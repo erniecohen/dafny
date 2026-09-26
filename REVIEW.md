@@ -49,6 +49,14 @@ model.  Their tests check what the fix changes that a program can see: for
 #6534, proofs about the values of fields that the deleted axiom used to carry
 and that the fix keeps.
 
+Three of upstream's tests record the verifier's resource counts in their
+expected output (`dafny0/CoinductiveProofs.dfy`, `dafny0/SubsetTypes.dfy`,
+`dafny1/SchorrWaite.dfy`).  The fixes for #6534 and #6536 move those counts,
+though not any verification result, and `7b6dba7` updates the expected outputs.
+Otherwise upstream's own harness gives the same outcome with and without the
+fixes for every test under `dafny0` to `dafny4`, `git-issues` and `logger`
+(run with the C# backend only).
+
 None of the fixes changes the Reference Manual or the command-line help.  They
 change the verifier's encoding, not the language or its options, and where the
 manual speaks to the point (`m.Items` is a set of pairs; `o - m` is defined only
@@ -57,30 +65,34 @@ verifier know.  Each follow-up commit gives its fix's reason.
 
 ## The version, and how to check it
 
-`c47a78b3` is the first 8 hex digits of the sha256 of the change this branch
-makes to files that v4.11.0 already has:
+`c47a78b3` is the first 8 hex digits of the sha256 of the change that the
+fix commits make to files that v4.11.0 already has:
 
-    git diff --diff-filter=M --abbrev=7 v4.11.0 v4.11.0+fcb2042d.review.c47a78b3 | sha256sum
+    git diff --diff-filter=M --abbrev=7 v4.11.0 7512bd5 | sha256sum
 
-The build was first named by applying the eight fixes to a fresh repository of
-v4.11.0's tree with `git apply` and hashing `git diff`.  That diff leaves out the
-files the fixes add, which stay untracked, and abbreviates object ids to 7 digits.
-The command above computes the same thing from a clone of this repository that
-has both tags.  (In a very large clone git may lengthen an abbreviation that would
-be ambiguous; a shallow fetch of the two tags avoids that.)
+`7512bd5` is the last product commit, the last commit that changes a file
+the build compiles; here it is the last fix commit.  The build was first named
+by applying the eight fixes to a fresh repository of v4.11.0's tree with
+`git apply` and hashing `git diff`.
+That diff leaves out the files the fixes add, which stay untracked, and
+abbreviates object ids to 7 digits; the command above computes the same thing
+from a clone of this repository that has the tag `v4.11.0`.  (In a very large
+clone git may lengthen an abbreviation that would be ambiguous; a shallow fetch
+avoids that.)
 
 **The version names the product, the source that is compiled.**  The commits
-after the eighth fix, `7512bd5`, add tests, release notes, this file and CI.  They
-change no file that the build compiles or embeds, and add none, so the version
-stays.  The rule on this branch:
+after `7512bd5` add or update tests, release notes, documents and CI.  They
+change no product file, so the version stays.  The rule on this branch:
 
-- a commit that changes or adds a product file gets a new version and a new tag;
-- a commit that only adds tests, release notes or documents keeps them;
-- the hash covers every change to an existing file, product or not, so changing
-  an existing test or document would move it too.
+- a commit that changes or adds a product file is a new last product commit,
+  and gets a new version and a new tag;
+- any other commit keeps them.
 
-To check that a commit's product is the one this version names, confirm that
-this prints nothing:
+The product is everything outside `Source/IntegrationTests/`, `docs/`,
+`.github/` and this file.  `.github/review/base` names the base and the last
+product commit, and CI's `.github/review/version.sh` computes the version from
+them and fails if a later commit changes a product file.  By hand, this prints
+nothing:
 
     git diff --name-only 7512bd5 <commit> -- . ':!Source/IntegrationTests' ':!docs' ':!.github' ':!REVIEW.md'
 
@@ -94,5 +106,6 @@ on `dev`, which exercise every compiler backend.  It builds Dafny, runs
 the programs of Dafny's own test suite that verify (under
 `LitTest/dafny0` to `dafny4` and `git-issues`) at a resource limit of 16,000,000
 with Z3 5.1.0, taken from Z3's public GitHub release by checksum, and reports each
-program's verdict.  On a tag it attaches self-contained binaries for `osx-arm64`
+program's verdict.  It also runs the tests named in `.github/review/regressions` in
+upstream's own harness.  On a tag it attaches self-contained binaries for `osx-arm64`
 and `linux-x64` to a GitHub release, with their sha256 sums.
