@@ -406,7 +406,8 @@ lemma sorted_insertInMiddle(xs: List<G>, a: G, ys: List<G>)
         true;
         { sorted_reverse(xs, ys); }
         sorted(reverse(xs', Cons(b, ys))) && sorted(Cons(a, ys));
-        { sorted_replaceSuffix(xs', Cons(b, ys), Cons(a, ys)); }
+        { assert forall y :: y in multiset_of(xs') ==> Below(y, a);
+          sorted_replaceSuffix(xs', Cons(b, ys), Cons(a, ys)); }
         sorted(reverse(xs', Cons(a, ys)));
         { sorted_reverse(xs', Cons(b, ys));
           sorted_insertInMiddle(xs', b, Cons(a, ys)); }
