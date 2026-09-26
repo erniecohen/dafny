@@ -162,7 +162,10 @@ on `dev`, which exercise every compiler backend.  On this branch it fetches the
 Boogie packages, builds Dafny, runs the programs of Dafny's own test suite that
 verify (under `LitTest/dafny0` to `dafny4` and `git-issues`) at a resource limit
 of 16,000,000 with Z3 5.1.0, taken from Z3's public GitHub release by checksum,
-and reports each program's verdict.  It also runs the tests named in `.github/review/regressions` in
+and reports each program's verdict.  It verifies Dafny's standard library,
+`Source/DafnyStandardLibraries`, as the library's Makefile's `verify` target does,
+once with Z3 5.1.0 and once with the Z3 that the tree's own tests expect (4.12.1 on
+this branch), and reports each declaration's verdict.  It also runs the tests named in `.github/review/regressions` in
 upstream's own harness.  On a tag it attaches self-contained binaries for `osx-arm64`
 and `linux-x64` to a GitHub release, with their sha256 sums.
 
@@ -187,3 +190,23 @@ To change the file on purpose:
    verdict changed, why: which change made a proof finish or stop finishing,
    or that the program itself changed.  A verdict is never updated without a
    reason on record.
+
+### Expected standard-library verdicts
+
+`.github/review/expected-std-verdicts-z3-5.1.0.tsv` and
+`expected-std-verdicts-z3-4.12.1.tsv` hold the verdict the job `Standard library`
+expects for each of the library's declarations under that Z3: its outcome
+(`Correct`, `Errors`, `OutOfResource`, ...), and for each part of the run (the
+library, and its target-specific files for each target language) the exit code,
+the summary line and the lines with errors.  They are updated as the suite's
+expected verdicts are, from the run's artifact `std-verdicts-z3-<version>`, with a
+reason for every row that changes.
+
+The library runs with its own resource limits and without a time limit, in
+Boogie's default declaration order, as upstream verifies it.  Dafny does not
+verify the library again when a program uses it (`--standard-libraries` loads its
+prebuilt binary), so these verdicts say whether the library's proofs still go
+through on this line, not whether a program that uses the library verifies.  Not
+all of them do, and most of those that do not are Z3 5.1.0's: unmodified 4.11.0
+verifies every declaration with Z3 4.12.1, and leaves 29 unverified with Z3 5.1.0,
+27 of them because a proof runs out of its resource limit.
