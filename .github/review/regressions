@@ -1,0 +1,24 @@
+# The lit tests that the regressions job runs in upstream's own harness
+# (Source/IntegrationTests), by path under TestFiles/LitTests/LitTest.
+#
+# The regression tests of this line's fixes:
+git-issues/git-issue-6366.dfy
+git-issues/git-issue-6531.dfy
+git-issues/git-issue-6532.dfy
+git-issues/git-issue-6533.dfy
+git-issues/git-issue-6534.dfy
+git-issues/git-issue-6535.dfy
+git-issues/git-issue-6536.dfy
+git-issues/git-issue-6537.dfy
+# Upstream tests whose expected output the fix for #6366 updated, or whose proofs
+# depended on the axioms it and the fix for #6531 changed:
+dafny0/CoinductiveProofs.dfy
+dafny4/GHC-MergeSort.dfy
+dafny4/Lucas-down.dfy
+# Upstream tests with proofs about the values of fields, which the fix for #6534
+# must keep:
+dafny1/Queue.dfy
+dafny1/ExtensibleArray.dfy
+dafny1/ExtensibleArrayAuto.dfy
+dafny1/SchorrWaite-stages.dfy
+dafny2/COST-verif-comp-2011-3-TwoDuplicates.dfy
