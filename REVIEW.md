@@ -4,8 +4,8 @@ This branch is Dafny 4.11.0 (tag `v4.11.0`, commit `fcb2042`) with fixes for
 eight soundness issues filed against dafny-lang/dafny, one commit per fix, and
 it builds against Boogie 3.5.5 with a fix for a ninth, filed against
 boogie-org/boogie.
-A build of it reports the version `4.11.0+fcb2042d.review.ff222cd4`, and the tag
-of the same name with a `v` marks it: `v4.11.0+fcb2042d.review.ff222cd4`.
+A build of it reports the version `4.11.0+fcb2042d.review.256a1ab3`, and the tag
+of the same name with a `v` marks it: `v4.11.0+fcb2042d.review.256a1ab3`.
 
 It is the shipped line.  Improvements go to the branch `dev`, which follows
 upstream's `master`, and come back here only after they pass the tests.
@@ -15,7 +15,7 @@ upstream's `master`, and come back here only after they pass the tests.
 | fix | test and release note | issue | what it changes | kind |
 |---|---|---|---|---|
 | `b6116c9` | (upstream's, in the fix) | [#6366](https://github.com/dafny-lang/dafny/issues/6366), fixed upstream by [#6367](https://github.com/dafny-lang/dafny/pull/6367) after 4.11.0 | An automatic induction hypothesis, and the range of a forall call statement, assume their call permissions only under the bound variables' type antecedent.  Upstream's commit, cherry-picked with its author. | weakens only |
-| `cf5fdba` | `b7231f8` | [#6531](https://github.com/dafny-lang/dafny/issues/6531) | The equality axiom of a datatype with a single constructor gets the antecedent `Ctor?(a) && Ctor?(b)`, as with several constructors.  It ranged over every datatype value. | weakens only |
+| `cf5fdba`, refined by `5fc27c0` | `b7231f8`, `f102115` | [#6531](https://github.com/dafny-lang/dafny/issues/6531) | The equality axiom of a datatype with a single constructor gets the antecedent `Ctor?(a) && Ctor?(b)` in its direction "equal fields imply `Dt#Equal`", which ranged over every datatype value.  The other direction, "`Dt#Equal` implies equal fields", holds of every value, since `Dt#Equal` is equality, and stays unguarded.  `cf5fdba` guarded both directions; `5fc27c0` guards only the false one, as the pull request [dafny-lang/dafny#6540](https://github.com/dafny-lang/dafny/pull/6540) does, because guarding both made some proofs that compare tuples hundreds of times dearer. | weakens only: it still only adds a guard, now to one direction of the axiom |
 | `f621876` | `251fbd1` | [#6537](https://github.com/dafny-lang/dafny/issues/6537) | Membership in `Map#Items` and `IMap#Items` gets a first conjunct: the item is a pair. | **asserts** that every item is a pair |
 | `007b409` | `9e7df43` | [#6533](https://github.com/dafny-lang/dafny/issues/6533) | The assumption after a forall statement that assigns to the heap puts the bound variables' type antecedent outermost, around the call facts of its range. | weakens only |
 | `5ecb3b4` | `c0713af` | [#6532](https://github.com/dafny-lang/dafny/issues/6532) | `BplForallTrim` keeps a bound variable whose type may be empty, under an `exists` guard, instead of dropping it.  Also substitutes the type arguments in the call facts of a constant field's right-hand side, which the first change exposed. | weakens only |
@@ -104,6 +104,10 @@ added hints to that file.  In the suite, at its resource limit, it moves the
 verdicts of a few programs, none by a new error: `15d1b11` updates the expected
 verdicts, and its message says why each one moved.
 
+The refinement of the fix for #6531, `5fc27c0`, moves no verdict of the suite
+and none of the resource counts those three tests record, and `git-issue-6531`
+is still refused.
+
 None of the fixes changes the Reference Manual or the command-line help.  They
 change the verifier's encoding, not the language or its options, and where the
 manual speaks to the point (`m.Items` is a set of pairs; `o - m` is defined only
@@ -112,16 +116,17 @@ verifier know.  Each follow-up commit gives its fix's reason.
 
 ## The version, and how to check it
 
-`ff222cd4` is the first 8 hex digits of the sha256 of the change that the
+`256a1ab3` is the first 8 hex digits of the sha256 of the change that the
 product commits make to files that v4.11.0 already has:
 
-    git diff --diff-filter=M --abbrev=7 v4.11.0 a48933e | sha256sum
+    git diff --diff-filter=M --abbrev=7 v4.11.0 5fc27c0 | sha256sum
 
-`a48933e` is the last product commit, the last commit that changes a file
-the build compiles; here it is the commit that moves Dafny to the fixed Boogie.
-Before it, the line was `4.11.0+fcb2042d.review.c47a78b3`, whose last product
-commit was `7512bd5`, the last of the eight fix commits; that build was first
-named by applying the eight fixes to a fresh repository of v4.11.0's tree with
+`5fc27c0` is the last product commit, the last commit that changes a file
+the build compiles; here it is the refinement of the fix for #6531, which came
+after `a48933e`, the commit that moves Dafny to the fixed Boogie.  Before them,
+the line was `4.11.0+fcb2042d.review.c47a78b3`, whose last product commit was
+`7512bd5`, the last of the eight fix commits; that build was first named by
+applying the eight fixes to a fresh repository of v4.11.0's tree with
 `git apply` and hashing `git diff`.
 That diff leaves out the files the fixes add, which stay untracked, and
 abbreviates object ids to 7 digits; the command above computes the same thing
@@ -130,7 +135,7 @@ clone git may lengthen an abbreviation that would be ambiguous; a shallow fetch
 avoids that.)
 
 **The version names the product, the source that is compiled.**  The commits
-after `a48933e` add or update tests, release notes, documents and CI.  They
+after `5fc27c0` add or update tests, release notes, documents and CI.  They
 change no product file, so the version stays.  The rule on this branch:
 
 - a commit that changes or adds a product file is a new last product commit,
@@ -143,10 +148,10 @@ product commit, and CI's `.github/review/version.sh` computes the version from
 them and fails if a later commit changes a product file.  By hand, this prints
 nothing:
 
-    git diff --name-only a48933e <commit> -- . ':!Source/IntegrationTests' ':!docs' ':!.github' ':!REVIEW.md'
+    git diff --name-only 5fc27c0 <commit> -- . ':!Source/IntegrationTests' ':!docs' ':!.github' ':!REVIEW.md'
 
 A release binary built from the tag prints the version with `dafny --version`.
-It is built with `-p:SourceRevisionId=fcb2042d.review.ff222cd4`.  The version
+It is built with `-p:SourceRevisionId=fcb2042d.review.256a1ab3`.  The version
 names the Boogie packages by their version, and `Scripts/boogie-packages.sha256`
 names their bytes.
 
