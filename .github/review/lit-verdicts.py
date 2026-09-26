@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """The verifier's verdicts on Dafny's own test programs.
 
-    lit-verdicts.py plan    <LitTest dir> <plan.tsv>
-    lit-verdicts.py run     <plan.tsv> <LitTest dir> <dafny> <z3> <out.tsv> [--shard I/N] [--jobs K]
-    lit-verdicts.py summary <verdicts.tsv>...                 counts, as Markdown
-    lit-verdicts.py compare <expected.tsv> <actual.tsv>       programs whose verdict differs
+    lit-verdicts.py plan     <LitTest dir> <plan.tsv>
+    lit-verdicts.py run      <plan.tsv> <LitTest dir> <dafny> <z3> <out.tsv> [--shard I/N] [--jobs K]
+    lit-verdicts.py summary  <verdicts.tsv>...                 counts, as Markdown
+    lit-verdicts.py expected <verdicts.tsv>...                 the verdicts alone, for expected-verdicts.tsv
+    lit-verdicts.py compare  <expected.tsv> <actual.tsv>       programs whose verdict differs
 
 The programs are the `.dfy` files under dafny0 to dafny4 and git-issues whose first
 RUN line verifies them (%verify, %testDafnyForEach*, %build or %run, without
@@ -22,6 +23,15 @@ cost or a false proof it stopped, and reading the program tells which.
 
 A verdict row is: program, exit code, the verifier's summary line(s) (with a
 count of proofs that ran out of resource), the lines with errors, and seconds.
+The verdict is the first four: `expected` drops the seconds, and `compare` looks
+at nothing else.  So a program's time, and the resources its finished proofs
+used, never change a verdict (the suite does not record resource counts); a
+proof that no longer finishes within the limit does, since it is counted.
+
+.github/review/expected-verdicts.tsv holds the verdicts CI expects, and the
+job fails when one changes, or a program is added or removed.  To change it on
+purpose, replace it with `expected-verdicts.tsv` from the run's `verdicts`
+artifact, in a commit that says, for each program whose verdict changed, why.
 """
 import concurrent.futures
 import os
@@ -122,8 +132,11 @@ def run(planf, litdir, dafny, z3, out, shard='0/1', jobs=4):
 
 
 def load(fn):
+    """Rows by program, padded to the five columns, so that an editor's trimming of
+    trailing tabs or a CRLF checkout does not change a verdict."""
     with open(fn) as f:
-        return {l.split('\t')[0]: l.rstrip('\n').split('\t') for l in f if l.strip()}
+        rows = [l.rstrip('\r\n').split('\t') for l in f if l.strip()]
+    return {r[0]: (r + [''] * 5)[:5] for r in rows}
 
 
 def verdict(row):
@@ -148,7 +161,7 @@ def summary(files):
     kinds = {}
     for r in rows.values():
         kinds[verdict(r)] = kinds.get(verdict(r), 0) + 1
-    secs = sum(float(r[4]) for r in rows.values() if len(r) > 4 and r[4])
+    secs = sum(float(r[4]) for r in rows.values() if r[4])
     print('| verdict | programs |')
     print('|---|---|')
     for k in ['verified', 'errors', 'out-of-resource', 'resolution', 'timeout', 'other']:
@@ -157,8 +170,16 @@ def summary(files):
     print('| **all** | **%d** |' % len(rows))
     print()
     print('Verifier time, summed over programs: %.0f s.' % secs)
-    slow = sorted(rows.values(), key=lambda r: -float(r[4] or 0) if len(r) > 4 else 0)[:5]
+    slow = sorted(rows.values(), key=lambda r: -float(r[4] or 0))[:5]
     print('Slowest: ' + ', '.join('`%s` %s s' % (r[0], r[4]) for r in slow) + '.')
+
+
+def expected(files):
+    rows = {}
+    for fn in files:
+        rows.update(load(fn))
+    for k in sorted(rows):
+        print('\t'.join(rows[k][:4]))
 
 
 def compare(expected, actual):
@@ -186,6 +207,8 @@ if __name__ == '__main__':
         run(*args[:5], shard=opts.get('--shard', '0/1'), jobs=int(opts.get('--jobs', '4')))
     elif cmd == 'summary':
         summary(args)
+    elif cmd == 'expected':
+        expected(args)
     elif cmd == 'compare':
         sys.exit(1 if compare(*args) else 0)
     else:

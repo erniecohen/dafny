@@ -109,3 +109,25 @@ with Z3 5.1.0, taken from Z3's public GitHub release by checksum, and reports ea
 program's verdict.  It also runs the tests named in `.github/review/regressions` in
 upstream's own harness.  On a tag it attaches self-contained binaries for `osx-arm64`
 and `linux-x64` to a GitHub release, with their sha256 sums.
+
+### Expected verdicts
+
+`.github/review/expected-verdicts.tsv` holds the verdict the suite expects for
+each program: its exit code, the verifier's summary line (proofs verified,
+errors, proofs out of resource) and the lines with errors.  The job `Verdicts`
+fails when any verdict changes, or a program is added or removed.  A program's
+time and the resources its finished proofs use are not part of its verdict, so
+a change in them alone does not fail it; a proof that stops finishing within
+the resource limit does.
+
+To change the file on purpose:
+
+1. Push the change.  The job `Verdicts` fails and lists each program whose
+   verdict moved, with the expected and the new verdict.
+2. Take `expected-verdicts.tsv` from that run's artifact `verdicts` (or write it
+   with `python3 .github/review/lit-verdicts.py expected verdicts.tsv`), and
+   replace `.github/review/expected-verdicts.tsv` with it.
+3. Commit it on its own.  The commit message must say, for each program whose
+   verdict changed, why: which change made a proof finish or stop finishing,
+   or that the program itself changed.  A verdict is never updated without a
+   reason on record.
