@@ -1,6 +1,7 @@
 # This fork's CI, in place of upstream's workflows, which exercise every compiler
 # backend and run for hours.  It builds Dafny, runs the verifier over Dafny's own test
-# programs at a fixed resource limit and reports each program's verdict, runs the
+# programs at a fixed resource limit and reports each program's verdict, verifies
+# Dafny's standard library and reports each declaration's verdict, runs the
 # regression tests of this line's fixes in upstream's test harness, and on a tag
 # publishes self-contained binaries.  Every job that builds first fetches the Boogie
 # packages this line builds against (Scripts/fetch-boogie-packages.sh, checked by sha256).
@@ -169,6 +170,85 @@ jobs:
             exit 1
           fi
 
+  stdlib:
+    name: Standard library (Z3 ${{ matrix.z3 }})
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        # This line's Z3, and the Z3 that the tree's own tests expect (its
+        # DefaultZ3Version), with which upstream builds the library.
+        z3: ['5.1.0', 'of the tests']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: dafny
+      - name: Unpack Dafny
+        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
+      - name: Z3
+        run: |
+          if [ "${{ matrix.z3 }}" = 5.1.0 ]; then
+            curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
+            echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
+            unzip -q z3.zip && chmod +x "$Z3_LINUX_X64/bin/z3"
+            echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
+            echo "Z3V=5.1.0" >> "$GITHUB_ENV"
+          else
+            v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
+            case "$v" in
+              4.12.1) sha=$HARNESS_Z3_4_12_1_SHA256 ;;
+              4.16.0) sha=$HARNESS_Z3_4_16_0_SHA256 ;;
+              *) echo "no checksum here for Z3 $v"; exit 1 ;;
+            esac
+            curl -fsSLo z3h.zip "$HARNESS_Z3_RELEASE/z3-$v-x64-ubuntu-24.04-bin.zip"
+            echo "$sha  z3h.zip" | sha256sum -c -
+            mkdir -p z3h && unzip -q z3h.zip -d z3h && chmod +x "z3h/z3-$v"
+            echo "Z3=$PWD/z3h/z3-$v" >> "$GITHUB_ENV"
+            echo "Z3V=$v" >> "$GITHUB_ENV"
+          fi
+      - name: Verify
+        run: |
+          "$Z3" --version
+          python3 .github/review/std-verdicts.py run Source/DafnyStandardLibraries "$PWD/out/dafny/Dafny" "$Z3" \
+            std-verdicts.tsv --cores 4
+          python3 .github/review/std-verdicts.py expected std-verdicts.tsv > "expected-std-verdicts-z3-$Z3V.tsv"
+          {
+            echo "## Standard library, Z3 $Z3V: ${{ needs.build.outputs.version }}"
+            echo
+            echo "Source/DafnyStandardLibraries, verified as its Makefile's verify target does, with"
+            echo "the library's own resource limits and no time limit."
+            echo
+            python3 .github/review/std-verdicts.py summary std-verdicts.tsv
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: std-verdicts-z3-${{ env.Z3V }}
+          path: |
+            std-verdicts.tsv
+            expected-std-verdicts-z3-${{ env.Z3V }}.tsv
+          retention-days: 90
+      # A declaration's verdict is its outcome; a part's is its exit code, summary line
+      # and error lines.  Not times, and not the resources finished proofs used.  To
+      # change the expected verdicts on purpose, see .github/review/std-verdicts.py.
+      - name: Compare with the expected verdicts
+        run: |
+          e=".github/review/expected-std-verdicts-z3-$Z3V.tsv"
+          if [ ! -f "$e" ]; then echo "::warning::no $e to compare with"; exit 0; fi
+          if python3 .github/review/std-verdicts.py compare "$e" std-verdicts.tsv > compare.txt; then
+            tail -1 compare.txt
+          else
+            cat compare.txt
+            { echo; echo "### Verdicts that changed"; echo; echo '```'; cat compare.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::Standard-library verdicts under Z3 $Z3V changed ($(tail -1 compare.txt)).  If that is intended, replace $e with the one in this run's artifact 'std-verdicts-z3-$Z3V', in a commit that says, for each row listed, why its verdict changed."
+            exit 1
+          fi
+
   regressions:
     name: Regression tests (upstream harness)
     runs-on: ubuntu-24.04
@@ -275,7 +355,7 @@ jobs:
 
   release:
     name: GitHub release
-    needs: [build, binaries, verdicts, regressions]
+    needs: [build, binaries, verdicts, stdlib, regressions]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
