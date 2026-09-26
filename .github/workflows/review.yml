@@ -2,7 +2,9 @@
 # backend and run for hours.  It builds Dafny, runs the verifier over Dafny's own test
 # programs at a fixed resource limit and reports each program's verdict, runs the
 # regression tests of this line's fixes in upstream's test harness, and on a tag
-# publishes self-contained binaries.  Standard GitHub-hosted runners only.
+# publishes self-contained binaries.  Every job that builds first fetches the Boogie
+# packages this line builds against (Scripts/fetch-boogie-packages.sh, checked by sha256).
+# Standard GitHub-hosted runners only.
 name: review
 
 on:
@@ -61,6 +63,8 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Boogie packages
+        run: sh Scripts/fetch-boogie-packages.sh
       - name: Build
         run: |
           dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny \
@@ -192,6 +196,8 @@ jobs:
           unzip -q z3h.zip -d Binaries/z3/bin
           chmod +x "Binaries/z3/bin/z3-$v"
           "Binaries/z3/bin/z3-$v" --version
+      - name: Boogie packages
+        run: sh Scripts/fetch-boogie-packages.sh
       - name: Build the test harness
         run: dotnet build Source/IntegrationTests -c Release
       - name: Run the tests named in .github/review/regressions
@@ -231,6 +237,8 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Boogie packages
+        run: sh Scripts/fetch-boogie-packages.sh
       - name: Publish, self-contained
         env:
           RUNTIME_IDENTIFIER: ${{ matrix.rid }}
