@@ -133,6 +133,7 @@ jobs:
         run: |
           sort verdicts-*.tsv > verdicts.tsv
           test "$(wc -l < verdicts.tsv)" -eq "$(wc -l < plan.tsv)"
+          python3 .github/review/lit-verdicts.py expected verdicts.tsv > expected-verdicts.tsv
           {
             echo "## Verifier suite: ${{ needs.build.outputs.version }}"
             echo
@@ -141,16 +142,28 @@ jobs:
             echo
             python3 .github/review/lit-verdicts.py summary verdicts.tsv
           } >> "$GITHUB_STEP_SUMMARY"
-      - name: Compare with the expected verdicts
-        if: hashFiles('.github/review/expected-verdicts.tsv') != ''
-        run: python3 .github/review/lit-verdicts.py compare .github/review/expected-verdicts.tsv verdicts.tsv
       - uses: actions/upload-artifact@v4
         with:
           name: verdicts
           path: |
             verdicts.tsv
+            expected-verdicts.tsv
             plan.tsv
           retention-days: 90
+      # A verdict is a program's exit code, summary line and error lines: not its
+      # time, and not the resources its finished proofs used.  To change the
+      # expected verdicts on purpose, see .github/review/lit-verdicts.py.
+      - name: Compare with the expected verdicts
+        if: hashFiles('.github/review/expected-verdicts.tsv') != ''
+        run: |
+          if python3 .github/review/lit-verdicts.py compare .github/review/expected-verdicts.tsv verdicts.tsv > compare.txt; then
+            tail -1 compare.txt
+          else
+            cat compare.txt
+            { echo; echo "### Verdicts that changed"; echo; echo '```'; cat compare.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::Verdicts changed ($(tail -1 compare.txt)).  If that is intended, replace .github/review/expected-verdicts.tsv with the one in this run's artifact 'verdicts', in a commit that says, for each program listed, why its verdict changed."
+            exit 1
+          fi
 
   regressions:
     name: Regression tests (upstream harness)
