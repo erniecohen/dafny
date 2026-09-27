@@ -21,8 +21,10 @@ if [ -f .github/review/base ]; then
   # Shallow fetches keep the repository small, so that 7-digit object ids stay unambiguous.
   git fetch --quiet --no-tags --depth=1 origin "+refs/tags/$base:refs/tags/$base"
   git cat-file -e "$product^{commit}" 2>/dev/null || git fetch --quiet --no-tags --depth=1 origin "$product"
+  # Not product: tests, documents and CI, and the documents at the top of the tree.
   changed=$(git diff --name-only "$product" HEAD -- . \
-    ':(exclude)Source/IntegrationTests' ':(exclude)docs' ':(exclude).github' ':(exclude)REVIEW.md')
+    ':(exclude)Source/IntegrationTests' ':(exclude)docs' ':(exclude).github' ':(exclude)REVIEW.md' \
+    ':(exclude)ROADMAP.md' ':(exclude)AGENTS.md' ':(exclude)CLAUDE.md')
   if [ -n "$changed" ]; then
     echo "product files changed after $product, the last product commit in .github/review/base:" >&2
     echo "$changed" >&2

@@ -143,12 +143,14 @@ change no product file, so the version stays.  The rule on this branch:
 - any other commit keeps them.
 
 The product is everything outside `Source/IntegrationTests/`, `docs/`,
-`.github/` and this file.  `.github/review/base` names the base and the last
-product commit, and CI's `.github/review/version.sh` computes the version from
-them and fails if a later commit changes a product file.  By hand, this prints
-nothing:
+`.github/`, this file, and the other documents at the top of the tree:
+`ROADMAP.md`, `AGENTS.md` and `CLAUDE.md`.  `.github/review/base` names the base
+and the last product commit, and CI's `.github/review/version.sh` computes the
+version from them and fails if a later commit changes a product file.  By hand,
+this prints nothing:
 
-    git diff --name-only 5fc27c0 <commit> -- . ':!Source/IntegrationTests' ':!docs' ':!.github' ':!REVIEW.md'
+    git diff --name-only 5fc27c0 <commit> -- . ':!Source/IntegrationTests' ':!docs' ':!.github' \
+      ':!REVIEW.md' ':!ROADMAP.md' ':!AGENTS.md' ':!CLAUDE.md'
 
 A release binary built from the tag prints the version with `dafny --version`.
 It is built with `-p:SourceRevisionId=fcb2042d.review.256a1ab3`.  The version
