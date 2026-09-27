@@ -10,6 +10,10 @@ of the same name with a `v` marks it: `v4.11.0+fcb2042d.review.256a1ab3`.
 It is the shipped line.  Improvements go to the branch `dev`, which follows
 upstream's `master`, and come back here only after they pass the tests.
 
+Where the fork is going is in [`ROADMAP.md`](ROADMAP.md); the work itself is in
+[the issues](https://github.com/erniecohen/dafny/issues).  How to work here, for
+anyone, human or AI, is in [`AGENTS.md`](AGENTS.md).
+
 ## The fixes
 
 | fix | test and release note | issue | what it changes | kind |
