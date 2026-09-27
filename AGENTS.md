@@ -60,9 +60,10 @@ As `CONTRIBUTING.md` and `docs/dev/README.md` ask:
 ## Only soundness fixes change the defaults
 
 A soundness fix may change what Dafny does under default options.  Nothing else
-may.  Every other change sits behind a new opt-in option.  With the option off,
-it must give the same verdicts and the same resource counts as before.  Show that,
-on the suite and on the standard library, before anything relies on the option.
+may.  Every other change sits behind a new opt-in option, except that added axioms
+share one (below).  With the option off, it must give the same verdicts and the
+same resource counts as before.  Show that, on the suite and on the standard
+library, before anything relies on the option.
 
 ## New axioms are where soundness is lost
 
@@ -73,8 +74,26 @@ axiom makes everything provable.  Each new axiom needs:
   definitions that are already trusted;
 - **a vacuity control**: a test in which `assert false` must still FAIL with the
   axiom present, in a context that triggers it;
-- **to ship opt-in**, behind a new option, because an extra axiom can move proof
-  costs or start matching loops under default flags.
+- **to ship opt-in**, behind an option, because an extra axiom can move proof costs
+  or start matching loops under default flags.  With the option off, Dafny gives
+  the same verdicts and resource counts as a build without the axiom.
+
+**One option for all added axioms.**  The axioms that supply missing facts, such as
+those that [issue 33](https://github.com/erniecohen/dafny/issues/33) and
+[issue 34](https://github.com/erniecohen/dafny/issues/34) report, all go behind one
+command-line option that they share, not one option each.  It is off by default,
+and a project file (`dfyconfig.toml`) can set it, like any other option.
+
+- **The first change that adds such an axiom defines the option**, and records its
+  name here.
+- **Every later axiom joins that option.**  The option turns all its axioms on at
+  once, so a later axiom's soundness argument covers it together with those
+  already there.
+- **An axiom whose measured performance effect is a problem gets its own option
+  instead.**  The change that adds it says why, with the measurements.
+
+**This option policy is provisional.**  It is expected to be revisited once it is
+clearer where upstream Dafny is going.
 
 A missing axiom is not automatically a bug fix under the upstream rule below.
 Label its issue `needs-owner-approval` before any pull request upstream.

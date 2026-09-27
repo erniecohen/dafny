@@ -15,8 +15,8 @@ check its version.  This file says where the fork is going.  The work itself is 
   crashing program as a test.
 - **Missing axioms**, such as axioms for bitvectors.  A new axiom makes more
   things provable.  It cannot fix unsoundness, and it can introduce it.  So each
-  one ships behind an opt-in option, with a written soundness argument and a
-  vacuity control (`AGENTS.md`).
+  one ships with a written soundness argument and a vacuity control, and for now
+  behind one opt-in option that all added axioms share (`AGENTS.md`).
 - **Improvements, opt-in only.**  Anything else is a new option, with the defaults
   unchanged.  Under default options, a program gets the verdicts and resource
   counts that it gets from 4.11.0 with the soundness fixes.  For example, a
