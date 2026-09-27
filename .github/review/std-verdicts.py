@@ -19,12 +19,22 @@ with `--cores N`, and with
 
 in place of the library's time limit, so that a verdict does not depend on the
 machine: a proof ends when it succeeds, fails or runs out of its resource limit.
-The declaration order is Boogie's default, as upstream verifies the library; it
-is decided by the declarations' contents, and two runs of one build give the same
-resource counts.  (`--boogie ARGS` passes Boogie options to the library part, for
-measurements under another order, e.g. /randomSeed:K; the target-specific parts
-cannot take them, since a library's --boogie options must equal those its binary
-was built with.)
+The declaration order is Boogie's default, as upstream verifies the library.  It
+is not quite deterministic.  Runs of one build have always given the same
+verdicts, but the resource counts of some declarations move between runs.  (In
+ten runs of the 4.11.0 line's library, of 2,190 declarations: between two runs,
+up to 251 counts moved under Z3 5.1.0 and up to 97 under Z3 4.12.1, mostly by
+under 0.1%, the most by 15%.)  So a proof close to its limit could change its
+verdict from one run to the next.  If the comparison ever reports such a change,
+run again before treating it as real.  Boogie's /normalizeDeclarationOrder:0 is
+no remedy: two runs in that order gave identical counts under Z3 4.12.1, but
+under Z3 5.1.0 the library did not finish in it within an hour (with a 30-second
+limit, one proof times out there: Producers.ProducerState.ValidChangeTransitive).
+A part that runs longer than TIMEOUT is stopped; its run row then reads TIMEOUT,
+and it has no declaration rows.  (`--boogie ARGS` passes Boogie options to the
+library part, for measurements under another order, e.g. /randomSeed:K; the
+target-specific parts cannot take them, since a library's --boogie options must
+equal those its binary was built with.)
 
 The rows, one per line, tab-separated:
 
