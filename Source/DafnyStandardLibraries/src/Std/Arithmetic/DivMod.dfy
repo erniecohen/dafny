@@ -1347,21 +1347,15 @@ module Std.Arithmetic.DivMod {
     }
   }
 
-  @IsolateAssertions
   lemma LemmaModNegNeg(x: int, d: int)
     requires 0 < d
     ensures x % d == (x * (1 - d)) % d
   {
-    assert (x - x * d) % d == x % d
-    by {
-      LemmaModAuto(d);
-      var f := i => (x - i * d) % d == x % d;
-      assert  MulAuto() ==> && f(0)
-                            && (forall i {:trigger IsLe(0, i)} :: IsLe(0, i) && f(i) ==> f(i + 1))
-                            && (forall i {:trigger IsLe(i, 0)} :: IsLe(i, 0) && f(i) ==> f(i - 1));
-      LemmaMulInductionAuto(x, f);
-    }
-    LemmaMulAuto();
+    LemmaModMultiplesVanish(-x, x, d);   // (d * -x + x) % d == x % d
+    LemmaMulIsDistributiveSub(x, 1, d);  // x * (1 - d) == x * 1 - x * d
+    LemmaMulBasics(x);                   // x * 1 == x
+    LemmaMulUnaryNegation(d, x);         // d * -x == -(d * x)
+    LemmaMulIsCommutative(x, d);         // x * d == d * x
   }
 
   /* proves the validity of the quotient and remainder */
