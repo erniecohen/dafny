@@ -83,13 +83,14 @@ is known to prove `false`: each issue shows that the axioms themselves have no
 model.  Their tests check what the fix changes that a program can see: for
 #6537 and #6536, facts that 4.11.0 does not prove and that now verify; for
 #6534, proofs about the values of fields that the deleted axiom used to carry
-and that the fix keeps.  For boogie-org/boogie#1168 no Dafny program is known to
-prove `false` either, and the test checks proofs about values read from arrays,
-sequences, maps, fields and sets, which relied on the reverse casts: they verify
-under 4.11.0 and with the fix, and fail when the reverse casts are dropped
-without the fix's casts.  Boogie's own tests for the fix, on its branch
-`review/3.5.5`, include the issue's program, on which Boogie 3.5.5 proves
-`assert false`.
+and that the fix keeps, and a vacuity control: a method in which the facts the
+fix asserts are in play, and whose `assert false` must still fail.  For
+boogie-org/boogie#1168 no Dafny program is known to prove `false` either, and the
+test checks proofs about values read from arrays, sequences, maps, fields and
+sets, which relied on the reverse casts: they verify under 4.11.0 and with the
+fix, and fail when the reverse casts are dropped without the fix's casts.
+Boogie's own tests for the fix, on its branch `review/3.5.5`, include the issue's
+program, on which Boogie 3.5.5 proves `assert false`.
 
 Three of upstream's tests record the verifier's resource counts in their
 expected output (`dafny0/CoinductiveProofs.dfy`, `dafny0/SubsetTypes.dfy`,

@@ -1,4 +1,4 @@
-// RUN: %verify "%s" > "%t"
+// RUN: %exits-with 4 %verify "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // The prelude had an axiom saying that every box is the box of a value of every type,
@@ -40,4 +40,25 @@ class Booleans {
     b := c;
     bs := {c};
   }
+}
+
+// A vacuity control.  The facts the fix states are in play here: fields of several types are
+// read and written, and their values go into collections as boxes.  With them present, false
+// must still not be provable.
+class Cell {
+  var i: int
+  var b: bool
+  var next: Cell?
+}
+
+method Vacuity(c: Cell)
+  modifies c
+{
+  c.i := c.i + 1;
+  c.b := !c.b;
+  var s: seq<int> := [c.i];
+  var t: set<bool> := {c.b};
+  var u: set<Cell?> := {c.next};
+  assert s[0] == c.i && c.b in t && c.next in u;
+  assert false; // error: must not be provable
 }
