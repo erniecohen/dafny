@@ -218,8 +218,6 @@ RHS condition.
 x, y :| 0 < x+y < 10;
 ```
 This is read as assign values to `x` and `y` such that `0 < x+y < 10` is true.
-In ghost code, a such-that assignment does not require an enumerable search bound,
-including when it appears inside a `match` case.
 The given boolean expression need not constrain the LHS values uniquely:
 the choice of satisfying values is non-deterministic. 
 This can be used to make a choice as in the
