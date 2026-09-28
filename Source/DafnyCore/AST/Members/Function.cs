@@ -64,7 +64,7 @@ public class Function : MethodOrFunction, TypeParameter.ParentType, ICallable, I
       yield return a;
     }
 
-    if (Body is null && HasPostcondition && EnclosingClass.EnclosingModuleDefinition.ModuleKind == ModuleKindEnum.Concrete && !HasExternAttribute && !HasAxiomAttribute) {
+    if (Body is null && !IsVirtual && HasPostcondition && EnclosingClass.EnclosingModuleDefinition.ModuleKind == ModuleKindEnum.Concrete && !HasExternAttribute && !HasAxiomAttribute) {
       yield return new Assumption(this, Origin, AssumptionDescription.NoBody(IsGhost));
     }
 
