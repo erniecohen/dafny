@@ -1,0 +1,26 @@
+github-issue-39.dfy(105,10): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-39.dfy(110,17): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-39.dfy(114,11): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-39.dfy(118,11): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-39.dfy(132,10): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-39.dfy(138,17): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-39.dfy(139,11): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-39.dfy(140,11): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-39.dfy(21,12): Error: assertion might not hold
+github-issue-39.dfy(26,22): Error: assertion might not hold
+github-issue-39.dfy(32,23): Error: function precondition could not be proved
+github-issue-39.dfy(15,30): Related location: this proposition could not be proved
+github-issue-39.dfy(38,22): Error: index out of range
+github-issue-39.dfy(44,22): Error: assertion might not hold
+github-issue-39.dfy(52,28): Error: assertion might not hold
+github-issue-39.dfy(61,30): Error: assertion might not hold
+github-issue-39.dfy(66,13): Error: assertion might not hold
+github-issue-39.dfy(105,28): Error: assertion might not hold
+github-issue-39.dfy(110,35): Error: assertion might not hold
+github-issue-39.dfy(114,34): Error: assertion might not hold
+github-issue-39.dfy(118,34): Error: assertion might not hold
+github-issue-39.dfy(122,24): Error: assertion might not hold
+github-issue-39.dfy(126,46): Error: index out of range
+github-issue-39.dfy(152,12): Error: assertion might not hold
+
+Dafny program verifier finished with 11 verified, 15 errors
