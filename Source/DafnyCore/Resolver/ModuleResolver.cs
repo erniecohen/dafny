@@ -983,12 +983,24 @@ namespace Microsoft.Dafny {
         if (d is TypeSynonymDecl) {
           var dd = (TypeSynonymDecl)d;
           ResolveType(dd.Origin, dd.Rhs, dd, ResolveTypeOptionEnum.AllowPrefix, dd.TypeArgs);
+          var successors = new List<RedirectingTypeDecl>();
           dd.Rhs.ForeachTypeComponent(ty => {
             var s = ty.AsRedirectingType;
-            if (s != null && s != dd) {
+            if (s == dd) {
+              dd.IsCyclic = true;
+            } else if (s != null) {
               typeRedirectionDependencies.AddEdge(dd, s);
+              successors.Add(s);
             }
           });
+          // A cycle among redirecting types is reported below, after all signatures are resolved.  But the
+          // declarations after this one may expand this synonym before then (for example, when a datatype's
+          // constructor has a parameter of this type), and expanding a cyclic synonym does not terminate.  So
+          // mark this synonym now if it closes a cycle.  Every cycle has a member that closes it (the member
+          // resolved last), so marking that member lets Type.NormalizeExpand stop on any cycle.
+          if (successors.Exists(s => typeRedirectionDependencies.Reaches(s, dd))) {
+            dd.IsCyclic = true;
+          }
         } else if (d is NewtypeDecl) {
           var dd = (NewtypeDecl)d;
           ResolveType(dd.Origin, dd.BaseType, dd, ResolveTypeOptionEnum.DontInfer, null);

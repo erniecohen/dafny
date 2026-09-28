@@ -246,7 +246,7 @@ public abstract class Type : NodeWithOrigin {
         }
 
         if (rtd.IsRevealedInScope(scope)) {
-          if (expandMode != ExpandMode.DontExpandJustAdjustForScopes && rtd is TypeSynonymDecl typeSynonymDecl) {
+          if (expandMode != ExpandMode.DontExpandJustAdjustForScopes && rtd is TypeSynonymDecl { IsCyclic: false } typeSynonymDecl) {
             if (typeSynonymDecl is not SubsetTypeDecl || expandMode == ExpandMode.ExpandSynonymsAndSubsetTypes) {
               type = typeSynonymDecl.RhsWithArgumentIgnoringScope(udt.TypeArgs);
               continue;
