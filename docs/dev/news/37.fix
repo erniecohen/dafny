@@ -1,0 +1,1 @@
+Type errors involving ambiguous arrow types now show their arrow syntax and qualify component types instead of printing internal system type names.

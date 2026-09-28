@@ -2808,6 +2808,11 @@ function Z(unit: ()): real
 ```
 have types `() -> real` and `(()) -> real`, respectively.
 
+When a type error compares arrow types whose printed names would be identical,
+the default resolver qualifies their component type names with module names.
+For example, it distinguishes `A.T -> bool` from `B.T -> bool` when both
+modules declare a type named `T`.
+
 The function arrows are right associative.
 For example, `A -> B -> C` means `A -> (B -> C)`, whereas
 the other association requires explicit parentheses: `(A -> B) -> C`.

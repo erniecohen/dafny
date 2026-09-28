@@ -64,10 +64,23 @@ namespace Microsoft.Dafny {
         }
         if (ambiguity) {
           return msgArgs.Select(x =>
-            (object)(x is UserDefinedType udt ? udt.FullName : x.ToString())
+            (object)(x is Type type ? UnambiguousTypeName(type) : x.ToString())
           ).ToArray();
         }
         return msgArgs;
+      }
+
+      private static string UnambiguousTypeName(Type type) {
+        if (type is not UserDefinedType udt) {
+          return type.ToString();
+        }
+        var arrow = type is ArrowType ? ArrowType.ANY_ARROW :
+          ArrowType.IsPartialArrowTypeName(udt.Name) ? ArrowType.PARTIAL_ARROW :
+          ArrowType.IsTotalArrowTypeName(udt.Name) ? ArrowType.TOTAL_ARROW : null;
+        // Qualify the components of an arrow, not its internal system declaration.
+        return arrow == null ? udt.FullName :
+          ArrowType.PrettyArrowTypeName(DafnyOptions.DefaultImmutableOptions, arrow,
+            udt.TypeArgs, null, null, false, UnambiguousTypeName);
       }
 
       protected abstract string ApproximateErrorMessage();
