@@ -3907,10 +3907,6 @@ The anonymous constructor is invoked as
 ```
 dropping the "`.`".
 
-Both named and anonymous constructor calls can appear in a `match` case.
-The constructor selection and argument types are checked in the same way as
-for calls outside a `match`.
-
 #### 6.3.2.3. Two-phase constructors
 
 The body of a constructor contains two sections,
