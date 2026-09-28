@@ -1,7 +1,7 @@
-// RUN: %exits-with 2 %baredafny resolve --type-system-refresh:false --show-snippets:false --use-basename-for-filename "%s" > "%t"
-// RUN: %diff "%s.expect" "%t"
-// RUN: %exits-with 2 %baredafny resolve --type-system-refresh:true --show-snippets:false --use-basename-for-filename "%s" > "%t"
-// RUN: %diff "%s.expect" "%t"
+// RUN: echo "Legacy resolver" > "%t"
+// RUN: %exits-with 2 %baredafny resolve --type-system-refresh:false --show-snippets:false --use-basename-for-filename "%s" >> "%t"
+// RUN: echo "Refreshed resolver" >> "%t"
+// RUN: %exits-with 2 %baredafny resolve --type-system-refresh:true --show-snippets:false --use-basename-for-filename "%s" >> "%t"
 
 datatype Option<X> = None | Some(value: X) {
   predicate IsFailure() { None? }
@@ -94,8 +94,8 @@ method GoodNoExtract(box: Box, arr: array<int>) returns (r: Status) {
   a, box.value, arr[0] :- WithoutExtract();
 }
 
-// RUN: %baredafny resolve --type-system-refresh:false --show-snippets:false --use-basename-for-filename "%S/Inputs/github-issue-43-valid.dfy" > "%t"
-// RUN: %baredafny resolve --type-system-refresh:true --show-snippets:false --use-basename-for-filename "%S/Inputs/github-issue-43-valid.dfy" > "%t"
+// RUN: %baredafny resolve --type-system-refresh:false --show-snippets:false --use-basename-for-filename "%S/Inputs/github-issue-43-valid.dfy" > "%t.valid"
+// RUN: %baredafny resolve --type-system-refresh:true --show-snippets:false --use-basename-for-filename "%S/Inputs/github-issue-43-valid.dfy" > "%t.valid"
 
 method BadDestinationAndCall() returns (r: Option<int>) {
   var a: int;
@@ -106,3 +106,5 @@ method BadDestinationAndExpressions() returns (r: Option<int>) {
   var a: int;
   a, missing :- Some(UndefinedFirst()), UndefinedSecond();
 }
+
+// RUN: %diff "%s.expect" "%t"
