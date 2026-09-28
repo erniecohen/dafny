@@ -7,28 +7,25 @@ using System.Text;
 using System.Collections.ObjectModel;
 using System.Diagnostics.Contracts;
 using Microsoft.Boogie;
-using Action = System.Action;
 using JetBrains.Annotations;
 
 namespace Microsoft.Dafny.Triggers {
   internal class QuantifierCollector : TopDownVisitor<OldExpr/*?*/> {
     readonly ErrorReporter reporter;
-    private readonly SystemModuleManager systemModuleManager;
     private readonly HashSet<Expression> quantifiers = [];
     internal readonly Dictionary<Expression, HashSet<OldExpr>> exprsInOldContext = new Dictionary<Expression, HashSet<OldExpr>>();
     internal readonly List<ComprehensionTriggerGenerator> quantifierCollections = [];
 
-    private readonly List<Action> ActionsOnSelectedTriggers = new();
+    private readonly List<System.Action<SystemModuleManager>> ActionsOnSelectedTriggers = new();
 
-    public QuantifierCollector(ErrorReporter reporter, SystemModuleManager systemModuleManager) {
+    public QuantifierCollector(ErrorReporter reporter) {
       Contract.Requires(reporter != null);
       this.reporter = reporter;
-      this.systemModuleManager = systemModuleManager;
     }
 
-    public void ApplyPostActions() {
+    public void ApplyPostActions(SystemModuleManager systemModuleManager) {
       foreach (var action in ActionsOnSelectedTriggers) {
-        action();
+        action(systemModuleManager);
       }
     }
 
@@ -54,7 +51,7 @@ namespace Microsoft.Dafny.Triggers {
           Type = Type.Bool
         };
 
-        ActionsOnSelectedTriggers.Add(() => {
+        ActionsOnSelectedTriggers.Add(_ => {
           letExpr.Attributes = existsExpr.Attributes;
         });
         expr = existsExpr;
@@ -112,7 +109,7 @@ namespace Microsoft.Dafny.Triggers {
           Type = Type.Bool
         };
 
-        ActionsOnSelectedTriggers.Add(() => {
+        ActionsOnSelectedTriggers.Add(systemModuleManager => {
           // Keep function calls in a form that can be cloned and resolved in a refining module.
           var substituteFrom = new Substituter(null, substBoundVarToLocal, new Dictionary<TypeParameter, Type>(),
             systemModuleManager: systemModuleManager);
