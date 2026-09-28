@@ -298,7 +298,7 @@ dafny2/MonotonicHeapstate.dfy	0	17 verified, 0 errors
 dafny2/SegmentSum.dfy	0	3 verified, 0 errors	
 dafny2/SmallestMissingNumber-functional.dfy	4	53 verified, 0 errors, 7 out of resource; 8 out of resource	157,230,277,278,279,297
 dafny2/SmallestMissingNumber-imperative.dfy	0	8 verified, 0 errors	
-dafny2/SnapshotableTrees.dfy	4	102 verified, 1 error, 4 out of resource; 5 out of resource	72,363,383,426,451
+dafny2/SnapshotableTrees.dfy	4	103 verified, 1 error, 4 out of resource; 5 out of resource	72,363,383,426,451
 dafny2/StoreAndRetrieve.dfy	0	16 verified, 0 errors	
 dafny2/TreeBarrier.dfy	0	7 verified, 0 errors	
 dafny2/TreeFill.dfy	0	3 verified, 0 errors	
@@ -1068,6 +1068,7 @@ git-issues/github-issue-3797.dfy	0	2 verified, 0 errors
 git-issues/github-issue-3860.dfy	2		7
 git-issues/github-issue-3871.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-3874.dfy	0	1 verified, 0 errors	
+git-issues/github-issue-39.dfy	4	6 verified, 8 errors	21,26,32,38,44,52,61,66
 git-issues/github-issue-4004.dfy	0	0 verified, 0 errors	
 git-issues/github-issue-4004_v2.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-4017.dfy	0	1 verified, 0 errors	
