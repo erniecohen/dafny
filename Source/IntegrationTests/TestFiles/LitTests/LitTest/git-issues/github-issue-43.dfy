@@ -94,5 +94,15 @@ method GoodNoExtract(box: Box, arr: array<int>) returns (r: Status) {
   a, box.value, arr[0] :- WithoutExtract();
 }
 
-// RUN: %baredafny resolve --type-system-refresh:false --show-snippets:false --use-basename-for-filename "%S/github-issue-43-valid.dfy" > "%t"
-// RUN: %baredafny resolve --type-system-refresh:true --show-snippets:false --use-basename-for-filename "%S/github-issue-43-valid.dfy" > "%t"
+// RUN: %baredafny resolve --type-system-refresh:false --show-snippets:false --use-basename-for-filename "%S/Inputs/github-issue-43-valid.dfy" > "%t"
+// RUN: %baredafny resolve --type-system-refresh:true --show-snippets:false --use-basename-for-filename "%S/Inputs/github-issue-43-valid.dfy" > "%t"
+
+method BadDestinationAndCall() returns (r: Option<int>) {
+  var a: int;
+  a, missing :- Undefined();
+}
+
+method BadDestinationAndExpressions() returns (r: Option<int>) {
+  var a: int;
+  a, missing :- Some(UndefinedFirst()), UndefinedSecond();
+}
