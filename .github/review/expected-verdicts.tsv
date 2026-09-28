@@ -1068,7 +1068,7 @@ git-issues/github-issue-3797.dfy	0	2 verified, 0 errors
 git-issues/github-issue-3860.dfy	2		7
 git-issues/github-issue-3871.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-3874.dfy	0	1 verified, 0 errors	
-git-issues/github-issue-39.dfy	4	10 verified, 14 errors	21,26,32,38,44,52,61,66,105,110,114,118,122,126
+git-issues/github-issue-39.dfy	4	11 verified, 15 errors	21,26,32,38,44,52,61,66,105,110,114,118,122,126,152
 git-issues/github-issue-4004.dfy	0	0 verified, 0 errors	
 git-issues/github-issue-4004_v2.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-4017.dfy	0	1 verified, 0 errors	
