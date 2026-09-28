@@ -2,9 +2,9 @@
 // RUN: %diff "%s.expect" "%t"
 // RUN: %baredafny resolve --allow-deprecation --type-system-refresh:true "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
-// RUN: %verify --allow-deprecation --type-system-refresh:false --boogie "/proc:__NoProcedureMatches__" --bprint "%t.bpl" "%s" > "%t"
+// RUN: %baredafny verify --allow-deprecation --solver-path "%z3" --type-system-refresh:false --boogie "/proc:__NoProcedureMatches__" --bprint "%t.bpl" "%s" > "%t"
 // RUN: %OutputCheck --file-to-check "%t_LabeledRefinement.bpl" "%s"
-// RUN: %verify --allow-deprecation --type-system-refresh:true --boogie "/proc:__NoProcedureMatches__" --bprint "%t.bpl" "%s" > "%t"
+// RUN: %baredafny verify --allow-deprecation --solver-path "%z3" --type-system-refresh:true --boogie "/proc:__NoProcedureMatches__" --bprint "%t.bpl" "%s" > "%t"
 // RUN: %OutputCheck --file-to-check "%t_LabeledRefinement.bpl" "%s"
 
 // The inherited trigger must keep the explicit old-state label after re-resolution.
