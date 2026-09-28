@@ -50,20 +50,32 @@ As `CONTRIBUTING.md` and `docs/dev/README.md` ask:
 - **A regression test** in the integration tests:
   `Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-<issue>.dfy`,
   with its `.expect`.  **A crash fix has the crashing program as its test.**
-- **Reference Manual (`docs/DafnyRef/`) and `--help` updates** for anything a user
-  can see: a new option, a new message, a changed result.
+- **Reference Manual (`docs/DafnyRef/`) and `--help` updates** when a documented rule
+  or interface changes: a new option, a new message, a changed result.  A crash fix or
+  an error-message fix needs none: the release-note fragment and the regression test
+  describe it.  `--help` text describes options and commands, never individual fixes.
 - **A commit message that says what changes, and why.**  For a soundness fix, say
   whether it only weakens (removes an axiom or an assumption, or guards one) or
   also asserts a new fact.  The parts that assert are the ones a reviewer must
   check (`REVIEW.md`, the fixes).
 
-## Only soundness fixes change the defaults
+## What may change the defaults
 
-A soundness fix may change what Dafny does under default options.  Nothing else
-may.  Every other change sits behind a new opt-in option, except that added axioms
-share one (below).  With the option off, it must give the same verdicts and the
+A soundness fix may change what Dafny does under default options.  So may a crash
+fix or an error-message fix: it changes only programs that crashed, or the text of a
+diagnostic, never the verdict or the cost of a program that already worked.  Every
+other change sits behind a new opt-in option, except that added axioms share one
+(below).  With the option off, it must give the same verdicts and the
 same resource counts as before.  Show that, on the suite and on the standard
 library, before anything relies on the option.
+
+## Merging fix pull requests
+
+Every product change updates `.github/review/base` and appends its test to
+`.github/review/regressions`, so two open fix pull requests always conflict there.
+They are merged one at a time.  After one merges, the next is rebased onto
+`review/4.11.0`, its `base` and `regressions` lines are redone, and its CI is run
+again before it merges.
 
 ## New axioms are where soundness is lost
 
