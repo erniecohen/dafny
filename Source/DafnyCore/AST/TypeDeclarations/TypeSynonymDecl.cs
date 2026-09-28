@@ -28,6 +28,14 @@ public abstract class TypeSynonymDecl : TypeSynonymDeclBase, RevealableTypeDecl 
 
   public TopLevelDecl AsTopLevelDecl => this;
   public TypeDeclSynonymInfo SynonymInfo { get; set; }
+
+  /// <summary>
+  /// Set by the resolver when this synonym's right-hand side is found to refer back to it, directly or through
+  /// other redirecting types.  Such a cycle is an error, and Type.NormalizeExpand does not expand this synonym,
+  /// since the expansion would not terminate.
+  /// </summary>
+  public bool IsCyclic { get; set; }
+
   public override SymbolKind? Kind => SymbolKind.Class;
   public override string GetDescription(DafnyOptions options) {
     return "type synonym";
