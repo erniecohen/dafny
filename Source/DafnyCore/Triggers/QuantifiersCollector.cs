@@ -82,6 +82,22 @@ namespace Microsoft.Dafny.Triggers {
       return true;
     }
 
+    private sealed class AssignSuchThatTriggerSubstituter : Substituter {
+      public AssignSuchThatTriggerSubstituter(Dictionary<IVariable, Expression> substitutions,
+        SystemModuleManager systemModuleManager)
+        : base(null, substitutions, new Dictionary<TypeParameter, Type>(), systemModuleManager: systemModuleManager) {
+      }
+
+      public override Expression Substitute(Expression expr) {
+        var result = base.Substitute(expr);
+        if (result is ApplySuffix { ResolvedExpression: FunctionCallExpr { AtLabel: { } label } } call) {
+          // Refinement re-resolves the parsed wrapper, so it needs the same explicit heap label.
+          call.AtTok = label.Tok;
+        }
+        return result;
+      }
+    }
+
     protected override bool VisitOneStmt(Statement stmt, ref OldExpr/*?*/ st) {
       if (stmt is ForallStmt { EffectiveEnsuresClauses: { } effectiveEnsuresClauses }) {
         foreach (var expr in effectiveEnsuresClauses) {
@@ -111,8 +127,7 @@ namespace Microsoft.Dafny.Triggers {
 
         ActionsOnSelectedTriggers.Add(systemModuleManager => {
           // Keep function calls in a form that can be cloned and resolved in a refining module.
-          var substituteFrom = new Substituter(null, substBoundVarToLocal, new Dictionary<TypeParameter, Type>(),
-            systemModuleManager: systemModuleManager);
+          var substituteFrom = new AssignSuchThatTriggerSubstituter(substBoundVarToLocal, systemModuleManager);
           var updatedAttributes = substituteFrom.SubstAttributes(existsExpr.Attributes);
           assignSuchThatStmt.Attributes = updatedAttributes;
         });

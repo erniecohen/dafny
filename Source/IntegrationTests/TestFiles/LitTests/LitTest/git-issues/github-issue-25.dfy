@@ -29,3 +29,31 @@ module ConcreteBase {
 }
 
 module ConcreteRefinement refines ConcreteBase { }
+
+abstract module GenericBase {
+  ghost predicate P<T>(x: T) { true }
+  lemma Generic<T>(w: T) {
+    var x: T {:trigger P(x)} :| P(x);
+  }
+}
+module GenericRefinement refines GenericBase { }
+abstract module LabeledBase {
+  class C {
+    var value: int
+    twostate predicate P(n: int) reads this { old(value) <= n }
+    method M() modifies this {
+      value := value + 1;
+      label L:
+      value := value + 1;
+      ghost var n: int :| P@L(n);
+    }
+  }
+}
+module LabeledRefinement refines LabeledBase {
+  class C ... {
+    method M ... {
+      ...;
+      assert value == old(value) + 2;
+    }
+  }
+}
