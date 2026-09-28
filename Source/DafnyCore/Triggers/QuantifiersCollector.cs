@@ -91,7 +91,7 @@ namespace Microsoft.Dafny.Triggers {
       public override Expression Substitute(Expression expr) {
         var result = base.Substitute(expr);
         if (result is ApplySuffix { ResolvedExpression: FunctionCallExpr { AtLabel: { } label } } call) {
-          // Refinement re-resolves the parsed wrapper, so it needs the same explicit heap label.
+          // Use the declaration token: re-resolution looks up the label by name, and diagnostics point to its declaration.
           call.AtTok = label.Tok;
         }
         return result;
