@@ -473,7 +473,9 @@ To improve assurance, provide a body that proves the conclusion.
 This is equivalent to an assumption of any loop invariants in the code after the loop.
 To improve assurance, provide a body that establishes any stated invariants.
 
-* Any declaration with no body and at least one `ensures` clause.
+* Any declaration with no body and at least one `ensures` clause, except instance members of traits and declarations in abstract modules.
+A bodyless instance member of a trait specifies a contract that implementations must satisfy; it does not introduce a missing-body assumption.
+Static trait members remain subject to this check. Explicit `{:axiom}` and `{:extern}` attributes are still audited.
 Any code that calls this declaration will assume that all `ensures` clauses are true after it returns.
 To improve assurance, provide a body that proves that any `ensures` clauses hold.
 

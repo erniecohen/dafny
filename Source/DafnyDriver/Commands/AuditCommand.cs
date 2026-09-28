@@ -14,7 +14,7 @@ static class AuditCommand {
   }.Concat(DafnyCommands.ResolverOptions);
 
   public static Command Create() {
-    var result = new Command("audit", "Report issues in the Dafny code that might limit the soundness claims of verification, emitting them as warnings or in a report document.");
+    var result = new Command("audit", "Report issues in the Dafny code that might limit the soundness claims of verification, emitting them as warnings or in a report document. Bodyless instance members of traits are not reported as missing-body assumptions.");
     result.AddArgument(DafnyCommands.FilesArgument);
 
     foreach (var option in Options) {
