@@ -38,7 +38,12 @@ namespace Microsoft.Dafny {
       if (expr is StaticReceiverExpr) {
         var e = (StaticReceiverExpr)expr;
         var ty = e.Type.Subst(typeMap);
-        return new StaticReceiverExpr(e.Origin, ty, e.IsImplicit) { Type = ty };
+        // The discarded receiver object may mention bound variables, and the verifier checks its well-formedness.
+        return new StaticReceiverExpr(e.Origin, ty, e.IsImplicit) {
+          Type = ty,
+          ObjectToDiscard = e.ObjectToDiscard == null ? null : Substitute(e.ObjectToDiscard),
+          ContainerExpression = e.ContainerExpression
+        };
       } else if (expr is LiteralExpr literalExpr) {
         if (literalExpr.Value == null) {
           var ty = literalExpr.Type.Subst(typeMap);
