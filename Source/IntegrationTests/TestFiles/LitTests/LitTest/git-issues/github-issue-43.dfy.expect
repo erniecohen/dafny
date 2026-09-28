@@ -1,0 +1,12 @@
+github-issue-43.dfy(17,7): Error: unresolved identifier: undeclaredVariable
+github-issue-43.dfy(35,2): Error: unresolved identifier: missing
+github-issue-43.dfy(40,5): Error: unresolved identifier: missing
+github-issue-43.dfy(45,8): Error: unresolved identifier: missing
+github-issue-43.dfy(50,9): Error: member 'missing' does not exist in class 'Box'
+github-issue-43.dfy(55,9): Error: unresolved identifier: missing
+github-issue-43.dfy(60,2): Error: unresolved identifier: missing
+github-issue-43.dfy(65,5): Error: unresolved identifier: missing
+github-issue-43.dfy(70,8): Error: unresolved identifier: missing
+github-issue-43.dfy(75,9): Error: member 'missing' does not exist in class 'Box'
+github-issue-43.dfy(80,9): Error: unresolved identifier: missing
+11 resolution/type errors detected in github-issue-43.dfy
