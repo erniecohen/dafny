@@ -1,0 +1,1 @@
+Fix a resolver crash when allocating an object with a named constructor inside a match case.
