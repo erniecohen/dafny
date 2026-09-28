@@ -36,3 +36,5 @@ auditor/TestAuditor.dfy
 git-issues/github-issue-46.dfy
 git-issues/github-issue-37.dfy
 git-issues/github-issue-43.dfy
+git-issues/github-issue-45.dfy
+dafny0/OnDemandResolutionCycle.dfy
