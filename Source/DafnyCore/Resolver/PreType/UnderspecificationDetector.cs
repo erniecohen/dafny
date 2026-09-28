@@ -282,7 +282,9 @@ namespace Microsoft.Dafny {
 
       var familyDeclName = PreTypeResolver.AncestorName(expr.PreType);
 
-      if (expr is LiteralExpr) {
+      if (expr is StaticReceiverExpr stexpr) {
+        CheckPreTypeIsDetermined(stexpr.Origin, stexpr.PreType, "static receiver");
+      } else if (expr is LiteralExpr) {
         var e = (LiteralExpr)expr;
         if (PreTypeResolver.IsBitvectorName(familyDeclName) || familyDeclName == PreType.TypeNameORDINAL) {
           var n = (BigInteger)e.Value;
@@ -299,10 +301,6 @@ namespace Microsoft.Dafny {
             cus.ReportError(ResolutionErrors.ErrorId.r_no_unary_minus_in_case_patterns, e.Origin,
               "unary minus (-{0}, type {1}) not allowed in case pattern", absN, e.PreType);
           }
-        }
-
-        if (expr is StaticReceiverExpr stexpr) {
-          CheckPreTypeIsDetermined(stexpr.Origin, stexpr.PreType, "static receiver");
         }
 
       } else if (expr is ComprehensionExpr) {
