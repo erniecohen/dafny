@@ -1,4 +1,4 @@
-// RUN: %exits-with 2 %resolve --type-system-refresh:false "%s" > "%t"
+// RUN: %exits-with 2 %baredafny resolve --type-system-refresh:false --use-basename-for-filename --show-snippets:false "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 
 module A { type T(==,!new,00) }
