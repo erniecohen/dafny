@@ -27,3 +27,4 @@ dafny1/ExtensibleArray.dfy
 dafny1/ExtensibleArrayAuto.dfy
 dafny1/SchorrWaite-stages.dfy
 dafny2/COST-verif-comp-2011-3-TwoDuplicates.dfy
+git-issues/github-issue-40.dfy
