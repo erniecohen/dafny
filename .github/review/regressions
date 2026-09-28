@@ -29,3 +29,5 @@ dafny1/SchorrWaite-stages.dfy
 dafny2/COST-verif-comp-2011-3-TwoDuplicates.dfy
 git-issues/github-issue-40.dfy
 git-issues/github-issue-41.dfy
+git-issues/github-issue-42.dfy
+git-issues/github-issue-42-errors.dfy

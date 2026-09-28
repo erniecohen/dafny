@@ -1897,10 +1897,6 @@ method M(x: int, y: int) {
 }
 ```
 
-Both operators are allowed only in specification and ghost contexts. A local
-variable initialized with either expression is inferred to be ghost and cannot
-be used in executable code.
-
 The `decreases to` operator is strict, that is, it means "strictly greater than".
 The `nonincreases to` operator is the non-strict ("greater than or equal") version of it.
 
