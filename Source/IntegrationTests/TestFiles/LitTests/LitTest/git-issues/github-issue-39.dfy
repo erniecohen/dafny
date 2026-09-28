@@ -97,3 +97,46 @@ function SafeInMatchExpression(d: D, c: C): int {
   case A => (assert d == A; c).f()
   case B => 0
 }
+
+// Quantifiers, comprehensions and lambdas substitute their bound variables
+// into the body before checking it, which must keep the receiver too.
+
+lemma InForall(c: C)
+  ensures forall x: int :: (assert false; c).f() == 0  // error
+{
+}
+
+method InExists(c: C) {
+  ghost var b := exists x: int :: (assert false; c).f() == x;  // error
+}
+
+method InSetComprehension(c: C) {
+  var s := set x | 0 <= x < 3 :: (assert false; c).f();  // error
+}
+
+method InMapComprehension(c: C) {
+  var m := map x | 0 <= x < 3 :: (assert false; c).f();  // error
+}
+
+method InLambda(c: C) {
+  var g := (x: int) => (assert x > 0; c).f();  // error
+}
+
+method IndexInForall(s: seq<C>) {
+  ghost var b := forall i | 0 <= i <= |s| :: s[i].f() == 0;  // error
+}
+
+// Controls: each receiver's obligation holds, so these verify.
+
+lemma SafeForall(c: C)
+  ensures forall x: int :: (assert x == x; c).f() == 0
+{
+}
+
+method SafeBinders(s: seq<C>, c: C) {
+  ghost var b := forall i | 0 <= i < |s| :: s[i].f() == 0;
+  ghost var e := exists x: int :: (assert x == x; c).f() == x;
+  var t := set x | 0 <= x < 3 :: (assert 0 <= x; c).f();
+  var m := map x | 0 <= x < 3 :: (assert x < 3; c).f();
+  var g := (x: int) requires x > 0 => (assert x > 0; c).f();
+}
