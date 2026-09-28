@@ -1,5 +1,5 @@
 // RUN: %baredafny resolve --type-system-refresh:true --general-newtypes:true --use-basename-for-filename --show-snippets:false "%s" > "%t"
-// RUN: %exits-with 2 %baredafny resolve --type-system-refresh:true --general-newtypes:true --use-basename-for-filename --show-snippets:false "%S/github-issue-46-range.dfy" >> "%t"
+// RUN: %exits-with 2 %baredafny resolve --type-system-refresh:true --general-newtypes:true --use-basename-for-filename --show-snippets:false "%S/Inputs/github-issue-46-range.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // The original crash: the synthetic receiver T has a type but no literal value.
