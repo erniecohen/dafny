@@ -3,9 +3,11 @@
 This branch is Dafny 4.11.0 (tag `v4.11.0`, commit `fcb2042`) with fixes for
 eight soundness issues filed against dafny-lang/dafny, one commit per fix, and
 it builds against Boogie 3.5.5 with a fix for a ninth, filed against
-boogie-org/boogie.
-A build of it reports the version `4.11.0+fcb2042d.review.256a1ab3`, and the tag
-of the same name with a `v` marks it: `v4.11.0+fcb2042d.review.256a1ab3`.
+boogie-org/boogie.  Since `4.11.0+fcb2042d.review.256a1ab3` it also has fixes
+for twelve issues filed here: one more soundness fix, crash and non-termination
+fixes, a diagnostic fix and an auditor fix, one pull request each (below).
+A build of it reports the version `4.11.0+fcb2042d.review.d2070b81`, and the tag
+of the same name with a `v` marks it: `v4.11.0+fcb2042d.review.d2070b81`.
 
 It is the shipped line.  Improvements go to the branch `dev`, which follows
 upstream's `master`, and come back here only after they pass the tests.
@@ -33,6 +35,36 @@ only" means that the fix removes an axiom or an assumption, or puts a guard on
 one.  "Asserts" means that it also states a fact that was not stated before;
 those parts are the ones a reviewer should check.  Each commit message says
 what its fix changes and why.
+
+## The fixes since 256a1ab3
+
+Each is one squash-merged pull request here, with its regression test
+`git-issues/github-issue-<issue>.dfy` and its release note
+`docs/dev/news/<issue>.fix` in the same commit.  Issue numbers are this
+repository's.  A crash, non-termination or diagnostic fix changes only programs
+that crashed, hung or were diagnosed; it changes no verdict of a program that
+already worked, as `AGENTS.md` requires.
+
+| fix | issue | what it changes | kind |
+|---|---|---|---|
+| `36811f3` (#52) | [#40](https://github.com/erniecohen/dafny/issues/40) | Cloning a such-that assignment with missing bounds inside a `match` case no longer crashes the resolver. | crash |
+| `8ef1431` (#53) | [#41](https://github.com/erniecohen/dafny/issues/41) | Allocating an object with a named constructor inside a `match` case no longer crashes the resolver. | crash |
+| `d7b2b63` (#54) | [#42](https://github.com/erniecohen/dafny/issues/42) | Ghost inference covers locals initialized by `decreases to` and `nonincreases to` expressions, which crashed the resolver. | crash |
+| `da1d421` (#55) | [#35](https://github.com/erniecohen/dafny/issues/35) | The auditor no longer reports bodyless instance members of traits as missing-body assumptions; static members and explicit assumptions are still audited. | auditor output |
+| `64e5544` (#56) | [#46](https://github.com/erniecohen/dafny/issues/46) | Selecting a static member of a bitvector-based newtype under `--type-system-refresh` and `--general-newtypes` no longer crashes the resolver. | crash |
+| `3ab6f38` (#57) | [#37](https://github.com/erniecohen/dafny/issues/37) | Type errors involving ambiguous arrow types show arrow syntax instead of internal type names. | diagnostic text |
+| `cc10f9a` (#58) | [#43](https://github.com/erniecohen/dafny/issues/43) | An undeclared destination of a `:-` statement is reported instead of crashing, in both resolvers. | crash |
+| `d24ac25` (#59) | [#45](https://github.com/erniecohen/dafny/issues/45) | The refreshed resolver resolves a datatype's signature before matching a qualified constructor's arguments, which crashed. | crash |
+| `b796eff` (#60) | [#25](https://github.com/erniecohen/dafny/issues/25) | Refining a module with a `:|` whose constraint calls a function no longer crashes: the substituted trigger keeps its parsed form and heap label. | crash |
+| `7959732` (#61) | [#39](https://github.com/erniecohen/dafny/issues/39) | The receiver of a static call written through an object, as in `(assert false; c).f()`, is checked inside a `match`, a quantifier, a set or map comprehension and a lambda, as it is elsewhere; cloning and substitution dropped it. | **soundness**, weakens only: it restores well-formedness checks and asserts nothing |
+| `9af9f84` (#62) | [#44](https://github.com/erniecohen/dafny/issues/44), program (a) | A cyclic type synonym used by a later datatype or codatatype is reported instead of making the resolver run forever. | non-termination |
+| `b97a6fe` (#64) | [#26](https://github.com/erniecohen/dafny/issues/26) | The existence check of a `:|` that binds many variables no longer overflows the stack: a long disjunction is balanced, and at most 20,000 partial guesses are kept. | crash; weakens only, since a dropped disjunct only strengthens the check |
+
+The fix for #39 moves one verdict of the suite, `dafny2/SnapshotableTrees.dfy`,
+from 102 to 103 verified with the same errors: a `reveal` inside a `match` case
+now has its receiver checked, which adds one proved assertion batch.  No other
+fix moves a verdict of the suite or of the standard library.  #63 moved a test
+input under `Inputs/` and changed no product file.
 
 ## Boogie
 
@@ -121,6 +153,16 @@ verifier know.  Each follow-up commit gives its fix's reason.
 
 ## The version, and how to check it
 
+`d2070b81` is the first 8 hex digits of the sha256 of the change that the
+product commits make to files that v4.11.0 already has:
+
+    git diff --diff-filter=M --abbrev=7 v4.11.0 b97a6fe | sha256sum
+
+`b97a6fe`, the fix for #26, is the last product commit.  `.github/review/base`
+names `ada0d09`, the same product tree on that pull request's branch before it
+was squash-merged; the two give the same hash.  Before the twelve fixes since,
+the version was `256a1ab3`, as follows.
+
 `256a1ab3` is the first 8 hex digits of the sha256 of the change that the
 product commits make to files that v4.11.0 already has:
 
@@ -140,7 +182,7 @@ clone git may lengthen an abbreviation that would be ambiguous; a shallow fetch
 avoids that.)
 
 **The version names the product, the source that is compiled.**  The commits
-after `5fc27c0` add or update tests, release notes, documents and CI.  They
+after `b97a6fe` add or update tests, release notes, documents and CI.  They
 change no product file, so the version stays.  The rule on this branch:
 
 - a commit that changes or adds a product file is a new last product commit,
@@ -154,11 +196,11 @@ and the last product commit, and CI's `.github/review/version.sh` computes the
 version from them and fails if a later commit changes a product file.  By hand,
 this prints nothing:
 
-    git diff --name-only 5fc27c0 <commit> -- . ':!Source/IntegrationTests' ':!docs' ':!.github' \
+    git diff --name-only b97a6fe <commit> -- . ':!Source/IntegrationTests' ':!docs' ':!.github' \
       ':!REVIEW.md' ':!ROADMAP.md' ':!AGENTS.md' ':!CLAUDE.md'
 
 A release binary built from the tag prints the version with `dafny --version`.
-It is built with `-p:SourceRevisionId=fcb2042d.review.256a1ab3`.  The version
+It is built with `-p:SourceRevisionId=fcb2042d.review.d2070b81`.  The version
 names the Boogie packages by their version, and `Scripts/boogie-packages.sha256`
 names their bytes.
 
