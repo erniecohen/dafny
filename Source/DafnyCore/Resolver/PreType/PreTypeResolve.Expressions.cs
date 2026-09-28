@@ -1703,8 +1703,6 @@ namespace Microsoft.Dafny {
         }
       }
 
-      ResolveDeclarationSignature(datatypeDecl);
-
       var rr = new DatatypeValue(expr.Origin, datatypeDecl.Name, name, args ?? []);
       var ok = ResolveDatatypeValue(resolutionContext, rr, datatypeDecl, null, complain);
       if (!ok) {
@@ -2434,6 +2432,8 @@ namespace Microsoft.Dafny {
       Contract.Requires(dtv != null);
       Contract.Requires(datatypeDecl != null);
       Contract.Requires(ty == null || (ty.Decl == datatypeDecl && ty.Arguments.Count == datatypeDecl.TypeArgs.Count));
+
+      ResolvePreTypeSignature(datatypeDecl);
 
       var ok = true;
       List<PreType> gt;
