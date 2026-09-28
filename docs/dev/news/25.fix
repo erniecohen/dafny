@@ -1,0 +1,1 @@
+Fix a resolution crash when refining a module containing an assign-such-that statement whose constraint calls a function.

@@ -7,7 +7,6 @@ using System.Text;
 using System.Collections.ObjectModel;
 using System.Diagnostics.Contracts;
 using Microsoft.Boogie;
-using Action = System.Action;
 using JetBrains.Annotations;
 
 namespace Microsoft.Dafny.Triggers {
@@ -17,16 +16,16 @@ namespace Microsoft.Dafny.Triggers {
     internal readonly Dictionary<Expression, HashSet<OldExpr>> exprsInOldContext = new Dictionary<Expression, HashSet<OldExpr>>();
     internal readonly List<ComprehensionTriggerGenerator> quantifierCollections = [];
 
-    private readonly List<Action> ActionsOnSelectedTriggers = new();
+    private readonly List<System.Action<SystemModuleManager>> ActionsOnSelectedTriggers = new();
 
     public QuantifierCollector(ErrorReporter reporter) {
       Contract.Requires(reporter != null);
       this.reporter = reporter;
     }
 
-    public void ApplyPostActions() {
+    public void ApplyPostActions(SystemModuleManager systemModuleManager) {
       foreach (var action in ActionsOnSelectedTriggers) {
-        action();
+        action(systemModuleManager);
       }
     }
 
@@ -52,7 +51,7 @@ namespace Microsoft.Dafny.Triggers {
           Type = Type.Bool
         };
 
-        ActionsOnSelectedTriggers.Add(() => {
+        ActionsOnSelectedTriggers.Add(_ => {
           letExpr.Attributes = existsExpr.Attributes;
         });
         expr = existsExpr;
@@ -83,6 +82,22 @@ namespace Microsoft.Dafny.Triggers {
       return true;
     }
 
+    private sealed class AssignSuchThatTriggerSubstituter : Substituter {
+      public AssignSuchThatTriggerSubstituter(Dictionary<IVariable, Expression> substitutions,
+        SystemModuleManager systemModuleManager)
+        : base(null, substitutions, new Dictionary<TypeParameter, Type>(), systemModuleManager: systemModuleManager) {
+      }
+
+      public override Expression Substitute(Expression expr) {
+        var result = base.Substitute(expr);
+        if (result is ApplySuffix { ResolvedExpression: FunctionCallExpr { AtLabel: { } label } } call) {
+          // Use the declaration token: re-resolution looks up the label by name, and diagnostics point to its declaration.
+          call.AtTok = label.Tok;
+        }
+        return result;
+      }
+    }
+
     protected override bool VisitOneStmt(Statement stmt, ref OldExpr/*?*/ st) {
       if (stmt is ForallStmt { EffectiveEnsuresClauses: { } effectiveEnsuresClauses }) {
         foreach (var expr in effectiveEnsuresClauses) {
@@ -110,8 +125,9 @@ namespace Microsoft.Dafny.Triggers {
           Type = Type.Bool
         };
 
-        ActionsOnSelectedTriggers.Add(() => {
-          var substituteFrom = new Substituter(null, substBoundVarToLocal, new Dictionary<TypeParameter, Type>());
+        ActionsOnSelectedTriggers.Add(systemModuleManager => {
+          // Keep function calls in a form that can be cloned and resolved in a refining module.
+          var substituteFrom = new AssignSuchThatTriggerSubstituter(substBoundVarToLocal, systemModuleManager);
           var updatedAttributes = substituteFrom.SubstAttributes(existsExpr.Attributes);
           assignSuchThatStmt.Attributes = updatedAttributes;
         });
