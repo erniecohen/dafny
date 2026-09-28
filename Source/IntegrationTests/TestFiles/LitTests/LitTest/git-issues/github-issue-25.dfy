@@ -64,3 +64,14 @@ module LabeledRefinement refines LabeledBase {
     }
   }
 }
+
+abstract module NestedInstanceBase {
+  class C {
+    function G(): int { 0 }
+  }
+  predicate P(n: int, m: int) { n == m }
+  lemma Test(c: C) {
+    var n: int :| P(n, c.G());
+  }
+}
+module NestedInstanceRefinement refines NestedInstanceBase { }
