@@ -1839,12 +1839,6 @@ newtype uint8 = i | 0 <= i < 256
 A newtype is like a type synonym or subset type except that it declares a wholly new type
 name that is distinct from its base type. It also accepts an optional [`witness` clause](#sec-witness).
 
-With the experimental `--type-system-refresh` and `--general-newtypes` options,
-a newtype can also be based on a bitvector type. Its static constants and functions
-can be selected through the newtype name or a value of that newtype, as for
-numeric newtypes. Selecting a static member does not treat the receiver as a
-numeric literal.
-
 A new type can be declared with the _newtype_
 declaration, for example:
 <!-- %no-check -->
