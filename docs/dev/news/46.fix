@@ -1,0 +1,1 @@
+Fix a resolver crash when selecting static members of bitvector-based newtypes with `--type-system-refresh` and `--general-newtypes` enabled. Numeric literal range checks are unchanged.
