@@ -109,7 +109,24 @@ public class AssignOrReturnStmt : ConcreteAssignStatement, ICloneable<AssignOrRe
   /// This is also known as the "elephant operator"
   /// </summary>
   public override void Resolve(ModuleResolver resolver, ResolutionContext resolutionContext) {
+    var errorCountBeforeResolvingDestinations = resolver.Reporter.Count(ErrorLevel.Error);
     base.Resolve(resolver, resolutionContext);
+    if (resolver.Reporter.Count(ErrorLevel.Error) != errorCountBeforeResolvingDestinations) {
+      // Preserve RHS diagnostics, but do not pass unresolved destinations into the desugared call.
+      foreach (var rhs in new AssignmentRhs[] { Rhs }.Concat(Rhss)) {
+        if (rhs is TypeRhs typeRhs) {
+          resolver.ResolveTypeRhs(typeRhs, this, resolutionContext);
+        } else if (rhs is ExprRhs exprRhs) {
+          if (exprRhs.Expr is ApplySuffix applySuffix) {
+            resolver.ResolveApplySuffix(applySuffix, resolutionContext, true);
+          } else {
+            resolver.ResolveExpression(exprRhs.Expr, resolutionContext);
+          }
+        }
+        resolver.ResolveAttributes(rhs, resolutionContext);
+      }
+      return;
+    }
 
     ResolveKeywordToken(resolver, resolutionContext);
 
