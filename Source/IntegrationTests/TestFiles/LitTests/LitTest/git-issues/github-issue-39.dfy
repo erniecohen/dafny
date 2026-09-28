@@ -140,3 +140,20 @@ method SafeBinders(s: seq<C>, c: C) {
   var m := map x | 0 <= x < 3 :: (assert x < 3; c).f();
   var g := (x: int) requires x > 0 => (assert x > 0; c).f();
 }
+
+// A greatest lemma's body is checked in its prefix lemma, whose body is
+// cloned from the syntax and resolved again.
+
+greatest predicate P(x: int) { true }
+
+greatest lemma InGreatestLemma(c: C, x: int)
+  ensures P(x)
+{
+  var r := (assert false; c).f();  // error
+}
+
+greatest lemma SafeGreatestLemma(c: C, x: int)
+  ensures P(x)
+{
+  var r := (assert x == x; c).f();
+}
