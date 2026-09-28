@@ -13,15 +13,17 @@ using JetBrains.Annotations;
 namespace Microsoft.Dafny.Triggers {
   internal class QuantifierCollector : TopDownVisitor<OldExpr/*?*/> {
     readonly ErrorReporter reporter;
+    private readonly SystemModuleManager systemModuleManager;
     private readonly HashSet<Expression> quantifiers = [];
     internal readonly Dictionary<Expression, HashSet<OldExpr>> exprsInOldContext = new Dictionary<Expression, HashSet<OldExpr>>();
     internal readonly List<ComprehensionTriggerGenerator> quantifierCollections = [];
 
     private readonly List<Action> ActionsOnSelectedTriggers = new();
 
-    public QuantifierCollector(ErrorReporter reporter) {
+    public QuantifierCollector(ErrorReporter reporter, SystemModuleManager systemModuleManager) {
       Contract.Requires(reporter != null);
       this.reporter = reporter;
+      this.systemModuleManager = systemModuleManager;
     }
 
     public void ApplyPostActions() {
@@ -111,7 +113,9 @@ namespace Microsoft.Dafny.Triggers {
         };
 
         ActionsOnSelectedTriggers.Add(() => {
-          var substituteFrom = new Substituter(null, substBoundVarToLocal, new Dictionary<TypeParameter, Type>());
+          // Keep function calls in a form that can be cloned and resolved in a refining module.
+          var substituteFrom = new Substituter(null, substBoundVarToLocal, new Dictionary<TypeParameter, Type>(),
+            systemModuleManager: systemModuleManager);
           var updatedAttributes = substituteFrom.SubstAttributes(existsExpr.Attributes);
           assignSuchThatStmt.Attributes = updatedAttributes;
         });

@@ -1,0 +1,31 @@
+// RUN: %baredafny resolve --type-system-refresh:false "%s" > "%t"
+// RUN: %diff "%s.expect" "%t"
+// RUN: %baredafny resolve --type-system-refresh:true "%s" > "%t"
+// RUN: %diff "%s.expect" "%t"
+
+abstract module Base {
+  predicate F(n: nat) { n >= 0 }
+
+  lemma L() {
+    var n: nat :| F(n);
+  }
+}
+
+module Refinement refines Base { }
+abstract module AbstractRefinement refines Base { }
+module FurtherRefinement refines AbstractRefinement { }
+
+module ConcreteBase {
+  function Identity(n: nat): nat { n }
+  predicate Pair(n: nat, m: nat) { n == m }
+
+  lemma Nested() {
+    var n: nat, m: nat :| Pair(Identity(n), m);
+  }
+
+  lemma NoCall() {
+    var n: nat :| n == 0;
+  }
+}
+
+module ConcreteRefinement refines ConcreteBase { }

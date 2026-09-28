@@ -10,7 +10,7 @@ public class TriggerGeneratingRewriter : IRewriter {
   }
 
   internal override void PostCyclicityResolve(ModuleDefinition definition) {
-    var finder = new Triggers.QuantifierCollector(Reporter);
+    var finder = new Triggers.QuantifierCollector(Reporter, systemModuleManager);
 
     foreach (var decl in ModuleDefinition.AllCallablesIncludingPrefixDeclarations(definition.TopLevelDecls)) {
       finder.Visit(decl, null);
