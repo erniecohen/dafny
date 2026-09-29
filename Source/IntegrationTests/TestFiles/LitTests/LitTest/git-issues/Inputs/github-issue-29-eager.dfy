@@ -1,5 +1,5 @@
 replaceable module Spec {
- trait Base { method Value() returns (n: int) { n := 64; } }
+ trait {:termination false} Base { method Value() returns (n: int) { n := 64; } }
 }
 module Client {
  import Spec

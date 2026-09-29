@@ -15,6 +15,11 @@
 // RUN: %baredafny run --no-verify --target py "%S/Inputs/github-issue-29-ordinary.dfy" > "%t"
 // RUN: %diff "%s.expect" "%t"
 
+// RUN: %baredafny run --no-verify --target py --python-reorder-replacements=false "%S/Inputs/github-issue-29-early.dfy" > "%t"
+// RUN: %diff "%s.expect" "%t"
+// RUN: %baredafny run --no-verify --target py --python-reorder-replacements=false "%S/Inputs/github-issue-29-ordinary.dfy" > "%t"
+// RUN: %diff "%s.expect" "%t"
+
 replaceable module Spec {
   type T(==,!new,00)
   function {:axiom} Size(t: T): int

@@ -160,7 +160,7 @@ namespace Microsoft.Dafny.Compilers {
 
         foreach (var declaration in module.TopLevelDecls) {
           if (declaration is AliasModuleDecl alias) {
-            VisitDependency(alias.TargetQId.Def);
+            VisitDependency(alias.Dereference());
           } else if (declaration is LiteralModuleDecl literal) {
             VisitDependency(literal.ModuleDef);
           }
