@@ -147,7 +147,7 @@ namespace Microsoft.Dafny.Compilers {
         }
         if (!active.Add(module)) {
           Reporter.Error(MessageSource.Compiler, module.Origin,
-            "Python compilation dependencies contain a cycle after replacing module '{0}'", module.Name);
+            "Python compilation dependencies contain a cycle through module '{0}' after applying replacements", module.Name);
           cyclic = true;
           return;
         }
