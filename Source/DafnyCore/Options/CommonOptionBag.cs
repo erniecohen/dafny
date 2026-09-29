@@ -84,6 +84,9 @@ true - In the compiled target code, transform any non-extern
         datatype Record = Record(x: int)
     is transformed into just 'int' in the target code.".TrimStart());
 
+  public static readonly Option<bool> PythonReorderReplacements = new("--python-reorder-replacements",
+    "Order Python modules by their compilation dependencies after substituting replacement modules. Defaults to false.");
+
   public static readonly Option<bool> Verbose = new("--verbose",
       "Print additional information such as which files are emitted where.");
 
@@ -667,6 +670,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(JsonOutput, OptionScope.Cli);
     OptionRegistry.RegisterOption(JsonDiagnostics, OptionScope.Cli);
     OptionRegistry.RegisterOption(QuantifierSyntax, OptionScope.Module);
+    OptionRegistry.RegisterOption(PythonReorderReplacements, OptionScope.Cli);
     OptionRegistry.RegisterOption(SpillTranslation, OptionScope.Cli);
     OptionRegistry.RegisterOption(StdIn, OptionScope.Cli);
     OptionRegistry.RegisterOption(TestAssumptions, OptionScope.Cli);

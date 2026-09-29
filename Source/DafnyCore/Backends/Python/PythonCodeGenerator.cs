@@ -129,6 +129,57 @@ namespace Microsoft.Dafny.Compilers {
       return mw.NewBlockPy($"def StaticMain({argsParameterName}):");
     }
 
+    protected override void OrganizeModules(Program program, out List<ModuleDefinition> modules) {
+      base.OrganizeModules(program, out modules);
+      if (!Options.Get(CommonOptionBag.PythonReorderReplacements) || program.Replacements.Count == 0) {
+        return;
+      }
+
+      var available = modules.ToHashSet();
+      var ordered = new List<ModuleDefinition>();
+      var visited = new HashSet<ModuleDefinition>();
+      var active = new HashSet<ModuleDefinition>();
+      var cyclic = false;
+
+      void Visit(ModuleDefinition module) {
+        if (!available.Contains(module) || visited.Contains(module)) {
+          return;
+        }
+        if (!active.Add(module)) {
+          Reporter.Error(MessageSource.Compiler, module.Origin,
+            "Python compilation dependencies contain a cycle after replacing module '{0}'", module.Name);
+          cyclic = true;
+          return;
+        }
+
+        void VisitDependency(ModuleDefinition dependency) {
+          if (dependency != null) {
+            Visit(program.Replacements.GetValueOrDefault(dependency, dependency));
+          }
+        }
+
+        foreach (var declaration in module.TopLevelDecls) {
+          if (declaration is AliasModuleDecl alias) {
+            VisitDependency(alias.TargetQId.Def);
+          } else if (declaration is LiteralModuleDecl literal) {
+            VisitDependency(literal.ModuleDef);
+          }
+        }
+        // A replacement's implementation edge points back to its own compiled module.
+        if (module.Implements is { Kind: ImplementationKind.Refinement } refinement) {
+          VisitDependency(refinement.Target.Def);
+        }
+        active.Remove(module);
+        visited.Add(module);
+        ordered.Add(module);
+      }
+
+      foreach (var module in modules) {
+        Visit(module);
+      }
+      modules = cyclic ? new List<ModuleDefinition>() : ordered;
+    }
+
     protected override ConcreteSyntaxTree CreateModule(ModuleDefinition module, string moduleName, bool isDefault,
       ModuleDefinition externModule,
       string libraryName, Attributes moduleAttributes, ConcreteSyntaxTree wr) {
