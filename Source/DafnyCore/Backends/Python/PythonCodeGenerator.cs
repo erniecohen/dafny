@@ -142,7 +142,7 @@ namespace Microsoft.Dafny.Compilers {
       var cyclic = false;
 
       void Visit(ModuleDefinition module) {
-        if (!available.Contains(module) || visited.Contains(module)) {
+        if (!module.CanCompile() || !available.Contains(module) || visited.Contains(module)) {
           return;
         }
         if (!active.Add(module)) {
