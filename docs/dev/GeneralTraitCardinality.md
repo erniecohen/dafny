@@ -65,7 +65,11 @@ the original interface. Its advertised parameter modes retain both interface
 and selected contracts, with expansion taking precedence; strengthening a
 selected body's contract does not silently strengthen the imported interface.
 The selected body is still checked against its own declared strictness. Missing
-replacement correspondence or incompatible arity fails closed.
+replacement correspondence or incompatible arity fails closed. Selecting a
+concrete implementation for an abstract import follows the recorded module
+correspondence and selects that import's raw facade declarations before their
+visibility links. Separate imports can therefore select different refinements
+of the same abstract template without selecting the global template itself.
 
 Kind-changing refinements retain inherited parent obligations separately where
 ordinary inheritance storage cannot preserve them. Those obligations are
