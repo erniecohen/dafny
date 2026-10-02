@@ -1,1 +1,56 @@
-Probe pending
+membership (type-system-refresh:false, default)
+github-issue-32-membership.dfy(13,2): Error: assertion might not hold
+github-issue-32-membership.dfy(21,2): Error: assertion might not hold
+github-issue-32-membership.dfy(36,2): Error: assertion might not hold
+github-issue-32-membership.dfy(45,2): Error: assertion might not hold
+github-issue-32-membership.dfy(54,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 5 errors
+membership (type-system-refresh:false, --map-comprehension-domain-triggers=false)
+github-issue-32-membership.dfy(13,2): Error: assertion might not hold
+github-issue-32-membership.dfy(21,2): Error: assertion might not hold
+github-issue-32-membership.dfy(36,2): Error: assertion might not hold
+github-issue-32-membership.dfy(45,2): Error: assertion might not hold
+github-issue-32-membership.dfy(54,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 5 errors
+membership (type-system-refresh:false, --map-comprehension-domain-triggers)
+
+Dafny program verifier finished with 7 verified, 0 errors
+negative (type-system-refresh:false, --map-comprehension-domain-triggers)
+github-issue-32-negative.dfy(7,2): Error: assertion might not hold
+github-issue-32-negative.dfy(13,2): Error: assertion might not hold
+github-issue-32-negative.dfy(21,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 3 errors
+malformed (type-system-refresh:false, --map-comprehension-domain-triggers)
+github-issue-32-malformed.dfy(2,34): Error: unresolved identifier: missing
+1 resolution/type errors detected in github-issue-32-malformed.dfy
+membership (type-system-refresh:true, default)
+github-issue-32-membership.dfy(13,2): Error: assertion might not hold
+github-issue-32-membership.dfy(21,2): Error: assertion might not hold
+github-issue-32-membership.dfy(36,2): Error: assertion might not hold
+github-issue-32-membership.dfy(45,2): Error: assertion might not hold
+github-issue-32-membership.dfy(54,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 5 errors
+membership (type-system-refresh:true, --map-comprehension-domain-triggers=false)
+github-issue-32-membership.dfy(13,2): Error: assertion might not hold
+github-issue-32-membership.dfy(21,2): Error: assertion might not hold
+github-issue-32-membership.dfy(36,2): Error: assertion might not hold
+github-issue-32-membership.dfy(45,2): Error: assertion might not hold
+github-issue-32-membership.dfy(54,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 5 errors
+membership (type-system-refresh:true, --map-comprehension-domain-triggers)
+
+Dafny program verifier finished with 7 verified, 0 errors
+negative (type-system-refresh:true, --map-comprehension-domain-triggers)
+github-issue-32-negative.dfy(7,2): Error: assertion might not hold
+github-issue-32-negative.dfy(13,2): Error: assertion might not hold
+github-issue-32-negative.dfy(21,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 3 errors
+malformed (type-system-refresh:true, --map-comprehension-domain-triggers)
+github-issue-32-malformed.dfy(2,34): Error: unresolved identifier: missing
+1 resolution/type errors detected in github-issue-32-malformed.dfy
