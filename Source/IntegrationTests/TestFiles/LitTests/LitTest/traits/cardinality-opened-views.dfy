@@ -13,5 +13,5 @@ module Client {
   import A = Api
   import opened O = Storage`Opaque
   import opened R = Storage`Transparent
-  datatype D extends A.V = D(opaque: O.B, transparent: R.B)
+  datatype D extends A.V = D(hidden: O.B, transparent: R.B)
 }
