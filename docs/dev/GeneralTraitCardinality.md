@@ -129,6 +129,15 @@ stored generic reference contract can reject clients that depended on its old
 strict annotation. Existing variance, equality, initialization, grounding,
 heap, allocation, termination, and compilation restrictions remain applicable.
 
+The standard library applies the same field contracts to its stored callbacks.
+`FunctionAction` and `TotalFunctionActionProof` use `!I` for callback inputs;
+`FoldingConsumer` uses `!T` and `!R`, and `FunctionalIProducer` uses `!S`.
+Stored action/producer families and their reference parents carry the required
+permissive contracts, including `ProducerState` and the target-specific
+`AtomicBox` and `MutableMap` implementations. Ordinary variance and existing
+`(!new)` and `(==)` characteristics are preserved. A client storing one of these
+families under its own strict formal may need the corresponding `!` annotation.
+
 ## Regression boundaries
 
 Core xUnit tests distinguish new diagnostic IDs from pre-existing variance
