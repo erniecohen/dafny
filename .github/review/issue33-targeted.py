@@ -42,11 +42,12 @@ for label, binary, flag in modes:
 # These are probes: every outcome is saved for review, including intentional failures.
 if a.candidate:
     for resolver in ['false', 'true']:
-        for name in ['original', 'positive', 'negative']:
+        for name in ['original', 'positive', 'negative'] + (['newtypes'] if resolver == 'true' else []):
             dest = out / ('test-' + resolver + '-' + name)
             dest.mkdir(exist_ok=True)
             input_file = source.with_name('github-issue-33-' + name + '.dfy')
             cmd = [a.candidate, 'verify', str(input_file), '--solver-path', a.z3, '--cores', '1', '--resource-limit', '200000', '--verification-time-limit', '0', '--additional-axioms', '--type-system-refresh=' + resolver, '--show-snippets=false', '--use-basename-for-filename', '--error-limit=0', '--log-format', 'json;LogFileName=' + str(dest / 'results.json'), '--log-format', 'csv;LogFileName=' + str(dest / 'results.csv'), '--bprint', str(dest / 'program.bpl'), '--solver-log', str(dest / 'solver.smt2'), '--solver-option', 'O:smt.qi.profile=true', '--boogie', '/emitDebugInformation:1']
+            if name == 'newtypes': cmd.append('--general-newtypes')
             (dest / 'command.json').write_text(json.dumps(cmd, indent=2))
             result = run_probe(cmd, capture_output=True, text=True, timeout=1200)
             (dest / 'stdout.txt').write_text(result.stdout)
@@ -110,3 +111,21 @@ if a.candidate:
             (stress / (name + '.output')).write_text(result.stdout + result.stderr)
             (stress / (name + '.exit')).write_text(str(result.returncode))
             print(name, result.returncode, result.stdout[-150:], flush=True)
+
+if a.candidate:
+    lib_dir = out / 'library'
+    lib_dir.mkdir(exist_ok=True)
+    producer = lib_dir / 'producer.dfy'
+    producer.write_text('module RoundTripLibrary { lemma RoundTrip(a: int) requires 0 <= a < 4294967296 ensures (a as bv32) as int == a {} }')
+    library = lib_dir / 'RoundTripLibrary'
+    cmd = [a.candidate, 'build', '-t:lib', str(producer), '--output', str(library), '--additional-axioms', '--solver-path', a.z3, '--resource-limit', '200000', '--verification-time-limit', '0', '--cores', '1']
+    result = run_probe(cmd, capture_output=True, text=True, timeout=1200)
+    (lib_dir / 'producer.txt').write_text(result.stdout + result.stderr)
+    (lib_dir / 'producer.exit').write_text(str(result.returncode))
+    consumer = lib_dir / 'consumer.dfy'
+    consumer.write_text('module Consumer { import R = RoundTripLibrary lemma Use(a: int) requires 0 <= a < 4294967296 ensures (a as bv32) as int == a { R.RoundTrip(a); } }')
+    cmd = [a.candidate, 'verify', str(consumer), '--library', str(library) + '.doo', '--additional-axioms=false', '--solver-path', a.z3, '--resource-limit', '200000', '--verification-time-limit', '0', '--cores', '1']
+    result = run_probe(cmd, capture_output=True, text=True, timeout=1200)
+    (lib_dir / 'consumer.txt').write_text(result.stdout + result.stderr)
+    (lib_dir / 'consumer.exit').write_text(str(result.returncode))
+    print('library consumer flag-off', result.returncode, result.stdout[-250:], flush=True)

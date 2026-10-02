@@ -11,4 +11,6 @@
 // RUN: %exits-with 0 %baredafny verify "%S/Inputs/github-issue-33-positive.dfy" --solver-path "%review-z3" --additional-axioms --type-system-refresh:true --cores:1 --resource-limit:200000 --verification-time-limit:0 --show-snippets:false --use-basename-for-filename --error-limit:0 >> "%t"
 // RUN: echo "negative (type-system-refresh:true)" >> "%t"
 // RUN: %exits-with 4 %baredafny verify "%S/Inputs/github-issue-33-negative.dfy" --solver-path "%review-z3" --additional-axioms --type-system-refresh:true --cores:1 --resource-limit:200000 --verification-time-limit:0 --show-snippets:false --use-basename-for-filename --error-limit:0 >> "%t"
+// RUN: echo "bitvector newtype (type-system-refresh:true)" >> "%t"
+// RUN: %exits-with 0 %baredafny verify "%S/Inputs/github-issue-33-newtypes.dfy" --solver-path "%review-z3" --additional-axioms --type-system-refresh --general-newtypes --cores:1 --resource-limit:200000 --verification-time-limit:0 --show-snippets:false --use-basename-for-filename >> "%t"
 // RUN: %diff "%s.expect" "%t"
