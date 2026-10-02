@@ -26,7 +26,13 @@ public class ProgramResolver {
     return classMembers.GetValueOrDefault(key);
   }
 
+  protected void ResetCardinalityValidationReceipt() {
+    Program.CardinalityValidationReceipt = null;
+  }
+
   public virtual Task Resolve(CancellationToken cancellationToken) {
+    ResetCardinalityValidationReceipt();
+    cancellationToken.ThrowIfCancellationRequested();
     Type.ResetScopes();
 
     Type.EnableScopes();
@@ -80,6 +86,13 @@ public class ProgramResolver {
     foreach (var rewriter in rewriters) {
       cancellationToken.ThrowIfCancellationRequested();
       rewriter.PostResolve(Program);
+    }
+
+    // Module cache hits still reach this phase. A downstream implementation can
+    // introduce a cardinality cycle without changing any imported module.
+    if (Reporter.ErrorCount == 0) {
+      cancellationToken.ThrowIfCancellationRequested();
+      CardinalityValidator.Validate(Program, cancellationToken);
     }
     return Task.CompletedTask;
   }

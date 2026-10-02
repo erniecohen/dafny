@@ -876,7 +876,9 @@ namespace Microsoft.Dafny {
         var result = new AbstractModuleDecl(abstractDecl.Options, abstractDecl.Origin, abstractDecl.QId, abstractDecl.NameNode, abstractDecl.Attributes,
           newParent, abstractDecl.Opened, abstractDecl.Exports, Guid.NewGuid()) {
           Signature = sig,
-          OriginalSignature = abstractDecl.OriginalSignature
+          OriginalSignature = abstractDecl.OriginalSignature,
+          // This manually reconstructed facade is still a pure signature view.
+          CardinalityViewOf = abstractDecl
         };
         return result;
       } else {
@@ -1053,6 +1055,19 @@ namespace Microsoft.Dafny {
             break; // one error message per "decl" is enough
           }
         }
+      }
+
+      // These inherited parents are analysis obligations rather than runtime
+      // inheritance. Resolve them explicitly without adding them to Children,
+      // the parent relation, or the ordinary type dependency graphs.
+      foreach (var declaration in declarations.Where(d => !d.CardinalityParentObligations.IsEmpty)) {
+        allTypeParameters.PushMarker();
+        ResolveTypeParameters(declaration.TypeArgs, false, declaration);
+        foreach (var parent in declaration.CardinalityParentObligations) {
+          ResolveType(declaration.Origin, parent, new NoContext(declaration.EnclosingModuleDefinition),
+            ResolveTypeOptionEnum.DontInfer, null);
+        }
+        allTypeParameters.PopMarker();
       }
 
       // Now that non-null types and their base types are in place, resolve the bounds of type parameters

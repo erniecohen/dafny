@@ -1,0 +1,6 @@
+cardinality-nonvacuity.dfy(13,2): Error: assertion could not be proved
+cardinality-nonvacuity.dfy(23,4): Error: assertion could not be proved
+cardinality-nonvacuity.dfy(35,4): Error: assertion could not be proved
+cardinality-nonvacuity.dfy(54,4): Error: assertion could not be proved
+
+Dafny program verifier finished with 5 verified, 4 errors

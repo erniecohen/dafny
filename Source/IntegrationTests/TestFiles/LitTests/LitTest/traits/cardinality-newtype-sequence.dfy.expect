@@ -1,0 +1,12 @@
+cardinality-newtype-sequence.dfy(6,19): Error: This type definition creates a potentially cardinality-expanding cycle:
+   '_module.Payload' depends on '_module.V' through constructor 'Payload.p' -> arrow input 0 (potentially expansive)
+   '_module.V' contains '_module.VP' because '_module.VP' extends '_module.V'
+   '_module.VP' depends on '_module.Payload' through base type of '_module.VP' -> sequence element
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-newtype-sequence.dfy(5,27): Related location: '_module.Payload' depends on '_module.V' through constructor 'Payload.p' -> arrow input 0
+cardinality-newtype-sequence.dfy(4,6): Related location: Type '_module.V' is declared here.
+cardinality-newtype-sequence.dfy(6,19): Related location: '_module.V' contains '_module.VP' because '_module.VP' extends '_module.V'
+cardinality-newtype-sequence.dfy(6,8): Related location: Type '_module.VP' is declared here.
+cardinality-newtype-sequence.dfy(6,8): Related location: '_module.VP' depends on '_module.Payload' through base type of '_module.VP' -> sequence element
+cardinality-newtype-sequence.dfy(5,9): Related location: Type '_module.Payload' is declared here.
+1 resolution/type errors detected in cardinality-newtype-sequence.dfy

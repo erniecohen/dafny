@@ -1,0 +1,1 @@
+Reject potentially cardinality-expanding cycles through general-trait implementations during resolution. Generic implementations must retain their parameters in compatible parent positions, and stored reference fields must honor their parameter contracts. The conservative checks also apply to unused declarations, hidden views, refinements, and loaded libraries.

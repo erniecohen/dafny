@@ -58,4 +58,8 @@
     <ProjectReference Include="..\DafnyRuntime\DafnyRuntime.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="DafnyCore.Test" />
+  </ItemGroup>
+
 </Project>

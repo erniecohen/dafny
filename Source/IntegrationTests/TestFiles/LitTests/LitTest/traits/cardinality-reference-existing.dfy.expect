@@ -1,0 +1,3 @@
+cardinality-reference-existing.dfy(11,34): Error: using the type being defined ('D') here would cause a logical inconsistency by defining a type whose cardinality exceeds itself (like the Continuum Transfunctioner, you might say its power would then be exceeded only by its mystery)
+cardinality-reference-existing.dfy(18,35): Error: using the type being defined ('D') here would cause a logical inconsistency by defining a type whose cardinality exceeds itself (like the Continuum Transfunctioner, you might say its power would then be exceeded only by its mystery)
+2 resolution/type errors detected in cardinality-reference-existing.dfy
