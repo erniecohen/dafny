@@ -5,7 +5,7 @@ on:
       mode:
         description: Build and checks to run
         type: choice
-        options: [build, focused, complete]
+        options: [build, focused, complete, integration]
         default: focused
 permissions:
   contents: read
@@ -16,6 +16,7 @@ env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
 jobs:
   probe:
+    if: inputs.mode != 'integration'
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     steps:
@@ -224,7 +225,7 @@ jobs:
           retention-days: 14
 
   binaries:
-    if: inputs.mode != 'focused'
+    if: inputs.mode == 'build' || inputs.mode == 'complete'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
@@ -262,7 +263,7 @@ jobs:
           retention-days: 14
 
   integration:
-    if: inputs.mode == 'complete'
+    if: always() && (inputs.mode == 'complete' || inputs.mode == 'integration')
     needs: probe
     runs-on: ubuntu-24.04
     timeout-minutes: 180
@@ -282,6 +283,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.0'
       - name: Solver
         run: |
           curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
@@ -297,6 +301,8 @@ jobs:
           if [ -f Scripts/fetch-boogie-packages.sh ]; then sh Scripts/fetch-boogie-packages.sh; fi
           npm install bignumber.js
           dotnet tool restore
+          go install golang.org/x/tools/cmd/goimports@v0.50.0
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       - name: Record all integration tests
         run: |
           mkdir -p integration-results
