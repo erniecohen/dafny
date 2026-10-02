@@ -25,6 +25,9 @@ class BoundedResolveCommand : ILitCommand {
   private static readonly Regex RefreshedCycle = new(
     @"Error: Cyclic dependency among declarations: [^\r\n]+ -> ",
     RegexOptions.CultureInvariant);
+  private static readonly Regex ConstraintCycle = new(
+    @"Error: recursive constraint dependency involving a newtype: [^\r\n]+ -> ",
+    RegexOptions.CultureInvariant);
   private static readonly Regex Underconstrained = new(
     @"Error: base type of (?:newtype|subset type) '[^']+' is not fully determined",
     RegexOptions.CultureInvariant);
@@ -39,7 +42,7 @@ class BoundedResolveCommand : ILitCommand {
   public BoundedResolveCommand(IEnumerable<string> arguments,
     IEnumerable<string> environmentVariables, string driverAssembly) {
     var args = arguments.ToArray();
-    if (args.Length < 3 || args[0] is not ("cycle" or "explicit-cycle" or "cycle-and-error" or "valid" or "underconstrained")) {
+    if (args.Length < 3 || args[0] is not ("cycle" or "explicit-cycle" or "constraint-cycle" or "cycle-and-error" or "valid" or "underconstrained")) {
       throw new ArgumentException("%bounded-resolve expects OUTCOME REFRESHED FILE [OPTIONS]");
     }
     expectation = args[0];
@@ -104,8 +107,9 @@ class BoundedResolveCommand : ILitCommand {
     var correctDiagnostic = expectation switch {
       "cycle" => hasCycle,
       "explicit-cycle" => RedirectingCycle.IsMatch(combined),
+      "constraint-cycle" => ConstraintCycle.IsMatch(combined),
       "cycle-and-error" => hasCycle && combined.Contains("unresolved identifier: missing"),
-      "underconstrained" => Underconstrained.IsMatch(combined) && !hasCycle,
+      "underconstrained" => Underconstrained.IsMatch(combined) && !hasCycle && !ConstraintCycle.IsMatch(combined),
       "valid" => !combined.Contains("Error:") && !combined.Contains("Warning:"),
       _ => false
     };
