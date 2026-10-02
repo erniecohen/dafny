@@ -141,6 +141,12 @@ permissive contracts, including `ProducerState` and the target-specific
 `(!new)` and `(==)` characteristics are preserved. A client storing one of these
 families under its own strict formal may need the corresponding `!` annotation.
 
+Existing variance rules also apply to parent applications. The permissive
+contracts therefore continue through consumers, producers, and batch adapters,
+with `ConsumerState` carrying the stored `Consumer<T>` contract. Set-reader
+examples keep their producer/proof relationships using matching permissive
+formals.
+
 ## Regression boundaries
 
 Core xUnit tests distinguish new diagnostic IDs from pre-existing variance
