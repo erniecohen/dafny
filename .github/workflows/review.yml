@@ -5,7 +5,7 @@ on:
       mode:
         description: Build and checks to run
         type: choice
-        options: [build, focused, complete, integration]
+        options: [build, focused, complete, integration, library]
         default: focused
 permissions:
   contents: read
@@ -16,7 +16,7 @@ env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
 jobs:
   probe:
-    if: inputs.mode != 'integration'
+    if: inputs.mode != 'integration' && inputs.mode != 'library'
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     steps:
@@ -315,4 +315,43 @@ jobs:
         with:
           name: cardinality-integration-${{ matrix.shard }}
           path: integration-results
+          retention-days: 14
+
+  library-build:
+    if: inputs.mode == 'library'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: cardinality-probe
+          run-id: 37055418937
+          github-token: ${{ github.token }}
+          path: baseline-artifact
+      - name: Unpack unchanged baseline
+        run: mkdir -p baseline-out && tar -C baseline-out -xzf baseline-artifact/dafny.tar.gz
+      - name: Solver
+        run: |
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo "f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+          chmod +x z3-5.1.0-x64-glibc-2.39/bin/z3
+          echo "Z3=$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" >> "$GITHUB_ENV"
+      - name: Record normal library archive builds
+        run: |
+          mkdir -p library-results
+          set +e
+          python3 .github/review/cardinality-library-build.py --dafny "$PWD/baseline-out/dafny/Dafny" --z3 "$Z3" --output library-results/attempts --cores 2 > library-results/console.txt 2>&1
+          echo "$?" > library-results/probe.exit
+          cat library-results/console.txt
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cardinality-library-build
+          path: library-results
           retention-days: 14
