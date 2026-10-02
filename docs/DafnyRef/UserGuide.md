@@ -1907,6 +1907,14 @@ The build and run steps are
 In one step:
 - `dafny run --target:py A.dfy`
 
+The opt-in option `--python-reorder-replacements` orders generated Python modules
+by their compilation dependencies after applying module replacements. Use it when
+a module consumes a replaceable module whose implementation would otherwise be
+emitted later. Dependencies of the implementation are emitted first as well.
+The option is disabled by default because changing module import order can change
+initialization order. A cycle introduced by replacement is reported as a
+compilation error when this option is enabled.
+
 Examples of how to integrate Python libraries and source code with Dafny source
 are contained in [this separate document](integration-py/IntegrationPython).
 
