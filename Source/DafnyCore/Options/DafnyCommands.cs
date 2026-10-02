@@ -48,6 +48,7 @@ public static class DafnyCommands {
     CommonOptionBag.VerificationCoverageReport,
     CommonOptionBag.ExtractCounterexample,
     CommonOptionBag.ManualTriggerOption,
+    CommonOptionBag.MapComprehensionDomainTriggers,
     CommonOptionBag.ShowProofObligationExpressions
   }.ToList();
 

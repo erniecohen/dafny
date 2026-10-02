@@ -525,7 +525,11 @@ namespace Microsoft.Dafny {
           var rr = TrExpr(BoogieGenerator.Substitute(e.Range, null, subst));
           var ff = TrExpr(BoogieGenerator.Substitute(t, null, subst));
           var exst_body = BplAnd(rr, Boogie.Expr.Eq(unboxw, ff));
-          var ebody = BplAnd(typeAntecedent, new Boogie.ExistsExpr(GetToken(e), bvs, exst_body));
+          // The trigger must refer to these fresh existential binders, just like the body.
+          var triggers = options.Get(CommonOptionBag.MapComprehensionDomainTriggers)
+            ? BoogieGenerator.TrTrigger(this, e.Attributes, GetToken(e), subst)
+            : null;
+          var ebody = BplAnd(typeAntecedent, new Boogie.ExistsExpr(GetToken(e), bvs, triggers, exst_body));
           keys = new Boogie.LambdaExpr(GetToken(e), [], [wVar], kv, ebody);
 
           BoogieGenerator.CreateMapComprehensionProjectionFunctions(e);

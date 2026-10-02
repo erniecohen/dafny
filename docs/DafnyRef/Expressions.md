@@ -1544,6 +1544,16 @@ method test()
 ```
 `m` maps `2` to `3`, `4` to `6`, and so on.
 
+The opt-in verification option `--map-comprehension-domain-triggers` also uses a
+comprehension's explicit or inferred triggers for the existential that defines
+membership in its domain. This applies to both `map` and `imap` comprehensions
+with general key expressions, such as `map i | 0 <= i < n :: ofs + i := e[i]`.
+A ground term matching the trigger, such as `e[j]`, can then help prove
+`ofs + j in m`. The option defaults to `false` and does not change the meaning
+of a comprehension or the translation of a simple bound-variable key.
+It can also be set as `map-comprehension-domain-triggers = true` in the
+`[options]` section of a project file.
+
 ## 9.32. Name Segment ([grammar](#g-name-segment)) {#sec-name-segment}
 
 Examples:
