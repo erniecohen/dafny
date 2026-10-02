@@ -207,7 +207,7 @@ module Std.Actions {
     i.ValidHistory(history) <==> forall e <- history :: e.1 == c
   }
 
-  class FunctionAction<!I, O> extends Action<I, O> {
+  class FunctionAction<!I, !O> extends Action<I, O> {
 
     const f: I --> O
 
@@ -298,7 +298,7 @@ module Std.Actions {
     }
   }
 
-  class TotalFunctionActionProof<!I, O> extends TotalActionProof<I, O> {
+  class TotalFunctionActionProof<!I, !O> extends TotalActionProof<I, O> {
 
     ghost const action: FunctionAction<I, O>
     ghost const f: I -> O

@@ -83,8 +83,10 @@ rewriters, then validates the resulting program. The validator runs outside the
 per-module cache-miss path. Its local descriptors and graph are rebuilt for each
 program; cached modules do not store a global admission decision. Cancellation,
 ordinary resolution errors, or failed validation cannot leave a successful
-receipt. Translation requires a successful current-program receipt and no
-errors before emitting declarations.
+receipt. Translation requires a successful current-program receipt and no parser,
+resolver, or other admission errors before emitting declarations. Later
+translator, verifier, or compiler diagnostics do not revoke the receipt;
+a new resolution error still blocks translation.
 
 Native `.doo` libraries preserve program text and resolve it again on loading.
 Their definitions participate in admission even when library bodies are not
@@ -130,7 +132,8 @@ strict annotation. Existing variance, equality, initialization, grounding,
 heap, allocation, termination, and compilation restrictions remain applicable.
 
 The standard library applies the same field contracts to its stored callbacks.
-`FunctionAction` and `TotalFunctionActionProof` use `!I` for callback inputs;
+`FunctionAction` and `TotalFunctionActionProof` use `!I` for callback inputs
+and `!O` for their permissive parent and stored-family contracts.
 `FoldingConsumer` uses `!T` and `!R`, and `FunctionalIProducer` uses `!S`.
 Stored action/producer families and their reference parents carry the required
 permissive contracts, including `ProducerState` and the target-specific
