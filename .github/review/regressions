@@ -76,3 +76,5 @@ traits/cardinality-replacement-facade.dfy
 traits/cardinality-replacement-strengthening-existing.dfy
 traits/cardinality-replacement.dfy
 traits/cardinality-runtime.dfy
+traits/cardinality-independent-facades-positive.dfy
+traits/cardinality-independent-facades.dfy
