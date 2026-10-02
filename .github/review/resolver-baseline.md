@@ -56,7 +56,7 @@ expected-verdict files were not changed.
 | `github-issue-42` | accepted | accepted | Valid decreases-to uses resolve without a crash. |
 | `github-issue-43` | rejected | rejected | All 16 intended bad destinations/RHS names are diagnosed; mode-specific diagnostic order is retained. |
 | `github-issue-44` | rejected | rejected | All seven explicit type cycles are rejected normally. |
-| `github-issue-45` | accepted | accepted | The labeled declaration regression resolves without a crash. |
+| `github-issue-45` | accepted | accepted | Inferred constants that require datatype constructor signatures resolve without a crash. |
 | `github-issue-46` | rejected | accepted | Refreshed mode resolves the bitvector-newtype/static-receiver regression with general-newtypes enabled; legacy mode exercises its ordinary unsupported-newtype diagnostic without an incompatible CLI flag. |
 | `github-issue-42-errors` | rejected | rejected | The two intended non-ghost uses of ghost/decreases-to expressions are rejected. |
 | `github-issue-27-duplicates` | rejected | rejected | The two genuine duplicate declarations remain rejected. |
