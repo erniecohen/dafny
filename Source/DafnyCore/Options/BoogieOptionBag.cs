@@ -90,6 +90,9 @@ public static class BoogieOptionBag {
     IsHidden = true
   };
 
+  public static readonly Option<int> ArithmeticSolver = new("--arithmetic-solver", () => 2,
+    "Select Z3's arithmetic solver (0 through 6). Module attributes {:z3ArithmeticSolver N} override this choice. Changing the solver may change verification results and resource use.");
+
   public static readonly Option<bool> SolverOptionHelp = new("--solver-option-help",
     @"Describe the possible parameters to --solver-option.") {
     IsHidden = true
@@ -97,6 +100,12 @@ public static class BoogieOptionBag {
 
 
   static BoogieOptionBag() {
+    ArithmeticSolver.AddValidator(result => {
+      if (result.GetValueOrDefault<int>() is < 0 or > 6) {
+        result.ErrorMessage = "--arithmetic-solver must be an integer from 0 through 6.";
+      }
+    });
+
     Cores.SetDefaultValue((uint)((Environment.ProcessorCount + 1) / 2));
 
     DafnyOptions.RegisterLegacyBinding(BoogieArguments, (o, boogieOptions) => {
@@ -156,6 +165,7 @@ public static class BoogieOptionBag {
     OptionRegistry.RegisterOption(IsolateAssertions, OptionScope.Cli);
     OptionRegistry.RegisterOption(SolverLog, OptionScope.Cli);
     OptionRegistry.RegisterOption(SolverOption, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ArithmeticSolver, OptionScope.Cli);
     OptionRegistry.RegisterOption(SolverOptionHelp, OptionScope.Cli);
     OptionRegistry.RegisterOption(SolverPath, OptionScope.Cli);
     OptionRegistry.RegisterOption(SolverPlugin, OptionScope.Cli);

@@ -1,0 +1,1 @@
+Add `--arithmetic-solver` to select Z3's arithmetic solver across a program. The default remains 2, and explicit `{:z3ArithmeticSolver N}` module attributes take precedence.
