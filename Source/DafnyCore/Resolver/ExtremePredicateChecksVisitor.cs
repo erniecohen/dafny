@@ -25,6 +25,8 @@ class ExtremePredicateChecksVisitor : FindFriendlyCallsVisitor {
             // this may be inside an non-friendly quantifier
             msg +=
               $" and cannot sit inside an unbounded {(context is LeastPredicate ? "universal" : "existential")} quantifier";
+          } else if (InsideOrdinalUnsafeQuantifier) {
+            msg += " and cannot sit inside a quantifier whose domain may contain unbounded ordinals";
           } else {
             // we don't care about the continuity restriction or
             // the extreme-call is not inside an quantifier, so don't bother mentioning the part of existentials/universals in the error message

@@ -894,6 +894,13 @@ requirement comes down to checking that they are also in _continuous positions_:
 that recursive calls to least predicates are
 not inside unbounded universal quantifiers and that recursive calls to greatest predicates
 are not inside unbounded existential quantifiers [@Milner:CCS; @LeinoMoskal:Coinduction].
+For `ORDINAL` indexing, these quantifier directions may range over infinite,
+set-sized domains, such as `int`, but not over all ordinals or types containing
+them. Each bound variable must independently have a known set-sized type or a
+finite bound. Datatype fields and type arguments are checked recursively;
+abstract types and type parameters require a finite bound. An `iset` bound or a
+datatype-rank comparison is insufficient. Negation reverses the quantifier
+direction for these checks.
 
 ### 12.5.4. Proofs about Extreme Predicates
 

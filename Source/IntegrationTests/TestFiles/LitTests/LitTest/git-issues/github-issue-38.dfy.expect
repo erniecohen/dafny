@@ -1,0 +1,110 @@
+github-issue-38-accepted.dfy (type-system-refresh:false)
+github-issue-38-accepted.dfy(27,2): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-38-accepted.dfy(27,2): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+
+Dafny program verifier did not attempt verification
+github-issue-38-accepted.dfy (type-system-refresh:true)
+github-issue-38-accepted.dfy(27,2): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+github-issue-38-accepted.dfy(27,2): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
+
+Dafny program verifier did not attempt verification
+github-issue-38-finite-proof.dfy (type-system-refresh:false)
+github-issue-38-finite-proof.dfy(12,0): Error: a postcondition could not be proved on this return path
+github-issue-38-finite-proof.dfy(11,10): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 1 error
+github-issue-38-finite-proof.dfy (type-system-refresh:true)
+github-issue-38-finite-proof.dfy(12,0): Error: a postcondition could not be proved on this return path
+github-issue-38-finite-proof.dfy(11,10): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 1 error
+github-issue-38-greatest.dfy (type-system-refresh:false)
+github-issue-38-greatest.dfy(5,51): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+1 resolution/type errors detected in github-issue-38-greatest.dfy
+github-issue-38-greatest.dfy (type-system-refresh:true)
+github-issue-38-greatest.dfy(5,51): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+1 resolution/type errors detected in github-issue-38-greatest.dfy
+github-issue-38-hidden.dfy (type-system-refresh:false)
+github-issue-38-hidden.dfy(9,27): Error: a least predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+1 resolution/type errors detected in github-issue-38-hidden.dfy
+github-issue-38-hidden.dfy (type-system-refresh:true)
+github-issue-38-hidden.dfy(9,27): Error: a least predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+1 resolution/type errors detected in github-issue-38-hidden.dfy
+github-issue-38-least-rank.dfy (type-system-refresh:false)
+github-issue-38-least-rank.dfy(7,75): Error: a least predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+1 resolution/type errors detected in github-issue-38-least-rank.dfy
+github-issue-38-least-rank.dfy (type-system-refresh:true)
+github-issue-38-least-rank.dfy(7,75): Error: a least predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+1 resolution/type errors detected in github-issue-38-least-rank.dfy
+github-issue-38-least-universal-iset.dfy (type-system-refresh:false)
+github-issue-38-least-universal-iset.dfy(5,81): Error: a least predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+1 resolution/type errors detected in github-issue-38-least-universal-iset.dfy
+github-issue-38-least-universal-iset.dfy (type-system-refresh:true)
+github-issue-38-least-universal-iset.dfy(5,81): Error: a least predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+1 resolution/type errors detected in github-issue-38-least-universal-iset.dfy
+github-issue-38-least.dfy (type-system-refresh:false)
+github-issue-38-least.dfy(5,54): Error: a least predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+1 resolution/type errors detected in github-issue-38-least.dfy
+github-issue-38-least.dfy (type-system-refresh:true)
+github-issue-38-least.dfy(5,54): Error: a least predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+1 resolution/type errors detected in github-issue-38-least.dfy
+github-issue-38-nat-accepted.dfy (type-system-refresh:false)
+
+Dafny program verifier did not attempt verification
+github-issue-38-nat-accepted.dfy (type-system-refresh:true)
+
+Dafny program verifier did not attempt verification
+github-issue-38-nat-rejected.dfy (type-system-refresh:false)
+github-issue-38-nat-rejected.dfy(3,39): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside an unbounded existential quantifier
+github-issue-38-nat-rejected.dfy(6,37): Error: a least predicate can be called recursively only in positive positions and cannot sit inside an unbounded universal quantifier
+2 resolution/type errors detected in github-issue-38-nat-rejected.dfy
+github-issue-38-nat-rejected.dfy (type-system-refresh:true)
+github-issue-38-nat-rejected.dfy(3,39): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside an unbounded existential quantifier
+github-issue-38-nat-rejected.dfy(6,37): Error: a least predicate can be called recursively only in positive positions and cannot sit inside an unbounded universal quantifier
+2 resolution/type errors detected in github-issue-38-nat-rejected.dfy
+github-issue-38-plain-false.dfy (type-system-refresh:false)
+github-issue-38-plain-false.dfy(1,33): Error: a postcondition could not be proved on this return path
+github-issue-38-plain-false.dfy(1,27): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 0 verified, 1 error
+github-issue-38-plain-false.dfy (type-system-refresh:true)
+github-issue-38-plain-false.dfy(1,33): Error: a postcondition could not be proved on this return path
+github-issue-38-plain-false.dfy(1,27): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 0 verified, 1 error
+github-issue-38-rejected.dfy (type-system-refresh:false)
+github-issue-38-rejected.dfy(10,58): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(13,58): Error: a least predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(16,35): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(19,36): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(22,28): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(25,28): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(28,25): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(31,26): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(34,36): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(37,68): Error: a least predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(41,45): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(44,34): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(47,34): Error: a least predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+13 resolution/type errors detected in github-issue-38-rejected.dfy
+github-issue-38-rejected.dfy (type-system-refresh:true)
+github-issue-38-rejected.dfy(10,58): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(13,58): Error: a least predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(16,35): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(19,36): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(22,28): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(25,28): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(28,25): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(31,26): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(34,36): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(37,68): Error: a least predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(41,45): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(44,34): Error: a greatest predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+github-issue-38-rejected.dfy(47,34): Error: a least predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+13 resolution/type errors detected in github-issue-38-rejected.dfy
+github-issue-38-trait.dfy (type-system-refresh:false)
+github-issue-38-trait.dfy(4,35): Error: a least predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+1 resolution/type errors detected in github-issue-38-trait.dfy
+github-issue-38-trait.dfy (type-system-refresh:true)
+github-issue-38-trait.dfy(4,35): Error: a least predicate can be called recursively only in positive positions and cannot sit inside a quantifier whose domain may contain unbounded ordinals
+1 resolution/type errors detected in github-issue-38-trait.dfy
