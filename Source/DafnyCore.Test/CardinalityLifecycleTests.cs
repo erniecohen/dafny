@@ -254,6 +254,112 @@ public class CardinalityLifecycleTests {
     Assert.Null(semanticClone.CardinalityViewOf);
   }
 
+  [Fact]
+  public async Task SelectedFacadesKeepIndependentImportIdentities() {
+    var (program, reporter) = await CardinalitySourceTests.ResolveAsync("""
+      abstract module A {
+        trait {:termination false} V {}
+        type F
+      }
+      module B1 refines A { type F = int }
+      module B2 refines A { type F = bool }
+      replaceable module P1 { import M : A export provides M }
+      replaceable module P2 { import M : A export provides M }
+      module C1 replaces P1 { import M = B1 }
+      module C2 replaces P2 { import M = B2 }
+      """);
+    Assert.True(reporter.ErrorCount == 0, string.Join(Environment.NewLine, reporter.AllMessages.Select(message => message.Message)));
+    var modules = program.RawModules().ToList();
+    var a = Assert.Single(modules.Where(module => module.Name == "A"));
+    var b1 = Assert.Single(modules.Where(module => module.Name == "B1"));
+    var b2 = Assert.Single(modules.Where(module => module.Name == "B2"));
+    var p1 = Assert.Single(modules.Where(module => module.Name == "P1"));
+    var p2 = Assert.Single(modules.Where(module => module.Name == "P2"));
+    var c1 = Assert.Single(modules.Where(module => module.Name == "C1"));
+    var c2 = Assert.Single(modules.Where(module => module.Name == "C2"));
+    var aType = Assert.Single(a.TopLevelDecls.OfType<AbstractTypeDecl>());
+    var b1Type = Assert.Single(b1.TopLevelDecls.OfType<ConcreteTypeSynonymDecl>());
+    var b2Type = Assert.Single(b2.TopLevelDecls.OfType<ConcreteTypeSynonymDecl>());
+    var p1Import = Assert.Single(p1.TopLevelDecls.OfType<AbstractModuleDecl>());
+    var p2Import = Assert.Single(p2.TopLevelDecls.OfType<AbstractModuleDecl>());
+    var c1Import = Assert.Single(c1.TopLevelDecls.OfType<AliasModuleDecl>());
+    var c2Import = Assert.Single(c2.TopLevelDecls.OfType<AliasModuleDecl>());
+    var p1Type = Assert.IsType<AbstractTypeDecl>(p1Import.Signature.TopLevels["F"]);
+    var p2Type = Assert.IsType<AbstractTypeDecl>(p2Import.Signature.TopLevels["F"]);
+    var p1Synonym = p1Type.SelfSynonymDecl();
+    var p2Synonym = p2Type.SelfSynonymDecl();
+
+    Assert.Same(p1Import, c1Import.CardinalityRefinementBase);
+    Assert.Same(p2Import, c2Import.CardinalityRefinementBase);
+    Assert.NotSame(p1Type, p2Type);
+    Assert.NotSame(aType, p1Type);
+    Assert.NotSame(aType, p2Type);
+    Assert.Same(aType, p1Type.CardinalityViewOf);
+    Assert.Same(aType, p2Type.CardinalityViewOf);
+    Assert.Same(p1Type, Assert.IsType<UserDefinedType>(p1Synonym.Rhs).ResolvedClass);
+    Assert.Same(p2Type, Assert.IsType<UserDefinedType>(p2Synonym.Rhs).ResolvedClass);
+    Assert.True(p1Type.EnclosingModuleDefinition.IsFacade);
+    Assert.True(p2Type.EnclosingModuleDefinition.IsFacade);
+
+    var providedView = Assert.Single(Assert.Single(p1.TopLevelDecls.OfType<ModuleExportDecl>())
+      .EffectiveModule.TopLevelDecls.OfType<AbstractModuleDecl>());
+    Assert.Same(p1Import, providedView.CardinalityViewOf);
+    Assert.Same(p1Import.Signature, providedView.Signature);
+    Assert.Null(providedView.CardinalityRefinementBase);
+
+    var canonicalizer = new CardinalityCanonicalizer(CancellationToken.None, program.Replacements);
+    Assert.Same(b1Type, canonicalizer.Declaration(p1Type));
+    Assert.Same(b2Type, canonicalizer.Declaration(p2Type));
+    Assert.Same(b1Type, canonicalizer.Declaration(p1Synonym));
+    Assert.Same(b2Type, canonicalizer.Declaration(p2Synonym));
+    Assert.Same(aType, canonicalizer.Declaration(aType));
+    Assert.Same(aType, canonicalizer.Declaration(aType.SelfSynonymDecl()));
+    Assert.NotSame(canonicalizer.Declaration(p1Type), canonicalizer.Declaration(p2Type));
+    Assert.True(program.CardinalityValidationReceipt?.Succeeded);
+  }
+
+  [Fact]
+  public async Task SelectedNestedFacadeRetainsExactModuleViewCorrespondence() {
+    var (program, reporter) = await CardinalitySourceTests.ResolveAsync("""
+      abstract module Leaf { type F }
+      abstract module Template { import N : Leaf }
+      module LeafImpl refines Leaf { type F = int }
+      module Impl refines Template { import N = LeafImpl }
+      replaceable module P { import M : Template export provides M }
+      module C replaces P { import M = Impl }
+      """);
+    Assert.True(reporter.ErrorCount == 0, string.Join(Environment.NewLine, reporter.AllMessages.Select(message => message.Message)));
+    var modules = program.RawModules().ToList();
+    var leaf = Assert.Single(modules.Where(module => module.Name == "Leaf"));
+    var template = Assert.Single(modules.Where(module => module.Name == "Template"));
+    var implementation = Assert.Single(modules.Where(module => module.Name == "Impl"));
+    var leafImplementation = Assert.Single(modules.Where(module => module.Name == "LeafImpl"));
+    var placeholder = Assert.Single(modules.Where(module => module.Name == "P"));
+    var replacement = Assert.Single(modules.Where(module => module.Name == "C"));
+    var templateImport = Assert.Single(template.TopLevelDecls.OfType<AbstractModuleDecl>());
+    var implementationImport = Assert.Single(implementation.TopLevelDecls.OfType<AliasModuleDecl>());
+    var placeholderImport = Assert.Single(placeholder.TopLevelDecls.OfType<AbstractModuleDecl>());
+    var replacementImport = Assert.Single(replacement.TopLevelDecls.OfType<AliasModuleDecl>());
+    var nestedView = Assert.IsType<AbstractModuleDecl>(placeholderImport.Signature.TopLevels["N"]);
+    var originalType = Assert.Single(leaf.TopLevelDecls.OfType<AbstractTypeDecl>());
+    var selectedType = Assert.Single(leafImplementation.TopLevelDecls.OfType<ConcreteTypeSynonymDecl>());
+    var nestedType = Assert.IsType<AbstractTypeDecl>(nestedView.Signature.TopLevels["F"]);
+
+    Assert.Same(placeholderImport, replacementImport.CardinalityRefinementBase);
+    Assert.Same(templateImport, implementationImport.CardinalityRefinementBase);
+    Assert.Same(templateImport, nestedView.CardinalityViewOf);
+    Assert.Null(nestedView.CardinalityRefinementBase);
+    Assert.NotSame(templateImport.Signature.ModuleDef, nestedView.Signature.ModuleDef);
+    Assert.Same(originalType, nestedType.CardinalityViewOf);
+    Assert.Same(nestedType, Assert.IsType<UserDefinedType>(nestedType.SelfSynonymDecl().Rhs).ResolvedClass);
+
+    var canonicalizer = new CardinalityCanonicalizer(CancellationToken.None, program.Replacements);
+    Assert.Same(selectedType, canonicalizer.Declaration(nestedType));
+    Assert.Same(selectedType, canonicalizer.Declaration(nestedType.SelfSynonymDecl()));
+    Assert.Same(originalType, canonicalizer.Declaration(originalType));
+    Assert.True(program.CardinalityValidationReceipt?.Succeeded);
+  }
+
   [Theory]
   [InlineData(false)]
   [InlineData(true)]

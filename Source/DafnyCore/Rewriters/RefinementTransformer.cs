@@ -220,6 +220,10 @@ namespace Microsoft.Dafny {
           } else if (newDeclaration is TypeSynonymDecl) {
             var msg = $"a type synonym ({newDeclaration.Name}) is not allowed to replace a {originalDeclaration.WhatKind} from the refined module ({module.Implements.Target}), even if it denotes the same type";
             Error(ErrorId.ref_refinement_type_must_match_base, newDeclaration.Origin, msg);
+          } else if (originalDeclaration is AbstractModuleDecl && newDeclaration is ModuleDecl) {
+            // Abstract-import overrides do not use refining notation or the type
+            // merger. Retain their exact correspondence for selected environments.
+            newDeclaration.CardinalityRefinementBase = originalDeclaration;
           } else if (!(originalDeclaration is AbstractModuleDecl)) {
             Error(ErrorId.ref_refining_notation_needed, newDeclaration.Origin, $"to redeclare and refine declaration '{originalDeclaration.Name}' from module '{module.Implements.Target}', you must use the refining (`...`) notation");
           }

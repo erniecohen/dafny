@@ -69,45 +69,82 @@ internal sealed class CardinalityCanonicalizer {
     IReadOnlyDictionary<ModuleDefinition, ModuleDefinition>? replacements = null) {
     this.cancellationToken = cancellationToken;
     if (replacements == null) { return; }
+    var pending = new Queue<(ModuleDefinition Target, ModuleDefinition Selected, bool Contextual)>();
+    var processed = new HashSet<(ModuleDefinition, ModuleDefinition, bool)>();
     foreach (var replacement in replacements.OrderBy(entry => entry.Key.FullName, StringComparer.Ordinal)) {
+      pending.Enqueue((replacement.Key, replacement.Value, false));
+    }
+    while (pending.TryDequeue(out var pair)) {
       cancellationToken.ThrowIfCancellationRequested();
-      var target = replacement.Key;
-      var selected = replacement.Value;
-      var correspondences = new HashSet<TopLevelDecl>();
-      foreach (var raw in selected.TopLevelDecls) {
+      if (!processed.Add(pair) || ReferenceEquals(pair.Target, pair.Selected)) { continue; }
+      var originalTypes = pair.Target.TopLevelDecls.Where(CardinalityValidator.IsTypeDeclaration)
+        .Select(raw => pair.Contextual ? ContextDeclaration(raw) : ViewDeclaration(raw))
+        .Where(original => original is not DefaultClassDecl).Distinct().ToArray();
+      var sources = new Dictionary<TopLevelDecl, List<TopLevelDecl>>();
+      foreach (var original in originalTypes) {
         cancellationToken.ThrowIfCancellationRequested();
-        if (!CardinalityValidator.IsTypeDeclaration(raw)) { continue; }
-        var final = ViewDeclaration(raw);
-        if (final is DefaultClassDecl) { continue; }
-        var current = final;
+        var source = ViewDeclaration(original);
+        if (!sources.TryGetValue(source, out var interfaces)) { sources[source] = interfaces = []; }
+        interfaces.Add(original);
+      }
+      var correspondences = new HashSet<TopLevelDecl>();
+      foreach (var raw in pair.Selected.TopLevelDecls.Where(CardinalityValidator.IsTypeDeclaration)) {
+        cancellationToken.ThrowIfCancellationRequested();
+        var selected = ContextDeclaration(raw);
+        var current = ViewDeclaration(selected);
+        if (current is DefaultClassDecl) { continue; }
         var seen = new HashSet<TopLevelDecl>();
-        while (current.CardinalityRefinementBase is { } predecessor) {
+        while (true) {
           cancellationToken.ThrowIfCancellationRequested();
           if (!seen.Add(current)) {
-            throw new CardinalityTypeException(final.Origin, "cyclic refinement correspondence in a selected replacement");
+            throw new CardinalityTypeException(selected.Origin, "cyclic refinement correspondence in a selected replacement");
           }
+          if (sources.TryGetValue(current, out var interfaces)) {
+            foreach (var original in interfaces) {
+              AddSelection(original, selected);
+              correspondences.Add(original);
+            }
+            // Stop at this exact interface. Ordinary template ancestors beyond it stay independent.
+            break;
+          }
+          if (current.CardinalityRefinementBase is not { } predecessor) { break; }
           current = ViewDeclaration(predecessor);
-          // Only this exact replacement target is an interface for this selection. An ordinary
-          // template ancestor beyond it retains its independent declaration identity.
-          if (!ReferenceEquals(current.EnclosingModuleDefinition, target)) { continue; }
-          CheckLink(current, final, true);
-          if (selections.TryGetValue(current, out var other) && !ReferenceEquals(other, final)) {
-            throw new CardinalityTypeException(current.Origin, "inconsistent selected type replacement");
-          }
-          selections[current] = final;
-          correspondences.Add(current);
-          break;
         }
       }
-      foreach (var raw in target.TopLevelDecls) {
+      foreach (var original in originalTypes) {
         cancellationToken.ThrowIfCancellationRequested();
-        if (!CardinalityValidator.IsTypeDeclaration(raw)) { continue; }
-        var original = ViewDeclaration(raw);
-        if (original is DefaultClassDecl) { continue; }
         if (!correspondences.Contains(original)) {
           throw new CardinalityTypeException(original.Origin,
-            $"selected replacement of '{target.FullName}' has no recorded correspondence for type '{original.FullName}'");
+            $"selected replacement of '{pair.Target.FullName}' has no recorded correspondence for type '{original.FullName}'");
         }
+      }
+
+      // A selected outer replacement can replace an abstract import with a concrete
+      // refining module. Its synthetic facade has its own raw declarations; select
+      // those before their visibility links, rather than selecting the global template.
+      foreach (var original in pair.Target.TopLevelDecls.OfType<AbstractModuleDecl>()) {
+        cancellationToken.ThrowIfCancellationRequested();
+        var source = ViewDeclaration(original);
+        var counterparts = new List<ModuleDecl>();
+        foreach (var raw in pair.Selected.TopLevelDecls.OfType<ModuleDecl>()) {
+          var current = ViewDeclaration(raw);
+          var seen = new HashSet<TopLevelDecl>();
+          while (true) {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!seen.Add(current)) {
+              throw new CardinalityTypeException(raw.Origin, "cyclic abstract-import correspondence in a selected replacement");
+            }
+            if (ReferenceEquals(current, source)) { counterparts.Add(raw); break; }
+            if (current.CardinalityRefinementBase is not { } predecessor) { break; }
+            current = ViewDeclaration(predecessor);
+          }
+        }
+        if (counterparts.Count != 1 || original.Signature?.ModuleDef is not { } facade ||
+            counterparts[0].Signature?.ModuleDef is not { } implementation) {
+          throw new CardinalityTypeException(original.Origin,
+            "a selected replacement has no unique resolved correspondence for an abstract import");
+        }
+        pending.Enqueue((facade, implementation, true));
       }
     }
     // Join every exposed interface's contract before profiling anything. The selected body
@@ -123,6 +160,18 @@ internal sealed class CardinalityCanonicalizer {
     }
   }
 
+  private static TopLevelDecl ContextDeclaration(TopLevelDecl declaration) =>
+    declaration is NonNullTypeDecl wrapper ? wrapper.Class : declaration;
+
+  private void AddSelection(TopLevelDecl original, TopLevelDecl selected) {
+    CheckLink(original, selected, true);
+    if (ReferenceEquals(original, selected)) { return; }
+    if (selections.TryGetValue(original, out var other) && !ReferenceEquals(other, selected)) {
+      throw new CardinalityTypeException(original.Origin, "inconsistent selected type replacement");
+    }
+    selections[original] = selected;
+  }
+
   internal TopLevelDecl Declaration(TopLevelDecl declaration) {
     var path = new List<TopLevelDecl>();
     var seen = new HashSet<TopLevelDecl>();
@@ -133,8 +182,10 @@ internal sealed class CardinalityCanonicalizer {
         throw new CardinalityTypeException(declaration.Origin, "cyclic semantic type-view or replacement metadata");
       }
       path.Add(current);
-      var next = ViewTarget(current);
-      var selection = next == null && selections.TryGetValue(current, out next);
+      // Contextual facade selections precede pure-view links to the global template.
+      TopLevelDecl? next;
+      var selection = selections.TryGetValue(current, out next);
+      if (!selection) { next = ViewTarget(current); }
       if (next == null) {
         canonical[current] = current;
         break;
