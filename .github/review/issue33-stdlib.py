@@ -3,7 +3,6 @@
 import argparse
 import importlib.util
 import json
-import hashlib
 from pathlib import Path
 
 p=argparse.ArgumentParser()
@@ -14,12 +13,9 @@ spec=importlib.util.spec_from_file_location('std','.github/review/std-verdicts.p
 std=importlib.util.module_from_spec(spec);spec.loader.exec_module(std)
 files={}
 original_part = std.part
-translation_paths = {}
 for mode,binary,flag in [('B',a.baseline,[]),('O',a.candidate,[]),('B2',a.baseline,[]),('O2',a.candidate,[]),('E',a.candidate,['--additional-axioms'])]:
-    translation = out / (mode + '.bpl')
-    translation_paths[mode] = translation
     def measured_part(label, cwd, args, dafny, z3, cores, fixed):
-        if label == 'Std': fixed = fixed + ['--bprint', str(translation)]
+        fixed = fixed + ['--log-format', 'csv;LogFileName=' + str(out / (mode + '-' + label + '.csv'))]
         return original_part(label, cwd, args, dafny, z3, cores, fixed)
     std.part = measured_part
     std.FIXED=['--verification-time-limit','0']+flag
@@ -28,8 +24,8 @@ for mode,binary,flag in [('B',a.baseline,[]),('O',a.candidate,[]),('B2',a.baseli
     files[mode]=std.load(str(path))
     print(mode,'rows',len(files[mode]),flush=True)
 # Separate outcomes from proof cost. Run rows include nondeterministic times.
-report={'translation_sha256': {mode: hashlib.sha256(path.read_bytes()).hexdigest() for mode, path in translation_paths.items()}}
-report['off_translation_identical'] = translation_paths['B'].read_bytes() == translation_paths['O'].read_bytes() == translation_paths['B2'].read_bytes() == translation_paths['O2'].read_bytes()
+# Full translation identity is measured separately by issue33-translation.py.
+report={}
 for x,y in [('B','O'),('B','B2'),('O','O2'),('O','E')]:
     different=[];resources=[];regressions=[]
     for key in sorted(set(files[x])|set(files[y])):
