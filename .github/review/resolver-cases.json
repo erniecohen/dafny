@@ -1,0 +1,383 @@
+[
+  {
+    "id": "DecreasesTo2",
+    "file": "dafny0/DecreasesTo2.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "DecreasesTo4",
+    "file": "dafny0/DecreasesTo4.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "GhostPrint",
+    "file": "dafny0/GhostPrint.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "ImplicitTypeParamPrint",
+    "file": "dafny0/ImplicitTypeParamPrint.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "ScientificNotationErrors",
+    "file": "dafny0/ScientificNotationErrors.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "Simple",
+    "file": "dafny0/Simple.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "incompatibleAttributes",
+    "file": "dafny0/incompatibleAttributes.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "parse-errors",
+    "file": "dafny4/parse-errors.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "parse-errors2",
+    "file": "dafny4/parse-errors2.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "git-issue-1618",
+    "file": "git-issues/git-issue-1618.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "git-issue-1637",
+    "file": "git-issues/git-issue-1637.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "git-issue-1665",
+    "file": "git-issues/git-issue-1665.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "git-issue-1966",
+    "file": "git-issues/git-issue-1966.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "git-issue-2200",
+    "file": "git-issues/git-issue-2200.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "git-issue-2507",
+    "file": "git-issues/git-issue-2507.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "git-issue-2550",
+    "file": "git-issues/git-issue-2550.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "git-issue-2830",
+    "file": "git-issues/git-issue-2830.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "git-issue-3304",
+    "file": "git-issues/git-issue-3304.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "git-issue-3382",
+    "file": "git-issues/git-issue-3382.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "git-issue-3390",
+    "file": "git-issues/git-issue-3390.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "git-issue-3461",
+    "file": "git-issues/git-issue-3461.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "git-issue-3497",
+    "file": "git-issues/git-issue-3497.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "git-issue-3757",
+    "file": "git-issues/git-issue-3757.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "git-issue-3757a",
+    "file": "git-issues/git-issue-3757a.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "git-issue-442",
+    "file": "git-issues/git-issue-442.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "ForbidNondeterminismResolve",
+    "file": "dafny0/ForbidNondeterminismResolve.dfy",
+    "options": [
+      "--enforce-determinism"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "git-issue-2959",
+    "file": "git-issues/git-issue-2959.dfy",
+    "options": [
+      "--enforce-determinism"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "Bug142",
+    "file": "dafny4/Bug142.dfy",
+    "options": [
+      "--warn-shadowing",
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "git-issue-3496",
+    "file": "git-issues/git-issue-3496.dfy",
+    "options": [
+      "--allow-axioms:false",
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "PrecedenceLinter",
+    "file": "dafny0/PrecedenceLinter.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "PrecedenceLinter.ignore-indentation",
+    "file": "dafny0/PrecedenceLinter.dfy",
+    "options": [
+      "--allow-warnings",
+      "--ignore-indentation"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "ReadsOnMethods_Printing.reads-false",
+    "file": "dafny0/ReadsOnMethods_Printing.dfy",
+    "options": [
+      "--reads-clauses-on-methods:false"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "ReadsOnMethods_Printing.reads-true",
+    "file": "dafny0/ReadsOnMethods_Printing.dfy",
+    "options": [
+      "--reads-clauses-on-methods:true"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "github-issue-25",
+    "file": "git-issues/github-issue-25.dfy",
+    "options": [
+      "--allow-warnings",
+      "--allow-deprecation"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "github-issue-27",
+    "file": "git-issues/github-issue-27.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "github-issue-37",
+    "file": "git-issues/github-issue-37.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "github-issue-40",
+    "file": "git-issues/github-issue-40.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "github-issue-41",
+    "file": "git-issues/github-issue-41.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "github-issue-42",
+    "file": "git-issues/github-issue-42.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "github-issue-43",
+    "file": "git-issues/github-issue-43.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "github-issue-44",
+    "file": "git-issues/github-issue-44.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "github-issue-45",
+    "file": "git-issues/github-issue-45.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60
+  },
+  {
+    "id": "github-issue-46",
+    "file": "git-issues/github-issue-46.dfy",
+    "options": [
+      "--allow-warnings"
+    ],
+    "seconds": 60,
+    "refresh_options": [
+      "--general-newtypes:true"
+    ]
+  },
+  {
+    "id": "github-issue-42-errors",
+    "file": "git-issues/github-issue-42-errors.dfy",
+    "options": [],
+    "seconds": 60
+  },
+  {
+    "id": "github-issue-27-duplicates",
+    "file": "git-issues/Inputs/github-issue-27-duplicates.dfy",
+    "options": [],
+    "seconds": 60
+  },
+  {
+    "id": "github-issue-43-valid",
+    "file": "git-issues/Inputs/github-issue-43-valid.dfy",
+    "options": [],
+    "seconds": 60
+  },
+  {
+    "id": "github-issue-44-acyclic",
+    "file": "git-issues/Inputs/github-issue-44-acyclic.dfy",
+    "options": [],
+    "seconds": 60
+  },
+  {
+    "id": "github-issue-46-range",
+    "file": "git-issues/Inputs/github-issue-46-range.dfy",
+    "options": [],
+    "seconds": 60
+  }
+]
