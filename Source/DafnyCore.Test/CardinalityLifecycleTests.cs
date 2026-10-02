@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Reactive.Linq;
 using DafnyCore.Test.Resolver.Cardinality;
 using Microsoft.Dafny;
 using Type = Microsoft.Dafny.Type;
@@ -102,6 +103,57 @@ public class CardinalityLifecycleTests {
     // The supported low-level route computes admission; it cannot simply mark a fixture trusted.
     Assert.True(CardinalityValidator.Validate(program, CancellationToken.None).Succeeded);
     Assert.True(program.CardinalityValidationReceipt?.Succeeded);
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task TranslatorDiagnosticsDoNotInvalidateAdmissionBetweenModules(bool observableReporter) {
+    var (program, batchReporter) = await CardinalitySourceTests.ResolveAsync("""
+      module First {
+        ghost function f(x: int): int {
+          if x <= 0 then 0 else 1 + f(x - 1)
+        }
+        method M(x: int) {
+          assert {:fuel f, 0, 0} f(x) == 0;
+        }
+      }
+      module Second {
+        ghost function f(x: int): int {
+          if x <= 0 then 0 else 1 + f(x - 1)
+        }
+        method M(x: int) {
+          assert {:fuel f, 0, 0} f(x) == 0;
+        }
+      }
+      """);
+    Assert.Equal(0, batchReporter.ErrorCount);
+    Assert.True(program.CardinalityValidationReceipt?.Succeeded);
+    ErrorReporter reporter = observableReporter
+      ? new ObservableErrorReporter(program.Options, new Uri("untitled:cardinality.dfy"))
+      : batchReporter;
+    program.Reporter = reporter;
+    var diagnostics = new List<DafnyDiagnostic>();
+    using var subscription = (reporter as ObservableErrorReporter)?.Updates.Subscribe(update => diagnostics.Add(update.Diagnostic));
+
+    using var translations = BoogieGenerator.Translate(program, reporter).GetEnumerator();
+    Assert.True(translations.MoveNext());
+    Assert.Equal(1, reporter.ErrorCount);
+    Assert.Equal(1, reporter.CountExceptVerifierAndCompiler(ErrorLevel.Error));
+    Assert.Equal(0, reporter.CountExceptTranslatorVerifierAndCompiler(ErrorLevel.Error));
+    Assert.True(translations.MoveNext());
+    Assert.False(translations.MoveNext());
+    Assert.Equal(2, reporter.ErrorCount);
+    Assert.All(observableReporter ? diagnostics.Where(diagnostic => diagnostic.Level == ErrorLevel.Error) : batchReporter.AllMessagesByLevel[ErrorLevel.Error],
+      diagnostic => Assert.Equal("g_fuel_must_increase", diagnostic.ErrorId));
+    Assert.True(program.CardinalityValidationReceipt?.Succeeded);
+
+    // An admission error still blocks both entry points even with an earlier successful receipt.
+    reporter.Error(MessageSource.Resolver, "r_cardinality_unclassified_type", Token.NoToken, "test admission error");
+    Assert.Equal(1, reporter.CountExceptTranslatorVerifierAndCompiler(ErrorLevel.Error));
+    Assert.Throws<InvalidOperationException>(() => BoogieGenerator.Translate(program, reporter).ToList());
+    var generator = new BoogieGenerator(reporter, program.ProofDependencyManager);
+    Assert.Throws<InvalidOperationException>(() => generator.DoTranslation(program, program.DefaultModuleDef));
   }
 
   [Fact]

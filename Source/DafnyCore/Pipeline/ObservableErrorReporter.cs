@@ -14,6 +14,7 @@ namespace Microsoft.Dafny {
     private readonly Uri entryUri;
     private readonly Dictionary<ErrorLevel, int> counts = new();
     private readonly Dictionary<ErrorLevel, int> countsNotVerificationOrCompiler = new();
+    private readonly Dictionary<ErrorLevel, int> countsNotTranslationVerificationOrCompiler = new();
     private readonly ReaderWriterLockSlim rwLock = new();
 
     /// <summary>
@@ -52,6 +53,16 @@ namespace Microsoft.Dafny {
       }
     }
 
+    public override int CountExceptTranslatorVerifierAndCompiler(ErrorLevel level) {
+      rwLock.EnterReadLock();
+      try {
+        return countsNotTranslationVerificationOrCompiler.GetValueOrDefault(level, 0);
+      }
+      finally {
+        rwLock.ExitReadLock();
+      }
+    }
+
     private void AddDiagnosticForFile(DafnyDiagnostic dafnyDiagnostic, Uri uri) {
       rwLock.EnterWriteLock();
       try {
@@ -59,6 +70,10 @@ namespace Microsoft.Dafny {
         if (dafnyDiagnostic.Source != MessageSource.Verifier && dafnyDiagnostic.Source != MessageSource.Compiler) {
           countsNotVerificationOrCompiler[dafnyDiagnostic.Level] =
             countsNotVerificationOrCompiler.GetValueOrDefault(dafnyDiagnostic.Level, 0) + 1;
+        }
+        if (dafnyDiagnostic.Source is not (MessageSource.Translator or MessageSource.Verifier or MessageSource.Compiler)) {
+          countsNotTranslationVerificationOrCompiler[dafnyDiagnostic.Level] =
+            countsNotTranslationVerificationOrCompiler.GetValueOrDefault(dafnyDiagnostic.Level, 0) + 1;
         }
         updates.OnNext(new NewDiagnostic(uri, dafnyDiagnostic));
       }

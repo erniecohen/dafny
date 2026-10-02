@@ -315,7 +315,7 @@ method {:concurrent} MemoizedSquare2(x: int, cache: ExternalSequentialMutableMap
   }
 }
 
-class {:extern} ExternalConcurrentMutableMap<K, V> {
+class {:extern} ExternalConcurrentMutableMap<!K, !V> {
   const inv: (K, V) -> bool
   method {:extern} Put(k: K, v: V)
     reads {}

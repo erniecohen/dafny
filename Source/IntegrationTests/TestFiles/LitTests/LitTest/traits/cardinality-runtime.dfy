@@ -1,4 +1,4 @@
-// RUN: %testDafnyForEachCompiler "%s" -- --type-system-refresh --general-traits=datatype --general-newtypes
+// RUN: %testDafnyForEachCompiler "%s" -- --type-system-refresh=true --general-traits=datatype --general-newtypes=true
 
 trait V { function Tag(): int }
 datatype Box extends V = Box(n: int) { function Tag(): int { n } }
