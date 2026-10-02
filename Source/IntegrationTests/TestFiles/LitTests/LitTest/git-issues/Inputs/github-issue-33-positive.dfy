@@ -228,7 +228,11 @@ lemma Simplification(a: int)
 
 function ShiftAtBoundary(a: int, k: int): int
   requires 0 <= a < 0x1_0000_0000 && 0 <= k <= 32
-{ ((a as bv32) >> (k as bv32)) as int }
+{
+  // Expose the count's integer value before checking the optimized narrower cast.
+  assert (k as bv32) as int == k;
+  ((a as bv32) >> (k as bv32)) as int
+}
 
 lemma VariableShift(a: int, k: int)
   requires 0 <= a < 0x1_0000_0000 && 0 <= k <= 32
