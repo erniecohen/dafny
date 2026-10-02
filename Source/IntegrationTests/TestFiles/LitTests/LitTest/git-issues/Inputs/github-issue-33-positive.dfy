@@ -163,15 +163,42 @@ newtype WordNat = a: int | 0 <= a < 0x1_0000_0000 witness 0
 datatype Holder = Holder(value: bv32)
 function Id<T>(x: T): T { x }
 
-lemma Shapes(a: int)
+lemma Generic(a: int)
   requires 0 <= a < 0x1_0000_0000
   ensures (Id(a as bv32)) as int == a
+{}
+
+lemma Sequence(a: int)
+  requires 0 <= a < 0x1_0000_0000
   ensures ([a as bv32][0]) as int == a
+{}
+
+lemma Map(a: int)
+  requires 0 <= a < 0x1_0000_0000
   ensures (map[0 := a as bv32][0]) as int == a
+{}
+
+lemma Datatype(a: int)
+  requires 0 <= a < 0x1_0000_0000
   ensures Holder(a as bv32).value as int == a
+{}
+
+lemma Nested(a: int)
+  requires 0 <= a < 0x1_0000_0000
   ensures (((a as bv32) as int) as bv32) as int == a
+{}
+
+lemma Widen(a: int)
+  requires 0 <= a < 0x1_0000_0000
   ensures (((a as bv32) as bv64) as int) == a
+{}
+
+lemma Narrow(a: int)
+  requires 0 <= a < 0x1_0000_0000
   ensures (((a as bv64) as bv32) as int) == a
+{}
+lemma Temporary(a: int)
+  requires 0 <= a < 0x1_0000_0000
 {
   var b := a as bv32;
   assert b as int == a;
@@ -198,9 +225,13 @@ lemma Simplification(a: int)
   ensures ((a as bv32) + 0) as int == a
 {}
 
+function ShiftAtBoundary(a: int, k: int): int
+  requires 0 <= a < 0x1_0000_0000 && 0 <= k <= 32
+{ ((a as bv32) >> (k as bv32)) as int }
+
 lemma VariableShift(a: int, k: int)
   requires 0 <= a < 0x1_0000_0000 && 0 <= k <= 32
-  ensures 0 <= ((a as bv32) >> (k as bv32)) as int < 0x1_0000_0000
+  ensures 0 <= ShiftAtBoundary(a, k) < 0x1_0000_0000
 {}
 
 lemma OtherConversions(a: int, c: char, o: ORDINAL)

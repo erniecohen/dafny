@@ -49,14 +49,16 @@ for cmd in commands:
     families[width]=(rename(cmd),rename(bridges[0]),x)
 assert set(families)=={32,64}
 common='(set-logic ALL)\n(set-option :smt.qi.profile true)\n'
+model_common=common
 for width,(axiom,bridge,x) in families.items():
     common+=f'(declare-fun roundTrip{width} ((_ BitVec {width})) Int)\n'+bridge+'\n'+axiom+'\n'
+    model_common+=f'(define-fun roundTrip{width} ((b (_ BitVec {width}))) Int (bv2int b))\n'+bridge+'\n'+axiom+'\n'
 report=[]
 for width,(axiom,bridge,x) in families.items():
     bound=1<<width;term=lambda v:f'(roundTrip{width} ((_ int2bv {width}) {v}))'
     checks=[('bounded','unsat',f'(declare-const a Int)\n(assert (<= 0 a))\n(assert (< a {bound}))\n(assert (not (= {term("a")} a)))'),('zero','sat',f'(assert (= {term("0")} 0))'),('high-bit','sat',f'(assert (= {term(str(bound//2))} {bound//2}))'),('negative','sat',f'(assert (= {term("(- 1)")} {bound-1}))'),('upper','sat',f'(assert (= {term(str(bound))} 0))')]
     for label,expected,body in checks:
-        filename=out/f'bv{width}-{label}.smt2';filename.write_text(common+body+'\n(check-sat)\n')
+        filename=out/f'bv{width}-{label}.smt2';filename.write_text((model_common if expected == 'sat' else common)+body+'\n(check-sat)\n')
         result=subprocess.run([a.z3,'-smt2',str(filename)],capture_output=True,text=True,timeout=60)
         (filename.with_suffix('.output')).write_text(result.stdout+result.stderr)
         actual=result.stdout.strip();report.append([width,label,expected,actual])

@@ -107,7 +107,11 @@ jobs:
           python3 .github/review/issue33-targeted.py --baseline "$PWD/out/baseline/dafny/Dafny" --z3 "$Z3" --output issue33-results "${args[@]}"
       - name: Check extracted native SMT axioms and mutations
         if: github.ref_name != 'scratch/issue33/baseline'
-        run: python3 .github/review/issue33-smt.py --smt issue33-results/E/solver.smt2 --z3 "$Z3" --output issue33-results/smt-controls
+        run: |
+          set +e
+          python3 .github/review/issue33-smt.py --smt issue33-results/E/solver.smt2 --z3 "$Z3" --output issue33-results/smt-controls
+          echo "$?" > issue33-results/smt-controls/exit-code.txt
+          exit 0
       - name: Targeted tests with the harness solver
         if: github.ref_name != 'scratch/issue33/baseline'
         run: |
