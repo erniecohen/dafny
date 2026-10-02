@@ -1,7 +1,7 @@
 name: Issue 33 validation
 on:
   push:
-    branches: ['scratch/issue33/baseline']
+    branches: ['scratch/issue33/baseline', 'scratch/issue33/candidate']
   workflow_dispatch:
     inputs:
       candidate_run:
@@ -12,7 +12,33 @@ permissions:
   contents: read
   actions: read
 jobs:
+  build:
+    if: github.ref_name != 'scratch/issue33/baseline'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build with fixed Boogie
+        run: |
+          sh Scripts/fetch-boogie-packages.sh
+          eval "$(sh .github/review/version.sh)"
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:SourceRevisionId="$revision"
+          tar -C out -czf dafny.tar.gz dafny
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue33-candidate
+          path: dafny.tar.gz
+          retention-days: 14
   targeted:
+    needs: build
+    if: always() && (needs.build.result == 'success' || github.ref_name == 'scratch/issue33/baseline')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -29,14 +55,12 @@ jobs:
       - name: Unpack baseline
         run: mkdir -p out/baseline && tar -C out/baseline -xzf baseline-artifact/dafny.tar.gz
       - uses: actions/download-artifact@v4
-        if: inputs.candidate_run && inputs.candidate_run != '0'
+        if: github.ref_name != 'scratch/issue33/baseline'
         with:
-          name: dafny
-          run-id: ${{ inputs.candidate_run }}
-          github-token: ${{ github.token }}
+          name: issue33-candidate
           path: candidate-artifact
       - name: Unpack candidate
-        if: inputs.candidate_run && inputs.candidate_run != '0'
+        if: github.ref_name != 'scratch/issue33/baseline'
         run: mkdir -p out/candidate && tar -C out/candidate -xzf candidate-artifact/dafny.tar.gz
       - name: Z3 5.1.0
         run: |
@@ -47,7 +71,7 @@ jobs:
       - name: Measure original reproducer and retain translation
         run: |
           args=()
-          if [ '${{ inputs.candidate_run || '0' }}' != 0 ]; then args+=(--candidate "$PWD/out/candidate/dafny/Dafny"); fi
+          if [ '${{ github.ref_name }}' != scratch/issue33/baseline ]; then args+=(--candidate "$PWD/out/candidate/dafny/Dafny"); fi
           python3 .github/review/issue33-targeted.py --baseline "$PWD/out/baseline/dafny/Dafny" --z3 "$Z3" --output issue33-results "${args[@]}"
       - uses: actions/upload-artifact@v4
         if: always()

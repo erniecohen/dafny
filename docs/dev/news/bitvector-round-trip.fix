@@ -1,0 +1,1 @@
+The default-off `--additional-axioms` option supplies bounded integer/bitvector round trips, allowing wide conversions and shift-by-zero lemmas to verify without extra range assertions. It can also be enabled in project files. Conversion legality checks are unchanged.
