@@ -1,0 +1,3 @@
+cardinality-replacement-facade-existing.dfy(18,49): Error: a compiled module is not allowed to use an abstract module (M)
+cardinality-replacement-facade-existing.dfy(18,25): Error: a compiled module is not allowed to use an abstract module (M)
+2 resolution/type errors detected in cardinality-replacement-facade-existing.dfy
