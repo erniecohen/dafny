@@ -4,6 +4,10 @@ on:
     branches: ['scratch/issue33/baseline', 'scratch/issue33/candidate']
   workflow_dispatch:
     inputs:
+      corpus:
+        description: Run full paired baseline/off/on performance measurements
+        type: boolean
+        default: false
       candidate_run:
         description: Review workflow run containing the candidate build (0 for baseline only)
         default: '0'
@@ -78,4 +82,46 @@ jobs:
         with:
           name: issue33-targeted
           path: issue33-results
+          retention-days: 90
+
+  corpus:
+    if: inputs.corpus
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: dafny
+          run-id: 37061413937
+          github-token: ${{ github.token }}
+          path: baseline-artifact
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue33-candidate
+          path: candidate-artifact
+      - name: Unpack builds and install pinned solver
+        run: |
+          mkdir -p out/baseline out/candidate
+          tar -C out/baseline -xzf baseline-artifact/dafny.tar.gz
+          tar -C out/candidate -xzf candidate-artifact/dafny.tar.gz
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+          unzip -q z3.zip
+      - name: Record paired proof outcomes and per-batch resources
+        run: |
+          python3 .github/review/issue33-corpus.py --baseline "$PWD/out/baseline/dafny/Dafny" --candidate "$PWD/out/candidate/dafny/Dafny" --z3 "$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" --output issue33-corpus --shard ${{ matrix.shard }}/4 --jobs 4
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue33-corpus-${{ matrix.shard }}
+          path: issue33-corpus
           retention-days: 90
