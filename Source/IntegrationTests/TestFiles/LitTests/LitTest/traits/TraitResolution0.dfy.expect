@@ -214,7 +214,7 @@ module M2 {
     ghost var u: bv10 := c.F(aa, bb);
   }
 
-  trait Tr<X, W> {
+  trait Tr<X, W> extends object {
     function F(x: X, w: W): bv10
     {
       15
@@ -247,14 +247,14 @@ module M3 {
     ghost var x: (int, int) := c.w;
   }
 
-  trait Tr<X(0)> {
+  trait Tr<X(0), Y(0)> {
     const w: X
   }
   /*-- non-null type
-  type {:axiom} Tr(==)<X(0)> = c: Tr?<X> | c != null /*special witness*/
+  type {:axiom} Tr(==)<X(0), Y(0)> = c: Tr?<X, Y> | c != null /*special witness*/
   */
 
-  class Cl<Y(0)> extends Tr<(Y, Y)> { }
+  class Cl<Y(0)> extends Tr<(Y, Y), Y> { }
   /*-- non-null type
   type {:axiom} Cl(==)<Y(0)> = c: Cl?<Y> | c != null /*special witness*/
   */
@@ -388,7 +388,7 @@ module P2 {
     ghost var u: bv10 := c.F(aa, bb);
   }
 
-  trait TrX<X, W> {
+  trait TrX<X, W> extends object {
     function F(x: X, w: W): bv10
     {
       15

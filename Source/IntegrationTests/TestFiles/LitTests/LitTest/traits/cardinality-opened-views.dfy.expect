@@ -1,15 +1,14 @@
-cardinality-opened-views.dfy(16,29): Warning: opaque is deprecated as an identifier. It will soon become a reserved word. Use a different name.
 cardinality-opened-views.dfy(16,23): Error: This type definition creates a potentially cardinality-expanding cycle:
    'Storage.F' depends on 'Api.V' through right-hand side of 'Storage.F' -> arrow input 0 (potentially expansive)
    'Api.V' contains 'Client.D' because 'Client.D' extends 'Api.V'
-   'Client.D' depends on 'Storage.B' through constructor 'D.opaque'
+   'Client.D' depends on 'Storage.B' through constructor 'D.hidden'
    'Storage.B' depends on 'Storage.F' through constructor 'B.f'
  Such a cycle is not admissible under the cardinality discipline.
 cardinality-opened-views.dfy(9,7): Related location: 'Storage.F' depends on 'Api.V' through right-hand side of 'Storage.F' -> arrow input 0
 cardinality-opened-views.dfy(4,40): Related location: Type 'Api.V' is declared here.
 cardinality-opened-views.dfy(16,23): Related location: 'Api.V' contains 'Client.D' because 'Client.D' extends 'Api.V'
 cardinality-opened-views.dfy(16,11): Related location: Type 'Client.D' is declared here.
-cardinality-opened-views.dfy(16,29): Related location: 'Client.D' depends on 'Storage.B' through constructor 'D.opaque'
+cardinality-opened-views.dfy(16,29): Related location: 'Client.D' depends on 'Storage.B' through constructor 'D.hidden'
 cardinality-opened-views.dfy(10,11): Related location: Type 'Storage.B' is declared here.
 cardinality-opened-views.dfy(10,17): Related location: 'Storage.B' depends on 'Storage.F' through constructor 'B.f'
 cardinality-opened-views.dfy(9,7): Related location: Type 'Storage.F' is declared here.
