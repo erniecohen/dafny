@@ -8,6 +8,9 @@ on:
         description: Include generated scaling stress cases
         type: boolean
         default: false
+      corpus_only:
+        description: Optional comma-separated subset of suite paths for focused probe repairs
+        default: ''
       corpus:
         description: Run full paired baseline/off/on performance measurements
         type: boolean
@@ -159,8 +162,10 @@ jobs:
           echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
           unzip -q z3.zip
       - name: Record paired proof outcomes and per-batch resources
+        env:
+          CORPUS_ONLY: ${{ inputs.corpus_only }}
         run: |
-          python3 .github/review/issue33-corpus.py --baseline "$PWD/out/baseline/dafny/Dafny" --candidate "$PWD/out/candidate/dafny/Dafny" --z3 "$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" --output issue33-corpus --shard ${{ matrix.shard }}/4 --jobs 4
+          python3 .github/review/issue33-corpus.py --baseline "$PWD/out/baseline/dafny/Dafny" --candidate "$PWD/out/candidate/dafny/Dafny" --z3 "$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" --output issue33-corpus --shard ${{ matrix.shard }}/4 --jobs 4 --only "$CORPUS_ONLY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -22,6 +22,7 @@ p.add_argument('--z3',required=True)
 p.add_argument('--output',required=True)
 p.add_argument('--shard',default='0/1')
 p.add_argument('--jobs',type=int,default=4)
+p.add_argument('--only',default='')
 a=p.parse_args()
 out=Path(a.output).resolve();out.mkdir(parents=True,exist_ok=True)
 litdir=Path('Source/IntegrationTests/TestFiles/LitTests/LitTest').resolve()
@@ -29,11 +30,15 @@ spec=importlib.util.spec_from_file_location('lit', '.github/review/lit-verdicts.
 lit=importlib.util.module_from_spec(spec);spec.loader.exec_module(lit)
 lit.plan(str(litdir),str(out/'plan.tsv'))
 rows=[line.split('\t') for line in (out/'plan.tsv').read_text().splitlines()]
+if a.only: rows=[r for r in rows if r[0] in a.only.split(',')]
 i,n=map(int,a.shard.split('/'));rows=rows[i::n]
 
 def run_one(task):
     path,opts=task
     own=shlex.split(opts)
+    # lit-verdicts' plan drops output placeholders, leaving bare print options.
+    # Drop those output-only options before adding the measurement log argument.
+    own=[t for t in own if t not in ['--print', '--bprint', '--rprint']]
     names={t.split('=')[0].split(':')[0] for t in own if t.startswith('--')}
     fixed=[];k=0
     while k<len(lit.FIXED):
