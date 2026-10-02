@@ -1,4 +1,4 @@
-includes = ["../github-issue-31.dfy"]
+includes = ["../../github-issue-31.dfy"]
 
 [options]
 arithmetic-solver = 6

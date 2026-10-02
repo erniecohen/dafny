@@ -1,4 +1,0 @@
-includes = ["github-issue-31-modules.dfy"]
-
-[options]
-arithmetic-solver = 6
