@@ -68,6 +68,11 @@ internal sealed class CardinalityTypeVisitor {
         }
         entered?.Add(cursor);
       }
+      if ((use.Type is BasicType || use.Type is UserDefinedType { ResolvedClass: TypeParameter }) &&
+          use.Type.TypeArgs.Count != 0) {
+        throw new CardinalityTypeException(use.Type.Origin ?? Token.NoToken,
+          "a resolved atomic type has unexpected type arguments");
+      }
       switch (use.Type) {
         case TypeProxy { T: { } target }:
           use = new CardinalityTypeUse(target, use.Substitution);

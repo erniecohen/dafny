@@ -250,6 +250,28 @@ public class CardinalityProfileTests {
   }
 
   [Fact]
+  public async Task AtomicTypesRejectUnexpectedArgumentsBeforeSubstitution() {
+    var (program, reporter) = await CardinalitySourceTests.ResolveAsync("type Owner<T>");
+    Assert.Equal(0, reporter.ErrorCount);
+    var owner = Find(program, "Owner");
+    var malformedBasic = new BoolType { TypeArgs = [DafnyType.Int] };
+    var malformedFormal = new UserDefinedType(owner.TypeArgs.Single());
+    malformedFormal.TypeArgs.Add(DafnyType.Int);
+    var substitution = CardinalitySubstitution.Bind(owner, [new CardinalityTypeUse(new BoolType())]);
+    var visitor = Visitor(program);
+    var uses = new[] {
+      new CardinalityTypeUse(malformedBasic),
+      new CardinalityTypeUse(malformedFormal),
+      new CardinalityTypeUse(malformedFormal, substitution)
+    };
+    foreach (var use in uses) {
+      Assert.Throws<CardinalityTypeException>(() => visitor.Normalize(use));
+      Assert.Throws<CardinalityTypeException>(() => visitor.Profile(use, Reason(owner)));
+      Assert.Throws<CardinalityTypeException>(() => visitor.DirectRetainedFormal(use));
+    }
+  }
+
+  [Fact]
   public async Task ViewCannotWeakenTheCanonicalFormalContract() {
     var (program, reporter) = await CardinalitySourceTests.ResolveAsync("type Original<T> type View<!X>");
     Assert.Equal(0, reporter.ErrorCount);
