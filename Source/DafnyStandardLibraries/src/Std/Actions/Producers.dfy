@@ -17,7 +17,7 @@ module Std.Producers {
 
   // Actions that consume nothing and produce a T.
   @AssumeCrossModuleTermination
-  trait IProducer<T> extends Action<(), T> {
+  trait IProducer<!T> extends Action<(), T> {
 
     // For better readability
     method Next() returns (r: T)
@@ -48,7 +48,7 @@ module Std.Producers {
   }
 
   @AssumeCrossModuleTermination
-  class FunctionalIProducer<!S, T> extends IProducer<T>, TotalActionProof<(), T> {
+  class FunctionalIProducer<!S, !T> extends IProducer<T>, TotalActionProof<(), T> {
 
     const stepFn: S -> (S, T)
     var state: S
@@ -797,7 +797,7 @@ module Std.Producers {
    * Simple Producers
    ***********************/
 
-  class EmptyProducer<T> extends Producer<T> {
+  class EmptyProducer<!T> extends Producer<T> {
 
     constructor()
       ensures Valid()
@@ -914,7 +914,7 @@ module Std.Producers {
     * The equivalent of SeqReader(Seq.Repeat(n, t)),
     * But avoids actually creating the sequence of values.
     */
-  class RepeatProducer<T> extends Producer<T> {
+  class RepeatProducer<!T> extends Producer<T> {
 
     // Note: it isn't great forcing a big integer in compiled code here,
     // but on the other hand this kind of producer is mostly useful
@@ -1057,7 +1057,7 @@ module Std.Producers {
     }
   }
 
-  class SeqReader<T> extends Producer<T> {
+  class SeqReader<!T> extends Producer<T> {
 
     const elements: seq<T>
     var index: nat
@@ -1192,7 +1192,7 @@ module Std.Producers {
   }
 
   // A proof that a given producer produces the elements from a given set.
-  trait ProducerOfSetProof<T> {
+  trait ProducerOfSetProof<!T> {
     ghost function Producer(): Producer<T>
     ghost function Set(): set<T>
 
@@ -1906,7 +1906,7 @@ module Std.Producers {
   }
 
   @AssumeCrossModuleTermination
-  trait OutputterOfNewProducers<I, !O> extends Action<I, Producer<O>>, TotalActionProof<I, Producer<O>>  {
+  trait OutputterOfNewProducers<!I, !O> extends Action<I, Producer<O>>, TotalActionProof<I, Producer<O>>  {
 
     ghost function MaxProduced(): TerminationMetric
 
