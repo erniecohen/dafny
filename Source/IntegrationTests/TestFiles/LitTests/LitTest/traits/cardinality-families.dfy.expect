@@ -28,4 +28,7 @@ cardinality-families.dfy(16,38): Related location: The parent cardinality contra
 cardinality-families.dfy(17,85): Error: Type parameter 'T' of 'BoundedFormal.D' is not retained as a direct type argument of parent 'BoundedFormal.V'. One fixed parent instance must not contain implementations for arbitrary type arguments.
 cardinality-families.dfy(17,60): Related location: The child type parameter is declared here.
 cardinality-families.dfy(17,29): Related location: The parent cardinality contract is declared here.
-10 resolution/type errors detected in cardinality-families.dfy
+cardinality-families.dfy(21,22): Error: Type parameter 'X1' of 'NonReferenceUnusedSubtypeFamily.D' is not retained as a direct type argument of parent 'NonReferenceUnusedSubtypeFamily.T'. One fixed parent instance must not contain implementations for arbitrary type arguments.
+cardinality-families.dfy(21,10): Related location: The child type parameter is declared here.
+cardinality-families.dfy(20,8): Related location: The parent cardinality contract is declared here.
+11 resolution/type errors detected in cardinality-families.dfy
