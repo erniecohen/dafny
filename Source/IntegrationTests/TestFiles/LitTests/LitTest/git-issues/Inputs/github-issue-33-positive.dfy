@@ -188,15 +188,16 @@ lemma Nested(a: int)
   ensures (((a as bv32) as int) as bv32) as int == a
 {}
 
-lemma Widen(a: int)
-  requires 0 <= a < 0x1_0000_0000
-  ensures (((a as bv32) as bv64) as int) == a
+// Width changes retain their existing bitvector fit and value obligations.
+lemma Widen(b: bv32)
+  ensures ((b as bv64) as bv32) == b
 {}
 
-lemma Narrow(a: int)
-  requires 0 <= a < 0x1_0000_0000
-  ensures (((a as bv64) as bv32) as int) == a
+lemma Narrow(b: bv64)
+  requires b < 0x1_0000_0000
+  ensures ((b as bv32) as bv64) == b
 {}
+
 lemma Temporary(a: int)
   requires 0 <= a < 0x1_0000_0000
 {

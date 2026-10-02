@@ -65,7 +65,11 @@ for width,(axiom,bridge,x) in families.items():
         assert result.returncode==0 and actual==expected,(label,actual)
     for label,old,new,body in [('remove-lower',f'(<= 0 {x})','true',f'(assert (= {term("(- 1)")} {bound-1}))'),('inclusive-upper',f'(< {x} {bound})',f'(<= {x} {bound})',f'(assert (= {term(str(bound))} 0))')]:
         changed=common.replace(axiom,axiom.replace(old,new))
-        filename=out/f'bv{width}-mutation-{label}.smt2';filename.write_text(changed+body+'\n(check-sat)\n')
+        mutated = axiom.replace(old, new)
+        quantified_body = mutated.split('(!', 1)[1].split(':pattern', 1)[0].strip()
+        value = '(- 1)' if label == 'remove-lower' else str(bound)
+        ground = re.sub(re.escape(x) + r'(?![\w@])', value, quantified_body)
+        filename=out/f'bv{width}-mutation-{label}.smt2';filename.write_text(changed+body+'\n(assert '+ground+')\n(check-sat)\n')
         result=subprocess.run([a.z3,'-smt2',str(filename)],capture_output=True,text=True,timeout=60)
         (filename.with_suffix('.output')).write_text(result.stdout+result.stderr)
         report.append([width,'mutation-'+label,'unsat',result.stdout.strip()])

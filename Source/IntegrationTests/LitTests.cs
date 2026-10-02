@@ -131,6 +131,7 @@ namespace IntegrationTests {
         { "%trargs", trargs },
         { "%binaryDir", "." },
         { "%z3", Path.Join("z3", "bin", $"z3-{DafnyOptions.DefaultZ3Version}") },
+        { "%review-z3", Path.Join("z3", "bin", "z3-5.1.0") },
         { "%repositoryRoot", RepositoryRoot.Replace(@"\", "/") },
       };
 

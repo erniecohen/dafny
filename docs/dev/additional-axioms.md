@@ -70,7 +70,24 @@ injectivity fact or arithmetic-operation axiom is added.
 The unchanged original reproducer is `git-issues/Inputs/github-issue-33-original.dfy`.
 The integration driver `git-issues/github-issue-33.dfy` checks both resolvers,
 widths, conversion shapes, negative fit checks and a live false-proof control.
-The review workflow runs that driver with the tree's harness solver; the issue
+The review workflow runs that driver with pinned Z3 5.1.0 (`%review-z3`); the issue
 validation workflow records Z3 5.1.0 measurements and actual Boogie/SMT inputs.
 Its baseline is the green shipped build at `1d45201a027d46be24988fe0946c0bde80a702c9`.
 The retained public artifacts contain per-VC results and commands.
+
+### Solver boundary and stress limits
+
+The prescribed composite trigger proves all original goals with Z3 5.1.0.
+With Z3 4.12.1, the direct 32/64-bit round trips are cheap, but the unchanged
+`ShiftRightByZero` still exhausts 20,000,000 resource units. Its actual solver
+input retains both the new axiom and the old wrapper bridge. This older-solver
+limitation is recorded rather than widening the trigger or changing solver
+settings. The existing library/regression gates still use their established
+solver configurations.
+
+The generated scaling corpus verifies nesting through depth 64 and widths
+through 1024. A single assertion batch combining 1000 distinct round trips
+exhausts 20,000,000 units; this family does not guarantee linear total solver
+cost. The negative guard mutations check explicit instances of the extracted
+formula, while SAT witnesses give the wrapper its standard unsigned native
+interpretation. Live Dafny false-proof controls separately audit actual matching.
