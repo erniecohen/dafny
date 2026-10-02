@@ -25,7 +25,7 @@ def read_manifest(path, litdir):
     cases = json.loads(Path(path).read_text())
     ids = set()
     for case in cases:
-        if set(case) - {"id", "file", "options", "seconds"}:
+        if set(case) - {"id", "file", "options", "refresh_options", "seconds"}:
             raise ValueError(f"Unknown manifest keys: {case}")
         name = case["id"]
         if not re.fullmatch(r"[A-Za-z0-9_.-]+", name) or name in ids:
@@ -34,9 +34,10 @@ def read_manifest(path, litdir):
         source = Path(case["file"])
         if source.is_absolute() or ".." in source.parts or not (litdir / source).is_file():
             raise ValueError(f"Missing or unsafe source path: {source}")
-        if not all(isinstance(arg, str) for arg in case.get("options", [])):
+        options = case.get("options", []) + case.get("refresh_options", [])
+        if not all(isinstance(arg, str) for arg in options):
             raise ValueError(f"Options must be strings: {name}")
-        if any(arg.startswith("--type-system-refresh") for arg in case.get("options", [])):
+        if any(arg.startswith("--type-system-refresh") for arg in options):
             raise ValueError(f"Resolver mode is controlled by the matrix: {name}")
         if not 0 < case.get("seconds", 60) <= 300:
             raise ValueError(f"Deadline must be in (0, 300]: {name}")
@@ -82,6 +83,8 @@ def run_case(case, refresh, litdir, dafny, outdir):
                "--type-system-refresh:" + str(refresh).lower(),
                "--use-basename-for-filename", "--show-snippets:false",
                "--standard-libraries:false"] + case.get("options", [])
+    if refresh:
+        command += case.get("refresh_options", [])
     rc, stdout, stderr, timed_out = execute(command, litdir, case.get("seconds", 60))
     # No timing or diagnostic content is discarded. Only cross-platform newlines
     # and the absolute checkout prefix are normalized in the compared record.

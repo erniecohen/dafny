@@ -2,7 +2,9 @@
 
 `resolver-matrix.py` runs each case in `resolver-cases.json` twice: once with the
 legacy resolver and once with the refreshed resolver. The manifest supplies
-source paths, options, and per-process deadlines explicitly. It does not parse,
+source paths, options, and per-process deadlines explicitly. `refresh_options`
+adds options that require the refreshed resolver without preventing legacy
+resolution. It does not parse,
 replace, or claim to execute Lit `RUN` lines.
 
 The matrix complements two existing gates:
@@ -18,6 +20,14 @@ additional option variants from later `RUN` lines. Print/serialization pipelines
 compiler actions, and tests of command-line argument precedence remain the Lit
 harness's responsibility. This is an explicit, bounded selection, not a claim
 that every resolver path or every upstream `RUN` line is covered.
+
+These raw `resolve` commands intentionally use ordinary language defaults unless
+an option is explicit in the manifest. They do not inherit `%resolve`'s
+`--general-traits=datatype` and `--general-newtypes` defaults: the latter requires
+the refreshed resolver. The issue 46 case enables it only in refreshed mode;
+the legacy row checks the diagnostic for unsupported bitvector newtypes. The
+plain bitvector-literal range control needs neither feature flag. Warning cases
+explicitly allow warnings, and both modes retain their complete diagnostics.
 
 ## Results
 

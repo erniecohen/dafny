@@ -343,10 +343,12 @@
     "id": "github-issue-46",
     "file": "git-issues/github-issue-46.dfy",
     "options": [
-      "--allow-warnings",
-      "--general-newtypes:true"
+      "--allow-warnings"
     ],
-    "seconds": 60
+    "seconds": 60,
+    "refresh_options": [
+      "--general-newtypes:true"
+    ]
   },
   {
     "id": "github-issue-42-errors",
@@ -375,9 +377,7 @@
   {
     "id": "github-issue-46-range",
     "file": "git-issues/Inputs/github-issue-46-range.dfy",
-    "options": [
-      "--general-newtypes:true"
-    ],
+    "options": [],
     "seconds": 60
   }
 ]

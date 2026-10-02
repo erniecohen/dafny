@@ -58,6 +58,19 @@ class ResolverMatrixTests(unittest.TestCase):
         self.assertEqual(result, (0, "partial", "diagnostic", True))
         self.assertEqual(matrix.classify(result[0], result[1] + result[2], result[3]), "timeout")
 
+    def test_refresh_only_feature_options_do_not_short_circuit_legacy_resolution(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            case = {"id": "feature", "file": "feature.dfy", "options": ["--allow-warnings"],
+                    "refresh_options": ["--general-newtypes:true"]}
+            with mock.patch.object(matrix, "execute", return_value=(0, "", "", False)) as execute:
+                for refresh in (False, True):
+                    matrix.run_case(case, refresh, root, root / "dafny", root)
+                    command = execute.call_args.args[0]
+                    self.assertIn("--type-system-refresh:" + str(refresh).lower(), command)
+                    self.assertEqual("--general-newtypes:true" in command, refresh)
+                    self.assertIn("--allow-warnings", command)
+
     def test_manifest_rejects_mode_override_duplicate_id_and_missing_source(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
