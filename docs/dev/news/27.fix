@@ -1,0 +1,1 @@
+Abstract imports of modules with least or greatest predicates and lemmas no longer report spurious duplicate prefix-member errors.

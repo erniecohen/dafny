@@ -830,7 +830,9 @@ namespace Microsoft.Dafny {
         }
       }
 
-      var defaultClassDecl = new DefaultClassDecl(module, origin.StaticMembers.Values.ToList());
+      // Registration regenerates prefix members from their extreme declarations.
+      var defaultClassDecl = new DefaultClassDecl(module,
+        origin.StaticMembers.Values.Where(member => member is not PrefixPredicate and not PrefixLemma).ToList());
       module.DefaultClass = (DefaultClassDecl)CloneDeclarationForAbstractSignature(origin.VisibilityScope, defaultClassDecl, module, moduleSignatures, name);
 
       var sig = module.RegisterTopLevelDecls(this, true);
