@@ -1,0 +1,5 @@
+includes = ["../../github-issue-31.dfy"]
+
+[options]
+arithmetic-solver = 6
+resource-limit = 20000000

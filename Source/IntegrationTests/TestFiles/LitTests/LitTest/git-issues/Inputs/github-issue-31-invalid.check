@@ -1,0 +1,1 @@
+// CHECK: --arithmetic-solver must be an integer from 0 through 6.
