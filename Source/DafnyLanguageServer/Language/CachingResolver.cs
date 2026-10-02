@@ -36,6 +36,8 @@ public class CachingResolver : ProgramResolver {
   }
 
   public override Task Resolve(CancellationToken cancellationToken) {
+    // Cancellation can occur while waiting for the cache lock, before base.Resolve runs.
+    ResetCardinalityValidationReceipt();
     return cache.Modules.ProfileAndPruneCache(async () => {
       await base.Resolve(cancellationToken);
       return Task.FromResult(Unit.Value);

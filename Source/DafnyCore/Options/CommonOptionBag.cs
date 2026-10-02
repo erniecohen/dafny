@@ -248,7 +248,8 @@ true (default) - Use an updated type-inference engine.".TrimStart()) {
     @"
 legacy - Every trait implicitly extends 'object', and thus is a reference type. Only traits and reference types can extend traits.
 datatype (default) - A trait is a reference type only if it or one of its ancestor traits is 'object'. Any non-'newtype' type with members can extend traits.
-full - (don't use; not yet completely supported) A trait is a reference type only if it or one of its ancestor traits is 'object'. Any type with members can extend traits.".TrimStart()) {
+full - (don't use; not yet completely supported) A trait is a reference type only if it or one of its ancestor traits is 'object'. Any type with members can extend traits.
+Value implementations must retain their type parameters in compatible parent positions and satisfy cardinality admissibility.".TrimStart()) {
     IsHidden = true
   };
 
@@ -474,7 +475,8 @@ features like traits or co-inductive types.".TrimStart(), "cs");
     DafnyOptions.RegisterLegacyUi(GeneralTraits, DafnyOptions.ParseGeneralTraitsOption, "Language feature selection", "generalTraits", @"
 legacy - Every trait implicitly extends 'object', and thus is a reference type. Only traits and reference types can extend traits.
 datatype (default) - A trait is a reference type only if it or one of its ancestor traits is 'object'. Any non-'newtype' type with members can extend traits.
-full - (don't use; not yet completely supported) A trait is a reference type only if it or one of its ancestor traits is 'object'. Any type with members can extend traits.".TrimStart(),
+full - (don't use; not yet completely supported) A trait is a reference type only if it or one of its ancestor traits is 'object'. Any type with members can extend traits.
+Value implementations must retain their type parameters in compatible parent positions and satisfy cardinality admissibility.".TrimStart(),
       defaultValue: GeneralTraitsOptions.Datatype);
     DafnyOptions.RegisterLegacyUi(GeneralNewtypes, DafnyOptions.ParseBoolean, "Language feature selection", "generalNewtypes", @"
 0 - A newtype can only be based on numeric types or another newtype.

@@ -1,0 +1,9 @@
+git-issue-6547.dfy(5,20): Error: This type definition creates a potentially cardinality-expanding cycle:
+   '_module.VP' depends on '_module.V' through constructor 'VP.p' -> arrow input 0 (potentially expansive)
+   '_module.V' contains '_module.VP' because '_module.VP' extends '_module.V'
+ Such a cycle is not admissible under the cardinality discipline.
+git-issue-6547.dfy(5,27): Related location: '_module.VP' depends on '_module.V' through constructor 'VP.p' -> arrow input 0
+git-issue-6547.dfy(4,6): Related location: Type '_module.V' is declared here.
+git-issue-6547.dfy(5,20): Related location: '_module.V' contains '_module.VP' because '_module.VP' extends '_module.V'
+git-issue-6547.dfy(5,9): Related location: Type '_module.VP' is declared here.
+1 resolution/type errors detected in git-issue-6547.dfy

@@ -1,0 +1,18 @@
+cardinality-no-verify.dfy(6,19): Error: This type definition creates a potentially cardinality-expanding cycle:
+   '_module.D' depends on '_module.V' through constructor 'D.p' -> arrow input 0 (potentially expansive)
+   '_module.V' contains '_module.D' because '_module.D' extends '_module.V'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-no-verify.dfy(6,25): Related location: '_module.D' depends on '_module.V' through constructor 'D.p' -> arrow input 0
+cardinality-no-verify.dfy(5,6): Related location: Type '_module.V' is declared here.
+cardinality-no-verify.dfy(6,19): Related location: '_module.V' contains '_module.D' because '_module.D' extends '_module.V'
+cardinality-no-verify.dfy(6,9): Related location: Type '_module.D' is declared here.
+1 resolution/type errors detected in cardinality-no-verify.dfy
+cardinality-no-verify.dfy(6,19): Error: This type definition creates a potentially cardinality-expanding cycle:
+   '_module.D' depends on '_module.V' through constructor 'D.p' -> arrow input 0 (potentially expansive)
+   '_module.V' contains '_module.D' because '_module.D' extends '_module.V'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-no-verify.dfy(6,25): Related location: '_module.D' depends on '_module.V' through constructor 'D.p' -> arrow input 0
+cardinality-no-verify.dfy(5,6): Related location: Type '_module.V' is declared here.
+cardinality-no-verify.dfy(6,19): Related location: '_module.V' contains '_module.D' because '_module.D' extends '_module.V'
+cardinality-no-verify.dfy(6,9): Related location: Type '_module.D' is declared here.
+1 resolution/type errors detected in cardinality-no-verify.dfy

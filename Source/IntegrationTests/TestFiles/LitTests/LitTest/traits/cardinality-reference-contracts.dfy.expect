@@ -1,0 +1,14 @@
+cardinality-reference-contracts.dfy(6,10): Error: Type parameter 'X' of 'StoredFunction.G' has a strict cardinality contract, but is used in a potentially expansive representation position (instance field 'p' -> arrow input 0). Declare a permissive cardinality mode such as '!X' if this use is intended.
+cardinality-reference-contracts.dfy(5,10): Related location: The strict type parameter is declared here.
+cardinality-reference-contracts.dfy(10,45): Error: Type parameter 'X' of 'GhostStorage.G' has a strict cardinality contract, but is used in a potentially expansive representation position (instance field 'p' -> arrow input 0). Declare a permissive cardinality mode such as '!X' if this use is intended.
+cardinality-reference-contracts.dfy(10,30): Related location: The strict type parameter is declared here.
+cardinality-reference-contracts.dfy(11,62): Error: Type parameter 'X' of 'ReferenceTrait.G' has a strict cardinality contract, but is used in a potentially expansive representation position (instance field 'p' -> arrow input 0). Declare a permissive cardinality mode such as '!X' if this use is intended.
+cardinality-reference-contracts.dfy(11,32): Related location: The strict type parameter is declared here.
+cardinality-reference-contracts.dfy(12,39): Error: Type parameter 'X' of 'IteratorStorage.G' has a strict cardinality contract, but is used in a potentially expansive representation position (instance field 'p' -> arrow input 0). Declare a permissive cardinality mode such as '!X' if this use is intended.
+cardinality-reference-contracts.dfy(12,36): Related location: The strict type parameter is declared here.
+cardinality-reference-contracts.dfy(12,39): Error: Type parameter 'X' of 'IteratorStorage.G' has a strict cardinality contract, but is used in a potentially expansive representation position (instance field '_decreases0' -> arrow input 0). Declare a permissive cardinality mode such as '!X' if this use is intended.
+cardinality-reference-contracts.dfy(12,36): Related location: The strict type parameter is declared here.
+cardinality-reference-contracts.dfy(15,26): Error: Type parameter 'X' of 'ReferenceParentContract.Child' has a permissive cardinality contract that exceeds its exposed strict contract in reference parent 'ReferenceParentContract.Parent'.
+cardinality-reference-contracts.dfy(15,15): Related location: The child type parameter is declared here.
+cardinality-reference-contracts.dfy(14,8): Related location: The parent cardinality contract is declared here.
+6 resolution/type errors detected in cardinality-reference-contracts.dfy
