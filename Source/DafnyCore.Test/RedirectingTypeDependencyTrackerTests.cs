@@ -28,6 +28,8 @@ public class RedirectingTypeDependencyTrackerTests {
       throw new InvalidOperationException("The raw collector must not instantiate types");
     public override bool Equals(DafnyType that, bool keepConstraints = false) =>
       throw new InvalidOperationException("The raw collector must use reference identity");
+    public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visited) =>
+      throw new InvalidOperationException("The raw collector must not query semantic reference properties");
   }
 
   private sealed class StopInference : Exception { }
