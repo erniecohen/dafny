@@ -318,7 +318,7 @@ jobs:
           retention-days: 14
 
   library-build:
-    if: inputs.mode == 'library'
+    if: inputs.mode == 'library-default'
     runs-on: ubuntu-24.04
     timeout-minutes: 200
     steps:
@@ -354,4 +354,44 @@ jobs:
         with:
           name: cardinality-library-build
           path: library-results
+          retention-days: 14
+
+  library-arithmetic-six:
+    if: inputs.mode == 'library'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: dafny
+          run-id: 37053829849
+          github-token: ${{ github.token }}
+          path: library-baseline-artifact
+      - name: Unpack baseline with arithmetic selection
+        run: mkdir -p arithmetic-baseline && tar -C arithmetic-baseline -xzf library-baseline-artifact/dafny.tar.gz
+      - name: Solver
+        run: |
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo "f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+          chmod +x z3-5.1.0-x64-glibc-2.39/bin/z3
+      - name: Record arithmetic-six archive builds and memory
+        run: |
+          mkdir -p library-six-results
+          set +e
+          python3 .github/review/cardinality-memory.py --output library-six-results/memory.json --interval-ms 50 -- python3 .github/review/cardinality-library-build-arith6.py --dafny "$PWD/arithmetic-baseline/dafny/Dafny" --z3 "$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" --baseline-build-revision 7299ca0b6ad08675b130e8d8fb8829a854ce450e --output "$PWD/library-six-results/attempts" --cores 2 > library-six-results/console.txt 2>&1
+          code=$?
+          echo "$code" > library-six-results/probe.exit
+          cat library-six-results/console.txt
+          echo "Arithmetic-six library build probe exit status: $code" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cardinality-library-arithmetic-six
+          path: library-six-results
           retention-days: 14
