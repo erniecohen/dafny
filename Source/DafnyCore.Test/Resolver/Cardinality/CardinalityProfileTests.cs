@@ -136,6 +136,34 @@ public class CardinalityProfileTests {
   }
 
   [Fact]
+  public async Task InternalViewsRejectCyclicActualsAndAcceptFiniteSharedActuals() {
+    var (program, reporter) = await CardinalitySourceTests.ResolveAsync("type Id<T> = T");
+    Assert.Equal(0, reporter.ErrorCount);
+    var id = (TypeSynonymDecl)Find(program, "Id");
+    var view = id.SynonymInfo.SelfSynonymDecl;
+    var cyclic = new UserDefinedType(view.Origin, view.Name, view, [DafnyType.Int]);
+    cyclic.TypeArgs[0] = cyclic;
+    var visitor = Visitor(program);
+    Assert.Throws<CardinalityTypeException>(() => visitor.Profile(new CardinalityTypeUse(cyclic), Reason(id)));
+    Assert.Throws<CardinalityTypeException>(() => visitor.SameType(new CardinalityTypeUse(cyclic), new CardinalityTypeUse(cyclic)));
+    Assert.Throws<CardinalityTypeException>(() => visitor.DirectRetainedFormal(new CardinalityTypeUse(cyclic)));
+
+    var inner = new UserDefinedType(view.Origin, view.Name, view, [DafnyType.Int]);
+    var outer = new UserDefinedType(view.Origin, view.Name, view, [inner]);
+    var shared = new MapType(true, outer, outer);
+    Assert.True(visitor.Profile(new CardinalityTypeUse(shared), Reason(id))
+      .TryGet(CardinalityAtom.Head(id), out var dependency));
+    Assert.Equal(CardinalityWeight.Preserving, dependency.Weight);
+    var sibling = new UserDefinedType(view.Origin, view.Name, view, [inner]);
+    Assert.True(visitor.SameType(new CardinalityTypeUse(outer), new CardinalityTypeUse(sibling)));
+
+    var formal = new UserDefinedType(id.TypeArgs.Single());
+    var retainedInner = new UserDefinedType(view.Origin, view.Name, view, [formal]);
+    var retainedOuter = new UserDefinedType(view.Origin, view.Name, view, [retainedInner]);
+    Assert.Equal(CardinalityAtom.Formal(id, 0), visitor.DirectRetainedFormal(new CardinalityTypeUse(retainedOuter)));
+  }
+
+  [Fact]
   public async Task SelectedReplacementJoinsExposedModesWithoutChangingSourceParameters() {
     var (program, reporter) = await CardinalitySourceTests.ResolveAsync("""
       trait V {}

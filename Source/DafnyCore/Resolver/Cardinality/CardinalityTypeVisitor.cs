@@ -48,12 +48,25 @@ internal sealed class CardinalityTypeVisitor {
   internal ImmutableArray<CardinalityWeight> AdvertisedModes(TopLevelDecl declaration) =>
     canonicalizer.AdvertisedModes(declaration);
 
-  internal CardinalityTypeUse Normalize(CardinalityTypeUse use) {
+  internal CardinalityTypeUse Normalize(CardinalityTypeUse use) => Normalize(use, null, null);
+
+  private CardinalityTypeUse Normalize(CardinalityTypeUse use,
+    HashSet<(Type, CardinalitySubstitution?)>? ancestors,
+    List<(Type, CardinalitySubstitution?)>? entered) {
     var seen = new HashSet<(Type, CardinalitySubstitution?)>();
     while (true) {
       cancellationToken.ThrowIfCancellationRequested();
       if (!seen.Add((use.Type, use.Substitution))) {
         throw new CardinalityTypeException(use.Type.Origin ?? Token.NoToken, "cyclic resolved type or substitution");
+      }
+      // Record raw and intermediate cursors as well as the normalized result. An internal
+      // view can otherwise hide a cyclic actual behind newly allocated substitution environments.
+      if (ancestors != null) {
+        var cursor = (use.Type, use.Substitution);
+        if (!ancestors.Add(cursor)) {
+          throw new CardinalityTypeException(use.Type.Origin ?? Token.NoToken, "cyclic resolved type arguments or substitutions");
+        }
+        entered?.Add(cursor);
       }
       switch (use.Type) {
         case TypeProxy { T: { } target }:
@@ -99,20 +112,19 @@ internal sealed class CardinalityTypeVisitor {
 
   internal CardinalityProfile Profile(CardinalityTypeUse use, CardinalityReason reason) {
     var profile = new CardinalityProfile();
-    var pending = new Stack<(CardinalityTypeUse Use, CardinalityWeight Weight, CardinalityReason Reason, bool Exit)>();
+    var pending = new Stack<(CardinalityTypeUse Use, CardinalityWeight Weight, CardinalityReason Reason,
+      List<(Type, CardinalitySubstitution?)>? Entered)>();
     var active = new HashSet<(Type, CardinalitySubstitution?)>();
-    pending.Push((use, CardinalityWeight.Preserving, reason, false));
+    pending.Push((use, CardinalityWeight.Preserving, reason, null));
     while (pending.TryPop(out var item)) {
       cancellationToken.ThrowIfCancellationRequested();
-      if (item.Exit) {
-        active.Remove((item.Use.Type, item.Use.Substitution));
+      if (item.Entered is { } completed) {
+        Leave(completed, active);
         continue;
       }
-      var current = Normalize(item.Use);
-      if (!active.Add((current.Type, current.Substitution))) {
-        throw new CardinalityTypeException(item.Reason.Origin, "cyclic resolved type arguments");
-      }
-      pending.Push((current, item.Weight, item.Reason, true));
+      var entered = new List<(Type, CardinalitySubstitution?)>();
+      var current = Normalize(item.Use, active, entered);
+      pending.Push((current, item.Weight, item.Reason, entered));
       switch (current.Type) {
         case BasicType:
           break;
@@ -167,7 +179,7 @@ internal sealed class CardinalityTypeVisitor {
           throw new CardinalityTypeException(item.Reason.Origin, "a resolved type has a missing type argument");
         }
         pending.Push((new CardinalityTypeUse(argument, current.Substitution),
-          CardinalityWeights.Join(item.Weight, mode), item.Reason.Through(step), false));
+          CardinalityWeights.Join(item.Weight, mode), item.Reason.Through(step), null));
       }
     }
     return profile;
@@ -192,10 +204,7 @@ internal sealed class CardinalityTypeVisitor {
     var seen = new HashSet<(Type, CardinalitySubstitution?)>();
     while (true) {
       cancellationToken.ThrowIfCancellationRequested();
-      use = Normalize(use);
-      if (!seen.Add((use.Type, use.Substitution))) {
-        throw new CardinalityTypeException(use.Type.Origin ?? Token.NoToken, "cyclic direct-retention type arguments");
-      }
+      use = Normalize(use, seen, null);
       if (use.Type is UserDefinedType { ResolvedClass: TypeParameter parameter }) {
         return canonicalizer.Formal(parameter);
       }
@@ -218,7 +227,10 @@ internal sealed class CardinalityTypeVisitor {
     Enter(initial);
     while (frames.TryPeek(out var frame)) {
       cancellationToken.ThrowIfCancellationRequested();
-      frame.Current = Normalize(frame.Current);
+      if (!frame.Normalized) {
+        frame.Current = Normalize(frame.Current, frame.Ancestors, null);
+        frame.Normalized = true;
+      }
       if (frame.Current.Type is UserDefinedType { ResolvedClass: TypeParameter parameter }) {
         var atom = canonicalizer.Formal(parameter);
         Complete(ReferenceEquals(atom.Owner, frame.Declaration) ? atom.Index : null);
@@ -237,6 +249,7 @@ internal sealed class CardinalityTypeVisitor {
             throw new CardinalityTypeException(alias.Origin, "cyclic identity-alias type arguments");
           }
           frame.Current = new CardinalityTypeUse(type.TypeArgs[projection.Value], frame.Current.Substitution);
+          frame.Normalized = false;
         }
       } else {
         Complete(null);
@@ -258,18 +271,31 @@ internal sealed class CardinalityTypeVisitor {
   private sealed class IdentityFrame(TopLevelDecl declaration, CardinalityTypeUse current) {
     internal TopLevelDecl Declaration { get; } = declaration;
     internal CardinalityTypeUse Current = current;
+    internal bool Normalized;
+    internal HashSet<(Type, CardinalitySubstitution?)> Ancestors { get; } = new();
     internal HashSet<(Type, CardinalitySubstitution?)> Followed { get; } = new();
   }
 
   /// <summary>Structural parent-instance equality, without visibility-dependent Type.Equals or recursive Subst.</summary>
   internal bool SameType(CardinalityTypeUse left, CardinalityTypeUse right) {
-    var pending = new Stack<(CardinalityTypeUse, CardinalityTypeUse)>();
+    var pending = new Stack<(CardinalityTypeUse Left, CardinalityTypeUse Right,
+      List<(Type, CardinalitySubstitution?)>? EnteredLeft, List<(Type, CardinalitySubstitution?)>? EnteredRight)>();
     var seen = new HashSet<(Type, CardinalitySubstitution?, Type, CardinalitySubstitution?)>();
-    pending.Push((left, right));
+    var activeLeft = new HashSet<(Type, CardinalitySubstitution?)>();
+    var activeRight = new HashSet<(Type, CardinalitySubstitution?)>();
+    pending.Push((left, right, null, null));
     while (pending.TryPop(out var pair)) {
       cancellationToken.ThrowIfCancellationRequested();
-      var a = Normalize(pair.Item1);
-      var b = Normalize(pair.Item2);
+      if (pair.EnteredLeft is { } completedLeft) {
+        Leave(completedLeft, activeLeft);
+        Leave(pair.EnteredRight!, activeRight);
+        continue;
+      }
+      var enteredLeft = new List<(Type, CardinalitySubstitution?)>();
+      var enteredRight = new List<(Type, CardinalitySubstitution?)>();
+      var a = Normalize(pair.Left, activeLeft, enteredLeft);
+      var b = Normalize(pair.Right, activeRight, enteredRight);
+      pending.Push((a, b, enteredLeft, enteredRight));
       if (!seen.Add((a.Type, a.Substitution, b.Type, b.Substitution))) { continue; }
       if (a.Type is UserDefinedType ua && b.Type is UserDefinedType ub) {
         if (ua.ResolvedClass is TypeParameter pa && ub.ResolvedClass is TypeParameter pb) {
@@ -289,9 +315,17 @@ internal sealed class CardinalityTypeVisitor {
       if (a.Type.TypeArgs.Count != b.Type.TypeArgs.Count) { return false; }
       for (var index = 0; index < a.Type.TypeArgs.Count; index++) {
         pending.Push((new CardinalityTypeUse(a.Type.TypeArgs[index], a.Substitution),
-          new CardinalityTypeUse(b.Type.TypeArgs[index], b.Substitution)));
+          new CardinalityTypeUse(b.Type.TypeArgs[index], b.Substitution), null, null));
       }
     }
     return true;
   }
+  private void Leave(IEnumerable<(Type, CardinalitySubstitution?)> entered,
+    HashSet<(Type, CardinalitySubstitution?)> active) {
+    foreach (var cursor in entered) {
+      cancellationToken.ThrowIfCancellationRequested();
+      active.Remove(cursor);
+    }
+  }
+
 }
