@@ -314,6 +314,7 @@ Various options control the verification process, in addition to all those descr
    - `--verification-time-limit`
    - `--boogie`
    - `--solver-path`
+   - `--arithmetic-solver`
 
 
 #### 13.6.1.4. `dafny translate <language>` {#sec-dafny-translate}
@@ -2349,6 +2350,18 @@ and what information it produces about the verification process.
   The behavior of `disable-nonlinear-arithmetic` can be turned on and off on a per-module basis 
   by placing the attribute [`{:disable-nonlinear-arithmetic}`](#sec-disable-nonlinear-arithmetic) after the module keyword.
   The attribute optionally takes the value `false` to enable nonlinear arithmetic.
+
+* `--arithmetic-solver N` - select Z3's arithmetic solver for modules without an
+  explicit [`{:z3ArithmeticSolver N}`](#sec-z3-arithmetic-solver) attribute.
+  The default is 2; values from 0 through 6 are accepted. Solver 6 can help with
+  some nonlinear arithmetic proofs, but changing solvers can change verification
+  results and resource use. See [Z3's parameter reference](https://microsoft.github.io/z3guide/programming/Parameters/)
+  for the meanings of the other values. In a project file, use
+  `arithmetic-solver = 6` in the `[options]` section. A command-line value takes
+  precedence over the project file; an explicit module attribute takes precedence
+  over either. The selected value is emitted on each verification implementation,
+  so it also takes precedence over `--solver-option O:smt.arith.solver=N` or the
+  corresponding `--boogie /proverOpt:O:smt.arith.solver=N` option.
 
 * `--manual-lemma-induction` - disables automatic inducntion for lemmas
 

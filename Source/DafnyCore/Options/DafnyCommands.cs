@@ -27,6 +27,7 @@ public static class DafnyCommands {
     CommonOptionBag.VerifyIncludedFiles,
     CommonOptionBag.ManualLemmaInduction,
     BoogieOptionBag.SolverPath,
+    BoogieOptionBag.ArithmeticSolver,
     CommonOptionBag.DisableNonLinearArithmetic,
     BoogieOptionBag.IsolateAssertions,
     BoogieOptionBag.BoogieArguments,
@@ -48,6 +49,7 @@ public static class DafnyCommands {
     CommonOptionBag.VerificationCoverageReport,
     CommonOptionBag.ExtractCounterexample,
     CommonOptionBag.ManualTriggerOption,
+    CommonOptionBag.MapComprehensionDomainTriggers,
     CommonOptionBag.ShowProofObligationExpressions
   }.ToList();
 

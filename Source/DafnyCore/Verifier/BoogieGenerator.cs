@@ -4531,7 +4531,7 @@ namespace Microsoft.Dafny {
         // performance, though some programs can be verified more quickly
         // (or verified at all) using a different solver.
         // https://microsoft.github.io/z3guide/programming/Parameters/
-        var defaultSolver = 2;
+        var defaultSolver = options.GetOrOptionDefault(BoogieOptionBag.ArithmeticSolver);
         if (arithmeticSolver == null) {
           return defaultSolver;
         }

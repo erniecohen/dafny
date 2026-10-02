@@ -177,6 +177,14 @@ For more detail on the use of `{:extern}`, see the corresponding [section](#sec-
 ### 11.1.5. `{:disableNonlinearArithmetic}` {#sec-disable-nonlinear-arithmetic}
 This attribute only applies to module declarations. It overrides the global option `--disable-nonlinear-arithmetic` for that specific module. The attribute can be given true or false to disable or enable nonlinear arithmetic. When no value is given, the default value is true.
 
+### 11.1.6. `{:z3ArithmeticSolver}` {#sec-z3-arithmetic-solver}
+
+This attribute applies to module declarations. An integer argument selects Z3's
+arithmetic solver for that module, overriding `--arithmetic-solver`.
+For example, `module {:z3ArithmeticSolver 6} M { ... }` uses solver 6 for `M`.
+Without this attribute, or with an attribute that has no argument, the module
+uses the command-line or project-file choice (2 by default).
+
 ## 11.2. Attributes on functions and methods
 
 ### 11.2.1. `{:abstemious}`
