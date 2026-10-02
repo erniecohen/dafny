@@ -1,5 +1,7 @@
 name: Issue 33 validation
 on:
+  push:
+    branches: ['scratch/issue33/baseline']
   workflow_dispatch:
     inputs:
       candidate_run:
