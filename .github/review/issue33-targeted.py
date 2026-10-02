@@ -35,7 +35,7 @@ if a.candidate:
             dest = out / ('test-' + resolver + '-' + name)
             dest.mkdir(exist_ok=True)
             input_file = source.with_name('github-issue-33-' + name + '.dfy')
-            cmd = [a.candidate, 'verify', str(input_file), '--solver-path', a.z3, '--cores', '1', '--resource-limit', '200000', '--verification-time-limit', '0', '--additional-axioms', '--type-system-refresh=' + resolver, '--show-snippets=false', '--use-basename-for-filename', '--error-limit=0', '--log-format', 'json;LogFileName=' + str(dest / 'results.json'), '--log-format', 'csv;LogFileName=' + str(dest / 'results.csv'), '--bprint', str(dest / 'program.bpl'), '--solver-log', str(dest / 'solver.smt2'), '--solver-option', 'O:smt.qi.profile=true']
+            cmd = [a.candidate, 'verify', str(input_file), '--solver-path', a.z3, '--cores', '1', '--resource-limit', '200000', '--verification-time-limit', '0', '--additional-axioms', '--type-system-refresh=' + resolver, '--show-snippets=false', '--use-basename-for-filename', '--error-limit=0', '--log-format', 'json;LogFileName=' + str(dest / 'results.json'), '--log-format', 'csv;LogFileName=' + str(dest / 'results.csv'), '--bprint', str(dest / 'program.bpl'), '--solver-log', str(dest / 'solver.smt2'), '--solver-option', 'O:smt.qi.profile=true', '--boogie', '/emitDebugInformation:1']
             (dest / 'command.json').write_text(json.dumps(cmd, indent=2))
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=1200)
             (dest / 'stdout.txt').write_text(result.stdout)
@@ -93,7 +93,7 @@ if a.candidate:
     for name, text in cases.items():
         input_file = stress / (name + '.dfy')
         input_file.write_text(text)
-        cmd = [a.candidate, 'verify', str(input_file), '--additional-axioms', '--solver-path', a.z3, '--cores', '1', '--resource-limit', '20000000', '--verification-time-limit', '0', '--log-format', 'csv;LogFileName=' + str(stress / (name + '.csv')), '--solver-option', 'O:smt.qi.profile=true']
+        cmd = [a.candidate, 'verify', str(input_file), '--additional-axioms', '--solver-path', a.z3, '--cores', '1', '--resource-limit', '20000000', '--verification-time-limit', '0', '--log-format', 'csv;LogFileName=' + str(stress / (name + '.csv')), '--solver-option', 'O:smt.qi.profile=true', '--boogie', '/emitDebugInformation:1']
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=1200)
         (stress / (name + '.output')).write_text(result.stdout + result.stderr)
         (stress / (name + '.exit')).write_text(str(result.returncode))

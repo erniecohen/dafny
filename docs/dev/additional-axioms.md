@@ -59,7 +59,8 @@ equalities. It does not trigger on every integer conversion and does not
 introduce a structurally deeper conversion in its body. The guard restricts the
 conclusion, not matching; false/unknown guards are covered by SMT controls.
 The new quantifier has stable profiling id
-`additional_axioms_bv<W>_int_round_trip`. Existing triggers, declaration order,
+`additional_axioms_bv<W>_int_round_trip`, retained in SMT when profiling with
+Boogie `/emitDebugInformation:1`. Existing triggers, declaration order,
 pruning, optimizations and solver settings are unchanged. The option is checked
 before constructing any new AST nodes. No modulo law, inverse family,
 injectivity fact or arithmetic-operation axiom is added.
