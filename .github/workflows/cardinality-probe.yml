@@ -1,0 +1,318 @@
+name: cardinality probe
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Build and checks to run
+        type: choice
+        options: [build, focused, complete, integration]
+        default: focused
+permissions:
+  contents: read
+  actions: read
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
+jobs:
+  probe:
+    if: inputs.mode != 'integration'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Solver
+        run: |
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo "f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+          chmod +x z3-5.1.0-x64-glibc-2.39/bin/z3
+          mkdir -p Binaries/z3/bin
+          ln -s "$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" Binaries/z3/bin/z3-4.16.0
+          ln -s "$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" Binaries/z3/bin/z3-4.12.1
+          echo "Z3=$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" >> "$GITHUB_ENV"
+          echo "$PWD/z3-5.1.0-x64-glibc-2.39/bin" >> "$GITHUB_PATH"
+          Binaries/z3/bin/z3-4.16.0 --version
+      - name: Boogie packages
+        run: |
+          if [ -f Scripts/fetch-boogie-packages.sh ]; then sh Scripts/fetch-boogie-packages.sh; fi
+      - name: Build and record
+        run: |
+          mkdir -p probe-results
+          set +e
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny > probe-results/build.txt 2>&1
+          code=$?
+          echo "$code" > probe-results/build.exit
+          cat probe-results/build.txt
+          echo "Build exit status: $code" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$code" = 0 ]; then tar -C out -czf probe-results/dafny.tar.gz dafny; fi
+          exit 0
+      - uses: actions/download-artifact@v4
+        if: inputs.mode != 'build'
+        with:
+          name: cardinality-probe
+          run-id: 37055418937
+          github-token: ${{ github.token }}
+          path: baseline-artifact
+      - name: Unpack baseline
+        if: inputs.mode != 'build'
+        run: mkdir -p baseline-out && tar -C baseline-out -xzf baseline-artifact/dafny.tar.gz
+      - name: Focused tests and output probes
+        if: inputs.mode != 'build'
+        run: |
+          if [ "$(cat probe-results/build.exit)" != 0 ]; then exit 0; fi
+          set +e
+          dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Cardinality --logger "trx;LogFileName=cardinality-core.trx" --results-directory "$PWD/probe-results" > probe-results/core.txt 2>&1
+          echo "$?" > probe-results/core.exit
+          dotnet test Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~Cardinality --logger "trx;LogFileName=cardinality-lsp.trx" --results-directory "$PWD/probe-results" > probe-results/lsp.txt 2>&1
+          echo "$?" > probe-results/lsp.exit
+          timeout 900 dotnet test Source/IntegrationTests -c Release --filter FullyQualifiedName~CardinalityEmissionTests --logger "trx;LogFileName=cardinality-emission.trx" --results-directory "$PWD/probe-results" > probe-results/emission.txt 2>&1
+          echo "$?" > probe-results/emission.exit
+          if [ -f .github/review/cardinality-probe.py ]; then
+            python3 .github/review/cardinality-probe.py --dafny "$PWD/out/dafny/Dafny" --z3 "$Z3" --output probe-results --baseline "$PWD/baseline-out/dafny/Dafny" > probe-results/fixtures-console.txt 2>&1
+            echo "$?" > probe-results/fixtures.exit
+          fi
+          {
+            echo "Core tests exit status: $(cat probe-results/core.exit)"
+            echo "Language-server tests exit status: $(cat probe-results/lsp.exit)"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cardinality-probe
+          path: probe-results
+          retention-days: 14
+
+  verifier-suite:
+    if: inputs.mode == 'complete'
+    needs: probe
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: cardinality-probe
+      - name: Unpack
+        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
+      - name: Solver
+        run: |
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo "f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+          chmod +x z3-5.1.0-x64-glibc-2.39/bin/z3
+          echo "Z3=$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" >> "$GITHUB_ENV"
+      - name: Record suite verdicts
+        run: |
+          set +e
+          L=Source/IntegrationTests/TestFiles/LitTests/LitTest
+          python3 .github/review/lit-verdicts.py plan "$L" plan.tsv
+          python3 .github/review/lit-verdicts.py run plan.tsv "$L" "$PWD/out/dafny/Dafny" "$Z3" verdicts.tsv --shard ${{ matrix.shard }}/4 --jobs 4 > suite.txt 2>&1
+          echo "$?" > suite.exit
+          cat suite.txt
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cardinality-verdicts-${{ matrix.shard }}
+          path: |
+            verdicts.tsv
+            plan.tsv
+            suite.txt
+            suite.exit
+          retention-days: 14
+  standard-library:
+    if: inputs.mode == 'complete'
+    needs: probe
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: cardinality-probe
+      - name: Unpack
+        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
+      - name: Solver
+        run: |
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo "f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+          chmod +x z3-5.1.0-x64-glibc-2.39/bin/z3
+          echo "Z3=$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" >> "$GITHUB_ENV"
+      - name: Record library verdicts
+        run: |
+          set +e
+          python3 .github/review/std-verdicts.py run Source/DafnyStandardLibraries "$PWD/out/dafny/Dafny" "$Z3" std-verdicts.tsv --cores 4 > std.txt 2>&1
+          echo "$?" > std.exit
+          python3 .github/review/std-verdicts.py expected std-verdicts.tsv > expected-std-verdicts-z3-5.1.0.tsv
+          echo "$?" > expected-std.exit
+          cat std.txt
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cardinality-stdlib
+          path: |
+            std-verdicts.tsv
+            expected-std-verdicts-z3-5.1.0.tsv
+            std.txt
+            std.exit
+            expected-std.exit
+          retention-days: 14
+
+  full-tests:
+    if: inputs.mode == 'complete'
+    needs: probe
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Solver
+        run: |
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo "f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+          chmod +x z3-5.1.0-x64-glibc-2.39/bin/z3
+          mkdir -p Binaries/z3/bin
+          ln -s "$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" Binaries/z3/bin/z3-4.16.0
+          ln -s "$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" Binaries/z3/bin/z3-4.12.1
+          echo "$PWD/z3-5.1.0-x64-glibc-2.39/bin" >> "$GITHUB_PATH"
+      - name: Boogie packages
+        run: |
+          if [ -f Scripts/fetch-boogie-packages.sh ]; then sh Scripts/fetch-boogie-packages.sh; fi
+      - name: JavaScript runtime dependency
+        run: npm install bignumber.js
+      - name: Full suites and recorded outcomes
+        run: |
+          mkdir -p full-results
+          set +e
+          timeout 1200 dotnet test Source/DafnyCore.Test -c Release --logger "trx;LogFileName=all-core.trx" --results-directory "$PWD/full-results" > full-results/all-core.txt 2>&1
+          echo "$?" > full-results/all-core.exit
+          timeout 2400 dotnet test Source/DafnyLanguageServer.Test -c Release --logger "trx;LogFileName=all-lsp.trx" --results-directory "$PWD/full-results" > full-results/all-lsp.txt 2>&1
+          echo "$?" > full-results/all-lsp.exit
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cardinality-full-tests
+          path: full-results
+          retention-days: 14
+
+  binaries:
+    if: inputs.mode == 'build' || inputs.mode == 'complete'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-24.04, rid: linux-x64}
+          - {os: macos-14, rid: osx-arm64}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Boogie packages
+        run: |
+          if [ -f Scripts/fetch-boogie-packages.sh ]; then sh Scripts/fetch-boogie-packages.sh; fi
+      - name: Build and record binaries
+        run: |
+          mkdir -p binary-results
+          set +e
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -r ${{ matrix.rid }} --self-contained -o out/dafny > binary-results/build.txt 2>&1
+          code=$?
+          echo "$code" > binary-results/build.exit
+          if [ "$code" = 0 ]; then
+            out/dafny/Dafny --version > binary-results/version.txt
+            tar -C out -czf binary-results/dafny-${{ matrix.rid }}.tar.gz dafny
+          fi
+          cat binary-results/build.txt
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cardinality-binaries-${{ matrix.rid }}
+          path: binary-results
+          retention-days: 14
+
+  integration:
+    if: always() && (inputs.mode == 'complete' || inputs.mode == 'integration')
+    needs: probe
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+    env:
+      XUNIT_SHARD: ${{ matrix.shard }}
+      XUNIT_SHARD_COUNT: '8'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.0'
+      - name: Solver
+        run: |
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo "f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+          chmod +x z3-5.1.0-x64-glibc-2.39/bin/z3
+          mkdir -p Binaries/z3/bin
+          ln -s "$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" Binaries/z3/bin/z3-4.16.0
+          ln -s "$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" Binaries/z3/bin/z3-4.12.1
+          echo "$PWD/z3-5.1.0-x64-glibc-2.39/bin" >> "$GITHUB_PATH"
+      - name: Dependencies
+        run: |
+          if [ -f Scripts/fetch-boogie-packages.sh ]; then sh Scripts/fetch-boogie-packages.sh; fi
+          npm install bignumber.js
+          dotnet tool restore
+          go install golang.org/x/tools/cmd/goimports@v0.50.0
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - name: Record all integration tests
+        run: |
+          mkdir -p integration-results
+          set +e
+          timeout 9900 dotnet test Source/IntegrationTests -c Release --logger "trx;LogFileName=integration-${{ matrix.shard }}.trx" --results-directory "$PWD/integration-results" > integration-results/integration.txt 2>&1
+          echo "$?" > integration-results/integration.exit
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cardinality-integration-${{ matrix.shard }}
+          path: integration-results
+          retention-days: 14
