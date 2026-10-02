@@ -67,7 +67,11 @@ def execute(command, cwd, seconds):
             stdout, stderr = process.communicate(timeout=seconds)
         except subprocess.TimeoutExpired:
             timed_out = True
-            os.killpg(process.pid, signal.SIGKILL)
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                # The group may exit between the deadline and the kill.
+                pass
             stdout, stderr = process.communicate()
         return process.returncode, stdout.decode("utf-8", "replace"), stderr.decode("utf-8", "replace"), timed_out
 

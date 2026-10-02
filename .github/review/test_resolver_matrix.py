@@ -7,6 +7,7 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest import mock
 
 spec = importlib.util.spec_from_file_location("resolver_matrix", Path(__file__).with_name("resolver-matrix.py"))
 matrix = importlib.util.module_from_spec(spec)
@@ -44,6 +45,18 @@ class ResolverMatrixTests(unittest.TestCase):
         self.assertTrue(timed_out)
         self.assertIn("started", stdout)
         self.assertLess(time.monotonic() - start, 5)
+
+    def test_deadline_race_still_records_timeout_and_partial_output(self):
+        process = mock.MagicMock()
+        process.returncode = 0
+        process.communicate.side_effect = [
+            matrix.subprocess.TimeoutExpired(["fake"], 1), (b"partial", b"diagnostic")]
+        with mock.patch.object(matrix.subprocess, "Popen") as popen, \
+                mock.patch.object(matrix.os, "killpg", side_effect=ProcessLookupError):
+            popen.return_value.__enter__.return_value = process
+            result = matrix.execute(["fake"], Path.cwd(), 1)
+        self.assertEqual(result, (0, "partial", "diagnostic", True))
+        self.assertEqual(matrix.classify(result[0], result[1] + result[2], result[3]), "timeout")
 
     def test_manifest_rejects_mode_override_duplicate_id_and_missing_source(self):
         with tempfile.TemporaryDirectory() as directory:
