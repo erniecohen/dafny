@@ -13,7 +13,7 @@ module Std.Consumers {
 
   // Actions that consume a T and outputs nothing.
   @AssumeCrossModuleTermination
-  trait IConsumer<T> extends Action<T, ()> {
+  trait IConsumer<!T> extends Action<T, ()> {
 
     twostate predicate ValidChange()
       reads this, Repr
@@ -582,7 +582,7 @@ module Std.Consumers {
     {}
   }
 
-  class FoldingConsumer<T, R> extends IConsumer<T> {
+  class FoldingConsumer<!T, !R> extends IConsumer<T> {
 
     ghost const init: R
     const f: (R, T) -> R
@@ -668,7 +668,7 @@ module Std.Consumers {
   }
 
   @AssumeCrossModuleTermination
-  class FoldingConsumerTotalActionProof<I, O> extends TotalActionProof<I, ()> {
+  class FoldingConsumerTotalActionProof<!I, !O> extends TotalActionProof<I, ()> {
 
     ghost const action: FoldingConsumer<I, O>
 

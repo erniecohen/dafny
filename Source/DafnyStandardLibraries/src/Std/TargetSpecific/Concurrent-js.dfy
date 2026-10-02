@@ -1,7 +1,7 @@
 @Compile(false)
 module Std.JavaScriptConcurrent replaces Concurrent {
 
-  class {:extern} MutableMap<K(==), V(==)> ... {
+  class {:extern} MutableMap<!K(==), !V(==)> ... {
 
     @Axiom
     constructor {:extern} (ghost inv: (K, V) -> bool, bytesKeys: bool)
@@ -37,7 +37,7 @@ module Std.JavaScriptConcurrent replaces Concurrent {
 
   }
 
-  class {:extern} AtomicBox<T> ... {
+  class {:extern} AtomicBox<!T> ... {
 
     @Axiom
     constructor {:extern} (ghost inv: T -> bool, t: T)
@@ -71,7 +71,7 @@ module {:extern "Std_Concurrent"} Std.ConcurrentDafny {
 
   import opened Wrappers
 
-  class MutableMap<K(==), V(==)> {
+  class MutableMap<!K(==), !V(==)> {
 
     ghost const inv: (K, V) -> bool
     ghost var knownKeys: set<K>
@@ -167,7 +167,7 @@ module {:extern "Std_Concurrent"} Std.ConcurrentDafny {
 
   }
 
-  class AtomicBox<T> {
+  class AtomicBox<!T> {
 
     ghost const inv: T -> bool
 

@@ -48,7 +48,7 @@ module Std.Producers {
   }
 
   @AssumeCrossModuleTermination
-  class FunctionalIProducer<S, T> extends IProducer<T>, TotalActionProof<(), T> {
+  class FunctionalIProducer<!S, T> extends IProducer<T>, TotalActionProof<(), T> {
 
     const stepFn: S -> (S, T)
     var state: S
@@ -130,7 +130,7 @@ module Std.Producers {
     {}
   }
 
-  datatype ProducerState<T> = ProducerState(producer: Producer<T>, remaining: Option<nat>, outputs: seq<Option<T>>) {
+  datatype ProducerState<!T> = ProducerState(producer: Producer<T>, remaining: Option<nat>, outputs: seq<Option<T>>) {
     ghost predicate Valid() {
       && Seq.Partitioned(outputs, IsSome)
       && (!Seq.All(outputs, IsSome) && remaining.Some? ==> remaining.value == 0)
@@ -202,7 +202,7 @@ module Std.Producers {
   /* Actions that consume nothing and produce an Option<T>,
    * where None indicates there are no more values to produce. */
   @AssumeCrossModuleTermination
-  trait Producer<T> extends Action<(), Option<T>>, TotalActionProof<(), Option<T>> {
+  trait Producer<!T> extends Action<(), Option<T>>, TotalActionProof<(), Option<T>> {
 
     ghost predicate Valid()
       reads this, Repr
@@ -1209,7 +1209,7 @@ module Std.Producers {
    * Producer Combinators
    ***********************/
 
-  class LimitedProducer<T> extends Producer<T> {
+  class LimitedProducer<!T> extends Producer<T> {
 
     const original: IProducer<T>
     var produced: nat
@@ -1355,7 +1355,7 @@ module Std.Producers {
     }
   }
 
-  class FilteredProducer<T> extends Producer<T> {
+  class FilteredProducer<!T> extends Producer<T> {
 
     const source: Producer<T>
     const filter: T -> bool
@@ -1527,7 +1527,7 @@ module Std.Producers {
     }
   }
 
-  class ConcatenatedProducer<T> extends Producer<T> {
+  class ConcatenatedProducer<!T> extends Producer<T> {
 
     const first: Producer<T>
     const second: Producer<T>
@@ -1713,7 +1713,7 @@ module Std.Producers {
     }
   }
 
-  class MappedProducer<I, O> extends Producer<O> {
+  class MappedProducer<!I, !O> extends Producer<O> {
 
     const original: Producer<I>
     const mapping: Action<I, O>
@@ -1881,7 +1881,7 @@ module Std.Producers {
   }
 
 
-  trait ProducerOfNewProducers<T> extends Producer<Producer<T>> {
+  trait ProducerOfNewProducers<!T> extends Producer<Producer<T>> {
 
     ghost function MaxProduced(): TerminationMetric
 
@@ -1906,7 +1906,7 @@ module Std.Producers {
   }
 
   @AssumeCrossModuleTermination
-  trait OutputterOfNewProducers<I, O> extends Action<I, Producer<O>>, TotalActionProof<I, Producer<O>>  {
+  trait OutputterOfNewProducers<I, !O> extends Action<I, Producer<O>>, TotalActionProof<I, Producer<O>>  {
 
     ghost function MaxProduced(): TerminationMetric
 
@@ -1933,7 +1933,7 @@ module Std.Producers {
     }
   }
 
-  class MappedProducerOfNewProducers<I, O> extends ProducerOfNewProducers<O> {
+  class MappedProducerOfNewProducers<!I, !O> extends ProducerOfNewProducers<O> {
 
     const original: Producer<I>
     const mapping: OutputterOfNewProducers<I, O>
@@ -2099,7 +2099,7 @@ module Std.Producers {
     }
   }
 
-  class FlattenedProducer<T> extends Producer<T> {
+  class FlattenedProducer<!T> extends Producer<T> {
 
     const original: ProducerOfNewProducers<T>
     var currentInner: Option<Producer<T>>
