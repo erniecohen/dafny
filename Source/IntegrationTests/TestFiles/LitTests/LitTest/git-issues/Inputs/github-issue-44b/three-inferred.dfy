@@ -1,0 +1,6 @@
+newtype A = b | P(b)
+newtype B = c | Q(c)
+newtype C = a | R(a)
+predicate P(b: B)
+predicate Q(c: C)
+predicate R(a: A)

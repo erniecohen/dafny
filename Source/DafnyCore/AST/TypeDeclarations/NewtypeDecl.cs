@@ -11,6 +11,12 @@ public class NewtypeDecl : TopLevelDeclWithMembers, RevealableTypeDecl, Redirect
   public PreType BasePreType;
   PreType RedirectingTypeDecl.BasePreType => BasePreType;
   public Type BaseType { get; set; } // null when refining
+
+  /// <summary>
+  /// Resolution-derived error metadata. Fresh declarations and clones start unmarked; this is not
+  /// copied from an earlier resolution, and marking a cycle does not change BaseType or Var.Type.
+  /// </summary>
+  [FilledInDuringResolution] public bool IsCyclic { get; set; }
   public BoundVar Var { get; set; }  // can be null (if non-null, then object.ReferenceEquals(Var.Type, BaseType))
   public Expression Constraint { get; set; }  // is null iff Var is
   public SubsetTypeDecl.WKind WitnessKind { get; set; } = SubsetTypeDecl.WKind.CompiledZero;
@@ -84,16 +90,17 @@ public class NewtypeDecl : TopLevelDeclWithMembers, RevealableTypeDecl, Redirect
   public Type RhsWithArgument(List<Type> typeArgs) {
     Contract.Requires(typeArgs != null);
     Contract.Requires(typeArgs.Count == TypeArgs.Count);
+    var baseType = ConcreteBaseType(typeArgs);
     var scope = Type.GetScope();
-    var rtd = BaseType.AsRevealableType;
+    var rtd = baseType.AsRevealableType;
     if (rtd != null) {
       Contract.Assume(rtd.AsTopLevelDecl.IsVisibleInScope(scope));
       if (!rtd.IsRevealedInScope(scope)) {
-        // type is actually hidden in this scope
-        return rtd.SelfSynonym(typeArgs);
+        // Preserve the instantiated base's arguments, which may differ from this newtype's arguments.
+        return rtd.SelfSynonym(baseType.TypeArgs);
       }
     }
-    return ConcreteBaseType(typeArgs);
+    return baseType;
   }
 
   public TopLevelDecl AsTopLevelDecl => this;

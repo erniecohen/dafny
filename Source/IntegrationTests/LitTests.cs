@@ -142,6 +142,9 @@ namespace IntegrationTests {
                 await SourceToBinary.GetCommand(output).InvokeAsync(finalArgs))
         },
         {
+          "%bounded-resolve", (args, config) =>
+            new BoundedResolveCommand(args, config.PassthroughEnvironmentVariables, DafnyDriverAssembly.Location)
+        }, {
           "%baredafny", (args, config) =>
             DafnyCommand(args, config, InvokeMainMethodsDirectly)
         }, {
