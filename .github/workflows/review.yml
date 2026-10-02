@@ -21,6 +21,11 @@ on:
         type: boolean
         default: false
 
+      resolver_probe:
+        description: Record resolver outcomes without enforcing their baseline (scratch branches only)
+        type: boolean
+        default: false
+
 permissions:
   contents: read
 
@@ -169,6 +174,58 @@ jobs:
             echo "::error::Verdicts changed ($(tail -1 compare.txt)).  If that is intended, replace .github/review/expected-verdicts.tsv with the one in this run's artifact 'verdicts', in a commit that says, for each program listed, why its verdict changed."
             exit 1
           fi
+
+  resolver:
+    name: Resolver matrix (both modes)
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: dafny
+      - name: Unpack Dafny
+        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
+      - name: Test matrix runner
+        run: python3 -m unittest discover -s .github/review -p test_resolver_matrix.py
+      - name: Resolve manifest in both modes
+        env:
+          PROBE: ${{ inputs.resolver_probe }}
+        run: |
+          extra=()
+          if [ "$PROBE" = true ]; then
+            case "$GITHUB_REF" in
+              refs/heads/scratch/*) extra+=(--probe) ;;
+              *) echo "Resolver probes must use a scratch branch"; exit 1 ;;
+            esac
+          fi
+          python3 .github/review/resolver-matrix.py \
+            --manifest .github/review/resolver-cases.json \
+            --lit-dir Source/IntegrationTests/TestFiles/LitTests/LitTest \
+            --dafny out/dafny/Dafny \
+            --expected .github/review/expected-resolver-results.json \
+            --output resolver-results "${extra[@]}"
+      - name: Record known unresolved cases separately
+        if: inputs.resolver_probe && startsWith(github.ref, 'refs/heads/scratch/')
+        run: |
+          python3 .github/review/resolver-matrix.py \
+            --manifest .github/review/resolver-probes.json \
+            --lit-dir Source/IntegrationTests/TestFiles/LitTests/LitTest \
+            --dafny out/dafny/Dafny \
+            --expected .github/review/expected-resolver-probes.json \
+            --output resolver-probes --probe
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resolver-results
+          path: |
+            resolver-results/
+            resolver-probes/
+          retention-days: 90
 
   stdlib:
     name: Standard library (Z3 ${{ matrix.z3 }})
@@ -360,7 +417,7 @@ jobs:
 
   release:
     name: GitHub release
-    needs: [build, binaries, verdicts, stdlib, regressions]
+    needs: [build, binaries, verdicts, stdlib, regressions, resolver]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
