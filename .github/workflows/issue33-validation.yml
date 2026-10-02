@@ -108,6 +108,11 @@ jobs:
           if [ "${{ inputs.stress }}" = true ]; then args+=(--stress); fi
           if [ '${{ github.ref_name }}' != scratch/issue33/baseline ]; then args+=(--candidate "$PWD/out/candidate/dafny/Dafny"); fi
           python3 .github/review/issue33-targeted.py --baseline "$PWD/out/baseline/dafny/Dafny" --z3 "$Z3" --output issue33-results "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue33-core-targeted
+          path: issue33-results
+          retention-days: 90
       - name: Check extracted native SMT axioms and mutations
         if: github.ref_name != 'scratch/issue33/baseline'
         run: |
