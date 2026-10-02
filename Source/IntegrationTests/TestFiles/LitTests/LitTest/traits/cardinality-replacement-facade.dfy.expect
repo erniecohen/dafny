@@ -1,0 +1,12 @@
+cardinality-replacement-facade.dfy(16,27): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'B.F' depends on 'B.V' through right-hand side of 'B.F' -> arrow input 0 (potentially expansive)
+   'B.V' contains 'Client.D' because 'Client.D' extends 'B.V'
+   'Client.D' depends on 'B.F' through constructor 'D.f'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-replacement-facade.dfy(8,26): Related location: 'B.F' depends on 'B.V' through right-hand side of 'B.F' -> arrow input 0
+cardinality-replacement-facade.dfy(5,29): Related location: Type 'B.V' is declared here.
+cardinality-replacement-facade.dfy(16,27): Related location: 'B.V' contains 'Client.D' because 'Client.D' extends 'B.V'
+cardinality-replacement-facade.dfy(16,11): Related location: Type 'Client.D' is declared here.
+cardinality-replacement-facade.dfy(16,42): Related location: 'Client.D' depends on 'B.F' through constructor 'D.f'
+cardinality-replacement-facade.dfy(8,26): Related location: Type 'B.F' is declared here.
+1 resolution/type errors detected in cardinality-replacement-facade.dfy
