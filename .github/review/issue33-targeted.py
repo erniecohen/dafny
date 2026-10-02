@@ -19,12 +19,15 @@ p.add_argument('--candidate')
 p.add_argument('--z3', required=True)
 p.add_argument('--output', required=True)
 p.add_argument('--stress', action='store_true')
+p.add_argument('--enabled-only', action='store_true')
 a = p.parse_args()
 out = Path(a.output).resolve()
 out.mkdir(parents=True, exist_ok=True)
 source = Path('Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-33-original.dfy').resolve()
 metadata = {'source_sha256': hashlib.sha256(source.read_bytes()).hexdigest(), 'z3_sha256': hashlib.sha256(Path(a.z3).read_bytes()).hexdigest(), 'z3_version': subprocess.check_output([a.z3, '--version'], text=True).strip(), 'builds': {}}
-for label, binary, flag in [('B', a.baseline, []), *([('O', a.candidate, []), ('F', a.candidate, ['--additional-axioms=false']), ('E', a.candidate, ['--additional-axioms'])] if a.candidate else [])]:
+modes = [('B', a.baseline, []), *([('O', a.candidate, []), ('F', a.candidate, ['--additional-axioms=false']), ('E', a.candidate, ['--additional-axioms'])] if a.candidate else [])]
+if a.enabled_only: modes = [mode for mode in modes if mode[0] == 'E']
+for label, binary, flag in modes:
     dest = out / label
     dest.mkdir(exist_ok=True)
     metadata['builds'][label] = {'version': subprocess.check_output([binary, '--version'], text=True).strip(), 'core_sha256': hashlib.sha256(Path(binary).with_name('DafnyCore.dll').read_bytes()).hexdigest()}

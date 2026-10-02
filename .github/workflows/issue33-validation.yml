@@ -121,7 +121,7 @@ jobs:
           curl -fsSLo z3h.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.12.1-x64-ubuntu-24.04-bin.zip
           echo 'e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b  z3h.zip' | sha256sum -c -
           mkdir -p z3h && unzip -q z3h.zip -d z3h
-          python3 .github/review/issue33-targeted.py --baseline "$PWD/out/baseline/dafny/Dafny" --candidate "$PWD/out/candidate/dafny/Dafny" --z3 "$PWD/z3h/z3-4.12.1" --output issue33-results-z3-4.12.1
+          python3 .github/review/issue33-targeted.py --baseline "$PWD/out/baseline/dafny/Dafny" --candidate "$PWD/out/candidate/dafny/Dafny" --z3 "$PWD/z3h/z3-4.12.1" --output issue33-results-z3-4.12.1 --enabled-only
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -218,4 +218,36 @@ jobs:
         with:
           name: issue33-stdlib-${{ matrix.solver }}
           path: issue33-stdlib
+          retention-days: 90
+
+  translation:
+    needs: [build, baseline]
+    if: github.ref_name != 'scratch/issue33/baseline'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue33-baseline
+          path: baseline-artifact
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue33-candidate
+          path: candidate-artifact
+      - name: Unpack
+        run: |
+          mkdir -p out/baseline out/candidate
+          tar -C out/baseline -xzf baseline-artifact/dafny.tar.gz
+          tar -C out/candidate -xzf candidate-artifact/dafny.tar.gz
+      - name: Compare full source-library translation without verification
+        run: python3 .github/review/issue33-translation.py --baseline "$PWD/out/baseline/dafny/Dafny" --candidate "$PWD/out/candidate/dafny/Dafny" --output issue33-translation
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue33-translation
+          path: issue33-translation
           retention-days: 90
