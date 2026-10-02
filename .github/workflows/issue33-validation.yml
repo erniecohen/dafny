@@ -29,14 +29,14 @@ jobs:
       - name: Unpack baseline
         run: mkdir -p out/baseline && tar -C out/baseline -xzf baseline-artifact/dafny.tar.gz
       - uses: actions/download-artifact@v4
-        if: inputs.candidate_run != '0'
+        if: inputs.candidate_run && inputs.candidate_run != '0'
         with:
           name: dafny
           run-id: ${{ inputs.candidate_run }}
           github-token: ${{ github.token }}
           path: candidate-artifact
       - name: Unpack candidate
-        if: inputs.candidate_run != '0'
+        if: inputs.candidate_run && inputs.candidate_run != '0'
         run: mkdir -p out/candidate && tar -C out/candidate -xzf candidate-artifact/dafny.tar.gz
       - name: Z3 5.1.0
         run: |
@@ -47,7 +47,7 @@ jobs:
       - name: Measure original reproducer and retain translation
         run: |
           args=()
-          if [ '${{ inputs.candidate_run }}' != 0 ]; then args+=(--candidate "$PWD/out/candidate/dafny/Dafny"); fi
+          if [ '${{ inputs.candidate_run || '0' }}' != 0 ]; then args+=(--candidate "$PWD/out/candidate/dafny/Dafny"); fi
           python3 .github/review/issue33-targeted.py --baseline "$PWD/out/baseline/dafny/Dafny" --z3 "$Z3" --output issue33-results "${args[@]}"
       - uses: actions/upload-artifact@v4
         if: always()
