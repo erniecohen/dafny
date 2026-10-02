@@ -39,6 +39,7 @@ def run_one(task):
     # lit-verdicts' plan drops output placeholders, leaving bare print options.
     # Drop those output-only options before adding the measurement log argument.
     own=[t for t in own if t not in ['--print', '--bprint', '--rprint']]
+    if own and own[-1] == '--library': own.append(path)
     names={t.split('=')[0].split(':')[0] for t in own if t.startswith('--')}
     fixed=[];k=0
     while k<len(lit.FIXED):
