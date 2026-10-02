@@ -1,0 +1,1 @@
+Add a dedicated CI matrix that records resolver outcomes and diagnostics in both resolver modes, with a deadline for each process.
