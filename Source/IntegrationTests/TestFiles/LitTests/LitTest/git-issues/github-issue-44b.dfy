@@ -34,11 +34,11 @@
 // RUN: %bounded-resolve cycle true "%S/Inputs/github-issue-44b/subset-alias-first.dfy" >> "%t"
 // RUN: %bounded-resolve cycle-and-error false "%S/Inputs/github-issue-44b/unrelated-error.dfy" >> "%t"
 // RUN: %bounded-resolve cycle-and-error true "%S/Inputs/github-issue-44b/unrelated-error.dfy" >> "%t"
-// RUN: %bounded-resolve cycle false "%S/Inputs/github-issue-44b/subset-original.dfy" >> "%t"
+// RUN: %bounded-resolve underconstrained false "%S/Inputs/github-issue-44b/subset-original.dfy" >> "%t"
 // RUN: %bounded-resolve cycle true "%S/Inputs/github-issue-44b/subset-original.dfy" >> "%t"
-// RUN: %bounded-resolve cycle false "%S/Inputs/github-issue-44b/subset-both-inferred.dfy" >> "%t"
+// RUN: %bounded-resolve underconstrained false "%S/Inputs/github-issue-44b/subset-both-inferred.dfy" >> "%t"
 // RUN: %bounded-resolve cycle true "%S/Inputs/github-issue-44b/subset-both-inferred.dfy" >> "%t"
-// RUN: %bounded-resolve cycle false "%S/Inputs/github-issue-44b/subset-self.dfy" >> "%t"
+// RUN: %bounded-resolve underconstrained false "%S/Inputs/github-issue-44b/subset-self.dfy" >> "%t"
 // RUN: %bounded-resolve cycle true "%S/Inputs/github-issue-44b/subset-self.dfy" >> "%t"
 // RUN: %bounded-resolve cycle false "%S/Inputs/github-issue-44b/subset-constant.dfy" >> "%t"
 // RUN: %bounded-resolve cycle true "%S/Inputs/github-issue-44b/subset-constant.dfy" >> "%t"
@@ -83,9 +83,19 @@
 // RUN: %bounded-resolve explicit-cycle true "%S/Inputs/github-issue-44b/generic-changing.dfy" --general-newtypes:true >> "%t"
 // RUN: %bounded-resolve cycle true "%S/Inputs/github-issue-44b/generic-inferred-changing.dfy" --general-newtypes:true >> "%t"
 // RUN: %bounded-resolve cycle true "%S/Inputs/github-issue-44b/generic-through-alias.dfy" --general-newtypes:true >> "%t"
+// RUN: %bounded-resolve explicit-cycle false "%S/Inputs/github-issue-44b/module-attribute-explicit.dfy" >> "%t"
+// RUN: %bounded-resolve explicit-cycle true "%S/Inputs/github-issue-44b/module-attribute-explicit.dfy" >> "%t"
+// RUN: %bounded-resolve cycle false "%S/Inputs/github-issue-44b/module-attribute-self.dfy" >> "%t"
+// RUN: %bounded-resolve cycle true "%S/Inputs/github-issue-44b/module-attribute-self.dfy" >> "%t"
+// RUN: %bounded-resolve cycle false "%S/Inputs/github-issue-44b/module-attribute-inferred.dfy" >> "%t"
+// RUN: %bounded-resolve cycle true "%S/Inputs/github-issue-44b/module-attribute-inferred.dfy" >> "%t"
+// RUN: %bounded-resolve valid false "%S/Inputs/github-issue-44b/module-attribute-valid.dfy" >> "%t"
+// RUN: %bounded-resolve valid true "%S/Inputs/github-issue-44b/module-attribute-valid.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // Each input is a separate process with a 30-second, startup-inclusive timeout.
-// Rejection requires normal exit 2 and a cycle diagnostic; a hang or exception fails.
+// Cycle cases require normal exit 2 and a cycle diagnostic; a hang or exception fails.
 // Generic source cases select the supported refreshed/general-newtypes configuration.
 // The part-(a) driver, github-issue-44.dfy, remains a separate regression.
+// The three pure inferred subset cases retain legacy underspecified-base diagnostics.
+// Their proxy occurs-check leaves no concrete nominal redirecting-type cycle.

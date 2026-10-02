@@ -1,8 +1,10 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Dafny.LanguageServer.IntegrationTest.Util;
 using Microsoft.Dafny.LanguageServer.Workspace;
+using Microsoft.Dafny.LanguageServer.Workspace.Notifications;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using Xunit;
 using Xunit.Abstractions;
@@ -34,14 +36,19 @@ public class InferredNewtypeCycleTest : ClientBasedLanguageServerTest {
     await SetUp(options => {
       options.Set(CommonOptionBag.TypeSystemRefresh, refreshed);
       options.Set(CommonOptionBag.GeneralNewtypes, false);
+      options.Set(CommonOptionBag.GeneralTraits, CommonOptionBag.GeneralTraitsOptions.Legacy);
+      options.Set(CommonOptionBag.UseStandardLibraries, false);
       options.Set(ProjectManager.Verification, VerifyOnMode.Never);
+      // The server validates solver options during resolution. This inert setting skips
+      // executable discovery; automatic verification is disabled and no solver is started.
+      options.ProverOptions.Add("SOLVER=noop");
     });
     using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
     var cancellationToken = timeout.Token;
     var document = CreateAndOpenTestDocument(Valid, "inferred-newtype-cycle.dfy");
-    Assert.True(await WaitUntilResolutionFinished(document, cancellationToken));
+    await RequireResolution(document, true, cancellationToken);
     var independent = CreateAndOpenTestDocument(IndependentValid, "independent.dfy");
-    Assert.True(await WaitUntilResolutionFinished(independent, cancellationToken));
+    await RequireResolution(independent, true, cancellationToken);
 
     for (var repetition = 0; repetition < 2; repetition++) {
       ApplyChange(ref document, null, Cyclic);
@@ -70,10 +77,27 @@ public class InferredNewtypeCycleTest : ClientBasedLanguageServerTest {
     }
   }
 
+  private async Task RequireResolution(TextDocumentItem document, bool successful,
+    CancellationToken cancellationToken) {
+    // Permit the helper to return an exceptional status so an assertion can include its diagnostics.
+    // Only the requested normal resolution status can satisfy this test.
+    await WaitUntilResolutionFinished(document, cancellationToken, allowException: true);
+    var actual = compilationStatusReceiver.History.Last(notification =>
+      notification.Uri == document.Uri && notification.Version == document.Version);
+    var expected = successful ? CompilationStatus.ResolutionSucceeded : CompilationStatus.ResolutionFailed;
+    if (actual.Status != expected) {
+      var diagnostics = string.Join(Environment.NewLine, diagnosticsReceiver.History.Select(notification =>
+        $"{notification.Uri}, version {notification.Version}: {PrintDiagnostics(notification.Diagnostics)}"));
+      Assert.True(false, $"Expected {expected} for {document.Uri}, version {document.Version}; " +
+                         $"received {actual.Status}, message: {actual.Message}. Diagnostics:\n{diagnostics}");
+    }
+    Assert.Equal(document.Uri, actual.Uri);
+    Assert.Equal(document.Version, actual.Version);
+  }
+
   private async Task<PublishDiagnosticsParams> DiagnosticsForVersion(TextDocumentItem document,
     bool successful, CancellationToken cancellationToken) {
-    // This infrastructure waits for the exact document version and rejects InternalException.
-    Assert.Equal(successful, await WaitUntilResolutionFinished(document, cancellationToken));
+    await RequireResolution(document, successful, cancellationToken);
     var diagnostics = diagnosticsReceiver.GetLatestAndClearQueue(notification =>
       notification.Uri == document.Uri && notification.Version == document.Version);
     while (diagnostics == null) {

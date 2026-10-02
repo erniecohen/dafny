@@ -42,20 +42,20 @@ public sealed class RedirectingTypeDependencyTracker {
     }
 
     var affected = RedirectingTypeCycleAnalysis.Ordered(owners).ToList();
-    var additions = new List<(RedirectingTypeDecl Source, RedirectingTypeDecl Target)>();
-    var work = new Queue<RedirectingTypeDecl>();
+    List<(RedirectingTypeDecl Source, RedirectingTypeDecl Target)>? additions = null;
+    Queue<RedirectingTypeDecl>? work = null;
     var removedEdge = false;
     foreach (var owner in affected) {
       var previous = definitions[owner];
       var current = RedirectingTypeCycleAnalysis.CollectDependencies(owner, scope);
-      removedEdge |= previous.RedirectingTypes.Any(dependency => !current.RedirectingTypes.Contains(dependency));
+      removedEdge |= !previous.RedirectingTypes.IsSubsetOf(current.RedirectingTypes);
       ReplaceDefinition(owner, current);
       foreach (var dependency in RedirectingTypeCycleAnalysis.Ordered(current.RedirectingTypes)) {
         if (!previous.RedirectingTypes.Contains(dependency)) {
-          additions.Add((owner, dependency));
+          (additions ??= []).Add((owner, dependency));
         }
         if (!definitions.ContainsKey(dependency)) {
-          work.Enqueue(dependency);
+          (work ??= new Queue<RedirectingTypeDecl>()).Enqueue(dependency);
         }
       }
     }
@@ -69,7 +69,7 @@ public sealed class RedirectingTypeDependencyTracker {
       return;
     }
 
-    while (work.TryDequeue(out var declaration)) {
+    while (work != null && work.TryDequeue(out var declaration)) {
       if (definitions.ContainsKey(declaration)) {
         continue;
       }
@@ -77,13 +77,16 @@ public sealed class RedirectingTypeDependencyTracker {
       ReplaceDefinition(declaration, dependencies);
       graph.AddVertex(declaration);
       foreach (var dependency in RedirectingTypeCycleAnalysis.Ordered(dependencies.RedirectingTypes)) {
-        additions.Add((declaration, dependency));
+        (additions ??= []).Add((declaration, dependency));
         if (!definitions.ContainsKey(dependency)) {
-          work.Enqueue(dependency);
+          (work ??= new Queue<RedirectingTypeDecl>()).Enqueue(dependency);
         }
       }
     }
 
+    if (additions == null) {
+      return;
+    }
     // Graph.AddEdge does not deduplicate edges. Only dependency-set differences are inserted, including when several
     // raw occurrences or shared proxies expose the same declaration. A notification without new edges needs no SCC work.
     foreach (var (source, target) in additions) {
@@ -141,6 +144,9 @@ public sealed class RedirectingTypeDependencyTracker {
   private void ReplaceDefinition(RedirectingTypeDecl declaration, RedirectingTypeCycleAnalysis.Dependencies dependencies) {
     if (definitions.TryGetValue(declaration, out var previous)) {
       foreach (var proxy in previous.ObservedProxies) {
+        if (dependencies.ObservedProxies.Contains(proxy)) {
+          continue;
+        }
         var owners = subscriptions[proxy];
         owners.Remove(declaration);
         if (owners.Count == 0) {
@@ -150,6 +156,9 @@ public sealed class RedirectingTypeDependencyTracker {
     }
     definitions[declaration] = dependencies;
     foreach (var proxy in dependencies.ObservedProxies) {
+      if (previous?.ObservedProxies.Contains(proxy) == true) {
+        continue;
+      }
       if (!subscriptions.TryGetValue(proxy, out var owners)) {
         owners = new HashSet<RedirectingTypeDecl>(ReferenceEqualityComparer.Instance);
         subscriptions.Add(proxy, owners);

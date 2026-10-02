@@ -23,6 +23,25 @@ public class NumericAncestryTests {
   private static UserDefinedType Application(NewtypeDecl declaration, params Type[] arguments) =>
     UserDefinedType.FromTopLevelDecl(SourceOrigin.NoToken, declaration, arguments.ToList());
 
+  private (Type Type, NewtypeDecl Base) Chain(string prefix, Type baseType, int count) {
+    var declaration = Newtype(prefix + "0", baseType);
+    Type type = Application(declaration);
+    for (var i = 1; i < count; i++) {
+      type = Application(Newtype(prefix + i, type));
+    }
+    return (type, declaration);
+  }
+
+  private sealed class ThrowingSubstitutionType : Type {
+    public override string TypeName(DafnyOptions options, ModuleDefinition context, bool parseAble = false) =>
+      "throwing substitution";
+    public override Type Subst(IDictionary<TypeParameter, Type> subst) =>
+      throw new InvalidOperationException("Substitution failed");
+    public override Type ReplaceTypeArguments(List<Type> arguments) => throw new NotSupportedException();
+    public override bool Equals(Type that, bool keepConstraints = false) => ReferenceEquals(this, that);
+    public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes) => false;
+  }
+
   private static void AssertClassification(Type type, Type.NumericAncestryKind expected) {
     Assert.Equal(expected, type.ClassifyNumericAncestry().Kind);
     Assert.Equal(expected is Type.NumericAncestryKind.Integer or Type.NumericAncestryKind.Real,
@@ -68,6 +87,76 @@ public class NumericAncestryTests {
     var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
     Assert.Equal(3000, numericCount);
     Assert.Equal(0L, allocated);
+  }
+
+  [Fact]
+  public void WarmLongWalksReuseEmptyStorageWithoutTraversalAllocations() {
+    var integer = Chain("Integer", Type.Int, 512).Type;
+    var real = Chain("Real", Type.Real, 512).Type;
+    AssertClassification(integer, Type.NumericAncestryKind.Integer);
+    AssertClassification(real, Type.NumericAncestryKind.Real);
+    var before = GC.GetAllocatedBytesForCurrentThread();
+    var numericCount = 0;
+    for (var i = 0; i < 100; i++) {
+      numericCount += integer.IsNumericBased() ? 1 : 0;
+      numericCount += real.IsNumericBased(Type.NumericPersuasion.Real) ? 1 : 0;
+    }
+    var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+    Assert.Equal(200, numericCount);
+    Assert.Equal(0L, allocated);
+  }
+
+  [Fact]
+  public void WalkStorageContainsNoResultsFromEarlierQueries() {
+    var (type, baseDeclaration) = Chain("Mutable", Type.Int, 64);
+    AssertClassification(type, Type.NumericAncestryKind.Integer);
+    baseDeclaration.BaseType = Type.Real;
+    AssertClassification(type, Type.NumericAncestryKind.Real);
+    baseDeclaration.BaseType = type;
+    AssertClassification(type, Type.NumericAncestryKind.Cyclic);
+    baseDeclaration.BaseType = Type.Int;
+    AssertClassification(type, Type.NumericAncestryKind.Integer);
+
+    var t = Parameter("T");
+    var generic = Newtype("G", new UserDefinedType(t), t);
+    var repeated = Application(generic, Application(generic, Type.Real));
+    AssertClassification(repeated, Type.NumericAncestryKind.Real);
+    generic.BaseType = Application(generic, new SeqType(new UserDefinedType(t)));
+    AssertClassification(repeated, Type.NumericAncestryKind.Cyclic);
+  }
+
+  [Fact]
+  public void SubstitutionFailureReturnsClearedWalkStorage() {
+    var (type, baseDeclaration) = Chain("Failing", Type.Int, 64);
+    AssertClassification(type, Type.NumericAncestryKind.Integer);
+    var t = Parameter("T");
+    var failing = Newtype("Throw", new ThrowingSubstitutionType(), t);
+    baseDeclaration.BaseType = Application(failing, Type.Int);
+    Assert.Throws<InvalidOperationException>(() => type.ClassifyNumericAncestry());
+    baseDeclaration.BaseType = Type.Int;
+    var before = GC.GetAllocatedBytesForCurrentThread();
+    var ancestry = type.ClassifyNumericAncestry();
+    var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+    Assert.Equal(Type.NumericAncestryKind.Integer, ancestry.Kind);
+    Assert.Equal(0L, allocated);
+  }
+
+  [Fact]
+  public void ConcurrentQueriesKeepTheirWalkStorageIndependent() {
+    var integer = Chain("ConcurrentInteger", Type.Int, 128).Type;
+    var real = Chain("ConcurrentReal", Type.Real, 128).Type;
+    var t = Parameter("T");
+    var generic = Newtype("ConcurrentG", new UserDefinedType(t), t);
+    var repeated = Application(generic, Application(generic, Type.Int));
+    var cyclic = Newtype("ConcurrentCycle", Type.Int);
+    cyclic.BaseType = Application(cyclic);
+    var cycleType = Application(cyclic);
+    Parallel.For(0, 128, _ => {
+      AssertClassification(integer, Type.NumericAncestryKind.Integer);
+      AssertClassification(real, Type.NumericAncestryKind.Real);
+      AssertClassification(repeated, Type.NumericAncestryKind.Integer);
+      AssertClassification(cycleType, Type.NumericAncestryKind.Cyclic);
+    });
   }
 
   [Fact]
@@ -233,7 +322,9 @@ public class NumericAncestryTests {
       new LiteralExpr(Token.NoToken, true), SubsetTypeDecl.WKind.CompiledZero, null, [], [], null, false);
     proxy.T = Application(declaration);
     declaration.IsCyclic = true;
-    Assert.Same(variable.Type, declaration.BaseType);
+    // Type follows assigned proxies; UnnormalizedType is the storage shared with BaseType.
+    Assert.Same(variable.UnnormalizedType, declaration.BaseType);
+    Assert.Same(variable.Type, declaration.BaseType.Normalize());
     var clone = Assert.IsType<NewtypeDecl>(new Cloner().CloneDeclaration(declaration, module));
     Assert.False(clone.IsCyclic);
     Assert.Same(clone.Var.Type, clone.BaseType);

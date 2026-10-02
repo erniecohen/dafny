@@ -17,8 +17,8 @@ namespace IntegrationTests;
 class BoundedResolveCommand : ILitCommand {
   private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(30);
   private static readonly Regex ExceptionOutput = new(
-    @"Unhandled exception|Stack overflow|Internal (?:error|exception)|System\.[\w.]*Exception",
-    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    @"\b[\w.]*Exception\b|Stack overflow|Dafny encountered an internal|Internal (?:\w+\s+)?(?:error|exception)|^\s+at [\w.]+[.(]",
+    RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant);
   private static readonly Regex RedirectingCycle = new(
     @"Error: cycle among redirecting types \(newtypes, subset types, type synonyms\): [^\r\n]+ -> ",
     RegexOptions.CultureInvariant);

@@ -129,6 +129,41 @@ namespace Microsoft.Dafny {
       }
     }
 
+    private void ReportRedirectingTypeCycle(IReadOnlyList<RedirectingTypeDecl> cycle) {
+      RedirectingTypeCycleAnalysis.MarkCyclic(cycle);
+      const string message = "cycle among redirecting types (newtypes, subset types, type synonyms)";
+      if (cycle.Count != 0) {
+        ReportCycleError(reporter, cycle.ToList(), d => d.Tok, d => d.Name, message);
+      } else {
+        reporter.Error(MessageSource.Resolver, Token.NoToken, message);
+      }
+    }
+
+    /// <summary>
+    /// Module attributes use the legacy constraint solver before the main body-inference phase, even with the
+    /// refreshed resolver selected. Protect this phase too, and retain the enclosing module's visibility scope.
+    /// </summary>
+    internal void ResolveModuleAttributes(ModuleDefinition module, List<TopLevelDecl> declarations) {
+      if (module.Attributes == null) {
+        return;
+      }
+      var checkpoint = new LegacyInferenceCheckpoint(this);
+      var enclosingTracker = redirectingTypeTracker;
+      try {
+        redirectingTypeTracker = new RedirectingTypeDependencyTracker(declarations, Type.GetScope(),
+          cycle => throw new RedirectingTypeCycleException(cycle));
+        scope.PushMarker();
+        scope.AllowInstance = false;
+        ResolveAttributes(module, new ResolutionContext(new NoContext(module.EnclosingModule), false), true);
+        scope.PopMarker();
+      } catch (RedirectingTypeCycleException cycleError) {
+        ReportRedirectingTypeCycle(cycleError.Cycle);
+        checkpoint.Restore();
+      } finally {
+        redirectingTypeTracker = enclosingTracker;
+      }
+    }
+
     private bool RevealedInScope(Declaration d) {
       Contract.Requires(d != null);
       Contract.Requires(moduleInfo != null);
@@ -1292,19 +1327,7 @@ namespace Microsoft.Dafny {
             checkTypeInferenceVisitor.VisitDeclarations(declarations);
           }
         } catch (RedirectingTypeCycleException cycleError) {
-          foreach (var declaration in cycleError.Cycle) {
-            if (declaration is TypeSynonymDecl synonym) {
-              synonym.IsCyclic = true;
-            } else if (declaration is NewtypeDecl newtype) {
-              newtype.IsCyclic = true;
-            }
-          }
-          const string message = "cycle among redirecting types (newtypes, subset types, type synonyms)";
-          if (cycleError.Cycle.Count != 0) {
-            ReportCycleError(reporter, cycleError.Cycle.ToList(), d => d.Tok, d => d.Name, message);
-          } else {
-            reporter.Error(MessageSource.Resolver, Token.NoToken, message);
-          }
+          ReportRedirectingTypeCycle(cycleError.Cycle);
           checkpoint.Restore();
           return;
         } finally {

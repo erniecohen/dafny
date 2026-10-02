@@ -485,10 +485,11 @@ Generate module names in the older A_mB_mC style instead of the current A.B.C sc
     resolver.ResolveTopLevelDecls_Signatures(this, sig, allDeclarations, datatypeDependencies, codatatypeDependencies);
     Contract.Assert(resolver.AllTypeConstraints.Count == 0); // signature resolution does not add any type constraints
 
-    resolver.scope.PushMarker();
-    resolver.scope.AllowInstance = false;
-    resolver.ResolveAttributes(this, new ResolutionContext(new NoContext(EnclosingModule), false), true); // Must follow ResolveTopLevelDecls_Signatures, in case attributes refer to members
-    resolver.scope.PopMarker();
+    if (resolver.reporter.Count(ErrorLevel.Error) == prevErrorCount) {
+      // Attributes may refer to members, so signatures must resolve first. Failed signatures can contain
+      // cyclic types; do not enter another constraint-solving phase after they have already been rejected.
+      resolver.ResolveModuleAttributes(this, allDeclarations);
+    }
 
     if (resolver.reporter.Count(ErrorLevel.Error) == prevErrorCount) {
       resolver.ResolveTopLevelDecls_Core(allDeclarations, datatypeDependencies, codatatypeDependencies,

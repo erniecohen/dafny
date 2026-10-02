@@ -3,6 +3,7 @@
 
 #nullable enable
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -14,12 +15,16 @@ namespace Microsoft.Dafny;
 /// </summary>
 public static class RedirectingTypeCycleAnalysis {
   public sealed class Dependencies {
+    // Sharing immutable empty collections is allocation control, not a cache of mutable definition answers.
+    internal static readonly Dependencies Empty = new(FrozenSet<RedirectingTypeDecl>.Empty,
+      FrozenSet<TypeProxy>.Empty, FrozenSet<TypeProxy>.Empty);
+
     public IReadOnlySet<RedirectingTypeDecl> RedirectingTypes { get; }
     public IReadOnlySet<TypeProxy> UnassignedProxies { get; }
     public IReadOnlySet<TypeProxy> ObservedProxies { get; }
 
-    internal Dependencies(HashSet<RedirectingTypeDecl> redirectingTypes, HashSet<TypeProxy> unassignedProxies,
-      HashSet<TypeProxy> observedProxies) {
+    internal Dependencies(IReadOnlySet<RedirectingTypeDecl> redirectingTypes, IReadOnlySet<TypeProxy> unassignedProxies,
+      IReadOnlySet<TypeProxy> observedProxies) {
       RedirectingTypes = redirectingTypes;
       UnassignedProxies = unassignedProxies;
       ObservedProxies = observedProxies;
@@ -57,18 +62,46 @@ public static class RedirectingTypeCycleAnalysis {
   /// Reference identity, rather than semantic type equality, makes even malformed raw proxy/type-argument loops finite.
   /// </summary>
   public static Dependencies CollectDependencies(RedirectingTypeDecl declaration, VisibilityScope? scope = null) {
-    var dependencies = new HashSet<RedirectingTypeDecl>(ReferenceEqualityComparer.Instance);
-    var unassignedProxies = new HashSet<TypeProxy>(ReferenceEqualityComparer.Instance);
-    var observedProxies = new HashSet<TypeProxy>(ReferenceEqualityComparer.Instance);
     if (declaration is not TopLevelDecl topLevelDecl || !topLevelDecl.IsRevealedInScope(scope)) {
-      return new Dependencies(dependencies, unassignedProxies, observedProxies);
+      return Dependencies.Empty;
     }
 
     var definition = declaration is TypeSynonymDeclBase synonym ? synonym.Rhs : declaration.BaseType;
     if (definition == null) {
-      return new Dependencies(dependencies, unassignedProxies, observedProxies);
+      return Dependencies.Empty;
     }
 
+    // Most definitions are a scalar, an unassigned base, or a single nominal application, possibly reached through
+    // one assigned proxy. These leaves cannot contain raw cycles and need no work stack or visitation set.
+    // Longer proxy chains and composite definitions still use the reference-guarded walk below.
+    var leafDefinition = definition;
+    TypeProxy? assignedLeafProxy = null;
+    if (definition is TypeProxy { T: { } leafAssignment } assignedProxy && definition.TypeArgs.Count == 0 &&
+        leafAssignment is not TypeProxy && leafAssignment.TypeArgs.Count == 0) {
+      leafDefinition = leafAssignment;
+      assignedLeafProxy = assignedProxy;
+    }
+    if (leafDefinition.TypeArgs.Count == 0) {
+      if (leafDefinition is TypeProxy { T: null } leafProxy) {
+        var proxies = new HashSet<TypeProxy>(ReferenceEqualityComparer.Instance) { leafProxy };
+        return new Dependencies(FrozenSet<RedirectingTypeDecl>.Empty, proxies, proxies);
+      }
+      if (leafDefinition is not TypeProxy) {
+        IReadOnlySet<TypeProxy> proxies = assignedLeafProxy == null ? FrozenSet<TypeProxy>.Empty :
+          new HashSet<TypeProxy>(ReferenceEqualityComparer.Instance) { assignedLeafProxy };
+        if (leafDefinition is UserDefinedType { ResolvedClass: RedirectingTypeDecl leafTarget } &&
+            leafTarget is TopLevelDecl leafDecl && leafDecl.IsVisibleInScope(scope)) {
+          var targets = new HashSet<RedirectingTypeDecl>(ReferenceEqualityComparer.Instance) { leafTarget };
+          return new Dependencies(targets, FrozenSet<TypeProxy>.Empty, proxies);
+        }
+        return assignedLeafProxy == null ? Dependencies.Empty :
+          new Dependencies(FrozenSet<RedirectingTypeDecl>.Empty, FrozenSet<TypeProxy>.Empty, proxies);
+      }
+    }
+
+    HashSet<RedirectingTypeDecl>? dependencies = null;
+    HashSet<TypeProxy>? unassignedProxies = null;
+    HashSet<TypeProxy>? observedProxies = null;
     var visited = new HashSet<Type>(ReferenceEqualityComparer.Instance);
     var work = new Stack<Type>();
     work.Push(definition);
@@ -77,21 +110,24 @@ public static class RedirectingTypeCycleAnalysis {
         continue;
       }
       if (type is TypeProxy proxy) {
-        observedProxies.Add(proxy);
+        (observedProxies ??= new HashSet<TypeProxy>(ReferenceEqualityComparer.Instance)).Add(proxy);
         if (proxy.T == null) {
-          unassignedProxies.Add(proxy);
+          (unassignedProxies ??= new HashSet<TypeProxy>(ReferenceEqualityComparer.Instance)).Add(proxy);
         } else {
           work.Push(proxy.T);
         }
       } else if (type is UserDefinedType { ResolvedClass: RedirectingTypeDecl target } &&
                  target is TopLevelDecl targetDecl && targetDecl.IsVisibleInScope(scope)) {
-        dependencies.Add(target);
+        (dependencies ??= new HashSet<RedirectingTypeDecl>(ReferenceEqualityComparer.Instance)).Add(target);
       }
       foreach (var argument in type.TypeArgs) {
         work.Push(argument);
       }
     }
-    return new Dependencies(dependencies, unassignedProxies, observedProxies);
+    return dependencies == null && observedProxies == null ? Dependencies.Empty : new Dependencies(
+      dependencies == null ? FrozenSet<RedirectingTypeDecl>.Empty : dependencies,
+      unassignedProxies == null ? FrozenSet<TypeProxy>.Empty : unassignedProxies,
+      observedProxies == null ? FrozenSet<TypeProxy>.Empty : observedProxies);
   }
 
   public static Result Analyze(IEnumerable<RedirectingTypeDecl> roots, VisibilityScope? scope = null) {
@@ -103,6 +139,9 @@ public static class RedirectingTypeCycleAnalysis {
       }
       var dependencies = CollectDependencies(declaration, scope);
       definitions.Add(declaration, dependencies);
+      if (dependencies.RedirectingTypes.Count == 0) {
+        continue;
+      }
       foreach (var dependency in Ordered(dependencies.RedirectingTypes).Reverse()) {
         work.Push(dependency);
       }
@@ -129,6 +168,10 @@ public static class RedirectingTypeCycleAnalysis {
   }
 
   internal static IEnumerable<RedirectingTypeDecl> Ordered(IEnumerable<RedirectingTypeDecl> declarations) {
+    // Empty and singleton dependency sets have no order to establish.
+    if (declarations is IReadOnlyCollection<RedirectingTypeDecl> { Count: < 2 }) {
+      return declarations;
+    }
     // Only names and origins are used here: printing a malformed type could itself recurse.
     return declarations.OrderBy(declaration => declaration.Name, StringComparer.Ordinal)
       .ThenBy(declaration => declaration.Module.Name, StringComparer.Ordinal)
@@ -141,6 +184,9 @@ public static class RedirectingTypeCycleAnalysis {
     var graph = new Graph<RedirectingTypeDecl>();
     foreach (var declaration in Ordered(definitions.Keys)) {
       graph.AddVertex(declaration);
+      if (definitions[declaration].RedirectingTypes.Count == 0) {
+        continue;
+      }
       foreach (var dependency in Ordered(definitions[declaration].RedirectingTypes)) {
         graph.AddEdge(declaration, dependency);
       }
@@ -150,14 +196,20 @@ public static class RedirectingTypeCycleAnalysis {
 
   internal static IReadOnlyList<Cycle> FindCycles(Graph<RedirectingTypeDecl> graph,
     IReadOnlyDictionary<RedirectingTypeDecl, Dependencies> definitions) {
-    var cycles = new List<Cycle>();
+    List<Cycle>? cycles = null;
     foreach (var representative in graph.TopologicallySortedComponents()) {
-      var component = Ordered(graph.GetSCC(representative)).ToList();
-      if (component.Count > 1 || definitions[representative].RedirectingTypes.Contains(representative)) {
-        cycles.Add(new Cycle(component, FindWitness(component, definitions)));
+      // Successful graphs have singleton SCCs. Do not allocate or sort a component list unless it contains a cycle.
+      if (graph.GetSCCSize(representative) == 1 &&
+          !definitions[representative].RedirectingTypes.Contains(representative)) {
+        continue;
       }
+      var component = Ordered(graph.GetSCC(representative)).ToList();
+      (cycles ??= []).Add(new Cycle(component, FindWitness(component, definitions)));
     }
-    return cycles.OrderBy(cycle => cycle.Component[0].Name, StringComparer.Ordinal).ToList();
+    if (cycles == null) {
+      return Array.Empty<Cycle>();
+    }
+    return cycles.Count == 1 ? cycles : cycles.OrderBy(cycle => cycle.Component[0].Name, StringComparer.Ordinal).ToList();
   }
 
   private static IReadOnlyList<RedirectingTypeDecl> FindWitness(IReadOnlyList<RedirectingTypeDecl> component,

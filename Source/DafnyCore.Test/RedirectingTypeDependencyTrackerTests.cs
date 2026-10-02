@@ -53,6 +53,30 @@ public class RedirectingTypeDependencyTrackerTests {
   }
 
   [Fact]
+  public void SharedEmptyDefinitionsDoNotCacheMutableAnswers() {
+    var module = new DefaultModuleDefinition();
+    var a = Newtype("A", module, DafnyType.Int);
+    var b = Newtype("B", module, DafnyType.Real);
+    var empty = RedirectingTypeCycleAnalysis.CollectDependencies(a);
+    Assert.Same(empty, RedirectingTypeCycleAnalysis.CollectDependencies(b));
+    Assert.Empty(empty.RedirectingTypes);
+    Assert.Empty(empty.ObservedProxies);
+
+    var p = new InferredTypeProxy();
+    a.BaseType = p;
+    var unresolved = RedirectingTypeCycleAnalysis.CollectDependencies(a);
+    Assert.Contains(p, unresolved.UnassignedProxies);
+    p.T = Reference(b);
+    var assigned = RedirectingTypeCycleAnalysis.CollectDependencies(a);
+    Assert.Contains(b, assigned.RedirectingTypes);
+    Assert.Empty(assigned.UnassignedProxies);
+    Assert.Contains(p, assigned.ObservedProxies);
+    Assert.Contains(p, unresolved.UnassignedProxies);
+    Assert.Empty(empty.RedirectingTypes);
+    Assert.Empty(empty.ObservedProxies);
+  }
+
+  [Fact]
   public void ProxyMergeTransfersOwnersToTheLaterAssignment() {
     var module = new DefaultModuleDefinition();
     var p = new InferredTypeProxy();
