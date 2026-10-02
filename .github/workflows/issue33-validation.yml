@@ -4,6 +4,10 @@ on:
     branches: ['scratch/issue33/baseline', 'scratch/issue33/candidate']
   workflow_dispatch:
     inputs:
+      stress:
+        description: Include generated scaling stress cases
+        type: boolean
+        default: false
       corpus:
         description: Run full paired baseline/off/on performance measurements
         type: boolean
@@ -98,6 +102,7 @@ jobs:
       - name: Measure original reproducer and retain translation
         run: |
           args=()
+          if [ "${{ inputs.stress }}" = true ]; then args+=(--stress); fi
           if [ '${{ github.ref_name }}' != scratch/issue33/baseline ]; then args+=(--candidate "$PWD/out/candidate/dafny/Dafny"); fi
           python3 .github/review/issue33-targeted.py --baseline "$PWD/out/baseline/dafny/Dafny" --z3 "$Z3" --output issue33-results "${args[@]}"
       - name: Check extracted native SMT axioms and mutations
