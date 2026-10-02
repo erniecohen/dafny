@@ -421,13 +421,13 @@ module MoreEquality {
 }
 
 module InferredDecreasesClauseForReceiver {
-  trait Parent {
+  trait Parent<X(0)> {
     // The following method and function each gets an automatic "decreases a" (without "this")
     method M(a: int) returns (r: int)
     function F(a: int): int
   }
 
-  datatype Unit<X(0)> extends Parent = Unit
+  datatype Unit<X(0)> extends Parent<X> = Unit
   {
     // These overrides had better also omit "this" from "decreases a", or else they won't be pass the override tests
     method M(a: int) returns (r: int) {
@@ -438,7 +438,7 @@ module InferredDecreasesClauseForReceiver {
     }
   }
 
-  type AbstractType<X(0)> extends Parent {
+  type AbstractType<X(0)> extends Parent<X> {
     // These overrides had better also omit "this" from "decreases a", or else they won't be pass the override tests
     method M(a: int) returns (r: int) {
       r := a;
@@ -448,7 +448,7 @@ module InferredDecreasesClauseForReceiver {
     }
   }
 
-  class Class<X(0)> extends Parent {
+  class Class<X(0)> extends Parent<X> {
     // These overrides had better also omit "this" from "decreases a", or else they won't be pass the override tests
     method M(a: int) returns (r: int) {
       r := a;
@@ -458,7 +458,7 @@ module InferredDecreasesClauseForReceiver {
     }
   }
 
-  newtype MyInt extends Parent = int
+  newtype MyInt extends Parent<int> = int
   {
     // These overrides had better also omit "this" from "decreases a", or else they won't be pass the override tests
     method M(a: int) returns (r: int) {

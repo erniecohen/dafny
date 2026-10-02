@@ -1,13 +1,13 @@
 // NONUNIFORM: Rust-specific tests
 // RUN: %baredafny run --target=rs --enforce-determinism --type-system-refresh --general-traits=datatype "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
-trait SuperTrait {
+trait SuperTrait<T> {
   function GetBool(): bool
 }
-trait SuperSubTrait extends SuperTrait {
+trait SuperSubTrait<T> extends SuperTrait<T> {
   const DecideOtherwise := !GetBool()
 }
-trait DatatypeOps<T> extends SuperSubTrait {
+trait DatatypeOps<T> extends SuperSubTrait<T> {
   function GetInt(): int
   function GetBool(): bool {
     GetInt() % 2 == 0
@@ -39,7 +39,7 @@ datatype BDatatype extends DatatypeOps<int> = BDatatype(i: int) {
   function GetInt(): int { i }
 }
 
-datatype CDatatype extends SuperTrait = CDatatype(i: int) { // But not superSubTrait
+datatype CDatatype extends SuperTrait<int> = CDatatype(i: int) { // But not superSubTrait
   function GetBool(): bool {
     i % 2 == 0
   }
@@ -83,8 +83,8 @@ method MainADatatype() {
   expect y1.ChooseAmong(8, 9) == 9;
   var y1m := y1.ChooseAmongMethod(8, 9);
   expect y1m == 9;
-  var zy := y as SuperTrait;
-  var zx := x as SuperTrait;
+  var zy := y as SuperTrait<int>;
+  var zx := x as SuperTrait<int>;
   expect zx.GetBool();
   expect !zy.GetBool();
   var xory1a := StaticWithGenerics(true, x1, y1);
@@ -98,10 +98,10 @@ method MainADatatype() {
   print x1, "\n"; // Ensure we can print even if behind trait
   print TW(x1) == TW(x1), "\n"; // True
   print TW(x1) == TW(y1), "\n"; // False
-  var sx := x1 as SuperTrait;
-  expect sx is SuperSubTrait;
-  var sx1 := sx as SuperSubTrait;
-  var sx1x := sx1 as SuperTrait;
+  var sx := x1 as SuperTrait<int>;
+  expect sx is SuperSubTrait<int>;
+  var sx1 := sx as SuperSubTrait<int>;
+  var sx1x := sx1 as SuperTrait<int>;
   expect sx is ADatatype;
   expect !(sx is BDatatype);
   var sxa := sx as ADatatype;
@@ -133,8 +133,8 @@ method MainBDatatype() {
   expect y1.ChooseAmong(8, 9) == 9;
   var y1m := y1.ChooseAmongMethod(8, 9);
   expect y1m == 9;
-  var zy := y as SuperTrait;
-  var zx := x as SuperTrait;
+  var zy := y as SuperTrait<int>;
+  var zx := x as SuperTrait<int>;
   expect zx.GetBool();
   expect !zy.GetBool();
   var xory1a := StaticWithGenerics(true, x1, y1);
@@ -148,10 +148,10 @@ method MainBDatatype() {
   print x1, "\n"; // Ensure we can print even if behind trait
   print TW(x1) == TW(x1), "\n"; // True
   print TW(x1) == TW(y1), "\n"; // False
-  var sx := x1 as SuperTrait;
-  expect sx is SuperSubTrait;
-  var sx1 := sx as SuperSubTrait;
-  var sx1x := sx1 as SuperTrait;
+  var sx := x1 as SuperTrait<int>;
+  expect sx is SuperSubTrait<int>;
+  var sx1 := sx as SuperSubTrait<int>;
+  var sx1x := sx1 as SuperTrait<int>;
   expect sx is BDatatype;
   expect !(sx is ADatatype);
   var sxa := sx as BDatatype;
@@ -159,9 +159,9 @@ method MainBDatatype() {
 
 method MainCDatatype() {
   var c := CDatatype(1);
-  var s := c as SuperTrait;
+  var s := c as SuperTrait<int>;
   expect c.GetBool() == s.GetBool();
-  expect !(s is SuperSubTrait);
+  expect !(s is SuperSubTrait<int>);
   expect c is CDatatype;
   expect !(s is ADatatype);
   var d := s as CDatatype;

@@ -15,3 +15,9 @@ module DiamondErasure {
 }
 module EqualityCharacteristic { trait V {} datatype D<T(==)> extends V = D(x: T) }
 module BoundedFormal { trait V {} trait Bound {} datatype D<T extends Bound> extends V = D(x: T) }
+
+module NonReferenceUnusedSubtypeFamily {
+  trait T<X> { }
+  class D<X1> extends T<(int, seq<X1>)> { }
+  type F<X2, Unused> = d: D<X2> | true witness *
+}
