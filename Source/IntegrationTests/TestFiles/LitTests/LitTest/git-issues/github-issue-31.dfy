@@ -32,6 +32,10 @@
 // RUN: %OutputCheck --file-to-check "%t" "%S/Inputs/github-issue-31-invalid.check"
 // RUN: %exits-with 1 %baredafny verify --arithmetic-solver=7 "%s" 2> "%t"
 // RUN: %OutputCheck --file-to-check "%t" "%S/Inputs/github-issue-31-invalid.check"
+// RUN: %exits-with 1 %baredafny verify --arithmetic-solver=x "%s" 2> "%t"
+// RUN: %OutputCheck --file-to-check "%t" "%S/Inputs/github-issue-31-invalid.check"
+// RUN: %exits-with 1 %baredafny verify --arithmetic-solver=2147483648 "%s" 2> "%t"
+// RUN: %OutputCheck --file-to-check "%t" "%S/Inputs/github-issue-31-invalid.check"
 
 lemma Mod8To4(d: int) requires d % 8 == 0 ensures d % 4 == 0 { }
 

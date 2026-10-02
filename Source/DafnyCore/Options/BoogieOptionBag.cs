@@ -101,7 +101,8 @@ public static class BoogieOptionBag {
 
   static BoogieOptionBag() {
     ArithmeticSolver.AddValidator(result => {
-      if (result.GetValueOrDefault<int>() is < 0 or > 6) {
+      if (result.Tokens.Count > 0 &&
+          (!int.TryParse(result.Tokens[0].Value, out var value) || value is < 0 or > 6)) {
         result.ErrorMessage = "--arithmetic-solver must be an integer from 0 through 6.";
       }
     });
