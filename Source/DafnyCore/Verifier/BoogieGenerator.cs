@@ -1048,7 +1048,28 @@ namespace Microsoft.Dafny {
           Bpl.Expr.Eq(bv2nat, smt_bv2nat));
         var ax = new Bpl.ForallExpr(tok, [bVar], BplTrigger(bv2nat), body);
         sink.AddTopLevelDeclaration(new Bpl.Axiom(tok, ax));
+
+        // Check the option before building anything, preserving the default translation.
+        if (options.Get(CommonOptionBag.AdditionalAxioms)) {
+          AddBitvectorIntRoundTripAxiom(w);
+        }
       }
+    }
+
+    private void AddBitvectorIntRoundTripAxiom(int w) {
+      Contract.Requires(0 < w);
+      var tok = Token.NoToken;
+      var xVar = new Bpl.BoundVariable(tok, new Bpl.TypedIdent(tok, "x", Bpl.Type.Int));
+      var x = new Bpl.IdentifierExpr(tok, xVar);
+      var bv = FunctionCall(tok, "nat_to_bv" + w, BplBvType(w), x);
+      var roundTrip = FunctionCall(tok, "nat_from_bv" + w, Bpl.Type.Int, bv);
+      var bound = Bpl.Expr.Literal(BaseTypes.BigNum.FromBigInt(BigInteger.One << w));
+      var range = BplAnd(Bpl.Expr.Le(Bpl.Expr.Literal(0), x), Bpl.Expr.Lt(x, bound));
+      var body = BplImp(range, Bpl.Expr.Eq(roundTrip, x));
+      var attributes = new Bpl.QKeyValue(tok, "qid", new List<object> { $"additional_axioms_bv{w}_int_round_trip" }, null);
+      // The wrapper keeps the composite pattern out of native bitvector rewriting.
+      var ax = new Bpl.ForallExpr(tok, [], [xVar], attributes, BplTrigger(roundTrip), body);
+      sink.AddTopLevelDeclaration(new Bpl.Axiom(tok, ax, $"bounded integer round trip for bv{w}"));
     }
 
     private void ComputeFunctionFuel() {

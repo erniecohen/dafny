@@ -1,0 +1,258 @@
+name: Issue 33 validation
+on:
+  push:
+    branches: ['scratch/issue33/baseline', 'scratch/issue33/candidate']
+  workflow_dispatch:
+    inputs:
+      stress:
+        description: Include generated scaling stress cases
+        type: boolean
+        default: false
+      corpus_only:
+        description: Optional comma-separated subset of suite paths for focused probe repairs
+        default: ''
+      corpus:
+        description: Run full paired baseline/off/on performance measurements
+        type: boolean
+        default: false
+      stdlib:
+        description: Run paired library source measurements and repeat controls
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  actions: read
+jobs:
+  baseline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 1d45201a027d46be24988fe0946c0bde80a702c9
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build pinned baseline with fixed Boogie
+        run: |
+          sh Scripts/fetch-boogie-packages.sh
+          eval "$(sh .github/review/version.sh)"
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:SourceRevisionId="$revision"
+          tar -C out -czf dafny.tar.gz dafny
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue33-baseline
+          path: dafny.tar.gz
+          retention-days: 14
+  build:
+    if: github.ref_name != 'scratch/issue33/baseline'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build with fixed Boogie
+        run: |
+          sh Scripts/fetch-boogie-packages.sh
+          eval "$(sh .github/review/version.sh)"
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:SourceRevisionId="$revision"
+          tar -C out -czf dafny.tar.gz dafny
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue33-candidate
+          path: dafny.tar.gz
+          retention-days: 14
+  targeted:
+    needs: [build, baseline]
+    if: always() && (needs.build.result == 'success' || github.ref_name == 'scratch/issue33/baseline')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue33-baseline
+          path: baseline-artifact
+      - name: Unpack baseline
+        run: mkdir -p out/baseline && tar -C out/baseline -xzf baseline-artifact/dafny.tar.gz
+      - uses: actions/download-artifact@v4
+        if: github.ref_name != 'scratch/issue33/baseline'
+        with:
+          name: issue33-candidate
+          path: candidate-artifact
+      - name: Unpack candidate
+        if: github.ref_name != 'scratch/issue33/baseline'
+        run: mkdir -p out/candidate && tar -C out/candidate -xzf candidate-artifact/dafny.tar.gz
+      - name: Z3 5.1.0
+        run: |
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+          unzip -q z3.zip
+          echo "Z3=$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" >> "$GITHUB_ENV"
+      - name: Measure original reproducer and retain translation
+        run: |
+          args=()
+          if [ "${{ inputs.stress }}" = true ]; then args+=(--stress); fi
+          if [ '${{ github.ref_name }}' != scratch/issue33/baseline ]; then args+=(--candidate "$PWD/out/candidate/dafny/Dafny"); fi
+          python3 .github/review/issue33-targeted.py --baseline "$PWD/out/baseline/dafny/Dafny" --z3 "$Z3" --output issue33-results "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue33-core-targeted
+          path: issue33-results
+          retention-days: 90
+      - name: Check extracted native SMT axioms and mutations
+        if: github.ref_name != 'scratch/issue33/baseline'
+        run: |
+          set +e
+          python3 .github/review/issue33-smt.py --smt issue33-results/E/solver.smt2 --z3 "$Z3" --output issue33-results/smt-controls
+          echo "$?" > issue33-results/smt-controls/exit-code.txt
+          exit 0
+      - name: Targeted tests with the harness solver
+        if: github.ref_name != 'scratch/issue33/baseline'
+        run: |
+          curl -fsSLo z3h.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.12.1-x64-ubuntu-24.04-bin.zip
+          echo 'e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b  z3h.zip' | sha256sum -c -
+          mkdir -p z3h && unzip -q z3h.zip -d z3h
+          python3 .github/review/issue33-targeted.py --baseline "$PWD/out/baseline/dafny/Dafny" --candidate "$PWD/out/candidate/dafny/Dafny" --z3 "$PWD/z3h/z3-4.12.1" --output issue33-results-z3-4.12.1 --enabled-only
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue33-targeted
+          path: |
+            issue33-results
+            issue33-results-z3-4.12.1
+          retention-days: 90
+
+  corpus:
+    if: inputs.corpus
+    needs: [build, baseline]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue33-baseline
+          path: baseline-artifact
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue33-candidate
+          path: candidate-artifact
+      - name: Unpack builds and install pinned solver
+        run: |
+          mkdir -p out/baseline out/candidate
+          tar -C out/baseline -xzf baseline-artifact/dafny.tar.gz
+          tar -C out/candidate -xzf candidate-artifact/dafny.tar.gz
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+          unzip -q z3.zip
+      - name: Record paired proof outcomes and per-batch resources
+        env:
+          CORPUS_ONLY: ${{ inputs.corpus_only }}
+        run: |
+          python3 .github/review/issue33-corpus.py --baseline "$PWD/out/baseline/dafny/Dafny" --candidate "$PWD/out/candidate/dafny/Dafny" --z3 "$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" --output issue33-corpus --shard ${{ matrix.shard }}/4 --jobs 4 --only "$CORPUS_ONLY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue33-corpus-${{ matrix.shard }}
+          path: issue33-corpus
+          retention-days: 90
+
+  stdlib:
+    if: inputs.stdlib
+    needs: [build, baseline]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        solver: ['5.1.0', '4.12.1']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue33-baseline
+          path: baseline-artifact
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue33-candidate
+          path: candidate-artifact
+      - name: Unpack builds and install pinned solver
+        run: |
+          mkdir -p out/baseline out/candidate
+          tar -C out/baseline -xzf baseline-artifact/dafny.tar.gz
+          tar -C out/candidate -xzf candidate-artifact/dafny.tar.gz
+          if [ '${{ matrix.solver }}' = 5.1.0 ]; then
+            curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+            echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+            unzip -q z3.zip
+            echo "Z3=$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" >> "$GITHUB_ENV"
+          else
+            curl -fsSLo z3.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.12.1-x64-ubuntu-24.04-bin.zip
+            echo 'e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b  z3.zip' | sha256sum -c -
+            mkdir -p z3h && unzip -q z3.zip -d z3h
+            echo "Z3=$PWD/z3h/z3-4.12.1" >> "$GITHUB_ENV"
+          fi
+      - name: Record paired library source outcomes and resources
+        run: python3 .github/review/issue33-stdlib.py --baseline "$PWD/out/baseline/dafny/Dafny" --candidate "$PWD/out/candidate/dafny/Dafny" --z3 "$Z3" --output issue33-stdlib
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue33-stdlib-${{ matrix.solver }}
+          path: issue33-stdlib
+          retention-days: 90
+
+  translation:
+    needs: [build, baseline]
+    if: github.ref_name != 'scratch/issue33/baseline'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue33-baseline
+          path: baseline-artifact
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue33-candidate
+          path: candidate-artifact
+      - name: Unpack
+        run: |
+          mkdir -p out/baseline out/candidate
+          tar -C out/baseline -xzf baseline-artifact/dafny.tar.gz
+          tar -C out/candidate -xzf candidate-artifact/dafny.tar.gz
+      - name: Compare full source-library translation without verification
+        run: python3 .github/review/issue33-translation.py --baseline "$PWD/out/baseline/dafny/Dafny" --candidate "$PWD/out/candidate/dafny/Dafny" --output issue33-translation
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue33-translation
+          path: issue33-translation
+          retention-days: 90

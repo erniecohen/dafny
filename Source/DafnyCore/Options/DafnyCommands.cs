@@ -21,6 +21,7 @@ public static class DafnyCommands {
   }
 
   public static readonly IReadOnlyList<Option> VerificationOptions = new Option[] {
+    CommonOptionBag.AdditionalAxioms,
     CommonOptionBag.ProgressOption,
     CommonOptionBag.RelaxDefiniteAssignment,
     BoogieOptionBag.VerificationTimeLimit,
