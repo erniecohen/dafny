@@ -358,6 +358,8 @@ jobs:
           echo "$filter"
           dotnet test Source/IntegrationTests -c Release --no-build \
             --logger "console;verbosity=normal" --filter "$filter"
+      - name: Literal identities are option guarded and local to each module
+        run: dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~AdditionalAxiomsTranslationTests --logger "console;verbosity=normal"
       - name: Editor option changes invalidate verification results
         run: dotnet test Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~AdditionalAxiomsTest --logger "console;verbosity=normal"
 

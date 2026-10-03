@@ -48,7 +48,7 @@ public partial class BoogieGenerator {
         var splits = new List<SplitExprInfo>();
         bool splitHappened /*we actually don't care*/ = generator.TrSplitExpr(context, ensures.E, splits, true, functionHeight, true, etran);
         var (errorMessage, successMessage) = generator.CustomErrorMessage(ensures.Attributes);
-        var canCalls = etran.CanCallAssumption(ensures.E, new CanCallOptions(true, f));
+        var canCalls = etran.CanCallAssumptionForVerification(ensures.E, new CanCallOptions(true, f));
         generator.AddEnsures(ens, generator.FreeEnsures(ensures.E.Origin, canCalls, null, true));
         foreach (var s in splits) {
           if (s.IsChecked && !s.Tok.IsInherited(generator.currentModule)) {
@@ -103,7 +103,7 @@ public partial class BoogieGenerator {
           var e = formal.DefaultValue;
           generator.CheckWellformed(e, wfo, locals, builder,
             etran.WithReadsFrame(etran.readsFrame, null)); // No frame scope for default values
-          builder.Add(new AssumeCmd(e.Origin, etran.CanCallAssumption(e)));
+          builder.Add(new AssumeCmd(e.Origin, etran.CanCallAssumptionForVerification(e)));
           generator.CheckSubrange(e.Origin, etran.TrExpr(e), e.Type, formal.Type, e, builder);
 
           if (formal.IsOld) {

@@ -1,12 +1,6 @@
-direct round trips (type-system-refresh:false)
+original (type-system-refresh:false)
 
-Dafny program verifier finished with 10 verified, 0 errors
-inverse round trip (type-system-refresh:false)
-
-Dafny program verifier finished with 2 verified, 0 errors
-range (type-system-refresh:false)
-
-Dafny program verifier finished with 2 verified, 0 errors
+Dafny program verifier finished with 17 verified, 0 errors
 positive (type-system-refresh:false)
 
 Dafny program verifier finished with 58 verified, 0 errors
@@ -25,15 +19,9 @@ github-issue-33-negative.dfy(45,0): Error: a postcondition could not be proved o
 github-issue-33-negative.dfy(44,29): Related location: this is the postcondition that could not be proved
 
 Dafny program verifier finished with 1 verified, 11 errors
-direct round trips (type-system-refresh:true)
+original (type-system-refresh:true)
 
-Dafny program verifier finished with 10 verified, 0 errors
-inverse round trip (type-system-refresh:true)
-
-Dafny program verifier finished with 2 verified, 0 errors
-range (type-system-refresh:true)
-
-Dafny program verifier finished with 2 verified, 0 errors
+Dafny program verifier finished with 17 verified, 0 errors
 positive (type-system-refresh:true)
 
 Dafny program verifier finished with 58 verified, 0 errors
