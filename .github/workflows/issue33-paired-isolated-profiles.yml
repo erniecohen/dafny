@@ -1,0 +1,61 @@
+name: Issue 33 paired isolated query profiles
+on:
+  push:
+    branches: [scratch/issue33/paired-isolated-profiles]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        solver: ['4.12.1', '5.1.0']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue33-isolated-3-5.1.0
+          path: first
+          run-id: 37089478922
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue33-isolated-2001-5.1.0
+          path: last
+          run-id: 37089478922
+          github-token: ${{ github.token }}
+      - name: Unpack and install pinned solver
+        run: |
+          if [ '${{ matrix.solver }}' = 5.1.0 ]; then
+            curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+            echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+            unzip -q z3.zip
+            echo "Z3=$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" >> "$GITHUB_ENV"
+          else
+            curl -fsSLo z3.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.12.1-x64-ubuntu-24.04-bin.zip
+            echo 'e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b  z3.zip' | sha256sum -c -
+            mkdir -p z3h && unzip -q z3.zip -d z3h
+            echo "Z3=$PWD/z3h/z3-4.12.1" >> "$GITHUB_ENV"
+          fi
+      - name: Replay identical isolated queries including every numbered log
+        run: |
+          set +e
+          mkdir -p diagnostic
+          python3 .github/review/issue33-profile.py --smt first/isolated/solver.smt2 --z3 "$Z3" --output diagnostic/first
+          echo "$?" > diagnostic/first-harness-exit-code.txt
+          python3 .github/review/issue33-profile.py --smt last/isolated/solver.smt2 --z3 "$Z3" --output diagnostic/last
+          echo "$?" > diagnostic/last-harness-exit-code.txt
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue33-paired-isolated-${{ matrix.solver }}
+          path: |
+            diagnostic
+          retention-days: 90

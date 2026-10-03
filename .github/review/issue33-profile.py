@@ -2,10 +2,17 @@
 """Replay each captured VC in a fresh solver, retaining complete exit-time profiles."""
 import argparse
 import hashlib
+import itertools
 import json
 from pathlib import Path
 import re
 import subprocess
+
+def file_sha256(path):
+    digest=hashlib.sha256()
+    with Path(path).open('rb') as stream:
+        while chunk:=stream.read(65536):digest.update(chunk)
+    return digest.hexdigest()
 
 def commands(path):
     # Large isolated logs repeat the prelude for every VC. Keep only one command
@@ -119,7 +126,10 @@ a=p.parse_args();out=Path(a.output);out.mkdir(parents=True,exist_ok=True)
 version=subprocess.run([a.z3,'-version'],capture_output=True,text=True,check=True).stdout
 (out/'solver-version.txt').write_text(version)
 (out/'solver-sha256.txt').write_text(hashlib.sha256(Path(a.z3).read_bytes()).hexdigest()+'\n')
-selected=queries(a.smt);report=[]
+base=Path(a.smt)
+logs=[base]+sorted((p for p in base.parent.glob(base.name+'.*') if re.fullmatch(re.escape(base.name)+r'\.\d+',p.name)),key=lambda p:int(p.name.rsplit('.',1)[1]))
+(out/'source-logs.json').write_text(json.dumps([dict(name=p.name,sha256=file_sha256(p)) for p in logs],indent=2))
+selected=itertools.chain.from_iterable(queries(path) for path in logs);report=[]
 if a.literal:
     selected=[(name,body) for name,body in selected if 'Impl$' in name and 'ShiftRightByZero' in name]
     assert len(selected)==1
