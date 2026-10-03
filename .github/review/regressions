@@ -88,3 +88,6 @@ git-issues/github-issue-51-library-quotients.dfy
 
 # Documentation of an explicitly reference-only trait hierarchy.
 dafnydoc/doc1/TestDafnyDoc.dfy
+
+# Preserve the current release line regression.
+git-issues/github-issue-74.dfy

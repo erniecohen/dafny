@@ -98,7 +98,8 @@ and a project file (`dfyconfig.toml`) can set it, like any other option.
 
 - **The shared option is `--additional-axioms`**, default false, also available
   as `additional-axioms = true` in `[options]` of `dfyconfig.toml`. Its current
-  family is the bounded integer/bitvector round trip described in
+  family is the bounded integer/bitvector round trip, with local verification instances of
+  existing native integer literal identities, described in
   [`docs/dev/additional-axioms.md`](docs/dev/additional-axioms.md).
 - **Every later axiom joins that option.**  The option turns all its axioms on at
   once, so a later axiom's soundness argument covers it together with those

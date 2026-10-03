@@ -217,7 +217,7 @@ public partial class BoogieGenerator {
         }
 
         if (actual is DefaultValueExpression) {
-          builder.Add(TrAssumeCmd(actual.Origin, etran.CanCallAssumption(actual)));
+          builder.Add(TrAssumeCmd(actual.Origin, etran.CanCallAssumptionForVerification(actual)));
         } else {
           TrStmt_CheckWellformed(actual, builder, locals, etran, true);
         }

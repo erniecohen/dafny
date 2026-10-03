@@ -1,0 +1,45 @@
+name: Issue 74 enabled-suite diagnostics
+on:
+  push:
+    branches: ['scratch/issue74/regressions']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue74-builds
+          run-id: 37095952540
+          github-token: ${{ github.token }}
+          path: build-artifact
+      - name: Unpack builds and pin solver
+        run: |
+          mkdir out && tar -C out -xzf build-artifact/builds.tar.gz
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+          unzip -q z3.zip
+      - name: Capture actual queries and characterize literal-identity removals
+        run: |
+          if python3 .github/review/issue74-regressions.py --baseline "$PWD/out/baseline/Dafny" --candidate "$PWD/out/candidate/Dafny" --z3 "$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" --output diagnostics; then
+            echo 0 > diagnostics/probe-exit.txt
+          else
+            probe_rc=$?
+            mkdir -p diagnostics
+            echo "$probe_rc" > diagnostics/probe-exit.txt
+          fi
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue74-enabled-regressions
+          path: diagnostics
+          retention-days: 90

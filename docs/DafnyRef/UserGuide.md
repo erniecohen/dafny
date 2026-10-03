@@ -2371,9 +2371,11 @@ and what information it produces about the verification process.
   `[options]` section; `--additional-axioms=false` overrides that setting.
   This setting also applies to editor verification and is distinct from
   `--allow-axioms`, which controls warnings about assumptions in user code.
-  Direct round trips pass the pinned Z3 4.12.1 and 5.1.0 gates. Indirect goals
-  can remain solver-dependent: the unchanged shift-by-zero example exhausts
-  its resource cap on 4.12.1 but passes on 5.1.0.
+  It also exposes existing identities for concrete native integer literals used
+  as function-call arguments in local verification assumptions, preserving those
+  arguments and conversion checks. Shared function/type axioms are unchanged.
+  The unchanged round-trip and shift-by-zero examples pass the pinned Z3 4.12.1
+  and 5.1.0 gates in both resolver modes. Other proof costs remain solver-dependent.
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
 
 * `--manual-lemma-induction` - disables automatic inducntion for lemmas
