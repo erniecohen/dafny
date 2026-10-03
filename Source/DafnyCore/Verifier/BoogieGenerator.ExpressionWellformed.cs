@@ -906,7 +906,10 @@ namespace Microsoft.Dafny {
               Bpl.IdentifierExpr canCallFuncID = new Bpl.IdentifierExpr(callExpr.Origin, e.Function.FullSanitizedName + "#canCall", Bpl.Type.Bool);
               List<Bpl.Expr> args = etran.FunctionInvocationArguments(e, null, null);
               if (options.Get(CommonOptionBag.AdditionalAxioms)) {
-                builder.Add(TrAssumeCmd(callExpr.Origin, etran.IntegerLiteralIdentities(args.TakeLast(e.Args.Count))));
+                var identities = etran.IntegerLiteralIdentities(args.TakeLast(e.Args.Count));
+                if (identities is not Bpl.LiteralExpr { isBool: true, asBool: true }) {
+                  builder.Add(TrAssumeCmd(callExpr.Origin, identities));
+                }
               }
               Bpl.Expr canCallFuncAppl = new Bpl.NAryExpr(GetToken(expr), new Bpl.FunctionCall(canCallFuncID), args);
               builder.Add(TrAssumeCmd(callExpr.Origin, allowance == null ? canCallFuncAppl : BplOr(etran.TrExpr(allowance), canCallFuncAppl)));
