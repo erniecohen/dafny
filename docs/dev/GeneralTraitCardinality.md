@@ -131,21 +131,38 @@ stored generic reference contract can reject clients that depended on its old
 strict annotation. Existing variance, equality, initialization, grounding,
 heap, allocation, termination, and compilation restrictions remain applicable.
 
-The standard library applies the same field contracts to its stored callbacks.
-`FunctionAction` and `TotalFunctionActionProof` use `!I` for callback inputs
-and `!O` for their permissive parent and stored-family contracts.
-`FoldingConsumer` uses `!T` and `!R`, and `FunctionalIProducer` uses `!S`.
-Stored action/producer families and their reference parents carry the required
-permissive contracts, including `ProducerState` and the target-specific
-`AtomicBox` and `MutableMap` implementations. Ordinary variance and existing
-`(!new)` and `(==)` characteristics are preserved. A client storing one of these
-families under its own strict formal may need the corresponding `!` annotation.
+## Exported standard-library cardinality contracts
 
-Existing variance rules also apply to parent applications. The permissive
-contracts therefore continue through consumers, producers, and batch adapters,
-with `ConsumerState` carrying the stored `Consumer<T>` contract. Set-reader
-examples keep their producer/proof relationships using matching permissive
-formals.
+The standard library satisfies the same representation, retention, and cycle
+obligations as client declarations. Its migration adds 82 permissive `!` markers
+across 55 declaration headers: 53 in library source and two in set-reader
+examples. These are exported cardinality-contract changes. Affected parameter
+positions no longer advertise cardinality preservation. A client that stores
+one of these families under its own strict formal can therefore be rejected;
+it must adjust its representation or expose the required permissive contract.
+That contract can also propagate to the client's parents and stored families.
+
+The changes preserve ordinary invariant variance, equality support `(==)`, and
+non-heap characteristics `(!new)`. Specifications other than the exported type
+cardinality contracts, proof bodies, and executable bodies are unchanged.
+The less-obvious annotations follow these dependencies:
+
+| Affected contracts | Dependency requiring the permissive mode |
+| --- | --- |
+| `FunctionAction<!I, !O>` and `TotalFunctionActionProof<!I, !O>` | Stored callback inputs require `!I`. The `!O` contracts follow their `Action` and `TotalActionProof` parents and the stored `FunctionAction` family; callback results themselves preserve cardinality. |
+| `FoldingConsumer<!T, !R>` and `FunctionalIProducer<!S, !T>` | Stored callbacks have inputs `(R, T)` and `S`, respectively. `FunctionalIProducer` needs `!T` because its `IProducer<T>` and `TotalActionProof<(), T>` parents expose permissive slots. |
+| `GenericAction`, `Action`, `TotalActionProof`, and the consumer/producer interfaces | The permissive contracts required by implementations propagate to their exposed parent slots. In particular, `FilteredProducer` requires permissive `Producer.T`, which passes through `Option<T>` to the output slots of `Action` and `TotalActionProof`. `Action` passes both modes to `GenericAction`. |
+| State datatypes, composed/mapped/flattened producers, and total-proof helpers | Stored families carry their advertised modes. `ConsumerState` stores `Consumer<T>`, `ProducerState` stores `Producer<T>`, `ComposedAction` stores both `Action<I, M>` and `Action<M, O>`, and `FlattenedProducer` stores `Option<Producer<T>>`. Ghost storage has the same obligation. |
+| Consumer/producer subclasses and batch adapters | Parent applications propagate permissive modes even when a subclass's own fields preserve cardinality. A permissive outer slot in `Producer<Batched<T, E>>`, `IConsumer<Batched<T, E>>`, or `TotalActionProof<Batched<T, E>, ...>` reaches both `T` and `E`; `Batched` itself stays strict. |
+| `AtomicBox<!T>` and `MutableMap<!K(==), !V(==)>` | Stored ghost invariant callbacks take `T` or `(K, V)` as inputs. The replaceable interface, target implementations, and JavaScript helper classes advertise matching contracts. |
+| `SetIReader<!T(==)>`, `SetReader<!T(==)>`, and `ProducerOfSetProof<!T>` | Producer parents require permissive `T`. `SetReader` also directly retains `T` in its non-reference `ProducerOfSetProof<T>` parent, so that parent's mode must be compatible. The stored sets preserve cardinality. |
+
+Thus `EmptyProducer`, `RepeatProducer`, `SeqReader`, `ArrayWriter`, and
+`SeqWriter` carry permissive contracts through their parents even without a
+stored callback of their own. `Option`, `Result`, `Batched`, and `BatchedByte`
+remain strict, as do the method-only `ActionCompositionProof` and
+`ProducesSetProof` helpers. A permissive annotation satisfies a parameter
+contract; it does not make an expansive nominal cycle admissible.
 
 ## Regression boundaries
 
@@ -171,3 +188,14 @@ change an imported helper, and change provided/revealed views. Lifecycle tests
 also require cancellation and invalid translation input to leave no successful
 admission. Expected CLI output is recorded from executed test runs rather than
 inferred from this design note.
+
+Validation distinguishes source admission, proof verification, archive builds,
+and packaged-library loading. Resolution of migrated source establishes only
+admission. Before shipping, all seven embedded libraries must be freshly built
+with verification using the branch's `DefaultZ3Version`, normal library settings,
+and existing budgets, then included in the executable tested with
+`--standard-libraries` and target-specific loading. Results using Z3 5.1 are a
+separate comparison; failures in that configuration alone do not establish that
+proof changes are needed under the branch's default solver. Any reported Boogie
+output or resource-count equivalence applies only to the controls actually
+compared, not to every accepted program or the whole library.
