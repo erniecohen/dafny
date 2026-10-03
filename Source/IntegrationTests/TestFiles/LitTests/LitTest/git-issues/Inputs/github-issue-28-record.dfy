@@ -1,5 +1,5 @@
 replaceable module Spec {
-  type T(==,!new,00)
+  type T(==,!new,0)
   function {:axiom} Size(t: T): int
   function {:axiom} Pick(): T
 }
