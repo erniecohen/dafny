@@ -10,10 +10,17 @@ module Impl replaces Spec {
 }
 module Client {
   import opened Spec
-  function Twice(t: T): int { 2 * Size(t) }
+  function Identity<X>(x: X): X { x }
+  method Default<X(0)>() returns (x: X) {}
+  function Twice(t: T): int { 2 * Size(Identity([t])[0]) }
+  method DefaultSize() returns (n: int) {
+    var t := Default<T>();
+    var values := new T[1];
+    n := Size(t) + Size(values[0]);
+  }
 }
 module App {
   import Client
   import opened Spec
-  method Main() { print Client.Twice(Pick()), "\n"; }
+  method Main() { var n := Client.DefaultSize(); print if n == 64 then Client.Twice(Pick()) else 0, "\n"; }
 }

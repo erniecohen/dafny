@@ -4,9 +4,9 @@ replaceable module Spec {
   function {:axiom} Pick(): T<int>
 }
 module Impl replaces Spec {
-  datatype T<X(==,!new,0)> = T(n: X)
+  type T<X(==,!new,0)> = seq<X>
   function Size(t: T<int>): int { 32 }
-  function Pick(): T<int> { T(3) }
+  function Pick(): T<int> { [3] }
 }
 module Client {
   import opened Spec
