@@ -181,6 +181,51 @@ the option off and on, records per-batch costs, saves actual SMT, and verifies
 literal-heavy non-bitvector code. Its expected failing negative/vacuity probes
 are recorded separately from the required regression gate.
 
+### Literal follow-up acceptance boundary
+
+The module-wide literal implementation is not yet accepted for merge. Its
+[paired suite comparison](https://github.com/erniecohen/dafny/actions/runs/37095952540)
+against merged #73 covers 1,081 programs and 7,499 proof batches. Option-off
+verdicts and controlled resource counts have no differences. With the option on,
+three previously valid batches exhaust the existing 16,000,000-RU cap:
+
+| Batch | Merged #73, option on (RU) | Module-wide identities (RU) | Result |
+| --- | --- | --- | --- |
+| `SnapshotableTrees`, `Iterator.Push` batch 13 | 5,226,959 | 16,037,767 | out of resource |
+| `Lucas-up`, `INDUCTION_EVEN_ODD` | 1,302,475 | 16,014,820 | out of resource |
+| `Ackermann`, `Am` | 36,339 | 16,025,284 | out of resource |
+
+Counters include setup work beyond the cap. Seven programs have substantial
+cost increases (eight batches exceed both twice the baseline cost and a
+100,000-RU increase). Three batches improve: one formerly out-of-resource
+function-specification proof and two true `Gauss` assertions whose literal
+encoding formerly failed to unfold the recursive function. This is not an
+option-on acceptance pass, despite the probe workflow recording expected
+failures and exiting zero. The required option-off CI and permanent source
+regressions pass separately.
+
+[Isolated actual-query diagnostics](https://github.com/erniecohen/dafny/actions/runs/37097153001)
+keep the source, solver settings and cap unchanged. Removing only the collected
+closed identities from the candidate SMT restores all three failing proofs.
+All 45 selected correctness-query profiles account for their complete
+`quant-instantiations` statistics. `Am` returns from 36,165 instances to the
+baseline's 232; the failing `Push` query returns from 48,063 to 22,329. The
+filtered fresh-process Lucas query returns from 271,403 to 18,654 instances and
+1,159,912 RU (its full-program baseline above has a different cost). These
+removals are causal diagnostics, not a production repair or end-to-end evidence
+for a different implementation.
+
+Ordinary pruning retains a closed `LitInt(n) == n` whenever `LitInt` is relevant:
+the axiom's expression itself produces that dependency. Attaching it to another
+function's definitions would not remove the incoming `LitInt` dependency. The
+current module-wide identities can therefore reach proofs with no eligible
+literal call of their own. A proposed repair is to expose closed identities
+through existing call-local assumptions, preserving original arguments/checks
+and both resolver modes. That changes the approved module-emission scope and
+requires owner review before implementation. It is not implemented here. No
+quantified family, trigger, pruning algorithm, solver setting or resource limit
+has been changed to make these comparisons pass.
+
 ### Isolated 1,000-term performance characterization
 
 The [reviewer diagnostic artifacts](https://github.com/erniecohen/dafny/actions/runs/37087827539)
