@@ -215,6 +215,27 @@ filtered fresh-process Lucas query returns from 271,403 to 18,654 instances and
 removals are causal diagnostics, not a production repair or end-to-end evidence
 for a different implementation.
 
+The same comparison verifies 2,190 source-library declarations per solver
+using the library's existing limits, including its larger declaration-specific
+limits. All 92 complete module translations are byte-identical in the two
+option-off builds and with explicit CLI false. Option-off library verdicts have
+no differences. Default-order resource counts vary in 239 declarations on
+4.12.1 and 67 on 5.1.0; unchanged-build repeats vary in 238/19 and 46/41,
+respectively. This is consistent with the pre-existing declaration-order
+variation in [#30](https://github.com/erniecohen/dafny/issues/30), rather than a
+controlled resource-equality result for those default-order runs. The controlled
+suite and focused SMT comparisons above have exact resource equality.
+
+The option-on library comparison also fails acceptance: two previously correct
+declarations regress on 4.12.1 (`DivMod.LemmaHoistOverDenominator` and
+`Power2.Lemma2To64`), and four regress on 5.1.0
+(`DivMod.LemmaMultiplyDivideLe`, `BulkActions.ToBatchedProducer`,
+`JSON.ConcreteSyntax.SpecProperties.ConcatBytes_Linear`, and
+`JSON.ZeroCopy.Deserializer.Sequences.Elements`). `Lemma2To64` becomes a proof
+error; the others exhaust their existing limits. These are observed paired
+library differences, without the causal removal diagnostics performed for the
+three suite failures. Improvements elsewhere do not make this comparison pass.
+
 Ordinary pruning retains a closed `LitInt(n) == n` whenever `LitInt` is relevant:
 the axiom's expression itself produces that dependency. Attaching it to another
 function's definitions would not remove the incoming `LitInt` dependency. The
