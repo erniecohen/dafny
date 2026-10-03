@@ -58,6 +58,7 @@ public static class DafnyCommands {
     BoogieOptionBag.NoVerify,
     BoogieOptionBag.HiddenNoVerify,
     CommonOptionBag.OptimizeErasableDatatypeWrapper,
+    CommonOptionBag.CsReplacementTypes,
     CommonOptionBag.PythonReorderReplacements,
     CommonOptionBag.TestAssumptions,
     DeveloperOptionBag.Bootstrapping,
