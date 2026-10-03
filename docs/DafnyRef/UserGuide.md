@@ -2371,7 +2371,10 @@ and what information it produces about the verification process.
   `[options]` section; `--additional-axioms=false` overrides that setting.
   This setting also applies to editor verification and is distinct from
   `--allow-axioms`, which controls warnings about assumptions in user code.
-  See [the soundness and trigger note](../dev/additional-axioms.md).
+  Direct round trips pass the pinned Z3 4.12.1 and 5.1.0 gates. Indirect goals
+  can remain solver-dependent: the unchanged shift-by-zero example exhausts
+  its resource cap on 4.12.1 but passes on 5.1.0.
+  See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
 
 * `--manual-lemma-induction` - disables automatic inducntion for lemmas
 
