@@ -46,6 +46,124 @@ namespace Microsoft.Dafny {
 
     public List<TypeConstraint.ErrorMsg> TypeConstraintErrorsToBeReported { get; } = [];
 
+    private RedirectingTypeDependencyTracker redirectingTypeTracker;
+
+    // All legacy inference assignments, including proxy merges, notify before inspecting
+    // the selected target's ancestry. The tracker is inactive outside this module's phase.
+    internal void OnTypeProxyAssigned(TypeProxy proxy) {
+      redirectingTypeTracker?.OnProxyAssigned(proxy);
+    }
+
+    internal bool IsNumericBasedDuringInference(Type type, Type.NumericPersuasion? persuasion = null) {
+      var ancestry = type.ClassifyNumericAncestry();
+      if (ancestry.Kind == Type.NumericAncestryKind.Cyclic) {
+        throw new RedirectingTypeCycleException(ancestry.Cycle);
+      }
+      return persuasion switch {
+        Type.NumericPersuasion.Int => ancestry.Kind == Type.NumericAncestryKind.Integer,
+        Type.NumericPersuasion.Real => ancestry.Kind == Type.NumericAncestryKind.Real,
+        _ => ancestry.Kind is Type.NumericAncestryKind.Integer or Type.NumericAncestryKind.Real
+      };
+    }
+
+    /// <summary>
+    /// Saves only inference-owned state. An abort can bypass nested push/pop pairs, including
+    /// temporarily replaced label scopes, so recovery restores both the objects and boundaries.
+    /// It deliberately leaves the enclosing module visibility scope and emitted errors alone.
+    /// </summary>
+    private sealed class LegacyInferenceCheckpoint {
+      private readonly ModuleResolver resolver;
+      private readonly Scope<IVariable>.Checkpoint variables;
+      private readonly Scope<TypeParameter> typeParameters;
+      private readonly Scope<TypeParameter>.Checkpoint typeParameterBoundary;
+      private readonly Scope<LabeledStatement> statementLabels;
+      private readonly Scope<LabeledStatement>.Checkpoint statementLabelBoundary;
+      private readonly Scope<Label> dominatingLabels;
+      private readonly Scope<Label>.Checkpoint dominatingLabelBoundary;
+      private readonly List<LabeledStatement> loops;
+      private readonly LabeledStatement[] loopContents;
+      private readonly TopLevelDeclWithMembers enclosingClass;
+      private readonly MethodOrConstructor enclosingMethod;
+      private readonly int recursionDepth;
+      private readonly Dictionary<TypeParameter, Type> selfTypeSubstitution;
+      private readonly int defaultValueCount;
+
+      internal LegacyInferenceCheckpoint(ModuleResolver resolver) {
+        this.resolver = resolver;
+        variables = resolver.scope.CreateCheckpoint();
+        typeParameters = resolver.allTypeParameters;
+        typeParameterBoundary = typeParameters.CreateCheckpoint();
+        statementLabels = resolver.EnclosingStatementLabels;
+        statementLabelBoundary = statementLabels.CreateCheckpoint();
+        dominatingLabels = resolver.DominatingStatementLabels;
+        dominatingLabelBoundary = dominatingLabels.CreateCheckpoint();
+        loops = resolver.loopStack;
+        loopContents = loops.ToArray();
+        enclosingClass = resolver.currentClass;
+        enclosingMethod = resolver.currentMethod;
+        recursionDepth = resolver._recursionDepth;
+        selfTypeSubstitution = resolver.SelfTypeSubstitution;
+        defaultValueCount = resolver.allDefaultValueExpressions.Count;
+      }
+
+      internal void Restore() {
+        resolver.scope.RestoreCheckpoint(variables);
+        resolver.allTypeParameters = typeParameters;
+        typeParameters.RestoreCheckpoint(typeParameterBoundary);
+        resolver.EnclosingStatementLabels = statementLabels;
+        statementLabels.RestoreCheckpoint(statementLabelBoundary);
+        resolver.DominatingStatementLabels = dominatingLabels;
+        dominatingLabels.RestoreCheckpoint(dominatingLabelBoundary);
+        resolver.loopStack = loops;
+        loops.Clear();
+        loops.AddRange(loopContents);
+        resolver.currentClass = enclosingClass;
+        resolver.currentMethod = enclosingMethod;
+        resolver._recursionDepth = recursionDepth;
+        resolver.SelfTypeSubstitution = selfTypeSubstitution;
+        resolver.allDefaultValueExpressions.RemoveRange(defaultValueCount,
+          resolver.allDefaultValueExpressions.Count - defaultValueCount);
+        resolver.AllTypeConstraints.Clear();
+        resolver.AllXConstraints.Clear();
+        resolver.TypeConstraintErrorsToBeReported.Clear();
+      }
+    }
+
+    private void ReportRedirectingTypeCycle(IReadOnlyList<RedirectingTypeDecl> cycle) {
+      RedirectingTypeCycleAnalysis.MarkCyclic(cycle);
+      const string message = "cycle among redirecting types (newtypes, subset types, type synonyms)";
+      if (cycle.Count != 0) {
+        ReportCycleError(reporter, cycle.ToList(), d => d.Tok, d => d.Name, message);
+      } else {
+        reporter.Error(MessageSource.Resolver, Token.NoToken, message);
+      }
+    }
+
+    /// <summary>
+    /// Module attributes use the legacy constraint solver before the main body-inference phase, even with the
+    /// refreshed resolver selected. Protect this phase too, and retain the enclosing module's visibility scope.
+    /// </summary>
+    internal void ResolveModuleAttributes(ModuleDefinition module, List<TopLevelDecl> declarations) {
+      if (module.Attributes == null) {
+        return;
+      }
+      var checkpoint = new LegacyInferenceCheckpoint(this);
+      var enclosingTracker = redirectingTypeTracker;
+      try {
+        redirectingTypeTracker = new RedirectingTypeDependencyTracker(declarations, Type.GetScope(),
+          cycle => throw new RedirectingTypeCycleException(cycle));
+        scope.PushMarker();
+        scope.AllowInstance = false;
+        ResolveAttributes(module, new ResolutionContext(new NoContext(module.EnclosingModule), false), true);
+        scope.PopMarker();
+      } catch (RedirectingTypeCycleException cycleError) {
+        ReportRedirectingTypeCycle(cycleError.Cycle);
+        checkpoint.Restore();
+      } finally {
+        redirectingTypeTracker = enclosingTracker;
+      }
+    }
+
     private bool RevealedInScope(Declaration d) {
       Contract.Requires(d != null);
       Contract.Requires(moduleInfo != null);
@@ -1202,17 +1320,34 @@ namespace Microsoft.Dafny {
         }
 
       } else {
-        InheritMembers(declarations);
+        var checkpoint = new LegacyInferenceCheckpoint(this);
+        var enclosingTracker = redirectingTypeTracker;
+        try {
+          // Signature resolution cannot see dependencies hidden behind unassigned bases.
+          // Keep tracking active through both rounds and reject a newly concrete cycle before
+          // inference propagation can enter an ancestry-dependent operation.
+          redirectingTypeTracker = new RedirectingTypeDependencyTracker(declarations, Type.GetScope(),
+            cycle => throw new RedirectingTypeCycleException(cycle));
+          InheritMembers(declarations);
 
-        // Resolve all names and infer types. These two are done together, because name resolution depends on having type information
-        // and type inference depends on having resolved names.
-        // The task is first performed for (the constraints of) newtype declarations, (the constraints of) subset type declarations, and
-        // (the right-hand sides of) const declarations, because type resolution sometimes needs to know the base type of newtypes and subset types
-        // and needs to know the type of const fields. Doing these declarations increases the chances the right information will be provided
-        // in time.
-        // Once the task is done for these newtype/subset-type/const parts, the task continues with everything else.
-        ResolveNamesAndInferTypes(declarations, true);
-        ResolveNamesAndInferTypes(declarations, false);
+          // Resolve newtype/subset constraints and constants before other bodies, preserving
+          // the existing inference order. Cold checks at round boundaries are a backstop;
+          // assignment notifications provide the synchronous well-formedness guarantee.
+          ResolveNamesAndInferTypes(declarations, true);
+          redirectingTypeTracker.CheckAtRoundBoundary();
+          ResolveNamesAndInferTypes(declarations, false);
+          redirectingTypeTracker.CheckAtRoundBoundary();
+          if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
+            var checkTypeInferenceVisitor = new CheckTypeInferenceVisitor(this);
+            checkTypeInferenceVisitor.VisitDeclarations(declarations);
+          }
+        } catch (RedirectingTypeCycleException cycleError) {
+          ReportRedirectingTypeCycle(cycleError.Cycle);
+          checkpoint.Restore();
+          return;
+        } finally {
+          redirectingTypeTracker = enclosingTracker;
+        }
       }
 
       // Check that all types have been determined. During this process, also fill in all .ResolvedOp fields.
@@ -1220,7 +1355,7 @@ namespace Microsoft.Dafny {
       // be specified, whereas some (necessarily unused) type arguments are still underspecified. Such will be caught by the
       // CheckTypeInferenceVisitor. (But CheckTypeInferenceVisitor could, for the type system refresh, be modified to
       // not bother setting .ResolvedOp fields, since the under-specification detector above has already set those.)
-      if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
+      if (Options.Get(CommonOptionBag.TypeSystemRefresh) && reporter.Count(ErrorLevel.Error) == prevErrorCount) {
         var checkTypeInferenceVisitor = new CheckTypeInferenceVisitor(this);
         checkTypeInferenceVisitor.VisitDeclarations(declarations);
       }

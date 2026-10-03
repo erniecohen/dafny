@@ -1,0 +1,1 @@
+Inferred newtype cycles now produce resolution errors instead of causing the resolver to loop indefinitely.

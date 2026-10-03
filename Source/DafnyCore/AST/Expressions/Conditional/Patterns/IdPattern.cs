@@ -109,6 +109,7 @@ public class IdPattern : ExtendedPattern, IHasReferences {
       // If the type was not given explicitly, set it to the sourceType
       if (Type.Normalize() is TypeProxy proxy) {
         proxy.T = sourceType;
+        resolver.OnTypeProxyAssigned(proxy);
       }
 
       if (inStatementContext) {

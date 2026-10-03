@@ -394,6 +394,35 @@ jobs:
       - name: Editor option changes invalidate verification results
         run: dotnet test Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~AdditionalAxiomsTest --logger "console;verbosity=normal"
 
+
+  resolver-tests:
+    name: Resolver unit tests and language-server recovery
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Boogie packages
+        run: sh Scripts/fetch-boogie-packages.sh
+      - name: Build resolver and language-server tests
+        run: dotnet build Source/DafnyLanguageServer.Test -c Release
+      # These tests exercise type resolution only. The language-server tests
+      # explicitly disable automatic verification, so this job starts no solver.
+      - name: Test redirecting dependencies, numeric ancestry and recovery scopes
+        run: |
+          dotnet test Source/DafnyCore.Test -c Release --no-build \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~DafnyCore.Test.RedirectingTypeDependencyTrackerTests|FullyQualifiedName~DafnyCore.Test.NumericAncestryTests|FullyQualifiedName~DafnyCore.Test.ScopeCheckpointTest" \
+            --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none
+      - name: Test newtype-cycle edits in both resolver modes
+        run: |
+          dotnet test Source/DafnyLanguageServer.Test -c Release --no-build \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~InferredNewtypeCycleTest" \
+            --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none
+
   binaries:
     name: Binaries (${{ matrix.rid }})
     needs: build
@@ -459,7 +488,7 @@ jobs:
 
   release:
     name: GitHub release
-    needs: [build, binaries, verdicts, stdlib, regressions, resolver]
+    needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     timeout-minutes: 15

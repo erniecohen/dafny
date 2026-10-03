@@ -33,6 +33,34 @@ public class Scope<Thing> where Thing : class {
     }
   }
 
+  /// <summary>
+  /// A boundary for restoring scopes after an aborted resolution phase. In addition to names,
+  /// it saves instance availability, which cannot be restored through AllowInstance's setter.
+  /// </summary>
+  public readonly struct Checkpoint {
+    internal readonly Scope<Thing> Owner;
+    internal readonly int Count;
+    internal readonly int InstanceBoundary;
+
+    internal Checkpoint(Scope<Thing> owner, int count, int instanceBoundary) {
+      Owner = owner;
+      Count = count;
+      InstanceBoundary = instanceBoundary;
+    }
+  }
+
+  public Checkpoint CreateCheckpoint() {
+    return new Checkpoint(this, names.Count, scopeSizeWhereInstancesWereDisallowed);
+  }
+
+  public void RestoreCheckpoint(Checkpoint checkpoint) {
+    Contract.Requires(ReferenceEquals(checkpoint.Owner, this));
+    Contract.Requires(checkpoint.Count <= names.Count);
+    names.RemoveRange(checkpoint.Count, names.Count - checkpoint.Count);
+    things.RemoveRange(checkpoint.Count, things.Count - checkpoint.Count);
+    scopeSizeWhereInstancesWereDisallowed = checkpoint.InstanceBoundary;
+  }
+
   public void PushMarker() {
     names.Add(null);
     things.Add(null);
