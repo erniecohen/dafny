@@ -1,0 +1,1 @@
+Stabilize the standard-library `LemmaIndistinguishableQuotients` proof on the 4.11 release line by deriving quotient equality from Euclidean decomposition and the existing quotient/remainder lemma. The specification, ordinary library resource budget, solver defaults, and executable code are preserved.

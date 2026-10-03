@@ -83,5 +83,8 @@ traits/cardinality-independent-facades.dfy
 git-issues/github-issue-33.dfy
 git-issues/github-issue-33-z3-4.12.1.dfy
 
+# Verify the actual bounded quotient proof at the library project budget.
+git-issues/github-issue-51-library-quotients.dfy
+
 # Documentation of an explicitly reference-only trait hierarchy.
 dafnydoc/doc1/TestDafnyDoc.dfy

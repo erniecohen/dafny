@@ -219,7 +219,7 @@ Std Std.Arithmetic.DivMod.LemmaHoistOverDenominator (correctness)	Correct
 Std Std.Arithmetic.DivMod.LemmaHoistOverDenominator (well-formedness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaHoistOverDenominatorAuto (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaHoistOverDenominatorAuto (well-formedness)	Correct		
-Std Std.Arithmetic.DivMod.LemmaIndistinguishableQuotients (correctness)	OutOfResource		
+Std Std.Arithmetic.DivMod.LemmaIndistinguishableQuotients (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaIndistinguishableQuotients (well-formedness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaIndistinguishableQuotientsAuto (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaIndistinguishableQuotientsAuto (well-formedness)	Correct		
@@ -2188,7 +2188,7 @@ TargetSpecific-py Std.FileIO.WriteUTF8ToFile (correctness)	Correct
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (correctness)	Correct		
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (well-formedness)	Correct		
 TargetSpecific-py Std.PythonConcurrent.MutableMap.Get (well-formedness)	Correct		
-run Std	4	7610 verified, 1 error, 1 out of resource	src/Std/Arithmetic/DivMod.dfy(629,27) src/Std/Arithmetic/DivMod.dfy(902,2)
+run Std	4	7611 verified, 1 error	src/Std/Arithmetic/DivMod.dfy(903,2)
 run TargetSpecific-cs	0	15 verified, 0 errors	
 run TargetSpecific-go	0	16 verified, 0 errors	
 run TargetSpecific-java	0	15 verified, 0 errors	
