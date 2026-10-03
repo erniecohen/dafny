@@ -17,7 +17,7 @@ out = Path(a.output).resolve(); out.mkdir(parents=True, exist_ok=True)
 inputs = Path('Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs').resolve()
 report = {'runs': [], 'off_differences': [], 'checks': {}}
 files = ['github-issue-33-original.dfy', 'github-issue-33-positive.dfy',
-         'github-issue-33-negative.dfy', 'github-issue-74-positive.dfy', 'github-issue-74-negative.dfy']
+         'github-issue-33-negative.dfy', 'github-issue-74-positive.dfy', 'github-issue-74-negative.dfy', 'github-issue-74-isolation.dfy']
 for refresh in [False, True]:
     for name in files:
         results = {}

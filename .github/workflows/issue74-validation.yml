@@ -83,6 +83,10 @@ jobs:
           fi
       - name: End-to-end original, literal cases, and controls at 200,000 units
         run: python3 .github/review/issue74-targeted.py --baseline "$PWD/out/baseline/Dafny" --candidate "$PWD/out/candidate/Dafny" --z3 "$Z3" --output results
+      - name: Recheck the three suite failures and six library regressions at existing limits
+        run: |
+          python3 .github/review/issue74-corpus.py --baseline "$PWD/out/baseline/Dafny" --candidate "$PWD/out/candidate/Dafny" --z3 "$Z3" --output results/suite --only dafny4/Ackermann.dfy,dafny4/Lucas-up.dfy,dafny2/SnapshotableTrees.dfy --jobs 2
+          python3 .github/review/issue74-library-focused.py --baseline "$PWD/out/baseline/Dafny" --candidate "$PWD/out/candidate/Dafny" --z3 "$Z3" --output results/library
       - uses: actions/upload-artifact@v4
         if: always()
         with:
