@@ -26,6 +26,11 @@ on:
         type: boolean
         default: false
 
+      additional_axioms_probe:
+        description: Record initial enabled verdict baselines without enforcing them (scratch branches only)
+        type: boolean
+        default: false
+
 permissions:
   contents: read
 
@@ -115,7 +120,7 @@ jobs:
           retention-days: 14
 
   suite:
-    name: Verifier suite (shard ${{ matrix.shard }} of 4)
+    name: Verifier suite (axioms ${{ matrix.axioms }}, shard ${{ matrix.shard }} of 4)
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 240
@@ -123,6 +128,7 @@ jobs:
       fail-fast: false
       matrix:
         shard: [0, 1, 2, 3]
+        axioms: ['off', 'on']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -145,33 +151,49 @@ jobs:
           L=Source/IntegrationTests/TestFiles/LitTests/LitTest
           python3 .github/review/lit-verdicts.py plan "$L" plan.tsv
           python3 .github/review/lit-verdicts.py run plan.tsv "$L" "$PWD/out/dafny/Dafny" "$Z3" \
-            verdicts-${{ matrix.shard }}.tsv --shard ${{ matrix.shard }}/4 --jobs 4
+            verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv --shard ${{ matrix.shard }}/4 --jobs 4 \
+            --additional-axioms ${{ matrix.axioms == 'on' }} --measurements measurements/${{ matrix.axioms }}
+          python3 .github/review/additional-axioms.py inventory measurements/${{ matrix.axioms }} \
+            resources-${{ matrix.axioms }}-${{ matrix.shard }}.json
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: verdicts-${{ matrix.shard }}
+          name: verdicts-${{ matrix.axioms }}-${{ matrix.shard }}
           path: |
-            verdicts-${{ matrix.shard }}.tsv
+            verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv
+            resources-${{ matrix.axioms }}-${{ matrix.shard }}.json
             plan.tsv
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: suite-measurements-${{ matrix.axioms }}-${{ matrix.shard }}
+          path: measurements
+          compression-level: 9
           retention-days: 90
 
   verdicts:
-    name: Verdicts
+    name: Verdicts (axioms ${{ matrix.axioms }})
     needs: [build, suite]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        axioms: ['off', 'on']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          pattern: verdicts-*
+          pattern: verdicts-${{ matrix.axioms }}-*
           merge-multiple: true
       - name: Merge and summarise
         run: |
-          sort verdicts-*.tsv > verdicts.tsv
+          sort verdicts-${{ matrix.axioms }}-*.tsv > verdicts.tsv
           test "$(wc -l < verdicts.tsv)" -eq "$(wc -l < plan.tsv)"
           python3 .github/review/lit-verdicts.py expected verdicts.tsv > expected-verdicts.tsv
           {
-            echo "## Verifier suite: ${{ needs.build.outputs.version }}"
+            echo "## Verifier suite, axioms ${{ matrix.axioms }}: ${{ needs.build.outputs.version }}"
             echo
             echo "Each program under LitTest/dafny0..4 and git-issues whose first RUN line"
             echo "verifies it, at a resource limit of 16,000,000, with Z3 5.1.0."
@@ -180,7 +202,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
-          name: verdicts
+          name: verdicts-${{ matrix.axioms }}
           path: |
             verdicts.tsv
             expected-verdicts.tsv
@@ -190,16 +212,20 @@ jobs:
       # time, and not the resources its finished proofs used.  To change the
       # expected verdicts on purpose, see .github/review/lit-verdicts.py.
       - name: Compare with the expected verdicts
-        if: hashFiles('.github/review/expected-verdicts.tsv') != ''
+        env:
+          PROBE: ${{ inputs.additional_axioms_probe }}
         run: |
-          if python3 .github/review/lit-verdicts.py compare .github/review/expected-verdicts.tsv verdicts.tsv > compare.txt; then
-            tail -1 compare.txt
-          else
-            cat compare.txt
-            { echo; echo "### Verdicts that changed"; echo; echo '```'; cat compare.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
-            echo "::error::Verdicts changed ($(tail -1 compare.txt)).  If that is intended, replace .github/review/expected-verdicts.tsv with the one in this run's artifact 'verdicts', in a commit that says, for each program listed, why its verdict changed."
-            exit 1
-          fi
+          suffix=""
+          if [ '${{ matrix.axioms }}' = on ]; then suffix="-additional-axioms"; fi
+          python3 .github/review/additional-axioms.py gate suite \
+            ".github/review/expected-verdicts$suffix.tsv" verdicts.tsv \
+            --mode '${{ matrix.axioms }}' --output comparison
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verdict-comparison-${{ matrix.axioms }}
+          path: comparison
+          retention-days: 90
 
   resolver:
     name: Resolver matrix (both modes)
@@ -216,6 +242,8 @@ jobs:
           name: dafny
       - name: Unpack Dafny
         run: mkdir -p out && tar -C out -xzf dafny.tar.gz
+      - name: Test axiom gate and resource reporting
+        run: python3 -m unittest discover -s .github/review -p test_additional_axioms.py
       - name: Test matrix runner
         run: python3 -m unittest discover -s .github/review -p test_resolver_matrix.py
       - name: Resolve manifest in both modes
@@ -254,7 +282,7 @@ jobs:
           retention-days: 90
 
   stdlib:
-    name: Standard library (Z3 ${{ matrix.z3 }})
+    name: Standard library (Z3 ${{ matrix.z3 }}, axioms ${{ matrix.axioms }})
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 180
@@ -264,6 +292,7 @@ jobs:
         # This line's Z3, and the Z3 that the tree's own tests expect (its
         # DefaultZ3Version), with which upstream builds the library.
         z3: ['5.1.0', 'of the tests']
+        axioms: ['off', 'on']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -299,10 +328,10 @@ jobs:
         run: |
           "$Z3" --version
           python3 .github/review/std-verdicts.py run Source/DafnyStandardLibraries "$PWD/out/dafny/Dafny" "$Z3" \
-            std-verdicts.tsv --cores 4
+            std-verdicts.tsv --cores 4 --additional-axioms ${{ matrix.axioms == 'on' }}
           python3 .github/review/std-verdicts.py expected std-verdicts.tsv > "expected-std-verdicts-z3-$Z3V.tsv"
           {
-            echo "## Standard library, Z3 $Z3V: ${{ needs.build.outputs.version }}"
+            echo "## Standard library, axioms ${{ matrix.axioms }}, Z3 $Z3V: ${{ needs.build.outputs.version }}"
             echo
             echo "Source/DafnyStandardLibraries, verified as its Makefile's verify target does, with"
             echo "the library's own resource limits and no time limit."
@@ -311,7 +340,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
-          name: std-verdicts-z3-${{ env.Z3V }}
+          name: std-verdicts-${{ matrix.axioms }}-z3-${{ env.Z3V }}
           path: |
             std-verdicts.tsv
             expected-std-verdicts-z3-${{ env.Z3V }}.tsv
@@ -320,17 +349,45 @@ jobs:
       # and error lines.  Not times, and not the resources finished proofs used.  To
       # change the expected verdicts on purpose, see .github/review/std-verdicts.py.
       - name: Compare with the expected verdicts
+        env:
+          PROBE: ${{ inputs.additional_axioms_probe }}
         run: |
-          e=".github/review/expected-std-verdicts-z3-$Z3V.tsv"
-          if [ ! -f "$e" ]; then echo "::warning::no $e to compare with"; exit 0; fi
-          if python3 .github/review/std-verdicts.py compare "$e" std-verdicts.tsv > compare.txt; then
-            tail -1 compare.txt
-          else
-            cat compare.txt
-            { echo; echo "### Verdicts that changed"; echo; echo '```'; cat compare.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
-            echo "::error::Standard-library verdicts under Z3 $Z3V changed ($(tail -1 compare.txt)).  If that is intended, replace $e with the one in this run's artifact 'std-verdicts-z3-$Z3V', in a commit that says, for each row listed, why its verdict changed."
-            exit 1
-          fi
+          suffix=""
+          if [ '${{ matrix.axioms }}' = on ]; then suffix="-additional-axioms"; fi
+          python3 .github/review/additional-axioms.py gate std \
+            ".github/review/expected-std-verdicts-z3-$Z3V$suffix.tsv" std-verdicts.tsv \
+            --mode '${{ matrix.axioms }}' --output comparison
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: std-comparison-${{ matrix.axioms }}-z3-${{ env.Z3V }}
+          path: comparison
+          retention-days: 90
+
+  axiom-resources:
+    name: Additional-axiom resource comparisons
+    needs: [suite, stdlib]
+    if: always() && needs.suite.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: verdicts-*-*
+          path: measurements
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: std-verdicts-*
+          path: measurements
+      - name: Report enabled versus disabled resource counts
+        run: python3 .github/review/additional-axioms.py resources measurements resource-comparison
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: additional-axiom-resources
+          path: resource-comparison
+          retention-days: 90
 
   regressions:
     name: Regression tests (upstream harness)
@@ -488,7 +545,7 @@ jobs:
 
   release:
     name: GitHub release
-    needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests]
+    needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, axiom-resources]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     timeout-minutes: 15

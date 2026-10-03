@@ -232,7 +232,7 @@ To change the file on purpose:
 
 1. Push the change.  The job `Verdicts` fails and lists each program whose
    verdict moved, with the expected and the new verdict.
-2. Take `expected-verdicts.tsv` from that run's artifact `verdicts` (or write it
+2. Take `expected-verdicts.tsv` from that run's artifact `verdicts-off` (or write it
    with `python3 .github/review/lit-verdicts.py expected verdicts.tsv`), and
    replace `.github/review/expected-verdicts.tsv` with it.
 3. Commit it on its own.  The commit message must say, for each program whose
@@ -248,7 +248,7 @@ expects for each of the library's declarations under that Z3: its outcome
 (`Correct`, `Errors`, `OutOfResource`, ...), and for each part of the run (the
 library, and its target-specific files for each target language) the exit code,
 the summary line and the lines with errors.  They are updated as the suite's
-expected verdicts are, from the run's artifact `std-verdicts-z3-<version>`, with a
+expected verdicts are, from the run's artifact `std-verdicts-off-z3-<version>`, with a
 reason for every row that changes.
 
 The library runs with its own resource limits and without a time limit, in
@@ -264,3 +264,12 @@ That order is not quite deterministic: the resource counts of some declarations
 move a little from one run to the next (`.github/review/std-verdicts.py` gives the
 figures).  So a proof close to its limit could change its verdict with no cause.
 If one does, run the job again before updating the file.
+
+
+### Additional axioms enabled
+
+The suite and source-library gates also run with `--additional-axioms`, using
+separate expected verdicts and recording paired OFF/ON resource counts. See
+[the standing axiom CI documentation](docs/dev/additional-axioms.md#standing-ci-for-the-shared-option-50)
+for scope, retained negative/vacuity controls, resource-order caveats and the
+scratch-only baseline-capture procedure. The OFF verdict files remain unchanged.

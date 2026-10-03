@@ -373,3 +373,40 @@ cap on each solver; its partial output is retained and further replay of that
 partial sweep was stopped. It supplies no whole-file green result. The
 20,000,000-RU per-query limit was not raised, and the failed grouped case is not
 made into an acceptance gate or used to redesign the axiom family.
+
+
+## Standing CI for the shared option (#50)
+
+The review workflow runs the existing suite plan with the shared option both
+OFF and ON under checksum-pinned Z3 5.1.0. It likewise runs the source standard
+library in both modes under Z3 4.12.1 and 5.1.0. The existing OFF expectations,
+program options, declaration order, resource caps and safety timeouts remain
+unchanged. An ON verdict is checked against its own file:
+
+- `.github/review/expected-verdicts-additional-axioms.tsv`;
+- `.github/review/expected-std-verdicts-z3-4.12.1-additional-axioms.tsv`;
+- `.github/review/expected-std-verdicts-z3-5.1.0-additional-axioms.tsv`.
+
+Missing files, added/removed programs or declarations, and changed verdicts fail
+the gate. The existing regression harness still checks the retained #33/#74
+positive, negative, vacuity and local-identity isolation controls in both resolver
+modes. These controls are needed alongside the suite: passing existing proofs
+alone does not establish consistency.
+
+Each suite shard retains commands, diagnostic output and per-batch JSON logs.
+The resource report joins OFF and ON batches by program, declaration and VC
+number, preserving unmatched entries. It retains every observed outcome/count
+and shows the largest increases in the job summary. Source-library resource
+counts are declaration totals in the existing runner's TSV files. They retain
+the known default-order variation described above and in #30; the paired
+observations do not claim exact controlled library resource equality. Costs have
+no new pass/fail threshold. In particular, #78's accepted `MinimumWindowMax`
+outliers remain nonblocking. No axiom, proof source or verification limit changes.
+
+`additional_axioms_probe=true` is a workflow-dispatch input restricted to
+`scratch/` branches. Only the new ON comparisons then record differences and
+exit zero, retaining candidate expected files in comparison artifacts. OFF
+comparisons remain strict. A successful probe is not an acceptance run: inspect
+every difference, document its reason, commit ON expectations separately, and
+run ordinary strict CI before proposing the change. Future snapshot changes
+follow the same reviewed-verdict policy as the OFF files.
