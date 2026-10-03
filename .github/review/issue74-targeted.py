@@ -29,7 +29,7 @@ for refresh in [False, True]:
                    '--cores', '1', '--resource-limit', '200000', '--verification-time-limit', '0',
                    '--type-system-refresh:' + str(refresh).lower(), '--show-snippets:false',
                    '--error-limit', '0', '--boogie', '/normalizeDeclarationOrder:0',
-                   '--boogie', '/proverLog:' + str(dest / 'solver.smt2'),
+                   '--solver-log', str(dest / 'solver.smt2'),
                    '--bprint', str(dest / 'input.bpl'), '--log-format', 'json;LogFileName=' + str(dest / 'results.json')] + flags
             (dest / 'command.json').write_text(json.dumps(cmd))
             try:
@@ -50,6 +50,7 @@ for refresh in [False, True]:
         if not identical: report['off_differences'].append([refresh, name])
         report['runs'].append({'refresh': refresh, 'file': name, 'off_identical': identical, 'results': results})
 report['checks']['all_off_identical'] = not report['off_differences']
+report['checks']['solver_input_saved'] = all(r['results'][m]['smt'] for r in report['runs'] for m in ['B', 'O', 'BE', 'E'])
 report['checks']['positive_pass'] = all(r['results']['E']['exit'] == 0 for r in report['runs'] if 'negative' not in r['file'])
 report['checks']['negative_rejected'] = all(r['results']['E']['exit'] == 4 and r['results']['E']['summary'] and
     '11 errors' in r['results']['E']['summary'][0] if '33-negative' in r['file'] else

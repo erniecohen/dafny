@@ -29,6 +29,11 @@ jobs:
             dotnet publish Source/Dafny/Dafny.csproj -c Release -o "$GITHUB_WORKSPACE/out/$1" -p:SourceRevisionId="$revision"
           }
           if build_one candidate > candidate-build.log 2>&1; then
+            if dotnet test Source/IntegrationTests -c Release --filter FullyQualifiedName~AdditionalAxiomsTranslationTests --logger "console;verbosity=normal" > translation-tests.log 2>&1; then
+              echo '0' > translation-tests-exit.txt
+            else
+              echo "$?" > translation-tests-exit.txt
+            fi
             git fetch --no-tags --depth=1 origin edff862a3da391fe2f0142343a5846edf078b2ed
             git worktree add baseline edff862a3da391fe2f0142343a5846edf078b2ed
             if (cd baseline && build_one baseline) > baseline-build.log 2>&1; then
@@ -43,6 +48,7 @@ jobs:
           path: |
             builds.tar.gz
             *-build.log
+            translation-tests*
           retention-days: 14
   targeted:
     needs: build
