@@ -849,7 +849,7 @@ namespace Microsoft.Dafny {
         var e = formal.DefaultValue;
         CheckWellformedWithResult(e, new WFOptions(null, true,
             false, true), locals, builder, etran, (returnBuilder, result) => {
-              builder.Add(new Bpl.AssumeCmd(e.Origin, etran.CanCallAssumption(e)));
+              builder.Add(new Bpl.AssumeCmd(e.Origin, etran.CanCallAssumptionForVerification(e)));
               CheckSubrange(result.Origin, etran.TrExpr(result), e.Type, formal.Type, e, returnBuilder);
             });
       }

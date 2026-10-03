@@ -55,33 +55,6 @@ namespace Microsoft.Dafny {
     // TODO(wuestholz): Enable this once Dafny's recommended Z3 version includes changeset 0592e765744497a089c42021990740f303901e67.
     public bool UseOptimizationInZ3 { get; set; }
 
-    // Allocated only when the opt-in translation encounters an eligible call argument.
-    private SortedSet<BigInteger> concreteIntegerLiteralArguments;
-
-    private void CollectIntegerLiteralIdentity(Bpl.Expr argument) {
-      if (!options.Get(CommonOptionBag.AdditionalAxioms)) {
-        return;
-      }
-      if (argument is Bpl.NAryExpr application && application.Fun.FunctionName == "LitInt" &&
-          application.Args.Count == 1 && application.Args[0] is Bpl.LiteralExpr { isBigNum: true } numeral) {
-        (concreteIntegerLiteralArguments ??= new SortedSet<BigInteger>()).Add(numeral.asBigNum.ToBigInteger);
-      }
-    }
-
-    private void AddIntegerLiteralIdentities() {
-      if (!options.Get(CommonOptionBag.AdditionalAxioms) || concreteIntegerLiteralArguments == null) {
-        return;
-      }
-      var literalFunction = sink.Functions.Single(function => function.Name == "LitInt");
-      foreach (var value in concreteIntegerLiteralArguments) {
-        var numeral = new Bpl.LiteralExpr(Token.NoToken, BaseTypes.BigNum.FromBigInt(value));
-        var identity = Bpl.Expr.Eq(FunctionCall(Token.NoToken, BuiltinFunction.LitInt, null, numeral), numeral);
-        // Use the existing function-definition dependency so ordinary pruning retains
-        // these closed instances when LitInt is used, without changing call arguments.
-        AddOtherDefinition(literalFunction, new Bpl.Axiom(Token.NoToken, identity, "concrete integer literal identity"));
-      }
-    }
-
     void AddOtherDefinition(Bpl.Declaration declaration, Axiom axiom) {
       sink.AddTopLevelDeclaration(axiom);
 
@@ -881,7 +854,6 @@ namespace Microsoft.Dafny {
       filesWhereOnlyMembersAreVerified = [];
 
       AddTraitParentAxioms();
-      AddIntegerLiteralIdentities();
 
       foreach (var c in tytagConstants.Values) {
         sink.AddTopLevelDeclaration(c);
@@ -2200,7 +2172,7 @@ namespace Microsoft.Dafny {
 
       foreach (var frameExpression in calleeFrame) {
         var e = substMap != null ? Substitute(frameExpression.E, receiverReplacement, substMap) : frameExpression.E;
-        makeAssume(frameExpression.Origin, etran.CanCallAssumption(e));
+        makeAssume(frameExpression.Origin, etran.CanCallAssumptionForVerification(e));
       }
 
       // emit: assert (forall o: ref, f: Field :: o != null && $Heap[o,alloc] && (o,f) in subFrame ==> enclosingFrame[o,f]);

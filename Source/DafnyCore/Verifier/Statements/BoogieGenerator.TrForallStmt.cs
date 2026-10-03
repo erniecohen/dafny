@@ -187,10 +187,10 @@ public partial class BoogieGenerator {
         tr = TrTrigger(callEtran, expr.Attributes, expr.Origin, bvars, substMap, s0.MethodSelect.TypeArgumentSubstitutionsWithParents());
 
         var p = Substitute(expr.Range, null, substMap);
-        anteCanCalls = initEtran.CanCallAssumption(p);
+        anteCanCalls = initEtran.CanCallAssumptionForVerification(p);
         ante = initEtran.TrExpr(p);
         p = Substitute(expr.Term, null, substMap);
-        post = BplAnd(post, callEtran.CanCallAssumption(p));
+        post = BplAnd(post, callEtran.CanCallAssumptionForVerification(p));
         post = BplAnd(post, callEtran.TrExpr(p));
       } else {
         typeAndAdditionalAntecedents = initEtran.TrBoundVariablesRename(boundVars, bvars, out substMap);
@@ -200,7 +200,7 @@ public partial class BoogieGenerator {
         }
 
         var p = Substitute(range, null, substMap);
-        anteCanCalls = initEtran.CanCallAssumption(p);
+        anteCanCalls = initEtran.CanCallAssumptionForVerification(p);
         ante = initEtran.TrExpr(p);
 
         var receiver = new BoogieWrapper(initEtran.TrExpr(Substitute(s0.Receiver, null, substMap, s0.MethodSelect.TypeArgumentSubstitutionsWithParents())), s0.Receiver.Type);
@@ -211,7 +211,7 @@ public partial class BoogieGenerator {
         foreach (var ens in ConjunctsOf(s0.Method.Ens)) {
           p = Substitute(ens.E, receiver, argsSubstMap, s0.MethodSelect.TypeArgumentSubstitutionsWithParents());  // substitute the call's actuals for the method's formals
           if (includeCanCalls) {
-            post = BplAnd(post, callEtran.CanCallAssumption(p));
+            post = BplAnd(post, callEtran.CanCallAssumptionForVerification(p));
           }
           post = BplAnd(post, callEtran.TrExpr(p));
         }
@@ -483,8 +483,8 @@ public partial class BoogieGenerator {
         tr = new Bpl.Trigger(tok, true, tt, tr);
       }
     }
-    var canCalls = BplAnd(prevEtran.CanCallAssumption(lhs), prevEtran.CanCallAssumption(rhs));
-    var canCallRange = prevEtran.CanCallAssumption(range);
+    var canCalls = BplAnd(prevEtran.CanCallAssumptionForVerification(lhs), prevEtran.CanCallAssumptionForVerification(rhs));
+    var canCallRange = prevEtran.CanCallAssumptionForVerification(range);
     var body = BplAnd(canCalls, Bpl.Expr.Eq(xHeapOF, g));
     body = BplImp(xAnte, body);
     body = BplAnd(canCallRange, body);
@@ -552,7 +552,7 @@ public partial class BoogieGenerator {
 
       // check that postconditions hold
       foreach (var ens in ConjunctsOf(forallStmt.Ens)) {
-        definedness.Add(TrAssumeCmd(ens.E.Origin, etran.CanCallAssumption(ens.E)));
+        definedness.Add(TrAssumeCmd(ens.E.Origin, etran.CanCallAssumptionForVerification(ens.E)));
 
         foreach (var split in TrSplitExpr(definedness.Context, ens.E, etran, true, out var splitHappened)) {
           if (split.IsChecked) {
@@ -570,7 +570,7 @@ public partial class BoogieGenerator {
     var se = forallStmt.Body == null ? Bpl.Expr.True : TrFunctionSideEffect(forallStmt.Body, etran);
     var substMap = new Dictionary<IVariable, Expression>();
     var p = Substitute(forallStmt.EffectiveEnsuresClauses[0], null, substMap);
-    exporter.Add(TrAssumeCmd(forallStmt.Origin, etran.CanCallAssumption(p)));
+    exporter.Add(TrAssumeCmd(forallStmt.Origin, etran.CanCallAssumptionForVerification(p)));
     var qq = etran.TrExpr(p);
     if (forallStmt.BoundVars.Count != 0) {
       exporter.Add(TrAssumeCmd(forallStmt.Origin, BplAnd(se, qq)));

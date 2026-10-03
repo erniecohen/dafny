@@ -607,7 +607,7 @@ namespace Microsoft.Dafny {
         foreach (var formal in m.Ins.Where(formal => formal.DefaultValue != null)) {
           var e = formal.DefaultValue;
           CheckWellformed(e, wfo, localVariables, builder, etran.WithReadsFrame(etran.readsFrame, null)); // No scope for default parameters
-          builder.Add(new Boogie.AssumeCmd(e.Origin, etran.CanCallAssumption(e)));
+          builder.Add(new Boogie.AssumeCmd(e.Origin, etran.CanCallAssumptionForVerification(e)));
           CheckSubrange(e.Origin, etran.TrExpr(e), e.Type, formal.Type, e, builder);
 
           if (formal.IsOld) {
@@ -796,12 +796,12 @@ namespace Microsoft.Dafny {
             decrToks.Add(ee.Origin);
             decrTypes.Add(ee.Type.NormalizeExpand());
             decrCallerDafny.Add(ee);
-            canCalls = BplAnd(canCalls, exprTran.CanCallAssumption(ee));
+            canCalls = BplAnd(canCalls, exprTran.CanCallAssumptionForVerification(ee));
             decrCaller.Add(exprTran.TrExpr(ee));
             Expression es = Substitute(ee, receiverSubst, substMap);
             es = Substitute(es, null, decrSubstMap);
             decrCalleeDafny.Add(es);
-            canCalls = BplAnd(canCalls, exprTran.CanCallAssumption(ee));
+            canCalls = BplAnd(canCalls, exprTran.CanCallAssumptionForVerification(ee));
             decrCallee.Add(exprTran.TrExpr(es));
           }
           return BplImp(canCalls,
@@ -1113,7 +1113,7 @@ namespace Microsoft.Dafny {
       var cco = new CanCallOptions(true, f);
       //generating class post-conditions
       foreach (var en in ConjunctsOf(f.Ens)) {
-        builder.Add(TrAssumeCmd(f.Origin, etran.CanCallAssumption(en.E, cco)));
+        builder.Add(TrAssumeCmd(f.Origin, etran.CanCallAssumptionForVerification(en.E, cco)));
         builder.Add(TrAssumeCmdWithDependencies(etran, f.Origin, en.E, "overridden function ensures clause"));
       }
 
@@ -1160,7 +1160,7 @@ namespace Microsoft.Dafny {
       foreach (var en in ConjunctsOf(f.OverriddenFunction.Ens)) {
         var subEn = sub.Substitute(en.E);
         foreach (var s in TrSplitExpr(new BodyTranslationContext(false), subEn, etran, false, out _).Where(s => s.IsChecked)) {
-          builder.Add(TrAssumeCmd(f.Origin, etran.CanCallAssumption(subEn, cco)));
+          builder.Add(TrAssumeCmd(f.Origin, etran.CanCallAssumptionForVerification(subEn, cco)));
           var constraint = Expression.CreateImplies(allOverrideEns, subEn);
           builder.Add(Assert(f.Origin, s.E, new FunctionContractOverride(true, constraint), builder.Context));
         }
@@ -1248,7 +1248,7 @@ namespace Microsoft.Dafny {
       var subReqs = new List<Expression>();
       foreach (var req in ConjunctsOf(f.OverriddenFunction.Req)) {
         var subReq = sub.Substitute(req.E);
-        builder.Add(TrAssumeCmd(f.Origin, etran.CanCallAssumption(subReq, cco)));
+        builder.Add(TrAssumeCmd(f.Origin, etran.CanCallAssumptionForVerification(subReq, cco)));
         builder.Add(TrAssumeCmdWithDependencies(etran, f.Origin, subReq, "overridden function requires clause"));
         subReqs.Add(subReq);
       }
@@ -1258,7 +1258,7 @@ namespace Microsoft.Dafny {
       cco = new CanCallOptions(true, f);
       foreach (var req in ConjunctsOf(f.Req)) {
         foreach (var s in TrSplitExpr(new BodyTranslationContext(false), req.E, etran, false, out _).Where(s => s.IsChecked)) {
-          builder.Add(TrAssumeCmd(f.Origin, etran.CanCallAssumption(req.E, cco)));
+          builder.Add(TrAssumeCmd(f.Origin, etran.CanCallAssumptionForVerification(req.E, cco)));
           var constraint = Expression.CreateImplies(allTraitReqs, req.E);
           builder.Add(Assert(f.Origin, s.E, new FunctionContractOverride(false, constraint), builder.Context));
         }
@@ -1506,7 +1506,7 @@ namespace Microsoft.Dafny {
       Contract.Requires(substMap != null);
       //generating class post-conditions
       foreach (var en in ConjunctsOf(m.Ens)) {
-        builder.Add(TrAssumeCmd(m.Origin, etran.CanCallAssumption(en.E)));
+        builder.Add(TrAssumeCmd(m.Origin, etran.CanCallAssumptionForVerification(en.E)));
         builder.Add(TrAssumeCmdWithDependencies(etran, m.Origin, en.E, "overridden ensures clause"));
       }
       // conjunction of class post-conditions
@@ -1519,7 +1519,7 @@ namespace Microsoft.Dafny {
       foreach (var en in ConjunctsOf(m.OverriddenMethod.Ens)) {
         var subEn = sub.Substitute(en.E);
         foreach (var s in TrSplitExpr(new BodyTranslationContext(false), subEn, etran, false, out _).Where(s => s.IsChecked)) {
-          builder.Add(TrAssumeCmd(m.OverriddenMethod.Origin, etran.CanCallAssumption(subEn)));
+          builder.Add(TrAssumeCmd(m.OverriddenMethod.Origin, etran.CanCallAssumptionForVerification(subEn)));
           var constraint = Expression.CreateImplies(allOverrideEns, subEn);
           builder.Add(Assert(m.Origin, s.E, new EnsuresStronger(constraint), builder.Context));
         }
@@ -1539,7 +1539,7 @@ namespace Microsoft.Dafny {
       var subReqs = new List<Expression>();
       foreach (var req in ConjunctsOf(m.OverriddenMethod.Req)) {
         var subReq = sub.Substitute(req.E);
-        builder.Add(TrAssumeCmd(m.OverriddenMethod.Origin, etran.CanCallAssumption(subReq)));
+        builder.Add(TrAssumeCmd(m.OverriddenMethod.Origin, etran.CanCallAssumptionForVerification(subReq)));
         builder.Add(TrAssumeCmdWithDependencies(etran, m.Origin, subReq, "overridden requires clause"));
         subReqs.Add(subReq);
       }
@@ -1548,7 +1548,7 @@ namespace Microsoft.Dafny {
       // generating class pre-conditions
       foreach (var req in ConjunctsOf(m.Req)) {
         foreach (var s in TrSplitExpr(new BodyTranslationContext(false), req.E, etran, false, out _).Where(s => s.IsChecked)) {
-          builder.Add(TrAssumeCmd(m.Origin, etran.CanCallAssumption(req.E)));
+          builder.Add(TrAssumeCmd(m.Origin, etran.CanCallAssumptionForVerification(req.E)));
           var constraint = Expression.CreateImplies(allTraitReqs, req.E);
           builder.Add(Assert(m.Origin, s.E, new RequiresWeaker(constraint), builder.Context));
         }
@@ -1594,7 +1594,7 @@ namespace Microsoft.Dafny {
         callerDafny.Add(e1);
         callee.Add(etran.TrExpr(e0));
         caller.Add(etran.TrExpr(e1));
-        var canCall = BplAnd(etran.CanCallAssumption(e1), etran.CanCallAssumption((e0)));
+        var canCall = BplAnd(etran.CanCallAssumptionForVerification(e1), etran.CanCallAssumptionForVerification((e0)));
         builder.Add(new Bpl.AssumeCmd(e1.Origin, canCall));
       }
 
@@ -1666,7 +1666,7 @@ namespace Microsoft.Dafny {
 
       var tok = m.Origin;
       var canCalls = traitFrameExps.Concat(classFrameExps)
-        .Select(e => etran.CanCallAssumption(e.E))
+        .Select(e => etran.CanCallAssumptionForVerification(e.E))
         .Aggregate((Bpl.Expr)Bpl.Expr.True, BplAnd);
       builder.Add(TrAssumeCmd(tok, canCalls));
 
@@ -1831,7 +1831,7 @@ namespace Microsoft.Dafny {
         var comment = "user-defined preconditions";
         foreach (var p in ConjunctsOf(m.Req)) {
           var (errorMessage, successMessage) = CustomErrorMessage(p.Attributes);
-          req.Add(FreeRequires(p.E.Origin, etran.CanCallAssumption(p.E), comment, true));
+          req.Add(FreeRequires(p.E.Origin, etran.CanCallAssumptionForVerification(p.E), comment, true));
           comment = null;
           if (p.Label != null && kind == MethodTranslationKind.Implementation) {
             // don't include this precondition here, but record it for later use
@@ -1854,7 +1854,7 @@ namespace Microsoft.Dafny {
         // assume can-call conditions for the modifies clause
         comment = "user-defined frame expressions";
         foreach (var frameExpression in m.Mod.Expressions) {
-          req.Add(FreeRequires(frameExpression.Origin, etran.CanCallAssumption(frameExpression.E), comment, true));
+          req.Add(FreeRequires(frameExpression.Origin, etran.CanCallAssumptionForVerification(frameExpression.E), comment, true));
           comment = null;
         }
 
@@ -1871,7 +1871,7 @@ namespace Microsoft.Dafny {
         var comment = "user-defined postconditions";
         foreach (var p in ConjunctsOf(m.Ens)) {
           var (errorMessage, successMessage) = CustomErrorMessage(p.Attributes);
-          AddEnsures(ens, FreeEnsures(p.E.Origin, etran.CanCallAssumption(p.E), comment, true));
+          AddEnsures(ens, FreeEnsures(p.E.Origin, etran.CanCallAssumptionForVerification(p.E), comment, true));
           comment = null;
           foreach (var split in TrSplitExprForMethodSpec(new BodyTranslationContext(m.ContainsHide), p.E, etran, kind)) {
             var post = split.E;

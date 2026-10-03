@@ -159,7 +159,7 @@ namespace Microsoft.Dafny {
               CheckWellformedAndAssume(e.E0, wfOptions, locals, bAnd, etran, comment);
               CheckWellformedAndAssume(e.E1, wfOptions, locals, bAnd, etran, comment);
               var bImp = new BoogieStmtListBuilder(this, options, builder.Context);
-              bImp.Add(TrAssumeCmd(expr.Origin, etran.CanCallAssumption(expr)));
+              bImp.Add(TrAssumeCmd(expr.Origin, etran.CanCallAssumptionForVerification(expr)));
               bImp.Add(TrAssumeCmdWithDependencies(etran, expr.Origin, expr, comment));
               builder.Add(new Bpl.IfCmd(expr.Origin, null, bAnd.Collect(expr.Origin), null, bImp.Collect(expr.Origin)));
             }
@@ -174,7 +174,7 @@ namespace Microsoft.Dafny {
               var b0 = new BoogieStmtListBuilder(this, options, builder.Context);
               CheckWellformedAndAssume(e.E0, wfOptions, locals, b0, etran, comment);
               var b1 = new BoogieStmtListBuilder(this, options, builder.Context);
-              b1.Add(TrAssumeCmd(expr.Origin, etran.CanCallAssumption(e.E0)));
+              b1.Add(TrAssumeCmd(expr.Origin, etran.CanCallAssumptionForVerification(e.E0)));
               b1.Add(TrAssumeCmdWithDependenciesAndExtend(etran, expr.Origin, e.E0, Expr.Not, comment));
               CheckWellformedAndAssume(e.E1, wfOptions, locals, b1, etran, comment);
               builder.Add(new Bpl.IfCmd(expr.Origin, null, b0.Collect(expr.Origin), null, b1.Collect(expr.Origin)));
@@ -196,7 +196,7 @@ namespace Microsoft.Dafny {
         CheckWellformedAndAssume(e.Test, wfOptions, locals, bThen, etran, comment);
         CheckWellformedAndAssume(e.Thn, wfOptions, locals, bThen, etran, comment);
         var bElse = new BoogieStmtListBuilder(this, options, builder.Context);
-        bElse.Add(TrAssumeCmd(expr.Origin, etran.CanCallAssumption(e.Test)));
+        bElse.Add(TrAssumeCmd(expr.Origin, etran.CanCallAssumptionForVerification(e.Test)));
         bElse.Add(TrAssumeCmdWithDependenciesAndExtend(etran, expr.Origin, e.Test, Expr.Not, comment));
         CheckWellformedAndAssume(e.Els, wfOptions, locals, bElse, etran, comment);
         builder.Add(new Bpl.IfCmd(expr.Origin, null, bThen.Collect(expr.Origin), null, bElse.Collect(expr.Origin)));
@@ -388,7 +388,7 @@ namespace Microsoft.Dafny {
                 desc, wfOptions.AssertKv);
             }
 
-            builder.Add(TrAssumeCmd(e.Origin, etran.CanCallAssumption(e)));
+            builder.Add(TrAssumeCmd(e.Origin, etran.CanCallAssumptionForVerification(e)));
             break;
           }
         case SeqSelectExpr selectExpr: {
@@ -811,7 +811,7 @@ namespace Microsoft.Dafny {
                   var directPrecond = directSub.Substitute(p.E);
 
                   Expression precond = Substitute(p.E, e.Receiver, substMap, e.GetTypeArgumentSubstitutions());
-                  builder.Add(TrAssumeCmd(precond.Origin, etran.CanCallAssumption(precond)));
+                  builder.Add(TrAssumeCmd(precond.Origin, etran.CanCallAssumptionForVerification(precond)));
                   var (errorMessage, successMessage) = CustomErrorMessage(p.Attributes);
                   foreach (var ss in TrSplitExpr(builder.Context, precond, etran, true, out _)) {
                     if (ss.IsChecked) {
@@ -905,6 +905,9 @@ namespace Microsoft.Dafny {
               // all is okay, so allow this function application access to the function's axiom, except if it was okay because of the self-call allowance.
               Bpl.IdentifierExpr canCallFuncID = new Bpl.IdentifierExpr(callExpr.Origin, e.Function.FullSanitizedName + "#canCall", Bpl.Type.Bool);
               List<Bpl.Expr> args = etran.FunctionInvocationArguments(e, null, null);
+              if (options.Get(CommonOptionBag.AdditionalAxioms)) {
+                builder.Add(TrAssumeCmd(callExpr.Origin, etran.IntegerLiteralIdentities(args)));
+              }
               Bpl.Expr canCallFuncAppl = new Bpl.NAryExpr(GetToken(expr), new Bpl.FunctionCall(canCallFuncID), args);
               builder.Add(TrAssumeCmd(callExpr.Origin, allowance == null ? canCallFuncAppl : BplOr(etran.TrExpr(allowance), canCallFuncAppl)));
 
@@ -1246,15 +1249,15 @@ namespace Microsoft.Dafny {
                   if (guard != null) {
                     Contract.Assert(e.Range != null);
                     var rangePrime = Substitute(e.Range, null, substMapPrime);
-                    guardPrimeCanCall = comprehensionEtran.CanCallAssumption(rangePrime);
+                    guardPrimeCanCall = comprehensionEtran.CanCallAssumptionForVerification(rangePrime);
                     guardPrime = comprehensionEtran.TrExpr(rangePrime);
                   }
                   BplIfIf(e.Origin, guard != null, BplAnd(guard, guardPrime), newBuilder, b => {
                     var canCalls = guardPrimeCanCall ?? Bpl.Expr.True;
-                    canCalls = BplAnd(canCalls, comprehensionEtran.CanCallAssumption(bodyLeft));
-                    canCalls = BplAnd(canCalls, comprehensionEtran.CanCallAssumption(bodyLeftPrime));
-                    canCalls = BplAnd(canCalls, comprehensionEtran.CanCallAssumption(body));
-                    canCalls = BplAnd(canCalls, comprehensionEtran.CanCallAssumption(bodyPrime));
+                    canCalls = BplAnd(canCalls, comprehensionEtran.CanCallAssumptionForVerification(bodyLeft));
+                    canCalls = BplAnd(canCalls, comprehensionEtran.CanCallAssumptionForVerification(bodyLeftPrime));
+                    canCalls = BplAnd(canCalls, comprehensionEtran.CanCallAssumptionForVerification(body));
+                    canCalls = BplAnd(canCalls, comprehensionEtran.CanCallAssumptionForVerification(bodyPrime));
                     var different = BplOr(
                       Bpl.Expr.Neq(comprehensionEtran.TrExpr(bodyLeft), comprehensionEtran.TrExpr(bodyLeftPrime)),
                       Bpl.Expr.Eq(comprehensionEtran.TrExpr(body), comprehensionEtran.TrExpr(bodyPrime)));
@@ -1291,7 +1294,7 @@ namespace Microsoft.Dafny {
             }
 
             builder.Add(new Bpl.CommentCmd("End Comprehension WF check"));
-            builder.Add(TrAssumeCmd(expr.Origin, etran.CanCallAssumption(expr)));
+            builder.Add(TrAssumeCmd(expr.Origin, etran.CanCallAssumptionForVerification(expr)));
             break;
           }
         case StmtExpr stmtExpr:
@@ -1424,7 +1427,7 @@ namespace Microsoft.Dafny {
       BoogieStmtListBuilder builder, string comment) {
 
       Contract.Assert(resultType != null);
-      builder.Add(TrAssumeCmd(expr.Origin, etran.CanCallAssumption(expr)));
+      builder.Add(TrAssumeCmd(expr.Origin, etran.CanCallAssumptionForVerification(expr)));
       var bResult = etran.TrExpr(expr);
       CheckSubrange(expr.Origin, bResult, expr.Type, resultType, expr, builder);
       builder.Add(TrAssumeCmdWithDependenciesAndExtend(etran, expr.Origin, expr,
@@ -1599,9 +1602,9 @@ namespace Microsoft.Dafny {
           }
           var rhsPrime = Substitute(e.RHSs[0], null, nonGhostMapPrime);
           var letBodyPrime = Substitute(e.Body, null, nonGhostMapPrime);
-          builder.Add(TrAssumeCmd(e.Origin, etran.CanCallAssumption(rhsPrime)));
+          builder.Add(TrAssumeCmd(e.Origin, etran.CanCallAssumptionForVerification(rhsPrime)));
           builder.Add(TrAssumeCmdWithDependencies(etran, e.Origin, rhsPrime, "assign-such-that constraint"));
-          builder.Add(TrAssumeCmd(e.Origin, etran.CanCallAssumption(letBodyPrime)));
+          builder.Add(TrAssumeCmd(e.Origin, etran.CanCallAssumptionForVerification(letBodyPrime)));
           var eq = Expression.CreateEq(letBody, letBodyPrime, e.Body.Type);
           builder.Add(Assert(GetToken(e), etran.TrExpr(eq),
             new LetSuchThatUnique(e.RHSs[0], e.BoundVars.ToList()), builder.Context));
@@ -1734,7 +1737,7 @@ namespace Microsoft.Dafny {
           Token.NoToken) {
           Type = sourceType.Result
         };
-        var canCall = etran.CanCallAssumption(dafnyInitApplication);
+        var canCall = etran.CanCallAssumptionForVerification(dafnyInitApplication);
 
         var ai = ReadHeap(tok, etran.HeapExpr, nw, GetArrayIndexFieldName(tok, indices));
         var ai_prime = UnboxUnlessBoxType(tok, ai, elementType);
