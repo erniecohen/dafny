@@ -1,0 +1,2 @@
+cardinality-newtype.dfy(8,8): Error: a newtype ('VP') must be based on some non-reference, non-trait, non-arrow, non-ORDINAL, non-datatype type (got Payload)
+1 resolution/type errors detected in cardinality-newtype.dfy

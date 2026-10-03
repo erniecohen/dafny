@@ -61,6 +61,11 @@ public abstract class ErrorReporter(DafnyOptions options) {
   public abstract int Count(ErrorLevel level);
   public abstract int CountExceptVerifierAndCompiler(ErrorLevel level);
 
+  // Reporters without separate source counts conservatively retain translator errors.
+  public virtual int CountExceptTranslatorVerifierAndCompiler(ErrorLevel level) {
+    return CountExceptVerifierAndCompiler(level);
+  }
+
   // This method required by the Parser
   internal void Error(MessageSource source, Enum errorId, Uri uri, int line, int col, string msg) {
     var tok = new Token(line, col);

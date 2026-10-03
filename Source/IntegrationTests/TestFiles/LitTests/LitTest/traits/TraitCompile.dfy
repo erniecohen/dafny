@@ -342,7 +342,7 @@ module Generics {
   }
 
   // TODO-RS: Call this something else: Closure? Method?
-  trait Function<T, R> {
+  trait Function<T, R> extends object {
     method Call(t: T) returns (r: R) decreases *
     method Compose<S>(f: Function<S, T>) returns (res: Function<S, R>) {
       res := new ComposedFunction(f, this);
@@ -492,7 +492,7 @@ module TraitsExtendingTraits {
 module TypeDescriptorTests {
   function Gee<Whiz(0)>(): int { 10 }
 
-  trait UberTrait<X, Y(0), Z(0)> {
+  trait UberTrait<X, Y(0), Z(0)> extends object {
     method Golly() {
       var n := Gee<Y>();
     }

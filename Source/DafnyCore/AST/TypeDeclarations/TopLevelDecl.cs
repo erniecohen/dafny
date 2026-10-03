@@ -1,4 +1,6 @@
+#nullable enable annotations
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using Newtonsoft.Json;
@@ -13,6 +15,22 @@ public abstract class TopLevelDecl : Declaration, TypeParameter.ParentType {
   public string WhatKindAndName => $"{WhatKind} '{Name}'";
   public ModuleDefinition EnclosingModuleDefinition;
   public List<TypeParameter> TypeArgs;
+
+  // Pure visibility views share a carrier with their source declaration. Semantic
+  // clones, including refinements, have their own declaration identity.
+  [FilledInDuringResolution, JsonIgnore]
+  internal TopLevelDecl? CardinalityViewOf;
+
+  // The actual declaration merged or cloned to create this specialization. This
+  // is activated only by a program's selected replacement environment, not by
+  // ordinary refinement or visibility canonicalization.
+  [FilledInDuringResolution, JsonIgnore]
+  internal TopLevelDecl? CardinalityRefinementBase;
+
+  // Refinement parents that a replacement declaration cannot keep in its ordinary
+  // inheritance list. These are analysis obligations, never logical AST children.
+  [FilledInDuringResolution, JsonIgnore]
+  internal ImmutableArray<Type> CardinalityParentObligations = ImmutableArray<Type>.Empty;
   [ContractInvariantMethod]
   void ObjectInvariant() {
     Contract.Invariant(Cce.NonNullElements(TypeArgs));
@@ -21,6 +39,8 @@ public abstract class TopLevelDecl : Declaration, TypeParameter.ParentType {
   protected TopLevelDecl(Cloner cloner, TopLevelDecl original, ModuleDefinition enclosingModule) : base(cloner, original) {
     TypeArgs = original.TypeArgs.ConvertAll(cloner.CloneTypeParam);
     EnclosingModuleDefinition = enclosingModule;
+    CardinalityParentObligations = original.CardinalityParentObligations.Select(cloner.CloneType).ToImmutableArray();
+    // View identity and refinement ancestry are set only by their respective cloners.
   }
 
   [SyntaxConstructor]

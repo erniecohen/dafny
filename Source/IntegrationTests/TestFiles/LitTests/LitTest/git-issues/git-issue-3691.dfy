@@ -1,7 +1,7 @@
 // RUN: %testDafnyForEachResolver "%s"
 
 
-trait A {
+trait A extends object {
   predicate f()
   method g() ensures f()
 }

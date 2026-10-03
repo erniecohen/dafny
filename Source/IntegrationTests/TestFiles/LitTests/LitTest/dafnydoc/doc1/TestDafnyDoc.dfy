@@ -179,7 +179,7 @@ module {:options "--function-syntax:4"} TestModule {
     var count: int
   }
   trait T2 extends T1<A>, T3 {}
-  trait T3 {
+  trait T3 extends object {
     predicate ftr()
     predicate ftz() { true }
     method mmm() {}

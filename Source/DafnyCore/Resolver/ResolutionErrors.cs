@@ -85,10 +85,35 @@ public class ResolutionErrors {
     r_member_only_assumes_other,
     r_member_only_has_no_before_after,
     r_empty_cyclic_datatype,
-    r_decreases_to_only_in_specification
+    r_decreases_to_only_in_specification,
+    r_cardinality_expansive_cycle,
+    r_cardinality_unretained_parameter,
+    r_cardinality_parent_contract,
+    r_cardinality_parameter_contract,
+    r_cardinality_unclassified_type
   }
 
   static ResolutionErrors() {
+    Add(ErrorId.r_cardinality_expansive_cycle,
+      "A cycle of type representations and general-trait implementations contains a potentially expansive position, " +
+      "such as an arrow input, an infinite collection domain, or a permissive type argument. " +
+      "Remove the cycle or the potentially expansive dependency. This conservative admissibility check does not " +
+      "claim that every rejected definition is inconsistent.");
+    Add(ErrorId.r_cardinality_unretained_parameter,
+      "Every type parameter of an implementation of a general trait must be retained directly in at least one " +
+      "parent type argument, after expanding identity aliases. Nested, erased, ghost-only, and phantom parameters " +
+      "do not waive this requirement.");
+    Add(ErrorId.r_cardinality_parent_contract,
+      "An implementation must respect the parent's cardinality contracts. A permissive child parameter requires " +
+      "a permissive directly retaining parent position for a general trait. Reference inheritance instead checks " +
+      "the contracts of parameters exposed by its parent arguments.");
+    Add(ErrorId.r_cardinality_parameter_contract,
+      "A strict type parameter cannot occur in a potentially expansive representation position. " +
+      "This includes instance fields and inherited fields of reference types, while static fields and ordinary " +
+      "function or method signatures are not representations.");
+    Add(ErrorId.r_cardinality_unclassified_type,
+      "Cardinality validation requires fully resolved types and canonical semantic type identities. " +
+      "An unresolved or unsupported representation cannot be silently treated as cardinality preserving.");
     Add(ErrorId.r_assume_statement_without_axiom,
       @"
 ".TrimStart(), InsertBefore("{:axiom}"));

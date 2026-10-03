@@ -735,6 +735,7 @@ namespace Microsoft.Dafny {
     }
 
     public Bpl.Program DoTranslation(Program p, ModuleDefinition forModule) {
+      RequireCardinalityValidation(p);
       if (sink == null) {
         return new Bpl.Program();
       }
@@ -881,6 +882,12 @@ namespace Microsoft.Dafny {
 
     }
 
+    private static void RequireCardinalityValidation(Program program) {
+      if (program.CardinalityValidationReceipt is not { Succeeded: true } || program.Reporter.CountExceptTranslatorVerifierAndCompiler(ErrorLevel.Error) != 0) {
+        throw new InvalidOperationException("Boogie translation requires a resolved program that passed cardinality validation");
+      }
+    }
+
     // Don't verify modules which only contain other modules
     public static bool ShouldVerifyModule(Program program, ModuleDefinition m) {
       if (!m.ShouldVerify(program.Compilation)) {
@@ -907,6 +914,7 @@ namespace Microsoft.Dafny {
       Contract.Requires(p != null);
       Contract.Requires(p.ModuleSigs.Count > 0);
 
+      RequireCardinalityValidation(p);
       Type.ResetScopes();
 
       foreach (ModuleDefinition outerModule in VerifiableModules(p)) {

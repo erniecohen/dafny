@@ -178,6 +178,7 @@ GeneralNewtypeResolution.dfy(903,4): Error: type parameter 'YY' is not allowed t
 GeneralNewtypeResolution.dfy(904,4): Error: type parameter 'Z' is not allowed to change the no-reference-type requirement
 GeneralNewtypeResolution.dfy(905,4): Error: type parameter 'ZZ' is not allowed to change the no-reference-type requirement
 GeneralNewtypeResolution.dfy(910,5): Error: type parameter 'A' is not allowed to change variance (here, from '+' to '-')
+GeneralNewtypeResolution.dfy(910,5): Error: type parameter 'A' is not allowed to weaken its strict cardinality contract in a refinement
 GeneralNewtypeResolution.dfy(911,5): Error: type parameter 'B' is not allowed to change variance (here, from '=' to '+')
 GeneralNewtypeResolution.dfy(912,4): Error: type parameter 'C' is not allowed to change variance (here, from '-' to '=')
 GeneralNewtypeResolution.dfy(917,12): Error: type parameters are not allowed to be renamed from the names given in the newtype in the module being refined (expected 'T', found 'U')
@@ -189,13 +190,14 @@ GeneralNewtypeResolution.dfy(925,4): Error: type parameter 'YY' is not allowed t
 GeneralNewtypeResolution.dfy(926,4): Error: type parameter 'Z' is not allowed to change the no-reference-type requirement
 GeneralNewtypeResolution.dfy(927,4): Error: type parameter 'ZZ' is not allowed to change the no-reference-type requirement
 GeneralNewtypeResolution.dfy(932,5): Error: type parameter 'A' is not allowed to change variance (here, from '+' to '-')
+GeneralNewtypeResolution.dfy(932,5): Error: type parameter 'A' is not allowed to weaken its strict cardinality contract in a refinement
 GeneralNewtypeResolution.dfy(933,5): Error: type parameter 'B' is not allowed to change variance (here, from '=' to '+')
 GeneralNewtypeResolution.dfy(934,4): Error: type parameter 'C' is not allowed to change variance (here, from '-' to '=')
 GeneralNewtypeResolution.dfy(940,10): Error: recursive constraint dependency involving a newtype: A -> A
 GeneralNewtypeResolution.dfy(945,10): Error: recursive constraint dependency involving a newtype: A -> A
 GeneralNewtypeResolution.dfy(950,7): Error: type-synonym cycle: A -> A
 GeneralNewtypeResolution.dfy(955,10): Error: recursive constraint dependency involving a newtype: A -> A
-197 resolution/type errors detected in GeneralNewtypeResolution.dfy
+199 resolution/type errors detected in GeneralNewtypeResolution.dfy
 GeneralNewtypeResolution.dfy(34,10): Error: a newtype ('MyOrdinal') must be based on some non-reference, non-trait, non-arrow, non-ORDINAL, non-datatype type (got ORDINAL)
 GeneralNewtypeResolution.dfy(40,10): Error: a newtype ('MyObject') must be based on some non-reference, non-trait, non-arrow, non-ORDINAL, non-datatype type (got object)
 GeneralNewtypeResolution.dfy(41,10): Error: a newtype ('MyTrait') must be based on some non-reference, non-trait, non-arrow, non-ORDINAL, non-datatype type (got Trait)
@@ -342,6 +344,7 @@ GeneralNewtypeResolution.dfy(903,4): Error: type parameter 'YY' is not allowed t
 GeneralNewtypeResolution.dfy(904,4): Error: type parameter 'Z' is not allowed to change the no-reference-type requirement
 GeneralNewtypeResolution.dfy(905,4): Error: type parameter 'ZZ' is not allowed to change the no-reference-type requirement
 GeneralNewtypeResolution.dfy(910,5): Error: type parameter 'A' is not allowed to change variance (here, from '+' to '-')
+GeneralNewtypeResolution.dfy(910,5): Error: type parameter 'A' is not allowed to weaken its strict cardinality contract in a refinement
 GeneralNewtypeResolution.dfy(911,5): Error: type parameter 'B' is not allowed to change variance (here, from '=' to '+')
 GeneralNewtypeResolution.dfy(912,4): Error: type parameter 'C' is not allowed to change variance (here, from '-' to '=')
 GeneralNewtypeResolution.dfy(917,12): Error: type parameters are not allowed to be renamed from the names given in the newtype in the module being refined (expected 'T', found 'U')
@@ -353,10 +356,11 @@ GeneralNewtypeResolution.dfy(925,4): Error: type parameter 'YY' is not allowed t
 GeneralNewtypeResolution.dfy(926,4): Error: type parameter 'Z' is not allowed to change the no-reference-type requirement
 GeneralNewtypeResolution.dfy(927,4): Error: type parameter 'ZZ' is not allowed to change the no-reference-type requirement
 GeneralNewtypeResolution.dfy(932,5): Error: type parameter 'A' is not allowed to change variance (here, from '+' to '-')
+GeneralNewtypeResolution.dfy(932,5): Error: type parameter 'A' is not allowed to weaken its strict cardinality contract in a refinement
 GeneralNewtypeResolution.dfy(933,5): Error: type parameter 'B' is not allowed to change variance (here, from '=' to '+')
 GeneralNewtypeResolution.dfy(934,4): Error: type parameter 'C' is not allowed to change variance (here, from '-' to '=')
 GeneralNewtypeResolution.dfy(940,10): Error: recursive constraint dependency involving a newtype: A -> A
 GeneralNewtypeResolution.dfy(945,10): Error: recursive constraint dependency involving a newtype: A -> A
 GeneralNewtypeResolution.dfy(950,7): Error: type-synonym cycle: A -> A
 GeneralNewtypeResolution.dfy(955,10): Error: recursive constraint dependency involving a newtype: A -> A
-162 resolution/type errors detected in GeneralNewtypeResolution.dfy
+164 resolution/type errors detected in GeneralNewtypeResolution.dfy

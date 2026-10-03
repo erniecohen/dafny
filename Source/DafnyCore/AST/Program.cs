@@ -1,8 +1,10 @@
+#nullable enable annotations
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using Microsoft.Dafny.Auditor;
+using Newtonsoft.Json;
 
 namespace Microsoft.Dafny;
 
@@ -43,6 +45,11 @@ public class Program : NodeWithoutOrigin {
   public DafnyOptions Options => Reporter.Options;
 
   public ErrorReporter Reporter { get; set; }
+
+  // Admission belongs to this resolution of the whole program, not to any cached
+  // module or serialized AST. Cloning and starting resolution leave it absent.
+  [FilledInDuringResolution, JsonIgnore]
+  internal CardinalityValidationResult? CardinalityValidationReceipt { get; set; }
 
   public ProofDependencyManager ProofDependencyManager { get; set; } = new();
 

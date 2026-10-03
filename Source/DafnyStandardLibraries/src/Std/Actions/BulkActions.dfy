@@ -13,7 +13,7 @@ module Std.BulkActions {
   type BatchedByte<E> = Batched<uint8, E>
 
   @AssumeCrossModuleTermination
-  trait BulkAction<I, O> extends Action<I, O> {
+  trait BulkAction<!I, !O> extends Action<I, O> {
 
     method Map(input: Producer<I>, output: IConsumer<O>,
                ghost thisTotalProof: TotalActionProof<I, O>, ghost outputTotalProof: TotalActionProof<O, ()>)
@@ -40,7 +40,7 @@ module Std.BulkActions {
     * but a separate class so it's possible to optimize via "is" testing.
     */
   @AssumeCrossModuleTermination
-  class BatchReader<T, E> extends Producer<Batched<T, E>> {
+  class BatchReader<!T, !E> extends Producer<Batched<T, E>> {
 
     const elements: seq<T>
     var index: nat
@@ -224,7 +224,7 @@ module Std.BulkActions {
   }
 
   @AssumeCrossModuleTermination
-  class BatchSeqWriter<T, E> extends IConsumer<Batched<T, E>> {
+  class BatchSeqWriter<!T, !E> extends IConsumer<Batched<T, E>> {
 
     var elements: seq<T>
     var state: Result<bool, E>
@@ -311,7 +311,7 @@ module Std.BulkActions {
   }
 
   @AssumeCrossModuleTermination
-  class BatchSeqWriterTotalProof<T, E> extends TotalActionProof<Batched<T, E>, ()> {
+  class BatchSeqWriterTotalProof<!T, !E> extends TotalActionProof<Batched<T, E>, ()> {
     ghost const action: BatchSeqWriter<T, E>
 
     ghost constructor (action: BatchSeqWriter<T, E>)
@@ -359,7 +359,7 @@ module Std.BulkActions {
   }
 
   @AssumeCrossModuleTermination
-  class BatchArrayWriter<T, E> extends Consumer<Batched<T, E>> {
+  class BatchArrayWriter<!T, !E> extends Consumer<Batched<T, E>> {
 
     var storage: array<T>
     var size: nat
@@ -483,7 +483,7 @@ module Std.BulkActions {
   }
 
   @AssumeCrossModuleTermination
-  class BatchArrayWriterTotalProof<T, E> extends TotalActionProof<Batched<T, E>, bool> {
+  class BatchArrayWriterTotalProof<!T, !E> extends TotalActionProof<Batched<T, E>, bool> {
     ghost const action: BatchArrayWriter<T, E>
 
     ghost constructor (action: BatchArrayWriter<T, E>)

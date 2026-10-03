@@ -41,4 +41,9 @@ public class BatchErrorReporter : ErrorReporter {
     return AllMessagesByLevel[level].Count(message => message.Source != MessageSource.Verifier &&
                                                message.Source != MessageSource.Compiler);
   }
+
+  public override int CountExceptTranslatorVerifierAndCompiler(ErrorLevel level) {
+    return AllMessagesByLevel[level].Count(message =>
+      message.Source is not (MessageSource.Translator or MessageSource.Verifier or MessageSource.Compiler));
+  }
 }
