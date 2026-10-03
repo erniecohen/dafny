@@ -1655,7 +1655,7 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
           if (expr is FunctionCallExpr call) {
             for (var i = 0; i < call.Args.Count; i++) {
               var actual = call.Args[i];
-              var argument = etran.BoogieGenerator.AdaptBoxing(GetToken(call), etran.TrExpr(actual),
+              var argument = etran.BoogieGenerator.AdaptBoxing(etran.GetToken(call), etran.TrExpr(actual),
                 Cce.NonNull(actual.Type), call.Function.Ins[i].Type);
               CollectIntegerLiteral(argument, Values);
             }
