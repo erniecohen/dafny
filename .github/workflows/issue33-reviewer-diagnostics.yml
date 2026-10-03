@@ -53,16 +53,28 @@ jobs:
       - name: Replay literal diagnostic with complete per-query profiles
         if: matrix.kind == 'literal'
         run: |
+          set +e
+          mkdir -p diagnostic
           python3 .github/review/issue33-profile.py --smt targeted/issue33-results-z3-4.12.1/test-false-original/solver.smt2 --z3 "$Z3" --output diagnostic --literal
+          echo "$?" > diagnostic/harness-exit-code.txt
+          exit 0
       - name: Replay grouped stress with complete per-query profiles
         if: matrix.kind == 'grouped'
         run: |
+          set +e
+          mkdir -p diagnostic
           python3 .github/review/issue33-profile.py --smt stress/issue33-stress-resources/distinct-1000/solver.smt2 --z3 "$Z3" --output diagnostic
+          echo "$?" > diagnostic/harness-exit-code.txt
+          exit 0
       - name: Generate and replay isolated stress
         if: matrix.kind == 'isolated'
         run: |
+          set +e
+          mkdir -p diagnostic
           python3 .github/review/issue33-isolated.py --dafny "$PWD/out/dafny/Dafny" --z3 "$Z3" --input stress/issue33-stress-resources/distinct-1000/input.dfy --output isolated
           python3 .github/review/issue33-profile.py --smt isolated/solver.smt2 --z3 "$Z3" --output diagnostic
+          echo "$?" > diagnostic/harness-exit-code.txt
+          exit 0
       - uses: actions/upload-artifact@v4
         if: always()
         with:

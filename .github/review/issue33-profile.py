@@ -88,7 +88,7 @@ def literal_variants(body):
     lit_ax=next(c for c in body if ':qid |DafnyPreludebpl.112:29|' in c)
     lit=re.search(r'\(= \((\S+) (\S+)\) \2\)',lit_ax)[1]
     vc=body[-1]
-    variable=re.search(r'\('+re.escape(lit)+r' 0\) (\S+)\)',vc)[1]
+    variable=re.search(r'\('+re.escape(lit)+r' 0\) ([^\s()]+)\)',vc)[1]
     assert f'(declare-fun {variable} () Int)' in body
     literal=f'(assert (= ({lit} 0) 0))'
     ground=f'(assert (=> (and (<= 0 {variable}) (< {variable} 4294967296)) (= ({wrapper} ((_ int2bv 32) {variable})) {variable})))'
