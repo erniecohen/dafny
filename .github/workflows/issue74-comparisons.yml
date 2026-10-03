@@ -1,5 +1,7 @@
 name: Issue 74 comparisons of focused-tested builds
 on:
+  push:
+    branches: ['scratch/issue74/comparisons-register']
   workflow_dispatch:
     inputs:
       build_run:
@@ -15,6 +17,7 @@ permissions:
   actions: read
 jobs:
   corpus:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     strategy:
@@ -52,6 +55,7 @@ jobs:
           path: corpus
           retention-days: 90
   stdlib:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     strategy:
@@ -101,6 +105,7 @@ jobs:
             translation
           retention-days: 90
   audit:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
