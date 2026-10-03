@@ -25,17 +25,19 @@ A verdict row is: program, exit code, the verifier's summary line(s) (with a
 count of proofs that ran out of resource), the lines with errors, and seconds.
 The verdict is the first four: `expected` drops the seconds, and `compare` looks
 at nothing else.  So a program's time, and the resources its finished proofs
-used, never change a verdict (the suite does not record resource counts); a
+used, never change a verdict (optional JSON logs record resource counts separately); a
 proof that no longer finishes within the limit does, since it is counted.
 
 .github/review/expected-verdicts.tsv holds the verdicts CI expects, and the
 job fails when one changes, or a program is added or removed.  To change it on
 purpose, replace it with `expected-verdicts.tsv` from the run's `verdicts`
-artifact, in a commit that says, for each program whose verdict changed, why.
+artifact (verdicts-off or verdicts-on), in a commit that says, for each program
+whose verdict changed, why. `run` accepts --additional-axioms true and
+--measurements <directory>; omitting them preserves the original invocation.
 """
 import concurrent.futures
-import os
 import json
+import os
 from pathlib import Path
 import re
 import shlex

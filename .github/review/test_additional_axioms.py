@@ -61,14 +61,41 @@ class AxiomGates(unittest.TestCase):
 
     def test_inventory_distinguishes_diagnostic_programs(self):
         directory = self.root / 'measurements'
-        for name in ['a.dfy', 'error.dfy']:
+        for name in ['a.dfy', 'error.dfy', 'empty.dfy']:
             dest = directory / name
             dest.mkdir(parents=True)
             (dest / 'command.json').write_text('[]')
         (directory / 'a.dfy' / 'results.json').write_text(json.dumps({'verificationResults': [
             {'name': 'lemma', 'vcResults': [{'vcNum': 0, 'outcome': 'Valid', 'resourceCount': 123}]}]}))
+        (directory / 'empty.dfy' / 'results.json').write_text('')
         path = self.root / 'inventory.json'
         axioms.inventory(directory, path)
         data = json.loads(path.read_text())
-        self.assertEqual(['a.dfy', 'error.dfy'], data['programs'])
+        self.assertEqual(['a.dfy', 'empty.dfy', 'error.dfy'], data['programs'])
+        self.assertEqual({'empty.dfy': 'empty log', 'error.dfy': 'no log'}, data['unavailable'])
         self.assertEqual({'a.dfy\tlemma\t0': ['Valid', 123]}, data['batches'])
+
+
+class ExistingRunnerCommands(unittest.TestCase):
+    def test_suite_observations_preserve_trailing_missing_argument(self):
+        lit = axioms.runner('lit')
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(lit.subprocess, 'run') as run:
+                run.return_value.stdout = ''
+                run.return_value.stderr = 'Missing argument for --print'
+                run.return_value.returncode = 1
+                result = lit.verify(('.', 'dafny', 'solver', 'a.dfy', '--print', True, directory))
+            command = run.call_args.args[0]
+            self.assertEqual('--print', command[-1])
+            self.assertIn('--additional-axioms', command)
+            self.assertEqual('1', result[1])
+
+    def test_suite_without_measurements_retains_original_command(self):
+        lit = axioms.runner('lit')
+        with patch.object(lit.subprocess, 'run') as run:
+            run.return_value.stdout = 'Dafny program verifier finished with 1 verified, 0 errors'
+            run.return_value.stderr = ''
+            run.return_value.returncode = 0
+            lit.verify(('.', 'dafny', 'solver', 'a.dfy', '--manual-triggers', False, None))
+        self.assertEqual(['dafny', 'verify', 'a.dfy', '--solver-path', 'solver'] +
+                         lit.FIXED + ['--manual-triggers'], run.call_args.args[0])
