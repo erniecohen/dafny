@@ -96,8 +96,10 @@ those that [issue 33](https://github.com/erniecohen/dafny/issues/33) and
 command-line option that they share, not one option each.  It is off by default,
 and a project file (`dfyconfig.toml`) can set it, like any other option.
 
-- **The first change that adds such an axiom defines the option**, and records its
-  name here.
+- **The shared option is `--additional-axioms`**, default false, also available
+  as `additional-axioms = true` in `[options]` of `dfyconfig.toml`. Its current
+  family is the bounded integer/bitvector round trip described in
+  [`docs/dev/additional-axioms.md`](docs/dev/additional-axioms.md).
 - **Every later axiom joins that option.**  The option turns all its axioms on at
   once, so a later axiom's soundness argument covers it together with those
   already there.

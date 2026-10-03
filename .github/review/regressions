@@ -80,3 +80,5 @@ traits/cardinality-replacement.dfy
 traits/cardinality-runtime.dfy
 traits/cardinality-independent-facades-positive.dfy
 traits/cardinality-independent-facades.dfy
+git-issues/github-issue-33.dfy
+git-issues/github-issue-33-z3-4.12.1.dfy

@@ -333,6 +333,18 @@ jobs:
           unzip -q z3h.zip -d Binaries/z3/bin
           chmod +x "Binaries/z3/bin/z3-$v"
           "Binaries/z3/bin/z3-$v" --version
+      - name: The pinned solver for additional-axiom regressions
+        run: |
+          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
+          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+          cp "$Z3_LINUX_X64/bin/z3" Binaries/z3/bin/z3-5.1.0
+          if [ ! -f Binaries/z3/bin/z3-4.12.1 ]; then
+            curl -fsSLo z3-4.12.1.zip "$HARNESS_Z3_RELEASE/z3-4.12.1-x64-ubuntu-24.04-bin.zip"
+            echo "$HARNESS_Z3_4_12_1_SHA256  z3-4.12.1.zip" | sha256sum -c -
+            unzip -q z3-4.12.1.zip -d Binaries/z3/bin
+            chmod +x Binaries/z3/bin/z3-4.12.1
+          fi
       - name: Boogie packages
         run: sh Scripts/fetch-boogie-packages.sh
       - name: Build the test harness
@@ -351,6 +363,8 @@ jobs:
           echo "$filter"
           dotnet test Source/IntegrationTests -c Release --no-build \
             --logger "console;verbosity=normal" --filter "$filter"
+      - name: Editor option changes invalidate verification results
+        run: dotnet test Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~AdditionalAxiomsTest --logger "console;verbosity=normal"
 
   binaries:
     name: Binaries (${{ matrix.rid }})
