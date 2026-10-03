@@ -190,9 +190,9 @@ at 637,151 RU on both solvers; correctness exhausts the unchanged cap at
 Each of the three records has maximum generation 0 and maximum cost 1. The
 input contains 15 quantified formulas; the other formulas have no nonzero
 exit-time record. These counts characterize this input and cap, not a general
-complexity bound. Fresh-process solver statistics report maximum memory of
-`max-memory` values 696.89 (4.12.1) and 730.88 (5.1.0), separately from the earlier command's
-GNU-time RSS measurement.
+complexity bound. Fresh-process solver statistics report `:max-memory` values of 696.89
+(4.12.1) and 730.88 (5.1.0), separately from the earlier command's GNU-time RSS
+measurement.
 
 The isolated comparison keeps the exact 1,000-term source (SHA-256
 `aa7b4ea46e5caa7a22ba7b9dfe20dae4de0ddc92dbeb2b6e2e86e0f493a4f1e4`).
