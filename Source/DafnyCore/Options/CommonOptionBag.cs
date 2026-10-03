@@ -87,6 +87,9 @@ true - In the compiled target code, transform any non-extern
         datatype Record = Record(x: int)
     is transformed into just 'int' in the target code.".TrimStart());
 
+  public static readonly Option<bool> CsReplacementTypes = new("--cs-replacement-types",
+    "Use replacement modules' concrete representations for abstract types when compiling C#. Defaults to false.");
+
   public static readonly Option<bool> PythonReorderReplacements = new("--python-reorder-replacements",
     "Order Python modules by their compilation dependencies after substituting replacement modules. Defaults to false.");
 
@@ -681,6 +684,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(JsonOutput, OptionScope.Cli);
     OptionRegistry.RegisterOption(JsonDiagnostics, OptionScope.Cli);
     OptionRegistry.RegisterOption(QuantifierSyntax, OptionScope.Module);
+    OptionRegistry.RegisterOption(CsReplacementTypes, OptionScope.Cli);
     OptionRegistry.RegisterOption(PythonReorderReplacements, OptionScope.Cli);
     OptionRegistry.RegisterOption(SpillTranslation, OptionScope.Cli);
     OptionRegistry.RegisterOption(StdIn, OptionScope.Cli);

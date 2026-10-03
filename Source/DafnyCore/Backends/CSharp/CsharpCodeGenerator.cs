@@ -30,6 +30,46 @@ namespace Microsoft.Dafny.Compilers {
     public CsharpCodeGenerator(DafnyOptions options, ErrorReporter reporter) : base(options, reporter) {
     }
 
+    private readonly Dictionary<TopLevelDecl, TopLevelDecl> replacementTypes = new();
+
+    protected override void OrganizeModules(Program program, out List<ModuleDefinition> modules) {
+      base.OrganizeModules(program, out modules);
+      replacementTypes.Clear();
+      if (!Options.Get(CommonOptionBag.CsReplacementTypes)) {
+        return;
+      }
+
+      void MatchTypes(ModuleDefinition original, ModuleDefinition replacement) {
+        var declarations = replacement.TopLevelDecls.ToDictionary(declaration => declaration.Name);
+        foreach (var declaration in original.TopLevelDecls) {
+          if (!declarations.TryGetValue(declaration.Name, out var concrete)) {
+            continue;
+          }
+          if (declaration is AbstractTypeDecl) {
+            replacementTypes[declaration] = concrete;
+          } else if (declaration is LiteralModuleDecl originalModule && concrete is LiteralModuleDecl replacementModule) {
+            MatchTypes(originalModule.ModuleDef, replacementModule.ModuleDef);
+          }
+        }
+      }
+
+      foreach (var (original, replacement) in program.Replacements) {
+        MatchTypes(original, replacement);
+      }
+    }
+
+    // Resolve the representation before erasing wrappers or choosing a C# type descriptor.
+    private Type ReplacementType(Type type) {
+      if (replacementTypes.Count == 0) {
+        return type;
+      }
+      var normalized = type.NormalizeExpandKeepConstraints();
+      while (normalized is UserDefinedType udt && replacementTypes.TryGetValue(udt.ResolvedClass, out var concrete)) {
+        normalized = UserDefinedType.FromTopLevelDecl(udt.Origin, concrete, udt.TypeArgs).NormalizeExpandKeepConstraints();
+      }
+      return normalized;
+    }
+
     const string DafnyISet = "Dafny.ISet";
     const string DafnyIMultiset = "Dafny.IMultiSet";
     const string DafnyISeq = "Dafny.ISequence";
@@ -1584,7 +1624,7 @@ namespace Microsoft.Dafny.Compilers {
       Contract.Ensures(Contract.Result<string>() != null);
       Contract.Assume(type != null);  // precondition; this ought to be declared as a Requires in the superclass
 
-      var xType = DatatypeWrapperEraser.SimplifyType(Options, type);
+      var xType = DatatypeWrapperEraser.SimplifyType(Options, ReplacementType(type));
       if (xType is BoolType) {
         return "bool";
       } else if (xType is CharType) {
@@ -1686,7 +1726,7 @@ namespace Microsoft.Dafny.Compilers {
     }
 
     protected override string TypeInitializationValue(Type type, ConcreteSyntaxTree wr, IOrigin tok, bool usePlaceboValue, bool constructTypeParameterDefaultsFromTypeDescriptors) {
-      var xType = type.NormalizeExpandKeepConstraints();
+      var xType = ReplacementType(type).NormalizeExpandKeepConstraints();
 
       if (usePlaceboValue) {
         return $"default({TypeName(type, wr, tok)})";
@@ -1816,7 +1856,7 @@ namespace Microsoft.Dafny.Compilers {
     }
 
     protected override string TypeDescriptor(Type type, ConcreteSyntaxTree wr, IOrigin tok) {
-      type = DatatypeWrapperEraser.SimplifyTypeAndTrimSubsetTypes(Options, type);
+      type = DatatypeWrapperEraser.SimplifyTypeAndTrimSubsetTypes(Options, ReplacementType(type));
       if (type is BoolType) {
         return "Dafny.Helpers.BOOL";
       } else if (type is CharType) {

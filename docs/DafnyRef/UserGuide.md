@@ -1830,6 +1830,11 @@ Note that all input `.dfy` files and any needed runtime library code are combine
 which is then compiled by `dotnet` to a `.dll`.
 
 
+The opt-in option `--cs-replacement-types` uses the replacement module's concrete
+representation when C# code refers to an abstract type in the replaced module.
+This includes client signatures, type descriptors, and default values. The option
+is false by default and affects C# compilation only; it does not change verification.
+
 Examples of how to integrate C# libraries and source code with Dafny source code
 are contained in [this separate document](integration-cs/IntegrationCS).
 
