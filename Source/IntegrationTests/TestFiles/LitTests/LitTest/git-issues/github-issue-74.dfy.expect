@@ -2,43 +2,43 @@ positive (Z3 5.1.0, type-system-refresh:false)
 
 Dafny program verifier finished with 4 verified, 0 errors
 negative (Z3 5.1.0, type-system-refresh:false)
-Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-74-negative.dfy(5,2): Error: assertion might not hold
-Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-74-negative.dfy(8,44): Error: a postcondition could not be proved on this return path
-Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-74-negative.dfy(8,39): Related location: this is the postcondition that could not be proved
-Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-74-negative.dfy(12,18): Error: function precondition could not be proved
-Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-74-negative.dfy(10,41): Related location: this proposition could not be proved
+github-issue-74-negative.dfy(5,2): Error: assertion might not hold
+github-issue-74-negative.dfy(8,44): Error: a postcondition could not be proved on this return path
+github-issue-74-negative.dfy(8,39): Related location: this is the postcondition that could not be proved
+github-issue-74-negative.dfy(12,18): Error: function precondition could not be proved
+github-issue-74-negative.dfy(10,41): Related location: this proposition could not be proved
 
 Dafny program verifier finished with 0 verified, 3 errors
 positive (Z3 5.1.0, type-system-refresh:true)
 
 Dafny program verifier finished with 4 verified, 0 errors
 negative (Z3 5.1.0, type-system-refresh:true)
-Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-74-negative.dfy(5,2): Error: assertion might not hold
-Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-74-negative.dfy(8,44): Error: a postcondition could not be proved on this return path
-Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-74-negative.dfy(8,39): Related location: this is the postcondition that could not be proved
-Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-74-negative.dfy(12,18): Error: function precondition could not be proved
-Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-74-negative.dfy(10,41): Related location: this proposition could not be proved
+github-issue-74-negative.dfy(5,2): Error: assertion might not hold
+github-issue-74-negative.dfy(8,44): Error: a postcondition could not be proved on this return path
+github-issue-74-negative.dfy(8,39): Related location: this is the postcondition that could not be proved
+github-issue-74-negative.dfy(12,18): Error: function precondition could not be proved
+github-issue-74-negative.dfy(10,41): Related location: this proposition could not be proved
 
 Dafny program verifier finished with 0 verified, 3 errors
 positive (Z3 4.12.1, type-system-refresh:false)
 
 Dafny program verifier finished with 4 verified, 0 errors
 negative (Z3 4.12.1, type-system-refresh:false)
-Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-74-negative.dfy(5,2): Error: assertion might not hold
-Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-74-negative.dfy(8,44): Error: a postcondition could not be proved on this return path
-Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-74-negative.dfy(8,39): Related location: this is the postcondition that could not be proved
-Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-74-negative.dfy(12,18): Error: function precondition could not be proved
-Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-74-negative.dfy(10,41): Related location: this proposition could not be proved
+github-issue-74-negative.dfy(5,2): Error: assertion might not hold
+github-issue-74-negative.dfy(8,44): Error: a postcondition could not be proved on this return path
+github-issue-74-negative.dfy(8,39): Related location: this is the postcondition that could not be proved
+github-issue-74-negative.dfy(12,18): Error: function precondition could not be proved
+github-issue-74-negative.dfy(10,41): Related location: this proposition could not be proved
 
 Dafny program verifier finished with 0 verified, 3 errors
 positive (Z3 4.12.1, type-system-refresh:true)
 
 Dafny program verifier finished with 4 verified, 0 errors
 negative (Z3 4.12.1, type-system-refresh:true)
-Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-74-negative.dfy(5,2): Error: assertion might not hold
-Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-74-negative.dfy(8,44): Error: a postcondition could not be proved on this return path
-Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-74-negative.dfy(8,39): Related location: this is the postcondition that could not be proved
-Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-74-negative.dfy(12,18): Error: function precondition could not be proved
-Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-74-negative.dfy(10,41): Related location: this proposition could not be proved
+github-issue-74-negative.dfy(5,2): Error: assertion might not hold
+github-issue-74-negative.dfy(8,44): Error: a postcondition could not be proved on this return path
+github-issue-74-negative.dfy(8,39): Related location: this is the postcondition that could not be proved
+github-issue-74-negative.dfy(12,18): Error: function precondition could not be proved
+github-issue-74-negative.dfy(10,41): Related location: this proposition could not be proved
 
 Dafny program verifier finished with 0 verified, 3 errors

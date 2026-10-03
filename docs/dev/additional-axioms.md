@@ -43,8 +43,10 @@ The new family is entailed by the existing bridge and native semantics.
 If `T` is that trusted theory, `S` any other enabled family, and `A33` this
 family, `Models(T union S union A33) = Models(T union S)`. This shows the
 addition imposes no new model restriction in combination with `S`; it does not
-prove consistency of the entire prelude or of `S`. The shared switch currently
-has no other families. Inventory this again when adding another family.
+prove consistency of the entire prelude or of `S`. The shared switch also exposes the closed literal identities derived below.
+Those identities are entailed by the trusted literal definition, so the same
+model argument applies with both additions enabled. Inventory this again when
+adding another family.
 
 The strict upper bound and lower bound are essential: the total native round
 trip is zero at `2^w`, and is `2^w - 1` at `-1`. Native conversions being total
@@ -73,24 +75,26 @@ widths, conversion shapes, negative fit checks and a live false-proof control.
 The review workflow runs that driver with pinned Z3 5.1.0 (`%review-z3`).
 A second permanent driver, `git-issues/github-issue-33-z3-4.12.1.dfy`, uses an
 explicitly pinned 4.12.1 substitution, independent of future harness-default
-changes. It gates the original direct/inverse/range lemmas, positive conversions,
-bitvector newtypes, and genuine negative controls in both supported resolver
-modes at the same 200,000-RU cap. It selects declarations from the original file
-without changing that source or gating the known failing indirect example.
+changes. It gates the complete unchanged original, including `ShiftRightByZero`,
+positive conversions, bitvector newtypes, and genuine negative controls in both
+supported resolver modes at the same 200,000-RU cap. The literal follow-up also
+has `github-issue-74.dfy` and structural translation tests for repeated, negative,
+large and excluded arguments and independent module inventories.
 The issue validation workflow records measurements and actual Boogie/SMT inputs.
 Its baseline is the green shipped build at `1d45201a027d46be24988fe0946c0bde80a702c9`.
 The retained public artifacts contain per-VC results and commands.
 
 ### Solver boundary and stress limits
 
-The prescribed composite trigger proves all original goals with Z3 5.1.0.
-With Z3 4.12.1, the direct 32/64-bit round trips are cheap, but the unchanged
-`ShiftRightByZero` still exhausts 20,000,000 resource units. Its actual solver
-input retains both the new axiom and the old wrapper bridge. This older-solver
-limitation is recorded rather than widening the trigger or changing solver
-settings. The older-solver direct/positive/negative gates are permanent; equal
-cost for every indirect example on both solvers is not an acceptance condition.
-The existing library/regression gates retain their established configurations.
+With the closed literal identities enabled, the complete unchanged original
+passes end to end on pinned Z3 4.12.1 and 5.1.0 in both resolver modes at
+200,000 RU. Before the literal follow-up (#74), the #73 encoding still exhausted
+the cap on 4.12.1 for `ShiftRightByZero`. The actual follow-up translation emits
+`LitInt(0) == 0` through the existing function-definition dependency, without
+changing pruning or the approved composite trigger. The earlier limitation is
+therefore resolved for this reproducer; arbitrary indirect goals have no general
+proof-cost guarantee. The existing library/regression gates retain their
+established configurations.
 
 The generated scaling corpus verifies nesting through depth 64 and widths
 through 1024. A single assertion batch combining 1000 distinct round trips
@@ -99,7 +103,7 @@ cost. The negative guard mutations check explicit instances of the extracted
 formula, while SAT witnesses give the wrapper its standard unsigned native
 interpretation. Live Dafny false-proof controls separately audit actual matching.
 
-### Literal identity diagnostic and proposed follow-up
+### Literal identity diagnostic before #74
 
 The SMT comparison replays the unchanged `ShiftRightByZero` implementation VC
 in a fresh process for each variant. It preserves all solver options and the
@@ -148,28 +152,34 @@ zero shift amount and the numeric lower bound before expensive bitvector search.
 The comparison demonstrates a performance effect; instantiation counts alone
 do not establish the solver's internal ordering of simplification and search.
 
-A narrow follow-up to review is to materialize **closed ground instances of this
-existing definition for native integer numeral actuals of function calls**:
+### Closed native integer literal identities (#74)
 
-1. While translating a function call, record an actual only when its translated
-   term is exactly `LitInt(n)` with `n` a native integer numeral. Preserve the
-   translated actual and all its checks.
-2. Deduplicate by numeral within the translated module, and emit the closed
-   equality `LitInt(n) == n` alongside that module's existing definitions. Ensure
-   pruning retains it for VCs containing the wrapped numeral; audit the actual
-   SMT for this rather than relying on a source-level assumption.
-3. Initially guard collection and emission with the existing default-off option,
-   before constructing nodes or changing declaration allocation with it off.
-   Compare byte identity and costs in off mode, full verdict/cost measurements
-   in on mode, and both pinned solvers on the unchanged reproducer and controls.
+The translator inspects each function-call actual after boxing adaptation.
+Only an argument exactly `LitInt(n)`, with `n` a native integer numeral, is
+collected. It records the arbitrary-precision integer value in a numerically
+sorted set owned by that module's translator. After translating the module, it
+emits each closed identity once. The original actual and all existing legality
+and well-formedness checks remain intact.
 
-This would instantiate a pre-existing definition, not create a new quantified
-axiom family. It would not target a shift operation, remove markers, cover
-symbolic `LitInt(x)`, alter real/boxed literals, change the approved round-trip
-pattern, or change global solver settings. It is a proposal, **not implemented
-by this change**. The indirect older-solver case remains a documented limitation
-of the current encoding. A prototype must demonstrate retention, benefit, and
-cost before this follow-up is included in a product change.
+`AddOtherDefinition` associates these instances with the existing `LitInt`
+function, just as it associates other definitions with their functions. Ordinary
+pruning consequently retains the instances when `LitInt` is used. Collection
+and emission both test the shared option before allocating new nodes; the
+collection is allocated only on the first eligible argument. With the option
+off, neither the Boogie translation nor controlled solver input/resources change
+relative to merged #73 (`edff862a3da391fe2f0142343a5846edf078b2ed`).
+
+These are substitutions in a trusted definition, not a new quantified family.
+The translation excludes symbolic arguments, real literals and boxed literals.
+It preserves markers, the bounded round-trip formula, its composite trigger,
+the native bridge and all solver settings. Numerals occurring only outside
+function-call actuals are not collected. The exact end-to-end cost need not equal
+the earlier edited-query replay's 6,657 RU.
+
+The issue-74 validation workflow compares the merged baseline and candidate with
+the option off and on, records per-batch costs, saves actual SMT, and verifies
+literal-heavy non-bitvector code. Its expected failing negative/vacuity probes
+are recorded separately from the required regression gate.
 
 ### Isolated 1,000-term performance characterization
 
