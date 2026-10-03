@@ -29,8 +29,8 @@ module TraitChain {
   datatype D extends Child = D(n: int)
   method NonVacuity() {
     var v: Root := D(3);
-    assert v is Child;
     assert v is D;
+    assert v is Child;
     assert (v as D).n == 3;
     assert false;
   }
