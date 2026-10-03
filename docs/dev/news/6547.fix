@@ -1,1 +1,9 @@
 Reject potentially cardinality-expanding cycles through general-trait implementations during resolution. Generic implementations must retain their parameters in compatible parent positions, and stored reference fields must honor their parameter contracts. The conservative checks also apply to unused declarations, hidden views, refinements, and loaded libraries.
+
+The standard library now exports permissive cardinality contracts for affected
+action, consumer, producer, and concurrent families. Their `!` annotations also
+propagate through parent and stored-family contracts, so clients relying on the
+previous strict contracts may require migration. Ordinary variance, equality
+support, non-heap characteristics, specifications other than the exported type
+cardinality contracts, and executable bodies are preserved. See
+[the contract dependencies](../GeneralTraitCardinality.md#exported-standard-library-cardinality-contracts).
