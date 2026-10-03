@@ -1,0 +1,1 @@
+CI now gates the verifier suite and standard library with additional axioms enabled as well as disabled, with separate verdict baselines and paired resource reports.
