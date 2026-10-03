@@ -93,3 +93,4 @@ dafnydoc/doc1/TestDafnyDoc.dfy
 
 # Preserve the current release line regression.
 git-issues/github-issue-74.dfy
+git-issues/github-issue-28.dfy
