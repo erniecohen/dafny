@@ -1,0 +1,57 @@
+direct round trips (type-system-refresh:false)
+
+Dafny program verifier finished with 10 verified, 0 errors
+inverse round trip (type-system-refresh:false)
+
+Dafny program verifier finished with 2 verified, 0 errors
+range (type-system-refresh:false)
+
+Dafny program verifier finished with 2 verified, 0 errors
+positive (type-system-refresh:false)
+
+Dafny program verifier finished with 58 verified, 0 errors
+negative (type-system-refresh:false)
+github-issue-33-negative.dfy(3,13): Error: value to be converted might not fit in bv32
+github-issue-33-negative.dfy(7,13): Error: value to be converted might not fit in bv32
+github-issue-33-negative.dfy(11,13): Error: value to be converted might not fit in bv32
+github-issue-33-negative.dfy(15,13): Error: value to be converted might not fit in bv32
+github-issue-33-negative.dfy(19,13): Error: value to be converted might not fit in bv0
+github-issue-33-negative.dfy(23,13): Error: value to be converted might not fit in bv32
+github-issue-33-negative.dfy(27,13): Error: the real-based number must be an integer (if you want truncation, apply .Floor to the real-based number)
+github-issue-33-negative.dfy(30,2): Error: assertion might not hold
+github-issue-33-negative.dfy(33,2): Error: assertion might not hold
+github-issue-33-negative.dfy(39,2): Error: assertion might not hold
+github-issue-33-negative.dfy(45,0): Error: a postcondition could not be proved on this return path
+github-issue-33-negative.dfy(44,29): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 11 errors
+direct round trips (type-system-refresh:true)
+
+Dafny program verifier finished with 10 verified, 0 errors
+inverse round trip (type-system-refresh:true)
+
+Dafny program verifier finished with 2 verified, 0 errors
+range (type-system-refresh:true)
+
+Dafny program verifier finished with 2 verified, 0 errors
+positive (type-system-refresh:true)
+
+Dafny program verifier finished with 58 verified, 0 errors
+negative (type-system-refresh:true)
+github-issue-33-negative.dfy(3,13): Error: value to be converted might not fit in bv32
+github-issue-33-negative.dfy(7,13): Error: value to be converted might not fit in bv32
+github-issue-33-negative.dfy(11,13): Error: value to be converted might not fit in bv32
+github-issue-33-negative.dfy(15,13): Error: value to be converted might not fit in bv32
+github-issue-33-negative.dfy(19,13): Error: value to be converted might not fit in bv0
+github-issue-33-negative.dfy(23,13): Error: value to be converted might not fit in bv32
+github-issue-33-negative.dfy(27,13): Error: the real-based number must be an integer (if you want truncation, apply .Floor to the real-based number)
+github-issue-33-negative.dfy(30,2): Error: assertion might not hold
+github-issue-33-negative.dfy(33,2): Error: assertion might not hold
+github-issue-33-negative.dfy(39,2): Error: assertion might not hold
+github-issue-33-negative.dfy(45,0): Error: a postcondition could not be proved on this return path
+github-issue-33-negative.dfy(44,29): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 11 errors
+bitvector newtype (type-system-refresh:true)
+
+Dafny program verifier finished with 5 verified, 0 errors
