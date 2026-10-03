@@ -100,3 +100,25 @@ jobs:
             stdlib
             translation
           retention-days: 90
+  audit:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        solver: ['4.12.1', '5.1.0']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue74-targeted-${{ matrix.solver }}
+          run-id: ${{ inputs.build_run }}
+          github-token: ${{ github.token }}
+          path: focused-inputs
+      - name: Audit actual focused queries with the current observational parser
+        run: python3 .github/review/issue74-smt-audit.py --input focused-inputs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue74-local-smt-audit-${{ matrix.solver }}
+          path: focused-inputs/smt-audit.json
+          retention-days: 90

@@ -42,3 +42,15 @@ github-issue-74-negative.dfy(12,18): Error: function precondition could not be p
 github-issue-74-negative.dfy(10,41): Related location: this proposition could not be proved
 
 Dafny program verifier finished with 0 verified, 3 errors
+isolation (Z3 5.1.0, type-system-refresh:false)
+
+Dafny program verifier finished with 5 verified, 0 errors
+isolation (Z3 5.1.0, type-system-refresh:true)
+
+Dafny program verifier finished with 5 verified, 0 errors
+isolation (Z3 4.12.1, type-system-refresh:false)
+
+Dafny program verifier finished with 5 verified, 0 errors
+isolation (Z3 4.12.1, type-system-refresh:true)
+
+Dafny program verifier finished with 5 verified, 0 errors
