@@ -1,0 +1,38 @@
+name: Issue 81 diagnostic
+on:
+  push:
+    branches: ['scratch/worker81/probe']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  investigate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Pinned backend and solver
+        run: |
+          sh Scripts/fetch-boogie-packages.sh
+          dotnet tool install Boogie --version 3.5.5-review.37e4435d --tool-path .tools
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+          unzip -q z3.zip
+          echo "Z3=$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" >> "$GITHUB_ENV"
+          mkdir -p issue81-results
+          z3-5.1.0-x64-glibc-2.39/bin/z3 --version > issue81-results/solver-version.txt
+          cp Scripts/boogie-packages.sha256 issue81-results/
+          git rev-parse HEAD > issue81-results/source.txt
+      - name: Record diagnostic outcomes
+        run: |
+          python3 .github/review/issue81/probe.py > issue81-results/driver.log 2>&1 || echo "Diagnostic driver exit: $?" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue81-diagnostics
+          path: issue81-results
+          retention-days: 30
