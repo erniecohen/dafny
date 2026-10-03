@@ -79,7 +79,8 @@ changes. It gates the complete unchanged original, including `ShiftRightByZero`,
 positive conversions, bitvector newtypes, and genuine negative controls in both
 supported resolver modes at the same 200,000-RU cap. The literal follow-up also
 has `github-issue-74.dfy` and structural translation tests for repeated, negative,
-large and excluded arguments and independent module inventories.
+large and excluded arguments, independent modules, branches, and same-module
+isolation from literals occurring only in another function body.
 The issue validation workflow records measurements and actual Boogie/SMT inputs.
 Its baseline is the green shipped build at `1d45201a027d46be24988fe0946c0bde80a702c9`.
 The retained public artifacts contain per-VC results and commands.
@@ -89,11 +90,11 @@ The retained public artifacts contain per-VC results and commands.
 With the closed literal identities enabled, the complete unchanged original
 passes end to end on pinned Z3 4.12.1 and 5.1.0 in both resolver modes at
 200,000 RU. Before the literal follow-up (#74), the #73 encoding still exhausted
-the cap on 4.12.1 for `ShiftRightByZero`. The actual follow-up translation emits
-`LitInt(0) == 0` through the existing function-definition dependency, without
-changing pruning or the approved composite trigger. The earlier limitation is
-therefore resolved for this reproducer; arbitrary indirect goals have no general
-proof-cost guarantee. The existing library/regression gates retain their
+the cap on 4.12.1 for `ShiftRightByZero`. The first, module-wide prototype achieved this result but failed enabled-mode
+acceptance comparisons below. The local revision exposes the identity only
+through verification-context assumptions; its acceptance results must be
+reviewed before removing the shipped #73 limitation. Arbitrary indirect goals
+have no general proof-cost guarantee. The existing library/regression gates retain their
 established configurations.
 
 The generated scaling corpus verifies nesting through depth 64 and widths
@@ -154,36 +155,40 @@ do not establish the solver's internal ordering of simplification and search.
 
 ### Closed native integer literal identities (#74)
 
-The translator inspects each function-call actual after boxing adaptation.
-Only an argument exactly `LitInt(n)`, with `n` a native integer numeral, is
-collected. It records the arbitrary-precision integer value in a numerically
-sorted set owned by that module's translator. After translating the module, it
-emits each closed identity once. The original actual and all existing legality
-and well-formedness checks remain intact.
+The translator inspects native function-call actuals after boxing adaptation.
+Only an argument exactly `LitInt(n)`, with `n` a concrete native integer numeral,
+qualifies. The original argument and all checks remain intact.
 
-`AddOtherDefinition` associates these instances with the existing `LitInt`
-function, just as it associates other definitions with their functions. Ordinary
-pruning consequently retains the instances when `LitInt` is used. Collection
-and emission both test the shared option before allocating new nodes; the
-collection is allocated only on the first eligible argument. With the option
-off, neither the Boogie translation nor controlled solver input/resources change
-relative to merged #73 (`edff862a3da391fe2f0142343a5846edf078b2ed`).
+`CanCallAssumptionForVerification` augments an existing local can-call assumption
+with these closed identities. The original `CanCallAssumption` is retained for
+shared function-definition, consequence, let and type axioms. A collector visits
+only the local source expression, including its nested expressions; it does not
+visit the body of a called function. Function-call well-formedness checking also
+inserts identities for the final native actuals in that implementation's local
+statement builder, excluding receivers and implicit arguments.
 
-These are substitutions in a trusted definition, not a new quantified family.
-The translation excludes symbolic arguments, real literals and boxed literals.
-It preserves markers, the bounded round-trip formula, its composite trigger,
-the native bridge and all solver settings. Numerals occurring only outside
-function-call actuals are not collected. The exact end-to-end cost need not equal
-the earlier edited-query replay's 6,657 RU.
+Each emitted assumption owns its numerically sorted arbitrary-precision set.
+Repeated values in that assumption are deduplicated. There is no inventory or
+suppression across modules, declarations, branches or other verification
+contexts: an identity emitted in one context may be absent from another. No
+top-level literal identity axioms or pruning dependencies are added.
+
+The shared option guards both collection and insertion before constructing new
+identity nodes. With the option off, the existing can-call expression is returned
+without collecting numerals or emitting extra commands. These are substitutions
+in the trusted `LitInt` definition, not a new quantified family. Symbolic, real
+and boxed arguments are excluded. Markers, the bounded round-trip formula and
+composite trigger, the native bridge, pruning and solver settings are preserved.
+The actual cost need not match the edited-query replay's 6,657 RU.
 
 The issue-74 validation workflow compares the merged baseline and candidate with
 the option off and on, records per-batch costs, saves actual SMT, and verifies
 literal-heavy non-bitvector code. Its expected failing negative/vacuity probes
 are recorded separately from the required regression gate.
 
-### Literal follow-up acceptance boundary
+### Rejected module-wide prototype
 
-The module-wide literal implementation is not yet accepted for merge. Its
+The module-wide literal implementation was rejected for merge. Its
 [paired suite comparison](https://github.com/erniecohen/dafny/actions/runs/37095952540)
 against merged #73 covers 1,081 programs and 7,499 proof batches. Option-off
 verdicts and controlled resource counts have no differences. With the option on,
@@ -239,13 +244,21 @@ three suite failures. Improvements elsewhere do not make this comparison pass.
 Ordinary pruning retains a closed `LitInt(n) == n` whenever `LitInt` is relevant:
 the axiom's expression itself produces that dependency. Attaching it to another
 function's definitions would not remove the incoming `LitInt` dependency. The
-current module-wide identities can therefore reach proofs with no eligible
-literal call of their own. A proposed repair is to expose closed identities
-through existing call-local assumptions, preserving original arguments/checks
-and both resolver modes. That changes the approved module-emission scope and
-requires owner review before implementation. It is not implemented here. No
-quantified family, trigger, pruning algorithm, solver setting or resource limit
-has been changed to make these comparisons pass.
+module-wide identities can therefore reach proofs with no eligible literal call
+of their own. The [review decision](https://github.com/erniecohen/dafny/pull/76#issuecomment-5966298566)
+authorized the local revision described above, while requiring new focused and
+complete comparisons and merge review. It explicitly prohibits adding identities
+to shared quantified can-call axioms. No quantified family, trigger, pruning
+algorithm, solver setting or resource limit is changed by the revision.
+
+### Local revision validation
+
+The local revision is undergoing focused end-to-end checks of the unchanged
+original, negative/vacuity controls, same-module isolation, the three suite
+failures and the six observed library regressions. The earlier module-wide
+measurements above are not acceptance evidence for this revision. It must not
+merge until the focused checks, actual solver-input audit, complete enabled and
+default-off comparisons, and required CI pass under their existing limits.
 
 ### Isolated 1,000-term performance characterization
 

@@ -37,7 +37,8 @@ jobs:
             git fetch --no-tags --depth=1 origin edff862a3da391fe2f0142343a5846edf078b2ed
             git worktree add baseline edff862a3da391fe2f0142343a5846edf078b2ed
             if (cd baseline && build_one baseline) > baseline-build.log 2>&1; then
-              tar -C out -czf builds.tar.gz baseline candidate
+              printf '%s\n' "$GITHUB_SHA" > out/candidate-source.txt
+              tar -C out -czf builds.tar.gz baseline candidate candidate-source.txt
               echo 'ready=true' >> "$GITHUB_OUTPUT"
             fi
           fi
@@ -83,6 +84,8 @@ jobs:
           fi
       - name: End-to-end original, literal cases, and controls at 200,000 units
         run: python3 .github/review/issue74-targeted.py --baseline "$PWD/out/baseline/Dafny" --candidate "$PWD/out/candidate/Dafny" --z3 "$Z3" --output results
+      - name: Inspect actual original and same-module isolation solver input
+        run: python3 .github/review/issue74-smt-audit.py --input results
       - name: Recheck the three suite failures and six library regressions at existing limits
         run: |
           python3 .github/review/issue74-corpus.py --baseline "$PWD/out/baseline/Dafny" --candidate "$PWD/out/candidate/Dafny" --z3 "$Z3" --output results/suite --only dafny4/Ackermann.dfy,dafny4/Lucas-up.dfy,dafny2/SnapshotableTrees.dfy --jobs 2

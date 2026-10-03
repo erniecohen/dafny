@@ -2372,7 +2372,8 @@ and what information it produces about the verification process.
   This setting also applies to editor verification and is distinct from
   `--allow-axioms`, which controls warnings about assumptions in user code.
   It also exposes existing identities for concrete native integer literals used
-  as function-call arguments, preserving those arguments and conversion checks.
+  as function-call arguments in local verification assumptions, preserving those
+  arguments and conversion checks. Shared function/type axioms are unchanged.
   The unchanged round-trip and shift-by-zero examples pass the pinned Z3 4.12.1
   and 5.1.0 gates in both resolver modes. Other proof costs remain solver-dependent.
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
