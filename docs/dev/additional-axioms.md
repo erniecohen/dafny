@@ -253,12 +253,70 @@ algorithm, solver setting or resource limit is changed by the revision.
 
 ### Local revision validation
 
-The local revision is undergoing focused end-to-end checks of the unchanged
-original, negative/vacuity controls, same-module isolation, the three suite
-failures and the six observed library regressions. The earlier module-wide
-measurements above are not acceptance evidence for this revision. It must not
-merge until the focused checks, actual solver-input audit, complete enabled and
-default-off comparisons, and required CI pass under their existing limits.
+[Focused end-to-end validation](https://github.com/erniecohen/dafny/actions/runs/37103804760)
+uses the actual local implementation and checksum-pinned Z3 4.12.1 and 5.1.0.
+The unchanged original verifies all 17 batches in both resolver modes at the
+existing 200,000-RU cap. `ShiftRightByZero` correctness uses 6,654 RU and its
+well-formedness query uses 4,413 RU in each combination. Positive conversions
+and literal-heavy non-bitvector code pass; the conversion negative controls
+retain 11 errors and the native literal/precondition/vacuity controls retain
+three errors. Same-module isolation verifies five batches on each solver/mode.
+
+Four permanent structural tests check both resolver modes and flag settings.
+They reject closed identities anywhere in shared quantified axioms, check
+ordered per-assumption deduplication, and check that other-body literals do not
+enter unrelated declarations. The actual-SMT audit inspects every captured
+original/isolation query: zero is available in the original; no `777` identity
+from the other function body propagates; no top-level closed identity assertion
+is present. Debug-free normalized logs omit VC names, so the audit does not
+invent an ordinal-to-declaration mapping. Named declarations are checked by
+the structural tests separately.
+
+All three known suite failures recover their exact merged-baseline resource
+counts in the focused whole-program comparisons:
+
+| Correctness batch | 4.12.1 baseline and local (RU) | 5.1.0 baseline and local (RU) |
+| --- | --- | --- |
+| `Iterator.Push` batch 13 | 191,298 | 5,226,959 |
+| `INDUCTION_EVEN_ODD` | 765,192 | 1,302,475 |
+| `Am` | 36,503 | 36,339 |
+
+The six library regression filters have no new incorrect/out-of-resource
+outcomes on either solver under their existing project limits. This does not
+claim that every filtered baseline declaration is correct: e.g. 5.1.0's existing
+`LemmaHoistOverDenominator` exhaustion remains on both builds, while
+`Lemma2To64` improves from exhaustion to a proved result with the local facts.
+
+The [complete paired suite comparison](https://github.com/erniecohen/dafny/actions/runs/37104365416)
+checks 1,081 programs and 7,499 batches on Z3 5.1.0. Option-off verdicts and
+controlled counts are identical. There are no enabled verdict regressions or
+improvements. One program retains two substantial enabled cost increases,
+which both finish within the unchanged 16,000,000-RU cap:
+
+| `MinimumWindowMax` correctness batch | Merged #73, option on (RU) | Local identities (RU) |
+| --- | --- | --- |
+| 116 | 2,257,780 | 5,387,699 |
+| 133 | 2,911,555 | 9,776,756 |
+
+[Required scratch CI](https://github.com/erniecohen/dafny/actions/runs/37104086114)
+passes the regression harness, resolver matrix, suite verdict gate and both
+source-library verdict gates. The [completed paired library comparison](https://github.com/erniecohen/dafny/actions/runs/37104365416)
+checks 2,190 declarations on each solver at the existing project and declaration
+limits. Neither solver has a new enabled verdict failure. On 4.12.1,
+`LemmaIndistinguishableQuotients` and `LemmaMultiplyDivideLt` improve to proved
+results, leaving all 2,190 declarations correct in this run. On 5.1.0,
+`Lemma2To64` improves to a proved result; other pre-existing failures remain.
+These are observed end-to-end improvements, not causal edited-query diagnostics.
+
+All 92 library module translations are byte-identical with the option off,
+including explicit CLI false, and there are no option-off verdict differences.
+The default-order B/O resource counts match on 4.12.1 and differ in 82
+5.1.0 declarations. Unchanged-build repeat controls differ in 48/47 declarations
+on 4.12.1 and 8/98 on 5.1.0. These default-order counts retain the known #30
+variation; the controlled focused and complete-suite comparisons establish
+exact option-off input/count equality separately. The remaining enabled cost increases and completed library
+results are submitted for merge review; this revision is not yet merged.
+No existing proof source, expected-verdict file or resource limit is changed.
 
 ### Isolated 1,000-term performance characterization
 
