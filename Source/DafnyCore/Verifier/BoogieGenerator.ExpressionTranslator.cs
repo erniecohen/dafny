@@ -1411,7 +1411,9 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
           Type t = e.Function.Ins[i].Type;
           Expr tr_ee = TrExpr(ee);
           argsAreLit = argsAreLit && BoogieGenerator.IsLit(tr_ee);
-          args.Add(BoogieGenerator.AdaptBoxing(GetToken(e), tr_ee, Cce.NonNull(ee.Type), t));
+          var argument = BoogieGenerator.AdaptBoxing(GetToken(e), tr_ee, Cce.NonNull(ee.Type), t);
+          BoogieGenerator.CollectIntegerLiteralIdentity(argument);
+          args.Add(argument);
         }
         return args;
       }
