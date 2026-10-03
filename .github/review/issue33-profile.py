@@ -7,43 +7,48 @@ from pathlib import Path
 import re
 import subprocess
 
-def commands(text):
-    result=[];start=None;depth=0;quoted=False;bar=False;comment=False
-    for i,c in enumerate(text):
-        if comment:
-            if c=='\n':comment=False
-            continue
-        if quoted:
-            if c=='"':quoted=False
-            continue
-        if bar:
-            if c=='|':bar=False
-            continue
-        if c==';':comment=True;continue
-        if c=='"':quoted=True;continue
-        if c=='|':bar=True;continue
-        if c=='(':
-            if depth==0:start=i
-            depth+=1
-        elif c==')':
-            depth-=1
-            if depth==0:result.append(text[start:i+1])
-    assert depth==0
-    return result
+def commands(path):
+    # Large isolated logs repeat the prelude for every VC. Keep only one command
+    # in memory rather than loading the entire log and all queries at once.
+    depth=0;quoted=False;bar=False;comment=False;buffer=[]
+    with Path(path).open() as stream:
+        while chunk:=stream.read(65536):
+            for c in chunk:
+                if depth:buffer.append(c)
+                if comment:
+                    if c=='\n':comment=False
+                    continue
+                if quoted:
+                    if c=='"':quoted=False
+                    continue
+                if bar:
+                    if c=='|':bar=False
+                    continue
+                if c==';':comment=True;continue
+                if c=='"':quoted=True;continue
+                if c=='|':bar=True;continue
+                if c=='(':
+                    if depth==0:buffer=['(']
+                    depth+=1
+                elif c==')':
+                    depth-=1
+                    if depth==0:
+                        yield ''.join(buffer)
+                        buffer=[]
+    assert depth==0, 'incomplete captured SMT command'
 
-def queries(text):
-    current=[];vc='';result=[]
-    for cmd in commands(text):
+def queries(path):
+    current=[];vc=''
+    for cmd in commands(path):
         if cmd=='(reset)':current=[]
         if cmd.startswith('(set-info :boogie-vc-id '):vc=cmd[len('(set-info :boogie-vc-id '):-1]
         if cmd=='(check-sat)':
             # Captures used here reset before every query. Reject reuse rather than
             # accidentally replay a previous check or forget stack restoration.
             assert not any(c=='(check-sat)' for c in current)
-            result.append((vc,current.copy()))
+            yield vc,current.copy()
         if cmd.startswith('(get-info') or cmd.startswith('(pop '):continue
         current.append(cmd)
-    return result
 
 def replay(z3, body, dest, label, limit):
     dest.mkdir(parents=True,exist_ok=True)
@@ -114,7 +119,7 @@ a=p.parse_args();out=Path(a.output);out.mkdir(parents=True,exist_ok=True)
 version=subprocess.run([a.z3,'-version'],capture_output=True,text=True,check=True).stdout
 (out/'solver-version.txt').write_text(version)
 (out/'solver-sha256.txt').write_text(hashlib.sha256(Path(a.z3).read_bytes()).hexdigest()+'\n')
-selected=queries(Path(a.smt).read_text());report=[]
+selected=queries(a.smt);report=[]
 if a.literal:
     selected=[(name,body) for name,body in selected if 'Impl$' in name and 'ShiftRightByZero' in name]
     assert len(selected)==1
