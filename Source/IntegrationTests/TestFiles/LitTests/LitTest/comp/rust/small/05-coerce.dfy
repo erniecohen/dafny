@@ -2,7 +2,7 @@
 // RUN: %baredafny run --target=rs --enforce-determinism --type-system-refresh --general-traits=full "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 
-trait Q<K(==)> {
+trait Q<!K(==)> {
   function put():(r:OM<K>)
 }
 

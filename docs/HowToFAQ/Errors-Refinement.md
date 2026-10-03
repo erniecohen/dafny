@@ -763,6 +763,12 @@ module Q refines P {
 
 There are restrictions on what can be changed in a refinement. 
 In particular, the variance of type parameters must remain the same.
+For a type declaration, refinement must also preserve an inherited strict
+cardinality contract: changing `X` to `!X`, or `+X` to `*X`, is rejected even
+though the ordinary variance is unchanged. Clients may already depend on the
+original strict contract. A refinement can strengthen a permissive cardinality
+contract if the remaining refinement and ordinary variance rules permit it.
+
 
 
 ## **Error: type parameter '_name_' of _what_ '_declarationname_' is declared with a different number of type bounds than in the corresponding _what_ in the module it refines (expected _oldnum_, found _num_)** {#ref_mismatched_type_bounds_count}

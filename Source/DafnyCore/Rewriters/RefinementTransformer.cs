@@ -220,6 +220,10 @@ namespace Microsoft.Dafny {
           } else if (newDeclaration is TypeSynonymDecl) {
             var msg = $"a type synonym ({newDeclaration.Name}) is not allowed to replace a {originalDeclaration.WhatKind} from the refined module ({module.Implements.Target}), even if it denotes the same type";
             Error(ErrorId.ref_refinement_type_must_match_base, newDeclaration.Origin, msg);
+          } else if (originalDeclaration is AbstractModuleDecl && newDeclaration is ModuleDecl) {
+            // Abstract-import overrides do not use refining notation or the type
+            // merger. Retain their exact correspondence for selected environments.
+            newDeclaration.CardinalityRefinementBase = originalDeclaration;
           } else if (!(originalDeclaration is AbstractModuleDecl)) {
             Error(ErrorId.ref_refining_notation_needed, newDeclaration.Origin, $"to redeclare and refine declaration '{originalDeclaration.Name}' from module '{module.Implements.Target}', you must use the refining (`...`) notation");
           }
@@ -320,6 +324,10 @@ namespace Microsoft.Dafny {
               nw.WhatKind, nw.Name);
           } else {
             CheckAgreement_TypeParameters(nw.Origin, d.TypeArgs, nw.TypeArgs, nw.Name, "type");
+            // A synonym or subset replacement has no ordinary parent-trait list.
+            // Keep the contract in the refining environment for global analysis.
+            nw.CardinalityParentObligations = nw.CardinalityParentObligations
+              .AddRange(od.Traits.Concat(od.CardinalityParentObligations).Select(refinementCloner.CloneType));
           }
         }
       } else if (nw is AbstractTypeDecl) {
@@ -376,6 +384,9 @@ namespace Microsoft.Dafny {
       } else {
         Contract.Assert(false);
       }
+      // Record the final object, including reconstructed iterators. The global
+      // validator uses this relation only when this module is selected as a replacement.
+      nwPointer.Get().CardinalityRefinementBase = d;
     }
 
     public bool CheckIsRefinement(ModuleDecl derived, AbstractModuleDecl original) {
@@ -597,13 +608,20 @@ namespace Microsoft.Dafny {
         yens,
         newBody,
         refinementCloner.MergeAttributes(prev.Attributes, nw.Attributes),
-        null);
+        null) {
+        // Iterator reconstruction has no parent-trait constructor argument. Retain
+        // inherited contracts for analysis without changing runtime inheritance.
+        CardinalityParentObligations = nw.CardinalityParentObligations
+          .AddRange(prev.Traits.Concat(prev.CardinalityParentObligations).Select(refinementCloner.CloneType))
+      };
     }
 
     TopLevelDeclWithMembers MergeClass(TopLevelDeclWithMembers nw, TopLevelDeclWithMembers prev) {
       CheckAgreement_TypeParameters(nw.Origin, prev.TypeArgs, nw.TypeArgs, nw.Name, nw.WhatKind);
 
       prev.Traits.ForEach(item => nw.Traits.Add(refinementCloner.CloneType(item)));
+      nw.CardinalityParentObligations = nw.CardinalityParentObligations
+        .AddRange(prev.CardinalityParentObligations.Select(refinementCloner.CloneType));
       nw.Attributes = refinementCloner.MergeAttributes(prev.Attributes, nw.Attributes);
 
       // Create a simple name-to-member dictionary.  Ignore any duplicates at this time.
@@ -829,6 +847,11 @@ namespace Microsoft.Dafny {
               var ov = o.Variance == TypeParameter.TPVariance.Co ? "+" : o.Variance == TypeParameter.TPVariance.Contra ? "-" : "=";
               var nv = n.Variance == TypeParameter.TPVariance.Co ? "+" : n.Variance == TypeParameter.TPVariance.Contra ? "-" : "=";
               Error(ErrorId.ref_mismatched_type_parameter_variance, n.Origin, "type parameter '{0}' is not allowed to change variance (here, from '{1}' to '{2}')", n.Name, ov, nv);
+            }
+
+            if (o.Parent is TopLevelDecl && o.StrictVariance && !n.StrictVariance) {
+              Error(ErrorId.ref_mismatched_type_parameter_variance, n.Origin,
+                "type parameter '{0}' is not allowed to weaken its strict cardinality contract in a refinement", n.Name);
             }
 
             CheckAgreement_TypeBounds(n.Origin, o, n, name, thing);
@@ -1638,6 +1661,7 @@ namespace Microsoft.Dafny {
           ((AbstractModuleDecl)dd).OriginalSignature = ((AbstractModuleDecl)d).OriginalSignature;
         }
       }
+      dd.CardinalityRefinementBase = d;
       return dd;
     }
     public virtual Attributes MergeAttributes(Attributes prevAttrs, Attributes moreAttrs) {

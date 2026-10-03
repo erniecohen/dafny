@@ -1243,6 +1243,22 @@ To fix it, we use the variance `!`:
 
 This states that `T` does not preserve the cardinality of `X`, meaning there could be strictly more values of type `T<E>` than values of type `E` for any `E`.
 
+A strict cardinality mode is a structural contract. Function inputs, infinite-set
+elements, infinite-map domains, and permissive type-parameter positions are
+potentially expansive; crossing any of them remains expansive even under two
+function inputs. Ordinary positive variance therefore does not imply cardinality
+preservation.
+
+For a generic reference class, reference trait, or iterator, this contract also
+applies to stored instance fields and constants, including ghost and inherited
+fields. A method merely accepting a callback does not store that callback.
+For example, a class storing a field of type `X -> bool` must advertise a
+permissive mode for `X`, such as `!X`, where its declaration syntax supports that
+mode. A refinement cannot relax an inherited strict cardinality contract.
+
+[General-trait implementations](#sec-general-trait-cardinality) have additional
+parameter-retention and cycle restrictions.
+
 A more detailed explanation of these topics is [here](http://leino.science/papers/krml280.html).
 
 <!--PDF NEWPAGE-->
@@ -2478,10 +2494,15 @@ The details of constructors and other class members are described in [Section 6.
 <!--PDF NEWPAGE-->
 ## 5.9. Trait types ([grammar](#g-trait-type)) {#sec-trait-types}
 
-A _trait_ is an abstract superclass, similar to an "interface" or
-"mixin". A trait can be _extended_ only by another trait or
-by a class (and in the latter case we say that the class _implements_
-the trait). More specifically, algebraic datatypes cannot extend traits.[^fn-traits]
+A _trait_ is an abstract supertype, similar to an "interface" or "mixin".
+A reference trait can be extended by another reference trait or by a class
+(and in the latter case we say that the class _implements_ the trait).
+A trait that does not inherit from `object` can also be a _general trait_,
+according to the `--general-traits` option. With `--general-traits=datatype`,
+non-newtype declarations with members, including datatypes, codatatypes, and
+abstract types, can implement general traits. With `--general-traits=full`, the
+existing language rules also permit eligible newtypes to implement them. These implementations must satisfy the
+[cardinality restrictions](#sec-general-trait-cardinality) below.[^fn-traits]
 
 [^fn-traits]: Traits are new to Dafny and are likely to evolve for a while.
 
@@ -2516,7 +2537,7 @@ such a `C` object can be used as a value of type `J`.
 
 ### 5.9.1. Type `object` ([grammar](#g-object-type)) {#sec-object-type}
 
-There is a built-in trait `object` that is implicitly extended by all classes and traits.
+There is a built-in reference trait `object` that is implicitly extended by all classes and reference traits.
 It produces two types: the type `object?` that is a supertype of all
 reference types and a subset type `object` that is a supertype of all non-null reference types.
 This includes reference types like arrays and iterators that do not permit
@@ -2707,6 +2728,78 @@ method m() {
   myShapes[1].MoveH(myShapes[0].Width());
 }
 ```
+
+### 5.9.4. Cardinality restrictions on general traits {#sec-general-trait-cardinality}
+
+Dafny checks general-trait implementations during resolution, including unused
+declarations and definitions loaded from includes or libraries. Skipping
+verification, selecting only a method for verification, or hiding a representation
+behind an export view does not skip this check.
+
+For an implementation `C<X0, ...> extends P<A0, ...>` into a general,
+non-reference trait, every type parameter of `C` must occur as a direct type
+argument of `P`. Identity type synonyms can be expanded for this purpose;
+collection types, subset types, and newtypes do not constitute direct retention.
+The rule includes phantom parameters and parameters used only in ghost storage.
+Characteristics such as `(!new)` and `(==)` do not waive retention.
+
+At least one direct retaining parent position must have a cardinality mode at
+least as permissive as the corresponding child parameter. An unannotated or `+`
+parameter is strict; a `!`, `-`, or `*` parameter is permissive. These annotations
+retain their ordinary variance meaning and are available only where the existing
+syntax and variance rules permit them. For example:
+
+<!-- %no-check -->
+```dafny
+trait Indexed<T> {}
+datatype Box<T> extends Indexed<T> = Box(x: T)  // accepted
+
+trait Permissive<!T> {}
+datatype Callback<!T> extends Permissive<T> = Callback(f: T -> bool)  // accepted
+
+trait Unindexed {}
+datatype Erased<T> extends Unindexed = Erased(x: T)  // rejected: T is not retained
+
+datatype Nested<T> extends Indexed<seq<T>> = Nested(x: T)  // rejected: no direct T slot
+```
+
+Dafny also rejects potentially expansive cycles through value representations
+and general-trait implementations. A representation depends on the types of its
+constructor payloads, synonym RHS, subset base, or newtype base. A general trait
+depends on each of its implementations. Function inputs, infinite-set elements,
+infinite-map domains, and permissive generic arguments make a dependency
+potentially expansive. A cycle containing any such dependency is rejected.
+For example:
+
+<!-- %no-check -->
+```dafny
+trait Value {}
+datatype PredicateValue extends Value = PredicateValue(p: Value -> bool)  // rejected
+
+datatype Term extends Value = Leaf(n: int) | Node(child: Value)  // accepted
+```
+
+Finite sequences, sets, multisets, and maps preserve the dependency flag;
+function results also preserve it. Nesting an expansive occurrence inside a
+finite collection or another function input does not remove its expansion.
+Ghost payloads and ghost constructors participate in the same check.
+A predicate or callback used outside an implementing type's representation
+remains subject to its ordinary rules.
+
+This is a conservative structural discipline. It does not prove that each
+rejected declaration is inconsistent. In particular, the graph identifies
+nominal declaration heads, so a dependency through `Value<int>` can close a cycle
+with an implementation of `Value<bool>`. It also gives no exemption for an empty
+subset constraint, a singleton function result, or a phantom parameter.
+More precise parameter recovery than a direct retaining slot is unsupported.
+
+Reference fields are checked for their generic parameter contracts; a reference
+object is not treated as a tuple containing all its fields. Ordinary reference
+inheritance, including extension of `object`, does not require every child
+parameter to be retained. It must still respect any parent's exposed strict
+parameter contract. Existing heap, allocation, equality, initialization, and
+termination checks remain applicable, as do existing restrictions on newtype
+bases and compilation support.
 
 <!--PDF NEWPAGE-->
 ## 5.10. Array types ([grammar](#g-array-type)) {#sec-array-type}

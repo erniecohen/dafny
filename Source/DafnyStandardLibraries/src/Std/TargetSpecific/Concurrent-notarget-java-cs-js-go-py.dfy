@@ -42,7 +42,7 @@ replaceable module Std.Concurrent {
     * A mutable wrapper for a single value that is safe to access
     * by multiple concurrent executions.
     */
-  class AtomicBox<T> {
+  class AtomicBox<!T> {
 
     // Invariant on values this box may hold
     ghost const inv: T -> bool
@@ -67,7 +67,7 @@ replaceable module Std.Concurrent {
     * Functionally equivalent to an AtomicBox<map<K, V>>
     * but will be much more efficient in practice.
     */
-  class MutableMap<K(==), V(==)> {
+  class MutableMap<!K(==), !V(==)> {
 
     // Invariant on key-value pairs this map may hold
     ghost const inv: (K, V) -> bool

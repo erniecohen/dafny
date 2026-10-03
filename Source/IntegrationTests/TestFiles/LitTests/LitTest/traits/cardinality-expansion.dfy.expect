@@ -1,0 +1,160 @@
+cardinality-expansion.dfy(4,50): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'TotalArrow.D' depends on 'TotalArrow.V' through constructor 'D.p' -> arrow input 0 (potentially expansive)
+   'TotalArrow.V' contains 'TotalArrow.D' because 'TotalArrow.D' extends 'TotalArrow.V'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-expansion.dfy(4,56): Related location: 'TotalArrow.D' depends on 'TotalArrow.V' through constructor 'D.p' -> arrow input 0
+cardinality-expansion.dfy(4,26): Related location: Type 'TotalArrow.V' is declared here.
+cardinality-expansion.dfy(4,50): Related location: 'TotalArrow.V' contains 'TotalArrow.D' because 'TotalArrow.D' extends 'TotalArrow.V'
+cardinality-expansion.dfy(4,40): Related location: Type 'TotalArrow.D' is declared here.
+cardinality-expansion.dfy(5,52): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'PartialArrow.D' depends on 'PartialArrow.V' through constructor 'D.p' -> arrow input 0 (potentially expansive)
+   'PartialArrow.V' contains 'PartialArrow.D' because 'PartialArrow.D' extends 'PartialArrow.V'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-expansion.dfy(5,58): Related location: 'PartialArrow.D' depends on 'PartialArrow.V' through constructor 'D.p' -> arrow input 0
+cardinality-expansion.dfy(5,28): Related location: Type 'PartialArrow.V' is declared here.
+cardinality-expansion.dfy(5,52): Related location: 'PartialArrow.V' contains 'PartialArrow.D' because 'PartialArrow.D' extends 'PartialArrow.V'
+cardinality-expansion.dfy(5,42): Related location: Type 'PartialArrow.D' is declared here.
+cardinality-expansion.dfy(6,50): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'ReadsArrow.D' depends on 'ReadsArrow.V' through constructor 'D.p' -> arrow input 0 (potentially expansive)
+   'ReadsArrow.V' contains 'ReadsArrow.D' because 'ReadsArrow.D' extends 'ReadsArrow.V'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-expansion.dfy(6,56): Related location: 'ReadsArrow.D' depends on 'ReadsArrow.V' through constructor 'D.p' -> arrow input 0
+cardinality-expansion.dfy(6,26): Related location: Type 'ReadsArrow.V' is declared here.
+cardinality-expansion.dfy(6,50): Related location: 'ReadsArrow.V' contains 'ReadsArrow.D' because 'ReadsArrow.D' extends 'ReadsArrow.V'
+cardinality-expansion.dfy(6,40): Related location: Type 'ReadsArrow.D' is declared here.
+cardinality-expansion.dfy(7,51): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'InfiniteSet.D' depends on 'InfiniteSet.V' through constructor 'D.p' -> iset element (potentially expansive)
+   'InfiniteSet.V' contains 'InfiniteSet.D' because 'InfiniteSet.D' extends 'InfiniteSet.V'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-expansion.dfy(7,63): Related location: 'InfiniteSet.D' depends on 'InfiniteSet.V' through constructor 'D.p' -> iset element
+cardinality-expansion.dfy(7,27): Related location: Type 'InfiniteSet.V' is declared here.
+cardinality-expansion.dfy(7,51): Related location: 'InfiniteSet.V' contains 'InfiniteSet.D' because 'InfiniteSet.D' extends 'InfiniteSet.V'
+cardinality-expansion.dfy(7,41): Related location: Type 'InfiniteSet.D' is declared here.
+cardinality-expansion.dfy(8,57): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'InfiniteMapDomain.D' depends on 'InfiniteMapDomain.V' through constructor 'D.p' -> imap domain (potentially expansive)
+   'InfiniteMapDomain.V' contains 'InfiniteMapDomain.D' because 'InfiniteMapDomain.D' extends 'InfiniteMapDomain.V'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-expansion.dfy(8,69): Related location: 'InfiniteMapDomain.D' depends on 'InfiniteMapDomain.V' through constructor 'D.p' -> imap domain
+cardinality-expansion.dfy(8,33): Related location: Type 'InfiniteMapDomain.V' is declared here.
+cardinality-expansion.dfy(8,57): Related location: 'InfiniteMapDomain.V' contains 'InfiniteMapDomain.D' because 'InfiniteMapDomain.D' extends 'InfiniteMapDomain.V'
+cardinality-expansion.dfy(8,47): Related location: Type 'InfiniteMapDomain.D' is declared here.
+cardinality-expansion.dfy(9,54): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'DoubleNegative.D' depends on 'DoubleNegative.V' through constructor 'D.p' -> arrow input 0 -> arrow input 0 (potentially expansive)
+   'DoubleNegative.V' contains 'DoubleNegative.D' because 'DoubleNegative.D' extends 'DoubleNegative.V'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-expansion.dfy(9,60): Related location: 'DoubleNegative.D' depends on 'DoubleNegative.V' through constructor 'D.p' -> arrow input 0 -> arrow input 0
+cardinality-expansion.dfy(9,30): Related location: Type 'DoubleNegative.V' is declared here.
+cardinality-expansion.dfy(9,54): Related location: 'DoubleNegative.V' contains 'DoubleNegative.D' because 'DoubleNegative.D' extends 'DoubleNegative.V'
+cardinality-expansion.dfy(9,44): Related location: Type 'DoubleNegative.D' is declared here.
+cardinality-expansion.dfy(10,54): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'NestedSequence.D' depends on 'NestedSequence.V' through constructor 'D.p' -> sequence element -> arrow input 0 (potentially expansive)
+   'NestedSequence.V' contains 'NestedSequence.D' because 'NestedSequence.D' extends 'NestedSequence.V'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-expansion.dfy(10,60): Related location: 'NestedSequence.D' depends on 'NestedSequence.V' through constructor 'D.p' -> sequence element -> arrow input 0
+cardinality-expansion.dfy(10,30): Related location: Type 'NestedSequence.V' is declared here.
+cardinality-expansion.dfy(10,54): Related location: 'NestedSequence.V' contains 'NestedSequence.D' because 'NestedSequence.D' extends 'NestedSequence.V'
+cardinality-expansion.dfy(10,44): Related location: Type 'NestedSequence.D' is declared here.
+cardinality-expansion.dfy(11,54): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'FiniteMapRange.D' depends on 'FiniteMapRange.V' through constructor 'D.p' -> map range -> arrow input 0 (potentially expansive)
+   'FiniteMapRange.V' contains 'FiniteMapRange.D' because 'FiniteMapRange.D' extends 'FiniteMapRange.V'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-expansion.dfy(11,60): Related location: 'FiniteMapRange.D' depends on 'FiniteMapRange.V' through constructor 'D.p' -> map range -> arrow input 0
+cardinality-expansion.dfy(11,30): Related location: Type 'FiniteMapRange.V' is declared here.
+cardinality-expansion.dfy(11,54): Related location: 'FiniteMapRange.V' contains 'FiniteMapRange.D' because 'FiniteMapRange.D' extends 'FiniteMapRange.V'
+cardinality-expansion.dfy(11,44): Related location: Type 'FiniteMapRange.D' is declared here.
+cardinality-expansion.dfy(12,50): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'GhostField.D' depends on 'GhostField.V' through constructor 'D.p' -> arrow input 0 (potentially expansive)
+   'GhostField.V' contains 'GhostField.D' because 'GhostField.D' extends 'GhostField.V'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-expansion.dfy(12,62): Related location: 'GhostField.D' depends on 'GhostField.V' through constructor 'D.p' -> arrow input 0
+cardinality-expansion.dfy(12,26): Related location: Type 'GhostField.V' is declared here.
+cardinality-expansion.dfy(12,50): Related location: 'GhostField.V' contains 'GhostField.D' because 'GhostField.D' extends 'GhostField.V'
+cardinality-expansion.dfy(12,40): Related location: Type 'GhostField.D' is declared here.
+cardinality-expansion.dfy(13,56): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'GhostConstructor.D' depends on 'GhostConstructor.V' through constructor 'D.p' -> arrow input 0 (potentially expansive)
+   'GhostConstructor.V' contains 'GhostConstructor.D' because 'GhostConstructor.D' extends 'GhostConstructor.V'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-expansion.dfy(13,77): Related location: 'GhostConstructor.D' depends on 'GhostConstructor.V' through constructor 'D.p' -> arrow input 0
+cardinality-expansion.dfy(13,32): Related location: Type 'GhostConstructor.V' is declared here.
+cardinality-expansion.dfy(13,56): Related location: 'GhostConstructor.V' contains 'GhostConstructor.D' because 'GhostConstructor.D' extends 'GhostConstructor.V'
+cardinality-expansion.dfy(13,46): Related location: Type 'GhostConstructor.D' is declared here.
+cardinality-expansion.dfy(14,72): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'IdentityAlias.F' depends on 'IdentityAlias.V' through right-hand side of 'IdentityAlias.F' -> arrow input 0 (potentially expansive)
+   'IdentityAlias.V' contains 'IdentityAlias.D' because 'IdentityAlias.D' extends 'IdentityAlias.V'
+   'IdentityAlias.D' depends on 'IdentityAlias.F' through constructor 'D.p'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-expansion.dfy(14,39): Related location: 'IdentityAlias.F' depends on 'IdentityAlias.V' through right-hand side of 'IdentityAlias.F' -> arrow input 0
+cardinality-expansion.dfy(14,29): Related location: Type 'IdentityAlias.V' is declared here.
+cardinality-expansion.dfy(14,72): Related location: 'IdentityAlias.V' contains 'IdentityAlias.D' because 'IdentityAlias.D' extends 'IdentityAlias.V'
+cardinality-expansion.dfy(14,62): Related location: Type 'IdentityAlias.D' is declared here.
+cardinality-expansion.dfy(14,78): Related location: 'IdentityAlias.D' depends on 'IdentityAlias.F' through constructor 'D.p'
+cardinality-expansion.dfy(14,39): Related location: Type 'IdentityAlias.F' is declared here.
+cardinality-expansion.dfy(15,78): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'PermissiveAlias.D' depends on 'PermissiveAlias.V' through constructor 'D.p' -> type argument 0 of 'PermissiveAlias.F' (potentially expansive)
+   'PermissiveAlias.V' contains 'PermissiveAlias.D' because 'PermissiveAlias.D' extends 'PermissiveAlias.V'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-expansion.dfy(15,84): Related location: 'PermissiveAlias.D' depends on 'PermissiveAlias.V' through constructor 'D.p' -> type argument 0 of 'PermissiveAlias.F'
+cardinality-expansion.dfy(15,31): Related location: Type 'PermissiveAlias.V' is declared here.
+cardinality-expansion.dfy(15,78): Related location: 'PermissiveAlias.V' contains 'PermissiveAlias.D' because 'PermissiveAlias.D' extends 'PermissiveAlias.V'
+cardinality-expansion.dfy(15,68): Related location: Type 'PermissiveAlias.D' is declared here.
+cardinality-expansion.dfy(16,86): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'TransitivePayload.B' depends on 'TransitivePayload.V' through constructor 'B.p' -> arrow input 0 (potentially expansive)
+   'TransitivePayload.V' contains 'TransitivePayload.D' because 'TransitivePayload.D' extends 'TransitivePayload.V'
+   'TransitivePayload.D' depends on 'TransitivePayload.B' through constructor 'D.b'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-expansion.dfy(16,53): Related location: 'TransitivePayload.B' depends on 'TransitivePayload.V' through constructor 'B.p' -> arrow input 0
+cardinality-expansion.dfy(16,33): Related location: Type 'TransitivePayload.V' is declared here.
+cardinality-expansion.dfy(16,86): Related location: 'TransitivePayload.V' contains 'TransitivePayload.D' because 'TransitivePayload.D' extends 'TransitivePayload.V'
+cardinality-expansion.dfy(16,76): Related location: Type 'TransitivePayload.D' is declared here.
+cardinality-expansion.dfy(16,92): Related location: 'TransitivePayload.D' depends on 'TransitivePayload.B' through constructor 'D.b'
+cardinality-expansion.dfy(16,47): Related location: Type 'TransitivePayload.B' is declared here.
+cardinality-expansion.dfy(20,21): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'TwoTraits.D' depends on 'TwoTraits.W' through constructor 'D.p' -> arrow input 0 (potentially expansive)
+   'TwoTraits.W' contains 'TwoTraits.E' because 'TwoTraits.E' extends 'TwoTraits.W'
+   'TwoTraits.E' depends on 'TwoTraits.D' through constructor 'E.d'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-expansion.dfy(19,27): Related location: 'TwoTraits.D' depends on 'TwoTraits.W' through constructor 'D.p' -> arrow input 0
+cardinality-expansion.dfy(18,19): Related location: Type 'TwoTraits.W' is declared here.
+cardinality-expansion.dfy(20,21): Related location: 'TwoTraits.W' contains 'TwoTraits.E' because 'TwoTraits.E' extends 'TwoTraits.W'
+cardinality-expansion.dfy(20,11): Related location: Type 'TwoTraits.E' is declared here.
+cardinality-expansion.dfy(20,27): Related location: 'TwoTraits.E' depends on 'TwoTraits.D' through constructor 'E.d'
+cardinality-expansion.dfy(19,11): Related location: Type 'TwoTraits.D' is declared here.
+cardinality-expansion.dfy(22,52): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'TraitChain.D' depends on 'TraitChain.V' through constructor 'D.p' -> arrow input 0 (potentially expansive)
+   'TraitChain.V' contains 'TraitChain.Middle' because 'TraitChain.Middle' extends 'TraitChain.V'
+   'TraitChain.Middle' contains 'TraitChain.D' because 'TraitChain.D' extends 'TraitChain.Middle'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-expansion.dfy(22,87): Related location: 'TraitChain.D' depends on 'TraitChain.V' through constructor 'D.p' -> arrow input 0
+cardinality-expansion.dfy(22,26): Related location: Type 'TraitChain.V' is declared here.
+cardinality-expansion.dfy(22,52): Related location: 'TraitChain.V' contains 'TraitChain.Middle' because 'TraitChain.Middle' extends 'TraitChain.V'
+cardinality-expansion.dfy(22,37): Related location: Type 'TraitChain.Middle' is declared here.
+cardinality-expansion.dfy(22,76): Related location: 'TraitChain.Middle' contains 'TraitChain.D' because 'TraitChain.D' extends 'TraitChain.Middle'
+cardinality-expansion.dfy(22,66): Related location: Type 'TraitChain.D' is declared here.
+cardinality-expansion.dfy(23,52): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'CoDatatype.D' depends on 'CoDatatype.V' through constructor 'D.p' -> arrow input 0 (potentially expansive)
+   'CoDatatype.V' contains 'CoDatatype.D' because 'CoDatatype.D' extends 'CoDatatype.V'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-expansion.dfy(23,58): Related location: 'CoDatatype.D' depends on 'CoDatatype.V' through constructor 'D.p' -> arrow input 0
+cardinality-expansion.dfy(23,26): Related location: Type 'CoDatatype.V' is declared here.
+cardinality-expansion.dfy(23,52): Related location: 'CoDatatype.V' contains 'CoDatatype.D' because 'CoDatatype.D' extends 'CoDatatype.V'
+cardinality-expansion.dfy(23,42): Related location: Type 'CoDatatype.D' is declared here.
+cardinality-expansion.dfy(27,21): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'EmptySubset.F' depends on 'EmptySubset.V' through right-hand side of 'EmptySubset.F' -> arrow input 0 (potentially expansive)
+   'EmptySubset.V' contains 'EmptySubset.D' because 'EmptySubset.D' extends 'EmptySubset.V'
+   'EmptySubset.D' depends on 'EmptySubset.F' through constructor 'D.p'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-expansion.dfy(26,7): Related location: 'EmptySubset.F' depends on 'EmptySubset.V' through right-hand side of 'EmptySubset.F' -> arrow input 0
+cardinality-expansion.dfy(25,8): Related location: Type 'EmptySubset.V' is declared here.
+cardinality-expansion.dfy(27,21): Related location: 'EmptySubset.V' contains 'EmptySubset.D' because 'EmptySubset.D' extends 'EmptySubset.V'
+cardinality-expansion.dfy(27,11): Related location: Type 'EmptySubset.D' is declared here.
+cardinality-expansion.dfy(27,27): Related location: 'EmptySubset.D' depends on 'EmptySubset.F' through constructor 'D.p'
+cardinality-expansion.dfy(26,7): Related location: Type 'EmptySubset.F' is declared here.
+cardinality-expansion.dfy(31,21): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'NominalHeadConservatism.D' depends on 'NominalHeadConservatism.V' through constructor 'D.p' -> arrow input 0 (potentially expansive)
+   'NominalHeadConservatism.V' contains 'NominalHeadConservatism.D' because 'NominalHeadConservatism.D' extends 'NominalHeadConservatism.V'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-expansion.dfy(31,33): Related location: 'NominalHeadConservatism.D' depends on 'NominalHeadConservatism.V' through constructor 'D.p' -> arrow input 0
+cardinality-expansion.dfy(30,8): Related location: Type 'NominalHeadConservatism.V' is declared here.
+cardinality-expansion.dfy(31,21): Related location: 'NominalHeadConservatism.V' contains 'NominalHeadConservatism.D' because 'NominalHeadConservatism.D' extends 'NominalHeadConservatism.V'
+cardinality-expansion.dfy(31,11): Related location: Type 'NominalHeadConservatism.D' is declared here.
+18 resolution/type errors detected in cardinality-expansion.dfy

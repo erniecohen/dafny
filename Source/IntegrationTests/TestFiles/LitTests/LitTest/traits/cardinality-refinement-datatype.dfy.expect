@@ -1,0 +1,9 @@
+cardinality-refinement-datatype.dfy(6,17): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'B.D' depends on 'B.V' through constructor 'D.p' -> arrow input 0 (potentially expansive)
+   'B.V' contains 'B.D' because 'B.D' extends 'B.V'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-refinement-datatype.dfy(9,26): Related location: 'B.D' depends on 'B.V' through constructor 'D.p' -> arrow input 0
+cardinality-refinement-datatype.dfy(5,8): Related location: Type 'B.V' is declared here.
+cardinality-refinement-datatype.dfy(6,17): Related location: 'B.V' contains 'B.D' because 'B.D' extends 'B.V'
+cardinality-refinement-datatype.dfy(9,11): Related location: Type 'B.D' is declared here.
+1 resolution/type errors detected in cardinality-refinement-datatype.dfy

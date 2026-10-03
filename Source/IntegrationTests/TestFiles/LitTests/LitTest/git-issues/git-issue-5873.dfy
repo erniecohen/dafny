@@ -2,12 +2,12 @@
 // RUN: %boogie "%t.bpl" > "%t"
 // RUN: %diff "%s.expect" "%t"
 
-trait Parent {
+trait Parent<K(!new)> {
   method M() returns (r: nat)
   function F(): nat
 }
 
-datatype Dt<K(!new)> extends Parent = Dt {
+datatype Dt<K(!new)> extends Parent<K> = Dt {
   method M() returns (r: nat) {
     r := 0;
   }

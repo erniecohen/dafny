@@ -1,0 +1,3 @@
+cardinality-replacement-strengthening-existing.dfy(6,56): Error: formal type parameter 'X' is not used according to its variance specification (it is used left of an arrow) (perhaps try declaring 'X' as '-X' or '!X')
+cardinality-replacement-strengthening-existing.dfy(8,7): Related location: refining module
+1 resolution/type errors detected in cardinality-replacement-strengthening-existing.dfy

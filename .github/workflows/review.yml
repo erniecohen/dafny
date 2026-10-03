@@ -71,6 +71,32 @@ jobs:
           v=$(dotnet out/dafny/Dafny.dll --version | head -1)
           echo "dafny --version: $v"
           test "$v" = "${{ steps.version.outputs.version }}"
+      - name: Check the packaged standard libraries
+        run: |
+          v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
+          case "$v" in
+            4.12.1) sha=$HARNESS_Z3_4_12_1_SHA256 ;;
+            4.16.0) sha=$HARNESS_Z3_4_16_0_SHA256 ;;
+            *) echo "no checksum here for Z3 $v"; exit 1 ;;
+          esac
+          curl -fsSLo z3h.zip "$HARNESS_Z3_RELEASE/z3-$v-x64-ubuntu-24.04-bin.zip"
+          echo "$sha  z3h.zip" | sha256sum -c -
+          mkdir -p z3h && unzip -q z3h.zip -d z3h && chmod +x "z3h/z3-$v"
+          "z3h/z3-$v" --version
+          python3 .github/review/packaged-libraries.py "$PWD/out/dafny/Dafny" "$PWD/z3h/z3-$v" \
+            out/packaged-libraries
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: packaged-libraries
+          path: |
+            out/packaged-libraries/summary.json
+            out/packaged-libraries/*/result.json
+            out/packaged-libraries/*/stdout.txt
+            out/packaged-libraries/*/stderr.txt
+            out/packaged-libraries/*/resources.csv
+            out/packaged-libraries/*/package-smoke.bin
+          retention-days: 14
       - name: Pack
         run: tar -C out -czf dafny.tar.gz dafny
       - uses: actions/upload-artifact@v4
@@ -274,6 +300,11 @@ jobs:
           "Binaries/z3/bin/z3-$v" --version
       - name: Build the test harness
         run: dotnet build Source/IntegrationTests -c Release
+      - name: Cardinality resolver and translation admission tests
+        run: |
+          dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Cardinality
+          dotnet test Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~Cardinality
+          dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~CardinalityEmissionTests
       - name: Run the tests named in .github/review/regressions
         env:
           DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS: cs
