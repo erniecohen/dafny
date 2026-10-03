@@ -156,6 +156,7 @@ jobs:
           python3 .github/review/additional-axioms.py inventory measurements/${{ matrix.axioms }} \
             resources-${{ matrix.axioms }}-${{ matrix.shard }}.json
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: verdicts-${{ matrix.axioms }}-${{ matrix.shard }}
           path: |

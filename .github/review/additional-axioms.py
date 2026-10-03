@@ -20,19 +20,24 @@ def runner(name):
 def inventory(directory, output):
     batches = {}
     programs = []
+    unavailable = {}
     for command in sorted(Path(directory).rglob('command.json')):
         program = command.parent.relative_to(directory).as_posix()
         programs.append(program)
         log = command.with_name('results.json')
-        if not log.exists():
-            continue  # Parser/resolver/command-line diagnostics have no proof batches.
+        if not log.exists() or not log.read_text().strip():
+            # A pre-verification diagnostic may leave an empty logger file (for
+            # example an invalid second logger). Keep the missing observation
+            # visible; the independent verdict gate still checks that program.
+            unavailable[program] = 'empty log' if log.exists() else 'no log'
+            continue
         for declaration in json.loads(log.read_text()).get('verificationResults', []):
             for batch in declaration['vcResults']:
                 key = program + '\t' + declaration['name'] + '\t' + str(batch['vcNum'])
                 if key in batches:
                     raise ValueError('duplicate proof batch: ' + key)
                 batches[key] = [batch['outcome'], batch['resourceCount']]
-    Path(output).write_text(json.dumps({'programs': programs, 'batches': batches}, indent=2))
+    Path(output).write_text(json.dumps({'programs': programs, 'batches': batches, 'unavailable': unavailable}, indent=2))
 
 
 def gate(kind, expected, actual, mode, output):
@@ -83,7 +88,7 @@ def resources(directory, output):
     suite = {}
     counts = {}
     for mode in ['off', 'on']:
-        batches, programs = {}, set()
+        batches, programs, unavailable = {}, set(), {}
         files = sorted(root.glob('verdicts-' + mode + '-*/resources-*.json'))
         if len(files) != 4:
             raise ValueError('Expected four resource shards for ' + mode)
@@ -93,9 +98,14 @@ def resources(directory, output):
                 raise ValueError('Overlapping resource shards')
             programs.update(data['programs'])
             batches.update(data['batches'])
+            unavailable.update(data.get('unavailable', {}))
         suite[mode] = batches
-        counts[mode] = {'programs': len(programs), 'batches': len(batches)}
-    report = {'source': os.environ.get('GITHUB_SHA', ''), 'suite_coverage': counts,
+        counts[mode] = {'programs': len(programs), 'batches': len(batches), 'unavailable': unavailable}
+    report = {'source': os.environ.get('GITHUB_SHA', ''),
+              'solver_archive_sha256': {
+                  '5.1.0': os.environ.get('Z3_LINUX_X64_SHA256', ''),
+                  '4.12.1': os.environ.get('HARNESS_Z3_4_12_1_SHA256', '')},
+              'suite_coverage': counts,
               'suite': pair(suite['off'], suite['on']), 'library': {}}
     std = runner('std')
     for version in ['4.12.1', '5.1.0']:
@@ -113,9 +123,9 @@ def resources(directory, output):
              'These paired library observations do not establish exact controlled cost differences.',
              'Cost changes are reported without a failure threshold. Verdict changes are checked by separate gates.',
              'Accepted MinimumWindowMax costs remain tracked in #78; no limits or proof sources are changed.', '',
-             '| Mode | Suite programs | Proof batches |', '|---|---:|---:|']
+             '| Mode | Suite programs | Proof batches | Missing/empty logs |', '|---|---:|---:|---:|']
     for mode, count in counts.items():
-        lines.append(f"| {mode} | {count['programs']} | {count['batches']} |")
+        lines.append(f"| {mode} | {count['programs']} | {count['batches']} | {len(count['unavailable'])} |")
     sections = {'suite (Z3 5.1.0)': report['suite'], **{'library Z3 ' + v: rows for v, rows in report['library'].items()}}
     for label, rows in sections.items():
         changed = [r for r in rows if r['off'] != r['on']]

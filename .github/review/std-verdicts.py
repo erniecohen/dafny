@@ -53,8 +53,8 @@ a proof that stops finishing within the limit does.
 .github/review/expected-std-verdicts-z3-<version>.tsv holds the verdicts CI
 expects under that Z3, and the job fails when one changes, or a row is added or
 removed.  To change one on purpose, replace it with the file of the same name in
-the run's artifact `std-verdicts-z3-<version>`, in a commit that says, for each
-row whose verdict changed, why.
+the run's artifact `std-verdicts-<off|on>-z3-<version>`, in a commit that says, for each
+row whose verdict changed, why. `run --additional-axioms true` uses the ON mode.
 """
 import glob
 import json
