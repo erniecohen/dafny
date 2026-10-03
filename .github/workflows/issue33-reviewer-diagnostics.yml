@@ -1,0 +1,73 @@
+name: Issue 33 reviewer diagnostics
+on:
+  push:
+    branches: [scratch/issue33/reviewer-diagnostics]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        solver: ['4.12.1', '5.1.0']
+        kind: [literal, grouped, isolated]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue33-candidate
+          run-id: 37073335929
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue33-targeted
+          path: targeted
+          run-id: 37073335929
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue33-stress-resources
+          path: stress
+          run-id: 37075734036
+          github-token: ${{ github.token }}
+      - name: Unpack and install pinned solver
+        run: |
+          mkdir -p out && tar -C out -xzf dafny.tar.gz
+          if [ '${{ matrix.solver }}' = 5.1.0 ]; then
+            curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+            echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+            unzip -q z3.zip
+            echo "Z3=$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" >> "$GITHUB_ENV"
+          else
+            curl -fsSLo z3.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.12.1-x64-ubuntu-24.04-bin.zip
+            echo 'e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b  z3.zip' | sha256sum -c -
+            mkdir -p z3h && unzip -q z3.zip -d z3h
+            echo "Z3=$PWD/z3h/z3-4.12.1" >> "$GITHUB_ENV"
+          fi
+      - name: Replay literal diagnostic with complete per-query profiles
+        if: matrix.kind == 'literal'
+        run: |
+          python3 .github/review/issue33-profile.py --smt targeted/issue33-results-z3-4.12.1/test-false-original/solver.smt2 --z3 "$Z3" --output diagnostic --literal
+      - name: Replay grouped stress with complete per-query profiles
+        if: matrix.kind == 'grouped'
+        run: |
+          python3 .github/review/issue33-profile.py --smt stress/issue33-stress-resources/distinct-1000/solver.smt2 --z3 "$Z3" --output diagnostic
+      - name: Generate and replay isolated stress
+        if: matrix.kind == 'isolated'
+        run: |
+          python3 .github/review/issue33-isolated.py --dafny "$PWD/out/dafny/Dafny" --z3 "$Z3" --input stress/issue33-stress-resources/distinct-1000/input.dfy --output isolated
+          python3 .github/review/issue33-profile.py --smt isolated/solver.smt2 --z3 "$Z3" --output diagnostic
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue33-${{ matrix.kind }}-${{ matrix.solver }}
+          path: |
+            diagnostic
+            isolated
+          retention-days: 90
