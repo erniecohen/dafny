@@ -3,7 +3,7 @@ module
   {:dummyImportMember "Dummy__", true}
   Std.GoConcurrent replaces Concurrent {
 
-  class {:extern} MutableMap<K(==), V(==)> ... {
+  class {:extern} MutableMap<!K(==), !V(==)> ... {
 
     @Axiom
     constructor {:extern} (ghost inv: (K, V) -> bool, bytesKeys: bool)
@@ -39,7 +39,7 @@ module
 
   }
 
-  class {:extern} AtomicBox<T> ... {
+  class {:extern} AtomicBox<!T> ... {
 
     @Axiom
     constructor {:extern} (ghost inv: T -> bool, t: T)

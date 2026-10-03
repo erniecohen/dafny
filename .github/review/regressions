@@ -51,3 +51,45 @@ git-issues/github-issue-32.dfy
 git-issues/github-issue-31.dfy
 git-issues/github-issue-44b.dfy
 git-issues/git-issue-2134.dfy
+
+# General-trait cardinality admission and compatibility controls.
+git-issues/git-issue-6547.dfy
+traits/cardinality-cross-module.dfy
+traits/cardinality-doo.dfy
+traits/cardinality-expansion.dfy
+traits/cardinality-families.dfy
+traits/cardinality-included.dfy
+traits/cardinality-inherited-existing.dfy
+traits/cardinality-newtype-positive.dfy
+traits/cardinality-newtype-sequence.dfy
+traits/cardinality-newtype.dfy
+traits/cardinality-no-verify.dfy
+traits/cardinality-nonvacuity.dfy
+traits/cardinality-opened-views.dfy
+traits/cardinality-positive.dfy
+traits/cardinality-provided-view.dfy
+traits/cardinality-reference-contracts.dfy
+traits/cardinality-reference-existing.dfy
+traits/cardinality-refinement-contracts.dfy
+traits/cardinality-refinement-datatype.dfy
+traits/cardinality-refinement-newtype.dfy
+traits/cardinality-replacement-contract.dfy
+traits/cardinality-replacement-facade-existing.dfy
+traits/cardinality-replacement-facade-positive.dfy
+traits/cardinality-replacement-facade.dfy
+traits/cardinality-replacement-strengthening-existing.dfy
+traits/cardinality-replacement.dfy
+traits/cardinality-runtime.dfy
+traits/cardinality-independent-facades-positive.dfy
+traits/cardinality-independent-facades.dfy
+git-issues/github-issue-33.dfy
+git-issues/github-issue-33-z3-4.12.1.dfy
+
+# Verify the actual bounded quotient proof at the library project budget.
+git-issues/github-issue-51-library-quotients.dfy
+
+# Documentation of an explicitly reference-only trait hierarchy.
+dafnydoc/doc1/TestDafnyDoc.dfy
+
+# Preserve the current release line regression.
+git-issues/github-issue-74.dfy

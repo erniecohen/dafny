@@ -135,7 +135,7 @@ module ActionsExamples {
   // Reading the elements of a set via an IProducer
 
   @AssumeCrossModuleTermination
-  class SetIReader<T(==)> extends IProducer<T> {
+  class SetIReader<!T(==)> extends IProducer<T> {
     ghost const original: set<T>
     var remaining: set<T>
 
@@ -290,7 +290,7 @@ module ActionsExamples {
   // of the same ProducerOfSetProof<T> proof trait, however.
 
   @AssumeCrossModuleTermination
-  class SetReader<T(==)> extends Producer<T>, ProducerOfSetProof<T> {
+  class SetReader<!T(==)> extends Producer<T>, ProducerOfSetProof<T> {
     ghost const original: set<T>
     var producedCount: nat
     var remaining: set<T>

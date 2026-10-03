@@ -13,7 +13,7 @@ module Std.Consumers {
 
   // Actions that consume a T and outputs nothing.
   @AssumeCrossModuleTermination
-  trait IConsumer<T> extends Action<T, ()> {
+  trait IConsumer<!T> extends Action<T, ()> {
 
     twostate predicate ValidChange()
       reads this, Repr
@@ -42,7 +42,7 @@ module Std.Consumers {
     }
   }
 
-  datatype ConsumerState<T> = ConsumerState(consumer: Consumer<T>, capacity: Option<nat>, history: seq<(T, bool)>){
+  datatype ConsumerState<!T> = ConsumerState(consumer: Consumer<T>, capacity: Option<nat>, history: seq<(T, bool)>){
     ghost predicate Valid() {
       && Seq.Partitioned(history, WasConsumed)
       && (!Seq.All(history, WasConsumed) && capacity.Some? ==> capacity.value == 0)
@@ -113,7 +113,7 @@ module Std.Consumers {
 
   // Actions that attempt to consume a T and eventually reach capacity and fail.
   @AssumeCrossModuleTermination
-  trait Consumer<T> extends Action<T, bool> {
+  trait Consumer<!T> extends Action<T, bool> {
 
     ghost function State(): ConsumerState<T>
       requires Valid()
@@ -320,7 +320,7 @@ module Std.Consumers {
     }
   }
 
-  class IgnoreNConsumer<T> extends Consumer<T> {
+  class IgnoreNConsumer<!T> extends Consumer<T> {
 
     const n: nat
     var consumedCount: nat
@@ -407,7 +407,7 @@ module Std.Consumers {
   }
 
   @AssumeCrossModuleTermination
-  class ArrayWriter<T> extends Consumer<T> {
+  class ArrayWriter<!T> extends Consumer<T> {
 
     const storage: array<T>
     var size: nat
@@ -499,7 +499,7 @@ module Std.Consumers {
   }
 
   @AssumeCrossModuleTermination
-  class DynamicArrayWriter<T> extends IConsumer<T>, TotalActionProof<T, ()> {
+  class DynamicArrayWriter<!T> extends IConsumer<T>, TotalActionProof<T, ()> {
 
     var storage: DynamicArray<T>
 
@@ -582,7 +582,7 @@ module Std.Consumers {
     {}
   }
 
-  class FoldingConsumer<T, R> extends IConsumer<T> {
+  class FoldingConsumer<!T, !R> extends IConsumer<T> {
 
     ghost const init: R
     const f: (R, T) -> R
@@ -668,7 +668,7 @@ module Std.Consumers {
   }
 
   @AssumeCrossModuleTermination
-  class FoldingConsumerTotalActionProof<I, O> extends TotalActionProof<I, ()> {
+  class FoldingConsumerTotalActionProof<!I, !O> extends TotalActionProof<I, ()> {
 
     ghost const action: FoldingConsumer<I, O>
 
@@ -715,7 +715,7 @@ module Std.Consumers {
   }
 
   @AssumeCrossModuleTermination
-  class SeqWriter<T> extends IConsumer<T> {
+  class SeqWriter<!T> extends IConsumer<T> {
 
     var values: seq<T>
 
@@ -789,7 +789,7 @@ module Std.Consumers {
   }
 
   @AssumeCrossModuleTermination
-  class SeqWriterTotalActionProof<T> extends TotalActionProof<T, ()> {
+  class SeqWriterTotalActionProof<!T> extends TotalActionProof<T, ()> {
 
     ghost const action: SeqWriter<T>
 

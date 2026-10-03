@@ -1,7 +1,7 @@
 // RUN: %testDafnyForEachResolver --expect-exit-code=2 --refresh-exit-code=4 "%s"
 
 module UnusedTypeParametersOfSubtypeTypes {
-  trait T<X> { }
+  trait T<X> extends object { }
   class D<X1> extends T<(int, seq<X1>)> { }
   type F<X2, Unused> = d: D<X2> | true witness * // the legacy resolver treats F as a reference type, and bogusly wants all parameters to be equal in order to have type compatibility
 

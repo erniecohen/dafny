@@ -12,7 +12,7 @@ method Nope() {
   assert f.val(0);  // error: precondition and assert
 }
 
-class FnRef<A(0),B(0)> {
+class FnRef<!A(0),B(0)> {
   var fn: A --> B
 }
 

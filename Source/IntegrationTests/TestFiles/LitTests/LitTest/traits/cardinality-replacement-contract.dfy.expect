@@ -1,0 +1,4 @@
+cardinality-replacement-contract.dfy(6,44): Error: Type parameter 'X' of 'C.D' has a permissive cardinality contract, but every directly retaining argument of parent 'C.V' is strict.
+cardinality-replacement-contract.dfy(6,33): Related location: The child type parameter is declared here.
+cardinality-replacement-contract.dfy(4,26): Related location: The parent cardinality contract is declared here.
+1 resolution/type errors detected in cardinality-replacement-contract.dfy

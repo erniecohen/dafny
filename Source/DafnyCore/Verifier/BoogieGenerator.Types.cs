@@ -1808,7 +1808,7 @@ public partial class BoogieGenerator {
 
   private void SplitAndAssertExpression(BoogieStmtListBuilder witnessCheckBuilder, Expression witnessExpr,
     ExpressionTranslator etran, BodyTranslationContext context, WitnessCheck desc) {
-    witnessCheckBuilder.Add(new Bpl.AssumeCmd(witnessExpr.Origin, etran.CanCallAssumption(witnessExpr)));
+    witnessCheckBuilder.Add(new Bpl.AssumeCmd(witnessExpr.Origin, etran.CanCallAssumptionForVerification(witnessExpr)));
 
     var ss = TrSplitExpr(context, witnessExpr, etran, true, out var splitHappened);
     if (!splitHappened) {

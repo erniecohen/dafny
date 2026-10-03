@@ -20,7 +20,7 @@ module Std.Actions {
   // for further details.
   //
   @AssumeCrossModuleTermination
-  trait Action<I, O> extends GenericAction<I, O>, Validatable {
+  trait Action<!I, !O> extends GenericAction<I, O>, Validatable {
 
     ghost var history: seq<(I, O)>
 
@@ -140,7 +140,7 @@ module Std.Actions {
   // that rely on quantifiers.
   // See DefaultTotalActionProof below for example.
   @AssumeCrossModuleTermination
-  trait TotalActionProof<I, O> extends Validatable {
+  trait TotalActionProof<!I, !O> extends Validatable {
 
     ghost function Action(): Action<I, O>
 
@@ -153,7 +153,7 @@ module Std.Actions {
   // A simple proof of an action being total.
   // Relies on quantifiers so it only works for non-reference types.
   @AssumeCrossModuleTermination
-  class DefaultTotalActionProof<I(!new), O(!new)> extends TotalActionProof<I, O> {
+  class DefaultTotalActionProof<!I(!new), !O(!new)> extends TotalActionProof<I, O> {
 
     const action: Action<I, O>
 
@@ -207,7 +207,7 @@ module Std.Actions {
     i.ValidHistory(history) <==> forall e <- history :: e.1 == c
   }
 
-  class FunctionAction<I, O> extends Action<I, O> {
+  class FunctionAction<!I, !O> extends Action<I, O> {
 
     const f: I --> O
 
@@ -298,7 +298,7 @@ module Std.Actions {
     }
   }
 
-  class TotalFunctionActionProof<I, O> extends TotalActionProof<I, O> {
+  class TotalFunctionActionProof<!I, !O> extends TotalActionProof<I, O> {
 
     ghost const action: FunctionAction<I, O>
     ghost const f: I -> O
@@ -351,7 +351,7 @@ module Std.Actions {
     {}
   }
 
-  class ComposedAction<I, M, O> extends Action<I, O> {
+  class ComposedAction<!I, !M, !O> extends Action<I, O> {
 
     const first: Action<I, M>
     const second: Action<M, O>

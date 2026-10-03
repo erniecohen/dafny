@@ -1,0 +1,12 @@
+cardinality-independent-facades.dfy(15,29): Error: This type definition creates a potentially cardinality-expanding cycle:
+   'B2.F' depends on 'B2.V' through right-hand side of 'B2.F' -> arrow input 0 (potentially expansive)
+   'B2.V' contains 'Client.D2' because 'Client.D2' extends 'B2.V'
+   'Client.D2' depends on 'B2.F' through constructor 'D2.f'
+ Such a cycle is not admissible under the cardinality discipline.
+cardinality-independent-facades.dfy(6,27): Related location: 'B2.F' depends on 'B2.V' through right-hand side of 'B2.F' -> arrow input 0
+cardinality-independent-facades.dfy(4,47): Related location: Type 'B2.V' is declared here.
+cardinality-independent-facades.dfy(15,29): Related location: 'B2.V' contains 'Client.D2' because 'Client.D2' extends 'B2.V'
+cardinality-independent-facades.dfy(15,11): Related location: Type 'Client.D2' is declared here.
+cardinality-independent-facades.dfy(15,46): Related location: 'Client.D2' depends on 'B2.F' through constructor 'D2.f'
+cardinality-independent-facades.dfy(6,27): Related location: Type 'B2.F' is declared here.
+1 resolution/type errors detected in cardinality-independent-facades.dfy

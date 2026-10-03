@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics.Contracts;
 using System.Linq;
 
@@ -63,6 +64,20 @@ namespace Microsoft.Dafny {
       Contract.Requires(d != null);
       Contract.Requires(newParent != null);
 
+      var clone = CloneDeclarationSyntax(d, newParent);
+      var parentObligations = d.CardinalityParentObligations;
+      // Iterator syntax has no parent-trait list, and its clone constructor omits
+      // Traits. A parent introduced by kind-changing refinement must still survive.
+      if (d is IteratorDecl iterator) {
+        parentObligations = parentObligations.AddRange(iterator.Traits);
+      }
+      clone.CardinalityParentObligations = parentObligations.Select(CloneType).ToImmutableArray();
+      // A generic clone may create a distinct refinement specialization. Only
+      // a pure view cloner is allowed to identify it with the source declaration.
+      return clone;
+    }
+
+    private TopLevelDecl CloneDeclarationSyntax(TopLevelDecl d, ModuleDefinition newParent) {
       if (d is AbstractTypeDecl) {
         var dd = (AbstractTypeDecl)d;
         return new AbstractTypeDecl(Origin(dd.Origin), dd.NameNode.Clone(this), newParent,

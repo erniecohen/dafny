@@ -1603,6 +1603,66 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
         return allowance;
       }
 
+      /// <summary>
+      /// Can-call facts for a verification obligation, with closed integer literal
+      /// identities available only in that local context. Shared function and type
+      /// axioms must use CanCallAssumption instead.
+      /// </summary>
+      public Expr CanCallAssumptionForVerification(Expression expr, CanCallOptions cco = null) {
+        var canCall = CanCallAssumption(expr, cco);
+        if (!options.Get(CommonOptionBag.AdditionalAxioms)) {
+          return canCall;
+        }
+        var collector = new LocalIntegerLiteralCollector(this);
+        collector.Visit(expr);
+        return BplAnd(canCall, IntegerLiteralIdentities(collector.Values));
+      }
+
+      public Expr IntegerLiteralIdentities(IEnumerable<Expr> arguments) {
+        if (!options.Get(CommonOptionBag.AdditionalAxioms)) {
+          return Expr.True;
+        }
+        var values = new SortedSet<BigInteger>();
+        foreach (var argument in arguments) {
+          CollectIntegerLiteral(argument, values);
+        }
+        return IntegerLiteralIdentities(values);
+      }
+
+      private Expr IntegerLiteralIdentities(SortedSet<BigInteger> values) {
+        Expr identities = Expr.True;
+        foreach (var value in values) {
+          var numeral = new Bpl.LiteralExpr(Token.NoToken, BigNum.FromBigInt(value));
+          var literal = BoogieGenerator.FunctionCall(Token.NoToken, BuiltinFunction.LitInt, null, numeral);
+          identities = BplAnd(identities, Expr.Eq(literal, numeral));
+        }
+        return identities;
+      }
+
+      private static void CollectIntegerLiteral(Expr argument, SortedSet<BigInteger> values) {
+        if (argument is NAryExpr application && application.Fun.FunctionName == "LitInt" &&
+            application.Args.Count == 1 && application.Args[0] is Bpl.LiteralExpr { isBigNum: true } numeral) {
+          values.Add(numeral.asBigNum.ToBigInteger);
+        }
+      }
+
+      private class LocalIntegerLiteralCollector(ExpressionTranslator etran) : BottomUpVisitor {
+        // This set belongs to one emitted assumption. There is no deduplication
+        // across branches, obligations or declarations where a fact may be absent.
+        public SortedSet<BigInteger> Values { get; } = [];
+
+        protected override void VisitOneExpr(Expression expr) {
+          if (expr is FunctionCallExpr call) {
+            for (var i = 0; i < call.Args.Count; i++) {
+              var actual = call.Args[i];
+              var argument = etran.BoogieGenerator.AdaptBoxing(etran.GetToken(call), etran.TrExpr(actual),
+                Cce.NonNull(actual.Type), call.Function.Ins[i].Type);
+              CollectIntegerLiteral(argument, Values);
+            }
+          }
+        }
+      }
+
       public Expr CanCallAssumption(Expression expr, CanCallOptions cco = null) {
         Contract.Requires(expr != null);
         Contract.Requires(this != null);

@@ -735,6 +735,7 @@ namespace Microsoft.Dafny {
     }
 
     public Bpl.Program DoTranslation(Program p, ModuleDefinition forModule) {
+      RequireCardinalityValidation(p);
       if (sink == null) {
         return new Bpl.Program();
       }
@@ -881,6 +882,12 @@ namespace Microsoft.Dafny {
 
     }
 
+    private static void RequireCardinalityValidation(Program program) {
+      if (program.CardinalityValidationReceipt is not { Succeeded: true } || program.Reporter.CountExceptTranslatorVerifierAndCompiler(ErrorLevel.Error) != 0) {
+        throw new InvalidOperationException("Boogie translation requires a resolved program that passed cardinality validation");
+      }
+    }
+
     // Don't verify modules which only contain other modules
     public static bool ShouldVerifyModule(Program program, ModuleDefinition m) {
       if (!m.ShouldVerify(program.Compilation)) {
@@ -907,6 +914,7 @@ namespace Microsoft.Dafny {
       Contract.Requires(p != null);
       Contract.Requires(p.ModuleSigs.Count > 0);
 
+      RequireCardinalityValidation(p);
       Type.ResetScopes();
 
       foreach (ModuleDefinition outerModule in VerifiableModules(p)) {
@@ -1048,7 +1056,28 @@ namespace Microsoft.Dafny {
           Bpl.Expr.Eq(bv2nat, smt_bv2nat));
         var ax = new Bpl.ForallExpr(tok, [bVar], BplTrigger(bv2nat), body);
         sink.AddTopLevelDeclaration(new Bpl.Axiom(tok, ax));
+
+        // Check the option before building anything, preserving the default translation.
+        if (options.Get(CommonOptionBag.AdditionalAxioms)) {
+          AddBitvectorIntRoundTripAxiom(w);
+        }
       }
+    }
+
+    private void AddBitvectorIntRoundTripAxiom(int w) {
+      Contract.Requires(0 < w);
+      var tok = Token.NoToken;
+      var xVar = new Bpl.BoundVariable(tok, new Bpl.TypedIdent(tok, "x", Bpl.Type.Int));
+      var x = new Bpl.IdentifierExpr(tok, xVar);
+      var bv = FunctionCall(tok, "nat_to_bv" + w, BplBvType(w), x);
+      var roundTrip = FunctionCall(tok, "nat_from_bv" + w, Bpl.Type.Int, bv);
+      var bound = Bpl.Expr.Literal(BaseTypes.BigNum.FromBigInt(BigInteger.One << w));
+      var range = BplAnd(Bpl.Expr.Le(Bpl.Expr.Literal(0), x), Bpl.Expr.Lt(x, bound));
+      var body = BplImp(range, Bpl.Expr.Eq(roundTrip, x));
+      var attributes = new Bpl.QKeyValue(tok, "qid", new List<object> { $"additional_axioms_bv{w}_int_round_trip" }, null);
+      // The wrapper keeps the composite pattern out of native bitvector rewriting.
+      var ax = new Bpl.ForallExpr(tok, [], [xVar], attributes, BplTrigger(roundTrip), body);
+      sink.AddTopLevelDeclaration(new Bpl.Axiom(tok, ax, $"bounded integer round trip for bv{w}"));
     }
 
     private void ComputeFunctionFuel() {
@@ -2151,7 +2180,7 @@ namespace Microsoft.Dafny {
 
       foreach (var frameExpression in calleeFrame) {
         var e = substMap != null ? Substitute(frameExpression.E, receiverReplacement, substMap) : frameExpression.E;
-        makeAssume(frameExpression.Origin, etran.CanCallAssumption(e));
+        makeAssume(frameExpression.Origin, etran.CanCallAssumptionForVerification(e));
       }
 
       // emit: assert (forall o: ref, f: Field :: o != null && $Heap[o,alloc] && (o,f) in subFrame ==> enclosingFrame[o,f]);

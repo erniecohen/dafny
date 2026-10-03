@@ -871,3 +871,99 @@ However, ghost constructors may only be called in ghost context, including that
 the newly allocated object be assigned to a ghost location (such as a ghost variable). 
 
 
+
+<!-- FILE DafnyCore/Resolver/Cardinality/CardinalityValidator.cs -->
+
+## **Error: This type definition creates a potentially cardinality-expanding cycle** {#r_cardinality_expansive_cycle}
+
+General traits can contain values of their implementing types. Dafny follows
+these implementation inclusions and value-representation dependencies across
+all resolved modules. A cycle is rejected if any dependency is potentially
+expansive, for example through a function input, `iset` element, `imap` domain,
+or permissive generic argument.
+
+<!-- %no-check -->
+```dafny
+trait V {}
+datatype D extends V = D(p: V -> bool)
+```
+
+Here `V` can contain `D`, while `D` stores a function whose input is `V`.
+A helper type, ghost field, provided export view, or verification filter cannot
+hide this dependency. The diagnostic supplies a cycle and related source
+locations. Change the representation or the implementation relation to remove
+the cycle. Merely annotating a parameter as permissive does not make an
+expansive cycle admissible. The check is conservative and does not claim that
+every rejected cycle has been proved inconsistent.
+
+<!-- FILE DafnyCore/Resolver/Cardinality/CardinalityParentChecker.cs -->
+
+## **Error: Type parameter _name_ is not retained as a direct type argument of parent _parent_** {#r_cardinality_unretained_parameter}
+
+Every parameter of a declaration implementing a general, non-reference trait
+must appear directly in the parent argument list. Otherwise a fixed parent type
+could contain a family of implementations indexed by arbitrary type arguments.
+The declaration is checked even when it has no use sites.
+
+<!-- %no-check -->
+```dafny
+trait V {}
+datatype D<T> extends V = D(x: T)
+```
+
+A retained alternative is `trait V<T> {}` with `datatype D<T> extends V<T>`.
+An argument such as `seq<T>` is not a direct retaining slot. Identity type
+synonyms can be expanded, but subset types and newtypes cannot. Phantom and
+ghost-only parameters, type bounds, and `(!new)` do not waive this rule.
+
+## **Error: Type parameter _name_ has a permissive cardinality contract that exceeds its parent contract** {#r_cardinality_parent_contract}
+
+An implementation cannot invalidate a parent's advertised strict cardinality
+contract. For a general-trait parent, each permissive child parameter needs at
+least one directly retaining permissive parent slot. If the argument is
+repeated, one sufficient slot is enough. For a reference-only parent, the
+contract check applies to exposed parameters without requiring retention of
+parameters that do not occur in the parent arguments.
+
+<!-- %no-check -->
+```dafny
+trait V<T> {}
+datatype D<!T> extends V<T> = D(p: T -> bool)
+```
+
+If expansion is part of the intended interface, declare the parent's retaining
+parameter permissive as well, for example `trait V<!T> {}`. Otherwise change the
+implementation to honor the strict contract. Changing the parent interface can
+affect clients and must be coordinated with their uses.
+
+<!-- FILE DafnyCore/Resolver/Cardinality/CardinalityValidator.cs -->
+
+## **Error: Type parameter _name_ has a strict cardinality contract but is used in a potentially expansive representation position** {#r_cardinality_parameter_contract}
+
+A stored representation must satisfy the cardinality mode advertised by its
+formal type parameter. The check includes instance fields and constants of
+classes, reference traits, and iterators, including ghost and inherited storage.
+Function inputs, infinite-set elements, infinite-map domains, and permissive
+generic arguments are potentially expansive positions.
+
+<!-- %no-check -->
+```dafny
+class G<X> {
+  ghost var p: X -> bool
+}
+```
+
+Where the existing declaration syntax permits it, use a permissive parameter
+such as `!X` when expansion is intended. Otherwise change the stored type.
+Ordinary variance restrictions still apply. A method merely accepting a callback
+is not stored representation, and reference fields do not add carrier-containment
+edges from their receiver to their field types.
+
+## **Error: Cardinality validation cannot classify this resolved type** {#r_cardinality_unclassified_type}
+
+Cardinality validation requires fully resolved types and consistent internal
+view and parameter metadata. An unresolved type proxy, unsupported resolved type
+form, inconsistent arity, or malformed semantic view must prevent translation.
+This diagnostic normally indicates an internal compiler or extension problem.
+Report it with a reproducing program and the compiler version. Skipping
+verification cannot bypass this resolution requirement.

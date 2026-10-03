@@ -55,7 +55,7 @@ module ForallSubstitution {
 }
 
 module ReceiverResolution {
-  trait MyTrait<U> {
+  trait MyTrait<U> extends object {
     ghost const Repr: set<object>
     ghost function F(): set<object> {{}}
   }

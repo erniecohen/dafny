@@ -409,11 +409,11 @@ module StaticMemberInheritanceAccessViaReceiver {
 }
 
 module NiceStarterTests {
-  trait Parent {
+  trait Parent<X(0)> {
     method MyMethod<Y(0)>(a: int) returns (r: int)
   }
 
-  datatype Color<X(0)> extends Parent = Blue | Gray(n: nat)
+  datatype Color<X(0)> extends Parent<X> = Blue | Gray(n: nat)
   {
     method MyMethod<Y(0)>(a: int) returns (r: int) {
       var x: X;
@@ -422,7 +422,7 @@ module NiceStarterTests {
     }
   }
 
-  class MyClass<X(0)> extends Parent
+  class MyClass<X(0)> extends Parent<X>
   {
     method MyMethod<Y(0)>(a: int) returns (r: int) {
       var x: X;
@@ -435,7 +435,7 @@ module NiceStarterTests {
     var u := Color<real>.Gray(15);
     var s := u.MyMethod<bool>(10);
 
-    var p: Parent := u;
+    var p: Parent<real> := u;
     var t := p.MyMethod<bool>(10);
     print s, " ", t, "\n"; // 23 23
   }

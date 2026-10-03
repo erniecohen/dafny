@@ -31,7 +31,7 @@ module M1 {
 }
 
 module M2 {
-  trait Tr<X, W> {
+  trait Tr<X, W> extends object {
     function F(x: X, w: W): bv10 { 15 }
   }
 
@@ -46,11 +46,11 @@ module M2 {
 }
 
 module M3 {
-  trait Tr<X(0)> {
+  trait Tr<X(0), Y(0)> {
     const w: X // const in non-reference trait
   }
 
-  class Cl<Y(0)> extends Tr<(Y,Y)> {
+  class Cl<Y(0)> extends Tr<(Y,Y), Y> {
   }
 
   lemma M(c: Cl<int>) {
@@ -107,7 +107,7 @@ module P1 {
 }
 
 module P2 {
-  trait TrX<X, W> {
+  trait TrX<X, W> extends object {
     function F(x: X, w: W): bv10 { 15 }
   }
 

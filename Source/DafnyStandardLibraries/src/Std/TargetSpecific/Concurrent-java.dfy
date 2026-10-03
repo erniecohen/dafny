@@ -1,6 +1,6 @@
 module {:extern} Std.JavaConcurrent replaces Concurrent {
 
-  class {:extern} MutableMap<K(==), V(==)> ... {
+  class {:extern} MutableMap<!K(==), !V(==)> ... {
 
     @Axiom
     constructor {:extern} (ghost inv: (K, V) -> bool, bytesKeys: bool)
@@ -36,7 +36,7 @@ module {:extern} Std.JavaConcurrent replaces Concurrent {
 
   }
 
-  class {:extern "AtomicBox"} AtomicBox<T> ... {
+  class {:extern "AtomicBox"} AtomicBox<!T> ... {
 
     @Axiom
     constructor {:extern} (ghost inv: T -> bool, t: T)
