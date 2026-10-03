@@ -69,12 +69,21 @@ def replay(z3, body, dest, label, limit):
     profile_lines=[line for line in stderr.splitlines() if '[quantifier_instances]' in line]
     (dest/'quantifier-profile.txt').write_text('\n'.join(profile_lines)+'\n')
     (dest/'quantifier-inventory.json').write_text(json.dumps(inventory,indent=2))
+    counters=re.findall(r'\[quantifier_instances\]\s+(.+?)\s+:\s+(\d+)\s+:\s+(\d+)\s+:\s+(\d+)\s+:\s+(\d+)\s+:\s+([\d.]+)',stderr)
+    profiles=[dict(qid=c[0],instances=int(c[1]),simplify_true=int(c[2]),checker_sat=int(c[3]),max_generation=int(c[4]),max_cost=float(c[5])) for c in counters]
+    (dest/'quantifier-profile.json').write_text(json.dumps(profiles,indent=2))
     status=re.findall(r'^(sat|unsat|unknown)$',stdout,re.M)
     ru=re.search(r':rlimit-count\s+(\d+)',stdout)
     instances=re.search(r':quant-instantiations\s+(\d+)',stdout)
+    total_instances=int(instances[1]) if instances else 0
+    profile_total=sum(c['instances'] for c in profiles)
+    reason=re.search(r':reason-unknown "([^"]*)"',stdout)
     result=dict(label=label,status=status[-1] if status else None,exit_code=exit_code,
                 resource_count=int(ru[1]) if ru else None,
-                quantifier_instantiations=int(instances[1]) if instances else 0,
+                quantifier_instantiations=total_instances,
+                profile_instance_total=profile_total,
+                profile_complete=not timed_out and exit_code==0 and profile_total==total_instances,
+                reason_unknown=reason[1] if reason else None,
                 profile_records=len(profile_lines),quantifiers=len(inventory),
                 wall_timeout=timed_out,sha256=hashlib.sha256(source.encode()).hexdigest())
     (dest/'result.json').write_text(json.dumps(result,indent=2))
