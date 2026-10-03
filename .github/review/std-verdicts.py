@@ -103,15 +103,16 @@ def part(label, cwd, args, dafny, z3, cores, fixed):
     return rows + sorted(decls)
 
 
-def run(libdir, dafny, z3, out, cores=4, boogie=None):
+def run(libdir, dafny, z3, out, cores=4, boogie=None, additional_axioms=False):
+    fixed = FIXED + (['--additional-axioms'] if additional_axioms else [])
     ts = os.path.join(libdir, 'src', 'Std', 'TargetSpecific')
     # The paths as the Makefile passes them, so that error lines read as in upstream's CI.
     extra = [a for b in (boogie or '').split() for a in ('--boogie', b)]
-    rows = part('Std', libdir, ['src/Std/dfyconfig.toml'], dafny, z3, cores, FIXED + extra)
+    rows = part('Std', libdir, ['src/Std/dfyconfig.toml'], dafny, z3, cores, fixed + extra)
     for t in TARGETS:
         files = sorted('./' + os.path.relpath(f, ts)
                        for f in glob.glob(os.path.join(ts, '**', '*-%s*.dfy' % t), recursive=True))
-        rows += part('TargetSpecific-' + t, ts, ['dfyconfig.toml'] + files, dafny, z3, cores, FIXED)
+        rows += part('TargetSpecific-' + t, ts, ['dfyconfig.toml'] + files, dafny, z3, cores, fixed)
     with open(out, 'w') as f:
         for r in rows:
             f.write('\t'.join(r) + '\n')
@@ -188,7 +189,8 @@ if __name__ == '__main__':
     cmd, args = sys.argv[1], sys.argv[2:]
     if cmd == 'run':
         opts = dict(zip(args[4::2], args[5::2]))
-        run(*args[:4], cores=int(opts.get('--cores', '4')), boogie=opts.get('--boogie'))
+        run(*args[:4], cores=int(opts.get('--cores', '4')), boogie=opts.get('--boogie'),
+            additional_axioms=opts.get('--additional-axioms', 'false') == 'true')
     elif cmd == 'summary':
         summary(*args)
     elif cmd == 'expected':
