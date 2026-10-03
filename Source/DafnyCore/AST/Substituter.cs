@@ -849,6 +849,9 @@ namespace Microsoft.Dafny {
         rr.Steps.AddRange(s.Steps.ConvertAll(Substitute));
         rr.Result = Substitute(s.Result);
         r = rr;
+      } else if (stmt is NestedMatchStmt nestedMatchStmt) {
+        // Verification uses the resolved decision tree, including all proof bodies.
+        return SubstStmt(nestedMatchStmt.Flattened);
       } else if (stmt is MatchStmt) {
         var s = (MatchStmt)stmt;
         var rr = new MatchStmt(s.Origin, Substitute(s.Source), s.Cases.ConvertAll(SubstMatchCaseStmt), s.UsesOptionalBraces);

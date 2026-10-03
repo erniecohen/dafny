@@ -1,0 +1,1 @@
+Fix a verifier crash when a function body contains a match statement inside an assert-by proof.
