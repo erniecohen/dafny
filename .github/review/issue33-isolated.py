@@ -5,10 +5,11 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
-p=argparse.ArgumentParser();p.add_argument('--dafny',required=True);p.add_argument('--z3',required=True);p.add_argument('--input',required=True);p.add_argument('--output',required=True)
+p=argparse.ArgumentParser();p.add_argument('--dafny',required=True);p.add_argument('--z3',required=True);p.add_argument('--input',required=True);p.add_argument('--output',required=True);p.add_argument('--position',type=int)
 a=p.parse_args();out=Path(a.output);out.mkdir(parents=True,exist_ok=True)
 source=out/'input.dfy';shutil.copyfile(a.input,source)
 cmd=[a.dafny,'verify',str(source),'--additional-axioms','--solver-path',a.z3,'--cores','1','--resource-limit','20000000','--verification-time-limit','0','--isolate-assertions','--log-format','csv;LogFileName='+str(out/'results.csv'),'--solver-log',str(out/'solver.smt2'),'--solver-option','O:smt.qi.profile=true','--boogie','/emitDebugInformation:1']
+if a.position:cmd+=['--filter-position', ':'+str(a.position)]
 (out/'command.json').write_text(json.dumps(cmd,indent=2))
 try:
     result=subprocess.run(cmd,capture_output=True,text=True,timeout=2400)
