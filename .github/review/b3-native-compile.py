@@ -19,6 +19,9 @@ if full_gate:
   ('worker-runtime',['env','PATH='+str(pathlib.Path(solver).parent)+os.pathsep+os.environ['PATH'],
     'DOTNET_GCHeapHardLimit=C0000000','dotnet',str((output/'worker/compiler/dafny/Dafny.dll').resolve()),
     'test','--no-verify','test/worker/dfyconfig.toml','--output',str((output/'worker-runtime/tests').resolve())]),
+  ('worker-java',['env','DOTNET_GCHeapHardLimit=C0000000','dotnet',
+    str((output/'worker/compiler/dafny/Dafny.dll').resolve()),'build','--no-verify','--target=java',
+    'target/java/src/dfyconfig.toml','--output',str((output/'worker-java/B3').resolve())]),
   ('host',['bash','Source/DafnyB3Host.Test/run-tests.sh',worker,solver]),
   ('corpus',['python3','Scripts/check-b3-integration.py','Binaries/net8.0/Dafny.dll','build/b3-host-tests/package/DafnyB3Host.dll',solver,'--output',str(output/'corpus')]),
   ('language-server',['env','DAFNY_TEST_SOLVER_PATH='+solver,'dotnet','test','Source/DafnyLanguageServer.Test/DafnyLanguageServer.Test.csproj','-c','Release','-m:1','-p:UseSharedCompilation=false','--filter','FullyQualifiedName~B3CacheVerificationTest|FullyQualifiedName~B3ProjectMigrationTest|FullyQualifiedName~IdeStateObserverRetirementTest|FullyQualifiedName~CounterExampleCapabilityTest|FullyQualifiedName~ProjectManagerDatabaseTest|FullyQualifiedName~ProjectFilesTest|FullyQualifiedName~MultipleFilesProjectTest|FullyQualifiedName~CompetingProjectFilesTest|FullyQualifiedName~AdditionalAxiomsTest|FullyQualifiedName~CounterexamplesStillWorksIfNothingHasBeenVerified','--results-directory',str(output/'language-server'),'--logger','trx;LogFileName=result.trx','--nologo']),
@@ -44,6 +47,9 @@ def validate(name):
  elif name=='worker-runtime':
   text=(output/'worker-runtime.txt').read_text()
   assert len(re.findall(r'PASSED$',text,re.M))==27 and not re.search(r'FAILED|HALT',text), 'Expected all 27 runtime controls'
+ elif name=='worker-java':
+  archive=output/'worker-java/B3.jar'
+  assert archive.is_file() and archive.stat().st_size>0, 'Java compiler produced no jar'
  elif name=='host':
   totals=re.findall(r'Failed:\s*(\d+),\s*Passed:\s*(\d+),\s*Skipped:\s*(\d+),\s*Total:\s*(\d+)',(output/'host.txt').read_text())
   assert totals==[('0','79','0','79'),('0','35','0','35')], 'Expected complete protocol and host checks'
@@ -60,7 +66,7 @@ for name,command in commands:
   try:
    if name == 'map-theory':
     command[command.index('PINNED_SOLVER_DIGEST')]=hashlib.sha256(pathlib.Path(solver).read_bytes()).hexdigest()
-   result=subprocess.run(command,stdout=log,stderr=subprocess.STDOUT,timeout=1800,cwd="ThirdParty/B3" if name=="worker-runtime" else None)
+   result=subprocess.run(command,stdout=log,stderr=subprocess.STDOUT,timeout=1800,cwd="ThirdParty/B3" if name in {"worker-runtime","worker-java"} else None)
    code=result.returncode
    if code == 0:
     log.flush()
@@ -74,7 +80,7 @@ for name,command in commands:
  if code!=0:
   print((output/(name+'.txt')).read_text()[-12000:],flush=True)
   # These terminal checks share only successfully built inputs; record every independent verdict.
-  if name not in {'corpus','language-server','regressions','map-theory'}:
+  if name not in {'worker-java','corpus','language-server','regressions','map-theory'}:
    break
 passed=len(results)==len(commands) and all(r['exitCode']==0 for r in results)
 (output/'summary.json').write_text(json.dumps({'passed':passed,'fullGate':full_gate,'head':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'stages':results,'libraryProof':proof_receipt,'expectedTestCounts':expected_tests},indent=2)+'\n')
