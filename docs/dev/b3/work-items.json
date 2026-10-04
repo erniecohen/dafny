@@ -45,17 +45,26 @@
     "P7": {
       "number": 124,
       "title": "B3 P7: typed native real and bitvector theories",
-      "url": "https://github.com/erniecohen/dafny/issues/124"
+      "url": "https://github.com/erniecohen/dafny/issues/124",
+      "integrationBranches": [
+        "codex/b3-native-real-integration",
+        "codex/b3-124-portable-rotations",
+        "codex/b3-124-unsigned-integration"
+      ]
     },
     "P8": {
       "number": 125,
       "title": "B3 P8: definition visibility and isolated axiom contexts",
-      "url": "https://github.com/erniecohen/dafny/issues/125"
+      "url": "https://github.com/erniecohen/dafny/issues/125",
+      "integrationBranches": [
+        "codex/b3-native-visibility-integration"
+      ]
     },
     "P9": {
       "number": 126,
       "title": "B3 P9: CLI, project, IDE, options and capability completion",
-      "url": "https://github.com/erniecohen/dafny/issues/126"
+      "url": "https://github.com/erniecohen/dafny/issues/126",
+      "qualificationBranch": "codex/b3-unavailable-metadata-controls"
     },
     "P10": {
       "number": 127,

@@ -88,6 +88,52 @@
       "finding": "The complete selector fell through to the ordinary compile-only path. Its Core/normalizer/protocol checks passed, but package and consumer stages did not run.",
       "repair": "The explicit complete selector routed to the combined gate; all required subset and package stages passed.",
       "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37209385158"
+    },
+    {
+      "kind": "native Real integration discrepancies",
+      "scope": "Separate codex/b3-native-real-integration branch; not imported into this documented subset",
+      "sourceCommit": "a4d3ec13a2929dd45f2f27770d458aa869f6667e",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/37232113837",
+      "receiptSha256": "dfa300517d75918a6d212f08a18996f7029fee9ef5c9d8178a0f26873c6e38cb",
+      "finding": "44 of 46 strict corpus cases and Java runtime controls passed. The conversion case returned canceled followed by push canceled; the false irrational-root assertion returned incomplete (theory arithmetic). These remain Inconclusive or ToolError, never accepted Failed outcomes. Four exact requests were replayed at 200k, 1M and 10M resource units with complete traversal and zero cleanup signals.",
+      "consequence": "Native floor and integer-to-real correspondence has source review, but these two strict targets and integrated feature acceptance remain unresolved. A separately sealed SMT capture diagnostic preserves the original request bytes and solver configuration."
+    },
+    {
+      "kind": "combined numeric integration stopped at host compilation",
+      "scope": "Separate codex/b3-124-portable-rotations branch; not imported into this documented subset",
+      "sourceCommit": "6da2229bad0ab4965fe3277def468e28745b73b7",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/37234654995",
+      "receiptSha256": "f57cf4018f683bb67ef230a829f57e3ec54ed4f2d18e7c7096d48232a78f2554",
+      "finding": "Core 26, normalizer 353 and protocol 163 controls passed. The exact B3 source verified all 590 library batches, followed by 37 runtime controls and Java controls. Host compilation then failed with CS0819 for a multiple-declarator var fixture. The 74 host targets and later corpus, IDE, regression, map and visibility stages were not accepted.",
+      "repair": "Product b321ae06cd6d81163a126f2264df1bec3d1353e0 splits that test declaration into two var declarations with the same values. The repair has not yet completed a fresh full gate.",
+      "consequence": "Successful bootstrap and runtime evidence is partial evidence, not acceptance of the combined numeric backend."
+    },
+    {
+      "kind": "unsigned-wrapper raw-root capture rejection",
+      "scope": "Separate codex/b3-124-unsigned-integration branch; not imported into this documented subset",
+      "sourceCommit": "7b60f93c2cf81486178eb7fcd6fdc35f7e868c71",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/37236538953",
+      "receiptSha256": "57ac2e5fab43ca384759941bb3910597cf6b6e179baa68fccefddac91c285454",
+      "finding": "Compiler, language-server assembly and 26 Core controls passed; 435 of 436 normalizer controls passed. The actual Dafny range/round-trip/false-check control returned Unsupported: Unsigned wrapper call has no captured direct raw-command root. Protocol and proof stages did not run.",
+      "consequence": "The source guard/root relationship needs an identity-preserving diagnostic before extending the reviewed wrapper certificate. Generated checking units, guards and goals remain required; no target or expectation is removed."
+    },
+    {
+      "kind": "same-process native comparison qualification incomplete",
+      "scope": "Three nonproof unavailable-metadata controls only; native proof entrypoints remain disabled",
+      "sourceCommit": "ff1824604c4799b65cb685fd1f75e22fdb51df11",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/37235933042",
+      "receiptSha256": "8f24964dab069e3deb2f79cf54051bb93e9fdec5731c0e0d4e0e5bbcd9a2bd1e",
+      "finding": "Default and private controls passed their exact denial-chain, actual poisoned runtime-demand, trigger, owned-process and collection requirements. Reactive failed before invocation, with no unavailable demand or qualified denial. Nine reached immutable boundaries passed; the mandatory final boundary was absent.",
+      "consequence": "The run is not green and cannot enable native proof comparisons. The source-derived overload ambiguity is distinct from a captured runtime exception type. The exact arity-zero selection repair requires all three fresh strict controls and separate proof-entrypoint review."
+    },
+    {
+      "kind": "definition-context integration checkpoint",
+      "scope": "Separate codex/b3-native-visibility-integration branch; not imported into this documented subset",
+      "sourceCommit": "1a63a8aa3d86eb52335f19230afb824bcf53a624",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/37225786055",
+      "finding": "The inspected focused checkpoint passed 26 Core controls, 260 structural controls and 29 visibility fixtures, plus five fresh launches including two concurrent launches.",
+      "consequence": "This is a bounded definition-availability result. Combined numeric/visibility and general recursive-fuel coverage remain pending.",
+      "receiptSha256": "3132aafa43441064ae3310c572fe3e803aa08673d7d8c4b0bf7e8f22923b72a0"
     }
   ]
 }
