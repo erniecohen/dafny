@@ -45,7 +45,7 @@ static class MeasureComplexityCommand {
   };
 
   public static Command Create() {
-    var result = new Command("measure-complexity", "(Experimental) Measure the complexity of verifying the program.");
+    var result = new Command("measure-complexity", "(Experimental) Measure the complexity of verifying the program. Requires the Boogie verification backend.");
     result.AddArgument(DafnyCommands.FilesArgument);
     foreach (var option in Options) {
       result.AddOption(option);
@@ -55,6 +55,11 @@ static class MeasureComplexityCommand {
   }
 
   private static async Task<int> Execute(DafnyOptions options) {
+    if (options.GetOrOptionDefault(B3OptionBag.VerificationBackend) == B3OptionBag.Backend.B3) {
+      await options.OutputWriter.Status("Error: The experimental B3 verification backend does not support measure-complexity.");
+      return (int)ExitValue.PREPROCESSING_ERROR;
+    }
+
     if (options.Get(CommonOptionBag.VerificationCoverageReport) != null) {
       options.TrackVerificationCoverage = true;
     }

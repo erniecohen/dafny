@@ -1,1 +1,3 @@
 Rejects experimental B3 selection in build, run, and test before compiler or worker initialization, including with --no-verify. These commands previously accepted the B3 option but verified through Boogie instead.
+
+Also rejects B3 in measure-complexity, generate-tests, and find-dead-code before preparation or generation. Test generation and dead-code analysis now load the backend selector from project files, so a B3 project cannot silently invoke their Boogie analysis.

@@ -1,0 +1,4 @@
+includes = ["../git-issue-126-capabilities.dfy"]
+
+[options]
+verification-backend = "b3"

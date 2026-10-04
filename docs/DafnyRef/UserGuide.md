@@ -2367,6 +2367,9 @@ and what information it produces about the verification process.
   overrides that setting. This selection also applies to editor verification.
   The experimental B3 backend currently rejects `build`, `run`, and `test`,
   including their `--no-verify` mode. Use `verify` for B3 verification.
+  B3 also rejects `measure-complexity`, `generate-tests`, and `find-dead-code`,
+  which require Boogie metrics or counterexample generation. This rejection also
+  applies when a project file selects B3.
 
 * `--b3-worker <path>` - locate a packaged `DafnyB3Host.dll`. Its build manifest
   and dependencies must be adjacent to it. The default location is

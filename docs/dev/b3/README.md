@@ -30,6 +30,8 @@ For an editor project, place `verification-backend = "b3"`, `b3-worker = "/path/
 
 The experimental B3 backend supports the `verify` command and editor verification. Selecting B3 for `build`, `run`, or `test` fails before compilation or worker lookup, including with `--no-verify`. Those commands still use the Boogie verification pipeline, so their B3 selection is rejected until they can use the backend-neutral pipeline.
 
+`measure-complexity`, `generate-tests`, and `find-dead-code` require metrics or counterexample generation that this B3 slice does not provide. They explicitly reject B3 selection from the CLI or project file before preparation or generation. Test generation and dead-code analysis accept `--verification-backend boogie` to override a project's B3 setting.
+
 B3 uses a fresh isolated process for each generated checking unit. The time limit covers the unit, including worker startup and IO. It requires a positive time limit and currently supports Unix process groups, arithmetic solver 2, and ordinary Z3 invocation. Solver unknown, invalid packages, incomplete output, cancellation and unsupported input produce non-success outcomes. Models, proof dependencies and resource counts are unavailable in this slice; options requiring those capabilities fail explicitly.
 
 ## Running the backend gate
