@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "status": "source-only-fixed-six-native-proof-smoke-controls-uncompiled-unexecuted; prior lifecycle evidence recorded separately",
-  "scope": "fixed-six-native-proof-smoke-api-with-unchanged-qualified-lifecycle-sources-no-cli-route",
+  "status": "source-only-separate-unavailable-metadata-runtime-denial-draft-uncompiled-unexecuted; all native proof APIs disabled",
+  "scope": "explicit-unavailable-common-metadata-with-runtime-demand-denial-and-three-disposable-nonproof-controls",
   "targetFramework": "net8.0",
   "reviewedContracts": {
     "dafnySourceCommit": "63f38e9163d1c596ef57afe3e34b5c161e9069a4",
@@ -83,8 +83,8 @@
     },
     {
       "path": "NativeProofSmokeControls.cs",
-      "sha256": "d5254577ff91bf0867acd99a66d55930e64acad940c9572c2515e5434fe395bb",
-      "bytes": 29386
+      "sha256": "963abe3c09fd452b16c3873fdbe85fdaa87111ce9b0a0c6cf1d0aa475f2ad15f",
+      "bytes": 31366
     },
     {
       "path": "NativeProofSmokeProgram.cs",
@@ -110,6 +110,51 @@
       "path": "Run.cs",
       "sha256": "3aee1ef1d18dc7eac7768ef2f066f4d1dd61784c79f2ed5d744c255a0493a213",
       "bytes": 11882
+    },
+    {
+      "path": "SHARED-COMMON-PLAN.md",
+      "sha256": "0062491f134130b0281829fc9c46bc4de16ca7d05bc1839ddb917d375b7fd841",
+      "bytes": 12997
+    },
+    {
+      "path": "SOURCE-CLOSURE-FINDINGS.json",
+      "sha256": "c8bf26dc23100dee959e7af822881c898f9112457481eac2b54a867c992a89a5",
+      "bytes": 2815
+    },
+    {
+      "path": "SharedCommonLibraries.cs",
+      "sha256": "e065859d0e2568984c3c93b0a7c0184523b74762b2c066dab4b0d6910f064332",
+      "bytes": 44599
+    },
+    {
+      "path": "SharedNativeRuns.cs",
+      "sha256": "8359809efe509ae9fc44c226dc822c0a7835d9a1b1c1b29555d43fd3516a80ca",
+      "bytes": 10440
+    },
+    {
+      "path": "SharedProductContext.cs",
+      "sha256": "e5a2202fbccf65631472ef3f7a5fbaa951e75ed696558f726211b15b8d8d9bfa",
+      "bytes": 8483
+    },
+    {
+      "path": "UNAVAILABLE-METADATA-PLAN.md",
+      "sha256": "678268df330ddadef4ea1a0814b6d0812a99653c44cae60e2bd6a5a022be2dd8",
+      "bytes": 6717
+    },
+    {
+      "path": "UNAVAILABLE-METADATA-SOURCE-EVIDENCE.json",
+      "sha256": "7166e6c53486b9ab3e77a7072328e9f841d7bf1797c550718e170b29913944cc",
+      "bytes": 3264
+    },
+    {
+      "path": "UnavailableMetadataControls.cs",
+      "sha256": "ddb13c6236df245f5bd6ab61ae417a00d75f18f07c7fdb55c89e223c97e96253",
+      "bytes": 15129
+    },
+    {
+      "path": "UnavailableMetadataProgram.cs",
+      "sha256": "cbe599002ff086e7375a1af3221e7e44808f478d8dd1666c2fd842c72304a8b3",
+      "bytes": 1868
     },
     {
       "path": "control-fixtures.json",
@@ -162,9 +207,77 @@
       "bytes": 49
     },
     {
+      "path": "shared-common-receipt-validation.py",
+      "sha256": "c6851fe8e7163122c182241ab05879c29682d5e1037520c4594748621b61c8bf",
+      "bytes": 8871
+    },
+    {
       "path": "solver-origin-technical-evidence.json",
       "sha256": "a64314c9ee010e48e19bdf9ede2ae6260b2dfbd857540a9b1c06010c5e6638af",
       "bytes": 1993
+    },
+    {
+      "path": "unavailable-metadata-control-fixtures.json",
+      "sha256": "efb4fdcc97cc065005fd30660f6bdea7a2b14202653f16896ff1b9b342c5c821",
+      "bytes": 919
+    },
+    {
+      "path": "unavailable-metadata-receipt-validation.py",
+      "sha256": "71caac837ef976fa4b447f4932bb487c705a5742c655ef456f44e04f7a8df3f0",
+      "bytes": 13502
     }
-  ]
+  ],
+  "baseSourceCommit": "a6132c6758c863ec4a897e4ac1534dc727f0b006",
+  "sharedCommonBoundary": {
+    "fixedBoogieRootCount": 13,
+    "completeMetadataAvailabilityRequired": false,
+    "explicitUnavailableReferencesPermitted": true,
+    "metadataClosureAvailabilityEstablished": false,
+    "persistentBoogieState": true,
+    "freshBoogieStateEstablished": false,
+    "nativeQueryOrResourceParityEstablished": false,
+    "maximumCommonFiles": 64,
+    "maximumFrameworkFiles": 512,
+    "maximumReferencesPerFile": 256,
+    "maximumAssemblyBytes": 67108864,
+    "maximumDefaultAudits": 32,
+    "successfulFixedSequenceExpectedAudits": null,
+    "requiredLaterControls": [
+      "repeat",
+      "interleaved",
+      "reversed-order"
+    ],
+    "separateScopeReviewRequired": true,
+    "actualHistoricalTpaCatalogCaptured": false,
+    "alternativesRemainUnderReview": true,
+    "completeMetadataInventoryRequired": true
+  },
+  "strictBaseSourceManifestSha256": "068a94b8112f0770f94760ce53548af47ac327301483d9fde7594d2284805491",
+  "englishProposalManifestSha256": "7513a911dca3ce7e708657cdd0f2c01ad104c43e507c3b42fba5a4648a81a97a",
+  "unavailableMetadataBoundary": {
+    "completeMetadataInventory": true,
+    "completeMetadataAvailability": false,
+    "maximumDeclaredUnavailableReferences": 1,
+    "maximumDemands": 8,
+    "maximumRuntimeLoads": 1024,
+    "maximumPackageManagedFiles": 512,
+    "maximumPackagePeInspectedBytes": 1073741824,
+    "maximumTypeReferencesPerFile": 8192,
+    "maximumScopedTypeReferencesPerAssemblyRef": 1024,
+    "controlCount": 3,
+    "oneControlPerDisposableHost": true,
+    "nativeProofEnabled": false,
+    "nativeProofAdaptersUnreachable": true,
+    "proofQualificationImplemented": false,
+    "negativeControlsExecuted": false,
+    "expectedGenericExceptionAccepted": false,
+    "hostWatchdogSeconds": 45,
+    "actualWeakCollectionSeconds": 10,
+    "lateRetiredCallbackExitCode": 126,
+    "requiredBeforeFutureProofAcceptance": [
+      "source-review",
+      "three-disposable-negative-controls",
+      "separately-reviewed-proof-entrypoint-and-coordinator"
+    ]
+  }
 }

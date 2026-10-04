@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "scope": "prototype/fixed-disposable-nonproof-unavailable-metadata-denial-control",
+  "controls": [
+    "default-unavailable-demand",
+    "private-unavailable-demand",
+    "reactive-event-unavailable-demand"
+  ],
+  "oneControlPerDisposableHost": true,
+  "hostWatchdogSeconds": 45,
+  "actualWeakCollectionSeconds": 10,
+  "solverExecuted": false,
+  "nativeProofEnabled": false,
+  "completeMetadataInventory": true,
+  "completeMetadataAvailability": false,
+  "expectedUnavailableOwnerSha256": "19f0112cd1f5172ee2688e96ddd44ada39a4bb1cb2315a154b63e9064f6e3dc0",
+  "expectedUnavailableIdentity": "System.Runtime.InteropServices.WindowsRuntime, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+  "denialCode": "declared-unavailable-assembly-demand-denied",
+  "genericExceptionIsSufficient": false,
+  "mustObserveTriggerApiInvocation": true,
+  "mustRetainPoisonAfterCatch": true
+}

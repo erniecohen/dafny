@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "status": "source-only-separate-unavailable-metadata-contract-implemented-for-review-uncompiled-unexecuted",
+  "baseSourceCommit": "a6132c6758c863ec4a897e4ac1534dc727f0b006",
+  "observedArtifactPublicRunId": 37221204349,
+  "owner": {
+    "file": "System.Reactive.dll",
+    "sha256": "19f0112cd1f5172ee2688e96ddd44ada39a4bb1cb2315a154b63e9064f6e3dc0"
+  },
+  "assemblyReference": {
+    "name": "System.Runtime.InteropServices.WindowsRuntime",
+    "version": "4.0.0.0",
+    "culture": "neutral",
+    "publicKeyToken": "b03f5f7f11d50a3a",
+    "flags": 0
+  },
+  "actualMetadataTypeReferences": [
+    "System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken"
+  ],
+  "packageAbsence": {
+    "baselineCompleteFileInventory": true,
+    "candidateCompleteFileInventory": true,
+    "historicalRuntimeTpaCatalogCaptured": false
+  },
+  "frameworkSource": {
+    "url": "https://raw.githubusercontent.com/dotnet/runtime/v8.0.31/src/libraries/NetCoreAppLibrary.props",
+    "sha256": "8a78246c72460b6682ba22b1a478aa9b4233eb98e13348d66985fcce8c5a218c",
+    "assemblyAbsentFromNetCoreAppLibraryList": true,
+    "scope": "runtime-source-inference-not-serialized-actual-TPA"
+  },
+  "historicalHostRuntime": ".NET 8.0.31",
+  "historicalHarnessDeps": {
+    "onlyRuntimeLibrary": "B3AlcGate/1.0.0",
+    "requestedSharedFramework": "Microsoft.NETCore.App",
+    "requestedSharedFrameworkVersion": "8.0.0"
+  },
+  "publicPackage": {
+    "url": "https://api.nuget.org/v3-flatcontainer/system.reactive/4.4.1/system.reactive.4.4.1.nupkg",
+    "sha256": "8a703a9f0f425f483f01eca033026801118e63bf69962fe32c5e780b0794a83f",
+    "exactMatchingAsset": "lib/netstandard2.0/System.Reactive.dll",
+    "nuspecSha256": "a3ea316970e9bb44b04b315d7dd9abda0276e9e43f75711e3c13b479e720269b",
+    "declaredSourceCommit": "7fe23fedde3d0c462ea3dd851debcf9ccb0f52f6",
+    "declarationIsSignedOriginAttestation": false
+  },
+  "sourceOnlyObservationMethod": "bounded-PE-metadata-file-inspection-no-managed-assembly-loaded",
+  "strictRejectionPreserved": true,
+  "packagesPatched": false,
+  "sourceCompiled": false,
+  "nativeProofRun": false,
+  "alternativesStillUnderReview": [
+    "separate-explicit-unavailable-metadata-and-runtime-demand-audit",
+    "caller-owned-public-native-verification-api-and-prover-factory"
+  ],
+  "strictRejectionScope": "unchanged-external-strict-checkpoint-only",
+  "strictSourceManifestSha256": "068a94b8112f0770f94760ce53548af47ac327301483d9fde7594d2284805491",
+  "activeContract": {
+    "completeMetadataInventory": true,
+    "completeMetadataAvailability": false,
+    "unavailableMetadataClassificationImplemented": true,
+    "actualAssemblyResolutionWaived": false,
+    "runtimeDemandDenialImplemented": true,
+    "runtimeDemandControlsQualified": false,
+    "nativeProofEnabled": false
+  }
+}

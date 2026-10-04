@@ -9,7 +9,7 @@ using System.Text.Json;
 
 namespace B3AlcGate;
 
-// Private source draft only. Program.Main deliberately has no route to this API.
+// Separate shared-common-library private source draft. Program.Main deliberately has no route to this API.
 // Its caller must be the reviewed fixed CI coordinator, never a forwarded Dafny CLI.
 internal sealed record PinnedEvidence(string Path, string Sha256);
 internal sealed record ProofSmokeInputs(string BaselineDirectory, string CandidateDirectory,
@@ -55,11 +55,17 @@ internal static class NativeProofSmokeControls {
   // This is a fixed six-case API, not an arbitrary-command entry point. No argument
   // array, budgets, input source, seeds, backend or solver options come from its caller.
   public static int Run(ProofSmokeInputs input) {
+    Console.Error.WriteLine("Unavailable-metadata native proof controls are disabled pending source/runtime qualification.");
+    return 2;
+  }
+
+  private static int RetainedUnqualifiedNativeSmokeImplementation(ProofSmokeInputs input) {
     Require(Interlocked.CompareExchange(ref entered, 1, 0) == 0, "fixed-smoke-sequence-is-single-use-per-host");
     var cases = new List<ProofSmokeCaseReceipt>();
     ProductPin[] products = [];
     JsonElement? prerequisites = null;
     FrameworkWitness? framework = null;
+    SharedCommonLibraries? shared = null;
     string? failure = null;
     string? evidenceRoot = null;
     try {
@@ -93,6 +99,10 @@ internal static class NativeProofSmokeControls {
       evidenceRoot = Path.Combine(receiptParent, "proof-smoke-evidence-" + Guid.NewGuid().ToString("N"));
       Directory.CreateDirectory(evidenceRoot, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
       framework = Framework.Witness();
+      // A distinct scope: one exact common closure is persistent in Default. Every
+      // Dafny run remains private and collectible; no Boogie static reset is attempted.
+      // All prerequisite receipts, packages, solver/fixture pins were checked first.
+      shared = SharedCommonLibraries.CreateAndPreload(products[0], products[1]);
       // Pair order is fixed. The same absolute source and unchanged host framework seed
       // are used by both product packages. Each preceding ALC must actually die first.
       foreach (var fixture in Fixtures) {
@@ -116,21 +126,22 @@ internal static class NativeProofSmokeControls {
               "--verification-time-limit", "20", "--resource-limit", "200000",
               "--solver-path", supervisor.WrapperPath, "--log-format", "json;LogFileName=" + json,
               "--log-format", "csv;LogFileName=" + csv };
-            run = Runs.RunVerification(new Product(product.Label, product.Directory), arguments, supervisor, TimeSpan.FromSeconds(60));
+            run = SharedNativeRuns.RunVerification(product, shared, arguments, supervisor, TimeSpan.FromSeconds(60));
             Require(run.Failure == null && run.ContextCollected && run.RemainingDirectChildren.Length == 0,
               "native-run-cleanup-or-weak-collection-failed");
-            Require(NoProductLoaded() && HostHasOnlyReviewedFramework(), "post-collection-default-context-contamination");
+            Require(NoDefaultDafnyLoaded(), "post-collection-default-dafny-contamination");
             Require(run.SchedulerCleanup == "LargeThreadScheduler.Dispose called; actual collection checked after leaving the frame",
               "scheduler-disposal-unproven");
             Require(run.ExitCode == fixture.Exit, "unexpected-native-cli-verdict");
             Require(run.ProofCleanup is { RecordedSolverGroups: > 0, LiveOwnedProcesses: 0 }, "missing-owned-cleanup");
-            ValidateLoader(product, run);
+            ValidateLoader(product, run, shared);
             if (fixture.Exit == 4) {
               Require((run.Output + run.ErrorOutput).Contains("assertion might not hold", StringComparison.Ordinal),
                 "reachable-false-diagnostic-missing");
             }
             evidence = NativeProofEvidence.Read(run, json, csv, FixturePath(fixture.File), fixture.Routine, fixture.Exit == 4);
-            Require(Framework.Witness() == framework && Framework.LiveChildren().Length == 0 && NoProductLoaded() && HostHasOnlyReviewedFramework(),
+            shared.Audit("after-native-evidence-" + name);
+            Require(Framework.Witness() == framework && Framework.LiveChildren().Length == 0 && NoDefaultDafnyLoaded(),
               "post-evidence-lifecycle-failed");
           } catch (Exception exception) { caseFailure = Code(exception); }
           cases.Add(new(name, product.Label, "proof-fixtures/" + fixture.File, fixture.Sha256, fixture.Exit,
@@ -140,20 +151,31 @@ internal static class NativeProofSmokeControls {
       }
     } catch (Exception exception) { failure = Code(exception); }
     complete:
+    // Default common libraries deliberately remain loaded. Removing only our owned
+    // resolver callback is audited; no product/framework state or handler surgery.
+    SharedCommonReceipt? commonClosure = null;
+    if (shared != null) {
+      try { shared.Audit("fixed-sequence-complete"); }
+      catch (Exception exception) { failure ??= Code(exception); }
+      commonClosure = shared.Snapshot();
+      shared.Dispose();
+    }
     var expected = Fixtures.SelectMany(f => new[] { "baseline/" + f.Name, "candidate/" + f.Name }).ToArray();
     var passed = failure == null && cases.Select(c => c.Name).SequenceEqual(expected) && cases.All(c => c.Passed);
     var receipt = JsonSerializer.SerializeToUtf8Bytes(new {
-      schemaVersion = 1, scope = "prototype/six-fixed-native-proof-smoke-controls", passed, failureCode = failure,
+      schemaVersion = 1, scope = "source-only-disabled-proof-scope-with-unavailable-metadata", passed, failureCode = failure,
       sourceManifestSha256 = Framework.Sha256(Path.Combine(AppContext.BaseDirectory, "source-manifest.json")),
       harnessAssemblySha256 = Framework.Sha256(typeof(Program).Assembly.Location), effectiveUid = GetEffectiveUserId(),
       privilegeScope = "explicit-privileged-ci-no-unprivileged-deployment-claim", commonFramework = framework,
       culture = CultureInfo.CurrentCulture.Name, uiCulture = CultureInfo.CurrentUICulture.Name,
       workingDirectory = Environment.CurrentDirectory, visibleProcessors = Environment.ProcessorCount,
       baselineArchiveSha256 = BaselineArchiveSha256, baselineSource = BaselineSource,
-      products, prerequisites, fixedCaseOrder = expected, runs = cases,
+      products, prerequisites, commonClosure, fixedCaseOrder = expected, runs = cases,
       solverSha256 = input.SolverSha256, solverVersion = "5.1.0",
       smokeBudgets = new { cores = 1, verificationTimeLimitSeconds = 20, resourceLimit = 200000, invocationSafetySeconds = 60 },
       ordinaryProofCliEnabled = false, nativeQueryOrResourceParityEstablished = false,
+      persistentBoogieState = true, freshBoogieStateEstablished = false,
+      requiredLaterControls = new[] { "repeat", "interleaved", "reversed-order" },
       evidenceRoot, remainingDirectChildren = Framework.LiveChildren()
     }, Json);
     Require(receipt.Length <= 8388608, "smoke-receipt-bound-exceeded");
@@ -244,6 +266,13 @@ internal static class NativeProofSmokeControls {
     }, Json);
   }
 
+  internal static ProductPin[] MetadataControlProducts(ProofSmokeInputs input) {
+    var products = new[] { Baseline(input), Candidate(input) };
+    Require(products[0].Directory != products[1].Directory, "distinct-product-packages-required");
+    foreach (var product in products) { CheckPackage(product); }
+    return products;
+  }
+
   private static ProductPin Baseline(ProofSmokeInputs input) {
     var archive = ReadBytes(input.BaselineArchive, 268435456);
     Require(Sha256(archive) == BaselineArchiveSha256, "original-public-baseline-archive-required");
@@ -318,13 +347,16 @@ internal static class NativeProofSmokeControls {
     }
   }
 
-  private static void ValidateLoader(ProductPin pin, RunReceipt run) {
+  private static void ValidateLoader(ProductPin pin, RunReceipt run, SharedCommonLibraries shared) {
     var core = run.LoaderLedger.Single(e => e.Kind == "private-loaded" && e.Identity == CoreIdentity);
     Require(core.Sha256 == pin.CoreSha256 && core.InformationalVersion == pin.CoreInformationalVersion &&
       Path.GetFullPath(core.Path) == Path.Combine(pin.Directory, "DafnyCore.dll"), "private-core-identity-pin-mismatch");
-    Require(run.LoaderLedger.Any(e => e.Kind == "private-loaded" && e.Identity.StartsWith("Boogie.", StringComparison.Ordinal)) &&
-      run.LoaderLedger.Any(e => e.Kind == "private-loaded" && e.Identity.StartsWith("Boogie.Provers.SMTLib,", StringComparison.Ordinal)),
-      "private-native-boogie-prover-not-loaded");
+    Require(run.LoaderLedger.Any(e => e.Kind == "shared-common" && e.Identity.StartsWith("Boogie.", StringComparison.Ordinal)) &&
+      run.LoaderLedger.Any(e => e.Kind == "shared-common-loaded" && e.Identity.StartsWith("Boogie.Provers.SMTLib,", StringComparison.Ordinal)),
+      "exact-common-native-boogie-prover-scope-missing");
+    foreach (var entry in run.LoaderLedger.Where(e => e.Kind is "shared-common" or "shared-common-loaded" or "shared-tpa")) {
+      shared.ValidateLedger(entry);
+    }
     var expected = pin.Files.ToDictionary(f => f.Path, StringComparer.Ordinal);
     foreach (var entry in run.LoaderLedger.Where(e => e.Kind.StartsWith("private-", StringComparison.Ordinal) || e.Kind.StartsWith("resolver-", StringComparison.Ordinal))) {
       var relative = Path.GetRelativePath(pin.Directory, entry.Path).Replace(Path.DirectorySeparatorChar, '/');
@@ -357,6 +389,8 @@ internal static class NativeProofSmokeControls {
   private static bool NoProductLoaded() => !AssemblyLoadContext.Default.Assemblies.Any(a =>
     (a.GetName().Name ?? "").StartsWith("Dafny", StringComparison.OrdinalIgnoreCase) ||
     (a.GetName().Name ?? "").StartsWith("Boogie", StringComparison.OrdinalIgnoreCase));
+  private static bool NoDefaultDafnyLoaded() => !AssemblyLoadContext.Default.Assemblies.Any(a =>
+    (a.GetName().Name ?? "").StartsWith("Dafny", StringComparison.OrdinalIgnoreCase));
   private static bool HostHasOnlyReviewedFramework() {
     var trusted = Framework.TrustedPaths();
     return AssemblyLoadContext.Default.Assemblies.All(assembly => assembly == typeof(Program).Assembly ||

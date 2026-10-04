@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "status": "english-proposal-only-no-implementation-or-runtime-acceptance",
+  "exactReactiveAssemblySha256": "19f0112cd1f5172ee2688e96ddd44ada39a4bb1cb2315a154b63e9064f6e3dc0",
+  "missingRequestedIdentity": "System.Runtime.InteropServices.WindowsRuntime, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+  "actualMetadataTypeReferences": [
+    "System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken"
+  ],
+  "publicSourceDeclaredCommit": "7fe23fedde3d0c462ea3dd851debcf9ccb0f52f6",
+  "publicSourceFiles": [
+    {
+      "path": "Rx.NET/Source/src/System.Reactive/System.Reactive.csproj",
+      "sha256": "721bc27ae352f6ad7d7a7e56d0ca704f676443aafaab752970ec6532a1ce1c34",
+      "bytes": 5178,
+      "url": "https://github.com/dotnet/reactive/blob/7fe23fedde3d0c462ea3dd851debcf9ccb0f52f6/Rx.NET/Source/src/System.Reactive/System.Reactive.csproj"
+    },
+    {
+      "path": "Rx.NET/Source/src/System.Reactive/build/System.Reactive.targets",
+      "sha256": "fb2c643cde98ca45b1b47ae7a26c74d0d6aa193337b8042fd5925ba2c7f2b13a",
+      "bytes": 719,
+      "url": "https://github.com/dotnet/reactive/blob/7fe23fedde3d0c462ea3dd851debcf9ccb0f52f6/Rx.NET/Source/src/System.Reactive/build/System.Reactive.targets"
+    },
+    {
+      "path": "Rx.NET/Source/src/System.Reactive/Internal/ReflectionUtils.cs",
+      "sha256": "57f3562d1824c08b38f8c56a41fdd9cb6dda2af02dad35c9a2e43d7e7c6ac27e",
+      "bytes": 6010,
+      "url": "https://github.com/dotnet/reactive/blob/7fe23fedde3d0c462ea3dd851debcf9ccb0f52f6/Rx.NET/Source/src/System.Reactive/Internal/ReflectionUtils.cs"
+    },
+    {
+      "path": "Rx.NET/Source/src/System.Reactive/Linq/QueryLanguage.Events.cs",
+      "sha256": "58efb95af1f15daf928e608f771583574753f4155f164febe25ec6cc4486f014",
+      "bytes": 16319,
+      "url": "https://github.com/dotnet/reactive/blob/7fe23fedde3d0c462ea3dd851debcf9ccb0f52f6/Rx.NET/Source/src/System.Reactive/Linq/QueryLanguage.Events.cs"
+    },
+    {
+      "path": "Rx.NET/Source/src/System.Reactive/Linq/Observable.Events.cs",
+      "sha256": "fdaedd0f4fed6fcb3c0bdffa0f474fb13e8218518bf74a82a86530fb6f7ce2ac",
+      "bytes": 95581,
+      "url": "https://github.com/dotnet/reactive/blob/7fe23fedde3d0c462ea3dd851debcf9ccb0f52f6/Rx.NET/Source/src/System.Reactive/Linq/Observable.Events.cs"
+    }
+  ],
+  "sourceDeclarationIsSignedOriginAttestation": false,
+  "historicalActualTpaCatalogRecorded": false,
+  "sourceFrameworkAbsenceAndActualTpaObservationRemainDistinct": true,
+  "globalStaticUnreachabilityProved": false,
+  "sourceOnlyDirectSearchNoFromEventCalls": {
+    "dafnySourceCommit": "a6132c6758c863ec4a897e4ac1534dc727f0b006",
+    "dafnyScopes": [
+      "Source/DafnyDriver",
+      "Source/DafnyCore",
+      "Source/DafnyLanguageServer"
+    ],
+    "boogieSourceCommit": "73a0e214a87df85fc058270268c1d0706fd05bc9",
+    "boogieScope": "Source"
+  },
+  "proposedMandatorySeparateNegativeControls": [
+    "default-exact-unavailable-demand",
+    "private-exact-unavailable-demand",
+    "pinned-reactive-reflection-event-demand"
+  ],
+  "implemented": false,
+  "built": false,
+  "executed": false,
+  "proofEnabled": false,
+  "strictDraftSourceManifestSha256": "068a94b8112f0770f94760ce53548af47ac327301483d9fde7594d2284805491"
+}
