@@ -627,9 +627,16 @@ const $OneHeap: Heap uses {
 }
 
 function $HeapSucc(Heap, Heap): bool;
+// A write is a heap succession step if it is to a field other than alloc, or if it allocates.
+// A write to alloc in general is not: one that restores the box an unallocated reference held
+// before an allocation would be a step from a heap where the reference is allocated to one where
+// it is not, against the monotonicity of alloc below (erniecohen/dafny#81, dafny-lang/dafny#2463).
 axiom (forall h: Heap, r: ref, f: Field, x: Box :: { update(h, r, f, x) }
-  $IsGoodHeap(update(h, r, f, x)) ==>
+  f != alloc && $IsGoodHeap(update(h, r, f, x)) ==>
   $HeapSucc(h, update(h, r, f, x)));
+axiom (forall h: Heap, r: ref :: { update(h, r, alloc, $Box(true)) }
+  $IsGoodHeap(update(h, r, alloc, $Box(true))) ==>
+  $HeapSucc(h, update(h, r, alloc, $Box(true))));
 axiom (forall a,b,c: Heap :: { $HeapSucc(a,b), $HeapSucc(b,c) }
   a != c ==> $HeapSucc(a,b) && $HeapSucc(b,c) ==> $HeapSucc(a,c));
 axiom (forall h: Heap, k: Heap :: { $HeapSucc(h,k) }
