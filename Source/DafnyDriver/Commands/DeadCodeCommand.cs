@@ -13,6 +13,7 @@ namespace Microsoft.Dafny;
 static class DeadCodeCommand {
   public static IEnumerable<Option> Options =>
     new Option[] {
+      B3OptionBag.VerificationBackend,
       GenerateTestsCommand.LoopUnroll,
       GenerateTestsCommand.SequenceLengthLimit,
       GenerateTestsCommand.ExpectedCoverageReport,
@@ -28,7 +29,7 @@ static class DeadCodeCommand {
       Concat(DafnyCommands.ResolverOptions);
 
   public static Command Create() {
-    var result = new Command("find-dead-code", "(Experimental) Use counterexample generation to warn about potential dead code.");
+    var result = new Command("find-dead-code", "(Experimental) Use counterexample generation to warn about potential dead code. Requires the Boogie verification backend.");
     result.AddArgument(DafnyCommands.FilesArgument);
 
     foreach (var option in Options) {
@@ -36,6 +37,11 @@ static class DeadCodeCommand {
     }
 
     DafnyNewCli.SetHandlerUsingDafnyOptionsContinuation(result, async (options, context) => {
+      if (options.GetOrOptionDefault(B3OptionBag.VerificationBackend) == B3OptionBag.Backend.B3) {
+        await options.OutputWriter.Status("Error: The experimental B3 verification backend does not support find-dead-code.");
+        return (int)ExitValue.PREPROCESSING_ERROR;
+      }
+
       GenerateTestsCommand.PostProcess(options, TestGenerationOptions.Modes.Block);
 
       options.TestGenOptions.WarnDeadCode = true;

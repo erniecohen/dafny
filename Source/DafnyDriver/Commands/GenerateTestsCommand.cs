@@ -18,6 +18,7 @@ static class GenerateTestsCommand {
   public static IEnumerable<Option> Options {
     get {
       return new Option[] {
+        B3OptionBag.VerificationBackend,
         IgnoreWarnings,
         LoopUnroll,
         SequenceLengthLimit,
@@ -49,7 +50,7 @@ InlinedBlock - Generate tests targeting block coverage after inlining (call-grap
 Path - Generate tests targeting path-coverage.");
 
   public static Command Create() {
-    var result = new Command("generate-tests", "(Experimental) Generate Dafny tests that ensure block or path coverage of a particular Dafny program.");
+    var result = new Command("generate-tests", "(Experimental) Generate Dafny tests that ensure block or path coverage of a particular Dafny program. Requires the Boogie verification backend.");
     result.AddArgument(modeArgument);
     result.AddArgument(DafnyCommands.FilesArgument);
 
@@ -58,6 +59,11 @@ Path - Generate tests targeting path-coverage.");
     }
 
     DafnyNewCli.SetHandlerUsingDafnyOptionsContinuation(result, async (options, context) => {
+      if (options.GetOrOptionDefault(B3OptionBag.VerificationBackend) == B3OptionBag.Backend.B3) {
+        await options.OutputWriter.Status("Error: The experimental B3 verification backend does not support generate-tests.");
+        return (int)ExitValue.PREPROCESSING_ERROR;
+      }
+
       var mode = context.ParseResult.GetValueForArgument(modeArgument) switch {
         Mode.Path => TestGenerationOptions.Modes.Path,
         Mode.Block => TestGenerationOptions.Modes.Block,

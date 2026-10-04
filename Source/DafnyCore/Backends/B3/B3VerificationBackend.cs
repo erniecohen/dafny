@@ -31,7 +31,7 @@ public sealed class B3VerificationBackend : IVerificationBackend {
     cancellationToken.ThrowIfCancellationRequested();
     var program = input.IntermediateProgram;
     var implementations = program.Implementations.Where(implementation =>
-      ((Bpl.ExecutionEngineOptions)options).UserWantsToCheckRoutine(implementation.VerboseName) && !implementation.IsSkipVerification(options)).OrderBy(implementation => implementation.Name, StringComparer.Ordinal).ToList();
+      ((Bpl.ExecutionEngineOptions)options).UserWantsToCheckRoutine(implementation.VerboseName)).OrderBy(implementation => implementation.Name, StringComparer.Ordinal).ToList();
     var configurationError = input.TranslationHasErrors ? "B3 cannot verify an incomplete or erroneous shared translation" : CheckConfiguration(options);
     var configurationOutcome = input.TranslationHasErrors ? VerificationOutcome.ToolError : VerificationOutcome.Unsupported;
     WorkerPackage? package = null;
@@ -48,6 +48,10 @@ public sealed class B3VerificationBackend : IVerificationBackend {
     if (configurationError == null && (program.Resolve(options, sink) != 0 || program.Typecheck(options, sink) != 0)) {
       configurationOutcome = VerificationOutcome.ToolError;
       configurationError = "B3 pre-VC resolution/typechecking failed: " + string.Join("; ", sink.Messages);
+    }
+    if (configurationError == null) {
+      // IsSkipVerification reads implementation.Proc, which is linked by pre-VC resolution.
+      implementations.RemoveAll(implementation => implementation.IsSkipVerification(options));
     }
     string? solverDigest = null;
     if (configurationError == null) {

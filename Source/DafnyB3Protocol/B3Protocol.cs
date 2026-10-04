@@ -16,7 +16,8 @@ public static class Protocol {
   public static readonly JsonSerializerOptions JsonOptions = new() {
     PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
-    MaxDepth = 256,
+    // A logical child can add an object plus nested arrays to the JSON depth.
+    MaxDepth = 4 * MaximumDepth + 16,
     Converters = { new JsonStringEnumConverter(allowIntegerValues: false) }
   };
 }

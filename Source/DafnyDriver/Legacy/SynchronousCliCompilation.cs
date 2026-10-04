@@ -43,6 +43,11 @@ namespace Microsoft.Dafny {
     }
 
     public static async Task<int> Run(DafnyOptions options) {
+      if (options.GetOrOptionDefault(B3OptionBag.VerificationBackend) == B3OptionBag.Backend.B3) {
+        await options.OutputWriter.Status("Error: The experimental B3 verification backend is supported by 'dafny verify' and editor verification; build, run, and test are unsupported.");
+        return (int)ExitValue.PREPROCESSING_ERROR;
+      }
+
       options.RunningBoogieFromCommandLine = true;
 
       var backend = GetBackend(options);

@@ -293,18 +293,21 @@ public static class B3Normalizer {
       return false;
     }
 
-    private static int IdentityProjection(Bpl.Function function) {
+    private int IdentityProjection(Bpl.Function function) {
       // Visibility analysis cannot hide AlwaysRevealed definitions. Other definitions remain opaque.
       if (!function.AlwaysRevealed) { return -1; }
       if (function.Body is Bpl.IdentifierExpr identifier) { return function.InParams.IndexOf(identifier.Decl); }
+      // Native checker setup asserts top-level axioms; detached definition metadata supplies no premise.
+      if (function.DefinitionAxiom == null || !source.TopLevelDeclarations.Contains(function.DefinitionAxiom)) { return -1; }
       // A universally quantified direct defining equality justifies this rewrite; an :identity claim alone does not.
-      var axiom = function.DefinitionAxiom?.Expr;
+      var axiom = function.DefinitionAxiom.Expr;
       if (axiom is Bpl.ForallExpr forall && forall.Body is Bpl.NAryExpr equality &&
           equality.Fun is Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.Eq }) {
         for (var side = 0; side < 2; side++) {
           var defined = equality.Args[side];
           if (defined is Bpl.NAryExpr { Fun: Bpl.TypeCoercion } coercion) { defined = coercion.Args[0]; }
           if (defined is Bpl.NAryExpr call && call.Fun is Bpl.FunctionCall fc && fc.Func == function &&
+              InstantiatesAllQuantifiedTypes(function, forall, call) &&
               equality.Args[1 - side] is Bpl.IdentifierExpr projected &&
               call.Args.Count == forall.Dummies.Count && call.Args.Select((a, i) => a is Bpl.IdentifierExpr id && id.Decl == forall.Dummies[i]).All(b => b)) {
             return forall.Dummies.IndexOf(projected.Decl);
@@ -313,6 +316,27 @@ public static class B3Normalizer {
       }
       return -1;
     }
+    private static bool InstantiatesAllQuantifiedTypes(Bpl.Function function, Bpl.ForallExpr forall, Bpl.NAryExpr call) {
+      // A definition at one closed instance does not justify rewriting every instance of a generic function.
+      if (function.TypeParameters.Count != forall.TypeParameters.Count) { return false; }
+      if (function.TypeParameters.Count == 0) { return true; }
+      var instantiation = call.TypeParameters;
+      if (instantiation == null || instantiation.FormalTypeParams.Count != function.TypeParameters.Count ||
+          function.TypeParameters.Any(p => !instantiation.FormalTypeParams.Contains(p))) { return false; }
+      var quantified = new HashSet<Bpl.TypeVariable>(forall.TypeParameters);
+      var used = new HashSet<Bpl.TypeVariable>();
+      foreach (var parameter in function.TypeParameters) {
+        var actual = instantiation[parameter];
+        for (var depth = 0; depth < Ir.Protocol.MaximumDepth; depth++) {
+          if (actual is Bpl.TypeProxy proxy && ProxyTarget != null) { actual = (Bpl.Type)ProxyTarget.GetValue(proxy); }
+          else if (actual is Bpl.TypeSynonymAnnotation alias) { actual = alias.ExpandedType; }
+          else { break; }
+        }
+        if (actual is not Bpl.TypeVariable bound || !quantified.Contains(bound) || !used.Add(bound)) { return false; }
+      }
+      return used.SetEquals(quantified);
+    }
+
     private static void FreeVariables(Bpl.Expr expression, HashSet<Bpl.Variable> bound,
       List<(Bpl.Variable Variable, bool Old)> found, bool old) {
       var pending = new Stack<(Bpl.Expr Expression, HashSet<Bpl.Variable> Bound, bool Old, int Depth)>();

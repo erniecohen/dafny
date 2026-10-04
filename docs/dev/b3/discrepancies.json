@@ -16,8 +16,9 @@
       "scope": "Standard library source; Z3 5.1.0, default options",
       "evidence": "https://github.com/erniecohen/dafny/actions/runs/37182760834",
       "finding": "All 2190 declaration verdicts matched, with 58 resource-count differences.",
-      "repair": "Hidden-function/pruning projection is lazy at its original lifecycle point. A focused repeat varied within baseline and candidate; a matching pair does not establish the required full exact parity. Native completion-event timing is also restored; its focused recheck is pending.",
-      "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37195123887"
+      "repair": "Hidden-function/pruning projection and native completion-event timing are restored. Focused repeats still vary within baseline and candidate, so full exact resource parity and attribution remain unresolved.",
+      "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37195123887",
+      "timingRecheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37196205136"
     },
     {
       "kind": "deliberate conservative approximation",
@@ -29,7 +30,14 @@
       "kind": "protocol test fixture packaging failure",
       "evidence": "https://github.com/erniecohen/dafny/actions/runs/37195114156",
       "finding": "CLI compiled; 22 selected Core controls and 51 structural normalizer controls passed. The protocol test copy target collided with the fixture apphost file name.",
-      "repair": "Use a separate worker-fixture output directory. New package bounds and record-transmission controls await executable validation."
+      "repair": "A separate worker-fixture directory fixes the collision. Public probe 37196523946 passed current package/process controls and proved the full-pipe regression fails with the prior newline write and passes with the bounded write.",
+      "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37196523946"
+    },
+    {
+      "kind": "real-input preparation crash",
+      "scope": "B3 generated implementations before resolution",
+      "finding": "The skip-verification query read the procedure link before pre-VC resolution established it.",
+      "repair": "Query skipped routines only after successful resolution/typechecking. The real corpus now rejects internal exceptions and requires explicit B3 failure diagnostics for invalid proofs; recheck pending."
     }
   ]
 }
