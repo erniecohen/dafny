@@ -19,7 +19,7 @@ on:
       b3_focus_gate:
         description: Focused scratch checks; each mode pins its own public B3 prerequisite
         type: choice
-        options: [none, ide-regressions, maps, isolation, numeric-proof, real-triage, complete]
+        options: [none, ide-regressions, maps, isolation, numeric-proof, real-triage, real-smt-capture, complete]
         default: none
       b3_full_gate:
         description: Also run the verifying B3 worker bootstrap and real Dafny corpus with b3_compile_only
@@ -623,6 +623,25 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Install the reviewed Real diagnostic tracer
+        if: inputs.b3_focus_gate == 'real-smt-capture'
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          case "$GITHUB_REF" in
+            refs/heads/scratch/*) ;;
+            *) echo "Real SMT capture requires a scratch branch"; exit 1 ;;
+          esac
+          test '${{ inputs.b3_compile_only }}' = true
+          test '${{ inputs.b3_full_gate }}' = false
+          mkdir -p out/b3-real-smt-setup
+          sudo apt-get update 2>&1 | tee out/b3-real-smt-setup/apt-update.txt
+          sudo apt-get install --yes --no-install-recommends strace=6.8-0ubuntu2 2>&1 | tee out/b3-real-smt-setup/apt-install.txt
+          dpkg-query -W -f='${Package} ${Version}\n' strace | tee out/b3-real-smt-setup/package.txt
+          test "$(dpkg-query -W -f='${Version}' strace)" = 6.8-0ubuntu2
+          strace --version | tee out/b3-real-smt-setup/version.txt
+          test "$(head -n1 out/b3-real-smt-setup/version.txt)" = 'strace -- version 6.8'
+          sha256sum "$(command -v strace)" > out/b3-real-smt-setup/executable-sha256.txt
       - name: Record compiler, contract and optional integration checks
         env:
           GH_TOKEN: ${{ github.token }}
@@ -634,7 +653,10 @@ jobs:
           DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER: '1'
           MSBUILDDISABLENODEREUSE: '1'
         run: |
-          if [ "$B3_FOCUS_GATE" = real-triage ]; then
+          if [ "$B3_FOCUS_GATE" = real-smt-capture ]; then
+            echo '73682b895837a93d369b201ee9dfad15d986434d66d29f50a77f070a8adbadce  .github/review/b3-real-smt-capture-gate.py' | sha256sum -c -
+            B3_COMPILE_ONLY='${{ inputs.b3_compile_only }}' python3 -B .github/review/b3-real-smt-capture-gate.py
+          elif [ "$B3_FOCUS_GATE" = real-triage ]; then
             python3 .github/review/b3-real-triage-gate.py
           elif [ "$B3_FOCUS_GATE" = isolation ]; then
             python3 .github/review/b3-alc-controls.py
@@ -651,6 +673,7 @@ jobs:
           name: b3-native-compile
           path: |
             out/b3-native-compile
+            out/b3-real-smt-setup
             Binaries/net8.0
             build/b3-host-tests
           retention-days: 14
