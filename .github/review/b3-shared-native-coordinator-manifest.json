@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "scope": "fixed-six-qualified-shared-native-smoke-source-only-no-default-parity",
+  "sourceManifestSha256": "b2e0e676f8c279e25358330ac3a91e740a12ddce319fd9aaedc5f1bd508dbc90",
+  "sourceOnlyUnexecuted": true,
+  "workflowRouteRegistered": false,
+  "normalProgramProofModeEnabled": false,
+  "fixedProofCases": 6,
+  "files": [
+    {
+      "path": ".github/review/B3-SHARED-NATIVE-SMOKE.md",
+      "sha256": "8cbb05e898533ddf08f86cbd9048e90824c1101fa420d4a9cc5f3fcad7c2cbc7",
+      "bytes": 5969
+    },
+    {
+      "path": ".github/review/b3-owned-process.py",
+      "sha256": "3a067f09ce2b06a4a0e412c43707b925789b1a2f210cb670ba8842284361cf04",
+      "bytes": 16345
+    },
+    {
+      "path": ".github/review/b3-shared-native-proof-smoke.py",
+      "sha256": "3e4e8712a080e7deb457d61a488384a63c814a192c9cd455e5271e3165fb0657",
+      "bytes": 29524
+    },
+    {
+      "path": ".github/review/base",
+      "sha256": "c991a035b5681782c5d6ce6ec0a1c5c62fa13f57ca64224b9eb192806e8bb47a",
+      "bytes": 49
+    },
+    {
+      "path": ".github/workflows/review.yml",
+      "sha256": "2e82419e45d447ec2d6498efb959eee420193614ec432f59410889faa6e2f936",
+      "bytes": 27542
+    }
+  ]
+}

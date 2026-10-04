@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "status": "source-only-exact-arity0-Reactive-selection-controls-uncompiled-unexecuted; all native proof APIs disabled",
-  "scope": "explicit-unavailable-common-metadata-with-runtime-demand-denial-and-three-disposable-nonproof-controls",
+  "status": "source-only-fixed-six-qualified-shared-native-smoke-restoration-uncompiled-unexecuted-unpublished",
+  "scope": "six-fixed-shared-native-proof-smoke-with-exact-qualified-nonproof-packet-and-zero-runtime-unavailable-demands",
   "targetFramework": "net8.0",
   "reviewedContracts": {
     "dafnySourceCommit": "63f38e9163d1c596ef57afe3e34b5c161e9069a4",
@@ -33,7 +33,9 @@
     "nativeQueryOrResourceParityEstablished": false,
     "resourceContract": "final-raw-rlimit-per-actual-reset-VC-group-no-reply-adjustments",
     "platform": "linux-x64",
-    "privilegeScope": "explicit-effective-uid-zero-no-unprivileged-deployment-claim"
+    "privilegeScope": "explicit-effective-uid-zero-no-unprivileged-deployment-claim",
+    "fixedApiSourceImplemented": true,
+    "workflowRouteRegistered": false
   },
   "files": [
     {
@@ -82,9 +84,14 @@
       "bytes": 22169
     },
     {
+      "path": "NativeProofSession.cs",
+      "sha256": "d5e34cac7e7bd6bcbc5943ec00f86162b12bc4d87e45090b3cde42068b6247e1",
+      "bytes": 6532
+    },
+    {
       "path": "NativeProofSmokeControls.cs",
-      "sha256": "963abe3c09fd452b16c3873fdbe85fdaa87111ce9b0a0c6cf1d0aa475f2ad15f",
-      "bytes": 31366
+      "sha256": "eb7744301ba546077b5c4a3b15d63113ba8866084c706479fd68a69c4ea20010",
+      "bytes": 33267
     },
     {
       "path": "NativeProofSmokeProgram.cs",
@@ -97,9 +104,24 @@
       "bytes": 33781
     },
     {
+      "path": "NativeSmokeQualification.cs",
+      "sha256": "836d8119c445f98de52d5b09e988eb2fa9b4798715fd49544a4f83ed8a1b6b39",
+      "bytes": 20294
+    },
+    {
       "path": "Program.cs",
       "sha256": "cefa5de0df4b2b6fa6f0ea829f1c6499cf874640e50e4055811ee589eb31069c",
       "bytes": 5051
+    },
+    {
+      "path": "QUALIFICATION-PINS.json",
+      "sha256": "705449e59e7303a02b5a27a8932622a27318a8f126eeffac7052cfdd30292428",
+      "bytes": 4144
+    },
+    {
+      "path": "QUALIFIED-SHARED-NATIVE-PLAN.md",
+      "sha256": "6a7e4795a3cea092c9f5c61ec63c766860a145c43c07a8bea11264fefec9717d",
+      "bytes": 25271
     },
     {
       "path": "README.md",
@@ -117,6 +139,11 @@
       "bytes": 12997
     },
     {
+      "path": "SHARED-NATIVE-SMOKE.md",
+      "sha256": "692c051a7545238d695c1b06d4e45b21c220813b5c5514abfa56462e4092dda0",
+      "bytes": 6710
+    },
+    {
       "path": "SOURCE-CLOSURE-FINDINGS.json",
       "sha256": "c8bf26dc23100dee959e7af822881c898f9112457481eac2b54a867c992a89a5",
       "bytes": 2815
@@ -128,8 +155,8 @@
     },
     {
       "path": "SharedNativeRuns.cs",
-      "sha256": "8359809efe509ae9fc44c226dc822c0a7835d9a1b1c1b29555d43fd3516a80ca",
-      "bytes": 10440
+      "sha256": "6715dc02258aa074dc33e46359ef1e5b08c3e380d2eb8a33f75ae199f75c398c",
+      "bytes": 11078
     },
     {
       "path": "SharedProductContext.cs",
@@ -212,6 +239,11 @@
       "bytes": 8871
     },
     {
+      "path": "shared-native-smoke-receipt-validation.py",
+      "sha256": "9346fdc95237b1506fe76f96eb7222e6ffb6c5431a6ac02d2e7b62fd65e7d1fd",
+      "bytes": 32530
+    },
+    {
       "path": "solver-origin-technical-evidence.json",
       "sha256": "a64314c9ee010e48e19bdf9ede2ae6260b2dfbd857540a9b1c06010c5e6638af",
       "bytes": 1993
@@ -241,14 +273,14 @@
     "maximumReferencesPerFile": 256,
     "maximumAssemblyBytes": 67108864,
     "maximumDefaultAudits": 32,
-    "successfulFixedSequenceExpectedAudits": null,
+    "successfulFixedSequenceExpectedAudits": 28,
     "requiredLaterControls": [
       "repeat",
       "interleaved",
       "reversed-order"
     ],
     "separateScopeReviewRequired": true,
-    "actualHistoricalTpaCatalogCaptured": false,
+    "actualHistoricalTpaCatalogCaptured": true,
     "alternativesRemainUnderReview": true,
     "completeMetadataInventoryRequired": true
   },
@@ -267,8 +299,8 @@
     "controlCount": 3,
     "oneControlPerDisposableHost": true,
     "nativeProofEnabled": false,
-    "nativeProofAdaptersUnreachable": true,
-    "proofQualificationImplemented": false,
+    "nativeProofAdaptersUnreachable": false,
+    "proofQualificationImplemented": true,
     "negativeControlsExecuted": false,
     "expectedGenericExceptionAccepted": false,
     "hostWatchdogSeconds": 45,
@@ -300,5 +332,148 @@
   "priorFailedNonproofSourceManifestSha256": "2fc847ab499ae08e398cbd748426d476589e1c74365348f7c6eb252e5c23ecfb",
   "priorFailedNonproofPublicRun": 37233056845,
   "priorFailedArityUnspecifiedSourceManifestSha256": "0e746e8c8aab5e789f2c5c5a29f0e78eeaf1359b42c4a3b754207c73f4417dda",
-  "priorFailedArityUnspecifiedPublicRun": 37235933042
+  "priorFailedArityUnspecifiedPublicRun": 37235933042,
+  "implementationBaseSourceCommit": "71fc9dcff677f80d43ef3cb7c767806513c438a4",
+  "reviewedEnglishPlanSha256": "6a7e4795a3cea092c9f5c61ec63c766860a145c43c07a8bea11264fefec9717d",
+  "qualifiedSharedNativeSmokeBoundary": {
+    "fixedProofCases": 6,
+    "runtimeQualified": false,
+    "normalProgramProofModeEnabled": false,
+    "completeMetadataAvailability": false,
+    "sourceOnly": true,
+    "workflowRouteRegistered": false,
+    "unchangedQualifiedSourceFiles": 36,
+    "unchangedOriginalLifecycleFiles": 19,
+    "exactCurrentRuntimeTpaFileCount": 168,
+    "historicalRuntimeObjectsComparedAcrossHosts": false,
+    "currentBuildRehashedAtEverySessionBoundary": true,
+    "newCompiledBundleNames": [
+      "B3AlcGate.dll",
+      "B3AlcGate.deps.json",
+      "B3AlcGate.runtimeconfig.json",
+      "source-manifest.json"
+    ],
+    "ordinaryEntrypoint": "Microsoft.Dafny.DafnyBackwardsCompatibleCli.MainWithWriters",
+    "nativeArgumentRewrite": false,
+    "solverQueryRewrite": false,
+    "resourceReplyRewrite": false,
+    "cores": 1,
+    "verificationTimeLimitSeconds": 20,
+    "resourceLimit": 200000,
+    "invocationSafetySeconds": 60,
+    "ownedCleanupSafetySeconds": 10,
+    "outerProofHostSafetySeconds": 600,
+    "requiredDefaultAudits": 28,
+    "nonproofQualification": {
+      "schemaVersion": 1,
+      "scope": "inspected-three-disposable-nonproof-controls-prerequisite-for-separate-six-smoke-source-review",
+      "status": "qualified-only-for-fixed-three-nonproof-controls",
+      "publicRun": 37238572256,
+      "sourceCommit": "71fc9dcff677f80d43ef3cb7c767806513c438a4",
+      "artifact": {
+        "id": 11316129057,
+        "name": "b3-native-compile",
+        "bytes": 80709394,
+        "zipSha256": "4f4b07ddac0ca8d5d8876a349ce6871d12d0dcf774c757971dabe29bf8ce7a29"
+      },
+      "summarySha256": "74950dca1707fc774add3ee067ea4939ec76dfeb16c1edb2fa1f5af894b8688b",
+      "sourceManifestSha256": "4230adf2ba624d42574d59ed95d4af1e28346d3260ffb79bf4249f1c80097a05",
+      "coordinatorManifestSha256": "383c8bffa310bf0ede4322e8679fa7026cf3e3733504404ee987d08f1d262b81",
+      "controls": [
+        {
+          "name": "default-unavailable-demand",
+          "passed": true,
+          "receiptSha256": "25205d9db1cf088d937a374ba8044725cfc82d3f886ccb3de9a009375f24b0b1",
+          "inputsSha256": "22d1267df3c8d9b71c334d82d74b33b80fe22ac78f3b8d7d1f60e33c026406cf",
+          "exactProcessStage": "default-unavailable-demand"
+        },
+        {
+          "name": "private-unavailable-demand",
+          "passed": true,
+          "receiptSha256": "aca632876dbb7b9b05e5625b122d93d5982c4d40954bc3513673cabbf1d7cadc",
+          "inputsSha256": "7243ae9f090d7dcff88640444dc448018b39aa20aca133a0b27adf81c91c6563",
+          "exactProcessStage": "private-unavailable-demand"
+        },
+        {
+          "name": "reactive-event-unavailable-demand",
+          "passed": true,
+          "receiptSha256": "09ddb7180ba82ce709cffc64da49c7fa62d872226cca0bfb6256e0493cf8546b",
+          "inputsSha256": "05f27d809bc9c20b64f47c9007e258c805925a64d5e9f45ab11fd3d5b936f1d4",
+          "exactProcessStage": "reactive-event-unavailable-demand"
+        }
+      ],
+      "immutableBoundaryOrder": [
+        "before-build",
+        "after-build-sources",
+        "after-build",
+        "before-default-unavailable-demand",
+        "after-default-unavailable-demand",
+        "before-private-unavailable-demand",
+        "after-private-unavailable-demand",
+        "before-reactive-event-unavailable-demand",
+        "after-reactive-event-unavailable-demand",
+        "final"
+      ],
+      "compiledBundlePins": {
+        "B3AlcGate.dll": {
+          "sha256": "f769dc26690a4175706a9758332b56438c4da32e690b3ed09fcef342e4678139",
+          "bytes": 385024
+        },
+        "B3AlcGate.deps.json": {
+          "sha256": "3f19663789fcabc493fe5e88617cc68bdcb406e03c6aade5e36accc22b090107",
+          "bytes": 397
+        },
+        "B3AlcGate.runtimeconfig.json": {
+          "sha256": "97c9700542b659150b230c3578b29530fd76ab01ec66a92cd16945e0245713df",
+          "bytes": 328
+        },
+        "source-manifest.json": {
+          "sha256": "4230adf2ba624d42574d59ed95d4af1e28346d3260ffb79bf4249f1c80097a05",
+          "bytes": 11378
+        }
+      },
+      "dotnetExecutablePin": {
+        "sha256": "7dda7a639bc35fba05c40d308b0296450aa4e628d109245a6312c385da9b0931",
+        "bytes": 68424
+      },
+      "archivedInputs": {
+        "baselinePublicRun": 37182760834,
+        "baselineArchiveSha256": "679b3569a3e188cdea5d9c061a463ef4adab849584c7d6990434bd87f80f1bae",
+        "candidatePublicRun": 37221204349,
+        "candidateSourceCommit": "a6132c6758c863ec4a897e4ac1534dc727f0b006",
+        "candidatePackageManifestSha256": "3d592286e3a08229a3b4fca3a987a05725482604968d1c1d4709fce6496f1c96",
+        "candidateCoreSha256": "92824cdc6b5247f7bc2418c78aa55dafe9c2a8f2572c9256e37daea8ea25a6d8",
+        "historicalCandidateProofSmokePassed": false,
+        "historicalCandidateSummarySha256": "d6ed6784d1a10344144c4ae84b121a1333f9345c75c5398346e582f9279dd631",
+        "priorLifecycleReceiptSha256": "60992bd42a47fbc9e3fca7294253d182947dd8ddfd4977d76361818bac2576bd",
+        "priorLifecycleSourceManifestSha256": "e25b41f0d0fb6c29708d64cccc5c4b945bd64f177054156db667688243cf9a42",
+        "oldQualifiedSourceFilesByteUnchanged": 19
+      },
+      "original19ByteUnchanged": true,
+      "exactCurrentRuntime": ".NET 8.0.31",
+      "runtimeBytesExportedForIndependentRehash": false,
+      "frameworkCatalogMustBeRehashedInNewHost": true,
+      "ordinaryProofCliEnabled": false,
+      "nativeProofExecuted": false,
+      "solverExecuted": false,
+      "nativeQueryOrResourceParityEstablished": false,
+      "freshBoogieStateEstablished": false,
+      "newRestorationSourceRequiresSeparateReview": true
+    },
+    "originalBaselineSource": "b07c038737d6713b6d1a5848d7568bdc972de7dd",
+    "archivedCandidateSource": "a6132c6758c863ec4a897e4ac1534dc727f0b006",
+    "finalIntegratedCandidateQualified": false,
+    "nativeQueryOrResourceParityEstablished": false,
+    "persistentBoogieState": true,
+    "freshBoogieStateEstablished": false,
+    "requiredLaterControls": [
+      "repeat",
+      "interleaved",
+      "reversed-order",
+      "174-checks",
+      "fullsuite",
+      "stdlib",
+      "exact-final-integrated-candidate-default-parity"
+    ]
+  }
 }

@@ -19,13 +19,18 @@ internal static class SharedNativeRuns {
   private static readonly TimeSpan CleanupDeadline = TimeSpan.FromSeconds(10);
 
   public static RunReceipt RunVerification(ProductPin product, SharedCommonLibraries shared, string[] arguments,
-    IProofLifecycleSupervisor supervisor, TimeSpan invocationSafetyDeadline) {
-    // No negative-control runtime qualification is present in this source draft.
-    throw new InvalidOperationException("Unavailable-metadata proof mode is disabled pending runtime qualification.");
+    IProofLifecycleSupervisor supervisor, TimeSpan invocationSafetyDeadline, NativeProofSession.Permit permit) {
+    ArgumentNullException.ThrowIfNull(permit);
+    try {
+      permit.Consume(product, shared, arguments, supervisor, invocationSafetyDeadline);
+      var receipt = ReviewedInvocationImplementation(product, shared, arguments, supervisor, invocationSafetyDeadline, permit);
+      if (receipt.Failure != null) { permit.Fail(); }
+      return receipt;
+    } catch { permit.Fail(); throw; }
   }
 
   private static RunReceipt ReviewedInvocationImplementation(ProductPin product, SharedCommonLibraries shared, string[] arguments,
-    IProofLifecycleSupervisor supervisor, TimeSpan invocationSafetyDeadline) {
+    IProofLifecycleSupervisor supervisor, TimeSpan invocationSafetyDeadline, NativeProofSession.Permit permit) {
     ArgumentNullException.ThrowIfNull(supervisor);
     if (arguments.Length < 3 || arguments[0] != "verify" || invocationSafetyDeadline <= TimeSpan.Zero) {
       throw new ArgumentException("A bounded explicit verify invocation is required.");
@@ -42,7 +47,7 @@ internal static class SharedNativeRuns {
     }
     try {
       if (poisoned) { throw new InvalidOperationException("A prior shared-common invocation failed. Stop this host."); }
-      var receipt = RunSerial(product, shared, arguments.ToArray(), supervisor, invocationSafetyDeadline);
+      var receipt = RunSerial(product, shared, arguments.ToArray(), supervisor, invocationSafetyDeadline, permit);
       poisoned = receipt.Failure != null;
       return receipt;
     } catch {
@@ -52,7 +57,7 @@ internal static class SharedNativeRuns {
   }
 
   private static RunReceipt RunSerial(ProductPin product, SharedCommonLibraries shared, string[] arguments,
-    IProofLifecycleSupervisor supervisor, TimeSpan invocationSafetyDeadline) {
+    IProofLifecycleSupervisor supervisor, TimeSpan invocationSafetyDeadline, NativeProofSession.Permit permit) {
     if (!OperatingSystem.IsLinux() || Environment.ProcessorCount > 8) {
       throw new PlatformNotSupportedException("Use a Linux CI host with at most eight visible processors.");
     }
@@ -60,15 +65,16 @@ internal static class SharedNativeRuns {
       throw new InvalidOperationException("The host already owns child processes.");
     }
     shared.Audit("before-native-run-" + product.Label + "-" + (sequence + 1));
+    shared.AssertAcceptable();
     var before = Framework.Witness();
-    var detached = InvokeAndUnload(product, shared, arguments, supervisor, invocationSafetyDeadline);
+    var detached = InvokeAndUnload(product, shared, arguments, supervisor, invocationSafetyDeadline, permit);
     var collected = Collect(detached.Context);
     var children = Framework.LiveChildren();
     var failure = detached.Receipt.Failure;
     if (!collected || children.Length != 0 || before != Framework.Witness()) {
       failure = Append(failure, "Isolation failed: context survived, child processes remain, or framework witness changed.");
     }
-    try { shared.Audit("after-weak-collection-" + product.Label + "-" + sequence); }
+    try { permit.BeforeInvocation(); shared.Audit("after-weak-collection-" + product.Label + "-" + sequence); }
     catch (Exception exception) { failure = Append(failure, "Shared Default audit: " + Explain(exception)); }
     return detached.Receipt with { ContextCollected = collected, RemainingDirectChildren = children, Failure = failure };
   }
@@ -77,7 +83,7 @@ internal static class SharedNativeRuns {
 
   [MethodImpl(MethodImplOptions.NoInlining)]
   private static Detached InvokeAndUnload(ProductPin product, SharedCommonLibraries shared, string[] arguments,
-    IProofLifecycleSupervisor supervisor, TimeSpan invocationSafetyDeadline) {
+    IProofLifecycleSupervisor supervisor, TimeSpan invocationSafetyDeadline, NativeProofSession.Permit permit) {
     SharedProductContext? context = null;
     IProofRunScope? proofScope = null;
     var output = new BoundedWriter();
@@ -101,12 +107,14 @@ internal static class SharedNativeRuns {
         if (method.ReturnType != typeof(Task<int>)) {
           throw new InvalidOperationException("MainWithWriters must return the shared framework Task<int>.");
         }
+        permit.BeforeInvocation();
         var task = (Task<int>)(method.Invoke(null, [output, error, new StringReader(""), arguments.ToArray()])
           ?? throw new InvalidOperationException("The entrypoint returned null."));
         if (!task.Wait(invocationSafetyDeadline)) {
           throw new TimeoutException("Invocation safety deadline exceeded. Stop this host; no next run is permitted.");
         }
         exitCode = task.GetAwaiter().GetResult();
+        shared.AssertAcceptable();
       }
     } catch (Exception exception) {
       // Nothing private (Exception, Type, Assembly, task, option, delegate) is returned.
@@ -163,7 +171,11 @@ internal static class SharedNativeRuns {
   }
 
   private static string Explain(Exception exception) {
-    while ((exception is TargetInvocationException or AggregateException) && exception.InnerException is { } inner) { exception = inner; }
+    for (var depth = 0; depth < 8 && exception.InnerException is { } inner; depth++) {
+      if (exception is AggregateException aggregate && aggregate.InnerExceptions.Count != 1) { break; }
+      if (exception is not (TargetInvocationException or AggregateException)) { break; }
+      exception = inner;
+    }
     var text = exception.GetType().FullName + ": " + exception.Message;
     return text.Length <= 4096 ? text : text[..4096];
   }
