@@ -15,9 +15,9 @@
     },
     {
       "construct": "Direct closed monomorphic raw map select/store",
-      "disposition": "reviewed direct read-over-write ITE and observation abstraction; repaired source awaits executable acceptance",
+      "disposition": "direct read-over-write ITE and observation abstraction; strict worker acceptance passed",
       "limits": "Zero global map axioms. Only direct reads of owned store expressions are rewritten. Exact complete-tuple read equality uses an uninterpreted Bool predicate; no pointwise consequences, extensionality, source Box laws, collection definitions or polymorphic map equations.",
-      "evidence": "Public run 37201990430 matched 6/15 strict typed map controls. Eight negatives and one tuple positive were Inconclusive; source model argument remains in map-helper-correspondence.md. No map release acceptance."
+      "evidence": "Public run 37207690631 passed all 15 strict typed map controls, including expected negatives and complete attempt coverage. Exact source-model argument is in map-helper-correspondence.md; complete backend acceptance remains pending."
     },
     {
       "construct": "Native real and bitvector theories, power, visibility and unrestricted control flow",
@@ -30,9 +30,9 @@
     },
     {
       "construct": "Integer division and modulo, including exact typed-body and active always-revealed universal prelude definitions",
-      "disposition": "reviewed normalization; new structural and real-input acceptance pending",
+      "disposition": "normalized; focused real-input acceptance passed",
       "limits": "Exact ordered integer operands only. Existing divisor obligations retained; no synthesized nonzero assumption or arithmetic axiom. Other definition shapes remain unsupported.",
-      "evidence": "arithmetic-correspondence.md; new controls are source-only until their focused gate runs."
+      "evidence": "Public run 37207690631 passed all new integer structural controls and all 36 real-input corpus controls, including default-option divisor signs, negative quotient/remainder, zero-divisor failures and an assertion-false control."
     }
   ],
   "optionSupport": [

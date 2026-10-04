@@ -1,0 +1,4 @@
+Add a reproducible experimental B3 package builder with exact CLI, worker,
+verified library and solver identities. Clean-install acceptance audits the
+unpacked bundle and requires valid/invalid controls from a path containing spaces
+and non-ASCII characters. Broader backend acceptance remains separately tracked.
