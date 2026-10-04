@@ -129,3 +129,21 @@ git-issues/github-issue-36.dfy
 
 # Allocation of function values from what they capture (#132 here).
 git-issues/github-issue-132.dfy
+
+# Newtype reference characteristics: instantiated visible bases and opaque promises
+git-issues/git-issue-132-newtype-finite-actual-positive-triggered.dfy
+git-issues/git-issue-132-newtype-general-arrow-characteristic-negative.dfy
+git-issues/git-issue-132-newtype-hidden-characteristic-negative.dfy
+git-issues/git-issue-132-newtype-mixed-subset-cycle-negative.dfy
+git-issues/git-issue-132-newtype-partial-total-positive.dfy
+git-issues/git-issue-132-newtype-partial-total-universal-proof-nonvacuity.dfy
+git-issues/git-issue-132-newtype-partial-total-universal-proof.dfy
+git-issues/git-issue-132-newtype-provided-characteristic-positive.dfy
+git-issues/git-issue-132-newtype-provided-inhabited-false-negative.dfy
+git-issues/git-issue-132-newtype-provided-newtype-no-characteristic-negative.dfy
+git-issues/git-issue-132-newtype-provided-no-characteristic-negative.dfy
+git-issues/git-issue-132-newtype-reference-characteristic-negative.dfy
+git-issues/git-issue-132-newtype-revealed-control-positive.dfy
+git-issues/git-issue-132-newtype-sequence-allocation-negative.dfy
+git-issues/git-issue-132-newtype-sequence-allocation-preallocated.dfy
+git-issues/git-issue-132-newtype-sequence-allocation-pure.dfy
