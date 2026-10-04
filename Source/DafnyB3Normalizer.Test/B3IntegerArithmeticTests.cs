@@ -114,6 +114,190 @@ public class B3IntegerArithmeticTests {
     Unsupported(Boogie("procedure P(); implementation P() { assert 2.0 ** 2.0 == 4.0; }"), "b3_primitive_type");
   }
 
+  [Theory]
+  [InlineData("div", Ir.Operator.Divide)]
+  [InlineData("mod", Ir.Operator.Modulo)]
+  public void AnActiveUniversalDefinitionUsesTheExactOrderedBinders(string operation, Ir.Operator expected) {
+    var options = Options();
+    var source = ParseBoogie($"revealed function F(x: int, y: int): int {{ x {operation} y }} " +
+      "procedure P(); implementation P() { assert F(5, 2) == 0; }", options);
+    var function = source.TopLevelDeclarations.OfType<Bpl.Function>().Single();
+    Assert.Null(function.Body);
+    Assert.NotNull(function.DefinitionAxiom);
+    Assert.Contains(function.DefinitionAxiom, source.TopLevelDeclarations);
+    var before = Emit(source, options);
+    var result = Normalize(source, options);
+    Validate(result);
+    Assert.Equal(before, Emit(source, options));
+    var arithmetic = Assert.IsType<Ir.Operation>(Assert.IsType<Ir.Operation>(Checks(result).Single().Condition).Arguments[0]);
+    Assert.Equal(expected, arithmetic.Operator);
+    Assert.Equal(new Ir.IntegerLiteral("5"), arithmetic.Arguments[0]);
+    Assert.Equal(new Ir.IntegerLiteral("2"), arithmetic.Arguments[1]);
+    Assert.Empty(result.Program!.Functions);
+    Assert.Empty(result.Program.Axioms);
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public void DetachedMetadataCannotBorrowAnEquivalentAxiomObject(bool keepEquivalentAxiom) {
+    var options = Options();
+    var source = ParseBoogie("revealed function F(x: int, y: int): int { x div y } " +
+      "procedure P(); implementation P() { assert F(5, 2) == 0; }", options);
+    var function = source.TopLevelDeclarations.OfType<Bpl.Function>().Single();
+    var definition = function.DefinitionAxiom;
+    Assert.NotNull(definition);
+    source.RemoveTopLevelDeclaration(definition);
+    if (keepEquivalentAxiom) { source.AddTopLevelDeclaration(new Bpl.Axiom(definition.tok, definition.Expr)); }
+    Assert.Same(definition, function.DefinitionAxiom);
+    Unsupported(Normalize(source, options));
+  }
+
+  [Fact]
+  public void AnUnlinkedActiveAxiomLeavesTheFunctionOpaque() {
+    var options = Options();
+    var source = ParseBoogie("revealed function F(x: int, y: int): int { x div y } " +
+      "procedure P(); implementation P() { assert F(5, 2) == 0; }", options);
+    source.TopLevelDeclarations.OfType<Bpl.Function>().Single().DefinitionAxiom = null;
+    Opaque(Normalize(source, options));
+  }
+
+  [Theory]
+  [InlineData("forall x, y: int :: y != 0 ==> F(x, y) == x div y")]
+  [InlineData("exists x, y: int :: F(x, y) == x div y")]
+  public void AGuardOrExistentialCannotSupplyAUniversalDefinition(string expression) {
+    Opaque(DefinitionMetadata(expression));
+  }
+
+  [Theory]
+  [InlineData("forall x, y, z: int :: F(x, y) == x div y")]
+  [InlineData("forall x, y: int :: F(x, x) == x div x")]
+  [InlineData("forall x, y: int :: F(y, x) == y div x")]
+  [InlineData("forall x, y: int :: F(x, y) == y div x")]
+  [InlineData("forall x, y: int :: F(x, y) == x div x")]
+  [InlineData("forall x, y: int :: F(x, y) == x div 2")]
+  public void TheOrderedBijectionAndBothOperandIdentitiesAreRequired(string expression) {
+    Unsupported(DefinitionMetadata(expression));
+  }
+
+  [Fact]
+  public void AnotherFunctionsAxiomCannotDefineTheCalledFunction() {
+    var options = Options();
+    var source = ParseBoogie("""
+      revealed function F(x: int, y: int): int;
+      revealed function G(x: int, y: int): int;
+      axiom (forall x, y: int :: G(x, y) == x div y);
+      procedure P(); implementation P() { assert F(5, 2) == 0; }
+      """, options);
+    source.TopLevelDeclarations.OfType<Bpl.Function>().Single(function => function.Name == "F").DefinitionAxiom =
+      source.TopLevelDeclarations.OfType<Bpl.Axiom>().Single();
+    Opaque(Normalize(source, options));
+  }
+
+  [Fact]
+  public void AnIntegerInstanceCannotDefineAllInstancesOfAGenericFunction() {
+    var options = Options();
+    var source = ParseBoogie("""
+      revealed function F<T>(x: T, y: T): T;
+      axiom (forall x, y: int :: F(x, y) == x div y);
+      procedure P(); implementation P() { assert F(5, 2) == 0; }
+      """, options);
+    source.TopLevelDeclarations.OfType<Bpl.Function>().Single().DefinitionAxiom =
+      source.TopLevelDeclarations.OfType<Bpl.Axiom>().Single();
+    Unsupported(Normalize(source, options));
+  }
+
+  [Fact]
+  public void ANonrevealedAxiomDefinitionStaysOutsideTheExpansionBoundary() {
+    Unsupported(Boogie("function F(x: int, y: int): int { x div y } " +
+      "procedure P(); implementation P() { assert F(5, 2) == 0; }"));
+  }
+
+  [Fact]
+  public void ABooleanResultIsNotAnIntegerOperation() {
+    var result = Boogie("revealed function F(x: int, y: int): bool { x div y == 0 } " +
+      "procedure P(); implementation P() { assert F(5, 2); }");
+    Validate(result);
+    Assert.IsType<Ir.Application>(Checks(result).Single().Condition);
+  }
+
+  [Fact]
+  public void TwoIntegerInputsAndOneIntegerResultAreRequired() {
+    Unsupported(Boogie("function {:inline} F(x: int, y: bool): int { x div x } " +
+      "procedure P(); implementation P() { assert F(5, true) == 0; }"));
+    Unsupported(Boogie("revealed function F(x: int, y: int, z: int): int { x div y } " +
+      "procedure P(); implementation P() { assert F(5, 2, 1) == 0; }"));
+  }
+
+  [Fact]
+  public void MatchingNamesCannotReplaceFormalDeclarationIdentity() {
+    var options = Options();
+    var source = ParseBoogie("function {:inline} F(x: int, y: int): int { x div y } " +
+      "procedure P(); implementation P() { assert F(5, 2) == 0; }", options);
+    var function = source.TopLevelDeclarations.OfType<Bpl.Function>().Single();
+    var body = Assert.IsType<Bpl.NAryExpr>(function.Body);
+    var detached = new Bpl.LocalVariable(function.tok,
+      new Bpl.TypedIdent(function.tok, function.InParams[0].Name, Bpl.Type.Int));
+    body.Args[0] = new Bpl.IdentifierExpr(function.tok, detached);
+    Assert.Equal(function.InParams[0].Name, detached.Name);
+    Assert.NotSame(function.InParams[0], detached);
+    Unsupported(Normalize(source, options));
+  }
+
+  [Fact]
+  public async Task ActualDafnyDefaultArithmeticWrappersAndZeroChecksNormalize() {
+    var results = await Dafny("method P(x: int, y: int) { assert x / y == x; assert x % y == x; }");
+    Assert.NotEmpty(results);
+    Assert.All(results, Validate);
+    var expressions = results.SelectMany(result => Checks(result)).SelectMany(check => Expressions(check.Condition)).ToArray();
+    Assert.Contains(expressions, expression => expression is Ir.Operation { Operator: Ir.Operator.Divide });
+    Assert.Contains(expressions, expression => expression is Ir.Operation { Operator: Ir.Operator.Modulo });
+    Assert.Equal(2, results.SelectMany(result => result.Obligations).Count(source => source.Description == "possible division by zero"));
+  }
+
+  [Fact]
+  public void AFreeConstantCannotReplaceTheDivisorBinder() {
+    var options = Options();
+    var source = ParseBoogie("const c: int; revealed function F(x: int, y: int): int; " +
+      "axiom (forall x, y: int :: F(x, y) == x div c); " +
+      "procedure P(); implementation P() { assert F(5, 2) == 0; }", options);
+    source.TopLevelDeclarations.OfType<Bpl.Function>().Single().DefinitionAxiom =
+      source.TopLevelDeclarations.OfType<Bpl.Axiom>().Single();
+    Unsupported(Normalize(source, options));
+  }
+
+  [Theory]
+  [InlineData("div", Ir.Operator.Divide)]
+  [InlineData("mod", Ir.Operator.Modulo)]
+  public void AnActiveDefinitionAtZeroAddsNoNonzeroPremise(string operation, Ir.Operator expected) {
+    var result = Boogie($"revealed function F(x: int, y: int): int {{ x {operation} y }} " +
+      "procedure P(x: int); implementation P(x: int) { assert F(x, 0) == 0; assert false; }");
+    Validate(result);
+    Assert.Equal(2, Checks(result).Count());
+    Assert.Equal(2, result.Obligations.Count);
+    Assert.Empty(result.Program!.Axioms);
+    Assert.DoesNotContain(Statements(result.Program.Unit.Body), statement => statement is Ir.Assume);
+    var arithmetic = Assert.IsType<Ir.Operation>(Assert.IsType<Ir.Operation>(Checks(result).First().Condition).Arguments[0]);
+    Assert.Equal(expected, arithmetic.Operator);
+    Assert.Equal(new Ir.IntegerLiteral("0"), arithmetic.Arguments[1]);
+  }
+
+  private static B3NormalizationResult DefinitionMetadata(string expression) {
+    var options = Options();
+    var source = ParseBoogie("revealed function F(x: int, y: int): int; axiom (" + expression + "); " +
+      "procedure P(); implementation P() { assert F(5, 2) == 0; }", options);
+    source.TopLevelDeclarations.OfType<Bpl.Function>().Single().DefinitionAxiom =
+      source.TopLevelDeclarations.OfType<Bpl.Axiom>().Single();
+    return Normalize(source, options);
+  }
+
+  private static void Opaque(B3NormalizationResult result) {
+    Validate(result);
+    var equality = Assert.IsType<Ir.Operation>(Checks(result).Single().Condition);
+    Assert.IsType<Ir.Application>(equality.Arguments[0]);
+    Assert.Empty(result.Program!.Axioms);
+  }
+
   private static DafnyOptions Options() {
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();

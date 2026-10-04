@@ -363,13 +363,6 @@ public class NormalizerTests {
   }
 
   [Fact]
-  public async Task ActualDafnyDefaultDivisionFailsClosedThroughItsDefiningFunction() {
-    var results = await Dafny("method Division(x: int) { assert x / 2 == x; }", false);
-    Assert.Contains(results, r => !r.Success && r.Diagnostics.Any(d => d.Code == "b3_arithmetic"));
-    Assert.All(results.Where(r => !r.Success), r => { Assert.Null(r.Program); Assert.Empty(r.Obligations); });
-  }
-
-  [Fact]
   public async Task RealDafnyGoodAndBadLoopChecksReachNormalization() {
     var results = await Dafny("""
       method Good(n: nat) {
