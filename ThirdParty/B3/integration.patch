@@ -1291,7 +1291,7 @@ index c8588d5f308be90550d8284938250f59e5718f6d..1e282edb1ac18c0d6acd02b5c3579e55
 \ No newline at end of file
 +}
 diff --git a/src/Solver/RSolver.dfy b/src/Solver/RSolver.dfy
-index 7049b456747b6486558482d4127842c2a03c6f26..a751fd0a7b51bd9385cd5b052e0703ae4082d32c 100644
+index 7049b456747b6486558482d4127842c2a03c6f26..9be58380bec391d93cb418fa67c48d5a6ee60617 100644
 --- a/src/Solver/RSolver.dfy
 +++ b/src/Solver/RSolver.dfy
 @@ -12,34 +12,48 @@ module RSolvers {
@@ -1305,7 +1305,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..a751fd0a7b51bd9385cd5b052e0703ae
    export
 -    reveals RExpr, ROperator, RPattern
 -    provides RExpr.Eq, RExpr.Operator2ROperator, RExpr.OperatorToString
-+    reveals RExpr, ROperator, RPattern, PositiveDenominator, NativeBitvectorOperator
++    reveals SExpr, RExpr, ROperator, RPattern, PositiveDenominator, NativeBitvectorOperator
 +    provides Types
 +    provides RExpr.Eq, RExpr.ToString, RExpr.ToSExpr, RExpr.Operator2ROperator, RExpr.OperatorToString
      provides RContext, CreateEmptyContext, Extend, ExtendWithEquality

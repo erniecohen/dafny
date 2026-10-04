@@ -17,7 +17,7 @@ module RSolvers {
   import Types
 
   export
-    reveals RExpr, ROperator, RPattern, PositiveDenominator, NativeBitvectorOperator
+    reveals SExpr, RExpr, ROperator, RPattern, PositiveDenominator, NativeBitvectorOperator
     provides Types
     provides RExpr.Eq, RExpr.ToString, RExpr.ToSExpr, RExpr.Operator2ROperator, RExpr.OperatorToString
     provides RContext, CreateEmptyContext, Extend, ExtendWithEquality
