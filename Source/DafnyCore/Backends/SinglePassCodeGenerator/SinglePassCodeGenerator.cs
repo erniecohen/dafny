@@ -3024,6 +3024,7 @@ namespace Microsoft.Dafny.Compilers {
             destination.Status == NewtypeOperationView.ViewStatus.Resolved &&
             source.BaseType.IsDatatype && source.BaseType.Equals(destination.BaseType, true) &&
             (source.Path.Any(d => d is NewtypeDecl) || destination.Path.Any(d => d is NewtypeDecl)) &&
+            source.Path.Concat(destination.Path).OfType<NewtypeDecl>().All(n => n.Traits.Count == 0) &&
             Type.Equals(GetRuntimeType(conversion.E.Type), GetRuntimeType(conversion.ToType))) {
           // The checked conversion is a runtime identity. Keep its operand in
           // statement context so datatype-update let bindings become locals,
