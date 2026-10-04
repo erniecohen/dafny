@@ -443,25 +443,28 @@ So the member adds no instance that is false in `I`, and makes no instance of
 instance of `T` that is already false in `I`.
 
 **Arrow types.** `$IsAlloc` at an arrow type does not depend on the heap through
-`alloc` only. On a good heap `h`, `$IsAlloc(f, T, h)` is defined by
-`RequiresN(.., h, f, ..)` and `ReadsN(.., h, f, ..)`, which depend on any field,
-so its monotonicity from `h` to a different heap `k` is a claim about how `f`'s
-precondition and reads frame change from `h` to `k`. The pairs this member adds
-are of one heap with itself, and the interpretation of `RequiresN` and `ReadsN`
-does not change, so what it adds at arrow types is `$IsAlloc(f, T, h) ==>
-$IsAlloc(f, T, h)`, for a two-state function's handle as for any other value, and
-the same for the frame axioms of arrow types and for `$IsAlloc` of values that
-hold arrows. The control `ArrowAllocation` in
+`alloc` only. On a good heap `h`, `$IsAlloc(f, T, h)` implies a property of
+`RequiresN(.., h, f, ..)` and `ReadsN(.., h, f, ..)`, which depend on any field:
+wherever the precondition holds, the reads frame is allocated in `h`. A lambda
+and a function handle are allocated in `h` when what they capture is allocated in
+`h` and each heap they capture is `h` or precedes it, `H == h || $HeapSucc(H, h)`.
+The pairs this member adds are of one heap with itself, and the interpretation of
+`RequiresN` and `ReadsN` does not change, so what it adds at arrow types is
+`$IsAlloc(f, T, h) ==> $IsAlloc(f, T, h)`, for a two-state function's handle as for
+any other value, and the same for the frame axioms of arrow types and for
+`$IsAlloc` of values that hold arrows; in the rules for captured heaps a new pair
+`(H, H)` says what `H == H` says. The control `ArrowAllocation` in
 `git-issues/Inputs/git-issue-1461-negative.dfy` uses the allocation of a handle
 whose precondition and reads frame depend on the heap, with the instance in
 play, and `assert false` still fails.
 
 An earlier version of this note interpreted `$HeapSucc(h, k)` as inclusion of
 the allocated references and said that `$IsAlloc` depends on the heap through
-`alloc` only. That is false at arrow types, and inclusion is not a model of `T`:
-the monotonicity of `$IsAlloc` fails at arrow types for pairs of heaps that `T`
-itself relates. With the unchanged build, without the option and without
-two-state functions, Z3 4.12.1 and 5.1.0 prove `ensures false` here, in both
+`alloc` only. That is false at arrow types. Until the fix for
+[#132](https://github.com/erniecohen/dafny/issues/132), `$IsAlloc` at an arrow
+type was defined by the precondition and reads frame, and its monotonicity failed
+for pairs of heaps that `T` itself relates. Without the option and without
+two-state functions, Z3 4.12.1 and 5.1.0 proved `ensures false` here, in both
 resolver modes, as does upstream `master`:
 
 ```dafny
@@ -482,12 +485,13 @@ method M(c: C) requires c.x != 5 modifies c ensures false {
 }
 ```
 
-At `L` the reads frame of `f` is `{c}`, so `f` is allocated there. The call makes
-`$HeapSucc(L, K)`, and monotonicity makes `f` allocated at `K`, where its reads
-frame holds `n`, which is not allocated until after `K`. That defect
-([#132](https://github.com/erniecohen/dafny/issues/132)) is in `T` and does not
-depend on this member, which neither repairs nor extends it: the
-pairs it adds relate a heap only to itself.
+At `L` the reads frame of `f` is `{c}`, so `f` was allocated there. The call makes
+`$HeapSucc(L, K)`, and monotonicity made `f` allocated at `K`, where its reads
+frame holds `n`, which is not allocated until after `K`. That defect was in `T`
+and did not depend on this member, which neither repaired nor extended it: the
+pairs it adds relate a heap only to itself. With the fix, `f` captures `n`, so it
+is not allocated at `L`, and the first assertion fails
+(`git-issues/github-issue-132.dfy`).
 
 Before #81, every good update was a succession step, and with extensional heaps
 an instance of the monotonicity of `alloc` was false in `I` (#81's restoring

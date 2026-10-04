@@ -1,0 +1,30 @@
+original (type-system-refresh:false)
+github-issue-132-original.dfy(14,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 1 error
+original (type-system-refresh:true)
+github-issue-132-original.dfy(14,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 1 error
+negative (type-system-refresh:false)
+github-issue-132-negative.dfy(11,2): Error: assertion might not hold
+github-issue-132-negative.dfy(21,2): Error: assertion might not hold
+github-issue-132-negative.dfy(29,2): Error: assertion might not hold
+github-issue-132-negative.dfy(41,2): Error: assertion might not hold
+github-issue-132-negative.dfy(49,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 5 errors
+negative (type-system-refresh:true)
+github-issue-132-negative.dfy(11,2): Error: assertion might not hold
+github-issue-132-negative.dfy(21,2): Error: assertion might not hold
+github-issue-132-negative.dfy(29,2): Error: assertion might not hold
+github-issue-132-negative.dfy(41,2): Error: assertion might not hold
+github-issue-132-negative.dfy(49,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 5 errors
+positive (type-system-refresh:false)
+
+Dafny program verifier finished with 16 verified, 0 errors
+positive (type-system-refresh:true)
+
+Dafny program verifier finished with 16 verified, 0 errors
