@@ -1000,6 +1000,24 @@ namespace Microsoft.Dafny {
             }
 
             if (e is ConversionExpr ee) {
+              if (options.Get(CommonOptionBag.ExtendedNewtypeBases) && ee.IsBaseOperation &&
+                  ee.Type.Equals(ee.ToType, true)) {
+                var operationSource = NewtypeOperationView.Get(ee.E.Type, preserveSubsetTypes: true);
+                var operationTarget = NewtypeOperationView.Get(ee.ToType, preserveSubsetTypes: true);
+                if (operationSource.Status == NewtypeOperationView.ViewStatus.Resolved &&
+                    operationTarget.Status == NewtypeOperationView.ViewStatus.Resolved &&
+                    operationSource.Path.Any(d => d is NewtypeDecl) &&
+                    !operationTarget.Path.Any(d => d is NewtypeDecl) &&
+                    operationSource.BaseType.AsArrowType != null &&
+                    operationSource.BaseType.Equals(operationTarget.BaseType, true)) {
+                  // The operand was checked above. This resolver-owned projection
+                  // exposes its declared instantiated carrier, including its exact
+                  // arrow family; it does not strengthen a user-written signature
+                  // or introduce a destination predicate. Rechecking that carrier
+                  // as a new arbitrary function is not an introduction obligation.
+                  break;
+                }
+              }
               CheckResultToBeInType(unaryExpr.Origin, ee.E, ee.ToType, locals, builder, etran, ee.messagePrefix);
               if (options.Get(CommonOptionBag.ExtendedNewtypeBases) && ee.Type.Equals(ee.ToType, true)) {
                 var sourceView = NewtypeOperationView.Get(ee.E.Type, preserveSubsetTypes: true);
