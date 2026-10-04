@@ -5,3 +5,5 @@ Also rejects B3 in measure-complexity, generate-tests, and find-dead-code before
 Project configuration changes now retire the old IDE observer and cancel its work before replacing the manager for every open source in that project. Late results cannot overwrite replacement diagnostics. Moving a source to a different project releases its actual old source reference.
 
 B3 now explicitly rejects nonzero editor verification caching levels before worker lookup, including for sources with no verification units. The default cache-verification level 0 remains supported.
+
+B3 configuration accepts the native unset-cache sentinel as disabled, alongside the modern zero level; positive verification-cache levels remain explicitly unsupported.

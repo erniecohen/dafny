@@ -6,12 +6,18 @@
     {
       "construct": "Boolean and integer expressions, method contracts, calls, parallel assignment, havoc, old and structured branches",
       "disposition": "normalized",
-      "evidence": "Public native compile probe 37196523946 passed 53 normalizer controls before the latest identity-activation guard; complete real Dafny verdict gate pending."
+      "evidence": "Public probe 37199018093 compiled the prior source and passed 58 normalizer controls; current complete real Dafny verdict gate 37200885683 pending."
     },
     {
-      "construct": "Closed representation sorts, maps, lambdas and ordinary functions",
+      "construct": "Closed representation sorts, lambdas and ordinary functions",
       "disposition": "conservative abstraction",
-      "limits": "Source axioms, nonidentity function definitions, distinctness and map/lambda equations are omitted; extra failures are expected."
+      "limits": "Source axioms, nonidentity function definitions, distinctness and lambda equations are omitted; extra failures are expected."
+    },
+    {
+      "construct": "Direct closed monomorphic raw map select/store",
+      "disposition": "reviewed read-over-write helpers; executable acceptance pending",
+      "limits": "Only R0 and one R1 disjunction per index coordinate. No extensionality, source Box laws, collection definitions or polymorphic map equations.",
+      "evidence": "Source-model argument in map-helper-correspondence.md and 15 strict typed worker controls; public gate 37200885683 pending."
     },
     {
       "construct": "Native real and bitvector theories, integer division/modulo/power, visibility and unrestricted control flow",
@@ -20,7 +26,7 @@
     {
       "construct": "Inductive loops, breaks, continues, forward lexical exits",
       "disposition": "source compiled with structural controls; end-to-end acceptance pending",
-      "evidence": "Public probe 37196523946 compiled the previous source and passed 53 structural controls. Five additional identity-activation controls and the current complete verdict gate remain pending."
+      "evidence": "Public probe 37199018093 compiled the prior source and passed 58 structural normalizer controls. Current full verdict and IDE gate 37200885683 remains pending."
     }
   ],
   "optionSupport": [
