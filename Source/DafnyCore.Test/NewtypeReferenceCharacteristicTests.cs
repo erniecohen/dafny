@@ -210,6 +210,21 @@ public class NewtypeReferenceCharacteristicTests {
   }
 
   [Fact]
+  public void AssignedProxyDoesNotHideAnUnmarkedSynonymCycle() {
+    var rhs = new InferredTypeProxy();
+    var synonym = new ConcreteTypeSynonymDecl(SourceOrigin.NoToken, new Name("Alias"),
+      TypeParameterCharacteristics.Default(), [], module, rhs, null);
+    rhs.T = Application(synonym);
+    var baseProxy = new InferredTypeProxy { T = Application(synonym) };
+    var wrapped = Application(Newtype("Outer", baseProxy));
+    Assert.Equal(Type.AncestorTypeKind.Cyclic, wrapped.NormalizeToAncestorTypeChecked().Kind);
+    Assert.Equal(Type.AncestorTypeKind.Cyclic,
+      wrapped.NormalizeToAncestorTypeChecked(preserveSubsetTypes: true).Kind);
+    Assert.True(wrapped.MayInvolveReferences);
+    Assert.True(wrapped.MayShowReferences);
+  }
+
+  [Fact]
   public void HiddenRepresentationsAreConservativeWithoutSubstitution() {
     var t = Parameter("T");
     var declaration = Newtype("Hidden", new ThrowOnSubstitution(), t);

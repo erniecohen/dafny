@@ -209,6 +209,7 @@ public abstract class Type : NodeWithOrigin {
         if (current == null) {
           return new AncestorTypeResult(AncestorTypeKind.Undetermined, null);
         }
+        current = current.Normalize();
         if (current is UserDefinedType { ResolvedClass: TypeSynonymDecl synonym }) {
           var cycle = RedirectingTypeCycleAnalysis.TryFindCycle(synonym, GetScope());
           if (cycle != null) {

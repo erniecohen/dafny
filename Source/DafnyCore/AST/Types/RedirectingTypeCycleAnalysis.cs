@@ -162,8 +162,8 @@ public static class RedirectingTypeCycleAnalysis {
     // Only names and origins are used here: printing a malformed type could itself recurse.
     return declarations.OrderBy(declaration => declaration.Name, StringComparer.Ordinal)
       .ThenBy(declaration => declaration.Module.Name, StringComparer.Ordinal)
-      .ThenBy(declaration => declaration.Origin.line)
-      .ThenBy(declaration => declaration.Origin.col);
+      .ThenBy(declaration => declaration.Tok.line)
+      .ThenBy(declaration => declaration.Tok.col);
   }
 
   internal static Graph<RedirectingTypeDecl> CreateGraph(
