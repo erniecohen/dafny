@@ -1,0 +1,1043 @@
+diff --git a/Source/DafnyCore/AST/Expressions/Variables/ResolverIdentifierExpr.cs b/Source/DafnyCore/AST/Expressions/Variables/ResolverIdentifierExpr.cs
+index 4f81c870..ca9c3591 100644
+--- a/Source/DafnyCore/AST/Expressions/Variables/ResolverIdentifierExpr.cs
++++ b/Source/DafnyCore/AST/Expressions/Variables/ResolverIdentifierExpr.cs
+@@ -27,7 +27,7 @@ class ResolverIdentifierExpr : Expression, IHasReferences, ICloneable<ResolverId
+   public override IEnumerable<INode> Children => TypeArgs.SelectMany(ta => ta.Nodes);
+ 
+   public abstract class ResolverType : Type {
+-    public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl>/*?*/ visitedDatatypes) {
++    public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl>/*?*/ visitedDatatypes, bool generalArrows = false) {
+       return false;
+     }
+     public override Type Subst(IDictionary<TypeParameter, Type> subst) {
+diff --git a/Source/DafnyCore/AST/Types/CollectionType.cs b/Source/DafnyCore/AST/Types/CollectionType.cs
+index 8880df5a..af17d795 100644
+--- a/Source/DafnyCore/AST/Types/CollectionType.cs
++++ b/Source/DafnyCore/AST/Types/CollectionType.cs
+@@ -97,8 +97,8 @@ public abstract class CollectionType : NonProxyType {
+     arg = cloner.CloneType(original.arg);
+   }
+ 
+-  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes) {
+-    return Arg.ComputeMayInvolveReferences(visitedDatatypes);
++  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes, bool generalArrows = false) {
++    return Arg.ComputeMayInvolveReferences(visitedDatatypes, generalArrows);
+   }
+ 
+   /// <summary>
+diff --git a/Source/DafnyCore/AST/Types/MapType.cs b/Source/DafnyCore/AST/Types/MapType.cs
+index 3d7b9c4a..b5e3168e 100644
+--- a/Source/DafnyCore/AST/Types/MapType.cs
++++ b/Source/DafnyCore/AST/Types/MapType.cs
+@@ -83,8 +83,8 @@ public class MapType : CollectionType {
+   // that the Keys type always supports equality, so we only need to check the Values type here.
+   public override bool SupportsEquality => range!.SupportsEquality;
+ 
+-  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes) {
+-    return Domain.ComputeMayInvolveReferences(visitedDatatypes) || Range.ComputeMayInvolveReferences(visitedDatatypes);
++  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes, bool generalArrows = false) {
++    return Domain.ComputeMayInvolveReferences(visitedDatatypes, generalArrows) || Range.ComputeMayInvolveReferences(visitedDatatypes, generalArrows);
+   }
+ 
+   public override BinaryExpr.ResolvedOpcode ResolvedOpcodeForIn => BinaryExpr.ResolvedOpcode.InMap;
+diff --git a/Source/DafnyCore/AST/Types/RedirectingTypeCycleAnalysis.cs b/Source/DafnyCore/AST/Types/RedirectingTypeCycleAnalysis.cs
+new file mode 100644
+index 00000000..3d8baacb
+--- /dev/null
++++ b/Source/DafnyCore/AST/Types/RedirectingTypeCycleAnalysis.cs
+@@ -0,0 +1,236 @@
++// Copyright by the contributors to the Dafny Project
++// SPDX-License-Identifier: MIT
++
++#nullable enable
++using System;
++using System.Collections.Frozen;
++using System.Collections.Generic;
++using System.Linq;
++
++namespace Microsoft.Dafny;
++
++/// <summary>
++/// Examines the finite graph of redirecting declarations, without normalizing or instantiating their definitions.
++/// It is safe to use while proxies are unresolved and while the graph contains a cycle.
++/// </summary>
++public static class RedirectingTypeCycleAnalysis {
++  public sealed class Dependencies {
++    // Sharing immutable empty collections is allocation control, not a cache of mutable definition answers.
++    internal static readonly Dependencies Empty = new(FrozenSet<RedirectingTypeDecl>.Empty,
++      FrozenSet<TypeProxy>.Empty, FrozenSet<TypeProxy>.Empty);
++
++    public IReadOnlySet<RedirectingTypeDecl> RedirectingTypes { get; }
++    public IReadOnlySet<TypeProxy> UnassignedProxies { get; }
++    public IReadOnlySet<TypeProxy> ObservedProxies { get; }
++
++    internal Dependencies(IReadOnlySet<RedirectingTypeDecl> redirectingTypes, IReadOnlySet<TypeProxy> unassignedProxies,
++      IReadOnlySet<TypeProxy> observedProxies) {
++      RedirectingTypes = redirectingTypes;
++      UnassignedProxies = unassignedProxies;
++      ObservedProxies = observedProxies;
++    }
++  }
++
++  public sealed class Cycle {
++    public IReadOnlyList<RedirectingTypeDecl> Component { get; }
++    // Consecutive declarations are connected by edges, including the last declaration back to the first.
++    public IReadOnlyList<RedirectingTypeDecl> Witness { get; }
++
++    internal Cycle(IReadOnlyList<RedirectingTypeDecl> component, IReadOnlyList<RedirectingTypeDecl> witness) {
++      Component = component;
++      Witness = witness;
++    }
++  }
++
++  public sealed class Result {
++    public IReadOnlyDictionary<RedirectingTypeDecl, Dependencies> Definitions { get; }
++    internal Graph<RedirectingTypeDecl> Graph { get; }
++
++    internal Result(Dictionary<RedirectingTypeDecl, Dependencies> definitions) {
++      Definitions = definitions;
++      Graph = CreateGraph(definitions);
++    }
++
++    public IReadOnlyList<Cycle> FindCycles() {
++      return RedirectingTypeCycleAnalysis.FindCycles(Graph, Definitions);
++    }
++  }
++
++  /// <summary>
++  /// Collects direct declaration dependencies and raw proxy links. Type arguments are inspected, but encountering
++  /// a declaration does not expand its definition. Hidden definitions and datatype constructors remain opaque.
++  /// Reference identity, rather than semantic type equality, makes even malformed raw proxy/type-argument loops finite.
++  /// </summary>
++  public static Dependencies CollectDependencies(RedirectingTypeDecl declaration, VisibilityScope? scope = null) {
++    if (declaration is not TopLevelDecl topLevelDecl || !topLevelDecl.IsRevealedInScope(scope)) {
++      return Dependencies.Empty;
++    }
++
++    var definition = declaration is TypeSynonymDeclBase synonym ? synonym.Rhs : declaration.BaseType;
++    if (definition == null) {
++      return Dependencies.Empty;
++    }
++
++    // Most definitions are a scalar, an unassigned base, or a single nominal application, possibly reached through
++    // one assigned proxy. These leaves cannot contain raw cycles and need no work stack or visitation set.
++    // Longer proxy chains and composite definitions still use the reference-guarded walk below.
++    var leafDefinition = definition;
++    TypeProxy? assignedLeafProxy = null;
++    if (definition is TypeProxy { T: { } leafAssignment } assignedProxy && definition.TypeArgs.Count == 0 &&
++        leafAssignment is not TypeProxy && leafAssignment.TypeArgs.Count == 0) {
++      leafDefinition = leafAssignment;
++      assignedLeafProxy = assignedProxy;
++    }
++    if (leafDefinition.TypeArgs.Count == 0) {
++      if (leafDefinition is TypeProxy { T: null } leafProxy) {
++        var proxies = new HashSet<TypeProxy>(ReferenceEqualityComparer.Instance) { leafProxy };
++        return new Dependencies(FrozenSet<RedirectingTypeDecl>.Empty, proxies, proxies);
++      }
++      if (leafDefinition is not TypeProxy) {
++        IReadOnlySet<TypeProxy> proxies = assignedLeafProxy == null ? FrozenSet<TypeProxy>.Empty :
++          new HashSet<TypeProxy>(ReferenceEqualityComparer.Instance) { assignedLeafProxy };
++        if (leafDefinition is UserDefinedType { ResolvedClass: RedirectingTypeDecl leafTarget } &&
++            leafTarget is TopLevelDecl leafDecl && leafDecl.IsVisibleInScope(scope)) {
++          var targets = new HashSet<RedirectingTypeDecl>(ReferenceEqualityComparer.Instance) { leafTarget };
++          return new Dependencies(targets, FrozenSet<TypeProxy>.Empty, proxies);
++        }
++        return assignedLeafProxy == null ? Dependencies.Empty :
++          new Dependencies(FrozenSet<RedirectingTypeDecl>.Empty, FrozenSet<TypeProxy>.Empty, proxies);
++      }
++    }
++
++    HashSet<RedirectingTypeDecl>? dependencies = null;
++    HashSet<TypeProxy>? unassignedProxies = null;
++    HashSet<TypeProxy>? observedProxies = null;
++    var visited = new HashSet<Type>(ReferenceEqualityComparer.Instance);
++    var work = new Stack<Type>();
++    work.Push(definition);
++    while (work.TryPop(out var type)) {
++      if (!visited.Add(type)) {
++        continue;
++      }
++      if (type is TypeProxy proxy) {
++        (observedProxies ??= new HashSet<TypeProxy>(ReferenceEqualityComparer.Instance)).Add(proxy);
++        if (proxy.T == null) {
++          (unassignedProxies ??= new HashSet<TypeProxy>(ReferenceEqualityComparer.Instance)).Add(proxy);
++        } else {
++          work.Push(proxy.T);
++        }
++      } else if (type is UserDefinedType { ResolvedClass: RedirectingTypeDecl target } &&
++                 target is TopLevelDecl targetDecl && targetDecl.IsVisibleInScope(scope)) {
++        (dependencies ??= new HashSet<RedirectingTypeDecl>(ReferenceEqualityComparer.Instance)).Add(target);
++      }
++      foreach (var argument in type.TypeArgs) {
++        work.Push(argument);
++      }
++    }
++    return dependencies == null && observedProxies == null ? Dependencies.Empty : new Dependencies(
++      dependencies == null ? FrozenSet<RedirectingTypeDecl>.Empty : dependencies,
++      unassignedProxies == null ? FrozenSet<TypeProxy>.Empty : unassignedProxies,
++      observedProxies == null ? FrozenSet<TypeProxy>.Empty : observedProxies);
++  }
++
++  public static Result Analyze(IEnumerable<RedirectingTypeDecl> roots, VisibilityScope? scope = null) {
++    var definitions = new Dictionary<RedirectingTypeDecl, Dependencies>(ReferenceEqualityComparer.Instance);
++    var work = new Stack<RedirectingTypeDecl>(Ordered(roots).Reverse());
++    while (work.TryPop(out var declaration)) {
++      if (definitions.ContainsKey(declaration)) {
++        continue;
++      }
++      var dependencies = CollectDependencies(declaration, scope);
++      definitions.Add(declaration, dependencies);
++      if (dependencies.RedirectingTypes.Count == 0) {
++        continue;
++      }
++      foreach (var dependency in Ordered(dependencies.RedirectingTypes).Reverse()) {
++        work.Push(dependency);
++      }
++    }
++    return new Result(definitions);
++  }
++
++  public static IReadOnlyList<RedirectingTypeDecl>? TryFindCycle(RedirectingTypeDecl root,
++    VisibilityScope? scope = null) {
++    return Analyze(new[] { root }, scope).FindCycles().FirstOrDefault()?.Witness;
++  }
++
++  internal static IEnumerable<RedirectingTypeDecl> Ordered(IEnumerable<RedirectingTypeDecl> declarations) {
++    // Empty and singleton dependency sets have no order to establish.
++    if (declarations is IReadOnlyCollection<RedirectingTypeDecl> { Count: < 2 }) {
++      return declarations;
++    }
++    // Only names and origins are used here: printing a malformed type could itself recurse.
++    return declarations.OrderBy(declaration => declaration.Name, StringComparer.Ordinal)
++      .ThenBy(declaration => declaration.Module.Name, StringComparer.Ordinal)
++      .ThenBy(declaration => declaration.Tok.line)
++      .ThenBy(declaration => declaration.Tok.col);
++  }
++
++  internal static Graph<RedirectingTypeDecl> CreateGraph(
++    IReadOnlyDictionary<RedirectingTypeDecl, Dependencies> definitions) {
++    var graph = new Graph<RedirectingTypeDecl>();
++    foreach (var declaration in Ordered(definitions.Keys)) {
++      graph.AddVertex(declaration);
++      if (definitions[declaration].RedirectingTypes.Count == 0) {
++        continue;
++      }
++      foreach (var dependency in Ordered(definitions[declaration].RedirectingTypes)) {
++        graph.AddEdge(declaration, dependency);
++      }
++    }
++    return graph;
++  }
++
++  internal static IReadOnlyList<Cycle> FindCycles(Graph<RedirectingTypeDecl> graph,
++    IReadOnlyDictionary<RedirectingTypeDecl, Dependencies> definitions) {
++    List<Cycle>? cycles = null;
++    foreach (var representative in graph.TopologicallySortedComponents()) {
++      // Successful graphs have singleton SCCs. Do not allocate or sort a component list unless it contains a cycle.
++      if (graph.GetSCCSize(representative) == 1 &&
++          !definitions[representative].RedirectingTypes.Contains(representative)) {
++        continue;
++      }
++      var component = Ordered(graph.GetSCC(representative)).ToList();
++      (cycles ??= []).Add(new Cycle(component, FindWitness(component, definitions)));
++    }
++    if (cycles == null) {
++      return Array.Empty<Cycle>();
++    }
++    return cycles.Count == 1 ? cycles : cycles.OrderBy(cycle => cycle.Component[0].Name, StringComparer.Ordinal).ToList();
++  }
++
++  private static IReadOnlyList<RedirectingTypeDecl> FindWitness(IReadOnlyList<RedirectingTypeDecl> component,
++    IReadOnlyDictionary<RedirectingTypeDecl, Dependencies> definitions) {
++    var members = new HashSet<RedirectingTypeDecl>(component, ReferenceEqualityComparer.Instance);
++    var start = component[0];
++    if (definitions[start].RedirectingTypes.Contains(start)) {
++      return new[] { start };
++    }
++
++    // Find a deterministic path from an outgoing neighbor back to start. The component is strongly connected,
++    // so such a path exists. This walk does not use recursive call frames, even for a long cycle.
++    var predecessors = new Dictionary<RedirectingTypeDecl, RedirectingTypeDecl>(ReferenceEqualityComparer.Instance);
++    var work = new Queue<RedirectingTypeDecl>();
++    foreach (var successor in Ordered(definitions[start].RedirectingTypes.Where(members.Contains))) {
++      predecessors.Add(successor, start);
++      work.Enqueue(successor);
++    }
++    while (work.TryDequeue(out var current)) {
++      foreach (var successor in Ordered(definitions[current].RedirectingTypes.Where(members.Contains))) {
++        if (ReferenceEquals(successor, start)) {
++          var witness = new List<RedirectingTypeDecl>();
++          for (var member = current; !ReferenceEquals(member, start); member = predecessors[member]) {
++            witness.Add(member);
++          }
++          witness.Add(start);
++          witness.Reverse();
++          return witness;
++        }
++        if (predecessors.TryAdd(successor, current)) {
++          work.Enqueue(successor);
++        }
++      }
++    }
++    throw new InvalidOperationException("A cyclic component must contain a cycle witness");
++  }
++}
+diff --git a/Source/DafnyCore/AST/Types/Types.cs b/Source/DafnyCore/AST/Types/Types.cs
+index 7693dec9..691bec58 100644
+--- a/Source/DafnyCore/AST/Types/Types.cs
++++ b/Source/DafnyCore/AST/Types/Types.cs
+@@ -169,6 +169,111 @@ public abstract class Type : NodeWithOrigin {
+     return NormalizeExpand(ExpandMode.DontExpandJustAdjustForScopes);
+   }
+ 
++  public enum AncestorTypeKind { Resolved, Undetermined, Cyclic }
++
++  public readonly record struct AncestorTypeResult(
++    AncestorTypeKind Kind, Type AncestorType, IReadOnlyList<RedirectingTypeDecl> Cycle = null);
++
++  // Retain only empty traversal storage, never declarations, visibility scopes, or ancestry results.
++  // Renting removes the set from the slot, giving each concurrent or nested query exclusive ownership.
++  private static HashSet<NewtypeDecl> reusableNewtypeWalkSet;
++  private const int MaximumRetainedNewtypeWalkCapacity = 16384;
++
++  private static HashSet<NewtypeDecl> RentNewtypeWalkSet() {
++    return Interlocked.Exchange(ref reusableNewtypeWalkSet, null) ??
++           new HashSet<NewtypeDecl>(ReferenceEqualityComparer.Instance);
++  }
++
++  private static void ReturnNewtypeWalkSet(HashSet<NewtypeDecl> set) {
++    if (set != null) {
++      set.Clear();
++      if (set.EnsureCapacity(0) <= MaximumRetainedNewtypeWalkCapacity) {
++        Interlocked.CompareExchange(ref reusableNewtypeWalkSet, set, null);
++      }
++    }
++  }
++
++  /// <summary>
++  /// Follow proxies, in-scope synonyms/subsets, and instantiated newtype bases. An unresolved base is
++  /// Undetermined, not a cycle. Raw synonym dependencies are checked before definition expansion.
++  /// The result never substitutes a primitive type for erroneous ancestry.
++  /// With preserveSubsetTypes, stop at a subset instead of erasing its constraints or arrow-family identity.
++  /// </summary>
++  public AncestorTypeResult NormalizeToAncestorTypeChecked(bool preserveSubsetTypes = false) {
++    Type current = this;
++    NewtypeDecl firstNewtype = null;
++    HashSet<NewtypeDecl> visited = null;
++    HashSet<NewtypeDecl> checkedAcyclic = null;
++    try {
++      while (true) {
++        if (current == null) {
++          return new AncestorTypeResult(AncestorTypeKind.Undetermined, null);
++        }
++        current = current.Normalize();
++        if (current is UserDefinedType { ResolvedClass: TypeSynonymDecl synonym }) {
++          var cycle = RedirectingTypeCycleAnalysis.TryFindCycle(synonym, GetScope());
++          if (cycle != null) {
++            return new AncestorTypeResult(AncestorTypeKind.Cyclic, null, cycle);
++          }
++        }
++        current = current.NormalizeExpand(preserveSubsetTypes);
++        if (current is TypeProxy || current is UserDefinedType { ResolvedClass: null }) {
++          return new AncestorTypeResult(AncestorTypeKind.Undetermined, current);
++        }
++        if (current is not UserDefinedType { ResolvedClass: NewtypeDecl newtypeDecl }) {
++          if (preserveSubsetTypes &&
++              current is UserDefinedType { ResolvedClass: SubsetTypeDecl stoppedSubset }) {
++            // Stopping at a subset must not hide a mixed redirecting cycle
++            // that would otherwise be found by following its instantiated RHS.
++            IEnumerable<RedirectingTypeDecl> roots = visited != null
++              ? visited.Cast<RedirectingTypeDecl>()
++              : firstNewtype == null ? [] : [firstNewtype];
++            var cycle = RedirectingTypeCycleAnalysis.Analyze(roots.Append(stoppedSubset), GetScope())
++              .FindCycles().FirstOrDefault()?.Witness;
++            if (cycle != null) {
++              return new AncestorTypeResult(AncestorTypeKind.Cyclic, null, cycle);
++            }
++          }
++          return new AncestorTypeResult(AncestorTypeKind.Resolved, current);
++        }
++
++        bool repeated;
++        if (firstNewtype == null) {
++          // The common scalar and single-newtype paths need no allocated traversal state.
++          firstNewtype = newtypeDecl;
++          repeated = false;
++        } else if (visited == null) {
++          repeated = ReferenceEquals(firstNewtype, newtypeDecl);
++          if (!repeated) {
++            visited = RentNewtypeWalkSet();
++            visited.Add(firstNewtype);
++            visited.Add(newtypeDecl);
++          }
++        } else {
++          repeated = !visited.Add(newtypeDecl);
++        }
++        if (repeated && !(checkedAcyclic?.Contains(newtypeDecl) ?? false)) {
++          // Repeated declarations do not imply repeated instantiated types: G<G<int>> with G<T> = T
++          // is finite. Conversely, C<T> = C<seq<T>> never repeats an instantiated type. Check the finite
++          // raw declaration graph, without constructing successively larger type arguments.
++          var cycle = RedirectingTypeCycleAnalysis.TryFindCycle(newtypeDecl, GetScope());
++          if (cycle != null) {
++            return new AncestorTypeResult(AncestorTypeKind.Cyclic, null, cycle);
++          }
++          checkedAcyclic ??= RentNewtypeWalkSet();
++          checkedAcyclic.Add(newtypeDecl);
++        }
++        // Adjust visibility after substitution, preserving the instantiated base's own arguments.
++        current = newtypeDecl.BaseType == null ? null :
++          newtypeDecl.ConcreteBaseType(current.TypeArgs).NormalizeAndAdjustForScope();
++      }
++    } finally {
++      // Every exit, including unresolved/cyclic results and substitution failures, releases empty buffers.
++      ReturnNewtypeWalkSet(visited);
++      ReturnNewtypeWalkSet(checkedAcyclic);
++    }
++  }
++
+   /// <summary>
+   /// Call NormalizeExpand() repeatedly, also on the base type of newtype's.
+   /// </summary>
+@@ -895,6 +1000,16 @@ public abstract class Type : NodeWithOrigin {
+ 
+   public bool MayInvolveReferences => ComputeMayInvolveReferences(null);
+ 
++  /// <summary>
++  /// Whether a value of the type may show a reference, as MayInvolveReferences, except that a value of a general
++  /// arrow type (~>) always may: it can capture references, and its reads frame shows them, whatever its argument
++  /// and result types are.  A partial or total arrow reads nothing, so it shows references only through its
++  /// arguments and result.  This, not MayInvolveReferences, decides (!new) and whether the values of a type are
++  /// allocated in every heap (erniecohen/dafny#132).  Quantifiers over general arrows range over all their values,
++  /// allocated or not, so their bounds still use MayInvolveReferences.
++  /// </summary>
++  public bool MayShowReferences => ComputeMayInvolveReferences(null, true);
++
+   /// <summary>
+   /// This is an auxiliary method used to compute the value of MayInvolveReferences (above). It is
+   /// needed to handle datatypes, because determining whether or not a datatype contains references
+@@ -915,7 +1030,7 @@ public abstract class Type : NodeWithOrigin {
+   /// uses all the type parameters it declares, then this will have the same effect. During the second
+   /// phase, formal type parameters (which necessarily are ones declared in datatypes) are ignored.
+   /// </summary>
+-  public abstract bool ComputeMayInvolveReferences(ISet<DatatypeDecl> /*?*/ visitedDatatypes);
++  public abstract bool ComputeMayInvolveReferences(ISet<DatatypeDecl> /*?*/ visitedDatatypes, bool generalArrows = false);
+ 
+   /// <summary>
+   /// Returns true if it is known how to meaningfully compare the type's inhabitants.
+@@ -1804,7 +1919,7 @@ public abstract class Type : NodeWithOrigin {
+ /// these types as the type of literal 6, until a more precise (and non-artificial) type is inferred for it.
+ /// </summary>
+ public abstract class ArtificialType : Type {
+-  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl>/*?*/ visitedDatatypes) {
++  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl>/*?*/ visitedDatatypes, bool generalArrows = false) {
+     // ArtificialType's are used only with numeric types.
+     return false;
+   }
+@@ -1875,7 +1990,7 @@ public abstract class BasicType : NonProxyType {
+   }
+ 
+   public override IEnumerable<INode> Children => Enumerable.Empty<Node>();
+-  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl>/*?*/ visitedDatatypes) {
++  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl>/*?*/ visitedDatatypes, bool generalArrows = false) {
+     return false;
+   }
+ 
+@@ -2122,7 +2237,7 @@ public class SelfType : NonProxyType {
+     throw new NotSupportedException();
+   }
+ 
+-  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl>/*?*/ visitedDatatypes) {
++  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl>/*?*/ visitedDatatypes, bool generalArrows = false) {
+     // SelfType is used only with bitvector types
+     return false;
+   }
+@@ -2288,9 +2403,9 @@ public abstract class TypeProxy : Type {
+       }
+     }
+   }
+-  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes) {
++  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes, bool generalArrows = false) {
+     if (T != null) {
+-      return T.ComputeMayInvolveReferences(visitedDatatypes);
++      return T.ComputeMayInvolveReferences(visitedDatatypes, generalArrows);
+     } else {
+       return true;
+     }
+diff --git a/Source/DafnyCore/AST/Types/UserDefinedType.cs b/Source/DafnyCore/AST/Types/UserDefinedType.cs
+index e4696655..e8ab1ad9 100644
+--- a/Source/DafnyCore/AST/Types/UserDefinedType.cs
++++ b/Source/DafnyCore/AST/Types/UserDefinedType.cs
+@@ -449,13 +449,32 @@ public class UserDefinedType : NonProxyType, IHasReferences {
+     }
+   }
+ 
+-  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes) {
++  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes, bool generalArrows = false) {
+     if (ResolvedClass is ArrowTypeDecl) {
+-      return TypeArgs.Any(ta => ta.ComputeMayInvolveReferences(visitedDatatypes));
++      return generalArrows || TypeArgs.Any(ta => ta.ComputeMayInvolveReferences(visitedDatatypes, generalArrows));
++    } else if (ResolvedClass != null && (ArrowType.IsPartialArrowTypeName(ResolvedClass.Name) || ArrowType.IsTotalArrowTypeName(ResolvedClass.Name))) {
++      // A partial or total arrow reads nothing, so it shows references only through its arguments and result,
++      // though its definition is a general arrow (see MayShowReferences).
++      return TypeArgs.Any(ta => ta.ComputeMayInvolveReferences(visitedDatatypes, generalArrows));
+     } else if (ResolvedClass is ClassLikeDecl) {
+       return true;
+-    } else if (ResolvedClass is NewtypeDecl) {
+-      return false;
++    } else if (ResolvedClass is NewtypeDecl newtypeDecl) {
++      // A nominal name does not remove references carried by its instantiated
++      // base. In particular, a general-arrow value can capture fresh objects.
++      if (!newtypeDecl.IsRevealedInScope(Type.GetScope()) || newtypeDecl.BaseType == null) {
++        return true;
++      }
++      var ancestry = NormalizeToAncestorTypeChecked(preserveSubsetTypes: true);
++      if (ancestry.Kind != AncestorTypeKind.Resolved || ancestry.AncestorType == null) {
++        // Erroneous ancestry cannot establish reference freedom.
++        return true;
++      }
++      if (ancestry.AncestorType is UserDefinedType { ResolvedClass: InternalTypeSynonymDecl provided }) {
++        // A provided head exposes only its declared characteristics. Preserve an explicit
++        // (!new) promise without inspecting or instantiating its hidden representation.
++        return !provided.Characteristics.ContainsNoReferenceTypes;
++      }
++      return ancestry.AncestorType.ComputeMayInvolveReferences(visitedDatatypes, generalArrows);
+     } else if (ResolvedClass is DatatypeDecl) {
+       // Datatype declarations do not support explicit (!new) annotations. Instead, whether or not
+       // a datatype involves references depends on the definition and parametrization of the type.
+@@ -469,7 +488,7 @@ public class UserDefinedType : NonProxyType, IHasReferences {
+         // The type's definition is hidden from the current scope, so we
+         // have to assume the type may involve references.
+         return true;
+-      } else if (TypeArgs.Any(ta => ta.ComputeMayInvolveReferences(visitedDatatypes))) {
++      } else if (TypeArgs.Any(ta => ta.ComputeMayInvolveReferences(visitedDatatypes, generalArrows))) {
+         return true;
+       } else if (visitedDatatypes != null && visitedDatatypes.Contains(dt)) {
+         // we're in the middle of looking through the types involved in dt's definition
+@@ -477,7 +496,7 @@ public class UserDefinedType : NonProxyType, IHasReferences {
+       } else {
+         visitedDatatypes ??= new HashSet<DatatypeDecl>();
+         visitedDatatypes.Add(dt);
+-        return dt.Ctors.Any(ctor => ctor.Formals.Any(f => f.Type.ComputeMayInvolveReferences(visitedDatatypes)));
++        return dt.Ctors.Any(ctor => ctor.Formals.Any(f => f.Type.ComputeMayInvolveReferences(visitedDatatypes, generalArrows)));
+       }
+     } else if (ResolvedClass is TypeSynonymDeclBase) {
+       var t = (TypeSynonymDeclBase)ResolvedClass;
+@@ -486,7 +505,7 @@ public class UserDefinedType : NonProxyType, IHasReferences {
+         return false;
+       } else if (t.IsRevealedInScope(Type.GetScope())) {
+         // The type's definition is available in the scope, so consult the RHS type
+-        return t.RhsWithArgument(TypeArgs).ComputeMayInvolveReferences(visitedDatatypes);
++        return t.RhsWithArgument(TypeArgs).ComputeMayInvolveReferences(visitedDatatypes, generalArrows);
+       } else {
+         // The type's definition is hidden from the current scope and there's no explicit "(!new)", so we
+         // have to assume the type may involve references.
+diff --git a/Source/DafnyCore/Backends/Python/PythonCodeGenerator.cs b/Source/DafnyCore/Backends/Python/PythonCodeGenerator.cs
+index cfb32ea3..1b223edf 100644
+--- a/Source/DafnyCore/Backends/Python/PythonCodeGenerator.cs
++++ b/Source/DafnyCore/Backends/Python/PythonCodeGenerator.cs
+@@ -1424,6 +1424,11 @@ namespace Microsoft.Dafny.Compilers {
+           return SpecialOrConstantField(obj, objType, member, typeArgs, cf, compiledNameConstantField);
+         case SpecialField sf: {
+             GetSpecialFieldInfo(sf.SpecialId, sf.IdParam, objType, out var compiledName, out _, out _);
++            if (sf.EnclosingClass is DatatypeDecl && sf.SpecialId == SpecialField.ID.UseIdParam) {
++              // Datatype discriminators are boolean properties. Their value does
++              // not depend on default descriptors for the datatype's parameters.
++              return SuffixLvalue(obj, $".{compiledName}");
++            }
+             return SpecialOrConstantField(obj, objType, member, typeArgs, sf, compiledName);
+           }
+         case Field: {
+diff --git a/Source/DafnyCore/Resolver/CheckTypeCharacteristicsVisitor.cs b/Source/DafnyCore/Resolver/CheckTypeCharacteristicsVisitor.cs
+index 47d80060..e1c5a1da 100644
+--- a/Source/DafnyCore/Resolver/CheckTypeCharacteristicsVisitor.cs
++++ b/Source/DafnyCore/Resolver/CheckTypeCharacteristicsVisitor.cs
+@@ -386,7 +386,7 @@ class CheckTypeCharacteristicsVisitor : ResolverTopDownVisitor<bool> {
+       errorId = RefinementErrors.ErrorId.ref_mismatched_type_characteristics_nonempty;
+       return false;
+     }
+-    if (formal.ContainsNoReferenceTypes && actual.MayInvolveReferences) {
++    if (formal.ContainsNoReferenceTypes && actual.MayShowReferences) {
+       whatIsNeeded = "contain no references";
+       hint = tp == null ? "" :
+         string.Format(" (perhaps try declaring {2} '{0}' on line {1} as '{0}(!new)', which says it can only be instantiated with a type that contains no references)", tp.Name, tp.Origin.line, tp.WhatKind);
+diff --git a/Source/DafnyCore/Resolver/TypeCharacteristicChecker.cs b/Source/DafnyCore/Resolver/TypeCharacteristicChecker.cs
+index 521decd4..86442751 100644
+--- a/Source/DafnyCore/Resolver/TypeCharacteristicChecker.cs
++++ b/Source/DafnyCore/Resolver/TypeCharacteristicChecker.cs
+@@ -245,7 +245,7 @@ namespace Microsoft.Dafny {
+                 "type '{0}' declared as auto-initialization type, but the RHS type ({1}) does not support auto-initialization", syn.Name,
+                 syn.Rhs);
+             }
+-            if (syn.Characteristics.ContainsNoReferenceTypes && syn.Rhs.MayInvolveReferences) {
++            if (syn.Characteristics.ContainsNoReferenceTypes && syn.Rhs.MayShowReferences) {
+               reporter.Error(MessageSource.Resolver, syn.Origin,
+                 "type '{0}' declared as containing no reference types, but the RHS type ({1}) may contain reference types", syn.Name,
+                 syn.Rhs);
+diff --git a/Source/DafnyCore/Triggers/TriggersCollector.cs b/Source/DafnyCore/Triggers/TriggersCollector.cs
+index d23a4f9c..46b8b0a6 100644
+--- a/Source/DafnyCore/Triggers/TriggersCollector.cs
++++ b/Source/DafnyCore/Triggers/TriggersCollector.cs
+@@ -315,7 +315,14 @@ internal class TriggersCollector {
+     Expression ret;
+     do {
+       ret = expr;
+-      if (expr is BinaryExpr bin) {
++      if (expr is TernaryExpr { Op: TernaryExpr.Opcode.PrefixNeqOp } prefixNeq) {
++        // Prefix inequality translates to the negation of prefix equality. A trigger
++        // must use the underlying equality application rather than that negation.
++        expr = new TernaryExpr(prefixNeq.Origin, TernaryExpr.Opcode.PrefixEqOp,
++          prefixNeq.E0, prefixNeq.E1, prefixNeq.E2) {
++          Type = prefixNeq.Type
++        };
++      } else if (expr is BinaryExpr bin) {
+         if (bin.Op == BinaryExpr.Opcode.NotIn) {
+           expr = new BinaryExpr(bin.Origin, BinaryExpr.Opcode.In, bin.E0, bin.E1) {
+             ResolvedOp = RemoveNotInBinaryExprIn(bin.ResolvedOp),
+diff --git a/Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs b/Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs
+index a79a2b4e..39e88427 100644
+--- a/Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs
++++ b/Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs
+@@ -1389,6 +1389,64 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
+           Predef.HandleType);
+       }
+ 
++      /// <summary>
++      /// A lambda value is allocated in any good heap in which what it captures is allocated: its free variables, and
++      /// "this" if it uses it.  A lambda that uses the previous heap ("old", "fresh", "unchanged", a two-state function
++      /// or lemma) or the heap at a label also captures that heap, which the heap must be or succeed.  The arrow
++      /// allocation axiom is an implication, from an allocated function value to its reads set and results
++      /// (erniecohen/dafny#132), so this is how a lambda is known to be allocated.
++      /// </summary>
++      private Expr LambdaAllocation(LambdaExpr e) {
++        bool usesHeap = false, usesOldHeap = false;
++        var heapAt = new HashSet<Label>();
++        Type usesThis = null;
++        var fvs = new HashSet<IVariable>();
++        FreeVariablesUtil.ComputeFreeVariables(BoogieGenerator.options, e, fvs, ref usesHeap, ref usesOldHeap, heapAt, ref usesThis, true);
++        usesOldHeap |= UsesPreviousHeap(e);
++        var varNameGen = BoogieGenerator.CurrentIdGenerator.NestedFreshIdGenerator("$la#");
++        var hVar = BplBoundVar(varNameGen.FreshId("#heap#"), Predef.HeapType, out var h);
++        Bpl.Expr captured = BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, h);
++        var capturedHeaps = new List<Bpl.Expr>();
++        if (usesOldHeap) {
++          capturedHeaps.Add(Old.HeapExpr);
++        }
++        foreach (var label in heapAt.OrderBy(l => l.Name)) {
++          capturedHeaps.Add(OldAt(label).HeapExpr);
++        }
++        foreach (var heap in capturedHeaps) {
++          if (heap == null) {
++            return Expr.True;
++          }
++          captured = BplAnd(captured, BplOr(Bpl.Expr.Eq(heap, h), BoogieGenerator.HeapSucc(heap, h)));
++        }
++        foreach (var v in fvs.OrderBy(v => v.UniqueName)) {
++          if (v.Type.MayShowReferences) {
++            captured = BplAnd(captured, BoogieGenerator.MkIsAlloc(BoogieGenerator.TrVar(e.Origin, v), v.Type, h));
++          }
++        }
++        if (usesThis != null) {
++          captured = BplAnd(captured, BoogieGenerator.MkIsAlloc(new Bpl.IdentifierExpr(e.Origin, This, BoogieGenerator.TrType(usesThis)), usesThis, h));
++        }
++        // A trigger cannot hold the lambda, which binds variables, so a let names its value.
++        var fVar = BplBoundVar(varNameGen.FreshId("#f#"), Predef.HandleType, out var f);
++        var allocated = BoogieGenerator.MkIsAlloc(f, e.Type.AsArrowType, h);
++        var rule = new Bpl.ForallExpr(e.Origin, [hVar], BplTrigger(allocated), BplImp(captured, allocated));
++        return new Bpl.LetExpr(e.Origin, [fVar], [TrExpr(e)], null, rule);
++      }
++
++      /// <summary>
++      /// Whether the expression uses the previous heap in a way that ComputeFreeVariables does not report:
++      /// a two-state function without a label, called or as a value, or a call of a two-state lemma without
++      /// a label in a statement of the expression.  None of these occurs in a one-state context, whose
++      /// translation has no previous heap.
++      /// </summary>
++      private static bool UsesPreviousHeap(Expression e) {
++        return e is FunctionCallExpr { Function: TwoStateFunction, AtLabel: null }
++          || e is MemberSelectExpr { Member: TwoStateFunction or TwoStateLemma, AtLabel: null }
++          || (e is StmtExpr s && s.S.SubExpressionsIncludingTransitiveSubStatements.Any(UsesPreviousHeap))
++          || e.SubExpressions.Any(UsesPreviousHeap);
++      }
++
+       public Expression DesugarMatchExpr(MatchExpr e) {
+         Contract.Requires(e != null);
+         // Translate:
+@@ -1823,7 +1881,7 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
+           FunctionCallExpr e = (FunctionCallExpr)expr;
+           Boogie.Expr r = CanCallAssumption(e.Receiver, cco);
+           r = BplAnd(r, CanCallAssumption(e.Args, cco));
+-          if (!(e.Function is SpecialFunction)) {
++          if (!(e.Function is SpecialFunction) && !IsCoRecursiveFunctionCall(e)) {
+             Boogie.IdentifierExpr canCallFuncID = new Boogie.IdentifierExpr(expr.Origin, e.Function.FullSanitizedName + "#canCall", Boogie.Type.Bool);
+             List<Boogie.Expr> args = FunctionInvocationArguments(e, null, null);
+             Boogie.Expr canCallFuncAppl = new Boogie.NAryExpr(BoogieGenerator.GetToken(expr), new Boogie.FunctionCall(canCallFuncID), args);
+@@ -1932,7 +1990,7 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
+           //TRIG (forall $l#0#heap#0: Heap, $l#0#x#0: int :: true)
+           //TRIG (forall $l#0#heap#0: Heap, $l#0#t#0: DatatypeType :: _module.__default.TMap#canCall(_module._default.TMap$A, _module._default.TMap$B, $l#0#heap#0, $l#0#t#0, f#0))
+           //TRIG (forall $l#4#heap#0: Heap, $l#4#x#0: Box :: _0_Monad.__default.Bind#canCall(Monad._default.Associativity$B, Monad._default.Associativity$C, $l#4#heap#0, Apply1(Monad._default.Associativity$A, #$M$B, f#0, $l#4#heap#0, $l#4#x#0), g#0))
+-          return BplForallTrim(bvarsAndAntecedents, null, canCall); // L_TRIGGER
++          return BplAnd(BplForallTrim(bvarsAndAntecedents, null, canCall), LambdaAllocation(e)); // L_TRIGGER
+ 
+         } else if (expr is ComprehensionExpr) {
+           var e = (ComprehensionExpr)expr;
+diff --git a/Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs b/Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs
+index 376cea20..835540bc 100644
+--- a/Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs
++++ b/Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs
+@@ -403,6 +403,9 @@ namespace Microsoft.Dafny {
+             }
+ 
+             builder.Add(TrAssumeCmd(e.Origin, etran.CanCallAssumption(e)));
++            if (e.Member is DatatypeDestructor && ContainsCoRecursiveFunctionCall(e.Obj)) {
++              CheckSuspendedValueMembership(e, e.Type, builder, etran);
++            }
+             break;
+           }
+         case SeqSelectExpr selectExpr: {
+@@ -660,7 +663,10 @@ namespace Microsoft.Dafny {
+             for (int i = 0; i < dtv.Ctor.Formals.Count; i++) {
+               var formal = dtv.Ctor.Formals[i];
+               var arg = dtv.Arguments[i];
+-              if (arg is not DefaultValueExpression) {
++              // A default was proved only under typed formal inputs. Substitution
++              // with a suspended call does not establish that premise.
++              var suspendedDefault = arg is DefaultValueExpression && ContainsCoRecursiveFunctionCall(arg);
++              if (arg is not DefaultValueExpression || suspendedDefault) {
+                 CheckWellformed(arg, wfOptions, locals, builder, etran);
+               }
+               // Cannot use the datatype's formals, so we substitute the inferred type args:
+@@ -669,6 +675,9 @@ namespace Microsoft.Dafny {
+                 su[p.Item1] = p.Item2;
+               }
+               Type ty = formal.Type.Subst(su);
++              if (suspendedDefault) {
++                CheckSuspendedValueMembership(arg, ty, builder, etran);
++              }
+               CheckSubrange(arg.Origin, etran.TrExpr(arg), arg.Type, ty, arg, builder);
+             }
+ 
+@@ -711,9 +720,12 @@ namespace Microsoft.Dafny {
+                 Expression ee = e.Args[i];
+                 directSubstMap.Add(p, ee);
+ 
+-                if (!(ee is DefaultValueExpression)) {
++                if (ee is not DefaultValueExpression || ContainsCoRecursiveFunctionCall(ee)) {
+                   CheckWellformedWithResult(ee, wfOptions, locals, builder, etran, (returnBuilder, result) => {
+                     CheckSubrange(result.Origin, etran.TrExpr(result), ee.Type, et, ee, returnBuilder);
++                    if (!IsCoRecursiveFunctionCall(e) && ContainsCoRecursiveFunctionCall(ee)) {
++                      CheckSuspendedValueMembership(result, et, returnBuilder, etran);
++                    }
+                   });
+                 }
+                 Bpl.Cmd cmd = Bpl.Cmd.SimpleAssign(p.Origin, lhs, AdaptBoxing(p.Origin, etran.TrExpr(ee), Cce.NonNull(ee.Type), et));
+@@ -920,10 +932,12 @@ namespace Microsoft.Dafny {
+               Bpl.IdentifierExpr canCallFuncID = new Bpl.IdentifierExpr(callExpr.Origin, e.Function.FullSanitizedName + "#canCall", Bpl.Type.Bool);
+               List<Bpl.Expr> args = etran.FunctionInvocationArguments(e, null, null);
+               Bpl.Expr canCallFuncAppl = new Bpl.NAryExpr(GetToken(expr), new Bpl.FunctionCall(canCallFuncID), args);
+-              builder.Add(TrAssumeCmd(callExpr.Origin, allowance == null ? canCallFuncAppl : BplOr(etran.TrExpr(allowance), canCallFuncAppl)));
++              if (!IsCoRecursiveFunctionCall(e)) {
++                builder.Add(TrAssumeCmd(callExpr.Origin, allowance == null ? canCallFuncAppl : BplOr(etran.TrExpr(allowance), canCallFuncAppl)));
++              }
+ 
+               var returnType = e.Type.AsDatatype;
+-              if (returnType != null && returnType.Ctors.Count == 1) {
++              if (!IsCoRecursiveFunctionCall(e) && returnType != null && returnType.Ctors.Count == 1) {
+                 var correctConstructor = FunctionCall(e.Origin, returnType.Ctors[0].QueryField.FullSanitizedName, Bpl.Type.Bool, etran.TrExpr(e));
+                 // There is only one constructor, so the value must be been constructed by it; might as well assume that here.
+                 builder.Add(TrAssumeCmd(callExpr.Origin, correctConstructor));
+@@ -1006,6 +1020,15 @@ namespace Microsoft.Dafny {
+             }
+ 
+             if (e is ConversionExpr ee) {
++              // A representation-preserving cast still has to establish the target's
++              // instantiated membership before any target-typed result is assumed.
++              // Keep provided types opaque and use their nominal target Ty.
++              var membershipTarget = ee.ToType.NormalizeExpandKeepConstraints();
++              if ((membershipTarget.IsDatatype || membershipTarget.IsInternalTypeSynonym) &&
++                  !membershipTarget.IsRefType && !ee.E.Type.IsTraitType && !membershipTarget.IsArrowType) {
++                CheckSubrange(unaryExpr.Origin, etran.TrExpr(ee.E), ee.E.Type, ee.ToType,
++                  ee.E, builder, ee.messagePrefix);
++              }
+               CheckResultToBeInType(unaryExpr.Origin, ee.E, ee.ToType, locals, builder, etran, ee.messagePrefix);
+             }
+ 
+@@ -1637,6 +1660,41 @@ namespace Microsoft.Dafny {
+       return array;
+     }
+ 
++    private static bool IsCoRecursiveFunctionCall(FunctionCallExpr call) {
++      // A guarded co-recursive call is a suspended value. Its full result type
++      // cannot be assumed while checking the cluster's constructor fields.
++      // Extreme predicates use this marker for their separate prefix proof rule.
++      return call.CoCall == FunctionCallExpr.CoCallResolution.Yes && call.Function is not ExtremePredicate and not PrefixPredicate;
++    }
++
++
++    private static bool ContainsCoRecursiveFunctionCall(Expression expression) {
++      expression = expression.Resolved;
++      return expression is FunctionCallExpr call && IsCoRecursiveFunctionCall(call) ||
++             expression.SubExpressions.Any(ContainsCoRecursiveFunctionCall);
++    }
++
++    internal void CheckCoRecursiveValueMembership(Expression expression, Type targetType,
++      BoogieStmtListBuilder builder, ExpressionTranslator etran) {
++      if (ContainsCoRecursiveFunctionCall(expression)) {
++        CheckSuspendedValueMembership(expression, targetType, builder, etran);
++      }
++    }
++
++    private void CheckSuspendedValueMembership(Expression expression, Type targetType,
++      BoogieStmtListBuilder builder, ExpressionTranslator etran) {
++      // A destructor of a suspended co-call must establish its result's type
++      // before static typing can supply refinement facts to another constructor.
++      var value = AdaptBoxing(expression.Origin, etran.TrExpr(expression), expression.Type, targetType);
++      var membership = GetWhereClause(expression.Origin, value, targetType, etran, NOALLOC);
++      if (membership != null) {
++        var description = new SubrangeCheck("co-recursive observation: ", expression.Type.ToString(),
++          targetType.ToString(), targetType.NormalizeExpandKeepConstraints().AsRedirectingType != null,
++          false, null, null);
++        builder.Add(Assert(expression.Origin, membership, description, builder.Context));
++      }
++    }
++
+     public void CheckSubsetType(ExpressionTranslator etran, Expression expr, Bpl.Expr selfCall, Type resultType,
+       BoogieStmtListBuilder builder, string comment) {
+ 
+@@ -1808,6 +1866,11 @@ namespace Microsoft.Dafny {
+           var rIe = new Bpl.IdentifierExpr(rhs.Origin, r);
+ 
+           void CheckPostconditionForRhs(BoogieStmtListBuilder innerBuilder, Expression body) {
++            // Check the original RHS before a generated binding supplies type facts.
++            // The callback result may no longer contain the suspended source call.
++            if (ContainsCoRecursiveFunctionCall(rhs)) {
++              CheckSuspendedValueMembership(body, pat.Expr.Type, innerBuilder, etran);
++            }
+             CheckSubsetType(etran, body, rIe, pat.Expr.Type, innerBuilder, "let expression binding RHS well-formed");
+           }
+ 
+diff --git a/Source/DafnyCore/Verifier/BoogieGenerator.Functions.cs b/Source/DafnyCore/Verifier/BoogieGenerator.Functions.cs
+index f3f574d3..b011c1e4 100644
+--- a/Source/DafnyCore/Verifier/BoogieGenerator.Functions.cs
++++ b/Source/DafnyCore/Verifier/BoogieGenerator.Functions.cs
+@@ -613,10 +613,12 @@ public partial class BoogieGenerator {
+       Func<List<Bpl.Expr>, List<Bpl.Expr>> SnocSelf = x => x;
+       Func<List<Bpl.Expr>, List<Bpl.Expr>> SnocPrevH = x => x;
+       Expression selfExpr;
++      Bpl.Expr prevHeapVar = null, selfVar = null;
+       Dictionary<IVariable, Expression> rhs_dict = new Dictionary<IVariable, Expression>();
+       if (f is TwoStateFunction) {
+         // also add previous-heap to the list of fixed arguments of the handle
+         var prevH = BplBoundVar("$prevHeap", Predef.HeapType, vars);
++        prevHeapVar = prevH;
+         formals.Add(BplFormalVar("h", Predef.HeapType, true));
+         SnocPrevH = xs => Snoc(xs, prevH);
+       }
+@@ -625,6 +627,7 @@ public partial class BoogieGenerator {
+       } else {
+         var selfTy = TrType(UserDefinedType.FromTopLevelDecl(f.Origin, f.EnclosingClass));
+         var self = BplBoundVar("$self", selfTy, vars);
++        selfVar = self;
+         formals.Add(BplFormalVar("self", selfTy, true));
+         SnocSelf = xs => Snoc(xs, self);
+         var wrapperType = UserDefinedType.FromTopLevelDecl(f.Origin, f.EnclosingClass);
+@@ -752,6 +755,26 @@ public partial class BoogieGenerator {
+         AddOtherDefinition(GetOrCreateFunction(f), (new Axiom(f.Origin,
+           BplForall(Concat(vars, func_vars), tr, Bpl.Expr.Eq(lhs, rhs_unboxed)))));
+       }
++
++      {
++        // IsGoodHeap(Heap) && [IsAlloc(self, C, Heap)] && [(prevHeap == Heap || HeapSucc(prevHeap, Heap))]
++        //   ==> IsAlloc(F#Handle(Ty1, .., TyN, Layer, [prevHeap,] [self]), Tclass._System.___hFuncN(..), Heap)
++        // A handle is allocated in a heap in which what it captures is allocated: its receiver, and for a
++        // two-state function its previous heap, which the heap must be or succeed.  The arrow allocation
++        // axiom is an implication, from an allocated function value to its reads set and results
++        // (erniecohen/dafny#132), so this is how a handle is known to be allocated.
++        var fhandle = FunctionCall(f.Origin, name, Predef.HandleType, SnocSelf(SnocPrevH(args)));
++        var allocated = MkIsAlloc(fhandle, ClassTyCon(program.SystemModuleManager.ArrowTypeDecls[arity], tyargs), h);
++        Bpl.Expr captured = FunctionCall(f.Origin, BuiltinFunction.IsGoodHeap, null, h);
++        if (selfVar != null) {
++          captured = BplAnd(captured, MkIsAlloc(selfVar, UserDefinedType.FromTopLevelDecl(f.Origin, f.EnclosingClass), h));
++        }
++        if (prevHeapVar != null) {
++          captured = BplAnd(captured, BplOr(Bpl.Expr.Eq(prevHeapVar, h), HeapSucc(prevHeapVar, h)));
++        }
++        AddOtherDefinition(GetOrCreateFunction(f), new Axiom(f.Origin,
++          BplForall(vars, BplTrigger(allocated), BplImp(captured, allocated))));
++      }
+     }
+     return name;
+   }
+diff --git a/Source/DafnyCore/Verifier/BoogieGenerator.Types.cs b/Source/DafnyCore/Verifier/BoogieGenerator.Types.cs
+index 7f7df0ca..4cd7651c 100644
+--- a/Source/DafnyCore/Verifier/BoogieGenerator.Types.cs
++++ b/Source/DafnyCore/Verifier/BoogieGenerator.Types.cs
+@@ -378,14 +378,14 @@ public partial class BoogieGenerator {
+         sink.AddTopLevelDeclaration(new Axiom(tok,
+           BplForall(bvarsOuter, new Bpl.Trigger(tok, true, new[] { IsT, IsU }), body)));
+       }
+-      /*  This is the definition of $IsAlloc function the arrow type:
++      /*  This is the allocatedness consequence axiom of arrow types for their reads sets:
+         axiom (forall f: HandleType, t0: Ty, t1: Ty, h: Heap ::
+           { $IsAlloc(f, Tclass._System.___hFunc1(t0, t1), h) }
+           $IsGoodHeap(h)
+           ==>
+           (
+             $IsAlloc(f, Tclass._System.___hFunc1(t0, t1), h)
+-              <==>
++              ==>
+               (forall bx0: Box ::
+                 { Apply1(t0, t1, f, h, bx0) } { Reads1(t0, t1, f, h, bx0) }
+                 $IsBox(bx0, t0) && $IsAllocBox(bx0, t0, h)
+@@ -393,8 +393,10 @@ public partial class BoogieGenerator {
+                 ==>
+                   (everything in reads set of f(bx0) is allocated in h)
+           ));
+-        However, for /allocated:0 and /allocated:1, IsAlloc for arrow types is trivially true
+-        and implies nothing about the reads set.
++        It is an implication, not a definition.  A function value is allocated when what it captures is
++        allocated, and its reads set does not show all it captures: () => n reads nothing and returns n.
++        The converse made such a value allocated in a heap where n is not, and so proved false, also
++        through the monotonicity of $IsAlloc along $HeapSucc (erniecohen/dafny#132).
+       */
+       {
+         var bvarsOuter = new List<Bpl.Variable>();
+@@ -423,7 +425,7 @@ public partial class BoogieGenerator {
+         sink.AddTopLevelDeclaration(new Axiom(tok,
+           BplForall(bvarsOuter, BplTrigger(isAlloc),
+             BplImp(goodHeap,
+-              BplIff(isAlloc,
++              BplImp(isAlloc,
+                 BplForall(bvarsInner,
+                   new Bpl.Trigger(tok, true, new List<Bpl.Expr> { applied }, BplTrigger(reads)),
+                   BplImp(BplAnd(isAllocBoxes, pre), isAllocReads)))))));
+@@ -1425,11 +1427,11 @@ public partial class BoogieGenerator {
+     Bpl.IdentifierExpr o = null;
+     void PutSourceIntoLocal() {
+       if (o == null) {
+-        var oType = fromType.IsCharType ? Type.Int : fromType;
++        var oType = fromTypeFamily.IsCharType ? Type.Int : fromType;
+         var oVar = locals.GetOrAdd(new Bpl.LocalVariable(tok, new Bpl.TypedIdent(tok, CurrentIdGenerator.FreshId("newtype$check#"), TrType(oType))));
+         o = new Bpl.IdentifierExpr(tok, oVar);
+         var rhs = etran.TrExpr(expr);
+-        if (fromType.IsCharType) {
++        if (fromTypeFamily.IsCharType) {
+           rhs = FunctionCall(expr.Origin, "char#ToInt", Bpl.Type.Int, rhs);
+         }
+         // Remove Lit wrappers for fp32/fp64-related conversions to avoid Z3 issues
+@@ -1639,7 +1641,7 @@ public partial class BoogieGenerator {
+         builder.Add(Assert(tok, boundsCheck, new ConversionFit("value", toType, dafnyBoundsCheck, errorMsgPrefix), builder.Context));
+       }
+ 
+-    } else if (toType.IsCharType) {
++    } else if (toTypeFamily.IsCharType) {
+       if (fromType.IsNumericBased(Type.NumericPersuasion.Int)) {
+         PutSourceIntoLocal();
+         var boundsCheck = FunctionCall(Token.NoToken, BuiltinFunction.IsChar, null, o);
+@@ -1652,30 +1654,24 @@ public partial class BoogieGenerator {
+         Expression intExpr = new ExprDotName(expr.Origin, expr, new Name("Floor"), null);
+         var dafnyBoundsCheck = Utils.MakeCharBoundsCheck(options, intExpr);
+         builder.Add(Assert(tok, boundsCheck, new ConversionFit("real value", toType, dafnyBoundsCheck, errorMsgPrefix), builder.Context));
+-      } else if (fromType.IsBitVectorType) {
+-        PutSourceIntoLocal();
+-        var fromWidth = fromType.AsBitVectorType.Width;
+-        var toWidth = 16;
+-        if (toWidth < fromWidth) {
+-          // Check "expr < (1 << toWidth)" in type "fromType" (note that "1 << toWidth" is indeed a value in "fromType")
++      } else if (fromTypeFamily.IsBitVectorType) {
++        var fromWidth = fromTypeFamily.AsBitVectorType.Width;
++        // Every value in a smaller carrier is already a character. Unicode
++        // mode also excludes surrogates, first reachable at width 16.
++        if (fromWidth > (options.Get(CommonOptionBag.UnicodeCharacters) ? 15 : 16)) {
+           PutSourceIntoLocal();
+-          var toBound = BaseTypes.BigNum.FromBigInt(BigInteger.One << toWidth); // 1 << toWidth
+-          var bound = BplBvLiteralExpr(tok, toBound, fromType.AsBitVectorType);
+-          var boundsCheck = FunctionCall(expr.Origin, "lt_bv" + fromWidth, Bpl.Type.Bool, o, bound);
+-          var dafnyBound = new BinaryExpr(expr.Origin, BinaryExpr.Opcode.LeftShift, Expression.CreateIntLiteral(expr.Origin, 1), Expression.CreateIntLiteral(expr.Origin, toWidth));
+-          var dafnyBoundsCheck = new BinaryExpr(expr.Origin, BinaryExpr.Opcode.Lt, expr, dafnyBound);
++          var intValue = FunctionCall(tok, "nat_from_bv" + fromWidth, Bpl.Type.Int, o);
++          var boundsCheck = FunctionCall(tok, BuiltinFunction.IsChar, null, intValue);
++          Expression intExpr = new ConversionExpr(expr.Origin, expr, Type.Int);
++          var dafnyBoundsCheck = Utils.MakeCharBoundsCheck(options, intExpr);
+           builder.Add(Assert(tok, boundsCheck, new ConversionFit("bit-vector value", toType, dafnyBoundsCheck, errorMsgPrefix), builder.Context));
+         }
+       } else if (fromType.IsBigOrdinalType) {
+         PutSourceIntoLocal();
+         var oi = FunctionCall(tok, "ORD#Offset", Bpl.Type.Int, o);
+-        int toWidth = 16;
+-        var toBound = BaseTypes.BigNum.FromBigInt(BigInteger.One << toWidth); // 1 << toWidth
+-        var bound = Bpl.Expr.Literal(toBound);
+-        var boundsCheck = Bpl.Expr.Lt(oi, bound);
+-        var dafnyBound = new BinaryExpr(expr.Origin, BinaryExpr.Opcode.LeftShift, Expression.CreateIntLiteral(expr.Origin, 1), Expression.CreateIntLiteral(expr.Origin, toWidth));
++        var boundsCheck = FunctionCall(tok, BuiltinFunction.IsChar, null, oi);
+         var offset = new ExprDotName(expr.Origin, expr, new Name("Offset"), null);
+-        var dafnyBoundsCheck = new BinaryExpr(expr.Origin, BinaryExpr.Opcode.Lt, offset, dafnyBound);
++        var dafnyBoundsCheck = Utils.MakeCharBoundsCheck(options, offset);
+         builder.Add(Assert(tok, boundsCheck, new ConversionFit("ORDINAL value", toType, dafnyBoundsCheck, errorMsgPrefix), builder.Context));
+       }
+ 
+@@ -1706,7 +1702,7 @@ public partial class BoogieGenerator {
+       Bpl.Expr be;
+       if (fromType.IsNumericBased() || fromTypeFamily.IsBitVectorType) {
+         be = ConvertExpression(expr.Origin, o, fromType, toType);
+-      } else if (fromType.IsCharType) {
++      } else if (fromTypeFamily.IsCharType) {
+         be = ConvertExpression(expr.Origin, o, Dafny.Type.Int, toType);
+       } else if (fromType.IsBigOrdinalType) {
+         be = FunctionCall(expr.Origin, "ORD#Offset", Bpl.Type.Int, o);
+diff --git a/Source/DafnyCore/Verifier/BoogieGenerator.cs b/Source/DafnyCore/Verifier/BoogieGenerator.cs
+index 2d721675..9f098506 100644
+--- a/Source/DafnyCore/Verifier/BoogieGenerator.cs
++++ b/Source/DafnyCore/Verifier/BoogieGenerator.cs
+@@ -4372,8 +4372,13 @@ namespace Microsoft.Dafny {
+       targetType = targetType.NormalizeExpandKeepConstraints();
+       var udt = targetType as UserDefinedType;
+       Bpl.Expr cre;
+-      if (udt?.ResolvedClass is RedirectingTypeDecl redirectingTypeDecl &&
+-          ModeledAsBoxType((redirectingTypeDecl as NewtypeDecl)?.BaseType ?? redirectingTypeDecl.Var.Type)) {
++      var constraintCarrier = udt?.ResolvedClass switch {
++        NewtypeDecl newtypeDecl => newtypeDecl.BaseType,
++        SubsetTypeDecl subsetTypeDecl => subsetTypeDecl.Var?.Type,
++        _ => null
++      };
++      if (ModeledAsBoxType(targetType) ||
++          constraintCarrier != null && ModeledAsBoxType(constraintCarrier)) {
+         cre = MkIs(BoxIfNecessary(bSource.tok, bSource, sourceType), TypeToTy(targetType), true, tok);
+       } else if (ModeledAsBoxType(sourceType)) {
+         cre = MkIs(bSource, TypeToTy(targetType), true, tok);
+diff --git a/Source/DafnyCore/Verifier/Datatypes/BoogieGenerator.DataTypes.cs b/Source/DafnyCore/Verifier/Datatypes/BoogieGenerator.DataTypes.cs
+index 9412b10a..0d7fbb23 100644
+--- a/Source/DafnyCore/Verifier/Datatypes/BoogieGenerator.DataTypes.cs
++++ b/Source/DafnyCore/Verifier/Datatypes/BoogieGenerator.DataTypes.cs
+@@ -16,7 +16,7 @@ namespace Microsoft.Dafny {
+       Contract.Requires(dt != null);
+       Contract.Requires(sink != null && Predef != null);
+ 
+-      var mayInvolveReferences = UserDefinedType.FromTopLevelDecl(dt.Origin, dt).MayInvolveReferences;
++      var mayInvolveReferences = UserDefinedType.FromTopLevelDecl(dt.Origin, dt).MayShowReferences;
+       var constructorFunctions = dt.Ctors.ToDictionary(ctor => ctor, ctor => AddDataTypeConstructor(dt, ctor, mayInvolveReferences));
+       if (!mayInvolveReferences) {
+         AddCommonIsAllocConstructorAxiom(dt);
+diff --git a/Source/DafnyCore/Verifier/Statements/MatchVerifier.cs b/Source/DafnyCore/Verifier/Statements/MatchVerifier.cs
+index c3712723..fc9e415f 100644
+--- a/Source/DafnyCore/Verifier/Statements/MatchVerifier.cs
++++ b/Source/DafnyCore/Verifier/Statements/MatchVerifier.cs
+@@ -20,6 +20,9 @@ public class MatchStmtVerifier {
+     FillMissingCases(stmt);
+ 
+     generator.TrStmt_CheckWellformed(stmt.Source, builder, locals, etran, true);
++    // Pattern locals assume their declared field types. A suspended source
++    // must establish membership before those assumptions enter any branch.
++    generator.CheckCoRecursiveValueMembership(stmt.Source, stmt.Source.Type, builder, etran);
+     Expr source = etran.TrExpr(stmt.Source);
+     var b = new BoogieStmtListBuilder(generator, generator.Options, builder.Context);
+     b.Add(BoogieGenerator.TrAssumeCmd(stmt.Origin, Expr.False));
+@@ -171,6 +174,8 @@ public class MatchStmtVerifier {
+     FillMissingCases(me);
+ 
+     boogieGenerator.CheckWellformed(me.Source, wfOptions, locals, builder, etran);
++    // Establish the source's type before assuming the pattern variables' types.
++    boogieGenerator.CheckCoRecursiveValueMembership(me.Source, me.Source.Type, builder, etran);
+     Expr src = etran.TrExpr(me.Source);
+     IfCmd ifCmd = null;
+     BoogieStmtListBuilder elsBldr = new BoogieStmtListBuilder(boogieGenerator, boogieGenerator.Options, builder.Context);
