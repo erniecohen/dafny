@@ -445,10 +445,16 @@ module TypeChecker {
     requires |types| > 0
     ensures r.Success? ==> IsNumericType(r.value) && forall t <- types :: t == r.value
     ensures r.Success? ==> types[0] == r.value
+    ensures r.Success? ==> forall i | 0 <= i < |types| :: types[i] == r.value
   {
     var typ := types[0];
     if !IsNumericType(typ) || exists t <- types :: t != typ {
       return Failure("operator " + op.ToString() + " requires operands of one numeric type");
+    }
+    forall i | 0 <= i < |types|
+      ensures types[i] == typ
+    {
+      assert types[i] in types;
     }
     return Success(typ);
   }
