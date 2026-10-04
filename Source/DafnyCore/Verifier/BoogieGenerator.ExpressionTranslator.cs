@@ -1322,7 +1322,8 @@ namespace Microsoft.Dafny {
 
       private sealed record LambdaEnvironment(List<Variable> Binders, List<Variable> LayerBinders,
         Expr Heap, Expr Layer, ExpressionTranslator Translator,
-        Dictionary<IVariable, Expression> Substitution, Substituter Substituter, Expr ArgumentTypes);
+        Dictionary<IVariable, Expression> Substitution, Substituter Substituter, Expr ArgumentTypes,
+        Expr ArgumentAllocation);
 
       // Value and common facts use the same heap, boxed arguments, previous heap,
       // and explicit layer. Fresh copies are alpha-equivalent, including captures.
@@ -1345,8 +1346,10 @@ namespace Microsoft.Dafny {
         translator = translator.WithLayer(layer);
         var types = BplAnd(arguments.Zip(e.BoundVars,
           (argument, bv) => BoogieGenerator.MkIsBox(argument, bv.Type)));
+        var allocated = BplAnd(arguments.Zip(e.BoundVars,
+          (argument, bv) => BoogieGenerator.MkIsAllocBox(argument, bv.Type, heap)));
         return new LambdaEnvironment(binders, layerBinders, heap, layer, translator,
-          substitution, new Substituter(null, substitution, new Dictionary<TypeParameter, Type>()), types);
+          substitution, new Substituter(null, substitution, new Dictionary<TypeParameter, Type>()), types, allocated);
       }
 
       private FiniteSetView BuildBoxedReadsFootprint(IOrigin tok, List<FrameExpression> reads) {
@@ -1415,7 +1418,9 @@ namespace Microsoft.Dafny {
             facts = BplAnd(facts, readsFacts);
           }
         }
-        var guard = BplAnd(environment.ArgumentTypes,
+        // Lambda source well-formedness checks its formals with ISALLOC in this
+        // future heap. Export child permissions only under those same premises.
+        var guard = BplAnd(BplAnd(environment.ArgumentTypes, environment.ArgumentAllocation),
           BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, environment.Heap));
         if (HeapExpr != null) {
           guard = BplAnd(guard, BoogieGenerator.HeapSameOrSucc(HeapExpr, environment.Heap));
