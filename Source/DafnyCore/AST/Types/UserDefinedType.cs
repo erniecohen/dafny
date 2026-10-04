@@ -452,14 +452,13 @@ public class UserDefinedType : NonProxyType, IHasReferences {
     }
   }
 
-  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes) {
+  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes, bool generalArrows = false) {
     if (ResolvedClass is ArrowTypeDecl) {
-      // A value of a general arrow type may capture references, and its reads frame shows them
-      // (erniecohen/dafny#132).
-      return true;
+      return generalArrows || TypeArgs.Any(ta => ta.ComputeMayInvolveReferences(visitedDatatypes, generalArrows));
     } else if (ResolvedClass != null && (ArrowType.IsPartialArrowTypeName(ResolvedClass.Name) || ArrowType.IsTotalArrowTypeName(ResolvedClass.Name))) {
-      // A partial or total arrow reads nothing, so it shows references only through its arguments and result.
-      return TypeArgs.Any(ta => ta.ComputeMayInvolveReferences(visitedDatatypes));
+      // A partial or total arrow reads nothing, so it shows references only through its arguments and result,
+      // though its definition is a general arrow (see MayShowReferences).
+      return TypeArgs.Any(ta => ta.ComputeMayInvolveReferences(visitedDatatypes, generalArrows));
     } else if (ResolvedClass is ClassLikeDecl) {
       return true;
     } else if (ResolvedClass is NewtypeDecl newtypeDecl) {
@@ -483,7 +482,7 @@ public class UserDefinedType : NonProxyType, IHasReferences {
         // The type's definition is hidden from the current scope, so we
         // have to assume the type may involve references.
         return true;
-      } else if (TypeArgs.Any(ta => ta.ComputeMayInvolveReferences(visitedDatatypes))) {
+      } else if (TypeArgs.Any(ta => ta.ComputeMayInvolveReferences(visitedDatatypes, generalArrows))) {
         return true;
       } else if (visitedDatatypes != null && visitedDatatypes.Contains(dt)) {
         // we're in the middle of looking through the types involved in dt's definition
@@ -491,7 +490,7 @@ public class UserDefinedType : NonProxyType, IHasReferences {
       } else {
         visitedDatatypes ??= new HashSet<DatatypeDecl>();
         visitedDatatypes.Add(dt);
-        return dt.Ctors.Any(ctor => ctor.Formals.Any(f => f.Type.ComputeMayInvolveReferences(visitedDatatypes)));
+        return dt.Ctors.Any(ctor => ctor.Formals.Any(f => f.Type.ComputeMayInvolveReferences(visitedDatatypes, generalArrows)));
       }
     } else if (ResolvedClass is TypeSynonymDeclBase) {
       var t = (TypeSynonymDeclBase)ResolvedClass;
@@ -500,7 +499,7 @@ public class UserDefinedType : NonProxyType, IHasReferences {
         return false;
       } else if (t.IsRevealedInScope(Type.GetScope())) {
         // The type's definition is available in the scope, so consult the RHS type
-        return t.RhsWithArgument(TypeArgs).ComputeMayInvolveReferences(visitedDatatypes);
+        return t.RhsWithArgument(TypeArgs).ComputeMayInvolveReferences(visitedDatatypes, generalArrows);
       } else {
         // The type's definition is hidden from the current scope and there's no explicit "(!new)", so we
         // have to assume the type may involve references.

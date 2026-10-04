@@ -899,6 +899,16 @@ public abstract class Type : NodeWithOrigin {
   public bool MayInvolveReferences => ComputeMayInvolveReferences(null);
 
   /// <summary>
+  /// Whether a value of the type may show a reference, as MayInvolveReferences, except that a value of a general
+  /// arrow type (~>) always may: it can capture references, and its reads frame shows them, whatever its argument
+  /// and result types are.  A partial or total arrow reads nothing, so it shows references only through its
+  /// arguments and result.  This, not MayInvolveReferences, decides (!new) and whether the values of a type are
+  /// allocated in every heap (erniecohen/dafny#132).  Quantifiers over general arrows range over all their values,
+  /// allocated or not, so their bounds still use MayInvolveReferences.
+  /// </summary>
+  public bool MayShowReferences => ComputeMayInvolveReferences(null, true);
+
+  /// <summary>
   /// This is an auxiliary method used to compute the value of MayInvolveReferences (above). It is
   /// needed to handle datatypes, because determining whether or not a datatype contains references
   /// involves recursing over the types in the datatype's constructor parameters. Since those types
@@ -918,7 +928,7 @@ public abstract class Type : NodeWithOrigin {
   /// uses all the type parameters it declares, then this will have the same effect. During the second
   /// phase, formal type parameters (which necessarily are ones declared in datatypes) are ignored.
   /// </summary>
-  public abstract bool ComputeMayInvolveReferences(ISet<DatatypeDecl> /*?*/ visitedDatatypes);
+  public abstract bool ComputeMayInvolveReferences(ISet<DatatypeDecl> /*?*/ visitedDatatypes, bool generalArrows = false);
 
   /// <summary>
   /// Returns true if it is known how to meaningfully compare the type's inhabitants.
@@ -1807,7 +1817,7 @@ public abstract class Type : NodeWithOrigin {
 /// these types as the type of literal 6, until a more precise (and non-artificial) type is inferred for it.
 /// </summary>
 public abstract class ArtificialType : Type {
-  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl>/*?*/ visitedDatatypes) {
+  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl>/*?*/ visitedDatatypes, bool generalArrows = false) {
     // ArtificialType's are used only with numeric types.
     return false;
   }
@@ -1878,7 +1888,7 @@ public abstract class BasicType : NonProxyType {
   }
 
   public override IEnumerable<INode> Children => Enumerable.Empty<Node>();
-  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl>/*?*/ visitedDatatypes) {
+  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl>/*?*/ visitedDatatypes, bool generalArrows = false) {
     return false;
   }
 
@@ -2125,7 +2135,7 @@ public class SelfType : NonProxyType {
     throw new NotSupportedException();
   }
 
-  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl>/*?*/ visitedDatatypes) {
+  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl>/*?*/ visitedDatatypes, bool generalArrows = false) {
     // SelfType is used only with bitvector types
     return false;
   }
@@ -2291,9 +2301,9 @@ public abstract class TypeProxy : Type {
       }
     }
   }
-  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes) {
+  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes, bool generalArrows = false) {
     if (T != null) {
-      return T.ComputeMayInvolveReferences(visitedDatatypes);
+      return T.ComputeMayInvolveReferences(visitedDatatypes, generalArrows);
     } else {
       return true;
     }
