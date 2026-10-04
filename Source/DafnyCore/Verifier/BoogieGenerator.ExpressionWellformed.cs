@@ -872,6 +872,9 @@ namespace Microsoft.Dafny {
                       case FunctionCallExpr.CoCallResolution.NoBecauseFunctionHasPostcondition:
                         hint = "note that only functions without any ensures clause can be called co-recursively";
                         break;
+                      case FunctionCallExpr.CoCallResolution.NoBecauseFunctionHasConstrainedReturnType:
+                        hint = "note that functions with a constrained codatatype newtype result cannot be called co-recursively";
+                        break;
                       case FunctionCallExpr.CoCallResolution.NoBecauseIsNotGuarded:
                         hint = "note that the call is not sufficiently guarded to be used co-recursively";
                         break;

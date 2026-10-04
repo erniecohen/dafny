@@ -42,6 +42,14 @@ public partial class BoogieGenerator {
       if (lit1 != null) {
         e1 = lit1;
       }
+      Type InductiveOperationType(Type nominal) {
+        return options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+          NewtypeOperationView.Get(nominal).BaseType is { IsIndDatatype: true } baseType ? baseType : nominal;
+      }
+      var indType0 = InductiveOperationType(binaryExpr.E0.Type);
+      var indType1 = InductiveOperationType(binaryExpr.E1.Type);
+      var coType0 = NewtypeOperationView.CoDatatypeType(binaryExpr.E0.Type, options.Get(CommonOptionBag.ExtendedNewtypeBases));
+      var coType1 = NewtypeOperationView.CoDatatypeType(binaryExpr.E1.Type, options.Get(CommonOptionBag.ExtendedNewtypeBases));
       switch (binaryExpr.ResolvedOp) {
         case BinaryExpr.ResolvedOpcode.Iff:
           typ = Boogie.Type.Bool;
@@ -65,14 +73,14 @@ public partial class BoogieGenerator {
             e0 = BoxIfNecessary(binaryExpr.Origin, e0, binaryExpr.E0.Type);
             oe0 = BoxIfNecessary(binaryExpr.Origin, oe0, binaryExpr.E0.Type);
           }
-          if (binaryExpr.E0.Type.IsCoDatatype && binaryExpr.E1.Type.IsCoDatatype) {
-            var e0args = binaryExpr.E0.Type.NormalizeExpand().TypeArgs;
-            var e1args = binaryExpr.E1.Type.NormalizeExpand().TypeArgs;
-            return BoogieGenerator.CoEqualCall(binaryExpr.E0.Type.AsCoDatatype, e0args, e1args, null,
+          if (coType0.IsCoDatatype && coType1.IsCoDatatype) {
+            var e0args = coType0.TypeArgs;
+            var e1args = coType1.TypeArgs;
+            return BoogieGenerator.CoEqualCall(coType0.AsCoDatatype, e0args, e1args, null,
               layerInterCluster.LayerN((int)FuelSetting.FuelAmount.HIGH), e0, e1, GetToken(binaryExpr));
           }
-          if (binaryExpr.E0.Type.IsIndDatatype && binaryExpr.E1.Type.IsIndDatatype) {
-            return BoogieGenerator.TypeSpecificEqual(GetToken(binaryExpr), binaryExpr.E0.Type, e0, e1);
+          if (indType0.IsIndDatatype && indType1.IsIndDatatype) {
+            return BoogieGenerator.TypeSpecificEqual(GetToken(binaryExpr), indType0, e0, e1);
           }
           typ = Boogie.Type.Bool;
           bOpcode = BinaryOperator.Opcode.Eq;
@@ -85,15 +93,15 @@ public partial class BoogieGenerator {
             e0 = BoxIfNecessary(binaryExpr.Origin, e0, binaryExpr.E0.Type);
             oe0 = BoxIfNecessary(binaryExpr.Origin, oe0, binaryExpr.E0.Type);
           }
-          if (binaryExpr.E0.Type.IsCoDatatype && binaryExpr.E1.Type.IsCoDatatype) {
-            var e0args = binaryExpr.E0.Type.NormalizeExpand().TypeArgs;
-            var e1args = binaryExpr.E1.Type.NormalizeExpand().TypeArgs;
-            var eq = BoogieGenerator.CoEqualCall(binaryExpr.E0.Type.AsCoDatatype, e0args, e1args, null,
+          if (coType0.IsCoDatatype && coType1.IsCoDatatype) {
+            var e0args = coType0.TypeArgs;
+            var e1args = coType1.TypeArgs;
+            var eq = BoogieGenerator.CoEqualCall(coType0.AsCoDatatype, e0args, e1args, null,
               layerInterCluster.LayerN((int)FuelSetting.FuelAmount.HIGH), e0, e1, GetToken(binaryExpr));
             return Expr.Unary(GetToken(binaryExpr), UnaryOperator.Opcode.Not, eq);
           }
-          if (binaryExpr.E0.Type.IsIndDatatype && binaryExpr.E1.Type.IsIndDatatype) {
-            var eq = BoogieGenerator.TypeSpecificEqual(GetToken(binaryExpr), binaryExpr.E0.Type, e0, e1);
+          if (indType0.IsIndDatatype && indType1.IsIndDatatype) {
+            var eq = BoogieGenerator.TypeSpecificEqual(GetToken(binaryExpr), indType0, e0, e1);
             return Expr.Unary(GetToken(binaryExpr), UnaryOperator.Opcode.Not, eq);
           }
           typ = Boogie.Type.Bool;
@@ -637,11 +645,15 @@ public partial class BoogieGenerator {
         case BinaryExpr.ResolvedOpcode.NeqCommon: {
             Expr r = Expr.True;
             if (cco is not { SkipIsA: true }) {
-              if (expr.E0 is { Type: { AsDatatype: { } dt0 }, Resolved: not DatatypeValue }) {
+              var dt0 = expr.E0.Type.AsDatatype ?? NewtypeOperationView.CoDatatypeType(
+                expr.E0.Type, options.Get(CommonOptionBag.ExtendedNewtypeBases)).AsCoDatatype;
+              if (dt0 != null && expr.E0.Resolved is not DatatypeValue) {
                 var funcId = new FunctionCall(new Boogie.IdentifierExpr(expr.Origin, "$IsA#" + dt0.FullSanitizedName, Boogie.Type.Bool));
                 r = BplAnd(r, new NAryExpr(expr.Origin, funcId, new List<Expr> { TrExpr(expr.E0) }));
               }
-              if (expr.E1 is { Type: { AsDatatype: { } dt1 }, Resolved: not DatatypeValue }) {
+              var dt1 = expr.E1.Type.AsDatatype ?? NewtypeOperationView.CoDatatypeType(
+                expr.E1.Type, options.Get(CommonOptionBag.ExtendedNewtypeBases)).AsCoDatatype;
+              if (dt1 != null && expr.E1.Resolved is not DatatypeValue) {
                 var funcId = new FunctionCall(new Boogie.IdentifierExpr(expr.Origin, "$IsA#" + dt1.FullSanitizedName, Boogie.Type.Bool));
                 r = BplAnd(r, new NAryExpr(expr.Origin, funcId, new List<Expr> { TrExpr(expr.E1) }));
               }

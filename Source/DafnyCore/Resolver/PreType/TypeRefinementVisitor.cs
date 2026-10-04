@@ -150,7 +150,7 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
 
     } else if (expr is ConversionExpr { IsBaseOperation: true } conversionExpr) {
       flows.Add(new FlowFromComputedType(expr, () => {
-        var view = NewtypeOperationView.Get(conversionExpr.E.Type, ((DPreType)conversionExpr.PreType.Normalize()).Decl);
+        var view = NewtypeOperationView.Get(conversionExpr.E.Type, ((DPreType)conversionExpr.PreType.Normalize()).Decl, preserveSubsetTypes: true);
         // Keep the current lower bound until the source view is determined.
         // Successful resolution supplies the concrete, instantiated visible base.
         return view.BaseType ?? TypeRefinementWrapper.NormalizeSansBottom(expr);
@@ -342,7 +342,9 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
 
       Func<Type> GetPatternArgumentType(int argumentIndex) {
         return () => {
-          var sourceType = getPatternRhsType().NormalizeExpand();
+          var nominalSourceType = getPatternRhsType();
+          var sourceType = systemModuleManager.Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+            ? NewtypeOperationView.Get(nominalSourceType).BaseType : nominalSourceType.NormalizeExpand();
           Contract.Assert(sourceType.IsDatatype);
           Contract.Assert(sourceType.TypeArgs.Count == ctor.EnclosingDatatype.TypeArgs.Count);
           var typeMap = TypeParameter.SubstitutionMap(ctor.EnclosingDatatype.TypeArgs, sourceType.TypeArgs);

@@ -657,8 +657,8 @@ namespace Microsoft.Dafny {
         switch (e.Op) {
           case TernaryExpr.Opcode.PrefixEqOp:
           case TernaryExpr.Opcode.PrefixNeqOp:
-            var e1type = e.E1.Type.NormalizeExpand();
-            var e2type = e.E2.Type.NormalizeExpand();
+            var e1type = NewtypeOperationView.CoDatatypeType(e.E1.Type, options.Get(CommonOptionBag.ExtendedNewtypeBases));
+            var e2type = NewtypeOperationView.CoDatatypeType(e.E2.Type, options.Get(CommonOptionBag.ExtendedNewtypeBases));
             var cot = e1type.AsCoDatatype;
             Contract.Assert(cot != null);  // the argument types of prefix equality (and prefix disequality) are codatatypes
             var r = BoogieGenerator.CoEqualCall(cot, e1type.TypeArgs, e2type.TypeArgs, e0, this.layerInterCluster.LayerN((int)FuelSetting.FuelAmount.HIGH), e1, e2);

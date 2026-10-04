@@ -159,8 +159,8 @@ namespace Microsoft.Dafny {
         case TernaryExpr ternaryExpr: {
             var e = ternaryExpr;
             if ((e.Op == TernaryExpr.Opcode.PrefixEqOp && position) || (e.Op == TernaryExpr.Opcode.PrefixNeqOp && !position)) {
-              var e1type = e.E1.Type.NormalizeExpand();
-              var e2type = e.E2.Type.NormalizeExpand();
+              var e1type = NewtypeOperationView.CoDatatypeType(e.E1.Type, options.Get(CommonOptionBag.ExtendedNewtypeBases));
+              var e2type = NewtypeOperationView.CoDatatypeType(e.E2.Type, options.Get(CommonOptionBag.ExtendedNewtypeBases));
               var codecl = e1type.AsCoDatatype;
               Contract.Assert(codecl != null);
               var k = etran.TrExpr(e.E0);

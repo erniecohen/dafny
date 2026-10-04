@@ -53,6 +53,7 @@ public class FunctionCallExpr : Expression, IHasReferences, ICloneable<FunctionC
     Yes,
     NoBecauseFunctionHasSideEffects,
     NoBecauseFunctionHasPostcondition,
+    NoBecauseFunctionHasConstrainedReturnType,
     NoBecauseRecursiveCallsAreNotAllowedInThisContext,
     NoBecauseIsNotGuarded,
     NoBecauseRecursiveCallsInDestructiveContext

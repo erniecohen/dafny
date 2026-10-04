@@ -277,7 +277,7 @@ namespace Microsoft.Dafny {
       return preType;
     }
 
-    private DPreType OperationPreType(PreType nominal) {
+    internal DPreType OperationPreType(PreType nominal) {
       var current = nominal.NormalizeWrtScope() as DPreType;
       if (!resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
         return nominal.Normalize() as DPreType;
@@ -321,8 +321,20 @@ namespace Microsoft.Dafny {
       return false;
     }
 
+    private DPreType PatternOperationPreType(PreType source) {
+      var view = OperationPreType(source);
+      if (view == null && resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+        var definedSource = Constraints.FindDefinedPreType(source, false);
+        if (definedSource != null) {
+          view = OperationPreType(definedSource);
+        }
+      }
+      return view;
+    }
+
     private Expression BaseOperationExpression(Expression expression, DPreType view) {
-      if (view == null || PreType.Same(expression.PreType, view)) {
+      if (!resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases) ||
+          view == null || PreType.Same(expression.PreType, view)) {
         return expression;
       }
       return new ConversionExpr(expression.Origin, expression, new InferredTypeProxy()) {
@@ -948,7 +960,7 @@ namespace Microsoft.Dafny {
         };
         if (resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
             (AncestorName(nd.BasePreType) == PreType.TypeNameORDINAL ||
-             OperationPreType(nd.BasePreType)?.Decl is IndDatatypeDecl)) {
+             OperationPreType(nd.BasePreType)?.Decl is DatatypeDecl)) {
           // Capability admission is deliberately separate from the existing mode.
           // Other families remain rejected until their operations and representation are complete.
         } else if (resolver.Options.Get(CommonOptionBag.GeneralNewtypes)) {
