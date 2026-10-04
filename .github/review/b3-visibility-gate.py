@@ -132,7 +132,7 @@ try:
     for name, project, count, selector in [
             ('contracts', 'Source/DafnyCore.Test/DafnyCore.Test.csproj', 26,
              'FullyQualifiedName~VerificationContractsTest|FullyQualifiedName~B3BackendSelectionTest|FullyQualifiedName~B3WorkItemTest'),
-            ('normalizer', 'Source/DafnyB3Normalizer.Test/DafnyB3Normalizer.Test.csproj', 252, None)]:
+            ('normalizer', 'Source/DafnyB3Normalizer.Test/DafnyB3Normalizer.Test.csproj', 260, None)]:
         command = ['dotnet', 'test', project, '-c', 'Release', '-m:1', '-p:UseSharedCompilation=false',
                    '--results-directory', str(output / name), '--logger', 'trx;LogFileName=result.trx', '--nologo']
         if selector:

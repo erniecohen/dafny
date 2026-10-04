@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
     inputs:
       b3_focus_gate:
-        description: Focused checks reusing the unchanged B3 library verified in public run 37201990430
+        description: Focused checks with source-pinned public B3 proof prerequisites
         type: choice
         options: [none, ide-regressions, maps, isolation, numeric-proof, visibility, complete]
         default: none
