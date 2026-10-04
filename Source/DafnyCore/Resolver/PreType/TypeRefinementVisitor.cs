@@ -148,6 +148,14 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
         () => new UserDefinedType(expr.Origin, datatypeDecl.Name, datatypeDecl, datatypeValue.InferredTypeArgs),
         ctor.Name));
 
+    } else if (expr is ConversionExpr { IsBaseOperation: true } conversionExpr) {
+      flows.Add(new FlowFromComputedType(expr, () => {
+        var view = NewtypeOperationView.Get(conversionExpr.E.Type, ((DPreType)conversionExpr.PreType.Normalize()).Decl);
+        // Keep the current lower bound until the source view is determined.
+        // Successful resolution supplies the concrete, instantiated visible base.
+        return view.BaseType ?? TypeRefinementWrapper.NormalizeSansBottom(expr);
+      }, "base operation"));
+
     } else if (expr is ApplyExpr applyExpr) {
       flows.Add(new FlowFromTypeArgument(expr, applyExpr.Function.UnnormalizedType, applyExpr.Args.Count));
 

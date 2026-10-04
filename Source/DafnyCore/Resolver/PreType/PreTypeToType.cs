@@ -151,7 +151,9 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
       }
 
     } else if (expr is ConversionExpr conversionExpr) {
-      PreType2TypeUtil.Combine(conversionExpr.ToType, conversionExpr.PreType, false);
+      // Pre-types omit subset refinements, including total/no-reads arrow families.
+      // A synthetic base view must recover them from its nominal source during refinement.
+      PreType2TypeUtil.Combine(conversionExpr.ToType, conversionExpr.PreType, conversionExpr.IsBaseOperation);
       expr.Type = conversionExpr.ToType;
       return;
     }
