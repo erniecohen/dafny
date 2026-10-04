@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(DafnyCensusReferenceDirectory)' == ''">
+    <ProjectReference Include="../DafnyCore/DafnyCore.csproj" />
+  </ItemGroup>
+  <!-- An exact-source release can supply the already-built dependencies for a quick census. -->
+  <ItemGroup Condition="'$(DafnyCensusReferenceDirectory)' != ''">
+    <Reference Include="$(DafnyCensusReferenceDirectory)/*.dll" />
+    <Content Include="$(DafnyCensusReferenceDirectory)/DafnyPrelude.bpl" Link="DafnyPrelude.bpl" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

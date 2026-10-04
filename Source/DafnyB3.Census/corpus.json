@@ -1,0 +1,277 @@
+[
+  {
+    "id": "assertions",
+    "path": "Source/DafnyB3.Census/Corpus/assertions.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "assertions"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "contains-valid-and-invalid-obligations"
+  },
+  {
+    "id": "contracts",
+    "path": "Source/DafnyB3.Census/Corpus/contracts.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "contracts"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "contains-valid-and-invalid-obligations"
+  },
+  {
+    "id": "generics",
+    "path": "Source/DafnyB3.Census/Corpus/generics.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "generics"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "not-executed"
+  },
+  {
+    "id": "heap-arrays",
+    "path": "Source/DafnyB3.Census/Corpus/heap-arrays.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "heap-arrays"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "not-executed"
+  },
+  {
+    "id": "collections",
+    "path": "Source/DafnyB3.Census/Corpus/collections.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "collections"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "not-executed"
+  },
+  {
+    "id": "lambdas",
+    "path": "Source/DafnyB3.Census/Corpus/lambdas.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "lambdas"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "not-executed"
+  },
+  {
+    "id": "datatypes-traits",
+    "path": "Source/DafnyB3.Census/Corpus/datatypes-traits.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "datatypes-traits"
+    ],
+    "generalTraits": "full",
+    "typeSystemRefresh": true,
+    "intendedVerification": "not-executed"
+  },
+  {
+    "id": "iterators",
+    "path": "Source/DafnyB3.Census/Corpus/iterators.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "iterators"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "not-executed"
+  },
+  {
+    "id": "bitvectors",
+    "path": "Source/DafnyB3.Census/Corpus/bitvectors.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "bitvectors"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "not-executed"
+  },
+  {
+    "id": "reals",
+    "path": "Source/DafnyB3.Census/Corpus/reals.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "reals"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "not-executed"
+  },
+  {
+    "id": "loops-recursion",
+    "path": "Source/DafnyB3.Census/Corpus/loops-recursion.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "loops-recursion"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "not-executed"
+  },
+  {
+    "id": "visibility",
+    "path": "Source/DafnyB3.Census/Corpus/visibility.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "visibility"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "not-executed"
+  },
+  {
+    "id": "parse-rejected",
+    "path": "Source/DafnyB3.Census/Corpus/parse-rejected.dfy",
+    "expectedStage": "parse-rejected",
+    "categories": [
+      "parse-rejected"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "not-executed"
+  },
+  {
+    "id": "git-issue-6366",
+    "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-6366.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "repaired-soundness"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "repository-lit-expectations-not-executed"
+  },
+  {
+    "id": "git-issue-6531",
+    "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-6531.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "repaired-soundness"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "repository-lit-expectations-not-executed"
+  },
+  {
+    "id": "git-issue-6532",
+    "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-6532.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "repaired-soundness"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "repository-lit-expectations-not-executed"
+  },
+  {
+    "id": "git-issue-6533",
+    "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-6533.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "repaired-soundness"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "repository-lit-expectations-not-executed"
+  },
+  {
+    "id": "git-issue-6534",
+    "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-6534.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "repaired-soundness"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "repository-lit-expectations-not-executed"
+  },
+  {
+    "id": "git-issue-6535",
+    "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-6535.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "repaired-soundness"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "repository-lit-expectations-not-executed"
+  },
+  {
+    "id": "git-issue-6536",
+    "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-6536.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "repaired-soundness"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "repository-lit-expectations-not-executed"
+  },
+  {
+    "id": "git-issue-6537",
+    "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-6537.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "repaired-soundness"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "repository-lit-expectations-not-executed"
+  },
+  {
+    "id": "boogie-issue-1168",
+    "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/boogie-issue-1168.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "repaired-soundness"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "repository-lit-expectations-not-executed"
+  },
+  {
+    "id": "cardinality-nonvacuity",
+    "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/traits/cardinality-nonvacuity.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "cardinality-soundness"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "repository-lit-expectations-not-executed"
+  },
+  {
+    "id": "cardinality-positive",
+    "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/traits/cardinality-positive.dfy",
+    "expectedStage": "typed-pre-vc",
+    "categories": [
+      "cardinality-soundness"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "repository-lit-expectations-not-executed"
+  },
+  {
+    "id": "cardinality-expansion",
+    "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/traits/cardinality-expansion.dfy",
+    "expectedStage": "resolution-rejected",
+    "categories": [
+      "cardinality-soundness"
+    ],
+    "generalTraits": "datatype",
+    "typeSystemRefresh": true,
+    "intendedVerification": "repository-lit-expectations-not-executed"
+  }
+]
