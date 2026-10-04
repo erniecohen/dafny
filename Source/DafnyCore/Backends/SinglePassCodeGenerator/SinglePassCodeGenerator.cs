@@ -2999,6 +2999,20 @@ namespace Microsoft.Dafny.Compilers {
 
     public record OptimizedExpressionContinuation(Action<Expression, Type, bool, ConcreteSyntaxTree> Continuation, bool PreventCaseFallThrough);
 
+    private bool IsExactDatatypeNewtypeRuntimeIdentity(ConversionExpr conversion) {
+      if (!Options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+        return false;
+      }
+      var source = NewtypeOperationView.Get(conversion.E.Type);
+      var destination = NewtypeOperationView.Get(conversion.ToType);
+      return source.Status == NewtypeOperationView.ViewStatus.Resolved &&
+             destination.Status == NewtypeOperationView.ViewStatus.Resolved &&
+             source.BaseType.IsDatatype && source.BaseType.Equals(destination.BaseType, true) &&
+             (source.Path.Any(d => d is NewtypeDecl) || destination.Path.Any(d => d is NewtypeDecl)) &&
+             source.Path.Concat(destination.Path).OfType<NewtypeDecl>().All(n => n.Traits.Count == 0) &&
+             GetRuntimeType(conversion.E.Type).Equals(GetRuntimeType(conversion.ToType), true);
+    }
+
     /// <summary>
     /// This method compiles "expr" into a statement context of the target. This typically means that, for example, Dafny let-bound variables can
     /// be compiled into local variables in the target code, and that Dafny if-then-else expressions can be compiled into if statements in the
@@ -3017,21 +3031,22 @@ namespace Microsoft.Dafny.Compilers {
       Contract.Requires(continuation != null);
 
       expr = expr.Resolved;
-      if (Options.Get(CommonOptionBag.ExtendedNewtypeBases) && expr is ConversionExpr conversion) {
-        var source = NewtypeOperationView.Get(conversion.E.Type);
-        var destination = NewtypeOperationView.Get(conversion.ToType);
-        if (source.Status == NewtypeOperationView.ViewStatus.Resolved &&
-            destination.Status == NewtypeOperationView.ViewStatus.Resolved &&
-            source.BaseType.IsDatatype && source.BaseType.Equals(destination.BaseType, true) &&
-            (source.Path.Any(d => d is NewtypeDecl) || destination.Path.Any(d => d is NewtypeDecl)) &&
-            source.Path.Concat(destination.Path).OfType<NewtypeDecl>().All(n => n.Traits.Count == 0) &&
-            Type.Equals(GetRuntimeType(conversion.E.Type), GetRuntimeType(conversion.ToType))) {
-          // The checked conversion is a runtime identity. Keep its operand in
-          // statement context so datatype-update let bindings become locals,
-          // with the original evaluation order and no extra closure layers.
-          TrExprOpt(conversion.E, resultType, wr, wStmts, inLetExprBody, accumulatorVar, continuation);
-          return;
-        }
+      if (expr is ConversionExpr conversion && IsExactDatatypeNewtypeRuntimeIdentity(conversion)) {
+        // Keep the checked nominal conversion on each terminal expression.
+        // Assignment and return continuations use that nominal type to select
+        // backend coercions; equal runtime carriers alone do not suffice.
+        var nominalContinuation = new OptimizedExpressionContinuation(
+          (inner, _, innerInLetExprBody, innerWriter) => {
+            var converted = new ConversionExpr(conversion.Origin, inner, conversion.ToType, conversion.messagePrefix) {
+              Type = conversion.Type,
+              IsBaseOperation = conversion.IsBaseOperation
+            };
+            continuation.Continuation(converted, resultType, innerInLetExprBody, innerWriter);
+          }, continuation.PreventCaseFallThrough);
+        // Lower bindings once in the same statement context and original order,
+        // then use the original result type even for a nested-match branch.
+        TrExprOpt(conversion.E, resultType, wr, wStmts, inLetExprBody, accumulatorVar, nominalContinuation);
+        return;
       }
       if (expr is LetExpr) {
         var e = (LetExpr)expr;
