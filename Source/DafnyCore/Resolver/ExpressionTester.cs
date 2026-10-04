@@ -447,6 +447,12 @@ public class ExpressionTester {
                                  operationB.Status != NewtypeOperationView.ViewStatus.Resolved)) {
         return false;
       }
+      if (usesExtendedNewtype && operationB.Path.OfType<RedirectingTypeDecl>()
+            .Any(declaration => declaration.Var != null && !declaration.ConstraintIsCompilable)) {
+        // A bare outer newtype does not make an inner ghost constraint executable.
+        // Inspect only the resolved, scope-sensitive destination path.
+        return false;
+      }
       if (usesExtendedNewtype && Type.SameHead(operationA.BaseType, operationB.BaseType)) {
         // Datatype, tuple, and arrow carriers are representation ancestry, not
         // trait parents. Keep B's symbolic arguments to perform the same
