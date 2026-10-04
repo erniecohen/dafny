@@ -153,7 +153,8 @@ def check(options):
             finally:
                 cleanup_count = cleanup_children()
                 process.wait(timeout=5)
-        text = log_path.read_bytes()[:1048576].decode('utf-8', errors='replace')
+        with log_path.open('rb') as captured:
+            text = captured.read(1048576).decode('utf-8', errors='replace')
         if log_path.stat().st_size > 1048576:
             failure = 'Output byte bound exceeded'
         diagnostic = '\n'.join(line.split('Error:', 1)[1] for line in text.splitlines() if 'Error:' in line)
