@@ -150,3 +150,14 @@ resolved printing. All exact text, literal, coercion, precedence and denominator
 checks remain required after correcting extraction. This fixture-only repair
 changes no parser/printer/solver implementation or proof contract; its edited
 inventory still requires a fresh runtime receipt.
+
+
+The universal identity corpus fixture marks only its arithmetic quantifier with
+`{:nowarn}`. The quantified formula remains `x + 0.0 == x`; no trigger or logical
+premise is introduced. The frontend supports this attribute to report a missing
+trigger as information, so its warning exit does not obscure the actual backend
+verdict. The earlier public run verified both units but exited 2 for that frontend
+warning; it remains a failed corpus receipt. The Java scratch compiler output is
+named `b3`, matching the original build recipe, because a default-package class
+`B3` would shadow the generated `B3` namespace in its own main method. Neither
+change alters worker arithmetic or the strict negative corpus expectations.

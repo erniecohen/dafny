@@ -21,7 +21,7 @@ if full_gate:
     'test','--no-verify','test/worker/dfyconfig.toml','--output',str((output/'worker-runtime/tests').resolve())]),
   ('worker-java',['env','DOTNET_GCHeapHardLimit=C0000000','dotnet',
     str((output/'worker/compiler/dafny/Dafny.dll').resolve()),'build','--no-verify','--target=java',
-    'target/java/src/dfyconfig.toml','--output',str((output/'worker-java/B3').resolve())]),
+    'target/java/src/dfyconfig.toml','--output',str((output/'worker-java/b3').resolve())]),
   ('host',['bash','Source/DafnyB3Host.Test/run-tests.sh',worker,solver]),
   ('corpus',['python3','Scripts/check-b3-integration.py','Binaries/net8.0/Dafny.dll','build/b3-host-tests/package/DafnyB3Host.dll',solver,'--output',str(output/'corpus')]),
   ('language-server',['env','DAFNY_TEST_SOLVER_PATH='+solver,'dotnet','test','Source/DafnyLanguageServer.Test/DafnyLanguageServer.Test.csproj','-c','Release','-m:1','-p:UseSharedCompilation=false','--filter','FullyQualifiedName~B3CacheVerificationTest|FullyQualifiedName~B3ProjectMigrationTest|FullyQualifiedName~IdeStateObserverRetirementTest|FullyQualifiedName~CounterExampleCapabilityTest|FullyQualifiedName~ProjectManagerDatabaseTest|FullyQualifiedName~ProjectFilesTest|FullyQualifiedName~MultipleFilesProjectTest|FullyQualifiedName~CompetingProjectFilesTest|FullyQualifiedName~AdditionalAxiomsTest|FullyQualifiedName~CounterexamplesStillWorksIfNothingHasBeenVerified','--results-directory',str(output/'language-server'),'--logger','trx;LogFileName=result.trx','--nologo']),
@@ -48,7 +48,7 @@ def validate(name):
   text=(output/'worker-runtime.txt').read_text()
   assert len(re.findall(r'PASSED$',text,re.M))==27 and not re.search(r'FAILED|HALT',text), 'Expected all 27 runtime controls'
  elif name=='worker-java':
-  archive=output/'worker-java/B3.jar'
+  archive=output/'worker-java/b3.jar'
   assert archive.is_file() and archive.stat().st_size>0, 'Java compiler produced no jar'
  elif name=='host':
   totals=re.findall(r'Failed:\s*(\d+),\s*Passed:\s*(\d+),\s*Skipped:\s*(\d+),\s*Total:\s*(\d+)',(output/'host.txt').read_text())
