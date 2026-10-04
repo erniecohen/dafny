@@ -24,7 +24,7 @@ common = ['--verification-backend', 'b3', '--b3-worker', str(args.worker.resolve
           '--progress', 'Batch']
 results = []
 
-def run(name, source, expected_exit, diagnostic=None, extra=(), proof_failure=False):
+def run(name, source, expected_exit, diagnostic=None, extra=(), proof_failure=False, empty_selection=False):
     options = common.copy()
     for option in ('--verification-time-limit', '--b3-worker'):
         if option in extra:
@@ -43,9 +43,11 @@ def run(name, source, expected_exit, diagnostic=None, extra=(), proof_failure=Fa
               (diagnostic is None or diagnostic in diagnostic_text) and not internal_error}
     if proof_failure:
         result['passed'] = result['passed'] and 'B3 failed:' in error_bodies
-    if expected_exit == 0:
+    if expected_exit == 0 and not empty_selection:
         # Successful preparation alone is insufficient: at least one complete unit must run.
         result['passed'] = result['passed'] and 'verified successfully' in text and 'resource count: unavailable' in text
+    if empty_selection:
+        result['passed'] = result['passed'] and '0 verified, 0 errors' in text and 'verified successfully' not in text
     results.append(result)
     print(name, 'PASS' if result['passed'] else 'FAIL', completed.returncode, flush=True)
 
@@ -59,7 +61,9 @@ run('solver-help', corpus / 'true.dfy', 4, 'unsupported by B3', ['--solver-optio
 run('passive-print', corpus / 'true.dfy', 4, 'unsupported by B3', ['--pprint', str(args.output / 'passive.bpl')])
 run('split-print', corpus / 'true.dfy', 4, 'unsupported by B3', ['--sprint', str(args.output / 'split.bpl')])
 run('empty-selection-failure', corpus / 'true.dfy', 4, 'unsupported by B3', ['--filter-symbol', 'Absent', '--solver-option-help'])
-run('symbol-filter', corpus / 'bad-precondition.dfy', 0, None, ['--filter-symbol', 'P'])
+run('symbol-filter', corpus / 'symbol-filter.dfy', 0, None, ['--filter-symbol', 'P'])
+run('symbol-filter-negative', corpus / 'symbol-filter.dfy', 4, 'assertion', ['--filter-symbol', 'T'], proof_failure=True)
+run('empty-selection', corpus / 'symbol-filter.dfy', 0, None, ['--filter-symbol', 'Absent'], empty_selection=True)
 parse_source = args.output / 'parse-error.dfy'
 parse_source.write_text('method Broken( {\n')
 run('parse-error', parse_source, 2, 'parse errors detected')

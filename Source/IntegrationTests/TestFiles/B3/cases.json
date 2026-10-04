@@ -63,7 +63,7 @@
       "name": "bitvector",
       "file": "bitvector.dfy",
       "exitCode": 4,
-      "diagnostic": "b3_primitive_type"
+      "diagnostic": "b3_type: Unsupported type BvType"
     },
     {
       "name": "division",
