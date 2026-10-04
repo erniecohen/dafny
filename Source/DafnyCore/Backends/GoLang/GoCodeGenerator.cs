@@ -1127,7 +1127,7 @@ namespace Microsoft.Dafny.Compilers {
         WriteRuntimeTypeDescriptorsLocals(descriptorParams, wDefaultBody);
         // Descriptor storage does not establish source-language inhabitation.
         // Ghost and opt-out witnesses never supply compiled default values.
-        var d = Options.Get(CommonOptionBag.ExtendedNewtypeBases) && udt.GetAutoInit() != AutoInitInfo.CompilableValue
+        var d = Options.Get(CommonOptionBag.ExtendedNewtypeBases) && udt.GetAutoInit() != Type.AutoInitInfo.CompilableValue
           ? PlaceboValue(udt, wr, nt.Origin, true)
           : DefaultValue(udt, wr, nt.Origin, true);
         wDefaultBody.WriteLine("return {0}", d);
