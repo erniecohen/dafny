@@ -386,7 +386,7 @@ class CheckTypeCharacteristicsVisitor : ResolverTopDownVisitor<bool> {
       errorId = RefinementErrors.ErrorId.ref_mismatched_type_characteristics_nonempty;
       return false;
     }
-    if (formal.ContainsNoReferenceTypes && actual.MayInvolveReferences) {
+    if (formal.ContainsNoReferenceTypes && actual.MayShowReferences) {
       whatIsNeeded = "contain no references";
       hint = tp == null ? "" :
         string.Format(" (perhaps try declaring {2} '{0}' on line {1} as '{0}(!new)', which says it can only be instantiated with a type that contains no references)", tp.Name, tp.Origin.line, tp.WhatKind);

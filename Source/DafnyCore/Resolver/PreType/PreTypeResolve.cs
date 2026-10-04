@@ -960,9 +960,11 @@ namespace Microsoft.Dafny {
         };
         if (resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
             (AncestorName(nd.BasePreType) == PreType.TypeNameORDINAL ||
-             OperationPreType(nd.BasePreType)?.Decl is DatatypeDecl)) {
+             OperationPreType(nd.BasePreType)?.Decl is DatatypeDecl or ArrowTypeDecl ||
+             OperationPreType(nd.BasePreType) is { Decl: var arrowBase } &&
+             (ArrowType.IsPartialArrowTypeName(arrowBase.Name) || ArrowType.IsTotalArrowTypeName(arrowBase.Name)))) {
           // Capability admission is deliberately separate from the existing mode.
-          // Other families remain rejected until their operations and representation are complete.
+          // References and traits remain excluded by the existing general-base confirmation.
         } else if (resolver.Options.Get(CommonOptionBag.GeneralNewtypes)) {
           AddConfirmation(PreTypeConstraints.CommonConfirmationBag.IsNewtypeBaseTypeGeneral, nd.BasePreType, nd.Origin,
             $"a newtype ('{nd.Name}') must be based on some non-reference, non-trait, non-arrow, non-ORDINAL, non-datatype type (got {{0}})",
