@@ -163,7 +163,11 @@ def main():
                     receipt['cleanupPoisoned']=True; receipt['emergencyDrain']=owned.drain_exclusive_children(10)
                     receipt['remainingDirectChildren']=owned.child_ids(os.getpid())
             except Exception as error: receipt['cleanupPoisoned']=True; receipt['cleanupFailure']=type(error).__name__+': '+str(error)
-        (output/'summary.json').write_text(json.dumps(receipt,indent=2)+'\n')
+        encoded=(json.dumps(receipt,indent=2)+'\n').encode()
+        if len(encoded)>8*1024*1024:
+            encoded=(json.dumps({'diagnosticOnly':True,'acceptanceClaimed':False,'receiptBoundExceeded':True,
+              'failure':'Outer aggregate receipt exceeded8MiB; individual stage/input files retained'},indent=2)+'\n').encode()
+        (output/'summary.json').write_bytes(encoded)
         print('Real SMT capture diagnostic receipt:',receipt.get('diagnosticReceiptProduced',False),'acceptance: False',flush=True)
         if os.environ.get('GITHUB_STEP_SUMMARY'):
             with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:

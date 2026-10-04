@@ -226,11 +226,16 @@ def main():
         stage(owned,receipt['stages'],'strace-version',[tracer,'--version'],args.output,env,30)
         require('version 6.8' in (args.output/'strace-version.log').read_text(), 'Parser supports reviewed strace6.8 only')
         runner=args.output/'runner'
+        require(seal()==hashes,'Diagnostic source changed before SDK build')
         stage(owned,receipt['stages'],'replay-build',[dotnet,'build',HERE/'Replay.csproj','--nologo','-c','Release','-o',runner,
           '-p:B3CaptureProtocolAssembly='+str(protocol)],args.output,env,240)
+        require(seal()==hashes,'Diagnostic source changed after SDK build')
         executable=runner/'Replay.dll'
         require(sha(read(runner/'DafnyB3Protocol.dll',32*1024*1024)) == manifest['protocolAssemblySha256'], 'Built replay loaded protocol differs')
-        runner_hashes={p.name:sha(read(p)) for p in runner.iterdir() if p.is_file()}
+        runner_files=list(runner.iterdir())
+        require(len(runner_files)<=32 and all(p.is_file() for p in runner_files),'Replay output file inventory bound')
+        require(sum(p.lstat().st_size for p in runner_files)<=512*1024*1024,'Replay output aggregate bound')
+        runner_hashes={p.name:sha(read(p)) for p in runner_files}
         receipt['runnerFileHashes']=runner_hashes
         controls=args.output/'controls'
         stage(owned,receipt['stages'],'prepare-controls',[dotnet,executable,'--mode','prepare','--baseline',HERE/'baseline','--output',controls],args.output,env,30)
@@ -248,6 +253,7 @@ def main():
             receipt['cases'].append(row); images=[]
             trace=args.output/(case['name']+'.trace'); result=args.output/(case['name']+'.result.json')
             try:
+                require(seal()==hashes,'Diagnostic source changed before replay')
                 require(sha(read(case['path'],1024*1024))==case['requestSha256'], 'Request changed before replay')
                 require(sha(read(dotnet))==receipt['dotnetExecutableSha256'] and sha(read(tracer))==receipt['straceExecutableSha256'], 'Invocation executable changed before replay')
                 for name,digest in runner_hashes.items(): require(sha(read(runner/name))==digest, 'Runner changed before replay')
@@ -264,6 +270,7 @@ def main():
                 verdict=json.loads(read(result,1024*1024)); row['replay']=verdict
                 row['mathematicalMatched']=verdict['mathematicalMatched']; row['actualProofResourceCount']=None
                 row['traceSha256']=sha(read(trace,MAX_TRACE)); row['liveImages']=images
+                row['missedDescendantPinObservations']=ownership['transientDescendantObservations']
                 analysis=capture.analyze(read(trace,MAX_TRACE),ownership,images,SOLVER_PATH,manifest['solverSha256'],case['checkIds'],str(worker/'DafnyB3Host.dll'),str(dotnet),
                   read(case['path'],1024*1024),verdict['completion'])
                 for stream_key,suffix in [('commandBytes','stdin.smt2'),('responseBytes','stdout.smt2')]:
@@ -278,12 +285,25 @@ def main():
             finally:
                 if trace.exists() and 0 < trace.stat().st_size <= MAX_TRACE:
                     row['traceSha256']=sha(read(trace,MAX_TRACE))
+                    try:
+                        observations=capture.weak_observations(read(trace,MAX_TRACE),SOLVER_PATH)
+                        for index,observation in enumerate(observations):
+                            for stream_key,suffix in [('commandBytes','stdin'),('responseBytes','stdout')]:
+                                data=observation.pop(stream_key)
+                                (args.output/(case['name']+'.unqualified-'+str(index)+'-'+suffix+'.bytes')).write_bytes(data)
+                                observation[stream_key+'Sha256']=sha(data)
+                        row['unqualifiedExecLineObservations']=observations
+                    except Exception as error:
+                        row['unqualifiedObservationError']=type(error).__name__+': '+str(error)
                 row['weakerPathAndImmutableFileObservation']={'solverPath':SOLVER_PATH,'solverSha256':manifest['solverSha256'],
                   'kernelImageQualified':row['captureComplete'],'signedAttestationClaimed':False}
                 require(sha(read(dotnet))==receipt['dotnetExecutableSha256'] and sha(read(tracer))==receipt['straceExecutableSha256'], 'Invocation executable changed after replay')
                 for name,digest in runner_hashes.items(): require(sha(read(runner/name))==digest, 'Runner changed after replay')
                 for name,digest in package_hashes.items(): require(sha(read(worker/name))==digest, 'Worker changed after replay')
                 require(sha(read(solver))==manifest['solverSha256'], 'Solver changed after replay')
+                require(sha(read(worker/'b3-worker-manifest.json',65536))==manifest['workerFingerprint'], 'Worker manifest changed after replay')
+                require(sha(read(case['path'],1024*1024))==case['requestSha256'], 'Exact request changed after replay')
+                require(seal()==hashes,'Diagnostic source changed after replay')
         require(seal()==hashes, 'Diagnostic source changed after execution')
         receipt['diagnosticDenominatorComplete']=len(receipt['cases'])==8
         receipt['allCapturesComplete']=len(receipt['cases'])==8 and all(x['captureComplete'] for x in receipt['cases'])
@@ -299,7 +319,12 @@ def main():
                     receipt['emergencyDrain']=owned.drain_exclusive_children(10)
                     receipt['remainingDirectChildren']=owned.child_ids(os.getpid())
             except Exception as error: receipt['cleanupFailure']=type(error).__name__+': '+str(error)
-        (args.output/'summary.json').write_text(json.dumps(receipt,indent=2)+'\n')
+        encoded=(json.dumps(receipt,indent=2)+'\n').encode()
+        if len(encoded)>4*1024*1024:
+            encoded=(json.dumps({'diagnosticOnly':True,'acceptanceClaimed':False,'receiptBoundExceeded':True,
+              'allCapturesComplete':False,'allMathematicalExpectationsMatched':False,
+              'failure':'Aggregate receipt exceeded4MiB; raw per-case files retained without aggregate qualification'},indent=2)+'\n').encode()
+        (args.output/'summary.json').write_bytes(encoded)
         print('Real SMT diagnostic: capture',receipt.get('allCapturesComplete',False),'strict math',receipt.get('allMathematicalExpectationsMatched',False),'acceptance False',flush=True)
     return 0
 

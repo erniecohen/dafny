@@ -21,7 +21,9 @@ SDK and tracing descendants receive no download token environment. The parser
 checks successful exec identity, live solver-image digest, source-bound worker
 request/newline bytes, native startup/completion records and exact pipe/FD
 lineage. Trace completeness and mathematical matching have separate receipts;
-fast or missed live-image capture and unsupported trace shapes stay incomplete.
+fast or missed process/live-image capture and unsupported trace shapes stay incomplete.
+Bounded completed-I/O observations may be retained under explicitly unqualified
+exec-line/TID labels, without a process, FD or stream-completeness claim.
 A command error may prevent a later check-sat, whose source attempt must remain
 explicit ToolError. No query, guard, solver option, seed or outcome is rewritten.
 
@@ -30,7 +32,7 @@ static evidence only. Fifteen parser regressions, the C# replay build, trace
 qualification and all eight worker cases require a future reviewed CI execution.
 No workflow routing is enabled here. Tracing overhead and file caps are diagnostic
 instrumentation and cannot establish original acceptance or proof cost parity.
-The source seal is `98c9b875d0fb254cbc0c4137b142e88730f198a51b191b82a85f8441ff544289`
+The source seal is `555ca55416c26cda6a2d9212f79428f833adb2f31e2b33afb859ce3a8097b4ca`
 for 19 files; the reviewed Git/CI source identity binds that declaration without
 claiming a signed origin attestation. The product ledger remains
 `v4.11.0 0e36fadf2a702df121bc9c0fe0b11e43e475e207` because only review tooling and

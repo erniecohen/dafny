@@ -257,10 +257,21 @@ ToolError. The session's first error response must be its final emitted command
 response, as the pinned failure latch forbids further sends. This distinction
 preserves goal completeness without inventing missing mathematical queries.
 
-This first source admission is deliberately strict about unfinished solver stdin
+This first source admission is deliberately strict about unfinished worker or solver stdin
 or stdout operations. A native cleanup kill may leave an unfinished read in the
 trace; that yields capture-incomplete with preserved raw trace, rather than a
 claimed complete stream. Any future narrower handling must justify the missing
 return boundary before qualification. Trace/PID/FD/image qualification and strict
 mathematical matching are separate booleans. Source-only validation is not a
 claim that either has passed.
+
+Live-image hashing can temporarily slow the bounded ownership scan. A short
+version probe or other fast process may vanish before pidfd capture; each such
+transient observation stays explicit, and a traced process lacking a live pin
+blocks qualification. Completed read/write dumps may nevertheless be retained as
+weaker, separately named observations scoped to a reported TID and successful exec
+line. Such bytes are not joined across a subsequent exec/PID-reuse boundary and
+other threads are not included. They assert no live-image, ownership, FD topology
+or complete-process stream claim. Raw traces remain authoritative observations.
+The request bytes, worker manifest, all invoked package files and utility seal are
+rechecked after each replay; the seal is also checked around the SDK build.

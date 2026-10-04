@@ -55,9 +55,12 @@ A failed push can prevent a later check-sat: remaining original attempts must th
 be explicit ToolError, without interpreting a missing query as a proof or countermodel.
 
 A missed fast exec image, PID reuse, unsupported namespace/trace escape, incomplete
-fork/FD topology, dump gap, truncated trace or unfinished solver stream I/O makes
+fork/FD topology, dump gap, truncated trace or unfinished worker/solver stream I/O makes
 capture incomplete. Raw traces and immutable-path observations remain available as
-weaker evidence; they do not qualify a live executable image. No reset, extra
+weaker evidence; they do not qualify a live executable image. Completed I/O from
+one reported TID between its successful exec line and a later exec/PID-reuse
+boundary is also retained in explicitly unqualified observation files. Other
+threads are not merged into those bytes, and no FD/process completeness is claimed. No reset, extra
 query/statistics request, solver wrapper, logging option or rational-only carrier
 is introduced. Original proof resource totals remain unavailable.
 

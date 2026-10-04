@@ -190,7 +190,8 @@ def analyze(data, ownership, images, solver_path, solver_sha, check_ids, worker_
     for entry in ownership['ownedProcesses']:
         pin = entry['identity']; pid = pin['pid']; require(pid not in pins, 'Owned numeric identity reuse')
         pins[pid] = pin
-    require(all(group in pins for group in set(groups.values())), 'A traced process missed live pidfd ownership')
+    missing = sorted(set(groups.values()) - set(pins))
+    require(not missing, 'Traced processes missed live pidfd ownership: ' + repr(missing))
     for child,fork in forks.items():
         if not fork['thread']:
             require(pins[child]['parent'] == groups[fork['parent']], 'Trace fork does not match pinned process parent')
@@ -266,10 +267,11 @@ def analyze(data, ownership, images, solver_path, solver_sha, check_ids, worker_
                 target = delivered if fd == 0 else produced
             else: target = worker_input if fd == 0 else worker_output
             target.extend(call['bytes']); require(len(target) <= MAX_STREAM, 'Reconstructed stream bound')
+            require(len(transitions) < 20000,'I/O transition evidence bound')
             transitions.append({'line': call['end'], 'processId':group, 'fd': fd, 'pipeInode': inode, 'call': name, 'returned': returned, 'deliveredBytes': len(call['bytes'])})
             eof |= group == pid and fd == 0 and returned == 0
-    require(not any(groups.get(tid) == pid and re.match(r'(read|readv|write|writev)\([01](?:<|,)', text[0]) for tid,text in unfinished.items()),
-            'Solver stream ended with unfinished I/O')
+    require(not any(groups.get(tid) in (pid,worker_pid) and re.match(r'(read|readv|write|writev)\([01](?:<|,)', text[0]) for tid,text in unfinished.items()),
+            'Worker/solver stream ended with unfinished I/O')
     require(bytes(worker_input) == request_bytes + b'\n', 'Worker did not consume the exact frozen request and newline')
     records = bytes(worker_output).splitlines()
     require(len(records) == 2, 'Frozen worker output record count differs')
@@ -303,3 +305,41 @@ def analyze(data, ownership, images, solver_path, solver_sha, check_ids, worker_
             'workerProcessId':worker_pid, 'workerInputSha256':hashlib.sha256(bytes(worker_input)).hexdigest(),
             'workerOutputSha256':hashlib.sha256(bytes(worker_output)).hexdigest(), 'orderedCheckIds': check_ids, 'workerResponseConsumptionClaimed': False,
             'noQuantifiedCommandObserved': not any(re.search(r'\b(forall|exists)\b', x) for x in commands)}
+
+
+def weak_observations(data, solver_path):
+    """Retain trace-line observations without any live-image/ownership/FD claim.
+
+    A reported TID is scoped to one successful exec line, never reassociated
+    with a later process or joined across an observed PID-reuse/exec boundary.
+    Other threads are intentionally not folded into these observation-only bytes.
+    """
+    calls,unfinished = calls_from_trace(data)
+    result = []
+    for candidate in calls:
+        if candidate['name'] != 'execve' or candidate['result'] != 0: continue
+        if cstring(candidate['args'][0]) != solver_path: continue
+        if [cstring(x) for x in split_arguments(candidate['args'][1][1:-1])] != [solver_path,'-in','-smt2']: continue
+        reads = bytearray(); writes = bytearray(); stop = None; count = 0
+        for call in calls:
+            if call['end'] <= candidate['end']: continue
+            if ((call['name'] == 'execve' and call['result'] == 0 and call['tid'] == candidate['tid']) or
+              (call['name'] in ('fork','vfork','clone','clone3') and call['result'] == candidate['tid'])):
+                stop = call['end']; break
+            if call['tid'] != candidate['tid'] or 'bytes' not in call: continue
+            fd = int(re.match(r'\d+',call['args'][0])[0])
+            target = reads if call['name'].startswith('read') and fd == 0 else \
+              writes if call['name'].startswith('write') and fd == 1 else None
+            if target is not None:
+                target.extend(call['bytes']); count += 1
+                require(len(target) <= MAX_STREAM,'Weak observed stream bound')
+        row = {'observationOnly':True,'kernelImageQualified':False,'ownershipQualified':False,'fdTopologyQualified':False,
+          'traceReportedTid':candidate['tid'],'successfulExecLine':candidate['end'],'execPath':solver_path,
+          'stopAtExecOrPidReuseLine':stop,'otherThreadsIncluded':False,'completedIoCalls':count,
+          'unfinishedSameTidIoObserved':candidate['tid'] in unfinished,
+          'commandBytes':bytes(reads),'responseBytes':bytes(writes)}
+        for key,value in [('observedCommandForms',reads),('observedResponseForms',writes)]:
+            try: row[key] = forms(bytes(value))
+            except ValueError as error: row[key+'Error'] = str(error)
+        result.append(row); require(len(result) <= 16,'Weak exec observation bound')
+    return result
