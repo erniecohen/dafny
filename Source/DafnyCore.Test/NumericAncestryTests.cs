@@ -3,6 +3,7 @@ using Type = Microsoft.Dafny.Type;
 
 namespace DafnyCore.Test;
 
+[Collection("Numeric ancestry allocation")]
 public class NumericAncestryTests {
   private readonly ModuleDefinition module = new(SourceOrigin.NoToken, new Name("AncestryTests"), [],
     ModuleKindEnum.Concrete, false, null, null, null);
@@ -330,3 +331,8 @@ public class NumericAncestryTests {
     Assert.Same(clone.Var.Type, clone.BaseType);
   }
 }
+
+// Allocation checks warm a process-wide reusable buffer. Other test collections
+// must not borrow or replace that buffer while its allocation count is measured.
+[CollectionDefinition("Numeric ancestry allocation", DisableParallelization = true)]
+public class NumericAncestryAllocationCollection { }

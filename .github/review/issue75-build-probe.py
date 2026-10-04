@@ -27,6 +27,8 @@ try:
         run("integration-build", ["dotnet", "build", "Source/IntegrationTests", "-c", "Release"])
         run("core-unit", ["dotnet", "test", "Source/DafnyCore.Test", "-c", "Release", "--no-build"])
         run("runtime-unit", ["dotnet", "test", "Source/DafnyRuntime.Tests", "-c", "Release", "--no-build"])
+        run("driver-process", ["dotnet", "test", "Source/DafnyDriver.Test", "-c", "Release", "--no-build",
+                               "--filter", "FullyQualifiedName~LanguageServerProcessTest"])
         run("smoke", ["dotnet", "test", "Source/IntegrationTests", "-c", "Release", "--no-build",
                       "--filter", "DisplayName~github-issue-75.dfy|DisplayName~github-issue-104.dfy"])
 except Exception as error:
