@@ -16,13 +16,87 @@ public static class B3StructuredCfgCorrespondence {
     public Bpl.IToken Token { get; }
     public Rejection(string message, Bpl.IToken token) : base(message) { Token = token; }
   }
-  public static void Validate(Bpl.Implementation implementation) => new Validator(implementation).Run();
+  public static void Validate(Bpl.Implementation implementation) => DescribeIfGuards(implementation);
+
+  // Only this complete producer validator mints catalogues. A shape or expression
+  // match made by a caller cannot supply the missing source-owner premise.
+  private static readonly object mint = new();
+  internal sealed record RawGuardSlot(Bpl.Block Block, int BlockIndex, int CommandIndex,
+    Bpl.AssumeCmd Command, Bpl.Expr Expression, Bpl.QKeyValue Attributes, string Role);
+  internal sealed record OwnerSource(Bpl.IfCmd Owner, Bpl.Expr Guard, Bpl.StmtList List,
+    Bpl.BigBlock Block, Bpl.StmtList Then, Bpl.StmtList Else, Bpl.IfCmd ElseIf,
+    string Path, object[] Containers);
+  internal sealed class IfGuardCertificate {
+    private readonly OwnerSource origin;
+    internal Bpl.IfCmd Owner => origin.Owner;
+    internal Bpl.Expr Guard => origin.Guard;
+    internal string SourcePath => origin.Path;
+    internal RawGuardSlot Positive { get; }
+    internal RawGuardSlot Negative { get; }
+    private readonly Bpl.Block predecessor;
+    private IfGuardCertificate(OwnerSource origin, RawGuardSlot positive, RawGuardSlot negative, Bpl.Block predecessor) {
+      this.origin = origin; Positive = positive; Negative = negative; this.predecessor = predecessor;
+    }
+    internal bool Same(IfGuardCertificate other) => other != null &&
+      ReferenceEquals(origin.Owner, other.origin.Owner) && ReferenceEquals(origin.Guard, other.origin.Guard) &&
+      ReferenceEquals(origin.List, other.origin.List) && ReferenceEquals(origin.Block, other.origin.Block) &&
+      ReferenceEquals(origin.Then, other.origin.Then) && ReferenceEquals(origin.Else, other.origin.Else) &&
+      ReferenceEquals(origin.ElseIf, other.origin.ElseIf) && origin.Path == other.origin.Path &&
+      origin.Containers.SequenceEqual(other.origin.Containers, ReferenceEqualityComparer.Instance) &&
+      ReferenceEquals(predecessor, other.predecessor) && SameSlot(Positive, other.Positive) && SameSlot(Negative, other.Negative);
+    private static bool SameSlot(RawGuardSlot a, RawGuardSlot b) =>
+      ReferenceEquals(a.Block, b.Block) && a.BlockIndex == b.BlockIndex && a.CommandIndex == b.CommandIndex &&
+      ReferenceEquals(a.Command, b.Command) && ReferenceEquals(a.Expression, b.Expression) &&
+      ReferenceEquals(a.Attributes, b.Attributes) && a.Role == b.Role;
+    internal static IfGuardCertificate FromProducer(object permission, OwnerSource origin,
+      RawGuardSlot positive, RawGuardSlot negative, Bpl.Block predecessor) {
+      Require(ReferenceEquals(permission, mint), "Guard certificate was not produced by complete validation", origin.Owner.tok);
+      return new IfGuardCertificate(origin, positive, negative, predecessor);
+    }
+  }
+  internal sealed class IfGuardCatalogue {
+    private readonly Bpl.Implementation unit;
+    private readonly Dictionary<Bpl.IfCmd, IfGuardCertificate> certificates;
+    private readonly RawBlockState[] raw;
+    private sealed record RawBlockState(Bpl.Block Block, string Label, Bpl.Cmd[] Commands,
+      Bpl.TransferCmd Transfer, Bpl.QKeyValue Attributes, string[] Names, Bpl.Block[] Targets);
+    internal IfGuardCatalogue(object permission, Bpl.Implementation unit, Dictionary<Bpl.IfCmd, IfGuardCertificate> certificates) {
+      Require(ReferenceEquals(permission, mint), "Guard catalogue was not produced by complete validation", unit.tok);
+      this.unit = unit; this.certificates = certificates;
+      raw = unit.Blocks.Select(block => new RawBlockState(block, block.Label, block.Cmds.ToArray(), block.TransferCmd,
+        block.TransferCmd switch { Bpl.GotoCmd jump => jump.Attributes, Bpl.ReturnCmd returned => returned.Attributes, _ => null },
+        (block.TransferCmd as Bpl.GotoCmd)?.LabelNames.ToArray(), (block.TransferCmd as Bpl.GotoCmd)?.LabelTargets.ToArray())).ToArray();
+    }
+    internal int Count => certificates.Count;
+    internal bool TryGet(Bpl.Implementation owner, Bpl.IfCmd conditional, out IfGuardCertificate certificate) {
+      certificate = null;
+      return ReferenceEquals(unit, owner) && certificates.TryGetValue(conditional, out certificate);
+    }
+    internal void Recheck() {
+      var current = DescribeIfGuards(unit);
+      Require(current.certificates.Count == certificates.Count && current.raw.Length == raw.Length,
+        "Guard producer inventory changed after capture", unit.tok);
+      foreach (var pair in certificates) {
+        Require(current.certificates.TryGetValue(pair.Key, out var other) && pair.Value.Same(other),
+          "Guard producer owner, source path or partition slot changed after capture", pair.Key.tok);
+      }
+      for (var i = 0; i < raw.Length; i++) {
+        var a = raw[i]; var b = current.raw[i];
+        Require(ReferenceEquals(a.Block, b.Block) && a.Label == b.Label &&
+          a.Commands.SequenceEqual(b.Commands, ReferenceEqualityComparer.Instance) && ReferenceEquals(a.Transfer, b.Transfer) &&
+          ReferenceEquals(a.Attributes, b.Attributes) && (a.Names == null ? b.Names == null : b.Names != null && a.Names.SequenceEqual(b.Names)) &&
+          (a.Targets == null ? b.Targets == null : b.Targets != null && a.Targets.SequenceEqual(b.Targets, ReferenceEqualityComparer.Instance)),
+          "Guard producer raw topology changed after capture", unit.tok);
+      }
+    }
+  }
+  internal static IfGuardCatalogue DescribeIfGuards(Bpl.Implementation implementation) => new Validator(implementation).Run();
 
   // Source: Boogie 73a0e214a87df85fc058270268c1d0706fd05bc9 (MIT),
   // Core/AST/StructuredBoogie/BigBlocksResolutionContext.cs:316-607 and StmtList.cs:92-131.
   // These are descriptions, never native Blocks or commands. Generated labels bind by
   // deterministic producer block position; their spelling supplies no semantic evidence.
-  private sealed record CommandShape(Bpl.Cmd Original, Bpl.Expr Guard = null, bool Negated = false);
+  private sealed record CommandShape(Bpl.Cmd Original, Bpl.Expr Guard = null, bool Negated = false, Bpl.IfCmd Owner = null, string Role = null);
   private sealed class BlockShape {
     public string Label;
     public IReadOnlyList<CommandShape> Commands;
@@ -35,13 +109,15 @@ public static class B3StructuredCfgCorrespondence {
     private readonly List<BlockShape> expected = new();
     private readonly Dictionary<Bpl.BigBlock, Bpl.BigBlock> successors = new();
     private readonly HashSet<object> sourceNodes = new();
+    private readonly Dictionary<Bpl.IfCmd, OwnerSource> owners = new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<Bpl.IfCmd, BlockShape> predecessors = new(ReferenceEqualityComparer.Instance);
     private int sourceCount;
     private int commandCount;
     private int expectedCount;
     private int edgeCount;
 
     public Validator(Bpl.Implementation unit) { this.unit = unit; }
-    public void Run() {
+    public IfGuardCatalogue Run() {
       Require(unit.StructuredStmts != null && unit.Blocks.Count is > 0 and <= 256,
         "Structured/raw CFG exceeds the audited block bound", unit.tok);
       Require(unit.Blocks.Distinct().Count() == unit.Blocks.Count &&
@@ -51,11 +127,12 @@ public static class B3StructuredCfgCorrespondence {
       Require(unit.Blocks.Sum(block => (long)block.Cmds.Count + 1) <= Ir.Protocol.MaximumNodes &&
         unit.Blocks.Sum(block => block.TransferCmd is Bpl.GotoCmd jump ? (long)(jump.LabelNames?.Count ?? 0) : 0) <= Ir.Protocol.MaximumNodes,
         "Raw CFG command/edge inventory exceeds its bound", unit.tok);
-      Index(unit.StructuredStmts, null, Array.Empty<Bpl.BigBlock>(), 0);
+      Index(unit.StructuredStmts, null, Array.Empty<Bpl.BigBlock>(), 0, "structured", Array.Empty<object>(), false);
       Create(unit.StructuredStmts, null, null, false, false, 0);
       Require(expected.Count == unit.Blocks.Count, "Raw CFG contains missing or extra producer blocks", unit.tok);
       var byLabel = unit.Blocks.ToDictionary(block => block.Label, StringComparer.Ordinal);
       var commandIdentities = new HashSet<Bpl.Cmd>();
+      var slots = new Dictionary<(Bpl.IfCmd Owner, bool Negated), RawGuardSlot>();
       for (var i = 0; i < expected.Count; i++) {
         var shape = expected[i]; var actual = unit.Blocks[i];
         Require(actual.Cmds.Count == shape.Commands.Count, "Raw block has inserted or missing ordinary commands", actual.tok);
@@ -64,7 +141,14 @@ public static class B3StructuredCfgCorrespondence {
           if (command.Original != null) {
             Require(ReferenceEquals(actual.Cmds[j], command.Original),
               "Raw ordinary command identity/order differs from structured source", actual.Cmds[j]?.tok ?? actual.tok);
-          } else { MatchGuard(actual.Cmds[j], command.Guard, command.Negated); }
+          }
+          if (command.Guard != null) { MatchGuard(actual.Cmds[j], command.Guard, command.Negated); }
+          if (command.Owner != null && owners.ContainsKey(command.Owner)) {
+            Require(slots.TryAdd((command.Owner, command.Negated), new RawGuardSlot(actual, i, j,
+              (Bpl.AssumeCmd)actual.Cmds[j], ((Bpl.AssumeCmd)actual.Cmds[j]).Expr,
+              ((Bpl.AssumeCmd)actual.Cmds[j]).Attributes, command.Role)),
+              "Guard producer has duplicate partition slots", command.Owner.tok);
+          }
           UniqueCommandTree(actual.Cmds[j], commandIdentities);
         }
         if (shape.OriginalTransfer != null) {
@@ -85,6 +169,15 @@ public static class B3StructuredCfgCorrespondence {
             "Raw goto names/targets differ from lexical producer topology", actual.TransferCmd.tok);
         }
       }
+      var certificates = new Dictionary<Bpl.IfCmd, IfGuardCertificate>(ReferenceEqualityComparer.Instance);
+      foreach (var pair in owners) {
+        Require(certificates.Count < 256 && slots.ContainsKey((pair.Key, false)) && slots.ContainsKey((pair.Key, true)),
+          "Guard producer has missing partition slots or exceeds its bound", pair.Key.tok);
+        certificates.Add(pair.Key, IfGuardCertificate.FromProducer(mint, pair.Value, slots[(pair.Key, false)],
+          slots[(pair.Key, true)], unit.Blocks[expected.IndexOf(predecessors[pair.Key])]));
+      }
+      Require(slots.Count == 2 * certificates.Count, "Guard producer has unowned partition slots", unit.tok);
+      return new IfGuardCatalogue(mint, unit, certificates);
     }
 
     private void Visit(object node, int depth, Bpl.IToken token) {
@@ -107,7 +200,8 @@ public static class B3StructuredCfgCorrespondence {
         }
       }
     }
-    private void Index(Bpl.StmtList list, Bpl.BigBlock next, IReadOnlyList<Bpl.BigBlock> ancestors, int depth) {
+    private void Index(Bpl.StmtList list, Bpl.BigBlock next, IReadOnlyList<Bpl.BigBlock> ancestors, int depth,
+      string path, object[] containers, bool insideWhile) {
       Visit(list, depth, list?.EndCurly ?? unit.tok);
       Require(list.BigBlocks.Count > 0, "Empty structured list is not a producer shape", list.EndCurly);
       if (list.PrefixCommands != null) { CountCommands(list.PrefixCommands, list.EndCurly); }
@@ -122,14 +216,20 @@ public static class B3StructuredCfgCorrespondence {
           switch (block.ec) {
             case Bpl.WhileCmd loop:
               CountCommands(loop.Yields.Cast<Bpl.Cmd>().Concat(loop.Invariants), loop.tok);
-              Index(loop.Body, block, nested, depth + 3); break;
+              Index(loop.Body, block, nested, depth + 3, path + "/block" + i + "/while", containers.Append(list).Append(block).Append(loop).ToArray(), true); break;
             case Bpl.IfCmd conditional:
-              var chainDepth = depth;
+              var chainDepth = depth; var chainIndex = 0;
               for (var current = conditional; current != null; current = current.ElseIf) {
                 if (!ReferenceEquals(current, conditional)) { Visit(current, ++chainDepth + 2, current.tok); }
                 Require(current.ElseBlock == null || current.ElseIf == null, "Conditional has two else alternatives", current.tok);
-                Index(current.Thn, next, nested, chainDepth + 3);
-                if (current.ElseBlock != null) { Index(current.ElseBlock, next, nested, chainDepth + 3); }
+                var ownerPath = path + "/block" + i + "/if" + chainIndex++;
+                var ownerContainers = containers.Append(list).Append(block).Append(current).ToArray();
+                if (!insideWhile && current.Guard != null) {
+                  owners.Add(current, new OwnerSource(current, current.Guard, list, block, current.Thn,
+                    current.ElseBlock, current.ElseIf, ownerPath, ownerContainers));
+                }
+                Index(current.Thn, next, nested, chainDepth + 3, ownerPath + "/then", ownerContainers, insideWhile);
+                if (current.ElseBlock != null) { Index(current.ElseBlock, next, nested, chainDepth + 3, ownerPath + "/else", ownerContainers, insideWhile); }
               }
               break;
             case Bpl.BreakCmd broken:
@@ -148,8 +248,8 @@ public static class B3StructuredCfgCorrespondence {
     private IReadOnlyList<Func<string>> Successor(Bpl.BigBlock block) => successors[block] == null ? null : new[] { SourceTarget(successors[block]) };
     private IReadOnlyList<Func<string>> Ending(Bpl.BigBlock block, bool last, BlockShape runoff) =>
       last && runoff != null ? new[] { GeneratedTarget(runoff) } : Successor(block);
-    private static IReadOnlyList<CommandShape> Guards(Bpl.Expr guard, bool negated) =>
-      guard == null ? Array.Empty<CommandShape>() : new[] { new CommandShape(null, guard, negated) };
+    private static IReadOnlyList<CommandShape> Guards(Bpl.Expr guard, bool negated, Bpl.IfCmd owner = null, string role = null) =>
+      guard == null ? Array.Empty<CommandShape>() : new[] { new CommandShape(null, guard, negated, owner, role) };
     private static bool Inlined(Bpl.StmtList list, Bpl.Expr guard) => guard == null || list.BigBlocks[0].Anonymous;
     private void Prefix(Bpl.StmtList list, Bpl.Expr guard, bool negated, bool inlined) {
       if (guard == null || !inlined) {
@@ -169,13 +269,14 @@ public static class B3StructuredCfgCorrespondence {
         "Expected CFG inventory exceeds its bound", actual.tok);
       expected.Add(shape); return shape;
     }
-    private void Create(Bpl.StmtList list, BlockShape runoff, Bpl.Expr prefixGuard, bool prefixNegated, bool prefixInlined, int depth) {
+    private void Create(Bpl.StmtList list, BlockShape runoff, Bpl.Expr prefixGuard, bool prefixNegated, bool prefixInlined, int depth, Bpl.IfCmd prefixOwner = null, string prefixRole = null) {
       Require(depth < Ir.Protocol.MaximumDepth, "Producer reconstruction exceeds nesting bound", list.EndCurly);
       Prefix(list, prefixGuard, prefixNegated, prefixInlined);
       for (var i = 0; i < list.BigBlocks.Count; i++) {
         var block = list.BigBlocks[i]; var last = i + 1 == list.BigBlocks.Count;
         var commands = (i == 0 ? list.PrefixCommands ?? new List<Bpl.Cmd>() : new List<Bpl.Cmd>())
-          .Concat(block.simpleCmds).Select(command => new CommandShape(command)).ToArray();
+          .Select(command => new CommandShape(command, prefixGuard, prefixNegated, prefixOwner, prefixRole))
+          .Concat(block.simpleCmds.Select(command => new CommandShape(command))).ToArray();
         if (block.tc != null) {
           var targets = block.tc is Bpl.GotoCmd jump ? jump.LabelNames?.Select<string, Func<string>>(name => () => name).ToArray() : null;
           Require(block.tc.GetType() == typeof(Bpl.ReturnCmd) || block.tc.GetType() == typeof(Bpl.GotoCmd) && targets != null,
@@ -206,20 +307,22 @@ public static class B3StructuredCfgCorrespondence {
             var inlineElse = current.ElseBlock != null && Inlined(current.ElseBlock, current.Guard);
             predecessor.Targets = new[] { inlineThen ? SourceTarget(current.Thn.BigBlocks[0]) : GeneratedTarget(then),
               inlineElse ? SourceTarget(current.ElseBlock.BigBlocks[0]) : GeneratedTarget(other) };
-            predecessor.TransferAttributes = current.Attributes; Add(predecessor, sourceLabel); sourceLabel = null;
+            predecessor.TransferAttributes = current.Attributes;
+            if (owners.ContainsKey(current)) { predecessors.Add(current, predecessor); }
+            Add(predecessor, sourceLabel); sourceLabel = null;
             if (!inlineThen) {
-              then.Commands = Guards(current.Guard, false); then.Targets = new[] { SourceTarget(current.Thn.BigBlocks[0]) }; Add(then);
+              then.Commands = Guards(current.Guard, false, current, "dedicated-then"); then.Targets = new[] { SourceTarget(current.Thn.BigBlocks[0]) }; Add(then);
             }
-            Create(current.Thn, last ? runoff : null, current.Guard, false, inlineThen, depth + 1);
+            Create(current.Thn, last ? runoff : null, current.Guard, false, inlineThen, depth + 1, current, "inlined-then");
             if (current.ElseBlock != null) {
               if (!inlineElse) {
-                other.Commands = Guards(current.Guard, true); other.Targets = new[] { SourceTarget(current.ElseBlock.BigBlocks[0]) }; Add(other);
+                other.Commands = Guards(current.Guard, true, current, "dedicated-else"); other.Targets = new[] { SourceTarget(current.ElseBlock.BigBlocks[0]) }; Add(other);
               }
-              Create(current.ElseBlock, last ? runoff : null, current.Guard, true, inlineElse, depth + 1);
+              Create(current.ElseBlock, last ? runoff : null, current.Guard, true, inlineElse, depth + 1, current, "inlined-else");
             } else if (current.ElseIf != null) {
-              other.Commands = Guards(current.Guard, true); predecessor = other;
+              other.Commands = Guards(current.Guard, true, current, "else-if-predecessor"); predecessor = other;
             } else {
-              other.Commands = Guards(current.Guard, true); other.Targets = Ending(block, last, runoff); Add(other);
+              other.Commands = Guards(current.Guard, true, current, "negative-runoff"); other.Targets = Ending(block, last, runoff); Add(other);
             }
           }
         } else { throw new Rejection("Unknown structured producer shape", block.ec.tok); }
