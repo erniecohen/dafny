@@ -1,0 +1,123 @@
+// Private draft; not registered or executed.
+// Intended flags: --type-system-refresh=true --general-newtypes=true --extended-newtype-bases
+// Requires actual reviewed issue 132 integration and root-owned arrow admission.
+
+module ArrowPositive {
+  newtype Total = int -> int witness ((x: int) => x)
+  newtype Partial = int --> int witness ((x: int) => x)
+  newtype General = int ~> int witness ((x: int) => x)
+  newtype Nullary = () ~> int witness (() => 0)
+  newtype Binary = (int, int) -> int witness ((x: int, y: int) => x + y)
+  newtype Endo<!T> = T -> T witness *
+  newtype Produce<+T> = () -> T witness *
+  newtype Consume<-T> = T -> int witness *
+  newtype Nested<!T> = Endo<T> witness *
+
+  newtype Nonnegative = n: int | 0 <= n witness 0
+  newtype NonnegativeDomain = Nonnegative -> int
+    witness ((x: Nonnegative) => x as int)
+  newtype AtZero = f: int -> int | f(0) == 0 witness ((x: int) => x)
+  newtype NaturalArrow = int -> nat witness ((x: int) => 0)
+  newtype Owned = int -> int witness ((x: int) => x) {
+    function AtZero(): int { (this as int -> int)(0) }
+  }
+  newtype OwnedTower = Owned witness (((x: int) => x) as Owned)
+
+  // Member lookup selects Owned's nominal receiver, rather than its arrow base.
+  lemma IntermediateNominalMember(f: OwnedTower) {
+    assert f.AtZero() == (f as Owned).AtZero();
+  }
+
+  // Full base refinement is int -> nat, rather than the pre-type int ~> int.
+  ghost function RefinedNaturalResult(f: NaturalArrow, x: int): nat {
+    f(x)
+  }
+
+  ghost function RefinedGenericResult(f: Produce<nat>): nat {
+    f()
+  }
+
+  lemma TotalRoundTrip(f: int -> int, x: int)
+    ensures ((f as Total) as int -> int)(x) == f(x)
+    ensures (f as Total)(x) == f(x)
+  {
+  }
+
+  lemma PartialRoundTrip(f: int --> int, x: int)
+    requires f.requires(x)
+    ensures (f as Partial).requires(x)
+    ensures (f as Partial)(x) == f(x)
+  {
+  }
+
+  ghost function GeneralApply(f: int ~> int, x: int): int
+    requires f.requires(x)
+    reads f.reads(x)
+  {
+    var wrapped := f as General;
+    wrapped(x)
+  }
+
+  lemma GeneralFramePreserved(f: int ~> int, x: int)
+    requires f.requires(x)
+    ensures (f as General).requires(x)
+    ensures (f as General).reads(x) == f.reads(x)
+  {
+  }
+
+  lemma GenericResult(f: Produce<nat>)
+    ensures 0 <= f()
+  {
+    var result: nat := f();
+  }
+
+  lemma CovariantResult(f: Produce<nat>)
+  {
+    var widened: Produce<int> := f;
+    assert widened() == f();
+  }
+
+  lemma ContravariantInput(f: Consume<int>, x: nat)
+  {
+    var narrowed: Consume<nat> := f;
+    assert narrowed(x) == f(x);
+  }
+
+  lemma GenericNested(f: int -> int, x: int)
+  {
+    var once := f as Endo<int>;
+    var twice := once as Nested<int>;
+    var result: int := twice(x);
+    assert result == f(x);
+  }
+
+  lemma ConcretePredicate()
+  {
+    var good := ((x: int) => x) as AtZero;
+    assert good(0) == 0;
+  }
+
+  class Cell {
+    var value: int
+    constructor(value: int)
+      ensures this.value == value
+    {
+      this.value := value;
+    }
+  }
+
+  ghost function ReadCapturedCell(cell: Cell): int
+    reads cell
+  {
+    var f := () reads cell => cell.value;
+    var wrapped := f as Nullary;
+    wrapped()
+  }
+
+  twostate lemma CaptureOldCell(cell: Cell)
+  {
+    var f: () ~> int := () reads cell => old(cell.value);
+    var wrapped := f as Nullary;
+    assert wrapped() == old(cell.value);
+  }
+}
