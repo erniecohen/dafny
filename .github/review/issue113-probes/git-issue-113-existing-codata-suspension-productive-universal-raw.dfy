@@ -16,10 +16,21 @@ lemma RepeatObservations<T>(x:T)
 lemma CopyObservations<T>(s:Stream<T>)
   ensures Copy(s).head == s.head && Copy(s).tail.head == s.tail.head
   ensures MatchCopy(s).head == s.head && MatchCopy(s).tail.head == s.tail.head
-{}
+{
+  var copiedTail := Copy(s.tail);
+  var matchedTail := MatchCopy(s.tail);
+  assert Copy(s).tail == copiedTail;
+  assert copiedTail.head == s.tail.head;
+  assert MatchCopy(s).tail == matchedTail;
+  assert matchedTail.head == s.tail.head;
+}
 lemma CountObservations(x:int)
   ensures Count(x).head == x && Count(x).tail.head == x+1
-{}
+{
+  var next := Count(x+1);
+  assert Count(x).tail == next;
+  assert next.head == x+1;
+}
 lemma PermutedObservations<T>(xs:seq<T>)
   ensures !Permuted(xs).left && Permuted(xs).right == xs
   ensures Permuted(xs).tail.right == xs
