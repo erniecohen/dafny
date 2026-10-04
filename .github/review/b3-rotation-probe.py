@@ -127,6 +127,7 @@ def main():
         require(not INPUTS.INPUTS.exists(), 'Refusing stale toolchain inputs')
         INPUTS.OUTPUT.mkdir(parents=True, exist_ok=True)
         INPUTS.INPUTS.mkdir()
+        INPUTS.PROOFS.mkdir()
         compiler, solver = INPUTS.prepare_inputs(receipt)
         for case in manifest['fixtures']:
             run_case(receipt, case, compiler, solver)

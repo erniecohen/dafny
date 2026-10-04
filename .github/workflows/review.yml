@@ -653,5 +653,5 @@ jobs:
           name: b3-rotation-probe
           path: |
             out/rotation-probe
-            out/b3-native-compile/*-version.txt
+            out/b3-native-compile/bitvector-proof
           retention-days: 14
