@@ -38,8 +38,8 @@ public sealed class B3VerificationBackend : IVerificationBackend {
     if (configurationError == null) {
       try {
         var path = options.Get(B3OptionBag.Worker)?.FullName ?? Path.Combine(AppContext.BaseDirectory, "b3", "DafnyB3Host.dll");
-        package = WorkerPackage.Load(path);
-      } catch (Exception exception) when (exception is IOException or InvalidDataException or System.Text.Json.JsonException or UnauthorizedAccessException) {
+        package = await WorkerPackage.LoadAsync(path, cancellationToken);
+      } catch (Exception exception) when (exception is IOException or InvalidDataException or System.Text.Json.JsonException or UnauthorizedAccessException or TimeoutException) {
         configurationOutcome = VerificationOutcome.ToolError;
         configurationError = "B3 worker package is unavailable or invalid: " + exception.Message;
       }
@@ -52,7 +52,7 @@ public sealed class B3VerificationBackend : IVerificationBackend {
     string? solverDigest = null;
     if (configurationError == null) {
       try { solverDigest = await SolverDigestAsync(SolverPath(), cancellationToken); }
-      catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or TimeoutException) {
+      catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException or TimeoutException) {
         configurationOutcome = VerificationOutcome.ToolError;
         configurationError = "B3 solver identity could not be captured: " + exception.Message;
       }
@@ -109,7 +109,7 @@ public sealed class B3VerificationBackend : IVerificationBackend {
       await workers.WaitAsync(linked.Token);
       try {
         // Revalidate immediately before launch; the worker also checks its own package.
-        if (WorkerPackage.Load(package.WorkerPath).Fingerprint != package.Fingerprint) {
+        if ((await WorkerPackage.LoadAsync(package.WorkerPath, linked.Token)).Fingerprint != package.Fingerprint) {
           throw new InvalidDataException("B3 worker package changed after preparation");
         }
         var executable = package.WorkerPath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ? "dotnet" : package.WorkerPath;
@@ -146,7 +146,7 @@ public sealed class B3VerificationBackend : IVerificationBackend {
     var error = CheckConfiguration(options);
     if (error != null) { return error; }
     try { WorkerPackage.Load(options.Get(B3OptionBag.Worker)?.FullName ?? Path.Combine(AppContext.BaseDirectory, "b3", "DafnyB3Host.dll")); }
-    catch (Exception exception) when (exception is IOException or InvalidDataException or System.Text.Json.JsonException or UnauthorizedAccessException) {
+    catch (Exception exception) when (exception is IOException or InvalidDataException or System.Text.Json.JsonException or UnauthorizedAccessException or TimeoutException) {
       return "B3 worker package is unavailable or invalid: " + exception.Message;
     }
     return null;

@@ -230,7 +230,7 @@ public class NormalizerTests {
   }
 
   [Fact]
-  public void TemporaryOutputWhereIsAssumedAtCallScopeEntryAndAfterHavoc() {
+  public void TemporaryOutputWhereIsOmittedAtEntryAndPreservedAfterHavoc() {
     var result = Boogie("""
       procedure Q(a: int) returns (x: int where x == a); ensures x == a;
       procedure P() returns (y: int);
@@ -239,16 +239,64 @@ public class NormalizerTests {
     Validate(result);
     var statements = Statements(result.Program!.Unit.Body).ToArray();
     Assert.Equal(2, Assert.IsType<Ir.Havoc>(statements[0]).Variables.Count);
-    var entryWhere = Assert.IsType<Ir.Operation>(Assert.IsType<Ir.Assume>(statements[1]).Condition);
-    var inputSave = Assert.IsType<Ir.Assign>(statements[2]);
+    var inputSave = Assert.IsType<Ir.Assign>(statements[1]);
     Assert.IsType<Ir.IntegerLiteral>(inputSave.Value);
-    Assert.Equal(inputSave.Variable, Assert.IsType<Ir.Variable>(entryWhere.Arguments[1]).Name);
-    Assert.Single(Assert.IsType<Ir.Havoc>(statements[3]).Variables);
-    var freshWhere = Assert.IsType<Ir.Operation>(Assert.IsType<Ir.Assume>(statements[4]).Condition);
-    Assert.Equal(Ir.Protocol.GetProgramHash(new Ir.Program(result.Program.Types, result.Program.Functions, result.Program.Axioms,
-      result.Program.Unit with { Body = new Ir.Assume(entryWhere) })),
-      Ir.Protocol.GetProgramHash(new Ir.Program(result.Program.Types, result.Program.Functions, result.Program.Axioms,
-      result.Program.Unit with { Body = new Ir.Assume(freshWhere) })));
+    Assert.Single(Assert.IsType<Ir.Havoc>(statements[2]).Variables);
+    var freshWhere = Assert.IsType<Ir.Operation>(Assert.IsType<Ir.Assume>(statements[3]).Condition);
+    Assert.Equal(inputSave.Variable, Assert.IsType<Ir.Variable>(freshWhere.Arguments[1]).Name);
+    Assert.Equal(2, statements.OfType<Ir.Assume>().Count()); // post-havoc where and callee ensures
+    Assert.Contains(result.Approximations, a => a.Contains("scope-entry where predicates are omitted"));
+  }
+
+  [Fact]
+  public void MutableGlobalOutputWhereCannotHideAFalseCallPrecondition() {
+    // The pinned StateCmd entry appends raw g == 0; evaluating it as current g == 0 here is unsound.
+    var result = Boogie("""
+      var g: int;
+      procedure Q() returns (x: int where g == 0); requires false;
+      procedure P(); requires g == 0; modifies g;
+      implementation P() { var x: int; g := 1; call x := Q(); }
+      """);
+    Validate(result);
+    var statements = Statements(result.Program!.Unit.Body).ToArray();
+    var callEntry = Array.FindIndex(statements, s => s is Ir.Havoc);
+    var precondition = Array.FindIndex(statements, s => s is Ir.Check);
+    Assert.True(callEntry >= 0 && precondition == callEntry + 1);
+    Assert.Equal(new Ir.BooleanLiteral(false), Assert.IsType<Ir.Check>(statements[precondition]).Condition);
+    Assert.IsType<Ir.Havoc>(statements[precondition + 1]);
+    Assert.IsType<Ir.Assume>(statements[precondition + 2]); // current g == 0 belongs only after havoc
+    Assert.Single(result.Obligations);
+  }
+
+  [Fact]
+  public void MutableGlobalStateWhereCannotHideAFalseScopedAssertion() {
+    // StateCmd has no surface syntax. Reuse a resolved/typechecked where expression from a local template.
+    var options = Options();
+    var source = ParseBoogie("""
+      var g: int;
+      procedure P(); requires g == 0; modifies g;
+      implementation P() { var template: int where g == 0; g := 1; }
+      """, options);
+    var implementation = source.Implementations.Single();
+    var template = implementation.LocVars.Single();
+    var token = template.tok;
+    var scoped = new Bpl.LocalVariable(token, new Bpl.TypedIdent(token, "scoped", Bpl.Type.Int,
+      template.TypedIdent.WhereExpr));
+    var assertion = new Bpl.AssertCmd(token, Bpl.Expr.False);
+    var state = new Bpl.StateCmd(token, new List<Bpl.Variable> { scoped }, new List<Bpl.Cmd> { assertion });
+    // The pinned structured-to-CFG conversion shares this command list. Insertion updates both views.
+    implementation.StructuredStmts!.BigBlocks[0].simpleCmds.Add(state);
+    Assert.Contains(state, implementation.Blocks[0].Cmds);
+    Assert.Equal(0, source.Resolve(options)); Assert.Equal(0, source.Typecheck(options));
+    var before = Emit(source, options);
+    var result = B3Normalizer.Normalize(source, implementation, options);
+    Validate(result);
+    Assert.Equal(before, Emit(source, options));
+    var statements = Statements(result.Program!.Unit.Body).ToArray();
+    var entry = Array.FindIndex(statements, s => s is Ir.Havoc);
+    Assert.True(entry >= 0);
+    Assert.Equal(new Ir.BooleanLiteral(false), Assert.IsType<Ir.Check>(statements[entry + 1]).Condition);
+    Assert.Single(result.Obligations);
   }
 
   [Fact]

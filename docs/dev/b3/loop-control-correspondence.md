@@ -22,7 +22,7 @@ For each loop, the normalizer emits these statements:
 
 Initialization establishes the checked inductive premise before any header assumptions. The arbitrary header state represents every source header state permitted by the loop abstraction. Body fallthrough supplies the induction step; early exit and return bypass that step and retain their ordinary continuation or postcondition obligations. On guard-false exit the continuation has the invariant and negated guard. This is induction over arbitrary states and backedges; no iteration count or bounded unrolling is used. Initialization and preservation obligations have distinct stable roles in their identities and source descriptions.
 
-For the projection direction used by the axiom-free model, choose all additional native havoc values equal to the corresponding original values. That includes normalization temporaries and targets on break-only paths. A successful universal check in this larger context suffices for the corresponding reference check; extra abstraction may cause false rejection.
+For the projection direction used by the axiom-free model, choose all additional native havoc values equal to the corresponding original values. That includes normalization temporaries and targets on break-only paths. The initial model also omits raw `StateCmd`/call-temporary scope-entry where context; that omission is an independent weakening, while post-havoc where context remains explicit. A successful universal check in this larger context suffices for the corresponding reference check; extra abstraction may cause false rejection.
 
 ## Header where clauses and target coverage
 

@@ -8,6 +8,8 @@ public static class VerificationStatusStream {
   /// <summary>
   /// A completion is published only after the stream itself completes normally.
   /// Errors, missing completion, duplicate completion and events after completion cannot publish success.
+  /// Compilation applies this guard to non-native backend streams. Native Boogie retains its
+  /// existing Completed event after prover traversal and before checker cleanup.
   /// </summary>
   public static IObservable<VerificationStatus> RequireCompletion(this IObservable<VerificationStatus> source) =>
     Observable.Create<VerificationStatus>(observer => {

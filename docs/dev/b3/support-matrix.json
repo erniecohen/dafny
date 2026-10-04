@@ -6,7 +6,7 @@
     {
       "construct": "Boolean and integer expressions, method contracts, calls, parallel assignment, havoc, old and structured branches",
       "disposition": "normalized",
-      "evidence": "21 normalizer controls; end-to-end Dafny verdict gate pending"
+      "evidence": "Public native compile probe passed 51 normalizer controls before the scope-entry where repair; complete real Dafny verdict gate pending."
     },
     {
       "construct": "Closed representation sorts, maps, lambdas and ordinary functions",
@@ -14,13 +14,13 @@
       "limits": "Source axioms, nonidentity function definitions, distinctness and map/lambda equations are omitted; extra failures are expected."
     },
     {
-      "construct": "Native real and bitvector theories, integer division/modulo/power, visibility, loops and unrestricted control flow",
+      "construct": "Native real and bitvector theories, integer division/modulo/power, visibility and unrestricted control flow",
       "disposition": "unsupported or pending separate semantic package"
     },
     {
       "construct": "Inductive loops, breaks, continues, forward lexical exits",
-      "disposition": "implemented source checkpoint; unverified",
-      "evidence": "Written correspondence and 51 focused normalizer cases; compilation and verdict gate pending"
+      "disposition": "source compiled with structural controls; end-to-end acceptance pending",
+      "evidence": "Public probe 37195114156 compiled the previous source and passed 51 structural controls. Two additional mutable-global anti-vacuity controls and the current complete verdict gate remain pending."
     }
   ],
   "optionSupport": [

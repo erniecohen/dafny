@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "Initial default-Boogie differential reports contain regressions; repairs await validation. Real B3 differential gate pending.",
+  "status": "Focused Fuel parity is confirmed; full default-Boogie cost parity and complete real B3 integration remain pending.",
   "entries": [
     {
       "kind": "default-backend verdict regression",
@@ -8,20 +8,28 @@
       "initialCandidate": "c063fbeb87500f422f281b23d39518ce38798ce1",
       "evidence": "https://github.com/erniecohen/dafny/actions/runs/37182760834",
       "finding": "Shared translation errors aborted the neutral preparation path while the previous backend continued reporting diagnostics.",
-      "repair": "A translation-error receipt preserves the existing Boogie path and blocks B3. Focused recheck pending."
+      "repair": "A translation-error receipt preserves the existing Boogie path and blocks B3. The focused recheck matched both diagnostics and all 44 batch outcomes/resource counts.",
+      "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37195123887"
     },
     {
-      "kind": "default-backend cost regression",
+      "kind": "unresolved default-backend cost differences",
       "scope": "Standard library source; Z3 5.1.0, default options",
       "evidence": "https://github.com/erniecohen/dafny/actions/runs/37182760834",
       "finding": "All 2190 declaration verdicts matched, with 58 resource-count differences.",
-      "repair": "An eager hidden-function/pruning projection was made lazy at its original lifecycle point. Cause and exact resource parity remain unconfirmed."
+      "repair": "Hidden-function/pruning projection is lazy at its original lifecycle point. A focused repeat varied within baseline and candidate; a matching pair does not establish the required full exact parity. Native completion-event timing is also restored; its focused recheck is pending.",
+      "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37195123887"
     },
     {
       "kind": "deliberate conservative approximation",
       "scope": "B3 normalization",
-      "finding": "Source axioms, nonidentity definitions, distinctness constraints and map/lambda equations are omitted.",
+      "finding": "Source axioms, nonidentity definitions, distinctness constraints and map/lambda equations are omitted. Scope-entry StateCmd/call-temporary where predicates are also omitted because pinned passification appends them without current-incarnation substitution.",
       "consequence": "Proofs relying on those facts can fail; this is incomplete support. Normalization retains checks and state transitions."
+    },
+    {
+      "kind": "protocol test fixture packaging failure",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/37195114156",
+      "finding": "CLI compiled; 22 selected Core controls and 51 structural normalizer controls passed. The protocol test copy target collided with the fixture apphost file name.",
+      "repair": "Use a separate worker-fixture output directory. New package bounds and record-transmission controls await executable validation."
     }
   ]
 }

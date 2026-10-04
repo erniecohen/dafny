@@ -32,7 +32,7 @@ public sealed class WorkerProcessClient(string executable, IReadOnlyList<string>
       var payload = JsonSerializer.SerializeToUtf8Bytes(request, Protocol.JsonOptions);
       if (payload.Length > Protocol.MaximumMessageBytes) { throw new InvalidDataException("B3 request exceeds message bound"); }
       await process.StandardInput.BaseStream.WriteAsync(payload, token);
-      await process.StandardInput.WriteLineAsync();
+      await process.StandardInput.BaseStream.WriteAsync(new byte[] { (byte)'\n' }, token);
       process.StandardInput.Close();
       var first = await ReadWorkerLineAsync(process, token);
       var started = JsonSerializer.Deserialize<WorkerStarted>(first, Protocol.JsonOptions)
