@@ -179,6 +179,13 @@ internal static class NativeLifecycleControls {
             var members = run.Members();
             Require(members.Length > 256 && members.Length <= 300 && File.ReadAllText(Path.Combine(input.Parent, "pids.max")).Trim() == "300", "cap-fixture-precondition-failed");
             facts["observedOwnedLiveMembers"] = members.Length;
+            // The kernel precondition alone is insufficient: wait for the real
+            // ownership monitor to publish its exact cap fault before cleanup.
+            var cap = run.WaitForLiveProcessCap(TimeSpan.FromSeconds(5));
+            Require(cap.ObservedLiveMembers > 256 && cap.ObservedLiveMembers <= 300 &&
+              cap.FailureCode == "live-owned-process-cap-exceeded" && cap.FailureMessage == "More than 256 owned live processes.",
+              "actual-monitor-cap-observation-required");
+            facts["actualMonitorCapObservation"] = cap;
           } else { Require(run.WaitExit(TimeSpan.FromSeconds(5)), "native-control-exit-deadline"); }
         }
         if (name is "refused-late-launch" or "malformed-completion") {
@@ -205,7 +212,8 @@ internal static class NativeLifecycleControls {
         var expectedFailure = name is "relay-broken-pipe" or "live-descendant-cap" or "malformed-completion";
         Require(run.SupervisorFailure == expectedFailure, "unexpected-supervisor-outcome");
         if (name == "live-descendant-cap") {
-          Require(run.FallbackUsed && run.CleanupFailures().Any(s => s.Contains("More than 256 owned live processes", StringComparison.Ordinal)), "cap-fault-or-fallback-not-recorded");
+          Require(run.FallbackUsed && run.CleanupFailures().Any(s => s.Contains("More than 256 owned live processes", StringComparison.Ordinal)) &&
+            run.RecordedLiveCap(), "cap-fault-or-fallback-not-recorded");
         } else if (name == "relay-broken-pipe") {
           using var complete = ReadJson(Path.Combine(run.LaunchDirectory(), "complete.json"), 16384);
           Require(complete.RootElement.GetProperty("errors").EnumerateArray().Any(e => e.GetProperty("stream").GetString() == "stdin" && e.GetProperty("errno").GetInt32() == 32), "actual-relay-broken-pipe-not-recorded");
@@ -358,6 +366,23 @@ internal static class NativeLifecycleControls {
     }
     public int[] Members() => File.ReadAllText(Path.Combine(Leaf, "cgroup.procs")).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
       .Select(s => int.Parse(s, CultureInfo.InvariantCulture)).Distinct().ToArray();
+    public OwnedLiveCapObservation WaitForLiveProcessCap(TimeSpan deadline) {
+      Require(scope is IOwnedLiveCapObservation, "native-supervisor-cap-observation-unavailable");
+      var observer = (IOwnedLiveCapObservation)scope;
+      var clock = Stopwatch.StartNew();
+      while (clock.Elapsed < deadline) {
+        if (observer.LiveCapObservation is { } observation) { return observation; }
+        if (Process.HasExited) { break; }
+        Thread.Sleep(10);
+      }
+      throw new ControlFailure("actual-monitor-cap-observation-deadline");
+    }
+    public bool RecordedLiveCap() {
+      if (cleanup == null || !cleanup.RootElement.TryGetProperty("liveCapObservation", out var cap) || cap.ValueKind != JsonValueKind.Object) { return false; }
+      return cap.GetProperty("observedLiveMembers").GetInt32() is > 256 and <= 300 &&
+        cap.GetProperty("failureCode").GetString() == "live-owned-process-cap-exceeded" &&
+        cap.GetProperty("failureMessage").GetString() == "More than 256 owned live processes.";
+    }
     public string LaunchDirectory() => Directory.GetDirectories(Path.Combine(Root, "launches")).Single();
     public int SolverPid() {
       using var ready = ReadJson(Path.Combine(LaunchDirectory(), "ready.json"), 16384);

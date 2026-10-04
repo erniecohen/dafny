@@ -33,23 +33,23 @@
     },
     {
       "path": "LIFECYCLE-CONTROLS.md",
-      "sha256": "87e038494d8b83ecf2d65fc239e1ef440ce46d9f8ab05ae6bff2f724bf2765b5",
-      "bytes": 6143
+      "sha256": "45202b6276dd0bbf3be605ddfbbfb756e5c1cdb2282ab9a74aea436780add34e",
+      "bytes": 6539
     },
     {
       "path": "LIFECYCLE.md",
-      "sha256": "5a404070ed6e0756d8b136e5f6ede6f1daeb338426776328fc21ba5037f13708",
-      "bytes": 9372
+      "sha256": "3d3f9b257f97cba18ab9b5ccc288a2e3d557910a5f8d1b1783789f4b0c4277ab",
+      "bytes": 9674
     },
     {
       "path": "NativeLifecycleControls.cs",
-      "sha256": "42d0577cd943df3411bf50b6b868d19ba296e67fac6d9874d7115d1a320c310d",
-      "bytes": 29967
+      "sha256": "9bec4b88f150913f8ed379ecdd57a7352f3e4f8ee35d8bc98361313a5fc15f60",
+      "bytes": 31598
     },
     {
       "path": "NativeProofSupervisor.cs",
-      "sha256": "ddee5265aee373c8f6f4e9d903342fd68bf9b55b91324d9bbff923eb4ce78f7e",
-      "bytes": 32588
+      "sha256": "f7edd40fdd5ee5912eca6a1240e649a328558b4e00121daaf2f2d06e7da9f7ba",
+      "bytes": 33781
     },
     {
       "path": "Program.cs",
