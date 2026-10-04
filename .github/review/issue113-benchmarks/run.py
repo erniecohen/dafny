@@ -292,9 +292,9 @@ def main():
         directory = out / (case["id"].replace("/", "-") + ("-on" if enabled else "-off") + ("-" + target if target else ""))
         directory.mkdir(parents=True, exist_ok=True)
         source = manifest_path.parent / case["path"]
-        common = ["--general-newtypes=true", "--type-system-refresh=true", "--additional-axioms=false",
+        common = ["--general-newtypes=true", "--type-system-refresh=true", "--unicode-char=true",
                   "--extended-newtype-bases=" + str(enabled).lower(),
-                  "--optimize-erasable-datatype-wrapper=" + str(case["erasure"]).lower(), "--show-snippets=false"]
+                  "--show-snippets=false"]
         row = {"id": case["id"], "family": case["family"], "arm": case["arm"], "source_sha256": case["sha256"],
                "feature_enabled": enabled, "erasure": case["erasure"], "target": target, "sample": sample,
                "profile": args.profile}
@@ -303,7 +303,10 @@ def main():
             if args.stage in ("resolve", "translate", "verify"):
                 command = [args.dafny, "verify" if args.stage == "translate" else args.stage, str(source)] + common
                 if args.stage == "translate":
-                    command += ["--no-verify", "--bprint", str(directory / "program.bpl")]
+                    command = [args.dafny, str(source), "/compile:0", "/verify:0", "/functionSyntax:4", "/unicodeChar:1",
+                               "/generalNewtypes:1", "/typeSystemRefresh:1", "/extendedNewtypeBases:" + ("1" if enabled else "0"),
+                               "/print:" + str(directory / "program.bpl")]
+                    row["translation_boundary"] = "legacy parse/resolution plus Boogie translation and preparation, no solver verification"
                 if args.stage == "verify":
                     command += ["--solver-path", args.solver, "--cores=1", "--resource-limit=" + str(args.resource_limit),
                                 "--verification-time-limit=60", "--boogie", "/normalizeDeclarationOrder:0", "--boogie", "/proverOpt:O:smt.random_seed=" + str(args.solver_seed),
@@ -321,7 +324,7 @@ def main():
                 local_source = directory / "bench.dfy"
                 local_source.write_bytes(source.read_bytes())
                 command = [args.dafny, "build", str(local_source), "--no-verify", "--target=" + target,
-                           "--spill-translation", "--output", str(directory / "bench")] + common
+                           "--spill-translation", "--output", str(directory / "bench"), "--optimize-erasable-datatype-wrapper=" + str(case["erasure"]).lower()] + common
                 row.update(execute(command, directory, "build", 120))
                 if row["exit"] == 0 and args.profile == "cs-allocated":
                     row["profile_instrumentation"] = cs_profile.instrument(directory)

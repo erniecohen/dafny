@@ -7,7 +7,7 @@ common=['python3',str(tools/'run.py'),str(manifest), '--dafny',str(root/'out/daf
  '--expected-dafny',(root/'compiler/compiler-version.txt').read_text().strip(),
  '--solver',os.environ['SOLVER'],'--solver-version',os.environ['SOLVER_VERSION'],
  '--solver-seed',os.environ['SOLVER_SEED'],'--source-sha',os.environ['GITHUB_SHA'],
- '--executor','github-ubuntu-24.04','--execution-environment','public-ci','--select',family+'/*']
+ '--executor','github-ubuntu-24.04','--execution-environment','public-ci','--select',(family+'*/*' if family in ['depth','generic-nesting'] else family+'/*')]
 steps=[]
 def run(stage,args=[]):
  out=dest/stage; out.mkdir(exist_ok=True)
