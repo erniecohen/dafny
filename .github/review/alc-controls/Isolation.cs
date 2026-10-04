@@ -150,6 +150,7 @@ internal static class Framework {
     var paths = (AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string)
       ?? throw new InvalidOperationException("No trusted platform assembly list.");
     return paths.Split(System.IO.Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
+      .Select(System.IO.Path.GetFullPath).Distinct(StringComparer.Ordinal)
       .ToDictionary(p => System.IO.Path.GetFileNameWithoutExtension(p)!, System.IO.Path.GetFullPath, StringComparer.OrdinalIgnoreCase);
   }
 
