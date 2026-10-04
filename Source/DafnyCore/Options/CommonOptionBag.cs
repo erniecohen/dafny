@@ -243,6 +243,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
     "Prevents a warning from being generated for axioms, such as assume statements and functions or methods without a body, that don't have an {:axiom} attribute.") {
   };
 
+  public static readonly Option<bool> ContextualLambdaDomains = new("--contextual-lambda-domains", () => false,
+    "With the refreshed type system, infer omitted parameters of function-result lambdas from the declared arrow domain. Disabled by default.");
+
   public static readonly Option<bool> TypeSystemRefresh = new("--type-system-refresh", () => false,
     @"
 false - The type-inference engine and supported types are those of Dafny 4.0.
@@ -694,6 +697,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(GeneralTraits, OptionScope.Cli);
     OptionRegistry.RegisterOption(GeneralNewtypes, OptionScope.Cli);
     OptionRegistry.RegisterOption(TypeSystemRefresh, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ContextualLambdaDomains, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationLogFormat, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerifyIncludedFiles, OptionScope.Cli);
     OptionRegistry.RegisterOption(DisableNonLinearArithmetic, OptionScope.Module);

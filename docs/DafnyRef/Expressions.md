@@ -454,6 +454,14 @@ as the following lambda expression:
 x => x + 1
 ```
 
+With `--type-system-refresh --contextual-lambda-domains`, an omitted parameter
+of a lambda that directly forms a named function's body is inferred from that
+function's declared arrow domain. For example, in
+`function Identity(f: nat->nat): nat->nat { x => f(x) }`, `x` has type `nat`.
+This option is disabled by default. Explicit parameter types are preserved;
+quantifiers, comprehensions, and lambdas without this checking context continue
+to infer base types. It does not change the legacy resolver.
+
 The _specification_ is a list of clauses `requires E` or
 `reads W`, where `E` is a boolean expression and `W` is a frame
 expression.

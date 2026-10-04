@@ -16,6 +16,14 @@ The "type system refresh" is a reimplementation of Dafny's name resolution, type
 
     This makes inference more predictable. It also removes the risk that, say, an intended quantifier `forall x: int :: P(x)` is instead inferred to be the logically weaker `forall x: nat :: P(x)`.
 
+    The fork's opt-in `--contextual-lambda-domains` supplies declared parameter
+    types to lambdas that directly form a named function's body. It uses only
+    domains with the same inferred base type, preserves explicit annotations,
+    and leaves other bound-variable inference unchanged. This is checking against
+    the named function's declared arrow domain: the ordinary lambda well-formedness
+    checks still verify every body application and result on that domain. It adds
+    no verifier axioms or unchecked subset constraints.
+
     (This design may soon change in one place, namely when a lambda expressions is known to be used in a limited number of places. This happens in array initializers and sequence comprehensions, where it would be friendly to try to infer the bound variable to be of type `nat` rather than `int`.)
 
 The new type system also fixes a number of bugs in the previous type system. Among them are bugs having to do with cyclic dependencies among declarations, which the new type system is equipped to handle.
