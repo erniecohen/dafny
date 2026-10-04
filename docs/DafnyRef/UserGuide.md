@@ -2396,6 +2396,9 @@ and what information it produces about the verification process.
   heap is the current one, and it instantiates the existing allocation axiom of a
   function that reads no heap and takes no references where the function is
   applied, so that the members of its result are known to be allocated.
+  After an assign-such-that statement it also makes checked call permissions
+  available for the selected values, so predicates in the constraint can unfold.
+  Existing well-formedness, precondition and existence checks are preserved.
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
 
 * `--manual-lemma-induction` - disables automatic inducntion for lemmas
