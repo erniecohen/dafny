@@ -897,8 +897,11 @@ namespace Microsoft.Dafny {
                     }
                     List<Expression> contextDecreases = codeContext.Decreases.Expressions;
                     List<Expression> calleeDecreases = e.Function.Decreases.Expressions;
+                    // In the callee's decreases clause, "old" denotes the previous heap of a two-state
+                    // function: the heap at its label, if the call has one.
+                    var calleeEtran = e.Function is TwoStateFunction && e.AtLabel != null ? etran.WithOld(etran.OldAt(e.AtLabel)) : null;
                     CheckCallTermination(callExpr.Origin, contextDecreases, calleeDecreases, allowance, e.Receiver, substMap, directSubstMap, e.GetTypeArgumentSubstitutions(),
-                      etran, false, builder, codeContext.InferredDecreases, hint);
+                      etran, false, builder, codeContext.InferredDecreases, hint, calleeEtran);
                   }
                 }
               }

@@ -179,6 +179,16 @@ namespace Microsoft.Dafny {
         return WithHeapVariable("$Heap_at_" + label.AssignUniqueId(BoogieGenerator.CurrentIdGenerator));
       }
 
+      /// <summary>
+      /// Returns a translator like this one, in which "old" denotes the state that "old" translates in.
+      /// </summary>
+      public ExpressionTranslator WithOld(ExpressionTranslator old) {
+        Contract.Requires(old != null);
+        var et = new ExpressionTranslator(this, HeapExpr);
+        et.oldEtran = old;
+        return et;
+      }
+
       public ExpressionTranslator WithHeapVariable(string heapVariableName) {
         var heapAt = new Boogie.IdentifierExpr(Token.NoToken, heapVariableName, Predef.HeapType);
         return new ExpressionTranslator(BoogieGenerator, Predef, heapAt, This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, scope, readsFrame, modifiesFrame, stripLits);
