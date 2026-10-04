@@ -11,7 +11,8 @@
       "name": "false",
       "file": "false.dfy",
       "exitCode": 4,
-      "diagnostic": "assertion"
+      "diagnostic": "assertion",
+      "outcome": "failed"
     },
     {
       "name": "integer",
@@ -29,13 +30,15 @@
       "name": "bad-postcondition",
       "file": "bad-postcondition.dfy",
       "exitCode": 4,
-      "diagnostic": "postcondition"
+      "diagnostic": "postcondition",
+      "outcome": "failed"
     },
     {
       "name": "bad-precondition",
       "file": "bad-precondition.dfy",
       "exitCode": 4,
-      "diagnostic": "precondition"
+      "diagnostic": "precondition",
+      "outcome": "failed"
     },
     {
       "name": "branch",
@@ -47,7 +50,8 @@
       "name": "bad-branch",
       "file": "bad-branch.dfy",
       "exitCode": 4,
-      "diagnostic": "assertion"
+      "diagnostic": "assertion",
+      "outcome": "failed"
     },
     {
       "name": "real",
@@ -83,19 +87,22 @@
       "name": "bad-loop-initialization",
       "file": "bad-loop-initialization.dfy",
       "exitCode": 4,
-      "diagnostic": "loop invariant initialization"
+      "diagnostic": "loop invariant initialization",
+      "outcome": "failed"
     },
     {
       "name": "bad-loop-preservation",
       "file": "bad-loop-preservation.dfy",
       "exitCode": 4,
-      "diagnostic": "loop invariant preservation"
+      "diagnostic": "loop invariant preservation",
+      "outcome": "failed"
     },
     {
       "name": "break-continuation",
       "file": "break-continuation.dfy",
       "exitCode": 4,
-      "diagnostic": "assertion"
+      "diagnostic": "assertion",
+      "outcome": "failed"
     },
     {
       "name": "loop-continue",

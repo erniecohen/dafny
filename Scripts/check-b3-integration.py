@@ -24,7 +24,7 @@ common = ['--verification-backend', 'b3', '--b3-worker', str(args.worker.resolve
           '--progress', 'Batch']
 results = []
 
-def run(name, source, expected_exit, diagnostic=None, extra=()):
+def run(name, source, expected_exit, diagnostic=None, extra=(), proof_failure=False):
     options = common.copy()
     for option in ('--verification-time-limit', '--b3-worker'):
         if option in extra:
@@ -34,9 +34,15 @@ def run(name, source, expected_exit, diagnostic=None, extra=()):
     completed = subprocess.run(command, capture_output=True, text=True, timeout=120)
     text = completed.stdout + completed.stderr
     (args.output / (name + '.txt')).write_text(text)
+    error_bodies = '\n'.join(line.split('Error:', 1)[1] for line in text.splitlines() if 'Error:' in line)
+    # A source filename or a stack frame is not a verifier diagnostic.
+    diagnostic_text = error_bodies if expected_exit == 4 else text
+    internal_error = 'internal compilation exception' in text.lower() or 'internal error occurred' in text.lower()
     result = {'name': name, 'exitCode': completed.returncode, 'expectedExitCode': expected_exit,
               'diagnostic': diagnostic, 'passed': completed.returncode == expected_exit and
-              (diagnostic is None or diagnostic in text)}
+              (diagnostic is None or diagnostic in diagnostic_text) and not internal_error}
+    if proof_failure:
+        result['passed'] = result['passed'] and 'B3 failed:' in error_bodies
     if expected_exit == 0:
         # Successful preparation alone is insufficient: at least one complete unit must run.
         result['passed'] = result['passed'] and 'verified successfully' in text and 'resource count: unavailable' in text
@@ -44,7 +50,7 @@ def run(name, source, expected_exit, diagnostic=None, extra=()):
     print(name, 'PASS' if result['passed'] else 'FAIL', completed.returncode, flush=True)
 
 for case in json.loads((corpus / 'cases.json').read_text())['cases']:
-    run(case['name'], corpus / case['file'], case['exitCode'], case['diagnostic'])
+    run(case['name'], corpus / case['file'], case['exitCode'], case['diagnostic'], proof_failure=case.get('outcome') == 'failed')
 run('time-limit', corpus / 'true.dfy', 4, 'requires --verification-time-limit', ['--verification-time-limit', '0'])
 run('isolation', corpus / 'true.dfy', 4, 'unsupported by B3', ['--isolate-assertions'])
 run('filter-position', corpus / 'false.dfy', 1, 'does not currently support --filter-position', ['--filter-position', 'false.dfy:1'])
