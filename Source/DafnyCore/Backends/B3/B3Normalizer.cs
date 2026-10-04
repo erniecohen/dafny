@@ -3,6 +3,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Globalization;
+using System.Numerics;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
@@ -85,6 +87,7 @@ public static class B3Normalizer {
     private int variableNumber;
     private int boundNumber;
     private int expressionCount;
+    private long numericCharacters;
     private Environment entry;
 
     public Normalization(Bpl.Program source, Bpl.Implementation unit, DafnyOptions options) {
@@ -171,7 +174,7 @@ public static class B3Normalizer {
     }
     private string Type(Bpl.Type type) {
       var key = TypeKey(type, new Dictionary<Bpl.TypeVariable, int>(), 0);
-      if (key is "bool" or "int") { return key; }
+      if (key is "bool" or "int" or "real") { return key; }
       if (!types.TryGetValue(key, out var name)) { name = Symbol("type:" + key); types.Add(key, name); }
       return name;
     }
@@ -185,8 +188,8 @@ public static class B3Normalizer {
       }
       if (type is Bpl.TypeSynonymAnnotation alias) { return TypeKey(alias.ExpandedType, bound, depth + 1); }
       if (type is Bpl.BasicType basic) {
-        Require(basic.IsBool || basic.IsInt, "b3_primitive_type", "Initial B3 slice supports bool and int primitives", type.tok);
-        return basic.IsBool ? "bool" : "int";
+        Require(basic.IsBool || basic.IsInt || basic.IsReal, "b3_primitive_type", "B3 supports bool, int, and real primitives", type.tok);
+        return basic.IsBool ? "bool" : basic.IsInt ? "int" : "real";
       }
       if (type is Bpl.TypeVariable parameter) {
         Require(bound.TryGetValue(parameter, out var index), "b3_open_type", "Residual free type parameter", type.tok);
@@ -332,7 +335,10 @@ public static class B3Normalizer {
       var type = Type(expression.Type);
       switch (expression) {
         case Bpl.LiteralExpr literal when literal.Val is bool boolean: return new Ir.BooleanLiteral(boolean);
-        case Bpl.LiteralExpr literal when literal.Val is BigNum integer: return new Ir.IntegerLiteral(integer.ToString());
+        case Bpl.LiteralExpr literal when literal.Val is BigNum integer:
+          return new Ir.IntegerLiteral(CaptureInteger(integer.ToBigInteger, expression.tok));
+        case Bpl.LiteralExpr literal when literal.Val is BigDec real:
+          return CaptureReal(real, expression.tok);
         case Bpl.IdentifierExpr identifier: return Variable(identifier.Decl, env, old);
         case Bpl.OldExpr previous: return Expr(previous.Expr, env, true, depth + 1);
         case Bpl.NAryExpr application: {
@@ -342,6 +348,8 @@ public static class B3Normalizer {
               return new Ir.Operation(unary.Op == Bpl.UnaryOperator.Opcode.Not ? Ir.Operator.Not : Ir.Operator.Negate, type, args);
             case Bpl.BinaryOperator binary: return Binary(binary.Op, type, args, expression.tok);
             case Bpl.IfThenElse: return new Ir.Operation(Ir.Operator.IfThenElse, type, args);
+            case Bpl.ArithmeticCoercion coercion:
+              return Coercion(coercion.Coercion, type, args, expression.tok);
             case Bpl.TypeCoercion:
               Require(args.Length == 1 && args[0].Type == type, "b3_coercion", "Nontrivial type coercion is unsupported", expression.tok);
               return args[0];
@@ -350,9 +358,10 @@ public static class B3Normalizer {
             case Bpl.FunctionCall call:
               Require(call.Func != null, "b3_resolution", "Unresolved function call", expression.tok);
               if (TryNativeIntegerBody(call.Func, type, args, out var arithmetic) ||
-                  TryNativeIntegerAxiom(call.Func, type, args, out arithmetic)) { return arithmetic; }
+                  TryNativeIntegerAxiom(call.Func, type, args, out arithmetic) ||
+                  TryNativeRealConversion(call.Func, type, args, out arithmetic)) { return arithmetic; }
               Require(!HasPrimitiveArithmeticDefinition(call.Func), "b3_arithmetic",
-                "Called primitive division/modulo/power definition is unsupported pending correspondence", expression.tok);
+                "Called primitive arithmetic definition is outside the reviewed substitution routes", expression.tok);
               var projection = IdentityProjection(call.Func);
               if (projection >= 0 && projection < args.Length && args[projection].Type == type) { return args[projection]; }
               var instantiation = call.Func.TypeParameters.Count == 0 ? "" :
@@ -399,6 +408,121 @@ public static class B3Normalizer {
         default: throw new Unsupported("b3_expression", "Unsupported expression " + expression.GetType().Name, expression.tok);
       }
     }
+    private string CaptureInteger(BigInteger value, Bpl.IToken token) {
+      // Check storage before decimal conversion, then check exact decimal length.
+      Require(value.GetBitLength() <= 4L * Ir.Protocol.MaximumIntegerCharacters,
+        "b3_literal_limit", "Exact numeric literal exceeds its size bound", token);
+      var digits = value.ToString(CultureInfo.InvariantCulture);
+      Require(digits.Length <= Ir.Protocol.MaximumIntegerCharacters,
+        "b3_literal_limit", "Exact numeric literal exceeds its size bound", token);
+      ReserveNumeric(digits.Length, token);
+      return digits;
+    }
+
+    private Ir.RationalLiteral CaptureReal(BigDec value, Bpl.IToken token) {
+      var mantissa = value.Mantissa;
+      if (mantissa.IsZero) {
+        ReserveNumeric(2, token);
+        return new Ir.RationalLiteral("0", "1");
+      }
+      Require(mantissa.GetBitLength() <= 4L * Ir.Protocol.MaximumIntegerCharacters,
+        "b3_literal_limit", "Exact real literal exceeds its size bound", token);
+      var digits = mantissa.ToString(CultureInfo.InvariantCulture);
+      var exponent = (long)value.Exponent; // Widen before negation, including int.MinValue.
+      var numeratorLength = digits.Length + Math.Max(0L, exponent);
+      var denominatorLength = 1L + Math.Max(0L, -exponent);
+      Require(numeratorLength <= Ir.Protocol.MaximumIntegerCharacters &&
+        denominatorLength <= Ir.Protocol.MaximumIntegerCharacters,
+        "b3_literal_limit", "Exact real literal expansion exceeds its size bound", token);
+      ReserveNumeric(numeratorLength + denominatorLength, token);
+      // Every allocation below is bounded by the exact decimal-length checks above.
+      var numerator = exponent >= 0 ? mantissa * BigInteger.Pow(10, (int)exponent) : mantissa;
+      var denominator = exponent < 0 ? BigInteger.Pow(10, (int)-exponent) : BigInteger.One;
+      return new Ir.RationalLiteral(numerator.ToString(CultureInfo.InvariantCulture),
+        denominator.ToString(CultureInfo.InvariantCulture));
+    }
+
+    private void ReserveNumeric(long characters, Bpl.IToken token) {
+      numericCharacters += characters + 128; // Include the literal's JSON field overhead.
+      Require(numericCharacters <= Ir.Protocol.MaximumMessageBytes, "b3_literal_limit",
+        "Cumulative exact numeric literals exceed the message size bound", token);
+    }
+
+    private static Ir.Expression Coercion(Bpl.ArithmeticCoercion.CoercionType operation,
+      string resultType, IReadOnlyList<Ir.Expression> args, Bpl.IToken token) {
+      var toReal = operation == Bpl.ArithmeticCoercion.CoercionType.ToReal;
+      Require((operation is Bpl.ArithmeticCoercion.CoercionType.ToReal or Bpl.ArithmeticCoercion.CoercionType.ToInt) &&
+        args.Count == 1 && args[0].Type == (toReal ? "int" : "real") && resultType == (toReal ? "real" : "int"),
+        "b3_arithmetic", "Native arithmetic coercion has an invalid signature", token);
+      return new Ir.Operation(toReal ? Ir.Operator.ToReal : Ir.Operator.ToInt, resultType, args.ToArray());
+    }
+
+    private bool TryNativeRealConversion(Bpl.Function function, string resultType,
+      IReadOnlyList<Ir.Expression> args, out Ir.Expression expression) {
+      expression = null;
+      if (args.Count != 1 || !TryCoercionDefinition(function, new HashSet<Bpl.Function>(), 0, out var operation)) {
+        return false;
+      }
+      var toReal = operation == Bpl.ArithmeticCoercion.CoercionType.ToReal;
+      if (args[0].Type != (toReal ? "int" : "real") || resultType != (toReal ? "real" : "int")) { return false; }
+      expression = Coercion(operation, resultType, args, function.tok);
+      return true;
+    }
+
+    private bool TryCoercionDefinition(Bpl.Function function, HashSet<Bpl.Function> visited, int depth,
+      out Bpl.ArithmeticCoercion.CoercionType operation) {
+      operation = default;
+      if (function == null || depth >= Ir.Protocol.MaximumDepth || !visited.Add(function) ||
+          function.TypeParameters.Count != 0 || function.InParams.Count != 1 || function.OutParams.Count != 1 ||
+          function.InParams[0].TypedIdent.WhereExpr != null) { return false; }
+      var formal = function.InParams[0];
+      var result = function.OutParams[0].TypedIdent.Type;
+      if (formal.TypedIdent.Type.IsInt && result.IsReal) { operation = Bpl.ArithmeticCoercion.CoercionType.ToReal; }
+      else if (formal.TypedIdent.Type.IsReal && result.IsInt) { operation = Bpl.ArithmeticCoercion.CoercionType.ToInt; }
+      else { return false; }
+
+      if (function.Body != null) {
+        if (IsDirectCoercion(function.Body, formal, operation)) { return true; }
+        // The actual Floor Body composes a unary call with a separately justified conversion.
+        if (function.Body is Bpl.NAryExpr { Fun: Bpl.FunctionCall call } body && body.Args.Count == 1 &&
+            SamePrimitiveType(body.Type, result) && IsMonomorphic(body) &&
+            body.Args[0] is Bpl.IdentifierExpr argument && ReferenceEquals(argument.Decl, formal) &&
+            TryCoercionDefinition(call.Func, visited, depth + 1, out var nested) && nested == operation) { return true; }
+        return false;
+      }
+      if (!function.AlwaysRevealed || !HasActiveDefinitionAxiom(function) ||
+          function.DefinitionAxiom.Expr is not Bpl.ForallExpr forall || forall.TypeParameters.Count != 0 ||
+          forall.Dummies.Count != 1 || forall.Dummies[0].TypedIdent.WhereExpr != null ||
+          !SamePrimitiveType(forall.Dummies[0].TypedIdent.Type, formal.TypedIdent.Type) ||
+          forall.Body is not Bpl.NAryExpr { Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.Eq } } equality ||
+          equality.Args.Count != 2) { return false; }
+      var definingCall = equality.Args[0];
+      if (definingCall is Bpl.NAryExpr { Fun: Bpl.TypeCoercion } coercion) {
+        if (coercion.Args.Count != 1 || !SamePrimitiveType(coercion.Type, result) ||
+            !SamePrimitiveType(coercion.Args[0].Type, result)) { return false; }
+        definingCall = coercion.Args[0];
+      }
+      return definingCall is Bpl.NAryExpr { Fun: Bpl.FunctionCall defining } application &&
+        ReferenceEquals(defining.Func, function) && SamePrimitiveType(application.Type, result) &&
+        IsMonomorphic(application) && application.Args.Count == 1 &&
+        application.Args[0] is Bpl.IdentifierExpr actual && ReferenceEquals(actual.Decl, forall.Dummies[0]) &&
+        IsDirectCoercion(equality.Args[1], forall.Dummies[0], operation);
+    }
+
+    private static bool IsMonomorphic(Bpl.NAryExpr expression) => expression.TypeParameters == null ||
+      expression.TypeParameters.FormalTypeParams.Count == 0;
+
+    private static bool SamePrimitiveType(Bpl.Type first, Bpl.Type second) => first != null && second != null &&
+      (first.IsInt && second.IsInt || first.IsReal && second.IsReal);
+
+    private static bool IsDirectCoercion(Bpl.Expr expression, Bpl.Variable formal,
+      Bpl.ArithmeticCoercion.CoercionType operation) =>
+      expression is Bpl.NAryExpr { Fun: Bpl.ArithmeticCoercion coercion } body && coercion.Coercion == operation &&
+      body.Args.Count == 1 && body.Args[0] is Bpl.IdentifierExpr identifier && ReferenceEquals(identifier.Decl, formal) &&
+      (operation == Bpl.ArithmeticCoercion.CoercionType.ToReal
+        ? formal.TypedIdent.Type.IsInt && body.Type?.IsReal == true
+        : formal.TypedIdent.Type.IsReal && body.Type?.IsInt == true);
+
     private static bool TryNativeIntegerBody(Bpl.Function function, string resultType,
       IReadOnlyList<Ir.Expression> args, out Ir.Expression expression) {
       expression = null;
@@ -468,7 +592,8 @@ public static class B3Normalizer {
     }
 
     private static bool HasPrimitiveArithmeticDefinition(Bpl.Function function) {
-      static bool Primitive(Bpl.Expr body) => body is Bpl.NAryExpr { Fun: Bpl.BinaryOperator binary } &&
+      static bool Primitive(Bpl.Expr body) => body is Bpl.NAryExpr { Fun: Bpl.ArithmeticCoercion } ||
+        body is Bpl.NAryExpr { Fun: Bpl.BinaryOperator binary } &&
         binary.Op is Bpl.BinaryOperator.Opcode.Div or Bpl.BinaryOperator.Opcode.Mod or
           Bpl.BinaryOperator.Opcode.RealDiv or Bpl.BinaryOperator.Opcode.Pow;
       if (Primitive(function.Body)) { return true; }
@@ -567,6 +692,13 @@ public static class B3Normalizer {
         Require(type == "int" && args.Length == 2 && args.All(arg => arg.Type == "int"),
           "b3_arithmetic", "Native division and modulo require two integer operands and an integer result", token);
       }
+      if (op == Bpl.BinaryOperator.Opcode.RealDiv) {
+        Require(type == "real" && args.Length == 2 && args.All(arg => arg.Type is "int" or "real"),
+          "b3_arithmetic", "Native real division requires numeric operands and a real result", token);
+        // Match the pinned native translation; this is not general mixed-sort promotion.
+        return new Ir.Operation(Ir.Operator.RealDivide, "real", args.Select(arg => arg.Type == "int"
+          ? new Ir.Operation(Ir.Operator.ToReal, "real", new[] { arg }) : arg).ToArray());
+      }
       var kind = op switch {
         Bpl.BinaryOperator.Opcode.Add => Ir.Operator.Add, Bpl.BinaryOperator.Opcode.Sub => Ir.Operator.Subtract,
         Bpl.BinaryOperator.Opcode.Div => Ir.Operator.Divide, Bpl.BinaryOperator.Opcode.Mod => Ir.Operator.Modulo,
@@ -575,7 +707,7 @@ public static class B3Normalizer {
         Bpl.BinaryOperator.Opcode.Le or Bpl.BinaryOperator.Opcode.Ge => Ir.Operator.LessEqual,
         Bpl.BinaryOperator.Opcode.And => Ir.Operator.And, Bpl.BinaryOperator.Opcode.Or => Ir.Operator.Or,
         Bpl.BinaryOperator.Opcode.Imp => Ir.Operator.Implies, Bpl.BinaryOperator.Opcode.Iff => Ir.Operator.Equiv,
-        _ => throw new Unsupported("b3_arithmetic", "Real/float division and power are unsupported pending correspondence", token)
+        _ => throw new Unsupported("b3_arithmetic", "Float division and power are unsupported pending correspondence", token)
       };
       if (op is Bpl.BinaryOperator.Opcode.Gt or Bpl.BinaryOperator.Opcode.Ge) { args = new[] { args[1], args[0] }; }
       return new Ir.Operation(kind, type, args);
