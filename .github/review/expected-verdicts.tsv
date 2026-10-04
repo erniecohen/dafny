@@ -602,6 +602,9 @@ git-issues/git-issue-1373.dfy	2		6,7
 git-issues/git-issue-1377.dfy	2		22,25,36,37,38,39
 git-issues/git-issue-1384.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-1419.dfy	2		8,17,23,25,27,32,33,34,38,39,40,44,45,46,49,50,51,52,56,59,65,94,106,110,118,126,130,134,138,142,146,150,154,187,195,202,205,206,210,218,219,252,253,256,262,263,264,265
+git-issues/git-issue-142-negative.dfy	4	1 verified, 12 errors	10,14,18,22,26,31,36,41,46,50,57
+git-issues/git-issue-142-runtime.dfy	0	1 verified, 0 errors	
+git-issues/git-issue-142.dfy	0	10 verified, 0 errors	
 git-issues/git-issue-1423.dfy	0	4 verified, 0 errors	
 git-issues/git-issue-1435.dfy	4	1 verified, 1 error	6
 git-issues/git-issue-1458.dfy	2		10
@@ -786,7 +789,7 @@ git-issues/git-issue-3482.dfy	0	1 verified, 0 errors
 git-issues/git-issue-351.dfy	0	1 verified, 0 errors	
 git-issues/git-issue-353.dfy	0	2 verified, 0 errors	
 git-issues/git-issue-354.dfy	0	0 verified, 0 errors	
-git-issues/git-issue-356-errors.dfy	4	11 verified, 27 errors	10,16,22,28,34,47,53,66,80,87,93,100,108,115,121,135,141,153,164,170,176,189,195,207
+git-issues/git-issue-356-errors.dfy	4	9 verified, 30 errors	10,16,22,28,34,47,53,66,80,87,93,100,108,115,121,135,141,153,164,170,176,182,189,195,207,213,217
 git-issues/git-issue-356-errors2.dfy	4	2 verified, 7 errors	17,18,19,23,24
 git-issues/git-issue-356.dfy	2		66
 git-issues/git-issue-3605.dfy	4	1 verified, 1 error	15
