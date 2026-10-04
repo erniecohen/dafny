@@ -149,12 +149,19 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
         ctor.Name));
 
     } else if (expr is ConversionExpr { IsBaseOperation: true } conversionExpr) {
-      flows.Add(new FlowFromComputedType(expr, () => {
+      Type BaseOperationType() {
         var view = NewtypeOperationView.Get(conversionExpr.E.Type, ((DPreType)conversionExpr.PreType.Normalize()).Decl, preserveSubsetTypes: true);
         // Keep the current lower bound until the source view is determined.
         // Successful resolution supplies the concrete, instantiated visible base.
         return view.BaseType ?? TypeRefinementWrapper.NormalizeSansBottom(expr);
-      }, "base operation"));
+      }
+      if (((DPreType)conversionExpr.PreType.Normalize()).Decl is ArrowTypeDecl) {
+        // An operation view has the source's exact base signature. A subtype join
+        // here can broaden a contravariant domain and create an invalid totality demand.
+        flows.Add(new FlowFromComputedArrowOperationType(expr, BaseOperationType));
+      } else {
+        flows.Add(new FlowFromComputedType(expr, BaseOperationType, "base operation"));
+      }
 
     } else if (expr is ApplyExpr applyExpr) {
       flows.Add(new FlowFromTypeArgument(expr, applyExpr.Function.UnnormalizedType, applyExpr.Args.Count));

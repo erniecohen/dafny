@@ -4061,6 +4061,18 @@ namespace Microsoft.Dafny {
         return null;
       }
       targetType = targetType.NormalizeExpandKeepConstraints();
+      if (options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+        var sourceView = NewtypeOperationView.Get(sourceType, preserveSubsetTypes: true);
+        if (sourceView.Status == NewtypeOperationView.ViewStatus.Resolved &&
+            sourceView.Path.OfType<NewtypeDecl>().Any() && sourceView.BaseType.IsArrowType &&
+            sourceView.BaseType.Equals(targetType, true)) {
+          // Membership in a nominal newtype entails membership in its exact,
+          // instantiated visible base. This is an operation projection, not
+          // an arrow-signature coercion or a stronger partiality/reads contract.
+          desc = null;
+          return null;
+        }
+      }
       var udt = targetType as UserDefinedType;
       Bpl.Expr cre;
       if (udt?.ResolvedClass is RedirectingTypeDecl redirectingTypeDecl &&
