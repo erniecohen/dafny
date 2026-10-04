@@ -88,6 +88,8 @@ public static class B3Normalizer {
     private int boundNumber;
     private int expressionCount;
     private long numericCharacters;
+    private long bitvectorExpressionBits;
+    private HashSet<Bpl.Function> ownedBitvectorFunctions;
     private Environment entry;
 
     public Normalization(Bpl.Program source, Bpl.Implementation unit, DafnyOptions options) {
@@ -174,7 +176,7 @@ public static class B3Normalizer {
     }
     private string Type(Bpl.Type type) {
       var key = TypeKey(type, new Dictionary<Bpl.TypeVariable, int>(), 0);
-      if (key is "bool" or "int" or "real") { return key; }
+      if (key is "bool" or "int" or "real" || Ir.ProtocolValidation.TryBitvectorWidth(key, out _)) { return key; }
       if (!types.TryGetValue(key, out var name)) { name = Symbol("type:" + key); types.Add(key, name); }
       return name;
     }
@@ -187,6 +189,11 @@ public static class B3Normalizer {
         return TypeKey(target, bound, depth + 1);
       }
       if (type is Bpl.TypeSynonymAnnotation alias) { return TypeKey(alias.ExpandedType, bound, depth + 1); }
+      if (type is Bpl.BvType word) {
+        Require(word.Bits is > 0 and <= Ir.Protocol.MaximumBitvectorWidth,
+          "b3_bitvector_width", "Native bitvector width is outside the positive bounded fragment", type.tok);
+        return Ir.Protocol.BitvectorTypeName(word.Bits);
+      }
       if (type is Bpl.BasicType basic) {
         Require(basic.IsBool || basic.IsInt || basic.IsReal, "b3_primitive_type", "B3 supports bool, int, and real primitives", type.tok);
         return basic.IsBool ? "bool" : basic.IsInt ? "int" : "real";
@@ -333,14 +340,21 @@ public static class B3Normalizer {
       Require(expression != null && depth < Ir.Protocol.MaximumDepth && ++expressionCount <= Ir.Protocol.MaximumNodes,
         "b3_expression_limit", "Missing expression or normalization resource bound exceeded", expression?.tok ?? unit.tok);
       var type = Type(expression.Type);
+      ReserveBitvectorExpression(type, expression.tok);
       switch (expression) {
         case Bpl.LiteralExpr literal when literal.Val is bool boolean: return new Ir.BooleanLiteral(boolean);
         case Bpl.LiteralExpr literal when literal.Val is BigNum integer:
           return new Ir.IntegerLiteral(CaptureInteger(integer.ToBigInteger, expression.tok));
         case Bpl.LiteralExpr literal when literal.Val is BigDec real:
           return CaptureReal(real, expression.tok);
+        case Bpl.LiteralExpr literal when literal.Val is Bpl.BvConst word:
+          return CaptureBitvector(word, type, expression.tok);
         case Bpl.IdentifierExpr identifier: return Variable(identifier.Decl, env, old);
         case Bpl.OldExpr previous: return Expr(previous.Expr, env, true, depth + 1);
+        case Bpl.BvExtractExpr extract:
+          return BitvectorExtract(extract, type, Expr(extract.Bitvector, env, old, depth + 1));
+        case Bpl.BvConcatExpr concat:
+          return BitvectorConcat(concat, type, Expr(concat.E0, env, old, depth + 1), Expr(concat.E1, env, old, depth + 1));
         case Bpl.NAryExpr application: {
           var args = application.Args.Select(a => Expr(a, env, old, depth + 1)).ToArray();
           switch (application.Fun) {
@@ -357,6 +371,8 @@ public static class B3Normalizer {
             case Bpl.MapStore: return MapOperation(application, type, args, true);
             case Bpl.FunctionCall call:
               Require(call.Func != null, "b3_resolution", "Unresolved function call", expression.tok);
+              if (TryNativeBitvectorFunction(application, type, args, new HashSet<Bpl.Function>(ReferenceEqualityComparer.Instance), depth,
+                  out var bitvector)) { return bitvector; }
               if (TryNativeIntegerBody(call.Func, type, args, out var arithmetic) ||
                   TryNativeIntegerAxiom(call.Func, type, args, out arithmetic) ||
                   TryNativeRealConversion(call.Func, type, args, out arithmetic)) { return arithmetic; }
@@ -446,6 +462,195 @@ public static class B3Normalizer {
       numericCharacters += characters + 128; // Include the literal's JSON field overhead.
       Require(numericCharacters <= Ir.Protocol.MaximumMessageBytes, "b3_literal_limit",
         "Cumulative exact numeric literals exceed the message size bound", token);
+    }
+
+    private Ir.BitvectorLiteral CaptureBitvector(Bpl.BvConst word, string type, Bpl.IToken token) {
+      Require(word.Bits is > 0 and <= Ir.Protocol.MaximumBitvectorWidth &&
+        type == Ir.Protocol.BitvectorTypeName(word.Bits), "b3_bitvector_literal", "Word literal width and resolved type disagree", token);
+      var value = word.Value.ToBigInteger;
+      Require(value >= 0 && value.GetBitLength() <= 4L * Ir.Protocol.MaximumIntegerCharacters,
+        "b3_literal_limit", "Source word literal exceeds its numeric bound", token);
+      Require(value.ToString(CultureInfo.InvariantCulture).Length <= Ir.Protocol.MaximumIntegerCharacters,
+        "b3_literal_limit", "Source word literal exceeds its decimal bound", token);
+      // The pinned Boogie literal printer emits the low Bits bits, including for noncanonical source values.
+      var digits = (value % (BigInteger.One << word.Bits)).ToString(CultureInfo.InvariantCulture);
+      ReserveNumeric(digits.Length, token);
+      return new Ir.BitvectorLiteral(digits, word.Bits);
+    }
+
+    private static Ir.BitvectorOperation BitvectorExtract(Bpl.BvExtractExpr sourceExpression,
+      string type, Ir.Expression argument) {
+      Require(Ir.ProtocolValidation.TryBitvectorWidth(argument.Type, out var inputWidth) &&
+        sourceExpression.Start >= 0 && sourceExpression.Start < sourceExpression.End &&
+        sourceExpression.End <= inputWidth && type == Ir.Protocol.BitvectorTypeName(sourceExpression.End - sourceExpression.Start),
+        "b3_bitvector_extract", "Word extraction has invalid resolved sorts or indices", sourceExpression.tok);
+      return new Ir.BitvectorOperation(Ir.BitvectorOperator.Extract, sourceExpression.End - sourceExpression.Start,
+        sourceExpression.Start, sourceExpression.End, type, new[] { argument });
+    }
+
+    private static Ir.BitvectorOperation BitvectorConcat(Bpl.BvConcatExpr sourceExpression,
+      string type, Ir.Expression left, Ir.Expression right) {
+      var leftValid = Ir.ProtocolValidation.TryBitvectorWidth(left.Type, out var leftWidth);
+      var rightValid = Ir.ProtocolValidation.TryBitvectorWidth(right.Type, out var rightWidth);
+      Require(leftValid && rightValid &&
+        leftWidth + rightWidth <= Ir.Protocol.MaximumBitvectorWidth &&
+        type == Ir.Protocol.BitvectorTypeName(leftWidth + rightWidth),
+        "b3_bitvector_concat", "Word concatenation has invalid resolved sorts or width", sourceExpression.tok);
+      // Source E0 is the high word; E1 is the low word.
+      return new Ir.BitvectorOperation(Ir.BitvectorOperator.Concat, leftWidth + rightWidth, 0, 0, type, new[] { left, right });
+    }
+
+    private bool TryNativeBitvectorFunction(Bpl.NAryExpr application, string type, IReadOnlyList<Ir.Expression> args,
+      HashSet<Bpl.Function> expanding, int depth, out Ir.Expression expression) {
+      expression = null;
+      var function = ((Bpl.FunctionCall)application.Fun).Func;
+      Require(function != null, "b3_resolution", "Unresolved function in word expansion", application.tok);
+      var wordSignature = Ir.ProtocolValidation.TryBitvectorWidth(type, out _) ||
+        args.Any(argument => Ir.ProtocolValidation.TryBitvectorWidth(argument.Type, out _));
+      var claimed = false;
+      for (var attribute = function.Attributes; attribute != null; attribute = attribute.Next) {
+        claimed |= attribute.Key == "bvbuiltin" || attribute.Key == "builtin" && attribute.Params.Count == 1 &&
+          attribute.Params[0] is string text && (text.StartsWith("bv", StringComparison.Ordinal) ||
+            text.StartsWith("(_ int2bv ", StringComparison.Ordinal));
+      }
+      // BV0 is a resolved Int alias. This route preserves an exact actual Int/Bool literal Body;
+      // it does not infer a width from a name or force an arbitrary Int value to zero.
+      var literalBody = function.TypeParameters.Count == 0 && function.Body is Bpl.LiteralExpr { Val: BigNum or bool } &&
+        function.InParams.All(parameter => Type(parameter.TypedIdent.Type) == "int");
+      if (!wordSignature && !claimed && !literalBody) { return false; }
+      if (function.Body == null && !claimed) {
+        var semanticAttribute = false;
+        for (var attribute = function.Attributes; attribute != null; attribute = attribute.Next) {
+          semanticAttribute |= attribute.Key is "bvbuiltin" or "builtin";
+        }
+        if (!semanticAttribute) { return false; } // Keep closed generic ordinary UFs on the existing route.
+      }
+      ownedBitvectorFunctions ??= new HashSet<Bpl.Function>(source.TopLevelDeclarations.OfType<Bpl.Function>(), ReferenceEqualityComparer.Instance);
+      Require(depth < Ir.Protocol.MaximumDepth && ownedBitvectorFunctions.Contains(function) &&
+        function.TypeParameters.Count == 0 && IsMonomorphic(application) && function.OutParams.Count == 1 &&
+        function.InParams.Count == args.Count &&
+        new HashSet<Bpl.Variable>(function.InParams, ReferenceEqualityComparer.Instance).Count == function.InParams.Count &&
+        function.InParams.Concat(function.OutParams).All(parameter => parameter.TypedIdent.WhereExpr == null) &&
+        Type(function.OutParams[0].TypedIdent.Type) == type &&
+        function.InParams.Select((parameter, index) => Type(parameter.TypedIdent.Type) == args[index].Type &&
+          Type(application.Args[index].Type) == args[index].Type).All(matches => matches),
+        "b3_bitvector_function", "Word function is not an owned resolved monomorphic call with matching formal identities and sorts", application.tok);
+      if (function.Body != null) {
+        Require(expanding.Add(function), "b3_bitvector_body", "Cyclic actual word function Body", application.tok);
+        try {
+          var bindings = function.InParams.Select((formal, index) => new KeyValuePair<Bpl.Variable, Ir.Expression>(formal, args[index]))
+            .ToDictionary(pair => pair.Key, pair => pair.Value);
+          expression = BitvectorBody(function.Body, bindings, expanding, depth + 1);
+          Require(expression.Type == type, "b3_bitvector_body", "Actual word Body result sort differs from the call", application.tok);
+          return true;
+        } finally { expanding.Remove(function); }
+      }
+      var builtin = BitvectorBuiltin(function);
+      if (builtin == null) { return false; } // An ordinary word-valued UF remains an overapproximation.
+      var reverse = builtin is "bvugt" or "bvuge";
+      Ir.BitvectorOperator operation;
+      switch (builtin) {
+        case "bvand": operation = Ir.BitvectorOperator.And; break;
+        case "bvor": operation = Ir.BitvectorOperator.Or; break;
+        case "bvxor": operation = Ir.BitvectorOperator.Xor; break;
+        case "bvnot": operation = Ir.BitvectorOperator.Not; break;
+        case "bvadd": operation = Ir.BitvectorOperator.Add; break;
+        case "bvsub": operation = Ir.BitvectorOperator.Subtract; break;
+        case "bvmul": operation = Ir.BitvectorOperator.Multiply; break;
+        case "bvudiv": operation = Ir.BitvectorOperator.UnsignedDivide; break;
+        case "bvurem": operation = Ir.BitvectorOperator.UnsignedRemainder; break;
+        case "bvult": case "bvugt": operation = Ir.BitvectorOperator.UnsignedLess; break;
+        case "bvule": case "bvuge": operation = Ir.BitvectorOperator.UnsignedLessEqual; break;
+        case "bvshl": operation = Ir.BitvectorOperator.ShiftLeft; break;
+        case "bvlshr": operation = Ir.BitvectorOperator.LogicalShiftRight; break;
+        case "bv2int": operation = Ir.BitvectorOperator.BitvectorToUnsignedInt; break;
+        default:
+          Require(TryIntToBitvectorIndex(builtin, out var index) &&
+            type == Ir.Protocol.BitvectorTypeName(index), "b3_bitvector_builtin",
+            "Claimed native word builtin is outside the reviewed fragment or has a mismatched index", application.tok);
+          operation = Ir.BitvectorOperator.IntToBitvector; break;
+      }
+      var unary = operation is Ir.BitvectorOperator.Not or Ir.BitvectorOperator.IntToBitvector or Ir.BitvectorOperator.BitvectorToUnsignedInt;
+      var comparison = operation is Ir.BitvectorOperator.UnsignedLess or Ir.BitvectorOperator.UnsignedLessEqual;
+      var wordType = operation == Ir.BitvectorOperator.IntToBitvector ? type : args.FirstOrDefault()?.Type;
+      Require(Ir.ProtocolValidation.TryBitvectorWidth(wordType, out var width) && args.Count == (unary ? 1 : 2) &&
+        (operation == Ir.BitvectorOperator.IntToBitvector
+          ? args[0].Type == "int" && type == wordType
+          : operation == Ir.BitvectorOperator.BitvectorToUnsignedInt
+            ? type == "int" && args[0].Type == wordType
+            : type == (comparison ? "bool" : wordType) && args.All(argument => argument.Type == wordType)),
+        "b3_bitvector_signature", "Native word primitive has an invalid arity, sort or same-width count", application.tok);
+      expression = new Ir.BitvectorOperation(operation, width, 0, 0, type, reverse ? args.Reverse().ToArray() : args);
+      return true;
+    }
+
+    private static string BitvectorBuiltin(Bpl.Function function) {
+      string word = null, general = null;
+      for (var attribute = function.Attributes; attribute != null; attribute = attribute.Next) {
+        if (attribute.Key is not ("bvbuiltin" or "builtin")) { continue; }
+        Require(attribute.Params.Count == 1 && attribute.Params[0] is string,
+          "b3_bitvector_builtin", "Malformed semantic word attribute", function.tok);
+        var value = (string)attribute.Params[0];
+        if (attribute.Key == "bvbuiltin") {
+          Require(word == null, "b3_bitvector_builtin", "Duplicate bvbuiltin attribute", function.tok); word = value;
+        } else {
+          Require(general == null, "b3_bitvector_builtin", "Duplicate builtin attribute", function.tok); general = value;
+        }
+      }
+      // Exact pinned priority: a valid bvbuiltin overrides builtin. Strings are never emitted as SMT code.
+      return word ?? general;
+    }
+
+    private static bool TryIntToBitvectorIndex(string builtin, out int width) {
+      width = 0;
+      const string prefix = "(_ int2bv ";
+      if (builtin.Length > prefix.Length + 5 || !builtin.StartsWith(prefix, StringComparison.Ordinal) || !builtin.EndsWith(')')) { return false; }
+      var digits = builtin.Substring(prefix.Length, builtin.Length - prefix.Length - 1);
+      return int.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out width) &&
+        width is > 0 and <= Ir.Protocol.MaximumBitvectorWidth && digits == width.ToString(CultureInfo.InvariantCulture);
+    }
+
+    private Ir.Expression BitvectorBody(Bpl.Expr body, Dictionary<Bpl.Variable, Ir.Expression> formals,
+      HashSet<Bpl.Function> expanding, int depth) {
+      Require(body != null && depth < Ir.Protocol.MaximumDepth && ++expressionCount <= Ir.Protocol.MaximumNodes,
+        "b3_expression_limit", "Actual word Body exceeds normalization bounds", body?.tok ?? unit.tok);
+      var type = Type(body.Type);
+      ReserveBitvectorExpression(type, body.tok);
+      switch (body) {
+        case Bpl.IdentifierExpr identifier:
+          Require(identifier.Decl != null && formals.TryGetValue(identifier.Decl, out var formal) && formal.Type == type,
+            "b3_bitvector_body", "Actual word Body captures a nonformal or mismatched variable", body.tok);
+          return formals[identifier.Decl];
+        case Bpl.LiteralExpr { Val: bool boolean }:
+          Require(type == "bool", "b3_bitvector_body", "Actual Bool Body literal has a mismatched sort", body.tok);
+          return new Ir.BooleanLiteral(boolean);
+        case Bpl.LiteralExpr { Val: BigNum integer }:
+          Require(type == "int", "b3_bitvector_body", "Actual Int Body literal has a mismatched sort", body.tok);
+          return new Ir.IntegerLiteral(CaptureInteger(integer.ToBigInteger, body.tok));
+        case Bpl.LiteralExpr { Val: Bpl.BvConst word }: return CaptureBitvector(word, type, body.tok);
+        case Bpl.BvExtractExpr extract:
+          return BitvectorExtract(extract, type, BitvectorBody(extract.Bitvector, formals, expanding, depth + 1));
+        case Bpl.BvConcatExpr concat:
+          return BitvectorConcat(concat, type, BitvectorBody(concat.E0, formals, expanding, depth + 1),
+            BitvectorBody(concat.E1, formals, expanding, depth + 1));
+        case Bpl.NAryExpr { Fun: Bpl.TypeCoercion } coercion:
+          Require(coercion.Args.Count == 1 && Type(coercion.Args[0].Type) == type,
+            "b3_bitvector_body", "Actual word Body has a nonidentity coercion", body.tok);
+          return BitvectorBody(coercion.Args[0], formals, expanding, depth + 1);
+        case Bpl.NAryExpr { Fun: Bpl.FunctionCall } application:
+          var args = application.Args.Select(argument => BitvectorBody(argument, formals, expanding, depth + 1)).ToArray();
+          Require(TryNativeBitvectorFunction(application, type, args, expanding, depth, out var expression),
+            "b3_bitvector_body", "Actual word Body calls an unrecognized function", body.tok);
+          return expression;
+        default: throw new Unsupported("b3_bitvector_body", "Actual word Body is outside the reviewed literal/primitive/formal composition", body.tok);
+      }
+    }
+
+    private void ReserveBitvectorExpression(string type, Bpl.IToken token) {
+      if (!Ir.ProtocolValidation.TryBitvectorWidth(type, out var width)) { return; }
+      bitvectorExpressionBits += width;
+      Require(bitvectorExpressionBits <= Ir.Protocol.MaximumBitvectorBits,
+        "b3_bitvector_limit", "Word expression traversal exceeds the aggregate width bound", token);
     }
 
     private static Ir.Expression Coercion(Bpl.ArithmeticCoercion.CoercionType operation,
@@ -993,15 +1198,31 @@ public static class B3Normalizer {
     private void CheckOwnedBounds(Ir.Program program) {
       var pending = new Stack<(object Node, int Depth)>(); pending.Push((program.Unit.Body, 0));
       foreach (var axiom in program.Axioms) { pending.Push((axiom.Condition, 0)); }
-      var count = program.Types.Count + program.Functions.Count + program.Axioms.Count + program.Unit.Variables.Count + obligations.Count;
+      var count = program.Types.Count + program.Functions.Count + program.Axioms.Count + program.Unit.Variables.Count + obligations.Count +
+        program.Functions.Sum(function => function.Parameters.Count);
+      long bitvectorBits = 0;
+      void Charge(string type) {
+        if (!Ir.ProtocolValidation.TryBitvectorWidth(type, out var width)) { return; }
+        bitvectorBits += width;
+        Require(bitvectorBits <= Ir.Protocol.MaximumBitvectorBits,
+          "b3_bitvector_limit", "Normalized word occurrences exceed the aggregate width bound", unit.tok);
+      }
+      foreach (var function in program.Functions) {
+        Charge(function.ResultType); foreach (var parameter in function.Parameters) { Charge(parameter.Type); }
+      }
+      var variableTypes = program.Unit.Variables.ToDictionary(binding => binding.Name, binding => binding.Type);
+      foreach (var binding in program.Unit.Variables) { Charge(binding.Type); }
       while (pending.Count > 0) {
         var (node, depth) = pending.Pop();
         Require(depth <= Ir.Protocol.MaximumDepth && ++count <= Ir.Protocol.MaximumNodes,
           "b3_owned_ir_limit", "Normalized IR exceeds protocol resource bounds", unit.tok);
         void Push(object child) => pending.Push((child, depth + 1));
+        if (node is Ir.Expression expression) { Charge(expression.Type); }
         switch (node) {
+          case Ir.Binding binding: Charge(binding.Type); break;
           case Ir.Block block: foreach (var child in block.Statements) { Push(child); } break;
-          case Ir.Assign assign: Push(assign.Value); break;
+          case Ir.Assign assign: Charge(variableTypes[assign.Variable]); Push(assign.Value); break;
+          case Ir.Havoc havoc: foreach (var variable in havoc.Variables) { Charge(variableTypes[variable]); } break;
           case Ir.Check check: Push(check.Condition); break;
           case Ir.Assume assume: Push(assume.Condition); break;
           case Ir.Choice choice: foreach (var branch in choice.Branches) { Push(branch); } break;
@@ -1010,9 +1231,11 @@ public static class B3Normalizer {
           case Ir.Labeled labeled: Push(labeled.Body); break;
           case Ir.Application application: foreach (var argument in application.Arguments) { Push(argument); } break;
           case Ir.Operation operation: foreach (var argument in operation.Arguments) { Push(argument); } break;
+          case Ir.BitvectorOperation wordOperation: foreach (var argument in wordOperation.Arguments) { Push(argument); } break;
           case Ir.Quantifier quantifier:
+            foreach (var binding in quantifier.Bindings) { Push(binding); }
             Push(quantifier.Body); foreach (var pattern in quantifier.Patterns) { foreach (var term in pattern) { Push(term); } } break;
-          case Ir.Let let: Push(let.Value); Push(let.Body); break;
+          case Ir.Let let: Push(let.Binding); Push(let.Value); Push(let.Body); break;
           case Ir.Label label: Push(label.Body); break;
         }
       }

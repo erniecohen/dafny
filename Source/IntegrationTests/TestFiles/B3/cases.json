@@ -62,8 +62,8 @@
     {
       "name": "bitvector",
       "file": "bitvector.dfy",
-      "exitCode": 4,
-      "diagnostic": "b3_type: Unsupported type BvType"
+      "exitCode": 0,
+      "diagnostic": null
     },
     {
       "name": "division",
@@ -222,6 +222,94 @@
       "exitCode": 4,
       "diagnostic": "assertion",
       "outcome": "failed"
+    },
+    {
+      "name": "bitvector-native",
+      "file": "bitvector-native.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-wrong-wrap",
+      "file": "bitvector-wrong-wrap.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-wrong-unsigned",
+      "file": "bitvector-wrong-unsigned.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-zero-divisor",
+      "file": "bitvector-zero-divisor.dfy",
+      "exitCode": 4,
+      "diagnostic": "possible division by zero",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-zero-remainder",
+      "file": "bitvector-zero-remainder.dfy",
+      "exitCode": 4,
+      "diagnostic": "possible division by zero",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-negative-shift",
+      "file": "bitvector-negative-shift.dfy",
+      "exitCode": 4,
+      "diagnostic": "shift amount must be non-negative",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-large-shift",
+      "file": "bitvector-large-shift.dfy",
+      "exitCode": 4,
+      "diagnostic": "shift amount must not exceed",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-bad-narrowing",
+      "file": "bitvector-bad-narrowing.dfy",
+      "exitCode": 4,
+      "diagnostic": "might not fit in bv3",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-negative-conversion",
+      "file": "bitvector-negative-conversion.dfy",
+      "exitCode": 4,
+      "diagnostic": "might not fit in bv3",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-bv0",
+      "file": "bitvector-bv0.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-bv0-bad-conversion",
+      "file": "bitvector-bv0-bad-conversion.dfy",
+      "exitCode": 4,
+      "diagnostic": "might not fit in bv0",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-false",
+      "file": "bitvector-false.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-rotation-unsupported",
+      "file": "bitvector-rotation-unsupported.dfy",
+      "exitCode": 4,
+      "diagnostic": "b3_bitvector_builtin"
     }
   ]
 }
