@@ -243,6 +243,15 @@ public static class B3StructuredCfgCorrespondence {
           return ReferenceEquals(actual, source.Args[0]);
         }
         if (source.Fun is Bpl.BinaryOperator op && source.Args.Count == 2) {
+          // Producer Not(Eq/Neq) precedes Typecheck. The shared guard and its
+          // complement then rewrite separately: Eq(a,b) -> Iff(a,b), and
+          // Neq(a,b) -> Iff(a,Not(b)) (AbsyExpr.cs:2483-2502).
+          // With typed Bool operands these two exact forms are complements.
+          if (op.Op == Bpl.BinaryOperator.Opcode.Iff &&
+              actual is Bpl.NAryExpr { Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.Iff }, Args.Count: 2 } iff &&
+              ReferenceEquals(iff.Args[0], source.Args[0])) {
+            return DirectNotOf(iff.Args[1], source.Args[1]) || DirectNotOf(source.Args[1], iff.Args[1]);
+          }
           var replacement = op.Op switch {
             Bpl.BinaryOperator.Opcode.Eq => Bpl.BinaryOperator.Opcode.Neq,
             Bpl.BinaryOperator.Opcode.Neq => Bpl.BinaryOperator.Opcode.Eq,
@@ -262,6 +271,9 @@ public static class B3StructuredCfgCorrespondence {
       return actual is Bpl.NAryExpr { Fun: Bpl.UnaryOperator unary, Args.Count: 1 } application &&
         unary.Op == Bpl.UnaryOperator.Opcode.Not && ReferenceEquals(application.Args[0], guard);
     }
+    private static bool DirectNotOf(Bpl.Expr expression, Bpl.Expr operand) =>
+      expression is Bpl.NAryExpr { Fun: Bpl.UnaryOperator { Op: Bpl.UnaryOperator.Opcode.Not }, Args.Count: 1 } negation &&
+      ReferenceEquals(negation.Args[0], operand);
     private static void UniqueCommandTree(Bpl.Cmd root, HashSet<Bpl.Cmd> identities) {
       var pending = new Stack<(Bpl.Cmd Command, int Depth)>(); pending.Push((root, 0));
       while (pending.Count > 0) {

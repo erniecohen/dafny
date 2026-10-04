@@ -87,6 +87,44 @@ public class B3DefinitionContextTests {
     Assert.All(result.Contexts!, context => Assert.Empty(context.Definitions));
   }
 
+  [Theory]
+  [InlineData(true)]
+  [InlineData(false)]
+  public void ActiveTypedBoolLiteralDefinitionKeepsItsEntireGuardedIffFormula(bool value) {
+    var literal = value ? "true" : "false";
+    var (source, options) = B3VisibilityTests.Parse("function F(): bool; function Guard(): bool; axiom Guard() ==> F() == " + literal +
+      "; procedure P(); implementation P() { assume Guard(); assert F() == " + literal + "; hide F; assert F() == " + literal + "; }");
+    OwnAxiom(source);
+    var axiom = Assert.Single(source.TopLevelDeclarations.OfType<Bpl.Axiom>());
+    var implication = Assert.IsType<Bpl.NAryExpr>(axiom.Expr);
+    var equality = Assert.IsType<Bpl.NAryExpr>(implication.Args[1]);
+    Assert.Equal(Bpl.BinaryOperator.Opcode.Iff, Assert.IsType<Bpl.BinaryOperator>(equality.Fun).Op);
+    var result = Normalize(source, options); Assert.True(result.Success, Errors(result));
+    var visible = Assert.Single(result.Contexts!.Where(context => context.Definitions.Count > 0));
+    var full = Assert.IsType<Ir.Operation>(Assert.Single(visible.Program.Axioms).Condition);
+    Assert.Equal(Ir.Operator.Implies, full.Operator); Assert.IsType<Ir.Application>(full.Arguments[0]);
+    var defining = Assert.IsType<Ir.Operation>(full.Arguments[1]); Assert.Equal(Ir.Operator.Equiv, defining.Operator);
+    Assert.Equal(value, Assert.IsType<Ir.BooleanLiteral>(defining.Arguments[1]).Value);
+    Assert.All(result.Contexts.Where(context => context.Obligations.Any(identity => identity.Id == result.Obligations.Last().Id)),
+      context => Assert.Empty(context.Definitions));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task ActualDafnyOpaqueBoolDefinitionRevealAndFalseControlsReachSourceOwnedContexts(bool negative) {
+    var body = negative ? "reveal F(); assert F(); assert F() != F(); hide F; assert true;" :
+      "reveal F(); assert F(); hide F; assert F();";
+    var results = await Dafny("opaque function F(): bool { true } lemma Use() { " + body + " }");
+    Assert.All(results, result => Assert.True(result.Success, Errors(result)));
+    var axioms = results.SelectMany(result => result.Contexts!).SelectMany(context => context.Program.Axioms).ToArray();
+    Assert.NotEmpty(axioms);
+    Assert.Contains(axioms, axiom => Applications(axiom.Condition).Any(application => application.ResultType == "bool" &&
+      application.Arguments.Count == 1 && application.Arguments[0] is Ir.BooleanLiteral { Value: true }));
+    Assert.All(results.SelectMany(result => result.Contexts!).SelectMany(context => context.Definitions),
+      origin => Assert.True(origin.AxiomOrdinal >= 0 && origin.FormulaHash.Length == 64));
+  }
+
   [Fact]
   public void DetachedAxiomMetadataCannotSupplyANamedVisibilityPremise() {
     var (source, options) = Source("hide F; assert F() == 7;");
