@@ -8,6 +8,26 @@
     { "source": "proof-fixtures/false.dfy", "expectedCliExitCode": 4, "requiredDiagnostic": "assertion might not hold" },
     { "source": "proof-fixtures/fuel.dfy", "expectedCliExitCode": 0 }
   ],
-  "requiredBeforeSuccess": ["complete-owned-process-receipt", "zero-populated-owned-cgroup", "actual-alc-unload", "unchanged-framework-witness"],
+  "requiredBeforeSuccess": ["complete-owned-process-receipt", "zero-populated-owned-cgroup", "actual-alc-unload", "unchanged-framework-witness", "nonzero-native-proof-batches", "pinned-z3-origin-resource-independence"],
+  "pendingLifecycleControls": [
+    {
+      "name": "live-descendant-cap-exceeded",
+      "setup": "Create more than 256 simultaneously live descendants inside the exclusively owned leaf; keep them live until cleanup observes the cap.",
+      "required": ["cap-failure-recorded", "owned-cgroup-kill-fallback-recorded", "empty-members-and-populated-zero", "owned-leaf-removed", "host-poisoned-no-next-context"],
+      "status": "source-design-only-unexecuted"
+    },
+    {
+      "name": "creating-thread-exit-host-alive",
+      "setup": "Launch the wrapper from a short-lived host thread, retire that thread while the host and solver stay alive, then separately end the host process.",
+      "required": ["wrapper-and-solver-survive-thread-retirement", "host-pidfd-exit-observed", "independent-ci-owned-cgroup-teardown"],
+      "status": "source-design-only-unexecuted"
+    },
+    {
+      "name": "sealed-image-source-mutation",
+      "setup": "After capture/sealing, mutate the original solver inode and attempt writes/grow/shrink/new seals on the captured image.",
+      "required": ["executed-image-digest-remains-pinned", "mandatory-seals-verified", "mutations-of-captured-image-refused"],
+      "status": "source-design-only-unexecuted"
+    }
+  ],
   "nativeQueryAndResourceParityEstablished": false
 }

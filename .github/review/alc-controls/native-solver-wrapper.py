@@ -8,10 +8,18 @@ import os
 from pathlib import Path
 import select
 import signal
+import stat
 import sys
 import threading
 import time
 import uuid
+
+
+MAX_IMAGE_BYTES = 256 * 1024 * 1024
+REQUIRED_IMAGE_SEALS = fcntl.F_SEAL_WRITE | fcntl.F_SEAL_GROW | fcntl.F_SEAL_SHRINK | fcntl.F_SEAL_SEAL
+# MFD_EXEC explicitly requires executable memfds (Linux 6.3+); never fall back
+# to executing the mutable source inode or an unsealed temporary pathname.
+MFD_EXEC = 0x0010
 
 
 def identity(pid):
@@ -30,6 +38,99 @@ def save(path, data):
     temporary.rename(path)
 
 
+def capture_solver(real, expected_digest):
+    source = os.open(real, os.O_RDONLY | os.O_CLOEXEC | os.O_NONBLOCK)
+    image = None
+    try:
+        metadata = os.fstat(source)
+        if not stat.S_ISREG(metadata.st_mode) or not 0 < metadata.st_size <= MAX_IMAGE_BYTES:
+            raise RuntimeError('Solver must be a bounded regular native ELF image')
+        image = os.memfd_create('alc-pinned-solver', os.MFD_CLOEXEC | os.MFD_ALLOW_SEALING | MFD_EXEC)
+        count = 0
+        prefix = b''
+        while True:
+            try:
+                data = os.read(source, 65536)
+            except InterruptedError:
+                continue
+            if not data:
+                break
+            count += len(data)
+            if count > MAX_IMAGE_BYTES:
+                raise RuntimeError('Solver image safety cap exceeded')
+            if len(prefix) < 4:
+                prefix = (prefix + data)[:4]
+            view = memoryview(data)
+            while view:
+                try:
+                    written = os.write(image, view)
+                except InterruptedError:
+                    continue
+                if written <= 0:
+                    raise RuntimeError('A solver image write made no progress')
+                view = view[written:]
+        if prefix != b'\x7fELF' or count == 0:
+            raise RuntimeError('The pinned solver must be a native ELF executable')
+        os.fchmod(image, 0o500)
+        fcntl.fcntl(image, fcntl.F_ADD_SEALS, REQUIRED_IMAGE_SEALS)
+        seals = fcntl.fcntl(image, fcntl.F_GET_SEALS)
+        if seals & REQUIRED_IMAGE_SEALS != REQUIRED_IMAGE_SEALS:
+            raise RuntimeError('Executable solver image sealing failed')
+        # Hash the final sealed image, not the potentially changing source file.
+        os.lseek(image, 0, os.SEEK_SET)
+        digest = hashlib.sha256()
+        while True:
+            data = os.read(image, 65536)
+            if not data:
+                break
+            digest.update(data)
+        os.lseek(image, 0, os.SEEK_SET)
+        if digest.hexdigest() != expected_digest:
+            raise RuntimeError('Captured solver image does not match the pin')
+        receipt = {'sha256': digest.hexdigest(), 'bytes': count, 'seals': seals,
+                   'requiredSeals': REQUIRED_IMAGE_SEALS, 'nativeElf': True, 'executableMemfd': True}
+        return image, receipt
+    except BaseException:
+        if image is not None:
+            os.close(image)
+        raise
+    finally:
+        os.close(source)
+
+
+def open_host_pidfd(host):
+    if identity(host['pid'])['startTime'] != host['startTime']:
+        raise RuntimeError('Host identity changed before pidfd capture')
+    descriptor = os.pidfd_open(host['pid'], 0)
+    try:
+        if identity(host['pid'])['startTime'] != host['startTime']:
+            raise RuntimeError('Host identity changed during pidfd capture')
+        return descriptor
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
+def watch_host(descriptor, stopped, root):
+    poller = select.poll()
+    poller.register(descriptor, select.POLLIN)
+    try:
+        while not stopped.is_set():
+            for _, events in poller.poll(50):
+                if events & (select.POLLIN | select.POLLHUP):
+                    # Signal only this wrapper; its stable main thread owns the
+                    # solver child's PDEATHSIG contract. Never signal the host.
+                    os.kill(os.getpid(), signal.SIGKILL)
+                if events & (select.POLLERR | select.POLLNVAL):
+                    raise RuntimeError('Host process-lifetime watcher failed')
+    except BaseException as error:
+        try:
+            save(root / ('wrapper-failure-' + str(os.getpid()) + '-' + uuid.uuid4().hex + '.json'),
+                 {'pid': os.getpid(), 'type': type(error).__name__, 'message': str(error)})
+        finally:
+            os._exit(125)
+
+
 def main():
     root = Path(__file__).resolve().parent
     config = json.loads((root / 'config.json').read_text())
@@ -37,10 +138,11 @@ def main():
     if not sys.platform.startswith('linux'):
         raise RuntimeError('Linux ownership is required')
     libc = ctypes.CDLL(None, use_errno=True)
-    if libc.prctl(1, signal.SIGKILL, 0, 0, 0) != 0:
-        raise OSError(ctypes.get_errno(), 'wrapper parent-death signaling failed')
     if os.getppid() != config['host']['pid'] or identity(os.getppid())['startTime'] != config['host']['startTime']:
         raise RuntimeError('Wrong launching host identity')
+    # PR_SET_PDEATHSIG follows the creating .NET thread, which may retire while
+    # the host stays alive. A verified pidfd observes process lifetime instead.
+    host_pidfd = open_host_pidfd(config['host'])
     # Serialize closing admission with joining the exclusive inherited cgroup.
     with (root / 'admission.lock').open('r+') as admission:
         fcntl.flock(admission, fcntl.LOCK_EX)
@@ -52,10 +154,7 @@ def main():
         folder.mkdir(mode=0o700)
         fcntl.flock(admission, fcntl.LOCK_UN)
     real = config['realSolver']
-    executable = open(real, 'rb')
-    digest = hashlib.file_digest(executable, 'sha256').hexdigest()
-    if digest != config['solverSha256']:
-        raise RuntimeError('Solver image changed')
+    executable, image_receipt = capture_solver(real, config['solverSha256'])
     if os.execve not in os.supports_fd:
         raise RuntimeError('Descriptor-bound solver exec is unavailable')
     input_read, input_write = os.pipe()
@@ -68,6 +167,7 @@ def main():
         try:
             if libc.prctl(1, signal.SIGKILL, 0, 0, 0) != 0 or os.getppid() != wrapper_pid:
                 os._exit(125)
+            os.close(host_pidfd)
             os.dup2(input_read, 0)
             os.dup2(output_write, 1)
             os.dup2(error_write, 2)
@@ -76,16 +176,22 @@ def main():
             if os.read(gate_read, 1) != b'g':
                 os._exit(125)
             os.close(gate_read)
-            # Execute the exact file descriptor whose bytes were hashed, retaining argv
-            # and environment. Linux native ELF exec closes the CLOEXEC descriptor.
-            os.execve(executable.fileno(), [real, *sys.argv[1:]], os.environ)
+            if fcntl.fcntl(executable, fcntl.F_GET_SEALS) & REQUIRED_IMAGE_SEALS != REQUIRED_IMAGE_SEALS:
+                os._exit(125)
+            os.lseek(executable, 0, os.SEEK_SET)
+            # Exec the sealed captured bytes, retaining argv[0], arguments and
+            # environment. Native ELF exec closes the CLOEXEC descriptor.
+            os.execve(executable, [real, *sys.argv[1:]], os.environ)
         except BaseException:
             os._exit(127)
     for fd in [input_read, output_write, error_write, gate_read]:
         os.close(fd)
-    executable.close()
+    os.close(executable)
+    host_watch_stopped = threading.Event()
+    host_watch = threading.Thread(target=watch_host, args=(host_pidfd, host_watch_stopped, root), daemon=True)
+    host_watch.start()  # Start after fork, avoiding a fork of a multithreaded Python process.
     save(folder / 'ready.json', {'token': token, 'wrapper': identity(wrapper_pid), 'solver': identity(pid),
-                                'solverSha256': digest, 'arguments': sys.argv[1:]})
+                                'solverSha256': image_receipt['sha256'], 'solverImage': image_receipt, 'arguments': sys.argv[1:]})
     deadline = time.monotonic() + 30
     while not (folder / 'admitted').exists():
         if time.monotonic() >= deadline:
@@ -165,7 +271,13 @@ def main():
     for thread in threads:
         thread.join()
     code = os.waitstatus_to_exitcode(status)
-    save(folder / 'complete.json', {'token': token, 'solverExitCode': code, 'streams': streams, 'errors': errors})
+    save(folder / 'complete.json', {'token': token, 'solverImage': image_receipt, 'solverExitCode': code,
+                                    'streams': streams, 'errors': errors})
+    host_watch_stopped.set()
+    host_watch.join(timeout=1)
+    if host_watch.is_alive():
+        raise RuntimeError('Host process-lifetime watcher did not stop')
+    os.close(host_pidfd)
     return code if code >= 0 else 128 - code
 
 
