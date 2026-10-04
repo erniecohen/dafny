@@ -119,9 +119,13 @@ public static class VerifyCommand {
             Interlocked.Increment(ref statistics.InconclusiveCount);
             break;
           case VerificationOutcome.Cancelled:
+            Interlocked.Increment(ref statistics.CancellationCount);
+            break;
           case VerificationOutcome.Unsupported:
+            Interlocked.Increment(ref statistics.UnsupportedCount);
+            break;
           case VerificationOutcome.ToolError:
-            Interlocked.Increment(ref statistics.SolverExceptionCount);
+            Interlocked.Increment(ref statistics.ToolErrorCount);
             break;
           default:
             throw new ArgumentOutOfRangeException();
@@ -182,6 +186,16 @@ public static class VerifyCommand {
 
     if (statistics.SolverExceptionCount != 0) {
       await trailer.WriteAsync($", {statistics.SolverExceptionCount} solver exceptions");
+    }
+
+    if (statistics.UnsupportedCount != 0) {
+      await trailer.WriteAsync($", {statistics.UnsupportedCount} unsupported");
+    }
+    if (statistics.CancellationCount != 0) {
+      await trailer.WriteAsync($", {statistics.CancellationCount} cancelled");
+    }
+    if (statistics.ToolErrorCount != 0) {
+      await trailer.WriteAsync($", {statistics.ToolErrorCount} tool errors");
     }
 
     await trailer.WriteLineAsync();
