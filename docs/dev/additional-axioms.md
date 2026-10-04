@@ -491,8 +491,8 @@ pairs it adds relate a heap only to itself.
 
 Before #81, every good update was a succession step, and with extensional heaps
 an instance of the monotonicity of `alloc` was false in `I` (#81's restoring
-write). The accounting above holds either way; this member is stacked on #81
-because its Boogie control checks #81's scenario with the instance.
+write). The accounting above holds either way; this member builds on #81 because its
+Boogie control checks #81's scenario with the instance.
 
 The encoding already relies on reflexivity in its intended interpretation. A
 two-state lemma's implementation assumes `$HeapSucc(previous$Heap,
