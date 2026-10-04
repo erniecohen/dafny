@@ -1448,8 +1448,30 @@ namespace Microsoft.Dafny {
         if (HeapExpr != null) {
           guard = BplAnd(guard, BoogieGenerator.HeapSameOrSucc(HeapExpr, environment.Heap));
         }
-        return BplForall(environment.LayerBinders.Concat(environment.Binders).ToList(), null,
+        var tok = GetToken(e);
+        var familyVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
+          BoogieGenerator.CurrentIdGenerator.FreshId("$lambdaFamily#"),
+          new Boogie.MapType(tok, [], [Predef.LayerType], Predef.HandleType)));
+        var family = new Boogie.IdentifierExpr(tok, familyVar);
+        var handle = BoogieGenerator.FunctionCall(tok, BuiltinFunction.AtLayer, Predef.HandleType,
+          family, environment.Layer);
+        var arguments = environment.Binders.Skip(1).Select(variable =>
+          (Expr)new Boogie.IdentifierExpr(tok, variable)).ToList();
+        var selectorArguments = Concat(Map(e.Type.AsArrowType.TypeArgs, BoogieGenerator.TypeToTy),
+          Cons(environment.Heap, Cons(handle, arguments)));
+        // Selector patterns cover every layer, heap, and argument binder. The
+        // family alias names the existing value lambda only inside patterns;
+        // the quantified availability guard and facts are unchanged.
+        var readsSelector = FunctionCall(tok, BoogieGenerator.Reads(e.BoundVars.Count), Predef.SetType, selectorArguments);
+        var requiresSelector = FunctionCall(tok, BoogieGenerator.Requires(e.BoundVars.Count), Boogie.Type.Bool, selectorArguments);
+        var applySelector = FunctionCall(tok, BoogieGenerator.Apply(e.BoundVars.Count), Predef.BoxType, selectorArguments);
+        var trigger = new Boogie.Trigger(tok, true, [readsSelector],
+          new Boogie.Trigger(tok, true, [requiresSelector],
+            new Boogie.Trigger(tok, true, [applySelector])));
+        var quantifiedFacts = BplForall(environment.LayerBinders.Concat(environment.Binders).ToList(), trigger,
           BplImp(guard, facts));
+        return new Boogie.LetExpr(tok, [familyVar],
+          [BuildLambdaHandleFamily(e, BuildLambdaEnvironment(e))], null, quantifiedFacts);
       }
 
       public Expression DesugarMatchExpr(MatchExpr e) {
