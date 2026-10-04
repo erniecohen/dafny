@@ -585,23 +585,41 @@ namespace Microsoft.Dafny.Compilers {
         wLoopBody.WriteLine("yield lo.toNumber();");
         EmitIncrementVar("lo", wLoopBody);
       }
+      var genericNewtype = Options.Get(CommonOptionBag.ExtendedNewtypeBases) && nt.TypeArgs.Count != 0;
+      var descriptorParams = nt.TypeArgs.Where(NeedsTypeDescriptor).ToList();
+      var descriptorNames = descriptorParams.Comma(tp => $"rtd$_{tp.GetCompileName(Options)}");
       if (nt.WitnessKind == SubsetTypeDecl.WKind.Compiled) {
-        var witness = new ConcreteSyntaxTree(w.RelativeIndentLevel);
-        var wStmts = w.Fork();
+        var witnessWriter = genericNewtype ? w.NewBlock($"static Witness({descriptorNames})") : w;
+        var witness = new ConcreteSyntaxTree(witnessWriter.RelativeIndentLevel);
+        var wStmts = witnessWriter.Fork();
         if (nt.NativeType == null) {
           witness.Append(Expr(nt.Witness, false, wStmts));
         } else {
           TrParenExpr(nt.Witness, witness, false, wStmts);
           witness.Write(".toNumber()");
         }
-        DeclareField("Witness", true, true, nt.BaseType, nt.Origin, witness.ToString(), w);
+        if (genericNewtype) {
+          witnessWriter.WriteLine($"return {witness};");
+        } else {
+          DeclareField("Witness", true, true, nt.BaseType, nt.Origin, witness.ToString(), w);
+        }
       }
       // In JavaScript, the companion class of a newtype (which is what is being declared here) doubles as a
       // type descriptor for the newtype. The Default() method for that type descriptor is declared here.
-      var wDefault = w.NewBlock("static get Default()");
-      var udt = new UserDefinedType(nt.Origin, nt.Name, nt, []);
-      var d = TypeInitializationValue(udt, wr, nt.Origin, false, false);
-      wDefault.WriteLine("return {0};", d);
+      if (genericNewtype) {
+        var udt = UserDefinedType.FromTopLevelDecl(nt.Origin, nt);
+        var wDefault = w.NewBlock($"static Default({descriptorNames})");
+        var d = TypeInitializationValue(udt, wDefault, nt.Origin, false, true);
+        wDefault.WriteLine("return {0};", d);
+        var wRtd = w.NewBlock($"static Rtd({descriptorNames})");
+        var wClass = wRtd.NewBlock("return class", ";");
+        wClass.NewBlock("static get Default()").WriteLine($"return {FullTypeName(udt)}.Default({descriptorNames});");
+      } else {
+        var wDefault = w.NewBlock("static get Default()");
+        var udt = new UserDefinedType(nt.Origin, nt.Name, nt, []);
+        var d = TypeInitializationValue(udt, wr, nt.Origin, false, false);
+        wDefault.WriteLine("return {0};", d);
+      }
 
       GenerateIsMethod(nt, cw.MethodWriter);
 
@@ -852,7 +870,13 @@ namespace Microsoft.Dafny.Compilers {
           return "_dafny.Rtd_ref/*not used*/";
         } else {
           Contract.Assert(cl is NewtypeDecl || cl is SubsetTypeDecl);
-          return TypeName_UDT(FullTypeName(udt), udt, wr, udt.Origin);
+          var name = TypeName_UDT(FullTypeName(udt), udt, wr, udt.Origin);
+          if (cl is NewtypeDecl && Options.Get(CommonOptionBag.ExtendedNewtypeBases) && cl.TypeArgs.Count != 0) {
+            var arguments = TypeArgumentInstantiation.ListFromClass(cl, udt.TypeArgs)
+              .Where(ta => NeedsTypeDescriptor(ta.Formal)).Comma(ta => TypeDescriptor(ta.Actual, wr, tok));
+            return $"{name}.Rtd({arguments})";
+          }
+          return name;
         }
       } else {
         Contract.Assert(false); throw new Cce.UnreachableException();  // unexpected type
@@ -1002,7 +1026,10 @@ namespace Microsoft.Dafny.Compilers {
       } else if (cl is NewtypeDecl) {
         var td = (NewtypeDecl)cl;
         if (td.Witness != null) {
-          return TypeName_UDT(FullTypeName(udt), udt, wr, udt.Origin) + ".Witness";
+          var witness = TypeName_UDT(FullTypeName(udt), udt, wr, udt.Origin) + ".Witness";
+          return Options.Get(CommonOptionBag.ExtendedNewtypeBases) && td.TypeArgs.Count != 0
+            ? $"{witness}({TypeArgumentInstantiation.ListFromClass(td, udt.TypeArgs).Where(ta => NeedsTypeDescriptor(ta.Formal)).Comma(ta => TypeDescriptor(ta.Actual, wr, tok))})"
+            : witness;
         } else if (td.NativeType != null) {
           return "0";
         } else {

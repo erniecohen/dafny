@@ -538,14 +538,16 @@ namespace Microsoft.Dafny.Compilers {
       var cw = (ClassWriter)CreateClass(IdProtect(d.EnclosingModuleDefinition.GetCompileName(Options)), d, wr);
       var w = cw.MethodWriter;
       var udt = UserDefinedType.FromTopLevelDecl(d.Origin, d);
+      var genericNewtype = d is NewtypeDecl && Options.Get(CommonOptionBag.ExtendedNewtypeBases) && d.TypeArgs.Count != 0;
+      var parameters = genericNewtype ? d.TypeArgs.Where(NeedsTypeDescriptor).Comma(FormatDefaultTypeParameterValue) : "";
       w.WriteLine("@staticmethod");
-      var block = w.NewBlockPy("def default():");
+      var block = w.NewBlockPy($"def default({parameters}):");
       var wStmts = block.Fork();
-      block.Write("return ");
+      block.Write(genericNewtype ? "return lambda: " : "return ");
       if (witnessKind == SubsetTypeDecl.WKind.Compiled) {
         block.Append(Expr(witness, false, wStmts));
       } else {
-        block.Write(TypeInitializationValue(udt, wr, d.Origin, false, false));
+        block.Write(TypeInitializationValue(udt, block, d.Origin, false, genericNewtype));
       }
       block.WriteLine();
 
@@ -790,7 +792,14 @@ namespace Microsoft.Dafny.Compilers {
       }
 
       string CustomDescriptor(UserDefinedType userDefinedType) {
-        return $"{TypeName_UDT(FullTypeName(userDefinedType), userDefinedType, wr, userDefinedType.Origin)}.default";
+        var descriptor = $"{TypeName_UDT(FullTypeName(userDefinedType), userDefinedType, wr, userDefinedType.Origin)}.default";
+        if (userDefinedType.ResolvedClass is NewtypeDecl declaration &&
+            Options.Get(CommonOptionBag.ExtendedNewtypeBases) && declaration.TypeArgs.Count != 0) {
+          var arguments = TypeArgumentInstantiation.ListFromClass(declaration, userDefinedType.TypeArgs)
+            .Where(ta => NeedsTypeDescriptor(ta.Formal)).Comma(ta => TypeDescriptor(ta.Actual, wr, tok));
+          return $"{descriptor}({arguments})";
+        }
+        return descriptor;
       }
 
       string DatatypeDescriptor(UserDefinedType udt, List<Type> typeArgs, IOrigin tok) {
@@ -937,7 +946,13 @@ namespace Microsoft.Dafny.Compilers {
 
               case NewtypeDecl td:
                 if (td.Witness != null) {
-                  return TypeName_UDT(FullName(cl), udt, wr, udt.Origin) + ".default()";
+                  var name = TypeName_UDT(FullName(cl), udt, wr, udt.Origin);
+                  if (Options.Get(CommonOptionBag.ExtendedNewtypeBases) && td.TypeArgs.Count != 0) {
+                    var arguments = TypeArgumentInstantiation.ListFromClass(td, udt.TypeArgs)
+                      .Where(ta => NeedsTypeDescriptor(ta.Formal)).Comma(ta => TypeDescriptor(ta.Actual, wr, tok));
+                    return $"{name}.default({arguments})()";
+                  }
+                  return name + ".default()";
                 } else {
                   return TypeInitializationValue(td.ConcreteBaseType(udt.TypeArgs), wr, tok, usePlaceboValue, constructTypeParameterDefaultsFromTypeDescriptors);
                 }
