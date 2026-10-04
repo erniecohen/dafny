@@ -254,7 +254,7 @@ public class CliCompilation {
         } catch (Exception e) {
           Compilation.Reporter.Error(MessageSource.Verifier, ResolutionErrors.ErrorId.none, canVerify.Origin,
             $"Internal error occurred during verification: {e.Message}\n{e.StackTrace}");
-          throw;
+          yield break;
         }
 
         yield return new CanVerifyResult(canVerify,
