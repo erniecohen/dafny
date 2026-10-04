@@ -13,6 +13,7 @@ import subprocess
 import time
 
 MAX_REGISTERED = 512
+MAX_TRANSIENT_OBSERVATIONS = 512
 MAX_CHILD_IDS = 4096
 MAX_THREADS = 2048
 MAX_TEXT = 65536
@@ -119,7 +120,7 @@ def run_owned(command, log, env, timeout, reject_descendants=False):
     result = {'command': list(command), 'exitCode': None, 'passed': False, 'poisoned': False,
               'safetyTimeoutSeconds': timeout, 'rejectObservedDescendants': reject_descendants,
               'ownedProcesses': [], 'signals': [], 'signalCount': 0, 'remainingDirectChildren': [],
-              'failures': [], 'subreaperAdoptionRequired': False}
+              'failures': [], 'subreaperAdoptionRequired': False, 'transientDescendantObservations': []}
     owned = {}
     retired = []
     root_captured = False
@@ -186,8 +187,21 @@ def run_owned(command, log, env, timeout, reject_descendants=False):
             for pid in children:
                 try:
                     register(pid, actual)
-                except FileNotFoundError:
-                    fault('Descendant disappeared before ownership could be captured')
+                except (FileNotFoundError, ProcessLookupError) as error:
+                    if reject_descendants:
+                        fault('Descendant disappeared before ownership could be captured')
+                    elif len(result['transientDescendantObservations']) >= MAX_TRANSIENT_OBSERVATIONS:
+                        fault('Transient descendant observation ledger exceeded its bound')
+                    else:
+                        # Only this non-direct owned-parent child-list capture can
+                        # race with natural exit/reaping. No ownership, pidfd or
+                        # exit claim is invented for a missed numeric observation.
+                        # Survivors of a disappearing parent adopt to the exclusive
+                        # subreaper and remain subject to strict direct capture.
+                        result['transientDescendantObservations'].append({
+                            'observedPid': pid, 'observedParentIdentity': dict(actual),
+                            'captureError': type(error).__name__, 'pidfdCaptured': False,
+                            'observation': 'owned-parent-child-list; vanished before descendant pin'})
         for pid in child_ids(owner['pid']):
             register(pid, owner, adopted=pid != root_pid)
 

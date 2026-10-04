@@ -15,8 +15,11 @@ this source are explicitly disabled. The output source manifest must match the
 input manifest byte-for-byte; the built DLL, deps and runtimeconfig get distinct
 actual hashes in the new receipt. These are CI build declarations, not signed
 compiler-origin attestations. A build requires an absent fresh output directory;
-there is no prior compiled manifest to trust before that build. The exact compiled
-manifest is checked in the build's finally path, including failed SDK stages.
+there is no prior compiled manifest to trust before that build. The original source/coordinator/host pins are checked in the build's finally
+path independently of its outputs. A present compiled manifest is checked there;
+an absent manifest after failed SDK execution is recorded as absent, without
+masking the primary stage failure. A successful build with no compiled manifest
+fails. Separate post-build input faults are recorded and cannot restore acceptance.
 Only a successful build can declare the complete new DLL/deps/runtimeconfig bundle.
 
 The baseline archive remains public run 37182760834, SHA256 `679b3569...`, original
@@ -72,6 +75,19 @@ A recycled PID receives a new captured identity and cannot inherit an old root
 classification or pidfd. The recorded descendant condition is observed ancestry,
 not a claim that polling detects every process that could be born and reaped
 between samples. The fixed nonproof source invokes no process creation API.
+
+Build/download stages permit only a narrow natural-lifetime observation race:
+a FileNotFoundError or ProcessLookupError while registering a descendant from an
+already validated live owned parent's child list may mean the parent reaped it
+before capture. Only when descendant rejection is disabled, record a bounded
+unpinned numeric observation rather than poison the SDK/download stage. The
+receipt does not claim that missed PID was captured, signaled or proven exited.
+Permission/identity/registry errors remain failures, as does loss of a direct-child
+capture. Fixed control stages still fail on this same descendant observation.
+If a missed process survives its parent's exit, the exclusive subreaper adopts
+it; subsequent direct capture remains strict. Captured pidfds and final empty
+adopted-child sets remain required, and any survivor causes bounded failed cleanup.
+The transient-observation ledger is bounded at 512; overflow poisons.
 
 Accepted control stages require exit zero, exactly the one recorded root, no
 observed descendants, no poison or signal, all owned pidfds exited, root reaped,

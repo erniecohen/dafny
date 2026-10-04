@@ -161,6 +161,37 @@ def recheck_boundary(name, host_pin, harness_pins=None, fresh_harness=None, arch
         raise
 
 
+def post_build_inputs(host_pin, compiled_manifest, archived_pins, build_failed):
+    # Preserve the SDK/ownership failure rather than replacing it with a missing
+    # output-file assertion. Source/host checks run independently of SDK outputs.
+    failures = []
+    try:
+        recheck_boundary('after-build-sources', host_pin, archived_pins=archived_pins)
+    except BaseException as error:
+        failures.append(error)
+    compiled = {'buildStageFailed': build_failed, 'hashVerified': False}
+    receipt['compiledManifestAfterBuild'] = compiled
+    try:
+        if compiled_manifest.exists() or compiled_manifest.is_symlink():
+            compiled['state'] = 'present'
+            value = pinned_bytes(compiled_manifest, SOURCE_SHA)
+            assert value == pinned_bytes(SOURCES / 'source-manifest.json', SOURCE_SHA)
+            compiled.update({'hashVerified': True, 'sha256': SOURCE_SHA, 'bytes': len(value)})
+        else:
+            compiled['state'] = 'absent'
+            if not build_failed:
+                raise AssertionError('Successful build has no compiled source manifest')
+    except BaseException as error:
+        compiled['failure'] = type(error).__name__ + ': ' + str(error)
+        failures.append(error)
+    if failures:
+        receipt['postBuildInputFailures'] = [type(error).__name__ + ': ' + str(error) for error in failures]
+        if not build_failed:
+            raise failures[0]
+    # A failed stage is still propagating its original exception. The absent
+    # compiled manifest is merely an explicit missing-output observation.
+
+
 def safe_environment(download=False):
     allowed = ['PATH', 'HOME', 'TMPDIR', 'TMP', 'TEMP', 'LANG', 'LC_ALL', 'TZ', 'DOTNET_ROOT',
                'DOTNET_NOLOGO', 'DOTNET_CLI_TELEMETRY_OPTOUT', 'DOTNET_SKIP_FIRST_TIME_EXPERIENCE',
@@ -307,16 +338,17 @@ try:
     harness = OUTPUT / 'harness'
     archived_pins = (archive, candidate_manifest, candidate, candidate_pin['files'])
     recheck_boundary('before-build', receipt['dotnetExecutable'], fresh_harness=harness, archived_pins=archived_pins)
+    build_failed = False
     try:
         stage('nonproof-harness-build', [str(dotnet), 'build', str(SOURCES / 'B3AlcGate.csproj'), '-c', 'Release',
                                       '-m:1', '-p:UseSharedCompilation=false',
                                       '-p:StartupObject=B3AlcGate.UnavailableMetadataProgram',
                                       '--output', str(harness), '--nologo'], 600)
+    except BaseException:
+        build_failed = True
+        raise
     finally:
-        # Source/host pins are checked even when the SDK stage fails. Only a
-        # successful stage may declare a complete fresh compiled bundle below.
-        recheck_boundary('after-build-sources', receipt['dotnetExecutable'], archived_pins=archived_pins,
-                         compiled_manifest=harness / 'source-manifest.json')
+        post_build_inputs(receipt['dotnetExecutable'], harness / 'source-manifest.json', archived_pins, build_failed)
     harness_pins = {relative: file_pin(harness / relative) for relative in
         ['B3AlcGate.dll', 'B3AlcGate.deps.json', 'B3AlcGate.runtimeconfig.json', 'source-manifest.json']}
     receipt['harnessBundlePins'] = harness_pins
