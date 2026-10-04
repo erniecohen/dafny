@@ -152,7 +152,7 @@ public class B3DefinitionContextTests {
 
   [Theory]
   [InlineData("axiom (forall i: int :: F() == i);", "hide F; assert F() == 7;")]
-  [InlineData("var g: int; axiom F() == g;", "hide F; assert F() == 7;")]
+  [InlineData("const C: int; axiom F() == C;", "hide F; assert F() == 7;")]
   [InlineData("axiom Guard() || F() == 7;", "hide F; assert F() == 7;")]
   public void UnreviewedDefinitionShapesFailClosedAtNamedVisibility(string axiom, string body) {
     var (source, options) = B3VisibilityTests.Parse("function F(): int; function Guard(): bool; " + axiom +
@@ -160,6 +160,73 @@ public class B3DefinitionContextTests {
     OwnAxiom(source);
     var result = Normalize(source, options);
     Assert.False(result.Success); Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "b3_visibility");
+  }
+
+  [Fact]
+  public void MutableGlobalDefinitionIsASourceResolutionRejection() {
+    const string text = "function F(): int; var g: int; axiom F() == g; procedure P(); implementation P() { assert true; }";
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    Assert.Equal(0, Bpl.Parser.Parse(text, "B3VisibilityRejectedSource.bpl", out var source));
+    Assert.Equal(1, source.Resolve(options));
+    // No typed artifact exists; this is not a normalizer rejection or an accepted global axiom.
+  }
+
+  [Fact]
+  public void ParametricSourceIdentityAllowsTheResolvedBoolLiteralInTheWholeOwnedFormula() {
+    var (source, options) = B3VisibilityTests.Parse("""
+      revealed function Identity<T>(x: T): T { x }
+      function F(): bool; function Guard(): bool;
+      axiom Guard() ==> F() == Identity(true);
+      procedure P(); implementation P() { assume Guard(); assert F(); hide F; assert F(); }
+      """);
+    var owner = source.Functions.Single(function => function.Name == "F");
+    var identity = source.Functions.Single(function => function.Name == "Identity");
+    Assert.NotNull(identity.DefinitionAxiom); Assert.Contains(identity.DefinitionAxiom, source.TopLevelDeclarations);
+    Assert.Equal(2, source.TopLevelDeclarations.OfType<Bpl.Axiom>().Count());
+    var owned = source.TopLevelDeclarations.OfType<Bpl.Axiom>().Single(axiom => !ReferenceEquals(axiom, identity.DefinitionAxiom));
+    owned.CanHide = true; owner.OtherDefinitionAxioms.Add(owned);
+    var result = Normalize(source, options); Assert.True(result.Success, Errors(result));
+    var visible = Assert.Single(result.Contexts!.Where(context => context.Definitions.Count > 0));
+    var implication = Assert.IsType<Ir.Operation>(Assert.Single(visible.Program.Axioms).Condition);
+    Assert.Equal(Ir.Operator.Implies, implication.Operator); Assert.IsType<Ir.Application>(implication.Arguments[0]);
+    var equation = Assert.IsType<Ir.Operation>(implication.Arguments[1]);
+    Assert.Equal(Ir.Operator.Equiv, equation.Operator);
+    Assert.True(Assert.IsType<Ir.BooleanLiteral>(equation.Arguments[1]).Value);
+    Assert.Single(visible.Definitions);
+  }
+
+  [Fact]
+  public void ClaimedGenericIdentityWithoutAnActiveDefinitionCannotEnableTheOwnedBoolFormula() {
+    var (source, options) = B3VisibilityTests.Parse("""
+      revealed function {:identity} Identity<T>(x: T): T;
+      function F(): bool; function Guard(): bool;
+      axiom Guard() ==> F() == Identity(true);
+      procedure P(); implementation P() { hide F; assert F(); }
+      """);
+    OwnAxiom(source);
+    var result = Normalize(source, options);
+    Assert.False(result.Success); Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "b3_visibility");
+  }
+
+  [Theory]
+  [InlineData(false, false)]
+  [InlineData(false, true)]
+  [InlineData(true, true)]
+  public void DisconnectedSourceGoalsAndTrailingPopRetainCoverageWithZeroDefinitionPremises(bool withVisibility, bool withTrailingPop) {
+    var (source, options) = Source("assume Guard(); " + (withVisibility ? "hide *; reveal F; " : "") +
+      "assert F() == 7; return; " + (withTrailingPop ? "pop; " : "") + "assert false;");
+    Assert.Equal(withVisibility || withTrailingPop, new B3DefinitionVisibility(source.Implementations.Single()).HasVisibilityCommands);
+    // An AlwaysRevealed owner must not bypass the explicit zero-premise rule at a known unreachable goal.
+    source.Functions.Single(function => function.Name == "F").AlwaysRevealed = true;
+    var result = Normalize(source, options); Assert.True(result.Success, Errors(result));
+    Assert.Equal(2, result.Obligations.Count);
+    var original = Checks(result.Program!.Unit.Body).ToArray(); Assert.Equal(2, original.Length);
+    Assert.False(Assert.IsType<Ir.BooleanLiteral>(original[1].Condition).Value);
+    var disconnected = Assert.Single(result.Contexts!.Where(context => context.Obligations.Any(identity => identity.Id == original[1].ObligationId)));
+    Assert.Empty(disconnected.Definitions); Assert.Empty(disconnected.Program.Axioms);
+    Assert.Contains(Checks(disconnected.Program.Unit.Body), check => ReferenceEquals(check, original[1]));
+    Assert.Contains(result.Contexts!, context => context.Definitions.Count > 0);
+    B3DefinitionContexts.ValidatePartition(result.Program, result.Obligations, result.Contexts, Bpl.Token.NoToken);
   }
 
   [Fact]
@@ -175,9 +242,10 @@ public class B3DefinitionContextTests {
 
   [Fact]
   public void DetachedNativeBodyRetainsPinnedObjectExpansionSemantics() {
-    var (source, options) = B3VisibilityTests.Parse("function {:inline 1} D(x: int, y: int): int { x div y } procedure P(); implementation P() { assert D(8, 2) == 4; }");
+    var (source, options) = B3VisibilityTests.Parse("function {:inline} D(x: int, y: int): int { x div y } procedure P(); implementation P() { assert D(8, 2) == 4; }");
     var assertion = source.Implementations.Single().Blocks.SelectMany(block => block.Cmds).OfType<Bpl.AssertCmd>().Single();
     var call = (Bpl.FunctionCall)((Bpl.NAryExpr)((Bpl.NAryExpr)assertion.Expr).Args[0]).Fun;
+    Assert.NotNull(source.Functions.Single().Body);
     call.Func = (Bpl.Function)source.Functions.Single().Clone();
     Assert.Equal(0, source.Resolve(options)); Assert.Equal(0, source.Typecheck(options));
     var result = Normalize(source, options); Assert.True(result.Success, Errors(result));

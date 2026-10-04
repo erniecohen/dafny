@@ -98,7 +98,6 @@ public static class B3Normalizer {
     private Environment entry;
     private B3DefinitionVisibility visibility;
     private readonly List<Bpl.HideRevealCmd> visibilityCommands = new();
-    private bool hasScopeCommands;
     private readonly HashSet<Bpl.ReturnCmd> explicitReturns = new();
     private readonly Dictionary<string, Bpl.Function> functionOwners = new(StringComparer.Ordinal);
     private readonly Dictionary<string, (B3DefinitionVisibility.Frame Frame, Ir.Expression Condition, Bpl.Absy Origin)> checkMasks = new(StringComparer.Ordinal);
@@ -121,7 +120,7 @@ public static class B3Normalizer {
         "b3_formals", "Implementation/procedure formal lists differ", unit.tok);
       B3StructuredCfgCorrespondence.Validate(unit);
       InspectControl(unit.StructuredStmts);
-      if (visibilityCommands.Count > 0 || hasScopeCommands) { visibility = new B3DefinitionVisibility(unit); }
+      visibility = new B3DefinitionVisibility(unit);
       var formals = new Dictionary<Bpl.Variable, Ir.Expression>();
       for (var i = 0; i < unit.InParams.Count; i++) { formals.Add(unit.Proc.InParams[i], Name(unit.InParams[i])); }
       for (var i = 0; i < unit.OutParams.Count; i++) { formals.Add(unit.Proc.OutParams[i], Name(unit.OutParams[i])); }
@@ -168,9 +167,11 @@ public static class B3Normalizer {
           .ToArray(), contexts);
     }
 
+    private Bpl.ReturnCmd[] FallthroughReturns() => unit.Blocks.Select(block => block.TransferCmd).OfType<Bpl.ReturnCmd>()
+      .Where(returned => !explicitReturns.Contains(returned) && (visibility == null || visibility.IsReachable(returned))).ToArray();
+
     private B3DefinitionVisibility.Frame FallthroughMask() {
-      var returns = unit.Blocks.Select(block => block.TransferCmd).OfType<Bpl.ReturnCmd>()
-        .Where(returned => !explicitReturns.Contains(returned)).ToArray();
+      var returns = FallthroughReturns();
       if (returns.Length == 0) {
         // All source fallthroughs are absent. This appended static exit is unreachable;
         // retain its checks but add no definition premise for that synthetic position.
@@ -236,7 +237,18 @@ public static class B3Normalizer {
               (constant.TypedIdent.Type.IsBool || constant.TypedIdent.Type.IsInt): break;
           case Bpl.NAryExpr application:
             if (application.Fun is Bpl.FunctionCall call) {
-              if (call.Func == null || call.Func.TypeParameters.Count != 0 ||
+              if (call.Func == null) { return false; }
+              var projection = IdentityProjection(call.Func);
+              if (projection >= 0 && projection < application.Args.Count &&
+                  (application.Type?.IsBool == true || application.Type?.IsInt == true) &&
+                  (application.Type.IsBool && application.Args[projection].Type?.IsBool == true ||
+                    application.Type.IsInt && application.Args[projection].Type?.IsInt == true)) {
+                // This is the same source-backed identity substitution used by Expr.
+                // In particular, resolved Lit<bool>(true) retains the whole owned formula.
+                foreach (var argument in application.Args) { pending.Push((argument, depth + 1)); }
+                break;
+              }
+              if (call.Func.TypeParameters.Count != 0 ||
                   !source.TopLevelDeclarations.Contains(call.Func) ||
                   call.Func.InParams.Any(parameter => !(parameter.TypedIdent.Type.IsBool || parameter.TypedIdent.Type.IsInt)) ||
                   call.Func.OutParams.Count != 1 || !(call.Func.OutParams[0].TypedIdent.Type.IsBool || call.Func.OutParams[0].TypedIdent.Type.IsInt)) { return false; }
@@ -280,8 +292,7 @@ public static class B3Normalizer {
       var must = visibility?.AnalyzeMust(catalogue.Select(formula => formula.Owner).Distinct().ToArray());
       B3DefinitionVisibility.MustFrame Mask(Bpl.Absy origin) {
         if (origin != null) { return must.Before(origin); }
-        var returns = unit.Blocks.Select(block => block.TransferCmd).OfType<Bpl.ReturnCmd>()
-          .Where(returned => !explicitReturns.Contains(returned)).ToArray();
+        var returns = FallthroughReturns();
         return returns.Length == 0 ? B3DefinitionVisibility.MustFrame.Unreachable :
           returns.Select(returned => must.After(returned)).Aggregate(B3DefinitionVisibility.MustFrame.Merge);
       }
@@ -289,6 +300,11 @@ public static class B3Normalizer {
         must.NativeAssertionOperands().Concat(checkMasks.Values.Select(check => Mask(check.Origin)))
           .Where(frame => frame.MayReveal).ToArray();
       foreach (var (id, check) in checkMasks) {
+        if (visibility != null && (check.Origin == null ? FallthroughReturns().Length == 0 : !visibility.IsReachable(check.Origin))) {
+          // A known disconnected source goal remains in the static partition without any definition premise.
+          result.Add(id, Array.Empty<B3DefinitionContexts.Formula>());
+          continue;
+        }
         var demanded = new HashSet<Bpl.Function>();
         var pending = new Stack<Ir.Expression>(); pending.Push(check.Condition);
         while (pending.Count > 0) {
@@ -983,7 +999,7 @@ public static class B3Normalizer {
             Push(loop.Body); foreach (var invariant in loop.Invariants) { Push(invariant); } break;
           case Bpl.StateCmd state: foreach (var command in state.Cmds) { Push(command); } break;
           case Bpl.HideRevealCmd hide: visibilityCommands.Add(hide); break;
-          case Bpl.ChangeScope: hasScopeCommands = true; break;
+          case Bpl.ChangeScope: break;
           case Bpl.GotoCmd jump:
             ValidateAttributes(jump.Attributes, "goto", jump.tok);
             Require(jump.LabelNames != null && jump.LabelNames.Count == 1, "b3_transfer",

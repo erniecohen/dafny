@@ -45,23 +45,24 @@ public sealed partial class B3DefinitionVisibility {
       .OfType<Bpl.AssertCmd>().Select(assertion => After(assertion)).ToArray();
 
     private MustFrame State(Bpl.Absy source, bool after) {
+      var node = graph.Origin(source);
+      if (!graph.reachable.Contains(node)) { return MustFrame.Unreachable; }
       if (!graph.HasVisibilityCommands) { return root; }
-      Require(source != null && (graph.nodes.ContainsKey(source) || graph.nestedOrigins.ContainsKey(source)),
-        "No exact CFG origin for a must-visibility operand", source?.tok ?? Bpl.Token.NoToken);
-      var node = graph.nodes.TryGetValue(source, out var direct) ? direct : graph.nestedOrigins[source];
       var states = after ? outputs : inputs;
       Require(states.TryGetValue(node, out var stack) && !stack.IsEmpty,
         "Unreachable must-visibility operand has no source mask", source.tok);
       return stack.Peek();
     }
     private void Run() {
-      var pending = new Stack<Node>(graph.nodes.Values.Where(node => node.Previous.Count == 0));
+      var pending = new Stack<Node>(); pending.Push(graph.entry);
       var steps = 0;
       while (pending.Count > 0) {
         var node = pending.Pop();
         Require(++steps <= Ir.Protocol.MaximumNodes * 16, "Must-visibility worklist exceeds its step bound", node.Source.tok);
-        var previous = node.Previous.Where(outputs.ContainsKey).Select(predecessor => outputs[predecessor]).ToArray();
-        var incoming = previous.Length == 0 ? ImmutableStack<MustFrame>.Empty.Push(root) :
+        var previous = node.Previous.Where(predecessor => graph.reachable.Contains(predecessor) && outputs.ContainsKey(predecessor))
+          .Select(predecessor => outputs[predecessor]).ToList();
+        if (node == graph.entry) { previous.Add(ImmutableStack<MustFrame>.Empty.Push(root)); }
+        var incoming = previous.Count == 0 ? ImmutableStack<MustFrame>.Empty.Push(root) :
           previous.Aggregate((first, second) => Merge(first, second, node.Source.tok));
         if (inputs.TryGetValue(node, out var oldInput) && SameStack(incoming, oldInput)) { continue; }
         inputs[node] = incoming;
@@ -72,7 +73,7 @@ public sealed partial class B3DefinitionVisibility {
         }
       }
       foreach (var node in graph.nodes.Values) {
-        var previous = node.Previous.Where(outputs.ContainsKey).Select(predecessor => outputs[predecessor]).ToArray();
+        var previous = node.Previous.Where(predecessor => graph.reachable.Contains(predecessor) && outputs.ContainsKey(predecessor)).Select(predecessor => outputs[predecessor]).ToArray();
         if (previous.Length > 1) { _ = previous.Aggregate((first, second) => Merge(first, second, node.Source.tok)); }
         if (node.Source is Bpl.ReturnCmd && outputs.TryGetValue(node, out var stack)) {
           Require(stack.Count() == 1, "Unbalanced complete must-visibility stack at return", node.Source.tok);

@@ -18,6 +18,7 @@ public sealed partial class B3DefinitionVisibility {
     public bool IsRevealed(Bpl.Function function) =>
       (Mode == Bpl.HideRevealCmd.Modes.Hide) == Offset.Contains(function) || function.AlwaysRevealed;
     public static readonly Frame AllRevealed = new(Bpl.HideRevealCmd.Modes.Reveal, ImmutableHashSet<Bpl.Function>.Empty);
+    public static readonly Frame Unreachable = new(Bpl.HideRevealCmd.Modes.Hide, ImmutableHashSet<Bpl.Function>.Empty);
   }
   public sealed class Rejection : Exception {
     public Bpl.IToken Token { get; }
@@ -30,6 +31,8 @@ public sealed partial class B3DefinitionVisibility {
     public Node(Bpl.Absy source) { Source = source; }
   }
   private readonly Dictionary<Bpl.Absy, Node> nodes = new();
+  private readonly HashSet<Node> reachable = new();
+  private readonly Node entry;
   private readonly Dictionary<Node, ImmutableStack<Frame>> input = new();
   private readonly Dictionary<Node, ImmutableStack<Frame>> output = new();
   private readonly Dictionary<Bpl.Absy, Node> nestedOrigins = new();
@@ -59,6 +62,16 @@ public sealed partial class B3DefinitionVisibility {
         "Visibility CFG has an unresolved or external successor", jump.tok);
       foreach (var successor in jump.LabelTargets) { Edge(ownedBlocks[block][^1], ownedBlocks[successor][0]); }
     }
+    entry = ownedBlocks[blocks[0]][0];
+    var pendingReachability = new Stack<Node>(); pendingReachability.Push(entry);
+    var reachabilityCount = 0;
+    while (pendingReachability.Count > 0) {
+      var node = pendingReachability.Pop();
+      Require(++reachabilityCount <= Ir.Protocol.MaximumNodes * 2,
+        "Visibility entry reachability exceeds its bound", implementation.tok);
+      if (!reachable.Add(node)) { continue; }
+      foreach (var next in node.Next) { pendingReachability.Push(next); }
+    }
     HasVisibilityCommands = nodes.Keys.Any(command => command is Bpl.HideRevealCmd or Bpl.ChangeScope);
     foreach (var node in nodes.Values) {
       if (node.Source is Bpl.StateCmd state) { AddNested(state.Cmds, node, 0); }
@@ -67,7 +80,7 @@ public sealed partial class B3DefinitionVisibility {
     // A raw loop-header mask does not distinguish native initiation from preservation.
     // Until the induction CFG has its own visibility origins, reject visibility changes in cycles.
     var reachabilitySteps = 0;
-    foreach (var node in nodes.Values.Where(node => node.Source is Bpl.HideRevealCmd)) {
+    foreach (var node in nodes.Values.Where(node => reachable.Contains(node) && node.Source is Bpl.HideRevealCmd)) {
       Require(!Reaches(node, node, ref reachabilitySteps), "Visibility changes on a CFG cycle require induction-role mapping", node.Source.tok);
     }
     Run();
@@ -80,11 +93,16 @@ public sealed partial class B3DefinitionVisibility {
 
   public Frame Before(Bpl.Absy source) => State(source, false);
   public Frame After(Bpl.Absy source) => State(source, true);
-  private Frame State(Bpl.Absy source, bool after) {
-    if (!HasVisibilityCommands) { return Frame.AllRevealed; }
+  public bool IsReachable(Bpl.Absy source) => reachable.Contains(Origin(source));
+  private Node Origin(Bpl.Absy source) {
     Require(source != null && (nodes.ContainsKey(source) || nestedOrigins.ContainsKey(source)),
       "No exact CFG origin for a visibility-sensitive check", source?.tok ?? Bpl.Token.NoToken);
-    var node = nodes.TryGetValue(source, out var direct) ? direct : nestedOrigins[source];
+    return nodes.TryGetValue(source, out var direct) ? direct : nestedOrigins[source];
+  }
+  private Frame State(Bpl.Absy source, bool after) {
+    var node = Origin(source);
+    if (!reachable.Contains(node)) { return Frame.Unreachable; }
+    if (!HasVisibilityCommands) { return Frame.AllRevealed; }
     var states = after ? output : input;
     Require(states.TryGetValue(node, out var stack) && !stack.IsEmpty,
       "Unreachable or unbalanced visibility-sensitive check has no mask", source.tok);
@@ -113,13 +131,17 @@ public sealed partial class B3DefinitionVisibility {
     return false;
   }
   private void Run() {
-    var pending = new Stack<Node>(nodes.Values.Where(node => node.Previous.Count == 0));
+    // Native preparation prunes from the first block before split-level visibility.
+    // Disconnected pre-VC blocks retain static coverage but do not seed execution paths.
+    var pending = new Stack<Node>(); pending.Push(entry);
     var steps = 0;
     while (pending.Count > 0) {
       var node = pending.Pop();
       Require(++steps <= Ir.Protocol.MaximumNodes * 16, "Visibility fixed-point traversal exceeds its bound", node.Source.tok);
-      var previous = node.Previous.Where(output.ContainsKey).Select(predecessor => output[predecessor]).ToArray();
-      var incoming = previous.Length == 0 ? ImmutableStack<Frame>.Empty.Push(Frame.AllRevealed) :
+      var previous = node.Previous.Where(predecessor => reachable.Contains(predecessor) && output.ContainsKey(predecessor))
+        .Select(predecessor => output[predecessor]).ToList();
+      if (node == entry) { previous.Add(ImmutableStack<Frame>.Empty.Push(Frame.AllRevealed)); }
+      var incoming = previous.Count == 0 ? ImmutableStack<Frame>.Empty.Push(Frame.AllRevealed) :
         previous.Aggregate((first, second) => Merge(first, second, node.Source.tok));
       if (input.TryGetValue(node, out var oldInput) && NativeEquals(incoming, oldInput)) {
         Require(EqualTail(incoming, oldInput), "Changing outer visibility frames are outside the pinned top-frame fixed-point boundary", node.Source.tok);
@@ -136,7 +158,7 @@ public sealed partial class B3DefinitionVisibility {
     }
     // Verify every completed join, including predecessors discovered after a fixed-point comparison.
     foreach (var node in nodes.Values) {
-      var previous = node.Previous.Where(output.ContainsKey).Select(predecessor => output[predecessor]).ToArray();
+      var previous = node.Previous.Where(predecessor => reachable.Contains(predecessor) && output.ContainsKey(predecessor)).Select(predecessor => output[predecessor]).ToArray();
       if (previous.Length > 1) { _ = previous.Aggregate((first, second) => Merge(first, second, node.Source.tok)); }
     }
   }
