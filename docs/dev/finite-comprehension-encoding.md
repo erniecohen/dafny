@@ -36,6 +36,49 @@ General images use equality with the actual boxed source term. The general-map
 witness relation includes source types and required allocation, and its chosen
 witness depends on the complete translated relation, including captures.
 
+## Reference carrier admission
+
+A reference type is a finite source image carrier only relative to one valid
+heap's finite allocation universe. Source well-formedness checks assume allocated
+parameters, whereas shared `#requires` and body axioms can be used with merely
+typed parameters. Allocation-independent source membership in a captured
+`iset<object?>` therefore cannot justify an unconditional finite definition.
+For example, a legal source function can return
+`set x: object? | x in xs` for an allocated `iset` argument `xs`; its shared
+axioms must not define the same finite conversion for arbitrary infinite
+unallocated reference isets.
+
+When all source witness bounds are genuinely finite, the ordinary defining
+equation is unchanged. Bounds supplied specifically by `allocated(x)` additionally
+require their actual heap to be good. When admission instead relies on a finite
+image carrier that may contain references, the equation has the premise
+
+```text
+exists h: Heap :: IsGoodHeap(h) &&
+  (forall b: Box :: characteristicMap[b] ==> IsAllocBox(b, imageType, h))
+```
+
+The predicate and converted value are unchanged. The premise establishes that
+the selected canonical image lies in one uniformly finite allocated universe.
+For sets of reference collections, it gives the finite powerset of that universe;
+for map-value carriers it combines finite allocated key and value carriers.
+A valid source caller can supply its actual heap. Existentially naming that heap
+also handles a heap-independent source function without making its translated
+value depend on an arbitrary distinguished heap.
+
+The allocation premise uses the characteristic-map selection directly, avoiding
+a circular assertion about the allocation of the converted finite set itself.
+It is a condition built from existing source allocation predicates, not a new
+universal finite-support oracle. It neither intersects the source predicate with
+allocation nor extends membership equations to unrelated backend maps.
+
+The reference-typed `AllocFreeBoundedPool` finite branch is not selected by the
+ordinary resolver: its constructor is reached there only when the witness type
+cannot involve references. The only other construction sites create the
+`nat`/`ORDINAL` index pools of generated extreme predicates. Clones preserve
+these types. Its reference branch must not be used to justify a new admission
+route without the same valid-heap argument.
+
 ## Construction and consumer inventory
 
 | Construction | Origin and predicate | Finite justification | Fact consumer |

@@ -610,11 +610,10 @@ public partial class BoogieGenerator {
         tyargs.Add(TypeToTy(fm.Type));
       }
       tyargs.Add(TypeToTy(f.ResultType));
-      Bpl.Expr handleLayer = null;
       if (f.IsFuelAware()) {
-        vars.Add(BplBoundVar("$ly", Predef.LayerType, out handleLayer));
-        args.Add(handleLayer);
-        argsRequires.Add(handleLayer);
+        vars.Add(BplBoundVar("$ly", Predef.LayerType, out var ly));
+        args.Add(ly);
+        argsRequires.Add(ly);
         formals.Add(BplFormalVar("$fuel", Predef.LayerType, true));
         AddFuelSuccSynonymAxiom(f, true);
       }
@@ -742,9 +741,6 @@ public partial class BoogieGenerator {
         var et = handlePrevHeap == null
           ? new ExpressionTranslator(this, Predef, h, f)
           : new ExpressionTranslator(this, Predef, h, handlePrevHeap, f);
-        if (handleLayer != null) {
-          et = et.WithLayer(handleLayer);
-        }
         // A finite footprint contains the canonical box of each selected reference, not every box
         // whose reference unboxing happens to select it.
         var rhs = BplAnd(MkIsBox(bx, program.SystemModuleManager.ObjectQ()),

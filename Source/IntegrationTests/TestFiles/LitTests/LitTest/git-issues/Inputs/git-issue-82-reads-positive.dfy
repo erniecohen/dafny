@@ -79,8 +79,9 @@ class ReadCell {
   }
 }
 
-twostate function Previous(c: ReadCell): int
-  reads old(c.objects)
+twostate function Previous(c: ReadCell, n: int): int
+  requires old(c.value) < n
+  reads c, c.objects
 {
   0
 }
@@ -89,12 +90,17 @@ method ChangedHeap(c: ReadCell, o: object?)
   modifies c
 {
   ghost var named := c.Read.reads();
+  ghost var previous := Previous;
+  ghost var previousValue := c.value;
   ghost var f := (x: int) reads c, c.objects => x;
   ghost var lambda := f.reads(0);
   label Before:
   c.objects := {o};
+  c.value := previousValue + 2;
   assert c.Read.reads() == {c, o};
-  assert Previous.reads(c) == old(c.objects);
+  assert previous.requires(c, previousValue + 1);
+  assert !previous.requires(c, previousValue);
+  assert previous.reads(c, previousValue + 1) == {c, o};
   assert f.reads(0) == {c, o};
   assert named == {c} + old(c.objects);
   assert lambda == {c} + old(c.objects);
