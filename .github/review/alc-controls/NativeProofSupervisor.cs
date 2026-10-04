@@ -101,6 +101,51 @@ public sealed class NativeProofSupervisor : IProofLifecycleSupervisor {
   private sealed record Launch(string Token, Identity Wrapper, Identity Solver, string SolverSha256, SolverImage SolverImage, string[] Arguments);
   private sealed record Tracked(Identity Identity, SafeFileHandle Handle, string Kind);
 
+  /// <summary>Lifecycle-only ownership of the single refused pre-fork direct child, never a PID-only kill authority.</summary>
+  internal sealed class DirectChildGuard : IDisposable {
+    private readonly Process process;
+    private SafeFileHandle? descriptor;
+    private bool stopped;
+    public bool Forced { get; private set; }
+    public bool ProvenExited { get; private set; }
+    public DirectChildGuard(Process process) {
+      this.process = process;
+      var host = Identity.Read(Environment.ProcessId);
+      Identity child;
+      try { child = Identity.Read(process.Id); }
+      catch (IOException) when (process.WaitForExit(0)) { ProvenExited = true; return; }
+      if (child.Parent != host.Pid || Identity.Read(host.Pid).StartTime != host.StartTime) {
+        throw new InvalidOperationException("The lifecycle host does not own this direct child.");
+      }
+      SafeFileHandle captured;
+      try { captured = Native.OpenPidFd(child.Pid); }
+      catch (IOException) when (process.WaitForExit(100)) { ProvenExited = true; return; }
+      try {
+        var after = Identity.Read(child.Pid);
+        if (after.StartTime != child.StartTime || after.Parent != host.Pid) {
+          throw new InvalidOperationException("Direct-child identity changed during pidfd capture.");
+        }
+        descriptor = captured;
+      } catch (IOException) when (Native.Exited(captured) && process.WaitForExit(100)) {
+        captured.Dispose(); ProvenExited = true;
+      } catch { captured.Dispose(); throw; }
+    }
+    public void Stop(TimeSpan deadline) {
+      if (stopped) { return; }
+      if (descriptor == null) { stopped = true; return; }
+      if (!Native.Exited(descriptor)) { Forced = true; Native.Signal(descriptor, 9); }
+      var clock = Stopwatch.StartNew();
+      while (!Native.Exited(descriptor) && clock.Elapsed < deadline) { Thread.Sleep(10); }
+      ProvenExited = Native.Exited(descriptor) && process.WaitForExit(Math.Max(1, (int)(deadline - clock.Elapsed).TotalMilliseconds));
+      stopped = ProvenExited;
+      if (!ProvenExited) { throw new TimeoutException("Owned refused direct child survived bounded pidfd cleanup."); }
+    }
+    public void Dispose() {
+      try { if (!stopped) { Stop(TimeSpan.FromSeconds(2)); } }
+      finally { descriptor?.Dispose(); }
+    }
+  }
+
   private sealed class Scope : IProofRunScope {
     private readonly string root;
     private readonly string parent;

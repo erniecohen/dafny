@@ -38,6 +38,25 @@ def save(path, data):
     temporary.rename(path)
 
 
+def forward_bytes(target, data, record_written, write=os.write):
+    """The production write loop; a component control supplies a bounded writer."""
+    view = memoryview(data)
+    calls = partial = interrupted = 0
+    while view:
+        try:
+            count = write(target, view)
+            calls += 1
+        except InterruptedError:
+            interrupted += 1
+            continue
+        if count <= 0 or count > len(view):
+            raise RuntimeError('A forwarding write made invalid progress')
+        partial += count < len(view)
+        record_written(view[:count])
+        view = view[count:]
+    return {'writeCalls': calls, 'partialWrites': partial, 'interruptedWrites': interrupted}
+
+
 def capture_solver(real, expected_digest):
     source = os.open(real, os.O_RDONLY | os.O_CLOEXEC | os.O_NONBLOCK)
     image = None
@@ -210,7 +229,12 @@ def main():
     def relay(source, target, name):
         read_hash, written_hash = hashlib.sha256(), hashlib.sha256()
         read_bytes = written_bytes = 0
+        writes = partial_writes = interrupted_writes = 0
         end = 'unknown'
+        def written(fragment):
+            nonlocal written_bytes
+            written_hash.update(fragment)
+            written_bytes += len(fragment)
         try:
             with (folder / (name + '.bin')).open('xb', buffering=0) as log:
                 while True:
@@ -241,17 +265,10 @@ def main():
                         logged = logged[count:]
                     read_hash.update(data)
                     read_bytes += len(data)
-                    view = memoryview(data)
-                    while view:
-                        try:
-                            count = os.write(target, view)
-                        except InterruptedError:
-                            continue
-                        if count <= 0:
-                            raise RuntimeError('A forwarding write made no progress')
-                        written_hash.update(view[:count])
-                        written_bytes += count
-                        view = view[count:]
+                    statistics = forward_bytes(target, data, written)
+                    writes += statistics['writeCalls']
+                    partial_writes += statistics['partialWrites']
+                    interrupted_writes += statistics['interruptedWrites']
                 os.fsync(log.fileno())
         except BaseException as error:
             with lock:
@@ -259,7 +276,9 @@ def main():
         finally:
             with lock:
                 streams[name] = {'readBytes': read_bytes, 'writtenBytes': written_bytes, 'end': end,
-                                 'readSha256': read_hash.hexdigest(), 'writtenSha256': written_hash.hexdigest()}
+                                 'readSha256': read_hash.hexdigest(), 'writtenSha256': written_hash.hexdigest(),
+                                 'writeCalls': writes, 'partialWrites': partial_writes, 'interruptedWrites': interrupted_writes,
+                                 'writeCountersScope': 'completed-forwarding-blocks'}
 
     threads = [threading.Thread(target=relay, args=(0, input_write, 'stdin')),
                threading.Thread(target=relay, args=(output_read, 1, 'stdout')),

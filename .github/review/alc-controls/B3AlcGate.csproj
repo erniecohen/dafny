@@ -12,6 +12,10 @@
     <None Update="source-manifest.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="native-solver-wrapper.py" CopyToOutputDirectory="PreserveNewest" />
     <None Update="native-proof-fixtures.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="lifecycle-control-fixtures.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="lifecycle-seal-probe.py" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="native-lifecycle-fixture.c" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="LIFECYCLE-CONTROLS.md" CopyToOutputDirectory="PreserveNewest" />
     <None Update="proof-fixtures/**/*.dfy" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

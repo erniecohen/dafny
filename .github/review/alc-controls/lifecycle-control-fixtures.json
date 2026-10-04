@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "scope": "prototype/native-lifecycle-controls",
+  "controls": [
+    "missing-delegation",
+    "wrong-solver-pin",
+    "sealed-version",
+    "sealed-mutation",
+    "creator-thread-exit",
+    "binary-streams-eof",
+    "relay-broken-pipe",
+    "timeout-reparented-descendant",
+    "live-descendant-cap",
+    "refused-late-launch",
+    "malformed-completion"
+  ],
+  "descendantForkLimit": 257,
+  "requiredDelegatedPidCeiling": 300,
+  "loadsDafnyProducts": false,
+  "invokesVerification": false,
+  "kernelPartialWritesRequired": false,
+  "partialWriteComponent": "exact production helper with forced bounded partial/InterruptedError callback; not a kernel syscall claim",
+  "fixtureCompilerReceipt": "CI declaration, not signed compiler-origin evidence"
+}

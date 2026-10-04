@@ -20,6 +20,10 @@ internal static class Program {
   };
 
   public static int Main(string[] arguments) {
+    if (arguments.Length != 0 && arguments[0] == "--lifecycle-controls") {
+      if (!OperatingSystem.IsLinux()) { Console.Error.WriteLine("Lifecycle controls require Linux x64."); return 2; }
+      return NativeLifecycleControls.Main(arguments);
+    }
     var runs = new List<RunReceipt>();
     try {
       var options = Options(arguments);
