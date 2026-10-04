@@ -109,6 +109,7 @@ public sealed class NativeProofSupervisor : IProofLifecycleSupervisor {
     private readonly Dictionary<(int, ulong), Tracked> tracked = [];
     private readonly Dictionary<string, Launch> launches = [];
     private readonly List<object> signalRequests = [];
+    private readonly HashSet<(int, ulong, int)> signalled = [];
     private readonly CancellationTokenSource stop = new();
     private readonly Task monitor;
     private string? monitorFailure;
@@ -131,6 +132,7 @@ public sealed class NativeProofSupervisor : IProofLifecycleSupervisor {
         if (kind is "wrapper" or "solver") { tracked[(identity.Pid, identity.StartTime)] = previous with { Kind = kind }; }
         return;
       }
+      if (tracked.Count >= 4096) { throw new InvalidDataException("More than 4096 historical owned process identities."); }
       if (!ReadMembers(leaf).Contains(identity.Pid) || Identity.Read(identity.Pid).StartTime != identity.StartTime) {
         throw new InvalidDataException("Ownership identity changed before pidfd capture.");
       }
@@ -251,6 +253,7 @@ public sealed class NativeProofSupervisor : IProofLifecycleSupervisor {
     }
 
     private void RequestSignal(Tracked process, int signal) {
+      if (!signalled.Add((process.Identity.Pid, process.Identity.StartTime, signal))) { return; }
       var delivered = Native.Signal(process.Handle, signal);
       signalRequests.Add(new { process.Identity, process.Kind, signal, delivered, phase = "after-cli-completion-or-recorded-invocation-failure" });
     }
