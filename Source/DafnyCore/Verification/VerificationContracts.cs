@@ -67,6 +67,10 @@ public sealed class VerificationResult {
   public VerificationOutcome Outcome { get; }
   public IReadOnlyList<DafnyDiagnostic> Diagnostics { get; }
   public IReadOnlyList<VerificationAssertion> Assertions { get; }
+  /// <summary>
+  /// The backend finished its obligation traversal. This is distinct from resource cleanup:
+  /// native Boogie records its result before returning the checker to its pool.
+  /// </summary>
   public bool TraversalCompleted { get; }
   public DateTime StartTime { get; }
   public TimeSpan RunTime { get; }

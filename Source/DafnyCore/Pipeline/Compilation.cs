@@ -453,7 +453,13 @@ public class Compilation : IDisposable {
   }
 
   private void VerifyTask(ICanVerify canVerify, IVerificationWorkItem task) {
-    var statusUpdates = task.TryRun()?.RequireCompletion();
+    var statusUpdates = task.TryRun();
+    // Native Boogie publishes Completed after prover traversal, before returning the checker
+    // to its pool. Preserve that existing CLI/IDE event timing. Other backend streams must
+    // complete normally before their terminal result can be published.
+    if (task is not BoogieVerificationWorkItem) {
+      statusUpdates = statusUpdates?.RequireCompletion();
+    }
     if (statusUpdates == null) {
       if (task.CacheStatus is VerificationCompleted completedCache) {
         HandleStatusUpdate(canVerify, task, completedCache);
