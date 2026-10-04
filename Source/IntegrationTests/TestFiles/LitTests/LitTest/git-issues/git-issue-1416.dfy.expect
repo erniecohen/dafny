@@ -6,11 +6,10 @@ positive, option off (type-system-refresh:false)
 git-issue-1416-positive.dfy(16,2): Error: assertion might not hold
 git-issue-1416-positive.dfy(17,2): Error: assertion might not hold
 git-issue-1416-positive.dfy(19,2): Error: assertion might not hold
-git-issue-1416-positive.dfy(20,2): Error: assertion might not hold
-git-issue-1416-positive.dfy(22,9): Error: assertion might not hold
-git-issue-1416-positive.dfy(29,2): Error: assertion might not hold
+git-issue-1416-positive.dfy(21,9): Error: assertion might not hold
+git-issue-1416-positive.dfy(28,2): Error: assertion might not hold
 
-Dafny program verifier finished with 2 verified, 6 errors
+Dafny program verifier finished with 2 verified, 5 errors
 original (type-system-refresh:false)
 
 Dafny program verifier finished with 1 verified, 0 errors

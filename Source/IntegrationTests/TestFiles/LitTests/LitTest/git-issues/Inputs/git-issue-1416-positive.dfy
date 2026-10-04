@@ -1,4 +1,5 @@
-// The references in a function's result are allocated where the function is applied.
+// The references in the result of a function that reads no heap and takes no references are allocated
+// where the function is applied.
 class O { const f: nat }
 class C { var s: set<O> }
 datatype D = D(o: O)
@@ -8,7 +9,6 @@ function G(n: int): set<O>
 function S(): seq<O>
 function Dt(): D
 function M(): map<int, O>
-function Generic<T>(x: T): set<T>
 function Reads(c: C): set<O> reads c { c.s }
 function Body(n: int): set<O> { if n <= 0 then {} else F() + Body(n - 1) }
 
@@ -17,7 +17,6 @@ method Results(n: int, c: C) {
   assert forall i | 0 <= i < |S()| :: allocated(S()[i]);
   assert allocated(Dt().o);
   assert forall k | k in M() :: allocated(M()[k]);
-  assert forall o | o in Generic(c) :: allocated(o);
   assert forall o | o in Reads(c) :: allocated(o);
   assert forall o | o in Body(n) :: allocated(o);
 }

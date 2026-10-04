@@ -476,31 +476,47 @@ so, but its only pattern is `$IsAlloc(F(args), T, $Heap)`, which nothing
 mentioned; `assert allocated(F());` made the program verify.
 
 With the option, that axiom gets a second pattern, at the function's
-applications:
+applications, for a function that reads no heap and whose parameters, receiver
+included, hold no references (their `$IsAlloc` antecedent is `true`):
 
-| function | existing axiom (unchanged) | added pattern |
-|---|---|---|
-| reads the heap | `F#canCall($Heap, args) ==> $IsAlloc(F($Heap, args), T, $Heap)` | `{ F($Heap, args) }` |
-| reads no heap | `F#canCall(args) && args allocated in $Heap && $IsGoodHeap($Heap) ==> $IsAlloc(F(args), T, $Heap)` | `{ F(args), $IsGoodHeap($Heap) }`, or `{ $IsGoodHeap($Heap) }` if `F(args)` has no bound variable |
+```boogie
+// existing axiom, unchanged
+forall $Heap, args :: { $IsAlloc(F(args), T, $Heap) }
+  F#canCall(args) && $IsGoodHeap($Heap) ==> $IsAlloc(F(args), T, $Heap)
+// added pattern
+{ F(args), $IsGoodHeap($Heap) }   // { $IsGoodHeap($Heap) } if F(args) has no bound variable
+```
 
-The last case is for an application without arguments, layer, reveal or type
+The second form is for an application without arguments, layer, reveal or type
 parameters, such as the issue's `f()`: a multi-pattern with a closed term is not
 used by Z3, and an earlier probe with `{ f(), $IsGoodHeap($Heap) }` left the
-issue's program failing. A function that reads no heap but whose specification
-does gets no added pattern.
+issue's program failing. These are the functions whose result's allocation cannot
+come from their arguments, as in the issue.
 
 No formula changes, so the models are the same and no soundness argument is
 needed beyond the existing axiom's: every new instance is an instance of it.
-The cost is in instances: for a function that reads no heap, one for each pair
-of an application term and a good-heap term in a verification condition. The
-paired OFF/ON resource report of the standing CI records it.
+The cost is in instances: one for each pair of an application term and a
+good-heap term in a verification condition.
+
+### Why not every function
+
+The first version added the pattern to every such axiom: `{ F($Heap, args) }`
+for a function that reads the heap, and the pair pattern for any function that
+does not. In [run 37180256455](https://github.com/erniecohen/dafny/actions/runs/37180256455)
+three standard-library declarations that verify with the unchanged build ran out
+of their limits with the option on: `MappedProducerOfNewProducers.Invoke` and
+`UnicodeEncodingForm.PartitionCodeUnitSequenceChecked` (Z3 4.12.1) and
+`BulkActions.ToBatchedProducer` (Z3 5.1.0). Isolated with `--filter-symbol`,
+all three verify with the pattern disabled and #94's instances kept; dropping
+the pattern for functions that read the heap, or whose parameters may hold
+references (type parameters among them), restores each of them.
 
 `git-issues/git-issue-1416.dfy` runs the issue's program and positive cases
-(results that are sets, sequences, maps, datatypes, generic, of heap-reading and
-of recursive functions, and in a state after an allocation) with the option off
-(they fail) and on (they verify), and vacuity controls in which the instances
-are in play and `assert false`, a membership, an inclusion and a bound on a
-field must fail, in both resolver modes.
+(results that are sets, sequences, maps and datatypes, of recursive functions,
+and in a state after an allocation; a heap-reading function, which needs no new
+instance) with the option off (5 of them fail) and on (they verify), and vacuity
+controls in which the instances are in play and `assert false`, a membership, an
+inclusion and a bound on a field must fail, in both resolver modes.
 
 ## Standing CI for the shared option (#50)
 
