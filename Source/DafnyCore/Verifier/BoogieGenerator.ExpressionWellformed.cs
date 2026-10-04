@@ -1451,6 +1451,13 @@ namespace Microsoft.Dafny {
              expression.SubExpressions.Any(ContainsCoRecursiveFunctionCall);
     }
 
+    internal void CheckCoRecursiveValueMembership(Expression expression, Type targetType,
+      BoogieStmtListBuilder builder, ExpressionTranslator etran) {
+      if (ContainsCoRecursiveFunctionCall(expression)) {
+        CheckSuspendedValueMembership(expression, targetType, builder, etran);
+      }
+    }
+
     private void CheckSuspendedValueMembership(Expression expression, Type targetType,
       BoogieStmtListBuilder builder, ExpressionTranslator etran) {
       // A destructor of a suspended co-call must establish its result's type
@@ -1594,6 +1601,11 @@ namespace Microsoft.Dafny {
           var rIe = new Bpl.IdentifierExpr(rhs.Origin, r);
 
           void CheckPostconditionForRhs(BoogieStmtListBuilder innerBuilder, Expression body) {
+            // Check the original RHS before a generated binding supplies type facts.
+            // The callback result may no longer contain the suspended source call.
+            if (ContainsCoRecursiveFunctionCall(rhs)) {
+              CheckSuspendedValueMembership(body, pat.Expr.Type, innerBuilder, etran);
+            }
             CheckSubsetType(etran, body, rIe, pat.Expr.Type, innerBuilder, "let expression binding RHS well-formed");
           }
 
