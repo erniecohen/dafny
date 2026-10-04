@@ -173,6 +173,8 @@ def build(options):
                 item = tarfile.TarInfo(name)
                 item.size, item.mode, item.mtime = len(data), mode, 0
                 archive.addfile(item, io.BytesIO(data))
+    if temporary_archive.stat().st_size > ARCHIVE_MAX_BYTES:
+        raise ValueError('Compressed archive byte bound exceeded')
     os.replace(temporary_archive, destination)
     with destination.open('rb') as archive:
         archive_sha = hashlib.file_digest(archive, 'sha256').hexdigest()
