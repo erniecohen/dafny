@@ -1,0 +1,1 @@
+The experimental B3 backend normalizes native integer division and modulo, including exact typed two-parameter function bodies and eligible active universal definitions used by the default Dafny prelude. It preserves existing nonzero-divisor obligations and adds no arithmetic assumptions. Real arithmetic and power remain unsupported.

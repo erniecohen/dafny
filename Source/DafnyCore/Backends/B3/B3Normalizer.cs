@@ -134,7 +134,7 @@ public static class B3Normalizer {
         new Ir.Unit(Symbol("unit:" + unit.Name), variables.ToArray(), new Ir.Block(statements)));
       CheckOwnedBounds(normalized);
       return new B3NormalizationResult(normalized, obligations.ToArray(), Array.Empty<B3NormalizationDiagnostic>(),
-        new[] { "All source axioms, distinct-constant constraints, nonidentity function definitions and lambda equations are omitted. Demanded closed function instances and constants are uninterpreted. Direct reads of owned closed monomorphic store expressions use the read-over-write ITE identity; other map operations remain uninterpreted. Exact metadata-free complete-tuple forall read equalities are abstracted by an uninterpreted Bool predicate of their two map values. No global read-over-write or observation axioms are asserted. Map equality remains opaque without extensionality.",
+        new[] { "All source axioms, distinct-constant constraints and lambda equations are omitted. Ordinary nonidentity function definitions are omitted; exact typed integer division/modulo bodies and active always-revealed universal definitions substitute their native operations. Other demanded closed function instances and constants are uninterpreted. Direct reads of owned closed monomorphic store expressions use the read-over-write ITE identity; other map operations remain uninterpreted. Exact metadata-free complete-tuple forall read equalities are abstracted by an uninterpreted Bool predicate of their two map values. No global read-over-write or observation axioms are asserted. Map equality remains opaque without extensionality.",
           "StateCmd and call-temporary scope-entry where predicates are omitted: pinned scope passification appends raw predicates without current-incarnation substitution. Post-havoc where predicates are preserved." }
           .Concat(mapHelperOrigins.Values).Concat(mapObservationOrigins.Values)
           .Concat(opaqueMapOrigins.OrderBy(s => s, StringComparer.Ordinal)).ToArray());
@@ -286,9 +286,10 @@ public static class B3Normalizer {
     private bool TryMapObservationEquality(Bpl.QuantifierExpr quantifier, Environment env, bool old,
       int depth, out Ir.Expression observation) {
       observation = null;
+      // Pinned type checking rewrites Bool equality to Iff; both express value equality here.
       // Metadata and all other quantifier shapes keep their existing translation.
       if (quantifier is not Bpl.ForallExpr || quantifier.Attributes != null || quantifier.Triggers != null ||
-          quantifier.Body is not Bpl.NAryExpr { Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.Eq } } equality ||
+          quantifier.Body is not Bpl.NAryExpr { Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.Eq or Bpl.BinaryOperator.Opcode.Iff } } equality ||
           equality.Args.Count != 2 ||
           equality.Args[0] is not Bpl.NAryExpr { Fun: Bpl.MapSelect } left ||
           equality.Args[1] is not Bpl.NAryExpr { Fun: Bpl.MapSelect } right ||
@@ -348,6 +349,8 @@ public static class B3Normalizer {
             case Bpl.MapStore: return MapOperation(application, type, args, true);
             case Bpl.FunctionCall call:
               Require(call.Func != null, "b3_resolution", "Unresolved function call", expression.tok);
+              if (TryNativeIntegerBody(call.Func, type, args, out var arithmetic) ||
+                  TryNativeIntegerAxiom(call.Func, type, args, out arithmetic)) { return arithmetic; }
               Require(!HasPrimitiveArithmeticDefinition(call.Func), "b3_arithmetic",
                 "Called primitive division/modulo/power definition is unsupported pending correspondence", expression.tok);
               var projection = IdentityProjection(call.Func);
@@ -396,6 +399,74 @@ public static class B3Normalizer {
         default: throw new Unsupported("b3_expression", "Unsupported expression " + expression.GetType().Name, expression.tok);
       }
     }
+    private static bool TryNativeIntegerBody(Bpl.Function function, string resultType,
+      IReadOnlyList<Ir.Expression> args, out Ir.Expression expression) {
+      expression = null;
+      if (resultType != "int" || args.Count != 2 || args.Any(arg => arg.Type != "int") ||
+          function.TypeParameters.Count != 0 || function.InParams.Count != 2 || function.OutParams.Count != 1 ||
+          function.InParams.Any(parameter => !parameter.TypedIdent.Type.IsInt) ||
+          ReferenceEquals(function.InParams[0], function.InParams[1]) ||
+          !function.OutParams[0].TypedIdent.Type.IsInt ||
+          function.Body is not Bpl.NAryExpr { Fun: Bpl.BinaryOperator binary } body ||
+          binary.Op is not (Bpl.BinaryOperator.Opcode.Div or Bpl.BinaryOperator.Opcode.Mod) ||
+          body.Type?.IsInt != true || body.Args.Count != 2 ||
+          body.Args[0] is not Bpl.IdentifierExpr left || body.Args[1] is not Bpl.IdentifierExpr right ||
+          !ReferenceEquals(left.Decl, function.InParams[0]) || !ReferenceEquals(right.Decl, function.InParams[1])) {
+        return false;
+      }
+      // The pinned native translator expands the actual typed Function.Body by formal substitution.
+      // Names, inline attributes and detached definition metadata supply no premise for this rewrite.
+      expression = new Ir.Operation(binary.Op == Bpl.BinaryOperator.Opcode.Div ? Ir.Operator.Divide : Ir.Operator.Modulo,
+        "int", args);
+      return true;
+    }
+
+    private bool HasActiveDefinitionAxiom(Bpl.Function function) =>
+      function.DefinitionAxiom != null && source.TopLevelDeclarations.Contains(function.DefinitionAxiom);
+
+    private bool TryNativeIntegerAxiom(Bpl.Function function, string resultType,
+      IReadOnlyList<Ir.Expression> args, out Ir.Expression expression) {
+      expression = null;
+      if (resultType != "int" || args.Count != 2 || args.Any(arg => arg.Type != "int") ||
+          !function.AlwaysRevealed || function.Body != null || !HasActiveDefinitionAxiom(function) ||
+          function.TypeParameters.Count != 0 || function.InParams.Count != 2 || function.OutParams.Count != 1 ||
+          function.InParams.Any(parameter => !parameter.TypedIdent.Type.IsInt) ||
+          ReferenceEquals(function.InParams[0], function.InParams[1]) ||
+          !function.OutParams[0].TypedIdent.Type.IsInt ||
+          function.DefinitionAxiom.Expr is not Bpl.ForallExpr forall || forall.TypeParameters.Count != 0 ||
+          forall.Dummies.Count != 2 || ReferenceEquals(forall.Dummies[0], forall.Dummies[1]) ||
+          forall.Dummies.Any(binder => !binder.TypedIdent.Type.IsInt || binder.TypedIdent.WhereExpr != null) ||
+          forall.Body is not Bpl.NAryExpr { Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.Eq } } equality ||
+          equality.Args.Count != 2) {
+        return false;
+      }
+      var definingCall = equality.Args[0];
+      // CreateDefinitionAxiom puts a typed identity coercion around the defining call.
+      if (definingCall is Bpl.NAryExpr { Fun: Bpl.TypeCoercion } coercion) {
+        if (coercion.Args.Count != 1 || coercion.Type?.IsInt != true || coercion.Args[0].Type?.IsInt != true) {
+          return false;
+        }
+        definingCall = coercion.Args[0];
+      }
+      if (definingCall is not Bpl.NAryExpr { Fun: Bpl.FunctionCall call } application ||
+          !ReferenceEquals(call.Func, function) || application.Type?.IsInt != true || application.Args.Count != 2 ||
+          application.TypeParameters != null && application.TypeParameters.FormalTypeParams.Count != 0 ||
+          application.Args[0] is not Bpl.IdentifierExpr left || application.Args[1] is not Bpl.IdentifierExpr right ||
+          !ReferenceEquals(left.Decl, forall.Dummies[0]) || !ReferenceEquals(right.Decl, forall.Dummies[1]) ||
+          equality.Args[1] is not Bpl.NAryExpr { Fun: Bpl.BinaryOperator binary } body ||
+          binary.Op is not (Bpl.BinaryOperator.Opcode.Div or Bpl.BinaryOperator.Opcode.Mod) ||
+          body.Type?.IsInt != true || body.Args.Count != 2 ||
+          body.Args[0] is not Bpl.IdentifierExpr dividend || body.Args[1] is not Bpl.IdentifierExpr divisor ||
+          !ReferenceEquals(dividend.Decl, left.Decl) || !ReferenceEquals(divisor.Decl, right.Decl)) {
+        return false;
+      }
+      // This exact source axiom constrains every pair, including zero divisors. It is used for
+      // substitution only; no axiom or nonzero guard is added to the normalized program.
+      expression = new Ir.Operation(binary.Op == Bpl.BinaryOperator.Opcode.Div ? Ir.Operator.Divide : Ir.Operator.Modulo,
+        "int", args);
+      return true;
+    }
+
     private static bool HasPrimitiveArithmeticDefinition(Bpl.Function function) {
       static bool Primitive(Bpl.Expr body) => body is Bpl.NAryExpr { Fun: Bpl.BinaryOperator binary } &&
         binary.Op is Bpl.BinaryOperator.Opcode.Div or Bpl.BinaryOperator.Opcode.Mod or
@@ -418,7 +489,7 @@ public static class B3Normalizer {
       if (!function.AlwaysRevealed) { return -1; }
       if (function.Body is Bpl.IdentifierExpr identifier) { return function.InParams.IndexOf(identifier.Decl); }
       // Native checker setup asserts top-level axioms; detached definition metadata supplies no premise.
-      if (function.DefinitionAxiom == null || !source.TopLevelDeclarations.Contains(function.DefinitionAxiom)) { return -1; }
+      if (!HasActiveDefinitionAxiom(function)) { return -1; }
       // A universally quantified direct defining equality justifies this rewrite; an :identity claim alone does not.
       var axiom = function.DefinitionAxiom.Expr;
       if (axiom is Bpl.ForallExpr forall && forall.Body is Bpl.NAryExpr equality &&
@@ -492,14 +563,19 @@ public static class B3Normalizer {
       }
     }
     private static Ir.Expression Binary(Bpl.BinaryOperator.Opcode op, string type, Ir.Expression[] args, Bpl.IToken token) {
+      if (op is Bpl.BinaryOperator.Opcode.Div or Bpl.BinaryOperator.Opcode.Mod) {
+        Require(type == "int" && args.Length == 2 && args.All(arg => arg.Type == "int"),
+          "b3_arithmetic", "Native division and modulo require two integer operands and an integer result", token);
+      }
       var kind = op switch {
         Bpl.BinaryOperator.Opcode.Add => Ir.Operator.Add, Bpl.BinaryOperator.Opcode.Sub => Ir.Operator.Subtract,
+        Bpl.BinaryOperator.Opcode.Div => Ir.Operator.Divide, Bpl.BinaryOperator.Opcode.Mod => Ir.Operator.Modulo,
         Bpl.BinaryOperator.Opcode.Mul => Ir.Operator.Multiply, Bpl.BinaryOperator.Opcode.Eq => Ir.Operator.Equal,
         Bpl.BinaryOperator.Opcode.Neq => Ir.Operator.NotEqual, Bpl.BinaryOperator.Opcode.Lt or Bpl.BinaryOperator.Opcode.Gt => Ir.Operator.Less,
         Bpl.BinaryOperator.Opcode.Le or Bpl.BinaryOperator.Opcode.Ge => Ir.Operator.LessEqual,
         Bpl.BinaryOperator.Opcode.And => Ir.Operator.And, Bpl.BinaryOperator.Opcode.Or => Ir.Operator.Or,
         Bpl.BinaryOperator.Opcode.Imp => Ir.Operator.Implies, Bpl.BinaryOperator.Opcode.Iff => Ir.Operator.Equiv,
-        _ => throw new Unsupported("b3_arithmetic", "Division, modulo, real/float division and power are unsupported pending correspondence", token)
+        _ => throw new Unsupported("b3_arithmetic", "Real/float division and power are unsupported pending correspondence", token)
       };
       if (op is Bpl.BinaryOperator.Opcode.Gt or Bpl.BinaryOperator.Opcode.Ge) { args = new[] { args[1], args[0] }; }
       return new Ir.Operation(kind, type, args);

@@ -20,13 +20,19 @@
       "evidence": "Public run 37201990430 matched 6/15 strict typed map controls. Eight negatives and one tuple positive were Inconclusive; source model argument remains in map-helper-correspondence.md. No map release acceptance."
     },
     {
-      "construct": "Native real and bitvector theories, integer division/modulo/power, visibility and unrestricted control flow",
+      "construct": "Native real and bitvector theories, power, visibility and unrestricted control flow",
       "disposition": "unsupported or pending separate semantic package"
     },
     {
       "construct": "Inductive loops, breaks, continues, forward lexical exits",
       "disposition": "normalized; focused real-input acceptance passed",
       "evidence": "Public run 37201990430 passed 76 structural normalizer controls and all 29 real Dafny corpus controls, including positive and negative contracts, loops and selection. Complete backend acceptance remains pending."
+    },
+    {
+      "construct": "Integer division and modulo, including exact typed-body and active always-revealed universal prelude definitions",
+      "disposition": "reviewed normalization; new structural and real-input acceptance pending",
+      "limits": "Exact ordered integer operands only. Existing divisor obligations retained; no synthesized nonzero assumption or arithmetic axiom. Other definition shapes remain unsupported.",
+      "evidence": "arithmetic-correspondence.md; new controls are source-only until their focused gate runs."
     }
   ],
   "optionSupport": [

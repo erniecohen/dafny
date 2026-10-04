@@ -23,7 +23,7 @@
     {
       "kind": "deliberate conservative approximation",
       "scope": "B3 normalization",
-      "finding": "Source axioms, nonidentity definitions, distinctness constraints and lambda equations are omitted. Scope-entry StateCmd/call-temporary where predicates are also omitted because pinned passification appends them without current-incarnation substitution. Direct reads of owned closed monomorphic stores now use a source expression identity. Exact complete-tuple read equality is conservatively abstracted by an uninterpreted predicate. No global map axioms are asserted; polymorphic map theory remains omitted.",
+      "finding": "Source axioms, ordinary nonidentity definitions, distinctness constraints and lambda equations are omitted. Scope-entry StateCmd/call-temporary where predicates are also omitted because pinned passification appends them without current-incarnation substitution. Direct reads of owned closed monomorphic stores now use a source expression identity. Exact complete-tuple read equality is conservatively abstracted by an uninterpreted predicate. No global map axioms are asserted; polymorphic map theory remains omitted. Exact typed integer division/modulo definitions now substitute native operations under the separately reviewed correspondence argument.",
       "consequence": "Proofs relying on those facts can fail; this is incomplete support. Normalization retains checks and state transitions."
     },
     {
@@ -65,7 +65,15 @@
       "kind": "strict map worker acceptance",
       "evidence": "https://github.com/erniecohen/dafny/actions/runs/37201990430",
       "finding": "Six of fifteen fixtures matched. Eight expected negatives and one tuple read-over-write positive returned Inconclusive under the pinned solver configuration; the opaque polymorphic negative returned Failed.",
-      "repair": "Replace global quantified helpers with the direct read-over-write ITE identity and conservatively abstract exact complete-tuple observation equality. The written model argument, strict verdict targets and scope exclusions are preserved. These source repairs await execution; Unknown remains a gate failure."
+      "repair": "Replace global quantified helpers with the direct read-over-write ITE identity and conservatively abstract exact complete-tuple observation equality. The written model argument, strict verdict targets and scope exclusions are preserved. These source repairs await execution; Unknown remains a gate failure. Focused execution matched 14/15 verdict targets and 97/98 structural controls. Boolean observation equality was rewritten to equivalence by pinned type checking and missed the matcher; the narrowly typed correction awaits recheck.",
+      "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37206332514"
+    },
+    {
+      "kind": "same-process default-backend comparison prerequisite",
+      "scope": "loader and cleanup argument controls only",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/37206727693",
+      "finding": "All four baseline/candidate help and malformed-command controls passed with pinned loaded Core identities, actual context collection and zero residual direct children.",
+      "consequence": "This establishes loader/argument prerequisites, not native query equality or resource-count parity. A solver ownership supervisor is required before proof comparisons."
     }
   ]
 }

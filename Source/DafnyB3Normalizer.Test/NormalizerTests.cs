@@ -151,7 +151,7 @@ public class NormalizerTests {
     var results = await Dafny("method Read(m: imap<int, int>, key: int) requires key in m { assert m[key] == m[key]; }");
     Assert.All(results, Validate);
     Assert.Contains(results, r => r.Approximations.Any(a => a.StartsWith("Monomorphic map helper origin:")));
-    Assert.All(results, r => Assert.Contains(r.Approximations, a => a.Contains("nonidentity function definitions and lambda equations are omitted")));
+    Assert.All(results, r => Assert.Contains(r.Approximations, a => a.Contains("All source axioms, distinct-constant constraints and lambda equations are omitted")));
   }
 
   [Fact]
@@ -240,6 +240,22 @@ public class NormalizerTests {
     Assert.Equal(assumption.Arguments.ToArray(), observation.Arguments.ToArray());
     Assert.Equal(Ir.Operator.NotEqual, Assert.IsType<Ir.Operation>(checks[1].Condition).Operator);
     Assert.Contains(result.Approximations, note => note.StartsWith("Map observation equality abstraction:"));
+    Assert.Empty(result.Program.Axioms);
+  }
+
+  [Theory]
+  [InlineData("==")]
+  [InlineData("<==>")]
+  public void BooleanObservationEqualityUsesTheResolvedEquivalenceForm(string equality) {
+    var result = Boogie("procedure P(m: [bool]bool, n: [bool]bool); requires (forall i: bool :: m[i] " + equality + " n[i]); implementation P(m: [bool]bool, n: [bool]bool) { assert !(forall j: bool :: m[j] " + equality + " n[j]); }");
+    Validate(result);
+    var assumption = Assert.IsType<Ir.Application>(Assert.Single(Statements(result.Program!.Unit.Body).OfType<Ir.Assume>()).Condition);
+    var negated = Assert.IsType<Ir.Operation>(Assert.Single(Statements(result.Program.Unit.Body).OfType<Ir.Check>()).Condition);
+    Assert.Equal(Ir.Operator.Not, negated.Operator);
+    var observation = Assert.IsType<Ir.Application>(negated.Arguments[0]);
+    Assert.Equal(assumption.Name, observation.Name);
+    Assert.Equal(assumption.Arguments.ToArray(), observation.Arguments.ToArray());
+    Assert.Single(result.Approximations.Where(note => note.StartsWith("Map observation equality abstraction:")));
     Assert.Empty(result.Program.Axioms);
   }
 
@@ -524,13 +540,6 @@ public class NormalizerTests {
     Assert.True(entry >= 0);
     Assert.Equal(new Ir.BooleanLiteral(false), Assert.IsType<Ir.Check>(statements[entry + 1]).Condition);
     Assert.Single(result.Obligations);
-  }
-
-  [Fact]
-  public async Task ActualDafnyDefaultDivisionFailsClosedThroughItsDefiningFunction() {
-    var results = await Dafny("method Division(x: int) { assert x / 2 == x; }", false);
-    Assert.Contains(results, r => !r.Success && r.Diagnostics.Any(d => d.Code == "b3_arithmetic"));
-    Assert.All(results.Where(r => !r.Success), r => { Assert.Null(r.Program); Assert.Empty(r.Obligations); });
   }
 
   [Fact]

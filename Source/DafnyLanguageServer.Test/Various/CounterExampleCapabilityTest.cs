@@ -1,13 +1,20 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
+using System.Security.Cryptography;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using DafnyB3Protocol;
 using Microsoft.Dafny.LanguageServer.Handlers.Custom;
 using Microsoft.Dafny.LanguageServer.IntegrationTest.Extensions;
 using Microsoft.Dafny.LanguageServer.IntegrationTest.Util;
 using Microsoft.Dafny.LanguageServer.Workspace;
+using Microsoft.Dafny.LanguageServer.Workspace.Notifications;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -31,8 +38,11 @@ public class CounterExampleCapabilityTest : ClientBasedLanguageServerTest {
 
   [Fact]
   public async Task B3CounterexamplesAreRejectedBeforeVerification() {
+    using var package = new PreflightOnlyWorkerPackage(GetFreshTempPath());
     await SetUp(options => {
       options.Set(B3OptionBag.VerificationBackend, B3OptionBag.Backend.B3);
+      options.Set(B3OptionBag.Worker, new FileInfo(package.Worker));
+      options.Set(BoogieOptionBag.VerificationTimeLimit, 30u);
       options.Set(ProjectManager.Verification, VerifyOnMode.Never);
     });
     var document = CreateTestDocument("method Foo() { assert false; }", "B3Counterexamples.dfy");
@@ -51,12 +61,47 @@ public class CounterExampleCapabilityTest : ClientBasedLanguageServerTest {
     Assert.Equal(ErrorCodes.InvalidRequest, responseException.ErrorCode);
     var manager = await Projects.GetProjectManager(request.TextDocument);
     Assert.NotNull(manager);
-    var state = await manager.States.FirstAsync().ToTask(CancellationToken);
-    Assert.NotEmpty(state.CanVerifyStates[document.Uri.ToUri()]);
-    Assert.All(state.CanVerifyStates[document.Uri.ToUri()].Values,
+    // Fail explicitly if package/configuration preflight prevented real unit discovery,
+    // rather than waiting forever for an impossible successful-resolution state.
+    var resolution = await manager.Compilation.Resolution;
+    Assert.NotNull(resolution);
+    Assert.False(resolution.HasErrors);
+    Assert.NotNull(resolution.CanVerifies);
+    var uri = document.Uri.ToUri();
+    // The replayed state can still precede resolution. Require actual source units
+    // before checking that capability rejection left their verification unstarted.
+    var state = await manager.States.Where(candidate => candidate.Status == CompilationStatus.ResolutionSucceeded &&
+                                                       candidate.CanVerifyStates.TryGetValue(uri, out var sourceUnits) && sourceUnits.Count != 0).
+      FirstAsync().ToTask(CancellationToken);
+    Assert.NotEmpty(state.CanVerifyStates[uri]);
+    Assert.All(state.CanVerifyStates[uri].Values,
       verifiable => Assert.Equal(VerificationPreparationState.NotStarted, verifiable.PreparationProgress));
     telemetryPublisher.Verify(publisher => publisher.PublishTelemetry(It.IsAny<ImmutableDictionary<string, object>>()),
       Times.Never());
+  }
+
+  private sealed class PreflightOnlyWorkerPackage : IDisposable {
+    private readonly string directory;
+    public string Worker => Path.Combine(directory, "DafnyB3Host.dll");
+
+    public PreflightOnlyWorkerPackage(string directory) {
+      this.directory = directory;
+      Directory.CreateDirectory(directory);
+      var files = new Dictionary<string, string>();
+      // These bytes satisfy production package-manifest preflight, not DLL validity.
+      // Capability rejection and Never mode must prevent any worker execution.
+      foreach (var name in new[] { "DafnyB3Host.dll", "B3Library.dll", "DafnyB3Protocol.dll" }) {
+        var bytes = new byte[] { 1, 2, 3 };
+        File.WriteAllBytes(Path.Combine(directory, name), bytes);
+        files[name] = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+      }
+      var manifest = new WorkerManifest(Protocol.Version, WorkerPackage.UpstreamCommit, Protocol.NormalizerVersion,
+        WorkerPackage.BootstrapCompiler, WorkerPackage.SourceFingerprint, files);
+      File.WriteAllBytes(Path.Combine(directory, WorkerPackage.ManifestFileName),
+        JsonSerializer.SerializeToUtf8Bytes(manifest, Protocol.JsonOptions));
+    }
+
+    public void Dispose() => Directory.Delete(directory, recursive: true);
   }
 
   [Fact]
