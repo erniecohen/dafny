@@ -68,3 +68,6 @@ git-issues/git-issue-141-datatype-cast-resolver-negative.dfy
 # Exact original invariant datatype cast and inhabited consistency control.
 git-issues/git-issue-141-original.dfy
 git-issues/git-issue-141-original-control.dfy
+
+# Generic datatype constructor discriminator runtime regression.
+git-issues/git-issue-148.dfy
