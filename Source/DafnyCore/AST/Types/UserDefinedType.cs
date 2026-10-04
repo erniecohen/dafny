@@ -462,13 +462,18 @@ public class UserDefinedType : NonProxyType, IHasReferences {
     } else if (ResolvedClass is ClassLikeDecl) {
       return true;
     } else if (ResolvedClass is NewtypeDecl newtypeDecl) {
-      if (!newtypeDecl.UseBaseReferenceCharacteristics) {
-        return false;
-      }
+      // A nominal name does not remove references carried by its instantiated
+      // base. In particular, a general-arrow value can capture fresh objects.
       if (!newtypeDecl.IsRevealedInScope(Type.GetScope()) || newtypeDecl.BaseType == null) {
         return true;
       }
-      return newtypeDecl.ConcreteBaseType(TypeArgs).NormalizeExpand().ComputeMayInvolveReferences(visitedDatatypes, generalArrows);
+      var ancestry = NormalizeToAncestorTypeChecked(preserveSubsetTypes: true);
+      if (ancestry.Kind != AncestorTypeKind.Resolved || ancestry.AncestorType == null ||
+          ancestry.AncestorType.IsInternalTypeSynonym) {
+        // Hidden or erroneous ancestry cannot establish reference freedom.
+        return true;
+      }
+      return ancestry.AncestorType.ComputeMayInvolveReferences(visitedDatatypes, generalArrows);
     } else if (ResolvedClass is DatatypeDecl) {
       // Datatype declarations do not support explicit (!new) annotations. Instead, whether or not
       // a datatype involves references depends on the definition and parametrization of the type.

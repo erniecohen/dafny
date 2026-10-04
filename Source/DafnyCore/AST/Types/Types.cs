@@ -169,6 +169,108 @@ public abstract class Type : NodeWithOrigin {
     return NormalizeExpand(ExpandMode.DontExpandJustAdjustForScopes);
   }
 
+  public enum AncestorTypeKind { Resolved, Undetermined, Cyclic }
+
+  public readonly record struct AncestorTypeResult(
+    AncestorTypeKind Kind, Type AncestorType, IReadOnlyList<RedirectingTypeDecl> Cycle = null);
+
+  // Retain only empty traversal storage, never declarations, visibility scopes, or ancestry results.
+  // Renting removes the set from the slot, giving each concurrent or nested query exclusive ownership.
+  private static HashSet<NewtypeDecl> reusableNewtypeWalkSet;
+  private const int MaximumRetainedNewtypeWalkCapacity = 16384;
+
+  private static HashSet<NewtypeDecl> RentNewtypeWalkSet() {
+    return Interlocked.Exchange(ref reusableNewtypeWalkSet, null) ??
+           new HashSet<NewtypeDecl>(ReferenceEqualityComparer.Instance);
+  }
+
+  private static void ReturnNewtypeWalkSet(HashSet<NewtypeDecl> set) {
+    if (set != null) {
+      set.Clear();
+      if (set.EnsureCapacity(0) <= MaximumRetainedNewtypeWalkCapacity) {
+        Interlocked.CompareExchange(ref reusableNewtypeWalkSet, set, null);
+      }
+    }
+  }
+
+  /// <summary>
+  /// Follow proxies, in-scope synonyms/subsets, and instantiated newtype bases. An unresolved base is
+  /// Undetermined, not a cycle. Raw synonym dependencies are checked before definition expansion.
+  /// The result never substitutes a primitive type for erroneous ancestry.
+  /// With preserveSubsetTypes, stop at a subset instead of erasing its constraints or arrow-family identity.
+  /// </summary>
+  public AncestorTypeResult NormalizeToAncestorTypeChecked(bool preserveSubsetTypes = false) {
+    Type current = this;
+    NewtypeDecl firstNewtype = null;
+    HashSet<NewtypeDecl> visited = null;
+    HashSet<NewtypeDecl> checkedAcyclic = null;
+    try {
+      while (true) {
+        if (current == null) {
+          return new AncestorTypeResult(AncestorTypeKind.Undetermined, null);
+        }
+        if (current is UserDefinedType { ResolvedClass: TypeSynonymDecl synonym }) {
+          var cycle = RedirectingTypeCycleAnalysis.TryFindCycle(synonym, GetScope());
+          if (cycle != null) {
+            return new AncestorTypeResult(AncestorTypeKind.Cyclic, null, cycle);
+          }
+        }
+        current = current.NormalizeExpand(preserveSubsetTypes);
+        if (current is TypeProxy || current is UserDefinedType { ResolvedClass: null }) {
+          return new AncestorTypeResult(AncestorTypeKind.Undetermined, current);
+        }
+        if (current is not UserDefinedType { ResolvedClass: NewtypeDecl newtypeDecl }) {
+          if (preserveSubsetTypes &&
+              current is UserDefinedType { ResolvedClass: SubsetTypeDecl stoppedSubset }) {
+            // Stopping at a subset must not hide a mixed redirecting cycle
+            // that would otherwise be found by following its instantiated RHS.
+            IEnumerable<RedirectingTypeDecl> roots = visited != null
+              ? visited.Cast<RedirectingTypeDecl>()
+              : firstNewtype == null ? [] : [firstNewtype];
+            var cycle = RedirectingTypeCycleAnalysis.Analyze(roots.Append(stoppedSubset), GetScope())
+              .FindCycles().FirstOrDefault()?.Witness;
+            if (cycle != null) {
+              return new AncestorTypeResult(AncestorTypeKind.Cyclic, null, cycle);
+            }
+          }
+          return new AncestorTypeResult(AncestorTypeKind.Resolved, current);
+        }
+
+        bool repeated;
+        if (firstNewtype == null) {
+          // The common scalar and single-newtype paths need no allocated traversal state.
+          firstNewtype = newtypeDecl;
+          repeated = false;
+        } else if (visited == null) {
+          repeated = ReferenceEquals(firstNewtype, newtypeDecl);
+          if (!repeated) {
+            visited = RentNewtypeWalkSet();
+            visited.Add(firstNewtype);
+            visited.Add(newtypeDecl);
+          }
+        } else {
+          repeated = !visited.Add(newtypeDecl);
+        }
+        if (repeated && !(checkedAcyclic?.Contains(newtypeDecl) ?? false)) {
+          // Repeated declarations do not imply repeated instantiated types: G<G<int>> with G<T> = T
+          // is finite. Conversely, C<T> = C<seq<T>> never repeats an instantiated type. Check the finite
+          // raw declaration graph, without constructing successively larger type arguments.
+          var cycle = RedirectingTypeCycleAnalysis.TryFindCycle(newtypeDecl, GetScope());
+          if (cycle != null) {
+            return new AncestorTypeResult(AncestorTypeKind.Cyclic, null, cycle);
+          }
+          checkedAcyclic ??= RentNewtypeWalkSet();
+          checkedAcyclic.Add(newtypeDecl);
+        }
+        current = newtypeDecl.BaseType == null ? null : newtypeDecl.RhsWithArgument(current.TypeArgs);
+      }
+    } finally {
+      // Every exit, including unresolved/cyclic results and substitution failures, releases empty buffers.
+      ReturnNewtypeWalkSet(visited);
+      ReturnNewtypeWalkSet(checkedAcyclic);
+    }
+  }
+
   /// <summary>
   /// Call NormalizeExpand() repeatedly, also on the base type of newtype's.
   /// </summary>

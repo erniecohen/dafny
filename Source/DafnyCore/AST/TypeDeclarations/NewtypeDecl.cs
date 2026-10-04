@@ -30,7 +30,7 @@ public class NewtypeDecl : TopLevelDeclWithMembers, RevealableTypeDecl, Redirect
     }
   }
 
-  // Default false preserves reference classification outside the opt-in extension.
+  // Marks extended operations and equality behavior; reference freedom is checked for every newtype.
   [FilledInDuringResolution] public bool UseBaseReferenceCharacteristics;
   [FilledInDuringResolution] public bool InheritsBaseDefault;
 
