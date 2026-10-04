@@ -87,7 +87,7 @@ public static class Program {
             Require(source.Resolve(options, sink) == 0 && source.Typecheck(options, sink) == 0,
               "Boogie typed artifact rejected: " + string.Join("; ", sink.Errors));
             using var output = new StringWriter(CultureInfo.InvariantCulture);
-            using (var writer = new Bpl.TokenTextWriter(output, options)) { source.Emit(writer); }
+            using (var writer = new Bpl.TokenTextWriter("module-" + moduleOrdinal + ".typed.bpl", output, setTokens: false, pretty: false, options: options)) { source.Emit(writer); }
             Require(output.GetStringBuilder().Length <= Ir.Protocol.MaximumMessageBytes, "Typed source dump exceeds bound");
             var before = output.ToString();
             await File.WriteAllTextAsync(Path.Combine(directory, "module-" + moduleOrdinal + ".typed.bpl"), before);
@@ -113,7 +113,7 @@ public static class Program {
               prepared.Add((program, normalized.Obligations, key));
             }
             using var afterOutput = new StringWriter(CultureInfo.InvariantCulture);
-            using (var writer = new Bpl.TokenTextWriter(afterOutput, options)) { source.Emit(writer); }
+            using (var writer = new Bpl.TokenTextWriter("module-" + moduleOrdinal + ".typed.bpl", afterOutput, setTokens: false, pretty: false, options: options)) { source.Emit(writer); }
             Require(before == afterOutput.ToString(), "Normalization mutated the emitted typed source");
             moduleOrdinal++;
           }

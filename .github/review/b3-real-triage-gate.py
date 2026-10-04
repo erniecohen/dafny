@@ -2,7 +2,8 @@
 """Scratch-only Real diagnosis; a zero job exit delivers evidence, never acceptance."""
 import ctypes
 import hashlib
-import importlib.util
+import sys
+import types
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -19,7 +20,7 @@ PUBLIC_ARTIFACT = 11311016429
 PUBLIC_ARTIFACT_NAME = 'b3-native-compile'
 PUBLIC_ARCHIVE_SHA = '76be6dadc245884a15c52b0b94d6eef8f16c96caed2d12ed23b3956c91e617fe'
 PUBLIC_ARCHIVE_BYTES = 145457636
-INNER_SEAL = '9dbfe0efdb8f96bb932ff6029f59c8275fa85e8ba4c1c9a2f59fa70ef5cf90ca'
+INNER_SEAL = '179b10f8bd33025dd62be724916b199ee8b62961b877a4350dcd8e29f2024864'
 SOURCE = 'a6ecb742096ddf2f4a6dbcfefb847fdb17ff1fbda7bacf0fafd445f60d843976'
 SOLVER = 'b4e0b3483ce37817230b20d6cad48390eb6a3aefde1d93342ad6dc763f24bc23'
 SEAL_PATH = '.github/review/real-triage/source-manifest.json'
@@ -62,9 +63,14 @@ def sealed_inner():
         path = ROOT / name
         require(path.stat().st_size == entry['bytes'] and digest(path, 1024 * 1024) == entry['sha256'],
                 'Diagnostic source bytes changed: ' + name)
-    spec = importlib.util.spec_from_file_location('b3_real_triage', ROOT / '.github/review/b3-real-triage.py')
-    inner = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(inner)
+    module_path = ROOT / '.github/review/b3-real-triage.py'
+    captured = module_path.read_bytes()
+    require(hashlib.sha256(captured).hexdigest() == manifest['files']['.github/review/b3-real-triage.py']['sha256'],
+            'Captured diagnostic module differs from sealed bytes')
+    inner = types.ModuleType('b3_real_triage')
+    inner.__file__ = str(module_path)
+    sys.modules[inner.__name__] = inner
+    exec(compile(captured, str(module_path), 'exec'), inner.__dict__)
     return inner, manifest
 
 

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "scope": "Real corpus diagnostic source checkpoint with qualified public snippet option; no full acceptance claim",
-  "inspectedCompilerSource": "570337c67659117240f30990af04826504b1a01b",
+  "scope": "Real diagnostic source checkpoint with nonmutating BPL token capture; no full acceptance claim",
+  "inspectedCompilerSource": "cf8d6c5f04f057aa2004cf45c9561e4c762a25fe",
   "sourceOnly": true,
   "csharpCompiled": false,
   "proofOrWorkerExecuted": false,
@@ -22,8 +22,8 @@
       "sha256": "6be1699f6f2e6c24021063dca39616c88151bf6d644d7da9537ee37ac2614d09"
     },
     ".github/review/real-triage/Program.cs": {
-      "bytes": 19740,
-      "sha256": "d1928167373cb14ea29cce09b3e3e08f26abe0ed8b35d7835df314b6779ecc49"
+      "bytes": 19908,
+      "sha256": "8c2472b28a73190310d66f6411867d033212e3f5814307e110e65c7b5f2b836f"
     },
     ".github/review/real-triage/RealTriage.csproj": {
       "bytes": 780,
@@ -46,11 +46,11 @@
       "sha256": "925b5eb9479d2650cd1882e07cb5d658807f8c3ba647ab1680c6b15cbb0894ca"
     },
     "docs/dev/b3/real-corpus-triage.md": {
-      "bytes": 12527,
-      "sha256": "e25f84c999ad54e93edec9b37f7f8480d9c098385f5ed05f18352e70dd84d840"
+      "bytes": 14347,
+      "sha256": "e5b7c6ee423c27270e4b0a99554fd37fc8c300f2730b86474ca11c7ce8287d1a"
     }
   },
-  "previousSourceSealSha256": "ee52260407c245d9f6ab93a1b5002c1c2992b75cd995b79fb321d146c6177aaa",
-  "priorDiagnosticRun": 37229767767,
-  "priorDiagnosticBoundary": "Fresh compiler exit zero and clean lifecycle; diagnostic build rejected unqualified Snippets reference; no Real requests/proofs executed"
+  "previousSourceSealSha256": "9dbfe0efdb8f96bb932ff6029f59c8275fa85e8ba4c1c9a2f59fa70ef5cf90ca",
+  "priorDiagnosticRun": 37230670642,
+  "priorDiagnosticBoundary": "Actual original requests captured; conversion and irrational strict mismatches remain; BPL printing overwrote source tokens, so original source locations unaccepted"
 }
