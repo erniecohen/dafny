@@ -103,12 +103,18 @@ namespace Microsoft.Dafny {
           return new NewtypeDecl(Origin(dd.Origin), dd.NameNode.Clone(this), dd.TypeArgs.ConvertAll(CloneTypeParam), newParent,
             CloneType(dd.BaseType), dd.WitnessKind, CloneExpr(dd.Witness),
             dd.Traits.ConvertAll(CloneType),
-            dd.Members.ConvertAll(d => CloneMember(d, false)), CloneAttributes(dd.Attributes), dd.IsRefining);
+            dd.Members.ConvertAll(d => CloneMember(d, false)), CloneAttributes(dd.Attributes), dd.IsRefining) {
+            UseBaseReferenceCharacteristics = CloneResolvedFields && dd.UseBaseReferenceCharacteristics,
+            InheritsBaseDefault = CloneResolvedFields && dd.InheritsBaseDefault
+          };
         } else {
           return new NewtypeDecl(Origin(dd.Origin), dd.NameNode.Clone(this), dd.TypeArgs.ConvertAll(CloneTypeParam), newParent,
             CloneBoundVar(dd.Var, false), CloneExpr(dd.Constraint), dd.WitnessKind, CloneExpr(dd.Witness),
             dd.Traits.ConvertAll(CloneType),
-            dd.Members.ConvertAll(d => CloneMember(d, false)), CloneAttributes(dd.Attributes), dd.IsRefining);
+            dd.Members.ConvertAll(d => CloneMember(d, false)), CloneAttributes(dd.Attributes), dd.IsRefining) {
+            UseBaseReferenceCharacteristics = CloneResolvedFields && dd.UseBaseReferenceCharacteristics,
+            InheritsBaseDefault = CloneResolvedFields && dd.InheritsBaseDefault
+          };
         }
       } else if (d is TupleTypeDecl) {
         // Tuple type declarations only exist in the system module. Therefore, they are never cloned.

@@ -5275,6 +5275,11 @@ namespace Microsoft.Dafny.Compilers {
         var ctor = pat.Ctor;
         Contract.Assert(ctor != null);  // follows from successful resolution
         Contract.Assert(pat.Arguments.Count == ctor.Formals.Count);  // follows from successful resolution
+        if (Options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+            NewtypeOperationView.Get(rhsType).BaseType is { } baseType &&
+            baseType.AsDatatype == ctor.EnclosingDatatype) {
+          rhsType = baseType;
+        }
         Contract.Assert(ctor.EnclosingDatatype.TypeArgs.Count == rhsType.NormalizeExpand().TypeArgs.Count);
         var typeSubst = TypeParameter.SubstitutionMap(ctor.EnclosingDatatype.TypeArgs, rhsType.NormalizeExpand().TypeArgs);
         var k = 0;  // number of non-ghost formals processed

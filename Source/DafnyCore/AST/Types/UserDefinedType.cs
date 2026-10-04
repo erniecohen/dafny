@@ -454,8 +454,14 @@ public class UserDefinedType : NonProxyType, IHasReferences {
       return TypeArgs.Any(ta => ta.ComputeMayInvolveReferences(visitedDatatypes));
     } else if (ResolvedClass is ClassLikeDecl) {
       return true;
-    } else if (ResolvedClass is NewtypeDecl) {
-      return false;
+    } else if (ResolvedClass is NewtypeDecl newtypeDecl) {
+      if (!newtypeDecl.UseBaseReferenceCharacteristics) {
+        return false;
+      }
+      if (!newtypeDecl.IsRevealedInScope(Type.GetScope()) || newtypeDecl.BaseType == null) {
+        return true;
+      }
+      return newtypeDecl.ConcreteBaseType(TypeArgs).NormalizeExpand().ComputeMayInvolveReferences(visitedDatatypes);
     } else if (ResolvedClass is DatatypeDecl) {
       // Datatype declarations do not support explicit (!new) annotations. Instead, whether or not
       // a datatype involves references depends on the definition and parametrization of the type.

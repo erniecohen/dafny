@@ -207,6 +207,13 @@ namespace Microsoft.Dafny.Compilers {
         // shows that the core destructor of "udt.ResolvedClass" has no cycles, then "udt.ResolvedClass" is
         // indeed an erasable type wrapper. If "udt.ResolvedClass" is involved in some cycle, then it is not
         // an erasable type wrapper, so we abandon (a) and instead do (b).
+        // Newtypes use their base representation. A nominal newtype can hide
+        // a representation cycle even when it has no type arguments of its own.
+        if (options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+            udt.ResolvedClass is NewtypeDecl { NativeType: null } newtypeDecl &&
+            CompiledTypeContains(options, newtypeDecl.ConcreteBaseType(udt.TypeArgs), lookingFor, visited)) {
+          return true;
+        }
         if (udt.ResolvedClass is DatatypeDecl d && FindUnwrappedCandidate(options, d, out var dtor)) {
           var typeSubst = TypeParameter.SubstitutionMap(d.TypeArgs, udt.TypeArgs);
           if (CompiledTypeContains(options, dtor.Type.Subst(typeSubst), lookingFor, visited)) {

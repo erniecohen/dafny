@@ -117,7 +117,9 @@ namespace Microsoft.Dafny {
       if (!InsistOnKnowingPreType(sourceExprToken, preType)) {
         return;
       }
-      var dpreType = (DPreType)preType.Normalize();
+      // A constructor pattern observes the visible instantiated base. A whole-source
+      // variable pattern below continues to use the original nominal preType.
+      var dpreType = OperationPreType(preType) ?? (DPreType)preType.NormalizeWrtScope();
 
       if (dpreType.Decl is DatatypeDecl dtd && dtd.ConstructorsByName.TryGetValue(idPattern.Id, out var ctor)) {
         // the given ID is a datatype constructor

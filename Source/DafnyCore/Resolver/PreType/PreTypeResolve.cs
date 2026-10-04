@@ -280,7 +280,7 @@ namespace Microsoft.Dafny {
     private DPreType OperationPreType(PreType nominal) {
       var current = nominal.NormalizeWrtScope() as DPreType;
       if (!resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
-        return current;
+        return nominal.Normalize() as DPreType;
       }
       var path = new HashSet<NewtypeDecl>();
       while (current?.Decl is NewtypeDecl declaration) {
@@ -642,7 +642,7 @@ namespace Microsoft.Dafny {
       }
       var fromFamily = fromAncestor.Decl.Name;
       var toFamily = toAncestor.Decl.Name;
-      var toName = toType.Decl.Name;
+      var toName = resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases) ? toFamily : toType.Decl.Name;
 
       if (IsBitvectorName(fromFamily) && (toFamily == PreType.TypeNameInt || IsBitvectorName(toFamily))) {
         return true;
@@ -928,6 +928,9 @@ namespace Microsoft.Dafny {
         std.Var.PreType = Type2PreType(std.Var.Type);
         ResolveConstraintAndWitness(std, true);
       } else if (declaration is NewtypeDecl nd) {
+        nd.UseBaseReferenceCharacteristics = resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases);
+        nd.InheritsBaseDefault = nd.UseBaseReferenceCharacteristics && nd.Var == null &&
+          nd.WitnessKind == SubsetTypeDecl.WKind.CompiledZero;
         nd.BasePreType = CreateTemporaryPreTypeProxy();
         if (nd.Var != null) {
           nd.Var.PreType = nd.BasePreType;
@@ -942,7 +945,8 @@ namespace Microsoft.Dafny {
             $"base type of {nd.WhatKindAndName} is not fully determined; add an explicit type for bound variable '{nd.Var.Name}'");
         };
         if (resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
-            AncestorName(nd.BasePreType) == PreType.TypeNameORDINAL) {
+            (AncestorName(nd.BasePreType) == PreType.TypeNameORDINAL ||
+             OperationPreType(nd.BasePreType)?.Decl is IndDatatypeDecl)) {
           // Capability admission is deliberately separate from the existing mode.
           // Other families remain rejected until their operations and representation are complete.
         } else if (resolver.Options.Get(CommonOptionBag.GeneralNewtypes)) {
