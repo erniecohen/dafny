@@ -1261,6 +1261,62 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
           Predef.HandleType);
       }
 
+      /// <summary>
+      /// A lambda value is allocated in any good heap in which what it captures is allocated: its free variables, and
+      /// "this" if it uses it.  A lambda that uses the previous heap ("old", "fresh", "unchanged", a two-state function,
+      /// or a statement) or the heap at a label also captures that heap, which the heap must be or succeed.  The arrow
+      /// allocation axiom is an implication, from an allocated function value to its reads set and results
+      /// (erniecohen/dafny#132), so this is how a lambda is known to be allocated.
+      /// </summary>
+      private Expr LambdaAllocation(LambdaExpr e) {
+        bool usesHeap = false, usesOldHeap = false;
+        var heapAt = new HashSet<Label>();
+        Type usesThis = null;
+        var fvs = new HashSet<IVariable>();
+        FreeVariablesUtil.ComputeFreeVariables(BoogieGenerator.options, e, fvs, ref usesHeap, ref usesOldHeap, heapAt, ref usesThis, true);
+        usesOldHeap |= UsesPreviousHeap(e);
+        var varNameGen = BoogieGenerator.CurrentIdGenerator.NestedFreshIdGenerator("$la#");
+        var hVar = BplBoundVar(varNameGen.FreshId("#heap#"), Predef.HeapType, out var h);
+        Bpl.Expr captured = BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, h);
+        var capturedHeaps = new List<Bpl.Expr>();
+        if (usesOldHeap) {
+          capturedHeaps.Add(Old.HeapExpr);
+        }
+        foreach (var label in heapAt.OrderBy(l => l.Name)) {
+          capturedHeaps.Add(OldAt(label).HeapExpr);
+        }
+        foreach (var heap in capturedHeaps) {
+          if (heap == null) {
+            return Expr.True;
+          }
+          captured = BplAnd(captured, BplOr(Bpl.Expr.Eq(heap, h), BoogieGenerator.HeapSucc(heap, h)));
+        }
+        foreach (var v in fvs.OrderBy(v => v.UniqueName)) {
+          if (v.Type.MayInvolveReferences) {
+            captured = BplAnd(captured, BoogieGenerator.MkIsAlloc(BoogieGenerator.TrVar(e.Origin, v), v.Type, h));
+          }
+        }
+        if (usesThis != null) {
+          captured = BplAnd(captured, BoogieGenerator.MkIsAlloc(new Bpl.IdentifierExpr(e.Origin, This, BoogieGenerator.TrType(usesThis)), usesThis, h));
+        }
+        // A trigger cannot hold the lambda, which binds variables, so the value is a bound variable equal to it.
+        var fVar = BplBoundVar(varNameGen.FreshId("#f#"), Predef.HandleType, out var f);
+        var allocated = BoogieGenerator.MkIsAlloc(f, e.Type.AsArrowType, h);
+        return new Bpl.ForallExpr(e.Origin, [hVar, fVar], BplTrigger(allocated),
+          BplImp(BplAnd(Bpl.Expr.Eq(f, TrExpr(e)), captured), allocated));
+      }
+
+      /// <summary>
+      /// Whether the expression uses the previous heap in a way that ComputeFreeVariables does not report:
+      /// a two-state function, called or as a value, or a statement, which may call a two-state lemma.
+      /// </summary>
+      private static bool UsesPreviousHeap(Expression e) {
+        return e is StmtExpr
+          || e is FunctionCallExpr { Function: TwoStateFunction, AtLabel: null }
+          || e is MemberSelectExpr { Member: TwoStateFunction, AtLabel: null }
+          || e.SubExpressions.Any(UsesPreviousHeap);
+      }
+
       public Expression DesugarMatchExpr(MatchExpr e) {
         Contract.Requires(e != null);
         // Translate:
@@ -1905,7 +1961,7 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
           //TRIG (forall $l#0#heap#0: Heap, $l#0#x#0: int :: true)
           //TRIG (forall $l#0#heap#0: Heap, $l#0#t#0: DatatypeType :: _module.__default.TMap#canCall(_module._default.TMap$A, _module._default.TMap$B, $l#0#heap#0, $l#0#t#0, f#0))
           //TRIG (forall $l#4#heap#0: Heap, $l#4#x#0: Box :: _0_Monad.__default.Bind#canCall(Monad._default.Associativity$B, Monad._default.Associativity$C, $l#4#heap#0, Apply1(Monad._default.Associativity$A, #$M$B, f#0, $l#4#heap#0, $l#4#x#0), g#0))
-          return BplForallTrim(bvarsAndAntecedents, null, canCall, possiblyEmpty); // L_TRIGGER
+          return BplAnd(BplForallTrim(bvarsAndAntecedents, null, canCall, possiblyEmpty), LambdaAllocation(e)); // L_TRIGGER
 
         } else if (expr is ComprehensionExpr) {
           var e = (ComprehensionExpr)expr;
