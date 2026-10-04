@@ -367,10 +367,21 @@ module TypeChecker {
           }
           typ := BoolType;
         case Less | AtMost =>
-          var _ :- ExpectSameNumericOperands(op, types);
+          var numericType :- ExpectSameNumericOperands(op, types);
+          assert types[0] == numericType && types[1] == numericType;
+          assert args[0].HasType(types[0]) && args[1].HasType(types[1]);
+          assert args[0].ExprType() == numericType && args[1].ExprType() == numericType;
           typ := BoolType;
         case Plus | Minus | Times | UnaryMinus =>
           typ :- ExpectSameNumericOperands(op, types);
+          assert types[0] == typ;
+          assert args[0].HasType(types[0]);
+          assert args[0].ExprType() == typ;
+          if |args| == 2 {
+            assert types[1] == typ;
+            assert args[1].HasType(types[1]);
+            assert args[1].ExprType() == typ;
+          }
         case Div | Mod =>
           var _ :- ExpectOperandTypes(op, types, IntType);
           typ := IntType;
@@ -433,6 +444,7 @@ module TypeChecker {
   method ExpectSameNumericOperands(op: Operator, types: seq<Type>) returns (r: Result<Type, string>)
     requires |types| > 0
     ensures r.Success? ==> IsNumericType(r.value) && forall t <- types :: t == r.value
+    ensures r.Success? ==> types[0] == r.value
   {
     var typ := types[0];
     if !IsNumericType(typ) || exists t <- types :: t != typ {

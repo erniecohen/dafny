@@ -612,7 +612,7 @@ module Parser {
   }
 
   const parseSignedInteger: B<int> :=
-    Sym("-").Option().I_I(Nat.I_e(W)).M2(MId, (minus: Option<string>, n: nat) => if minus.Some? then -n else n)
+    Sym("-").Option().I_I(Nat.I_e(W)).M2(MId, (minus: Option<string>, n: int) => if minus.Some? then -n else n)
 
   function parseAtomicExpr(c: ExprRecSel): B<Expr> {
     Or([
