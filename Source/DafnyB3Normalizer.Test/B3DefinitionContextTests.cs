@@ -60,6 +60,34 @@ public class B3DefinitionContextTests {
   }
 
   [Fact]
+  public void ARevealMergeCannotEstablishACheckOnAHiddenIncomingPath() {
+    var result = Owned("assume Guard(); if (*) { reveal *; } else { hide *; } assert F() == 7;");
+    Assert.True(result.Success, Errors(result));
+    Assert.All(result.Contexts!, context => Assert.Empty(context.Definitions));
+  }
+
+  [Fact]
+  public void EveryIncomingPathRevealedCanRetainTheOwnedDefinition() {
+    var result = Owned("assume Guard(); hide F; if (*) { reveal F; } else { reveal F; } assert F() == 7;");
+    Assert.True(result.Success, Errors(result));
+    Assert.Single(Assert.Single(result.Contexts!).Definitions);
+  }
+
+  [Fact]
+  public void ChangingTheTargetsPossibleModeCannotHideAnotherRevealOperand() {
+    var result = Owned("assume Guard(); hide *; reveal F; if (*) { reveal *; } else { } assert F() == 7; reveal *; hide F; assert F() == 7;");
+    Assert.True(result.Success, Errors(result));
+    Assert.All(result.Contexts!, context => Assert.Empty(context.Definitions));
+  }
+
+  [Fact]
+  public void TrueAssertionsAlsoContributeTheirPossibleRevealModes() {
+    var result = Owned("assume Guard(); hide *; reveal F; assert F() == 7; if (*) { reveal *; hide F; } else { reveal *; } assert true;");
+    Assert.True(result.Success, Errors(result));
+    Assert.All(result.Contexts!, context => Assert.Empty(context.Definitions));
+  }
+
+  [Fact]
   public void DetachedAxiomMetadataCannotSupplyANamedVisibilityPremise() {
     var (source, options) = Source("hide F; assert F() == 7;");
     var axiom = Assert.Single(source.TopLevelDeclarations.OfType<Bpl.Axiom>());
@@ -161,6 +189,24 @@ public class B3DefinitionContextTests {
   public void UnbalancedScopeCannotSupplyARevealedDefinitionPremise() {
     var result = Owned("pop; assume Guard(); assert F() == 7;");
     Assert.False(result.Success); Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "b3_visibility");
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public void RawOnlyFalseAssertionCannotDisappearFromTheNormalizedInventory(bool nested) {
+    var (source, options) = Source("assume Guard(); assert true;");
+    var unit = source.Implementations.Single();
+    var assertion = new Bpl.AssertCmd(Bpl.Token.NoToken, Bpl.Expr.False);
+    Bpl.Cmd inserted = nested ? new Bpl.StateCmd(Bpl.Token.NoToken, new List<Bpl.Variable>(),
+      new List<Bpl.Cmd> { assertion }) : assertion;
+    // Break the producer's shared list deliberately; typed native Blocks now contain a real false goal.
+    unit.Blocks[0].Cmds = unit.Blocks[0].Cmds.Append(inserted).ToList();
+    Assert.DoesNotContain(inserted, unit.StructuredStmts!.BigBlocks[0].simpleCmds);
+    Assert.Equal(0, source.Resolve(options)); Assert.Equal(0, source.Typecheck(options));
+    var result = Normalize(source, options);
+    Assert.False(result.Success);
+    Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "b3_cfg_correspondence");
   }
 
   [Fact]

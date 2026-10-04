@@ -76,6 +76,27 @@ public class B3VisibilityTests {
     Assert.Contains("outer scope stacks", rejection.Message);
   }
 
+  [Fact]
+  public void MustAvailabilityDoesNotReplaceThePinnedMixedModeMerge() {
+    var (source, _) = Parse("function F(): int; procedure P(); implementation P() { if (*) { reveal *; } else { hide *; } assert F() == 7; }");
+    var implementation = source.Implementations.Single(); var function = source.Functions.Single();
+    var assertion = implementation.Blocks.SelectMany(block => block.Cmds).OfType<Bpl.AssertCmd>().Single();
+    var exact = new B3DefinitionVisibility(implementation);
+    Assert.True(exact.Before(assertion).IsRevealed(function));
+    var must = exact.AnalyzeMust(new[] { function }); var state = must.Before(assertion);
+    Assert.False(state.IsRevealed(function)); Assert.False(state.AllReveal); Assert.True(state.MayReveal);
+  }
+
+  [Fact]
+  public void MustVisibilityRestoresTheWholeSavedScopeFrame() {
+    var (source, _) = Parse("function F(): int; procedure P(); implementation P() { hide *; push; reveal F; assert true; pop; assert true; }");
+    var implementation = source.Implementations.Single(); var function = source.Functions.Single();
+    var assertions = implementation.Blocks.SelectMany(block => block.Cmds).OfType<Bpl.AssertCmd>().ToArray();
+    var must = new B3DefinitionVisibility(implementation).AnalyzeMust(new[] { function });
+    Assert.True(must.Before(assertions[0]).IsRevealed(function)); Assert.False(must.Before(assertions[0]).MayReveal);
+    Assert.False(must.Before(assertions[1]).IsRevealed(function)); Assert.False(must.Before(assertions[1]).MayReveal);
+  }
+
   internal static (Bpl.Program Program, DafnyOptions Options) Parse(string text) {
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();

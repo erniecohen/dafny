@@ -25,19 +25,35 @@ behind a native-equal top frame. It rejects visibility commands on CFG cycles.
 Loops whose visibility remains unchanged retain the existing induction lowering.
 Changed backedges need separate initiation/preservation origins before support.
 
-`Pruner.GetRevealedState` merges assertion states across a native split. A B3
-context may use a stricter per-check state and a subset of eligible definitions;
-this is conservative incompleteness, not an exact split-parity claim. A target
-Reveal-mode operand that reveals an owner keeps that owner revealed under every
-native aggregate merge containing it. A Hide-mode target is eligible only if
-every potential Reveal-mode operand from the original check inventory also
-reveals that owner. Hide/Hide merges union their revealed offsets. This extra
-guard prevents a Hide-mode reveal from incorrectly supplying a definition when
-the native mixed aggregate retains another Reveal operand hiding it. Source
-functions remain declared even when a definition edge is hidden. Only
-Function-to-CanHide-Axiom edges are cut by that availability decision. A direct
-edge from a demanded function to its owned active definition is sufficient for
-this first phase. General trigger-dependent reachability is outside the phase.
+`Pruner.GetRevealedState` merges assertion states across a native split. The
+exact owned port remains separate from a conservative sufficient guard. A raw
+join can be in Reveal mode even though an incoming path hides the owner. Native
+`Splits/Split.cs` can remove successors (`CloneBlock`) and split paths (`SplitAt`);
+therefore a raw per-assert mask alone cannot establish availability in every
+native split. This phase makes no exact split-parity claim.
+
+For at most 64 catalogue owners, a second owned analysis intersects revealed
+owners at every join. Each bit means the owner is revealed on every original
+path reaching that lexical frame. Push/pop preserves full matching stacks;
+wildcards replace the state and AlwaysRevealed is honored. The analysis also
+records whether all paths have Reveal mode and whether any path has Reveal mode.
+Changing cycles remain unsupported. Any path subset uses only original paths,
+so a retained owner bit remains sufficient on that subset.
+
+A selected source formula requires both the exact native mask and this must-owner
+bit. It additionally requires either all target paths to have Reveal mode, or
+every potential native assertion operand with a possible Reveal mode to retain
+the owner bit. The operand inventory includes every original raw and nested
+AssertCmd plus generated call, return and invariant roles, even checks with no
+function demand. This guards the pinned mixed-mode aggregate: a target that can
+become Hide mode after path splitting cannot rely on a different Reveal operand
+that hides its owner. Missing source origins or unequal full outer stacks reject
+normalization. Adding extra operands can only omit definitions.
+
+Source functions remain declared even when a definition edge is hidden. Only
+Function-to-CanHide-Axiom edges are cut by availability. A direct edge from a
+demanded function to its active owned definition is sufficient for this phase;
+general trigger-dependent reachability remains outside its scope.
 
 ## Owned CFG and source origins
 
@@ -47,6 +63,13 @@ their source object identities. B3 builds new metadata nodes and adjacency lists
 around those objects. It never clears source Block.Predecessors, rewrites goto
 lists, marks expression polarity, desugars calls, passifies, prunes the original
 program, constructs Boogie verification tasks, or calls a Boogie prover.
+
+Resolve and Typecheck inspect Blocks rather than StructuredStmts. Normalization
+therefore checks that every raw assertion, including one nested in a StateCmd,
+has an original normalized assert or invariant anchor. An extra raw false goal
+cannot be discarded or used solely as availability metadata. The command and
+topology correspondence boundary additionally needs the reviewed producer-shape
+validation; this source checkpoint is not accepted while that work remains.
 
 Each ordinary assertion maps to its exact command. A checked call requirement
 uses the original CallCmd entry state, since its reviewed desugaring introduces
@@ -175,13 +198,15 @@ explicit rejection of changing cycles or unequal outer scope stacks.
 original-unit deadline, cancellation cleanup and disjoint identities.
 
 The strict packaged-worker gate is `Source/DafnyB3Visibility.TestRunner`. It
-contains 17 typed Boogie/actual Dafny cases plus one five-launch session-isolation
+contains 21 typed Boogie/actual Dafny cases plus one five-launch session-isolation
 control. The typed Boogie fixtures explicitly attach their active source axioms
 to the exact function ownership metadata used by native pruning. Actual Dafny
 fixtures use only the producer's own metadata. Cases that require a definition
 also require a nonzero loaded source-origin manifest. Hidden and mixed-mode
 cases require zero loaded definitions. Linear typed Boogie cases require exact
-attempt outcomes and coverage; actual Dafny cases allow legitimately unreachable
+attempt outcomes and coverage. Four branch/path-subset cases require strict
+outcomes, the expected definition count and coverage of their reachable checks
+without assuming one attempt per check; actual Dafny cases allow legitimately unreachable
 generated checks while requiring completed traversal, strict outcomes and a
 failed attempt for each expected failure. Unknown cannot pass.
 

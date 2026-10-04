@@ -171,6 +171,45 @@
       "kind": "dafny",
       "expectedB3": "Verified",
       "minimumLoadedDefinitions": 1
+    },
+    {
+      "file": "branch-hidden.bpl",
+      "kind": "boogie",
+      "owner": "F",
+      "ownedAxiom": 0,
+      "expectedB3": "Failed",
+      "minimumLoadedDefinitions": 0,
+      "requireReachableCheckCoverage": true,
+      "maximumLoadedDefinitions": 0
+    },
+    {
+      "file": "branch-visible.bpl",
+      "kind": "boogie",
+      "owner": "F",
+      "ownedAxiom": 0,
+      "expectedB3": "Verified",
+      "minimumLoadedDefinitions": 1,
+      "requireReachableCheckCoverage": true
+    },
+    {
+      "file": "path-subset-mode.bpl",
+      "kind": "boogie",
+      "owner": "F",
+      "ownedAxiom": 0,
+      "expectedB3": "Failed",
+      "minimumLoadedDefinitions": 0,
+      "requireReachableCheckCoverage": true,
+      "maximumLoadedDefinitions": 0
+    },
+    {
+      "file": "true-aggregate-operand.bpl",
+      "kind": "boogie",
+      "owner": "F",
+      "ownedAxiom": 0,
+      "expectedB3": "Failed",
+      "minimumLoadedDefinitions": 0,
+      "requireReachableCheckCoverage": true,
+      "maximumLoadedDefinitions": 0
     }
   ],
   "isolationFixture": "nonlearning-hide.bpl",

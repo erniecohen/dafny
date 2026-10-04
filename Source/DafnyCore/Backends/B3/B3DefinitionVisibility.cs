@@ -10,7 +10,7 @@ using Ir = DafnyB3Protocol;
 namespace Microsoft.Dafny;
 
 /// <summary>A bounded owned metadata analysis, with no VC generation or source mutation.</summary>
-public sealed class B3DefinitionVisibility {
+public sealed partial class B3DefinitionVisibility {
   // Transfer and merge rules ported from Boogie 73a0e214a87df85fc058270268c1d0706fd05bc9,
   // Source/VCGeneration/Prune/RevealedAnalysis.cs and DataflowAnalysis.cs (MIT).
   // The native mixed-mode merge and top-frame fixed-point comparison are intentional.
@@ -168,6 +168,8 @@ public sealed class B3DefinitionVisibility {
     if (source is Bpl.ChangeScope scope) {
       Require(scope.Mode is Bpl.ChangeScope.Modes.Push or Bpl.ChangeScope.Modes.Pop, "Unknown visibility scope mode", source.tok);
       Require(scope.Mode != Bpl.ChangeScope.Modes.Pop || stack.Count() > 1, "Visibility scope pop has no matching push", source.tok);
+      Require(scope.Mode != Bpl.ChangeScope.Modes.Push || stack.Count() < Ir.Protocol.MaximumDepth,
+        "Visibility scope depth exceeds its bound", source.tok);
       return scope.Mode == Bpl.ChangeScope.Modes.Push ? stack.Push(stack.Peek()) : stack.Pop();
     }
     if (source is Bpl.HideRevealCmd hide) {
