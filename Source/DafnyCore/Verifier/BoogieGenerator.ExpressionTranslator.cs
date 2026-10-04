@@ -1568,6 +1568,17 @@ namespace Microsoft.Dafny {
           Predef.HandleType);
       }
 
+      private sealed class TotalDatatypeDestructorCollector : BottomUpVisitor {
+        public bool Found { get; private set; }
+
+        protected override void VisitOneExpr(Expression expr) {
+          if (expr is MemberSelectExpr { Member: DatatypeDestructor dtor } &&
+              dtor.EnclosingCtors.Count == dtor.EnclosingCtors[0].EnclosingDatatype.Ctors.Count) {
+            Found = true;
+          }
+        }
+      }
+
       private Expr LambdaCanCallAssumption(LambdaExpr e, CanCallOptions cco) {
         var environment = BuildLambdaEnvironment(e);
         var et = environment.Translator;
@@ -1638,15 +1649,22 @@ namespace Microsoft.Dafny {
             pureSelectorArguments);
           var goodHeap = BoogieGenerator.FunctionCall(tok, BuiltinFunction.IsGoodHeap, null, environment.Heap);
           trigger = new Boogie.Trigger(tok, true, [pureApplySelector, goodHeap], trigger);
-          // Pure arrow subtype checks can need child facts before producing any
-          // result application. Their selector types can also differ from the
-          // inferred source result type. Match the existing native typed formals
-          // and closure layer; the complete source guard and exact family equality
-          // remain in the body of this same universal consequence.
-          var sourceTriggerTerms = new List<Expr> { handle, goodHeap };
-          sourceTriggerTerms.AddRange(arguments.Zip(e.BoundVars,
-            (argument, bv) => BoogieGenerator.MkIsBox(argument, bv.Type)));
-          trigger = new Boogie.Trigger(tok, true, sourceTriggerTerms, trigger);
+          var constructorFacts = new TotalDatatypeDestructorCollector();
+          constructorFacts.Visit(e.Body);
+          if (e.Range != null) {
+            constructorFacts.Visit(e.Range);
+          }
+          if (constructorFacts.Found) {
+            // Match this pattern only when the source's existing child facts
+            // contain a total datatype destructor's constructor fact. Pure arrow
+            // subtype checks can need that fact before any result application;
+            // their selector types can also differ from the source result type.
+            // The complete native guard and exact family equality are unchanged.
+            var sourceTriggerTerms = new List<Expr> { handle, goodHeap };
+            sourceTriggerTerms.AddRange(arguments.Zip(e.BoundVars,
+              (argument, bv) => BoogieGenerator.MkIsBox(argument, bv.Type)));
+            trigger = new Boogie.Trigger(tok, true, sourceTriggerTerms, trigger);
+          }
         }
         var actualFamily = BuildLambdaHandleFamily(e, BuildLambdaEnvironment(e));
         var familyGuard = BplAnd(Boogie.Expr.Eq(family, actualFamily), guard);

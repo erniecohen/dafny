@@ -126,12 +126,16 @@ Pure-arrow subtype checks can need child permissions or datatype constructor
 facts before producing a result application. A lambda's inferred source result
 can also have a base type while its required result retains a subset constraint,
 so their selector type arguments differ. For a lambda with no reads expressions,
-an additional multi-pattern uses `AtLayer(family, layer)`, the native `IsBox`
-type of every boxed formal, and `IsGoodHeap(futureHeap)`. It instantiates the same
-universal consequence independently of the target arrow's result type. The
-source types, body, exact closure family, allocation, range, and formation-heap
-guards are unchanged. No inhabitant is assumed, so an empty domain grants no
-additional child permission.
+the translator adds a source-typed multi-pattern only when its body or precondition
+selects a datatype destructor shared by every constructor. This is the exact
+member-selection case whose common permission translation supplies a constructor
+fact. Restricting matching to these source expressions avoids matching pure
+function calls that need no such fact. The pattern uses `AtLayer(family, layer)`,
+the native `IsBox` type of every boxed formal, and `IsGoodHeap(futureHeap)`. It
+instantiates the same universal consequence independently of the target arrow's
+result type. The source types, body, exact closure family, allocation, range,
+and formation-heap guards are unchanged. No inhabitant is assumed, so an empty
+domain grants no additional child permission.
 
 Heap-independent source definitions sometimes require a translator heap for
 lambda or application syntax. They use `$OneHeap` as a placeholder; their
