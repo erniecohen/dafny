@@ -583,7 +583,7 @@ jobs:
 
   release:
     name: GitHub release
-    needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, axiom-resources]
+    needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, native-parity]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
