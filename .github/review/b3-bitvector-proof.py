@@ -1,8 +1,10 @@
 """Focused universal BV contracts; expected failures are strict receipt data.
 
 Each invocation uses one literal --filter-symbol substring, never a regex union.
-The selected-module prefix check also rejects accidental substring matches in
-other modules. Function body/postcondition proofs are logged as
+The Types selector includes seven Types batches and eight explicitly listed
+incidental substring matches from other modules. Its exact, unique 15-batch
+inventory is checked; every selected row must pass. The other selectors retain
+their module-prefix checks. Function body/postcondition proofs are logged as
 "(well-formedness)"; executable method body proofs as "(correctness)" (see
 BoogieGenerator.Functions.Wellformedness.cs and BoogieGenerator.cs).
 This probe verifies source only: it does not build a B3 library or worker.
@@ -29,6 +31,25 @@ SOLVER_URL = 'https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/' + SOLV
 SOLVER_ARCHIVE_SHA = 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a'
 SOLVER_SHA = 'b4e0b3483ce37817230b20d6cad48390eb6a3aefde1d93342ad6dc763f24bc23'
 UPSTREAM = 'ea6e8a18dfe9e317d313de769291f989957dc5f2'
+TYPES_MODULE_BATCHES = (
+    'Types.ParseBitvectorWidth (well-formedness)',
+    'Types.ReadWidthDigits (well-formedness)',
+    'Types.CanonicalWord (well-formedness)',
+    'Types.WordBound (well-formedness)',
+    'Types.Word.Valid (well-formedness)',
+    'Types.BitvectorLiteralValid (well-formedness)',
+    'Types.BitvectorWidth (well-formedness)',
+)
+TYPES_INCIDENTAL_BATCHES = (
+    'Resolver.ResolveAllTypes (correctness)',
+    'Resolver.ResolveAllTypes (well-formedness)',
+    'Resolver.AddGeneratedTypes (correctness)',
+    'SolverExpr.SType.TypesToSExpr (well-formedness)',
+    'TypeChecker.ExpectOperandTypes (correctness)',
+    'TypeChecker.ExpectOperandTypes (well-formedness)',
+    'RSolvers.REngine.DeclareNewTypes (correctness)',
+    'RSolvers.REngine.DeclareNewTypes (well-formedness)',
+)
 MODULES = (
     ('Types', ('Types.WordBound (well-formedness)',
                'Types.ParseBitvectorWidth (well-formedness)')),
@@ -179,6 +200,13 @@ def prepare_inputs(receipt):
 def prove_module(receipt, compiler, solver, selector, required):
     result = {'selector': selector, 'selectorKind': 'literal-substring', 'passed': False,
               'requiredVerifiedBatches': list(required)}
+    if selector == 'Types':
+        result.update(scopeValidation='exact literal-substring batch inventory',
+                      expectedBatchCount=15,
+                      expectedModuleBatches=sorted(TYPES_MODULE_BATCHES),
+                      expectedIncidentalSubstringBatches=sorted(TYPES_INCIDENTAL_BATCHES))
+    else:
+        result['scopeValidation'] = 'selected module prefix and required batches'
     receipt['modules'].append(result)
     csv_path = PROOFS / (selector + '.csv')
     stage, log = run_stage(receipt, selector,
@@ -207,7 +235,13 @@ def prove_module(receipt, compiler, solver, selector, required):
         require(stage['exitCode'] == 0 and not stage['timedOut'] and 'failure' not in stage,
                 'Verifier invocation did not complete successfully')
         require(all(row['TestResult.Outcome'] == 'Passed' for row in rows), 'Unsuccessful proof batches')
-        require(all(name.startswith(selector + '.') for name in names), 'Unexpected selected module')
+        if selector == 'Types':
+            expected = TYPES_MODULE_BATCHES + TYPES_INCIDENTAL_BATCHES
+            require(len(names) == 15 and len(set(names)) == 15,
+                    'Unexpected or duplicate Types literal-substring proof denominator')
+            require(set(names) == set(expected), 'Unexpected Types literal-substring batch inventory')
+        else:
+            require(all(name.startswith(selector + '.') for name in names), 'Unexpected selected module')
         require(set(required) <= set(names), 'Required verified routine missing')
         require(all(0 <= resource <= RESOURCE_LIMIT for resource in resources), 'Invalid or excessive proof resources')
         require(result['randomSeeds'] == ['0'], 'Unexpected proof seed')
@@ -220,7 +254,7 @@ def prove_module(receipt, compiler, solver, selector, required):
 
 def main():
     OUTPUT.mkdir(parents=True, exist_ok=True)
-    receipt = {'scope': 'focused B3 bitvector universal contracts', 'passed': False,
+    receipt = {'scope': 'focused B3 bitvector contracts with all literal-substring matches', 'passed': False,
                'completeLibraryVerified': False, 'libraryBinaryProduced': False,
                'workerBinaryProduced': False,
                'resourceLimit': RESOURCE_LIMIT, 'verificationTimeLimitSeconds': PROOF_TIMEOUT,
@@ -241,7 +275,8 @@ def main():
     finally:
         (OUTPUT / 'summary.json').write_text(json.dumps(receipt, indent=2) + '\n')
         summary = ['Focused B3 bitvector proofs: ' + ('PASS' if receipt['passed'] else 'NOT GREEN'), '',
-                   'Selected contracts only. No whole-library proof, worker build or backend runtime acceptance. '
+                   'All selected rows count, including the eight enumerated incidental Types substring matches. '
+                   'No whole-library proof, worker build or backend runtime acceptance. '
                    'Expected failures exit zero; inspect summary.json and each CSV.']
         if receipt['modules']:
             summary.append('')
