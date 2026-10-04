@@ -106,7 +106,12 @@ internal sealed class B3IfGuardSnapshot {
       Expression(function.Body, depth + 1); Expression(function.DefinitionBody, depth + 1); Ref(function.DefinitionAxiom);
     }
     private void Appliable(Bpl.IAppliable fun, int depth) {
-      Enter(depth); Ref(fun); Ref(fun.GetType());
+      Enter(depth); Ref(fun); var constructor = fun.GetType(); Ref(constructor);
+      Require(constructor == typeof(Bpl.UnaryOperator) || constructor == typeof(Bpl.BinaryOperator) ||
+        constructor == typeof(Bpl.FunctionCall) || constructor == typeof(Bpl.TypeCoercion) ||
+        constructor == typeof(Bpl.ArithmeticCoercion) || constructor == typeof(Bpl.MapSelect) ||
+        constructor == typeof(Bpl.MapStore) || constructor == typeof(Bpl.IfThenElse),
+        "Unsupported exact operator constructor in guard field view", token);
       switch (fun) {
         case Bpl.UnaryOperator unary: Val(unary.Op); break;
         case Bpl.BinaryOperator binary: Val(binary.Op); break;
@@ -126,7 +131,14 @@ internal sealed class B3IfGuardSnapshot {
     internal void Expression(Bpl.Expr expression, int depth) {
       Enter(depth); Ref(expression);
       if (expression == null) { return; }
-      Ref(expression.GetType()); Type(expression.Type, depth + 1);
+      var constructor = expression.GetType(); Ref(constructor);
+      Require(constructor == typeof(Bpl.LiteralExpr) || constructor == typeof(Bpl.IdentifierExpr) ||
+        constructor == typeof(Bpl.NAryExpr) || constructor == typeof(Bpl.OldExpr) ||
+        constructor == typeof(Bpl.BvExtractExpr) || constructor == typeof(Bpl.BvConcatExpr) ||
+        constructor == typeof(Bpl.ForallExpr) || constructor == typeof(Bpl.ExistsExpr) ||
+        constructor == typeof(Bpl.LambdaExpr) || constructor == typeof(Bpl.LetExpr),
+        "Unsupported exact expression constructor in guard field view", token);
+      Type(expression.Type, depth + 1);
       switch (expression) {
         case Bpl.LiteralExpr literal:
           // Val and BvConst.Value/Bits are readonly. Their existing boxed value

@@ -427,6 +427,19 @@
       "file": "bitvector-unsigned-spec-unsupported.dfy",
       "exitCode": 4,
       "diagnostic": "b3_unsigned_wrapper"
+    },
+    {
+      "name": "bitvector-unsigned-if-guard",
+      "file": "bitvector-unsigned-if-guard.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-unsigned-if-guard-false",
+      "file": "bitvector-unsigned-if-guard-false.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
     }
   ]
 }
