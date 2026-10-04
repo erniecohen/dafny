@@ -16,6 +16,7 @@
   <ItemGroup Condition="'$(DafnyNormalizerReferenceDirectory)' != ''">
     <Reference Include="$(DafnyNormalizerReferenceDirectory)/*.dll" />
     <Compile Include="../DafnyCore/Backends/B3/B3Normalizer.cs" Link="B3Normalizer.cs" />
+    <Compile Include="../DafnyCore/Backends/B3/B3DefinitionVisibility.cs" Link="B3DefinitionVisibility.cs" />
     <Content Include="$(DafnyNormalizerReferenceDirectory)/DafnyPrelude.bpl" Link="DafnyPrelude.bpl" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
