@@ -2879,8 +2879,13 @@ namespace Microsoft.Dafny {
       } else if (cl is InternalTypeSynonymDecl) {
         // a type exported as opaque from another module is like a ground type
         return true;
-      } else if (cl is NewtypeDecl) {
-        // values of a newtype can be constructed
+      } else if (cl is NewtypeDecl newtype) {
+        // Extended carriers and their compiled witnesses can require generic
+        // defaults even though the nominal newtype has no datatype head.
+        // Retain the legacy default-parameter selection with the option off.
+        if (newtype.UseBaseReferenceCharacteristics) {
+          type.AddFreeTypeParameters(typeParametersUsed);
+        }
         return true;
       } else if (cl is SubsetTypeDecl) {
         var td = (SubsetTypeDecl)cl;

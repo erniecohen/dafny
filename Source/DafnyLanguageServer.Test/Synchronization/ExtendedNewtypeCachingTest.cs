@@ -17,19 +17,24 @@ using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 namespace Microsoft.Dafny.LanguageServer.IntegrationTest.Synchronization;
 
 public class ExtendedNewtypeCachingTest : ClientBasedLanguageServerTest {
-  private const string EnabledProject = "[options]\nextended-newtype-bases = true\n";
+  private const string EnabledProject = "[options]\nextended-newtype-bases = true\ngeneral-newtypes = true\ntype-system-refresh = true\n";
 
   private async Task Configure() => await SetUp(options => {
     options.Set(CommonOptionBag.ExtendedNewtypeBases, true);
+    options.Set(CommonOptionBag.GeneralNewtypes, true);
+    options.Set(CommonOptionBag.TypeSystemRefresh, true);
     options.Set(ProjectManager.Verification, VerifyOnMode.Never);
   });
 
   private async Task AssertResolution(TextDocumentItem document, bool succeeds, string? message = null) {
     await client.WaitForNotificationCompletionAsync(document.Uri, CancellationToken);
-    Assert.Equal(succeeds, await WaitUntilResolutionFinished(document, CancellationToken));
+    var resolved = await WaitUntilResolutionFinished(document, CancellationToken);
     var published = diagnosticsReceiver.GetLatestAndClearQueue(d => d.Uri == document.Uri);
     var errors = published?.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToArray()
       ?? Array.Empty<Diagnostic>();
+    Assert.True(succeeds == resolved,
+      $"Expected resolution success: {succeeds}; actual: {resolved}. " +
+      string.Join(Environment.NewLine, errors.Select(diagnostic => diagnostic.Message)));
     if (succeeds) {
       Assert.Empty(errors);
     } else {
