@@ -10,6 +10,6 @@
   </ItemGroup>
   <Target Name="CopyWorkerFixture" AfterTargets="Build">
     <ItemGroup><WorkerFixtureFiles Include="$(MSBuildProjectDirectory)/WorkerFixture/bin/$(Configuration)/$(TargetFramework)/**/*" /></ItemGroup>
-    <Copy SourceFiles="@(WorkerFixtureFiles)" DestinationFiles="@(WorkerFixtureFiles->'$(OutDir)WorkerFixture/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(WorkerFixtureFiles)" DestinationFiles="@(WorkerFixtureFiles->'$(OutDir)worker-fixture/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
   </Target>
 </Project>

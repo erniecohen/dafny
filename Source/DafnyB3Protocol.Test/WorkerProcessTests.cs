@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using DafnyB3Protocol;
 using Xunit;
 using Program = DafnyB3Protocol.Program;
@@ -16,7 +17,7 @@ public class WorkerProcessTests {
   }
   private static WorkerProcessClient Client(string mode, string pidFile = "") {
     var fixture = Environment.GetEnvironmentVariable("B3_WORKER_FIXTURE")
-      ?? Path.Combine(AppContext.BaseDirectory, "WorkerFixture", "WorkerFixture.dll");
+      ?? Path.Combine(AppContext.BaseDirectory, "worker-fixture", "WorkerFixture.dll");
     return new WorkerProcessClient("dotnet", new[] { fixture, mode, pidFile });
   }
   [UnixTheory]
@@ -54,6 +55,39 @@ public class WorkerProcessTests {
     var result = await Client("missing").RunAsync(CreateRequest(), cancelled.Token);
     Assert.Equal(Outcome.Cancelled, result.Outcome);
   }
+  [LinuxTheory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task BackpressureOnRecordTerminatorHonorsCancellation(bool userCancellation) {
+    using var cancelled = new CancellationTokenSource();
+    var request = CreateRequest(5000) with {
+      Obligations = new[] { new SourceIdentity("sO0", "test.dfy", 1, 1, new string('x', 1024 * 1024)) }
+    };
+    var payloadLength = JsonSerializer.SerializeToUtf8Bytes(request, Protocol.JsonOptions).Length;
+    var fixture = Environment.GetEnvironmentVariable("B3_WORKER_FIXTURE")
+      ?? Path.Combine(AppContext.BaseDirectory, "worker-fixture", "WorkerFixture.dll");
+    var pidFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+    var client = new WorkerProcessClient("dotnet", new[] { fixture, "stop-before-newline", payloadLength.ToString(), pidFile });
+    var run = client.RunAsync(request, cancelled.Token);
+    try {
+      for (var i = 0; i < 100 && !File.Exists(pidFile); i++) { await Task.Delay(20); }
+      Assert.True(File.Exists(pidFile), "Worker did not reach the payload boundary");
+      await Task.Delay(100);
+      if (userCancellation) { cancelled.Cancel(); }
+      var result = await run.WaitAsync(TimeSpan.FromSeconds(10));
+      Assert.Equal(userCancellation ? Outcome.Cancelled : Outcome.TimedOut, result.Outcome);
+      Assert.False(result.TraversalCompleted);
+    } finally {
+      // A regression in the write cancellation must not leave the fixture alive.
+      if (File.Exists(pidFile)) {
+        var pid = int.Parse(await File.ReadAllTextAsync(pidFile));
+        try { using var process = Process.GetProcessById(pid); process.Kill(entireProcessTree: true); }
+        catch (ArgumentException) { }
+        catch (InvalidOperationException) { }
+      }
+      File.Delete(pidFile);
+    }
+  }
   private static bool IsRunning(int pid) {
     try { using var process = Process.GetProcessById(pid); return !process.HasExited; }
     catch (ArgumentException) { return false; }
@@ -68,5 +102,11 @@ internal sealed class UnixFactAttribute : FactAttribute {
 internal sealed class UnixTheoryAttribute : TheoryAttribute {
   public UnixTheoryAttribute() {
     if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS()) { Skip = "B3 process isolation requires Unix"; }
+  }
+}
+
+internal sealed class LinuxTheoryAttribute : TheoryAttribute {
+  public LinuxTheoryAttribute() {
+    if (!OperatingSystem.IsLinux()) { Skip = "This fixture measures Linux pipe capacity"; }
   }
 }

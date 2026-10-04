@@ -1,8 +1,19 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using DafnyB3Protocol;
 
 var mode = args[0];
+if (mode == "stop-before-newline") {
+  // Leave exactly one Linux pipe capacity unread so payload write completes with a full pipe.
+  var capacity = FixturePipe.fcntl(0, 1032); // Linux F_GETPIPE_SZ
+  if (capacity <= 0 || !UnixProcessGroup.IsolateCurrentProcess()) { return 70; }
+  var prefix = int.Parse(args[1]) - capacity;
+  if (prefix <= 0) { return 70; }
+  await Console.OpenStandardInput().ReadExactlyAsync(new byte[prefix]);
+  await File.WriteAllTextAsync(args[2], Environment.ProcessId.ToString());
+  await Task.Delay(Timeout.Infinite);
+}
 var request = JsonSerializer.Deserialize<Request>(await Console.In.ReadLineAsync() ?? "", Protocol.JsonOptions)!;
 if (!UnixProcessGroup.IsolateCurrentProcess()) { return 70; }
 var started = new WorkerStarted(Protocol.Version, request.RequestId, 0, Environment.ProcessId, true);
@@ -25,3 +36,7 @@ var completion = new Completion(Protocol.Version, request.RequestId, request.Pro
 if (mode == "wrong-id") { completion = completion with { RequestId = "wrong" }; }
 Console.WriteLine(JsonSerializer.Serialize(completion, Protocol.JsonOptions));
 return 0;
+
+internal static class FixturePipe {
+  [DllImport("libc", SetLastError = true)] public static extern int fcntl(int fd, int command);
+}
