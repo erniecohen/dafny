@@ -1125,7 +1125,11 @@ namespace Microsoft.Dafny.Compilers {
           ? nt.TypeArgs.Where(NeedsTypeDescriptor).ToList() : nt.TypeArgs;
         CreateRTD(IdName(nt), descriptorParams, out var wDefaultBody, wr);
         WriteRuntimeTypeDescriptorsLocals(descriptorParams, wDefaultBody);
-        var d = DefaultValue(udt, wr, nt.Origin, true);
+        // Descriptor storage does not establish source-language inhabitation.
+        // Ghost and opt-out witnesses never supply compiled default values.
+        var d = Options.Get(CommonOptionBag.ExtendedNewtypeBases) && udt.GetAutoInit() != AutoInitInfo.CompilableValue
+          ? PlaceboValue(udt, wr, nt.Origin, true)
+          : DefaultValue(udt, wr, nt.Origin, true);
         wDefaultBody.WriteLine("return {0}", d);
       }
 
