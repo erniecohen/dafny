@@ -97,6 +97,29 @@ public class B3VisibilityTests {
     Assert.False(must.Before(assertions[1]).IsRevealed(function)); Assert.False(must.Before(assertions[1]).MayReveal);
   }
 
+  [Fact]
+  public void EntryReachabilityDoesNotSeedDisconnectedTrailingPopsOrAssertions() {
+    var (source, _) = Parse("function F(): int; procedure P(); implementation P() { push; assert true; pop; return; pop; assert false; }");
+    var implementation = source.Implementations.Single(); var owner = source.Functions.Single();
+    var assertions = implementation.Blocks.SelectMany(block => block.Cmds).OfType<Bpl.AssertCmd>().ToArray();
+    Assert.Equal(2, assertions.Length);
+    var blocks = implementation.Blocks.ToArray();
+    var analysis = new B3DefinitionVisibility(implementation); var must = analysis.AnalyzeMust(new[] { owner });
+    Assert.True(analysis.IsReachable(assertions[0])); Assert.False(analysis.IsReachable(assertions[1]));
+    Assert.True(must.Before(assertions[0]).IsRevealed(owner));
+    Assert.False(must.Before(assertions[1]).IsRevealed(owner)); Assert.False(must.Before(assertions[1]).MayReveal);
+    Assert.Equal(blocks, implementation.Blocks);
+    Assert.Equal(2, must.NativeAssertionOperands().Count);
+    Assert.Throws<B3DefinitionVisibility.Rejection>(() => analysis.IsReachable(new Bpl.AssertCmd(Bpl.Token.NoToken, Bpl.Expr.False)));
+  }
+
+  [Fact]
+  public void ReachableUnmatchedPopRemainsUnsupported() {
+    var (source, _) = Parse("procedure P(); implementation P() { pop; assert false; }");
+    var rejection = Assert.Throws<B3DefinitionVisibility.Rejection>(() => new B3DefinitionVisibility(source.Implementations.Single()));
+    Assert.Contains("pop has no matching push", rejection.Message);
+  }
+
   internal static (Bpl.Program Program, DafnyOptions Options) Parse(string text) {
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();

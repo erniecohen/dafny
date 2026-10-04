@@ -130,7 +130,9 @@ receives no definition premise. Ambiguous origins are unsupported. Invariant ini
 and preservation share a visibility mask only when the source cycle contains no
 visibility changes. StateCmd assertions can inherit the enclosing command mask
 only when the state introduces no hide/reveal or scope commands. Missing,
-shared, unreachable or unbalanced visibility-sensitive origins fail closed.
+shared or unbalanced reachable visibility-sensitive origins fail closed. Known
+entry-unreachable origins retain their normalized checks and receive no definition
+premises; they do not seed an independent visibility path.
 
 The graph is bounded before analysis. The worklist is bounded and its native
 fixed-point behavior is retained. No source computed property that performs a
@@ -296,3 +298,68 @@ number of solver sessions but cannot extend the original unit's wall deadline.
 These controls and this implementation are source checkpoints until executed on
 that exact edited source and pinned package. Prior Real, map and bootstrap gates
 do not establish G3 acceptance.
+
+
+## Typed producer correspondence repairs
+
+The Bool literal producer calls the prelude's generic `Lit<T>` at the resolved
+Bool instance, whereas Int literals use monomorphic `LitInt`. The prelude's
+universally quantified active identity definition and `AlwaysRevealed` status
+justify the existing identity projection for every instance. The bounded ground
+formula recognizer may therefore pass through that same audited projection when
+the actual call and projected argument both have the same resolved Bool or Int
+type. It validates the projected argument as ground and retains the entire owned
+source formula, including its canCall/reveal guards. It accepts no claimed
+identity attribute or function-name convention, detached defining axiom, generic
+nonidentity function, or additional source equation. The Bool literal predicate
+uses the existing projection independently. This expands producer recognition;
+it asserts only the same complete active owned definition instances already
+covered by the source-model argument above. [Prelude identities](../../../Source/DafnyCore/DafnyPrelude.bpl),
+[prelude availability](../../../Source/DafnyCore/Verifier/BoogieGenerator.cs#L106),
+[literal translation](../../../Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs#L862).
+
+The visibility graph still owns and validates every original CFG block, command,
+transfer, successor and normalized check anchor. Every bounded normalized unit
+constructs this owned metadata graph, including units without hide/reveal or scope
+commands. Metadata execution starts only
+at the first raw block, traversing all structural successors without a
+literal-false or guard-feasibility shortcut. Thus its paths are a conservative
+superset of feasible execution paths. A disconnected trailing block cannot seed
+an independent path with a fresh root scope. Unknown origins remain unsupported;
+known disconnected origins have no state and no eligible definition premises.
+All normalized checks, including those in disconnected source continuations,
+remain in their original static partition. Runoff masks aggregate only
+entry-reachable implicit returns. Reachable pops, complete outer-frame joins,
+changing visibility cycles and ambiguous nested origins retain their strict
+checks.
+
+This entry boundary matches an unconditional native preparation step, rather
+than relying on `RemoveEmptyBlocks`: pinned
+`VerificationConditionGenerator.PrepareImplementation` calls
+`RemoveBackEdges.ConvertCfg2Dag` before passification, and that method first calls
+`Implementation.PruneUnreachableBlocks`. The latter starts at `Blocks[0]`.
+Its optional literal-false edge pruning can remove still more paths; retaining
+those paths in B3 metadata only weakens the must-availability sufficient guard.
+Dafny emits unwinding pops before return/break transfers and also emits lexical
+trailing pops after translating a statement list. The structured producer can
+therefore retain disconnected trailing-pop blocks before native preparation.
+These blocks require exact representation correspondence and static coverage,
+not an invented initial visibility scope. [Native preparation](https://github.com/erniecohen/boogie/blob/73a0e214a87df85fc058270268c1d0706fd05bc9/Source/VCGeneration/VerificationConditionGenerator.cs#L427),
+[unconditional native reachability](https://github.com/erniecohen/boogie/blob/73a0e214a87df85fc058270268c1d0706fd05bc9/Source/VCGeneration/Transformations/RemoveBackEdges.cs#L19),
+[entry-rooted traversal](https://github.com/erniecohen/boogie/blob/73a0e214a87df85fc058270268c1d0706fd05bc9/Source/Core/AST/Implementation.cs#L1020),
+[Dafny scope schedule](../../../Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs#L860).
+
+Two controls also require precise source-premise classification. Boogie's
+Boolean inline attribute is `{:inline}` or `{:inline true}`; `{:inline 1}` does
+not populate `Function.Body`. The detached-body control explicitly asserts that
+the native body exists before cloning its function object. Mutable globals are
+forbidden in the stateless resolution context of an axiom, so a source axiom
+`F() == g` with mutable global `g` is a resolution-rejection control, not evidence
+about normalization of a typed axiom. A valid immutable constant capture remains
+a separate nonliteral-definition rejection. [Attribute rule](https://github.com/erniecohen/boogie/blob/73a0e214a87df85fc058270268c1d0706fd05bc9/Source/Core/AST/QKeyValueExtensions.cs#L8),
+[body construction](https://github.com/erniecohen/boogie/blob/73a0e214a87df85fc058270268c1d0706fd05bc9/Source/Core/BoogiePL.atg#L529),
+[stateless global rejection](https://github.com/erniecohen/boogie/blob/73a0e214a87df85fc058270268c1d0706fd05bc9/Source/Core/AST/Expression/AbsyExpr.cs#L1313).
+
+These are source correspondence arguments. Edited structural and worker controls
+require execution on the exact compiler/library/solver pins before acceptance;
+a static review is not a runtime result.
