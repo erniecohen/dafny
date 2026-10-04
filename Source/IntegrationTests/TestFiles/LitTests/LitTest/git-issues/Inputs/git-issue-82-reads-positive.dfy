@@ -153,3 +153,23 @@ method ChangedHeap(c: ReadCell, o: object?)
   assert old(ReadAll.reads(c)) == {c} + old(c.objects);
   assert old@Before(allLambda.reads(0)) == {c} + old@Before(c.objects);
 }
+
+// A returned pure lambda retains the previous heap used only in its body.
+class OldOnlyReadCell {
+  var value: int
+}
+
+twostate function OldOnlyReads(c: OldOnlyReadCell): int -> int {
+  (x: int) => old(c.value) + x
+}
+
+method OldOnlyReturnedLambda(c: OldOnlyReadCell)
+  modifies c
+{
+  label Before:
+  var previous := c.value;
+  c.value := previous + 1;
+  ghost var f := OldOnlyReads@Before(c);
+  assert f(0) == previous;
+  assert f(1) == previous + 1;
+}

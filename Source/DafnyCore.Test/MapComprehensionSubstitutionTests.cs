@@ -95,6 +95,33 @@ public class MapComprehensionSubstitutionTests {
   }
 
   [Theory]
+  [InlineData(true)]
+  [InlineData(false)]
+  public void TypeChangingSubstitutionCreatesANewProjectionSource(bool finite) {
+    var parameter = new TypeParameter(Token.NoToken, new Name("T"), TPVarianceSyntax.NonVariant_Strict);
+    var type = new UserDefinedType(parameter);
+    var bound = new BoundVar(Token.NoToken, "x", type);
+    var key = new BoundVar(Token.NoToken, "key", DafnyType.Int);
+    var original = new MapComprehension(Token.NoToken, finite, [bound],
+      new LiteralExpr(Token.NoToken, true) { Type = DafnyType.Bool },
+      new IdentifierExpr(Token.NoToken, key), new IdentifierExpr(Token.NoToken, bound)) {
+      Type = new MapType(finite, DafnyType.Int, type)
+    };
+    var sameBinderCopy = SubstituteKey(original, key, Integer(7));
+    Assert.Same(original, sameBinderCopy.ProjectionFunctionsSource);
+
+    var substituter = new Substituter(null, new Dictionary<IVariable, Expression>(),
+      new Dictionary<TypeParameter, DafnyType> { [parameter] = DafnyType.Bool });
+    var changed = Assert.IsType<MapComprehension>(substituter.Substitute(sameBinderCopy));
+
+    Assert.Null(changed.ProjectionFunctionsSource);
+    Assert.NotSame(original.BoundVars, changed.BoundVars);
+    Assert.Same(DafnyType.Bool, Assert.Single(changed.BoundVars).Type);
+    Assert.Same(changed.BoundVars[0], Assert.IsType<IdentifierExpr>(changed.Term).Var);
+    Assert.Same(DafnyType.Bool, changed.Type.AsMapType.Range);
+  }
+
+  [Theory]
   [InlineData(false)]
   [InlineData(true)]
   public async Task RepeatedAndImportedTranslationsOwnTheirProjectionDeclarations(bool refresh) {

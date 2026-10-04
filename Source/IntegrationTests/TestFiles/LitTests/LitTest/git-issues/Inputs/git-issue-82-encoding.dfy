@@ -57,3 +57,23 @@ ghost function Encoding82KeyOnly(n: int): set<int> {
 ghost function Encoding82Lambda(): (object?) -> set<object?> {
   (o: object?) => set i: int | i == 0 :: o
 }
+
+// A lifted factory must retain this conditional capture outside its trigger.
+ghost function Encoding82Conditional(b: bool): map<int, int> {
+  var n := if b then 0 else 1;
+  map x: int | x == n :: 0 := x
+}
+
+lemma Encoding82ConditionalValue(b: bool) {
+  assert Encoding82Conditional(b)[0] == (if b then 0 else 1);
+}
+
+ghost function Encoding82ConditionalLambda(b: bool): int -> set<int> {
+  var n := if b then 0 else 1;
+  (i: int) => set x: int | x == i :: n
+}
+
+lemma Encoding82ConditionalLambdaValue(b: bool) {
+  var f := Encoding82ConditionalLambda(b);
+  assert f(0) == {if b then 0 else 1};
+}

@@ -484,13 +484,17 @@ namespace Microsoft.Dafny {
       }
 
       private Expr WithFiniteViewAlias(IOrigin tok, FiniteSetView view, Func<FiniteSetView, Expr> body) {
-        // Boogie resolves triggers before lifting lambdas. Keep the exact map in
-        // a local definitional binding so triggers do not contain its lambda body.
+        // A let alias is expanded before SMT pattern validation; a lifted map
+        // factory can then expose interpreted captures (for example, an ite).
+        // Quantify the alias and restrict it by equality to this exact source map.
+        // This is equivalent to the let-bound instance, without an arbitrary-map
+        // membership principle or a characteristic lambda inside any pattern.
         var mapVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
           BoogieGenerator.CurrentIdGenerator.FreshId("$finiteMap#"), Predef.ISetType));
         var map = new Boogie.IdentifierExpr(tok, mapVar);
-        return new Boogie.LetExpr(tok, [mapVar], [view.CharacteristicMap], null,
-          body(FiniteView(tok, map)));
+        var aliased = FiniteView(tok, map);
+        return BplForall([mapVar], new Boogie.Trigger(tok, true, [aliased.SetValue]),
+          BplImp(Boogie.Expr.Eq(map, view.CharacteristicMap), body(aliased)));
       }
 
       private Expr DefineFiniteSetView(IOrigin tok, FiniteSetView view) {
@@ -613,8 +617,12 @@ namespace Microsoft.Dafny {
         foreach (var projection in projections.AsEnumerable().Reverse()) {
           triggers = new Boogie.Trigger(tok, true, [projection], triggers);
         }
-        var choice = BplForall([keyVar], triggers, BplImp(inhabited, selected));
-        return new Boogie.LetExpr(tok, [familyVar], [BuildMapWitnessFamily(e)], null, choice);
+        // Equality fixes the universally bound alias to this source family.
+        // Unlike a let, this alias remains a variable in the final SMT pattern
+        // even when lambda lifting puts conditional captures in the family term.
+        var actualFamily = BuildMapWitnessFamily(e);
+        var premise = BplAnd(Boogie.Expr.Eq(family, actualFamily), inhabited);
+        return BplForall([familyVar, keyVar], triggers, BplImp(premise, selected));
       }
 
       private Expr TranslateMapComprehension(MapComprehension e) {
@@ -1459,19 +1467,31 @@ namespace Microsoft.Dafny {
           (Expr)new Boogie.IdentifierExpr(tok, variable)).ToList();
         var selectorArguments = Concat(Map(e.Type.AsArrowType.TypeArgs, BoogieGenerator.TypeToTy),
           Cons(environment.Heap, Cons(handle, arguments)));
-        // Selector patterns cover every layer, heap, and argument binder. The
-        // family alias names the existing value lambda only inside patterns;
-        // the quantified availability guard and facts are unchanged.
+        // Selector patterns cover the family, layer, heap, and arguments. An
+        // equality-guarded family alias prevents interpreted captures from being
+        // expanded into patterns; it names only this exact source lambda family.
         var readsSelector = FunctionCall(tok, BoogieGenerator.Reads(e.BoundVars.Count), Predef.SetType, selectorArguments);
         var requiresSelector = FunctionCall(tok, BoogieGenerator.Requires(e.BoundVars.Count), Boogie.Type.Bool, selectorArguments);
         var applySelector = FunctionCall(tok, BoogieGenerator.Apply(e.BoundVars.Count), Predef.BoxType, selectorArguments);
         var trigger = new Boogie.Trigger(tok, true, [readsSelector],
           new Boogie.Trigger(tok, true, [requiresSelector],
             new Boogie.Trigger(tok, true, [applySelector])));
-        var quantifiedFacts = BplForall(environment.LayerBinders.Concat(environment.Binders).ToList(), trigger,
-          BplImp(guard, facts));
-        var guardedFacts = new Boogie.LetExpr(tok, [familyVar],
-          [BuildLambdaHandleFamily(e, BuildLambdaEnvironment(e))], null, quantifiedFacts);
+        if (reads.Count == 0) {
+          // Pure arrow applications use $OneHeap. Match that application with a
+          // good future heap while retaining the formal allocation and heap-
+          // succession premises in the body of this same quantifier.
+          var pureSelectorArguments = Concat(Map(e.Type.AsArrowType.TypeArgs, BoogieGenerator.TypeToTy),
+            Cons(BoogieGenerator.NewOneHeapExpr(tok), Cons(handle, arguments)));
+          var pureApplySelector = FunctionCall(tok, BoogieGenerator.Apply(e.BoundVars.Count), Predef.BoxType,
+            pureSelectorArguments);
+          var goodHeap = BoogieGenerator.FunctionCall(tok, BuiltinFunction.IsGoodHeap, null, environment.Heap);
+          trigger = new Boogie.Trigger(tok, true, [pureApplySelector, goodHeap], trigger);
+        }
+        var actualFamily = BuildLambdaHandleFamily(e, BuildLambdaEnvironment(e));
+        var familyGuard = BplAnd(Boogie.Expr.Eq(family, actualFamily), guard);
+        var guardedFacts = BplForall(Cons<Variable>(familyVar,
+          environment.LayerBinders.Concat(environment.Binders).ToList()), trigger,
+          BplImp(familyGuard, facts));
         // With no reads expressions the characteristic predicate is constant
         // false, independent of the lambda's arguments, heap, and precondition.
         // Its exact empty finite view therefore needs no formal-domain premise.

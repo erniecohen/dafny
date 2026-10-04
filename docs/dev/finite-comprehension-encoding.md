@@ -65,11 +65,34 @@ so repeated keys with identical values remain accepted.
 The translator materializes the relation as a family indexed by the boxed key:
 `family[key]` is the complete typed witness predicate for that key. Both the
 map value and its choice property use the same translated family. The property
-names that family in a local definitional binding and triggers on each
-`projection(family[key])` access. Thus value use directly activates the joint
+names that family by a universally quantified alias constrained to equal the
+actual source family, and triggers on each `projection(family[key])` access. Thus value use directly activates the joint
 choice while Boogie's trigger resolver never traverses an inline lambda body.
 Lambda lifting preserves the family's current heap, type, and source captures
 as arguments; it does not rely on equating unrelated characteristic maps.
+
+## Aliases in solver patterns
+
+Finite-view and lambda-family aliases are universally quantified and guarded
+by equality to their actual translated characteristic map or handle family.
+For any context `G` and source term `t`, the formula
+`forall a :: a == t && G ==> Facts(a)` is equivalent to the original
+`G ==> Facts(t)`: substitute `t` for `a` in one direction, and substitute the
+premise equality in the other. The alias adds no arbitrary-map membership law
+and preserves all enclosing source guards and allocated-image premises.
+
+The quantified alias remains a variable in solver patterns. A local `let`
+instead expands before pattern checking; after lambda lifting, a conditional
+capture can then expose an interpreted `if` expression inside a pattern.
+Equality-guarded aliases prevent that expansion without changing the source
+value, predicate, choice relation, or availability condition.
+
+Pure arrow calls use the distinguished `$OneHeap` selector. An additional
+multi-pattern pairs that exact application with `IsGoodHeap(futureHeap)` to
+cover the otherwise absent future-heap binder. It changes matching only:
+the consequence still requires allocated typed formals and the actual
+formation-heap succession. Ordinary selector patterns are retained, and
+arrows with a nonempty reads clause receive no such pattern.
 
 ## Reference carrier admission
 

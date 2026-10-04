@@ -31,6 +31,7 @@ MARKERS = (
     "Encoding82EmptyOuter", "Encoding82EmptyQuantifier", "Encoding82Guarded", "Encoding82Typed",
     "Encoding82Generic", "Encoding82Map", "Encoding82Tuple",
     "Encoding82IMap", "Encoding82Nested", "Encoding82KeyOnly", "Encoding82Lambda",
+    "Encoding82Conditional", "Encoding82ConditionalLambda",
 )
 
 
@@ -249,6 +250,96 @@ def expand_lets(node, aliases=None):
                    triggers=tuple(tuple(expand_lets(t, aliases) for t in p) for p in node.triggers))
 
 
+def conjunctions(node):
+    return sum((conjunctions(child) for child in node.args), []) if node.op == "&&" else [node]
+
+
+def conjunction(nodes):
+    if not nodes:
+        return Node("literal", text="true")
+    result = nodes[0]
+    for node in nodes[1:]:
+        result = Node("&&", (result, node))
+    return result
+
+
+def fixed_map_aliases(node):
+    """Find exact dominating equalities for universally scoped map aliases.
+
+    Only a genuine characteristic/closure lambda (or its lifted factory) may
+    fix the alias; a quantified backend map or wrapper around one is rejected.
+    The fixed expression cannot depend on any of this quantifier's arguments.
+    """
+    if node.op != "forall" or node.args[0].op != "==>":
+        return {}
+    own = {name for name, _ in node.bound}
+    maps = {name for name, sort in node.bound if sort.startswith("[")}
+    result = {}
+    for guard in conjunctions(node.args[0].args[0]):
+        if guard.op != "==":
+            continue
+        for alias, actual in (guard.args, guard.args[::-1]):
+            if alias.op != "id" or alias.text not in maps:
+                continue
+            if actual.op != "lambda" and not (actual.op in ("call", "id") and actual.text.startswith("lambda#")):
+                continue
+            if free(actual) & own:
+                continue
+            result[alias.text] = (actual, guard)
+    return result
+
+
+def instantiate_fixed_map_aliases(node):
+    """Equality substitution for semantic comparisons; patterns stay raw.
+
+    This is the fixed-map instance D(M), not the unrestricted all-map schema.
+    The raw formula is retained separately for trigger and guard-drop checks.
+    """
+    fixed = fixed_map_aliases(node)
+    if fixed:
+        aliases = {name: actual for name, (actual, _) in fixed.items()}
+        discarded = {guard for _, guard in fixed.values()}
+        remaining = [g for g in conjunctions(node.args[0].args[0]) if g not in discarded]
+        consequent = expand_lets(node.args[0].args[1], aliases)
+        if remaining:
+            consequent = Node("==>", (expand_lets(conjunction(remaining), aliases), consequent))
+        bound = tuple((name, typ) for name, typ in node.bound if name not in fixed)
+        if not bound:
+            return instantiate_fixed_map_aliases(consequent)
+        node = replace(node, bound=bound, args=(consequent,),
+                       triggers=tuple(tuple(expand_lets(t, aliases) for t in pattern) for pattern in node.triggers))
+    return replace(node, args=tuple(instantiate_fixed_map_aliases(c) for c in node.args))
+
+
+def closed_false_characteristic(characteristic, rows):
+    if free(characteristic):
+        return False
+    if characteristic.op == "lambda":
+        return characteristic.args[0] == Node("literal", text="false")
+    if characteristic.op != "call" or not characteristic.text.startswith("lambda#"):
+        return False
+    # A lifted empty lambda may carry the literal false as a captured parameter.
+    # Confirm its actual pointwise defining axiom before treating it as empty.
+    for row in rows:
+        for equation, ancestors in walk(row.expr):
+            if equation.op != "==":
+                continue
+            for selected, value in (equation.args, equation.args[::-1]):
+                if selected.op != "select" or len(selected.args) != 2:
+                    continue
+                factory, element = selected.args
+                if factory.op != "call" or factory.text != characteristic.text or len(factory.args) != len(characteristic.args):
+                    continue
+                if not all(arg.op == "id" for arg in factory.args) or element.op != "id":
+                    continue
+                if not any(parent.op == "forall" and (element.text, "Box") in parent.bound for parent, _ in ancestors):
+                    continue
+                aliases = {formal.text: actual for formal, actual in zip(factory.args, characteristic.args)}
+                if expand_lets(value, aliases) == Node("literal", text="false"):
+                    return True
+    return False
+
+
 @dataclass
 class Statement:
     kind: str
@@ -439,7 +530,7 @@ def audit(rows, decls, require_probe=True, lifted=False, source_triggers=True):
         if item not in findings:
             findings.append(item)
     original_rows = rows
-    rows = [Statement(row.kind, expand_lets(row.expr), row.context) for row in rows]
+    rows = [Statement(row.kind, instantiate_fixed_map_aliases(expand_lets(row.expr)), row.context) for row in rows]
     available = set().union(*(contexts(row) for row in rows)) if rows else set()
     if require_probe:
         for marker in MARKERS:
@@ -452,6 +543,12 @@ def audit(rows, decls, require_probe=True, lifted=False, source_triggers=True):
             for n, _ in walk(row.expr):
                 if n.op != "forall":
                     continue
+                handles = {name for name, sort in n.bound if sort.startswith("[") and sort.endswith("HandleType")}
+                selector_trigger = any(term.op == "call" and term.text.startswith(("Reads", "Requires", "Apply"))
+                                       and contains(term, lambda z: z.op == "select" and z.args[0].op == "id" and z.args[0].text in handles)
+                                       for pattern in n.triggers for term in pattern)
+                if selector_trigger and not handles <= set(fixed_map_aliases(n)):
+                    fail("E08", "source arrow-selector family is not fixed to its actual closure lambda")
                 own = {name for name, _ in n.bound}
                 used = free(n.args[0]) & own
                 for pattern in n.triggers:
@@ -459,7 +556,7 @@ def audit(rows, decls, require_probe=True, lifted=False, source_triggers=True):
                     covered = set().union(*(free(term) for term in pattern)) & own
                     if not used <= covered:
                         fail("E10", "trigger does not bind all used quantifier variables")
-                    if any(not trigger_application(term) or contains(term, lambda c: c.op in ("forall", "exists", "lambda", "==", "!=", "<", ">", "<=", ">=", "&&", "||", "==>", "<==>")) for term in pattern):
+                    if any(not trigger_application(term) or contains(term, lambda c: c.op in ("forall", "exists", "lambda", "==", "!=", "<", ">", "<=", ">=", "&&", "||", "==>", "<==>", "if")) for term in pattern):
                         fail("E10", "trigger contains an invalid compound/binder expression before resolution")
     for row in rows:
         for n, ancestors in walk(row.expr):
@@ -505,7 +602,7 @@ def audit(rows, decls, require_probe=True, lifted=False, source_triggers=True):
             if not any(matching_definition(n.args[0], d) for d in context_defs):
                 fail("E02", "actual characteristic map/captures have no matching definition in " + ",".join(sorted(markers)))
     if require_probe:
-        for marker in ("Encoding82Finite", "Encoding82EmptyOwn", "Encoding82Guarded", "Encoding82Typed", "Encoding82Generic", "Encoding82Map", "Encoding82Tuple", "Encoding82Nested", "Encoding82KeyOnly"):
+        for marker in ("Encoding82Finite", "Encoding82EmptyOwn", "Encoding82Guarded", "Encoding82Typed", "Encoding82Generic", "Encoding82Map", "Encoding82Tuple", "Encoding82Nested", "Encoding82KeyOnly", "Encoding82Conditional", "Encoding82ConditionalLambda"):
             if not by_context[marker]:
                 fail("E02", "no finite definition observed in " + marker)
     for d in by_context["Encoding82EmptyOwn"]:
@@ -530,6 +627,9 @@ def audit(rows, decls, require_probe=True, lifted=False, source_triggers=True):
         if not any(contains(g, lambda n: n.op == "literal" and n.text == "false") for g in guards(d.ancestors)):
             fail("E03", "definition escaped its empty outer quantified domain")
     for d in by_context["Encoding82Lambda"]:
+        if closed_false_characteristic(d.characteristic, rows):
+            evidence["closed_empty_characteristic_definitions"] += 1
+            continue
         source = next((parent for parent, _ in reversed(d.ancestors)
                        if parent.op == "forall" and any(typ == "Heap" for _, typ in parent.bound)
                        and any(typ == "Box" for _, typ in parent.bound)), None)
@@ -615,13 +715,24 @@ def change(rows, statement, old, new):
 
 def mutations(rows, decls):
     original_rows = rows
-    rows = [Statement(row.kind, expand_lets(row.expr), row.context) for row in rows]
+    rows = [Statement(row.kind, instantiate_fixed_map_aliases(expand_lets(row.expr)), row.context) for row in rows]
     defs = definitions(rows)
     results = []
     def run(name, mutated, code):
         errors, _ = audit(mutated, decls, source_triggers=False)
         codes = sorted({e["code"] for e in errors})
         results.append({"name": name, "expected": code, "detected": codes, "passed": code in codes})
+    for name, code, predicate in (
+        ("drop-finite-characteristic-alias-equality", "E01", lambda actual: actual.op == "lambda" and actual.bound == ((actual.bound[0][0], "Box"),) and actual.args[0].op != "lambda"),
+        ("drop-map-witness-family-alias-equality", "E08", lambda actual: actual.op == "lambda" and actual.bound == ((actual.bound[0][0], "Box"),) and actual.args[0].op == "lambda"),
+        ("drop-arrow-selector-family-alias-equality", "E08", lambda actual: actual.op == "lambda" and any(sort == "LayerType" for _, sort in actual.bound)),
+    ):
+        found = next(((row, guard) for row in original_rows for quantifier, _ in walk(row.expr)
+                      for actual, guard in fixed_map_aliases(quantifier).values() if predicate(actual)), None)
+        if found:
+            errors, _ = audit(change(original_rows, found[0], found[1], Node("literal", text="true")), decls)
+            codes = sorted({e["code"] for e in errors})
+            results.append({"name": name, "expected": code, "detected": codes, "passed": code in codes})
     bridge = parse(lex("(forall m: [Box]bool, b: Box :: {Set#IsMember(Set#FromBoogieMap(m), b)} Set#IsMember(Set#FromBoogieMap(m), b) <==> m[b])"))
     run("restore-universal-bridge", rows + [Statement("axiom", bridge)], "E01")
     reference = parse(lex("(forall references: [ref]bool, b: Box :: {Set#IsMember(RenamedReferenceConversion(references), b)} Set#IsMember(RenamedReferenceConversion(references), b) <==> references[$Unbox(b): ref])"))
@@ -636,6 +747,7 @@ def mutations(rows, decls):
                 if parent.op == "let" and child == len(parent.args) - 1:
                     values = [expand_lets(c, aliases) for c in parent.args[:-1]]
                     aliases.update(zip((name for name, _ in parent.bound), values))
+            aliases.update({name: actual for name, (actual, _) in fixed_map_aliases(quantifier).items()})
             for pattern in quantifier.triggers:
                 for term in pattern:
                     resolved = expand_lets(term, aliases)
@@ -694,7 +806,7 @@ def mutations(rows, decls):
                          and contains(n.args[0], lambda c: c.op == "literal" and c.text == "false")), None)
         if ancestor:
             run("move-definition-above-empty-outer-domain", change(rows, outer.statement, ancestor, ancestor.args[1]), "E03")
-    allocation = next((d for d in defs if "Encoding82Lambda" in contexts(d.statement)), None)
+    allocation = next((d for d in defs if "Encoding82Lambda" in contexts(d.statement) and not closed_false_characteristic(d.characteristic, rows)), None)
     if allocation:
         target = next((c for g in guards(allocation.ancestors) for c in calls(g, "$IsAllocBox")), None)
         if target:
@@ -778,6 +890,33 @@ class ParserTests(unittest.TestCase):
         errors, _ = audit_smt(text)
         self.assertIn("E01", {e["code"] for e in errors})
 
+    def test_equality_guarded_finite_alias_has_only_the_fixed_source_instance(self):
+        text = "axiom (forall m: [Box]bool :: {Set#FromBoogieMap(m)} m == (lambda x: Box :: false) ==> (forall b: Box :: {Set#IsMember(Set#FromBoogieMap(m), b)} Set#IsMember(Set#FromBoogieMap(m), b) <==> m[b]));"
+        rows = statements(text)
+        errors, _ = audit(rows, {}, require_probe=False)
+        self.assertNotIn("E01", {e["code"] for e in errors})
+        quantifier = rows[0].expr
+        guard = fixed_map_aliases(quantifier)["m"][1]
+        dropped = change(rows, rows[0], guard, Node("literal", text="true"))
+        errors, _ = audit(dropped, {}, require_probe=False)
+        self.assertIn("E01", {e["code"] for e in errors})
+
+    def test_alias_equal_to_arbitrary_map_is_still_rejected(self):
+        text = "axiom (forall arbitrary: [Box]bool, m: [Box]bool, b: Box :: {Set#IsMember(Set#FromBoogieMap(m), b)} m == arbitrary ==> (Set#IsMember(Set#FromBoogieMap(m), b) <==> m[b]));"
+        errors, _ = audit(statements(text), {}, require_probe=False)
+        self.assertIn("E01", {e["code"] for e in errors})
+
+    def test_smt_fixed_alias_and_guard_drop(self):
+        text = """(assert (forall ((m Map)) (!
+          (=> (= m (lambda#12 false))
+            (forall ((b Box)) (! (= (Set#IsMember (Set#FromBoogieMap m) b) (MapSelect m b))
+                                :pattern ((Set#IsMember (Set#FromBoogieMap m) b)))))
+          :pattern ((Set#FromBoogieMap m))))) (check-sat)"""
+        errors, _ = audit_smt(text)
+        self.assertNotIn("E01", {e["code"] for e in errors})
+        errors, _ = audit_smt(text.replace("(= m (lambda#12 false))", "true"))
+        self.assertIn("E01", {e["code"] for e in errors})
+
     def test_bridge_is_structural(self):
         expr = "axiom (forall arbitrary: [Box]bool, b: Box :: {Set#IsMember(Set#FromBoogieMap(arbitrary), b)} Set#IsMember(Set#FromBoogieMap(arbitrary), b) <==> arbitrary[b]);"
         errors, _ = audit(statements(expr), {}, require_probe=False)
@@ -827,6 +966,35 @@ def smt_variables(form, candidates):
     return set().union(*(smt_variables(child, candidates) for child in form))
 
 
+def smt_conjunctions(form):
+    return sum((smt_conjunctions(c) for c in form[1:]), []) if isinstance(form, list) and form and form[0] == "and" else [form]
+
+
+def smt_fixed_aliases(quantifier):
+    if not isinstance(quantifier, list) or len(quantifier) != 3 or quantifier[0] != "forall":
+        return {}
+    own = {p[0] for p in quantifier[1]}
+    body = quantifier[2]
+    if isinstance(body, list) and body and body[0] == "!":
+        body = body[1]
+    if not isinstance(body, list) or len(body) != 3 or body[0] != "=>":
+        return {}
+    result = {}
+    for guard in smt_conjunctions(body[1]):
+        if not isinstance(guard, list) or len(guard) != 3 or guard[0] != "=":
+            continue
+        for alias, actual in ((guard[1], guard[2]), (guard[2], guard[1])):
+            if not isinstance(alias, str) or alias not in own:
+                continue
+            factory = actual[0] if isinstance(actual, list) and actual else actual
+            if not isinstance(factory, str) or not factory.strip("|").startswith("lambda#"):
+                continue
+            if alias in smt_variables(actual, {alias}):
+                continue
+            result[alias] = (actual, guard)
+    return result
+
+
 def audit_smt(text):
     findings = []
     patterns = 0
@@ -856,7 +1024,9 @@ def audit_smt(text):
         name = form[0].strip("|")
         if name in ("forall", "exists") and len(form) == 3:
             shadow = {p[0] for p in form[1]}
-            boundary(form[2], bound | shadow, {k: v for k, v in aliases.items() if k not in shadow})
+            inside = {k: v for k, v in aliases.items() if k not in shadow}
+            inside.update({name: resolve(actual, inside) for name, (actual, _) in smt_fixed_aliases(form).items()})
+            boundary(form[2], bound | shadow, inside)
             return
         if name == "let" and len(form) == 3:
             expanded = dict(aliases)
@@ -954,6 +1124,16 @@ def smt_mutations(text):
         errors, _ = audit_smt(mutated)
         codes = sorted({e["code"] for e in errors})
         output.append({"name": name, "expected": "E10", "detected": codes, "passed": "E10" in codes})
+    fixed = next(((alias, guard) for form in forms for quantifier in smt_walk(form)
+                  for alias, (_, guard) in smt_fixed_aliases(quantifier).items()
+                  if any(isinstance(node, list) and len(node) == 2 and isinstance(node[0], str)
+                         and node[0].strip("|") == CONVERSION and node[1] == alias
+                         for node in smt_walk(quantifier[2]))), None)
+    if fixed:
+        mutated = "\n".join(render(alter(form, fixed[1], "true")) for form in forms)
+        errors, _ = audit_smt(mutated)
+        codes = sorted({e["code"] for e in errors})
+        output.append({"name": "drop-actual-smt-characteristic-alias-equality", "expected": "E01", "detected": codes, "passed": "E01" in codes})
     if audit_smt(text)[1]["named_finite_conversions"]:
         for name, bridge in (
             ("restore-actual-smt-universal-bridge", "(assert (forall ((m Map) (b Box)) (= (Set#IsMember (Set#FromBoogieMap m) b) (MapSelect m b))))"),

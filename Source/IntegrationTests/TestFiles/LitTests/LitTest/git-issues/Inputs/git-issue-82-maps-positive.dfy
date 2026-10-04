@@ -118,3 +118,13 @@ method HeapCaptures(c: Cell)
   assert old(HeapMap(c))[0] == original;
   assert old@Before(HeapMap(c))[0] == original;
 }
+
+ghost function ConditionalCapturedMap(b: bool): map<int, int> {
+  var n := if b then 0 else 1;
+  map x: int | x == n :: 0 := x
+}
+
+lemma ConditionalCaptures(b: bool) {
+  assert ConditionalCapturedMap(b).Keys == {0};
+  assert ConditionalCapturedMap(b)[0] == (if b then 0 else 1);
+}
