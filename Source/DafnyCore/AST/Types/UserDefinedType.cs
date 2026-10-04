@@ -468,10 +468,14 @@ public class UserDefinedType : NonProxyType, IHasReferences {
         return true;
       }
       var ancestry = NormalizeToAncestorTypeChecked(preserveSubsetTypes: true);
-      if (ancestry.Kind != AncestorTypeKind.Resolved || ancestry.AncestorType == null ||
-          ancestry.AncestorType.IsInternalTypeSynonym) {
-        // Hidden or erroneous ancestry cannot establish reference freedom.
+      if (ancestry.Kind != AncestorTypeKind.Resolved || ancestry.AncestorType == null) {
+        // Erroneous ancestry cannot establish reference freedom.
         return true;
+      }
+      if (ancestry.AncestorType is UserDefinedType { ResolvedClass: InternalTypeSynonymDecl provided }) {
+        // A provided head exposes only its declared characteristics. Preserve an explicit
+        // (!new) promise without inspecting or instantiating its hidden representation.
+        return !provided.Characteristics.ContainsNoReferenceTypes;
       }
       return ancestry.AncestorType.ComputeMayInvolveReferences(visitedDatatypes, generalArrows);
     } else if (ResolvedClass is DatatypeDecl) {
