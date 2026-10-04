@@ -118,7 +118,7 @@ using a later same-number process.
 
 The implementation binds the traced replay to the exact launch argv and permits
 only its frozen worker exec plus worker-child solver `-version` and `-in -smt2`
-execs. Each admitted process group has one successful exec epoch. Any later
+execs. Each admitted process identity (thread group/TGID) has one successful exec epoch. Any later
 successful exec, unexpected executable or successful `execveat` rejects qualified
 capture. Unqualified same-TID observations also stop at successful `execveat`.
 
