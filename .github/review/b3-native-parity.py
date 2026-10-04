@@ -75,7 +75,7 @@ def main(root, output):
     except Exception as error:
         report = {'complete': False, 'default_parity': False, 'error': str(error)}
     report['baseline_source'] = 'b07c038737d6713b6d1a5848d7568bdc972de7dd'
-    report['candidate_product'] = 'c063fbeb87500f422f281b23d39518ce38798ce1'
+    report['candidate_product'] = '36ebc48e9fd8b9133995d6b1b12e183a2a6855b2'
     report['solver'] = '5.1.0'
     report['excluded'] = ['Legacy-solver upstream regression harness other than the neutral-boundary regression',
                           'Legacy-solver cardinality harness checks',
