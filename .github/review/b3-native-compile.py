@@ -40,7 +40,9 @@ for name,command in commands:
  print(name,code,flush=True)
  if code!=0:
   print((output/(name+'.txt')).read_text()[-12000:],flush=True)
-  break
+  # These terminal checks share only successfully built inputs; record every independent verdict.
+  if name not in {'corpus','language-server','regressions','map-theory'}:
+   break
 passed=len(results)==len(commands) and all(r['exitCode']==0 for r in results)
 (output/'summary.json').write_text(json.dumps({'passed':passed,'fullGate':full_gate,'head':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'stages':results},indent=2)+'\n')
 with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
