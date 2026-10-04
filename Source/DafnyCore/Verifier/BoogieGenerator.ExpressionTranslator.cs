@@ -531,6 +531,19 @@ namespace Microsoft.Dafny {
         return new Boogie.LambdaExpr(GetToken(e), [], witnesses, null, body);
       }
 
+      private Boogie.MapType MapWitnessRelationType(MapComprehension e) {
+        return new Boogie.MapType(GetToken(e), [],
+          e.BoundVars.ConvertAll(bv => BoogieGenerator.TrType(bv.Type)), Boogie.Type.Bool);
+      }
+
+      private Boogie.LambdaExpr BuildMapWitnessFamily(MapComprehension e) {
+        var tok = GetToken(e);
+        var keyVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
+          BoogieGenerator.CurrentIdGenerator.FreshId("$familyKey#"), Predef.BoxType));
+        var key = new Boogie.IdentifierExpr(tok, keyVar);
+        return new Boogie.LambdaExpr(tok, [], [keyVar], null, BuildMapWitnessRelation(e, key));
+      }
+
       private Expr BuildMapComprehensionKeys(MapComprehension e) {
         var tok = GetToken(e);
         var wVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
@@ -567,7 +580,7 @@ namespace Microsoft.Dafny {
       }
 
       private Dictionary<IVariable, Expression> MapSelectedWitnesses(MapComprehension e,
-        Boogie.LambdaExpr relation, out List<Expr> projections) {
+        Expr relation, out List<Expr> projections) {
         BoogieGenerator.CreateMapComprehensionProjectionFunctions(e);
         projections = [];
         var subst = new Dictionary<IVariable, Expression>();
@@ -582,21 +595,26 @@ namespace Microsoft.Dafny {
 
       private Expr DefineMapSelectedWitnesses(MapComprehension e) {
         var tok = GetToken(e);
-        var keysVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
-          BoogieGenerator.CurrentIdGenerator.FreshId("$choiceKeys#"), Predef.ISetType));
-        var keys = new Boogie.IdentifierExpr(tok, keysVar);
+        var familyType = new Boogie.MapType(tok, [], [Predef.BoxType], MapWitnessRelationType(e));
+        var familyVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
+          BoogieGenerator.CurrentIdGenerator.FreshId("$choiceFamily#"), familyType));
+        var family = new Boogie.IdentifierExpr(tok, familyVar);
         var keyVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
           BoogieGenerator.CurrentIdGenerator.FreshId("$key#"), Predef.BoxType));
         var key = new Boogie.IdentifierExpr(tok, keyVar);
-        var relation = BuildMapWitnessRelation(e, key);
+        var relation = Boogie.Expr.SelectTok(tok, family, key);
         MapSelectedWitnesses(e, relation, out var projections);
-        var inhabited = new Boogie.ExistsExpr(tok, relation.Dummies, relation.Body);
+        var witness = BuildMapWitnessRelation(e, key);
+        var inhabited = new Boogie.ExistsExpr(tok, witness.Dummies, witness.Body);
         var selected = Boogie.Expr.SelectTok(tok, relation, projections.ToArray());
-        // Domain queries activate the choice fact. The exact domain map is named
-        // outside the quantifier to keep literal lambdas out of its trigger.
-        var choice = BplForall([keyVar], new Boogie.Trigger(tok, true,
-          [Boogie.Expr.SelectTok(tok, keys, key)]), BplImp(inhabited, selected));
-        return new Boogie.LetExpr(tok, [keysVar], [BuildMapComprehensionKeys(e)], null, choice);
+        // The value uses this same relation family. Each projection access can
+        // activate their joint choice fact, with no lambda inside the trigger.
+        Boogie.Trigger triggers = null;
+        foreach (var projection in projections.AsEnumerable().Reverse()) {
+          triggers = new Boogie.Trigger(tok, true, [projection], triggers);
+        }
+        var choice = BplForall([keyVar], triggers, BplImp(inhabited, selected));
+        return new Boogie.LetExpr(tok, [familyVar], [BuildMapWitnessFamily(e)], null, choice);
       }
 
       private Expr TranslateMapComprehension(MapComprehension e) {
@@ -607,7 +625,8 @@ namespace Microsoft.Dafny {
         var w = new Boogie.IdentifierExpr(tok, wVar);
         Dictionary<IVariable, Expression> subst;
         if (e.IsGeneralMapComprehension) {
-          subst = MapSelectedWitnesses(e, BuildMapWitnessRelation(e, w), out _);
+          subst = MapSelectedWitnesses(e,
+            Boogie.Expr.SelectTok(tok, BuildMapWitnessFamily(e), w), out _);
         } else {
           var bv = e.BoundVars[0];
           subst = new Dictionary<IVariable, Expression> {
@@ -1358,7 +1377,8 @@ namespace Microsoft.Dafny {
         var box = new Boogie.IdentifierExpr(tok, bvar);
         var reference = BoogieGenerator.FunctionCall(tok, BuiltinFunction.Unbox, Predef.RefType, box);
         var body = BplAnd(BoogieGenerator.MkIsBox(box, BoogieGenerator.program.SystemModuleManager.ObjectQ()),
-          BoogieGenerator.InRWClause(tok, reference, null, reads, this, null, null));
+          BoogieGenerator.InRWClause_Aux(tok, reference, box, null, reads, false, this, null, null,
+            materializeFiniteSets: true));
         return FiniteView(tok, new Boogie.LambdaExpr(tok, [], [bvar], null, body));
       }
 
@@ -1375,8 +1395,7 @@ namespace Microsoft.Dafny {
         return support;
       }
 
-      private Expr TrLambdaExpr(LambdaExpr e) {
-        var environment = BuildLambdaEnvironment(e);
+      private Boogie.LambdaExpr BuildLambdaHandleFamily(LambdaExpr e, LambdaEnvironment environment) {
         var et = environment.Translator;
         var body = et.TrExpr(BoogieGenerator.Substitute(e.Body, null, environment.Substitution));
         body = BoogieGenerator.BoxIfNotNormallyBoxed(body.tok, body, e.Body.Type);
@@ -1387,13 +1406,17 @@ namespace Microsoft.Dafny {
         }
         var reads = e.Reads.Expressions.ConvertAll(environment.Substituter.SubstFrameExpr);
         var footprint = et.BuildBoxedReadsFootprint(GetToken(e), reads);
+        return new Boogie.LambdaExpr(GetToken(e), [], environment.LayerBinders, null,
+          FunctionCall(GetToken(e), BoogieGenerator.Handle(e.BoundVars.Count), Predef.BoxType,
+            new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, body),
+            new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, requires),
+            new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, footprint.SetValue)));
+      }
+
+      private Expr TrLambdaExpr(LambdaExpr e) {
+        var family = BuildLambdaHandleFamily(e, BuildLambdaEnvironment(e));
         return MaybeLit(
-          BoogieGenerator.FunctionCall(GetToken(e), BuiltinFunction.AtLayer, Predef.HandleType,
-            new Boogie.LambdaExpr(GetToken(e), [], environment.LayerBinders, null,
-              FunctionCall(GetToken(e), BoogieGenerator.Handle(e.BoundVars.Count), Predef.BoxType,
-                new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, body),
-                new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, requires),
-                new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, footprint.SetValue))),
+          BoogieGenerator.FunctionCall(GetToken(e), BuiltinFunction.AtLayer, Predef.HandleType, family,
             layerIntraCluster != null ? layerIntraCluster.ToExpr() : layerInterCluster.ToExpr()),
           Predef.HandleType);
       }

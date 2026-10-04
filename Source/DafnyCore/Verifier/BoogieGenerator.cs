@@ -2350,7 +2350,8 @@ namespace Microsoft.Dafny {
     /// </summary>
     Bpl.Expr InRWClause_Aux(IOrigin tok, Bpl.Expr o, Bpl.Expr boxO, Bpl.Expr f, List<FrameExpression> rw, bool usedInUnchanged,
                         ExpressionTranslator etran,
-                        Expression receiverReplacement, Dictionary<IVariable, Expression> substMap) {
+                        Expression receiverReplacement, Dictionary<IVariable, Expression> substMap,
+                        bool materializeFiniteSets = false) {
       Contract.Requires(tok != null);
       Contract.Requires(o != null);
       Contract.Requires(boxO != null);
@@ -2407,8 +2408,28 @@ namespace Microsoft.Dafny {
 
           // e[Box(o)]
           bool pr;
-          disjunct = etran.TrInSet_Aux(tok, o, boxO, e, setType.Finite, true, out pr,
-            ShouldExtractObjectFromMemoryLocation(setType.Arg, f) ? ExtractObjectFromMemoryLocationCallback(tok, setType.Arg, etran) : null);
+          if (materializeFiniteSets && setType.Finite) {
+            // A finite footprint must consume the actual finite collection. In
+            // particular, unfolding a comprehension here would bypass the
+            // support premise guarding its defining membership equation.
+            var set = etran.TrExpr(e);
+            if (ShouldExtractObjectFromMemoryLocation(setType.Arg, f)) {
+              var memberVar = new Bpl.BoundVariable(tok, new Bpl.TypedIdent(tok,
+                CurrentIdGenerator.FreshId("$readsMember#"), Predef.BoxType));
+              var memberBox = new Bpl.IdentifierExpr(tok, memberVar);
+              var memberValue = UnboxUnlessInherentlyBoxed(memberBox, setType.Arg);
+              var selected = BplAnd(MkIsBox(memberBox, setType.Arg),
+                IsSetMember(tok, set, memberBox, true));
+              var reference = ExtractObjectFromMemoryLocation(tok, memberValue, setType.Arg, etran);
+              disjunct = new Bpl.ExistsExpr(tok, [memberVar],
+                BplAnd(selected, Bpl.Expr.Eq(o, reference)));
+            } else {
+              disjunct = IsSetMember(tok, set, boxO, true);
+            }
+          } else {
+            disjunct = etran.TrInSet_Aux(tok, o, boxO, e, setType.Finite, true, out pr,
+              ShouldExtractObjectFromMemoryLocation(setType.Arg, f) ? ExtractObjectFromMemoryLocationCallback(tok, setType.Arg, etran) : null);
+          }
         } else if (eType is MultiSetType multisetType) {
           // e[Box(o)] > 0
           disjunct = etran.TrInMultiSet_Aux(tok, o, boxO, e, true);

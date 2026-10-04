@@ -744,7 +744,8 @@ public partial class BoogieGenerator {
         // A finite footprint contains the canonical box of each selected reference, not every box
         // whose reference unboxing happens to select it.
         var rhs = BplAnd(MkIsBox(bx, program.SystemModuleManager.ObjectQ()),
-          InRWClause_Aux(f.Origin, unboxBx, bx, null, f.Reads.Expressions, false, et, selfExpr, rhs_dict));
+          InRWClause_Aux(f.Origin, unboxBx, bx, null, f.Reads.Expressions, false, et, selfExpr, rhs_dict,
+            materializeFiniteSets: true));
 
         Bpl.Expr available = FunctionCall(f.Origin, BuiltinFunction.IsGoodHeap, null, h);
         if (handlePrevHeap != null) {
