@@ -1,7 +1,7 @@
 // RUN: %testDafnyForEachCompiler "%s" -- --type-system-refresh=true --general-newtypes=true --extended-newtype-bases=true
 // Unrun: feature mode must preserve native conversion representation.
 
-newtype {:nativeType "byte"} Byte = i: int | 0 <= i < 256
+newtype {:nativeType "byte", "number"} Byte = i: int | 0 <= i < 256
 
 method Main() {
   var b: Byte := 255;

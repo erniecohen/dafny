@@ -20,7 +20,7 @@ method Copy<A(==), B(==)>(v: Value<A, B>) returns (w: Value<A, B>)
   var base: Pair<A, B> := v as Pair<A, B>;
   w := base as Value<A, B>;
 }
-lemma GenericRoundTrip<A(==), B(==)>(p: Pair<A, B>)
+lemma GenericRoundTrip<A, B>(p: Pair<A, B>)
   ensures ((p as Value<A, B>) as Pair<A, B>) == p
 {}
 method Main() {
