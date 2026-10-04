@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "backendStatus": "not implemented",
+  "defaultBackend": "boogie",
+  "languageSupport": [],
+  "optionSupport": [],
+  "policy": "Unknown constructs, unimplemented options and missing completion are non-success. No silent fallback."
+}

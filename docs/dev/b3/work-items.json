@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "branch": "codex/b3-backend",
+  "umbrella": {
+    "number": 116,
+    "title": "B3: add an opt-in alternative verification backend",
+    "url": "https://github.com/erniecohen/dafny/issues/116"
+  },
+  "packages": {
+    "P0": {
+      "number": 117,
+      "title": "B3 P0: baseline, bootstrap and emitted-IR census",
+      "url": "https://github.com/erniecohen/dafny/issues/117"
+    },
+    "P1": {
+      "number": 118,
+      "title": "B3 P1: backend-neutral task/result boundary and Boogie adapter",
+      "url": "https://github.com/erniecohen/dafny/issues/118"
+    },
+    "P2": {
+      "number": 119,
+      "title": "B3 P2: pinned B3 worker, structured results and fail-closed transport",
+      "url": "https://github.com/erniecohen/dafny/issues/119"
+    },
+    "P3": {
+      "number": 120,
+      "title": "B3 P3: first real Dafny-to-B3 vertical slice",
+      "url": "https://github.com/erniecohen/dafny/issues/120"
+    },
+    "P4": {
+      "number": 121,
+      "title": "B3 P4: representation specialization, expressions, maps and lambdas",
+      "url": "https://github.com/erniecohen/dafny/issues/121"
+    },
+    "P5": {
+      "number": 122,
+      "title": "B3 P5: explicit state, contracts, old and where-clause semantics",
+      "url": "https://github.com/erniecohen/dafny/issues/122"
+    },
+    "P6": {
+      "number": 123,
+      "title": "B3 P6: loops, labels and structured control flow",
+      "url": "https://github.com/erniecohen/dafny/issues/123"
+    },
+    "P7": {
+      "number": 124,
+      "title": "B3 P7: typed native real and bitvector theories",
+      "url": "https://github.com/erniecohen/dafny/issues/124"
+    },
+    "P8": {
+      "number": 125,
+      "title": "B3 P8: definition visibility and isolated axiom contexts",
+      "url": "https://github.com/erniecohen/dafny/issues/125"
+    },
+    "P9": {
+      "number": 126,
+      "title": "B3 P9: CLI, project, IDE, options and capability completion",
+      "url": "https://github.com/erniecohen/dafny/issues/126"
+    },
+    "P10": {
+      "number": 127,
+      "title": "B3 P10: differential corpus, packaging and release acceptance",
+      "url": "https://github.com/erniecohen/dafny/issues/127"
+    }
+  }
+}
