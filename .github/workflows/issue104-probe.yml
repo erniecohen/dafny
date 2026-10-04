@@ -1,0 +1,45 @@
+name: issue104 diagnostic
+on:
+  push:
+    branches: ['scratch/codex/104-probe']
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Boogie packages
+        run: sh Scripts/fetch-boogie-packages.sh
+      - name: Build and record compiler outcomes
+        run: |
+          set +e
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny > build.log 2>&1
+          build_status=$?
+          echo "Build exit: $build_status" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$build_status" = 0 ]; then
+            python3 Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-104.py "$PWD/out/dafny/Dafny.dll" issue104-outcomes --record > outcomes.log 2>&1
+            cat outcomes.log >> "$GITHUB_STEP_SUMMARY"
+          fi
+          dotnet build Source/IntegrationTests -c Release > harness-build.log 2>&1
+          harness_status=$?
+          echo "Harness build exit: $harness_status" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$harness_status" = 0 ]; then
+            dotnet test Source/IntegrationTests -c Release --no-build --filter 'DisplayName~git-issues/github-issue-104.dfy' --logger 'console;verbosity=normal' > harness-test.log 2>&1
+            echo "Harness test exit: $?" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue104-outcomes
+          path: |
+            build.log
+            harness-build.log
+            harness-test.log
+            outcomes.log
+            issue104-outcomes/results.json
