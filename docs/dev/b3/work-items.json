@@ -62,5 +62,14 @@
       "title": "B3 P10: differential corpus, packaging and release acceptance",
       "url": "https://github.com/erniecohen/dafny/issues/127"
     }
+  },
+  "relatedWork": {
+    "nativeRotationSoundness": {
+      "number": 147,
+      "title": "Soundness: native bv3 rotation composition proves a false postcondition with Z3 5.1",
+      "url": "https://github.com/erniecohen/dafny/issues/147",
+      "status": "Public reproduction complete; native repair pending; B3 portable rotation review remains in P7",
+      "reproduction": "https://github.com/erniecohen/dafny/actions/runs/37225366638"
+    }
   }
 }

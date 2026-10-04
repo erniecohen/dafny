@@ -64,6 +64,8 @@ It builds the CLI, checks the neutral contracts and backend selection, runs norm
 - [P9 #126](https://github.com/erniecohen/dafny/issues/126): CLI, project, IDE, options and capability completion.
 - [P10 #127](https://github.com/erniecohen/dafny/issues/127): differential corpus, packaging and release acceptance.
 
+[Native rotation soundness #147](https://github.com/erniecohen/dafny/issues/147) tracks a separately reproduced default-verifier discrepancy. Portable B3 rotation support remains part of P7; the native false postcondition is never an accepted differential expectation.
+
 P0 establishes the source/toolchain and emitted-IR boundary. P1/P2 establish the task/result and worker protocol contracts. P3 delivers a true/false/unsupported slice using real generated Dafny checking units. P4-P8 complete semantics, P9 completes consumers and option handling, and P10 gates packaging and release.
 
 ## Trust and review conditions
