@@ -119,3 +119,6 @@ git-issues/github-issue-104.dfy
 
 # Generic subset fields must use the supplied C# cloning converter.
 git-issues/git-issue-5881.dfy
+
+# Bitvector map lookup keys (#112 here).
+git-issues/git-issue-1962.dfy
