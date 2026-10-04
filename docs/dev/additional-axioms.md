@@ -46,8 +46,8 @@ addition imposes no new model restriction in combination with `S`; it does not
 prove consistency of the entire prelude or of `S`. The shared switch also exposes the closed literal identities derived below.
 Those identities are entailed by the trusted literal definition, so the same
 model argument applies with both additions enabled. Inventory this again when
-adding another family; the application trigger for allocation (#95), below,
-does so.
+adding another family; the instances of reflexivity of heap succession (#94)
+and the application trigger for allocation (#95), below, do so.
 
 The strict upper bound and lower bound are essential: the total native round
 trip is zero at `2^w`, and is `2^w - 1` at `-1`. Native conversions being total
@@ -376,6 +376,154 @@ partial sweep was stopped. It supplies no whole-file green result. The
 made into an acceptance gate or used to redesign the axiom family.
 
 
+## Heap succession is reflexive at two-state function values (#94)
+
+[Issue 94](https://github.com/erniecohen/dafny/issues/94) (dafny-lang/dafny#1461):
+a two-state function used as a value is applied with `Requires0`, whose axiom
+needs `$HeapSucc(previous, current)`. A handle made at a method's entry has the
+same heap for both, and nothing proved `$HeapSucc(h, h)`, so
+`var q := p; assume q();` failed although `assume p();` verified.
+
+With the option, `CanCallAssumptionForVerification`, which already adds the
+closed literal identities below, also adds, for each two-state function that
+the expression uses as a value,
+
+```boogie
+$IsGoodHeap(H) ==> $HeapSucc(H, H)
+```
+
+where `H` is the previous heap the function's handle captures, as `TrExpr` gives
+it (`old($Heap)`, or the heap of `old@L` around it). These are instances of
+reflexivity, local to the verification context; shared function and type
+axioms do not get them. With the option off nothing is collected or emitted.
+
+### Why not one axiom
+
+The first version added `axiom (forall h: Heap :: { $HeapSucc(h, h) }
+$IsGoodHeap(h) ==> $HeapSucc(h, h));` to the prelude under the option. In the
+paired CI it made one standard-library declaration fail with Z3 4.12.1 and the
+option on, `ConcatenatedProducer.Invoke` (`Std/Actions/Producers.dfy(1678,37)`,
+"assertion might not hold", within its limit), in
+[run 37178760521](https://github.com/erniecohen/dafny/actions/runs/37178760521).
+Isolated with `--filter-symbol`: the declaration verifies with the option off,
+with the option on and every member but that axiom, and with the unchanged
+build; it fails with the axiom alone and the option off. That declaration makes
+no two-state function value, so the local instances leave it as it was.
+
+### Model
+
+The argument is relative to the trusted theory `T` and to its intended
+interpretation `I`, in which every symbol has its meaning in Dafny and
+`$HeapSucc` denotes some relation `R`. Let `I'` be `I` except that `$HeapSucc`
+denotes `R` together with `(h, h)` for every good heap `h`. No other symbol
+changes: not `$IsAlloc` or `$IsAllocBox`, not the `RequiresN`, `ReadsN` and
+`ApplyN` of arrow types, and not a two-state function `F`, `F#requires` or
+`F#canCall`. The new instances hold in `I'` by construction. An instance of an
+axiom of `T` reads differently in `I'` only where it mentions `$HeapSucc(h, h)`
+for a pair not in `R`, and then it still holds:
+
+- where `$HeapSucc` is a conclusion (the update axioms, transitivity,
+  `$HeapSuccGhost`), a larger relation keeps the instance true. Transitivity
+  also has it as a hypothesis: if a premise is a new pair `(b, b)`, the
+  conclusion is the other premise;
+- where it is the hypothesis of a property relating its two heaps, the property
+  relates a heap to itself and holds: the monotonicity of `alloc`, `$IsAlloc` and
+  `$IsAllocBox`, `Seq#FromArray`, and the frame axioms of functions (of two-state
+  functions at a fixed previous heap) and of `ReadsN`, `RequiresN` and `ApplyN`;
+- where it is the hypothesis of a property of one pair, the `#requires` axiom of
+  a two-state function, `F#requires(h, h, args)` must be `F`'s precondition with
+  both heaps `h`. That is what `F#requires` means at any pair of states, and the
+  encoding already uses it at such pairs without `$HeapSucc`: the `Requires0` of
+  `F#Handle(h, ...)` applied in `h` is `F#requires(h, h, ...)` by an axiom with no
+  succession hypothesis, and a call at a method's entry evaluates `F` with
+  `old($Heap)` and `$Heap` the same heap.
+
+So the member adds no instance that is false in `I`, and makes no instance of
+`T` false that was true. A proof that reaches a false conclusion with it uses an
+instance of `T` that is already false in `I`.
+
+**Arrow types.** `$IsAlloc` at an arrow type does not depend on the heap through
+`alloc` only. On a good heap `h`, `$IsAlloc(f, T, h)` is defined by
+`RequiresN(.., h, f, ..)` and `ReadsN(.., h, f, ..)`, which depend on any field,
+so its monotonicity from `h` to a different heap `k` is a claim about how `f`'s
+precondition and reads frame change from `h` to `k`. The pairs this member adds
+are of one heap with itself, and the interpretation of `RequiresN` and `ReadsN`
+does not change, so what it adds at arrow types is `$IsAlloc(f, T, h) ==>
+$IsAlloc(f, T, h)`, for a two-state function's handle as for any other value, and
+the same for the frame axioms of arrow types and for `$IsAlloc` of values that
+hold arrows. The control `ArrowAllocation` in
+`git-issues/Inputs/git-issue-1461-negative.dfy` uses the allocation of a handle
+whose precondition and reads frame depend on the heap, with the instance in
+play, and `assert false` still fails.
+
+An earlier version of this note interpreted `$HeapSucc(h, k)` as inclusion of
+the allocated references and said that `$IsAlloc` depends on the heap through
+`alloc` only. That is false at arrow types, and inclusion is not a model of `T`:
+the monotonicity of `$IsAlloc` fails at arrow types for pairs of heaps that `T`
+itself relates. With the unchanged build, without the option and without
+two-state functions, Z3 4.12.1 and 5.1.0 prove `ensures false` here, in both
+resolver modes, as does upstream `master`:
+
+```dafny
+class C {
+  var x: int
+  constructor () {}
+  method Set5() modifies this ensures x == 5 { x := 5; }
+}
+method M(c: C) requires c.x != 5 modifies c ensures false {
+  label L:
+  c.Set5();
+  label K:
+  var n := new C();
+  var f := () reads c, (if c.x == 5 then {n} else {}) => 0;
+  assert old@L(allocated(f));
+  assert !old@K(allocated(n));
+  assert old@K(n in f.reads());
+}
+```
+
+At `L` the reads frame of `f` is `{c}`, so `f` is allocated there. The call makes
+`$HeapSucc(L, K)`, and monotonicity makes `f` allocated at `K`, where its reads
+frame holds `n`, which is not allocated until after `K`. That defect
+([#132](https://github.com/erniecohen/dafny/issues/132)) is in `T` and does not
+depend on this member, which neither repairs nor extends it: the
+pairs it adds relate a heap only to itself.
+
+Before #81, every good update was a succession step, and with extensional heaps
+an instance of the monotonicity of `alloc` was false in `I` (#81's restoring
+write). The accounting above holds either way; this member builds on #81 because its
+Boogie control checks #81's scenario with the instance.
+
+The encoding already relies on reflexivity in its intended interpretation. A
+two-state lemma's implementation assumes `$HeapSucc(previous$Heap,
+current$Heap)`, but a call does not check it, and at a method's entry it passes
+`old($Heap)` and `$Heap`, which are the same heap. The case `CallAtEntry` in
+`git-issues/Inputs/git-issue-1461-positive.dfy` verifies with the option off.
+Such a proof is sound only in an interpretation in which `$HeapSucc(h, h)` holds.
+
+### Combination with the other members
+
+The bounded round trips and the literal identities are entailed by the trusted
+theory `T`, and they do not mention `$HeapSucc`; the application trigger below
+adds no formula, and the instances it makes do not mention `$HeapSucc` either. So
+the accounting above is the same with all members enabled: their instances read
+the same in `I` and `I'`.
+
+### Controls
+
+`git-issues/git-issue-1461.dfy` runs the issue's program with the option off (it
+fails) and on (it verifies), positive cases (three of them fail with the option
+off), and vacuity controls in which a two-state function value is used and
+`assert false` and two false assertions about the value must fail, in both
+resolver modes. In one of them, `ArrowAllocation`, the value's precondition and
+reads frame depend on the heap; `allocated(q) && q.requires()` verifies with the
+option (its `q.requires()` fails without it), and `assert false` fails after an
+allocation and a write that change both. A Boogie part appends procedures to the
+program emitted with the option and assumes the instance at every heap they
+make: in #81's scenario, where under the monomorphic encoding
+(`-typeEncoding:m`) the restoring write gives back the original heap, and after
+an allocation, `assert false` still fails, under that encoding and Dafny's.
+
 ## Allocation of function results at their applications (#95)
 
 [Issue 95](https://github.com/erniecohen/dafny/issues/95) (dafny-lang/dafny#1416):
@@ -419,7 +567,7 @@ three standard-library declarations that verify with the unchanged build ran out
 of their limits with the option on: `MappedProducerOfNewProducers.Invoke` and
 `UnicodeEncodingForm.PartitionCodeUnitSequenceChecked` (Z3 4.12.1) and
 `BulkActions.ToBatchedProducer` (Z3 5.1.0). Isolated with `--filter-symbol`,
-all three verify with the pattern disabled; dropping
+all three verify with the pattern disabled and #94's instances kept; dropping
 the pattern for functions that read the heap, or whose parameters may hold
 references (type parameters among them), restores each of them.
 
