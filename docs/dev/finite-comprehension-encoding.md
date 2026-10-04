@@ -122,6 +122,17 @@ the consequence still requires allocated typed formals and the actual
 formation-heap succession. Ordinary selector patterns are retained, and
 arrows with a nonempty reads clause receive no such pattern.
 
+Pure-arrow subtype checks can need child permissions or datatype constructor
+facts before producing a result application. A lambda's inferred source result
+can also have a base type while its required result retains a subset constraint,
+so their selector type arguments differ. For a lambda with no reads expressions,
+an additional multi-pattern uses `AtLayer(family, layer)`, the native `IsBox`
+type of every boxed formal, and `IsGoodHeap(futureHeap)`. It instantiates the same
+universal consequence independently of the target arrow's result type. The
+source types, body, exact closure family, allocation, range, and formation-heap
+guards are unchanged. No inhabitant is assumed, so an empty domain grants no
+additional child permission.
+
 Heap-independent source definitions sometimes require a translator heap for
 lambda or application syntax. They use `$OneHeap` as a placeholder; their
 well-formedness proof remains generic in a good source heap. For these exact

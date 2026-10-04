@@ -1638,6 +1638,15 @@ namespace Microsoft.Dafny {
             pureSelectorArguments);
           var goodHeap = BoogieGenerator.FunctionCall(tok, BuiltinFunction.IsGoodHeap, null, environment.Heap);
           trigger = new Boogie.Trigger(tok, true, [pureApplySelector, goodHeap], trigger);
+          // Pure arrow subtype checks can need child facts before producing any
+          // result application. Their selector types can also differ from the
+          // inferred source result type. Match the existing native typed formals
+          // and closure layer; the complete source guard and exact family equality
+          // remain in the body of this same universal consequence.
+          var sourceTriggerTerms = new List<Expr> { handle, goodHeap };
+          sourceTriggerTerms.AddRange(arguments.Zip(e.BoundVars,
+            (argument, bv) => BoogieGenerator.MkIsBox(argument, bv.Type)));
+          trigger = new Boogie.Trigger(tok, true, sourceTriggerTerms, trigger);
         }
         var actualFamily = BuildLambdaHandleFamily(e, BuildLambdaEnvironment(e));
         var familyGuard = BplAnd(Boogie.Expr.Eq(family, actualFamily), guard);
