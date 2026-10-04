@@ -195,8 +195,9 @@ public abstract class Type : NodeWithOrigin {
   /// Follow proxies, in-scope synonyms/subsets, and instantiated newtype bases. An unresolved base is
   /// Undetermined, not a cycle. Synonym cycles must already have their resolution-derived IsCyclic marks,
   /// as required by NormalizeExpand. The result never substitutes a primitive type for erroneous ancestry.
+  /// With preserveSubsetTypes, stop at a subset instead of erasing its constraints or arrow-family identity.
   /// </summary>
-  public AncestorTypeResult NormalizeToAncestorTypeChecked() {
+  public AncestorTypeResult NormalizeToAncestorTypeChecked(bool preserveSubsetTypes = false) {
     Type current = this;
     NewtypeDecl firstNewtype = null;
     HashSet<NewtypeDecl> visited = null;
@@ -206,7 +207,7 @@ public abstract class Type : NodeWithOrigin {
         if (current == null) {
           return new AncestorTypeResult(AncestorTypeKind.Undetermined, null);
         }
-        current = current.NormalizeExpand();
+        current = current.NormalizeExpand(preserveSubsetTypes);
         if (current is TypeProxy || current is UserDefinedType { ResolvedClass: null }) {
           return new AncestorTypeResult(AncestorTypeKind.Undetermined, current);
         }
@@ -215,6 +216,15 @@ public abstract class Type : NodeWithOrigin {
             RedirectingTypeCycleAnalysis.TryFindCycle(synonym, GetScope()) ?? Array.Empty<RedirectingTypeDecl>());
         }
         if (current is not UserDefinedType { ResolvedClass: NewtypeDecl newtypeDecl }) {
+          if (preserveSubsetTypes &&
+              current is UserDefinedType { ResolvedClass: SubsetTypeDecl stoppedSubset }) {
+            // Stopping at a subset must not hide a mixed redirecting cycle
+            // that would otherwise be found by following its instantiated RHS.
+            var cycle = RedirectingTypeCycleAnalysis.TryFindCycle((RedirectingTypeDecl)firstNewtype ?? stoppedSubset, GetScope());
+            if (cycle != null) {
+              return new AncestorTypeResult(AncestorTypeKind.Cyclic, null, cycle);
+            }
+          }
           return new AncestorTypeResult(AncestorTypeKind.Resolved, current);
         }
         if (newtypeDecl.IsCyclic) {
