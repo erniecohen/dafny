@@ -1,0 +1,8 @@
+Add the experimental, default-off `--extended-newtype-bases` option, requiring
+`--general-newtypes` and `--type-system-refresh`. It permits ORDINAL, datatype
+(including tuple and codatatype), and all three arrow families as newtype bases.
+Newtypes retain nominal typing and checked constraints; visible base operations
+keep their instantiated signatures. Nominal updates recheck their predicates,
+and exact datatype identity casts preserve statement evaluation order and
+nominal conversion metadata without added closure layers. Existing base
+restrictions remain when the option is disabled.
