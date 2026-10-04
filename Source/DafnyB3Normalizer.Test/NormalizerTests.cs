@@ -40,12 +40,10 @@ public class NormalizerTests {
   }
 
   [Fact]
-  public async Task ActualDafnyVisibilityAndLoopFeaturesFailClosed() {
+  public async Task ActualDafnyVisibilityFailsClosed() {
     var visibility = await Dafny("function F(x: int): int { x + 1 } lemma V(x: int) { hide F; reveal F; assert F(x) == x + 1; }", false);
     Assert.Contains(visibility, r => !r.Success && r.Diagnostics.Any(d => d.Code == "b3_visibility"));
-    var loops = await Dafny("method L(n: nat) { var i := 0; while i < n invariant 0 <= i <= n { i := i + 1; } }", false);
-    Assert.Contains(loops, r => !r.Success && r.Diagnostics.Any(d => d.Code == "b3_structured_control"));
-    Assert.All(visibility.Concat(loops).Where(r => !r.Success), r => { Assert.Null(r.Program); Assert.Empty(r.Obligations); });
+    Assert.All(visibility.Where(r => !r.Success), r => { Assert.Null(r.Program); Assert.Empty(r.Obligations); });
   }
 
   [Fact]
@@ -120,7 +118,10 @@ public class NormalizerTests {
   [Theory]
   [InlineData("procedure P(x: real); implementation P(x: real) { assert x == x; }", "b3_primitive_type")]
   [InlineData("procedure P(x: int); implementation P(x: int) { assert x div 2 == x; }", "b3_arithmetic")]
-  [InlineData("procedure P(); implementation P() { goto done; done: assert true; }", "b3_transfer")]
+  [InlineData("procedure P(); implementation P() { again: assert true; goto again; }", "b3_transfer")]
+  [InlineData("procedure P(); implementation P() { goto a, b; a: return; b: return; }", "b3_transfer")]
+  [InlineData("procedure P(); implementation P() { goto {:unreviewed} done; done: assert true; }", "b3_attribute")]
+  [InlineData("procedure P(); implementation P() { return {:unreviewed}; }", "b3_attribute")]
   public void UnsupportedFeaturesNeverProduceAPartialProgram(string source, string diagnostic) {
     var result = Boogie(source);
     Assert.False(result.Success);
@@ -250,6 +251,248 @@ public class NormalizerTests {
       result.Program.Unit with { Body = new Ir.Assume(freshWhere) })));
   }
 
+  [Fact]
+  public async Task ActualDafnyDefaultDivisionFailsClosedThroughItsDefiningFunction() {
+    var results = await Dafny("method Division(x: int) { assert x / 2 == x; }", false);
+    Assert.Contains(results, r => !r.Success && r.Diagnostics.Any(d => d.Code == "b3_arithmetic"));
+    Assert.All(results.Where(r => !r.Success), r => { Assert.Null(r.Program); Assert.Empty(r.Obligations); });
+  }
+
+  [Fact]
+  public async Task RealDafnyGoodAndBadLoopChecksReachNormalization() {
+    var results = await Dafny("""
+      method Good(n: nat) {
+        var i := 0;
+        while i < n invariant 0 <= i <= n { i := i + 1; }
+        assert i == n;
+      }
+      method BadInitialization() {
+        var i := 0;
+        while i < 2 invariant false { i := i + 1; }
+      }
+      method BadPreservation(n: nat) {
+        var i := 0;
+        while i < n invariant 0 <= i <= n { i := i + 2; }
+      }
+      """);
+    Assert.All(results, Validate);
+    var loops = results.SelectMany(r => Statements(r.Program!.Unit.Body)).OfType<Ir.Loop>().ToArray();
+    Assert.Equal(3, loops.Length); Assert.All(loops, loop => Assert.Empty(loop.Invariants));
+    var manifest = results.SelectMany(r => r.Obligations).ToArray();
+    Assert.Contains(manifest, o => o.Id.StartsWith("sOinit") && o.Description == "loop invariant initialization");
+    Assert.Contains(manifest, o => o.Id.StartsWith("sOmaint") && o.Description == "loop invariant preservation");
+    Assert.Contains(results.SelectMany(r => Statements(r.Program!.Unit.Body)).OfType<Ir.Check>(),
+      c => c.ObligationId.StartsWith("sOinit") && c.Condition is Ir.Operation { Operator: Ir.Operator.Implies });
+  }
+
+  [Fact]
+  public async Task RealDafnyReturnNestedBreakAndContinueUseLexicalExits() {
+    var results = await Dafny("""
+      method Paths(n: nat) returns (r: int) ensures r >= 0 {
+        r := 0;
+        label Outer:
+        while r < n invariant 0 <= r <= n {
+          var j := 0;
+          while j < n invariant 0 <= j <= n {
+            if j == 1 { break Outer; }
+            j := j + 1;
+            if j == 2 { continue; }
+          }
+          r := r + 1;
+          if r == 2 { return; }
+        }
+      }
+      """);
+    Assert.All(results, Validate);
+    var statements = results.SelectMany(r => Statements(r.Program!.Unit.Body)).ToArray();
+    Assert.Equal(2, statements.OfType<Ir.Loop>().Count());
+    Assert.True(statements.OfType<Ir.Exit>().Count() >= 4);
+    Assert.Contains(results.SelectMany(r => r.Obligations), o => o.Description.Contains("postcondition"));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public void FreeInvariantsHaveThePinnedCheckingAndHeaderSchedule(bool alwaysAssume) {
+    var options = Options(); options.AlwaysAssumeFreeLoopInvariants = alwaysAssume;
+    var result = Boogie("""
+      procedure P(); implementation P() {
+        var i: int;
+        i := 0;
+        while (i < 2)
+          free invariant false;
+          invariant {:subsumption 0} i >= 0;
+        { i := i + 1; }
+      }
+      """, options);
+    Validate(result);
+    var statements = Statements(result.Program!.Unit.Body).ToArray();
+    var falseAssumptions = statements.OfType<Ir.Assume>().Count(a => a.Condition is Ir.BooleanLiteral { Value: false });
+    // One header free predicate and one cut edge; optional init/maintenance copies add two.
+    Assert.Equal(alwaysAssume ? 4 : 2, falseAssumptions);
+    Assert.Equal(2, statements.OfType<Ir.Check>().Count());
+    Assert.All(statements.OfType<Ir.Check>(), c => Assert.False(c.Learn));
+    var initialization = Array.FindIndex(statements, s => s is Ir.Check c && c.ObligationId.StartsWith("sOinit"));
+    var loopIndex = Array.FindIndex(statements, s => s is Ir.Loop);
+    Assert.True(initialization < loopIndex);
+    var preservation = Array.FindIndex(statements, s => s is Ir.Check c && c.ObligationId.StartsWith("sOmaint"));
+    Assert.True(preservation > loopIndex);
+    Assert.IsType<Ir.Assume>(statements[preservation + 1]);
+  }
+
+  [Fact]
+  public void CheckedFalseInvariantIsCheckedBeforeItIsAssumed() {
+    var result = Boogie("procedure P(); implementation P() { while (*) invariant false; { } }");
+    Validate(result);
+    var statements = Statements(result.Program!.Unit.Body).ToArray();
+    var first = statements.First(s => s is Ir.Check or Ir.Assume);
+    Assert.IsType<Ir.Check>(first);
+    Assert.Equal(new Ir.BooleanLiteral(false), ((Ir.Check)first).Condition);
+    Assert.Equal(2, result.Obligations.Count);
+  }
+
+  [Theory]
+  [InlineData("while (*) invariant true; { break; } assert false;")]
+  [InlineData("OUT: while (*) invariant true; { while (*) invariant true; { break OUT; } }")]
+  [InlineData("OUT: if (*) { break OUT; } assert false;")]
+  public void StructuredBreaksNameTheirResolvedLexicalEnclosures(string body) {
+    var result = Boogie("procedure P(); implementation P() { " + body + " }");
+    Validate(result);
+    Assert.Contains(Statements(result.Program!.Unit.Body), s => s is Ir.Exit);
+  }
+
+  [Fact]
+  public void ForwardGotoSkipsChecksButKeepsThemInTheStaticManifest() {
+    var result = Boogie("procedure P(); implementation P() { goto done; assert false; done: assert true; }");
+    Validate(result);
+    var labels = Statements(result.Program!.Unit.Body).OfType<Ir.Labeled>().ToArray();
+    Assert.Single(labels);
+    Assert.Contains(Statements(labels[0].Body), s => s is Ir.Exit e && e.Label == labels[0].Name);
+    Assert.Equal(2, result.Obligations.Count);
+  }
+
+  [Theory]
+  [InlineData("while (*) invariant true; { goto outer; } outer: assert true;")]
+  [InlineData("while (*) invariant true; { goto again; again: assert true; }")]
+  public void ForwardGotoCanExitTheLoopOrContinueItsBody(string body) {
+    var result = Boogie("procedure P(); implementation P() { " + body + " }");
+    Validate(result);
+    Assert.Single(Statements(result.Program!.Unit.Body).OfType<Ir.Loop>());
+  }
+
+  [Fact]
+  public void BreakOnlyTargetsDoNotReceiveHeaderWhereAssumptions() {
+    var result = Boogie("""
+      var g: int;
+      procedure P(); modifies g;
+      implementation P() {
+        var x: int where x == g;
+        while (*) invariant true; {
+          assert x == g;
+          if (*) { x := 0; break; } else { g := g + 1; }
+        }
+      }
+      """);
+    Validate(result);
+    var loop = Statements(result.Program!.Unit.Body).OfType<Ir.Loop>().Single();
+    var header = Assert.IsType<Ir.Block>(loop.Body);
+    Assert.Equal(2, header.Statements.Count); // invariant + choice; no x where constraint.
+    Assert.IsType<Ir.Choice>(header.Statements[1]);
+  }
+
+  [Fact]
+  public void NaturalLoopTargetsReceiveWhereBeforeHeaderInvariants() {
+    var result = Boogie("""
+      procedure P(); implementation P() {
+        var x: int where x >= 0;
+        x := 0;
+        while (x < 2) invariant true; { x := x + 1; }
+      }
+      """);
+    Validate(result);
+    var loop = Statements(result.Program!.Unit.Body).OfType<Ir.Loop>().Single();
+    var header = Assert.IsType<Ir.Block>(loop.Body);
+    Assert.Equal(3, header.Statements.Count);
+    Assert.IsType<Ir.Operation>(Assert.IsType<Ir.Assume>(header.Statements[0]).Condition);
+    Assert.Equal(new Ir.BooleanLiteral(true), Assert.IsType<Ir.Assume>(header.Statements[1]).Condition);
+  }
+
+  [Fact]
+  public void LoopNormalizationLeavesTheTypedSourceUntouched() {
+    var options = Options();
+    var source = ParseBoogie("procedure P(); implementation P() { var i: int; i := 0; while (i < 2) invariant i >= 0; { if (*) { break; } i := i + 1; } }", options);
+    var before = Emit(source, options);
+    var first = B3Normalizer.Normalize(source, source.Implementations.Single(), options);
+    var second = B3Normalizer.Normalize(source, source.Implementations.Single(), options);
+    Validate(first); Validate(second);
+    Assert.Equal(before, Emit(source, options));
+    Assert.Equal(Ir.Protocol.GetProgramHash(first.Program!), Ir.Protocol.GetProgramHash(second.Program!));
+  }
+
+  [Theory]
+  [InlineData("function Identity(x: int): int { x }")]
+  [InlineData("function {:inline} Identity(x: int): int { x }")]
+  [InlineData("function {:identity} Identity(x: int): int { x }")]
+  public void DefinitionsWithoutAlwaysRevealedRemainOpaque(string definition) {
+    var result = Boogie(definition + " procedure P(); implementation P() { assert Identity(1) == 1; }");
+    Validate(result);
+    var equality = Assert.IsType<Ir.Operation>(Statements(result.Program!.Unit.Body).OfType<Ir.Check>().Single().Condition);
+    Assert.IsType<Ir.Application>(equality.Arguments[0]);
+  }
+
+  [Theory]
+  [InlineData("revealed function Identity(x: int): int { x }")]
+  [InlineData("revealed function {:inline} Identity(x: int): int { x }")]
+  public void AlwaysRevealedDirectIdentitiesCanBeProjected(string definition) {
+    var result = Boogie(definition + " procedure P(); implementation P() { assert Identity(1) == 1; }");
+    Validate(result);
+    var equality = Assert.IsType<Ir.Operation>(Statements(result.Program!.Unit.Body).OfType<Ir.Check>().Single().Condition);
+    Assert.Equal(new Ir.IntegerLiteral("1"), equality.Arguments[0]);
+  }
+
+  [Fact]
+  public void HideAnywherePreventsIdentityExpansionAndNoPartialProgramEscapes() {
+    var result = Boogie("function {:inline} Identity(x: int): int { x } procedure P(); implementation P() { assert Identity(1) == 1; hide Identity; }");
+    Assert.False(result.Success); Assert.Null(result.Program); Assert.Empty(result.Obligations);
+    Assert.Contains(result.Diagnostics, d => d.Code == "b3_visibility");
+  }
+
+  [Fact]
+  public void PureVisibilityScopesCanBeOmittedAfterWholeUnitInspection() {
+    var result = Boogie("procedure P(); implementation P() { push; assert true; pop; assert false; }");
+    Validate(result); Assert.Equal(2, result.Obligations.Count);
+  }
+
+  [Theory]
+  [InlineData("unroll")]
+  [InlineData("induction")]
+  [InlineData("houdini")]
+  public void OtherLoopModesFailClosed(string mode) {
+    var options = Options();
+    if (mode == "unroll") { options.LoopUnrollCount = 2; }
+    if (mode == "induction") { options.KInductionDepth = 1; }
+    if (mode == "houdini") { options.ConcurrentHoudini = true; }
+    var result = Boogie("procedure P(); implementation P() { while (*) invariant true; { } }", options);
+    Assert.False(result.Success); Assert.Null(result.Program); Assert.Empty(result.Obligations);
+    Assert.Contains(result.Diagnostics, d => d.Code == "b3_loop_mode");
+  }
+
+  [Fact]
+  public void LargeLoopGraphsRejectWithoutProducingPartialIr() {
+    var labels = string.Join(" ", Enumerable.Range(0, 257).Select(i => "next" + i + ": assert true;"));
+    var result = Boogie("procedure P(); implementation P() { while (*) invariant true; { } " + labels + " }");
+    Assert.False(result.Success); Assert.Null(result.Program); Assert.Empty(result.Obligations);
+    Assert.Contains(result.Diagnostics, d => d.Code == "b3_cfg_limit");
+  }
+
+  [Fact]
+  public void ExcessiveLambdaCaptureTraversalFailsBeforeRecursing() {
+    var body = string.Join(" + ", Enumerable.Repeat("g", Ir.Protocol.MaximumDepth + 1));
+    var result = Boogie("var g: int; procedure P(); implementation P() { var m: [int]int; m := (lambda x: int :: " + body + "); }");
+    Assert.False(result.Success); Assert.Null(result.Program);
+    Assert.Contains(result.Diagnostics, d => d.Code == "b3_lambda_capture_limit");
+  }
+
   private static DafnyOptions Options() {
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
@@ -275,8 +518,8 @@ public class NormalizerTests {
     Assert.False(reporter.HasErrors);
     return results;
   }
-  private static B3NormalizationResult Boogie(string text) {
-    var options = Options(); var source = ParseBoogie(text, options);
+  private static B3NormalizationResult Boogie(string text, DafnyOptions? options = null) {
+    options ??= Options(); var source = ParseBoogie(text, options);
     return B3Normalizer.Normalize(source, source.Implementations.Single(), options);
   }
   private static Bpl.Program ParseBoogie(string text, DafnyOptions options) {
@@ -297,6 +540,10 @@ public class NormalizerTests {
       foreach (var child in choice.Branches.SelectMany(Statements)) { yield return child; }
     } else if (statement is Ir.Conditional conditional) {
       foreach (var child in Statements(conditional.Then).Concat(Statements(conditional.Else))) { yield return child; }
+    } else if (statement is Ir.Loop loop) {
+      foreach (var child in Statements(loop.Body)) { yield return child; }
+    } else if (statement is Ir.Labeled labeled) {
+      foreach (var child in Statements(labeled.Body)) { yield return child; }
     }
   }
   private static void Validate(B3NormalizationResult result) {

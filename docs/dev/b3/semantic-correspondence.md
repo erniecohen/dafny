@@ -42,3 +42,7 @@ The pruner aggregates visibility poststates at every assertion in a split, then 
 ## Review boundaries
 
 These source facts resolve the package-provenance blocker and identify the rules to reproduce. They do not establish semantic correctness of any B3 lowering. P4/P5/P6/P8 still need written correspondence arguments and executable negative controls. The feature census is a stratified inventory, not a claim that its constructs are supported by the B3 backend.
+
+## Initial loop/control correspondence
+
+The [P6 lowering argument](loop-control-correspondence.md) records the standard invariant initialization/preservation schedule, exact natural-loop where assumptions, selected B3 assignment-target rules and lexical exit restrictions. This initial slice is conservative and rejects unsupported modes and graph shapes. Identity expansion requires `AlwaysRevealed`; an arbitrary visible-looking defining equality or identity attribute is not enough.

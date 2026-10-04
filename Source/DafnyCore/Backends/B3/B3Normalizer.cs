@@ -73,6 +73,10 @@ public static class B3Normalizer {
     private readonly Dictionary<Bpl.Variable, (Bpl.Expr Expression, Environment Environment)> outputWhere = new();
     private readonly List<Ir.SourceIdentity> obligations = new();
     private readonly Dictionary<Bpl.LambdaExpr, string> lambdaNames = new();
+    private readonly HashSet<string> jumpTargets = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> jumpLabels = new(StringComparer.Ordinal);
+    private int controlNumber;
+    private int statementCount;
     private int variableNumber;
     private int boundNumber;
     private int expressionCount;
@@ -94,6 +98,7 @@ public static class B3Normalizer {
       Require(unit.StructuredStmts != null, "b3_structure", "A structured pre-VC body is required", unit.tok);
       Require(unit.InParams.Count == unit.Proc.InParams.Count && unit.OutParams.Count == unit.Proc.OutParams.Count,
         "b3_formals", "Implementation/procedure formal lists differ", unit.tok);
+      InspectControl(unit.StructuredStmts);
       var formals = new Dictionary<Bpl.Variable, Ir.Expression>();
       for (var i = 0; i < unit.InParams.Count; i++) { formals.Add(unit.Proc.InParams[i], Name(unit.InParams[i])); }
       for (var i = 0; i < unit.OutParams.Count; i++) { formals.Add(unit.Proc.OutParams[i], Name(unit.OutParams[i])); }
@@ -115,13 +120,14 @@ public static class B3Normalizer {
         ValidateAttributes(requires.Attributes, "requires", requires.tok);
         prologue.Add(new Ir.Assume(Expr(requires.Condition, entry)));
       }
-      var body = Structured(unit.StructuredStmts, entry);
+      var body = Structured(unit.StructuredStmts, entry, new Control());
       var exit = Exit(entry);
       // Discovering expressions above discovers every demanded global. Save entry state before any assumptions.
       var snapshots = oldNames.Select(pair => (Ir.Statement)new Ir.Assign(pair.Value.Name, Name(pair.Key))).ToList();
       var statements = snapshots.Concat(prologue).Append(body).Append(exit).ToArray();
       var normalized = new Ir.Program(types.Values.ToArray(), functions.Values.ToArray(), Array.Empty<Ir.Axiom>(),
         new Ir.Unit(Symbol("unit:" + unit.Name), variables.ToArray(), new Ir.Block(statements)));
+      CheckOwnedBounds(normalized);
       return new B3NormalizationResult(normalized, obligations.ToArray(), Array.Empty<B3NormalizationDiagnostic>(),
         new[] { "All source axioms, distinct-constant constraints, nonidentity function definitions, and map/lambda equations are omitted. Demanded closed function instances, constants and maps are uninterpreted; verification therefore uses a weaker context." });
     }
@@ -222,6 +228,8 @@ public static class B3Normalizer {
             case Bpl.MapStore: return Apply("map-store", type, args);
             case Bpl.FunctionCall call:
               Require(call.Func != null, "b3_resolution", "Unresolved function call", expression.tok);
+              Require(!HasPrimitiveArithmeticDefinition(call.Func), "b3_arithmetic",
+                "Called primitive division/modulo/power definition is unsupported pending correspondence", expression.tok);
               var projection = IdentityProjection(call.Func);
               if (projection >= 0 && projection < args.Length && args[projection].Type == type) { return args[projection]; }
               var instantiation = call.Func.TypeParameters.Count == 0 ? "" :
@@ -267,7 +275,26 @@ public static class B3Normalizer {
         default: throw new Unsupported("b3_expression", "Unsupported expression " + expression.GetType().Name, expression.tok);
       }
     }
+    private static bool HasPrimitiveArithmeticDefinition(Bpl.Function function) {
+      static bool Primitive(Bpl.Expr body) => body is Bpl.NAryExpr { Fun: Bpl.BinaryOperator binary } &&
+        binary.Op is Bpl.BinaryOperator.Opcode.Div or Bpl.BinaryOperator.Opcode.Mod or
+          Bpl.BinaryOperator.Opcode.RealDiv or Bpl.BinaryOperator.Opcode.Pow;
+      if (Primitive(function.Body)) { return true; }
+      var defining = function.DefinitionBody ?? function.DefinitionAxiom?.Expr;
+      if (defining is Bpl.ForallExpr forall) { defining = forall.Body; }
+      if (defining is not Bpl.NAryExpr { Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.Eq } } equality) { return false; }
+      for (var side = 0; side < 2; side++) {
+        var call = equality.Args[side];
+        if (call is Bpl.NAryExpr { Fun: Bpl.TypeCoercion } coercion) { call = coercion.Args[0]; }
+        if (call is Bpl.NAryExpr { Fun: Bpl.FunctionCall functionCall } && functionCall.Func == function &&
+            Primitive(equality.Args[1 - side])) { return true; }
+      }
+      return false;
+    }
+
     private static int IdentityProjection(Bpl.Function function) {
+      // Visibility analysis cannot hide AlwaysRevealed definitions. Other definitions remain opaque.
+      if (!function.AlwaysRevealed) { return -1; }
       if (function.Body is Bpl.IdentifierExpr identifier) { return function.InParams.IndexOf(identifier.Decl); }
       // A universally quantified direct defining equality justifies this rewrite; an :identity claim alone does not.
       var axiom = function.DefinitionAxiom?.Expr;
@@ -285,23 +312,38 @@ public static class B3Normalizer {
       }
       return -1;
     }
-    private static void FreeVariables(Bpl.Expr expression, HashSet<Bpl.Variable> bound, List<(Bpl.Variable Variable, bool Old)> found, bool old) {
-      switch (expression) {
-        case Bpl.IdentifierExpr identifier:
-          if (!bound.Contains(identifier.Decl) && !found.Contains((identifier.Decl, old))) { found.Add((identifier.Decl, old)); }
-          break;
-        case Bpl.NAryExpr nary: foreach (var argument in nary.Args) { FreeVariables(argument, bound, found, old); } break;
-        case Bpl.OldExpr previous: FreeVariables(previous.Expr, bound, found, true); break;
-        case Bpl.BinderExpr binder:
-          var nested = new HashSet<Bpl.Variable>(bound.Concat(binder.Dummies));
-          FreeVariables(binder.Body, nested, found, old);
-          break;
-        case Bpl.LetExpr let:
-          foreach (var rhs in let.Rhss) { FreeVariables(rhs, bound, found, old); }
-          FreeVariables(let.Body, new HashSet<Bpl.Variable>(bound.Concat(let.Dummies)), found, old);
-          break;
-        case Bpl.LiteralExpr: break;
-        default: throw new Unsupported("b3_lambda_capture", "Unsupported lambda capture expression " + expression.GetType().Name, expression.tok);
+    private static void FreeVariables(Bpl.Expr expression, HashSet<Bpl.Variable> bound,
+      List<(Bpl.Variable Variable, bool Old)> found, bool old) {
+      var pending = new Stack<(Bpl.Expr Expression, HashSet<Bpl.Variable> Bound, bool Old, int Depth)>();
+      var seen = new HashSet<(Bpl.Variable, bool)>();
+      var count = 0;
+      pending.Push((expression, bound, old, 0));
+      while (pending.Count > 0) {
+        var item = pending.Pop();
+        Require(item.Depth < Ir.Protocol.MaximumDepth && ++count <= Ir.Protocol.MaximumNodes,
+          "b3_lambda_capture_limit", "Lambda capture traversal exceeds normalization bounds", item.Expression.tok);
+        void Push(Bpl.Expr child, HashSet<Bpl.Variable> scope, bool previous) =>
+          pending.Push((child, scope, previous, item.Depth + 1));
+        switch (item.Expression) {
+          case Bpl.IdentifierExpr identifier:
+            if (!item.Bound.Contains(identifier.Decl) && seen.Add((identifier.Decl, item.Old))) {
+              found.Add((identifier.Decl, item.Old));
+            }
+            break;
+          case Bpl.NAryExpr nary:
+            for (var i = nary.Args.Count - 1; i >= 0; i--) { Push(nary.Args[i], item.Bound, item.Old); }
+            break;
+          case Bpl.OldExpr previous: Push(previous.Expr, item.Bound, true); break;
+          case Bpl.BinderExpr binder:
+            Push(binder.Body, new HashSet<Bpl.Variable>(item.Bound.Concat(binder.Dummies)), item.Old);
+            break;
+          case Bpl.LetExpr let:
+            Push(let.Body, new HashSet<Bpl.Variable>(item.Bound.Concat(let.Dummies)), item.Old);
+            for (var i = let.Rhss.Count - 1; i >= 0; i--) { Push(let.Rhss[i], item.Bound, item.Old); }
+            break;
+          case Bpl.LiteralExpr: break;
+          default: throw new Unsupported("b3_lambda_capture", "Unsupported lambda capture expression " + item.Expression.GetType().Name, item.Expression.tok);
+        }
       }
     }
     private static Ir.Expression Binary(Bpl.BinaryOperator.Opcode op, string type, Ir.Expression[] args, Bpl.IToken token) {
@@ -320,7 +362,7 @@ public static class B3Normalizer {
     private void Where(Bpl.Expr where, Environment env, List<Ir.Statement> statements) {
       if (where != null) { statements.Add(new Ir.Assume(Expr(where, env))); }
     }
-    private Ir.Check Check(Bpl.Expr condition, Environment env, Bpl.IToken token, string description, Bpl.QKeyValue attributes) {
+    private Ir.Check Check(Bpl.Expr condition, Environment env, Bpl.IToken token, string description, Bpl.QKeyValue attributes, string role = "assert") {
       var expression = Expr(condition, env);
       var subsumption = Bpl.QKeyValue.FindIntAttribute(attributes, "subsumption", -1);
       var mode = subsumption switch { 0 => Bpl.CoreOptions.SubsumptionOption.Never,
@@ -328,7 +370,7 @@ public static class B3Normalizer {
         _ => options.UseSubsumption };
       var learn = mode == Bpl.CoreOptions.SubsumptionOption.Always ||
         mode == Bpl.CoreOptions.SubsumptionOption.NotForQuantifiers && expression is not Ir.Quantifier;
-      var id = "sO" + (obligations.Count + 1);
+      var id = "sO" + role + (obligations.Count + 1);
       var origin = BoogieGenerator.ToDafnyToken(token);
       obligations.Add(new Ir.SourceIdentity(id, origin.Uri?.AbsoluteUri ?? token.filename ?? "",
         Math.Max(0, token.line), Math.Max(0, token.col), description));
@@ -345,28 +387,280 @@ public static class B3Normalizer {
       statements.Add(new Ir.Return());
       return new Ir.Block(statements.ToArray());
     }
-    private Ir.Statement Structured(Bpl.StmtList list, Environment env, int depth = 0) {
+    private sealed class Control {
+      public readonly Dictionary<string, string> Forward;
+      public readonly Dictionary<Bpl.BigBlock, string> Break;
+      public Control(Dictionary<string, string> forward = null, Dictionary<Bpl.BigBlock, string> breaks = null) {
+        Forward = forward ?? new(StringComparer.Ordinal); Break = breaks ?? new();
+      }
+      public Control WithBreak(Bpl.BigBlock block, string label) {
+        var breaks = new Dictionary<Bpl.BigBlock, string>(Break) { [block] = label };
+        return new Control(Forward, breaks);
+      }
+    }
+
+    // Bounded inspection establishes that pure scope pushes/pops have no visibility command to affect.
+    // It also finds exactly the labels that require lexical exit wrappers.
+    private void InspectControl(Bpl.StmtList root) {
+      var pending = new Stack<(object Node, int Depth)>();
+      pending.Push((root, 0));
+      while (pending.Count > 0) {
+        var (node, depth) = pending.Pop();
+        Require(depth < Ir.Protocol.MaximumDepth && ++statementCount <= Ir.Protocol.MaximumNodes,
+          "b3_statement_limit", "Source control traversal exceeds normalization bounds", unit.tok);
+        void Push(object child) { if (child != null) { pending.Push((child, depth + 1)); } }
+        switch (node) {
+          case Bpl.StmtList list:
+            if (list.PrefixCommands != null) { foreach (var command in list.PrefixCommands) { Push(command); } }
+            foreach (var block in list.BigBlocks) { Push(block); }
+            break;
+          case Bpl.BigBlock block:
+            foreach (var command in block.simpleCmds) { Push(command); }
+            Push(block.ec); Push(block.tc); break;
+          case Bpl.IfCmd conditional:
+            Push(conditional.Thn); Push(conditional.ElseIf); Push(conditional.ElseBlock); break;
+          case Bpl.WhileCmd loop:
+            Push(loop.Body); foreach (var invariant in loop.Invariants) { Push(invariant); } break;
+          case Bpl.StateCmd state: foreach (var command in state.Cmds) { Push(command); } break;
+          case Bpl.HideRevealCmd hide:
+            throw new Unsupported("b3_visibility", "Hide/reveal requires pinned pruning correspondence", hide.tok);
+          case Bpl.GotoCmd jump:
+            ValidateAttributes(jump.Attributes, "goto", jump.tok);
+            Require(jump.LabelNames != null && jump.LabelNames.Count == 1, "b3_transfer",
+              "Only single-target lexical forward jumps are supported", jump.tok);
+            jumpTargets.Add(jump.LabelNames[0]); break;
+          case Bpl.ReturnCmd returned: ValidateAttributes(returned.Attributes, "return", returned.tok); break;
+        }
+      }
+      foreach (var target in jumpTargets.OrderBy(t => t, StringComparer.Ordinal)) { jumpLabels.Add(target, "sC" + ++controlNumber); }
+    }
+
+    private Ir.Statement Structured(Bpl.StmtList list, Environment env, Control control, int depth = 0) {
       Require(depth < Ir.Protocol.MaximumDepth, "b3_statement_limit", "Structured nesting exceeds normalization bound", list.EndCurly);
       var statements = new List<Ir.Statement>();
+      var blocks = list.BigBlocks;
+      var forward = new Dictionary<string, string>(control.Forward, StringComparer.Ordinal);
+      foreach (var block in blocks) {
+        if (block.LabelName != null && jumpTargets.Contains(block.LabelName)) { forward[block.LabelName] = jumpLabels[block.LabelName]; }
+      }
       if (list.PrefixCommands != null) { statements.AddRange(list.PrefixCommands.Select(c => Command(c, env))); }
-      foreach (var block in list.BigBlocks) {
+      foreach (var block in blocks) {
+        if (block.LabelName != null && jumpTargets.Contains(block.LabelName)) {
+          // This target is active only while processing the preceding prefix or its descendants.
+          // Finishing or exiting that prefix resumes at this block.
+          forward.Remove(block.LabelName);
+          statements = new List<Ir.Statement> { new Ir.Labeled(jumpLabels[block.LabelName], new Ir.Block(statements.ToArray())) };
+        }
+        var nested = new Control(new Dictionary<string, string>(forward, StringComparer.Ordinal), control.Break);
         statements.AddRange(block.simpleCmds.Select(c => Command(c, env)));
-        if (block.ec != null) { statements.Add(StructuredCommand(block.ec, env, depth + 1)); }
+        if (block.ec != null) { statements.Add(StructuredCommand(block.ec, env, nested, depth + 1, block)); }
         else if (block.tc is Bpl.ReturnCmd and not Bpl.ReturnExprCmd) { statements.Add(Exit(env)); }
-        else if (block.tc != null) { throw new Unsupported("b3_transfer", "Explicit goto or return-expression control is unsupported", block.tc.tok); }
+        else if (block.tc is Bpl.GotoCmd jump) {
+          Require(jump.LabelNames.Count == 1 && nested.Forward.TryGetValue(jump.LabelNames[0], out _),
+            "b3_transfer", "Backward, cross-region or multiple-target jumps are unsupported", jump.tok);
+          statements.Add(new Ir.Exit(nested.Forward[jump.LabelNames[0]]));
+        } else if (block.tc != null) { throw new Unsupported("b3_transfer", "Return-expression control is unsupported", block.tc.tok); }
       }
       return new Ir.Block(statements.ToArray());
     }
-    private Ir.Statement StructuredCommand(Bpl.StructuredCmd command, Environment env, int depth) {
+
+    private Ir.Statement StructuredCommand(Bpl.StructuredCmd command, Environment env, Control control, int depth,
+      Bpl.BigBlock enclosing = null) {
+      Require(depth < Ir.Protocol.MaximumDepth, "b3_statement_limit", "Structured nesting exceeds normalization bound", command.tok);
+      if (command is Bpl.BreakCmd broken) {
+        Require(broken.BreakEnclosure != null && control.Break.TryGetValue(broken.BreakEnclosure, out _),
+          "b3_break", "Break does not name an active lexical enclosure", broken.tok);
+        return new Ir.Exit(control.Break[broken.BreakEnclosure]);
+      }
       if (command is Bpl.IfCmd conditional) {
         ValidateAttributes(conditional.Attributes, "conditional", conditional.tok);
-        var then = Structured(conditional.Thn, env, depth);
-        var other = conditional.ElseIf != null ? StructuredCommand(conditional.ElseIf, env, depth + 1) :
-          conditional.ElseBlock != null ? Structured(conditional.ElseBlock, env, depth) : new Ir.Block(Array.Empty<Ir.Statement>());
-        return conditional.Guard == null ? new Ir.Choice(new[] { then, other }) :
+        string exit = null;
+        if (enclosing != null) {
+          exit = "sC" + ++controlNumber;
+          control = control.WithBreak(enclosing, exit);
+        }
+        var then = Structured(conditional.Thn, env, control, depth);
+        var other = conditional.ElseIf != null ? StructuredCommand(conditional.ElseIf, env, control, depth + 1) :
+          conditional.ElseBlock != null ? Structured(conditional.ElseBlock, env, control, depth) : new Ir.Block(Array.Empty<Ir.Statement>());
+        Ir.Statement result = conditional.Guard == null ? new Ir.Choice(new[] { then, other }) :
           new Ir.Conditional(Expr(conditional.Guard, env), then, other);
+        return exit == null ? result : new Ir.Labeled(exit, result);
       }
-      throw new Unsupported("b3_structured_control", "Loops and breaks require explicit invariant/control lowering", command.tok);
+      if (command is Bpl.WhileCmd loop && enclosing != null) { return While(loop, enclosing, env, control, depth); }
+      throw new Unsupported("b3_structured_control", "Unsupported structured control " + command.GetType().Name, command.tok);
+    }
+
+    private Ir.Statement While(Bpl.WhileCmd loop, Bpl.BigBlock enclosing, Environment env, Control control, int depth) {
+      Require(loop.Yields.Count == 0 && options.KInductionDepth == -1 && options.LoopUnrollCount == -1 && !options.ConcurrentHoudini,
+        "b3_loop_mode", "Yield invariants, k-induction, unrolling and concurrent Houdini need separate correspondence", loop.tok);
+      var exit = "sC" + ++controlNumber;
+      var initialization = LoopChecks(loop, env, "init");
+      var iteration = new List<Ir.Statement>();
+      if (loop.Guard != null) { iteration.Add(new Ir.Assume(Expr(loop.Guard, env))); }
+      iteration.Add(Structured(loop.Body, env, control.WithBreak(enclosing, exit), depth));
+      iteration.AddRange(LoopChecks(loop, env, "maint"));
+      iteration.Add(new Ir.Assume(new Ir.BooleanLiteral(false)));
+      var done = new List<Ir.Statement>();
+      if (loop.Guard != null) { done.Add(new Ir.Assume(new Ir.Operation(Ir.Operator.Not, "bool", new[] { Expr(loop.Guard, env) }))); }
+      done.Add(new Ir.Exit(exit));
+      var choice = new Ir.Choice(new Ir.Statement[] { new Ir.Block(done.ToArray()), new Ir.Block(iteration.ToArray()) });
+      var changed = NaturalLoopAssignments(enclosing, loop);
+      var targetInfo = AssignmentTargets(choice);
+      var targets = targetInfo.Continuations.Contains("normal") ? targetInfo.Targets : new HashSet<string>();
+      Require(changed.All(v => targets.Contains(Name(v).Name)), "b3_loop_targets",
+        "Native loop assignment targets do not cover the pinned natural-loop havoc", loop.tok);
+      var header = new List<Ir.Statement>();
+      // The native loop may havoc additional break-only targets. Their where clauses must NOT be assumed.
+      foreach (var variable in changed) {
+        if (outputWhere.TryGetValue(variable, out var where)) { Where(where.Expression, where.Environment, header); }
+        else { Where(variable.TypedIdent.WhereExpr, env, header); }
+      }
+      foreach (var invariant in loop.Invariants) {
+        ValidateAttributes(invariant.Attributes, "invariant", invariant.tok);
+        header.Add(new Ir.Assume(Expr(invariant.Expr, env)));
+      }
+      header.Add(choice);
+      initialization.Add(new Ir.Labeled(exit, new Ir.Loop(Array.Empty<Ir.Expression>(), new Ir.Block(header.ToArray()))));
+      return new Ir.Block(initialization.ToArray());
+    }
+
+    private List<Ir.Statement> LoopChecks(Bpl.WhileCmd loop, Environment env, string role) {
+      var checks = new List<Ir.Statement>();
+      foreach (var invariant in loop.Invariants) {
+        ValidateAttributes(invariant.Attributes, "invariant", invariant.tok);
+        if (invariant is Bpl.AssertCmd assertion) {
+          checks.Add(Check(assertion.Expr, env, assertion.tok,
+            role == "init" ? "loop invariant initialization" : "loop invariant preservation", assertion.Attributes, role));
+        } else if (invariant is Bpl.AssumeCmd && options.AlwaysAssumeFreeLoopInvariants) {
+          checks.Add(new Ir.Assume(Expr(invariant.Expr, env)));
+        } else { Require(invariant is Bpl.AssumeCmd, "b3_invariant", "Unknown invariant predicate", invariant.tok); }
+      }
+      return checks;
+    }
+
+    // Recompute graph information in owned sets. Never call ConvertToReducible, ComputePredecessors,
+    // GetDesugaring or any VC transform. Irreducible or oversized CFGs fail closed.
+    private IReadOnlyList<Bpl.Variable> NaturalLoopAssignments(Bpl.BigBlock enclosing, Bpl.WhileCmd loop) {
+      Require(unit.Blocks.Count is > 0 and <= 256, "b3_cfg_limit", "Loop CFG exceeds audited graph bound", loop.tok);
+      var blocks = new HashSet<Bpl.Block>(unit.Blocks);
+      var successors = new Dictionary<Bpl.Block, List<Bpl.Block>>();
+      var predecessors = unit.Blocks.ToDictionary(b => b, _ => new List<Bpl.Block>());
+      foreach (var block in unit.Blocks) {
+        var next = block.TransferCmd is Bpl.GotoCmd jump ? jump.LabelTargets : new List<Bpl.Block>();
+        Require(next != null && next.All(blocks.Contains), "b3_cfg", "Unresolved or external CFG successor", block.tok);
+        successors.Add(block, next);
+        foreach (var target in next) { predecessors[target].Add(block); }
+      }
+      var entryBlock = unit.Blocks.SingleOrDefault(b => b.Label == enclosing.LabelName);
+      Require(entryBlock?.TransferCmd is Bpl.GotoCmd { LabelTargets.Count: 1 }, "b3_loop_header", "Cannot identify structured loop entry", loop.tok);
+      var header = ((Bpl.GotoCmd)entryBlock.TransferCmd).LabelTargets[0];
+      Require(header.Cmds.SequenceEqual(loop.Invariants) && header.TransferCmd is Bpl.GotoCmd { LabelTargets.Count: 2 },
+        "b3_loop_header", "Typed CFG does not match the pinned structured loop header", loop.tok);
+      var reachable = new HashSet<Bpl.Block>();
+      var pending = new Stack<Bpl.Block>(); pending.Push(unit.Blocks[0]);
+      while (pending.Count > 0) {
+        var block = pending.Pop(); if (!reachable.Add(block)) { continue; }
+        foreach (var next in successors[block]) { pending.Push(next); }
+      }
+      if (!reachable.Contains(header)) { return Array.Empty<Bpl.Variable>(); }
+      var dominators = reachable.ToDictionary(b => b, b => b == unit.Blocks[0] ? new HashSet<Bpl.Block> { b } : new HashSet<Bpl.Block>(reachable));
+      bool changed;
+      do {
+        changed = false;
+        foreach (var block in unit.Blocks.Where(b => reachable.Contains(b) && b != unit.Blocks[0])) {
+          var incoming = predecessors[block].Where(reachable.Contains).ToArray();
+          var current = new HashSet<Bpl.Block>(dominators[incoming[0]]);
+          foreach (var previous in incoming.Skip(1)) { current.IntersectWith(dominators[previous]); }
+          current.Add(block);
+          if (!current.SetEquals(dominators[block])) { dominators[block] = current; changed = true; }
+        }
+      } while (changed);
+      var region = new HashSet<Bpl.Block>();
+      foreach (var backedge in predecessors[header].Where(b => reachable.Contains(b) && dominators[b].Contains(header))) {
+        region.Add(header); pending.Push(backedge);
+        while (pending.Count > 0) {
+          var block = pending.Pop(); if (!region.Add(block)) { continue; }
+          Require(dominators[block].Contains(header), "b3_irreducible_loop", "Loop has an unaudited external entry", loop.tok);
+          foreach (var previous in predecessors[block].Where(reachable.Contains)) { pending.Push(previous); }
+        }
+      }
+      var assigned = new HashSet<Bpl.Variable>();
+      foreach (var block in unit.Blocks.Where(region.Contains)) {
+        foreach (var command in block.Cmds) { assigned.UnionWith(Assigned(command)); }
+      }
+      return assigned.OrderBy(v => Name(v).Name, StringComparer.Ordinal).ToArray();
+    }
+
+    private IEnumerable<Bpl.Variable> Assigned(Bpl.Cmd command, int depth = 0) {
+      Require(depth < Ir.Protocol.MaximumDepth, "b3_statement_limit", "Assigned-variable traversal exceeds normalization bound", command.tok);
+      return command switch {
+        Bpl.AssignCmd assignment => assignment.Lhss.Select(lhs => lhs.DeepAssignedVariable),
+        Bpl.HavocCmd havoc => havoc.Vars.Select(v => v.Decl),
+        Bpl.CallCmd call => call.Outs.Where(v => v != null).Select(v => v.Decl).Concat(call.Proc.Modifies.Select(v => v.Decl)),
+        Bpl.StateCmd state => state.Cmds.SelectMany(c => Assigned(c, depth + 1)).Except(state.Locals),
+        Bpl.PredicateCmd or Bpl.CommentCmd or Bpl.ChangeScope => Array.Empty<Bpl.Variable>(),
+        _ => throw new Unsupported("b3_assigned_variables", "Unsupported natural-loop assignment command " + command.GetType().Name, command.tok)
+      };
+    }
+
+    private sealed record TargetInfo(HashSet<string> TargetsSet, HashSet<string> Continuations) {
+      public HashSet<string> Targets => TargetsSet;
+    }
+    // Mirrors the selected B3 AssignmentTargets algorithm, including abrupt control.
+    private static TargetInfo AssignmentTargets(Ir.Statement root, int depth = 0) {
+      Require(depth < Ir.Protocol.MaximumDepth, "b3_statement_limit", "Assignment-target traversal exceeds normalization bound", Bpl.Token.NoToken);
+      const string normal = "normal";
+      var targets = new HashSet<string>(); var points = new HashSet<string> { normal };
+      void Merge(TargetInfo child) { targets.UnionWith(child.Targets); points.UnionWith(child.Continuations); }
+      switch (root) {
+        case Ir.Assign assign: targets.Add(assign.Variable); break;
+        case Ir.Havoc havoc: targets.UnionWith(havoc.Variables); break;
+        case Ir.Exit exit: points = new HashSet<string> { exit.Label }; break;
+        case Ir.Return: points = new HashSet<string> { "return" }; break;
+        case Ir.Block block:
+          foreach (var statement in block.Statements) {
+            if (!points.Remove(normal)) { break; }
+            Merge(AssignmentTargets(statement, depth + 1));
+          }
+          break;
+        case Ir.Choice choice:
+          points.Clear(); foreach (var branch in choice.Branches) { Merge(AssignmentTargets(branch, depth + 1)); } break;
+        case Ir.Conditional conditional:
+          points.Clear(); Merge(AssignmentTargets(conditional.Then, depth + 1)); Merge(AssignmentTargets(conditional.Else, depth + 1)); break;
+        case Ir.Loop loop:
+          points.Clear(); Merge(AssignmentTargets(loop.Body, depth + 1)); points.Remove(normal); break;
+        case Ir.Labeled labeled:
+          points.Clear(); Merge(AssignmentTargets(labeled.Body, depth + 1));
+          if (points.Remove(labeled.Name)) { points.Add(normal); } break;
+      }
+      return new TargetInfo(targets, points);
+    }
+
+    private void CheckOwnedBounds(Ir.Program program) {
+      var pending = new Stack<(object Node, int Depth)>(); pending.Push((program.Unit.Body, 0));
+      var count = program.Types.Count + program.Functions.Count + program.Unit.Variables.Count + obligations.Count;
+      while (pending.Count > 0) {
+        var (node, depth) = pending.Pop();
+        Require(depth <= Ir.Protocol.MaximumDepth && ++count <= Ir.Protocol.MaximumNodes,
+          "b3_owned_ir_limit", "Normalized IR exceeds protocol resource bounds", unit.tok);
+        void Push(object child) => pending.Push((child, depth + 1));
+        switch (node) {
+          case Ir.Block block: foreach (var child in block.Statements) { Push(child); } break;
+          case Ir.Assign assign: Push(assign.Value); break;
+          case Ir.Check check: Push(check.Condition); break;
+          case Ir.Assume assume: Push(assume.Condition); break;
+          case Ir.Choice choice: foreach (var branch in choice.Branches) { Push(branch); } break;
+          case Ir.Conditional conditional: Push(conditional.Condition); Push(conditional.Then); Push(conditional.Else); break;
+          case Ir.Loop loop: Push(loop.Body); break;
+          case Ir.Labeled labeled: Push(labeled.Body); break;
+          case Ir.Application application: foreach (var argument in application.Arguments) { Push(argument); } break;
+          case Ir.Operation operation: foreach (var argument in operation.Arguments) { Push(argument); } break;
+          case Ir.Quantifier quantifier:
+            Push(quantifier.Body); foreach (var pattern in quantifier.Patterns) { foreach (var term in pattern) { Push(term); } } break;
+          case Ir.Let let: Push(let.Value); Push(let.Body); break;
+          case Ir.Label label: Push(label.Body); break;
+        }
+      }
     }
     private Ir.Statement Command(Bpl.Cmd command, Environment env) {
       if (command is Bpl.ICarriesAttributes attributed) { ValidateAttributes(attributed.Attributes, "command", command.tok); }
@@ -391,8 +685,9 @@ public static class B3Normalizer {
           return new Ir.Block(statements.ToArray());
         }
         case Bpl.CallCmd call: return Call(call, env);
-        case Bpl.HideRevealCmd or Bpl.ChangeScope:
-          throw new Unsupported("b3_visibility", "Hide/reveal and visibility scopes require pinned pruning correspondence", command.tok);
+        case Bpl.ChangeScope: return new Ir.Block(Array.Empty<Ir.Statement>());
+        case Bpl.HideRevealCmd:
+          throw new Unsupported("b3_visibility", "Hide/reveal requires pinned pruning correspondence", command.tok);
         default: throw new Unsupported("b3_command", "Unsupported command " + command.GetType().Name, command.tok);
       }
     }
