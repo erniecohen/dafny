@@ -2378,6 +2378,9 @@ and what information it produces about the verification process.
   The time limit applies to the whole generated checking unit, including worker
   startup and IO. Native Boogie model, proof-analysis and detailed metric options
   are unsupported by this slice and produce explicit diagnostics.
+  Editor verification caching (`cache-verification` in project options or
+  `--cache-verification` on `server`) must remain at its default level 0 with B3;
+  nonzero levels are rejected even when the source has no verification units.
 
 * `--arithmetic-solver N` - select Z3's arithmetic solver for modules without an
   explicit [`{:z3ArithmeticSolver N}`](#sec-z3-arithmetic-solver) attribute.

@@ -36,6 +36,8 @@ Editor counterexample requests require a backend that provides models. B3 reques
 
 B3 uses a fresh isolated process for each generated checking unit. The time limit covers the unit, including worker startup and IO. It requires a positive time limit and currently supports Unix process groups, arithmetic solver 2, and ordinary Z3 invocation. Solver unknown, invalid packages, incomplete output, cancellation and unsupported input produce non-success outcomes. Models, proof dependencies and resource counts are unavailable in this slice; options requiring those capabilities fail explicitly.
 
+Editor verification caching is unsupported. Keep `cache-verification = 0` (the default) in project options, or `--cache-verification 0` when starting `server`. Nonzero levels fail configuration preflight even for a source without verification units.
+
 ## Running the backend gate
 
 After the pinned verifying bootstrap, run the repository entrypoint:

@@ -19,6 +19,10 @@ using OmniSharpLanguageServer = OmniSharp.Extensions.LanguageServer.Server.Langu
 namespace Microsoft.Dafny.LanguageServer {
   public class LanguageServer {
 
+    static LanguageServer() {
+      DafnyOptions.RegisterLegacyBinding(VerifySnapshots, (options, level) => options.VerifySnapshots = (int)level);
+    }
+
     public static IEnumerable<Option> Options => new Option[] {
         BoogieOptionBag.NoVerify,
         ProjectManager.Verification,

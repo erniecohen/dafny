@@ -156,6 +156,7 @@ public sealed class B3VerificationBackend : IVerificationBackend {
     return null;
   }
   private static string? CheckConfiguration(DafnyOptions options) {
+    if (options.VerifySnapshots != 0) { return "B3 does not support --cache-verification; use 0"; }
     if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS()) { return "B3 workers currently require Unix process-group isolation"; }
     if (options.TimeLimit == 0 || options.TimeLimit > int.MaxValue / 1000) { return "B3 requires --verification-time-limit between 1 and 2147483 seconds"; }
     if (options.GetOrOptionDefault(BoogieOptionBag.ArithmeticSolver) != 2) { return "B3 currently supports --arithmetic-solver 2 only"; }

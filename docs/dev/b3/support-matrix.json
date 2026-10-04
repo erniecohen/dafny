@@ -47,6 +47,7 @@
         "boogie",
         "proof analysis and model/coverage options",
         "solver-option-help",
+        "cache-verification (nonzero)",
         "sprint",
         "pprint"
       ],

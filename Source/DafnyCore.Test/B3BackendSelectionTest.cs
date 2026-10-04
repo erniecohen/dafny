@@ -14,6 +14,17 @@ public class B3BackendSelectionTest {
     Assert.IsType<B3VerificationBackend>(backend);
     Assert.Equal("b3", backend.Name);
   }
+  [Theory]
+  [InlineData(1)]
+  [InlineData(2)]
+  [InlineData(3)]
+  public void B3RejectsVerificationCachingBeforeWorkerLookup(int level) {
+    var options = new DafnyOptions(DafnyOptions.Default) { VerifySnapshots = level };
+    options.Set(B3OptionBag.VerificationBackend, B3OptionBag.Backend.B3);
+    options.Set(B3OptionBag.Worker, new FileInfo("missing-cache-worker.dll"));
+    Assert.Equal("B3 does not support --cache-verification; use 0",
+      B3VerificationBackend.ValidateInvocation(options));
+  }
   [Fact]
   public void B3SolverPreparationDoesNotExecuteTheSolverInTheParent() {
     var path = Path.GetTempFileName();
