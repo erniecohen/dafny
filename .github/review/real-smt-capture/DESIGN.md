@@ -116,6 +116,12 @@ untraced clone flags, unknown PID namespaces, missed ownership, unexpected execu
 or reuse/mapping ambiguity as capture-incomplete. Do not classify an unknown PID
 using a later same-number process.
 
+The implementation binds the traced replay to the exact launch argv and permits
+only its frozen worker exec plus worker-child solver `-version` and `-in -smt2`
+execs. Each admitted process group has one successful exec epoch. Any later
+successful exec, unexpected executable or successful `execveat` rejects qualified
+capture. Unqualified same-TID observations also stop at successful `execveat`.
+
 Identify every interactive Z3 exec by its successful exec transition, exact pathname
 and exact argv [-in,-smt2], not comm/filename alone. The separate -version probe is a
 different process and must not supply proof bytes. While each interactive solver is
@@ -137,6 +143,15 @@ never append an attempted full buffer after a partial return. Save delivered inp
 bytes and produced output bytes separately. Do not claim the worker consumed every
 produced byte without matching read evidence. If supported syscalls or descriptor
 transfers escape this reviewed mapping, mark the stream incomplete.
+
+Strace 6.8 obtains full dumps by reading tracee memory after the syscall and emits
+the adjacent completed-syscall/dump records. Treating those observations as the
+runtime's bytes requires stable I/O buffers while strace reads them. The fixed
+worker writes records serially, and its solver sends wait before subsequent sends;
+this is an explicit source-runtime premise, not atomic kernel payload attestation.
+An implementation that reuses or concurrently mutates these buffers would need a
+different capture argument. The parser's positive-return slicing alone does not
+prove buffer stability.
 
 Parse SMT command/response framing only after byte reconstruction. Preserve raw
 streams, exact order, EOF/exit markers and hashes. Match labeled source obligation

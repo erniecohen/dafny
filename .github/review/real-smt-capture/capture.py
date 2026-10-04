@@ -1,8 +1,10 @@
 """Bounded fail-closed strace v6.8 read/write dump reconstruction, not an SMT rewriter.
 
-Full dump blocks follow the completed syscall atomically in strace syscall.c;
-write dumps contain the attempted buffer while reads contain returned bytes.
-Only positive return lengths contribute to the delivered/produced stream.
+Strace emits adjacent syscall/dump records and reads dump bytes from tracee
+memory after the syscall. Reconstruction requires the fixed runtime's serialized
+I/O buffers to remain stable through that read; it is not atomic kernel payload
+attestation. Writes dump attempted buffers; reads dump returned bytes. Only
+positive return lengths contribute to the delivered/produced observations.
 """
 import hashlib
 import json
@@ -167,7 +169,37 @@ def forms(data):
     return result
 
 
-def analyze(data, ownership, images, solver_path, solver_sha, check_ids, worker_path, dotnet_path, request_bytes, completion):
+def exec_identity(call):
+    require(call['name'] == 'execve' and len(call['args']) == 3, 'Unsupported executable transition')
+    argv = call['args'][1]
+    require(argv.startswith('[') and argv.endswith(']'), 'Incomplete exec argv')
+    return cstring(call['args'][0]), [cstring(x) for x in split_arguments(argv[1:-1])]
+
+
+def validate_exec_epochs(calls, groups, pins, root_exec, worker_exec, solver, root_argv,
+                         dotnet_path, worker_path, solver_path):
+    selected = {groups[x['tid']] for x in (root_exec,worker_exec,solver)}
+    require(len(selected) == 3, 'Selected replay/worker/solver executable epochs overlap')
+    require(exec_identity(root_exec) == (dotnet_path,root_argv), 'Traced replay exec differs from exact launch argv')
+    seen = set()
+    for call in calls:
+        if call['name'] not in ('execve','execveat') or call['result'] != 0: continue
+        require(call['name'] == 'execve', 'Unsupported successful execveat transition')
+        group = groups[call['tid']]
+        require(group not in seen, 'Later successful exec changed a captured executable epoch')
+        seen.add(group)
+        if call is root_exec: continue
+        path,argv = exec_identity(call)
+        if call is worker_exec:
+            require((path,argv) == (dotnet_path,[dotnet_path,worker_path]), 'Frozen worker exec differs')
+        elif call is solver:
+            require((path,argv) == (solver_path,[solver_path,'-in','-smt2']), 'Interactive solver exec differs')
+        else:
+            require((path,argv) == (solver_path,[solver_path,'-version']) and
+                    pins[group]['parent'] == groups[worker_exec['tid']], 'Unexpected successful executable transition')
+
+
+def analyze(data, ownership, images, solver_path, solver_sha, check_ids, worker_path, dotnet_path, request_bytes, completion, root_argv):
     calls, unfinished = calls_from_trace(data)
     forks = {}; groups = {}; root_exec = next((x for x in calls if x['name'] == 'execve' and x['result'] == 0), None)
     require(root_exec is not None, 'No traced root exec')
@@ -207,6 +239,7 @@ def analyze(data, ownership, images, solver_path, solver_sha, check_ids, worker_
     require(len(interactive) == 1, 'Expected exactly one interactive solver exec')
     solver = interactive[0]; pid = groups[solver['tid']]
     require(pins[pid]['parent'] == worker_pid, 'Solver is not the captured frozen worker child')
+    validate_exec_epochs(calls,groups,pins,root_exec,worker_exec,solver,root_argv,dotnet_path,worker_path,solver_path)
     image = [x for x in images if x['identity']['pid'] == pid and x['identity']['startTime'] == pins[pid]['startTime'] and
              x['sha256'] == solver_sha and x['argv'] == [solver_path, '-in', '-smt2']]
     require(len(image) == 1, 'Fast/missed interactive exec image pin: capture incomplete')
@@ -323,7 +356,7 @@ def weak_observations(data, solver_path):
         reads = bytearray(); writes = bytearray(); stop = None; count = 0
         for call in calls:
             if call['end'] <= candidate['end']: continue
-            if ((call['name'] == 'execve' and call['result'] == 0 and call['tid'] == candidate['tid']) or
+            if ((call['name'] in ('execve','execveat') and call['result'] == 0 and call['tid'] == candidate['tid']) or
               (call['name'] in ('fork','vfork','clone','clone3') and call['result'] == candidate['tid'])):
                 stop = call['end']; break
             if call['tid'] != candidate['tid'] or 'bytes' not in call: continue

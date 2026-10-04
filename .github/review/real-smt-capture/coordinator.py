@@ -192,6 +192,7 @@ def main():
         solver_bytes = read(source_solver); require(sha(solver_bytes) == manifest['solverSha256'], 'Solver bytes differ')
         receipt['prerequisite'] = inner.prerequisite(args.prerequisite,source_solver)
         solver = Path(SOLVER_PATH)
+        require(solver.parent.resolve() == solver.parent, 'Solver staging directory traverses a symlink')
         if solver.exists(): require(read(solver) == solver_bytes, 'Absolute frozen solver staging path already differs')
         else:
             solver.parent.mkdir(parents=True,exist_ok=True)
@@ -224,7 +225,8 @@ def main():
         stage(owned,receipt['stages'],'sdk-version',[dotnet,'--version'],args.output,env,30)
         require((args.output/'sdk-version.log').read_text().strip().startswith('8.'), 'Require .NET8 SDK')
         stage(owned,receipt['stages'],'strace-version',[tracer,'--version'],args.output,env,30)
-        require('version 6.8' in (args.output/'strace-version.log').read_text(), 'Parser supports reviewed strace6.8 only')
+        require((args.output/'strace-version.log').read_text().splitlines()[0] == 'strace -- version 6.8',
+          'Parser supports reviewed strace6.8 only')
         runner=args.output/'runner'
         require(seal()==hashes,'Diagnostic source changed before SDK build')
         stage(owned,receipt['stages'],'replay-build',[dotnet,'build',HERE/'Replay.csproj','--nologo','-c','Release','-o',runner,
@@ -272,7 +274,7 @@ def main():
                 row['traceSha256']=sha(read(trace,MAX_TRACE)); row['liveImages']=images
                 row['missedDescendantPinObservations']=ownership['transientDescendantObservations']
                 analysis=capture.analyze(read(trace,MAX_TRACE),ownership,images,SOLVER_PATH,manifest['solverSha256'],case['checkIds'],str(worker/'DafnyB3Host.dll'),str(dotnet),
-                  read(case['path'],1024*1024),verdict['completion'])
+                  read(case['path'],1024*1024),verdict['completion'],[str(x) for x in command[command.index('--')+1:]])
                 for stream_key,suffix in [('commandBytes','stdin.smt2'),('responseBytes','stdout.smt2')]:
                     data=analysis.pop(stream_key); path=args.output/(case['name']+'.'+suffix)
                     path.write_bytes(data); analysis[stream_key+'Sha256']=sha(data)

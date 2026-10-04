@@ -45,8 +45,12 @@ requires, both conversion checks and Learn flags. Full source-check coverage and
 fixed eight-case denominator remain explicit; no generated source goal is discarded.
 
 strace follows only the launched host and descendants. The coordinator records
-validated pidfd/start-time process ownership, successful execs, a live solver image
-hash, pipe creation and descriptor duplication. Full hex dumps are reconstructed
+validated pidfd/start-time process ownership, successful execs, a live solver image hash
+and exact replay launch argv. Later successful execs and successful `execveat`
+reject qualification. Strace reads dump bytes from tracee memory after syscalls;
+the fixed runtime's serialized I/O buffers must stay stable through those reads.
+This diagnostic does not claim atomic kernel payload attestation. It also checks
+pipe creation and descriptor duplication. Full hex dumps are reconstructed
 using successful return lengths, preserving partial and vector I/O. The traced
 worker must consume the exact request plus newline; its startup PID and completion
 must match the validated replay receipt. The solver's command/response pipes must
@@ -72,9 +76,10 @@ or cleanup faults cannot establish capture completeness. The 64MiB file cap and
 tracing overhead are diagnostic changes; observed outcomes and wall times cannot
 establish original execution or cost parity.
 
-Fifteen source parser regressions cover partial writes, failed writes, vector
+Twenty-one source parser regressions cover partial writes, failed writes, vector
 buffers, resumed I/O, dump gaps/missing bytes, orphan dumps, missing PID association,
-truncation, SMT framing, absent live image, wrong fork parent and PID reuse. They do
+truncation, SMT framing, absent live image, wrong fork parent, PID reuse and exact
+executable epochs, including unsupported `execveat` boundaries. They do
 not invoke a solver or worker. The outer wrapper runs this fixed denominator before
 any traced replay. No control has been executed at this source checkpoint.
 
