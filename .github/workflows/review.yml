@@ -16,10 +16,10 @@ jobs:
           dotnet-version: 8.0.x
       - name: Record source and build
         run: |
+          set +e
           mkdir -p results
           git rev-parse HEAD > results/source.txt
-          git rev-parse HEAD^ > results/candidate.txt
-          set +e
+          echo '1e415f026102940e0a6cee822f131925c7243bbf' > results/candidate.txt
           sh Scripts/fetch-boogie-packages.sh > results/boogie-fetch.txt 2>&1
           echo "$?" > results/boogie-fetch-exit.txt
           timeout 900 dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny > results/build.txt 2>&1
