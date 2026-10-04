@@ -859,6 +859,11 @@ namespace Microsoft.Dafny.Compilers {
       string PrintConvertedExpr(string name, Type fromType) {
         // Subset types are erased; their underlying type determines the converter.
         fromType = fromType.NormalizeExpand();
+        if (Options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+          // Unwrap before pairing carrier arguments; a nominal Flip<X,Y>
+          // may compile as Pair<Y,X> and its clone converters use that order.
+          fromType = DatatypeWrapperEraser.SimplifyTypeAndTrimNewtypes(Options, fromType);
+        }
         var constructorIndex = nonGhostTypeArgs.IndexOf(fromType.AsTypeParameter);
         if (constructorIndex != -1) {
           return $"converter{constructorIndex}({name})";
@@ -1157,7 +1162,10 @@ namespace Microsoft.Dafny.Compilers {
         foreach (var arg in ctor.Formals) {
           if (!arg.IsGhost) {
             var nm = FieldName(arg, i);
-            w.Write(IsDirectlyComparable(DatatypeWrapperEraser.SimplifyType(Options, arg.Type))
+            var equalityType = Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+              ? DatatypeWrapperEraser.SimplifyTypeAndTrimNewtypes(Options, arg.Type)
+              : DatatypeWrapperEraser.SimplifyType(Options, arg.Type);
+            w.Write(IsDirectlyComparable(equalityType)
               ? $" && this.{nm} == oth.{nm}"
               : $" && object.Equals(this.{nm}, oth.{nm})");
 
