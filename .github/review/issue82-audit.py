@@ -14,7 +14,7 @@ def sole_false_control(stdout, stderr, stem, line, verified):
     # assertion of false, even when the verifier's exit status is identical.
     output = stdout + stderr
     errors = re.findall(r'^.*Error:.*$', output, re.M)
-    expected = re.escape(stem + '.dfy') + rf'\({line},\d+\): Error: assertion might not hold$'
+    expected = r'^' + re.escape(stem + '.dfy') + rf'\({line},\d+\): Error: assertion might not hold$'
     summary = rf'^Dafny program verifier finished with {verified} verified, 1 error$'
     return (len(errors) == 1 and re.search(expected, errors[0]) is not None and
             re.search(summary, stdout, re.M) is not None and
