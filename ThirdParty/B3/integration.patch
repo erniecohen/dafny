@@ -843,10 +843,10 @@ index c8588d5f308be90550d8284938250f59e5718f6d..1e282edb1ac18c0d6acd02b5c3579e55
 \ No newline at end of file
 +}
 diff --git a/src/Solver/RSolver.dfy b/src/Solver/RSolver.dfy
-index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474ffcab1695 100644
+index 7049b456747b6486558482d4127842c2a03c6f26..c205ade524694954acb3c23bf8ee2838926c3df6 100644
 --- a/src/Solver/RSolver.dfy
 +++ b/src/Solver/RSolver.dfy
-@@ -12,15 +12,18 @@ module RSolvers {
+@@ -12,15 +12,19 @@ module RSolvers {
    import opened Basics
    import CLI = CommandLineOptions
    import PrintUtil
@@ -857,6 +857,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
 -    reveals RExpr, ROperator, RPattern
 +    reveals RExpr, ROperator, RPattern, PositiveDenominator
      provides RExpr.Eq, RExpr.Operator2ROperator, RExpr.OperatorToString
++    provides RExpr.ToString, RExpr.ToSExpr
      provides RContext, CreateEmptyContext, Extend, ExtendWithEquality
      provides Record, RecordTracePoint, PrintTrace
      reveals REngine
@@ -868,7 +869,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
 
    // ===== RExpr =====
 
-@@ -37,9 +40,12 @@ module RSolvers {
+@@ -37,9 +41,12 @@ module RSolvers {
      }
    }
 
@@ -881,7 +882,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
      | CustomLiteral(s: string, typ: SolverExpr.SType)
      | Id(v: SolverExpr.SConstant)
      | FuncAppl(op: ROperator, args: seq<RExpr>)
-@@ -53,6 +59,7 @@ module RSolvers {
+@@ -53,6 +60,7 @@ module RSolvers {
        match this
        case Boolean(b) => SExpr.Boolean(b)
        case Integer(x) => SExpr.Integer(x)
@@ -889,7 +890,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
        case CustomLiteral(s, typ) =>
          if s in literalMapper then literalMapper[s] else SExpr.S(CustomLiteralToSExprName())
        case Id(v) => SExpr.Id(v)
-@@ -124,6 +131,9 @@ module RSolvers {
+@@ -124,6 +132,9 @@ module RSolvers {
        case Times => "*"
        case Div => "div"
        case Mod => "mod"
@@ -899,7 +900,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
        case LogicalNot => "not"
        case UnaryMinus => "-"
      }
-@@ -137,10 +147,12 @@ module RSolvers {
+@@ -137,10 +148,12 @@ module RSolvers {
        match this
        case Boolean(b) => if b then "true" else "false"
        case Integer(x) => Int2String(x)
@@ -913,7 +914,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
        case IfThenElse(guard, thn, els) =>
          "(if " + guard.ToString() + " " + thn.ToString() + " else " + els.ToString() + ")"
        case LetExpr(v, rhs, body) =>
-@@ -219,6 +231,10 @@ module RSolvers {
+@@ -219,6 +232,10 @@ module RSolvers {
        requires Valid()
        decreases depth
 
@@ -924,7 +925,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
      method PrintTrace()
        requires Valid()
        decreases depth
-@@ -248,6 +264,13 @@ module RSolvers {
+@@ -248,6 +265,13 @@ module RSolvers {
      {
      }
 
@@ -938,7 +939,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
      method PrintTrace()
        requires Valid()
        decreases depth
-@@ -289,6 +312,14 @@ module RSolvers {
+@@ -289,6 +313,14 @@ module RSolvers {
        print "  ", expr.ToString(), "\n";
      }
 
@@ -953,7 +954,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
      method PrintTrace()
        requires Valid()
        decreases depth
-@@ -343,6 +374,7 @@ module RSolvers {
+@@ -343,6 +375,7 @@ module RSolvers {
      const state: Solvers.SolverState<RContext>
      const axiomMap: map<Ast.Axiom, RExpr>
      const Options: CLI.CliOptions
@@ -961,7 +962,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
 
      ghost predicate Valid()
        reads Repr
-@@ -361,6 +393,7 @@ module RSolvers {
+@@ -361,6 +394,7 @@ module RSolvers {
        this.state := state;
        this.axiomMap := axiomMap;
        this.Options := options;
@@ -969,7 +970,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
        Repr := {this} + state.Repr;
      }
 
-@@ -370,7 +403,7 @@ module RSolvers {
+@@ -370,7 +404,7 @@ module RSolvers {
        map["%tag" := SExpr.S(Int2String(|state.declarations| + |state.additionalDeclaredNames|))]
      }
 
@@ -978,7 +979,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
        requires Valid()
        modifies Repr
        ensures Valid()
-@@ -382,8 +415,27 @@ module RSolvers {
+@@ -382,8 +416,27 @@ module RSolvers {
 
        state.Push(context); // do another Push; the parameter here is irrelevant and will soon be popped off again
        DeclareNewSymbols(expr);
@@ -1007,7 +1008,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
      }
 
      method SetContext(context: RContext)
-@@ -453,6 +505,7 @@ module RSolvers {
+@@ -453,6 +506,7 @@ module RSolvers {
        match r
        case Boolean(_) =>
        case Integer(_) =>
@@ -1015,7 +1016,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
        case CustomLiteral(s, typ) =>
          if s != "%tag" {
            var name := r.CustomLiteralToSExprName();
-@@ -546,7 +599,7 @@ module RSolvers {
+@@ -546,7 +600,7 @@ module RSolvers {
        ensures Valid() && state.Evolves()
      {
        match typ
@@ -1024,7 +1025,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
        case SUserType(decl) =>
          if decl !in state.declarations {
            state.DeclareType(decl, decl);
-@@ -557,8 +610,17 @@ module RSolvers {
+@@ -557,8 +611,17 @@ module RSolvers {
    method CreateEngine(axiomMap: map<Ast.Axiom, RExpr>, options: CLI.CliOptions) returns (r: Result<REngine, string>)
      ensures r.Success? ==> var smtEngine := r.value; smtEngine.Valid() && fresh(smtEngine.Repr)
    {

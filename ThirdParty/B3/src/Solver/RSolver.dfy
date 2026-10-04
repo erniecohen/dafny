@@ -18,6 +18,7 @@ module RSolvers {
   export
     reveals RExpr, ROperator, RPattern, PositiveDenominator
     provides RExpr.Eq, RExpr.Operator2ROperator, RExpr.OperatorToString
+    provides RExpr.ToString, RExpr.ToSExpr
     provides RContext, CreateEmptyContext, Extend, ExtendWithEquality
     provides Record, RecordTracePoint, PrintTrace
     reveals REngine

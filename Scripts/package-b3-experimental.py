@@ -21,7 +21,7 @@ MAX_FILES = 2048
 LIBRARY_SHA = None
 VERIFIED_BATCHES = None
 VERIFICATION_EVIDENCE = None
-SOURCE_SHA = '4b53100120cc9a1e8584f3c335985ed04f7b826778b114cc5e49f515f2d8d562'
+SOURCE_SHA = 'cd4fbf40c81f5a7a4bdee88597b8c115c2a586b87af3f15a4721d74bf9470450'
 SOLVER_SHA = 'b4e0b3483ce37817230b20d6cad48390eb6a3aefde1d93342ad6dc763f24bc23'
 LAUNCHER_BYTES = b'#!/bin/sh\nset -eu\npackage_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nexec dotnet "$package_root/cli/Dafny.dll" "$@"\n'
 
