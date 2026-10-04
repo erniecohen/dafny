@@ -263,7 +263,9 @@ public abstract class Type : NodeWithOrigin {
           checkedAcyclic ??= RentNewtypeWalkSet();
           checkedAcyclic.Add(newtypeDecl);
         }
-        current = newtypeDecl.BaseType == null ? null : newtypeDecl.RhsWithArgument(current.TypeArgs);
+        // Adjust visibility after substitution, preserving the instantiated base's own arguments.
+        current = newtypeDecl.BaseType == null ? null :
+          newtypeDecl.ConcreteBaseType(current.TypeArgs).NormalizeAndAdjustForScope();
       }
     } finally {
       // Every exit, including unresolved/cyclic results and substitution failures, releases empty buffers.
