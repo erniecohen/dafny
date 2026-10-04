@@ -3,14 +3,14 @@
   "scope": "fixed-six-qualified-shared-native-smoke-source-only-no-default-parity",
   "sourceManifestSha256": "b2e0e676f8c279e25358330ac3a91e740a12ddce319fd9aaedc5f1bd508dbc90",
   "sourceOnlyUnexecuted": true,
-  "workflowRouteRegistered": false,
+  "workflowRouteRegistered": true,
   "normalProgramProofModeEnabled": false,
   "fixedProofCases": 6,
   "files": [
     {
       "path": ".github/review/B3-SHARED-NATIVE-SMOKE.md",
-      "sha256": "8cbb05e898533ddf08f86cbd9048e90824c1101fa420d4a9cc5f3fcad7c2cbc7",
-      "bytes": 5969
+      "sha256": "a65173a91151ce9f1ea3080cad56fe9b2f53a2a1e6b4493695cd5161ba0eca2a",
+      "bytes": 7705
     },
     {
       "path": ".github/review/b3-owned-process.py",
@@ -29,8 +29,23 @@
     },
     {
       "path": ".github/workflows/review.yml",
-      "sha256": "2e82419e45d447ec2d6498efb959eee420193614ec432f59410889faa6e2f936",
-      "bytes": 27542
+      "sha256": "19c7c7e3d19c756b68e4c0af84acb746531fdb0f008ee0b191c167a4ffcadb69",
+      "bytes": 35543
     }
-  ]
+  ],
+  "workflowFocus": "shared-native-smoke",
+  "requiredWorkflowFlags": {
+    "b3_compile_only": true,
+    "b3_full_gate": false,
+    "binaries": false,
+    "resolver_probe": false,
+    "additional_axioms_probe": false
+  },
+  "ordinaryJobsExcludedForFocus": true,
+  "executeCapturedHashPinnedCoordinator": true,
+  "expectedProbeFailureExitZero": true,
+  "archiveDiagnosticsAlways": true,
+  "routingSourceOnlyUnexecuted": true,
+  "harnessSourceCommit": "706c9542a36d490b0cfccbc82f0c15807052c910",
+  "coordinatorBodySha256": "3e4e8712a080e7deb457d61a488384a63c814a192c9cd455e5271e3165fb0657"
 }

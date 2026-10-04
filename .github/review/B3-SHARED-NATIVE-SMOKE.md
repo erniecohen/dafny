@@ -1,16 +1,43 @@
 # Fixed qualified shared native smoke coordinator
 
-This is an unpublished source-only coordinator checkpoint for issue126. No new
-harness build, native proof, solver or control has run. It adds no workflow choice:
-review.yml remains byte-identical to source71fc. Its existing native-proof-smoke
-choice still selects the prior coordinator, and unavailable-metadata still selects
-the prior fixed nonproof coordinator. Neither is silently redirected here.
+This is an unpublished source-only routing checkpoint for issue126, based on
+the independently reviewed706c9542 harness/coordinator source. No new harness
+build, native proof, solver or control has run. The distinct shared-native-smoke
+workflow choice selects only this fixed coordinator. Every existing focus and
+default behavior remains unchanged: native-proof-smoke still selects its prior
+coordinator, and unavailable-metadata still selects the prior nonproof coordinator.
+
+The new focus explicitly skips all ordinary build/verifier/standard-library/
+regression/binary/release jobs and the previous b3-native-compile job, even if
+compile_only is false. Its dedicated job records NOT GREEN diagnostics with
+exit0 unless compile_only=true, full=false and every other boolean is false.
+Only passing routing/source pins enable setup-dotnet and the coordinator. There
+is no Java setup, Dafny/Boogie product build, B3 library build or full gate here.
+
+Before setup, routing checks the exact44 source manifest and declared bytes,
+the five-file external inventory and coordinator29524byte SHA
+3e4e8712a080e7deb457d61a488384a63c814a192c9cd455e5271e3165fb0657.
+Invocation then captures and checks that same coordinator body again and
+compile/executes those checked bytes, with no cache or forwarded arguments.
+Both workflow Python entries use isolated -I mode. Expected routing/coordinator
+failures preserve a failed summary while allowing always-on diagnostic archival;
+job exit0 remains delivery only. The sole artifact is out/b3-native-compile,
+under its existing b3-native-compile name.
+
+Source44 remains exactly
+b2e0e676f8c279e25358330ac3a91e740a12ddce319fd9aaedc5f1bd508dbc90.
+Its route-unregistered metadata documents the immutable706c source checkpoint;
+actual routing state now belongs to this external five-file manifest and workflow
+revision. The original19/other36 payloads, coordinator body, owned supervisor,
+normal Program and product/base8333 bytes remain unchanged.
 
 The new file b3-shared-native-proof-smoke.py accepts no command-line arguments.
 It downloads only the exact qualification artifact11316129057 from public
 run37238572256, checks its80709394byte ZIP SHA
 4f4b07ddac0ca8d5d8876a349ce6871d12d0dcf774c757971dabe29bf8ce7a29,
 then extracts the exact1192 regular entries under out/b3-native-compile.
+Run/artifact provenance is fixed historical reviewed data. The coordinator fetches
+the ZIP endpoint only; it does not claim a fresh run/artifact metadata fetch.
 No alternate archive layout, artifact, candidate build or package supplement is
 accepted. The original qualified summary and bundle remain distinct from the new
 smoke summary and shared-harness output.
