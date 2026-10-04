@@ -14,9 +14,10 @@ if full_gate:
  worker=str((output/'worker/library/B3Library.dll').resolve())
  commands += [
   ('pinned-inputs',['python3','.github/review/b3-public-inputs.py']),
-  ('worker-bootstrap',['bash','Scripts/build-b3-worker.sh',str(output/'inputs/bootstrap/dafny.tar.gz'),solver,str(output/'worker')]),
+  ('worker-bootstrap',['env','DOTNET_GCHeapHardLimit=C0000000','bash','Scripts/build-b3-worker.sh',str(output/'inputs/bootstrap/dafny.tar.gz'),solver,str(output/'worker')]),
   ('host',['bash','Source/DafnyB3Host.Test/run-tests.sh',worker,solver]),
   ('corpus',['python3','Scripts/check-b3-integration.py','Binaries/net8.0/Dafny.dll','build/b3-host-tests/package/DafnyB3Host.dll',solver,'--output',str(output/'corpus')]),
+  ('language-server',['env','DAFNY_TEST_SOLVER_PATH='+solver,'dotnet','test','Source/DafnyLanguageServer.Test/DafnyLanguageServer.Test.csproj','-c','Release','-m:1','-p:UseSharedCompilation=false','--filter','FullyQualifiedName~B3ProjectMigrationTest|FullyQualifiedName~IdeStateObserverRetirementTest|FullyQualifiedName~CounterExampleCapabilityTest|FullyQualifiedName~ProjectManagerDatabaseTest|FullyQualifiedName~ProjectFilesTest|FullyQualifiedName~MultipleFilesProjectTest|FullyQualifiedName~CompetingProjectFilesTest|FullyQualifiedName~AdditionalAxiomsTest|FullyQualifiedName~CounterexamplesStillWorksIfNothingHasBeenVerified','--results-directory',str(output/'language-server'),'--logger','trx;LogFileName=result.trx','--nologo']),
   ('regressions',['dotnet','test','Source/IntegrationTests/IntegrationTests.csproj','-c','Release','-m:1','-p:UseSharedCompilation=false','--filter','FullyQualifiedName~git-issue-118.dfy|FullyQualifiedName~git-issue-120.dfy|FullyQualifiedName~git-issue-126.dfy|FullyQualifiedName~git-issue-126-capabilities.dfy','--results-directory',str(output/'regressions'),'--logger','trx;LogFileName=result.trx','--nologo'])]
 results=[]
 for name,command in commands:
