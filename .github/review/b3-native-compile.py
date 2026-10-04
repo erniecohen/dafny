@@ -50,7 +50,8 @@ MAXIMUM_STAGE_LOG_BYTES=32 * 1024 * 1024
 STAGE_TIMEOUT_SECONDS=1800
 NATURAL_CHILD_GRACE_SECONDS=5
 MAXIMUM_CHILD_DIAGNOSTICS=64
-stage_environment={**os.environ,'GRADLE_OPTS':'-Dorg.gradle.daemon=false'}
+stage_environment={**os.environ,'GRADLE_OPTS':'-Dorg.gradle.daemon=false',
+                   'UseSharedCompilation':'false'}
 source_receipt={}
 results=[]
 def validate(name):
@@ -63,7 +64,7 @@ def validate(name):
   assert len(tests)==expected_tests[name] and all(t.get('outcome')=='Passed' for t in tests), 'Incomplete '+name+' denominator'
  elif name=='worker-bootstrap':
   rows=list(csv.DictReader((output/'worker/library/resources.csv').open()))
-  assert rows and all(r['TestResult.Outcome']=='Passed' and r['RandomSeed']=='0' for r in rows), 'Incomplete library proof receipt'
+  assert len(rows)==590 and all(r['TestResult.Outcome']=='Passed' and r['RandomSeed']=='0' for r in rows), 'Incomplete library proof receipt'
   assert len({r['TestResult.DisplayName'] for r in rows})==len(rows), 'Duplicate library proof batch identity'
   resources=[int(r['TestResult.ResourceCount']) for r in rows]
   assert all(0 <= value <= 100000000 for value in resources), 'Invalid library proof resource count'
@@ -340,7 +341,7 @@ passed=len(results)==len(commands) and all(r['exitCode']==0 for r in results)
  'libraryBinaryProduced':proof_receipt is not None,'expectedTestCounts':expected_tests,'expectedControlCounts':expected_controls,
  'defaultCompatibilityVerified':False,'cleanupPoisoned':cleanup_poisoned,
  'cleanupScope':'Dedicated Linux child-subreaper with pidfd-signalled validated owned adopted children',
- 'stageEnvironmentOverrides':{'GRADLE_OPTS':stage_environment['GRADLE_OPTS']}},indent=2)+'\n')
+ 'stageEnvironmentOverrides':{key:stage_environment[key] for key in ('GRADLE_OPTS','UseSharedCompilation')}},indent=2)+'\n')
 with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
  summary.write('B3 native compilation probe: '+('PASS' if passed else 'NOT GREEN')+'\n\n')
  for result in results: summary.write('- '+result['stage']+': exit '+str(result['exitCode'])+'\n')
