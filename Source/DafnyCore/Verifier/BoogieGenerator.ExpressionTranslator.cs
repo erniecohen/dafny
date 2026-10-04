@@ -1615,7 +1615,41 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
         }
         var collector = new LocalIntegerLiteralCollector(this);
         collector.Visit(expr);
-        return BplAnd(canCall, IntegerLiteralIdentities(collector.Values));
+        return BplAnd(BplAnd(canCall, IntegerLiteralIdentities(collector.Values)), TwoStateFunctionValueReflexivity(expr));
+      }
+
+      /// <summary>
+      /// Heap succession is reflexive at the previous heap of each two-state function that "expr" uses as a
+      /// value, whose handle is applied in a current heap that may be the same (erniecohen/dafny#94).  These
+      /// are instances of reflexivity on good heaps, local to the verification context, as the closed literal
+      /// identities are; --additional-axioms only.
+      /// </summary>
+      private Expr TwoStateFunctionValueReflexivity(Expression expr) {
+        var collector = new TwoStateFunctionValueCollector();
+        collector.Visit(expr, this);
+        Expr facts = Expr.True;
+        var heaps = new HashSet<string>();
+        foreach (var heap in collector.PreviousHeaps) {
+          if (heaps.Add(heap.ToString())) {
+            var goodHeap = BoogieGenerator.FunctionCall(heap.tok, BuiltinFunction.IsGoodHeap, null, heap);
+            facts = BplAnd(facts, BplImp(goodHeap, BoogieGenerator.HeapSucc(heap, heap)));
+          }
+        }
+        return facts;
+      }
+
+      private class TwoStateFunctionValueCollector : TopDownVisitor<ExpressionTranslator> {
+        // The previous heaps of the handles, as TrExpr gives them
+        public List<Expr> PreviousHeaps { get; } = [];
+
+        protected override bool VisitOneExpr(Expression expr, ref ExpressionTranslator etran) {
+          if (expr is OldExpr oldExpr) {
+            etran = etran.OldAt(oldExpr.AtLabel);
+          } else if (expr is MemberSelectExpr { Member: TwoStateFunction }) {
+            PreviousHeaps.Add(etran.Old.HeapExpr);
+          }
+          return true;
+        }
       }
 
       public Expr IntegerLiteralIdentities(IEnumerable<Expr> arguments) {
