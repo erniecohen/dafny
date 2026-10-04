@@ -2,6 +2,8 @@
 
 This records the English design and prepared source checkpoints. It is not a verification receipt. It continues the supplied plan's P7 and section 5.7. The complete scope remains native positive-width bitvectors, the existing width-zero encoding, unsigned operations, shifts, rotations, extraction, concatenation, and conversions. The small first fragment below is a checkpoint toward that scope.
 
+The remaining typed-Boogie normalization rules and exact source availability argument are refined in the [source-only normalization proposal](native-bitvector-normalization-proposal.md). That proposal is pending source review and grants no implementation or gate acceptance.
+
 ## Frozen source basis
 
 * Dafny producer: `3218225e747d115dd81cabad6212c3187c3a5038`. The inspected bitvector producer files have the same blobs in the approved Real checkpoint.
