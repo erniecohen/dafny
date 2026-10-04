@@ -17,9 +17,9 @@ on:
   workflow_dispatch:
     inputs:
       b3_focus_gate:
-        description: Focused checks reusing the unchanged B3 library verified in public run 37201990430
+        description: Focused B3 checks; library-dependent modes require exact verified-source receipts
         type: choice
-        options: [none, ide-regressions, maps, isolation, complete]
+        options: [none, ide-regressions, maps, isolation, lifecycle, complete]
         default: none
       b3_full_gate:
         description: Also run the verifying B3 worker bootstrap and real Dafny corpus with b3_compile_only
@@ -636,6 +636,8 @@ jobs:
         run: |
           if [ "$B3_FOCUS_GATE" = isolation ]; then
             python3 .github/review/b3-alc-controls.py
+          elif [ "$B3_FOCUS_GATE" = lifecycle ]; then
+            python3 .github/review/b3-native-lifecycle.py
           elif [ "$B3_FOCUS_GATE" = ide-regressions ] || [ "$B3_FOCUS_GATE" = maps ] || [ "$B3_FOCUS_GATE" = complete ]; then
             python3 .github/review/b3-focused-gate.py
           else
