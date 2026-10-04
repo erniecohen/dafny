@@ -121,9 +121,57 @@ public static class NewtypeOperationView {
     if (!extendedNewtypeBases) {
       return false;
     }
-    var view = GetCoDatatypeView(nominal);
-    return view.BaseType?.IsCoDatatype == true && view.Path.Any(d => d is NewtypeDecl) &&
-      HasNontrivialRefinement(view);
+    if (GetCoDatatypeView(nominal).BaseType?.IsCoDatatype != true) {
+      return false;
+    }
+    // $Is of a co-result also implies membership of every constructor field.
+    // A co-call consequence must not establish a newtype field's constraint
+    // while that same constraint is being checked in the constructor body.
+    var pending = new Stack<(Type Type, bool UnderExtendedNewtype)>();
+    var visitedDatatypes = new HashSet<(DatatypeDecl Declaration, bool UnderExtendedNewtype)>();
+    pending.Push((nominal, false));
+    while (pending.TryPop(out var entry)) {
+      var raw = entry.Type.Normalize();
+      if (raw is UserDefinedType { ResolvedClass: NewtypeDecl { UseBaseReferenceCharacteristics: true } hidden } &&
+          !hidden.IsRevealedInScope(Type.GetScope())) {
+        // Hidden membership constraints cannot be assumed trivial.
+        return true;
+      }
+      var view = Get(entry.Type);
+      var underExtendedNewtype = entry.UnderExtendedNewtype ||
+        view.Path.OfType<NewtypeDecl>().Any(n => n.UseBaseReferenceCharacteristics);
+      if (underExtendedNewtype && HasNontrivialRefinement(view)) {
+        return true;
+      }
+      if (view.Status != ViewStatus.Resolved) {
+        // Resolution rejects erroneous ancestry; do not use it to justify a co-call.
+        if (underExtendedNewtype) {
+          return true;
+        }
+        continue;
+      }
+      var carrier = view.BaseType;
+      if (carrier is UserDefinedType { ResolvedClass: InternalTypeSynonymDecl hiddenType } &&
+          (underExtendedNewtype || hiddenType.Rhs.Normalize() is UserDefinedType {
+            ResolvedClass: NewtypeDecl { UseBaseReferenceCharacteristics: true }
+          })) {
+        return true;
+      }
+      foreach (var argument in carrier.TypeArgs) {
+        pending.Push((argument, underExtendedNewtype));
+      }
+      if (carrier is UserDefinedType { ResolvedClass: DatatypeDecl datatype } &&
+          datatype.IsRevealedInScope(Type.GetScope()) &&
+          visitedDatatypes.Add((datatype, underExtendedNewtype))) {
+        // Scanning each raw declaration once makes expanding generic families
+        // finite. Actual arguments were queued above, so refinements passed to
+        // formal fields are included without growing instantiated recursive types.
+        foreach (var formal in datatype.Ctors.SelectMany(constructor => constructor.Formals)) {
+          pending.Push((formal.Type, underExtendedNewtype));
+        }
+      }
+    }
+    return false;
   }
 
   // Only representation-identity casts may preserve a constructor guard. A

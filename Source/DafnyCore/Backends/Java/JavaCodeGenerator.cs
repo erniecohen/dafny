@@ -1009,7 +1009,9 @@ namespace Microsoft.Dafny.Compilers {
         Contract.Assert(targetTypeName == null);
         var enclosingTypeWithItsOwnTypeArguments = UserDefinedType.FromTopLevelDecl(enclosingTypeDecl.Origin, enclosingTypeDecl);
         var targetType = DatatypeWrapperEraser.SimplifyTypeAndTrimSubsetTypes(Options, enclosingTypeWithItsOwnTypeArguments);
-        var targetTypeIgnoringConstraints = DatatypeWrapperEraser.SimplifyType(Options, enclosingTypeWithItsOwnTypeArguments).GetRuntimeType();
+        var targetTypeIgnoringConstraints = Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+          ? DatatypeWrapperEraser.SimplifyTypeAndTrimNewtypes(Options, enclosingTypeWithItsOwnTypeArguments)
+          : DatatypeWrapperEraser.SimplifyType(Options, enclosingTypeWithItsOwnTypeArguments).GetRuntimeType();
         targetTypeName = BoxedTypeName(targetTypeIgnoringConstraints, wr, enclosingTypeDecl.Origin);
         var w = (enclosingTypeDecl as RedirectingTypeDecl)?.Witness != null ? "Witness" : null;
         switch (AsJavaNativeType(targetType)) {

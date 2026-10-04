@@ -1041,7 +1041,9 @@ namespace Microsoft.Dafny.Compilers {
             if (!arg.IsGhost) {
               wCase.Write(" && ");
               string nm = DatatypeFieldName(arg, k);
-              var eqType = DatatypeWrapperEraser.SimplifyType(Options, arg.Type);
+              var eqType = Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+                ? DatatypeWrapperEraser.SimplifyTypeAndTrimNewtypes(Options, arg.Type)
+                : DatatypeWrapperEraser.SimplifyType(Options, arg.Type);
               if (IsDirectlyComparable(eqType)) {
                 wCase.Write("data1.{0} == data2.{0}", nm);
               } else if (IsOrderedByCmp(eqType)) {
