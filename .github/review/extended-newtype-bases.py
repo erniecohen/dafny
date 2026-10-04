@@ -43,7 +43,8 @@ def main():
                "--solver-path", args.solver, "--cores=1", "--resource-limit=16000000",
                "--verification-time-limit=60", "--show-snippets=false", "--allow-warnings", "--rprint", str(case / "resolved.dfy"), "--bprint", str(case / "program.bpl"), "--boogie", "/normalizeDeclarationOrder:0", "--log-format", "csv;LogFileName=" + str(case / "resources.csv")]
     if "legacy-raw-arrow-subset" in name:
-      command = ["--type-system-refresh=false" if flag == "--type-system-refresh=true" else flag for flag in command]
+      command = ["--type-system-refresh=false" if flag == "--type-system-refresh=true" else
+                 "--general-newtypes=false" if flag == "--general-newtypes=true" else flag for flag in command]
     if "runtime" in name:
       command.append("--relax-definite-assignment")
     if "trait" in name:
