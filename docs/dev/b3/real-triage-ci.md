@@ -7,7 +7,7 @@ and the default `none` focus remain unchanged. A zero job exit delivers a
 diagnostic artifact, never a full acceptance result.
 
 The reviewed inner source seal is
-`ee52260407c245d9f6ab93a1b5002c1c2992b75cd995b79fb321d146c6177aaa`.
+`9dbfe0efdb8f96bb932ff6029f59c8275fa85e8ba4c1c9a2f59fa70ef5cf90ca`.
 All eight sealed source files and their byte lengths must match before the
 coordinator imports its helpers. The local Git attributes force the sealed
 project file to LF so a fresh checkout preserves its exact approved bytes. They are checked again after the build and

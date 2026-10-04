@@ -74,7 +74,7 @@ public static class Program {
           options.TimeLimit = TimeoutMilliseconds / 1000; options.ResourceLimit = (uint)BaselineLimit; options.VcsCores = 1;
           options.Set(BoogieOptionBag.ArithmeticSolver, 2);
           options.Set(CommonOptionBag.AllowWarnings, false); options.FailOnWarnings = true;
-          options.Set(Snippets.ShowSnippets, false); options.UseBaseNameForFileName = true;
+          options.Set(global::DafnyCore.Snippets.ShowSnippets, false); options.UseBaseNameForFileName = true;
           var reporter = new BatchErrorReporter(options);
           var parsed = await ProgramParser.Parse(Encoding.UTF8.GetString(bytes), new Uri("file:///B3RealTriage/original/" + fixture.File), reporter);
           Require(!reporter.HasErrors, "Source parse rejected");

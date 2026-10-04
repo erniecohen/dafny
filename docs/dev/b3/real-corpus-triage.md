@@ -182,3 +182,5 @@ before emitting any triage requests or running Real proofs. This operational
 failure provides no Real correspondence result. The lifecycle repair is a fresh
 source-only checkpoint; it has not been executed. Actual emitted artifacts and
 budget comparisons remain pending.
+
+The replacement [run 37229767767](https://github.com/erniecohen/dafny/actions/runs/37229767767) built the fresh compiler with zero cleanup signals or residual children. The diagnostic runner then failed to compile because its `Snippets.ShowSnippets` reference lacked the actual `DafnyCore` namespace qualifier. No Real requests or proofs were executed. The narrow repair qualifies that same public option; original source fixtures, intended option value, queries and resource budgets remain unchanged. A fresh diagnostic source seal records the correction; earlier seals and incomplete receipts remain historical evidence.
