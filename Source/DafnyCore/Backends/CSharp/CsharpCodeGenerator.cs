@@ -391,7 +391,14 @@ namespace Microsoft.Dafny.Compilers {
       Contract.Requires(wr != null);
 
       var type = UserDefinedType.FromTopLevelDecl(enclosingTypeDecl.Origin, enclosingTypeDecl);
-      var initializer = DefaultValue(type, wr, enclosingTypeDecl.Origin, true);
+      // A descriptor may be needed for a value that was explicitly introduced
+      // even when its nominal type has no compiled default. Its storage slot must
+      // not evaluate a ghost/opt-out witness or require unavailable defaults.
+      var unavailableNewtypeDefault = enclosingTypeDecl is NewtypeDecl &&
+        Options.Get(CommonOptionBag.ExtendedNewtypeBases) && type.GetAutoInit() != AutoInitInfo.CompilableValue;
+      var initializer = unavailableNewtypeDefault
+        ? PlaceboValue(type, wr, enclosingTypeDecl.Origin, true)
+        : DefaultValue(type, wr, enclosingTypeDecl.Origin, true);
 
       var targetTypeName = TypeName(type, wr, enclosingTypeDecl.Origin);
       var typeDescriptorExpr = $"new {DafnyTypeDescriptor}<{targetTypeName}>({initializer})";
