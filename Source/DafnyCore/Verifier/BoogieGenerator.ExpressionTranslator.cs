@@ -679,7 +679,7 @@ namespace Microsoft.Dafny {
       private sealed class ScopedCollectionFactVisitor : Boogie.StandardVisitor {
         public bool Found { get; private set; }
 
-        public override Boogie.BinderExpr VisitBinderExpr(Boogie.BinderExpr node) {
+        public override Expr VisitBinderExpr(Boogie.BinderExpr node) {
           // These aliases occur only in the guarded definitions emitted for a
           // source collection and its selected witnesses.
           Found |= node is Boogie.ForallExpr && node.Dummies.Any(variable =>
@@ -695,6 +695,7 @@ namespace Microsoft.Dafny {
             childFacts is not Boogie.ForallExpr { Triggers: null } quantified ||
             !options.AutoTriggers || Attributes.Contains(source.Attributes, "trigger") ||
             Attributes.Contains(source.Attributes, "autotriggers") ||
+            Attributes.Contains(source.Attributes, "deleted-trigger") ||
             source.Bounds == null || source.Bounds.Count != source.BoundVars.Count) {
           return childFacts;
         }
