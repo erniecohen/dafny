@@ -124,7 +124,11 @@
       "evidence": "https://github.com/erniecohen/dafny/actions/runs/37235933042",
       "receiptSha256": "8f24964dab069e3deb2f79cf54051bb93e9fdec5731c0e0d4e0e5bbcd9a2bd1e",
       "finding": "Default and private controls passed their exact denial-chain, actual poisoned runtime-demand, trigger, owned-process and collection requirements. Reactive failed before invocation, with no unavailable demand or qualified denial. Nine reached immutable boundaries passed; the mandatory final boundary was absent.",
-      "consequence": "The run is not green and cannot enable native proof comparisons. The source-derived overload ambiguity is distinct from a captured runtime exception type. The exact arity-zero selection repair requires all three fresh strict controls and separate proof-entrypoint review."
+      "consequence": "The original run remains failed. Fresh qualification establishes exactly these three nonproof controls; native proof comparisons still require a separately reviewed implementation and fresh proof receipts. Query/resource parity, fresh shared-library state and the full default compatibility gates remain unresolved.",
+      "repair": "Exact nongeneric arity-zero Reactive selection was checked before ordinary invocation. The fresh three-host run passed all three strict selected-method, complete denial-chain, actual poisoned demand, private collection and process controls, plus every required immutable boundary.",
+      "recheckSourceCommit": "71fc9dcff677f80d43ef3cb7c767806513c438a4",
+      "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37238572256",
+      "recheckReceiptSha256": "74950dca1707fc774add3ee067ea4939ec76dfeb16c1edb2fa1f5af894b8688b"
     },
     {
       "kind": "definition-context integration checkpoint",
