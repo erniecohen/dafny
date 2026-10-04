@@ -83,8 +83,8 @@ public class MapType : CollectionType {
   // that the Keys type always supports equality, so we only need to check the Values type here.
   public override bool SupportsEquality => range!.SupportsEquality;
 
-  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes) {
-    return Domain.ComputeMayInvolveReferences(visitedDatatypes) || Range.ComputeMayInvolveReferences(visitedDatatypes);
+  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes, bool generalArrows = false) {
+    return Domain.ComputeMayInvolveReferences(visitedDatatypes, generalArrows) || Range.ComputeMayInvolveReferences(visitedDatatypes, generalArrows);
   }
 
   public override BinaryExpr.ResolvedOpcode ResolvedOpcodeForIn => BinaryExpr.ResolvedOpcode.InMap;
