@@ -303,7 +303,7 @@ def main():
             if args.stage in ("resolve", "translate", "verify"):
                 command = [args.dafny, "verify" if args.stage == "translate" else args.stage, str(source)] + common
                 if args.stage == "translate":
-                    command = [args.dafny, str(source), "/compile:0", "/verify:0", "/functionSyntax:4", "/unicodeChar:1",
+                    command = [args.dafny, str(source), "/compile:0", "/noVerify", "/functionSyntax:4", "/unicodeChar:1",
                                "/generalNewtypes:1", "/typeSystemRefresh:1", "/extendedNewtypeBases:" + ("1" if enabled else "0"),
                                "/print:" + str(directory / "program.bpl")]
                     row["translation_boundary"] = "legacy parse/resolution plus Boogie translation and preparation, no solver verification"
@@ -313,6 +313,10 @@ def main():
                                 "--bprint", str(directory / "program.bpl"),
                                 "--log-format", "csv;LogFileName=" + str(directory / "resources.csv")]
                 row.update(execute(command, directory, args.stage, 90))
+                if args.stage == "translate":
+                    notice = "Warning: this way of using the CLI is deprecated. Use 'dafny --help' to see help for the new Dafny CLI format"
+                    row["cli_deprecation_notice"] = notice in row["stdout"].splitlines()
+                    row["warnings"] = contains_warning("\n".join(line for line in row["stdout"].splitlines() if line != notice) + "\n" + row["stderr"])
                 row["resources"] = csv_cost(directory / "resources.csv")
                 row["boogie"] = boogie_counts(directory / "program.bpl")
             elif args.stage == "build":
