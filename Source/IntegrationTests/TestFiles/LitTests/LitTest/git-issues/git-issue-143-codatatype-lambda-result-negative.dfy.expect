@@ -1,0 +1,3 @@
+git-issue-143-codatatype-lambda-result-negative.dfy(7,52): Error: result of operation could not be proved to satisfy subset type constraint for 'Impossible'
+
+Dafny program verifier finished with 1 verified, 1 error

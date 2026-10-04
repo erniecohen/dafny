@@ -1,0 +1,1 @@
+Numeric conversions now check character validity through instantiated newtype ancestry. Bitvector and ordinal conversions respect Unicode scalar ranges and destination constraints; character newtype conversions use the character representation correctly.

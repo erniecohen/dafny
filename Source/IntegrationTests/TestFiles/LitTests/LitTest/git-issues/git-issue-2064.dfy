@@ -56,7 +56,7 @@ module CoreTests {
 
   module ArrowGood refines UnitTestParent {
     type A = int ~> int
-    type T = A
+    type T = A // error: A is not (!new), since a general arrow may capture references (erniecohen/dafny#132)
     type U = A // error: A is not (==)
     type V = A
     type W = A

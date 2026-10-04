@@ -1,0 +1,3 @@
+git-issue-143-codatatype-helper-let-negative.dfy(8,49): Error: cannot prove termination; try supplying a decreases clause (note that calls cannot be co-recursive in this context)
+
+Dafny program verifier finished with 1 verified, 1 error

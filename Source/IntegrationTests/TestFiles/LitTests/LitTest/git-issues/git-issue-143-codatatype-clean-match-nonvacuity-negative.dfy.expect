@@ -1,0 +1,3 @@
+git-issue-143-codatatype-clean-match-nonvacuity-negative.dfy(8,84): Error: assertion could not be proved
+
+Dafny program verifier finished with 2 verified, 1 error

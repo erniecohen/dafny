@@ -1,0 +1,8 @@
+Dafny no longer assumes that a suspended co-recursive call has already established
+its result's full type membership. The previous circular assumption could accept
+a co-datatype with an impossible refined payload and allow clients to prove false.
+Destructors, ordinary helper inputs, pattern bindings, and substituted defaults
+now establish the existing type-membership obligations before introducing their
+type facts. No axioms are added. The repair conservatively rejects some valid
+destructive observations of productive self-calls that previously verified; see
+[the compatibility explanation](../codatatype-refinement-boundaries.md).
