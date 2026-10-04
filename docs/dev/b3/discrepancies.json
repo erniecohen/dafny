@@ -23,7 +23,7 @@
     {
       "kind": "deliberate conservative approximation",
       "scope": "B3 normalization",
-      "finding": "Source axioms, nonidentity definitions, distinctness constraints and map/lambda equations are omitted. Scope-entry StateCmd/call-temporary where predicates are also omitted because pinned passification appends them without current-incarnation substitution.",
+      "finding": "Source axioms, nonidentity definitions, distinctness constraints and lambda equations are omitted. Scope-entry StateCmd/call-temporary where predicates are also omitted because pinned passification appends them without current-incarnation substitution. Closed monomorphic direct-map helpers now add only the separately reviewed read-over-write laws; polymorphic map theory remains omitted.",
       "consequence": "Proofs relying on those facts can fail; this is incomplete support. Normalization retains checks and state transitions."
     },
     {
@@ -38,6 +38,13 @@
       "scope": "B3 generated implementations before resolution",
       "finding": "The skip-verification query read the procedure link before pre-VC resolution established it.",
       "repair": "Query skipped routines only after successful resolution/typechecking. The real corpus now rejects internal exceptions and requires explicit B3 failure diagnostics for invalid proofs; recheck pending."
+    },
+    {
+      "kind": "public bootstrap probe memory failure",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/37199018093",
+      "finding": "CLI/Core/normalizer/protocol stages passed; the verifying worker bootstrap exceeded the inherited one-GiB managed-heap cap. Downstream stages did not run.",
+      "repair": "The next scratch gate gives the bootstrap alone a three-GiB cap and adds current map and IDE controls. Acceptance remains pending.",
+      "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37200885683"
     }
   ]
 }

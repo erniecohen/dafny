@@ -4,9 +4,11 @@ Tracking issue: [#116](https://github.com/erniecohen/dafny/issues/116).
 
 The implementation reuses the existing typed, pre-VC Dafny-to-Boogie AST translation. Boogie remains the default backend. B3 normalization, verification and result reporting must not invoke Boogie VC generation or proving. A separately pinned .NET worker will construct RawAst and run B3 resolution, type checking and static consistency checks before verification.
 
-The branch is implementing an experimental bool/int slice with a supervised worker. The initial normalizer omits source axioms and map/lambda equations, leaving a weaker context. It retains goals, state transitions and contracts, and rejects unhandled constructs. This is conservative verification support; full prelude, loop, real/bitvector and visibility coverage remains tracked below. The support matrix records validated cases as they become available. Loop lowering has a written correspondence argument; its previous source compiled and passed 53 structural controls. Five further identity-activation controls await execution, and the real-input preparation repair and end-to-end loop verdict checks remain pending.
+The branch implements an experimental bool/int slice with a supervised worker. It retains goals, state transitions, modular contracts and inductive loop checks, and rejects unhandled constructs. Source axioms, nonidentity definitions, distinctness constraints and lambda equations remain omitted. Direct closed monomorphic maps now have only the reviewed read-over-write helper laws; polymorphic maps and collection definitions remain conservative abstractions. The [map correspondence argument](map-helper-correspondence.md) and 15 strict worker verdict controls record the exact boundary. This is incomplete support, with real/bitvector and visibility coverage tracked below.
 
-The complete integration gate has not passed. Worker controls passed before the latest integration changes. Focused default-Boogie checking confirms the translation-error repair, while exact full-suite resource-count parity remains unresolved. Repairs and their pending checks are recorded in `discrepancies.json`. This checkpoint is not an experimental release candidate yet.
+The complete integration gate has not passed. Public [probe 37199018093](https://github.com/erniecohen/dafny/actions/runs/37199018093) compiled the CLI and passed 22 Core, 58 structural normalizer and 29 protocol controls, including the newline-write counterfactual. Its verifying library bootstrap then ran out of memory under the probe's one-GiB managed-heap cap; no downstream corpus or host result from that run counts as passed. [Probe 37200885683](https://github.com/erniecohen/dafny/actions/runs/37200885683) raises only the bootstrap cap and includes the current map and IDE migration/capability controls. Its result is pending.
+
+Focused default-Boogie checking confirms the translation-error repair, while exact full-suite resource-count parity remains unresolved. Repairs and pending checks are recorded in `discrepancies.json`. This checkpoint is not an experimental release candidate yet.
 
 ## Building and selecting the worker
 
@@ -46,7 +48,7 @@ After the pinned verifying bootstrap, run the repository entrypoint:
 make test-b3 B3_LIBRARY=/path/to/B3Library.dll Z3_PATH=/path/to/z3
 ```
 
-It builds the CLI, checks the neutral contracts and backend selection, runs normalizer and worker controls, and executes the real Dafny corpus. The final corpus rejects unsupported features and includes negative assertion/contract controls. Protocol and normalizer test projects also participate in the normal solution test entrypoint. The host stays separate because its verified library artifact is an explicit build input.
+It builds the CLI, checks the neutral contracts and backend selection, runs normalizer and worker controls, requires all 15 typed map verdict controls, and executes the real Dafny corpus. The final corpus rejects unsupported features and includes negative assertion/contract controls. Protocol and normalizer test projects also participate in the normal solution test entrypoint. The host stays separate because its verified library artifact is an explicit build input.
 
 ## Work packages
 
