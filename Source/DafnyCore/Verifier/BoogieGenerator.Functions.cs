@@ -610,10 +610,11 @@ public partial class BoogieGenerator {
         tyargs.Add(TypeToTy(fm.Type));
       }
       tyargs.Add(TypeToTy(f.ResultType));
+      Bpl.Expr handleLayer = null;
       if (f.IsFuelAware()) {
-        vars.Add(BplBoundVar("$ly", Predef.LayerType, out var ly));
-        args.Add(ly);
-        argsRequires.Add(ly);
+        vars.Add(BplBoundVar("$ly", Predef.LayerType, out handleLayer));
+        args.Add(handleLayer);
+        argsRequires.Add(handleLayer);
         formals.Add(BplFormalVar("$fuel", Predef.LayerType, true));
         AddFuelSuccSynonymAxiom(f, true);
       }
@@ -627,11 +628,12 @@ public partial class BoogieGenerator {
       Func<List<Bpl.Expr>, List<Bpl.Expr>> SnocPrevH = x => x;
       Expression selfExpr;
       Dictionary<IVariable, Expression> rhs_dict = new Dictionary<IVariable, Expression>();
+      Bpl.Expr handlePrevHeap = null;
       if (f is TwoStateFunction) {
         // also add previous-heap to the list of fixed arguments of the handle
-        var prevH = BplBoundVar("$prevHeap", Predef.HeapType, vars);
+        handlePrevHeap = BplBoundVar("$prevHeap", Predef.HeapType, vars);
         formals.Add(BplFormalVar("h", Predef.HeapType, true));
-        SnocPrevH = xs => Snoc(xs, prevH);
+        SnocPrevH = xs => Snoc(xs, handlePrevHeap);
       }
       if (f.IsStatic) {
         selfExpr = null;
@@ -737,18 +739,70 @@ public partial class BoogieGenerator {
         Bpl.Expr unboxBx = FunctionCall(f.Origin, BuiltinFunction.Unbox, Predef.RefType, bx);
         Bpl.Expr lhs = IsSetMember(f.Origin, lhs_inner, bx, true);
 
-        var et = new ExpressionTranslator(this, Predef, h, f);
-        var rhs = InRWClause_Aux(f.Origin, unboxBx, bx, null, f.Reads.Expressions, false, et, selfExpr, rhs_dict);
-
-        if (f.EnclosingClass is ArrowTypeDecl) {
-          var args_h = f.ReadsHeap ? Snoc(SnocPrevH(argsRequires), h) : argsRequires;
-          var precondition = FunctionCall(f.Origin, Requires(arity), Bpl.Type.Bool, Concat(SnocSelf(args_h), lhs_args));
-          sink.AddTopLevelDeclaration(new Axiom(f.Origin,
-            BplForall(Cons(bxVar, Concat(vars, bvars)), BplTrigger(lhs), BplImp(precondition, Bpl.Expr.Eq(lhs, rhs)))));
-        } else {
-          sink.AddTopLevelDeclaration(new Axiom(f.Origin,
-            BplForall(Cons(bxVar, Concat(vars, bvars)), BplTrigger(lhs), Bpl.Expr.Eq(lhs, rhs))));
+        var et = handlePrevHeap == null
+          ? new ExpressionTranslator(this, Predef, h, f)
+          : new ExpressionTranslator(this, Predef, h, handlePrevHeap, f);
+        if (handleLayer != null) {
+          et = et.WithLayer(handleLayer);
         }
+        // A finite footprint contains the canonical box of each selected reference, not every box
+        // whose reference unboxing happens to select it.
+        var rhs = BplAnd(MkIsBox(bx, program.SystemModuleManager.ObjectQ()),
+          InRWClause_Aux(f.Origin, unboxBx, bx, null, f.Reads.Expressions, false, et, selfExpr, rhs_dict));
+
+        Bpl.Expr available = FunctionCall(f.Origin, BuiltinFunction.IsGoodHeap, null, h);
+        if (handlePrevHeap != null) {
+          available = BplAnd(available, BplAnd(
+            FunctionCall(f.Origin, BuiltinFunction.IsGoodHeap, null, handlePrevHeap),
+            HeapSucc(handlePrevHeap, h)));
+        }
+        foreach (var typeBoundAxiom in TypeBoundAxioms(f.Origin, GetTypeParams(f))) {
+          available = BplAnd(available, typeBoundAxiom);
+        }
+        if (selfExpr != null) {
+          var self = et.TrExpr(selfExpr);
+          var receiverType = ModuleResolver.GetReceiverType(f.Origin, f);
+          var receiverWhere = f.EnclosingClass is ArrowTypeDecl
+            ? GetWhereClause(f.Origin, self, receiverType, et, NOALLOC)
+            : BplAnd(ReceiverNotNull(self),
+              (handlePrevHeap == null ? et : et.Old).GoodRef(f.Origin, self, receiverType));
+          if (receiverWhere != null) {
+            available = BplAnd(available, receiverWhere);
+          }
+        }
+        for (var i = 0; i < f.Ins.Count; i++) {
+          var formal = f.Ins[i];
+          available = BplAnd(available, MkIsBox(lhs_args[i], formal.Type));
+          // Match the source function's parameter availability discipline. Ordinary formals are
+          // checked without allocation; old/new formals of two-state functions use their own heap.
+          if (handlePrevHeap != null) {
+            available = BplAnd(available,
+              MkIsAllocBox(lhs_args[i], formal.Type, formal.IsOld ? handlePrevHeap : h));
+          }
+        }
+        var requiresArgs = f.ReadsHeap ? Snoc(SnocPrevH(argsRequires), h) : argsRequires;
+        var precondition = f.EnclosingClass is ArrowTypeDecl
+          ? FunctionCall(f.Origin, Requires(arity), Bpl.Type.Bool, Concat(SnocSelf(requiresArgs), lhs_args))
+          : FunctionCall(f.Origin, RequiresName(f), Bpl.Type.Bool, Concat(SnocSelf(requiresArgs), rhs_args));
+        // .reads checks the receiving function's precondition; it does not first call that function.
+        // In particular, do not require its #canCall predicate here. An effect-free arrow's .reads
+        // is total, including at inputs where the function itself cannot be called.
+        if (f.Reads.Expressions.Count != 0) {
+          available = BplAnd(available, precondition);
+        }
+
+        var readsSubstituter = new Substituter(selfExpr, rhs_dict, new Dictionary<TypeParameter, Type>());
+        var reads = f.Reads.Expressions.ConvertAll(readsSubstituter.SubstFrameExpr);
+        Bpl.Expr readsFacts = Bpl.Expr.True;
+        foreach (var frame in reads) {
+          readsFacts = BplAnd(readsFacts, et.CanCallAssumption(frame.E));
+        }
+        var finiteSupport = et.FiniteReadsSupport(reads);
+        sink.AddTopLevelDeclaration(new Axiom(f.Origin,
+          BplForall(Concat(vars, bvars), BplTrigger(lhs_inner), BplImp(available, readsFacts))));
+        sink.AddTopLevelDeclaration(new Axiom(f.Origin,
+          BplForall(Cons(bxVar, Concat(vars, bvars)), BplTrigger(lhs),
+            BplImp(BplAnd(available, finiteSupport), Bpl.Expr.Eq(lhs, rhs)))));
       }
 
       {

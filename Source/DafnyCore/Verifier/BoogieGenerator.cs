@@ -4146,16 +4146,20 @@ namespace Microsoft.Dafny {
     }
 
     /// <summary>
-    /// Idempotently fills in "mc.ProjectionFunctions"
+    /// Idempotently declares the components of a map-comprehension witness choice.
+    /// Each projection takes the complete witness predicate for the current key
+    /// and translated environment. All components of one choice use that same
+    /// predicate; their coordinated correctness is supplied at the source use.
     /// </summary>
     void CreateMapComprehensionProjectionFunctions(MapComprehension mc) {
       Contract.Requires(mc != null && mc.TermLeft != null);
       if (mc.ProjectionFunctions == null) {
         var varNameGen = CurrentIdGenerator.NestedFreshIdGenerator(string.Format("map$project${0}#", projectionFunctionCount));
         projectionFunctionCount++;
+        var witnessPredicateType = new Bpl.MapType(mc.Origin, [], mc.BoundVars.ConvertAll(bv => TrType(bv.Type)), Bpl.Type.Bool);
         mc.ProjectionFunctions = [];
         foreach (var bv in mc.BoundVars) {
-          var arg = BplFormalVar(null, TrType(mc.TermLeft.Type), false);
+          var arg = BplFormalVar(null, witnessPredicateType, false);
           var res = BplFormalVar(null, TrType(bv.Type), true);
           var projectFn = new Bpl.Function(mc.Origin, varNameGen.FreshId(string.Format("#{0}#", bv.Name)), [arg], res);
           mc.ProjectionFunctions.Add(projectFn);

@@ -1,0 +1,4 @@
+A datatype-rank comparison no longer counts as a finite bound for finite
+set or map comprehensions. A datatype containing an infinite set can have
+infinitely many values below its rank. Use a genuinely finite bound, such
+as membership in a finite collection, or an infinite comprehension instead.

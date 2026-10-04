@@ -11,8 +11,17 @@ public class MapComprehension : ComprehensionExpr, ICloneable<MapComprehension> 
   public bool Finite;
   public Expression? TermLeft;
 
+  /// <summary>
+  /// Translation-only projections for a general map comprehension, in the final
+  /// BoundVars order. Projection i takes a predicate on the complete backend
+  /// witness tuple and returns the representation of BoundVars[i]. Every component
+  /// of a selected tuple receives the same predicate for the current key and
+  /// environment; source-scoped facts establish their coordinated correctness.
+  /// The symbols are not copied by cloning, and translated predicates are never
+  /// cached here because their captures depend on the active translator.
+  /// </summary>
   [FilledInDuringTranslation]
-  public List<Boogie.Function>? ProjectionFunctions;  // filled in during translation (and only for general map comprehensions where "TermLeft != null")
+  public List<Boogie.Function>? ProjectionFunctions;
 
   public MapComprehension Clone(Cloner cloner) {
     return new MapComprehension(cloner, this);
