@@ -29,7 +29,7 @@ MEMBER = "Set#IsMember"
 MARKERS = (
     "Encoding82Finite", "Encoding82SimpleISet", "Encoding82EmptyOwn",
     "Encoding82EmptyOuter", "Encoding82EmptyQuantifier", "Encoding82Guarded", "Encoding82Typed",
-    "Encoding82Generic", "Encoding82Map", "Encoding82Tuple",
+    "Encoding82Generic", "Encoding82Map", "Encoding82Tuple", "Encoding82TupleKey", "Encoding82ReverseTupleKey",
     "Encoding82IMap", "Encoding82Nested", "Encoding82KeyOnly", "Encoding82Lambda",
     "Encoding82Conditional", "Encoding82ConditionalLambda",
 )
@@ -294,11 +294,87 @@ def simplify_witness_exists(node):
     return Node("exists", (body,), bound=tuple(remaining)) if remaining else body
 
 
+
+def full_witness_body_instance(relation, candidate):
+    """Match the complete typed predicate under uniform, capture-free witnesses.
+
+    Track binding identities on both sides: equal printed names do not make an
+    inner-bound variable a legal free witness, nor preserve a captured formal.
+    This recognizes an instance of the existential body, not a tuple inverse.
+    """
+    witnesses = dict(relation.bound)
+    substitutions = {}
+
+    def known_sort(term):
+        if term.op == "coerce":
+            return term.text
+        if term.op == "literal":
+            return "bool" if term.text in ("true", "false") else ("real" if "." in term.text else "int")
+        if term.op == "-" and len(term.args) == 1:
+            return known_sort(term.args[0])
+        if term.op == "call" and re.fullmatch(r"_System\.Tuple[0-9]+\._[0-9]+", term.text):
+            return "Box"
+        return None
+
+    def match(template, actual, template_scope=None, actual_scope=None, depth=0):
+        template_scope = {} if template_scope is None else template_scope
+        actual_scope = {} if actual_scope is None else actual_scope
+        if template.op == "id":
+            if template.text in template_scope:
+                return actual.op == "id" and actual_scope.get(actual.text) == template_scope[template.text]
+            if template.text in witnesses:
+                if free(actual) & (set(witnesses) | set(actual_scope)):
+                    return False
+                if known_sort(actual) != witnesses[template.text]:
+                    return False
+                prior = substitutions.setdefault(template.text, actual)
+                return alpha(prior) == alpha(actual)
+            # A free source capture cannot become bound by an alpha-renamed
+            # candidate quantifier, even if its printed name remains identical.
+            return (actual.op == "id" and actual.text == template.text and
+                    actual.text not in actual_scope)
+        if (template.op != actual.op or template.text != actual.text or
+                len(template.args) != len(actual.args) or len(template.bound) != len(actual.bound) or
+                len(template.triggers) != len(actual.triggers)):
+            return False
+        nested_template, nested_actual = dict(template_scope), dict(actual_scope)
+        for index, ((name, sort), (other, other_sort)) in enumerate(zip(template.bound, actual.bound)):
+            if sort != other_sort:
+                return False
+            identity = (depth, index)
+            nested_template[name], nested_actual[other] = identity, identity
+        if template.op == "let":
+            # Let RHSs are simultaneous and use the preceding lexical scope.
+            if not all(match(left, right, template_scope, actual_scope, depth + 1)
+                       for left, right in zip(template.args[:-1], actual.args[:-1])):
+                return False
+            arguments = [(template.args[-1], actual.args[-1])]
+        else:
+            arguments = zip(template.args, actual.args)
+        return (all(match(left, right, nested_template, nested_actual, depth + 1) for left, right in arguments) and
+                all(len(left) == len(right) and
+                    all(match(a, b, nested_template, nested_actual, depth + 1) for a, b in zip(left, right))
+                    for left, right in zip(template.triggers, actual.triggers)))
+
+    return (match(relation.args[0], candidate) and substitutions.keys() == witnesses.keys() and
+            not (free(candidate) & set(witnesses)))
+
+
 def inhabited_source_guard(relation, ancestors):
     target = simplify_witness_exists(Node("exists", relation.args, bound=relation.bound))
     required = {alpha(part) for part in conjunctions(target)}
-    available = {alpha(part) for guard in guards(ancestors)
-                 for part in conjunctions(simplify_witness_exists(guard))}
+    available = set()
+    for guard in guards(ancestors):
+        for part in conjunctions(guard):
+            if part.op == "||":
+                original, candidate = part.args
+                if (alpha(simplify_witness_exists(original)) != alpha(target) or
+                        not full_witness_body_instance(relation, candidate)):
+                    continue
+                # E || P(candidate) equals E only when the complete candidate
+                # predicate implies this exact retained source existential.
+                part = original
+            available.update(alpha(piece) for piece in conjunctions(simplify_witness_exists(part)))
     return required <= available
 
 
@@ -658,7 +734,7 @@ def audit(rows, decls, require_probe=True, lifted=False, source_triggers=True):
             if not any(matching_definition(n.args[0], d) for d in context_defs):
                 fail("E02", "actual characteristic map/captures have no matching definition in " + ",".join(sorted(markers)))
     if require_probe:
-        for marker in ("Encoding82Finite", "Encoding82EmptyOwn", "Encoding82Guarded", "Encoding82Typed", "Encoding82Generic", "Encoding82Map", "Encoding82Tuple", "Encoding82Nested", "Encoding82KeyOnly", "Encoding82Conditional", "Encoding82ConditionalLambda"):
+        for marker in ("Encoding82Finite", "Encoding82EmptyOwn", "Encoding82Guarded", "Encoding82Typed", "Encoding82Generic", "Encoding82Map", "Encoding82Tuple", "Encoding82TupleKey", "Encoding82ReverseTupleKey", "Encoding82Nested", "Encoding82KeyOnly", "Encoding82Conditional", "Encoding82ConditionalLambda"):
             if not by_context[marker]:
                 fail("E02", "no finite definition observed in " + marker)
     for d in by_context["Encoding82EmptyOwn"]:
@@ -842,6 +918,48 @@ def mutations(rows, decls):
             run(name, change(rows, found[0], found[1], Node("literal", text="true")), code)
         else:
             results.append({"name": name, "expected": code, "passed": False, "reason": "mutation target absent"})
+    for marker in ("Encoding82TupleKey", "Encoding82ReverseTupleKey"):
+        found = None
+        for row in rows:
+            if marker not in contexts(row):
+                continue
+            for selected, ancestors in walk(row.expr):
+                if selected.op != "select" or len(selected.args) < 3 or not all(projection(p) for p in selected.args[1:]):
+                    continue
+                relation = witness_relation(selected.args[0])
+                if relation is None:
+                    continue
+                expected = simplify_witness_exists(Node("exists", relation.args, bound=relation.bound))
+                for guard in guards(ancestors):
+                    for part in conjunctions(guard):
+                        if (part.op == "||" and alpha(simplify_witness_exists(part.args[0])) == alpha(expected) and
+                                full_witness_body_instance(relation, part.args[1])):
+                            found = row, part
+                            break
+                    if found:
+                        break
+                if found:
+                    break
+            if found:
+                break
+        if not found:
+            results.append({"name": marker + "-candidate-instance", "passed": False,
+                            "reason": "retained source existential and complete candidate instance absent"})
+            continue
+        row, disjunction = found
+        candidate = disjunction.args[1]
+        for suffix, predicate in (
+            ("drop-candidate-range", lambda c: c.op in ("<", "<=", ">", ">=")),
+            ("drop-candidate-canonical-key", lambda c: c.op == "==" and contains(c, lambda n: n.op == "call" and n.text.startswith("$Box"))),
+        ):
+            conjunct = next((c for c in conjunctions(candidate) if predicate(c)), None)
+            if conjunct is None:
+                results.append({"name": marker + "-" + suffix, "passed": False, "reason": "candidate conjunct absent"})
+            else:
+                weakened = replace(disjunction, args=(disjunction.args[0], replace_node(candidate, conjunct, Node("literal", text="true"))))
+                run(marker + "-" + suffix, change(rows, row, disjunction, weakened), "E08")
+        run(marker + "-drop-retained-existential",
+            change(rows, row, disjunction, replace(disjunction, args=(Node("literal", text="true"), candidate))), "E08")
     guarded = next((d for d in defs if "Encoding82Guarded" in contexts(d.statement)), None)
     if guarded:
         ancestor = next((n for n, child in reversed(guarded.ancestors) if n.op == "==>" and child == 1 and contains(n.args[0], lambda c: c.op == "!=")), None)
@@ -897,6 +1015,47 @@ class ParserTests(unittest.TestCase):
         c = parse(lex("(lambda y: int :: y == m)"))
         self.assertEqual(alpha(a), alpha(b))
         self.assertNotEqual(alpha(a), alpha(c))
+
+    def test_complete_witness_instances_preserve_all_guards(self):
+        relation = parse(lex("(lambda x: int, y: bool :: $Is(x, TInt) && 0 <= x && $IsAllocBox($Box(x), TInt, heap) && Range(x, y, n) && key == $Box(Tuple($Box(x), $Box(y))))"))
+        values = {"x": parse(lex("$Unbox(Field1($Unbox(key): DatatypeType)): int")),
+                  "y": parse(lex("$Unbox(Field0($Unbox(key): DatatypeType)): bool"))}
+        candidate = expand_lets(relation.args[0], values)
+        self.assertTrue(full_witness_body_instance(relation, candidate))
+        original = Node("exists", relation.args, bound=relation.bound)
+        guard = Node("||", (original, candidate))
+        ancestors = ((Node("==>", (guard, Node("literal", text="true"))), 1),)
+        self.assertTrue(inhabited_source_guard(relation, ancestors))
+        for conjunct in conjunctions(candidate):
+            weakened = replace_node(candidate, conjunct, Node("literal", text="true"))
+            self.assertFalse(full_witness_body_instance(relation, weakened))
+            bad_guard = replace(guard, args=(original, weakened))
+            self.assertFalse(inhabited_source_guard(relation, ((Node("==>", (bad_guard, Node("literal", text="true"))), 1),)))
+        wrong_sort = expand_lets(relation.args[0], {**values, "x": parse(lex("$Unbox(Field1($Unbox(key): DatatypeType)): bool"))})
+        self.assertFalse(full_witness_body_instance(relation, wrong_sort))
+        wrong_original = replace(original, args=(Node("literal", text="true"),))
+        self.assertFalse(inhabited_source_guard(relation, ((Node("==>", (replace(guard, args=(wrong_original, candidate)), Node("literal", text="true"))), 1),)))
+
+    def test_witness_instance_rejects_inconsistent_and_residual_witnesses(self):
+        relation = parse(lex("(lambda x: int :: F(x, x))"))
+        self.assertTrue(full_witness_body_instance(relation, parse(lex("F(1, 1)"))))
+        self.assertFalse(full_witness_body_instance(relation, parse(lex("F(1, 2)"))))
+        self.assertFalse(full_witness_body_instance(relation, parse(lex("F(x, x)"))))
+
+    def test_witness_instance_rejects_nested_capture(self):
+        relation = parse(lex("(lambda x: int :: (forall z: int :: F(x, z, n)))"))
+        self.assertTrue(full_witness_body_instance(relation, parse(lex("(forall w: int :: F(1, w, n))"))))
+        self.assertFalse(full_witness_body_instance(relation, parse(lex("(forall z: int :: F(z, z, n))"))))
+        self.assertFalse(full_witness_body_instance(relation, parse(lex("(forall n: int :: F(1, n, n))"))))
+        shadowed = parse(lex("(lambda x: int :: (forall z: int :: (forall w: int :: F(x, z, w))))"))
+        self.assertFalse(full_witness_body_instance(shadowed, parse(lex("(forall a: int :: (forall a: int :: F(1, a, a)))"))))
+
+    def test_witness_instance_respects_simultaneous_let_and_patterns(self):
+        relation = parse(lex("(lambda x: int :: (var z: int := n; F(z, x)))"))
+        self.assertTrue(full_witness_body_instance(relation, parse(lex("(var n: int := n; F(n, 1))"))))
+        quantified = parse(lex("(lambda x: int :: (forall z: int :: {F(x, z)} F(x, z)))"))
+        self.assertTrue(full_witness_body_instance(quantified, parse(lex("(forall w: int :: {F(1, w)} F(1, w))"))))
+        self.assertFalse(full_witness_body_instance(quantified, parse(lex("(forall w: int :: {F(2, w)} F(1, w))"))))
 
     def test_quantifier_scope_and_trigger(self):
         q = parse(lex("(forall b: Box :: {:weight 3} {M(C(n), b)} n != 0 ==> M(C(n), b))"))

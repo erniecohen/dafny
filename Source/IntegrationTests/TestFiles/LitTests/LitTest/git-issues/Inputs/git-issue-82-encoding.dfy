@@ -42,6 +42,15 @@ ghost function Encoding82Tuple(n: int, b: bool): map<int, (int, bool)> {
   map x: int, y: bool | x == n && y == b :: 0 := (x, y)
 }
 
+// Direct tuple keys exercise candidate fields in source order and reversed bounds.
+ghost function Encoding82TupleKey(n: int): map<(int, int), int> {
+  map i: int, j: int | 0 <= i < 2 && 0 <= j <= i && j <= n :: (i, j) := i + j
+}
+
+ghost function Encoding82ReverseTupleKey(n: int): map<(int, int), int> {
+  map j: int, i: int | 0 <= i < 2 && 0 <= j <= i && j <= n :: (i, j) := i + j
+}
+
 ghost function Encoding82IMap(n: int): imap<int, int> {
   imap x: int | x == n :: 0 := x
 }

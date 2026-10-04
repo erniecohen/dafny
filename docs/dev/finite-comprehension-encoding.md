@@ -79,6 +79,16 @@ prevent capture, and self-dependent equations retain their existential binder.
 This avoids asking the solver to invent an arithmetic witness solely to enable
 an already justified choice fact; it introduces no additional choice principle.
 
+For a direct tuple key containing each source witness exactly once, the
+translator also exposes candidate witnesses obtained from the corresponding
+tuple fields of the unboxed key. The premise retains the original existential
+and adds the complete predicate at those candidates: `E || P(candidate)`.
+Since `P(candidate)` implies `E = exists witnesses :: P(witnesses)`, this is
+logically the same premise. Every source type, subset, allocation, range, and
+canonical boxed-key equation remains in `P`; no tuple inverse or off-domain
+key assumption is introduced. Field positions follow constructor arguments,
+including when bounds discovery reverses the source binders.
+
 ## Aliases in solver patterns
 
 Finite-view and lambda-family aliases are universally quantified and guarded
@@ -120,10 +130,14 @@ formal-argument heap. No succession from `$OneHeap` is needed. Actual current,
 previous, and labeled heap contexts keep their formation-heap relation, and
 all argument allocation, type, range, and child permission guards remain.
 
-When an empty-reads lambda has no body or range call facts, its unconditional
-constant-empty definition already entails the whole guarded consequence.
-The translator omits only that redundant quantified formula; it changes no
-value, precondition, or permission.
+For a lambda with no reads expressions, its constant-empty footprint definition
+`D` has no free formal, heap, layer, or range variable. The translator emits `D`
+once outside the guarded child facts: `D && (forall x :: G ==> D && F)` is
+equivalent to `D && (forall x :: G ==> F)`. This also removes its duplicate inside
+a range-conditioned branch while retaining every child and range fact and guard.
+When there are no body or range call facts, `D` alone entails the whole guarded
+consequence, so that redundant quantifier is omitted too. The value,
+precondition, and permissions are unchanged.
 
 Lambda common facts also include source-local instances of the existing
 allocated-arrow result theorem. For the actual selector heap `h`, the premises
@@ -195,17 +209,19 @@ captured map values, then a separate control rejects a live `assert false`.
 
 Lambda source well-formedness checks havoc a good successor heap and introduce
 formal variables with `GetWhereClause(..., ISALLOC)`. Common lambda facts must
-therefore guard their child call facts and footprint definitions with both the
-boxed source type and allocatedness in that same lambda heap, as well as the
-actual formation-heap succession and source range. An effect-free arrow has a
-total empty `.reads` selector, including arguments outside the allocated formal
-universe or where its body precondition is false. Its characteristic predicate
-is the constant false map, independent of arguments, heap, and layer. This exact
-empty-footprint definition is supplied at formation without the lambda's formal
-domain guard; enclosing source guards and all child-call guards remain intact. The value and its `.requires` translation retain their own descriptor;
-a stronger availability premise for facts does not change the lambda's predicate or footprint. In particular, merely
-typed unallocated backend arguments do not inherit child function permissions
-that were checked only for allocated source formals.
+therefore guard their child call facts and nonempty-footprint definitions with
+both the boxed source type and allocatedness in that same lambda heap, as well
+as the actual formation-heap succession and source range. An effect-free arrow
+has a total empty `.reads` selector, including arguments outside the allocated
+formal universe or where its body precondition is false. Its characteristic
+predicate is the constant false map, independent of arguments, heap, and layer.
+This exact closed definition is supplied once at formation without the lambda's
+formal domain guard; copies under the guarded body or range are redundant.
+Enclosing source guards and all child-call guards remain intact. The value and
+its `.requires` translation retain their own descriptor; a stronger availability
+premise for facts does not change the lambda's predicate or footprint. In
+particular, merely typed unallocated backend arguments do not inherit child
+function permissions that were checked only for allocated source formals.
 
 Ordinary function definitions reject direct dependence on `allocated(q)`.
 The source allocation control instead uses an effectful reference-argument
