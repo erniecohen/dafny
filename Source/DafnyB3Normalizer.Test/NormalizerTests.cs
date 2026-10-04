@@ -244,6 +244,22 @@ public class NormalizerTests {
   }
 
   [Theory]
+  [InlineData("==")]
+  [InlineData("<==>")]
+  public void BooleanObservationEqualityUsesTheResolvedEquivalenceForm(string equality) {
+    var result = Boogie("procedure P(m: [bool]bool, n: [bool]bool); requires (forall i: bool :: m[i] " + equality + " n[i]); implementation P(m: [bool]bool, n: [bool]bool) { assert !(forall j: bool :: m[j] " + equality + " n[j]); }");
+    Validate(result);
+    var assumption = Assert.IsType<Ir.Application>(Assert.Single(Statements(result.Program!.Unit.Body).OfType<Ir.Assume>()).Condition);
+    var negated = Assert.IsType<Ir.Operation>(Assert.Single(Statements(result.Program.Unit.Body).OfType<Ir.Check>()).Condition);
+    Assert.Equal(Ir.Operator.Not, negated.Operator);
+    var observation = Assert.IsType<Ir.Application>(negated.Arguments[0]);
+    Assert.Equal(assumption.Name, observation.Name);
+    Assert.Equal(assumption.Arguments.ToArray(), observation.Arguments.ToArray());
+    Assert.Single(result.Approximations.Where(note => note.StartsWith("Map observation equality abstraction:")));
+    Assert.Empty(result.Program.Axioms);
+  }
+
+  [Theory]
   [InlineData("forall i,j: int :: m[i,j] == n[i,j]", true)]
   [InlineData("forall i: int :: m[i,0] == n[i,0]", false)]
   [InlineData("forall i,j: int :: m[i,i] == n[i,i]", false)]
