@@ -462,15 +462,16 @@ module RawAst {
     | LogicalAnd | LogicalOr
     | Eq | Neq
     | Less | AtMost
-    | Plus | Minus | Times | Div | Mod
+    | Plus | Minus | Times | Div | Mod | RealDiv
     // unary operators
     | LogicalNot
     | UnaryMinus
+    | ToReal | ToInt
   {
     function ArgumentCount(): nat {
       match this
       case IfThenElse => 3
-      case LogicalNot | UnaryMinus => 1
+      case LogicalNot | UnaryMinus | ToReal | ToInt => 1
       case _ => 2
     }
 
@@ -490,6 +491,9 @@ module RawAst {
       case Times => "*"
       case Div => "div"
       case Mod => "mod"
+      case RealDiv => "/"
+      case ToReal => "#to_real"
+      case ToInt => "#to_int"
       case LogicalNot => "!"
     }
 
@@ -504,14 +508,15 @@ module RawAst {
       case Plus => PrintUtil.BindingPower(60, 60)
       case Minus => PrintUtil.BindingPower(60, 61)
       case Times => PrintUtil.BindingPower(70, 70)
-      case Div | Mod => PrintUtil.BindingPower(70, 71)
-      case LogicalNot | UnaryMinus => PrintUtil.BindingPower(80, 80)
+      case Div | Mod | RealDiv => PrintUtil.BindingPower(70, 71)
+      case LogicalNot | UnaryMinus | ToReal | ToInt => PrintUtil.BindingPower(80, 80)
     }
   }
 
   datatype Expr =
     | BLiteral(bvalue: bool)
     | ILiteral(ivalue: int)
+    | RLiteral(numerator: int, denominator: int)
     | CustomLiteral(s: string, typ: TypeName)
     | IdExpr(name: string, isOld: bool := false)
     | OperatorExpr(op: Operator, args: seq<Expr>)
@@ -525,6 +530,7 @@ module RawAst {
       match this
       case BLiteral(_) => true
       case ILiteral(_) => true
+      case RLiteral(_, denominator) => denominator > 0
       case CustomLiteral(_, _) => true
       case IdExpr(name, isOld) =>
         (if isOld then OldName(name) else name) in scope

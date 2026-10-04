@@ -60,6 +60,7 @@ module Ast {
   datatype Type =
     | BoolType
     | IntType
+    | RealType
     | TagType
     | UserType(decl: TypeDecl)
   {
@@ -67,6 +68,7 @@ module Ast {
       match this
       case BoolType => Types.BoolTypeName
       case IntType => Types.IntTypeName
+      case RealType => Types.RealTypeName
       case TagType => Types.TagTypeName
       case UserType(decl) => decl.Name
     }
@@ -429,6 +431,7 @@ module Ast {
   datatype Expr =
     | BLiteral(bvalue: bool)
     | ILiteral(ivalue: int)
+    | RLiteral(numerator: int, denominator: int)
     | CustomLiteral(s: string, typ: Type)
     | IdExpr(v: Variable)
     | OperatorExpr(op: Operator, args: seq<Expr>)
@@ -442,6 +445,7 @@ module Ast {
       match this
       case BLiteral(_) => BoolType
       case ILiteral(_) => IntType
+      case RLiteral(_, _) => RealType
       case CustomLiteral(_, typ) => typ
       case IdExpr(v) => v.typ
       case OperatorExpr(op, args) =>
@@ -452,8 +456,10 @@ module Ast {
             BoolType
           case Eq | Neq | Less | AtMost =>
             BoolType
-          case Plus | Minus | Times | Div | Mod | UnaryMinus =>
-            IntType
+          case Plus | Minus | Times | UnaryMinus =>
+            if op.ArgumentCount() == |args| then args[0].ExprType() else IntType
+          case Div | Mod | ToInt => IntType
+          case RealDiv | ToReal => RealType
         }
       case FunctionCallExpr(func, args) => func.ResultType
       case LabeledExpr(_, body) => body.ExprType()
@@ -470,7 +476,8 @@ module Ast {
       match this
       case BLiteral(_) => true
       case ILiteral(_) => true
-      case CustomLiteral(_, typ) => typ != BoolType && typ != IntType
+      case RLiteral(_, denominator) => denominator > 0
+      case CustomLiteral(_, typ) => typ != BoolType && typ != IntType && typ != RealType
       case IdExpr(_) => true
       case OperatorExpr(op, args) =>
         && |args| == op.ArgumentCount()
@@ -495,6 +502,7 @@ module Ast {
       match this
       case BLiteral(value) => if value then "true" else "false"
       case ILiteral(value) => Int2String(value)
+      case RLiteral(n, d) => "#real(" + Int2String(n) + ", " + Int2String(d) + ")"
       case CustomLiteral(s, typ) => PrintUtil.CustomLiteralToString(s, typ.ToString())
       case IdExpr(v) => v.name
       case OperatorExpr(op, args) =>
@@ -504,6 +512,8 @@ module Ast {
             "if " + args[0].ToString() +
             " " + args[1].ToString() +
             " else " + args[2].ToString(opStrength.SubexpressionPower(PrintUtil.Right, context))
+          else if op in {Operator.ToReal, Operator.ToInt} && |args| == 1 then
+            op.ToString() + "(" + args[0].ToString() + ")"
           else if op.ArgumentCount() == 1 == |args| then
             op.ToString() + args[0].ToString(opStrength.SubexpressionPower(PrintUtil.Right, context))
           else if op.ArgumentCount() == 2 == |args| then
@@ -579,6 +589,7 @@ module Ast {
       match this
       case BLiteral(_) => {}
       case ILiteral(_) => {}
+      case RLiteral(_, _) => {}
       case CustomLiteral(_, _) => {}
       case IdExpr(v) => {v}
       case OperatorExpr(_, args) => FreeVariablesInList(args)

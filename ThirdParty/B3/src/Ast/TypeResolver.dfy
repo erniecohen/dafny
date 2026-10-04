@@ -14,6 +14,8 @@ module TypeResolver {
       return Success(BoolType);
     } else if typename == IntTypeName {
       return Success(IntType);
+    } else if typename == RealTypeName {
+      return Success(RealType);
     } else if typename == TagTypeName {
       return Success(TagType);
     }

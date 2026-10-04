@@ -43,9 +43,14 @@ module ExprResolver {
         r := BLiteral(value);
       case ILiteral(value) =>
         r := ILiteral(value);
+      case RLiteral(numerator, denominator) =>
+        if denominator <= 0 {
+          return Failure("real literal denominator must be positive");
+        }
+        r := RLiteral(numerator, denominator);
       case CustomLiteral(s, typeName) =>
         var typ :- ResolveType(typeName, ers.typeMap);
-        if typ == BoolType || typ == IntType {
+        if typ == BoolType || typ == IntType || typ == RealType {
           return Failure("custom literal is not allowed for a built-in type: " + PrintUtil.CustomLiteralToString(s, typeName));
         }
         r := CustomLiteral(s, typ);
@@ -178,6 +183,7 @@ module ExprResolver {
     match expr
     case BLiteral(_) => false
     case ILiteral(_) => false
+    case RLiteral(_, _) => false
     case CustomLiteral(_, _) => false
     case IdExpr(_) => false
     case OperatorExpr(_, args) =>

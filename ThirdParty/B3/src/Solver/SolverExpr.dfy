@@ -14,7 +14,7 @@ module SolverExpr {
     reveals SExprPrintConfig
     reveals SExpr
     provides SExpr.ToString
-    provides SExpr.Boolean, SExpr.Integer, SExpr.EQ, SExpr.Id, SExpr.FuncAppl, SExpr.Eq, SExpr.Negation, SExpr.BigAnd
+    provides SExpr.Boolean, SExpr.Integer, SExpr.Rational, SExpr.EQ, SExpr.Id, SExpr.FuncAppl, SExpr.Eq, SExpr.Negation, SExpr.BigAnd
     provides Wrappers, DeclarationMarkers
 
   trait SDeclaration extends object {
@@ -30,6 +30,7 @@ module SolverExpr {
   datatype SType =
     | SBool
     | SInt
+    | SReal
     | SUserType(decl: STypeDecl)
   {
     static function TypesToSExpr(types: seq<SType>): SExpr {
@@ -40,6 +41,7 @@ module SolverExpr {
       match this
       case SBool => S("Bool")
       case SInt => S("Int")
+      case SReal => S("Real")
       case SUserType(name) => S(decl.name)
     }
 
@@ -47,6 +49,7 @@ module SolverExpr {
       match this
       case SBool => "bool"
       case SInt => "int"
+      case SReal => "real"
       case SUserType(name) => decl.name
     }
   }
@@ -113,7 +116,12 @@ module SolverExpr {
       S(if b then TRUE else FALSE)
     }
     static function Integer(x: int): SExpr {
-      S(Int2String(x))
+      if x < 0 then PP([S("-"), S(Int2String(-x))]) else S(Int2String(x))
+    }
+    static function Rational(numerator: int, denominator: int): SExpr
+      requires denominator > 0
+    {
+      FuncAppl("/", [FuncAppl("to_real", [Integer(numerator)]), FuncAppl("to_real", [Integer(denominator)])])
     }
     static function Id(x: SConstant): SExpr {
       S(x.name)
