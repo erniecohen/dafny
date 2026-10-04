@@ -175,7 +175,7 @@ namespace Microsoft.Dafny {
               // conditions, it seems confusing to get yet another error message.  Therefore, we add a middle disjunct to (*), namely
               // the conjunction of all the previous RHSs.
               var isOrdinalLimit = e.E0.Type.IsBigOrdinalType || options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
-                e.E0.Type.NormalizeToAncestorType().IsBigOrdinalType;
+                NewtypeOperationView.IsOrdinal(e.E0.Type);
               var kAsORD = !isOrdinalLimit ? FunctionCall(k.tok, "ORD#FromNat", Bpl.Type.Int, k) : k;
               var prefixEqK = CoEqualCall(codecl, e1type.TypeArgs, e2type.TypeArgs, kAsORD, etran.layerInterCluster.LayerN((int)FuelSetting.FuelAmount.HIGH), A, B); // FunctionCall(expr.Tok, CoPrefixName(codecl, 1), Bpl.Type.Bool, k, A, B);
               Bpl.Expr kHasSuccessor, kMinusOne;

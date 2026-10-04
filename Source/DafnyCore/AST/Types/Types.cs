@@ -465,6 +465,9 @@ public abstract class Type : NodeWithOrigin {
       var td = (NewtypeDecl)cl;
       switch (td.WitnessKind) {
         case SubsetTypeDecl.WKind.CompiledZero:
+          return td.InheritsBaseDefault
+            ? td.ConcreteBaseType(udt.TypeArgs).GetAutoInit(coDatatypesBeingVisited)
+            : AutoInitInfo.CompilableValue;
         case SubsetTypeDecl.WKind.Compiled:
           return AutoInitInfo.CompilableValue;
         case SubsetTypeDecl.WKind.Ghost:

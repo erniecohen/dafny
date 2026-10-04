@@ -637,7 +637,7 @@ namespace Microsoft.Dafny {
         var e = ternaryExpr;
         var e0 = TrExpr(e.E0);
         if (!(e.E0.Type.IsBigOrdinalType || options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
-              e.E0.Type.NormalizeToAncestorType().IsBigOrdinalType)) {
+              NewtypeOperationView.IsOrdinal(e.E0.Type))) {
           e0 = FunctionCall(e0.tok, "ORD#FromNat", Predef.BigOrdinalType, e0);
         }
         var e1 = TrExpr(e.E1);
@@ -888,7 +888,7 @@ namespace Microsoft.Dafny {
           if (e.Type.NormalizeToAncestorType() is BitvectorType bitvectorType) {
             return MaybeLit(BoogieGenerator.BplBvLiteralExpr(GetToken(e), n, bitvectorType));
           } else if (e.Type.IsBigOrdinalType || options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
-                   e.Type.NormalizeToAncestorType().IsBigOrdinalType) {
+                   NewtypeOperationView.IsOrdinal(e.Type)) {
             var fromNat = FunctionCall(GetToken(literalExpr), "ORD#FromNat", Predef.BigOrdinalType, Boogie.Expr.Literal(n));
             return MaybeLit(fromNat, Predef.BigOrdinalType);
           } else {

@@ -316,12 +316,21 @@ namespace Microsoft.Dafny {
             // Next, at a leisurely pace (that is, waiting until enough of the pre-type of .Root is known), resolve the update expression
             // and desugar it into some kind of nested let expression.
             Constraints.AddGuardedConstraint(() => {
-              if (e.Root.PreType.NormalizeWrtScope() is DPreType tentativeRootPreType) {
+              var nominalRootPreType = e.Root.PreType;
+              if (OperationPreType(nominalRootPreType) is DPreType tentativeRootPreType) {
                 if (tentativeRootPreType.Decl is DatatypeDecl datatypeDecl) {
+                  var needsReintroduction = !PreType.Same(nominalRootPreType, tentativeRootPreType);
+                  e.Root = BaseOperationExpression(e.Root, tentativeRootPreType);
                   var (ghostLet, compiledLet) = ResolveDatatypeUpdate(expr.Origin, tentativeRootPreType, e.Root, datatypeDecl, e.Updates,
                     resolutionContext, out var members, out var legalSourceConstructors);
                   // if 'let' returns as 'null', an error has already been reported
                   if (ghostLet != null) {
+                    if (needsReintroduction) {
+                      var originalGhostLet = ghostLet;
+                      ghostLet = new ConversionExpr(e.Origin, ghostLet, new InferredTypeProxy()) { PreType = nominalRootPreType };
+                      compiledLet = originalGhostLet == compiledLet ? ghostLet
+                        : new ConversionExpr(e.Origin, compiledLet, new InferredTypeProxy()) { PreType = nominalRootPreType };
+                    }
                     e.ResolvedExpression = ghostLet;
                     e.ResolvedCompiledExpression = compiledLet;
                     e.Members = members;
@@ -665,6 +674,9 @@ namespace Microsoft.Dafny {
               foreach (var lhs in e.LHSs) {
                 var rhsPreType = i < e.RHSs.Count ? e.RHSs[i].PreType : CreatePreTypeProxy("let RHS");
                 ResolveCasePattern(lhs, rhsPreType, resolutionContext);
+                if (lhs.Ctor != null && i < e.RHSs.Count && OperationPreType(rhsPreType) is { Decl: DatatypeDecl } operationPreType) {
+                  e.RHSs[i] = BaseOperationExpression(e.RHSs[i], operationPreType);
+                }
                 // Check for duplicate names now, because not until after resolving the case pattern do we know if identifiers inside it refer to bound variables or nullary constructors
                 var c = 0;
                 foreach (var v in lhs.Vars) {
@@ -2473,13 +2485,16 @@ namespace Microsoft.Dafny {
       Contract.Requires(sourcePreType != null);
       Contract.Requires(resolutionContext != null);
 
-      var dtd = (sourcePreType.Normalize() as DPreType)?.Decl as DatatypeDecl;
+      // Use the base only for constructor lookup and component signatures. A
+      // variable pattern must retain the original nominal sourcePreType.
+      var operationSourcePreType = OperationPreType(sourcePreType);
+      var dtd = operationSourcePreType?.Decl as DatatypeDecl;
       List<PreType> sourceTypeArguments = null;
       // Find the constructor in the given datatype
       // If what was parsed was just an identifier, we will interpret it as a datatype constructor, if possible
       DatatypeCtor ctor = null;
       if (dtd != null) {
-        sourceTypeArguments = ((DPreType)sourcePreType.Normalize()).Arguments;
+        sourceTypeArguments = operationSourcePreType.Arguments;
         if (pat.Var == null || (pat.Var != null && pat.Var.Type is TypeProxy)) {
           if (dtd.ConstructorsByName.TryGetValue(pat.Id, out ctor)) {
             if (pat.Arguments == null) {
