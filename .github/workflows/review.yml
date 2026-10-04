@@ -16,6 +16,12 @@ on:
     branches: ['review/**', 'dev']
   workflow_dispatch:
     inputs:
+      b3_focus_gate:
+        description: Select the focused BV universal proof probe (scratch branches only)
+        type: choice
+        options: [none, bitvector-proof]
+        default: none
+
       binaries:
         description: Also build the self-contained binaries (a release is made only for a tag)
         type: boolean
@@ -56,6 +62,7 @@ env:
 
 jobs:
   build:
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' }}
     name: Build (Release)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -120,6 +127,7 @@ jobs:
           retention-days: 14
 
   suite:
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' }}
     name: Verifier suite (axioms ${{ matrix.axioms }}, shard ${{ matrix.shard }} of 4)
     needs: build
     runs-on: ubuntu-24.04
@@ -173,6 +181,7 @@ jobs:
           retention-days: 90
 
   verdicts:
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' }}
     name: Verdicts (axioms ${{ matrix.axioms }})
     needs: [build, suite]
     runs-on: ubuntu-24.04
@@ -228,6 +237,7 @@ jobs:
           retention-days: 90
 
   resolver:
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' }}
     name: Resolver matrix (both modes)
     needs: build
     runs-on: ubuntu-24.04
@@ -282,6 +292,7 @@ jobs:
           retention-days: 90
 
   stdlib:
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' }}
     name: Standard library (Z3 ${{ matrix.z3 }}, axioms ${{ matrix.axioms }})
     needs: build
     runs-on: ubuntu-24.04
@@ -367,7 +378,7 @@ jobs:
   axiom-resources:
     name: Additional-axiom resource comparisons
     needs: [suite, stdlib]
-    if: always() && needs.suite.result == 'success'
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && (always() && needs.suite.result == 'success') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -390,6 +401,7 @@ jobs:
           retention-days: 90
 
   regressions:
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' }}
     name: Regression tests (upstream harness)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -453,6 +465,7 @@ jobs:
 
 
   resolver-tests:
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' }}
     name: Resolver unit tests and language-server recovery
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -483,7 +496,7 @@ jobs:
   binaries:
     name: Binaries (${{ matrix.rid }})
     needs: build
-    if: github.ref_type == 'tag' || inputs.binaries
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && (github.ref_type == 'tag' || inputs.binaries) }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
@@ -546,7 +559,7 @@ jobs:
   release:
     name: GitHub release
     needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, axiom-resources]
-    if: github.ref_type == 'tag'
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && (github.ref_type == 'tag') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -582,3 +595,33 @@ jobs:
           } > notes.md
           gh release create "$TAG" dafny-*.zip SHA256SUMS --repo "$GITHUB_REPOSITORY" \
             --verify-tag --title "$VERSION" --notes-file notes.md
+
+  b3-bitvector-proof:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.b3_focus_gate == 'bitvector-proof' && startsWith(github.ref, 'refs/heads/scratch/') }}
+    name: B3 focused bitvector universal proofs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Record the three selected universal proof scopes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DOTNET_PROCESSOR_COUNT: '1'
+          DOTNET_GCHeapHardLimit: '40000000'
+        run: python3 .github/review/b3-bitvector-proof.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b3-bitvector-proof
+          path: |
+            out/b3-native-compile/summary.json
+            out/b3-native-compile/bitvector-proof
+          retention-days: 14
