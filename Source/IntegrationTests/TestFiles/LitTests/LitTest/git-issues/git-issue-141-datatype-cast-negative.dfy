@@ -1,4 +1,4 @@
-// RUN: %exits-with 4 %verify --cores=1 --resource-limit=16000000 --verification-time-limit=60 "%s" > "%t"
+// RUN: %exits-with 4 %verify --type-system-refresh --general-traits=datatype --general-newtypes --cores=1 --resource-limit=16000000 --verification-time-limit=60 "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 datatype Box<+T> = Box(value: T)
 datatype List<+T> = Nil | Cons(head: T, tail: List<T>)
