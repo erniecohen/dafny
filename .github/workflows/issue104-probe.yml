@@ -25,6 +25,13 @@ jobs:
             python3 Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-104.py "$PWD/out/dafny/Dafny.dll" issue104-outcomes --record > outcomes.log 2>&1
             cat outcomes.log >> "$GITHUB_STEP_SUMMARY"
           fi
+          dotnet build Source/IntegrationTests -c Release > harness-build.log 2>&1
+          harness_status=$?
+          echo "Harness build exit: $harness_status" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$harness_status" = 0 ]; then
+            dotnet test Source/IntegrationTests -c Release --no-build --filter 'DisplayName~git-issues/github-issue-104.dfy' --logger 'console;verbosity=normal' > harness-test.log 2>&1
+            echo "Harness test exit: $?" >> "$GITHUB_STEP_SUMMARY"
+          fi
           exit 0
       - uses: actions/upload-artifact@v4
         if: always()
@@ -32,5 +39,7 @@ jobs:
           name: issue104-outcomes
           path: |
             build.log
+            harness-build.log
+            harness-test.log
             outcomes.log
             issue104-outcomes/results.json
