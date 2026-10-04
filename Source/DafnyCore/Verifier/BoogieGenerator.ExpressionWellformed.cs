@@ -1019,7 +1019,8 @@ namespace Microsoft.Dafny {
               // Keep provided types opaque and use their nominal target Ty.
               var membershipTarget = ee.ToType.NormalizeExpandKeepConstraints();
               if ((membershipTarget.IsDatatype || membershipTarget.IsInternalTypeSynonym) &&
-                  !membershipTarget.IsRefType && !ee.E.Type.IsTraitType && !membershipTarget.IsArrowType) {
+                  !membershipTarget.IsRefType && !ee.E.Type.IsTraitType && !membershipTarget.IsArrowType &&
+                  !IsSuspendedCoDatatypeIdentityConversion(ee)) {
                 CheckSubrange(unaryExpr.Origin, etran.TrExpr(ee.E), ee.E.Type, ee.ToType,
                   ee.E, builder, ee.messagePrefix);
               }
@@ -1515,6 +1516,23 @@ namespace Microsoft.Dafny {
       return call.CoCall == FunctionCallExpr.CoCallResolution.Yes && call.Function is not ExtremePredicate and not PrefixPredicate;
     }
 
+
+    private bool IsSuspendedCoDatatypeIdentityConversion(ConversionExpr conversion) {
+      var enabled = options.Get(CommonOptionBag.ExtendedNewtypeBases);
+      if (!conversion.Type.Equals(conversion.ToType, true) ||
+          !NewtypeOperationView.IsCoDatatypeIdentityConversion(conversion, enabled)) {
+        return false;
+      }
+      // Preserve the existing constructor guard through representation-identity
+      // casts of this suspended call. Do not establish full value membership here.
+      // Observation and binding boundaries retain their independent checks.
+      var operand = conversion.E.Resolved;
+      while (operand is ConversionExpr inner && inner.Type.Equals(inner.ToType, true) &&
+             NewtypeOperationView.IsCoDatatypeIdentityConversion(inner, enabled)) {
+        operand = inner.E.Resolved;
+      }
+      return operand is FunctionCallExpr call && IsCoRecursiveFunctionCall(call);
+    }
 
     private static bool ContainsCoRecursiveFunctionCall(Expression expression) {
       expression = expression.Resolved;
