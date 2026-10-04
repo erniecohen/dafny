@@ -233,7 +233,12 @@ public partial class BoogieGenerator {
         }
 
         var axBody = BplImp(ante, whr);
-        var ax = BplForall(f.Origin, [], formals, null, BplTrigger(whr), axBody);
+        var trigger = BplTrigger(whr);
+        if (options.Get(CommonOptionBag.AdditionalAxioms)) {
+          // Keep the allocation consequence and its guards; also instantiate it at calls.
+          trigger.Next = BplTriggerHeap(this, f.Origin, funcAppl, f.ReadsHeap ? null : etranHeap.HeapExpr);
+        }
+        var ax = BplForall(f.Origin, [], formals, null, trigger, axBody);
         var allocConsequenceAxiom = new Bpl.Axiom(f.Origin, ax, "alloc consequence axiom for " + f.FullSanitizedName);
         AddOtherDefinition(boogieFunction, allocConsequenceAxiom);
       }
