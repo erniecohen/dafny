@@ -1,7 +1,9 @@
-// RUN: %testDafnyForEachCompiler "%s" -- --general-newtypes=true --type-system-refresh=true --optimize-erasable-datatype-wrapper=true --cores=1 --resource-limit=16000000 --boogie /normalizeDeclarationOrder:0
-// RUN: %testDafnyForEachCompiler "%s" -- --general-newtypes=true --type-system-refresh=true --optimize-erasable-datatype-wrapper=false --cores=1 --resource-limit=16000000 --boogie /normalizeDeclarationOrder:0
-// RUN: %testDafnyForEachCompiler "%s" -- --general-newtypes=false --type-system-refresh=false --optimize-erasable-datatype-wrapper=true --cores=1 --resource-limit=16000000 --boogie /normalizeDeclarationOrder:0
-// RUN: %testDafnyForEachCompiler "%s" -- --general-newtypes=false --type-system-refresh=false --optimize-erasable-datatype-wrapper=false --cores=1 --resource-limit=16000000 --boogie /normalizeDeclarationOrder:0
+// RUN: %verify --general-newtypes=true --type-system-refresh=true --cores=1 --resource-limit=16000000 --show-snippets=false --allow-warnings --boogie /normalizeDeclarationOrder:0 "%s" > "%t"
+// RUN: %diff "%s.verify.expect" "%t"
+// RUN: %testDafnyForEachCompiler "%s" -- --general-newtypes=true --type-system-refresh=true --optimize-erasable-datatype-wrapper:true --cores=1 --resource-limit=16000000 --boogie /normalizeDeclarationOrder:0
+// RUN: %testDafnyForEachCompiler "%s" -- --general-newtypes=true --type-system-refresh=true --optimize-erasable-datatype-wrapper:false --cores=1 --resource-limit=16000000 --boogie /normalizeDeclarationOrder:0
+// RUN: %testDafnyForEachCompiler "%s" -- --general-newtypes=false --type-system-refresh=false --optimize-erasable-datatype-wrapper:true --cores=1 --resource-limit=16000000 --boogie /normalizeDeclarationOrder:0
+// RUN: %testDafnyForEachCompiler "%s" -- --general-newtypes=false --type-system-refresh=false --optimize-erasable-datatype-wrapper:false --cores=1 --resource-limit=16000000 --boogie /normalizeDeclarationOrder:0
 
 codatatype NatStream = N(head: nat, tail: NatStream)
 function Count(n: nat): NatStream { N(n, Count(n + 1)) }
