@@ -262,6 +262,18 @@
       "kind": "dafny",
       "expectedB3": "Failed",
       "minimumLoadedDefinitions": 1
+    },
+    {
+      "file": "dafny-imported-opaque.dfy",
+      "kind": "dafny",
+      "expectedB3": "Verified",
+      "minimumLoadedDefinitions": 1
+    },
+    {
+      "file": "dafny-imported-opaque-false.dfy",
+      "kind": "dafny",
+      "expectedB3": "Failed",
+      "minimumLoadedDefinitions": 1
     }
   ],
   "isolationFixture": "nonlearning-hide.bpl",
