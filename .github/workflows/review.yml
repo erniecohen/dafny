@@ -16,6 +16,16 @@ on:
     branches: ['review/**', 'dev']
   workflow_dispatch:
     inputs:
+      b3_compile_only:
+        description: Record compiler and contract checks only (scratch branches only)
+        type: boolean
+        default: false
+
+      b3_full_gate:
+        description: Add fresh complete BV library, worker and integration checks (scratch branches only)
+        type: boolean
+        default: false
+
       b3_focus_gate:
         description: Select the focused BV universal proof probe (scratch branches only)
         type: choice
@@ -62,7 +72,7 @@ env:
 
 jobs:
   build:
-    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' }}
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && !inputs.b3_compile_only && !inputs.b3_full_gate }}
     name: Build (Release)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -127,7 +137,7 @@ jobs:
           retention-days: 14
 
   suite:
-    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' }}
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && !inputs.b3_compile_only && !inputs.b3_full_gate }}
     name: Verifier suite (axioms ${{ matrix.axioms }}, shard ${{ matrix.shard }} of 4)
     needs: build
     runs-on: ubuntu-24.04
@@ -181,7 +191,7 @@ jobs:
           retention-days: 90
 
   verdicts:
-    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' }}
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && !inputs.b3_compile_only && !inputs.b3_full_gate }}
     name: Verdicts (axioms ${{ matrix.axioms }})
     needs: [build, suite]
     runs-on: ubuntu-24.04
@@ -237,7 +247,7 @@ jobs:
           retention-days: 90
 
   resolver:
-    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' }}
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && !inputs.b3_compile_only && !inputs.b3_full_gate }}
     name: Resolver matrix (both modes)
     needs: build
     runs-on: ubuntu-24.04
@@ -292,7 +302,7 @@ jobs:
           retention-days: 90
 
   stdlib:
-    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' }}
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && !inputs.b3_compile_only && !inputs.b3_full_gate }}
     name: Standard library (Z3 ${{ matrix.z3 }}, axioms ${{ matrix.axioms }})
     needs: build
     runs-on: ubuntu-24.04
@@ -378,7 +388,7 @@ jobs:
   axiom-resources:
     name: Additional-axiom resource comparisons
     needs: [suite, stdlib]
-    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && (always() && needs.suite.result == 'success') }}
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && !inputs.b3_compile_only && !inputs.b3_full_gate && (always() && needs.suite.result == 'success') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -401,7 +411,7 @@ jobs:
           retention-days: 90
 
   regressions:
-    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' }}
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && !inputs.b3_compile_only && !inputs.b3_full_gate }}
     name: Regression tests (upstream harness)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -465,7 +475,7 @@ jobs:
 
 
   resolver-tests:
-    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' }}
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && !inputs.b3_compile_only && !inputs.b3_full_gate }}
     name: Resolver unit tests and language-server recovery
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -496,7 +506,7 @@ jobs:
   binaries:
     name: Binaries (${{ matrix.rid }})
     needs: build
-    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && (github.ref_type == 'tag' || inputs.binaries) }}
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && !inputs.b3_compile_only && !inputs.b3_full_gate && (github.ref_type == 'tag' || inputs.binaries) }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
@@ -559,7 +569,7 @@ jobs:
   release:
     name: GitHub release
     needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, axiom-resources]
-    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && (github.ref_type == 'tag') }}
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && !inputs.b3_compile_only && !inputs.b3_full_gate && (github.ref_type == 'tag') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -624,4 +634,44 @@ jobs:
           path: |
             out/b3-native-compile/summary.json
             out/b3-native-compile/bitvector-proof
+          retention-days: 14
+
+
+  b3-native-compile:
+    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.b3_compile_only || inputs.b3_full_gate) && inputs.b3_focus_gate != 'bitvector-proof' && startsWith(github.ref, 'refs/heads/scratch/') }}
+    name: B3 compiler and optional fresh BV integration receipt
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Record compiler, contract and optional fresh full BV checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          B3_FULL_GATE: ${{ inputs.b3_full_gate }}
+          B3_BUILD_CORES: '2'
+          DOTNET_PROCESSOR_COUNT: '1'
+          DOTNET_GCHeapHardLimit: '40000000'
+          DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER: '1'
+          MSBUILDDISABLENODEREUSE: '1'
+        run: python3 .github/review/b3-native-compile.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b3-native-compile
+          path: |
+            out/b3-native-compile
+            Binaries/net8.0
+            build/b3-host-tests
           retention-days: 14
