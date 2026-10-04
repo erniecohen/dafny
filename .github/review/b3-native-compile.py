@@ -5,6 +5,7 @@ commands=[
  ('packages',['sh','Scripts/fetch-boogie-packages.sh']),
  ('compiler',['dotnet','build','Source/Dafny/Dafny.csproj','-c','Release','-m:1','-p:UseSharedCompilation=false','--nologo']),
  ('contracts',['dotnet','test','Source/DafnyCore.Test/DafnyCore.Test.csproj','-c','Release','-m:1','-p:UseSharedCompilation=false','--filter','FullyQualifiedName~VerificationContractsTest|FullyQualifiedName~B3BackendSelectionTest|FullyQualifiedName~B3WorkItemTest','--results-directory',str(output/'contracts'),'--logger','trx;LogFileName=result.trx','--nologo']),
+ ('language-server-build',['dotnet','build','Source/DafnyLanguageServer.Test/DafnyLanguageServer.Test.csproj','-c','Release','-m:1','-p:UseSharedCompilation=false','--nologo']),
  ('normalizer',['dotnet','test','Source/DafnyB3Normalizer.Test/DafnyB3Normalizer.Test.csproj','-c','Release','-m:1','-p:UseSharedCompilation=false','--results-directory',str(output/'normalizer'),'--logger','trx;LogFileName=result.trx','--nologo']),
  ('protocol',['dotnet','test','Source/DafnyB3Protocol.Test/DafnyB3Protocol.Test.csproj','-c','Release','-m:1','-p:UseSharedCompilation=false','--results-directory',str(output/'protocol'),'--logger','trx;LogFileName=result.trx','--nologo']),
  ('terminator-control',['python3','.github/review/b3-newline-control.py'])]
@@ -13,7 +14,6 @@ if full_gate:
  solver=str((output/'inputs'/os.environ['Z3_LINUX_X64']/'bin/z3').resolve())
  worker=str((output/'worker/library/B3Library.dll').resolve())
  commands += [
-  ('language-server-build',['dotnet','build','Source/DafnyLanguageServer.Test/DafnyLanguageServer.Test.csproj','-c','Release','-m:1','-p:UseSharedCompilation=false','--nologo']),
   ('pinned-inputs',['python3','.github/review/b3-public-inputs.py']),
   ('worker-bootstrap',['env','DOTNET_GCHeapHardLimit=C0000000','bash','Scripts/build-b3-worker.sh',str(output/'inputs/bootstrap/dafny.tar.gz'),solver,str(output/'worker')]),
   ('host',['bash','Source/DafnyB3Host.Test/run-tests.sh',worker,solver]),
