@@ -163,6 +163,26 @@ def reap_exited_children():
    return
 
 
+def reap_completed_adopted_children(stage_pid, receipt):
+ # Leave the Popen root exclusively owned by Popen so its real exit status is
+ # preserved. Orphaned exited grandchildren must be reaped while a live test
+ # host is checking that terminated workers are gone, not only after that host.
+ for pid in sorted(direct_children()):
+  if pid==stage_pid:
+   continue
+  try:
+   reaped,status=os.waitpid(pid,os.WNOHANG)
+  except (ChildProcessError,ProcessLookupError,InterruptedError):
+   continue
+  if reaped:
+   receipt['count']+=1
+   assert receipt['count']<=4096, 'Adopted-child reap count exceeds stage bound'
+   if len(receipt['records'])<MAXIMUM_CHILD_DIAGNOSTICS:
+    receipt['records'].append({'pid':reaped,'waitStatus':status})
+   else:
+    receipt['recordsTruncated']=True
+
+
 def child_diagnostics(stage_pid):
  children=sorted(direct_children())
  records=[]
@@ -196,6 +216,7 @@ def run_stage(name, command):
  residual=residual_before_grace=None
  cleanup_count=remaining=0
  before_cleanup={'childCount':0,'records':[],'recordsTruncated':False}
+ adopted_reaps={'count':0,'records':[],'recordsTruncated':False}
  try:
   assert not cleanup_poisoned and not direct_children(), 'Require empty owned child scope before each stage'
   with log_path.open('wb') as log:
@@ -203,6 +224,7 @@ def run_stage(name, command):
      cwd="ThirdParty/B3" if name in {"worker-runtime","worker-java"} else None,env=stage_environment)
    deadline=time.monotonic()+STAGE_TIMEOUT_SECONDS
    while process.poll() is None:
+    reap_completed_adopted_children(process.pid,adopted_reaps)
     if time.monotonic()>=deadline or log_path.stat().st_size>MAXIMUM_STAGE_LOG_BYTES:
      raise TimeoutError('Stage safety deadline or output byte bound exceeded')
     time.sleep(0.01)
@@ -269,7 +291,7 @@ def run_stage(name, command):
    failure=type(error).__name__+': '+str(error)
    code=1
  return {'stage':name,'exitCode':code,'actualProcessExitCode':actual_code,'command':command,
-   'failure':failure,'residualChildrenBeforeGrace':residual_before_grace,
+   'failure':failure,'naturalChildReapsDuringStage':adopted_reaps,'residualChildrenBeforeGrace':residual_before_grace,
    'residualChildrenAtCompletion':residual,'cleanupSignals':cleanup_count,
    'naturalChildGraceSeconds':NATURAL_CHILD_GRACE_SECONDS,'childrenBeforeCleanup':before_cleanup,
    'remainingAdoptedChildren':remaining,'cleanupPoisoned':cleanup_poisoned,
