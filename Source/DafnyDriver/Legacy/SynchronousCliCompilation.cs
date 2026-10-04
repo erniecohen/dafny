@@ -675,7 +675,7 @@ namespace Microsoft.Dafny {
       var options = dafnyProgram.Options;
 
       var compiler = options.Backend;
-      if ((options.Get(CommonOptionBag.ProjectOutput) || compiler is CsharpBackend) &&
+      if ((options.Get(CommonOptionBag.ProjectOutput) || (invokeCompiler && compiler is CsharpBackend)) &&
           string.IsNullOrEmpty(Path.GetFileNameWithoutExtension(dafnyProgramName))) {
         await outputWriter.Status("Invalid output filename: specify a filename with a nonempty stem, not a directory.");
         return false;

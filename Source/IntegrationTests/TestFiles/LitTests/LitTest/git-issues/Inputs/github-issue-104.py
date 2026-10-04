@@ -32,8 +32,14 @@ def case(name, command, mode, project_output="nested/result", extra=(), target="
     if project_opt_in:
         project_options += "project-output = true\n"
     (project / "dfyconfig.toml").write_text('includes = ["foo.dfy"]\n[options]\n' + project_options)
-    args = launcher + [command, "project/dfyconfig.toml" if project_subdir else "dfyconfig.toml", "--no-verify", "--spill-translation", "--target", target,
-                       "--type-system-refresh:" + mode] + list(extra)
+    args = launcher + [command]
+    if command == "translate":
+        args.append(target)
+    args += ["project/dfyconfig.toml" if project_subdir else "dfyconfig.toml", "--no-verify",
+             "--type-system-refresh:" + mode]
+    if command != "translate":
+        args += ["--spill-translation", "--target", target]
+    args += list(extra)
     result = subprocess.run(args, cwd=work, capture_output=True, text=True, timeout=90)
     files = sorted(str(p.relative_to(work)).replace(os.sep, "/") for p in work.rglob("*") if p.is_file())
     records.append({"name": name, "exit": result.returncode, "stdout": result.stdout,
@@ -48,7 +54,7 @@ def case(name, command, mode, project_output="nested/result", extra=(), target="
         expected = expected_stem + {"cs": ".cs", "py": "-py/__main__.py", "js": ".js"}[target]
         if expected not in files:
             errors.append("missing target: " + expected)
-        if target == "cs" and expected_stem + ".dll" not in files:
+        if target == "cs" and command != "translate" and expected_stem + ".dll" not in files:
             errors.append("missing compiled assembly")
         if expected_stem != "foo" and any(f in files for f in ["foo.cs", "foo.dll", "foo.js", "foo-py/__main__.py"]):
             errors.append("used source filename instead of output setting")
@@ -69,12 +75,19 @@ for mode in ["false", "true"]:
         enable = ["--project-output"] if command == "run" else []
         prefix = mode + "-" + command
         case(prefix + "-project", command, mode, extra=enable)
+        case(prefix + "-bin-filename", command, mode, project_output="bin", extra=enable, expected_stem="bin")
         case(prefix + "-override", command, mode, extra=enable + ["--output", "chosen"], expected_stem="chosen")
         case(prefix + "-slash", command, mode, project_output="bin/", extra=enable,
              expected_stem=None, expected_exit=3, diagnostic="Invalid output filename")
         case(prefix + "-empty-stem", command, mode, extra=enable + ["--output", ".cs"],
              expected_stem=None, expected_exit=3, diagnostic="Invalid output filename")
+        case(prefix + "-empty-project", command, mode, project_output="", extra=enable,
+             expected_stem=None, expected_exit=1, diagnostic="Invalid value for option output")
         case(prefix + "-empty-project-override", command, mode, project_output="", extra=enable + ["--output", "chosen"], expected_stem="chosen")
+    for target in ["java", "go", "cpp", "rust", "js"]:
+        case(mode + "-" + target + "-slash", "build", mode, target=target, project_output="bin/", extra=["--project-output"],
+             expected_stem=None, expected_exit=3, diagnostic="Invalid output filename")
+    case(mode + "-translate-cs-default", "translate", mode, project_output="bin/", expected_stem="bin/")
     case(mode + "-build-library", "build", mode, main=False)
     case(mode + "-run-library", "run", mode, main=False, extra=["--project-output"])
     case(mode + "-run-project-relative", "run", mode, project_subdir=True, extra=["--project-output"], expected_stem="project/nested/result")
@@ -85,7 +98,9 @@ for mode in ["false", "true"]:
     case(mode + "-run-project-option", "run", mode, project_opt_in=True)
     case(mode + "-run-disabled", "run", mode, project_opt_in=True, extra=["--project-output:false"], expected_stem="foo")
     case(mode + "-run-build-alias", "run", mode, extra=["--build", "chosen"], expected_stem="chosen")
-    for target in ["py", "js"]:
+    case(mode + "-translate-js-default", "translate", mode, target="js", project_output="bin/", expected_stem="bin/")
+    for target in ["py"]:
+        case(mode + "-" + target + "-default-slash", "build", mode, target=target, project_output="bin/", expected_stem="bin/")
         for command in ["build", "run", "test"]:
             case(mode + "-" + target + "-" + command, command, mode, target=target, extra=["--project-output"])
         case(mode + "-" + target + "-slash", "run", mode, target=target, project_output="bin/", extra=["--project-output"],
