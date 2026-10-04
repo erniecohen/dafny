@@ -49,7 +49,7 @@ The current CLI verification path creates `CliCompilation`/`ExecutionEngine` wit
 
 ## Verification API prepared, deliberately unavailable from the CLI
 
-`Runs.RunVerification(Product, string[], IProofLifecycleSupervisor?, TimeSpan)` can invoke the same unchanged public verification entrypoint. It rejects a null supervisor before constructing a product context, requires one explicit `--solver-path PATH` selecting that supervisor's existing absolute wrapper, and requires a positive invocation safety cap. The interface has no implementation in this directory. Verification is not a command-line mode, and the four fixture controls cannot select it.
+`Runs.RunVerification(Product, string[], IProofLifecycleSupervisor?, TimeSpan)` can invoke the same unchanged public verification entrypoint. It rejects a null supervisor before constructing a product context, requires one explicit `--solver-path PATH` selecting that supervisor's existing absolute wrapper, and requires a positive invocation safety cap. A source-only `NativeProofSupervisor` implementation now exists; its cgroup/pidfd/stream controls have not been compiled or executed. See [the lifecycle plan](LIFECYCLE.md). Verification is not a command-line mode, and the four fixture controls cannot select it.
 
 The future supervisor must own every run-specific transparent solver process group, forward stdin/stdout bytes unchanged, separately drain/log stderr, record executable identity and every created PID/descendant, and account for solver exits. It must preserve original options, queries, reset order, polling, resource-history and results. It may close/terminate run-owned groups only after CLI completion and log flush, or after recording a timeout/failure. `StopAndAssertNoOwnedSolvers` must return a complete nonempty ownership receipt with zero live owned descendants; absence of that receipt fails the run. Context collection remains mandatory afterward. Simply implementing an interface that reports zero is not sufficient evidence.
 
@@ -60,3 +60,7 @@ Only after those lifecycle controls pass should the small native-number baseline
 ## Static source manifest
 
 `source-manifest.json` lists SHA-256 hashes of the prototype source/project/fixtures/README and the source commits reviewed for the entrypoint/cleanup contracts. It excludes itself and uses relative source paths. Recompute the manifest after edits, freeze exact sources before compilation, and preserve its digest in any later receipt. It is source identity, not a build or execution attestation.
+
+## Native supervisor source stage
+
+`NativeProofSupervisor.cs`, `native-solver-wrapper.py` and the three `proof-fixtures` prepare a strictly owned Linux native path. Proof CLI mode remains unavailable. The source requires a clean delegated cgroup, PID start-time/pidfd ownership and complete byte-forwarding/zero-populated receipts, followed by actual ALC unload. No native proof control or query/RU comparison has run; [LIFECYCLE.md](LIFECYCLE.md) lists prerequisite controls and the remaining limits.

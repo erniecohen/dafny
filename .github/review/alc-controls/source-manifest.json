@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "status": "experimental-source; help/identity repair is uncompiled and unexecuted; scratch receipts report execution",
-  "scope": "four-non-verifying-help-malformed-controls-product-identity-and-guarded-verification-entrypoint",
+  "status": "source-only-native-supervisor-uncompiled-unexecuted; argument-control execution is recorded separately",
+  "scope": "non-verifying-argument-controls-and-cli-disabled-owned-native-supervisor-source",
   "targetFramework": "net8.0",
   "reviewedContracts": {
     "dafnySourceCommit": "63f38e9163d1c596ef57afe3e34b5c161e9069a4",
@@ -11,7 +11,9 @@
     "schedulerSource": "Source/DafnyCore/DafnyMain.cs",
     "schedulerImplementationSource": "Source/ExecutionEngine/CustomStackSizePoolTaskScheduler.cs",
     "helpSource": "Source/DafnyDriver/DafnyNewCli.cs",
-    "productAssemblyIdentity": "DafnyCore, Version=4.11.0.0, Culture=neutral, PublicKeyToken=null"
+    "productAssemblyIdentity": "DafnyCore, Version=4.11.0.0, Culture=neutral, PublicKeyToken=null",
+    "nativeSupervisorSourceBase": "ee83db89e2720a4d7302eb45afcb7e0625d63934",
+    "solverExitUnsubscribeSource": "Source/Provers/SMTLib/SMTLibProcess.cs"
   },
   "files": [
     {
@@ -21,13 +23,23 @@
     },
     {
       "path": "B3AlcGate.csproj",
-      "sha256": "e6ad61c73d2486c84bb634d7be782742919e34970933f7a3150daed4609745dc",
-      "bytes": 527
+      "sha256": "590e4acd326b283be1344aa63fd6bfb36d46bb68e38229f5a91fd2becd65e107",
+      "bytes": 786
     },
     {
       "path": "Isolation.cs",
       "sha256": "27cabb6280782adee2120034fbff476457ad4e5296374e3d4dc86520e452d4af",
       "bytes": 10279
+    },
+    {
+      "path": "LIFECYCLE.md",
+      "sha256": "cab59a5b2e8a38201966919adc862a0a805f3b7f9be823455a40907447b3af0f",
+      "bytes": 5002
+    },
+    {
+      "path": "NativeProofSupervisor.cs",
+      "sha256": "4df19c8e953959e01194b964b67f6d61ef5324c177112fcc99b5886c7cca84e5",
+      "bytes": 19564
     },
     {
       "path": "Program.cs",
@@ -36,18 +48,43 @@
     },
     {
       "path": "README.md",
-      "sha256": "e2adbed4e43f80bb7b6252d994f39e38926e51c0cbbf8a1cbf293f4f5806dc01",
-      "bytes": 11596
+      "sha256": "a7781ce93a6e061cefd83a10de4052aa548ff610b74043624854b4e266576184",
+      "bytes": 12218
     },
     {
       "path": "Run.cs",
-      "sha256": "8be30511e09359c74a5c4ca9fe48956039461f85cb3a53d8a739ae5328f004e7",
-      "bytes": 11867
+      "sha256": "3aee1ef1d18dc7eac7768ef2f066f4d1dd61784c79f2ed5d744c255a0493a213",
+      "bytes": 11882
     },
     {
       "path": "control-fixtures.json",
       "sha256": "649ab280af52e64bd851fc08d2ba1339e42863eda6f23fc76a658c699eccd0ed",
       "bytes": 456
+    },
+    {
+      "path": "native-proof-fixtures.json",
+      "sha256": "e6273abcde0e3e1ca28cd48b843b165d3bb50a14f1730dab17030e7a1cad0449",
+      "bytes": 625
+    },
+    {
+      "path": "native-solver-wrapper.py",
+      "sha256": "0c9cf18809fdb86b9a2c818380e186b4997e31a51c3b8be8d4c07a62676e7d5c",
+      "bytes": 7815
+    },
+    {
+      "path": "proof-fixtures/false.dfy",
+      "sha256": "a50e9615c8b49eefe55a458f6f4df613f11164406074b9a011f7f389aad2dc8e",
+      "bytes": 40
+    },
+    {
+      "path": "proof-fixtures/fuel.dfy",
+      "sha256": "55a2d36861839f955e222ab8b2ae6f838645ef013e8610b588f391bbe61c3206",
+      "bytes": 157
+    },
+    {
+      "path": "proof-fixtures/true.dfy",
+      "sha256": "4d62c8992b31429da6963d3e9a45c4bb51445c07d3a51ffd19ec75ce034010dc",
+      "bytes": 38
     }
   ]
 }

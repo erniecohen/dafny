@@ -10,5 +10,8 @@
   <ItemGroup>
     <None Update="control-fixtures.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update="source-manifest.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="native-solver-wrapper.py" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="native-proof-fixtures.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="proof-fixtures/**/*.dfy" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

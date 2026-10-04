@@ -1,0 +1,3 @@
+lemma NativeFalse() {
+  assert false;
+}

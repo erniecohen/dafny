@@ -1,0 +1,3 @@
+lemma NativeTrue() {
+  assert true;
+}
