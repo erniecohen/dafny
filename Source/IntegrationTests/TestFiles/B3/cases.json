@@ -306,10 +306,75 @@
       "outcome": "failed"
     },
     {
-      "name": "bitvector-rotation-unsupported",
-      "file": "bitvector-rotation-unsupported.dfy",
+      "name": "bitvector-rotation-zero",
+      "file": "bitvector-rotation-zero.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-rotation-mixed-bad",
+      "file": "bitvector-rotation-mixed-bad.dfy",
       "exitCode": 4,
-      "diagnostic": "b3_bitvector_builtin"
+      "diagnostic": "postcondition",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-rotation-mixed-good",
+      "file": "bitvector-rotation-mixed-good.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-rotation-same-direction-good",
+      "file": "bitvector-rotation-same-direction-good.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-rotation-primitive-left-good",
+      "file": "bitvector-rotation-primitive-left-good.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-rotation-primitive-right-good",
+      "file": "bitvector-rotation-primitive-right-good.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-rotation-satisfiable-inputs-false",
+      "file": "bitvector-rotation-satisfiable-inputs-false.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-rotation-identities",
+      "file": "bitvector-rotation-identities.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-rotation-negative-count",
+      "file": "bitvector-rotation-negative-count.dfy",
+      "exitCode": 4,
+      "diagnostic": "rotate amount must be non-negative",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-rotation-large-count",
+      "file": "bitvector-rotation-large-count.dfy",
+      "exitCode": 4,
+      "diagnostic": "rotate amount must not exceed",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-rotation-anti-vacuity",
+      "file": "bitvector-rotation-anti-vacuity.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
     }
   ]
 }

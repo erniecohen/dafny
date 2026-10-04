@@ -745,6 +745,13 @@ public static class B3Normalizer {
       }
       var builtin = BitvectorBuiltin(function);
       if (builtin == null) { return false; } // An ordinary word-valued UF remains an overapproximation.
+      if (builtin is "ext_rotate_left" or "ext_rotate_right") {
+        Require(Ir.ProtocolValidation.TryBitvectorWidth(type, out var rotationWidth) &&
+          args.Count == 2 && args.All(argument => argument.Type == type),
+          "b3_bitvector_signature", "Rotation requires two equal-width positive words and the same result sort", application.tok);
+        expression = PortableRotation(args[0], args[1], rotationWidth, builtin == "ext_rotate_left");
+        return true;
+      }
       var reverse = builtin is "bvugt" or "bvuge";
       Ir.BitvectorOperator operation;
       switch (builtin) {
@@ -780,6 +787,25 @@ public static class B3Normalizer {
         "b3_bitvector_signature", "Native word primitive has an invalid arity, sort or same-width count", application.tok);
       expression = new Ir.BitvectorOperation(operation, width, 0, 0, type, reverse ? args.Reverse().ToArray() : args);
       return true;
+    }
+
+    // Three nested fresh lets preserve argument sharing and the r -> s dependency.
+    // The complete output traversal charges every generated occurrence and literal.
+    private Ir.Expression PortableRotation(Ir.Expression value, Ir.Expression count, int width, bool left) {
+      var type = Ir.Protocol.BitvectorTypeName(width);
+      var x = new Ir.Binding("sB" + ++boundNumber, type);
+      var r = new Ir.Binding("sB" + ++boundNumber, type);
+      var s = new Ir.Binding("sB" + ++boundNumber, type);
+      Ir.Variable Use(Ir.Binding binding) => new(binding.Name, binding.Type);
+      Ir.BitvectorLiteral Width() => new(width.ToString(CultureInfo.InvariantCulture), width);
+      Ir.BitvectorOperation Word(Ir.BitvectorOperator operation, params Ir.Expression[] arguments) =>
+        new(operation, width, 0, 0, type, arguments);
+      var remainder = Word(Ir.BitvectorOperator.UnsignedRemainder, count, Width());
+      var complement = Word(Ir.BitvectorOperator.Subtract, Width(), Use(r));
+      var first = Word(left ? Ir.BitvectorOperator.ShiftLeft : Ir.BitvectorOperator.LogicalShiftRight, Use(x), Use(r));
+      var second = Word(left ? Ir.BitvectorOperator.LogicalShiftRight : Ir.BitvectorOperator.ShiftLeft, Use(x), Use(s));
+      return new Ir.Let(x, value, new Ir.Let(r, remainder,
+        new Ir.Let(s, complement, Word(Ir.BitvectorOperator.Or, first, second))));
     }
 
     private static string BitvectorBuiltin(Bpl.Function function) {

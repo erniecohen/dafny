@@ -11,7 +11,7 @@ The remaining typed-Boogie normalization rules and exact source availability arg
 * Pinned Boogie implementation: `73a0e214a87df85fc058270268c1d0706fd05bc9`.
 * Source inventory at the Real checkpoint: `4b53100120cc9a1e8584f3c335985ed04f7b826778b114cc5e49f515f2d8d562`. Any bitvector language change invalidates that inventory and requires a fresh library proof/build receipt. No earlier receipt establishes this extension.
 
-This source work has no completed fresh library proof receipt. The native rotation diagnostic remains inconclusive and establishes no bug or semantic equivalence.
+This source work has no completed fresh library proof receipt. The completed [native rotation diagnostic](https://github.com/erniecohen/dafny/actions/runs/37225366638) reproduces the nested extended-rotation discrepancy tracked in [issue 147](https://github.com/erniecohen/dafny/issues/147). The separate [portable lowering](portable-bitvector-rotations.md) has a reviewed English correspondence and unexecuted source implementation; it forwards no extended-rotation operator to Z3.
 
 ## Actual emitted language and recognition boundary
 

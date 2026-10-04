@@ -40,8 +40,8 @@ if full_gate:
    '--solver-sha256','PINNED_SOLVER_DIGEST','--compiler-version','EXACT_COMPILER_VERSION'])]
 # Recounted from Fact/UnixFact/LinuxFact, InlineData, all finite MemberData rows,
 # the source fixture manifests, and the included @Test methods. No count is a proof claim.
-expected_tests={'contracts':26,'normalizer':333,'protocol':163,'language-server':40,'regressions':4}
-expected_controls={'worker-runtime':37,'host':74,'corpus':59,'map-theory':17,
+expected_tests={'contracts':26,'normalizer':348,'protocol':163,'language-server':40,'regressions':4}
+expected_controls={'worker-runtime':37,'host':74,'corpus':69,'map-theory':17,
                    'visibility':29,'visibility-session-isolation':1,'visibility-isolation-launches':5}
 proof_receipt=None
 head=None

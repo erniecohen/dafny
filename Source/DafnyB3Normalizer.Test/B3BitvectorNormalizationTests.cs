@@ -171,8 +171,6 @@ public class B3BitvectorNormalizationTests {
   [InlineData("{:bvbuiltin \"(_ int2bv 03)\"}", "int", "bv3", 1)]
   [InlineData("{:bvbuiltin \"bv2int\"}", "bv3", "real", 1)]
   [InlineData("{:bvbuiltin \"bvashr\"}", "bv3", "bv3", 2)]
-  [InlineData("{:bvbuiltin \"ext_rotate_left\"}", "bv3", "bv3", 2)]
-  [InlineData("{:bvbuiltin \"ext_rotate_right\"}", "bv3", "bv3", 2)]
   [InlineData("{:bvbuiltin 0}", "bv3", "bv3", 2)]
   [InlineData("{:bvbuiltin \"bvadd\"} {:bvbuiltin \"bvsub\"}", "bv3", "bv3", 2)]
   [InlineData("{:builtin \"bvadd\"} {:builtin \"bvsub\"}", "bv3", "bv3", 2)]
@@ -396,6 +394,117 @@ public class B3BitvectorNormalizationTests {
     Assert.All(results.SelectMany(result => result.Program!.Unit.Variables), binding => Assert.DoesNotContain("#bv0", binding.Type));
     Assert.Contains(results.SelectMany(result => result.Obligations), source => source.Description.Contains("might not fit in bv0"));
     Assert.Contains(results.SelectMany(Checks), check => check.Condition is Ir.BooleanLiteral { Value: false });
+  }
+
+  [Theory]
+  [InlineData("ext_rotate_left", Ir.BitvectorOperator.ShiftLeft, Ir.BitvectorOperator.LogicalShiftRight)]
+  [InlineData("ext_rotate_right", Ir.BitvectorOperator.LogicalShiftRight, Ir.BitvectorOperator.ShiftLeft)]
+  public void RotationsUseNestedFreshLetsAndReviewedPrimitives(string builtin,
+    Ir.BitvectorOperator firstShift, Ir.BitvectorOperator secondShift) {
+    var options = Options(); var source = ParseBoogie(NativeCall(builtin, "bv3", "bv3", 2), options);
+    var before = Emit(source, options); var result = Normalize(source, options); Validate(result);
+    Assert.Equal(before, Emit(source, options));
+    var equality = Assert.IsType<Ir.Operation>(Checks(result).Single().Condition);
+    var names = new HashSet<string>();
+    foreach (var operand in equality.Arguments) {
+      var x = Assert.IsType<Ir.Let>(operand); var r = Assert.IsType<Ir.Let>(x.Body); var s = Assert.IsType<Ir.Let>(r.Body);
+      Assert.All(new[] { x.Binding, r.Binding, s.Binding }, binding => Assert.True(names.Add(binding.Name)));
+      Assert.Equal(result.Program!.Unit.Variables[0].Name, Assert.IsType<Ir.Variable>(x.Value).Name);
+      var rem = Assert.IsType<Ir.BitvectorOperation>(r.Value);
+      Assert.Equal(Ir.BitvectorOperator.UnsignedRemainder, rem.Operator);
+      Assert.Equal(result.Program.Unit.Variables[1].Name, Assert.IsType<Ir.Variable>(rem.Arguments[0]).Name);
+      Assert.Equal(new Ir.BitvectorLiteral("3", 3), rem.Arguments[1]);
+      var sub = Assert.IsType<Ir.BitvectorOperation>(s.Value);
+      Assert.Equal(Ir.BitvectorOperator.Subtract, sub.Operator);
+      Assert.Equal(new Ir.BitvectorLiteral("3", 3), sub.Arguments[0]);
+      Assert.Equal(r.Binding.Name, Assert.IsType<Ir.Variable>(sub.Arguments[1]).Name);
+      var combined = Assert.IsType<Ir.BitvectorOperation>(s.Body); Assert.Equal(Ir.BitvectorOperator.Or, combined.Operator);
+      var first = Assert.IsType<Ir.BitvectorOperation>(combined.Arguments[0]);
+      var second = Assert.IsType<Ir.BitvectorOperation>(combined.Arguments[1]);
+      Assert.Equal(firstShift, first.Operator); Assert.Equal(secondShift, second.Operator);
+      Assert.Equal(x.Binding.Name, Assert.IsType<Ir.Variable>(first.Arguments[0]).Name);
+      Assert.Equal(x.Binding.Name, Assert.IsType<Ir.Variable>(second.Arguments[0]).Name);
+      Assert.Equal(r.Binding.Name, Assert.IsType<Ir.Variable>(first.Arguments[1]).Name);
+      Assert.Equal(s.Binding.Name, Assert.IsType<Ir.Variable>(second.Arguments[1]).Name);
+    }
+    Assert.Empty(result.Program!.Functions); Assert.Empty(result.Program.Axioms);
+  }
+
+  [Theory]
+  [InlineData(1, "1")]
+  [InlineData(3, "0")]
+  [InlineData(3, "3")]
+  [InlineData(3, "7")]
+  [InlineData(67, "147573952589676412927")]
+  public void RotationCountsRetainExactWordsIncludingWidthAndLargerValues(int width, string count) {
+    var result = Boogie($"function {{:bvbuiltin \"ext_rotate_left\"}} F(x: bv{width},y: bv{width}): bv{width}; " +
+      $"procedure P(x: bv{width}); implementation P(x: bv{width}) {{ assert F(x,{count}bv{width}) == x; }}");
+    Validate(result);
+    var x = Assert.IsType<Ir.Let>(Left(result)); var r = Assert.IsType<Ir.Let>(x.Body);
+    var remainder = Assert.IsType<Ir.BitvectorOperation>(r.Value);
+    Assert.Equal(new Ir.BitvectorLiteral(count, width), remainder.Arguments[0]);
+    Assert.Equal(new Ir.BitvectorLiteral(width.ToString(CultureInfo.InvariantCulture), width), remainder.Arguments[1]);
+    Assert.DoesNotContain(Statements(result.Program!.Unit.Body), statement => statement is Ir.Assume);
+  }
+
+  [Theory]
+  [InlineData("int", "bv3", 2)]
+  [InlineData("bv3", "bool", 2)]
+  [InlineData("bv3", "bv3", 1)]
+  public void RotationAttributesCannotOverrideTheTypedSignature(string input, string output, int arity) {
+    Unsupported(Boogie(NativeCall("ext_rotate_left", input, output, arity)), "b3_bitvector_signature");
+  }
+
+  [Fact]
+  public void APositiveRotationCannotUseAnotherCountWidth() {
+    Unsupported(Boogie("function {:bvbuiltin \"ext_rotate_right\"} F(x: bv3,y: bv5): bv3; " +
+      "procedure P(x: bv3,y: bv5); implementation P(x: bv3,y: bv5) { assert F(x,y) == x; }"), "b3_bitvector_signature");
+  }
+
+  [Theory]
+  [InlineData("ext_rotate_left")]
+  [InlineData("ext_rotate_right")]
+  public void RotationAttributeNeverOverridesAnActualFormalBody(string builtin) {
+    var result = Boogie($"function {{:inline}} {{:bvbuiltin \"{builtin}\"}} F(x: bv3,y: bv3): bv3 {{ x }} " +
+      "procedure P(x: bv3,y: bv3); implementation P(x: bv3,y: bv3) { assert F(x,y) == x; }");
+    Validate(result); Assert.IsType<Ir.Variable>(Left(result));
+    Assert.DoesNotContain(AllExpressions(result), expression => expression is Ir.Let or Ir.BitvectorOperation);
+  }
+
+  [Fact]
+  public void RotationBindingsCannotCaptureSourceQuantifierNames() {
+    var result = Boogie("function {:bvbuiltin \"ext_rotate_left\"} F(x: bv3,y: bv3): bv3; " +
+      "procedure P(); implementation P() { assert (forall sB1:bv3,sB2:bv3 :: F(sB1,sB2) == sB1); }");
+    Validate(result);
+    var quantified = Assert.IsType<Ir.Quantifier>(Checks(result).Single().Condition);
+    var equality = Assert.IsType<Ir.Operation>(quantified.Body);
+    var x = Assert.IsType<Ir.Let>(equality.Arguments[0]); var r = Assert.IsType<Ir.Let>(x.Body); var s = Assert.IsType<Ir.Let>(r.Body);
+    Assert.Equal(5, quantified.Bindings.Select(b => b.Name).Concat(new[] { x.Binding.Name, r.Binding.Name, s.Binding.Name }).Distinct().Count());
+    Assert.Equal(quantified.Bindings[0].Name, Assert.IsType<Ir.Variable>(x.Value).Name);
+    Assert.Equal(quantified.Bindings[1].Name, Assert.IsType<Ir.Variable>(Assert.IsType<Ir.BitvectorOperation>(r.Value).Arguments[0]).Name);
+  }
+
+  [Theory]
+  [InlineData(1003, true)]
+  [InlineData(1004, false)]
+  public void RotationExpansionChargesEveryGeneratedWordOccurrence(int locals, bool accepted) {
+    var names = string.Join(",", Enumerable.Range(0, locals).Select(i => "x" + i));
+    var result = Boogie("function {:bvbuiltin \"ext_rotate_left\"} F(x: bv4096,y: bv4096): bv4096; " +
+      $"procedure P(); implementation P() {{ var {names}:bv4096; assert F(x0,x0) == x0; }}");
+    if (accepted) { Validate(result); } else { Unsupported(result, "b3_bitvector_limit"); }
+  }
+
+  [Fact]
+  public async Task ActualRotationRetainsBothSourceCountChecksAndBv0Body() {
+    var results = await Dafny("""
+      method Positive(x: bv3,n: int) { var y := x.RotateLeft(n); var z := x.RotateRight(n); }
+      method Alias(x: bv0,n: int) { var y := x.RotateLeft(n); }
+      """);
+    Assert.All(results, Validate);
+    Assert.Contains(results.SelectMany(result => result.Obligations), source => source.Description.Contains("negative"));
+    Assert.Contains(results.SelectMany(result => result.Obligations), source => source.Description.Contains("rotate amount must not exceed"));
+    Assert.Contains(results.SelectMany(AllExpressions), expression => expression is Ir.Let);
+    Assert.All(results.SelectMany(result => result.Program!.Unit.Variables), binding => Assert.DoesNotContain("#bv0", binding.Type));
   }
 
   private static string NativeCall(string? builtin, string input, string output, int arity, string? attributes = null) {
