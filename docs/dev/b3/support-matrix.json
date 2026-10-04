@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "backendStatus": "experimental implementation; complete integration gate pending",
+  "backendStatus": "experimental documented-subset and clean-install gates passed; default-Boogie release validation and broader features pending",
   "defaultBackend": "boogie",
   "languageSupport": [
     {
       "construct": "Boolean and integer expressions, method contracts, calls, parallel assignment, havoc, old and structured branches",
       "disposition": "normalized; focused real-input acceptance passed",
-      "evidence": "Public run 37201990430 passed 76 structural normalizer controls and all 29 real Dafny corpus controls, including positive and negative contracts, loops and selection. Complete backend acceptance remains pending."
+      "evidence": "Public run 37209385158 passed the combined documented-subset gate: 137 structural normalizer controls, all 15 strict map cases and all 36 real Dafny corpus cases. Broader feature and default-Boogie release validation remain pending."
     },
     {
       "construct": "Closed representation sorts, lambdas and ordinary functions",
@@ -17,7 +17,7 @@
       "construct": "Direct closed monomorphic raw map select/store",
       "disposition": "direct read-over-write ITE and observation abstraction; strict worker acceptance passed",
       "limits": "Zero global map axioms. Only direct reads of owned store expressions are rewritten. Exact complete-tuple read equality uses an uninterpreted Bool predicate; no pointwise consequences, extensionality, source Box laws, collection definitions or polymorphic map equations.",
-      "evidence": "Public run 37207690631 passed all 15 strict typed map controls, including expected negatives and complete attempt coverage. Exact source-model argument is in map-helper-correspondence.md; complete backend acceptance remains pending."
+      "evidence": "Public run 37209385158 passed the combined documented-subset gate: 137 structural normalizer controls, all 15 strict map cases and all 36 real Dafny corpus cases. Broader feature and default-Boogie release validation remain pending."
     },
     {
       "construct": "Native real and bitvector theories, power, visibility and unrestricted control flow",
@@ -26,13 +26,13 @@
     {
       "construct": "Inductive loops, breaks, continues, forward lexical exits",
       "disposition": "normalized; focused real-input acceptance passed",
-      "evidence": "Public run 37201990430 passed 76 structural normalizer controls and all 29 real Dafny corpus controls, including positive and negative contracts, loops and selection. Complete backend acceptance remains pending."
+      "evidence": "Public run 37209385158 passed the combined documented-subset gate: 137 structural normalizer controls, all 15 strict map cases and all 36 real Dafny corpus cases. Broader feature and default-Boogie release validation remain pending."
     },
     {
       "construct": "Integer division and modulo, including exact typed-body and active always-revealed universal prelude definitions",
       "disposition": "normalized; focused real-input acceptance passed",
       "limits": "Exact ordered integer operands only. Existing divisor obligations retained; no synthesized nonzero assumption or arithmetic axiom. Other definition shapes remain unsupported.",
-      "evidence": "Public run 37207690631 passed all new integer structural controls and all 36 real-input corpus controls, including default-option divisor signs, negative quotient/remainder, zero-divisor failures and an assertion-false control."
+      "evidence": "Public run 37209385158 passed the combined documented-subset gate: 137 structural normalizer controls, all 15 strict map cases and all 36 real Dafny corpus cases. Broader feature and default-Boogie release validation remain pending."
     }
   ],
   "optionSupport": [
@@ -46,7 +46,7 @@
         "resource-limit",
         "arithmetic-solver"
       ],
-      "disposition": "implemented; full consumer gate pending",
+      "disposition": "implemented; focused 40-control consumer and clean-install gates passed",
       "limits": "Unix workers, Z3 5.1.0, arithmetic solver 2, positive whole-unit deadline, no resource-count reporting"
     },
     {

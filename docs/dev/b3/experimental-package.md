@@ -40,3 +40,15 @@ A completed command with a residual child fails; timeout or cleanup failure also
 fails. Successful proof controls require actual complete B3 progress and a
 positive verified-symbol count. These controls do not establish general language
 coverage or native proof-cost parity.
+
+Public [run 37209385158](https://github.com/erniecohen/dafny/actions/runs/37209385158)
+passed the combined documented-subset gate and three strict clean-install
+controls. Two package builds from identical captured binary inputs produced
+archive SHA256 `d0684d5ebb15a93c12d75cc1ad7630bf395dbbe3dc806f3f994978dff771b62a`
+(25,031,973 archive bytes). This demonstrates deterministic packaging of those
+inputs; it does not establish reproducibility of compiler or library builds.
+The install path included spaces and Unicode. Version and actual positive and
+negative B3 verification all matched, with zero residual descendants and zero
+dependency downloads. The public run artifact contains the archive and receipts;
+its retention limit still applies. Broader semantics, persistent distribution
+and full default-Boogie release validation remain open.

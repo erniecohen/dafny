@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "Focused real B3 corpus passes all 36 controls, strict map acceptance 15/15 and IDE/regressions 40/40 plus 4/4. Combined package acceptance and full default-Boogie cost parity remain pending.",
+  "status": "Combined documented-subset gate passed: 36 real B3 corpus controls, 15 strict map cases, 40 IDE controls, four regressions, 137 structural controls, reproducible archive writes and three strict clean-install controls. Full default-Boogie cost parity and broader semantics remain pending.",
   "entries": [
     {
       "kind": "default-backend verdict regression",
@@ -79,7 +79,15 @@
       "kind": "superseded arithmetic exclusion fixture",
       "evidence": "https://github.com/erniecohen/dafny/actions/runs/37207690631",
       "finding": "137/138 structural controls passed; the remaining row expected native integer division to be unsupported after its reviewed implementation. All 39 new integer cases and all 36 real-input cases passed.",
-      "repair": "Remove only the obsolete unsupported row; new typed native controls retain coverage. The corrected 137-control source awaits the combined gate."
+      "repair": "Removed only the obsolete unsupported row; new typed native controls retain coverage. All 137 corrected structural controls passed in the combined gate.",
+      "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37209385158"
+    },
+    {
+      "kind": "complete-gate workflow selection",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/37208697482",
+      "finding": "The complete selector fell through to the ordinary compile-only path. Its Core/normalizer/protocol checks passed, but package and consumer stages did not run.",
+      "repair": "The explicit complete selector routed to the combined gate; all required subset and package stages passed.",
+      "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37209385158"
     }
   ]
 }
