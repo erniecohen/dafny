@@ -1,0 +1,202 @@
+{
+  "schemaVersion": 1,
+  "scope": "native rotation correspondence diagnostic; no backend acceptance",
+  "fixtures": [
+    {
+      "name": "primitive-left-all",
+      "kind": "smt",
+      "file": "smt/primitive-left-all.smt2",
+      "expected": "Unsat",
+      "role": "primitive-domain-control",
+      "scope": "All 64 uint3 value/count pairs, via free-symbol QF_BV counterexample query"
+    },
+    {
+      "name": "primitive-right-all",
+      "kind": "smt",
+      "file": "smt/primitive-right-all.smt2",
+      "expected": "Unsat",
+      "role": "primitive-domain-control",
+      "scope": "All 64 uint3 value/count pairs, via free-symbol QF_BV counterexample query"
+    },
+    {
+      "name": "native-leftleft-good-goal-first",
+      "kind": "smt",
+      "file": "smt/native-leftleft-good-goal-first.smt2",
+      "expected": "Unsat",
+      "role": "native-composition",
+      "scenario": "leftleft",
+      "schedule": "goal-first",
+      "target": "#b100"
+    },
+    {
+      "name": "native-leftleft-good-constraints-first",
+      "kind": "smt",
+      "file": "smt/native-leftleft-good-constraints-first.smt2",
+      "expected": "Unsat",
+      "role": "native-composition",
+      "scenario": "leftleft",
+      "schedule": "constraints-first",
+      "target": "#b100"
+    },
+    {
+      "name": "portable-leftleft-good",
+      "kind": "smt",
+      "file": "smt/portable-leftleft-good.smt2",
+      "expected": "Unsat",
+      "role": "portable-reference",
+      "scenario": "leftleft",
+      "target": "#b100"
+    },
+    {
+      "name": "native-leftleft-bad-goal-first",
+      "kind": "smt",
+      "file": "smt/native-leftleft-bad-goal-first.smt2",
+      "expected": "Sat",
+      "role": "native-composition",
+      "scenario": "leftleft",
+      "schedule": "goal-first",
+      "target": "#b001"
+    },
+    {
+      "name": "native-leftleft-bad-constraints-first",
+      "kind": "smt",
+      "file": "smt/native-leftleft-bad-constraints-first.smt2",
+      "expected": "Sat",
+      "role": "native-composition",
+      "scenario": "leftleft",
+      "schedule": "constraints-first",
+      "target": "#b001"
+    },
+    {
+      "name": "portable-leftleft-bad",
+      "kind": "smt",
+      "file": "smt/portable-leftleft-bad.smt2",
+      "expected": "Sat",
+      "role": "portable-reference",
+      "scenario": "leftleft",
+      "target": "#b001"
+    },
+    {
+      "name": "native-mixed-good-goal-first",
+      "kind": "smt",
+      "file": "smt/native-mixed-good-goal-first.smt2",
+      "expected": "Unsat",
+      "role": "native-composition",
+      "scenario": "mixed",
+      "schedule": "goal-first",
+      "target": "#b001"
+    },
+    {
+      "name": "native-mixed-good-constraints-first",
+      "kind": "smt",
+      "file": "smt/native-mixed-good-constraints-first.smt2",
+      "expected": "Unsat",
+      "role": "native-composition",
+      "scenario": "mixed",
+      "schedule": "constraints-first",
+      "target": "#b001"
+    },
+    {
+      "name": "portable-mixed-good",
+      "kind": "smt",
+      "file": "smt/portable-mixed-good.smt2",
+      "expected": "Unsat",
+      "role": "portable-reference",
+      "scenario": "mixed",
+      "target": "#b001"
+    },
+    {
+      "name": "native-mixed-bad-goal-first",
+      "kind": "smt",
+      "file": "smt/native-mixed-bad-goal-first.smt2",
+      "expected": "Sat",
+      "role": "native-composition",
+      "scenario": "mixed",
+      "schedule": "goal-first",
+      "target": "#b100"
+    },
+    {
+      "name": "native-mixed-bad-constraints-first",
+      "kind": "smt",
+      "file": "smt/native-mixed-bad-constraints-first.smt2",
+      "expected": "Sat",
+      "role": "native-composition",
+      "scenario": "mixed",
+      "schedule": "constraints-first",
+      "target": "#b100"
+    },
+    {
+      "name": "portable-mixed-bad",
+      "kind": "smt",
+      "file": "smt/portable-mixed-bad.smt2",
+      "expected": "Sat",
+      "role": "portable-reference",
+      "scenario": "mixed",
+      "target": "#b100"
+    },
+    {
+      "name": "dafny-mixed-good",
+      "kind": "dafny",
+      "file": "dafny/mixed-good.dfy",
+      "expected": "GoodVerified",
+      "role": "native-accepted-composition"
+    },
+    {
+      "name": "dafny-mixed-bad",
+      "kind": "dafny",
+      "file": "dafny/mixed-bad.dfy",
+      "expected": "BadFailed",
+      "role": "native-accepted-composition"
+    },
+    {
+      "name": "dafny-primitive-right-good",
+      "kind": "dafny",
+      "file": "dafny/primitive-right-good.dfy",
+      "expected": "GoodVerified",
+      "role": "dafny-primitive-control"
+    },
+    {
+      "name": "dafny-primitive-left-good",
+      "kind": "dafny",
+      "file": "dafny/primitive-left-good.dfy",
+      "expected": "GoodVerified",
+      "role": "dafny-primitive-control"
+    },
+    {
+      "name": "dafny-same-direction-good",
+      "kind": "dafny",
+      "file": "dafny/same-direction-good.dfy",
+      "expected": "GoodVerified",
+      "role": "dafny-no-wrap-control"
+    },
+    {
+      "name": "dafny-satisfiable-inputs-false",
+      "kind": "dafny",
+      "file": "dafny/satisfiable-inputs-false.dfy",
+      "expected": "BadFailed",
+      "role": "reachable-false-control-with-identical-inputs"
+    }
+  ],
+  "files": {
+    "smt/primitive-left-all.smt2": "f0fdcf1a88b6e4aa6d37946e5ed9a60012022d8cc7e7591af47956032c6eaa80",
+    "smt/primitive-right-all.smt2": "d1121a96dc06eaefa13a5be90e2086200da211a846985146c2cc45a1f053ec3b",
+    "smt/native-leftleft-good-goal-first.smt2": "fb62ae4bdc7b8fa132b11cc42457d4ca9e3023d62a17575230ec64ae034f64ee",
+    "smt/native-leftleft-good-constraints-first.smt2": "f9f0c177d8c31b7194596860e53ae75ad0550745833cb9976b21ebaff7ec2cba",
+    "smt/portable-leftleft-good.smt2": "542cac4090a08f43a69375308ce045ff98e8bee9f65a7be9366fb3752701b2af",
+    "smt/native-leftleft-bad-goal-first.smt2": "6deda0e75416a9196b4ab9c87de8899e9d0a7fec3430b8edd9f9ba21a467db51",
+    "smt/native-leftleft-bad-constraints-first.smt2": "7e4fc4f67da5d6ba4d9d8025e4814be27d31db5063c29fea49b9555c872812ae",
+    "smt/portable-leftleft-bad.smt2": "4df356422b041da7a5b31509fc8dd2c36aa9adec7283e2a1c625bd66463f61ac",
+    "smt/native-mixed-good-goal-first.smt2": "89fd13c6e25513ff7930b0763001b1a5ed7e15b97568b3e03b9d7f37f2984343",
+    "smt/native-mixed-good-constraints-first.smt2": "5be7f64ef265f682454fd092f5bd36b842527a27f19900b7531ed9f09e3da4b0",
+    "smt/portable-mixed-good.smt2": "2efdcef96393ce24d0362467a24f9e987628ec3175ed3c00862e2e0870271736",
+    "smt/native-mixed-bad-goal-first.smt2": "74d59a9a0ea1e3537d7b1a2dfd8f75bc8f81afbab527b2f95f4f1d357dcabd6e",
+    "smt/native-mixed-bad-constraints-first.smt2": "931242c4bc3c1b5f9dc9914e3fdc3bebec7c1d11cc5e9973e8c3d48fb3e7b02c",
+    "smt/portable-mixed-bad.smt2": "e41b5264c724b4d6dbc48705895786144ea9c972404ec5d7dd71cd15163d40e9",
+    "dafny/mixed-good.dfy": "54fee7071de6c9a724b486232acf4d878ba8b918901c55ebc7ec7926938d983c",
+    "dafny/mixed-bad.dfy": "bdcfb468d937392f263d0693507f7b4fa06f2cb8917f8f8685ee442cd649f9f9",
+    "dafny/primitive-right-good.dfy": "b3d09bde21ef9400d1562b01d5b37df42651be780a1bb86532b9b223f56a9030",
+    "dafny/primitive-left-good.dfy": "b2cdeb36bb0c286a8e8b297b21e8057973b9af2e790e99c6df02dbcd673660e0",
+    "dafny/same-direction-good.dfy": "93fc844b6cc171c488ac45e467e1ed408bd4db6c125648c19b2f63a2b83d133d",
+    "dafny/satisfiable-inputs-false.dfy": "8bc652e5838dd400d65bd4b08cb06504830c89cf5cb43708767acc63b88a4325"
+  }
+}
