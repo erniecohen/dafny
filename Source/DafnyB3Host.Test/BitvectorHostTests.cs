@@ -97,7 +97,8 @@ public sealed class BitvectorHostTests {
   }
 
   public static IEnumerable<object[]> PrimitiveValues() {
-    var x = Word(127), y = Word(3);
+    var x = Word(127);
+    var y = Word(3);
     yield return Row(Op(BitvectorOperator.And, 7, x, y), Word(3));
     yield return Row(Op(BitvectorOperator.Or, 7, Word(64), y), Word(67));
     yield return Row(Op(BitvectorOperator.Xor, 7, x, y), Word(124));
