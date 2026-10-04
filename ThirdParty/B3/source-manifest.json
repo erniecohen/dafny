@@ -7,7 +7,7 @@
   "patches": [
     {
       "file": "integration.patch",
-      "sha256": "df9e603df37ca33d0c457974dc354515dea8fe079fa0506958fb2aa2285b33cf"
+      "sha256": "877244934cea9acf0676ee3002b7893c7419ba5d94408b10410083cf71c93f3e"
     }
   ],
   "vendoredPaths": [
@@ -24,7 +24,7 @@
     "LICENSE": "e91686b267408f7ca5da770a3bb742911872b9cfcab2b1f4364263a86283d0cb",
     "README.md": "956e48ef8e9b1fa2be3ec1a2a6e979a17bf6a16ba2dbc9d3c44d6b8280cbf2c6",
     "doc/worker-library.md": "b1660772823dd6297366b541d16a296306b559c7fee63c2a6b8577ca2ef86ce0",
-    "integration.patch": "df9e603df37ca33d0c457974dc354515dea8fe079fa0506958fb2aa2285b33cf",
+    "integration.patch": "877244934cea9acf0676ee3002b7893c7419ba5d94408b10410083cf71c93f3e",
     "library/dfyconfig.toml": "b0a57d8fe24030e720edfd0f4d490be2b4011c0f8b66cfd6adbdb9a9946463c8",
     "src/Ast/Ast.dfy": "5d929eb44165880f94b3a5b9051d51c19b9a3b626aac9b7007d0ecb764ac793b",
     "src/Ast/AstValid.dfy": "6473a5b5c018f1eab55998956a72dcb8e8e92a02711ad2080b7b7007c39a21cf",
@@ -37,7 +37,7 @@
     "src/Ast/Resolver.dfy": "1dd02e72cf94261e4f330275d43e003e6ed067f10d14f3ca2cd103751788fa04",
     "src/Ast/StaticConsistency.dfy": "767df5a4f78d6843513083d21ef296297d190bd91717957906ca3bd10f36c88d",
     "src/Ast/StmtResolver.dfy": "227b779519de0feb6c18721954608ae17774e7f48c584f0cb8574930c26de736",
-    "src/Ast/TypeChecker.dfy": "932c768a27716536fe3b19d4403a23b6fb527c55f30f9db980e5595b4b1f48ce",
+    "src/Ast/TypeChecker.dfy": "153a5ba6ae76d37481ca85327c168693cd63f5434c2f45ba37437eda0e002ce0",
     "src/Ast/TypeResolver.dfy": "0927be71c8cff572aa04579015c824b3239ed67eb48228190d8189c5f7eb1940",
     "src/Driver/CommandLineOptions.dfy": "9a1d853d450b91993e84293ac5b3451f685148871781dec9f766f895ed78fb6e",
     "src/Driver/Library.dfy": "4429aa1be94e9f5aa26e36ae6a35a0a9664147f70566bc824c2052e9427ab922",
