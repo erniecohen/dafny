@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "controls": [
+    {
+      "name": "version",
+      "arguments": ["--version"],
+      "expectedExitCode": 0,
+      "requiredOutput": "4.11.0"
+    },
+    {
+      "name": "malformed-command",
+      "arguments": ["__b3_alc_invalid_command_6f60f0eb__"],
+      "expectedExitCode": 1,
+      "requiredOutput": "The first input must be a command or a legacy option or file with supported extension"
+    }
+  ]
+}
