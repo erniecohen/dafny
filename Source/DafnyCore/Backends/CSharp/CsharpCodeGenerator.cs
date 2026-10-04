@@ -3319,7 +3319,9 @@ namespace Microsoft.Dafny.Compilers {
 
       switch (op) {
         case BinaryExpr.ResolvedOpcode.EqCommon: {
-            var eqType = DatatypeWrapperEraser.SimplifyType(Options, e0Type);
+            var eqType = Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+              ? DatatypeWrapperEraser.SimplifyTypeAndTrimNewtypes(Options, e0Type)
+              : DatatypeWrapperEraser.SimplifyType(Options, e0Type);
             if (eqType.IsRefType) {
               // Dafny's type rules are slightly different C#, so we may need a cast here.
               // For example, Dafny allows x==y if x:array<T> and y:array<int> and T is some
@@ -3333,7 +3335,9 @@ namespace Microsoft.Dafny.Compilers {
             break;
           }
         case BinaryExpr.ResolvedOpcode.NeqCommon: {
-            var eqType = DatatypeWrapperEraser.SimplifyType(Options, e0Type);
+            var eqType = Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+              ? DatatypeWrapperEraser.SimplifyTypeAndTrimNewtypes(Options, e0Type)
+              : DatatypeWrapperEraser.SimplifyType(Options, e0Type);
             if (eqType.IsRefType) {
               // Dafny's type rules are slightly different C#, so we may need a cast here.
               // For example, Dafny allows x==y if x:array<T> and y:array<int> and T is some
