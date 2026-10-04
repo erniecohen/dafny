@@ -613,10 +613,12 @@ public partial class BoogieGenerator {
       Func<List<Bpl.Expr>, List<Bpl.Expr>> SnocSelf = x => x;
       Func<List<Bpl.Expr>, List<Bpl.Expr>> SnocPrevH = x => x;
       Expression selfExpr;
+      Bpl.Expr prevHeapVar = null, selfVar = null;
       Dictionary<IVariable, Expression> rhs_dict = new Dictionary<IVariable, Expression>();
       if (f is TwoStateFunction) {
         // also add previous-heap to the list of fixed arguments of the handle
         var prevH = BplBoundVar("$prevHeap", Predef.HeapType, vars);
+        prevHeapVar = prevH;
         formals.Add(BplFormalVar("h", Predef.HeapType, true));
         SnocPrevH = xs => Snoc(xs, prevH);
       }
@@ -625,6 +627,7 @@ public partial class BoogieGenerator {
       } else {
         var selfTy = TrType(UserDefinedType.FromTopLevelDecl(f.Origin, f.EnclosingClass));
         var self = BplBoundVar("$self", selfTy, vars);
+        selfVar = self;
         formals.Add(BplFormalVar("self", selfTy, true));
         SnocSelf = xs => Snoc(xs, self);
         var wrapperType = UserDefinedType.FromTopLevelDecl(f.Origin, f.EnclosingClass);
@@ -751,6 +754,26 @@ public partial class BoogieGenerator {
 
         AddOtherDefinition(GetOrCreateFunction(f), (new Axiom(f.Origin,
           BplForall(Concat(vars, func_vars), tr, Bpl.Expr.Eq(lhs, rhs_unboxed)))));
+      }
+
+      {
+        // IsGoodHeap(Heap) && [IsAlloc(self, C, Heap)] && [(prevHeap == Heap || HeapSucc(prevHeap, Heap))]
+        //   ==> IsAlloc(F#Handle(Ty1, .., TyN, Layer, [prevHeap,] [self]), Tclass._System.___hFuncN(..), Heap)
+        // A handle is allocated in a heap in which what it captures is allocated: its receiver, and for a
+        // two-state function its previous heap, which the heap must be or succeed.  The arrow allocation
+        // axiom is an implication, from an allocated function value to its reads set and results
+        // (erniecohen/dafny#132), so this is how a handle is known to be allocated.
+        var fhandle = FunctionCall(f.Origin, name, Predef.HandleType, SnocSelf(SnocPrevH(args)));
+        var allocated = MkIsAlloc(fhandle, ClassTyCon(program.SystemModuleManager.ArrowTypeDecls[arity], tyargs), h);
+        Bpl.Expr captured = FunctionCall(f.Origin, BuiltinFunction.IsGoodHeap, null, h);
+        if (selfVar != null) {
+          captured = BplAnd(captured, MkIsAlloc(selfVar, UserDefinedType.FromTopLevelDecl(f.Origin, f.EnclosingClass), h));
+        }
+        if (prevHeapVar != null) {
+          captured = BplAnd(captured, BplOr(Bpl.Expr.Eq(prevHeapVar, h), HeapSucc(prevHeapVar, h)));
+        }
+        AddOtherDefinition(GetOrCreateFunction(f), new Axiom(f.Origin,
+          BplForall(vars, BplTrigger(allocated), BplImp(captured, allocated))));
       }
     }
     return name;

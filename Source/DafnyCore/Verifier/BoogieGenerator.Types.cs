@@ -378,14 +378,14 @@ public partial class BoogieGenerator {
         sink.AddTopLevelDeclaration(new Axiom(tok,
           BplForall(bvarsOuter, new Bpl.Trigger(tok, true, new[] { IsT, IsU }), body)));
       }
-      /*  This is the definition of $IsAlloc function the arrow type:
+      /*  This is the allocatedness consequence axiom of arrow types for their reads sets:
         axiom (forall f: HandleType, t0: Ty, t1: Ty, h: Heap ::
           { $IsAlloc(f, Tclass._System.___hFunc1(t0, t1), h) }
           $IsGoodHeap(h)
           ==>
           (
             $IsAlloc(f, Tclass._System.___hFunc1(t0, t1), h)
-              <==>
+              ==>
               (forall bx0: Box ::
                 { Apply1(t0, t1, f, h, bx0) } { Reads1(t0, t1, f, h, bx0) }
                 $IsBox(bx0, t0) && $IsAllocBox(bx0, t0, h)
@@ -393,8 +393,10 @@ public partial class BoogieGenerator {
                 ==>
                   (everything in reads set of f(bx0) is allocated in h)
           ));
-        However, for /allocated:0 and /allocated:1, IsAlloc for arrow types is trivially true
-        and implies nothing about the reads set.
+        It is an implication, not a definition.  A function value is allocated when what it captures is
+        allocated, and its reads set does not show all it captures: () => n reads nothing and returns n.
+        The converse made such a value allocated in a heap where n is not, and so proved false, also
+        through the monotonicity of $IsAlloc along $HeapSucc (erniecohen/dafny#132).
       */
       {
         var bvarsOuter = new List<Bpl.Variable>();
@@ -423,7 +425,7 @@ public partial class BoogieGenerator {
         sink.AddTopLevelDeclaration(new Axiom(tok,
           BplForall(bvarsOuter, BplTrigger(isAlloc),
             BplImp(goodHeap,
-              BplIff(isAlloc,
+              BplImp(isAlloc,
                 BplForall(bvarsInner,
                   new Bpl.Trigger(tok, true, new List<Bpl.Expr> { applied }, BplTrigger(reads)),
                   BplImp(BplAnd(isAllocBoxes, pre), isAllocReads)))))));
