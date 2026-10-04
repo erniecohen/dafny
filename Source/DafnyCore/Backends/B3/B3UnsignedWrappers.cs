@@ -22,7 +22,15 @@ internal sealed class B3UnsignedWrappers {
     Bpl.Variable Binder, int Width, Bpl.Variable WrapperInput, Bpl.Variable WrapperOutput,
     Bpl.Variable NativeInput, Bpl.Variable NativeOutput);
   private sealed record RawRoot(Bpl.Block Block, IReadOnlyList<Bpl.StateCmd> Containers, Bpl.Cmd Command);
-  private sealed class Scope(RawRoot root) {
+  private sealed class ConditionalAnchor(Ir.Conditional statement) {
+    internal Ir.Conditional Statement { get; } = statement;
+    internal string StatementPath;
+  }
+  private sealed class Scope(RawRoot root, B3StructuredCfgCorrespondence.IfGuardCertificate guard = null) {
+    internal B3StructuredCfgCorrespondence.IfGuardCertificate Guard { get; } = guard;
+    internal B3IfGuardSnapshot Snapshot;
+    internal ConditionalAnchor Conditional;
+
     internal RawRoot Root { get; } = root;
     internal List<Witness> Calls { get; } = new();
     internal Dictionary<Bpl.NAryExpr, string> SourceCalls { get; } = new(ReferenceEqualityComparer.Instance);
@@ -30,6 +38,7 @@ internal sealed class B3UnsignedWrappers {
   private sealed record Witness(Shape Shape, Scope Scope, Bpl.NAryExpr SourceCall, string SourcePath,
     Ir.Application Application, Bpl.Expr Argument, Bpl.Variable ArgumentDeclaration) {
     internal HashSet<Ir.Statement> Anchors { get; } = new(ReferenceEqualityComparer.Instance);
+    internal HashSet<string> GuardPaths { get; } = new(StringComparer.Ordinal);
   }
   private readonly Bpl.Program source;
   private readonly Bpl.Implementation unit;
@@ -38,13 +47,17 @@ internal sealed class B3UnsignedWrappers {
   private readonly Dictionary<Ir.Application, Witness> witnesses = new(ReferenceEqualityComparer.Instance);
   private readonly Dictionary<string, Shape> symbols = new(StringComparer.Ordinal);
   private Scope active;
+  private readonly B3StructuredCfgCorrespondence.IfGuardCatalogue guardCatalogue;
+  private Ir.Statement boundOriginalBody;
   private HashSet<Ir.Application> certifiedApplications = new(ReferenceEqualityComparer.Instance);
   private int sourceNodes;
   private long pathCharacters;
   private static readonly FieldInfo ProxyTarget = typeof(Bpl.TypeProxy).GetField("proxyFor",
     BindingFlags.Instance | BindingFlags.NonPublic);
 
-  internal B3UnsignedWrappers(Bpl.Program source, Bpl.Implementation unit) {
+  internal B3UnsignedWrappers(Bpl.Program source, Bpl.Implementation unit,
+    B3StructuredCfgCorrespondence.IfGuardCatalogue guardCatalogue = null) {
+    this.guardCatalogue = guardCatalogue;
     this.source = source; this.unit = unit;
     var functions = new HashSet<Bpl.Function>(ReferenceEqualityComparer.Instance);
     var axioms = new List<Bpl.Axiom>();
@@ -92,6 +105,54 @@ internal sealed class B3UnsignedWrappers {
       }
       return result;
     } finally { active = previous; }
+  }
+
+  internal Ir.Conditional InIfGuard(Bpl.IfCmd owner, Func<Ir.Expression> normalizeGuard,
+    Ir.Statement thenStatement, Ir.Statement elseStatement) {
+    var previous = active;
+    active = guardCatalogue != null && guardCatalogue.TryGet(unit, owner, out var certificate) &&
+      roots.TryGetValue(certificate.Positive.Command, out var root) && ReferenceEquals(root.Block, certificate.Positive.Block) ?
+      new Scope(root, certificate) : null;
+    try {
+      if (active != null) {
+        IndexSourceCalls(active);
+        if (active.SourceCalls.Count != 0) {
+          active.Snapshot = B3IfGuardSnapshot.Capture(active.Guard.Guard, ref sourceNodes, ref pathCharacters);
+        }
+      }
+      var result = new Ir.Conditional(normalizeGuard(), thenStatement, elseStatement);
+      if (active != null && active.Calls.Count != 0) { active.Conditional = new ConditionalAnchor(result); }
+      return result;
+    } finally { active = previous; }
+  }
+
+  // Bind only after the full original tree is assembled. Replay clones Conditional
+  // records but preserves its Condition and ordered statement/expression paths.
+  internal void BindOriginalGuardOccurrences(Ir.Program original) {
+    var guarded = witnesses.Values.Where(witness => witness.Scope.Guard != null).ToArray();
+    if (guarded.Length == 0) { return; }
+    Require(boundOriginalBody == null, "Original guard occurrences were already bound", unit.tok);
+    boundOriginalBody = original.Unit.Body;
+    Walk(boundOriginalBody, (statement, expression, path) => {
+      if (expression is not Ir.Application application || !witnesses.TryGetValue(application, out var witness) ||
+          witness.Scope.Guard == null) { return; }
+      var anchor = witness.Scope.Conditional;
+      var statementPath = StatementPath(path);
+      Require(anchor != null && ReferenceEquals(statement, anchor.Statement) &&
+        (anchor.StatementPath == null || anchor.StatementPath == statementPath),
+        "Guard application has an ambiguous or foreign original Conditional occurrence", unit.tok);
+      anchor.StatementPath = statementPath;
+      Require(witness.GuardPaths.Add(path), "Guard original occurrence path is duplicate", unit.tok);
+      pathCharacters += path.Length;
+      Require(pathCharacters <= Ir.Protocol.MaximumMessageBytes, "Guard original occurrence paths exceed their bound", unit.tok);
+    });
+    Require(guarded.All(witness => witness.GuardPaths.Count != 0 && witness.Scope.Conditional.StatementPath != null),
+      "Captured guard application is absent from its original Conditional", unit.tok);
+  }
+  private static string StatementPath(string expressionPath) {
+    var separator = expressionPath.IndexOf("/expr", StringComparison.Ordinal);
+    Require(separator >= 0, "Guard occurrence has no expression slot path", Bpl.Token.NoToken);
+    return expressionPath[..separator];
   }
 
   internal void Capture(Bpl.NAryExpr call, Ir.Application application) {
@@ -198,7 +259,14 @@ internal sealed class B3UnsignedWrappers {
         ReferenceEquals(current.NativeInput, shape.NativeInput) && ReferenceEquals(current.NativeOutput, shape.NativeOutput),
         "Unsigned wrapper source shape changed after capture", unit.tok);
     }
-    var recheckNodes = 0;
+    var guardScopes = witnesses.Values.Select(witness => witness.Scope).Distinct()
+      .Where(scope => scope.Guard != null).ToArray();
+    if (guardScopes.Length != 0) {
+      Require(guardCatalogue != null && ReferenceEquals(boundOriginalBody, original.Unit.Body),
+        "Guard occurrences have no bound complete original tree", unit.tok);
+      guardCatalogue.Recheck();
+    }
+    var recheckNodes = 0; long recheckBytes = 0;
     foreach (var scope in witnesses.Values.Select(witness => witness.Scope).Distinct()) {
       IReadOnlyList<Bpl.Cmd> commands = scope.Root.Block.Cmds;
       Require(unit.Blocks.Any(block => ReferenceEquals(block, scope.Root.Block)),
@@ -210,6 +278,13 @@ internal sealed class B3UnsignedWrappers {
       }
       Require(commands.Any(command => ReferenceEquals(command, scope.Root.Command)),
         "Captured wrapper command is no longer owned by its raw root", unit.tok);
+      if (scope.Guard != null) {
+        Require(scope.Snapshot != null && ReferenceEquals(scope.Root.Command, scope.Guard.Positive.Command) &&
+          ReferenceEquals(scope.Root.Block, scope.Guard.Positive.Block) &&
+          ReferenceEquals(((Bpl.AssumeCmd)scope.Root.Command).Expr, scope.Guard.Guard),
+          "Guard witness has lost its own positive producer root", unit.tok);
+        scope.Snapshot.Recheck(scope.Guard.Guard, ref recheckNodes, ref recheckBytes);
+      }
       RecheckSourceCalls(scope, ref recheckNodes);
     }
     B3DefinitionContexts.ValidatePartition(original, obligations, preliminary, unit.tok);
@@ -229,7 +304,7 @@ internal sealed class B3UnsignedWrappers {
         if (expression is not Ir.Application application || !symbols.ContainsKey(application.Name)) { return; }
         Require(witnesses.TryGetValue(application, out var witness),
           "Retained unsigned wrapper occurrence has no source-call identity witness", unit.tok);
-        Require(Available(witness, statement, selected),
+        Require(Available(witness, statement, selected, path),
           "Retained unsigned wrapper occurrence lacks its own source root in this context", unit.tok);
         Require(receipts.Count < B3DefinitionContexts.MaximumAggregateNodes && receipts.Add((context.MaskId, path)),
           "Wrapper context occurrence receipts are duplicate or exceed their bound", unit.tok);
@@ -255,10 +330,18 @@ internal sealed class B3UnsignedWrappers {
     }
   }
 
-  private bool Available(Witness witness, Ir.Statement statement, HashSet<string> selected) {
+  private bool Available(Witness witness, Ir.Statement statement, HashSet<string> selected, string path) {
     // Capturing a shape or source expression elsewhere cannot supply this invocation's active root.
     if (!unit.Blocks.Any(block => ReferenceEquals(block, witness.Scope.Root.Block)) ||
         !roots.TryGetValue(witness.Scope.Root.Command, out var root) || !ReferenceEquals(root, witness.Scope.Root)) { return false; }
+    if (witness.Scope.Guard != null) {
+      var anchor = witness.Scope.Conditional;
+      return anchor != null && statement is Ir.Conditional conditional &&
+        ReferenceEquals(conditional.Condition, anchor.Statement.Condition) && conditional.Condition.Type == "bool" &&
+        anchor.StatementPath == StatementPath(path) && witness.GuardPaths.Contains(path) &&
+        ReferenceEquals(witness.Scope.Root.Command, witness.Scope.Guard.Positive.Command) &&
+        ReferenceEquals(witness.Scope.Root.Block, witness.Scope.Guard.Positive.Block);
+    }
     foreach (var anchor in witness.Anchors) {
       if (ReferenceEquals(anchor, statement)) {
         return anchor switch {

@@ -241,7 +241,6 @@ public class B3UnsignedWrapperTests {
   [InlineData("procedure P(x:bv3); ensures F(x) >= 0; implementation P(x:bv3) { assert true; }")]
   [InlineData("var g:bv3 where F(g) >= 0; procedure P(); implementation P() { assert true; }")]
   [InlineData("procedure Q(x:bv3); requires F(x) >= 0; procedure P(x:bv3); implementation P(x:bv3) { call Q(x); }")]
-  [InlineData("procedure P(x:bv3); implementation P(x:bv3) { if (F(x) >= 0) { assert true; } else { assert false; } }")]
   [InlineData("procedure Q(y:int); procedure P(x:bv3); implementation P(x:bv3) { call Q(F(x)); }")]
   [InlineData("procedure P(); implementation P() { var y:bv3 where F(y) >= 0; assert true; }")]
   [InlineData("procedure P(x:bv3); implementation P(x:bv3) { while (*) invariant F(x) >= 0; { break; } }")]
@@ -273,7 +272,10 @@ public class B3UnsignedWrapperTests {
         assert false;
       }
       """);
+    Assert.Equal(3, results.Count);
     Assert.All(results, Valid);
+    Assert.Equal(new[] { 4, 1, 2 }, results.Select(result => result.Obligations.Count).ToArray());
+    Assert.Contains(results.SelectMany(result => Unsigned(result.Program!)), operation => operation.Width == 3);
     Assert.Contains(results.SelectMany(result => Unsigned(result.Program!)), operation => operation.Width == 67);
     Assert.Contains(results.SelectMany(result => Expressions(result.Program!)), expression => expression is Ir.BooleanLiteral { Value: false });
   }

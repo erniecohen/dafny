@@ -124,8 +124,8 @@ public static class B3Normalizer {
       Require(unit.StructuredStmts != null, "b3_structure", "A structured pre-VC body is required", unit.tok);
       Require(unit.InParams.Count == unit.Proc.InParams.Count && unit.OutParams.Count == unit.Proc.OutParams.Count,
         "b3_formals", "Implementation/procedure formal lists differ", unit.tok);
-      B3StructuredCfgCorrespondence.Validate(unit);
-      unsignedWrappers = new B3UnsignedWrappers(source, unit);
+      var ifGuards = B3StructuredCfgCorrespondence.DescribeIfGuards(unit);
+      unsignedWrappers = new B3UnsignedWrappers(source, unit, ifGuards);
       InspectControl(unit.StructuredStmts);
       visibility = new B3DefinitionVisibility(unit);
       var formals = new Dictionary<Bpl.Variable, Ir.Expression>();
@@ -161,6 +161,7 @@ public static class B3Normalizer {
       // Formula conversion can demand additional stable guard symbols. Use the same declarations in every replay.
       normalized = normalized with { Types = types.Values.ToArray(), Functions = functions.Values.ToArray() };
       CheckOwnedBounds(normalized);
+      unsignedWrappers.BindOriginalGuardOccurrences(normalized);
       var selected = SelectDefinitions(catalogue);
       var contexts = B3DefinitionContexts.Create(normalized, obligations.ToArray(), selected, unit.tok);
       var lowered = unsignedWrappers.Lower(normalized, obligations.ToArray(), selected, contexts);
@@ -171,7 +172,7 @@ public static class B3Normalizer {
         normalized = lowered; contexts = finalContexts;
       }
       return new B3NormalizationResult(normalized, obligations.ToArray(), Array.Empty<B3NormalizationDiagnostic>(),
-        new[] { "Outside reviewed guarded literal-definition contexts, source axioms, distinct-constant constraints and lambda equations are omitted. Reviewed typed Int/Real arithmetic and conversion routes preserve native primitives, actual Body expansions and eligible active always-revealed universal definitions. Positive-width word primitives preserve exact owned semantic declarations or accepted actual typed Body expansions; exact literal Int/Bool Bodies of Int-alias functions are preserved. Exact unsigned wrappers are substituted only after direct raw-command witnesses and every retained G3 occurrence are independently certified against an owned nonhideable source equality. Other demanded closed function instances and constants are uninterpreted. Direct reads of owned closed monomorphic store expressions use the read-over-write ITE identity; other map operations remain uninterpreted. Exact metadata-free complete-tuple forall read equalities are abstracted by an uninterpreted Bool predicate of their two map values. No global read-over-write or observation axioms are asserted. Map equality remains opaque without extensionality.",
+        new[] { "Outside reviewed guarded literal-definition contexts, source axioms, distinct-constant constraints and lambda equations are omitted. Reviewed typed Int/Real arithmetic and conversion routes preserve native primitives, actual Body expansions and eligible active always-revealed universal definitions. Positive-width word primitives preserve exact owned semantic declarations or accepted actual typed Body expansions; exact literal Int/Bool Bodies of Int-alias functions are preserved. Exact unsigned wrappers are substituted only after direct raw-command or complete producer-owned non-loop If-guard witnesses and every retained G3 occurrence are independently certified against an owned nonhideable source equality. Other demanded closed function instances and constants are uninterpreted. Direct reads of owned closed monomorphic store expressions use the read-over-write ITE identity; other map operations remain uninterpreted. Exact metadata-free complete-tuple forall read equalities are abstracted by an uninterpreted Bool predicate of their two map values. No global read-over-write or observation axioms are asserted. Map equality remains opaque without extensionality.",
           "StateCmd and call-temporary scope-entry where predicates are omitted: pinned scope passification appends raw predicates without current-incarnation substitution. Post-havoc where predicates are preserved." }
           .Concat(mapHelperOrigins.Values).Concat(mapObservationOrigins.Values)
           .Concat(opaqueMapOrigins.OrderBy(s => s, StringComparer.Ordinal))
@@ -1304,7 +1305,7 @@ public static class B3Normalizer {
         var other = conditional.ElseIf != null ? StructuredCommand(conditional.ElseIf, env, control, depth + 1) :
           conditional.ElseBlock != null ? Structured(conditional.ElseBlock, env, control, depth) : new Ir.Block(Array.Empty<Ir.Statement>());
         Ir.Statement result = conditional.Guard == null ? new Ir.Choice(new[] { then, other }) :
-          new Ir.Conditional(Expr(conditional.Guard, env), then, other);
+          unsignedWrappers.InIfGuard(conditional, () => Expr(conditional.Guard, env), then, other);
         return exit == null ? result : new Ir.Labeled(exit, result);
       }
       if (command is Bpl.WhileCmd loop && enclosing != null) { return While(loop, enclosing, env, control, depth); }

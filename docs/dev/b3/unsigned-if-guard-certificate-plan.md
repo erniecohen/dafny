@@ -217,6 +217,12 @@ identifier declarations, old/extract/concat indices, binder/let variables and
 expression-valued metadata. Use typed pinned API fields, not reflection-based
 structural equality, unbounded ToString, names or a generic ContentHash. Any
 source constructor not covered by the audited view rejects this new route.
+The implementation initially rejects cycles reached through a variable's where
+expression or a referenced function Body/DefinitionBody at the existing depth
+bound, even if the guard occurrence tree itself is finite. Its supported guard
+subset therefore also requires this bounded field view to complete. This is a
+conservative admission restriction, not a source-root extension; the depth/cycle
+control exercises a declaration cycle without making it a normalization root.
 Read-only snapshots of an existing referenced Body/definition may detect changes;
 they never add a SourceChildren root or license a wrapper inside that Body.
 The source declaration/argument stability premises of existing expression and
