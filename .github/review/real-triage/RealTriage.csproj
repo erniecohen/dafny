@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <Target Name="RequireCapturedCompiler" BeforeTargets="ResolveReferences">
+    <Error Condition="'$(DafnyRealTriageReferenceDirectory)' == ''" Text="Supply the exact freshly built compiler reference directory." />
+  </Target>
+  <ItemGroup>
+    <Reference Include="$(DafnyRealTriageReferenceDirectory)/*.dll" />
+    <Content Include="$(DafnyRealTriageReferenceDirectory)/DafnyPrelude.bpl" Link="DafnyPrelude.bpl" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

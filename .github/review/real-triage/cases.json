@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "name": "real-universal",
+      "file": "real-universal.dfy",
+      "sha256": "925b5eb9479d2650cd1882e07cb5d658807f8c3ba647ab1680c6b15cbb0894ca",
+      "expectedUnits": 2,
+      "expected": "Verified",
+      "requiredFailureLine": 0
+    },
+    {
+      "name": "real-conversion",
+      "file": "real-conversion.dfy",
+      "sha256": "fc11d376a165b38ec0b0abfc5868fef7387ea3f4657663de89f40539ebe4ab9c",
+      "expectedUnits": 1,
+      "expected": "Verified",
+      "requiredFailureLine": 0
+    },
+    {
+      "name": "real-irrational",
+      "file": "real-irrational.dfy",
+      "sha256": "8cba520d92c63938c50fd2dd510c8ff10bd0a39e3bdbf5d1db634b6981dae0ff",
+      "expectedUnits": 1,
+      "expected": "Failed",
+      "requiredFailureLine": 4
+    }
+  ]
+}

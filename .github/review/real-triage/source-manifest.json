@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "scope": "Real corpus diagnostic source checkpoint; no full acceptance claim",
+  "inspectedCompilerSource": "66b36bc1d5326115f96e1faf7d466d0f5f0ed67e",
+  "sourceOnly": true,
+  "csharpCompiled": false,
+  "proofOrWorkerExecuted": false,
+  "sourceManifestSha256": "a6ecb742096ddf2f4a6dbcfefb847fdb17ff1fbda7bacf0fafd445f60d843976",
+  "reusedLibrarySha256": "9461fe3bb77dfabf981af767b586025e76bda574534f2829b59bf5c462955536",
+  "originalFullGatePassed": false,
+  "staticChecks": {
+    "pythonAstParsed": true,
+    "projectXmlParsed": true,
+    "fixtureHashesMatched": 3,
+    "vendorInventoryMatched": 58,
+    "consumerPinsMatched": 3,
+    "currentCorpusNamesMatched": 46
+  },
+  "files": {
+    ".github/review/b3-real-triage.py": {
+      "bytes": 24289,
+      "sha256": "41baf3a8ac3805197c98b6c2f60057d55d141643eb00819a04a2ed33bf3a7fad"
+    },
+    ".github/review/real-triage/Program.cs": {
+      "bytes": 19722,
+      "sha256": "398da84129201f8a57d8ed1cf3ae079ca08f71b4a900bdac686c550023a7ae6e"
+    },
+    ".github/review/real-triage/RealTriage.csproj": {
+      "bytes": 780,
+      "sha256": "583e67886882bd204ab1efe5626e16b55f9a8cbb23141450b08c8bb96107cb74"
+    },
+    ".github/review/real-triage/cases.json": {
+      "bytes": 800,
+      "sha256": "e485f700ad93b8a85b88af1ad1be5f5b9b821781370763dde9fb1d2de3a2d7f9"
+    },
+    ".github/review/real-triage/original/real-conversion.dfy": {
+      "bytes": 71,
+      "sha256": "fc11d376a165b38ec0b0abfc5868fef7387ea3f4657663de89f40539ebe4ab9c"
+    },
+    ".github/review/real-triage/original/real-irrational.dfy": {
+      "bytes": 77,
+      "sha256": "8cba520d92c63938c50fd2dd510c8ff10bd0a39e3bdbf5d1db634b6981dae0ff"
+    },
+    ".github/review/real-triage/original/real-universal.dfy": {
+      "bytes": 164,
+      "sha256": "925b5eb9479d2650cd1882e07cb5d658807f8c3ba647ab1680c6b15cbb0894ca"
+    },
+    "docs/dev/b3/real-corpus-triage.md": {
+      "bytes": 10588,
+      "sha256": "956c69accbe4a9eb832c13d081f37a3503de95477888498c874195d1e60911bb"
+    }
+  }
+}

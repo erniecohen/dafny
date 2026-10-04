@@ -17,9 +17,9 @@ on:
   workflow_dispatch:
     inputs:
       b3_focus_gate:
-        description: Focused checks reusing the unchanged B3 library verified in public run 37201990430
+        description: Focused scratch checks; each mode pins its own public B3 prerequisite
         type: choice
-        options: [none, ide-regressions, maps, isolation, numeric-proof, complete]
+        options: [none, ide-regressions, maps, isolation, numeric-proof, real-triage, complete]
         default: none
       b3_full_gate:
         description: Also run the verifying B3 worker bootstrap and real Dafny corpus with b3_compile_only
@@ -634,7 +634,9 @@ jobs:
           DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER: '1'
           MSBUILDDISABLENODEREUSE: '1'
         run: |
-          if [ "$B3_FOCUS_GATE" = isolation ]; then
+          if [ "$B3_FOCUS_GATE" = real-triage ]; then
+            python3 .github/review/b3-real-triage-gate.py
+          elif [ "$B3_FOCUS_GATE" = isolation ]; then
             python3 .github/review/b3-alc-controls.py
           elif [ "$B3_FOCUS_GATE" = ide-regressions ] || [ "$B3_FOCUS_GATE" = maps ] || [ "$B3_FOCUS_GATE" = complete ]; then
             python3 .github/review/b3-focused-gate.py
