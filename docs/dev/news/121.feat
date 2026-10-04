@@ -1,0 +1,1 @@
+Add an initial conservative typed pre-VC normalizer for the experimental B3 verification backend. It preserves explicit bool/int checks, contracts and state schedules, abstracts the demanded prelude without axioms, and rejects unsupported features without producing a partial verification unit.
