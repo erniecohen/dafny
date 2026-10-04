@@ -259,7 +259,9 @@ public static class B3Normalizer {
       if (binary.Op == Bpl.BinaryOperator.Opcode.And && application.Args.Count == 2) {
         return application.Args.Any(argument => HasLiteralEquation(argument, owner, depth + 1));
       }
-      return binary.Op == Bpl.BinaryOperator.Opcode.Eq && application.Args.Count == 2 &&
+      return application.Args.Count == 2 &&
+        (binary.Op == Bpl.BinaryOperator.Opcode.Eq || binary.Op == Bpl.BinaryOperator.Opcode.Iff &&
+          Type(application.Args[0].Type) == "bool" && Type(application.Args[1].Type) == "bool") &&
         application.Args[0] is Bpl.NAryExpr { Fun: Bpl.FunctionCall call } defining &&
         ReferenceEquals(call.Func, owner) && IsMonomorphic(defining) && defining.Args.Count == owner.InParams.Count &&
         (owner.InParams.Count == 0 || defining.Args[0] is Bpl.LiteralExpr { Val: true }) &&

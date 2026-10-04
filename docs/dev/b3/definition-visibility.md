@@ -80,7 +80,8 @@ The bounded validator uses the exact producer at Boogie
   `CheckLegalLabels:228-245` selects the nearest loop or named lexical enclosure.
 - `CreateBlocks:413-450` creates only exact Guard and Not(Guard) assumptions with
   one empty partition attribute, including the pinned `Expr.Not` simplifications
-  (`Expression/AbsyExpr.cs:275-333`), and reuses every yield/invariant object at the
+  (`Expression/AbsyExpr.cs:275-333`) and the typed Bool rewrites
+  (`Expression/AbsyExpr.cs:2483-2502`), and reuses every yield/invariant object at the
   loop header. `453-477` supplies the loop body, backedge and exit topology.
 - `CreateBlocks:494-525,527-584` supplies branch guards and exact successor order;
   conditional jump attributes are the original IfCmd attributes. Else-if guards
@@ -100,6 +101,15 @@ shapes, reordered/replaced/inserted commands, redirected or missing edges, and
 ambiguous source objects fail `b3_cfg_correspondence`. Source statements shared
 with their raw commands remain observed exactly once; mutating a shared command
 changes both interpretations and does not bypass these checks.
+
+For typed Boolean comparisons, producer negation occurs before Typecheck. The
+shared Eq guard becomes Iff(a,b); its separately created Neq complement becomes
+Iff(a,Not(b)). A source Neq guard becomes Iff(a,Not(b)) while its Eq complement
+becomes Iff(a,b). The matcher accepts only those two complementary Iff forms
+with the same first operand object and one direct Not wrapping the exact other
+second operand object. Boolean semantics makes them complements under every
+source interpretation. It adds no premise and performs no expression rewriting.
+Changed captures, same polarity, swapped operands and other unmatched forms reject.
 
 This establishes the representation premise for the separately reviewed lowering:
 the raw CFG has precisely the source ordinary commands, generated guards and
@@ -142,6 +152,14 @@ be ground. The opaque defining application uses the literal reveal argument
 guard and equality must remain intact. The bridge never replaces this with an
 unconditional function-equals-literal equation and never assumes reveal or
 canCall guards merely because a definition is loaded.
+
+For a Bool-valued literal owner, Typecheck rewrites the defining equality into
+Iff. This is admitted only when both equality operands have normalized Bool type;
+the same complete source function application, active ownership, literal value
+and full outer formula/guards are still required. Typed Bool equality is logical
+equivalence, so recognizing that leaf does not introduce a different equation or
+remove a guard. Int equalities continue to use Eq. Arbitrary Iff formulas cannot
+qualify without the exact owned defining-call and literal recognition.
 
 The exact Axiom object must occur in Program.TopLevelDeclarations and in that
 Function's definition ownership collection. The owner must also be an active
@@ -231,7 +249,7 @@ is not used as an API correctness premise.
 `Source/DafnyB3Normalizer.Test/B3DefinitionContextTests.cs` checks active source
 ownership, intact guards, finite Bool instances, declaration object identity,
 original learning flags, mixed-mode availability and actual Dafny translation.
-`B3CfgCorrespondenceTests.cs` adds 20 producer-shape/mutation controls for ordinary
+`B3CfgCorrespondenceTests.cs` adds 28 producer-shape/mutation controls for ordinary
 commands, generated guards, branch/loop/break/return topology and complete block
 consumption. Raw-only false-assertion controls also cover nested StateCmd goals.
 The large-loop control now rejects at the earlier correspondence bound.
@@ -241,15 +259,19 @@ explicit rejection of changing cycles or unequal outer scope stacks.
 original-unit deadline, cancellation cleanup and disjoint identities.
 
 The strict packaged-worker gate is `Source/DafnyB3Visibility.TestRunner`. It
-contains 21 typed Boogie/actual Dafny cases plus one five-launch session-isolation
+contains 27 typed Boogie/actual Dafny cases plus one five-launch session-isolation
 control. The typed Boogie fixtures explicitly attach their active source axioms
 to the exact function ownership metadata used by native pruning. Actual Dafny
 fixtures use only the producer's own metadata. Cases that require a definition
-also require a nonzero loaded source-origin manifest. Hidden and mixed-mode
+also require a nonzero loaded source-origin manifest. The opaque Bool-return
+reveal/learn/hide pair includes a reachable self-inequality failure while its
+Bool definition is loaded. Hidden and mixed-mode
 cases require zero loaded definitions. Linear typed Boogie cases require exact
 attempt outcomes and coverage. Four branch/path-subset cases require strict
 outcomes, the expected definition count and coverage of their reachable checks
-without assuming one attempt per check; actual Dafny cases allow legitimately unreachable
+without assuming one attempt per check. Four additional typed Boolean equality/
+inequality branch controls require Verified positives, Failed reachable-false
+negatives and fixture-specific reachable coverage; actual Dafny cases allow legitimately unreachable
 generated checks while requiring completed traversal, strict outcomes and a
 failed attempt for each expected failure. Unknown cannot pass.
 

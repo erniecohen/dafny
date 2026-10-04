@@ -28,6 +28,46 @@ public class B3CfgCorrespondenceTests {
   }
 
   [Theory]
+  [InlineData("==")]
+  [InlineData("!=")]
+  public void TypedBooleanComparisonBranchesPreserveComplementaryGuardSemantics(string operation) {
+    var opposite = operation == "==" ? "!=" : "==";
+    var (source, options) = B3VisibilityTests.Parse("procedure P(a: bool, b: bool); implementation P(a: bool, b: bool) { " +
+      "if (a " + operation + " b) { assert a " + operation + " b; } else { assert a " + opposite + " b; } }");
+    var unit = source.Implementations.Single(); var conditional = (Bpl.IfCmd)unit.StructuredStmts!.BigBlocks[0].ec;
+    var guard = Assert.IsType<Bpl.NAryExpr>(conditional.Guard);
+    Assert.Equal(Bpl.BinaryOperator.Opcode.Iff, Assert.IsType<Bpl.BinaryOperator>(guard.Fun).Op);
+    if (operation == "!=") { Assert.IsType<Bpl.UnaryOperator>(Assert.IsType<Bpl.NAryExpr>(guard.Args[1]).Fun); }
+    var before = Emit(source, options); B3StructuredCfgCorrespondence.Validate(unit);
+    var result = B3Normalizer.Normalize(source, unit, options);
+    Assert.True(result.Success, string.Join("; ", result.Diagnostics.Select(diagnostic => diagnostic.Message)));
+    Assert.Equal(before, Emit(source, options));
+  }
+
+  [Theory]
+  [InlineData("==", "changed")]
+  [InlineData("==", "same-polarity")]
+  [InlineData("==", "swapped")]
+  [InlineData("!=", "changed")]
+  [InlineData("!=", "same-polarity")]
+  [InlineData("!=", "swapped")]
+  public void BooleanComplementMatchingDoesNotGuessCapturesPolarityOrOperandOrder(string operation, string mutation) {
+    var (source, options) = B3VisibilityTests.Parse("procedure P(a: bool, b: bool, c: bool); implementation P(a: bool, b: bool, c: bool) { " +
+      "if (a " + operation + " b) { assert true; } else { assert true; } }");
+    var unit = source.Implementations.Single(); var conditional = (Bpl.IfCmd)unit.StructuredStmts!.BigBlocks[0].ec;
+    var guard = (Bpl.NAryExpr)conditional.Guard;
+    var second = operation == "==" ? guard.Args[1] : ((Bpl.NAryExpr)guard.Args[1]).Args[0];
+    var original = (Bpl.AssumeCmd)Assert.Single(conditional.ElseBlock.PrefixCommands);
+    original.Expr = mutation switch {
+      "changed" => Bpl.Expr.Iff(guard.Args[0], new Bpl.IdentifierExpr(unit.tok, unit.InParams[2])),
+      "same-polarity" => guard,
+      "swapped" => Bpl.Expr.Iff(second, Bpl.Expr.Not(guard.Args[0])),
+      _ => throw new ArgumentException(mutation)
+    };
+    Assert.Equal(0, source.Resolve(options)); Assert.Equal(0, source.Typecheck(options)); Reject(source, options);
+  }
+
+  [Theory]
   [InlineData("insert-assumption")]
   [InlineData("replace-assumption")]
   [InlineData("insert-assignment")]

@@ -210,6 +210,58 @@
       "minimumLoadedDefinitions": 0,
       "requireReachableCheckCoverage": true,
       "maximumLoadedDefinitions": 0
+    },
+    {
+      "file": "bool-equality-branch.bpl",
+      "kind": "boogie",
+      "owner": "F",
+      "ownedAxiom": 0,
+      "expectedB3": "Verified",
+      "minimumLoadedDefinitions": 0,
+      "maximumLoadedDefinitions": 0,
+      "requireReachableCheckCoverage": true
+    },
+    {
+      "file": "bool-equality-branch-false.bpl",
+      "kind": "boogie",
+      "owner": "F",
+      "ownedAxiom": 0,
+      "expectedB3": "Failed",
+      "minimumLoadedDefinitions": 0,
+      "maximumLoadedDefinitions": 0,
+      "requireReachableCheckCoverage": true
+    },
+    {
+      "file": "bool-inequality-branch.bpl",
+      "kind": "boogie",
+      "owner": "F",
+      "ownedAxiom": 0,
+      "expectedB3": "Verified",
+      "minimumLoadedDefinitions": 0,
+      "maximumLoadedDefinitions": 0,
+      "requireReachableCheckCoverage": true
+    },
+    {
+      "file": "bool-inequality-branch-false.bpl",
+      "kind": "boogie",
+      "owner": "F",
+      "ownedAxiom": 0,
+      "expectedB3": "Failed",
+      "minimumLoadedDefinitions": 0,
+      "maximumLoadedDefinitions": 0,
+      "requireReachableCheckCoverage": true
+    },
+    {
+      "file": "dafny-bool-reveal.dfy",
+      "kind": "dafny",
+      "expectedB3": "Verified",
+      "minimumLoadedDefinitions": 1
+    },
+    {
+      "file": "dafny-bool-reveal-false.dfy",
+      "kind": "dafny",
+      "expectedB3": "Failed",
+      "minimumLoadedDefinitions": 1
     }
   ],
   "isolationFixture": "nonlearning-hide.bpl",
