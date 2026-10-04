@@ -33,13 +33,13 @@
     },
     {
       "path": "LIFECYCLE.md",
-      "sha256": "da7d3ab8289fff11fd1f6346f243ec40e88f7eb7902ca3a2faa69659d14ae547",
-      "bytes": 5204
+      "sha256": "b2e818a0d2e60f848bf24dcc7ccf32652134c2a0c89a181b7ef0ca02add816d6",
+      "bytes": 8876
     },
     {
       "path": "NativeProofSupervisor.cs",
-      "sha256": "10e91f65ecf83ad6b9cfd489a5269303f23ad8df13e1685200fa6b525ef33145",
-      "bytes": 19850
+      "sha256": "67a0d271a7e794f081711ae9c33f0daf34220b11229805c3383279dbd87ac924",
+      "bytes": 30163
     },
     {
       "path": "Program.cs",
@@ -63,13 +63,13 @@
     },
     {
       "path": "native-proof-fixtures.json",
-      "sha256": "e6273abcde0e3e1ca28cd48b843b165d3bb50a14f1730dab17030e7a1cad0449",
-      "bytes": 625
+      "sha256": "bb8517210d4a6fc2392828ab7eec360c14b67361473b6d59341b4fc5eb0c2b72",
+      "bytes": 1951
     },
     {
       "path": "native-solver-wrapper.py",
-      "sha256": "0c9cf18809fdb86b9a2c818380e186b4997e31a51c3b8be8d4c07a62676e7d5c",
-      "bytes": 7815
+      "sha256": "d4c9e3139fc22b823f8e6341d9412adbbc238d7e0471f0a31d61e62f64bd8413",
+      "bytes": 12717
     },
     {
       "path": "proof-fixtures/false.dfy",
@@ -83,8 +83,15 @@
     },
     {
       "path": "proof-fixtures/true.dfy",
-      "sha256": "4d62c8992b31429da6963d3e9a45c4bb51445c07d3a51ffd19ec75ce034010dc",
-      "bytes": 38
+      "sha256": "bf2c7f7498a9221291dbc5244c3725f0fb9af93b741638595bdc11f3b83d24e6",
+      "bytes": 49
     }
-  ]
+  ],
+  "nativeSupervisorBoundary": {
+    "platform": "linux-x64",
+    "minimumKernelForExecutableMemfd": "6.3",
+    "solverImage": "bounded-native-ELF-sealed-executable-memfd",
+    "proofCliEnabled": false,
+    "runtimeEvidenceEstablished": false
+  }
 }
