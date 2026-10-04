@@ -211,6 +211,19 @@ public class NewtypeReferenceCharacteristicTests {
     Assert.True(wrapped.MayShowReferences);
   }
 
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public void ProvidedBaseUsesOnlyItsAdvertisedReferencePromise(bool noReferences) {
+    var characteristics = TypeParameterCharacteristics.Default();
+    characteristics.ContainsNoReferenceTypes = noReferences;
+    var provided = new InternalTypeSynonymDecl(SourceOrigin.NoToken, new Name("Provided"),
+      characteristics, [], module, new ThrowOnSubstitution(), null);
+    var wrapped = Application(Newtype("Outer", Application(provided)));
+    Assert.Equal(!noReferences, wrapped.MayInvolveReferences);
+    Assert.Equal(!noReferences, wrapped.MayShowReferences);
+  }
+
   [Fact]
   public void HiddenRepresentationsAreConservativeWithoutSubstitution() {
     var t = Parameter("T");
