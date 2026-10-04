@@ -69,7 +69,8 @@
       "name": "division",
       "file": "division.dfy",
       "exitCode": 4,
-      "diagnostic": "b3_arithmetic"
+      "diagnostic": "assertion",
+      "outcome": "failed"
     },
     {
       "name": "visibility",
@@ -109,6 +110,53 @@
       "file": "loop-continue.dfy",
       "exitCode": 0,
       "diagnostic": null
+    },
+    {
+      "name": "division-signs",
+      "file": "division-signs.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "division-negative-quotient",
+      "file": "division-negative-quotient.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "division-wrong-floor",
+      "file": "division-wrong-floor.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
+    },
+    {
+      "name": "modulo-wrong-remainder",
+      "file": "modulo-wrong-remainder.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
+    },
+    {
+      "name": "division-zero",
+      "file": "division-zero.dfy",
+      "exitCode": 4,
+      "diagnostic": "possible division by zero",
+      "outcome": "failed"
+    },
+    {
+      "name": "modulo-zero",
+      "file": "modulo-zero.dfy",
+      "exitCode": 4,
+      "diagnostic": "possible division by zero",
+      "outcome": "failed"
+    },
+    {
+      "name": "division-false",
+      "file": "division-false.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
     }
   ]
 }
