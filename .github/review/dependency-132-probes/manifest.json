@@ -1,0 +1,44 @@
+{
+  "sequence-newtype-datatype": {
+    "kind": "suspect"
+  },
+  "sequence-newtype-not-new": {
+    "kind": "suspect"
+  },
+  "sequence-newtype-capture": {
+    "kind": "suspect"
+  },
+  "plain-general-datatype": {
+    "kind": "negative-control"
+  },
+  "plain-general-not-new": {
+    "kind": "resolution-control"
+  },
+  "plain-reference-result": {
+    "kind": "negative-control"
+  },
+  "plain-general-capture": {
+    "kind": "negative-control"
+  },
+  "sequence-newtype-pure-positive": {
+    "kind": "positive-control"
+  },
+  "sequence-newtype-preallocated-positive": {
+    "kind": "positive-control"
+  },
+  "fresh-receiver-handle": {
+    "kind": "negative-control"
+  },
+  "preallocated-receiver-handle-positive": {
+    "kind": "positive-control"
+  },
+  "later-previous-heap-handle": {
+    "kind": "negative-control"
+  },
+  "previous-heap-handle-positive": {
+    "kind": "positive-control"
+  },
+  "handle-vacuity": {
+    "kind": "negative-control"
+  }
+}
