@@ -167,7 +167,7 @@ public static class DafnyNewCli {
     var result = context.ParseResult.FindResultFor(option);
     object? projectFileValue = null;
     var hasProjectFileValue = useProjectOption &&
-      (option.Arity.MaximumNumberOfValues > 1 || result == null || Equals(result.Token, null)) &&
+      (option != CommonOptionBag.Output || result == null || Equals(result.Token, null)) &&
       (dafnyOptions.DafnyProject?.TryGetValue(option, out projectFileValue) ?? false);
     object value;
     if (option.Arity.MaximumNumberOfValues <= 1) {

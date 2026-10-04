@@ -82,9 +82,12 @@ for mode in ["false", "true"]:
         case(prefix + "-empty-stem", command, mode, extra=enable + ["--output", ".cs"],
              expected_stem=None, expected_exit=3, diagnostic="Invalid output filename")
         case(prefix + "-empty-project", command, mode, project_output="", extra=enable,
+             expected_stem=None, expected_exit=3, diagnostic="Invalid output filename")
+        case(prefix + "-invalid-project", command, mode, project_output="\0", extra=enable,
              expected_stem=None, expected_exit=1, diagnostic="Invalid value for option output")
+        case(prefix + "-invalid-project-override", command, mode, project_output="\0", extra=enable + ["--output", "chosen"], expected_stem="chosen")
         case(prefix + "-empty-project-override", command, mode, project_output="", extra=enable + ["--output", "chosen"], expected_stem="chosen")
-    for target in ["java", "go", "cpp", "rust", "js"]:
+    for target in ["java", "go", "cpp", "rs", "js", "lib"]:
         case(mode + "-" + target + "-slash", "build", mode, target=target, project_output="bin/", extra=["--project-output"],
              expected_stem=None, expected_exit=3, diagnostic="Invalid output filename")
     case(mode + "-translate-cs-default", "translate", mode, project_output="bin/", expected_stem="bin/")
