@@ -403,11 +403,12 @@ that concludes or uses `$HeapSucc` holds too:
 
 - transitivity, also without its `a != c` guard, and the monotonicity of `alloc`:
   inclusion is transitive, and monotonicity is the definition;
-- the update axiom, with the guard of [#81](https://github.com/erniecohen/dafny/issues/81):
-  a write to another field or another reference leaves every `alloc` bit as it
-  was, and a write to `alloc` at `r` is a step only if `r` stays allocated when it
-  was. Without that guard there is no model with extensional heaps at all (#81),
-  so this member needs the guard, which is on by default;
+- the update axioms, as [#81](https://github.com/erniecohen/dafny/issues/81) leaves
+  them: a write to a field other than `alloc` leaves every `alloc` bit as it was,
+  and the one write to `alloc` that is a step writes `$Box(true)`, after which the
+  reference is allocated. Before #81 every good update was a step, and there is no
+  model with extensional heaps at all, so this member needs #81, which is on by
+  default;
 - `$HeapSuccGhost`, interpreted as inclusion together with equality of the
   non-ghost fields, and the monotonicity of `$IsAlloc` and `$IsAllocBox`, which
   depend on the heap through `alloc` only.

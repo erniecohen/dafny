@@ -7,7 +7,9 @@ procedure Issue1461_Reflexive(h: Heap)
   assert $HeapSucc(h, h);
 }
 
-// A write of the box a reference holds gives back the same heap, under the monomorphic encoding.
+// A write of the box a reference holds gives back the same heap under the monomorphic encoding,
+// and reflexivity makes it a step.  Under Dafny's encoding it is a different heap, and not a step:
+// the only write to alloc that is one writes $Box(true) (erniecohen/dafny#81).
 procedure Issue1461_WriteBack(h: Heap, r: ref)
 {
   var h1: Heap;
