@@ -59,17 +59,98 @@ lemma LocalArithmeticCapture(n: int, i: int) {
   assert m[0] == n + i;
 }
 
+// Name the inner computation so a source witness uses the same key term as
+// the outer relation. The nested source comprehensions stay in these bodies.
+ghost function NestedInnerValue82(v: int): (value: int)
+  ensures value == v
+{
+  (map j: int | j == v :: 0 := j)[0]
+}
+
+ghost function NestedRangeMap82(n: int): map<int, int> {
+  map i: int | 0 <= i < 2 &&
+    (map j: int | j == n + i :: 0 := j)[0] == n + i :: i + 10 := i
+}
+
+ghost function NestedKeyMap82(n: int): map<int, int> {
+  map i: int | 0 <= i < 2 :: NestedInnerValue82(n + i) := i
+}
+
+lemma NestedRangeWitness82(n: int, i: int)
+  requires 0 <= i < 2
+  ensures i + 10 in NestedRangeMap82(n).Keys
+{
+  // This tuple supplies the native source witness to the domain trigger.
+  var witnessTuple := (i, false);
+  assert witnessTuple.0 == i;
+}
+
+lemma NestedRangeMapContract82(n: int)
+  ensures NestedRangeMap82(n).Keys == {10, 11}
+  ensures NestedRangeMap82(n)[10] == 0
+  ensures NestedRangeMap82(n)[11] == 1
+{
+  NestedRangeWitness82(n, 0);
+  NestedRangeWitness82(n, 1);
+}
+
+// Use the same named inner computation as the actual key predicate.
+lemma NestedKeyWitness82(n: int, i: int)
+  requires 0 <= i < 2
+  ensures NestedInnerValue82(n + i) in NestedKeyMap82(n).Keys
+  ensures NestedKeyMap82(n)[NestedInnerValue82(n + i)] == i
+{
+  NestedInnerIdentity82();
+  assert NestedInnerValue82(n + i) == n + i;
+  // This tuple supplies the native source witness to the domain trigger.
+  var witnessTuple := (i, false);
+  assert witnessTuple.0 == i;
+}
+
+lemma NestedInnerIdentity82()
+  ensures forall value: int :: NestedInnerValue82(value) == value
+{
+  forall value: int
+    ensures NestedInnerValue82(value) == value
+  {
+    assert NestedInnerValue82(value) == value;
+  }
+}
+
+lemma NestedKeyMembership82(n: int, key: int)
+  ensures key in NestedKeyMap82(n).Keys <==> key == n || key == n + 1
+{
+  NestedInnerIdentity82();
+  if key == n { NestedKeyWitness82(n, 0); }
+  if key == n + 1 { NestedKeyWitness82(n, 1); }
+}
+
+lemma NestedKeyMapContract82(n: int)
+  ensures NestedKeyMap82(n).Keys == {n, n + 1}
+  ensures NestedKeyMap82(n)[n] == 0
+  ensures NestedKeyMap82(n)[n + 1] == 1
+{
+  NestedInnerIdentity82();
+  NestedKeyWitness82(n, 0);
+  NestedKeyWitness82(n, 1);
+  forall key: int
+    ensures key in NestedKeyMap82(n).Keys <==> key == n || key == n + 1
+  {
+    NestedKeyMembership82(n, key);
+  }
+}
+
 lemma NestedGeneralMaps(n: int) {
+  NestedRangeMapContract82(n);
+  NestedKeyMapContract82(n);
   var s := set i: int | 0 <= i < 2 &&
     (map j: int | j == n + i :: 0 := j)[0] == n + i;
   assert s == {0, 1};
-  var m := map i: int | 0 <= i < 2 &&
-    (map j: int | j == n + i :: 0 := j)[0] == n + i :: i + 10 := i;
+  var m := NestedRangeMap82(n);
   assert m.Keys == {10, 11};
   assert m[10] == 0;
   assert m[11] == 1;
-  var nestedKey := map i: int | 0 <= i < 2 ::
-    (map j: int | j == n + i :: 0 := j)[0] := i;
+  var nestedKey := NestedKeyMap82(n);
   assert nestedKey.Keys == {n, n + 1};
   assert nestedKey[n] == 0;
   assert nestedKey[n + 1] == 1;
@@ -99,9 +180,23 @@ lemma SubsetWitnesses() {
 
 // One order needs bounds discovery to reverse the binders. Each projection
 // component must still refer to its corresponding binder after that reversal.
+ghost opaque function DependentForward82(): (m: map<(int, int), int>)
+  ensures m.Keys == {(0, 0), (1, 0), (1, 1)}
+  ensures forall key: (int, int) | key in m.Keys :: m[key] == key.0 + key.1
+{
+  map i: int, j: int | 0 <= i < 2 && 0 <= j <= i :: (i, j) := i + j
+}
+
+ghost opaque function DependentReverse82(): (m: map<(int, int), int>)
+  ensures m.Keys == {(0, 0), (1, 0), (1, 1)}
+  ensures forall key: (int, int) | key in m.Keys :: m[key] == key.0 + key.1
+{
+  map j: int, i: int | 0 <= i < 2 && 0 <= j <= i :: (i, j) := i + j
+}
+
 lemma DependentBinders() {
-  var forward := map i: int, j: int | 0 <= i < 2 && 0 <= j <= i :: (i, j) := i + j;
-  var reverse := map j: int, i: int | 0 <= i < 2 && 0 <= j <= i :: (i, j) := i + j;
+  var forward := DependentForward82();
+  var reverse := DependentReverse82();
   assert forward.Keys == {(0, 0), (1, 0), (1, 1)};
   assert forward[(1, 0)] == 1;
   assert forward[(1, 1)] == 2;
