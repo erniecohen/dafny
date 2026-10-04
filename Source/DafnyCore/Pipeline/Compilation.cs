@@ -453,7 +453,7 @@ public class Compilation : IDisposable {
   }
 
   private void VerifyTask(ICanVerify canVerify, IVerificationWorkItem task) {
-    var statusUpdates = task.TryRun();
+    var statusUpdates = task.TryRun()?.RequireCompletion();
     if (statusUpdates == null) {
       if (task.CacheStatus is VerificationCompleted completedCache) {
         HandleStatusUpdate(canVerify, task, completedCache);

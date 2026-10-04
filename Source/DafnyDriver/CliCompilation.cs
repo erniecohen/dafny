@@ -249,7 +249,8 @@ public class CliCompilation {
           Compilation.Reporter.Error(MessageSource.Verifier, ResolutionErrors.ErrorId.none, canVerify.Origin, e.Message);
           yield break;
         } catch (OperationCanceledException) {
-
+          Compilation.Reporter.Error(MessageSource.Verifier, canVerify.Origin,
+            $"Verification cancelled for '{canVerify.FullDafnyName}'");
         } catch (Exception e) {
           Compilation.Reporter.Error(MessageSource.Verifier, ResolutionErrors.ErrorId.none, canVerify.Origin,
             $"Internal error occurred during verification: {e.Message}\n{e.StackTrace}");
