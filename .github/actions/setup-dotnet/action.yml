@@ -12,7 +12,7 @@ runs:
       shell: bash
       run: |
         curl -fsSL https://dot.net/v1/dotnet-install.sh -o "$RUNNER_TEMP/dotnet-install.sh"
-        bash "$RUNNER_TEMP/dotnet-install.sh" --channel 8.0 --runtime dotnet --install-dir "$DOTNET_ROOT" --no-path
+        bash "$RUNNER_TEMP/dotnet-install.sh" --channel 8.0 --runtime dotnet --install-dir "$DOTNET_ROOT" --no-path --skip-non-versioned-files
     - name: Check SDK and runtime inventory
       shell: bash
       run: |

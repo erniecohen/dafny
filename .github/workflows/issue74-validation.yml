@@ -17,7 +17,9 @@ jobs:
       ready: ${{ steps.build.outputs.ready }}
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
       - name: Build candidate and merged baseline with fixed Boogie
         id: build
         run: |
@@ -59,7 +61,9 @@ jobs:
         solver: ['4.12.1', '5.1.0']
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
       - uses: actions/download-artifact@v4
         with:
           name: issue74-builds
@@ -103,7 +107,9 @@ jobs:
         shard: [0, 1, 2, 3]
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
       - uses: actions/download-artifact@v4
         with:
           name: issue74-builds
@@ -133,7 +139,9 @@ jobs:
         solver: ['4.12.1', '5.1.0']
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
       - uses: actions/download-artifact@v4
         with:
           name: issue74-builds
