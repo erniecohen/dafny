@@ -16,6 +16,11 @@ on:
     branches: ['review/**', 'dev']
   workflow_dispatch:
     inputs:
+      b3_compile_only:
+        description: Record native B3 compilation and contract checks without verifier workloads (scratch branches only)
+        type: boolean
+        default: false
+
       binaries:
         description: Also build the self-contained binaries (a release is made only for a tag)
         type: boolean
@@ -56,6 +61,7 @@ env:
 
 jobs:
   build:
+    if: ${{ inputs.b3_compile_only != true }}
     name: Build (Release)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -120,6 +126,7 @@ jobs:
           retention-days: 14
 
   suite:
+    if: ${{ inputs.b3_compile_only != true }}
     name: Verifier suite (axioms ${{ matrix.axioms }}, shard ${{ matrix.shard }} of 4)
     needs: build
     runs-on: ubuntu-24.04
@@ -173,6 +180,7 @@ jobs:
           retention-days: 90
 
   verdicts:
+    if: ${{ inputs.b3_compile_only != true }}
     name: Verdicts (axioms ${{ matrix.axioms }})
     needs: [build, suite]
     runs-on: ubuntu-24.04
@@ -228,6 +236,7 @@ jobs:
           retention-days: 90
 
   resolver:
+    if: ${{ inputs.b3_compile_only != true }}
     name: Resolver matrix (both modes)
     needs: build
     runs-on: ubuntu-24.04
@@ -282,6 +291,7 @@ jobs:
           retention-days: 90
 
   stdlib:
+    if: ${{ inputs.b3_compile_only != true }}
     name: Standard library (Z3 ${{ matrix.z3 }}, axioms ${{ matrix.axioms }})
     needs: build
     runs-on: ubuntu-24.04
@@ -367,7 +377,7 @@ jobs:
   axiom-resources:
     name: Additional-axiom resource comparisons
     needs: [suite, stdlib]
-    if: always() && needs.suite.result == 'success'
+    if: ${{ inputs.b3_compile_only != true && (always() && needs.suite.result == 'success') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -390,6 +400,7 @@ jobs:
           retention-days: 90
 
   regressions:
+    if: ${{ inputs.b3_compile_only != true }}
     name: Regression tests (upstream harness)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -453,6 +464,7 @@ jobs:
 
 
   resolver-tests:
+    if: ${{ inputs.b3_compile_only != true }}
     name: Resolver unit tests and language-server recovery
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -483,7 +495,7 @@ jobs:
   binaries:
     name: Binaries (${{ matrix.rid }})
     needs: build
-    if: github.ref_type == 'tag' || inputs.binaries
+    if: ${{ inputs.b3_compile_only != true && (github.ref_type == 'tag' || inputs.binaries) }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
@@ -546,7 +558,7 @@ jobs:
   release:
     name: GitHub release
     needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, axiom-resources]
-    if: github.ref_type == 'tag'
+    if: ${{ inputs.b3_compile_only != true && (github.ref_type == 'tag') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -582,3 +594,32 @@ jobs:
           } > notes.md
           gh release create "$TAG" dafny-*.zip SHA256SUMS --repo "$GITHUB_REPOSITORY" \
             --verify-tag --title "$VERSION" --notes-file notes.md
+
+  b3-native-compile:
+    if: ${{ inputs.b3_compile_only == true }}
+    name: B3 native compilation probe
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Record compiler and contract checks
+        run: python3 .github/review/b3-native-compile.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b3-native-compile
+          path: |
+            out/b3-native-compile
+            Binaries/net8.0
+          retention-days: 14
