@@ -1,0 +1,1738 @@
+diff --git a/doc/worker-library.md b/doc/worker-library.md
+new file mode 100644
+index 0000000..c4307d8
+--- /dev/null
++++ b/doc/worker-library.md
+@@ -0,0 +1,52 @@
++# Checked worker library
++
++`library/dfyconfig.toml` builds the C# library without the command-line entry
++point. The normal project configuration continues to build the B3 command-line
++adapter. For example:
++
++```sh
++dafny build library/dfyconfig.toml --target cs --output build/B3Worker
++dafny test --no-verify test/worker/dfyconfig.toml --output build/worker-tests
++```
++
++The test command checks runtime protocol behavior. It does not verify the Dafny
++source; run a verifying build separately using the project's pinned compiler and
++solver.
++
++`B3Library.CheckAndVerify` accepts a `RawAst.Program`, a procedure name, and a
++`SolverConfiguration.Configuration`. It rejects unsupported inputs before
++running resolution, type checking, static consistency checking, and verification
++of the selected procedure. Domains, signature types, domain instantiations,
++custom literals, closure expressions, reachability statements, and unsafe SMT
++identifiers are currently excluded from this boundary.
++
++The generated C# method returns `VerificationResults._IUnitResult`. Each attempt
++has a sequence number, description, breadcrumbs, outcome, and obligation ID.
++Place an obligation's ID on its outermost `RawAst.LabeledExpr` to retain that ID
++without parsing diagnostic text. Outcomes distinguish proved (`unsat`), failed
++(`sat`), inconclusive (`unknown`, including the solver's reason), and tool error.
++The structured path does not request models; the command-line adapter retains
++raw model diagnostics for failed attempts.
++
++`complete` records that the selected procedure's traversal finished. It is not a
++successful verdict: callers must also inspect the unit's error and every attempt.
++An error in startup, an SMT acknowledgment, a query, restoration, or cleanup is a
++tool error. Any session error poisons that session; no later command or result can
++be accepted as a proof. Restoration failures override an earlier `unsat` result.
++Source well-formedness and ghost stack contracts describe B3's client traversal;
++they do not claim that a rejected SMT command changed the external solver state.
++
++Solver configuration uses an explicit executable and argument sequence, an IO
++deadline, a Z3 resource limit, a response bound, solver kind, and arithmetic solver
++selection. The deadline and response bound must be positive and fit signed 32-bit
++integers. A zero resource limit means no configured Z3 resource cap. Arithmetic
++solver values 0 through 6 are forwarded to Z3. Explicit resource limits and
++nondefault arithmetic settings are rejected for CVC5. The process boundary uses
++argument lists, bounded stderr retention, framed SMT responses, EOF detection,
++and termination on IO failure. A supervising host must also terminate its worker
++process group on cancellation or worker failure.
++
++The existing B3 source contracts are preserved. Native process methods are an
++explicit trusted boundary. The current upstream semantics work does not supply a
++soundness theorem for the complete B3 verification pipeline; passing these checks
++must not be described as such a theorem.
+diff --git a/library/dfyconfig.toml b/library/dfyconfig.toml
+new file mode 100644
+index 0000000..5fcc39b
+--- /dev/null
++++ b/library/dfyconfig.toml
+@@ -0,0 +1,8 @@
++includes = ["../src/**/*.dfy", "../target/cs/src/**/*.cs"]
++excludes = ["../src/**/flycheck_*", "../target/**/flycheck_*", "../src/Driver/Main.dfy", "../src/Solver/TestExternalSolvers.dfy"]
++
++[options]
++type-system-refresh = true
++general-traits = "datatype"
++general-newtypes = true
++standard-libraries = true
+diff --git a/src/Driver/Library.dfy b/src/Driver/Library.dfy
+new file mode 100644
+index 0000000..bf0611d
+--- /dev/null
++++ b/src/Driver/Library.dfy
+@@ -0,0 +1,117 @@
++module B3Library {
++  import opened Std.Wrappers
++  import Raw = RawAst
++  import Resolver
++  import TypeChecker
++  import StaticConsistency
++  import Verifier
++  import VerificationResults
++  import SolverConfiguration
++
++  export
++    provides CheckAndVerify
++    provides Raw, VerificationResults, SolverConfiguration, Wrappers
++
++  // External construction always passes through resolution, type checking, and
++  // consistency checking. No client-supplied checked flag crosses this boundary.
++  method CheckAndVerify(raw: Raw.Program, selectedProcedure: string,
++    configuration: SolverConfiguration.Configuration) returns (r: VerificationResults.UnitResult)
++  {
++    if !configuration.Valid() {
++      return VerificationResults.UnitResult(selectedProcedure, [], false, Some("invalid solver configuration"));
++    }
++    if raw.signatureTypes != {} || raw.domains != [] ||
++      exists typ <- raw.types :: typ.domainInstantiation.Some?
++    {
++      return VerificationResults.UnitResult(selectedProcedure, [], false,
++        Some("unsupported: domains, domain instantiations, and signature types"));
++    }
++    if !SupportedProgram(raw) {
++      return VerificationResults.UnitResult(selectedProcedure, [], false,
++        Some("unsupported: closure, reachability, custom literal, or unsafe SMT identifier"));
++    }
++    var resolution, _ := Resolver.Resolve(raw, []);
++    if resolution.Failure? {
++      return VerificationResults.UnitResult(selectedProcedure, [], false, Some("invalid input: " + resolution.error));
++    }
++    var program := resolution.value;
++    var checked := TypeChecker.TypeCheck(program);
++    if checked.IsFailure() {
++      return VerificationResults.UnitResult(selectedProcedure, [], false, Some("invalid input: " + checked.error));
++    }
++    checked := StaticConsistency.CheckConsistent(program);
++    if checked.IsFailure() {
++      return VerificationResults.UnitResult(selectedProcedure, [], false, Some("invalid input: " + checked.error));
++    }
++    r := Verifier.VerifySelected(program, selectedProcedure, configuration);
++  }
++
++  predicate SafeSymbol(name: string) {
++    name != "" && forall c <- name ::
++      'a' <= c <= 'z' || 'A' <= c <= 'Z' || '0' <= c <= '9' || c in "$%_!?@^~&*+-=<>./#"
++  }
++
++  predicate SupportedProgram(raw: Raw.Program) {
++    && (forall typ <- raw.types :: SafeSymbol(typ.name))
++    && (forall tagger <- raw.taggers :: SafeSymbol(tagger.name) && SafeSymbol(tagger.typ))
++    && (forall func <- raw.functions ::
++      && SafeSymbol(func.name) && SafeSymbol(func.resultType)
++      && (func.tag.Some? ==> SafeSymbol(func.tag.value))
++      && (forall p <- func.parameters :: SafeSymbol(p.name) && SafeSymbol(p.typ))
++      && (func.definition.Some? ==> (SupportedExpression(func.definition.value.body) &&
++          (forall e <- func.definition.value.when :: SupportedExpression(e)))))
++    && (forall axiom <- raw.axioms :: (SupportedExpression(axiom.expr) &&
++      (forall name <- axiom.explains :: SafeSymbol(name))))
++    && (forall proc <- raw.procedures ::
++      && SafeSymbol(proc.name)
++      && (forall p <- proc.parameters :: (SafeSymbol(p.name) && SafeSymbol(p.typ) &&
++        (p.optionalAutoInv.Some? ==> SupportedExpression(p.optionalAutoInv.value))))
++      && (forall ae <- proc.pre + proc.post :: SupportedAExpr(ae))
++      && (proc.body.Some? ==> SupportedStatement(proc.body.value)))
++  }
++
++  predicate SupportedExpression(expr: Raw.Expr) {
++    match expr
++    case BLiteral(_) | ILiteral(_) => true
++    case CustomLiteral(_, _) | ClosureExpr(_, _, _, _) => false
++    case IdExpr(name, _) => SafeSymbol(name)
++    case OperatorExpr(_, args) => forall e <- args :: SupportedExpression(e)
++    case FunctionCallExpr(name, args) => SafeSymbol(name) && forall e <- args :: SupportedExpression(e)
++    case LabeledExpr(name, body) => SafeSymbol(name) && SupportedExpression(body)
++    case LetExpr(name, optionalType, rhs, body) => SafeSymbol(name) &&
++      (optionalType.Some? ==> SafeSymbol(optionalType.value)) && SupportedExpression(rhs) && SupportedExpression(body)
++    case QuantifierExpr(_, bindings, patterns, body) =>
++      && (forall b <- bindings :: SafeSymbol(b.name) && SafeSymbol(b.typ))
++      && (forall pattern <- patterns :: forall e <- pattern.exprs :: SupportedExpression(e))
++      && SupportedExpression(body)
++  }
++
++  predicate SupportedAExpr(ae: Raw.AExpr) {
++    match ae
++    case AExpr(e) => SupportedExpression(e)
++    case AAssertion(s) => SupportedStatement(s)
++  }
++
++  predicate SupportedStatement(stmt: Raw.Stmt) {
++    match stmt
++    case VarDecl(v, init, body) => SafeSymbol(v.name) &&
++      (v.optionalType.Some? ==> SafeSymbol(v.optionalType.value)) &&
++      (v.optionalAutoInv.Some? ==> SupportedExpression(v.optionalAutoInv.value)) &&
++      (init.Some? ==> SupportedExpression(init.value)) && SupportedStatement(body)
++    case Assign(name, rhs) => SafeSymbol(name) && SupportedExpression(rhs)
++    case Reinit(names) => forall name <- names :: SafeSymbol(name)
++    case Block(stmts) => forall s <- stmts :: SupportedStatement(s)
++    case Call(name, args) => SafeSymbol(name) && forall arg <- args :: SupportedExpression(arg.arg)
++    case Check(_) | Assume(_) | Assert(_) => SupportedExpression(stmt.cond)
++    case Probe(e) => SupportedExpression(e)
++    case Reach(_) => false
++    case AForall(name, typ, body) => SafeSymbol(name) && SafeSymbol(typ) && SupportedStatement(body)
++    case Choose(branches) => forall branch <- branches :: SupportedStatement(branch)
++    case If(cond, thn, els) => SupportedExpression(cond) && SupportedStatement(thn) && SupportedStatement(els)
++    case IfCase(cases) => forall branch <- cases :: SupportedExpression(branch.cond) && SupportedStatement(branch.body)
++    case Loop(invariants, body) => (forall ae <- invariants :: SupportedAExpr(ae)) && SupportedStatement(body)
++    case LabeledStmt(lbl, body) => SafeSymbol(lbl) && SupportedStatement(body)
++    case Exit(optionalLabel) => optionalLabel.Some? ==> SafeSymbol(optionalLabel.value)
++    case Return => true
++  }
++}
+diff --git a/src/Solver/ExternalSolvers.dfy b/src/Solver/ExternalSolvers.dfy
+index c8588d5..1e282ed 100644
+--- a/src/Solver/ExternalSolvers.dfy
++++ b/src/Solver/ExternalSolvers.dfy
+@@ -2,138 +2,99 @@ module ExternalSolvers {
+   import opened Basics
+   import opened Std.Wrappers
+   import opened OSProcesses
++  import SolverConfiguration
+ 
+   export
+     reveals SolverSelection
+-    provides StartSmtSolverProcess, Send
+-    provides Wrappers, OSProcesses
++    provides StartSmtSolverProcess, StartConfiguredSolver, Send
++    provides Wrappers, OSProcesses, SolverConfiguration
+ 
+   datatype SolverSelection = Z3 | CVC5
+ 
+   method StartSmtSolverProcess(which: SolverSelection, printLog: bool) returns (r: Result<OSProcess, string>)
+     ensures r.Success? ==> var process := r.value; process.Valid() && fresh(process)
+   {
+-    var process;
+-    match which {
+-      case Z3 =>
+-        process :- OSProcess.Create("z3", "-in");
+-      case CVC5 =>
+-        process :- OSProcess.Create("cvc5", "--incremental");
+-    }
+-
+-    // Initialize SMT solver with some SMT-LIB2 commands
+-    var _ :- Send(process, "(set-logic ALL)", printLog);
+-    var _ :- Send(process, "(set-option :produce-models true)", printLog);
++    var configuration := if which == Z3 then SolverConfiguration.Default else
++      SolverConfiguration.Configuration("cvc5", ["--incremental"], 30000, 0, 1048576, SolverConfiguration.CVC5);
++    r := StartConfiguredSolver(configuration, printLog);
++  }
+ 
+-    match which {
+-      case Z3 =>
+-        var _ :- Send(process, "(set-option :auto_config false)", printLog);
+-        var _ :- Send(process, "(set-option :smt.mbqi false)", printLog);
+-      case CVC5 =>
++  method StartConfiguredSolver(configuration: SolverConfiguration.Configuration, printLog: bool)
++    returns (r: Result<OSProcess, string>)
++    ensures r.Success? ==> var process := r.value; process.Valid() && fresh(process)
++  {
++    if !configuration.Valid() { return Result<OSProcess, string>.Failure("invalid solver configuration"); }
++    var process :- OSProcess.Create(configuration.executable, configuration.arguments,
++      configuration.timeoutMilliseconds, configuration.maximumResponseCharacters);
++    var commands := ["(set-option :print-success true)", "(set-logic ALL)",
++      "(set-option :produce-models true)"];
++    for i := 0 to |commands|
++      invariant process.Valid() && fresh(process)
++    {
++      var ack := Send(process, commands[i], printLog);
++      if ack.Failure? {
++        var _ := process.Dispose();
++        return Result<OSProcess, string>.Failure(ack.error);
++      }
++    }
++    if configuration.solverKind == SolverConfiguration.Z3 {
++      var options := ["(set-option :auto_config false)", "(set-option :smt.mbqi false)",
++        "(set-option :smt.arith.solver " + Int2String(configuration.arithmeticSolver) + ")"];
++      if configuration.resourceLimit != 0 {
++        options := options + ["(set-option :rlimit " + Int2String(configuration.resourceLimit) + ")"];
++      }
++      options := options + ["(set-option :timeout " + Int2String(configuration.timeoutMilliseconds) + ")"];
++      for i := 0 to |options|
++        invariant process.Valid() && fresh(process)
++      {
++        var ack := Send(process, options[i], printLog);
++        if ack.Failure? {
++          var _ := process.Dispose();
++          return Result<OSProcess, string>.Failure(ack.error);
++        }
++      }
++    } else if configuration.resourceLimit != 0 || configuration.arithmeticSolver != 2 {
++      var _ := process.Dispose();
++      return Result<OSProcess, string>.Failure("resource limits require an explicit Z3 configuration");
+     }
+-
+     return Success(process);
+   }
+ 
+   method Send(process: OSProcess, cmd: string, printLog: bool) returns (r: Result<string, string>)
+     requires process.Valid()
+     modifies process
+-    ensures r.Success? && cmd != "(exit)" ==> process.Valid()
++    ensures process.Valid()
+   {
+-    if printLog {
+-      print "smt>> ", cmd, "\n";
+-    }
+-
+-    var _ := process.Send(cmd);
+-
+-    // For simple commands like (push), (pop), there is no response from the SMT solver
+-    if
+-      || cmd == "(push)"
+-      || cmd == "(pop)"
+-      || "(assert " <= cmd
+-      || "(set-option " <= cmd
+-      || "(set-logic " <= cmd
+-      || "(declare-fun " <= cmd
+-      || "(declare-const " <= cmd
+-      || "(declare-sort " <= cmd
+-      || cmd == "(exit)"
+-    {
++    if printLog { print "smt>> ", cmd, "\n"; }
++    var _ :- process.Send(cmd);
++    if cmd == "(exit)" {
++      var _ :- process.Dispose();
+       return Success("");
+     }
+-
+-    // For get-model, read until we get a balanced set of parentheses
+-    if cmd == "(get-model)" {
+-      r := ReadBalancedParentheses(process);
+-      return;
++    var response :- process.ReadResponse();
++    if response.None? { return Failure("unexpected EOF from solver"); }
++    var text := response.value;
++    var head := 0;
++    if text != "" && text[0] == '(' {
++      head := 1;
++      while head < |text| && text[head] in " \t\r\n"
++        invariant 1 <= head <= |text|
++      {
++        head := head + 1;
++      }
+     }
+-
+-    // In all other cases, including the command check-sat, the response is a single line
+-    var line :- process.ReadLine();
+-    match line
+-    case None => return Success("");
+-    case Some(text) => return Success(text);
+-  }
+-
+-  method ReadBalancedParentheses(process: OSProcess) returns (r: Result<string, string>)
+-    requires process.Valid()
+-    modifies process
+-    ensures r.Success? ==> process.Valid()
+-  {
+-    // Read until we get a balanced set of parentheses
+-    var response := "";
+-    var parenCount: nat := 0;
+-    var started := false;
+-    // We don't actually know that the process is going to give us a finite amount
+-    // of response output. However, we will in effect assume that here, by dreaming
+-    // up the number of characters we're expecting in the reponse.
+-    ghost var lengthOfEntireResponse :| 0 <= lengthOfEntireResponse;
+-    assert |response| == 0 <= lengthOfEntireResponse;
+-    while true
+-      invariant |response| <= lengthOfEntireResponse
+-      decreases lengthOfEntireResponse - |response|
+-    {
+-      var line :- process.ReadLine();
+-      match line
+-      case None =>
+-        // at end of file; okay, so this is unexpected, but let's just return what we've got so far
+-        return Success(response);
+-      case Some(text) =>
+-        response := response + text + "\n";
+-
+-        for i := 0 to |text| {
+-          var ch := text[i];
+-          if ch == '(' {
+-            started := true;
+-            parenCount := parenCount + 1;
+-          } else if ch == ')' {
+-            if !started || parenCount == 0 {
+-              // malformed parentheses; just return what we've got so far
+-              return Success(response);
+-            }
+-            parenCount := parenCount - 1;
+-          }
+-        }
+-
+-        if started && parenCount == 0 {
+-          // perfect
+-          return Success(response);
+-        }
+-        assume {:axiom} |response| <= lengthOfEntireResponse;
++    if (head != 0 && "error" <= text[head..]) || text == "unsupported" || text == "" {
++      return Failure("solver command failed: " + text);
+     }
+-  }
+-
+-  const DEBUG: bool := false
+-
+-  datatype Direction = ToProcess | FromProcess
+-
+-  method Log(process: OSProcess, direction: Direction, msg: string) {
+-    if DEBUG {
+-      print process.ExecutableName();
+-      match direction {
+-        case ToProcess => print " << ";
+-        case FromProcess => print " >> ";
++    if cmd == "(check-sat)" {
++      if text != "unsat" && text != "sat" && text != "unknown" {
++        return Failure("invalid check-sat response: " + text);
+       }
+-      print msg, "\n";
++    } else if cmd != "(get-model)" && cmd != "(get-info :reason-unknown)" {
++      if text != "success" { return Failure("expected solver acknowledgment, received: " + text); }
++    } else if text[0] != '(' {
++      return Failure("expected solver S-expression, received: " + text);
+     }
++    return Success(text);
+   }
+-}
+\ No newline at end of file
++}
+diff --git a/src/Solver/RSolver.dfy b/src/Solver/RSolver.dfy
+index 7049b45..1b38138 100644
+--- a/src/Solver/RSolver.dfy
++++ b/src/Solver/RSolver.dfy
+@@ -12,6 +12,8 @@ module RSolvers {
+   import opened Basics
+   import CLI = CommandLineOptions
+   import PrintUtil
++  import VerificationResults
++  import SolverConfiguration
+ 
+   export
+     reveals RExpr, ROperator, RPattern
+@@ -19,8 +21,9 @@ module RSolvers {
+     provides RContext, CreateEmptyContext, Extend, ExtendWithEquality
+     provides Record, RecordTracePoint, PrintTrace
+     reveals REngine
+-    provides CreateEngine, REngine.Repr, REngine.Valid, REngine.Prove, REngine.Options
+-    provides SolverExpr, Solvers, Ast, CLI, Wrappers
++    provides CreateEngine, CreateConfiguredEngine, REngine.Repr, REngine.Valid, REngine.Prove, REngine.Options
++    provides REngine.Attempts, REngine.FailureReason, REngine.Dispose
++    provides SolverExpr, Solvers, Ast, CLI, Wrappers, VerificationResults, SolverConfiguration
+ 
+   // ===== RExpr =====
+ 
+@@ -219,6 +222,10 @@ module RSolvers {
+       requires Valid()
+       decreases depth
+ 
++    method Breadcrumbs() returns (r: seq<string>)
++      requires Valid()
++      decreases depth
++
+     method PrintTrace()
+       requires Valid()
+       decreases depth
+@@ -248,6 +255,13 @@ module RSolvers {
+     {
+     }
+ 
++    method Breadcrumbs() returns (r: seq<string>)
++      requires Valid()
++      decreases depth
++    {
++      r := [];
++    }
++
+     method PrintTrace()
+       requires Valid()
+       decreases depth
+@@ -289,6 +303,14 @@ module RSolvers {
+       print "  ", expr.ToString(), "\n";
+     }
+ 
++    method Breadcrumbs() returns (r: seq<string>)
++      requires Valid()
++      decreases depth
++    {
++      r := parent.Breadcrumbs();
++      if traceString.Some? { r := r + [traceString.value]; }
++    }
++
+     method PrintTrace()
+       requires Valid()
+       decreases depth
+@@ -343,6 +365,7 @@ module RSolvers {
+     const state: Solvers.SolverState<RContext>
+     const axiomMap: map<Ast.Axiom, RExpr>
+     const Options: CLI.CliOptions
++    var Attempts: seq<VerificationResults.Attempt>
+ 
+     ghost predicate Valid()
+       reads Repr
+@@ -361,6 +384,7 @@ module RSolvers {
+       this.state := state;
+       this.axiomMap := axiomMap;
+       this.Options := options;
++      this.Attempts := [];
+       Repr := {this} + state.Repr;
+     }
+ 
+@@ -370,7 +394,7 @@ module RSolvers {
+       map["%tag" := SExpr.S(Int2String(|state.declarations| + |state.additionalDeclaredNames|))]
+     }
+ 
+-    method Prove(context: RContext, expr: RExpr) returns (result: Solvers.ProofResult)
++    method Prove(context: RContext, expr: RExpr, description: string := "", obligationId: string := "") returns (result: Solvers.ProofResult)
+       requires Valid()
+       modifies Repr
+       ensures Valid()
+@@ -382,8 +406,27 @@ module RSolvers {
+ 
+       state.Push(context); // do another Push; the parameter here is irrelevant and will soon be popped off again
+       DeclareNewSymbols(expr);
+-      result := state.Prove(expr.ToSExpr(LiteralMapper()));
++      result := state.Prove(expr.ToSExpr(LiteralMapper()), "structured-results" !in Options);
+       state.Pop();
++      var failure := state.FailureReason();
++      if failure.Some? { result := Solvers.ToolError(failure.value); }
++      var breadcrumbs := context.Breadcrumbs();
++      Attempts := Attempts + [VerificationResults.Attempt(|Attempts|, description, breadcrumbs, result, obligationId)];
++    }
++
++    function FailureReason(): Option<string>
++      requires Valid()
++      reads Repr
++    {
++      state.FailureReason()
++    }
++
++    method Dispose()
++      requires Valid()
++      modifies Repr
++      ensures Valid()
++    {
++      state.Dispose();
+     }
+ 
+     method SetContext(context: RContext)
+@@ -557,8 +600,17 @@ module RSolvers {
+   method CreateEngine(axiomMap: map<Ast.Axiom, RExpr>, options: CLI.CliOptions) returns (r: Result<REngine, string>)
+     ensures r.Success? ==> var smtEngine := r.value; smtEngine.Valid() && fresh(smtEngine.Repr)
+   {
+-    var which := if "cvc5" in options then ExternalSolvers.CVC5 else ExternalSolvers.Z3;
+-    var process :- ExternalSolvers.StartSmtSolverProcess(which, "solver-log" in options);
++    var configuration := if "cvc5" in options then
++      SolverConfiguration.Configuration("cvc5", ["--incremental"], 30000, 0, 1048576, SolverConfiguration.CVC5)
++      else SolverConfiguration.Default;
++    r := CreateConfiguredEngine(axiomMap, options, configuration);
++  }
++
++  method CreateConfiguredEngine(axiomMap: map<Ast.Axiom, RExpr>, options: CLI.CliOptions,
++    configuration: SolverConfiguration.Configuration) returns (r: Result<REngine, string>)
++    ensures r.Success? ==> var smtEngine := r.value; smtEngine.Valid() && fresh(smtEngine.Repr)
++  {
++    var process :- ExternalSolvers.StartConfiguredSolver(configuration, "solver-log" in options);
+     var solver := new Smt.SolverEngine(process, "solver-log" in options || "solver-log-no-options" in options);
+     var state := new Solvers.SolverState(solver);
+     var smtEngine := new REngine.New(state, axiomMap, options);
+diff --git a/src/Solver/SmtEngines.dfy b/src/Solver/SmtEngines.dfy
+index 717b1ea..e125262 100644
+--- a/src/Solver/SmtEngines.dfy
++++ b/src/Solver/SmtEngines.dfy
+@@ -9,7 +9,7 @@ module SmtEngines {
+     provides SolverEngine.Valid, SolverEngine.process
+     provides SolverEngine.Push, SolverEngine.Pop, SolverEngine.Assume
+     provides SolverEngine.DeclareSort, SolverEngine.DeclareFunction, SolverEngine.CheckSat
+-    provides SolverEngine.GetModel, SolverEngine.Dispose
++    provides SolverEngine.GetModel, SolverEngine.GetReasonUnknown, SolverEngine.Dispose, SolverEngine.FailureReason
+     provides SolverEngine.CommandStacks
+     reveals SolverEngine.PushCommandStack, SolverEngine.PopCommandStack, SolverEngine.AddCommand
+     reveals Context
+@@ -47,6 +47,7 @@ module SmtEngines {
+   class SolverEngine {
+     const process: OSProcesses.OSProcess
+     const printLog: bool
++    var failure: Option<string>
+ 
+     // The following variable seeks to explain the state of the solver engine
+     ghost var CommandStacks: List<List<string>>
+@@ -59,6 +60,7 @@ module SmtEngines {
+     {
+       this.process := process;
+       this.printLog := printLog;
++      failure := None;
+       CommandStacks := PushCommandStack(Nil);
+     }
+ 
+@@ -83,7 +85,7 @@ module SmtEngines {
+       requires Valid()
+       requires CommandStacks.Cons?
+       modifies this, process
+-      ensures cmd != CMD_EXIT ==> Valid()
++      ensures Valid()
+       ensures
+         && (cmd == CMD_PUSH ==> CommandStacks == PushCommandStack(old(CommandStacks)))
+         && (cmd == CMD_POP && old(CommandStacks.DoubleCons?) ==> CommandStacks == PopCommandStack(old(CommandStacks)))
+@@ -97,7 +99,17 @@ module SmtEngines {
+         CommandStacks := AddCommand(CommandStacks, cmd);
+       }
+ 
++      // The ghost stack records client traversal even after a session is poisoned.
++      // It is not a claim that failed commands were accepted by the solver.
++      if failure.Some? { return Failure(failure.value); }
+       r := ExternalSolvers.Send(process, cmd, printLog);
++      if r.Failure? { failure := Some(r.error); }
++    }
++
++    function FailureReason(): Option<string>
++      reads this
++    {
++      failure
+     }
+ 
+     ghost predicate Valid()
+@@ -174,11 +186,22 @@ module SmtEngines {
+       r := SendCmd(CMD_GET_MODEL);
+     }
+ 
++    method GetReasonUnknown() returns (r: Result<string, string>)
++      requires Valid()
++      modifies this, this.process
++      ensures Valid()
++      ensures CommandStacks == AddCommand(old(CommandStacks), "(get-info :reason-unknown)")
++    {
++      r := SendCmd("(get-info :reason-unknown)");
++    }
++
+     method Dispose()
+       requires Valid()
+       modifies this, this.process
++      ensures Valid() && CommandStacks == old(CommandStacks)
+     {
+-      var _ := SendCmd(CMD_EXIT);
++      var outcome := process.Dispose();
++      if outcome.Failure? { failure := Some(outcome.error); }
+     }
+   }
+ }
+\ No newline at end of file
+diff --git a/src/Solver/SolverConfiguration.dfy b/src/Solver/SolverConfiguration.dfy
+new file mode 100644
+index 0000000..8823cd0
+--- /dev/null
++++ b/src/Solver/SolverConfiguration.dfy
+@@ -0,0 +1,18 @@
++module SolverConfiguration {
++  datatype SolverKind = Z3 | CVC5
++
++  datatype Configuration = Configuration(
++    executable: string,
++    arguments: seq<string>,
++    timeoutMilliseconds: nat,
++    resourceLimit: nat,
++    maximumResponseCharacters: nat, solverKind: SolverKind := Z3, arithmeticSolver: nat := 2)
++  {
++    predicate Valid() {
++      executable != "" && 0 < timeoutMilliseconds <= 2147483647 &&
++      0 < maximumResponseCharacters <= 2147483647 && arithmeticSolver <= 6
++    }
++  }
++
++  const Default := Configuration("z3", ["-in", "-smt2"], 30000, 0, 1048576)
++}
+diff --git a/src/Solver/Solvers.dfy b/src/Solver/Solvers.dfy
+index 0aae508..a8928ff 100644
+--- a/src/Solver/Solvers.dfy
++++ b/src/Solver/Solvers.dfy
+@@ -8,16 +8,18 @@ module Solvers {
+   export
+     reveals SolverState, ProofResult, StackItem, SolverState.Evolves
+     provides SolverState.Repr, SolverState.Valid
+-    provides SolverState.stack, SolverState.declarations, SolverState.additionalDeclaredNames
++    provides SolverState.stack, SolverState.declarations, SolverState.additionalDeclaredNames, SolverState.smtEngine
+     reveals SolverState.IsTopMemo
+     provides SolverState.Push, SolverState.Pop
+     provides SolverState.DeclareType, SolverState.AddDeclarationMarker, SolverState.DeclareSymbol, SolverState.DeclareAdditionalName
+-    provides SolverState.AddAssumption, SolverState.Prove
+-    provides Smt, Basics, SolverExpr, DeclarationMarkers
++    provides SolverState.AddAssumption, SolverState.Prove, SolverState.FailureReason, SolverState.Dispose
++    provides Smt, Basics, SolverExpr, DeclarationMarkers, Wrappers
+ 
+   datatype ProofResult =
+     | Proved
+     | Unproved(reason: string)
++    | Inconclusive(reason: string)
++    | ToolError(reason: string)
+ 
+   datatype StackItem<Memo> = StackItem(memo: Memo, decls: set<DeclarationMarker>, names: set<string>)
+   
+@@ -157,7 +159,22 @@ module Solvers {
+       smtEngine.DeclareFunction(name, inputTpe.ToString(), outputTpe.ToString());
+     }
+ 
+-    method Prove(expr: SExpr) returns (result: ProofResult)
++    function FailureReason(): Option<string>
++      requires Valid()
++      reads Repr
++    {
++      smtEngine.FailureReason()
++    }
++
++    method Dispose()
++      requires Valid()
++      modifies Repr
++      ensures Valid()
++    {
++      smtEngine.Dispose();
++    }
++
++    method Prove(expr: SExpr, retrieveModel: bool := true) returns (result: ProofResult)
+       requires Valid()
+       modifies Repr
+       ensures Valid() && stack == old(stack)
+@@ -168,19 +185,25 @@ module Solvers {
+ 
+       var satness := smtEngine.CheckSat();
+       if satness.Failure? {
+-        result := Unproved(satness.error);
++        result := ToolError(satness.error);
+       } else if satness.value == "unsat" {
+         result := Proved;
+-      } else {
+-        var reason := satness.value;
+-        var r := smtEngine.GetModel();
+-        if r.Success? {
+-          reason := reason + "\n" + r.value;
++      } else if satness.value == "sat" {
++        result := Unproved("sat");
++        if retrieveModel {
++          var model := smtEngine.GetModel();
++          result := if model.Success? then Unproved("sat\n" + model.value) else ToolError(model.error);
+         }
+-        result := Unproved(reason);
++      } else if satness.value == "unknown" {
++        var reason := smtEngine.GetReasonUnknown();
++        result := if reason.Success? then Inconclusive(reason.value) else ToolError(reason.error);
++      } else {
++        result := ToolError("invalid solver outcome: " + satness.value);
+       }
+-
+       smtEngine.Pop();
++      var failure := smtEngine.FailureReason();
++      if failure.Some? { result := ToolError(failure.value); }
++
+     }
+   }
+ }
+diff --git a/src/Util/OSProcesses.dfy b/src/Util/OSProcesses.dfy
+index 628b2e4..4981798 100644
+--- a/src/Util/OSProcesses.dfy
++++ b/src/Util/OSProcesses.dfy
+@@ -4,28 +4,43 @@ module OSProcesses {
+   export
+     reveals OSProcess
+     provides OSProcess.Create, OSProcess.Valid, OSProcess.ExecutableName
+-    provides OSProcess.Send, OSProcess.ReadLine
++    provides OSProcess.Send, OSProcess.ReadLine, OSProcess.ReadResponse, OSProcess.Dispose
+     provides Wrappers
+ 
+   class {:extern} OSProcess {
+     ghost predicate {:extern} Valid()
+     function {:extern} ExecutableName(): string
+ 
++    // The external boundary guarantees wrapper integrity, not solver truth.
+     @Axiom
+-    static method {:extern} Create(executable: string, arguments: string) returns (r: Result<OSProcess, string>)
++    static method {:extern} Create(executable: string, arguments: seq<string>,
++      timeoutMilliseconds: nat, maximumResponseCharacters: nat)
++      returns (r: Result<OSProcess, string>)
+       ensures r.Success? ==> var p := r.value; p.Valid() && fresh(p)
+ 
+     @Axiom
+     method {:extern} Send(msg: string) returns (r: Result<(), string>)
+       requires Valid()
+       modifies this
+-      ensures r.Success? ==> Valid()
++      ensures Valid()
+ 
+-    // A return of Success(None) means the process output has signaled an end-of-file
++    // Success(None) means EOF before a response. IO and truncation are failures.
+     @Axiom
+     method {:extern} ReadLine() returns (r: Result<Option<string>, string>)
+       requires Valid()
+       modifies this
+-      ensures r.Success? ==> Valid()
++      ensures Valid()
++
++    @Axiom
++    method {:extern} ReadResponse() returns (r: Result<Option<string>, string>)
++      requires Valid()
++      modifies this
++      ensures Valid()
++
++    @Axiom
++    method {:extern} Dispose() returns (r: Result<(), string>)
++      requires Valid()
++      modifies this
++      ensures Valid()
+   }
+-}
+\ No newline at end of file
++}
+diff --git a/src/Verifier/VerificationResults.dfy b/src/Verifier/VerificationResults.dfy
+new file mode 100644
+index 0000000..83ae804
+--- /dev/null
++++ b/src/Verifier/VerificationResults.dfy
+@@ -0,0 +1,10 @@
++module VerificationResults {
++  import Solvers
++  import opened Std.Wrappers
++
++  datatype Attempt = Attempt(sequenceNumber: nat, description: string,
++    breadcrumbs: seq<string>, outcome: Solvers.ProofResult, obligationId: string)
++
++  datatype UnitResult = UnitResult(procedureName: string, attempts: seq<Attempt>,
++    complete: bool, error: Option<string>)
++}
+diff --git a/src/Verifier/Verifier.dfy b/src/Verifier/Verifier.dfy
+index 6c9d940..5f7988a 100644
+--- a/src/Verifier/Verifier.dfy
++++ b/src/Verifier/Verifier.dfy
+@@ -11,14 +11,39 @@ module Verifier {
+   import SpecConversions
+   import BC = BlockContinuations
+   import CLI = CommandLineOptions
++  import VerificationResults
++  import SolverConfiguration
+ 
+   export
+-    provides Verify
+-    provides Ast, AstValid, CLI, StaticConsistency
++    provides Verify, VerifySelected
++    provides Ast, AstValid, CLI, StaticConsistency, VerificationResults, SolverConfiguration
+ 
+   method Verify(b3: Ast.Program, options: CLI.CliOptions)
+     requires AstValid.Program(b3)
+   {
++    var configuration := if "cvc5" in options then
++      SolverConfiguration.Configuration("cvc5", ["--incremental"], 30000, 0, 1048576, SolverConfiguration.CVC5)
++      else SolverConfiguration.Default;
++    var _ := VerifyUnits(b3, options, configuration, None);
++  }
++
++  method VerifySelected(b3: Ast.Program, selectedProcedure: string,
++    configuration: SolverConfiguration.Configuration) returns (r: VerificationResults.UnitResult)
++    requires AstValid.Program(b3)
++  {
++    var units := VerifyUnits(b3, map["structured-results" := []], configuration, Some(selectedProcedure));
++    if |units| != 1 {
++      return VerificationResults.UnitResult(selectedProcedure, [], false, Some("selected procedure was not found or was ambiguous"));
++    }
++    return units[0];
++  }
++
++  method VerifyUnits(b3: Ast.Program, options: CLI.CliOptions,
++    configuration: SolverConfiguration.Configuration, selectedProcedure: Option<string>)
++    returns (units: seq<VerificationResults.UnitResult>)
++    requires AstValid.Program(b3)
++  {
++    units := [];
+     // Create STypeDecl and SConstant declarations for the B3 types, taggers, and functions
+ 
+     var typeMap := map[];
+@@ -58,8 +83,11 @@ module Verifier {
+ 
+     for i := 0 to |b3.procedures| {
+       var proc := b3.procedures[i];
+-      print "Verifying ", proc.Name, " ...\n";
+-      VerifyProcedure(proc, context, declMap, axiomMap, options);
++      if selectedProcedure.None? || proc.Name == selectedProcedure.value {
++        if selectedProcedure.None? { print "Verifying ", proc.Name, " ...\n"; }
++        var unit := VerifyProcedure(proc, context, declMap, axiomMap, options, configuration, selectedProcedure.None?);
++        units := units + [unit];
++      }
+     }
+   }
+ 
+@@ -71,13 +99,15 @@ module Verifier {
+     }
+   }
+ 
+-  method VerifyProcedure(proc: Ast.Procedure, context_in: RSolvers.RContext, declMap: I.DeclMappings, axiomMap: map<Axiom, RSolvers.RExpr>, options: CLI.CliOptions)
++  method VerifyProcedure(proc: Ast.Procedure, context_in: RSolvers.RContext, declMap: I.DeclMappings, axiomMap: map<Axiom, RSolvers.RExpr>, options: CLI.CliOptions,
++    configuration: SolverConfiguration.Configuration, printDiagnostics: bool)
++    returns (unit: VerificationResults.UnitResult)
+     requires AstValid.Procedure(proc)
+   {
+-    var result := RSolvers.CreateEngine(axiomMap, options);
++    var result := RSolvers.CreateConfiguredEngine(axiomMap, options, configuration);
+     if result.Failure? {
+-      print result.error, "\n";
+-      return;
++      if printDiagnostics { print result.error, "\n"; }
++      return VerificationResults.UnitResult(proc.Name, [], false, Some(result.error));
+     }
+     var smtEngine := result.value;
+     var preIncarnations, bodyIncarnations, postIncarnations := CreateProcIncarnations(proc.Parameters, declMap);
+@@ -101,8 +131,11 @@ module Verifier {
+       var postCheck := SpecConversions.ToCheck(proc.Post);
+       var procOutcomes := new ProcedureOutcomes();
+       Process([body] + postCheck, bodyIncarnations, context, BC.Empty(), smtEngine, procOutcomes);
+-      ReportUnreachedReachStatements(body, procOutcomes);
++      if printDiagnostics { ReportUnreachedReachStatements(body, procOutcomes); }
+     }
++    smtEngine.Dispose();
++    var failure := smtEngine.FailureReason();
++    return VerificationResults.UnitResult(proc.Name, smtEngine.Attempts, true, failure);
+   }
+ 
+   method CreateProcIncarnations(parameters: seq<PParameter>, declMap: I.DeclMappings)
+@@ -312,7 +345,7 @@ module Verifier {
+     match stmt
+     case Check(cond, location) =>
+       var rCond := incarnations.REval(cond);
+-      ProveAndReport(context, rCond, location, smtEngine);
++      ProveAndReport(context, rCond, location, smtEngine, if cond.LabeledExpr? then cond.lbl.Name else "");
+     case Assume(cond) =>
+       var rCond := incarnations.REval(cond);
+       context := RSolvers.Extend(context, rCond);
+@@ -320,15 +353,17 @@ module Verifier {
+       if location !in procOutcomes.reachableReachStatements {
+         var rCond := incarnations.REval(cond);
+         var negatedCondition := RSolvers.FuncAppl(RSolvers.RExpr.Operator2ROperator(Operator.LogicalNot), [rCond]);
+-        var result := smtEngine.Prove(context, negatedCondition);
++        var result := smtEngine.Prove(context, negatedCondition, location.description, if cond.LabeledExpr? then cond.lbl.Name else "");
+         match result
+         case Proved =>
+         case Unproved(_) =>
+           procOutcomes.reachableReachStatements := procOutcomes.reachableReachStatements + {location};
++        case Inconclusive(_) =>
++        case ToolError(_) =>
+       }
+     case Assert(cond, location) =>
+       var rCond := incarnations.REval(cond);
+-      ProveAndReport(context, rCond, location, smtEngine);
++      ProveAndReport(context, rCond, location, smtEngine, if cond.LabeledExpr? then cond.lbl.Name else "");
+       context := RSolvers.Extend(context, rCond);
+   }
+ 
+@@ -508,20 +543,22 @@ module Verifier {
+   }
+ 
+   // print error if `context ==> expr` cannot be proved by `smtEngine`.
+-  method ProveAndReport(context: RSolvers.RContext, expr: RSolvers.RExpr, location: Location, smtEngine: RSolvers.REngine)
++  method ProveAndReport(context: RSolvers.RContext, expr: RSolvers.RExpr, location: Location, smtEngine: RSolvers.REngine, obligationId: string := "")
+     requires smtEngine.Valid()
+     modifies smtEngine.Repr
+     ensures smtEngine.Valid()
+   {
+-    var result := smtEngine.Prove(context, expr);
+-    match result
+-    case Proved =>
+-    case Unproved(reason) =>
+-      print "Error: Failed to prove ", location.description, "\n";
+-      RSolvers.PrintTrace(context);
+-      if "solver-failure" in smtEngine.Options {
+-        print "Low-level proof-failure context: ", reason, "\n";
++    var result := smtEngine.Prove(context, expr, location.description, obligationId);
++    if !result.Proved? {
++      // Human diagnostics belong to the CLI adapter; structured clients consume Attempts.
++      if "structured-results" !in smtEngine.Options {
++        print "Error: Failed to prove ", location.description, "\n";
++        RSolvers.PrintTrace(context);
++        if "solver-failure" in smtEngine.Options {
++          print "Low-level proof-failure context: ", result.reason, "\n";
++        }
+       }
++    }
+   }
+ 
+   method ReportUnreachedReachStatements(stmt: Stmt, procOutcomes: ProcedureOutcomes) {
+diff --git a/target/cs/src/OSProcess.cs b/target/cs/src/OSProcess.cs
+index b2d364e..0ffa7cc 100644
+--- a/target/cs/src/OSProcess.cs
++++ b/target/cs/src/OSProcess.cs
+@@ -1,70 +1,211 @@
++#nullable enable
+ using System;
+ using System.Diagnostics;
+ using System.IO;
++using System.Numerics;
++using System.Text;
++using System.Threading.Tasks;
+ 
+ namespace OSProcesses {
+-  
+-  public class OSProcess {
+-    private Dafny.ISequence<Dafny.Rune> executableName;
+-    private Process process;
+-    private StreamWriter input;
+-    private StreamReader output;
++  public sealed class OSProcess {
++    private readonly Dafny.ISequence<Dafny.Rune> executableName;
++    private Process process = null!;
++    private StreamWriter input = null!;
++    private StreamReader output = null!;
++    private int timeoutMilliseconds;
++    private int maximumResponseCharacters;
++    private readonly StringBuilder stderr = new StringBuilder();
++    private readonly object stderrLock = new object();
++    private bool disposed;
+ 
+-    public static Std.Wrappers._IResult<OSProcess, Dafny.ISequence<Dafny.Rune>> Create(Dafny.ISequence<Dafny.Rune> executable, Dafny.ISequence<Dafny.Rune> arguments)
+-    {
+-      var execName = executable.ToVerbatimString(false);
+-      var args = arguments.ToVerbatimString(false);
++    private OSProcess(Dafny.ISequence<Dafny.Rune> executable) {
++      executableName = executable;
++    }
+ 
+-      var p = new OSProcess(executable);
+-      try {
+-        var startInfo = new ProcessStartInfo(execName, args);
+-        startInfo.RedirectStandardInput = true;
+-        startInfo.RedirectStandardOutput = true;
+-        startInfo.RedirectStandardError = true;
+-        startInfo.UseShellExecute = false;
+-        startInfo.CreateNoWindow = true;
++    private static Dafny.ISequence<Dafny.Rune> Text(string value) =>
++      Dafny.Sequence<Dafny.Rune>.UnicodeFromString(value);
+ 
+-        p.process = Process.Start(startInfo);
+-        if (p.process == null) {
+-          var errorMessage = Dafny.Sequence<Dafny.Rune>.UnicodeFromString($"Failed to start '{executable}' process");
+-          return Std.Wrappers.Result<OSProcess, Dafny.ISequence<Dafny.Rune>>.create_Failure(errorMessage);
++    public static Std.Wrappers._IResult<OSProcess, Dafny.ISequence<Dafny.Rune>> Create(
++      Dafny.ISequence<Dafny.Rune> executable,
++      Dafny.ISequence<Dafny.ISequence<Dafny.Rune>> arguments,
++      BigInteger timeoutMilliseconds, BigInteger maximumResponseCharacters) {
++      var wrapper = new OSProcess(executable);
++      try {
++        if (timeoutMilliseconds <= 0 || timeoutMilliseconds > int.MaxValue ||
++            maximumResponseCharacters <= 0 || maximumResponseCharacters > int.MaxValue) {
++          throw new ArgumentOutOfRangeException("Invalid process deadline or response bound");
+         }
+-
+-        p.input = p.process.StandardInput;
+-        p.output = p.process.StandardOutput;
+-
++        wrapper.timeoutMilliseconds = (int)timeoutMilliseconds;
++        wrapper.maximumResponseCharacters = (int)maximumResponseCharacters;
++        var startInfo = new ProcessStartInfo(executable.ToVerbatimString(false)) {
++          RedirectStandardInput = true, RedirectStandardOutput = true,
++          RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true
++        };
++        foreach (var argument in arguments.CloneAsArray()) {
++          startInfo.ArgumentList.Add(argument.ToVerbatimString(false));
++        }
++        wrapper.process = new Process { StartInfo = startInfo };
++        // Continuously drain stderr, retaining a bounded diagnostic suffix.
++        if (!wrapper.process.Start()) { throw new IOException("Process did not start"); }
++        wrapper.input = wrapper.process.StandardInput;
++        wrapper.output = wrapper.process.StandardOutput;
++        _ = Task.Run(() => {
++          var chunk = new char[4096];
++          try {
++            while (true) {
++              int count = wrapper.process.StandardError.Read(chunk, 0, chunk.Length);
++              if (count == 0) { break; }
++              lock (wrapper.stderrLock) {
++                wrapper.stderr.Append(chunk, 0, count);
++                const int bound = 16384;
++                if (wrapper.stderr.Length > bound) {
++                  wrapper.stderr.Remove(0, wrapper.stderr.Length - bound);
++                }
++              }
++            }
++          } catch (ObjectDisposedException) { }
++            catch (IOException) { }
++            catch (InvalidOperationException) { }
++        });
++        return Std.Wrappers.Result<OSProcess, Dafny.ISequence<Dafny.Rune>>.create_Success(wrapper);
+       } catch (Exception ex) {
+-        var errorMessage = Dafny.Sequence<Dafny.Rune>.UnicodeFromString($"Error initializing '{executable}': {ex.Message}");
+-        return Std.Wrappers.Result<OSProcess, Dafny.ISequence<Dafny.Rune>>.create_Failure(errorMessage);
++        try { wrapper.Close(); } catch { }
++        return Std.Wrappers.Result<OSProcess, Dafny.ISequence<Dafny.Rune>>.create_Failure(
++          Text("Could not start solver: " + ex.Message));
+       }
++    }
+ 
+-      return Std.Wrappers.Result<OSProcess, Dafny.ISequence<Dafny.Rune>>.create_Success(p);
++    public Dafny.ISequence<Dafny.Rune> ExecutableName() => executableName;
++
++    private string Diagnostic(Exception ex) {
++      string diagnostic;
++      lock (stderrLock) { diagnostic = stderr.ToString(); }
++      return ex.Message + (diagnostic.Length == 0 ? "" : "\nSolver stderr: " + diagnostic);
+     }
+ 
+-    public OSProcess(Dafny.ISequence<Dafny.Rune> executable) {
+-      executableName = executable;
++    public Std.Wrappers._IResult<_System._ITuple0, Dafny.ISequence<Dafny.Rune>> Send(
++      Dafny.ISequence<Dafny.Rune> command) {
++      try {
++        if (disposed) { throw new IOException("Solver session is closed"); }
++        var write = Task.Run(() => { input.WriteLine(command.ToVerbatimString(false)); input.Flush(); });
++        if (!write.Wait(timeoutMilliseconds)) { throw new TimeoutException("Solver write deadline exceeded"); }
++        write.GetAwaiter().GetResult();
++        return Std.Wrappers.Result<_System._ITuple0, Dafny.ISequence<Dafny.Rune>>.create_Success(_System.Tuple0.create());
++      } catch (Exception ex) {
++        var message = Diagnostic(ex);
++        try { Close(); } catch (Exception cleanup) { message += "\nCleanup: " + cleanup.Message; }
++        return Std.Wrappers.Result<_System._ITuple0, Dafny.ISequence<Dafny.Rune>>.create_Failure(Text(message));
++      }
+     }
+ 
+-    public Dafny.ISequence<Dafny.Rune> ExecutableName() {
+-      return executableName;
++    private Std.Wrappers._IResult<Std.Wrappers._IOption<Dafny.ISequence<Dafny.Rune>>, Dafny.ISequence<Dafny.Rune>> Read(Func<string?> reader) {
++      try {
++        if (disposed) { throw new IOException("Solver session is closed"); }
++        var read = Task.Run(reader);
++        if (!read.Wait(timeoutMilliseconds)) { throw new TimeoutException("Solver read deadline exceeded"); }
++        var value = read.GetAwaiter().GetResult();
++        var result = value == null
++          ? Std.Wrappers.Option<Dafny.ISequence<Dafny.Rune>>.create_None()
++          : Std.Wrappers.Option<Dafny.ISequence<Dafny.Rune>>.create_Some(Text(value));
++        return Std.Wrappers.Result<Std.Wrappers._IOption<Dafny.ISequence<Dafny.Rune>>, Dafny.ISequence<Dafny.Rune>>.create_Success(result);
++      } catch (Exception ex) {
++        var message = Diagnostic(ex);
++        try { Close(); } catch (Exception cleanup) { message += "\nCleanup: " + cleanup.Message; }
++        return Std.Wrappers.Result<Std.Wrappers._IOption<Dafny.ISequence<Dafny.Rune>>, Dafny.ISequence<Dafny.Rune>>.create_Failure(Text(message));
++      }
+     }
+ 
+-    public Std.Wrappers._IResult<_System._ITuple0, Dafny.ISequence<Dafny.Rune>> Send(Dafny.ISequence<Dafny.Rune> cmdDafny) {
+-      var cmd = cmdDafny.ToVerbatimString(false);
+-      input.WriteLine(cmd);
+-      input.Flush();
++    public Std.Wrappers._IResult<Std.Wrappers._IOption<Dafny.ISequence<Dafny.Rune>>, Dafny.ISequence<Dafny.Rune>> ReadLine() => Read(() => {
++      var buffer = new StringBuilder();
++      while (true) {
++        int next = output.Read();
++        if (next < 0) { return buffer.Length == 0 ? null : buffer.ToString(); }
++        if (next == '\n') { return buffer.ToString().TrimEnd('\r'); }
++        if (buffer.Length >= maximumResponseCharacters) { throw new IOException("Solver response bound exceeded"); }
++        buffer.Append((char)next);
++      }
++    });
++
++    // Framing distinguishes strings (with doubled quotes), quoted symbols, comments,
++    // and S-expressions. EOF within a frame is never a successful partial response.
++    public Std.Wrappers._IResult<Std.Wrappers._IOption<Dafny.ISequence<Dafny.Rune>>, Dafny.ISequence<Dafny.Rune>> ReadResponse() =>
++      Read(() => ReadSmtResponse(output, maximumResponseCharacters));
+ 
+-      var r = Std.Wrappers.Result<_System._ITuple0, Dafny.ISequence<Dafny.Rune>>.create_Success(_System.Tuple0.create());
+-      return r;
++    public static string? ReadSmtResponse(TextReader reader, int maximumCharacters) {
++      var buffer = new StringBuilder();
++      int next;
++      int skipped = 0;
++      while (true) {
++        next = reader.Read();
++        if (next < 0) { return null; }
++        if (++skipped > maximumCharacters) { throw new IOException("Solver response bound exceeded"); }
++        if (char.IsWhiteSpace((char)next)) { continue; }
++        if (next == ';') {
++          do {
++            next = reader.Read();
++            if (++skipped > maximumCharacters) { throw new IOException("Solver response bound exceeded"); }
++          } while (next >= 0 && next != '\n');
++          if (next < 0) { return null; }
++          continue;
++        }
++        break;
++      }
++      bool expression = next == '(';
++      bool inString = false, inSymbol = false, inComment = false;
++      int depth = 0;
++      while (true) {
++        if (next < 0) {
++          if (!expression && !inString && !inSymbol) { return buffer.ToString(); }
++          throw new IOException("EOF within solver response");
++        }
++        char ch = (char)next;
++        if (!expression && !inString && !inSymbol && char.IsWhiteSpace(ch)) { return buffer.ToString(); }
++        if (buffer.Length >= maximumCharacters) { throw new IOException("Solver response bound exceeded"); }
++        buffer.Append(ch);
++        if (inComment) {
++          if (ch == '\n') { inComment = false; }
++        } else if (inString) {
++          if (ch == '"') {
++            if (reader.Peek() == '"') {
++              if (buffer.Length >= maximumCharacters) { throw new IOException("Solver response bound exceeded"); }
++              buffer.Append((char)reader.Read());
++            } else { inString = false; }
++          }
++        } else if (inSymbol) {
++          if (ch == '|') { inSymbol = false; }
++          else if (ch == '\\') { throw new IOException("Invalid escape in quoted SMT symbol"); }
++        } else if (ch == '"') { inString = true; }
++        else if (ch == '|') { inSymbol = true; }
++        else if (ch == ';') { inComment = true; }
++        else if (ch == '(') {
++          if (!expression) { throw new IOException("Malformed solver atom"); }
++          depth++;
++        } else if (ch == ')') {
++          if (!expression || --depth < 0) { throw new IOException("Unbalanced solver response"); }
++          if (depth == 0) { return buffer.ToString(); }
++        }
++        next = reader.Read();
++      }
+     }
+ 
+-    public Std.Wrappers._IResult<Std.Wrappers._IOption<Dafny.ISequence<Dafny.Rune>>, Dafny.ISequence<Dafny.Rune>> ReadLine()
+-    {
+-      var line = output.ReadLine();
+-      var dafnyLine = Dafny.Sequence<Dafny.Rune>.UnicodeFromString(line);
+-      var some = Std.Wrappers.Option<Dafny.ISequence<Dafny.Rune>>.create_Some(dafnyLine);
+-      var r = Std.Wrappers.Result<Std.Wrappers._IOption<Dafny.ISequence<Dafny.Rune>>, Dafny.ISequence<Dafny.Rune>>.create_Success(some);
+-      return r;
++    private void Close() {
++      if (disposed) { return; }
++      disposed = true;
++      try {
++        if (process != null && !process.HasExited) { process.Kill(entireProcessTree: true); }
++        if (process != null && !process.WaitForExit(5000)) { throw new IOException("Solver did not exit after termination"); }
++      } finally {
++        input?.Dispose(); output?.Dispose(); process?.Dispose();
++      }
++    }
++
++    public Std.Wrappers._IResult<_System._ITuple0, Dafny.ISequence<Dafny.Rune>> Dispose() {
++      try {
++        Close();
++        return Std.Wrappers.Result<_System._ITuple0, Dafny.ISequence<Dafny.Rune>>.create_Success(_System.Tuple0.create());
++      } catch (Exception ex) {
++        return Std.Wrappers.Result<_System._ITuple0, Dafny.ISequence<Dafny.Rune>>.create_Failure(Text("Solver cleanup failed: " + ex.Message));
++      }
+     }
+   }
+ }
+diff --git a/target/java/src/OSProcess.java b/target/java/src/OSProcess.java
+index 0f46940..0a1a203 100644
+--- a/target/java/src/OSProcess.java
++++ b/target/java/src/OSProcess.java
+@@ -1,91 +1,174 @@
+ package OSProcesses;
+ 
+ import java.io.*;
++import java.math.BigInteger;
++import java.nio.charset.StandardCharsets;
++import java.util.ArrayList;
++import java.util.concurrent.*;
+ 
+ public class OSProcess {
+-    private dafny.DafnySequence<? extends dafny.CodePoint> executableName;
+-    private Process process;
+-    private PrintWriter input;
+-    private BufferedReader output;
++  private final dafny.DafnySequence<? extends dafny.CodePoint> executableName;
++  private Process process;
++  private Writer input;
++  private PushbackReader output;
++  private int timeoutMilliseconds, maximumResponseCharacters;
++  private final StringBuilder stderr = new StringBuilder();
++  private final ExecutorService io = Executors.newSingleThreadExecutor(r -> {
++    Thread t = new Thread(r, "b3-solver-io"); t.setDaemon(true); return t;
++  });
++  private boolean disposed;
+ 
+-    public static Std.Wrappers.Result<OSProcess, dafny.DafnySequence<? extends dafny.CodePoint>> Create(
+-        dafny.DafnySequence<? extends dafny.CodePoint> executable,
+-        dafny.DafnySequence<? extends dafny.CodePoint> arguments)
+-    {
+-      String execName = executable.verbatimString();
+-      String args = arguments.verbatimString();
++  private OSProcess(dafny.DafnySequence<? extends dafny.CodePoint> executable) { executableName = executable; }
+ 
+-      OSProcess p = new OSProcess(executable);
+-      try {
+-          ProcessBuilder pb = new ProcessBuilder(execName, args); // TODO: is this right if "arguments" contains several arguments?
+-          pb.redirectErrorStream(true);
+-          p.process = pb.start();
++  private static dafny.TypeDescriptor<dafny.DafnySequence<? extends dafny.CodePoint>> textType() {
++    return dafny.DafnySequence._typeDescriptor(dafny.TypeDescriptor.UNICODE_CHAR);
++  }
++  private static <T> Std.Wrappers.Result<T, dafny.DafnySequence<? extends dafny.CodePoint>> success(dafny.TypeDescriptor<T> t, T value) {
++    return Std.Wrappers.Result.create_Success(t, textType(), value);
++  }
++  private static <T> Std.Wrappers.Result<T, dafny.DafnySequence<? extends dafny.CodePoint>> failure(dafny.TypeDescriptor<T> t, String message) {
++    return Std.Wrappers.Result.create_Failure(t, textType(), dafny.DafnySequence.asUnicodeString(message));
++  }
+ 
+-          p.input = new PrintWriter(p.process.getOutputStream(), true);
+-          p.output = new BufferedReader(new InputStreamReader(p.process.getInputStream()));
+-
+-      } catch (Exception ex) {
+-          String javaErrorMessage = "Error initializing '" + executable + "': " + ex.getMessage();
+-          dafny.DafnySequence<? extends dafny.CodePoint> errorMessage = dafny.DafnySequence.asUnicodeString(javaErrorMessage);
+-          return Std.Wrappers.Result.<OSProcess, dafny.DafnySequence<? extends dafny.CodePoint>>create_Failure(
+-              ((dafny.TypeDescriptor<OSProcess>)(java.lang.Object)dafny.TypeDescriptor.reference(OSProcess.class)),
+-              dafny.DafnySequence.<dafny.CodePoint>_typeDescriptor(dafny.TypeDescriptor.UNICODE_CHAR),
+-              errorMessage);
+-      }
+-
+-      Std.Wrappers.Result<OSProcess, dafny.DafnySequence<? extends dafny.CodePoint>> r =
+-          Std.Wrappers.Result.<OSProcess, dafny.DafnySequence<? extends dafny.CodePoint>>create_Success(
+-              ((dafny.TypeDescriptor<OSProcess>)(java.lang.Object)dafny.TypeDescriptor.reference(OSProcess.class)),
+-              dafny.DafnySequence.<dafny.CodePoint>_typeDescriptor(dafny.TypeDescriptor.UNICODE_CHAR),
+-              p);
+-      return r;
++  public static Std.Wrappers.Result<OSProcess, dafny.DafnySequence<? extends dafny.CodePoint>> Create(
++      dafny.DafnySequence<? extends dafny.CodePoint> executable,
++      dafny.DafnySequence<? extends dafny.DafnySequence<? extends dafny.CodePoint>> arguments,
++      BigInteger timeoutMilliseconds, BigInteger maximumResponseCharacters) {
++    OSProcess p = new OSProcess(executable);
++    try {
++      p.timeoutMilliseconds = timeoutMilliseconds.intValueExact();
++      p.maximumResponseCharacters = maximumResponseCharacters.intValueExact();
++      if (p.timeoutMilliseconds <= 0 || p.maximumResponseCharacters <= 0) { throw new IOException("Invalid solver budgets"); }
++      var args = new ArrayList<String>(); args.add(executable.verbatimString());
++      for (var argument : arguments) { args.add(argument.verbatimString()); }
++      p.process = new ProcessBuilder(args).start();
++      p.input = new OutputStreamWriter(p.process.getOutputStream(), StandardCharsets.UTF_8);
++      p.output = new PushbackReader(new InputStreamReader(p.process.getInputStream(), StandardCharsets.UTF_8), 1);
++      var drain = new Thread(() -> {
++        try (var reader = new InputStreamReader(p.process.getErrorStream(), StandardCharsets.UTF_8)) {
++          var chunk = new char[4096]; int count;
++          while ((count = reader.read(chunk)) >= 0) {
++            synchronized (p.stderr) {
++              p.stderr.append(chunk, 0, count);
++              if (p.stderr.length() > 16384) { p.stderr.delete(0, p.stderr.length() - 16384); }
++            }
++          }
++        } catch (IOException ignored) { }
++      }, "b3-solver-stderr");
++      drain.setDaemon(true); drain.start();
++      return success(dafny.TypeDescriptor.reference(OSProcess.class), p);
++    } catch (Exception e) {
++      try { p.close(); } catch (Exception ignored) { }
++      return failure(dafny.TypeDescriptor.reference(OSProcess.class), "Could not start solver: " + e.getMessage());
+     }
++  }
+ 
+-    public OSProcess(dafny.DafnySequence<? extends dafny.CodePoint> executable) {
+-        executableName = executable;
+-    }
++  public dafny.DafnySequence<? extends dafny.CodePoint> ExecutableName() { return executableName; }
+ 
+-    public dafny.DafnySequence<? extends dafny.CodePoint> ExecutableName() {
+-        return executableName;
++  private <T> T deadline(Callable<T> operation) throws Exception {
++    if (disposed) { throw new IOException("Solver session is closed"); }
++    return io.submit(operation).get(timeoutMilliseconds, TimeUnit.MILLISECONDS);
++  }
++  private String diagnostic(Exception e) {
++    synchronized (stderr) { return e.toString() + (stderr.length() == 0 ? "" : "\nSolver stderr: " + stderr); }
++  }
++  public Std.Wrappers.Result<dafny.Tuple0, dafny.DafnySequence<? extends dafny.CodePoint>> Send(
++      dafny.DafnySequence<? extends dafny.CodePoint> command) {
++    try {
++      deadline(() -> { input.write(command.verbatimString()); input.write('\n'); input.flush(); return null; });
++      return success(dafny.Tuple0._typeDescriptor(), dafny.Tuple0.create());
++    } catch (Exception e) {
++      String message = diagnostic(e); try { close(); } catch (Exception cleanup) { message += "\nCleanup: " + cleanup; }
++      return failure(dafny.Tuple0._typeDescriptor(), message);
+     }
++  }
+ 
+-    public Std.Wrappers.Result<dafny.Tuple0, dafny.DafnySequence<? extends dafny.CodePoint>> Send(
+-        dafny.DafnySequence<? extends dafny.CodePoint> cmdDafny)
+-    {
+-        String cmd = cmdDafny.verbatimString();
+-        input.println(cmd);
+-        input.flush();
+-
+-        Std.Wrappers.Result<dafny.Tuple0, dafny.DafnySequence<? extends dafny.CodePoint>> r =
+-            Std.Wrappers.Result.<dafny.Tuple0, dafny.DafnySequence<? extends dafny.CodePoint>>create_Success(
+-                dafny.Tuple0._typeDescriptor(),
+-                dafny.DafnySequence.<dafny.CodePoint>_typeDescriptor(dafny.TypeDescriptor.UNICODE_CHAR),
+-                dafny.Tuple0.create());
+-        return r;
++  private Std.Wrappers.Result<Std.Wrappers.Option<dafny.DafnySequence<? extends dafny.CodePoint>>, dafny.DafnySequence<? extends dafny.CodePoint>> read(Callable<String> reader) {
++    var optionType = Std.Wrappers.Option._typeDescriptor(textType());
++    try {
++      String text = deadline(reader);
++      var option = text == null ? Std.Wrappers.Option.create_None(textType()) :
++        Std.Wrappers.Option.create_Some(textType(), dafny.DafnySequence.asUnicodeString(text));
++      return success(optionType, option);
++    } catch (Exception e) {
++      String message = diagnostic(e); try { close(); } catch (Exception cleanup) { message += "\nCleanup: " + cleanup; }
++      return failure(optionType, message);
+     }
++  }
++
++  public Std.Wrappers.Result<Std.Wrappers.Option<dafny.DafnySequence<? extends dafny.CodePoint>>, dafny.DafnySequence<? extends dafny.CodePoint>> ReadLine() {
++    return read(() -> {
++      var text = new StringBuilder(); int ch;
++      while ((ch = output.read()) >= 0) {
++        if (ch == '\n') { return text.toString().replaceAll("\\r$", ""); }
++        if (text.length() >= maximumResponseCharacters) { throw new IOException("Solver response bound exceeded"); }
++        text.append((char)ch);
++      }
++      return text.length() == 0 ? null : text.toString();
++    });
++  }
+ 
+-    public Std.Wrappers.Result<Std.Wrappers.Option<dafny.DafnySequence<? extends dafny.CodePoint>>, dafny.DafnySequence<? extends dafny.CodePoint>> ReadLine()
+-    {
+-        String line;
+-        try {
+-            line = output.readLine();
+-        } catch (Exception ex) {
+-            String javaErrorMessage = "Error reading response from '" + executableName.verbatimString() + "': " + ex.getMessage();
+-            dafny.DafnySequence<? extends dafny.CodePoint> errorMessage = dafny.DafnySequence.asUnicodeString(javaErrorMessage);
+-            return Std.Wrappers.Result.<Std.Wrappers.Option<dafny.DafnySequence<? extends dafny.CodePoint>>, dafny.DafnySequence<? extends dafny.CodePoint>>create_Failure(
+-                Std.Wrappers.Option.<dafny.DafnySequence<? extends dafny.CodePoint>>_typeDescriptor(dafny.DafnySequence.<dafny.CodePoint>_typeDescriptor(dafny.TypeDescriptor.UNICODE_CHAR)),
+-                dafny.DafnySequence.<dafny.CodePoint>_typeDescriptor(dafny.TypeDescriptor.UNICODE_CHAR),
+-                errorMessage);
++  public Std.Wrappers.Result<Std.Wrappers.Option<dafny.DafnySequence<? extends dafny.CodePoint>>, dafny.DafnySequence<? extends dafny.CodePoint>> ReadResponse() {
++    return read(() -> {
++      var text = new StringBuilder(); int next, skipped = 0;
++      while (true) {
++        next = output.read(); if (next < 0) { return null; }
++        if (++skipped > maximumResponseCharacters) { throw new IOException("Solver response bound exceeded"); }
++        if (Character.isWhitespace(next)) { continue; }
++        if (next == ';') {
++          do { next = output.read(); if (++skipped > maximumResponseCharacters) { throw new IOException("Solver response bound exceeded"); } }
++          while (next >= 0 && next != '\n');
++          if (next < 0) { return null; } continue;
++        }
++        break;
++      }
++      boolean expression = next == '(', string = false, symbol = false, comment = false; int depth = 0;
++      while (true) {
++        if (next < 0) {
++          if (!expression && !string && !symbol) { return text.toString(); }
++          throw new IOException("EOF within solver response");
+         }
++        char ch = (char)next;
++        if (!expression && !string && !symbol && Character.isWhitespace(ch)) { return text.toString(); }
++        if (text.length() >= maximumResponseCharacters) { throw new IOException("Solver response bound exceeded"); }
++        text.append(ch);
++        if (comment) { if (ch == '\n') { comment = false; } }
++        else if (string) {
++          if (ch == '"') {
++            int peek = output.read();
++            if (peek == '"') { text.append((char)peek); if (text.length() > maximumResponseCharacters) { throw new IOException("Solver response bound exceeded"); } }
++            else { string = false; if (peek >= 0) { output.unread(peek); } }
++          }
++        } else if (symbol) {
++          if (ch == '|') { symbol = false; }
++          else if (ch == '\\') { throw new IOException("Invalid escape in quoted SMT symbol"); }
++        } else if (ch == '"') { string = true; }
++        else if (ch == '|') { symbol = true; }
++        else if (ch == ';') { comment = true; }
++        else if (ch == '(') { if (!expression) { throw new IOException("Malformed solver atom"); } depth++; }
++        else if (ch == ')') {
++          if (!expression || --depth < 0) { throw new IOException("Unbalanced solver response"); }
++          if (depth == 0) { return text.toString(); }
++        }
++        next = output.read();
++      }
++    });
++  }
+ 
+-        dafny.DafnySequence<? extends dafny.CodePoint> dafnyLine = dafny.DafnySequence.asUnicodeString(line);
+-        Std.Wrappers.Option<dafny.DafnySequence<? extends dafny.CodePoint>> some =
+-            Std.Wrappers.Option.<dafny.DafnySequence<? extends dafny.CodePoint>>create_Some(
+-                dafny.DafnySequence.<dafny.CodePoint>_typeDescriptor(dafny.TypeDescriptor.UNICODE_CHAR),
+-                dafnyLine);
+-        return Std.Wrappers.Result.<Std.Wrappers.Option<dafny.DafnySequence<? extends dafny.CodePoint>>, dafny.DafnySequence<? extends dafny.CodePoint>>create_Success(
+-            Std.Wrappers.Option.<dafny.DafnySequence<? extends dafny.CodePoint>>_typeDescriptor(dafny.DafnySequence.<dafny.CodePoint>_typeDescriptor(dafny.TypeDescriptor.UNICODE_CHAR)),
+-            dafny.DafnySequence.<dafny.CodePoint>_typeDescriptor(dafny.TypeDescriptor.UNICODE_CHAR),
+-            some);
++  private void close() throws Exception {
++    if (disposed) { return; } disposed = true;
++    try {
++      if (process != null) {
++        process.descendants().forEach(ProcessHandle::destroyForcibly);
++        process.destroyForcibly();
++        if (!process.waitFor(5, TimeUnit.SECONDS)) { throw new IOException("Solver did not exit"); }
++      }
++    } finally {
++      if (input != null) { input.close(); } if (output != null) { output.close(); } io.shutdownNow();
+     }
+-}
+\ No newline at end of file
++  }
++  public Std.Wrappers.Result<dafny.Tuple0, dafny.DafnySequence<? extends dafny.CodePoint>> Dispose() {
++    try { close(); return success(dafny.Tuple0._typeDescriptor(), dafny.Tuple0.create()); }
++    catch (Exception e) { return failure(dafny.Tuple0._typeDescriptor(), "Solver cleanup failed: " + e); }
++  }
++}
+diff --git a/test/worker/WorkerTests.dfy b/test/worker/WorkerTests.dfy
+new file mode 100644
+index 0000000..beab359
+--- /dev/null
++++ b/test/worker/WorkerTests.dfy
+@@ -0,0 +1,175 @@
++module WorkerTests {
++  import opened Std.Wrappers
++  import Raw = RawAst
++  import B3Library
++  import SolverConfiguration
++  import VerificationResults
++  import Solvers
++  import ExternalSolvers
++  import OSProcesses
++
++  function Program(value: bool): Raw.Program {
++    Raw.Program({}, [], [], [], [], [], [
++      Raw.Procedure("sUnit", [], [], [], Some(Raw.Block([
++        Raw.Check(Raw.LabeledExpr("sO0", Raw.BLiteral(value)))])))])
++  }
++
++  method Fixture(scenario: string) returns (r: VerificationResults.UnitResult) {
++    var configuration := SolverConfiguration.Configuration("python3",
++      ["test/worker/fake-solver.py", scenario], 5000, 0, 1048576);
++    r := B3Library.CheckAndVerify(Program(true), "sUnit", configuration);
++  }
++
++  @Test
++  method PushFailureCannotBeProved() {
++    var r := Fixture("bad-push");
++    expect r.error.Some?;
++    expect forall a <- r.attempts :: a.outcome.ToolError?;
++  }
++
++  @Test
++  method StartupFailureCannotComplete() {
++    var r := Fixture("bad-option");
++    expect !r.complete && r.error.Some?;
++  }
++
++  @Test
++  method InvalidAnswerCannotBeProved() {
++    var r := Fixture("invalid-answer");
++    expect r.error.Some?;
++    expect |r.attempts| == 1 && r.attempts[0].outcome.ToolError?;
++  }
++
++  @Test
++  method QueryEofCannotBeProved() {
++    var r := Fixture("eof-query");
++    expect r.error.Some?;
++    expect |r.attempts| == 1 && r.attempts[0].outcome.ToolError?;
++  }
++
++  @Test
++  method SilentSolverExceedsDeadline() {
++    var c := SolverConfiguration.Configuration("python3", ["test/worker/fake-solver.py", "silent"], 100, 0, 1048576);
++    var r := B3Library.CheckAndVerify(Program(true), "sUnit", c);
++    expect !r.complete && r.error.Some?;
++  }
++
++  @Test
++  method OversizedResponseIsError() {
++    var r := Fixture("oversized");
++    expect !r.complete && r.error.Some?;
++  }
++
++  @Test
++  method ZeroDeadlineIsRejected() {
++    var c := SolverConfiguration.Default.(timeoutMilliseconds := 0);
++    var r := B3Library.CheckAndVerify(Program(true), "sUnit", c);
++    expect !r.complete && r.error.Some?;
++  }
++
++  method GetModel(scenario: string) returns (r: Result<string, string>) {
++    var c := SolverConfiguration.Configuration("python3", ["test/worker/fake-solver.py", scenario], 5000, 0, 1048576);
++    var started := ExternalSolvers.StartConfiguredSolver(c, false);
++    expect started.Success?;
++    r := ExternalSolvers.Send(started.value, "(get-model)", false);
++    var closed := started.value.Dispose();
++    expect closed.Success?;
++  }
++
++  @Test
++  method ModelFramingIgnoresQuotedParentheses() {
++    var r := GetModel("unsat");
++    expect r.Success?;
++    expect r.value == "(model (define-fun |x(y)| () String \"(a) \"\"b\"\"\"))";
++  }
++
++  @Test
++  method TruncatedModelIsError() {
++    var r := GetModel("truncated-model");
++    expect r.Failure?;
++  }
++
++  @Test
++  method RealZ3ProvesTrueAndRefutesFalse() {
++    var proved := B3Library.CheckAndVerify(Program(true), "sUnit", SolverConfiguration.Default);
++    var failed := B3Library.CheckAndVerify(Program(false), "sUnit", SolverConfiguration.Default);
++    expect proved.complete && proved.error.None? && |proved.attempts| == 1 && proved.attempts[0].outcome.Proved?;
++    expect failed.complete && failed.error.None? && |failed.attempts| == 1 && failed.attempts[0].outcome.Unproved?;
++  }
++
++  @Test
++  method FailedAssertionCannotBeProved() {
++    var r := Fixture("bad-assert");
++    expect r.error.Some?;
++    expect |r.attempts| == 1 && r.attempts[0].outcome.ToolError?;
++  }
++
++  @Test
++  method RestoreFailureOverridesUnsat() {
++    var r := Fixture("bad-pop");
++    expect r.error.Some?;
++    expect |r.attempts| == 1 && r.attempts[0].outcome.ToolError?;
++  }
++
++  @Test
++  method ReasonQueryErrorCannotBeInconclusive() {
++    var r := Fixture("unknown-error");
++    expect r.error.Some?;
++    expect |r.attempts| == 1 && r.attempts[0].outcome.ToolError?;
++  }
++
++  @Test
++  method UnknownIsInconclusive() {
++    var r := Fixture("unknown");
++    expect r.complete && r.error.None?;
++    expect |r.attempts| == 1 && r.attempts[0].outcome.Inconclusive?;
++  }
++
++  @Test
++  method SatIsUnproved() {
++    var r := Fixture("sat");
++    expect r.complete && r.error.None?;
++    expect |r.attempts| == 1 && r.attempts[0].outcome.Unproved?;
++  }
++
++  @Test
++  method UnreadErrorCannotBeProved() {
++    var r := Fixture("unread-error");
++    expect r.error.Some?;
++    expect |r.attempts| == 1 && r.attempts[0].outcome.ToolError?;
++  }
++
++  @Test
++  method CompletedProofPreservesIdentity() {
++    var r := Fixture("unsat");
++    expect r.complete && r.error.None?;
++    expect |r.attempts| == 1 && r.attempts[0].outcome.Proved?;
++    expect r.attempts[0].sequenceNumber == 0 && r.attempts[0].obligationId == "sO0";
++  }
++
++  @Test
++  method StderrFloodCannotDeadlock() {
++    var r := Fixture("stderr-flood");
++    expect r.complete && r.error.None?;
++    expect |r.attempts| == 1 && r.attempts[0].outcome.Proved?;
++  }
++
++  @Test
++  method ImmediateEofIsError() {
++    var r := Fixture("immediate-eof");
++    expect !r.complete && r.error.Some?;
++  }
++
++  @Test
++  method UnknownUnitCannotComplete() {
++    var r := B3Library.CheckAndVerify(Program(true), "sMissing", SolverConfiguration.Default);
++    expect !r.complete && r.error.Some?;
++  }
++
++  @Test
++  method DomainInputIsUnsupported() {
++    var p := Program(true).(signatureTypes := {"sT"});
++    var r := B3Library.CheckAndVerify(p, "sUnit", SolverConfiguration.Default);
++    expect !r.complete && r.error.Some?;
++  }
++}
+diff --git a/test/worker/dfyconfig.toml b/test/worker/dfyconfig.toml
+new file mode 100644
+index 0000000..4917334
+--- /dev/null
++++ b/test/worker/dfyconfig.toml
+@@ -0,0 +1,8 @@
++includes = ["../../src/**/*.dfy", "../../target/cs/src/**/*.cs", "**/*.dfy"]
++excludes = ["../../src/Driver/Main.dfy", "../../src/Solver/TestExternalSolvers.dfy"]
++
++[options]
++type-system-refresh = true
++general-traits = "datatype"
++general-newtypes = true
++standard-libraries = true
+diff --git a/test/worker/fake-solver.py b/test/worker/fake-solver.py
+new file mode 100644
+index 0000000..3d667b8
+--- /dev/null
++++ b/test/worker/fake-solver.py
+@@ -0,0 +1,59 @@
++#!/usr/bin/env python3
++"""Deterministic protocol faults, not a mathematical solver."""
++import sys
++import time
++
++scenario = sys.argv[1]
++assertion_seen = False
++for raw in sys.stdin:
++    command = raw.strip()
++    if scenario == "silent":
++        time.sleep(10)
++        sys.exit(0)
++    if scenario == "oversized":
++        print("x" * 1048577, flush=True)
++        continue
++    if scenario == "immediate-eof":
++        sys.exit(0)
++    if scenario == "stderr-flood":
++        sys.stderr.write("x" * 65536)
++        sys.stderr.flush()
++    if command == "(exit)":
++        sys.exit(0)
++    if command.startswith("(assert "):
++        assertion_seen = True
++        if scenario == "bad-assert":
++            print('(error "assertion was rejected")', flush=True)
++            continue
++    if command == "(pop)" and scenario == "bad-pop":
++        print('(error "pop was rejected")', flush=True)
++    elif command == "(push)" and scenario == "bad-push":
++        print('(error "push was rejected")', flush=True)
++    elif command.startswith("(set-option ") and scenario == "bad-option":
++        print("unsupported", flush=True)
++    elif command == "(check-sat)":
++        if scenario in ("unknown", "unknown-error"):
++            print("unknown", flush=True)
++        elif scenario == "sat":
++            print("sat", flush=True)
++        elif scenario == "invalid-answer":
++            print("certainly-unsat", flush=True)
++        elif scenario == "eof-query":
++            sys.exit(0)
++        elif scenario == "unread-error":
++            print('(error "earlier operation failed")\nunsat', flush=True)
++        else:
++            print("unsat", flush=True)
++    elif command == "(get-info :reason-unknown)":
++        if scenario == "unknown-error":
++            print('( \n error "reason failed")', flush=True)
++        else:
++            print('(:reason-unknown "deterministic fixture")', flush=True)
++    elif command == "(get-model)":
++        if scenario == "truncated-model":
++            print('(model (define-fun x () Int 1)', flush=True)
++            sys.exit(0)
++        else:
++            print('(model (define-fun |x(y)| () String "(a) ""b"""))', flush=True)
++    else:
++        print("success", flush=True)

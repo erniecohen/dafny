@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "baseline investigation; worker not built",
+  "status": "pinned source and verifying library bootstrap; experimental integration in progress",
   "dafny": {
     "repository": "https://github.com/erniecohen/dafny",
     "branch": "review/4.11.0",
@@ -21,7 +21,7 @@
     "mainCommit": "b24a2b2d6101df900e67d3bb151c4e85af4cd16d",
     "latestContributionCommit": "ea6e8a18dfe9e317d313de769291f989957dc5f2",
     "latestContribution": "https://github.com/dafny-lang/b3/pull/13",
-    "selectionStatus": "latest contribution is fetched; bootstrap and domain limitations under review",
+    "selectionStatus": "selected newest contribution, explicitly unmerged; domains rejected by structured entrypoint",
     "soundnessWork": {
       "pullRequest": "https://github.com/dafny-lang/b3/pull/12",
       "commit": "f0b9c22e3d3bb7c0df6acccacb0e5c40dc302e74",
@@ -36,7 +36,10 @@
         "pullRequest": 8,
         "commit": "5d0f05b310b1de28e232dff5e2e1a11bde8b341f"
       }
-    ]
+    ],
+    "selectedCommit": "ea6e8a18dfe9e317d313de769291f989957dc5f2",
+    "sourceManifest": "ThirdParty/B3/source-manifest.json",
+    "integrationPatch": "ThirdParty/B3/integration.patch"
   },
   "runtime": {
     "targetFramework": "net8.0",
@@ -48,7 +51,10 @@
     "version": "5.1.0"
   },
   "bootstrapCompiler": {
-    "version": "4.11.0+fcb2042d.review.256a1ab3",
-    "status": "initial source-resolution probe; verifying build pending"
+    "version": "4.11.0+fcb2042d.review.a171069d",
+    "sourceCommit": "8b9635e3d48b94c1a5875f0f2e0a772d9131900b",
+    "archiveSha256": "ba06f4d5048ecf0cc40f79281230eb44b429fd73a8bbed5c4377a3d0ff010331",
+    "artifactOrigin": "https://github.com/erniecohen/dafny/actions/runs/37157932239",
+    "status": "full verifying library build completed; generated assembly remains a trusted compiler artifact"
   }
 }

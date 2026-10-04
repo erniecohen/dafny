@@ -17,16 +17,17 @@ public static class Protocol {
     PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
     MaxDepth = 256,
-    Converters = { new JsonStringEnumConverter() }
+    Converters = { new JsonStringEnumConverter(allowIntegerValues: false) }
   };
 }
 
 public sealed record SourceIdentity(string Id, string Uri, int Line, int Column, string Description);
 public sealed record Configuration(string SolverExecutable, IReadOnlyList<string> SolverArguments,
-  int TimeoutMilliseconds, long ResourceLimit, int MaximumResponseCharacters, int ArithmeticSolver);
+  int TimeoutMilliseconds, long ResourceLimit, int MaximumResponseCharacters, int ArithmeticSolver,
+  string SolverVersion, string SolverSha256);
 public sealed record Request(int Version, string RequestId, string NormalizerVersion,
   string B3Commit, string ProgramHash, string UnitId, Program Program,
-  Configuration Configuration, IReadOnlyList<SourceIdentity> Obligations);
+  Configuration Configuration, IReadOnlyList<SourceIdentity> Obligations, string WorkerFingerprint);
 public sealed record Program(IReadOnlyList<string> Types, IReadOnlyList<Function> Functions,
   IReadOnlyList<Axiom> Axioms, Unit Unit);
 public sealed record Binding(string Name, string Type);
@@ -92,9 +93,10 @@ public enum Outcome {
   Verified, Failed, Inconclusive, TimedOut, ResourceExhausted, OutOfMemory,
   Cancelled, Unsupported, ToolError
 }
-public sealed record Attempt(int Sequence, string ObligationId, Outcome Outcome, string? Reason);
+public sealed record Attempt(int Sequence, string ObligationId, Outcome Outcome, string? Reason,
+  string? Description = null, IReadOnlyList<string>? Breadcrumbs = null);
 public sealed record Completion(int Version, string RequestId, string ProgramHash, string UnitId,
   string B3Commit, bool TraversalCompleted, Outcome Outcome,
-  IReadOnlyList<Attempt> Attempts, string? Error);
+  IReadOnlyList<Attempt> Attempts, string? Error, string WorkerFingerprint);
 
 public sealed record WorkerStarted(int Version, string RequestId, int Sequence, int ProcessId, bool IsolatedProcessGroup);

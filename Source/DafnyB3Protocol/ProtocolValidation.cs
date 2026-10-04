@@ -9,7 +9,7 @@ public static class ProtocolValidation {
       throw new InvalidDataException("Unsupported B3 protocol or normalizer version");
     }
     Require(!string.IsNullOrWhiteSpace(request.RequestId), "Missing request identity");
-    Require(IsHash(request.ProgramHash) && IsCommit(request.B3Commit), "Invalid program/build identity");
+    Require(IsHash(request.ProgramHash) && IsCommit(request.B3Commit) && IsHash(request.WorkerFingerprint), "Invalid program/build identity");
     Require(request.ProgramHash == Protocol.GetProgramHash(request.Program), "Program hash mismatch");
     Require(request.UnitId == request.Program.Unit.Name, "Wrong selected unit");
     Require(request.Program.Types.Count + request.Program.Functions.Count + request.Program.Axioms.Count +
@@ -17,10 +17,12 @@ public static class ProtocolValidation {
       "Program declaration manifest exceeds resource bounds");
     var configuration = request.Configuration;
     Require(!string.IsNullOrWhiteSpace(configuration.SolverExecutable), "Missing solver executable");
-    Require(configuration.TimeoutMilliseconds >= 0 && configuration.ResourceLimit >= 0,
-      "Negative solver budget");
+    Require(configuration.TimeoutMilliseconds > 0 && configuration.ResourceLimit >= 0,
+      "B3 requires a positive deadline and nonnegative resource budget");
     Require(configuration.MaximumResponseCharacters is > 0 and <= Protocol.MaximumMessageBytes,
       "Invalid solver response bound");
+    Require(configuration.SolverVersion == "5.1.0" && IsHash(configuration.SolverSha256),
+      "B3 requires the pinned Z3 5.1.0 executable identity");
     Require(configuration.ArithmeticSolver == 2, "This B3 protocol version supports arithmetic solver 2 only");
     Require(configuration.SolverArguments.SequenceEqual(new[] { "-in", "-smt2" }),
       "Unsupported solver arguments");
@@ -180,13 +182,18 @@ public static class ProtocolValidation {
   public static void ValidateCompletion(Request request, Completion completion) {
     Require(completion.Version == Protocol.Version && completion.RequestId == request.RequestId &&
       completion.ProgramHash == request.ProgramHash && completion.UnitId == request.UnitId &&
-      completion.B3Commit == request.B3Commit, "Mismatched B3 completion identity");
+      completion.B3Commit == request.B3Commit && completion.WorkerFingerprint == request.WorkerFingerprint, "Mismatched B3 completion identity");
     Require(Enum.IsDefined(completion.Outcome), "Unknown completion outcome");
     var obligations = request.Obligations.Select(source => source.Id).ToHashSet(StringComparer.Ordinal);
+    Require(completion.Attempts.Count <= Protocol.MaximumNodes, "Proof-attempt response exceeds resource bounds");
     for (var i = 0; i < completion.Attempts.Count; i++) {
       var attempt = completion.Attempts[i];
       Require(attempt.Sequence == i && obligations.Contains(attempt.ObligationId) &&
         Enum.IsDefined(attempt.Outcome), "Invalid/out-of-order proof attempt");
+      Require((attempt.Description?.Length ?? 0) <= 65536 && (attempt.Reason?.Length ?? 0) <= 65536 &&
+        (attempt.Breadcrumbs?.Count ?? 0) <= Protocol.MaximumDepth &&
+        (attempt.Breadcrumbs?.All(breadcrumb => breadcrumb != null && breadcrumb.Length <= 65536) ?? true),
+        "Proof-attempt diagnostic exceeds resource bounds");
     }
     if (completion.Outcome == Outcome.Verified) {
       Require(completion.TraversalCompleted && completion.Error is null &&

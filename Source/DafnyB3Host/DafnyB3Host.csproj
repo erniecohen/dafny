@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable><UseAppHost>false</UseAppHost>
+    <B3LibraryPath Condition="'$(B3LibraryPath)' == ''">../../build/b3-library/B3Library.dll</B3LibraryPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../DafnyB3Protocol/DafnyB3Protocol.csproj" />
+    <Reference Include="B3Library"><HintPath>$(B3LibraryPath)</HintPath><Private>true</Private></Reference>
+  </ItemGroup>
+  <Target Name="RequireB3Library" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(B3LibraryPath)')" Text="Build the pinned B3 library first, or pass B3LibraryPath." />
+  </Target>
+</Project>

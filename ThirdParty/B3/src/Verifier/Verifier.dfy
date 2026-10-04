@@ -1,0 +1,594 @@
+module Verifier {
+  import opened Std.Wrappers
+  import opened Basics
+  import opened Ast
+  import opened SolverExpr
+  import AstValid
+  import I = Incarnations
+  import RSolvers
+  import StaticConsistency
+  import AssignmentTargets
+  import SpecConversions
+  import BC = BlockContinuations
+  import CLI = CommandLineOptions
+  import VerificationResults
+  import SolverConfiguration
+
+  export
+    provides Verify, VerifySelected
+    provides Ast, AstValid, CLI, StaticConsistency, VerificationResults, SolverConfiguration
+
+  method Verify(b3: Ast.Program, options: CLI.CliOptions)
+    requires AstValid.Program(b3)
+  {
+    var configuration := if "cvc5" in options then
+      SolverConfiguration.Configuration("cvc5", ["--incremental"], 30000, 0, 1048576, SolverConfiguration.CVC5)
+      else SolverConfiguration.Default;
+    var _ := VerifyUnits(b3, options, configuration, None);
+  }
+
+  method VerifySelected(b3: Ast.Program, selectedProcedure: string,
+    configuration: SolverConfiguration.Configuration) returns (r: VerificationResults.UnitResult)
+    requires AstValid.Program(b3)
+  {
+    var units := VerifyUnits(b3, map["structured-results" := []], configuration, Some(selectedProcedure));
+    if |units| != 1 {
+      return VerificationResults.UnitResult(selectedProcedure, [], false, Some("selected procedure was not found or was ambiguous"));
+    }
+    return units[0];
+  }
+
+  method VerifyUnits(b3: Ast.Program, options: CLI.CliOptions,
+    configuration: SolverConfiguration.Configuration, selectedProcedure: Option<string>)
+    returns (units: seq<VerificationResults.UnitResult>)
+    requires AstValid.Program(b3)
+  {
+    units := [];
+    // Create STypeDecl and SConstant declarations for the B3 types, taggers, and functions
+
+    var typeMap := map[];
+    for i := 0 to |b3.types| {
+      var typ := b3.types[i];
+      var t := new STypeDecl(typ.Name);
+      typeMap := typeMap[typ := t];
+    }
+
+    var functionMap := map[];
+    for i := 0 to |b3.functions| {
+      var func := b3.functions[i];
+      var inputTypes := SeqMap(func.Parameters, (parameter: FParameter) => I.DeclMappings.Type2STypeWithMap(parameter.typ, typeMap));
+      var f := new SConstant.Function(func.Name, inputTypes, I.DeclMappings.Type2STypeWithMap(func.ResultType, typeMap));
+      functionMap := functionMap[func := f];
+    }
+
+    var declMap := I.DeclMappings(typeMap, functionMap);
+
+    // Add undifferentiated axioms to context (i.e., those axioms that don't explain specific functions).
+    // For the other axioms (i.e., those that explain functions), do the .REval and add them to the axiomMap
+    var context := RSolvers.CreateEmptyContext();
+    var axiomIncarnations := I.Incarnations.Empty(declMap);
+    var axiomMap := map[];
+    for i := 0 to |b3.axioms| {
+      var axiom := b3.axioms[i];
+      assert axiom.WellFormed();
+      var cond := axiomIncarnations.REval(axiom.Expr);
+      if axiom.Explains == [] {
+        context := RSolvers.Extend(context, cond);
+      } else {
+        axiomMap := axiomMap[axiom := cond];
+      }
+    }
+
+    // Verify each procedure
+
+    for i := 0 to |b3.procedures| {
+      var proc := b3.procedures[i];
+      if selectedProcedure.None? || proc.Name == selectedProcedure.value {
+        if selectedProcedure.None? { print "Verifying ", proc.Name, " ...\n"; }
+        var unit := VerifyProcedure(proc, context, declMap, axiomMap, options, configuration, selectedProcedure.None?);
+        units := units + [unit];
+      }
+    }
+  }
+
+  class ProcedureOutcomes {
+    var reachableReachStatements: set<Location>
+
+    constructor () {
+      reachableReachStatements := {};
+    }
+  }
+
+  method VerifyProcedure(proc: Ast.Procedure, context_in: RSolvers.RContext, declMap: I.DeclMappings, axiomMap: map<Axiom, RSolvers.RExpr>, options: CLI.CliOptions,
+    configuration: SolverConfiguration.Configuration, printDiagnostics: bool)
+    returns (unit: VerificationResults.UnitResult)
+    requires AstValid.Procedure(proc)
+  {
+    var result := RSolvers.CreateConfiguredEngine(axiomMap, options, configuration);
+    if result.Failure? {
+      if printDiagnostics { print result.error, "\n"; }
+      return VerificationResults.UnitResult(proc.Name, [], false, Some(result.error));
+    }
+    var smtEngine := result.value;
+    var preIncarnations, bodyIncarnations, postIncarnations := CreateProcIncarnations(proc.Parameters, declMap);
+
+    {
+      var context := context_in;
+      context := AssumeAutoInvariants(proc.Parameters, {Raw.In, Raw.InOut}, preIncarnations, context);
+      context := VetSpecification(proc.Pre, preIncarnations, context, smtEngine);
+      context := AssumeAutoInvariants(proc.Parameters, {Raw.InOut, Raw.Out}, postIncarnations, context);
+      var _ := VetSpecification(proc.Post, postIncarnations, context, smtEngine);
+    }
+
+    if proc.Body.Some? {
+      var body := proc.Body.value;
+      var context := context_in;
+      context := AssumeAutoInvariants(proc.Parameters, {Raw.In, Raw.InOut, Raw.Out}, bodyIncarnations, context);
+
+      var preLearning := SpecConversions.ToLearn(proc.Pre);
+      context := ProcessPredicateStmts(preLearning, bodyIncarnations, context, smtEngine);
+
+      var postCheck := SpecConversions.ToCheck(proc.Post);
+      var procOutcomes := new ProcedureOutcomes();
+      Process([body] + postCheck, bodyIncarnations, context, BC.Empty(), smtEngine, procOutcomes);
+      if printDiagnostics { ReportUnreachedReachStatements(body, procOutcomes); }
+    }
+    smtEngine.Dispose();
+    var failure := smtEngine.FailureReason();
+    return VerificationResults.UnitResult(proc.Name, smtEngine.Attempts, true, failure);
+  }
+
+  method CreateProcIncarnations(parameters: seq<PParameter>, declMap: I.DeclMappings)
+      returns (preIncarnations: I.Incarnations, bodyIncarnations: I.Incarnations, postIncarnations: I.Incarnations)
+    requires forall i :: 0 <= i < |parameters| ==> parameters[i].WellFormed()
+  {
+    preIncarnations, bodyIncarnations, postIncarnations := I.Incarnations.Empty(declMap), I.Incarnations.Empty(declMap), I.Incarnations.Empty(declMap);
+    for i := 0 to |parameters| {
+      var parameter := parameters[i];
+      match parameter.mode
+      case In =>
+        var v := new SConstant(parameter.name, declMap.Type2SType(parameter.typ));
+        preIncarnations := preIncarnations.Set(parameter, v);
+        bodyIncarnations := bodyIncarnations.Set(parameter, v);
+        postIncarnations := postIncarnations.Set(parameter, v);
+      case InOut =>
+        var vOld := new SConstant(parameter.name + "%old", declMap.Type2SType(parameter.typ));
+        preIncarnations := preIncarnations.Set(parameter.oldInOut.value, vOld);
+        preIncarnations := preIncarnations.Set(parameter, vOld);
+        bodyIncarnations := bodyIncarnations.Set(parameter.oldInOut.value, vOld);
+        bodyIncarnations := bodyIncarnations.Set(parameter, vOld);
+        postIncarnations := postIncarnations.Set(parameter.oldInOut.value, vOld);
+        var v := new SConstant(parameter.name, declMap.Type2SType(parameter.typ));
+        postIncarnations := postIncarnations.Set(parameter, v);
+      case out =>
+        var v := new SConstant(parameter.name, declMap.Type2SType(parameter.typ));
+        bodyIncarnations := bodyIncarnations.Set(parameter, v);
+        postIncarnations := postIncarnations.Set(parameter, v);
+    }
+  }
+
+  method VetSpecification(spec: seq<AExpr>,
+                          incarnations: I.Incarnations, context_in: RSolvers.RContext, smtEngine: RSolvers.REngine,
+                          ghost parent: Stmt := Loop(spec, Block([])))
+      returns (context: RSolvers.RContext)
+    requires AstValid.AExprSeq(spec)
+    requires forall aexpr <- spec :: aexpr < parent
+    requires smtEngine.Valid()
+    modifies smtEngine.Repr
+    ensures smtEngine.Valid()
+    decreases BC.AExprsMeasure(spec, parent)
+  {
+    context := context_in;
+    for i := 0 to |spec|
+      invariant smtEngine.Valid()
+    {
+      assert spec[i] in spec;
+      match spec[i]
+      case AExpr(cond, _) =>
+        var rCond := incarnations.REval(cond);
+        context := RSolvers.Extend(context, rCond);
+      case AAssertion(s) =>
+        assert BC.AExprsMeasure(spec, parent) > BC.StmtSeqMeasure([s]) + BC.ContinuationsMeasure(BC.Empty()) by {
+          BC.AboutAExprsMeasure(s, spec, parent);
+          BC.AboutStmtSeqMeasureSingleton(s);
+          BC.ContinuationsMeasureEmpty();
+        }
+        var procOutcomes := new ProcedureOutcomes();
+        Process([s], incarnations, context, BC.Empty(), smtEngine, procOutcomes);
+        expect procOutcomes.reachableReachStatements == {}; // since "s" does not contain any "reach" statements
+        var L := SpecConversions.Learn(s);
+        var rL := incarnations.REval(L);
+        context := RSolvers.Extend(context, rL);
+    }
+  }
+
+  method AssumeAutoInvariants(parameters: seq<PParameter>, modes: set<ParameterMode>,
+                              incarnations: I.Incarnations, context_in: RSolvers.RContext)
+      returns (context: RSolvers.RContext)
+  {
+    context := context_in;
+    for n := 0 to |parameters| {
+      var p := parameters[n];
+      if p.mode in modes {
+        context := AssumeAutoInvariant(p, incarnations, context);
+      }
+    }
+  }
+
+  method AssumeAutoInvariant(variable: Variable, incarnations: I.Incarnations, context_in: RSolvers.RContext) returns (context: RSolvers.RContext)
+  {
+    context := context_in;
+    if variable is AutoInvVariable {
+      var av := variable as AutoInvVariable;
+      if av.maybeAutoInv.Some? {
+        var autoInv := av.maybeAutoInv.value;
+        assume {:axiom} autoInv.WellFormed();
+        var cond := incarnations.REval(autoInv);
+        context := RSolvers.Extend(context, cond);
+      }
+    }
+  }
+
+  method Process(stmts: seq<Stmt>, incarnations_in: I.Incarnations, context_in: RSolvers.RContext, B: BC.T, smtEngine: RSolvers.REngine, procOutcomes: ProcedureOutcomes)
+    requires AstValid.StmtSeq(stmts) && BC.Valid(B) && smtEngine.Valid() && procOutcomes !in smtEngine.Repr
+    modifies smtEngine.Repr, procOutcomes
+    ensures smtEngine.Valid()
+    decreases BC.StmtSeqMeasure(stmts) + BC.ContinuationsMeasure(B)
+  {
+    if stmts == [] {
+      return;
+    }
+
+    var incarnations, context := incarnations_in, context_in;
+    var stmt, cont := stmts[0], stmts[1..];
+    assert AstValid.Stmt(stmt);
+    BC.StmtMeasureSplit(stmts);
+
+    if stmt.IsPredicateStmt() {
+      context := ProcessPredicateStmt(stmt, incarnations, context, smtEngine, procOutcomes);
+      Process(cont, incarnations, context, B, smtEngine, procOutcomes);
+      return;
+    }
+
+    match stmt
+    case VarDecl(v, init, body) =>
+      var sv;
+      incarnations, sv := incarnations.Update(v);
+      if init.Some? {
+        var sRhs := incarnations.REval(init.value);
+        context := RSolvers.ExtendWithEquality(context, sv, sRhs);
+      } else if v.maybeAutoInv.Some? {
+        var autoInv := v.maybeAutoInv.value;
+        assume {:axiom} autoInv.WellFormed();
+        var cond := incarnations.REval(autoInv);
+        context := RSolvers.Extend(context, cond);
+      }
+      BC.StmtMeasurePrepend(body, cont);
+      Process([body] + cont, incarnations, context, B, smtEngine, procOutcomes);
+    case Assign(lhs, rhs) =>
+      var sRhs := incarnations.REval(rhs);
+      var sLhs;
+      incarnations, sLhs := incarnations.Update(lhs);
+      context := RSolvers.ExtendWithEquality(context, sLhs, sRhs);
+      Process(cont, incarnations, context, B, smtEngine, procOutcomes);
+    case Reinit(vars) =>
+      for n := 0 to |vars|
+        invariant smtEngine.Valid()
+      {
+        var sv;
+        incarnations, sv := incarnations.Update(vars[n]);
+      }
+      for n := 0 to |vars|
+        invariant smtEngine.Valid()
+      {
+        context := AssumeAutoInvariant(vars[n], incarnations, context);
+      }
+      Process(cont, incarnations, context, B, smtEngine, procOutcomes);
+    case Block(stmts) =>
+      BC.AboutStmtSeqMeasureConcat(stmts, cont);
+      Process(stmts + cont, incarnations, context, B, smtEngine, procOutcomes);
+    case Call(_, _) =>
+      incarnations, context := ProcessCall(stmt, incarnations, context, smtEngine);
+      Process(cont, incarnations, context, B, smtEngine, procOutcomes);
+    case AForall(v, body) =>
+      var bodyIncarnations, _ := incarnations.Update(v);
+      BC.AboutStmtSeqMeasureSingleton(body);
+      Process([body], bodyIncarnations, context, B, smtEngine, procOutcomes);
+      assert !StaticConsistency.ContainsNonAssertions(stmt);
+      var L := SpecConversions.Learn(stmt);
+      var rL := incarnations.REval(L);
+      context := RSolvers.Extend(context, rL);
+      Process(cont, incarnations, context, B, smtEngine, procOutcomes);
+    case Choose(branches) =>
+      for i := 0 to |branches|
+        invariant smtEngine.Valid()
+      {
+        var ctx := RSolvers.RecordTracePoint(context, "choose alternative " + Int2String(i));
+        BC.StmtSeqElement(branches, i);
+        BC.StmtMeasurePrepend(branches[i], cont);
+        Process([branches[i]] + cont, incarnations, ctx, B, smtEngine, procOutcomes);
+      }
+    case Loop(_, _) =>
+      // `cont` is ignored, since a `loop` never has any normal exit
+      ProcessLoop(stmt, incarnations, context, B, smtEngine, procOutcomes);
+    case LabeledStmt(lbl, body) =>
+      var B' := BC.Add(B, lbl, incarnations.Variables(), cont);
+      BC.AboutContinuationsMeasureAdd(B, lbl, incarnations.Variables(), cont);
+      BC.StmtPairMeasure(body, Exit(lbl));
+      Process([body, Exit(lbl)], incarnations, context, B', smtEngine, procOutcomes);
+    case Exit(lbl) =>
+      expect lbl in B, lbl.Name; // TODO
+      var c := BC.Get(B, lbl);
+      var variablesInScope, cont := c.variablesInScope, c.continuation;
+      var incarnations' := incarnations.DomainRestrict(variablesInScope);
+      var B0 := BC.Remove(B, lbl);
+      assert B == B0[lbl := BC.Continuation(variablesInScope, cont)];
+      assert B == BC.Add(B0, lbl, variablesInScope, cont);
+      assert BC.ContinuationsMeasure(B) >= BC.StmtSeqMeasure(cont) + BC.ContinuationsMeasure(B0) by {
+        BC.AboutContinuationsMeasure(B0, lbl, variablesInScope, cont);
+      }
+      Process(cont, incarnations', context, B0, smtEngine, procOutcomes);
+    case Probe(e) =>
+      var rExpr := incarnations.REval(e);
+      context := RSolvers.Record(context, rExpr, incarnations.Type2SType(e.ExprType()));
+      Process(cont, incarnations, context, B, smtEngine, procOutcomes);
+  }
+
+  method ProcessPredicateStmt(stmt: Stmt, incarnations: I.Incarnations, context_in: RSolvers.RContext, smtEngine: RSolvers.REngine, procOutcomes: ProcedureOutcomes)
+      returns (context: RSolvers.RContext)
+    requires AstValid.Stmt(stmt) && stmt.IsPredicateStmt()
+    requires smtEngine.Valid() && procOutcomes !in smtEngine.Repr
+    modifies smtEngine.Repr, procOutcomes
+    ensures smtEngine.Valid()
+  {
+    context := context_in;
+    match stmt
+    case Check(cond, location) =>
+      var rCond := incarnations.REval(cond);
+      ProveAndReport(context, rCond, location, smtEngine, if cond.LabeledExpr? then cond.lbl.Name else "");
+    case Assume(cond) =>
+      var rCond := incarnations.REval(cond);
+      context := RSolvers.Extend(context, rCond);
+    case Reach(cond, location) =>
+      if location !in procOutcomes.reachableReachStatements {
+        var rCond := incarnations.REval(cond);
+        var negatedCondition := RSolvers.FuncAppl(RSolvers.RExpr.Operator2ROperator(Operator.LogicalNot), [rCond]);
+        var result := smtEngine.Prove(context, negatedCondition, location.description, if cond.LabeledExpr? then cond.lbl.Name else "");
+        match result
+        case Proved =>
+        case Unproved(_) =>
+          procOutcomes.reachableReachStatements := procOutcomes.reachableReachStatements + {location};
+        case Inconclusive(_) =>
+        case ToolError(_) =>
+      }
+    case Assert(cond, location) =>
+      var rCond := incarnations.REval(cond);
+      ProveAndReport(context, rCond, location, smtEngine, if cond.LabeledExpr? then cond.lbl.Name else "");
+      context := RSolvers.Extend(context, rCond);
+  }
+
+  method ProcessCall(stmt: Stmt, incarnations_in: I.Incarnations, context_in: RSolvers.RContext, smtEngine: RSolvers.REngine)
+      returns (incarnations: I.Incarnations, context: RSolvers.RContext)
+    requires AstValid.Stmt(stmt) && stmt.Call?
+    requires smtEngine.Valid()
+    modifies smtEngine.Repr
+    ensures smtEngine.Valid()
+  {
+    var Call(proc, args) := stmt;
+    assume {:axiom} AstValid.ProcedureHeader(proc); // TODO
+    incarnations, context := incarnations_in, context_in;
+
+    // While evolving "incarnations", create two incarnation sub-maps:
+    //   * preIncarnations, whose domain is proc's in- and inout-parameters
+    //   * postIncarnations, whose domain is proc's in-parameters, old and new inout-parameters, and out-parameters.
+    // Both of these sub-maps will take proc's in-parameters to fresh names in "incarnations".
+    // "preIncarnations" will take the inout-parameters to the (same incarnations as the) actual inout-parameters (in the pre-state of the call),
+    // and "postIncarnations" will take the old inout-parameters to those same incarnations.
+    // "postIncarnations" will take the inout- and out-parameters to fresh names for the actual inout- and out-parameters.
+    // Meanwhile, the fresh names used for the in-parameters must not be used again in "incarnations", and the final
+    // incarnations for the actual inout- and out-parameters will be those used in "postIncarnations".
+    //
+    // Example: Suppose "proc" is declared with formal parameters
+    //     procedure proc(x, inout y, out z)
+    // and "args" uses the actual parameters
+    //     call proc(e, inout b, out c)
+    // where "e" is an expression and "b" and "c" are variables. Suppose furthermore that "incarnations" includes the
+    // following mappings:
+    //     b := "b14"
+    //     c := "c8"
+    //     x := "x10"
+    //     y := "y29"
+    //     z := "z2"
+    //     k := "k19"
+    // "preIncarnations" will then be computed to be:
+    //     x := "x11"
+    //     y := "b14"
+    // "postIncarnations" will be:
+    //     x := "x11"
+    //     y.old := "b14"
+    //     y := "b15"
+    //     z := "c9"
+    // The returned value of "incarnations" will be:
+    //     b := "b15"
+    //     c := "c9"
+    //     x := "x10"  // but the subsequent incarnation for "x" will be "x12", since "x11" has already been used
+    //     y := "y29"
+    //     z := "z2"
+    //     k := "k19"
+    var preMap: map<Variable, SConstant>, postMap: map<Variable, SConstant> := map[], map[];
+    for i := 0 to |args|
+      invariant smtEngine.Valid()
+    {
+      assert args[i] in args;
+      var formal := proc.Parameters[i];
+      match args[i]
+      case InArgument(e) =>
+        var freshIncarnation;
+        incarnations, freshIncarnation := incarnations.Reserve(formal);
+        preMap := preMap[formal := freshIncarnation];
+        postMap := postMap[formal := freshIncarnation];
+
+        var actual := incarnations_in.REval(e);
+        context := RSolvers.ExtendWithEquality(context, preMap[formal], actual);
+
+      case OutgoingArgument(isInOut, v) =>
+        if isInOut {
+          assert formal.oldInOut.Some?;
+          var incomingIncarnation := incarnations_in.Get(v);
+          preMap := preMap[formal := incomingIncarnation];
+          postMap := postMap[formal.oldInOut.value := incomingIncarnation];
+        }
+        var freshIncarnation;
+        incarnations, freshIncarnation := incarnations.Update(v);
+        postMap := postMap[formal := freshIncarnation];
+    }
+    var preIncarnations := incarnations.CreateSubMap(preMap);
+    var postIncarnations := incarnations.CreateSubMap(postMap);
+
+    // check preconditions, then drop them
+    assert AstValid.AExprSeq(proc.Pre); // this should come from well-formedness of program/context
+    var preChecks := SpecConversions.ToCheck(proc.Pre);
+    var _ := ProcessPredicateStmts(preChecks, preIncarnations, context, smtEngine);
+
+    // learn auto-invariants and postconditions
+    context := AssumeAutoInvariants(proc.Parameters, {Raw.InOut, Raw.Out}, postIncarnations, context);
+    var postLearning := SpecConversions.ToLearn(proc.Post);
+    context := ProcessPredicateStmts(postLearning, postIncarnations, context, smtEngine);
+
+    if "print-incarnations" in smtEngine.Options {
+      incarnations_in.Print("start of call to " + proc.Name);
+      preIncarnations.Print("precondition of call");
+      postIncarnations.Print("postcondition of call");
+      incarnations.Print("after call");
+    }
+  }
+
+  method ProcessPredicateStmts(stmts: seq<Stmt>, incarnations: I.Incarnations, context_in: RSolvers.RContext, smtEngine: RSolvers.REngine) returns (context: RSolvers.RContext)
+    requires AstValid.StmtSeq(stmts) && SpecConversions.JustPredicateStmts(stmts)
+    requires smtEngine.Valid()
+    modifies smtEngine.Repr
+    ensures smtEngine.Valid()
+  {
+    context := context_in;
+
+    for i := 0 to |stmts|
+      invariant smtEngine.Valid()
+    {
+      var procOutcomes := new ProcedureOutcomes();
+      context := ProcessPredicateStmt(stmts[i], incarnations, context, smtEngine, procOutcomes);
+      expect procOutcomes.reachableReachStatements == {}; // since "stmts[i]" does not contain any "reach" statements
+    }
+  }
+
+  method ProcessLoop(stmt: Stmt, incarnations_in: I.Incarnations, context_in: RSolvers.RContext, B: BC.T, smtEngine: RSolvers.REngine, procOutcomes: ProcedureOutcomes)
+    requires AstValid.Stmt(stmt) && stmt.Loop?
+    requires BC.Valid(B) && smtEngine.Valid() && procOutcomes !in smtEngine.Repr
+    modifies smtEngine.Repr, procOutcomes
+    ensures smtEngine.Valid()
+    decreases BC.StmtMeasure(stmt) + BC.ContinuationsMeasure(B), 0
+  {
+    var Loop(invariants, body) := stmt;
+    var incarnations, context := incarnations_in, context_in;
+
+    // check the invariant on entry, then drop it
+    var initChecks := SpecConversions.ToCheck(invariants);
+    var _ := ProcessPredicateStmts(initChecks, incarnations, context, smtEngine);
+
+    // Havoc the assignment targets of the loop body
+    var assignmentTargets := AssignmentTargets.Compute(body);
+    for n := 0 to |assignmentTargets|
+      invariant smtEngine.Valid()
+    {
+      var v := assignmentTargets[n];
+      var sv;
+      incarnations, sv := incarnations.Update(v);
+    }
+    for n := 0 to |assignmentTargets|
+      invariant smtEngine.Valid()
+    {
+      var v := assignmentTargets[n];
+      if v is AutoInvVariable {
+        var av := v as AutoInvVariable;
+        if av.maybeAutoInv.Some? {
+          var autoInv := av.maybeAutoInv.value;
+          assume {:axiom} autoInv.WellFormed(); // TODO
+          var cond := incarnations.REval(autoInv);
+          context := RSolvers.Extend(context, cond);
+        }
+      }
+    }
+
+    var _ := VetSpecification(invariants, incarnations, context, smtEngine, stmt);
+
+    var assumeInvariants := SpecConversions.ToLearn(invariants);
+    var maintenanceChecks := SpecConversions.ToCheck(invariants);
+    // Process body
+    assert BC.StmtMeasure(stmt) > BC.StmtSeqMeasure(assumeInvariants + [body] + maintenanceChecks) by {
+      calc {
+        BC.StmtMeasure(stmt);
+        1 + BC.AExprsMeasure(invariants, stmt) + 4 * |invariants| + BC.StmtMeasure(body);
+      >=
+        1 + 4 * |invariants| + BC.StmtMeasure(body);
+      >  { BC.JustPredicateStmtsMeasure(assumeInvariants); BC.JustPredicateStmtsMeasure(maintenanceChecks); }
+        BC.StmtSeqMeasure(assumeInvariants) + BC.StmtMeasure(body) + BC.StmtSeqMeasure(maintenanceChecks);
+        { BC.AboutStmtSeqMeasureSingleton(body); }
+        BC.StmtSeqMeasure(assumeInvariants) + BC.StmtSeqMeasure([body]) + BC.StmtSeqMeasure(maintenanceChecks);
+        { BC.AboutStmtSeqMeasureConcat(assumeInvariants, [body]); }
+        BC.StmtSeqMeasure(assumeInvariants + [body]) + BC.StmtSeqMeasure(maintenanceChecks);
+        { BC.AboutStmtSeqMeasureConcat(assumeInvariants + [body], maintenanceChecks); }
+        BC.StmtSeqMeasure(assumeInvariants + [body] + maintenanceChecks);
+      }
+    }
+    Process(assumeInvariants + [body] + maintenanceChecks, incarnations, context, B, smtEngine, procOutcomes);
+  }
+
+  // print error if `context ==> expr` cannot be proved by `smtEngine`.
+  method ProveAndReport(context: RSolvers.RContext, expr: RSolvers.RExpr, location: Location, smtEngine: RSolvers.REngine, obligationId: string := "")
+    requires smtEngine.Valid()
+    modifies smtEngine.Repr
+    ensures smtEngine.Valid()
+  {
+    var result := smtEngine.Prove(context, expr, location.description, obligationId);
+    if !result.Proved? {
+      // Human diagnostics belong to the CLI adapter; structured clients consume Attempts.
+      if "structured-results" !in smtEngine.Options {
+        print "Error: Failed to prove ", location.description, "\n";
+        RSolvers.PrintTrace(context);
+        if "solver-failure" in smtEngine.Options {
+          print "Low-level proof-failure context: ", result.reason, "\n";
+        }
+      }
+    }
+  }
+
+  method ReportUnreachedReachStatements(stmt: Stmt, procOutcomes: ProcedureOutcomes) {
+    match stmt
+    case VarDecl(_, _, body) =>
+      ReportUnreachedReachStatements(body, procOutcomes);
+    case Assign(_, _) =>
+    case Reinit(_) =>
+    case Block(stmts) =>
+      for i := 0 to |stmts| {
+        ReportUnreachedReachStatements(stmts[i], procOutcomes);
+      }
+    case Call(_, _) =>
+    case Check(_, _) =>
+    case Assume(_) =>
+    case Reach(_, location) =>
+      if location !in procOutcomes.reachableReachStatements {
+        print "Error: Failed to ", location.description, "\n";
+      }
+    case Assert(_, _) =>
+    case AForall(_, _) =>
+    case Choose(branches) =>
+      for i := 0 to |branches| {
+        ReportUnreachedReachStatements(branches[i], procOutcomes);
+      }
+    case Loop(_, body) =>
+      ReportUnreachedReachStatements(body, procOutcomes);
+    case LabeledStmt(_, body) =>
+      ReportUnreachedReachStatements(body, procOutcomes);
+    case Exit(_) =>
+    case Probe(_) =>
+ }
+}

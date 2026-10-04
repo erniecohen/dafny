@@ -11,8 +11,8 @@ public class WorkerProcessTests {
       new Unit("sP0", Array.Empty<Binding>(), new Check("sO0", new BooleanLiteral(true), false)));
     return new Request(Protocol.Version, "worker-test", Protocol.NormalizerVersion,
       new string('a', 40), Protocol.GetProgramHash(program), "sP0", program,
-      new Configuration("z3", new[] { "-in", "-smt2" }, timeout, 10000, 100000, 2),
-      new[] { new SourceIdentity("sO0", "test.dfy", 1, 1, "assertion") });
+      new Configuration("z3", new[] { "-in", "-smt2" }, timeout, 10000, 100000, 2, "5.1.0", new string('d', 64)),
+      new[] { new SourceIdentity("sO0", "test.dfy", 1, 1, "assertion") }, new string('f', 64));
   }
   private static WorkerProcessClient Client(string mode, string pidFile = "") {
     var fixture = Environment.GetEnvironmentVariable("B3_WORKER_FIXTURE")

@@ -74,7 +74,7 @@ public sealed class WorkerProcessClient(string executable, IReadOnlyList<string>
     var reason = error?.Message ?? "Missing B3 completion";
     if (stderr.Length > 0) { reason += ": " + stderr; }
     return new Completion(Protocol.Version, request.RequestId, request.ProgramHash, request.UnitId,
-      request.B3Commit, false, outcome, Array.Empty<Attempt>(), reason);
+      request.B3Commit, false, outcome, Array.Empty<Attempt>(), reason, request.WorkerFingerprint);
   }
 
   private static async Task<string> ReadWorkerLineAsync(Process process, CancellationToken token) {

@@ -11,12 +11,12 @@ public class ProtocolTests {
       new Unit("sP0", Array.Empty<Binding>(), body ?? new Check("sO0", new BooleanLiteral(true), false)));
     return new Request(Protocol.Version, "request-1", Protocol.NormalizerVersion, new string('a', 40),
       Protocol.GetProgramHash(program), "sP0", program,
-      new Configuration("z3", new[] { "-in", "-smt2" }, 1000, 10000, 100000, 2),
-      new[] { new SourceIdentity("sO0", "file:///program.dfy", 2, 4, "assertion") });
+      new Configuration("z3", new[] { "-in", "-smt2" }, 1000, 10000, 100000, 2, "5.1.0", new string('d', 64)),
+      new[] { new SourceIdentity("sO0", "file:///program.dfy", 2, 4, "assertion") }, new string('f', 64));
   }
   private static Completion Complete(Request request) => new(Protocol.Version, request.RequestId,
     request.ProgramHash, request.UnitId, request.B3Commit, true, Outcome.Verified,
-    new[] { new Attempt(0, "sO0", Outcome.Verified, null) }, null);
+    new[] { new Attempt(0, "sO0", Outcome.Verified, null) }, null, request.WorkerFingerprint);
 
   [Fact]
   public void ValidRoundTripPreservesTypedProgramAndManifest() {
@@ -42,7 +42,7 @@ public class ProtocolTests {
     var completion = Complete(request);
     foreach (var altered in new[] { completion with { RequestId = "another" },
       completion with { ProgramHash = new string('b', 64) }, completion with { UnitId = "sP1" },
-      completion with { B3Commit = new string('b', 40) }, completion with { Version = 0 } }) {
+      completion with { B3Commit = new string('b', 40) }, completion with { Version = 0 }, completion with { WorkerFingerprint = new string('b', 64) } }) {
       Assert.Throws<InvalidDataException>(() => ProtocolValidation.ValidateCompletion(request, altered));
     }
   }

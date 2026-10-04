@@ -1,0 +1,8 @@
+includes = ["../../../src/**/*.dfy", "**/*.cs"]
+excludes = ["../../../src/**/flycheck_*", "**/flycheck_*"]
+
+[options]
+type-system-refresh = true
+general-traits = "datatype"
+general-newtypes = true
+standard-libraries = true

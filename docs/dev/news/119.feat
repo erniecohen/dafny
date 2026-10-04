@@ -1,0 +1,1 @@
+Adds a pinned B3 source component, a structured library entrypoint and a bounded worker protocol. Solver command failures, unknown results, incomplete responses and cleanup failures cannot produce successful verification.

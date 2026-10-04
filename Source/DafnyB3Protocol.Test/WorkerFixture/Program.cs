@@ -21,7 +21,7 @@ if (mode == "stderr") {
 }
 var completion = new Completion(Protocol.Version, request.RequestId, request.ProgramHash,
   request.UnitId, request.B3Commit, true, Outcome.Verified,
-  new[] { new Attempt(0, "sO0", Outcome.Verified, null) }, null);
+  new[] { new Attempt(0, "sO0", Outcome.Verified, null) }, null, request.WorkerFingerprint);
 if (mode == "wrong-id") { completion = completion with { RequestId = "wrong" }; }
 Console.WriteLine(JsonSerializer.Serialize(completion, Protocol.JsonOptions));
 return 0;
