@@ -631,6 +631,9 @@ jobs:
             --verify-tag --title "$VERSION" --notes-file notes.md
 
   native-focus:
+    permissions:
+      contents: read
+      actions: read
     if: ${{ inputs.native_focus_only && startsWith(github.ref, 'refs/heads/scratch/') }}
     name: Native translation and pruning lifecycle compatibility
     runs-on: ubuntu-24.04
