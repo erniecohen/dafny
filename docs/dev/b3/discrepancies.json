@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "Focused Fuel parity is confirmed; full default-Boogie cost parity and complete real B3 integration remain pending.",
+  "status": "Real B3 corpus passes all 29 controls; strict map acceptance, remaining IDE controls and full default-Boogie cost parity remain pending.",
   "entries": [
     {
       "kind": "default-backend verdict regression",
@@ -37,14 +37,33 @@
       "kind": "real-input preparation crash",
       "scope": "B3 generated implementations before resolution",
       "finding": "The skip-verification query read the procedure link before pre-VC resolution established it.",
-      "repair": "Query skipped routines only after successful resolution/typechecking. The real corpus now rejects internal exceptions and requires explicit B3 failure diagnostics for invalid proofs; recheck pending."
+      "repair": "Query skipped routines only after successful resolution/typechecking. Public run 37201990430 passed all 29 real-input controls, including explicit invalid-proof diagnostics and selection controls.",
+      "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37201990430"
     },
     {
       "kind": "public bootstrap probe memory failure",
       "evidence": "https://github.com/erniecohen/dafny/actions/runs/37199018093",
       "finding": "CLI/Core/normalizer/protocol stages passed; the verifying worker bootstrap exceeded the inherited one-GiB managed-heap cap. Downstream stages did not run.",
-      "repair": "The next scratch gate gives the bootstrap alone a three-GiB cap and adds current map and IDE controls. Acceptance remains pending.",
-      "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37200885683"
+      "repair": "The three-GiB bootstrap cap verified 557/557 batches in public run 37201990430. Host controls passed 24/24 and the real corpus passed 29/29; IDE controls were 38/40 and strict map controls 6/15. This run is not overall green.",
+      "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37201990430"
+    },
+    {
+      "kind": "IDE counterexample response and project ownership controls",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/37201990430",
+      "finding": "The outgoing capability error reached clients as -32603 instead of -32600. A root-change test also incorrectly expected an excluded source to retain its configured project.",
+      "repair": "Use the pinned dispatcher outgoing RPC error type. Strengthen migration checks to distinguish retained sources and excluded sources, option isolation and project retirement. Focused execution pending."
+    },
+    {
+      "kind": "integration regression selection",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/37201990430",
+      "finding": "The scratch filter used method names for file-based regressions and selected zero tests. Its explicit denominator check failed.",
+      "repair": "Select file regressions by DisplayName, as the repository harness does. Require exactly four passing cases; focused execution pending."
+    },
+    {
+      "kind": "strict map worker acceptance",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/37201990430",
+      "finding": "Six of fifteen fixtures matched. Eight expected negatives and one tuple read-over-write positive returned Inconclusive under the pinned solver configuration; the opaque polymorphic negative returned Failed.",
+      "repair": "Operational mapping remains under review. Unknown is not accepted as a negative verdict or a passing gate; the source-model argument does not establish solver completeness."
     }
   ]
 }

@@ -11,6 +11,7 @@ using Microsoft.Dafny.LanguageServer.Workspace;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
+using OmniSharp.Extensions.JsonRpc;
 using OmniSharp.Extensions.JsonRpc.Server;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
@@ -40,9 +41,9 @@ public class CounterExampleCapabilityTest : ClientBasedLanguageServerTest {
       TextDocument = new TextDocumentIdentifier { Uri = document.Uri }
     };
     var telemetryPublisher = new Mock<TelemetryPublisherBase>(Mock.Of<ILogger<TelemetryPublisherBase>>());
-    var exception = await Assert.ThrowsAsync<RequestException>(() =>
+    var exception = await Assert.ThrowsAsync<RpcErrorException>(() =>
       CreateHandler(telemetryPublisher.Object).Handle(request, CancellationToken));
-    Assert.Equal(ErrorCodes.InvalidRequest, exception.ErrorCode);
+    Assert.Equal(ErrorCodes.InvalidRequest, exception.Code);
     Assert.Equal("The b3 verification backend does not provide counterexample models.", exception.Message);
 
     // Exercise the custom request on the wire as well as its detailed server error.

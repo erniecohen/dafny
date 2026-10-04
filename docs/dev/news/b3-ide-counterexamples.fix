@@ -1,1 +1,1 @@
-Editor counterexample requests reject verification backends that do not provide models before starting verification, and request cancellation stops waiting for unfinished verification.
+Editor counterexample requests return an explicit JSON-RPC invalid-request response for verification backends that do not provide models, before starting verification. Request cancellation stops waiting for unfinished verification.

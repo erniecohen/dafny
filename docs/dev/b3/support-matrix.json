@@ -5,8 +5,8 @@
   "languageSupport": [
     {
       "construct": "Boolean and integer expressions, method contracts, calls, parallel assignment, havoc, old and structured branches",
-      "disposition": "normalized",
-      "evidence": "Public probe 37199018093 compiled the prior source and passed 58 normalizer controls; current complete real Dafny verdict gate 37200885683 pending."
+      "disposition": "normalized; focused real-input acceptance passed",
+      "evidence": "Public run 37201990430 passed 76 structural normalizer controls and all 29 real Dafny corpus controls, including positive and negative contracts, loops and selection. Complete backend acceptance remains pending."
     },
     {
       "construct": "Closed representation sorts, lambdas and ordinary functions",
@@ -15,9 +15,9 @@
     },
     {
       "construct": "Direct closed monomorphic raw map select/store",
-      "disposition": "reviewed read-over-write helpers; executable acceptance pending",
+      "disposition": "reviewed read-over-write helpers; strict executable gate failed",
       "limits": "Only R0 and one R1 disjunction per index coordinate. No extensionality, source Box laws, collection definitions or polymorphic map equations.",
-      "evidence": "Source-model argument in map-helper-correspondence.md and 15 strict typed worker controls; public gate 37200885683 pending."
+      "evidence": "Public run 37201990430 matched 6/15 strict typed map controls. Eight negatives and one tuple positive were Inconclusive; source model argument remains in map-helper-correspondence.md. No map release acceptance."
     },
     {
       "construct": "Native real and bitvector theories, integer division/modulo/power, visibility and unrestricted control flow",
@@ -25,8 +25,8 @@
     },
     {
       "construct": "Inductive loops, breaks, continues, forward lexical exits",
-      "disposition": "source compiled with structural controls; end-to-end acceptance pending",
-      "evidence": "Public probe 37199018093 compiled the prior source and passed 58 structural normalizer controls. Current full verdict and IDE gate 37200885683 remains pending."
+      "disposition": "normalized; focused real-input acceptance passed",
+      "evidence": "Public run 37201990430 passed 76 structural normalizer controls and all 29 real Dafny corpus controls, including positive and negative contracts, loops and selection. Complete backend acceptance remains pending."
     }
   ],
   "optionSupport": [
@@ -53,7 +53,7 @@
         "boogie",
         "proof analysis and model/coverage options",
         "solver-option-help",
-        "cache-verification (nonzero)",
+        "cache-verification (positive levels)",
         "sprint",
         "pprint"
       ],
