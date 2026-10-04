@@ -1,0 +1,4 @@
+Add an opt-in, source-sealed review diagnostic for Real solver command streams,
+with exact baseline request replay, strict symbolic controls and explicit
+capture-incomplete outcomes. This source checkpoint does not change product
+verification semantics or establish runtime acceptance.

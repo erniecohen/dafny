@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "diagnosticOnly": true,
+  "publicRun": 37232113837,
+  "publicHead": "a4d3ec13a2929dd45f2f27770d458aa869f6667e",
+  "innerReceiptSha256": "dfa300517d75918a6d212f08a18996f7029fee9ef5c9d8178a0f26873c6e38cb",
+  "librarySourceManifestSha256": "a6ecb742096ddf2f4a6dbcfefb847fdb17ff1fbda7bacf0fafd445f60d843976",
+  "librarySha256": "9461fe3bb77dfabf981af767b586025e76bda574534f2829b59bf5c462955536",
+  "workerFingerprint": "785fdda10ac925f7b14cc5556831843eb6d8a46f0f7b51054bbe84fc3f07d822",
+  "solverSha256": "b4e0b3483ce37817230b20d6cad48390eb6a3aefde1d93342ad6dc763f24bc23",
+  "protocolAssemblySha256": "8ef317f868a9d8fb58aa2c3dbc78d57cf0bff3d7fc6439a011c971fa037292be",
+  "baseline": [
+    {
+      "name": "real-universal-unit-0",
+      "request": "baseline/real-universal-unit-0.request.json",
+      "requestSha256": "1c324588207bac35cea52a2887ed7c9ebfd4886f4050aca2cb4ca88913b9c7fe",
+      "requestBytes": 6844,
+      "program": "baseline/real-universal-unit-0.program.json",
+      "programHash": "e9a727d9ec452901838ba6e9d7dd0e5c654ca34c2a93ff3f27c317fa07a33261",
+      "unitId": "s2f59ee34a82ba44a80f89854a5771e7981beadc124250f58c4c882958daab875",
+      "requestId": "real-universal-unit-0-200000",
+      "expected": "Verified",
+      "checkIds": [
+        "sOassert1",
+        "sOassert2"
+      ]
+    },
+    {
+      "name": "real-universal-unit-1",
+      "request": "baseline/real-universal-unit-1.request.json",
+      "requestSha256": "9c16bebe1362584839bbe15763fc287da364eea4c7d9300adb142458ae3fed4d",
+      "requestBytes": 6564,
+      "program": "baseline/real-universal-unit-1.program.json",
+      "programHash": "a46959a80d86cb82702bcde093a957a4c8ffe5fbed27bf49bb4c3c6f709da282",
+      "unitId": "sa653318894033cef714049a64e2561954b954913338fece23ac25daaac4a3999",
+      "requestId": "real-universal-unit-1-200000",
+      "expected": "Verified",
+      "checkIds": [
+        "sOassert1"
+      ]
+    },
+    {
+      "name": "real-conversion-unit-0",
+      "request": "baseline/real-conversion-unit-0.request.json",
+      "requestSha256": "31a80456fa7365f6812cfe7909b5f24b41c78ae9883a2fb24b90e12144bdf579",
+      "requestBytes": 7062,
+      "program": "baseline/real-conversion-unit-0.program.json",
+      "programHash": "f4c160cb52184be2bb985e72c7979c22e4b97fb843d666d2a66e510b10d29abd",
+      "unitId": "s6d5e6cab203ebf02b410210d943a43e8c67868c6ffcd89facc07418b8fdbbc00",
+      "requestId": "real-conversion-unit-0-200000",
+      "expected": "Verified",
+      "checkIds": [
+        "sOassert1",
+        "sOassert2"
+      ]
+    },
+    {
+      "name": "real-irrational-unit-0",
+      "request": "baseline/real-irrational-unit-0.request.json",
+      "requestSha256": "2470a4d21d01c1dc224f3cb5802985f6aaf02d1e4ee423a3d8430f9cc8aa10b4",
+      "requestBytes": 6122,
+      "program": "baseline/real-irrational-unit-0.program.json",
+      "programHash": "a26457459fd322b3a72cd641cc22f48b389c3e660425ec9b35445edfe2f3a637",
+      "unitId": "s4070aa1924137f59660b0bdfb445e3b1a980e6623640ede75ca920dc327f84bd",
+      "requestId": "real-irrational-unit-0-200000",
+      "expected": "Failed",
+      "checkIds": [
+        "sOassert1"
+      ]
+    }
+  ],
+  "exploratory": [
+    {
+      "name": "conversion-pure",
+      "expected": "Verified",
+      "checkIds": [
+        "sOassert1",
+        "sOassert2"
+      ]
+    },
+    {
+      "name": "conversion-mixed",
+      "expected": "Verified",
+      "checkIds": [
+        "sOassert1",
+        "sOassert2"
+      ]
+    },
+    {
+      "name": "irrational-pure",
+      "expected": "Failed",
+      "checkIds": [
+        "sOassert1"
+      ]
+    },
+    {
+      "name": "irrational-mixed",
+      "expected": "Failed",
+      "checkIds": [
+        "sOassert1"
+      ]
+    }
+  ]
+}

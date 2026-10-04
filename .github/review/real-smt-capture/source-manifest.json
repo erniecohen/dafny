@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "diagnosticOnly": true,
+  "sourceOnlyCheckpoint": true,
+  "libraryRebuilt": false,
+  "files": {
+    "DESIGN.md": {
+      "bytes": 17332,
+      "sha256": "bba4c36155020c6e007cd04903a6bcdf3eb2d100829ddf7f1f0c433ef2efb30e"
+    },
+    "Program.cs": {
+      "bytes": 9160,
+      "sha256": "95c5b77198dfacb5a2cb51d868effcf01895d20147cc4fee03103dce22342231"
+    },
+    "README.md": {
+      "bytes": 4914,
+      "sha256": "a371e5bd645bec606eabafdfa28f6d86d5f14842b845055ef21ad50cd18421e0"
+    },
+    "Replay.csproj": {
+      "bytes": 648,
+      "sha256": "108c6b28bad383937f01efd395abbb28ec5862dbe86f8c15acf533e36a11bdf0"
+    },
+    "baseline/real-conversion-unit-0.program.json": {
+      "bytes": 5866,
+      "sha256": "f4c160cb52184be2bb985e72c7979c22e4b97fb843d666d2a66e510b10d29abd"
+    },
+    "baseline/real-conversion-unit-0.request.json": {
+      "bytes": 7062,
+      "sha256": "31a80456fa7365f6812cfe7909b5f24b41c78ae9883a2fb24b90e12144bdf579"
+    },
+    "baseline/real-irrational-unit-0.program.json": {
+      "bytes": 5145,
+      "sha256": "a26457459fd322b3a72cd641cc22f48b389c3e660425ec9b35445edfe2f3a637"
+    },
+    "baseline/real-irrational-unit-0.request.json": {
+      "bytes": 6122,
+      "sha256": "2470a4d21d01c1dc224f3cb5802985f6aaf02d1e4ee423a3d8430f9cc8aa10b4"
+    },
+    "baseline/real-universal-unit-0.program.json": {
+      "bytes": 5732,
+      "sha256": "e9a727d9ec452901838ba6e9d7dd0e5c654ca34c2a93ff3f27c317fa07a33261"
+    },
+    "baseline/real-universal-unit-0.request.json": {
+      "bytes": 6844,
+      "sha256": "1c324588207bac35cea52a2887ed7c9ebfd4886f4050aca2cb4ca88913b9c7fe"
+    },
+    "baseline/real-universal-unit-1.program.json": {
+      "bytes": 5589,
+      "sha256": "a46959a80d86cb82702bcde093a957a4c8ffe5fbed27bf49bb4c3c6f709da282"
+    },
+    "baseline/real-universal-unit-1.request.json": {
+      "bytes": 6564,
+      "sha256": "9c16bebe1362584839bbe15763fc287da364eea4c7d9300adb142458ae3fed4d"
+    },
+    "capture.py": {
+      "bytes": 19640,
+      "sha256": "59feeebb34c9569fdb526335b4dbcd8d0c3637188938c896a91089490b576f3f"
+    },
+    "coordinator.py": {
+      "bytes": 21780,
+      "sha256": "27834a822d119e8712f9791a4b57d4e69082fb0ff4a6fadf10a7cf64c869301e"
+    },
+    "gate.py": {
+      "bytes": 12328,
+      "sha256": "41ce874130ffd8d49f2b63c526ad01cff6c14a70ac79818ece682f27f657ac64"
+    },
+    "inputs.json": {
+      "bytes": 3727,
+      "sha256": "7b08e4b29bf8f5b6d5756a8311bfb3bd4ecc2a5b3a1275c22a056af2a6a41511"
+    },
+    "owned-process.py": {
+      "bytes": 18055,
+      "sha256": "3d26a5bbd4e02d837087185a6a25b757027b642798019cda3271c6e7b5713c8e"
+    },
+    "test_capture.py": {
+      "bytes": 5236,
+      "sha256": "781f7b18a20d3109cdd0cccff3b1888ed871d3a5e7871d1bd7830a359d0ad814"
+    }
+  }
+}
