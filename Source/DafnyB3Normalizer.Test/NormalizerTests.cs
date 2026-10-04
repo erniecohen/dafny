@@ -499,6 +499,81 @@ public class NormalizerTests {
   }
 
   [Fact]
+  public void IdentityAxiomAtAnIntegerInstanceCannotProjectBooleanInstances() {
+    var options = Options();
+    var source = ParseBoogie("""
+      revealed function Identity<T>(x: T): T;
+      axiom (forall x: int :: Identity(x) == x);
+      procedure P(b: bool);
+      implementation P(b: bool) { assert Identity(b) == b; assert Identity(1) == 1; }
+      """, options);
+    // The public typed-IR API permits attaching a typed, specialized axiom as definition metadata.
+    // The reviewed Dafny producer uses CreateDefinitionAxiom instead, quantifying every type parameter.
+    source.TopLevelDeclarations.OfType<Bpl.Function>().Single().DefinitionAxiom =
+      source.TopLevelDeclarations.OfType<Bpl.Axiom>().Single();
+    var result = B3Normalizer.Normalize(source, source.Implementations.Single(), options);
+    Validate(result);
+    Assert.All(Statements(result.Program!.Unit.Body).OfType<Ir.Check>(), check => {
+      var equality = Assert.IsType<Ir.Operation>(check.Condition);
+      Assert.IsType<Ir.Application>(equality.Arguments[0]);
+    });
+  }
+
+  [Theory]
+  [InlineData("revealed function Identity<T>(x: T): T { x }", "Identity(b)", "Identity(1)")]
+  [InlineData("revealed function Identity<A, B>(x: A, y: B): A { x }", "Identity(b, 1)", "Identity(1, b)")]
+  public void UniversallyParametricIdentityProjectsIntegerAndBooleanInstances(string definition, string booleanCall, string integerCall) {
+    var result = Boogie(definition + " procedure P(b: bool); implementation P(b: bool) { assert " +
+      booleanCall + " == b; assert " + integerCall + " == 1; }");
+    Validate(result);
+    var equalities = Statements(result.Program!.Unit.Body).OfType<Ir.Check>()
+      .Select(check => Assert.IsType<Ir.Operation>(check.Condition)).ToArray();
+    Assert.Equal(2, equalities.Length);
+    Assert.Equal(equalities[0].Arguments[1], Assert.IsType<Ir.Variable>(equalities[0].Arguments[0]));
+    Assert.Equal(new Ir.IntegerLiteral("1"), equalities[1].Arguments[0]);
+  }
+
+  [Fact]
+  public void DirectTypedBodyIsActiveWithoutAnInlineAttribute() {
+    var options = Options();
+    var source = ParseBoogie("""
+      revealed function Identity<T>(x: T): T;
+      procedure P(b: bool);
+      implementation P(b: bool) { assert Identity(b) == b; assert Identity(1) == 1; }
+      """, options);
+    var function = source.TopLevelDeclarations.OfType<Bpl.Function>().Single();
+    var input = function.InParams.Single();
+    function.Body = new Bpl.IdentifierExpr(input.tok, input);
+    Assert.False(Bpl.QKeyValueExtensions.FindBoolAttribute(function.Attributes, "inline"));
+    Assert.Equal(0, source.Typecheck(options));
+    var result = B3Normalizer.Normalize(source, source.Implementations.Single(), options);
+    Validate(result);
+    Assert.All(Statements(result.Program!.Unit.Body).OfType<Ir.Check>(), check => {
+      var equality = Assert.IsType<Ir.Operation>(check.Condition);
+      Assert.Equal(equality.Arguments[1], equality.Arguments[0]);
+    });
+  }
+
+  [Fact]
+  public void DetachedUniversalIdentityMetadataCannotSupplyAProjectionPremise() {
+    var options = Options();
+    var source = ParseBoogie("""
+      revealed function Identity<T>(x: T): T { x }
+      procedure P(b: bool);
+      implementation P(b: bool) { assert Identity(b) == b; }
+      """, options);
+    var function = source.TopLevelDeclarations.OfType<Bpl.Function>().Single();
+    var definition = function.DefinitionAxiom;
+    Assert.NotNull(definition);
+    source.RemoveTopLevelDeclaration(definition);
+    Assert.Same(definition, function.DefinitionAxiom);
+    var result = B3Normalizer.Normalize(source, source.Implementations.Single(), options);
+    Validate(result);
+    var equality = Assert.IsType<Ir.Operation>(Statements(result.Program!.Unit.Body).OfType<Ir.Check>().Single().Condition);
+    Assert.IsType<Ir.Application>(equality.Arguments[0]);
+  }
+
+  [Fact]
   public void HideAnywherePreventsIdentityExpansionAndNoPartialProgramEscapes() {
     var result = Boogie("function {:inline} Identity(x: int): int { x } procedure P(); implementation P() { assert Identity(1) == 1; hide Identity; }");
     Assert.False(result.Success); Assert.Null(result.Program); Assert.Empty(result.Obligations);
