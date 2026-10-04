@@ -205,7 +205,9 @@ public static class NewtypeOperationView {
       // it supplies the selected operation. A subset of the carrier preserves
       // its own refined signature (notably total/no-reads arrows and nat).
       return current is not TypeProxy && current is not UserDefinedType { ResolvedClass: NewtypeDecl } &&
-        (current is not UserDefinedType user || user.ResolvedClass == expected);
+        (current is not UserDefinedType user ||
+         expected != null && user.ResolvedClass == expected ||
+         expected == null && user.ResolvedClass is ArrowTypeDecl);
     }
     return false;
   }
