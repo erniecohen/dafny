@@ -1,0 +1,6 @@
+git-issue-113-extended-newtypes-codatatype-constrained-result-negative.dfy(8,19): Error: cannot prove termination; try supplying a decreases clause (note that calls cannot be co-recursive in this context)
+git-issue-113-extended-newtypes-codatatype-constrained-result-negative.dfy(14,25): Error: cannot prove termination; try supplying a decreases clause (note that calls cannot be co-recursive in this context)
+git-issue-113-extended-newtypes-codatatype-constrained-result-negative.dfy(19,29): Error: cannot prove termination; try supplying a decreases clause (note that calls cannot be co-recursive in this context)
+git-issue-113-extended-newtypes-codatatype-constrained-result-negative.dfy(23,38): Error: cannot prove termination; try supplying a decreases clause (note that calls cannot be co-recursive in this context)
+
+Dafny program verifier finished with 0 verified, 4 errors

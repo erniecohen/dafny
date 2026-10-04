@@ -1,0 +1,2 @@
+git-issue-113-extended-newtypes-hidden-base-plus.dfy(13,20): Error: type of + must be of a numeric type, a bitvector type, ORDINAL, char, a sequence type, or a set-like or map-like type (instead got Exposed<int>)
+1 resolution/type errors detected in git-issue-113-extended-newtypes-hidden-base-plus.dfy

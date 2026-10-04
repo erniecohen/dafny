@@ -1,0 +1,6 @@
+git-issue-113-extended-newtypes-arrow-variance-control.dfy(8,2): Error: assertion might not hold
+git-issue-113-extended-newtypes-arrow-variance-control.dfy(12,2): Error: assertion might not hold
+git-issue-113-extended-newtypes-arrow-variance-control.dfy(17,2): Error: assertion might not hold
+git-issue-113-extended-newtypes-arrow-variance-control.dfy(22,2): Error: assertion might not hold
+
+Dafny program verifier finished with 6 verified, 4 errors

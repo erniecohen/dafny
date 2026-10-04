@@ -1,0 +1,4 @@
+git-issue-113-extended-newtypes-ordinal-generic.dfy(23,26): Error: result of operation might violate newtype constraint for 'Nonzero'
+git-issue-113-extended-newtypes-ordinal-generic.dfy(29,2): Error: assertion might not hold
+
+Dafny program verifier finished with 4 verified, 2 errors

@@ -1,0 +1,3 @@
+git-issue-113-extended-newtypes-codatatype-field-constraint-negative.dfy(12,11): Error: cannot prove termination; try supplying a decreases clause (note that functions with a constrained codatatype newtype result cannot be called co-recursively)
+
+Dafny program verifier finished with 1 verified, 1 error

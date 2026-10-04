@@ -1,0 +1,2 @@
+git-issue-113-extended-newtypes-hidden-base-order.dfy(13,21): Error: arguments to < must be of a numeric type, bitvector type, ORDINAL, char, a sequence type, or a set-like type (instead got Exposed<int>)
+1 resolution/type errors detected in git-issue-113-extended-newtypes-hidden-base-order.dfy

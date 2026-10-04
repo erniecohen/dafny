@@ -1,0 +1,6 @@
+git-issue-113-extended-newtypes-codatatype-field-refinement-proof-negative.dfy(11,18): Error: cannot prove termination; try supplying a decreases clause (note that functions with a constrained codatatype newtype result cannot be called co-recursively)
+git-issue-113-extended-newtypes-codatatype-field-refinement-proof-negative.dfy(14,17): Error: cannot prove termination; try supplying a decreases clause (note that functions with a constrained codatatype newtype result cannot be called co-recursively)
+git-issue-113-extended-newtypes-codatatype-field-refinement-proof-negative.dfy(17,21): Error: cannot prove termination; try supplying a decreases clause (note that functions with a constrained codatatype newtype result cannot be called co-recursively)
+git-issue-113-extended-newtypes-codatatype-field-refinement-proof-negative.dfy(25,34): Error: cannot prove termination; try supplying a decreases clause (note that functions with a constrained codatatype newtype result cannot be called co-recursively)
+
+Dafny program verifier finished with 1 verified, 4 errors

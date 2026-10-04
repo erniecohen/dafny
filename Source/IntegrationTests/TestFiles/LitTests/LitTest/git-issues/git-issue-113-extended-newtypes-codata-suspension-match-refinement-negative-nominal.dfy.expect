@@ -1,0 +1,3 @@
+git-issue-113-extended-newtypes-codata-suspension-match-refinement-negative-nominal.dfy(7,40): Error: cannot prove termination; try supplying a decreases clause (note that calls cannot be co-recursive in this context)
+
+Dafny program verifier finished with 1 verified, 1 error

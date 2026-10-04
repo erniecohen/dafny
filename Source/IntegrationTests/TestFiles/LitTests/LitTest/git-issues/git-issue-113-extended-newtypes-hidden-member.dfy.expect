@@ -1,0 +1,2 @@
+git-issue-113-extended-newtypes-hidden-member.dfy(12,20): Error: member 'Offset' does not exist in newtype 'Ord'
+1 resolution/type errors detected in git-issue-113-extended-newtypes-hidden-member.dfy

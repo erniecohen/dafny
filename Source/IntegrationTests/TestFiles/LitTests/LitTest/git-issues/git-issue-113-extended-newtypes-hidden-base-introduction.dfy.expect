@@ -1,0 +1,2 @@
+git-issue-113-extended-newtypes-hidden-base-introduction.dfy(13,21): Error: type conversion to an ORDINAL type is allowed only from numeric and bitvector types, char, and ORDINAL (got ORDINAL)
+1 resolution/type errors detected in git-issue-113-extended-newtypes-hidden-base-introduction.dfy

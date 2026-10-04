@@ -1,0 +1,16 @@
+git-issue-113-extended-newtypes-arrow-allocation-negative.dfy(26,2): Error: assertion might not hold
+git-issue-113-extended-newtypes-arrow-allocation-negative.dfy(36,2): Error: assertion might not hold
+git-issue-113-extended-newtypes-arrow-allocation-negative.dfy(47,2): Error: assertion might not hold
+git-issue-113-extended-newtypes-arrow-allocation-negative.dfy(58,2): Error: assertion might not hold
+git-issue-113-extended-newtypes-arrow-allocation-negative.dfy(68,2): Error: assertion might not hold
+git-issue-113-extended-newtypes-arrow-allocation-negative.dfy(78,2): Error: assertion might not hold
+git-issue-113-extended-newtypes-arrow-allocation-negative.dfy(79,2): Error: assertion might not hold
+git-issue-113-extended-newtypes-arrow-allocation-negative.dfy(88,2): Error: assertion might not hold
+git-issue-113-extended-newtypes-arrow-allocation-negative.dfy(105,2): Error: assertion might not hold
+git-issue-113-extended-newtypes-arrow-allocation-negative.dfy(106,2): Error: assertion might not hold
+git-issue-113-extended-newtypes-arrow-allocation-negative.dfy(113,54): Error: a postcondition could not be proved on this return path
+git-issue-113-extended-newtypes-arrow-allocation-negative.dfy(113,48): Related location: this is the postcondition that could not be proved
+git-issue-113-extended-newtypes-arrow-allocation-negative.dfy(129,2): Error: assertion might not hold
+git-issue-113-extended-newtypes-arrow-allocation-negative.dfy(130,2): Error: assertion might not hold
+
+Dafny program verifier finished with 3 verified, 13 errors

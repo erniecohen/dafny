@@ -1,0 +1,8 @@
+git-issue-113-extended-newtypes-datatype-proof-negative.dfy(11,23): Error: result of operation might violate newtype constraint for 'Positive'
+git-issue-113-extended-newtypes-datatype-proof-negative.dfy(15,24): Error: result of operation might violate newtype constraint for 'ZeroProof'
+git-issue-113-extended-newtypes-datatype-proof-negative.dfy(19,19): Error: result of operation might violate newtype constraint for 'Positive'
+git-issue-113-extended-newtypes-datatype-proof-negative.dfy(23,16): Error: destructor 'tail' can only be applied to datatype values constructed by 'Cons'
+git-issue-113-extended-newtypes-datatype-proof-negative.dfy(29,12): Error: decreases clause might not decrease
+git-issue-113-extended-newtypes-datatype-proof-negative.dfy(35,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 6 errors

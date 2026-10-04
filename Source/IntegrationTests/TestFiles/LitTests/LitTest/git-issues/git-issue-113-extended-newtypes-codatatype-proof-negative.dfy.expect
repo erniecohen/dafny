@@ -1,0 +1,9 @@
+git-issue-113-extended-newtypes-codatatype-proof-negative.dfy(8,11): Error: cannot prove termination; try supplying a decreases clause (note that the call is not sufficiently guarded to be used co-recursively)
+git-issue-113-extended-newtypes-codatatype-proof-negative.dfy(12,35): Error: co-recursive observation: value of expression (of type 'Stream') is not known to be an instance of type 'Stream'
+git-issue-113-extended-newtypes-codatatype-proof-negative.dfy(16,32): Error: cannot prove termination; try supplying a decreases clause (note that calls cannot be co-recursive in this context)
+git-issue-113-extended-newtypes-codatatype-proof-negative.dfy(23,27): Error: cannot prove termination; try supplying a decreases clause (note that only functions without any ensures clause can be called co-recursively)
+git-issue-113-extended-newtypes-codatatype-proof-negative.dfy(29,14): Error: decreases clause might not decrease
+git-issue-113-extended-newtypes-codatatype-proof-negative.dfy(35,23): Error: result of operation might violate newtype constraint for 'Positive'
+git-issue-113-extended-newtypes-codatatype-proof-negative.dfy(41,2): Error: assertion might not hold
+
+Dafny program verifier finished with 1 verified, 7 errors

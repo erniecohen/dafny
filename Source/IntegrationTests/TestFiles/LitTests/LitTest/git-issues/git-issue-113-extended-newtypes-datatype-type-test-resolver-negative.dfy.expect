@@ -1,0 +1,2 @@
+git-issue-113-extended-newtypes-datatype-type-test-resolver-negative.dfy(23,9): Error: type test for type 'Permuted<bool, int>' must be from an expression assignable to it (got 'Pair<bool, int>')
+1 resolution/type errors detected in git-issue-113-extended-newtypes-datatype-type-test-resolver-negative.dfy
