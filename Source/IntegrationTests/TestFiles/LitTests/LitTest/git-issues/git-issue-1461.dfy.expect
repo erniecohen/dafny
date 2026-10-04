@@ -23,8 +23,9 @@ git-issue-1461-negative.dfy(10,4): Error: assertion might not hold
 git-issue-1461-negative.dfy(16,4): Error: assertion might not hold
 git-issue-1461-negative.dfy(22,22): Error: assertion might not hold
 git-issue-1461-negative.dfy(5,48): Related location: this proposition could not be proved
+git-issue-1461-negative.dfy(42,4): Error: assertion might not hold
 
-Dafny program verifier finished with 1 verified, 3 errors
+Dafny program verifier finished with 2 verified, 4 errors
 original (type-system-refresh:true)
 
 Dafny program verifier finished with 1 verified, 0 errors
@@ -36,8 +37,9 @@ git-issue-1461-negative.dfy(10,4): Error: assertion might not hold
 git-issue-1461-negative.dfy(16,4): Error: assertion might not hold
 git-issue-1461-negative.dfy(22,22): Error: assertion might not hold
 git-issue-1461-negative.dfy(5,48): Related location: this proposition could not be proved
+git-issue-1461-negative.dfy(42,4): Error: assertion might not hold
 
-Dafny program verifier finished with 1 verified, 3 errors
+Dafny program verifier finished with 2 verified, 4 errors
 Boogie, extensional heaps (typeEncoding:m)
 git-issue-1461.bpl(23,3): Error: this assertion could not be proved
 Execution trace:
