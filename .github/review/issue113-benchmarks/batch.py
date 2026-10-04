@@ -17,7 +17,7 @@ def run(stage,args=[]):
  steps.append({'stage':stage,'command':cmd,'exit':p.returncode})
  print(stage,p.returncode,p.stdout[-150:])
  (dest/'stages.json').write_text(json.dumps(steps,indent=2))
-for stage in ['resolve','translate','verify']:run(stage)
+for stage in ['resolve','translate','verify']:run(stage,['--samples','3'])
 selected=[c for c in json.loads(manifest.read_text())['cases'] if c['family']==family]
 if any(c['runtime'] for c in selected) and os.environ['SOLVER_VERSION']=='5.1.0' and os.environ['SOLVER_SEED']=='0':
  run('build',['--proof-report',str(dest/'verify/results.json')])

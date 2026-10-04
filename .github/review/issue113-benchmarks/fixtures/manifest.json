@@ -553,6 +553,50 @@
       "off_supported": true,
       "erasure": false,
       "sha256": "c29eb9b7b9d5cc759e314c7b56570da5a6802a2c88de8bb0a04735a3a99762b3"
+    },
+    {
+      "id": "depth-1000/B",
+      "family": "depth-1000",
+      "arm": "B",
+      "size": 100,
+      "path": "depth-1000/B.dfy",
+      "runtime": false,
+      "off_supported": true,
+      "erasure": true,
+      "sha256": "f1166476619e00a0384fada96d9a9c322f3bfd7a633db8c7b7264c5cb48d9b60"
+    },
+    {
+      "id": "depth-1000/N",
+      "family": "depth-1000",
+      "arm": "N",
+      "size": 100,
+      "path": "depth-1000/N.dfy",
+      "runtime": false,
+      "off_supported": false,
+      "erasure": true,
+      "sha256": "e340e8e01a1a4d6f9fcd30dd8f73f7a6e91391d9516c26bb9ab41ad724722108"
+    },
+    {
+      "id": "depth-1000/W-erased",
+      "family": "depth-1000",
+      "arm": "W-erased",
+      "size": 100,
+      "path": "depth-1000/W.dfy",
+      "runtime": false,
+      "off_supported": true,
+      "erasure": true,
+      "sha256": "f6aa9458940b935cfa1cc2c5057ebb4048e7f76aae92bbb392b19fd39dc90be1"
+    },
+    {
+      "id": "depth-1000/W-materialized",
+      "family": "depth-1000",
+      "arm": "W-materialized",
+      "size": 100,
+      "path": "depth-1000/W.dfy",
+      "runtime": false,
+      "off_supported": true,
+      "erasure": false,
+      "sha256": "f6aa9458940b935cfa1cc2c5057ebb4048e7f76aae92bbb392b19fd39dc90be1"
     }
   ],
   "unexecuted": true,

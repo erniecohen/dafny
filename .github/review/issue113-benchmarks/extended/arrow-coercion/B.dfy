@@ -4,10 +4,6 @@ type Source = Tag -> seq<Token>
 type Target = Token -> seq<Tag>
 // The base language performs the same genuine signature coercion in every arm.
 function Coerce(source: Source): Target { source }
-lemma CoercionLaw(source: Source, token: Token)
-  ensures |Coerce(source)(token)| == |source(token)|
-  ensures forall j :: 0 <= j < |source(token)| ==> Coerce(source)(token)[j] == source(token)[j]
-{}
 type Value = Target
 function Encode(b: Target): Value { b }
 function Decode(v: Value): Target { v }

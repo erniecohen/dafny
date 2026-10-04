@@ -79,7 +79,15 @@ def csv_cost(path):
             if value != value.to_integral_value():
                 raise ValueError("Non-integral solver resource count: " + row[field])
             costs.append(int(value))
-    return {"available": True, "rows": rows,
+    durations = []
+    for row in rows:
+        value = row.get("TestResult.Duration")
+        if value:
+            h, m, sec = value.split(":")
+            durations.append(int(h) * 3600 + int(m) * 60 + float(sec))
+    return {"available": True, "rows": rows, "vc_batches": len(rows),
+            "sum_batch_solver_seconds": sum(durations) if durations else None,
+            "timing_boundary": "sum of verifier-recorded batch durations; not process wall time",
             "total_resource_count": sum(costs) if costs else None}
 
 def boogie_counts(path):
@@ -266,7 +274,7 @@ def main():
             parser.error("source checksum changed: " + case["id"])
         if args.stage in ("resolve", "translate", "verify"):
             for enabled in ((False, True) if case["off_supported"] else (True,)):
-                jobs.append((case, enabled, None, 0))
+                jobs.extend((case, enabled, None, sample) for sample in range(args.samples))
         elif case["runtime"]:
             for target in targets:
                 for sample in range(args.samples if args.stage == "run" else 1):
@@ -290,6 +298,8 @@ def main():
     random.Random(args.seed).shuffle(jobs)
     for case, enabled, target, sample in jobs:
         directory = out / (case["id"].replace("/", "-") + ("-on" if enabled else "-off") + ("-" + target if target else ""))
+        if args.stage in ("resolve", "translate", "verify") and args.samples > 1:
+            directory = directory / ("sample-" + str(sample))
         directory.mkdir(parents=True, exist_ok=True)
         source = manifest_path.parent / case["path"]
         common = ["--general-newtypes=true", "--type-system-refresh=true", "--unicode-char=true",
