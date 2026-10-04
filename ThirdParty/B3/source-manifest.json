@@ -7,7 +7,7 @@
   "patches": [
     {
       "file": "integration.patch",
-      "sha256": "9779d59c22fb519df2dad60a9152d6092a522bc495e84bc0624f0df8c6765824"
+      "sha256": "6ede1148895aa6da8f5da12b04dee5dd5529de701780b4f517b570bd73a1fa3f"
     }
   ],
   "vendoredPaths": [
@@ -23,8 +23,8 @@
   "files": {
     "LICENSE": "e91686b267408f7ca5da770a3bb742911872b9cfcab2b1f4364263a86283d0cb",
     "README.md": "956e48ef8e9b1fa2be3ec1a2a6e979a17bf6a16ba2dbc9d3c44d6b8280cbf2c6",
-    "doc/worker-library.md": "5d2e8156239e2b3604eb162119ec9755e301fd43f02d690543ee8236b9663cd2",
-    "integration.patch": "9779d59c22fb519df2dad60a9152d6092a522bc495e84bc0624f0df8c6765824",
+    "doc/worker-library.md": "b1660772823dd6297366b541d16a296306b559c7fee63c2a6b8577ca2ef86ce0",
+    "integration.patch": "6ede1148895aa6da8f5da12b04dee5dd5529de701780b4f517b570bd73a1fa3f",
     "library/dfyconfig.toml": "b0a57d8fe24030e720edfd0f4d490be2b4011c0f8b66cfd6adbdb9a9946463c8",
     "src/Ast/Ast.dfy": "5d929eb44165880f94b3a5b9051d51c19b9a3b626aac9b7007d0ecb764ac793b",
     "src/Ast/AstValid.dfy": "6473a5b5c018f1eab55998956a72dcb8e8e92a02711ad2080b7b7007c39a21cf",
@@ -51,7 +51,7 @@
     "src/Semantics/Semantics.dfy": "8111d60733211106ed440e35518cc5b9ac752bb9c1765a004b353a9eb2815f3b",
     "src/Solver/DeclarationMarkers.dfy": "16400118a77aa3ce316e0ce02c3c132371d916d604003b8ba57202803624dc18",
     "src/Solver/ExternalSolvers.dfy": "9ddf48ea55d2f0d678b49f6074e328899ede823b5c6b9a389269097db34552dc",
-    "src/Solver/RSolver.dfy": "a503dd6c6700d587bb389dfdc2067525438c4b97d341d4ff49a1d830f749cb56",
+    "src/Solver/RSolver.dfy": "26d66e6a0bdc9ed8f69c39efdcb863bee97d18455695364ab697aa327edb52da",
     "src/Solver/SmtEngines.dfy": "b692ee788a1052a3ddabc26c11afadca76a1643d44bf11424b10641e2444e616",
     "src/Solver/SolverConfiguration.dfy": "03df472f0bc0e2f16d4edd14116c8caf0a5c1323ff0f29423bc782d080a52401",
     "src/Solver/SolverExpr.dfy": "fc5b13bc523ab6338b866008fa5b8d27f39c2031d5cc153f4a708ac1a46409d8",
@@ -75,6 +75,7 @@
     "target/java/src/OSProcess.java": "fc815eed4365c0a0979777da8ab738156af5ba9d83afb233eb9daeace24d4aca",
     "target/java/src/__default.java": "637cb4d440f77a9a4c18632da5f03f245694efa18a6299afd3f6a5ca1c0771cb",
     "target/java/src/dfyconfig.toml": "1be9ffbf95985a674f6c20f8a19700cb37c82e0fc56ca5caf8894c1518adf8ba",
+    "test/worker/RealTests.dfy": "71ae73d7ed31f0a2793baeff429f7b712088e03af665a70a3554c62b2d3c7ee4",
     "test/worker/WorkerTests.dfy": "5ca2f0fcabc002bc947c450b3be320af1831acdbc7ecca5bbcd3714e73cc965c",
     "test/worker/dfyconfig.toml": "b5ef1c5b340cd6049cba26e40cf5a1608959fae2497231843840851abb4628ff",
     "test/worker/fake-solver.py": "1c80d1c6454178249b04290ffa638c9cc863f90ef1c02214b3f2556bdab338a9"

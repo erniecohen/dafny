@@ -1,9 +1,9 @@
 diff --git a/doc/worker-library.md b/doc/worker-library.md
 new file mode 100644
-index 0000000000000000000000000000000000000000..c4307d8850fdc23318ae6a995d3777c10ae2b34b
+index 0000000000000000000000000000000000000000..49766ad896749831e54acd3ffb8de6e7b43ba0ac
 --- /dev/null
 +++ b/doc/worker-library.md
-@@ -0,0 +1,52 @@
+@@ -0,0 +1,61 @@
 +# Checked worker library
 +
 +`library/dfyconfig.toml` builds the C# library without the command-line entry
@@ -25,6 +25,15 @@ index 0000000000000000000000000000000000000000..c4307d8850fdc23318ae6a995d3777c1
 +of the selected procedure. Domains, signature types, domain instantiations,
 +custom literals, closure expressions, reachability statements, and unsafe SMT
 +identifiers are currently excluded from this boundary.
++
++Native `real` uses the SMT Real carrier, with exact rational literals whose
++denominator is positive. Arithmetic uses homogeneous Int or Real operands;
++integer `div`/`mod` stay integer-only. Real division, integer embedding, and
++floor use the native SMT primitives. The text forms are `#real(n, d)`,
++`#to_real(e)`, and `#to_int(e)`. Raw invalid denominators and mixed numeric
++signatures fail before verification. Parser/printer and runtime controls are in
++`test/worker/RealTests.dfy`. The source extension requires a fresh verifying
++library build; an earlier library receipt does not apply to this source.
 +
 +The generated C# method returns `VerificationResults._IUnitResult`. Each attempt
 +has a sequence number, description, breadcrumbs, outcome, and obligation ID.
@@ -813,7 +822,7 @@ index c8588d5f308be90550d8284938250f59e5718f6d..1e282edb1ac18c0d6acd02b5c3579e55
 \ No newline at end of file
 +}
 diff --git a/src/Solver/RSolver.dfy b/src/Solver/RSolver.dfy
-index 7049b456747b6486558482d4127842c2a03c6f26..df018a9cc52c191a559c3dabf6e1d466c5903ac7 100644
+index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474ffcab1695 100644
 --- a/src/Solver/RSolver.dfy
 +++ b/src/Solver/RSolver.dfy
 @@ -12,15 +12,18 @@ module RSolvers {
@@ -869,7 +878,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..df018a9cc52c191a559c3dabf6e1d466
        case LogicalNot => "not"
        case UnaryMinus => "-"
      }
-@@ -137,6 +147,7 @@ module RSolvers {
+@@ -137,10 +147,12 @@ module RSolvers {
        match this
        case Boolean(b) => if b then "true" else "false"
        case Integer(x) => Int2String(x)
@@ -877,7 +886,13 @@ index 7049b456747b6486558482d4127842c2a03c6f26..df018a9cc52c191a559c3dabf6e1d466
        case CustomLiteral(s, typ) => PrintUtil.CustomLiteralToString(s, typ.ToString())
        case Id(v) => v.name
        case FuncAppl(op, args) =>
-@@ -219,6 +230,10 @@ module RSolvers {
+-        op.ToString() + "(" + RExprListToString(args, this) + ")"
++        var prefix := if op.BuiltInOperator? && op.name in {"to_real", "to_int"} then "#" else "";
++        prefix + op.ToString() + "(" + RExprListToString(args, this) + ")"
+       case IfThenElse(guard, thn, els) =>
+         "(if " + guard.ToString() + " " + thn.ToString() + " else " + els.ToString() + ")"
+       case LetExpr(v, rhs, body) =>
+@@ -219,6 +231,10 @@ module RSolvers {
        requires Valid()
        decreases depth
 
@@ -888,7 +903,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..df018a9cc52c191a559c3dabf6e1d466
      method PrintTrace()
        requires Valid()
        decreases depth
-@@ -248,6 +263,13 @@ module RSolvers {
+@@ -248,6 +264,13 @@ module RSolvers {
      {
      }
 
@@ -902,7 +917,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..df018a9cc52c191a559c3dabf6e1d466
      method PrintTrace()
        requires Valid()
        decreases depth
-@@ -289,6 +311,14 @@ module RSolvers {
+@@ -289,6 +312,14 @@ module RSolvers {
        print "  ", expr.ToString(), "\n";
      }
 
@@ -917,7 +932,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..df018a9cc52c191a559c3dabf6e1d466
      method PrintTrace()
        requires Valid()
        decreases depth
-@@ -343,6 +373,7 @@ module RSolvers {
+@@ -343,6 +374,7 @@ module RSolvers {
      const state: Solvers.SolverState<RContext>
      const axiomMap: map<Ast.Axiom, RExpr>
      const Options: CLI.CliOptions
@@ -925,7 +940,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..df018a9cc52c191a559c3dabf6e1d466
 
      ghost predicate Valid()
        reads Repr
-@@ -361,6 +392,7 @@ module RSolvers {
+@@ -361,6 +393,7 @@ module RSolvers {
        this.state := state;
        this.axiomMap := axiomMap;
        this.Options := options;
@@ -933,7 +948,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..df018a9cc52c191a559c3dabf6e1d466
        Repr := {this} + state.Repr;
      }
 
-@@ -370,7 +402,7 @@ module RSolvers {
+@@ -370,7 +403,7 @@ module RSolvers {
        map["%tag" := SExpr.S(Int2String(|state.declarations| + |state.additionalDeclaredNames|))]
      }
 
@@ -942,7 +957,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..df018a9cc52c191a559c3dabf6e1d466
        requires Valid()
        modifies Repr
        ensures Valid()
-@@ -382,8 +414,27 @@ module RSolvers {
+@@ -382,8 +415,27 @@ module RSolvers {
 
        state.Push(context); // do another Push; the parameter here is irrelevant and will soon be popped off again
        DeclareNewSymbols(expr);
@@ -971,7 +986,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..df018a9cc52c191a559c3dabf6e1d466
      }
 
      method SetContext(context: RContext)
-@@ -453,6 +504,7 @@ module RSolvers {
+@@ -453,6 +505,7 @@ module RSolvers {
        match r
        case Boolean(_) =>
        case Integer(_) =>
@@ -979,7 +994,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..df018a9cc52c191a559c3dabf6e1d466
        case CustomLiteral(s, typ) =>
          if s != "%tag" {
            var name := r.CustomLiteralToSExprName();
-@@ -546,7 +598,7 @@ module RSolvers {
+@@ -546,7 +599,7 @@ module RSolvers {
        ensures Valid() && state.Evolves()
      {
        match typ
@@ -988,7 +1003,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..df018a9cc52c191a559c3dabf6e1d466
        case SUserType(decl) =>
          if decl !in state.declarations {
            state.DeclareType(decl, decl);
-@@ -557,8 +609,17 @@ module RSolvers {
+@@ -557,8 +610,17 @@ module RSolvers {
    method CreateEngine(axiomMap: map<Ast.Axiom, RExpr>, options: CLI.CliOptions) returns (r: Result<REngine, string>)
      ensures r.Success? ==> var smtEngine := r.value; smtEngine.Valid() && fresh(smtEngine.Repr)
    {
@@ -2014,6 +2029,101 @@ index 0f46940420af48d6756e07008ce86f51e3097e66..0a1a2034f257859f24c6c6d0815d5415
 +  public Std.Wrappers.Result<dafny.Tuple0, dafny.DafnySequence<? extends dafny.CodePoint>> Dispose() {
 +    try { close(); return success(dafny.Tuple0._typeDescriptor(), dafny.Tuple0.create()); }
 +    catch (Exception e) { return failure(dafny.Tuple0._typeDescriptor(), "Solver cleanup failed: " + e); }
++  }
++}
+diff --git a/test/worker/RealTests.dfy b/test/worker/RealTests.dfy
+new file mode 100644
+index 0000000000000000000000000000000000000000..9c83d8c029d0fb57d3e18c8b153c9d60ea2e4559
+--- /dev/null
++++ b/test/worker/RealTests.dfy
+@@ -0,0 +1,89 @@
++module RealWorkerTests {
++  import opened Std.Wrappers
++  import Raw = RawAst
++  import Ast
++  import Parser
++  import Resolver
++  import TypeChecker
++  import Printer
++  import ResolvedPrinter
++  import SolverExpr
++  import RSolvers
++  import SB = Std.Parsers.StringBuilders
++
++  method Parse(text: string) returns (raw: Raw.Program) {
++    var parsed := SB.Apply(Parser.TopLevel, text);
++    expect parsed.ParseSuccess?;
++    return parsed.result;
++  }
++
++  method Resolve(text: string) returns (expr: Ast.Expr) {
++    var raw := Parse("procedure sP() { check " + text + " }");
++    var resolved, _ := Resolver.Resolve(raw, []);
++    expect resolved.Success?;
++    var program := resolved.value;
++    var checked := TypeChecker.TypeCheck(program);
++    expect checked.Pass?;
++    expect |program.procedures| == 1 && program.procedures[0].Body.Some?;
++    var body := program.procedures[0].Body.value;
++    expect body.Block? && |body.stmts| == 1 && body.stmts[0].Check?;
++    return body.stmts[0].cond;
++  }
++
++  @Test
++  method NativeRealTextRoundTripsWithoutLosingTheLiteralOrCoercion() {
++    var expr := Resolve("#real(-13, 10) == #to_real(#to_int(#real(-13, 10)))");
++    var text := expr.ToString();
++    var reparsed := Resolve(text);
++    expect reparsed.ToString() == text;
++    expect expr.OperatorExpr? && expr.args[0].RLiteral?;
++    expect expr.args[0].numerator == -13 && expr.args[0].denominator == 10;
++  }
++
++  @Test
++  method RealDivisionPrecedenceRoundTrips() {
++    var expr := Resolve("#real(1, 3) + #real(2, 3) / (#real(5, 7) - #real(1, 7)) == #real(3, 2)");
++    var text := expr.ToString();
++    var reparsed := Resolve(text);
++    expect reparsed.ToString() == text;
++  }
++
++  @Test
++  method RationalSMTPrintingMakesRealSortAndSignsExplicit() {
++    var expression := SolverExpr.SExpr.Rational(-13, 10);
++    expect expression.ToString() == "(/ (to_real (- 13)) (to_real 10))";
++  }
++
++  @Test
++  method SolverDiagnosticsPreserveNativeCoercionForms() {
++    var literal := RSolvers.RExpr.Rational(-13, 10);
++    var floor := RSolvers.RExpr.FuncAppl(RSolvers.ROperator.BuiltInOperator("to_int"), [literal]);
++    var embed := RSolvers.RExpr.FuncAppl(RSolvers.ROperator.BuiltInOperator("to_real"), [floor]);
++    expect embed.ToString() == "#to_real(#to_int(#real(-13, 10)))";
++    var expr := Resolve(embed.ToString() + " == #real(-2, 1)");
++    expect expr.ToString() == "#to_real(#to_int(#real(-13, 10))) == #real(-2, 1)";
++  }
++
++  @Test
++  method ResolutionRejectsANonpositiveRawDenominator() {
++    var zero := Parse("procedure sP() { check #real(1, 0) == #real(1, 1) }");
++    var rejectedZero, _ := Resolver.Resolve(zero, []);
++    expect rejectedZero.Failure?;
++    var negative := Parse("procedure sP() { check #real(1, -1) == #real(1, 1) }");
++    var rejectedNegative, _ := Resolver.Resolve(negative, []);
++    expect rejectedNegative.Failure?;
++  }
++
++  @Test
++  method RawAndResolvedPrintersExposeTheSameNewForms() {
++    var raw := Parse("procedure sP() { check #to_int(#real(-13, 10)) == -2 }");
++    var rawBody := raw.procedures[0].body.value;
++    expect rawBody.Block? && |rawBody.stmts| == 1 && rawBody.stmts[0].Check?;
++    Printer.Expression(rawBody.stmts[0].cond);
++    print "\n";
++    var expr := Resolve("#to_int(#real(-13, 10)) == -2");
++    ResolvedPrinter.Expression(expr);
++    print "\n";
++    expect expr.ToString() == "#to_int(#real(-13, 10)) == -2";
 +  }
 +}
 diff --git a/test/worker/WorkerTests.dfy b/test/worker/WorkerTests.dfy

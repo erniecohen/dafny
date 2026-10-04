@@ -20,6 +20,15 @@ of the selected procedure. Domains, signature types, domain instantiations,
 custom literals, closure expressions, reachability statements, and unsafe SMT
 identifiers are currently excluded from this boundary.
 
+Native `real` uses the SMT Real carrier, with exact rational literals whose
+denominator is positive. Arithmetic uses homogeneous Int or Real operands;
+integer `div`/`mod` stay integer-only. Real division, integer embedding, and
+floor use the native SMT primitives. The text forms are `#real(n, d)`,
+`#to_real(e)`, and `#to_int(e)`. Raw invalid denominators and mixed numeric
+signatures fail before verification. Parser/printer and runtime controls are in
+`test/worker/RealTests.dfy`. The source extension requires a fresh verifying
+library build; an earlier library receipt does not apply to this source.
+
 The generated C# method returns `VerificationResults._IUnitResult`. Each attempt
 has a sequence number, description, breadcrumbs, outcome, and obligation ID.
 Place an obligation's ID on its outermost `RawAst.LabeledExpr` to retain that ID

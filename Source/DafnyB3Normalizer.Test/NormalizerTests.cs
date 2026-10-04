@@ -359,7 +359,6 @@ public class NormalizerTests {
   }
 
   [Theory]
-  [InlineData("procedure P(x: real); implementation P(x: real) { assert x == x; }", "b3_primitive_type")]
   [InlineData("procedure P(); implementation P() { again: assert true; goto again; }", "b3_transfer")]
   [InlineData("procedure P(); implementation P() { goto a, b; a: return; b: return; }", "b3_transfer")]
   [InlineData("procedure P(); implementation P() { goto {:unreviewed} done; done: assert true; }", "b3_attribute")]

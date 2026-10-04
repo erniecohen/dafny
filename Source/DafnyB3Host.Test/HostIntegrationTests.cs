@@ -291,6 +291,129 @@ public sealed class HostIntegrationTests {
     Assert.Contains("package digest mismatch", result.Error);
   }
 
+  [Theory]
+  [InlineData("-13", "10", -2, Outcome.Verified)]
+  [InlineData("-13", "10", -1, Outcome.Failed)]
+  [InlineData("13", "10", 1, Outcome.Verified)]
+  [InlineData("0", "1", 0, Outcome.Verified)]
+  public async Task NativeRealFloorUsesMathematicalFloor(string numerator, string denominator, int expected, Outcome outcome) {
+    using var package = new PackageFixture();
+    var condition = new Operation(Operator.Equal, "bool", new Expression[] {
+      new Operation(Operator.ToInt, "int", new Expression[] { new RationalLiteral(numerator, denominator) }),
+      new IntegerLiteral(expected.ToString(System.Globalization.CultureInfo.InvariantCulture))
+    });
+    var result = await Run(package.Package, Request(package.Package, Unit(new Check("sO0", condition, false)), "sO0"));
+    Assert.True(result.TraversalCompleted, result.Error);
+    Assert.Null(result.Error);
+    Assert.Equal(outcome, result.Outcome);
+    Assert.Equal(outcome, Assert.Single(result.Attempts).Outcome);
+  }
+
+  [Fact]
+  public async Task ExactRealStateAndDivisionRetainAllDigits() {
+    using var package = new PackageFixture();
+    Expression value = new RationalLiteral("9007199254740993125", "1000");
+    var body = new Block(new Statement[] {
+      new Assign("sV0", value),
+      new Check("sO0", new Operation(Operator.Equal, "bool", new Expression[] {
+        new Operation(Operator.RealDivide, "real", new Expression[] { new Variable("sV0", "real"), new RationalLiteral("5", "4") }),
+        new RationalLiteral("72057594037927945", "10")
+      }), false)
+    });
+    var result = await Run(package.Package, Request(package.Package, Unit(body, new Binding("sV0", "real")), "sO0"));
+    Assert.True(result.TraversalCompleted, result.Error);
+    Assert.Null(result.Error);
+    Assert.Equal(Outcome.Verified, result.Outcome);
+    Assert.Equal(Outcome.Verified, Assert.Single(result.Attempts).Outcome);
+  }
+
+  [Fact]
+  public async Task RealFunctionsQuantifiersAndLetsUseTheNativeSort() {
+    using var package = new PackageFixture();
+    var x = new Variable("sX", "real");
+    var fx = new Application("sF", "real", new Expression[] { x });
+    var condition = new Quantifier(true, new[] { new Binding("sX", "real") }, Array.Empty<IReadOnlyList<Expression>>(),
+      new Let(new Binding("sY", "real"), fx, new Operation(Operator.Equal, "bool",
+        new Expression[] { new Variable("sY", "real"), fx })));
+    var program = Unit(new Check("sO0", condition, false)) with {
+      Functions = new[] { new Function("sF", new[] { new Binding("sArg", "real") }, "real") }
+    };
+    var result = await Run(package.Package, Request(package.Package, program, "sO0"));
+    Assert.True(result.TraversalCompleted, result.Error);
+    Assert.Null(result.Error);
+    Assert.Equal(Outcome.Verified, result.Outcome);
+    Assert.Equal(Outcome.Verified, Assert.Single(result.Attempts).Outcome);
+  }
+
+  [Fact]
+  public async Task AnIrrationalRealWitnessCannotMakeFalseVacuouslyTrue() {
+    using var package = new PackageFixture();
+    var x = new Variable("sX", "real");
+    var body = new Block(new Statement[] {
+      new Assume(new Operation(Operator.Equal, "bool", new Expression[] {
+        new Operation(Operator.Multiply, "real", new Expression[] { x, x }), new RationalLiteral("2", "1")
+      })),
+      new Check("sO0", new BooleanLiteral(false), false)
+    });
+    var result = await Run(package.Package, Request(package.Package, Unit(body, new Binding("sX", "real")), "sO0"));
+    Assert.True(result.TraversalCompleted, result.Error);
+    Assert.Null(result.Error);
+    Assert.Equal(Outcome.Failed, result.Outcome);
+    Assert.Equal(Outcome.Failed, Assert.Single(result.Attempts).Outcome);
+  }
+
+  [Fact]
+  public async Task TheSharedRealDivisionPrimitiveRemainsUnderspecifiedAtZero() {
+    using var package = new PackageFixture();
+    var quotient = new Operation(Operator.RealDivide, "real",
+      new Expression[] { new RationalLiteral("1", "1"), new RationalLiteral("0", "1") });
+    var body = new Block(new Statement[] {
+      new Assume(new Operation(Operator.Equal, "bool", new Expression[] { quotient, new RationalLiteral("1", "1") })),
+      new Check("sO0", new BooleanLiteral(false), false)
+    });
+    var result = await Run(package.Package, Request(package.Package, Unit(body), "sO0"));
+    Assert.True(result.TraversalCompleted, result.Error);
+    Assert.Null(result.Error);
+    Assert.Equal(Outcome.Failed, result.Outcome);
+    Assert.Equal(Outcome.Failed, Assert.Single(result.Attempts).Outcome);
+  }
+
+  [Theory]
+  [InlineData(0)]
+  [InlineData(-1)]
+  public void RawNonpositiveDenominatorsAreRejectedWithoutSolverAttempts(int denominator) {
+    // Bypass host validation deliberately to exercise the executable library boundary.
+    var bad = RawAst.Expr.create_RLiteral(BigInteger.One, new BigInteger(denominator));
+    var condition = RawAst.Expr.create_OperatorExpr(RawAst.Operator.create_Eq(),
+      Dafny.Sequence<RawAst._IExpr>.FromArray(new[] { bad, bad }));
+    var procedure = RawAst.Procedure.create(RawAstBuilder.S("sUnit"),
+      Dafny.Sequence<RawAst._IPParameter>.Empty, Dafny.Sequence<RawAst._IAExpr>.Empty,
+      Dafny.Sequence<RawAst._IAExpr>.Empty,
+      Std.Wrappers.Option<RawAst._IStmt>.create_Some(RawAst.Stmt.create_Check(condition)));
+    var empty = RawAstBuilder.Build(Unit(new Check("sO0", new BooleanLiteral(true), false)));
+    var raw = RawAst.Program.create_Program(empty.dtor_signatureTypes, empty.dtor_domains, empty.dtor_types,
+      empty.dtor_taggers, empty.dtor_functions, empty.dtor_axioms,
+      Dafny.Sequence<RawAst._IProcedure>.FromArray(new[] { procedure }));
+    var result = B3Library.__default.CheckAndVerify(raw, RawAstBuilder.S("sUnit"), NativeConfiguration());
+    Assert.False(result.dtor_complete);
+    Assert.True(result.dtor_error.is_Some);
+    Assert.Empty(result.dtor_attempts);
+  }
+
+  [Fact]
+  public void RawMixedRealArithmeticCannotBypassTheLibraryTypechecker() {
+    var mixed = new Operation(Operator.Add, "real", new Expression[] {
+      new IntegerLiteral("1"), new RationalLiteral("1", "1")
+    });
+    var raw = RawAstBuilder.Build(Unit(new Check("sO0",
+      new Operation(Operator.Equal, "bool", new Expression[] { mixed, new RationalLiteral("2", "1") }), false)));
+    var result = B3Library.__default.CheckAndVerify(raw, RawAstBuilder.S("sUnit"), NativeConfiguration());
+    Assert.False(result.dtor_complete);
+    Assert.True(result.dtor_error.is_Some);
+    Assert.StartsWith("invalid input:", result.dtor_error.dtor_value.ToVerbatimString(false));
+    Assert.Empty(result.dtor_attempts);
+  }
+
   private sealed class PackageFixture : IDisposable {
     public string Directory { get; } = Path.Combine(Path.GetTempPath(), "b3-host-" + Guid.NewGuid().ToString("N"));
     public WorkerPackage Package { get; }
