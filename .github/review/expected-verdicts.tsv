@@ -304,7 +304,7 @@ dafny2/TreeBarrier.dfy	0	7 verified, 0 errors
 dafny2/TreeFill.dfy	0	3 verified, 0 errors	
 dafny2/TuringFactorial.dfy	0	3 verified, 0 errors	
 dafny2/pq-intrinsic-extrinsic.dfy	4	31 verified, 0 errors, 1 out of resource; 2 out of resource	222
-dafny3/Abstemious.dfy	0	21 verified, 0 errors	
+dafny3/Abstemious.dfy	4	21 verified, 5 errors	90,100,110,115
 dafny3/AbstemiousErrors.dfy	4	0 verified, 5 errors	39,47,53,60,68
 dafny3/CachedContainer.dfy	0	27 verified, 0 errors	
 dafny3/CalcExample.dfy	0	2 verified, 0 errors	
@@ -322,8 +322,8 @@ dafny3/SetIterations.dfy	0	8 verified, 0 errors
 dafny3/SimpleCoinduction.dfy	0	13 verified, 0 errors	
 dafny3/SimpleInduction.dfy	0	10 verified, 0 errors	
 dafny3/Streams.dfy	0	29 verified, 0 errors	
-dafny3/WideTrees.dfy	0	6 verified, 0 errors	
-dafny3/Zip.dfy	0	8 verified, 0 errors	
+dafny3/WideTrees.dfy	4	5 verified, 1 error	50
+dafny3/Zip.dfy	4	3 verified, 5 errors	43,74,80,92,98
 dafny4/ACL2-extractor.dfy	0	32 verified, 0 errors	
 dafny4/Ackermann.dfy	0	14 verified, 0 errors	
 dafny4/BinarySearch.dfy	4	6 verified, 1 error	43
@@ -397,7 +397,7 @@ dafny4/Bug92.dfy	0	9 verified, 0 errors
 dafny4/Bug93.dfy	4	0 verified, 2 errors	17,34
 dafny4/Bug94.dfy	0	1 verified, 0 errors	
 dafny4/Bug99.dfy	0	1 verified, 0 errors	
-dafny4/Circ.dfy	0	3 verified, 0 errors	
+dafny4/Circ.dfy	4	2 verified, 1 error	18
 dafny4/ClassRefinement.dfy	0	11 verified, 0 errors	
 dafny4/CoqArt-InsertionSort.dfy	0	21 verified, 0 errors	
 dafny4/ExpandedGuardednessNeg.dfy	4	0 verified, 4 errors	8,13
@@ -596,6 +596,50 @@ git-issues/git-issue-142-negative.dfy	4	1 verified, 12 errors	10,14,18,22,26,31,
 git-issues/git-issue-142-runtime.dfy	0	1 verified, 0 errors	
 git-issues/git-issue-142.dfy	0	10 verified, 0 errors	
 git-issues/git-issue-1423.dfy	0	4 verified, 0 errors	
+git-issues/git-issue-143-codatatype-abstemious-constructor-helper-negative.dfy	4	1 verified, 1 error	8
+git-issues/git-issue-143-codatatype-abstemious-constructor-helper-positive.dfy	4	1 verified, 2 errors	10,14
+git-issues/git-issue-143-codatatype-abstemious-constructor-helper-typed-negative.dfy	4	1 verified, 1 error	9
+git-issues/git-issue-143-codatatype-abstemious-constructor-nat-helper-negative.dfy	4	1 verified, 2 errors	7
+git-issues/git-issue-143-codatatype-arrow-application-negative.dfy	4	1 verified, 1 error	7
+git-issues/git-issue-143-codatatype-clean-even-nonvacuity-negative.dfy	4	3 verified, 1 error	15
+git-issues/git-issue-143-codatatype-clean-match-nonvacuity-negative.dfy	4	2 verified, 1 error	8
+git-issues/git-issue-143-codatatype-clean-nat-nonvacuity-negative.dfy	4	2 verified, 1 error	13
+git-issues/git-issue-143-codatatype-clean-raw-nonvacuity-negative.dfy	4	1 verified, 1 error	13
+git-issues/git-issue-143-codatatype-constructor-default-negative.dfy	4	1 verified, 1 error	7
+git-issues/git-issue-143-codatatype-constructor-double-default-negative.dfy	4	1 verified, 1 error	6
+git-issues/git-issue-143-codatatype-constructor-owned-default-nonvacuity-negative.dfy	4	2 verified, 1 error	8
+git-issues/git-issue-143-codatatype-constructor-owned-default-positive.dfy	0	2 verified, 0 errors	
+git-issues/git-issue-143-codatatype-destructive-guarded-observation-positive.dfy	4	1 verified, 2 errors	10,15
+git-issues/git-issue-143-codatatype-destructive-tail-observation-positive.dfy	4	1 verified, 1 error	10
+git-issues/git-issue-143-codatatype-even-nonvacuity-negative.dfy	4	2 verified, 2 errors	11,12
+git-issues/git-issue-143-codatatype-extreme-prefix-positive.dfy	0	4 verified, 0 errors	
+git-issues/git-issue-143-codatatype-field-first-negative.dfy	4	1 verified, 1 error	7
+git-issues/git-issue-143-codatatype-generic-constructor-default-negative.dfy	4	1 verified, 1 error	5
+git-issues/git-issue-143-codatatype-generic-field-negative.dfy	4	1 verified, 1 error	7
+git-issues/git-issue-143-codatatype-helper-default-negative.dfy	4	1 verified, 1 error	8
+git-issues/git-issue-143-codatatype-helper-let-negative.dfy	4	1 verified, 1 error	8
+git-issues/git-issue-143-codatatype-helper-match-negative.dfy	4	1 verified, 1 error	8
+git-issues/git-issue-143-codatatype-inductive-positive.dfy	0	2 verified, 0 errors	
+git-issues/git-issue-143-codatatype-lambda-container-negative.dfy	4	1 verified, 2 errors	7
+git-issues/git-issue-143-codatatype-lambda-result-negative.dfy	4	1 verified, 1 error	7
+git-issues/git-issue-143-codatatype-let-field-negative.dfy	4	1 verified, 1 error	7
+git-issues/git-issue-143-codatatype-let-pattern-negative.dfy	4	1 verified, 1 error	7
+git-issues/git-issue-143-codatatype-let-tail-negative.dfy	4	1 verified, 1 error	7
+git-issues/git-issue-143-codatatype-match-field-negative.dfy	4	1 verified, 1 error	7
+git-issues/git-issue-143-codatatype-match-observation-positive.dfy	4	1 verified, 1 error	9
+git-issues/git-issue-143-codatatype-match-tail-negative.dfy	4	1 verified, 1 error	7
+git-issues/git-issue-143-codatatype-mutual-constructor-default-negative.dfy	4	1 verified, 2 errors	6
+git-issues/git-issue-143-codatatype-mutual-field-negative.dfy	4	1 verified, 2 errors	7,8
+git-issues/git-issue-143-codatatype-nat-field-negative.dfy	4	1 verified, 1 error	6
+git-issues/git-issue-143-codatatype-nested-payload-negative.dfy	4	1 verified, 1 error	8
+git-issues/git-issue-143-codatatype-ordinary-constant-default-positive.dfy	0	2 verified, 0 errors	
+git-issues/git-issue-143-codatatype-productive-positive.dfy	0	19 verified, 0 errors	
+git-issues/git-issue-143-codatatype-productive-runtime.dfy	0	19 verified, 0 errors	
+git-issues/git-issue-143-codatatype-raw-nonvacuity-negative.dfy	4	1 verified, 2 errors	10,11
+git-issues/git-issue-143-codatatype-two-constructors-negative.dfy	4	1 verified, 1 error	7
+git-issues/git-issue-143-codatatype-typed-self-observation-negative.dfy	4	1 verified, 1 error	8
+git-issues/git-issue-143-codatatype-update-negative.dfy	4	1 verified, 1 error	7
+git-issues/git-issue-143.dfy	4	1 verified, 1 error	7
 git-issues/git-issue-1435.dfy	4	1 verified, 1 error	6
 git-issues/git-issue-145-nonvacuity.dfy	4	2 verified, 2 errors	9,15
 git-issues/git-issue-145.dfy	0	6 verified, 0 errors	
