@@ -11,6 +11,8 @@ using VCGeneration;
 
 namespace Microsoft.Dafny;
 
+public record AssertionBatchResult(Implementation Implementation, VerificationRunResult Result);
+
 /// <summary>Preserves the existing Boogie task execution, cache, splitting and result objects.</summary>
 public sealed class BoogieVerificationBackend : IVerificationBackend {
   public ExecutionEngine Engine { get; }
@@ -68,7 +70,14 @@ public sealed class BoogieVerificationWorkItem : IVerificationWorkItem {
   };
 
   private static VerificationResult ConvertResult(VerificationRunResult result) {
-    result.ComputePerAssertOutcomes(out var outcomes, out var counterexamples);
+    Dictionary<AssertCmd, SolverOutcome> outcomes;
+    Dictionary<AssertCmd, Counterexample> counterexamples;
+    if (result.Outcome == SolverOutcome.Valid) {
+      outcomes = result.Asserts.Distinct().ToDictionary(assertion => assertion, _ => SolverOutcome.Valid);
+      counterexamples = new();
+    } else {
+      result.ComputePerAssertOutcomes(out outcomes, out counterexamples);
+    }
     var assertions = result.Asserts.Select(assertion => {
       counterexamples.TryGetValue(assertion, out var counterexample);
       var secondary = counterexample switch {
