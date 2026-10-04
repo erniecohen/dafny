@@ -16,6 +16,10 @@ on:
     branches: ['review/**', 'dev']
   workflow_dispatch:
     inputs:
+      b3_full_gate:
+        description: Also run the verifying B3 worker bootstrap and real Dafny corpus with b3_compile_only
+        type: boolean
+        default: false
       b3_compile_only:
         description: Record native B3 compilation and contract checks without verifier workloads (scratch branches only)
         type: boolean
@@ -597,11 +601,12 @@ jobs:
 
   b3-native-compile:
     if: ${{ inputs.b3_compile_only == true }}
-    name: B3 native compilation probe
+    name: B3 compilation and optional integration probe
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
       contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -613,7 +618,15 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Record compiler and contract checks
+      - name: Record compiler, contract and optional integration checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          B3_FULL_GATE: ${{ inputs.b3_full_gate }}
+          B3_BUILD_CORES: '2'
+          DOTNET_PROCESSOR_COUNT: '1'
+          DOTNET_GCHeapHardLimit: '40000000'
+          DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER: '1'
+          MSBUILDDISABLENODEREUSE: '1'
         run: python3 .github/review/b3-native-compile.py
       - uses: actions/upload-artifact@v4
         if: always()
@@ -622,4 +635,5 @@ jobs:
           path: |
             out/b3-native-compile
             Binaries/net8.0
+            build/b3-host-tests
           retention-days: 14
