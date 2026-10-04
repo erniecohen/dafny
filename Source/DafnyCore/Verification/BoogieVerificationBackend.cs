@@ -60,7 +60,15 @@ public sealed class BoogieVerificationWorkItem : IVerificationWorkItem {
   public VerificationStatus CacheStatus => ConvertStatus(Task.CacheStatus);
   public bool IsIdle => Task.IsIdle;
   public IVerificationWorkItem FromSeed(int newSeed) => new BoogieVerificationWorkItem(Task.FromSeed(newSeed));
-  public IObservable<VerificationStatus>? TryRun() => Task.TryRun()?.Select(ConvertStatus);
+  public IObservable<VerificationStatus>? TryRun() {
+    var started = DateTime.UtcNow;
+    // Boogie terminates a cancelled run with Stale. CacheStatus remains stale so a later run can restart.
+    return Task.TryRun()?.Select(status => status is Stale
+      ? new VerificationCompleted(new VerificationResult(VerificationOutcome.Cancelled,
+        Array.Empty<DafnyDiagnostic>(), Array.Empty<VerificationAssertion>(), false,
+        started, DateTime.UtcNow - started, null, 0))
+      : ConvertStatus(status));
+  }
   public void Cancel() => Task.Cancel();
 
   private static VerificationStatus ConvertStatus(IVerificationStatus status) => status switch {

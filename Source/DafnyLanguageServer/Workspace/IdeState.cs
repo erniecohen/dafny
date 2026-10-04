@@ -530,6 +530,8 @@ public record IdeState(
         return PublishedVerificationStatus.Queued;
       case VerificationRunning:
         return PublishedVerificationStatus.Running;
+      case VerificationCompleted { Result.Outcome: VerificationOutcome.Cancelled }:
+        return PublishedVerificationStatus.Stale;
       case VerificationCompleted completed:
         return completed.Result.IsVerified
           ? PublishedVerificationStatus.Correct
