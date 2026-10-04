@@ -1,5 +1,7 @@
 name: Issue 112 diagnostic probe
 on:
+  push:
+    branches: ['scratch/issue112/diagnose']
   workflow_dispatch:
 permissions:
   contents: read
