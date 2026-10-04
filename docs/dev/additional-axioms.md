@@ -484,8 +484,9 @@ method M(c: C) requires c.x != 5 modifies c ensures false {
 
 At `L` the reads frame of `f` is `{c}`, so `f` is allocated there. The call makes
 `$HeapSucc(L, K)`, and monotonicity makes `f` allocated at `K`, where its reads
-frame holds `n`, which is not allocated until after `K`. That defect is in `T`
-and does not depend on this member, which neither repairs nor extends it: the
+frame holds `n`, which is not allocated until after `K`. That defect
+([#132](https://github.com/erniecohen/dafny/issues/132)) is in `T` and does not
+depend on this member, which neither repairs nor extends it: the
 pairs it adds relate a heap only to itself.
 
 Before #81, every good update was a succession step, and with extensional heaps
