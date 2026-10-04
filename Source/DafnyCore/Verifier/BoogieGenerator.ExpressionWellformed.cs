@@ -1001,6 +1001,21 @@ namespace Microsoft.Dafny {
 
             if (e is ConversionExpr ee) {
               CheckResultToBeInType(unaryExpr.Origin, ee.E, ee.ToType, locals, builder, etran, ee.messagePrefix);
+              if (options.Get(CommonOptionBag.ExtendedNewtypeBases) && ee.Type.Equals(ee.ToType, true)) {
+                var sourceView = NewtypeOperationView.Get(ee.E.Type, preserveSubsetTypes: true);
+                var destinationView = NewtypeOperationView.Get(ee.ToType, preserveSubsetTypes: true);
+                if (sourceView.Status == NewtypeOperationView.ViewStatus.Resolved &&
+                    destinationView.Status == NewtypeOperationView.ViewStatus.Resolved &&
+                    sourceView.BaseType.AsArrowType != null && destinationView.BaseType.AsArrowType != null &&
+                    sourceView.BaseType.Equals(destinationView.BaseType, true) &&
+                    (ee.IsBaseOperation || sourceView.Path.Any(d => d is NewtypeDecl) ||
+                     destinationView.Path.Any(d => d is NewtypeDecl))) {
+                  // An identity conversion retains this exact instantiated arrow
+                  // family and HandleType value. The complete destination check
+                  // above already checks that value at this same result type.
+                  break;
+                }
+              }
             }
 
             CheckResultToBeInType(expr.Origin, expr, expr.Type, locals, builder, etran);
