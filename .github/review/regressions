@@ -41,3 +41,7 @@ traits/cardinality-independent-facades.dfy
 
 # Documentation of an explicitly reference-only trait hierarchy.
 dafnydoc/doc1/TestDafnyDoc.dfy
+git-issues/git-issue-142.dfy
+git-issues/git-issue-142-negative.dfy
+git-issues/git-issue-142-legacy.dfy
+git-issues/git-issue-142-runtime.dfy
