@@ -67,6 +67,13 @@ class CoCallResolution {
       CheckCoCalls(conversion.E, destructionLevel, coContext, coCandidates, functionYouMayWishWereAbstemious);
       return;
     }
+    if (expr is ConversionExpr refiningConversion &&
+        NewtypeOperationView.IsCoDatatypeRefiningConversion(refiningConversion, extendedNewtypeBases)) {
+      // A destination predicate may observe arbitrarily deeply. Infinity also
+      // prevents a constructor nested inside the cast from recreating a guard.
+      CheckCoCalls(refiningConversion.E, int.MaxValue, null, coCandidates);
+      return;
+    }
     if (expr is DatatypeValue) {
       var e = (DatatypeValue)expr;
       if (e.Ctor.EnclosingDatatype is CoDatatypeDecl) {

@@ -95,6 +95,26 @@ public static class NewtypeOperationView {
       _ => false
     });
 
+  private static bool ContainsNewtypeCoDatatypeExpression(Expression expression) {
+    expression = expression.Resolved;
+    if (expression.Type != null) {
+      var view = GetCoDatatypeView(expression.Type);
+      if (view.BaseType?.IsCoDatatype == true && view.Path.Any(d => d is NewtypeDecl)) {
+        return true;
+      }
+    }
+    return expression.SubExpressions.Any(ContainsNewtypeCoDatatypeExpression);
+  }
+
+  public static bool IsCoDatatypeRefiningConversion(ConversionExpr conversion, bool extendedNewtypeBases) {
+    if (!extendedNewtypeBases) {
+      return false;
+    }
+    var destination = GetCoDatatypeView(conversion.Type);
+    return destination.BaseType?.IsCoDatatype == true && HasNontrivialRefinement(destination) &&
+      (destination.Path.Any(d => d is NewtypeDecl) || ContainsNewtypeCoDatatypeExpression(conversion.E));
+  }
+
   // A strengthened result type is an implicit postcondition. The existing
   // co-call rule must not assume it while proving that same result constraint.
   public static bool HasConstrainedCoDatatypeResult(Type nominal, bool extendedNewtypeBases) {
