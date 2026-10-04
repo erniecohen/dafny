@@ -273,7 +273,7 @@ dafny1/MatrixFun.dfy	0	6 verified, 0 errors
 dafny1/MoreInduction.dfy	4	26 verified, 4 errors	78,83,88,93
 dafny1/PriorityQueue.dfy	0	22 verified, 0 errors	
 dafny1/Queue.dfy	0	18 verified, 0 errors	
-dafny1/SchorrWaite-stages.dfy	4	5 verified, 0 errors, 2 out of resource; 3 out of resource	36,197
+dafny1/SchorrWaite-stages.dfy	4	6 verified, 0 errors, 1 out of resource; 2 out of resource	36
 dafny1/SchorrWaite.dfy	0	272 verified, 0 errors	
 dafny1/SeparationLogicList.dfy	0	13 verified, 0 errors	
 dafny1/Substitution.dfy	0	9 verified, 0 errors	
