@@ -1,0 +1,1 @@
+The default-off `--additional-axioms` option also instantiates the existing allocation consequence axiom of a function that reads no heap and takes no references where the function is applied, so that the members of its result are known to be allocated, as the translation of a quantifier over those members already takes them to be.

@@ -105,5 +105,8 @@ git-issues/git-issue-2463.dfy
 # Termination of two-state recursion (#93 here).
 git-issues/git-issue-1462.dfy
 
+# Allocation of function results at their applications (#95 here).
+git-issues/git-issue-1416.dfy
+
 # Reflexivity of heap succession at two-state function values (#94 here).
 git-issues/git-issue-1461.dfy
