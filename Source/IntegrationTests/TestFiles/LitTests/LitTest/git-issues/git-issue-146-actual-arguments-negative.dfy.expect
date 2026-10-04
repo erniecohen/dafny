@@ -1,0 +1,3 @@
+git-issue-146-actual-arguments-negative.dfy(16,4): Error: assertion could not be proved
+
+Dafny program verifier finished with 1 verified, 1 error
