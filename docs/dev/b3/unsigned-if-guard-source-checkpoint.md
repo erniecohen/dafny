@@ -40,7 +40,11 @@ Body, lambda or declaration. A field-view depth/cycle failure rejects the unit
 without partial output, even when its occurrence expression is finite. This
 conservative admission restriction is explicit and exercised in the source
 controls. The one pinned TypeProxy backing field is read to avoid the public
-getter's path compression; reflective structural equality is not used.
+getter's path compression; reflective structural equality is not used. Only the
+exact SimpleTypeParamInstantiation is admitted by this field view: the pinned
+private MapTypeProxyParamInstantiation getters can compress proxy paths or create
+an instantiation cache and are therefore conservatively rejected before reading
+them. This is another read-only admission boundary, not a map-root extension.
 
 After the full original normalized tree and its wrappers are assembled and pass
 owned bounds, `BindOriginalGuardOccurrences` records the owned Conditional's

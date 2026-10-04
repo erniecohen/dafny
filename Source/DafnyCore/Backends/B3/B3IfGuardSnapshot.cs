@@ -149,6 +149,10 @@ internal sealed class B3IfGuardSnapshot {
         case Bpl.NAryExpr application:
           Appliable(application.Fun, depth + 1); Ref(application.TypeParameters);
           if (application.TypeParameters != null) {
+            // Pinned MapTypeProxyParamInstantiation getters can compress proxy
+            // paths or initialize a cache. Do not execute them in this field view.
+            Require(application.TypeParameters.GetType() == typeof(Bpl.SimpleTypeParamInstantiation),
+              "Unsupported read-only type instantiation in guard field view", token);
             var parameters = application.TypeParameters.FormalTypeParams;
             Types(parameters, depth + 1);
             foreach (var parameter in parameters) { Type(application.TypeParameters[parameter], depth + 1); }

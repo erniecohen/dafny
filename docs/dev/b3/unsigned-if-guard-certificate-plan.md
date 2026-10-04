@@ -217,6 +217,9 @@ identifier declarations, old/extract/concat indices, binder/let variables and
 expression-valued metadata. Use typed pinned API fields, not reflection-based
 structural equality, unbounded ToString, names or a generic ContentHash. Any
 source constructor not covered by the audited view rejects this new route.
+For type-instantiation metadata the implementation admits only the exact
+SimpleTypeParamInstantiation: the pinned private proxy-backed implementation has
+mutating getters, so its field view is conservatively rejected before reading.
 The implementation initially rejects cycles reached through a variable's where
 expression or a referenced function Body/DefinitionBody at the existing depth
 bound, even if the guard occurrence tree itself is finite. Its supported guard
