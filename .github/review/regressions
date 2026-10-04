@@ -95,6 +95,9 @@ dafnydoc/doc1/TestDafnyDoc.dfy
 git-issues/github-issue-74.dfy
 git-issues/github-issue-28.dfy
 git-issues/github-issue-85.dfy
+git-issues/github-issue-108.dfy
+git-issues/github-issue-110.dfy
+git-issues/github-issue-111.dfy
 
 # Heap-update succession (#81 here).
 git-issues/git-issue-2463.dfy
