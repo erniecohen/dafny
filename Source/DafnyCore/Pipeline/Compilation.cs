@@ -22,7 +22,7 @@ using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 namespace Microsoft.Dafny;
 
 public delegate Compilation CreateCompilation(
-  ExecutionEngine boogieEngine,
+  IVerificationBackend verificationBackend,
   CompilationInput compilation);
 
 public record FilePosition(Uri Uri, Position Position);
@@ -48,15 +48,15 @@ public class Compilation : IDisposable {
   /// FilePosition is required because the default module lives in multiple files
   /// </summary>
   private readonly LazyConcurrentDictionary<ModuleDefinition,
-    Task<IReadOnlyDictionary<ICanVerify, IReadOnlyList<IVerificationTask>>>> translatedModules = new();
+    Task<IReadOnlyDictionary<ICanVerify, IReadOnlyList<IVerificationWorkItem>>>> translatedModules = new();
 
   private readonly ConcurrentDictionary<ICanVerify, Unit> verifyingOrVerifiedSymbols = new();
-  private readonly LazyConcurrentDictionary<ICanVerify, IReadOnlyList<IVerificationTask>> tasksPerVerifiable = new();
+  private readonly LazyConcurrentDictionary<ICanVerify, IReadOnlyList<IVerificationWorkItem>> tasksPerVerifiable = new();
 
   public DafnyOptions Options => Input.Options;
   public CompilationInput Input { get; }
   public DafnyProject Project => Input.Project;
-  private readonly ExecutionEngine boogieEngine;
+  private readonly IVerificationBackend verificationBackend;
 
   private readonly Subject<ICompilationEvent> updates = new();
   public IObservable<ICompilationEvent> Updates => updates;
@@ -82,11 +82,11 @@ public class Compilation : IDisposable {
     IFileSystem fileSystem,
     ITextDocumentLoader documentLoader,
     IProgramVerifier verifier,
-    ExecutionEngine boogieEngine,
+    IVerificationBackend verificationBackend,
     CompilationInput input
     ) {
     Input = input;
-    this.boogieEngine = boogieEngine;
+    this.verificationBackend = verificationBackend;
 
     this.documentLoader = documentLoader;
     this.logger = logger;
@@ -284,21 +284,13 @@ public class Compilation : IDisposable {
     return resolution;
   }
 
-  public static string GetTaskName(IVerificationTask task) {
-    var prefix = task.ScopeId + task.Split.SplitIndex;
-
-    // Refining declarations get the token of what they're refining, so to distinguish them we need to
-    // add the refining module name to the prefix.
-    if (task.ScopeToken is RefinementOrigin refinementToken) {
-      prefix += "." + refinementToken.InheritingModule.Name;
-    }
-
-    return prefix;
+  public static string GetTaskName(IVerificationWorkItem task) {
+    return task.Identity.Key;
   }
 
   // When verifying a symbol, a ticket must be acquired before the SMT part of verification may start.
   private readonly AsyncQueue<Unit> verificationTickets = new();
-  public async Task<bool> VerifyLocation(FilePosition verifiableLocation, Func<IVerificationTask, bool>? taskFilter = null,
+  public async Task<bool> VerifyLocation(FilePosition verifiableLocation, Func<IVerificationWorkItem, bool>? taskFilter = null,
     int? randomSeed = null,
     bool onlyPrepareVerificationForGutterTests = false) {
     cancellationSource.Token.ThrowIfCancellationRequested();
@@ -329,7 +321,7 @@ public class Compilation : IDisposable {
     return [];
   }
 
-  public async Task<bool> VerifyCanVerify(ICanVerify canVerify, Func<IVerificationTask, bool> taskFilter,
+  public async Task<bool> VerifyCanVerify(ICanVerify canVerify, Func<IVerificationWorkItem, bool> taskFilter,
     int? randomSeed = 0,
     bool onlyPrepareVerificationForGutterTests = false) {
 
@@ -359,24 +351,23 @@ public class Compilation : IDisposable {
   }
 
   private async Task VerifyUnverifiedSymbol(bool onlyPrepareVerificationForGutterTests, ICanVerify canVerify,
-    ResolutionResult resolution, Func<IVerificationTask, bool> taskFilter, int? randomSeed) {
+    ResolutionResult resolution, Func<IVerificationWorkItem, bool> taskFilter, int? randomSeed) {
     try {
 
       var ticket = verificationTickets.Dequeue();
       var containingModule = canVerify.ContainingModule;
 
-      IReadOnlyDictionary<ICanVerify, IReadOnlyList<IVerificationTask>> tasksForModule;
+      IReadOnlyDictionary<ICanVerify, IReadOnlyList<IVerificationWorkItem>> tasksForModule;
       try {
         tasksForModule = await translatedModules.GetOrAdd(containingModule, async () => {
-          var result = await verifier.GetVerificationTasksAsync(boogieEngine, resolution, containingModule,
+          var result = await verifier.GetVerificationTasksAsync(verificationBackend, resolution, containingModule,
             cancellationSource.Token);
 
           return result.GroupBy(t => {
-            var dafnyToken = (CanVerifyOrigin)t.ScopeToken;
-            return dafnyToken.CanVerify;
+            return t.Source.CanVerify;
           }).ToDictionary(
             g => g.Key,
-            g => (IReadOnlyList<IVerificationTask>)g.ToList());
+            g => (IReadOnlyList<IVerificationWorkItem>)g.ToList());
         });
       } catch (OperationCanceledException) {
         throw;
@@ -390,7 +381,7 @@ public class Compilation : IDisposable {
       var tasks = tasksPerVerifiable.GetOrAdd(canVerify, () => {
         var result =
           tasksForModule.GetValueOrDefault(canVerify) ??
-          new List<IVerificationTask>(0);
+          new List<IVerificationWorkItem>(0);
 
         updated = true;
         return result;
@@ -406,9 +397,8 @@ public class Compilation : IDisposable {
         var groups = GroupOverlappingRanges(tasks).
           OrderBy(g => g.Group.StartToken);
         foreach (var tokenTasks in groups) {
-          var functions = tokenTasks.Tasks.SelectMany(t => t.Split.HiddenFunctions.Select(f => f.tok).
-            OfType<FromDafnyNode>().Select(n => n.Node).
-            OfType<Function>()).Distinct().OrderBy(f => f.Origin.Center);
+          var functions = tokenTasks.Tasks.SelectMany(t => t.Source.HiddenFunctions)
+            .Distinct().OrderBy(f => f.Origin.Center);
           var hiddenFunctions = string.Join(", ", functions.Select(f => f.FullDafnyName));
           if (!string.IsNullOrEmpty(hiddenFunctions)) {
             Reporter.Info(MessageSource.Verifier,
@@ -431,19 +421,19 @@ public class Compilation : IDisposable {
   }
 
 
-  public static IEnumerable<(TokenRange Group, List<IVerificationTask> Tasks)> GroupOverlappingRanges(IReadOnlyList<IVerificationTask> ranges) {
+  public static IEnumerable<(TokenRange Group, List<IVerificationWorkItem> Tasks)> GroupOverlappingRanges(IReadOnlyList<IVerificationWorkItem> ranges) {
     if (!ranges.Any()) {
       return [];
     }
     var sortedTasks = ranges.OrderBy(r =>
-      BoogieGenerator.ToDafnyToken(r.Token).ReportingRange.StartToken).ToList();
-    var groups = new List<(TokenRange Group, List<IVerificationTask> Tasks)>();
-    var currentGroup = new List<IVerificationTask> { sortedTasks[0] };
-    var currentGroupRange = BoogieGenerator.ToDafnyToken(currentGroup[0].Token).ReportingRange;
+      r.Source.Origin.ReportingRange.StartToken).ToList();
+    var groups = new List<(TokenRange Group, List<IVerificationWorkItem> Tasks)>();
+    var currentGroup = new List<IVerificationWorkItem> { sortedTasks[0] };
+    var currentGroupRange = currentGroup[0].Source.Origin.ReportingRange;
 
     for (int i = 1; i < sortedTasks.Count; i++) {
       var currentTask = sortedTasks[i];
-      var currentTaskRange = BoogieGenerator.ToDafnyToken(currentTask.Token).ReportingRange;
+      var currentTaskRange = currentTask.Source.Origin.ReportingRange;
       bool overlapsWithGroup = currentGroupRange.Intersects(currentTaskRange);
 
       if (overlapsWithGroup) {
@@ -462,10 +452,10 @@ public class Compilation : IDisposable {
     return groups;
   }
 
-  private void VerifyTask(ICanVerify canVerify, IVerificationTask task) {
+  private void VerifyTask(ICanVerify canVerify, IVerificationWorkItem task) {
     var statusUpdates = task.TryRun();
     if (statusUpdates == null) {
-      if (task.CacheStatus is Completed completedCache) {
+      if (task.CacheStatus is VerificationCompleted completedCache) {
         HandleStatusUpdate(canVerify, task, completedCache);
       }
 
@@ -481,7 +471,7 @@ public class Compilation : IDisposable {
         }
       },
       e => {
-        updates.OnNext(new BoogieException(canVerify, task, e));
+        updates.OnNext(new VerificationException(canVerify, task, e));
         if (e is not OperationCanceledException) {
           logger.LogError(e, $"Caught error in statusUpdates observable.");
         }
@@ -498,7 +488,7 @@ public class Compilation : IDisposable {
     var canVerifies = GetCanVerify(filePosition, resolution);
     foreach (var canVerify in canVerifies) {
       var implementations = tasksPerVerifiable.TryGetValue(canVerify, out var implementationsPerName)
-        ? implementationsPerName! : Enumerable.Empty<IVerificationTask>();
+        ? implementationsPerName! : Enumerable.Empty<IVerificationWorkItem>();
       foreach (var view in implementations) {
         view.Cancel();
       }
@@ -506,11 +496,11 @@ public class Compilation : IDisposable {
     }
   }
 
-  private void HandleStatusUpdate(ICanVerify canVerify, IVerificationTask verificationTask, IVerificationStatus boogieStatus) {
-    var tokenString = BoogieGenerator.ToDafnyToken(verificationTask.Split.Token).OriginToString(Options);
-    logger.LogDebug($"Received Boogie status {boogieStatus} for {tokenString}, version {Input.Version}");
+  private void HandleStatusUpdate(ICanVerify canVerify, IVerificationWorkItem verificationTask, VerificationStatus boogieStatus) {
+    var tokenString = verificationTask.Source.Origin.OriginToString(Options);
+    logger.LogDebug($"Received verification status {boogieStatus} for {tokenString}, version {Input.Version}");
 
-    updates.OnNext(new BoogieUpdate(transformedProgram!.ProofDependencyManager, canVerify,
+    updates.OnNext(new VerificationUpdate(transformedProgram!.ProofDependencyManager, canVerify,
       verificationTask,
       boogieStatus));
   }
@@ -567,15 +557,31 @@ public class Compilation : IDisposable {
   }
 
   public static List<DafnyDiagnostic> GetDiagnosticsFromResult(DafnyOptions options, Uri uri, ICanVerify canVerify,
-    IVerificationTask task, VerificationRunResult result) {
+    IVerificationWorkItem task, VerificationResult result) {
+    if (task is not BoogieVerificationWorkItem native || result.BoogieResult == null) {
+      return result.Diagnostics.ToList();
+    }
     var errorReporter = new ObservableErrorReporter(options, uri);
     List<DafnyDiagnostic> diagnostics = [];
     errorReporter.Updates.Subscribe(d => diagnostics.Add(d.Diagnostic));
-
-    ReportDiagnosticsInResult(options, canVerify.NavigationRange.StartToken.val, BoogieGenerator.ToDafnyToken(task.Token),
-      task.Split.Implementation.GetTimeLimit(options), result, errorReporter);
-
+    ReportDiagnosticsInResult(options, canVerify.NavigationRange.StartToken.val, task.Source.Origin,
+      native.Task.Split.Implementation.GetTimeLimit(options), result.BoogieResult, errorReporter);
     return diagnostics.OrderBy(d => d.Range.StartToken.GetLspPosition()).ToList();
+  }
+
+  public static void ReportDiagnosticsInResult(DafnyOptions options, ICanVerify canVerify,
+    IVerificationWorkItem task, VerificationResult result, ErrorReporter reporter) {
+    if (result.BoogieResult != null) {
+      // Retain the legacy CLI diagnostic parameters and formatting exactly.
+      ReportDiagnosticsInResult(options, canVerify.FullDafnyName, task.Source.Origin,
+        (uint)result.RunTime.TotalSeconds, result.BoogieResult, reporter);
+    } else {
+      foreach (var diagnostic in result.Diagnostics) { reporter.MessageCore(diagnostic); }
+      if (!result.IsVerified && result.Diagnostics.Count == 0) {
+        reporter.Error(MessageSource.Verifier, task.Source.Origin,
+          $"Verification {result.Outcome.ToString().ToLowerInvariant()} for '{canVerify.FullDafnyName}'");
+      }
+    }
   }
 
   public static void ReportDiagnosticsInResult(DafnyOptions options, string name, IOrigin token,

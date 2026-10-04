@@ -1,4 +1,4 @@
-﻿using Microsoft.Boogie;
+using Microsoft.Boogie;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -26,7 +26,7 @@ namespace Microsoft.Dafny.LanguageServer.Language {
       this.logger = logger;
     }
 
-    public async Task<IReadOnlyList<IVerificationTask>> GetVerificationTasksAsync(ExecutionEngine engine,
+    public async Task<IReadOnlyList<IVerificationWorkItem>> GetVerificationTasksAsync(IVerificationBackend backend,
       ResolutionResult resolution,
       ModuleDefinition moduleDefinition,
       CancellationToken cancellationToken) {
@@ -46,7 +46,7 @@ namespace Microsoft.Dafny.LanguageServer.Language {
         var boogieProgram = await DafnyMain.LargeStackFactory.StartNew(() => {
           Type.ResetScopes();
           var translatorFlags = new BoogieGenerator.TranslatorFlags(errorReporter.Options) {
-            InsertChecksums = 0 < engine.Options.VerifySnapshots,
+            InsertChecksums = 0 < program.Options.VerifySnapshots,
             ReportRanges = program.Options.Get(Snippets.ShowSnippets)
           };
           var translator = new BoogieGenerator(errorReporter, resolution.ResolvedProgram.ProofDependencyManager, translatorFlags);
@@ -56,13 +56,16 @@ namespace Microsoft.Dafny.LanguageServer.Language {
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (engine.Options.PrintFile != null) {
+        if (program.Options.PrintFile != null) {
           var moduleCount = BoogieGenerator.VerifiableModules(program).Count();
-          var fileName = moduleCount > 1 ? DafnyMain.BoogieProgramSuffix(engine.Options.PrintFile, suffix) : engine.Options.PrintFile;
-          ExecutionEngine.PrintBplFile(engine.Options, fileName, boogieProgram, false, false, engine.Options.PrettyPrint);
+          var fileName = moduleCount > 1 ? DafnyMain.BoogieProgramSuffix(program.Options.PrintFile, suffix) : program.Options.PrintFile;
+          ExecutionEngine.PrintBplFile(program.Options, fileName, boogieProgram, false, false, program.Options.PrettyPrint);
         }
 
-        return await engine.GetVerificationTasks(boogieProgram, cancellationToken);
+        if (errorReporter.Count(ErrorLevel.Error) != 0) {
+          throw new InvalidOperationException("Verification preparation failed during translation");
+        }
+        return await backend.PrepareAsync(new VerificationPreparation(resolution, moduleDefinition, boogieProgram), cancellationToken);
       }
       finally {
         mutex.Release();

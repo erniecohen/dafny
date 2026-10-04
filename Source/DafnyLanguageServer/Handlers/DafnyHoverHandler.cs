@@ -119,8 +119,8 @@ namespace Microsoft.Dafny.LanguageServer.Handlers {
             .ToList();
 
         // Put errors in the front. Put assertions with the highest resource count first
-        List<(string content, long resources)> errors = [];
-        List<(string content, long resources)> other = [];
+        List<(string content, long? resources)> errors = [];
+        List<(string content, long? resources)> other = [];
 
         foreach (var assertionBatch in orderedAssertionBatches) {
           if (!assertionBatch.Range.Contains(position)) {
@@ -146,9 +146,9 @@ namespace Microsoft.Dafny.LanguageServer.Handlers {
         }
 
         var biggerResourceCountFirst =
-          Comparer<(string content, long resources)>.Create(
+          Comparer<(string content, long? resources)>.Create(
           (left, right) =>
-            right.resources.CompareTo(left.resources)
+            Nullable.Compare(right.resources, left.resources)
         );
         errors.Sort(biggerResourceCountFirst);
         other.Sort(biggerResourceCountFirst);
@@ -184,7 +184,7 @@ namespace Microsoft.Dafny.LanguageServer.Handlers {
         information += "No assertions.";
       } else if (assertionBatchesToReport.Count >= 1) {
         information += $"- Total resource usage: {FormatResourceCount(node.ResourceCount)}";
-        if (node.ResourceCount > RuLimitToBeOverCostly) {
+        if (node.ResourceCount.GetValueOrDefault() > RuLimitToBeOverCostly) {
           information += OverCostlyMessage;
         }
 
@@ -202,7 +202,7 @@ namespace Microsoft.Dafny.LanguageServer.Handlers {
               resourceCount, bool overCostly)>();
           foreach (var costlierAssertionBatch in assertionBatchesToReport) {
             var item = costlierAssertionBatch.Range.Start.Line + 1;
-            var overCostly = costlierAssertionBatch.ResourceCount > RuLimitToBeOverCostly;
+            var overCostly = costlierAssertionBatch.ResourceCount.GetValueOrDefault() > RuLimitToBeOverCostly;
             result.Add(("#" + costlierAssertionBatch.RelativeNumber, item.ToString(),
               costlierAssertionBatch.Children.Count + "",
               costlierAssertionBatch.Children.Count != 1 ? "s" : "",
@@ -342,6 +342,8 @@ namespace Microsoft.Dafny.LanguageServer.Handlers {
       } else if (assertCmd is AssertEnsuresCmd assertEnsuresCmd) {
         information += GetDescription(assertEnsuresCmd.Description);
         information += MoreInformation(assertEnsuresCmd.Ensures.tok, currentlyHoveringPostcondition);
+      } else if (assertCmd == null && assertionNode.BackendDescription != null) {
+        information += couldProveOrNotPrefix + assertionNode.BackendDescription;
       } else {
         information += GetDescription(assertCmd?.Description);
         if (assertCmd?.tok is NestedOrigin) {
@@ -395,6 +397,9 @@ namespace Microsoft.Dafny.LanguageServer.Handlers {
 
       return nodeResourceCount;
     }
+
+    public static string FormatResourceCount(long? resourceCount) => resourceCount is { } value
+      ? FormatResourceCount(value) : "unavailable";
 
     public static string FormatResourceCount(long nodeResourceCount) {
       var suffix = 0;

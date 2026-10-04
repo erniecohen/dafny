@@ -14,6 +14,13 @@ public class ProofDependencyWarnings {
   private static ProofDependencyManager manager;
 
 
+  public static void ReportSuspiciousDependencies(DafnyOptions dafnyOptions, IEnumerable<VerificationWorkItemResult> parts,
+    ErrorReporter reporter, ProofDependencyManager depManager) {
+    var nativeParts = parts.Where(part => part.Task is BoogieVerificationWorkItem && part.Result.BoogieResult != null)
+      .Select(part => new VerificationTaskResult(((BoogieVerificationWorkItem)part.Task).Task, part.Result.BoogieResult!));
+    ReportSuspiciousDependencies(dafnyOptions, nativeParts, reporter, depManager);
+  }
+
   public static void ReportSuspiciousDependencies(DafnyOptions dafnyOptions, IEnumerable<VerificationTaskResult> parts,
     ErrorReporter reporter, ProofDependencyManager depManager) {
     manager = depManager;

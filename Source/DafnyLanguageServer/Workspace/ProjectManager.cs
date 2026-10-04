@@ -82,7 +82,7 @@ Determine when to automatically verify the program. Choose from: Never, OnChange
   private readonly DafnyOptions options;
   private readonly DafnyOptions serverOptions;
   private readonly CreateCompilation createCompilation;
-  private ExecutionEngine? boogieEngine;
+  private BoogieVerificationBackend? boogieBackend;
   private readonly IFileSystem fileSystem;
   private readonly TelemetryPublisherBase telemetryPublisher;
   private readonly IProjectDatabase projectDatabase;
@@ -162,14 +162,14 @@ Determine when to automatically verify the program. Choose from: Never, OnChange
     TriggerVerificationForFile(triggeringFile);
   }
 
-  private ExecutionEngine GetBoogie() {
+  private IVerificationBackend GetBoogie() {
     if (options.Get(ReuseSolvers)) {
-      boogieEngine ??= new ExecutionEngine(options, cache, scheduler);
+      boogieBackend ??= new BoogieVerificationBackend(new ExecutionEngine(options, cache, scheduler));
     } else {
-      boogieEngine?.Dispose();
-      boogieEngine = new ExecutionEngine(options, cache, scheduler);
+      boogieBackend?.Dispose();
+      boogieBackend = new BoogieVerificationBackend(new ExecutionEngine(options, cache, scheduler));
     }
-    return boogieEngine;
+    return boogieBackend;
   }
 
   private void UpdateRecentChanges(DidChangeTextDocumentParams changes, IMigrator? migrator) {
@@ -384,7 +384,7 @@ Determine when to automatically verify the program. Choose from: Never, OnChange
 
   public void Dispose() {
     IsDisposed = true;
-    boogieEngine?.Dispose();
+    boogieBackend?.Dispose();
     Compilation.Dispose();
     observerSubscription.Dispose();
     // Dispose the update scheduler after the observer subscription, to prevent accessing a disposed object.

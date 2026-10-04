@@ -1,4 +1,4 @@
-﻿using Microsoft.Dafny.LanguageServer.Workspace;
+using Microsoft.Dafny.LanguageServer.Workspace;
 using Moq;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using System;
@@ -71,7 +71,7 @@ namespace Microsoft.Dafny.LanguageServer.IntegrationTest.Unit {
       var engine = new ExecutionEngine(DafnyOptions.Default, new VerificationResultCache(),
         CustomStackSizePoolTaskScheduler.Create(0, 0));
       var compilation = new Compilation(new Mock<ILogger<Compilation>>().Object, new Mock<IFileSystem>().Object, textDocumentLoader,
-        new Mock<IProgramVerifier>().Object, engine, input);
+        new Mock<IProgramVerifier>().Object, new BoogieVerificationBackend(engine), input);
       compilation.RootFiles = Task.FromResult<IReadOnlyList<DafnyFile>>(new[] { file });
       return compilation;
     }

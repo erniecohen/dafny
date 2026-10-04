@@ -1,4 +1,4 @@
-﻿using Microsoft.Dafny.LanguageServer.Language.Symbols;
+using Microsoft.Dafny.LanguageServer.Language.Symbols;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -40,12 +40,12 @@ namespace Microsoft.Dafny.LanguageServer.Language {
             serviceProvider.GetRequiredService<INotificationPublisher>(),
             compilation))
         .AddSingleton(CreateVerifier)
-        .AddSingleton<CreateCompilation>(serviceProvider => (engine, compilation) => new Compilation(
+        .AddSingleton<CreateCompilation>(serviceProvider => (backend, compilation) => new Compilation(
           serviceProvider.GetRequiredService<ILogger<Compilation>>(),
           serviceProvider.GetRequiredService<IFileSystem>(),
           serviceProvider.GetRequiredService<ITextDocumentLoader>(),
           serviceProvider.GetRequiredService<IProgramVerifier>(),
-          engine, compilation
+          backend, compilation
           ))
         .AddSingleton<ISymbolTableFactory, SymbolTableFactory>()
         .AddSingleton<IGhostStateDiagnosticCollector, GhostStateDiagnosticCollector>();

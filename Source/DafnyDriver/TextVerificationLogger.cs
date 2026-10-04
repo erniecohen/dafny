@@ -79,6 +79,21 @@ public class TextVerificationLogger : IVerificationResultFormatLogger {
     textWriter.Flush();
   }
 
+  public void LogNeutralScopeResults(NeutralVerificationScopeResult scope) {
+    output.WriteLine();
+    output.WriteLine($"Results for {scope.Name}");
+    foreach (var part in scope.Results) {
+      output.WriteLine($"  Work item {part.Task.Identity.Key}: {part.Result.Outcome}");
+      output.WriteLine($"    Duration: {part.Result.RunTime}");
+      output.WriteLine($"    Resource count: {part.Result.ResourceCount?.ToString() ?? "unavailable"}");
+      output.WriteLine($"    Traversal completed: {part.Result.TraversalCompleted}");
+      foreach (var assertion in part.Result.Assertions) {
+        output.WriteLine($"      {assertion.Origin.Filepath}({assertion.Origin.line},{assertion.Origin.col}): {assertion.Description}: {assertion.Outcome}");
+      }
+    }
+    output.Flush();
+  }
+
   public async Task Flush() {
     await output.DisposeAsync();
   }
