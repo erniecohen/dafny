@@ -21,7 +21,8 @@ module BitvectorResources {
   function ExprCost(expr: Expr): nat {
     TypeCost(expr.ExprType()) + match expr {
       case BLiteral(_) | ILiteral(_) | RLiteral(_, _) | BvLiteral(_, _) | CustomLiteral(_, _) | IdExpr(_) => 0
-      case OperatorExpr(_, args) | FunctionCallExpr(_, args) => ExprsCost(args)
+      case OperatorExpr(_, args) => ExprsCost(args)
+      case FunctionCallExpr(_, args) => ExprsCost(args)
       case LabeledExpr(_, body) => ExprCost(body)
       case LetExpr(v, rhs, body) => VariableCost(v) + ExprCost(rhs) + ExprCost(body)
       case QuantifierExpr(_, vv, patterns, body) =>
@@ -56,10 +57,14 @@ module BitvectorResources {
     case VarDecl(v, initial, body) => VariableCost(v) + AutoInvariantCost(v) + (if initial.Some? then ExprCost(initial.value) else 0) + StmtCost(body)
     case Assign(v, rhs) => VariableCost(v) + ExprCost(rhs)
     case Reinit(vv) => VariablesCost(vv)
-    case Block(stmts) | Choose(stmts) => StmtsCost(stmts)
+    case Block(stmts) => StmtsCost(stmts)
+    case Choose(stmts) => StmtsCost(stmts)
     case Call(_, args) => ArgumentsCost(args)
-    case Check(cond, _) | Assert(cond, _) | Reach(cond, _) => ExprCost(cond)
-    case Assume(cond) | Probe(cond) => ExprCost(cond)
+    case Check(cond, _) => ExprCost(cond)
+    case Assert(cond, _) => ExprCost(cond)
+    case Reach(cond, _) => ExprCost(cond)
+    case Assume(cond) => ExprCost(cond)
+    case Probe(cond) => ExprCost(cond)
     case AForall(v, body) => VariableCost(v) + StmtCost(body)
     case Loop(invariants, body) => AExprsCost(invariants) + StmtCost(body)
     case LabeledStmt(_, body) => StmtCost(body)

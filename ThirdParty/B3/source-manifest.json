@@ -7,7 +7,7 @@
   "patches": [
     {
       "file": "integration.patch",
-      "sha256": "1c1e27c52d77b750ee324d1063d990b3bb59daec0a787c9cb097d3e8914f8449"
+      "sha256": "6d0a276f79e3237167f2e059e63b89f9878c2c33fb1ef0b985e7e3387ba001be"
     }
   ],
   "vendoredPaths": [
@@ -24,7 +24,7 @@
     "LICENSE": "e91686b267408f7ca5da770a3bb742911872b9cfcab2b1f4364263a86283d0cb",
     "README.md": "956e48ef8e9b1fa2be3ec1a2a6e979a17bf6a16ba2dbc9d3c44d6b8280cbf2c6",
     "doc/worker-library.md": "eb236634b48e8abf23f1a452904915e8c5e8b3b5c0b9b62d2548514e7a07a248",
-    "integration.patch": "1c1e27c52d77b750ee324d1063d990b3bb59daec0a787c9cb097d3e8914f8449",
+    "integration.patch": "6d0a276f79e3237167f2e059e63b89f9878c2c33fb1ef0b985e7e3387ba001be",
     "library/dfyconfig.toml": "b0a57d8fe24030e720edfd0f4d490be2b4011c0f8b66cfd6adbdb9a9946463c8",
     "src/Ast/Ast.dfy": "f69bb0f6ec6dadc0e0be071e89ea9b4ee0a7815bc331873d704b0e82c5c2ea52",
     "src/Ast/AstValid.dfy": "6473a5b5c018f1eab55998956a72dcb8e8e92a02711ad2080b7b7007c39a21cf",
@@ -39,7 +39,7 @@
     "src/Ast/StmtResolver.dfy": "227b779519de0feb6c18721954608ae17774e7f48c584f0cb8574930c26de736",
     "src/Ast/TypeChecker.dfy": "4824b739f5168927fe57a2b5114678971a60030a621d8f60aba863ceeb4a1514",
     "src/Ast/TypeResolver.dfy": "af74ed291c705438861239780888c1db86e51cddc7770755779ad864709d4c05",
-    "src/Driver/BitvectorResources.dfy": "dd63e8aa41bac25c5aab447a5a06835c50a30a7a408f89d4baabcfd49c684775",
+    "src/Driver/BitvectorResources.dfy": "2bb335864bf8710dc214d77bb1254909641589b76bbab614e23c04ddff35808f",
     "src/Driver/CommandLineOptions.dfy": "9a1d853d450b91993e84293ac5b3451f685148871781dec9f766f895ed78fb6e",
     "src/Driver/Library.dfy": "89f8804746feaa958152e78b37623acb71d6a62478e6390e5925f2eeb8328e65",
     "src/Driver/Main.dfy": "30bb9de0206817920fe2155418911e57775645f226c0a1bb3aa0502269476a78",
@@ -55,7 +55,7 @@
     "src/Solver/RSolver.dfy": "aa08c0a96f113ca51697ff5b185aad0e6f54921365a376593c7d83a28fc68c86",
     "src/Solver/SmtEngines.dfy": "b692ee788a1052a3ddabc26c11afadca76a1643d44bf11424b10641e2444e616",
     "src/Solver/SolverConfiguration.dfy": "03df472f0bc0e2f16d4edd14116c8caf0a5c1323ff0f29423bc782d080a52401",
-    "src/Solver/SolverExpr.dfy": "25dddf4998cfb75e01348b256d0fd10b0a32f7b4f7ea1fba8da21cb1a2eff0f5",
+    "src/Solver/SolverExpr.dfy": "cf8ffbd61acc558c665b85d9f9794c457ad7719e3a85da4c4ceb2e52267f58d7",
     "src/Solver/Solvers.dfy": "802382377d265d9d5a45e6f02b9c5a916684cd03a56b3bb2fcbc2fc93fe9bc8f",
     "src/Solver/TestExternalSolvers.dfy": "83a6680b64953410aa4e2a8c866e5ef8b428a49f9f1619cbc443363eb632e5d9",
     "src/Util/Basics.dfy": "ff6ab98ef622a54ef9b759421480551f86a8c40e46a0e27a2632aca7f9550416",

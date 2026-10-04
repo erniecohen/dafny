@@ -44,7 +44,7 @@ module SolverExpr {
       case SBool => S("Bool")
       case SInt => S("Int")
       case SReal => S("Real")
-      case SBitvector(width) => PP([S("_"), S("BitVec"), Integer(width)])
+      case SBitvector(width) => PP([S("_"), S("BitVec"), SExpr.Integer(width)])
       case SUserType(name) => S(decl.name)
     }
 

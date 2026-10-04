@@ -525,10 +525,10 @@ index 4c5dc1757890fbf95d92198237dd981da8305c34..c6f21e7ce086ee6e60df2b049cdbfcaf
      }
 diff --git a/src/Driver/BitvectorResources.dfy b/src/Driver/BitvectorResources.dfy
 new file mode 100644
-index 0000000000000000000000000000000000000000..1c145b62f639b041a3a28e84577f140a023d109c
+index 0000000000000000000000000000000000000000..3f6a2f85f99344a9babb4204ed42bf104e5a91b3
 --- /dev/null
 +++ b/src/Driver/BitvectorResources.dfy
-@@ -0,0 +1,96 @@
+@@ -0,0 +1,101 @@
 +// Resource accounting is not a logical premise: over-budget input is rejected before verification.
 +module BitvectorResources {
 +  import opened Ast
@@ -552,7 +552,8 @@ index 0000000000000000000000000000000000000000..1c145b62f639b041a3a28e84577f140a
 +  function ExprCost(expr: Expr): nat {
 +    TypeCost(expr.ExprType()) + match expr {
 +      case BLiteral(_) | ILiteral(_) | RLiteral(_, _) | BvLiteral(_, _) | CustomLiteral(_, _) | IdExpr(_) => 0
-+      case OperatorExpr(_, args) | FunctionCallExpr(_, args) => ExprsCost(args)
++      case OperatorExpr(_, args) => ExprsCost(args)
++      case FunctionCallExpr(_, args) => ExprsCost(args)
 +      case LabeledExpr(_, body) => ExprCost(body)
 +      case LetExpr(v, rhs, body) => VariableCost(v) + ExprCost(rhs) + ExprCost(body)
 +      case QuantifierExpr(_, vv, patterns, body) =>
@@ -587,10 +588,14 @@ index 0000000000000000000000000000000000000000..1c145b62f639b041a3a28e84577f140a
 +    case VarDecl(v, initial, body) => VariableCost(v) + AutoInvariantCost(v) + (if initial.Some? then ExprCost(initial.value) else 0) + StmtCost(body)
 +    case Assign(v, rhs) => VariableCost(v) + ExprCost(rhs)
 +    case Reinit(vv) => VariablesCost(vv)
-+    case Block(stmts) | Choose(stmts) => StmtsCost(stmts)
++    case Block(stmts) => StmtsCost(stmts)
++    case Choose(stmts) => StmtsCost(stmts)
 +    case Call(_, args) => ArgumentsCost(args)
-+    case Check(cond, _) | Assert(cond, _) | Reach(cond, _) => ExprCost(cond)
-+    case Assume(cond) | Probe(cond) => ExprCost(cond)
++    case Check(cond, _) => ExprCost(cond)
++    case Assert(cond, _) => ExprCost(cond)
++    case Reach(cond, _) => ExprCost(cond)
++    case Assume(cond) => ExprCost(cond)
++    case Probe(cond) => ExprCost(cond)
 +    case AForall(v, body) => VariableCost(v) + StmtCost(body)
 +    case Loop(invariants, body) => AExprsCost(invariants) + StmtCost(body)
 +    case LabeledStmt(_, body) => StmtCost(body)
@@ -1658,7 +1663,7 @@ index 0000000000000000000000000000000000000000..8823cd0df6bd269dd4542fb687ed10dd
 +  const Default := Configuration("z3", ["-in", "-smt2"], 30000, 0, 1048576)
 +}
 diff --git a/src/Solver/SolverExpr.dfy b/src/Solver/SolverExpr.dfy
-index b04653d6f25cf55450c61b2edcc3007f4dd0632e..6e94e57ca030eb2d8a34ee0ed84a2636f8f33328 100644
+index b04653d6f25cf55450c61b2edcc3007f4dd0632e..4539c0b9f35856621024898605657df1615aa099 100644
 --- a/src/Solver/SolverExpr.dfy
 +++ b/src/Solver/SolverExpr.dfy
 @@ -2,6 +2,7 @@ module SolverExpr {
@@ -1694,7 +1699,7 @@ index b04653d6f25cf55450c61b2edcc3007f4dd0632e..6e94e57ca030eb2d8a34ee0ed84a2636
        case SBool => S("Bool")
        case SInt => S("Int")
 +      case SReal => S("Real")
-+      case SBitvector(width) => PP([S("_"), S("BitVec"), Integer(width)])
++      case SBitvector(width) => PP([S("_"), S("BitVec"), SExpr.Integer(width)])
        case SUserType(name) => S(decl.name)
      }
 
