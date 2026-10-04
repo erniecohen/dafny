@@ -363,3 +363,14 @@ a separate nonliteral-definition rejection. [Attribute rule](https://github.com/
 These are source correspondence arguments. Edited structural and worker controls
 require execution on the exact compiler/library/solver pins before acceptance;
 a static review is not a runtime result.
+
+
+The next focused source fixtures exercise a module-imported opaque definition
+through actual Dafny translation. Both reveal the imported function, check its
+literal result, hide it, and use the already checked result under the original
+learning rule. One then checks `false`, which must still fail with the imported
+definition present. They use the ordinary default export and import declarations
+and add no synthetic background equation. This complements the existing local
+opaque controls and the five fresh-worker isolation launches, including two
+concurrent launches with permissive and restrictive masks. The imported controls
+remain pending until their exact worker receipts are inspected.
