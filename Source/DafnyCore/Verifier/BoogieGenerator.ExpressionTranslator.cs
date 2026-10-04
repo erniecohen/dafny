@@ -597,6 +597,57 @@ namespace Microsoft.Dafny {
         return subst;
       }
 
+      private sealed class MapWitnessSubstituter(Variable variable, Expr replacement) : Boogie.Duplicator {
+        public override Expr VisitIdentifierExpr(Boogie.IdentifierExpr node) {
+          // Translation precedes Boogie resolution: free identifiers need not
+          // have declarations yet. Match only the fresh witness declaration.
+          return ReferenceEquals(node.Decl, variable) ? replacement : base.VisitIdentifierExpr(node);
+        }
+      }
+
+      private static IEnumerable<Expr> MapWitnessConjuncts(Expr expression) {
+        if (expression is Boogie.NAryExpr { Fun: Boogie.BinaryOperator { Op: Boogie.BinaryOperator.Opcode.And } } conjunction) {
+          return MapWitnessConjuncts(conjunction.Args[0]).Concat(MapWitnessConjuncts(conjunction.Args[1]));
+        }
+        return [expression];
+      }
+
+      private Expr MapWitnessInhabited(IOrigin tok, Boogie.LambdaExpr witness) {
+        var remaining = witness.Dummies.ToList();
+        var conjuncts = MapWitnessConjuncts(witness.Body).ToList();
+        foreach (var variable in witness.Dummies) {
+          for (var i = 0; i < conjuncts.Count; i++) {
+            if (conjuncts[i] is not Boogie.NAryExpr { Fun: Boogie.BinaryOperator { Op: Boogie.BinaryOperator.Opcode.Eq } } equation) {
+              continue;
+            }
+            Expr replacement = null;
+            if (equation.Args[0] is Boogie.IdentifierExpr left && ReferenceEquals(left.Decl, variable)) {
+              replacement = equation.Args[1];
+            } else if (equation.Args[1] is Boogie.IdentifierExpr right && ReferenceEquals(right.Decl, variable)) {
+              replacement = equation.Args[0];
+            }
+            if (replacement == null) {
+              continue;
+            }
+            var uses = new VariableNameVisitor();
+            uses.Visit(replacement);
+            if (uses.Names.Contains(variable.Name)) {
+              continue;
+            }
+            // exists x :: x == t && P(x) is P(t), when t is independent
+            // of x. Keep every source type, subset, allocation, range, and key
+            // conjunct; substitute by declaration identity to avoid capture.
+            conjuncts.RemoveAt(i);
+            var substituter = new MapWitnessSubstituter(variable, replacement);
+            conjuncts = conjuncts.ConvertAll(conjunct => substituter.VisitExpr(conjunct));
+            remaining.Remove(variable);
+            break;
+          }
+        }
+        var body = BplAnd(conjuncts);
+        return remaining.Count == 0 ? body : new Boogie.ExistsExpr(tok, remaining, body);
+      }
+
       private Expr DefineMapSelectedWitnesses(MapComprehension e) {
         var tok = GetToken(e);
         var familyType = new Boogie.MapType(tok, [], [Predef.BoxType], MapWitnessRelationType(e));
@@ -609,7 +660,7 @@ namespace Microsoft.Dafny {
         var relation = Boogie.Expr.SelectTok(tok, family, key);
         MapSelectedWitnesses(e, relation, out var projections);
         var witness = BuildMapWitnessRelation(e, key);
-        var inhabited = new Boogie.ExistsExpr(tok, witness.Dummies, witness.Body);
+        var inhabited = MapWitnessInhabited(tok, witness);
         var selected = Boogie.Expr.SelectTok(tok, relation, projections.ToArray());
         // The value uses this same relation family. Each projection access can
         // activate their joint choice fact, with no lambda inside the trigger.
@@ -1440,10 +1491,17 @@ namespace Microsoft.Dafny {
         }
         var footprintFact = et.DefineFiniteSetView(GetToken(e), et.BuildBoxedReadsFootprint(GetToken(e), reads));
         readsFacts = BplAnd(readsFacts, BplImp(et.FiniteReadsSupport(reads), footprintFact));
+        var range = e.Range == null ? null : Substitute(e.Range, null, environment.Substitution);
+        var rangeFacts = range == null ? Boogie.Expr.True : et.CanCallAssumption(range, cco);
+        if (reads.Count == 0 && bodyFacts is Boogie.LiteralExpr { IsTrue: true } &&
+            rangeFacts is Boogie.LiteralExpr { IsTrue: true }) {
+          // The only fact is the constant empty footprint, already independent
+          // of the formals and range. A guarded selector quantifier is redundant.
+          return footprintFact;
+        }
         Expr facts = BplAnd(readsFacts, bodyFacts);
-        if (e.Range != null) {
-          var range = Substitute(e.Range, null, environment.Substitution);
-          facts = BplAnd(et.CanCallAssumption(range, cco), BplImp(et.TrExpr(range), facts));
+        if (range != null) {
+          facts = BplAnd(rangeFacts, BplImp(et.TrExpr(range), facts));
           if (reads.Count == 0) {
             // An effect-free arrow's .reads is total even when its body precondition is false.
             facts = BplAnd(facts, readsFacts);
@@ -1453,9 +1511,13 @@ namespace Microsoft.Dafny {
         // future heap. Export child permissions only under those same premises.
         var guard = BplAnd(BplAnd(environment.ArgumentTypes, environment.ArgumentAllocation),
           BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, environment.Heap));
-        if (HeapExpr != null) {
+        if (HeapExpr != null && HeapExpr is not Boogie.IdentifierExpr { Name: "$OneHeap" }) {
           guard = BplAnd(guard, BoogieGenerator.HeapSameOrSucc(HeapExpr, environment.Heap));
         }
+        // Heap-independent definitions use $OneHeap as a translation placeholder,
+        // not an actual source formation heap. Their well-formedness proof is
+        // generic in a good heap, which can be this allocated formal-argument heap.
+        // Actual current, previous, and labeled heaps retain their succession guard.
         var tok = GetToken(e);
         var familyVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
           BoogieGenerator.CurrentIdGenerator.FreshId("$lambdaFamily#"),

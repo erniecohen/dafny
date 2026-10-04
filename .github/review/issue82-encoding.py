@@ -269,6 +269,39 @@ def backend_map_sort(sort):
     return sort.startswith("[") or sort == "ISet"
 
 
+def simplify_witness_exists(node):
+    """Normalize exists x :: x == t && P(x) to P(t), keeping all guards."""
+    if node.op != "exists":
+        return node
+    remaining = list(node.bound)
+    parts = list(conjunctions(node.args[0]))
+    for name, _ in node.bound:
+        for index, part in enumerate(parts):
+            if part.op != "==":
+                continue
+            replacement = None
+            for variable, term in (part.args, part.args[::-1]):
+                if variable.op == "id" and variable.text == name and name not in free(term):
+                    replacement = term
+                    break
+            if replacement is None:
+                continue
+            parts.pop(index)
+            parts = [expand_lets(part, {name: replacement}) for part in parts]
+            remaining = [pair for pair in remaining if pair[0] != name]
+            break
+    body = conjunction(parts)
+    return Node("exists", (body,), bound=tuple(remaining)) if remaining else body
+
+
+def inhabited_source_guard(relation, ancestors):
+    target = simplify_witness_exists(Node("exists", relation.args, bound=relation.bound))
+    required = {alpha(part) for part in conjunctions(target)}
+    available = {alpha(part) for guard in guards(ancestors)
+                 for part in conjunctions(simplify_witness_exists(guard))}
+    return required <= available
+
+
 def fixed_map_aliases(node):
     """Find exact dominating equalities for universally scoped map aliases.
 
@@ -713,8 +746,7 @@ def audit(rows, decls, require_probe=True, lifted=False, source_triggers=True):
                     for (_, typ), p in zip(normalized.bound, n.args[1:]):
                         if p.text in decls and decls[p.text][1] != typ:
                             fail("E04", "choice component does not have its source witness representation")
-                    inhabited = Node("exists", normalized.args, bound=normalized.bound)
-                    if not any(alpha(g) == alpha(inhabited) for g in guards(ancestors)):
+                    if not inhabited_source_guard(normalized, ancestors):
                         fail("E08", "choice property is not guarded by its exact inhabited source relation")
                 activation = next((parent for parent, _ in reversed(ancestors) if parent.op == "forall"), None)
                 if activation is None or any(not any(alpha(term) == alpha(p) for pattern in activation.triggers for term in pattern)
@@ -923,6 +955,19 @@ class ParserTests(unittest.TestCase):
         dropped = change(rows, rows[0], guard, Node("literal", text="true"))
         errors, _ = audit(dropped, {}, require_probe=False)
         self.assertIn("E01", {e["code"] for e in errors})
+
+    def test_witness_equality_elimination_retains_subset_and_allocation(self):
+        relation = parse(lex("(lambda x: int :: x == v && 0 <= x && $IsAllocBox($Box(x), TInt, heap) && key == $Box(x))"))
+        guard = parse(lex("0 <= v && $IsAllocBox($Box(v), TInt, heap) && key == $Box(v)"))
+        ancestors = ((Node("==>", (guard, Node("literal", text="true"))), 1),)
+        self.assertTrue(inhabited_source_guard(relation, ancestors))
+        dropped = parse(lex("0 <= v && key == $Box(v)"))
+        self.assertFalse(inhabited_source_guard(relation, ((Node("==>", (dropped, Node("literal", text="true"))), 1),)))
+        self_reference = parse(lex("(exists x: int :: x == x + 1 && key == $Box(x))"))
+        self.assertEqual(alpha(simplify_witness_exists(self_reference)), alpha(self_reference))
+        captured = parse(lex("(exists x: int :: x == v && F((lambda x: int :: x + v), x))"))
+        expected = parse(lex("F((lambda x: int :: x + v), v)"))
+        self.assertEqual(alpha(simplify_witness_exists(captured)), alpha(expected))
 
     def test_arrow_family_atlayer_requires_actual_closure_guard(self):
         text = "axiom (forall f: [LayerType]HandleType, l: LayerType, h: Heap, b: Box :: {Reads1(TInt, TInt, h, AtLayer(f, l), b)} f == (lambda layer: LayerType :: Handle(layer)) ==> Reads1(TInt, TInt, h, AtLayer(f, l), b) == Empty());"

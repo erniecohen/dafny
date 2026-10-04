@@ -1,5 +1,5 @@
-// CHECK-NOT: Error:
-// CHECK: git-issue-82-maps-imap-capture.dfy\(8,3\): Error: assertion might not hold
-// CHECK-NOT: Error:
-// CHECK: Dafny program verifier finished with [0-9]+ verified, 1 error
-// CHECK-NOT: Error:
+// CHECK-NOT: ^(?!git-issue-82-maps-imap-capture\.dfy\(8,[0-9]+\): Error: assertion might not hold$).*Error:|(?i:out of resource|timed out|timeout|internal error)
+// CHECK: ^git-issue-82-maps-imap-capture\.dfy\(8,[0-9]+\): Error: assertion might not hold$
+// CHECK-NOT: Error:|(?i:out of resource|timed out|timeout|internal error)
+// CHECK: ^Dafny program verifier finished with 1 verified, 1 error$
+// CHECK-NOT: Error:|(?i:out of resource|timed out|timeout|internal error)

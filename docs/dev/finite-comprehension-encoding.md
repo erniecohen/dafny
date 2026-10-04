@@ -71,6 +71,22 @@ choice while Boogie's trigger resolver never traverses an inline lambda body.
 Lambda lifting preserves the family's current heap, type, and source captures
 as arguments; it does not rely on equating unrelated characteristic maps.
 
+The inhabitance premise uses equality elimination when a witness is fixed by
+a source equation: `exists x :: x == t && P(x)` becomes `P(t)` if `t` is
+independent of `x`. All source type, subset, allocation, range, and boxed-key
+constraints in `P` remain after substitution. Fresh declaration identities
+prevent capture, and self-dependent equations retain their existential binder.
+This avoids asking the solver to invent an arithmetic witness solely to enable
+an already justified choice fact; it introduces no additional choice principle.
+
+When a top-level equality fixes a witness to a term independent of that witness,
+the choice premise uses existential equality elimination:
+`exists x :: x == t && P(x)` is equivalent to `P(t)`. The translator substitutes
+by fresh declaration identity, retaining every other type, subset, allocation,
+range, and key conjunct, as well as the remaining binders. A self-dependent
+equality is retained. This removes no source restriction and does not change the
+selected relation or its coordinated projection tuple.
+
 ## Aliases in solver patterns
 
 Finite-view and lambda-family aliases are universally quantified and guarded
@@ -93,6 +109,19 @@ cover the otherwise absent future-heap binder. It changes matching only:
 the consequence still requires allocated typed formals and the actual
 formation-heap succession. Ordinary selector patterns are retained, and
 arrows with a nonempty reads clause receive no such pattern.
+
+Heap-independent source definitions sometimes require a translator heap for
+lambda or application syntax. They use `$OneHeap` as a placeholder; their
+well-formedness proof remains generic in a good source heap. For these exact
+placeholder contexts, that proof can be instantiated with the chosen good
+formal-argument heap. No succession from `$OneHeap` is needed. Actual current,
+previous, and labeled heap contexts keep their formation-heap relation, and
+all argument allocation, type, range, and child permission guards remain.
+
+When an empty-reads lambda has no body or range call facts, its unconditional
+constant-empty definition already entails the whole guarded consequence.
+The translator omits only that redundant quantified formula; it changes no
+value, precondition, or permission.
 
 ## Reference carrier admission
 

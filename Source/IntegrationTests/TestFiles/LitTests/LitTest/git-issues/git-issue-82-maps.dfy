@@ -24,3 +24,7 @@
 // RUN: %OutputCheck --file-to-check "%t-imap-capture-true" "%S/Inputs/git-issue-82-maps-imap-capture.check"
 // RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-maps-conflict.dfy" --solver-path "%review-z3" --additional-axioms=false --cores:1 --resource-limit:2000000 --verification-time-limit:60 --show-snippets:false --use-basename-for-filename --error-limit:0 --allow-warnings --type-system-refresh:true > "%t-conflict-true"
 // RUN: %OutputCheck --file-to-check "%t-conflict-true" "%S/Inputs/git-issue-82-maps-conflict.check"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-maps-local-capture.dfy" --solver-path "%review-z3" --additional-axioms=false --cores:1 --resource-limit:2000000 --verification-time-limit:60 --show-snippets:false --use-basename-for-filename --error-limit:0 --allow-warnings --type-system-refresh:false > "%t-local-capture-false"
+// RUN: %OutputCheck --file-to-check "%t-local-capture-false" "%S/Inputs/git-issue-82-maps-local-capture.check"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-maps-local-capture.dfy" --solver-path "%review-z3" --additional-axioms=false --cores:1 --resource-limit:2000000 --verification-time-limit:60 --show-snippets:false --use-basename-for-filename --error-limit:0 --allow-warnings --type-system-refresh:true > "%t-local-capture-true"
+// RUN: %OutputCheck --file-to-check "%t-local-capture-true" "%S/Inputs/git-issue-82-maps-local-capture.check"

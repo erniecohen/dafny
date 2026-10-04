@@ -41,6 +41,12 @@ lemma KeyOnlySubstitution(n: int) {
 
 // Rebuilding outer predicates must keep the same nested choice symbols, even
 // when substitution creates fresh nodes for the inner comprehension.
+lemma LocalArithmeticCapture(n: int, i: int) {
+  var m := map j: int | j == n + i :: 0 := j;
+  assert m.Keys == {0};
+  assert m[0] == n + i;
+}
+
 lemma NestedGeneralMaps(n: int) {
   var s := set i: int | 0 <= i < 2 &&
     (map j: int | j == n + i :: 0 := j)[0] == n + i;
@@ -63,8 +69,15 @@ lemma GenericWitnesses<T(!new)>(a: T, b: T) {
   assert CapturedGeneric(b)[0] == b;
 }
 
+lemma SmallTransformedKey(x: Small)
+  ensures x + 10 in (map y: Small | true :: y + 10 := y).Keys
+{
+}
+
 lemma SubsetWitnesses() {
   var m := map x: Small | true :: x + 10 := x;
+  SmallTransformedKey(0);
+  SmallTransformedKey(1);
   assert m.Keys == {10, 11};
   assert m[10] == 0;
   assert m[11] == 1;
@@ -83,8 +96,16 @@ lemma DependentBinders() {
   assert forward == reverse;
 }
 
+lemma DuplicateTransformedKey(x: int)
+  requires 0 <= x < 4
+  ensures x % 2 in (map y: int | 0 <= y < 4 :: y % 2 := y % 2).Keys
+{
+}
+
 lemma EqualValueDuplicateKeys() {
   var m := map i: int | 0 <= i < 4 :: i % 2 := i % 2;
+  DuplicateTransformedKey(0);
+  DuplicateTransformedKey(1);
   assert m.Keys == {0, 1};
   assert m[0] == 0;
   assert m[1] == 1;

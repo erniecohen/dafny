@@ -1,5 +1,5 @@
-// CHECK-NOT: Error:
-// CHECK: git-issue-82-reads-precondition.dfy\(10,[0-9]+\): Error: function precondition could not be proved
-// CHECK-NOT: Error:
-// CHECK: Dafny program verifier finished with [0-9]+ verified, 1 error
-// CHECK-NOT: Error:
+// CHECK-NOT: ^(?!git\-issue\-82\-reads\-precondition\.dfy\(10,[0-9]+\): Error: function precondition could not be proved$).*Error:|(?i:out of resource|timed out|timeout|inconclusive)
+// CHECK: ^git\-issue\-82\-reads\-precondition\.dfy\(10,[0-9]+\): Error: function precondition could not be proved$
+// CHECK-NOT: Error:|(?i:out of resource|timed out|timeout|inconclusive)
+// CHECK: ^Dafny program verifier finished with [0-9]+ verified, 1 error$
+// CHECK-NOT: Error:|(?i:out of resource|timed out|timeout|inconclusive)
