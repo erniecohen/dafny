@@ -6,8 +6,8 @@ enables a native proof entrypoint, or establishes query/resource parity. Expecte
 failures are recorded with job exit zero; acceptance requires `summary.json`, all
 three exact control receipts and all process-stage ownership receipts.
 
-The imported harness source is exactly the accepted 38-file manifest
-`0e746e8c8aab5e789f2c5c5a29f0e78eeaf1359b42c4a3b754207c73f4417dda`.
+The declared 38-file harness source manifest is
+`4230adf2ba624d42574d59ed95d4af1e28346d3260ffb79bf4249f1c80097a05`.
 All nineteen previously qualified lifecycle source files are unchanged. StartupObject
 is overridden at build time only to `B3AlcGate.UnavailableMetadataProgram`; the
 project default and normal Program remain unchanged. Both native proof APIs in
@@ -134,3 +134,12 @@ All three fixed controls must run freshly after source review. Inner terminal
 type/message/FileName facts, independent trigger flags and exact runtime-demand
 poison/route evidence replace reliance on the outer presentation summary; no
 other package, loader, context, process or collection guard is relaxed.
+
+
+The fresh source selects only the pinned nongeneric Reactive MethodDef0x06000771
+through the supported generic-arity-zero Type.GetMethod API. Detached method
+facts are required alongside the unchanged exact schema2 denial/demand/process
+evidence; method selection alone never qualifies a control. The prior run37235933042
+remains NOT GREEN, and this new source needs fresh inspection of all three controls.
+The original nineteen lifecycle files, both loaders, denier and disabled proof
+routes remain byte-identical.

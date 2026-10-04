@@ -16,13 +16,17 @@ internal sealed record UnavailableExceptionNode(int Depth, string Type, bool Kno
   string? FileName, int HResult, int? InnerDepth, int? AggregateInnerCount);
 internal sealed record UnavailableExceptionChain(UnavailableExceptionNode[] Nodes, bool Complete, bool Truncated,
   int TextUtf8Bytes, string? CaptureFailure, int? RejectedAggregateInnerCount);
+internal sealed record UnavailableSelectedMethod(string SelectionApi, string DeclaringType, string MethodName,
+  int GenericArity, int MetadataToken, string AssemblySha256, string[] ParameterTypeNames,
+  bool ManifestModuleMatched, bool IsPublic, bool IsStatic, bool IsNongeneric);
 internal sealed record UnavailableControlObservation(bool DenialExceptionObserved, bool TriggerApiInvoked, string TriggerApi, string? ExceptionSummary,
-  UnavailableExceptionChain? ExceptionChain, AssemblyEntry[] PrivateLoaderLedger, string SchedulerCleanup, bool ContextCollected);
+  UnavailableExceptionChain? ExceptionChain, UnavailableSelectedMethod? SelectedMethod, AssemblyEntry[] PrivateLoaderLedger, string SchedulerCleanup, bool ContextCollected);
 
 /// <summary>Exactly one fixed nonproof control per disposable host. Never runs Dafny or a solver.</summary>
 [SupportedOSPlatform("linux")]
 internal static class UnavailableMetadataControls {
   internal static readonly string[] Names = ["default-unavailable-demand", "private-unavailable-demand", "reactive-event-unavailable-demand"];
+  private const string ReactiveSelectionApi = "System.Type.GetMethod(genericParameterCount:0,Public|Static,Type/string)";
   private static int entered;
   private static readonly JsonSerializerOptions Json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     WriteIndented = true, MaxDepth = 64 };
@@ -79,7 +83,7 @@ internal static class UnavailableMetadataControls {
       }
       var state = shared.DemandState();
       var expectedRoute = input.Control == "private-unavailable-demand" ? "private-load" : "default-resolving";
-      NativeProofSmokeControls.Require(observation.DenialExceptionObserved && IsDenial(observation.ExceptionChain) && observation.TriggerApiInvoked && state.Poisoned &&
+      NativeProofSmokeControls.Require(observation.DenialExceptionObserved && IsDenial(observation.ExceptionChain) && HasExactSelection(input.Control, observation.SelectedMethod) && observation.TriggerApiInvoked && state.Poisoned &&
         state.Failures.SequenceEqual(new[] { SharedCommonLibraries.DenialCode }) && state.UnavailableDemands.Length == 1 &&
         state.UnavailableDemands[0].Route == expectedRoute && state.UnavailableDemands[0].ExactDeclaredIdentity &&
         state.UnavailableDemands[0].RequestedIdentity == SharedCommonLibraries.UnavailableIdentity &&
@@ -110,7 +114,7 @@ internal static class UnavailableMetadataControls {
       failure = Append(failure, "Nonproof final host isolation failed.");
     }
     var passed = failure == null && observation is { DenialExceptionObserved: true, ContextCollected: true } &&
-      IsDenial(observation.ExceptionChain) && observation.TriggerApiInvoked &&
+      IsDenial(observation.ExceptionChain) && HasExactSelection(input.Control, observation.SelectedMethod) && observation.TriggerApiInvoked &&
       closure is { CompleteMetadataInventory: true, CompleteMetadataAvailability: false } && closure.RuntimeDemandState.Poisoned &&
       closure.RuntimeDemandState.Failures.SequenceEqual(new[] { SharedCommonLibraries.DenialCode }) &&
       closure.RuntimeDemandState.UnavailableDemands.Length == 1 &&
@@ -143,27 +147,40 @@ internal static class UnavailableMetadataControls {
     } catch (Exception exception) { caught = exception; }
     var chain = caught == null ? null : CaptureExceptionChain(caught);
     return new(IsDenial(chain), invoked, "AssemblyLoadContext.Default.LoadFromAssemblyName(exact-unavailable-identity)",
-      caught == null ? null : Explain(caught), chain, [], "not initialized: no product entrypoint invoked", true);
+      caught == null ? null : Explain(caught), chain, null, [], "not initialized: no product entrypoint invoked", true);
   }
 
   [MethodImpl(MethodImplOptions.NoInlining)]
   private static UnavailableControlObservation ObserveReactiveDemand(SharedCommonLibraries shared) {
     Exception? caught = null;
     var invoked = false;
+    UnavailableSelectedMethod? selectedMethod = null;
     try {
       var reactive = shared.CommonForNonproofControl("System.Reactive");
       var observable = reactive.GetType("System.Reactive.Linq.Observable", throwOnError: true)!;
-      var method = observable.GetMethod("FromEventPattern", BindingFlags.Public | BindingFlags.Static,
+      // The pinned assembly also has generic arities 1 and 2 with the same
+      // Type/string parameters. Select arity 0 through the supported Type API.
+      var method = observable.GetMethod("FromEventPattern", genericParameterCount: 0,
+        bindingAttr: BindingFlags.Public | BindingFlags.Static,
         binder: null, types: [typeof(Type), typeof(string)], modifiers: null)
-        ?? throw new MissingMethodException("Exact public Reactive FromEventPattern(Type,string) overload is missing.");
-      NativeProofSmokeControls.Require(!method.IsGenericMethodDefinition && method.DeclaringType == observable,
-        "exact-public-reactive-trigger-overload-required");
+        ?? throw new MissingMethodException("Exact public nongeneric Reactive FromEventPattern(Type,string) overload is missing.");
+      var parameters = method.GetParameters();
+      var moduleMatched = method.Module == reactive.ManifestModule;
+      var ownerSha256 = Framework.Sha256(reactive.Location);
+      NativeProofSmokeControls.Require(method.IsPublic && method.IsStatic && !method.IsGenericMethod &&
+        method.DeclaringType == observable && moduleMatched && method.MetadataToken == 0x06000771 &&
+        parameters.Length == 2 && parameters[0].ParameterType == typeof(Type) && parameters[1].ParameterType == typeof(string) &&
+        ownerSha256 == SharedCommonLibraries.UnavailableOwnerSha256,
+        "exact-public-nongeneric-reactive-trigger-overload-required");
+      selectedMethod = new(ReactiveSelectionApi, "System.Reactive.Linq.Observable", method.Name,
+        method.GetGenericArguments().Length, method.MetadataToken, ownerSha256,
+        ["System.Type", "System.String"], moduleMatched, method.IsPublic, method.IsStatic, !method.IsGenericMethod);
       invoked = true;
       method.Invoke(null, [typeof(OrdinaryEventFixture), nameof(OrdinaryEventFixture.Happened)]);
     } catch (Exception exception) { caught = exception; }
     var chain = caught == null ? null : CaptureExceptionChain(caught);
     return new(IsDenial(chain), invoked, "System.Reactive.Linq.Observable.FromEventPattern(Type,string)",
-      caught == null ? null : Explain(caught), chain, [], "not initialized: pinned Reactive public surface only", true);
+      caught == null ? null : Explain(caught), chain, selectedMethod, [], "not initialized: pinned Reactive public surface only", true);
   }
 
   private sealed record DetachedPrivate(UnavailableControlObservation Observation, WeakReference Context);
@@ -218,7 +235,7 @@ internal static class UnavailableMetadataControls {
     // Detached only strings/records. No Assembly, Type, exception or scheduler root
     // survives this noinline frame. DafnyMain was never accessed or initialized.
     return new(new(denial, invoked, "Owned SharedProductContext.LoadFromAssemblyName(exact-unavailable-identity)",
-      cleanupFailure == null ? exceptionSummary : Append(exceptionSummary, cleanupFailure), exceptionChain,
+      cleanupFailure == null ? exceptionSummary : Append(exceptionSummary, cleanupFailure), exceptionChain, null,
       ledger, "not initialized: only pinned DafnyCore assembly metadata accessed", false),
       new WeakReference(context, trackResurrection: true));
   }
@@ -246,6 +263,15 @@ internal static class UnavailableMetadataControls {
       .GetProperty("sha256").GetString() == "7166e6c53486b9ab3e77a7072328e9f841d7bf1797c550718e170b29913944cc",
       "nonproof-source-evidence-pin-mismatch");
     return pin.Sha256;
+  }
+
+  private static bool HasExactSelection(string control, UnavailableSelectedMethod? selection) {
+    if (control != Names[2]) { return selection == null; }
+    return selection is { GenericArity: 0, MetadataToken: 0x06000771,
+      ManifestModuleMatched: true, IsPublic: true, IsStatic: true, IsNongeneric: true } &&
+      selection.SelectionApi == ReactiveSelectionApi && selection.DeclaringType == "System.Reactive.Linq.Observable" &&
+      selection.MethodName == "FromEventPattern" && selection.AssemblySha256 == SharedCommonLibraries.UnavailableOwnerSha256 &&
+      selection.ParameterTypeNames.SequenceEqual(new[] { "System.Type", "System.String" });
   }
 
   private static UnavailableExceptionChain CaptureExceptionChain(Exception exception) {

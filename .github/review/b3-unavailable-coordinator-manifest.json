@@ -1,15 +1,15 @@
 {
   "schemaVersion": 1,
   "scope": "fixed-three-disposable-nonproof-unavailable-metadata-controls",
-  "sourceManifestSha256": "0e746e8c8aab5e789f2c5c5a29f0e78eeaf1359b42c4a3b754207c73f4417dda",
+  "sourceManifestSha256": "4230adf2ba624d42574d59ed95d4af1e28346d3260ffb79bf4249f1c80097a05",
   "nativeProofEnabled": false,
   "solverExecutionEnabled": false,
   "sourceOnlyUnexecuted": true,
   "files": [
     {
       "path": ".github/review/B3-UNAVAILABLE-COORDINATOR.md",
-      "sha256": "489fdfed6647ad0b018759091a6b4eab510a68a76b37ddde5462ca3c173e343b",
-      "bytes": 9521
+      "sha256": "c94af014fd120aa4888160f02fd4659fae4df3795f75d01a86d11da286ab7928",
+      "bytes": 10018
     },
     {
       "path": ".github/review/b3-owned-process.py",
@@ -18,7 +18,7 @@
     },
     {
       "path": ".github/review/b3-unavailable-controls.py",
-      "sha256": "8d919faac7b609e4a20e9dfde27f0fbb609f702b11078c449f543f9cf4563386",
+      "sha256": "3111d34b1c7ce84f2860ca7a7f03a557baa5bba6669b32b90c88e0f83953c75c",
       "bytes": 25372
     },
     {

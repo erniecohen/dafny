@@ -82,6 +82,19 @@ def inspect_unavailable_control(receipt, sha, expected_manifest):
     observation = receipt['observation']
     assert observation['denialExceptionObserved'] is True and observation['triggerApiInvoked'] is True and observation['contextCollected'] is True
     assert observation['triggerApi'] == TRIGGERS[name]
+    selection = observation['selectedMethod']
+    if name == NAMES[2]:
+        assert isinstance(selection, dict) and set(selection) == {
+            'selectionApi', 'declaringType', 'methodName', 'genericArity', 'metadataToken',
+            'assemblySha256', 'parameterTypeNames', 'manifestModuleMatched', 'isPublic', 'isStatic', 'isNongeneric'}
+        assert selection['selectionApi'] == 'System.Type.GetMethod(genericParameterCount:0,Public|Static,Type/string)'
+        assert selection['declaringType'] == 'System.Reactive.Linq.Observable' and selection['methodName'] == 'FromEventPattern'
+        assert type(selection['genericArity']) is int and selection['genericArity'] == 0
+        assert type(selection['metadataToken']) is int and selection['metadataToken'] == 0x06000771
+        assert selection['assemblySha256'] == OWNER_SHA256 and selection['parameterTypeNames'] == ['System.Type', 'System.String']
+        assert all(selection[field] is True for field in ['manifestModuleMatched', 'isPublic', 'isStatic', 'isNongeneric'])
+    else:
+        assert selection is None
     assert isinstance(observation['exceptionSummary'], str) and len(observation['exceptionSummary']) <= 4096
     inspect_exception_chain(observation['exceptionChain'])
     assert observation['schedulerCleanup'].startswith('not initialized:')

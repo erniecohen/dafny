@@ -129,3 +129,30 @@ otherwise format unbounded inner graphs. Rejected structure has explicit capture
 failure/aggregate-count facts and never claims a complete chain. Explain renders
 only bounded captured nodes or the capture rejection code. The strict inspector
 requires literal true trigger/denial/completeness booleans and no capture failure.
+
+## Exact nongeneric Reactive selection
+
+Public run37235933042 remains NOT GREEN: Default/private passed their strict
+schema2 controls, but Reactive failed before invocation with no unavailable
+demand. Read-only metadata of the unchanged Reactive assembly found Type/string
+overloads with generic arities0/1/2 at MethodDef tokens0x06000771/773/775.
+The old lookup omitted arity; the source-derived ambiguity diagnosis is distinct
+from a captured runtime exception type, which that failed receipt omitted.
+
+This revised source uses .NET8's supported genericParameterCount:0 Type.GetMethod
+overload. It checks public/static/nongeneric, exact declaring Type, ManifestModule
+object, token0x06000771, both actual parameter Types and actual assembly SHA19f....
+A bounded detached selected-method record contains only fixed strings, numbers,
+the two checked parameter names and actual selection booleans. It must match
+exactly for Reactive and be null for the other controls. Selection never qualifies
+the denial: actual trigger, complete terminal denial, exactly one expected
+poisoned demand and every process/context guard remain independently required.
+
+The public Reactive wrapper and reflection-event path are unchanged. The arity
+filter is described by .NET8.0.31 source commit
+1219a42122cf5190c7f512850557e38c422430dc in System/Type.cs and
+RuntimeType.CoreCLR.cs; pinned Reactive source remains
+7fe23fedde3d0c462ea3dd851debcf9ccb0f52f6. This is an uncompiled/unexecuted new
+source snapshot. All three controls require fresh qualification. Accepted denial
+wrapper types, structural capture/Explain, original19 lifecycle files,
+loaders/denier and proof-disabled APIs are unchanged; no proof mode is enabled.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "source-only-schema2-detached-exception-chain-controls-uncompiled-unexecuted; all native proof APIs disabled",
+  "status": "source-only-exact-arity0-Reactive-selection-controls-uncompiled-unexecuted; all native proof APIs disabled",
   "scope": "explicit-unavailable-common-metadata-with-runtime-demand-denial-and-three-disposable-nonproof-controls",
   "targetFramework": "net8.0",
   "reviewedContracts": {
@@ -138,8 +138,8 @@
     },
     {
       "path": "UNAVAILABLE-METADATA-PLAN.md",
-      "sha256": "c92715520c11a740b9d0aae9e07738af21a12f207e5731d4b7816ad9fd37f7e9",
-      "bytes": 8821
+      "sha256": "7bec70d2c59dd25430e66d1733085c99f1a90a2d5a985ddf8b9528b29c005adc",
+      "bytes": 10527
     },
     {
       "path": "UNAVAILABLE-METADATA-SOURCE-EVIDENCE.json",
@@ -148,8 +148,8 @@
     },
     {
       "path": "UnavailableMetadataControls.cs",
-      "sha256": "0896310416d8a1f680db180c7f06b2f943e0cd5df2aa95c55c262d76083dab1e",
-      "bytes": 20503
+      "sha256": "28592aa4c2228517e020f244764eb39818c84327eafec8c9314a0ec9f9ae5c41",
+      "bytes": 22808
     },
     {
       "path": "UnavailableMetadataProgram.cs",
@@ -223,8 +223,8 @@
     },
     {
       "path": "unavailable-metadata-receipt-validation.py",
-      "sha256": "2a7fd7dd2d5c6639cf5063ee3af0fd843c7ca789d4a7b9c9c521d15483900f2f",
-      "bytes": 15706
+      "sha256": "61cb6ff782b02a58fcf1276d3faa012eacf6c6a5a3beed995eae6aeb9e3bbda2",
+      "bytes": 16788
     }
   ],
   "baseSourceCommit": "a6132c6758c863ec4a897e4ac1534dc727f0b006",
@@ -284,8 +284,21 @@
     "maximumExceptionChainDepth": 8,
     "maximumExceptionChainTextUtf8Bytes": 65536,
     "requiredTerminalException": "System.IO.FileNotFoundException/exact-denial-message/exact-requested-FileName/no-inner",
-    "branchingAggregateAccepted": false
+    "branchingAggregateAccepted": false,
+    "requiredReactiveSelection": {
+      "genericArity": 0,
+      "methodToken": "0x06000771",
+      "ownerAssemblySha256": "19f0112cd1f5172ee2688e96ddd44ada39a4bb1cb2315a154b63e9064f6e3dc0",
+      "parameterTypeNames": [
+        "System.Type",
+        "System.String"
+      ],
+      "manifestModuleObjectMustMatch": true,
+      "selectionAloneQualifiesDenial": false
+    }
   },
   "priorFailedNonproofSourceManifestSha256": "2fc847ab499ae08e398cbd748426d476589e1c74365348f7c6eb252e5c23ecfb",
-  "priorFailedNonproofPublicRun": 37233056845
+  "priorFailedNonproofPublicRun": 37233056845,
+  "priorFailedArityUnspecifiedSourceManifestSha256": "0e746e8c8aab5e789f2c5c5a29f0e78eeaf1359b42c4a3b754207c73f4417dda",
+  "priorFailedArityUnspecifiedPublicRun": 37235933042
 }
