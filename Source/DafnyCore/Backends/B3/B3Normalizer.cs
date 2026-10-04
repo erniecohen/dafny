@@ -303,6 +303,7 @@ public static class B3Normalizer {
             case Bpl.MapStore: return MapOperation(application, type, args, true);
             case Bpl.FunctionCall call:
               Require(call.Func != null, "b3_resolution", "Unresolved function call", expression.tok);
+              if (TryNativeIntegerBody(call.Func, type, args, out var arithmetic)) { return arithmetic; }
               Require(!HasPrimitiveArithmeticDefinition(call.Func), "b3_arithmetic",
                 "Called primitive division/modulo/power definition is unsupported pending correspondence", expression.tok);
               var projection = IdentityProjection(call.Func);
@@ -350,6 +351,27 @@ public static class B3Normalizer {
         default: throw new Unsupported("b3_expression", "Unsupported expression " + expression.GetType().Name, expression.tok);
       }
     }
+    private static bool TryNativeIntegerBody(Bpl.Function function, string resultType,
+      IReadOnlyList<Ir.Expression> args, out Ir.Expression expression) {
+      expression = null;
+      if (resultType != "int" || args.Count != 2 || args.Any(arg => arg.Type != "int") ||
+          function.TypeParameters.Count != 0 || function.InParams.Count != 2 || function.OutParams.Count != 1 ||
+          function.InParams.Any(parameter => !parameter.TypedIdent.Type.IsInt) ||
+          !function.OutParams[0].TypedIdent.Type.IsInt ||
+          function.Body is not Bpl.NAryExpr { Fun: Bpl.BinaryOperator binary } body ||
+          binary.Op is not (Bpl.BinaryOperator.Opcode.Div or Bpl.BinaryOperator.Opcode.Mod) ||
+          body.Type?.IsInt != true || body.Args.Count != 2 ||
+          body.Args[0] is not Bpl.IdentifierExpr left || body.Args[1] is not Bpl.IdentifierExpr right ||
+          !ReferenceEquals(left.Decl, function.InParams[0]) || !ReferenceEquals(right.Decl, function.InParams[1])) {
+        return false;
+      }
+      // The pinned native translator expands the actual typed Function.Body by formal substitution.
+      // Names, inline attributes and detached definition metadata supply no premise for this rewrite.
+      expression = new Ir.Operation(binary.Op == Bpl.BinaryOperator.Opcode.Div ? Ir.Operator.Divide : Ir.Operator.Modulo,
+        "int", args);
+      return true;
+    }
+
     private static bool HasPrimitiveArithmeticDefinition(Bpl.Function function) {
       static bool Primitive(Bpl.Expr body) => body is Bpl.NAryExpr { Fun: Bpl.BinaryOperator binary } &&
         binary.Op is Bpl.BinaryOperator.Opcode.Div or Bpl.BinaryOperator.Opcode.Mod or
@@ -446,14 +468,19 @@ public static class B3Normalizer {
       }
     }
     private static Ir.Expression Binary(Bpl.BinaryOperator.Opcode op, string type, Ir.Expression[] args, Bpl.IToken token) {
+      if (op is Bpl.BinaryOperator.Opcode.Div or Bpl.BinaryOperator.Opcode.Mod) {
+        Require(type == "int" && args.Length == 2 && args.All(arg => arg.Type == "int"),
+          "b3_arithmetic", "Native division and modulo require two integer operands and an integer result", token);
+      }
       var kind = op switch {
         Bpl.BinaryOperator.Opcode.Add => Ir.Operator.Add, Bpl.BinaryOperator.Opcode.Sub => Ir.Operator.Subtract,
+        Bpl.BinaryOperator.Opcode.Div => Ir.Operator.Divide, Bpl.BinaryOperator.Opcode.Mod => Ir.Operator.Modulo,
         Bpl.BinaryOperator.Opcode.Mul => Ir.Operator.Multiply, Bpl.BinaryOperator.Opcode.Eq => Ir.Operator.Equal,
         Bpl.BinaryOperator.Opcode.Neq => Ir.Operator.NotEqual, Bpl.BinaryOperator.Opcode.Lt or Bpl.BinaryOperator.Opcode.Gt => Ir.Operator.Less,
         Bpl.BinaryOperator.Opcode.Le or Bpl.BinaryOperator.Opcode.Ge => Ir.Operator.LessEqual,
         Bpl.BinaryOperator.Opcode.And => Ir.Operator.And, Bpl.BinaryOperator.Opcode.Or => Ir.Operator.Or,
         Bpl.BinaryOperator.Opcode.Imp => Ir.Operator.Implies, Bpl.BinaryOperator.Opcode.Iff => Ir.Operator.Equiv,
-        _ => throw new Unsupported("b3_arithmetic", "Division, modulo, real/float division and power are unsupported pending correspondence", token)
+        _ => throw new Unsupported("b3_arithmetic", "Real/float division and power are unsupported pending correspondence", token)
       };
       if (op is Bpl.BinaryOperator.Opcode.Gt or Bpl.BinaryOperator.Opcode.Ge) { args = new[] { args[1], args[0] }; }
       return new Ir.Operation(kind, type, args);

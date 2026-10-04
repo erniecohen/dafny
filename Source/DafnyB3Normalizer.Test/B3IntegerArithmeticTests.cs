@@ -1,0 +1,202 @@
+// Copyright by the contributors to the Dafny Project
+// SPDX-License-Identifier: MIT
+using Microsoft.Dafny;
+using Xunit;
+using Bpl = Microsoft.Boogie;
+using Ir = DafnyB3Protocol;
+
+namespace DafnyB3Normalizer.Test;
+
+[Collection("B3 translation")]
+public class B3IntegerArithmeticTests {
+  [Theory]
+  [InlineData("div", Ir.Operator.Divide)]
+  [InlineData("mod", Ir.Operator.Modulo)]
+  public void NativeIntegerOperationsKeepOperandOrder(string operation, Ir.Operator expected) {
+    var result = Boogie($"procedure P(x: int, y: int); implementation P(x: int, y: int) {{ assert x {operation} y == 0; }}");
+    Validate(result);
+    var equality = Assert.IsType<Ir.Operation>(Checks(result).Single().Condition);
+    var arithmetic = Assert.IsType<Ir.Operation>(equality.Arguments[0]);
+    Assert.Equal(expected, arithmetic.Operator);
+    Assert.Equal("int", arithmetic.Type);
+    Assert.Equal(result.Program!.Unit.Variables[0].Name, Assert.IsType<Ir.Variable>(arithmetic.Arguments[0]).Name);
+    Assert.Equal(result.Program.Unit.Variables[1].Name, Assert.IsType<Ir.Variable>(arithmetic.Arguments[1]).Name);
+  }
+
+  [Theory]
+  [InlineData("div", Ir.Operator.Divide)]
+  [InlineData("mod", Ir.Operator.Modulo)]
+  public void AnInlineTypedBodyUsesItsFormalsRatherThanItsName(string operation, Ir.Operator expected) {
+    var options = Options();
+    var source = ParseBoogie($"function {{:inline}} DifferentName(x: int, y: int): int {{ x {operation} y }} " +
+      "procedure P(); implementation P() { assert DifferentName(5, 2) == 0; }", options);
+    Assert.NotNull(source.TopLevelDeclarations.OfType<Bpl.Function>().Single().Body);
+    var before = Emit(source, options);
+    var result = Normalize(source, options);
+    Validate(result);
+    Assert.Equal(before, Emit(source, options));
+    var arithmetic = Assert.IsType<Ir.Operation>(Assert.IsType<Ir.Operation>(Checks(result).Single().Condition).Arguments[0]);
+    Assert.Equal(expected, arithmetic.Operator);
+    Assert.Equal(new Ir.IntegerLiteral("5"), arithmetic.Arguments[0]);
+    Assert.Equal(new Ir.IntegerLiteral("2"), arithmetic.Arguments[1]);
+    Assert.Empty(result.Program!.Functions);
+    Assert.Empty(result.Program.Axioms);
+  }
+
+  [Fact]
+  public void ActualTypedBodyNeedsNoInlineAttribute() {
+    var options = Options();
+    var source = ParseBoogie("function F(x: int, y: int): int; procedure P(); implementation P() { assert F(5, 2) == 0; }", options);
+    var function = source.TopLevelDeclarations.OfType<Bpl.Function>().Single();
+    function.Body = Bpl.Expr.Binary(Bpl.BinaryOperator.Opcode.Div,
+      new Bpl.IdentifierExpr(function.tok, function.InParams[0]),
+      new Bpl.IdentifierExpr(function.tok, function.InParams[1]));
+    Assert.Equal(0, source.Typecheck(options));
+    var result = Normalize(source, options);
+    Validate(result);
+    var arithmetic = Assert.IsType<Ir.Operation>(Assert.IsType<Ir.Operation>(Checks(result).Single().Condition).Arguments[0]);
+    Assert.Equal(Ir.Operator.Divide, arithmetic.Operator);
+  }
+
+  [Theory]
+  [InlineData("Div")]
+  [InlineData("Mod")]
+  [InlineData("INTERNAL_div_boogie")]
+  public void APrimitiveLookingNameCannotDefineAnOperation(string name) {
+    var result = Boogie($"function {name}(x: int, y: int): int; procedure P(); implementation P() {{ assert {name}(5, 2) == 0; }}");
+    Validate(result);
+    var equality = Assert.IsType<Ir.Operation>(Checks(result).Single().Condition);
+    Assert.IsType<Ir.Application>(equality.Arguments[0]);
+    Assert.Empty(result.Program!.Axioms);
+  }
+
+  [Theory]
+  [InlineData("y div x")]
+  [InlineData("x div x")]
+  [InlineData("x div 2")]
+  [InlineData("y mod x")]
+  public void ADirectBodyMustUseTheExactOrderedFormalDeclarations(string body) {
+    var result = Boogie($"function {{:inline}} F(x: int, y: int): int {{ {body} }} " +
+      "procedure P(); implementation P() { assert F(5, 2) == 0; }");
+    Unsupported(result);
+  }
+
+  [Theory]
+  [InlineData("div", Ir.Operator.Divide)]
+  [InlineData("mod", Ir.Operator.Modulo)]
+  public void ZeroDivisorsDoNotSynthesizeAnAssumptionOrCheck(string operation, Ir.Operator expected) {
+    var result = Boogie($"procedure P(x: int); implementation P(x: int) {{ assert x {operation} 0 == 0; assert false; }}");
+    Validate(result);
+    var checks = Checks(result).ToArray();
+    Assert.Equal(2, checks.Length);
+    Assert.Equal(2, result.Obligations.Count);
+    Assert.DoesNotContain(Statements(result.Program!.Unit.Body), statement => statement is Ir.Assume);
+    var arithmetic = Assert.IsType<Ir.Operation>(Assert.IsType<Ir.Operation>(checks[0].Condition).Arguments[0]);
+    Assert.Equal(expected, arithmetic.Operator);
+    Assert.Equal(new Ir.IntegerLiteral("0"), arithmetic.Arguments[1]);
+    Assert.Equal(new Ir.BooleanLiteral(false), checks[1].Condition);
+  }
+
+  [Fact]
+  public async Task ActualDafnyNativeOperatorsRetainTheirExistingDivisorObligations() {
+    var results = await Dafny("method P(x: int, y: int) { assert x / y == x; assert x % y == x; }", 0);
+    Assert.NotEmpty(results);
+    Assert.All(results, Validate);
+    var expressions = results.SelectMany(result => Checks(result)).SelectMany(check => Expressions(check.Condition)).ToArray();
+    Assert.Contains(expressions, expression => expression is Ir.Operation { Operator: Ir.Operator.Divide });
+    Assert.Contains(expressions, expression => expression is Ir.Operation { Operator: Ir.Operator.Modulo });
+    Assert.Equal(2, results.SelectMany(result => result.Obligations).Count(source => source.Description == "possible division by zero"));
+  }
+
+  [Fact]
+  public void RealDivisionAndPowerStillFailClosed() {
+    Unsupported(Boogie("procedure P(); implementation P() { assert 2.0 / 1.0 == 2.0; }"), "b3_primitive_type");
+    Unsupported(Boogie("procedure P(); implementation P() { assert 2.0 ** 2.0 == 4.0; }"), "b3_primitive_type");
+  }
+
+  private static DafnyOptions Options() {
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    options.ApplyDefaultOptionsWithoutSettingsDefault();
+    options.DafnyPrelude = Path.Combine(AppContext.BaseDirectory, "DafnyPrelude.bpl");
+    return options;
+  }
+
+  private static async Task<List<B3NormalizationResult>> Dafny(string text, int? arithmeticMode = null) {
+    Microsoft.Dafny.Type.ResetScopes();
+    var options = Options();
+    if (arithmeticMode.HasValue) { options.ArithMode = arithmeticMode.Value; }
+    var reporter = new BatchErrorReporter(options);
+    var parsed = await ProgramParser.Parse(text, new Uri("file:///B3IntegerArithmeticTests.dfy"), reporter);
+    await new ProgramResolver(parsed.Program).Resolve(CancellationToken.None);
+    Assert.False(reporter.HasErrors, string.Join("\n", reporter.AllMessages.Select(message => message.Message)));
+    var results = new List<B3NormalizationResult>();
+    foreach (var (_, source) in BoogieGenerator.Translate(parsed.Program, reporter)) {
+      Assert.Equal(0, source.Resolve(options));
+      Assert.Equal(0, source.Typecheck(options));
+      foreach (var implementation in source.Implementations) { results.Add(B3Normalizer.Normalize(source, implementation, options)); }
+    }
+    Assert.False(reporter.HasErrors);
+    return results;
+  }
+
+  private static Bpl.Program ParseBoogie(string text, DafnyOptions options) {
+    Assert.Equal(0, Bpl.Parser.Parse(text, "B3IntegerArithmeticTests.bpl", out var source));
+    Assert.Equal(0, source.Resolve(options));
+    Assert.Equal(0, source.Typecheck(options));
+    return source;
+  }
+
+  private static B3NormalizationResult Normalize(Bpl.Program source, DafnyOptions options) =>
+    B3Normalizer.Normalize(source, source.Implementations.Single(), options);
+
+  private static B3NormalizationResult Boogie(string text) {
+    var options = Options();
+    return Normalize(ParseBoogie(text, options), options);
+  }
+
+  private static string Emit(Bpl.Program source, DafnyOptions options) {
+    using var output = new StringWriter();
+    using var writer = new Bpl.TokenTextWriter(output, options);
+    source.Emit(writer);
+    return output.ToString();
+  }
+
+  private static IEnumerable<Ir.Expression> Expressions(Ir.Expression expression) {
+    yield return expression;
+    if (expression is Ir.Operation operation) {
+      foreach (var child in operation.Arguments.SelectMany(Expressions)) { yield return child; }
+    } else if (expression is Ir.Label label) {
+      foreach (var child in Expressions(label.Body)) { yield return child; }
+    }
+  }
+
+  private static IEnumerable<Ir.Check> Checks(B3NormalizationResult result) => Statements(result.Program!.Unit.Body).OfType<Ir.Check>();
+
+  private static IEnumerable<Ir.Statement> Statements(Ir.Statement statement) {
+    yield return statement;
+    IEnumerable<Ir.Statement> children = statement switch {
+      Ir.Block block => block.Statements,
+      Ir.Choice choice => choice.Branches,
+      Ir.Conditional conditional => new[] { conditional.Then, conditional.Else },
+      Ir.Loop loop => new[] { loop.Body },
+      Ir.Labeled labeled => new[] { labeled.Body },
+      _ => Array.Empty<Ir.Statement>()
+    };
+    foreach (var child in children.SelectMany(Statements)) { yield return child; }
+  }
+
+  private static void Unsupported(B3NormalizationResult result, string code = "b3_arithmetic") {
+    Assert.False(result.Success);
+    Assert.Null(result.Program);
+    Assert.Empty(result.Obligations);
+    Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == code);
+  }
+
+  private static void Validate(B3NormalizationResult result) {
+    Assert.True(result.Success, string.Join("\n", result.Diagnostics.Select(diagnostic => diagnostic.Code + ": " + diagnostic.Message)));
+    var request = new Ir.Request(Ir.Protocol.Version, "integer-arithmetic-test", Ir.Protocol.NormalizerVersion,
+      new string('0', 40), Ir.Protocol.GetProgramHash(result.Program!), result.Program!.Unit.Name, result.Program,
+      new Ir.Configuration("z3", new[] { "-in", "-smt2" }, 1000, 10000, 100000, 2, "5.1.0", new string('d', 64)), result.Obligations, new string('f', 64));
+    Ir.ProtocolValidation.ValidateRequest(request);
+  }
+}
