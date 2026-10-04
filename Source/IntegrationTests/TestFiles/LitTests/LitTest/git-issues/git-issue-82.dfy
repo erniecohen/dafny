@@ -1,9 +1,9 @@
-// RUN: %baredafny verify "%s" --type-system-refresh:false --show-snippets:false --use-basename-for-filename --solver-path "%z3" > "%t"
-// RUN: %baredafny verify "%s" --type-system-refresh:true --show-snippets:false --use-basename-for-filename --solver-path "%z3" >> "%t"
-// RUN: %baredafny verify "%s" --type-system-refresh:false --additional-axioms --show-snippets:false --use-basename-for-filename --solver-path "%z3" >> "%t"
-// RUN: %baredafny verify "%s" --type-system-refresh:true --additional-axioms --show-snippets:false --use-basename-for-filename --solver-path "%z3" >> "%t"
-// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-mixed-negative.dfy" --show-snippets:false --use-basename-for-filename --solver-path "%z3" >> "%t"
-// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-empty-outer-negative.dfy" --show-snippets:false --use-basename-for-filename --solver-path "%z3" >> "%t"
+// RUN: %baredafny verify "%s" --type-system-refresh:false --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" > "%t"
+// RUN: %baredafny verify "%s" --type-system-refresh:true --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
+// RUN: %baredafny verify "%s" --type-system-refresh:false --additional-axioms --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
+// RUN: %baredafny verify "%s" --type-system-refresh:true --additional-axioms --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-mixed-negative.dfy" --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-empty-outer-negative.dfy" --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 type Empty = x: int | false witness *

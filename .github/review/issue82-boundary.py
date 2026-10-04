@@ -14,6 +14,7 @@ the extra diagonal equation makes that old-bridge instance satisfiable again.
 
 import argparse
 import json
+import re
 from pathlib import Path
 import subprocess
 
@@ -93,7 +94,9 @@ def main() -> int:
                 (dest / 'stderr.txt').write_text(result.stderr)
                 answer = next((line for line in result.stdout.splitlines()
                                if line in ('sat', 'unsat', 'unknown')), None)
-                row.update(exit=result.returncode, answer=answer)
+                resource = re.search(r':rlimit-count\s+(\d+)', result.stdout)
+                row.update(exit=result.returncode, answer=answer,
+                           resource_count=int(resource[1]) if resource else None)
                 row['pass'] = result.returncode == 0 and answer == expected
             except subprocess.TimeoutExpired:
                 row.update(answer='wall-time safety cap', **{'pass': False})
