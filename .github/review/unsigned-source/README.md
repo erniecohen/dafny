@@ -27,6 +27,19 @@ producer-branch or G3 availability certificates. Names are descriptive; they
 grant no semantic recognition. Complement matching is a
 read-only copy of the current CFG validator's finite shapes and creates no
 Boogie expression. The inventory is compared before/after normalization.
+The first diagnostic run
+[37240827629](https://github.com/erniecohen/dafny/actions/runs/37240827629)
+compiled and executed the tiny runner, but its inventory rejected a
+`Microsoft.Boogie.LambdaExpr` before producing any unit receipt. Job success
+was expected-failure delivery only. This source repair records the actual
+lambda binder kind, body, type parameters, bound-variable and type identities,
+where roots and attributes. It walks the body, every binder where expression
+and every expression-valued attribute parameter with bounded child paths.
+Lambda contents are not opaque leaves; this diagnostic traversal supplies no
+normalization rule or source-root/availability license. All original inputs,
+three-unit requirements and before/after inventory equality remain unchanged.
+This repaired diagnostic has not executed at this source checkpoint.
+
 The original source is emitted with the exact printer overload setting
 `allowPrintDesugaring=false` and `setTokens=false`; no desugaring, passification,
 engine instance, verification tasks, pruning or prover is invoked.

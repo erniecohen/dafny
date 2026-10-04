@@ -126,6 +126,16 @@ internal static class Program {
     }
     object Variable(Bpl.Variable variable, string path) => new { id = Id(variable), name = variable.Name,
       type = variable.TypedIdent.Type.ToString(), where = variable.TypedIdent.WhereExpr == null ? null : Expression(variable.TypedIdent.WhereExpr, path + "/where") };
+    object? Lambda(Bpl.Expr expression) {
+      if (expression is not Bpl.LambdaExpr lambda) { return null; }
+      // Pinned Boogie AbsyQuant.cs: BinderExpr fields and LambdaExpr constructor.
+      // Use the already resolved Type; ShallowType would populate a source cache.
+      return new { kind = lambda.Kind.ToString(), body = Id(lambda.Body),
+        typeParameters = lambda.TypeParameters.Select(parameter => new { id = Id(parameter), name = parameter.Name }).ToArray(),
+        dummies = lambda.Dummies.Select(variable => new { id = Id(variable), name = variable.Name,
+          typedIdent = Id(variable.TypedIdent), type = variable.TypedIdent.Type.ToString(), typeIdentity = Id(variable.TypedIdent.Type),
+          where = Id(variable.TypedIdent.WhereExpr) }).ToArray(), attributes = Attributes(lambda.Attributes) };
+    }
     object Expression(Bpl.Expr expression, string root, int initialDepth = 0) {
       var rows = new List<object>();
       var pending = new Stack<(Bpl.Expr Expr, string Path, int Depth)>(); pending.Push((expression, root, initialDepth));
@@ -141,7 +151,7 @@ internal static class Program {
             typeParameters = function.TypeParameters.Count, inputs = function.InParams.Select(p => new { id = Id(p), type = p.TypedIdent.Type.ToString() }).ToArray(),
             outputs = function.OutParams.Select(p => new { id = Id(p), type = p.TypedIdent.Type.ToString() }).ToArray(), attributes = Attributes(function.Attributes) },
           identifier = current is Bpl.IdentifierExpr identifier ? new { declaration = Id(identifier.Decl), name = identifier.Name } : null,
-          children = children.Select(child => new { slot = child.Slot, id = Id(child.Expr) }).ToArray() });
+          lambda = Lambda(current), children = children.Select(child => new { slot = child.Slot, id = Id(child.Expr) }).ToArray() });
         for (var i = children.Length - 1; i >= 0; i--) { pending.Push((children[i].Expr, path + "/" + children[i].Slot, depth + 1)); }
       }
       return new { root = Id(expression), occurrences = rows };
@@ -159,6 +169,20 @@ internal static class Program {
           for (var trigger = quantified.Triggers; trigger != null; trigger = trigger.Next) {
             Require(++t <= MaximumDepth, "Trigger chain bound");
             for (var i = 0; i < trigger.Tr.Count; i++) { yield return ("trigger" + (t - 1) + "/term" + i, trigger.Tr[i]); }
+          }
+          break;
+        case Bpl.LambdaExpr lambda:
+          Require((long)lambda.Dummies.Count + lambda.TypeParameters.Count <= MaximumNodes, "Lambda binder inventory bound");
+          yield return ("body", lambda.Body);
+          for (var i = 0; i < lambda.Dummies.Count; i++) {
+            if (lambda.Dummies[i].TypedIdent.WhereExpr is { } where) { yield return ("dummy" + i + "/where", where); }
+          }
+          var a = 0; long parameters = 0;
+          for (var attribute = lambda.Attributes; attribute != null; attribute = attribute.Next) {
+            Require(++a <= MaximumDepth && (parameters += attribute.Params.Count) <= MaximumNodes, "Lambda attribute inventory bound");
+            for (var i = 0; i < attribute.Params.Count; i++) {
+              if (attribute.Params[i] is Bpl.Expr value) { yield return ("attribute" + (a - 1) + "/argument" + i, value); }
+            }
           }
           break;
         case Bpl.LetExpr let:

@@ -7,12 +7,12 @@
       "sha256": "a79691a93b46e49ce460c26ef22afcc03d6eca1e63bf2edbc20e96159510f6c9"
     },
     "Program.cs": {
-      "bytes": 21589,
-      "sha256": "29ccfc9be9661a63ef043c579f1cf1246b928def61df60cde93b92ea49e02082"
+      "bytes": 23353,
+      "sha256": "9cf2880e280190729a8c8c0f11c91d64e58cc6a32d826bc498d1f7b84df57f95"
     },
     "README.md": {
-      "bytes": 4098,
-      "sha256": "af0e061d6100fa1f74dba24346b906d7f1376071a8528bd64bbede98e9f86e03"
+      "bytes": 4950,
+      "sha256": "eca165ecaf211a52b07cb68d294392c522a36521ead1c3f3c6edc8a6c56cb5d4"
     },
     "UnsignedSourceProbe.csproj": {
       "bytes": 821,
