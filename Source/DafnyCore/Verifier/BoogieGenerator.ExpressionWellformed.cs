@@ -703,6 +703,9 @@ namespace Microsoft.Dafny {
                 if (!(ee is DefaultValueExpression)) {
                   CheckWellformedWithResult(ee, wfOptions, locals, builder, etran, (returnBuilder, result) => {
                     CheckSubrange(result.Origin, etran.TrExpr(result), ee.Type, et, ee, returnBuilder);
+                    if (!IsCoRecursiveFunctionCall(e) && ContainsCoRecursiveFunctionCall(ee)) {
+                      CheckSuspendedValueMembership(result, et, returnBuilder, etran);
+                    }
                   });
                 }
                 Bpl.Cmd cmd = Bpl.Cmd.SimpleAssign(p.Origin, lhs, AdaptBoxing(p.Origin, etran.TrExpr(ee), Cce.NonNull(ee.Type), et));
