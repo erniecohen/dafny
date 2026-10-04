@@ -2592,10 +2592,10 @@ index 0f46940420af48d6756e07008ce86f51e3097e66..0a1a2034f257859f24c6c6d0815d5415
 +}
 diff --git a/test/worker/BitvectorTests.dfy b/test/worker/BitvectorTests.dfy
 new file mode 100644
-index 0000000000000000000000000000000000000000..9e574d91712c303405f4805d8f84dba76bee0283
+index 0000000000000000000000000000000000000000..ac941fd4272b02854fbecdf7cf552301f650c352
 --- /dev/null
 +++ b/test/worker/BitvectorTests.dfy
-@@ -0,0 +1,189 @@
+@@ -0,0 +1,193 @@
 +module BitvectorWorkerTests {
 +  import opened Std.Wrappers
 +  import opened Basics
@@ -2627,7 +2627,11 @@ index 0000000000000000000000000000000000000000..9e574d91712c303405f4805d8f84dba7
 +    var checked := TypeChecker.TypeCheck(program);
 +    expect checked.Pass?;
 +    expect |program.procedures| == 1 && program.procedures[0].Body.Some?;
-+    var body := program.procedures[0].Body.value;
++    // ResolveProcedureBody installs one synthetic return-label wrapper around the parsed body.
++    // Require that exact shape before extracting the single checked expression.
++    var returned := program.procedures[0].Body.value;
++    expect returned.LabeledStmt? && returned.lbl.Name == "return";
++    var body := returned.body;
 +    expect body.Block? && |body.stmts| == 1 && body.stmts[0].Check?;
 +    return body.stmts[0].cond;
 +  }
@@ -2787,10 +2791,10 @@ index 0000000000000000000000000000000000000000..9e574d91712c303405f4805d8f84dba7
 +}
 diff --git a/test/worker/RealTests.dfy b/test/worker/RealTests.dfy
 new file mode 100644
-index 0000000000000000000000000000000000000000..9c83d8c029d0fb57d3e18c8b153c9d60ea2e4559
+index 0000000000000000000000000000000000000000..10e7d8b910b811786f5707c1c704d3e8bc7ddcd8
 --- /dev/null
 +++ b/test/worker/RealTests.dfy
-@@ -0,0 +1,89 @@
+@@ -0,0 +1,93 @@
 +module RealWorkerTests {
 +  import opened Std.Wrappers
 +  import Raw = RawAst
@@ -2818,7 +2822,11 @@ index 0000000000000000000000000000000000000000..9c83d8c029d0fb57d3e18c8b153c9d60
 +    var checked := TypeChecker.TypeCheck(program);
 +    expect checked.Pass?;
 +    expect |program.procedures| == 1 && program.procedures[0].Body.Some?;
-+    var body := program.procedures[0].Body.value;
++    // ResolveProcedureBody installs one synthetic return-label wrapper around the parsed body.
++    // Require that exact shape before extracting the single checked expression.
++    var returned := program.procedures[0].Body.value;
++    expect returned.LabeledStmt? && returned.lbl.Name == "return";
++    var body := returned.body;
 +    expect body.Block? && |body.stmts| == 1 && body.stmts[0].Check?;
 +    return body.stmts[0].cond;
 +  }

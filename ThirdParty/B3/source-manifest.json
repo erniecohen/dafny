@@ -7,7 +7,7 @@
   "patches": [
     {
       "file": "integration.patch",
-      "sha256": "6d0a276f79e3237167f2e059e63b89f9878c2c33fb1ef0b985e7e3387ba001be"
+      "sha256": "29ce3e116f81d2d8d6fb777c1eb50a28a0f85a8b5c3e9efe61236ba91b3e6b42"
     }
   ],
   "vendoredPaths": [
@@ -24,7 +24,7 @@
     "LICENSE": "e91686b267408f7ca5da770a3bb742911872b9cfcab2b1f4364263a86283d0cb",
     "README.md": "956e48ef8e9b1fa2be3ec1a2a6e979a17bf6a16ba2dbc9d3c44d6b8280cbf2c6",
     "doc/worker-library.md": "eb236634b48e8abf23f1a452904915e8c5e8b3b5c0b9b62d2548514e7a07a248",
-    "integration.patch": "6d0a276f79e3237167f2e059e63b89f9878c2c33fb1ef0b985e7e3387ba001be",
+    "integration.patch": "29ce3e116f81d2d8d6fb777c1eb50a28a0f85a8b5c3e9efe61236ba91b3e6b42",
     "library/dfyconfig.toml": "b0a57d8fe24030e720edfd0f4d490be2b4011c0f8b66cfd6adbdb9a9946463c8",
     "src/Ast/Ast.dfy": "f69bb0f6ec6dadc0e0be071e89ea9b4ee0a7815bc331873d704b0e82c5c2ea52",
     "src/Ast/AstValid.dfy": "6473a5b5c018f1eab55998956a72dcb8e8e92a02711ad2080b7b7007c39a21cf",
@@ -76,8 +76,8 @@
     "target/java/src/OSProcess.java": "fc815eed4365c0a0979777da8ab738156af5ba9d83afb233eb9daeace24d4aca",
     "target/java/src/__default.java": "637cb4d440f77a9a4c18632da5f03f245694efa18a6299afd3f6a5ca1c0771cb",
     "target/java/src/dfyconfig.toml": "1be9ffbf95985a674f6c20f8a19700cb37c82e0fc56ca5caf8894c1518adf8ba",
-    "test/worker/BitvectorTests.dfy": "2bc9817f2cc58978ce9ac1400bf83f4891806a36ebe72f04e1a465b222b661c5",
-    "test/worker/RealTests.dfy": "71ae73d7ed31f0a2793baeff429f7b712088e03af665a70a3554c62b2d3c7ee4",
+    "test/worker/BitvectorTests.dfy": "fd0fb8775d2be23366b162338a032304dacb577c8202b9493e5346cd2b0e3c2b",
+    "test/worker/RealTests.dfy": "a14ca307f13a087daad662ca3c87d358f2632419883355871495babcbb00cc74",
     "test/worker/WorkerTests.dfy": "5ca2f0fcabc002bc947c450b3be320af1831acdbc7ecca5bbcd3714e73cc965c",
     "test/worker/dfyconfig.toml": "b5ef1c5b340cd6049cba26e40cf5a1608959fae2497231843840851abb4628ff",
     "test/worker/fake-solver.py": "1c80d1c6454178249b04290ffa638c9cc863f90ef1c02214b3f2556bdab338a9"

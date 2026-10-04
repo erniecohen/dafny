@@ -25,7 +25,11 @@ module RealWorkerTests {
     var checked := TypeChecker.TypeCheck(program);
     expect checked.Pass?;
     expect |program.procedures| == 1 && program.procedures[0].Body.Some?;
-    var body := program.procedures[0].Body.value;
+    // ResolveProcedureBody installs one synthetic return-label wrapper around the parsed body.
+    // Require that exact shape before extracting the single checked expression.
+    var returned := program.procedures[0].Body.value;
+    expect returned.LabeledStmt? && returned.lbl.Name == "return";
+    var body := returned.body;
     expect body.Block? && |body.stmts| == 1 && body.stmts[0].Check?;
     return body.stmts[0].cond;
   }
