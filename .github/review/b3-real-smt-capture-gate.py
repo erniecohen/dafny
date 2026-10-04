@@ -5,6 +5,8 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
+import shutil
 import stat
 import sys
 import types
@@ -19,9 +21,9 @@ def require(condition, message):
     if not condition: raise ValueError(message)
 
 
-def captured_regular(path, maximum):
+def captured_regular(path, maximum, allow_empty=False):
     before = path.lstat()
-    require(stat.S_ISREG(before.st_mode) and 0 < before.st_size <= maximum, 'Bounded regular input required: ' + path.name)
+    require(stat.S_ISREG(before.st_mode) and (0 if allow_empty else 1) <= before.st_size <= maximum, 'Bounded regular input required: ' + path.name)
     fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
     try:
         pinned = os.fstat(fd)
@@ -61,7 +63,8 @@ def main():
     output.mkdir(parents=True)
     receipt = {'diagnosticOnly':True,'acceptanceClaimed':False,'instrumentedAcceptanceClaimed':False,
       'sourceSealSha256':SOURCE_SEAL,'libraryRebuilt':False,'compilerProductRebuilt':False,
-      'declaredCIHead':os.environ.get('GITHUB_SHA'),'receiptProduced':False}
+      'declaredCIHead':os.environ.get('GITHUB_SHA'),'receiptProduced':False,
+      'prerequisiteSetupOk':os.environ.get('REAL_SMT_SETUP_OK') == 'true','sourceSealValidated':False}
     try:
         require(len(sys.argv) == 1 and os.environ.get('GITHUB_EVENT_NAME') == 'workflow_dispatch' and
           os.environ.get('GITHUB_REPOSITORY') == 'erniecohen/dafny' and
@@ -75,7 +78,29 @@ def main():
         receipt['routingSourceSha256'] = hashlib.sha256(captured_regular(Path(__file__),MAX_SOURCE)).hexdigest()
         receipt['workflowSourceSha256'] = hashlib.sha256(captured_regular(ROOT/'.github/workflows/review.yml',MAX_SOURCE)).hexdigest()
         receipt['productLedger'] = captured_regular(ROOT/'.github/review/base',4096).decode().strip()
+        setup = ROOT/'out/b3-real-smt-setup'
+        receipt['prerequisiteSetupFiles'] = {}
+        for name in ['status.txt','apt-update.log','apt-install.log','package-version.log','version.log','executable-sha256.log','executable-pin.log']:
+            path = setup/name
+            if path.exists():
+                data = captured_regular(path,4 * MAX_SOURCE,allow_empty=True)
+                receipt['prerequisiteSetupFiles'][name] = {'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()}
+                if name == 'status.txt':
+                    require(len(data) <= 8192, 'Setup status byte bound')
+                    receipt['prerequisiteSetupStatus'] = data.decode('ascii')
+        require(receipt['prerequisiteSetupOk'], 'Reviewed tracer prerequisite setup failed; no SDK/parser/trace stages started')
+        require(receipt.get('prerequisiteSetupStatus','').endswith('setupPassed=true\n'), 'Setup success receipt missing')
+        require(captured_regular(setup/'package-version.log',4096) == b'6.8-0ubuntu2\n' and
+          captured_regular(setup/'version.log',65536).splitlines()[0] == b'strace -- version 6.8', 'Exact setup tracer pins differ')
+        raw_hash = captured_regular(setup/'executable-sha256.log',4096).decode('ascii')
+        matched = re.fullmatch(r'([0-9a-f]{64})  /usr/bin/strace\n',raw_hash)
+        require(matched is not None, 'Setup tracer digest record differs')
+        tracer = Path(shutil.which('strace') or '').resolve(strict=True)
+        require(tracer == Path('/usr/bin/strace').resolve(strict=True), 'Installed tracer shadowed on invocation PATH')
+        receipt['setupTracerSha256'] = matched[1]
+        require(hashlib.sha256(captured_regular(tracer,16 * MAX_SOURCE)).hexdigest() == matched[1], 'Tracer bytes changed after setup')
         manifest,captured = source_snapshot()
+        receipt['sourceSealValidated'] = True
         receipt['approvedSourceManifest'] = manifest
         path = SEALED/'gate.py'
         gate = types.ModuleType('b3_real_smt_capture_gate'); gate.__file__ = str(path)
@@ -92,6 +117,8 @@ def main():
         inner = json.loads(raw)
         require(inner['diagnosticOnly'] is True and inner['acceptanceClaimed'] is False,
           'Diagnostic receipt boundary differs')
+        observed_tracer = inner.get('diagnostic',{}).get('straceExecutableSha256')
+        require(observed_tracer in (None,receipt['setupTracerSha256']), 'Diagnostic tracer digest differs from successful setup')
         receipt['receiptProduced'] = True
         receipt['diagnosticReceiptSha256'] = hashlib.sha256(raw).hexdigest()
         receipt['cleanupPoisoned'] = inner.get('cleanupPoisoned',False)

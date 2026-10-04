@@ -22,7 +22,17 @@ version line to be exactly `strace -- version 6.8`. Package installation uses
 sudo before any captured replay. All SDK, worker and traced solver stages run as
 the ordinary non-root runner user; the entry point rejects UID0. The install log,
 package/version lines and executable digest are uploaded alongside the diagnostic
-receipts. Captured descendants receive no download token environment.
+receipts. The setup stage initially sets `REAL_SMT_SETUP_OK=false`, uses fixed
+180-second apt and 20-second metadata deadlines with five-second kill backstops,
+and streams at most 4MiB to each command log. Any command, package/version, log
+bound or digest failure records its status and exits zero as unavailable diagnostic
+evidence. The flag becomes true only after all checks succeed. The outer wrapper
+requires that flag and the exact setup receipts before loading any diagnostic,
+SDK, parser or trace stages; a preexisting tracer cannot override failed setup.
+It checks the captured `/usr/bin/strace` digest and rejects PATH shadowing.
+Captured descendants receive no download token environment. These installer
+timeouts are fixed CI preparation, separate from the pidfd-owned non-root replay
+scope; they do not establish proof-process lifecycle acceptance.
 
 The approved inner wrapper downloads only the two pinned public artifacts. It
 replays the four exact original requests from run 37232113837 and four separate
@@ -38,5 +48,7 @@ Unknown/ToolError results remain strict discrepancies; no expectation is waived.
 observations, stage receipts and the inner diagnostic. The existing artifact
 upload runs under `always()`, including prerequisite or parser failures. Expected
 mathematical mismatch or incomplete capture produces diagnostic evidence and a
-zero exit; it is never relabeled acceptance. Unexpected setup/entry-point
-failures may fail the workflow while still uploading their available evidence.
+zero exit; it is never relabeled acceptance. Prerequisite failure also produces a
+zero diagnostic exit and an outer failure receipt without starting proof stages.
+Unexpected entry-point or source-binding failures may fail the workflow while
+still uploading their available evidence.

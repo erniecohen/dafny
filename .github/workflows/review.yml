@@ -627,21 +627,45 @@ jobs:
         if: inputs.b3_focus_gate == 'real-smt-capture'
         run: |
           set -euo pipefail
-          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          printf 'REAL_SMT_SETUP_OK=false\n' >> "$GITHUB_ENV" || exit 0
+          mkdir -p out/b3-real-smt-setup || exit 0
+          printf 'setupPassed=false\n' > out/b3-real-smt-setup/status.txt || exit 0
+          fail_setup() {
+            printf 'failure=%s\n' "$1" >> out/b3-real-smt-setup/status.txt
+            echo "Real SMT diagnostic prerequisite unavailable: $1"
+            exit 0
+          }
+          run_setup() {
+            local name=$1 code size
+            shift
+            if "$@" 2>&1 | head -c 4194304 > "out/b3-real-smt-setup/$name.log"; then
+              code=0
+            else
+              code=$?
+            fi
+            size=$(wc -c < "out/b3-real-smt-setup/$name.log") || return 1
+            if [ "$size" -ge 4194304 ]; then code=125; fi
+            printf '%s exit=%s bytes=%s\n' "$name" "$code" "$size" >> out/b3-real-smt-setup/status.txt || return 1
+            return "$code"
+          }
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch || fail_setup event
           case "$GITHUB_REF" in
             refs/heads/scratch/*) ;;
-            *) echo "Real SMT capture requires a scratch branch"; exit 1 ;;
+            *) fail_setup branch ;;
           esac
-          test '${{ inputs.b3_compile_only }}' = true
-          test '${{ inputs.b3_full_gate }}' = false
-          mkdir -p out/b3-real-smt-setup
-          sudo apt-get update 2>&1 | tee out/b3-real-smt-setup/apt-update.txt
-          sudo apt-get install --yes --no-install-recommends strace=6.8-0ubuntu2 2>&1 | tee out/b3-real-smt-setup/apt-install.txt
-          dpkg-query -W -f='${Package} ${Version}\n' strace | tee out/b3-real-smt-setup/package.txt
-          test "$(dpkg-query -W -f='${Version}' strace)" = 6.8-0ubuntu2
-          strace --version | tee out/b3-real-smt-setup/version.txt
-          test "$(head -n1 out/b3-real-smt-setup/version.txt)" = 'strace -- version 6.8'
-          sha256sum "$(command -v strace)" > out/b3-real-smt-setup/executable-sha256.txt
+          test '${{ inputs.b3_compile_only }}' = true || fail_setup compile-only
+          test '${{ inputs.b3_full_gate }}' = false || fail_setup full-gate
+          run_setup apt-update sudo -n timeout --kill-after=5s 180s apt-get update || fail_setup apt-update
+          run_setup apt-install sudo -n timeout --kill-after=5s 180s apt-get install --yes --no-install-recommends strace=6.8-0ubuntu2 || fail_setup apt-install
+          run_setup package-version timeout --kill-after=5s 20s dpkg-query -W -f='${Version}\n' strace || fail_setup package-query
+          test "$(cat out/b3-real-smt-setup/package-version.log)" = 6.8-0ubuntu2 || fail_setup package-version
+          run_setup version timeout --kill-after=5s 20s /usr/bin/strace --version || fail_setup version-command
+          test "$(head -n1 out/b3-real-smt-setup/version.log)" = 'strace -- version 6.8' || fail_setup version-line
+          run_setup executable-sha256 timeout --kill-after=5s 20s sha256sum /usr/bin/strace || fail_setup executable-hash
+          run_setup executable-pin timeout --kill-after=5s 20s sha256sum -c out/b3-real-smt-setup/executable-sha256.log || fail_setup executable-pin
+          printf 'setupPassed=true\n' >> out/b3-real-smt-setup/status.txt || fail_setup status-write
+          printf 'REAL_SMT_SETUP_OK=true\n' >> "$GITHUB_ENV" || fail_setup environment-write
+          exit 0
       - name: Record compiler, contract and optional integration checks
         env:
           GH_TOKEN: ${{ github.token }}
@@ -654,7 +678,7 @@ jobs:
           MSBUILDDISABLENODEREUSE: '1'
         run: |
           if [ "$B3_FOCUS_GATE" = real-smt-capture ]; then
-            echo '73682b895837a93d369b201ee9dfad15d986434d66d29f50a77f070a8adbadce  .github/review/b3-real-smt-capture-gate.py' | sha256sum -c -
+            echo '639990fc74a8593f25830b7f7a11bd153dbaeaef473c8908940b68cb73ef5d28  .github/review/b3-real-smt-capture-gate.py' | sha256sum -c -
             B3_COMPILE_ONLY='${{ inputs.b3_compile_only }}' python3 -B .github/review/b3-real-smt-capture-gate.py
           elif [ "$B3_FOCUS_GATE" = real-triage ]; then
             python3 .github/review/b3-real-triage-gate.py
