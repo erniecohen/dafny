@@ -64,12 +64,50 @@ around those objects. It never clears source Block.Predecessors, rewrites goto
 lists, marks expression polarity, desugars calls, passifies, prunes the original
 program, constructs Boogie verification tasks, or calls a Boogie prover.
 
-Resolve and Typecheck inspect Blocks rather than StructuredStmts. Normalization
-therefore checks that every raw assertion, including one nested in a StateCmd,
-has an original normalized assert or invariant anchor. An extra raw false goal
-cannot be discarded or used solely as availability metadata. The command and
-topology correspondence boundary additionally needs the reviewed producer-shape
-validation; this source checkpoint is not accepted while that work remains.
+Resolve and Typecheck inspect Blocks rather than StructuredStmts
+(`Implementation.cs:586-589,640-643`). The structured constructor builds Blocks
+once (`Implementation.cs:400-403`). Typed input alone therefore does not establish
+that those two mutable representations still correspond.
+
+The bounded validator will use the exact producer at Boogie
+`73a0e214a87df85fc058270268c1d0706fd05bc9`,
+`Source/Core/AST/StructuredBoogie/BigBlocksResolutionContext.cs`:
+
+- `CreateBlocks:351-375` preserves the complete source command sequence by object
+  identity, including PrefixCommands applied once, and reuses explicit transfers.
+- `AssignSuccessors:316-341` sets lexical continuation/backedge successors.
+  `CreateBlocks:382-403,594-605` derives runoff and break transfers from them.
+  `CheckLegalLabels:228-245` selects the nearest loop or named lexical enclosure.
+- `CreateBlocks:413-450` creates only exact Guard and Not(Guard) assumptions with
+  one empty partition attribute, and reuses every yield/invariant object at the
+  loop header. `453-477` supplies the loop body, backedge and exit topology.
+- `CreateBlocks:494-525,527-584` supplies branch guards and exact successor order;
+  conditional jump attributes are the original IfCmd attributes. Else-if guards
+  remain attached to the preceding condition, not the next one.
+- `StmtList.PrefixFirstBlock:100-129` puts a nonempty guard prefix inside an
+  anonymous first block, otherwise creates a separate guard block; an empty
+  prefix needs no extra block. The validator checks this placement.
+
+Reconstruct only owned expected descriptions in deterministic producer block
+order. Bind each generated label to the corresponding actual block, without
+constructing native nodes, guessing label spellings or trusting mutable successor
+metadata. Require exact command object sequences, exact generated guard shapes,
+explicit transfer identities, matching goto names and resolved target objects,
+all lexical loop/break/return edges, and every actual block consumed exactly once.
+Bound source depth, command/edge totals and block count before expansion. Unknown
+shapes, reordered/replaced/inserted commands, redirected or missing edges, and
+ambiguous source objects fail `b3_cfg_correspondence`. Source statements shared
+with their raw commands remain observed exactly once; mutating a shared command
+changes both interpretations and does not bypass these checks.
+
+This establishes the representation premise for the separately reviewed lowering:
+the raw CFG has precisely the source ordinary commands, generated guards and
+control graph of the structured artifact being normalized. Every raw assertion,
+including StateCmd descendants, must additionally have an original normalized
+assert or invariant anchor; unmatched goals cannot be discarded or treated only
+as availability data. The resulting visibility origin mappings refer to that
+same checked graph. This is a source correspondence argument and implementation
+plan, not executable or formal acceptance evidence.
 
 Each ordinary assertion maps to its exact command. A checked call requirement
 uses the original CallCmd entry state, since its reviewed desugaring introduces
