@@ -663,7 +663,10 @@ namespace Microsoft.Dafny {
             for (int i = 0; i < dtv.Ctor.Formals.Count; i++) {
               var formal = dtv.Ctor.Formals[i];
               var arg = dtv.Arguments[i];
-              if (arg is not DefaultValueExpression) {
+              // A default was proved only under typed formal inputs. Substitution
+              // with a suspended call does not establish that premise.
+              var suspendedDefault = arg is DefaultValueExpression && ContainsCoRecursiveFunctionCall(arg);
+              if (arg is not DefaultValueExpression || suspendedDefault) {
                 CheckWellformed(arg, wfOptions, locals, builder, etran);
               }
               // Cannot use the datatype's formals, so we substitute the inferred type args:
@@ -672,6 +675,9 @@ namespace Microsoft.Dafny {
                 su[p.Item1] = p.Item2;
               }
               Type ty = formal.Type.Subst(su);
+              if (suspendedDefault) {
+                CheckSuspendedValueMembership(arg, ty, builder, etran);
+              }
               CheckSubrange(arg.Origin, etran.TrExpr(arg), arg.Type, ty, arg, builder);
             }
 
@@ -714,7 +720,7 @@ namespace Microsoft.Dafny {
                 Expression ee = e.Args[i];
                 directSubstMap.Add(p, ee);
 
-                if (!(ee is DefaultValueExpression)) {
+                if (ee is not DefaultValueExpression || ContainsCoRecursiveFunctionCall(ee)) {
                   CheckWellformedWithResult(ee, wfOptions, locals, builder, etran, (returnBuilder, result) => {
                     CheckSubrange(result.Origin, etran.TrExpr(result), ee.Type, et, ee, returnBuilder);
                     if (!IsCoRecursiveFunctionCall(e) && ContainsCoRecursiveFunctionCall(ee)) {
