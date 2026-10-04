@@ -31,8 +31,22 @@ jobs:
           tail -80 results/console.log
           echo "Incremental regression process exit: $status. Inspect the artifact; workflow status only confirms capture." >> "$GITHUB_STEP_SUMMARY"
           exit 0
+      - name: Record baseline counterfactual
+        run: |
+          mkdir -p baseline-results
+          git fetch --no-tags --depth=1 origin 8b9635e3d48b94c1a5875f0f2e0a772d9131900b
+          git restore --source=8b9635e3d48b94c1a5875f0f2e0a772d9131900b -- Source/DafnyCore/Resolver/ProgramResolver.cs Source/DafnyLanguageServer/Language/CachingResolver.cs
+          set +e
+          dotnet test Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~IncrementalBitvectorMembersTest --logger 'console;verbosity=normal' --logger trx --results-directory baseline-results > baseline-results/console.log 2>&1
+          status=$?
+          echo "$status" > baseline-results/process-exit.txt
+          tail -80 baseline-results/console.log
+          echo "Baseline counterfactual exit: $status (expected regression failures)." >> "$GITHUB_STEP_SUMMARY"
+          exit 0
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: issue110-incremental
-          path: results
+          path: |
+            results
+            baseline-results

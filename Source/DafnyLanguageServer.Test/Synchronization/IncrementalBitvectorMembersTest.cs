@@ -40,8 +40,12 @@ public class IncrementalBitvectorMembersTest : ClientBasedLanguageServerTest {
     });
     using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(60));
     var document = CreateAndOpenTestDocument(source, "incremental-bitvector-members.dfy");
-    for (var edit = 0; edit < 3; edit++) {
-      if (edit != 0) {
+    for (var edit = 0; edit < 5; edit++) {
+      if (edit == 3) {
+        // Add another lazily created width to an already populated cache, then edit again.
+        ApplyChange(ref document, new Range(0, 0, 0, 0),
+          "newtype Later = bv17\nconst rotation := (1 as bv17).RotateLeft(1)\n");
+      } else if (edit != 0) {
         ApplyChange(ref document, new Range(0, 0, 0, 0), "\n");
       }
       Assert.True(await WaitUntilResolutionFinished(document, timeout.Token));
