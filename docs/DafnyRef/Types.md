@@ -3804,8 +3804,10 @@ each parameter of a constructor can be named in order to introduce a
 corresponding destructor. For example, if `xs` is the stream
 `SCons(x, ys)`, then `xs.SCons?` and `xs.head == x` hold. In contrast
 to datatype declarations, there is no grounding check for
-co-datatypes—since a codatatype admits infinite values, the type is
-nevertheless inhabited.
+co-datatypes: recursively defined co-datatypes can admit infinite values without
+a finite base constructor. Constructor payloads must still satisfy their declared
+types, including any refinement predicates; an impossible payload constraint
+does not become inhabited through co-recursion.
 
 #### 5.14.3.3. Creating Values of Co-datatypes
 To define values of co-datatypes, one could imagine a “co-function”
@@ -3827,6 +3829,15 @@ condition is satisfied if every co-recursive call is syntactically guarded by a 
 of a co-datatype, which is the criterion Dafny uses to classify intra-cluster calls as being
 either co-recursive or recursive. Calls that are classified as co-recursive are exempt from
 termination checks.
+
+A co-recursive call is a suspended value while its defining constructor's fields
+are checked. Its full result type cannot be assumed to justify those same field
+checks. Destructive observations, ordinary helper inputs, pattern bindings, and
+substituted defaults must establish the applicable type-membership obligations
+before their type facts are used. The current encoding conservatively rejects
+some valid destructive observations of suspended calls; the
+[compatibility explanation](../dev/codatatype-refinement-boundaries.md) describes
+these limits and the retained productive patterns.
 
 A consequence of the productivity checks and termination checks is that, even in the
 absence of talking about least or greatest fix-points of self-calling functions, all functions
