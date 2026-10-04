@@ -3,6 +3,11 @@
 Thanks for contributing to Dafny!  Github is the right place to discuss feature requests, report issues with Dafny, or contact the Dafny developers.
 Dafny is an Open Source project and welcomes contributions.
 
+The fork's build and test tools require the .NET 10 SDK. Generated C# programs
+continue to target .NET 8; the .NET 10 SDK can build them, and their existing
+runtime requirements still apply. CI uses an isolated .NET 10 SDK installation
+with the .NET 8 runtime, and checks that no .NET 8 SDK is available to the build.
+
 ## Reporting issues
 
 Before reporting an issue here, consider whether it would be better handled in one of the following places:
