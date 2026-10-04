@@ -20,6 +20,9 @@ public class MatchStmtVerifier {
     FillMissingCases(stmt);
 
     generator.TrStmt_CheckWellformed(stmt.Source, builder, locals, etran, true);
+    // Pattern locals assume their declared field types. A suspended source
+    // must establish membership before those assumptions enter any branch.
+    generator.CheckCoRecursiveValueMembership(stmt.Source, stmt.Source.Type, builder, etran);
     Expr source = etran.TrExpr(stmt.Source);
     var b = new BoogieStmtListBuilder(generator, generator.Options, builder.Context);
     b.Add(BoogieGenerator.TrAssumeCmd(stmt.Origin, Expr.False));
@@ -171,6 +174,8 @@ public class MatchStmtVerifier {
     FillMissingCases(me);
 
     boogieGenerator.CheckWellformed(me.Source, wfOptions, locals, builder, etran);
+    // Establish the source's type before assuming the pattern variables' types.
+    boogieGenerator.CheckCoRecursiveValueMembership(me.Source, me.Source.Type, builder, etran);
     Expr src = etran.TrExpr(me.Source);
     IfCmd ifCmd = null;
     BoogieStmtListBuilder elsBldr = new BoogieStmtListBuilder(boogieGenerator, boogieGenerator.Options, builder.Context);
