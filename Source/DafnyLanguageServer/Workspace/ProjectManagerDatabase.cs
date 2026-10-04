@@ -153,17 +153,26 @@ namespace Microsoft.Dafny.LanguageServer.Workspace {
 
             var projectFileContentHasChanged = projectManagerForFile.Project.Uri == project.Uri;
             if (projectFileContentHasChanged) {
+              var previousManager = projectManagerForFile;
+              var affectedSources = managersBySourceFile.Where(entry => ReferenceEquals(entry.Value, previousManager))
+                .Select(entry => entry.Key).ToList();
               managersByProject.Remove(project.Uri);
+              // Retire publication and cancel every old task before activating the replacement.
+              previousManager.CloseAsync();
+              projectManagerForFile = createProjectManager(scheduler, verificationCache, project);
+              foreach (var source in affectedSources) {
+                managersBySourceFile[source] = projectManagerForFile;
+                projectManagerForFile.OpenDocument(source, false);
+              }
+            } else {
+              var previousProjectHasNoDocuments = projectManagerForFile.CloseDocument(uri);
+              if (previousProjectHasNoDocuments) {
+                // Enable garbage collection
+                managersByProject.Remove(projectManagerForFile.Project.Uri);
+              }
+              projectManagerForFile = managersByProject.GetValueOrDefault(project.Uri) ??
+                                      createProjectManager(scheduler, verificationCache, project);
             }
-            var previousProjectHasNoDocuments = projectManagerForFile.CloseDocument(projectManagerForFile.Project.Uri);
-            if (previousProjectHasNoDocuments) {
-              // Enable garbage collection
-              managersByProject.Remove(projectManagerForFile.Project.Uri);
-            }
-
-            projectManagerForFile = managersByProject.GetValueOrDefault(project.Uri) ??
-                                    createProjectManager(scheduler, verificationCache, project);
-            projectManagerForFile.OpenDocument(uri, true);
             triggerCompilation = true;
           }
         } else {

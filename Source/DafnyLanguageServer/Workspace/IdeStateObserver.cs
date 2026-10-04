@@ -19,6 +19,7 @@ public class IdeStateObserver : IObserver<IdeState> { // Inheriting from Observe
 
   private readonly object lastPublishedStateLock = new();
   private readonly IdeState initialState;
+  private bool retired;
 
   public IdeState LastPublishedState { get; private set; }
 
@@ -34,6 +35,25 @@ public class IdeStateObserver : IObserver<IdeState> { // Inheriting from Observe
   }
 
   public void Clear() {
+    lock (lastPublishedStateLock) {
+      if (retired) { return; }
+      ClearCore();
+    }
+  }
+
+  /// <summary>
+  /// Wait for any current publication and prevent all subsequent publication by this observer.
+  /// The optional final clear occurs before a replacement manager can start publishing.
+  /// </summary>
+  public void Retire(bool clear = true) {
+    lock (lastPublishedStateLock) {
+      if (retired) { return; }
+      retired = true;
+      if (clear) { ClearCore(); }
+    }
+  }
+
+  private void ClearCore() {
     var ideState = initialState with {
       Input = initialState.Input with { Version = LastPublishedState.Version + 1 },
       OwnedUris = LastPublishedState.OwnedUris
@@ -50,7 +70,7 @@ public class IdeStateObserver : IObserver<IdeState> { // Inheriting from Observe
 
   public void OnNext(IdeState snapshot) {
     lock (lastPublishedStateLock) {
-      if (snapshot.Version < LastPublishedState.Version) {
+      if (retired || snapshot.Version < LastPublishedState.Version) {
         return;
       }
 
@@ -62,6 +82,7 @@ public class IdeStateObserver : IObserver<IdeState> { // Inheriting from Observe
 
   public void Migrate(DafnyOptions options, IMigrator migrator, int version) {
     lock (lastPublishedStateLock) {
+      if (retired) { return; }
       LastPublishedState = LastPublishedState.Migrate(options, migrator, version, true);
       logger.LogDebug($"Migrated LastPublishedState to version {version}, uri {initialState.Input.Uri.ToUri()}");
     }

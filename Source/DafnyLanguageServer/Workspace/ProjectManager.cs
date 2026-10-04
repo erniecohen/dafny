@@ -280,12 +280,12 @@ Determine when to automatically verify the program. Choose from: Never, OnChange
   }
 
   public void CloseAsync() {
-    Compilation.Dispose();
     try {
-      observer.Clear();
+      observer.Retire();
     } catch (OperationCanceledException) {
+    } finally {
+      Dispose();
     }
-    Dispose();
   }
 
   public Task<IdeState> GetStateAfterParsingAsync() {
@@ -389,6 +389,8 @@ Determine when to automatically verify the program. Choose from: Never, OnChange
   public bool IsDisposed { get; private set; }
 
   public void Dispose() {
+    if (IsDisposed) { return; }
+    observer.Retire(clear: false);
     IsDisposed = true;
     boogieBackend?.Dispose();
     b3Backend?.Dispose();
