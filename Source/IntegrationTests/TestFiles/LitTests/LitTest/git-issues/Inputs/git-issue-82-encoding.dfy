@@ -18,6 +18,10 @@ ghost function Encoding82EmptyOuter(z: Encoding82Empty): set<int> {
   set i: int | i == 0
 }
 
+ghost function Encoding82EmptyQuantifier(): bool {
+  forall z: Encoding82Empty :: z in (set i: int | i == z)
+}
+
 ghost function Encoding82Guarded(n: int): bool {
   n != 0 ==> n in (set i: int | i == n)
 }
@@ -48,4 +52,8 @@ ghost function Encoding82Nested(n: int): set<int> {
 
 ghost function Encoding82KeyOnly(n: int): set<int> {
   ((k: int) => map j: int | j == 0 :: k := j)(n).Keys
+}
+
+ghost function Encoding82Lambda(): (object?) -> set<object?> {
+  (o: object?) => set i: int | i == 0 :: o
 }

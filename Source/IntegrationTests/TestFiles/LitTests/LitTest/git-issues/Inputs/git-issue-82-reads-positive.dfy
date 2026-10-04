@@ -36,6 +36,21 @@ ghost function Generic<T(!new)>(x: T, o: object?): int
   0
 }
 
+// A function-valued clause generates an _reads finite comprehension over all int inputs.
+ghost function ReadFamily(f: int -> set<object?>): int
+  reads f
+{
+  0
+}
+
+lemma GeneratedFamilyReads(s: set<object?>)
+{
+  var family: int -> set<object?> := (x: int) => s;
+  assert ReadFamily.reads(family) == s;
+  var outer := (x: int) reads family => x;
+  assert outer.reads(0) == s;
+}
+
 lemma NamedReads<T(!new)>(x: T, a: object?, b: object?, c: object?, s: iset<object?>)
 {
   assert Empty.reads(0) == {};
@@ -77,6 +92,19 @@ class ReadCell {
   {
     value
   }
+
+  ghost function ReadInput(n: int): int
+    reads this, objects
+  {
+    n
+  }
+}
+
+// The generated union is over infinitely many inputs, with references in one heap.
+ghost function ReadAll(c: ReadCell): int
+  reads c, c.ReadInput.reads
+{
+  0
 }
 
 twostate function Previous(c: ReadCell, n: int): int
@@ -94,17 +122,26 @@ method ChangedHeap(c: ReadCell, o: object?)
   ghost var previousValue := c.value;
   ghost var f := (x: int) reads c, c.objects => x;
   ghost var lambda := f.reads(0);
+  ghost var allNamed := ReadAll.reads(c);
+  ghost var allLambda := (x: int) reads c, c.ReadInput.reads => x;
+  ghost var allLambdaReads := allLambda.reads(0);
   label Before:
   c.objects := {o};
-  c.value := previousValue + 2;
+  c.value := c.value + 2;
   assert c.Read.reads() == {c, o};
   assert previous.requires(c, previousValue + 1);
   assert !previous.requires(c, previousValue);
   assert previous.reads(c, previousValue + 1) == {c, o};
   assert f.reads(0) == {c, o};
+  assert ReadAll.reads(c) == {c, o};
+  assert allLambda.reads(0) == {c, o};
+  assert allNamed == {c} + old(c.objects);
+  assert allLambdaReads == {c} + old(c.objects);
   assert named == {c} + old(c.objects);
   assert lambda == {c} + old(c.objects);
   assert old(c.Read.reads()) == {c} + old(c.objects);
   assert old@Before(c.Read.reads()) == {c} + old@Before(c.objects);
   assert old@Before(f.reads(0)) == {c} + old@Before(c.objects);
+  assert old(ReadAll.reads(c)) == {c} + old(c.objects);
+  assert old@Before(allLambda.reads(0)) == {c} + old@Before(c.objects);
 }

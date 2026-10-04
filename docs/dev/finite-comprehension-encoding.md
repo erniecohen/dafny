@@ -62,6 +62,15 @@ its components; no injectivity assumption about source keys is required.
 The collision obligation still requires only that equal keys have equal values,
 so repeated keys with identical values remain accepted.
 
+The translator materializes the relation as a family indexed by the boxed key:
+`family[key]` is the complete typed witness predicate for that key. Both the
+map value and its choice property use the same translated family. The property
+names that family in a local definitional binding and triggers on each
+`projection(family[key])` access. Thus value use directly activates the joint
+choice while Boogie's trigger resolver never traverses an inline lambda body.
+Lambda lifting preserves the family's current heap, type, and source captures
+as arguments; it does not rely on equating unrelated characteristic maps.
+
 ## Reference carrier admission
 
 A reference type is a finite source image carrier only relative to one valid
@@ -104,6 +113,33 @@ cannot involve references. The only other construction sites create the
 `nat`/`ORDINAL` index pools of generated extreme predicates. Clones preserve
 these types. Its reference branch must not be used to justify a new admission
 route without the same valid-heap argument.
+
+## Common function and lambda contexts
+
+An opaque function's postcondition can contain a finite comprehension even when
+its body returns a literal collection. Callers must obtain that comprehension's
+membership definition through the ordinary function consequence, without
+revealing the body and without enabling optional verification facts. The
+opaque-contract regression derives legitimate set membership and two distinct
+captured map values, then a separate control rejects a live `assert false`.
+
+Lambda source well-formedness checks havoc a good successor heap and introduce
+formal variables with `GetWhereClause(..., ISALLOC)`. Common lambda facts must
+therefore guard their child call facts and footprint definitions with both the
+boxed source type and allocatedness in that same lambda heap, as well as the
+actual formation-heap succession and source range. The value and its `.requires`
+translation retain their own descriptor; a stronger availability premise for
+facts does not change the lambda's predicate or footprint. In particular, merely
+typed unallocated backend arguments do not inherit child function permissions
+that were checked only for allocated source formals.
+
+Ordinary function definitions reject direct dependence on `allocated(q)`.
+The source allocation control instead uses an effectful reference-argument
+lambda whose call precondition follows from a `nat` field, allocates a fresh
+object, and uses the resulting lambda and footprint before rejecting `false`.
+The structured encoding audit separately checks the allocation guard at the
+actual boxed argument and heap; source tests do not expose arbitrary unallocated
+backend references as admitted actual arguments.
 
 ## Construction and consumer inventory
 
