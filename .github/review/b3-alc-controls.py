@@ -33,8 +33,8 @@ try:
     assert hashlib.sha256(archive.read_bytes()).hexdigest() == '679b3569a3e188cdea5d9c061a463ef4adab849584c7d6990434bd87f80f1bae'
     with tarfile.open(archive) as reader:
         for member in reader.getmembers():
-            assert member.name.startswith('dafny/') and (member.isfile() or member.isdir())
-            assert (baseline / member.name).resolve().is_relative_to(baseline.resolve())
+            assert (member.name.startswith('dafny/') or (member.name == 'dafny' and member.isdir())) and (member.isfile() or member.isdir()), 'Unexpected baseline archive entry: ' + member.name
+            assert (baseline / member.name).resolve().is_relative_to(baseline.resolve()), 'Baseline archive path escapes output: ' + member.name
         reader.extractall(baseline)
     receipt['baselineSource'] = 'b07c038737d6713b6d1a5848d7568bdc972de7dd'
     receipt['baselineArtifactRun'] = 37182760834
