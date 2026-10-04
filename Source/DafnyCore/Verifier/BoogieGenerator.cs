@@ -4372,8 +4372,13 @@ namespace Microsoft.Dafny {
       targetType = targetType.NormalizeExpandKeepConstraints();
       var udt = targetType as UserDefinedType;
       Bpl.Expr cre;
-      if (udt?.ResolvedClass is RedirectingTypeDecl redirectingTypeDecl &&
-          ModeledAsBoxType((redirectingTypeDecl as NewtypeDecl)?.BaseType ?? redirectingTypeDecl.Var.Type)) {
+      var constraintCarrier = udt?.ResolvedClass switch {
+        NewtypeDecl newtypeDecl => newtypeDecl.BaseType,
+        SubsetTypeDecl subsetTypeDecl => subsetTypeDecl.Var?.Type,
+        _ => null
+      };
+      if (ModeledAsBoxType(targetType) ||
+          constraintCarrier != null && ModeledAsBoxType(constraintCarrier)) {
         cre = MkIs(BoxIfNecessary(bSource.tok, bSource, sourceType), TypeToTy(targetType), true, tok);
       } else if (ModeledAsBoxType(sourceType)) {
         cre = MkIs(bSource, TypeToTy(targetType), true, tok);
