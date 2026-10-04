@@ -3,8 +3,13 @@
   <ItemGroup><Compile Remove="WorkerFixture/**/*.cs" /></ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../DafnyB3Protocol/DafnyB3Protocol.csproj" />
+    <ProjectReference Include="WorkerFixture/WorkerFixture.csproj" ReferenceOutputAssembly="false" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3"><PrivateAssets>all</PrivateAssets></PackageReference>
   </ItemGroup>
+  <Target Name="CopyWorkerFixture" AfterTargets="Build">
+    <ItemGroup><WorkerFixtureFiles Include="$(MSBuildProjectDirectory)/WorkerFixture/bin/$(Configuration)/$(TargetFramework)/**/*" /></ItemGroup>
+    <Copy SourceFiles="@(WorkerFixtureFiles)" DestinationFiles="@(WorkerFixtureFiles->'$(OutDir)WorkerFixture/%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
 </Project>

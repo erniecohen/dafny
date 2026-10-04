@@ -16,10 +16,10 @@ public class WorkerProcessTests {
   }
   private static WorkerProcessClient Client(string mode, string pidFile = "") {
     var fixture = Environment.GetEnvironmentVariable("B3_WORKER_FIXTURE")
-      ?? throw new InvalidOperationException("Set B3_WORKER_FIXTURE to the built fixture DLL");
+      ?? Path.Combine(AppContext.BaseDirectory, "WorkerFixture", "WorkerFixture.dll");
     return new WorkerProcessClient("dotnet", new[] { fixture, mode, pidFile });
   }
-  [Theory]
+  [UnixTheory]
   [InlineData("missing")]
   [InlineData("truncated")]
   [InlineData("wrong-id")]
@@ -28,12 +28,12 @@ public class WorkerProcessTests {
     Assert.Equal(Outcome.ToolError, result.Outcome);
     Assert.False(result.TraversalCompleted);
   }
-  [Fact]
+  [UnixFact]
   public async Task DrainedStderrCannotDeadlockSuccessfulWorker() {
     var result = await Client("stderr").RunAsync(CreateRequest(), CancellationToken.None);
     Assert.Equal(Outcome.Verified, result.Outcome);
   }
-  [Theory]
+  [UnixTheory]
   [InlineData("crash-with-child")]
   [InlineData("hang-with-child")]
   public async Task CrashAndDeadlineTerminateWorkerChildren(string mode) {
@@ -47,7 +47,7 @@ public class WorkerProcessTests {
       Assert.False(IsRunning(pid));
     } finally { File.Delete(pidFile); }
   }
-  [Fact]
+  [UnixFact]
   public async Task UserCancellationIsDistinctFromDeadline() {
     using var cancelled = new CancellationTokenSource();
     cancelled.Cancel();
@@ -57,5 +57,16 @@ public class WorkerProcessTests {
   private static bool IsRunning(int pid) {
     try { using var process = Process.GetProcessById(pid); return !process.HasExited; }
     catch (ArgumentException) { return false; }
+  }
+}
+
+internal sealed class UnixFactAttribute : FactAttribute {
+  public UnixFactAttribute() {
+    if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS()) { Skip = "B3 process isolation requires Unix"; }
+  }
+}
+internal sealed class UnixTheoryAttribute : TheoryAttribute {
+  public UnixTheoryAttribute() {
+    if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS()) { Skip = "B3 process isolation requires Unix"; }
   }
 }
