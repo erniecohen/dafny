@@ -16,9 +16,11 @@ HERE=Path(__file__).resolve().parent
 ROOT=HERE.parents[2]
 PUBLIC=[
  {'run':37232113837,'head':'a4d3ec13a2929dd45f2f27770d458aa869f6667e','artifact':11314207981,
-  'bytes':201508453,'sha256':'37233c026b7744d1c66d20169a81a698cb70ca21dbe68dbc6403d19a4d1013f3','directory':'original'},
+  'bytes':201508453,'sha256':'37233c026b7744d1c66d20169a81a698cb70ca21dbe68dbc6403d19a4d1013f3','directory':'original',
+  'archiveMembers':{'out/b3-native-compile':677,'Binaries/net8.0':335}},
  {'run':37221479537,'head':'ee32faedf6968ffef9baf5e3ab18caa91180a670','artifact':11311016429,
-  'bytes':145457636,'sha256':'76be6dadc245884a15c52b0b94d6eef8f16c96caed2d12ed23b3956c91e617fe','directory':'prerequisite'},
+  'bytes':145457636,'sha256':'76be6dadc245884a15c52b0b94d6eef8f16c96caed2d12ed23b3956c91e617fe','directory':'prerequisite',
+  'archiveMembers':{'out/b3-native-compile':1186,'Binaries/net8.0':344,'build/b3-host-tests':9}},
 ]
 
 
@@ -51,26 +53,50 @@ def bootstrap():
     return module,hashes
 
 
-def extract(inner,archive,destination):
-    captured=inner.read(archive,256*1024*1024)
-    require=inner.require; files={}; total=0
-    require(not destination.exists(),'Archive destination must be fresh'); destination.mkdir()
-    with zipfile.ZipFile(io.BytesIO(captured)) as zipped:
-        entries=zipped.infolist(); require(0<len(entries)<=20000,'Archive inventory bound')
-        seen=set()
-        for entry in entries:
-            path=PurePosixPath(entry.filename)
-            require(not path.is_absolute() and '\\' not in entry.filename and
-              all(x not in ('','.', '..') for x in entry.filename.rstrip('/').split('/')) and
-              path.parts[:2]==('out','b3-native-compile'),'Unsafe/unexpected public archive path')
-            require(entry.filename not in seen,'Duplicate public archive member'); seen.add(entry.filename)
-            mode=entry.external_attr>>16
-            require(entry.flag_bits&1==0 and not stat.S_ISLNK(mode),'Encrypted/symlink public archive member')
-            target=destination.joinpath(*path.parts)
-            if entry.is_dir():
-                require(stat.S_IFMT(mode) in (0,stat.S_IFDIR),'Invalid directory mode'); target.mkdir(parents=True,exist_ok=True); continue
+def preflight_members(inner,entries,expected):
+    # The caller has checked the complete archive bytes against this public-run
+    # pin. Validate every header and path before creating any extraction output.
+    require=inner.require; layout=expected['archiveMembers']; seen={}; rows=[]; total=0
+    require(0<len(entries)<=20000 and len(entries)==sum(layout.values()),'Pinned public archive member count differs')
+    observed={name:0 for name in layout}
+    for entry in entries:
+        path=PurePosixPath(entry.filename); directory=entry.is_dir()
+        require(len(entry.filename)<=4096 and len(path.parts)<=64,'Public archive path bound')
+        require(not path.is_absolute() and '\\' not in entry.filename and
+          all(x not in ('','.', '..') for x in entry.filename.rstrip('/').split('/')) and
+          entry.filename==path.as_posix()+('/' if directory else '') and
+          '/'.join(path.parts[:2]) in layout and (directory or len(path.parts)>2),'Unsafe/unexpected public archive path')
+        canonical=path.as_posix()
+        require(canonical not in seen,'Duplicate canonical public archive member')
+        seen[canonical]=directory; observed['/'.join(path.parts[:2])]+=1
+        mode=entry.external_attr>>16
+        require(entry.flag_bits&1==0 and not stat.S_ISLNK(mode),'Encrypted/symlink public archive member')
+        if directory:
+            require(stat.S_IFMT(mode) in (0,stat.S_IFDIR) and entry.file_size==0,'Invalid directory mode/size')
+        else:
             require(stat.S_IFMT(mode) in (0,stat.S_IFREG) and 0<=entry.file_size<=256*1024*1024,'Public file mode/size bound')
             total+=entry.file_size; require(total<=1024*1024*1024,'Public archive aggregate bound')
+        rows.append((entry,path))
+    require(observed==layout,'Pinned public archive root member counts differ')
+    for canonical in seen:
+        parent=PurePosixPath(canonical).parent
+        while parent!=PurePosixPath('.'):
+            require(parent.as_posix() not in seen or seen[parent.as_posix()],'Public file is an ancestor of another member')
+            parent=parent.parent
+    return rows
+
+
+def extract(inner,archive,destination,expected):
+    captured=inner.read(archive,256*1024*1024)
+    require=inner.require; files={}
+    require(not destination.exists(),'Archive destination must be fresh')
+    with zipfile.ZipFile(io.BytesIO(captured)) as zipped:
+        rows=preflight_members(inner,zipped.infolist(),expected)
+        destination.mkdir()
+        for entry,path in rows:
+            target=destination.joinpath(*path.parts)
+            if entry.is_dir():
+                target.mkdir(parents=True,exist_ok=True); continue
             target.parent.mkdir(parents=True,exist_ok=True)
             hasher=inner.hashlib.sha256(); count=0
             with zipped.open(entry) as source, target.open('xb') as output:
@@ -127,7 +153,7 @@ def main():
             archive=output/(prefix+'.zip')
             stage(prefix+'-download',[gh,'api','repos/erniecohen/dafny/actions/artifacts/'+str(expected['artifact'])+'/zip'],archive,256*1024*1024,240,download_env)
             inner.require(archive.stat().st_size==expected['bytes'] and inner.sha(inner.read(archive))==expected['sha256'],'Public archive bytes differ')
-            root,inventory=extract(inner,archive,output/expected['directory']); roots.append(root)
+            root,inventory=extract(inner,archive,output/expected['directory'],expected); roots.append(root)
             inventory_path=output/(prefix+'-inventory.json'); inventory_path.write_text(json.dumps(inventory,indent=2)+'\n')
             receipt.setdefault('extractedInventories',[]).append({'run':expected['run'],'inventorySha256':inner.sha(inner.read(inventory_path,4*1024*1024)),
               'files':len(inventory),'bytes':sum(x['bytes'] for x in inventory.values())})
@@ -139,7 +165,7 @@ def main():
         parser_log=output/'parser-controls.log'
         stage('parser-controls',[sys.executable,'-B','-m','unittest','discover','-s',HERE,'-p','test_capture.py'],parser_log,4*1024*1024,30)
         text=inner.read(parser_log,4*1024*1024).decode()
-        inner.require('Ran 21 tests' in text and text.rstrip().endswith('OK'),'Parser control denominator differs')
+        inner.require('Ran 27 tests' in text and text.rstrip().endswith('OK'),'Parser control denominator differs')
         diagnostic=output/'capture'
         stage('real-smt-capture',[sys.executable,'-B',HERE/'coordinator.py','--captured-real-artifacts',roots[0]/'real-triage',
           '--prerequisite',roots[1],'--dotnet',dotnet,'--strace',tracer,'--output',diagnostic],output/'capture.log',4*1024*1024,900)

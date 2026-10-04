@@ -63,6 +63,35 @@ modify the verified B3 library, worker or solver, choose another solver executab
 enable logging flags in the worker, add solver commands, change seeds/options, or
 replace the solver with a wrapper. Pin the replay host's source/build artifact too.
 
+
+## Pinned archive layout admission
+
+The first capture run 37240724688 validated the original archive's exact metadata,
+201508453-byte length and SHA256, then stopped at entry 677,
+`Binaries/net8.0/Boogie.AbstractInterpretation.dll`, with
+`ValueError: Unsafe/unexpected public archive path`. Its tracer setup passed;
+three download stages had zero signals and no remaining children. No parser
+control, SDK replay build, worker or query ran. Keep that receipt without any
+mathematical or capture qualification.
+
+Both exact public ZIPs have now been audited read-only. Original run 37232113837
+has 1012 regular members: 677 under `out/b3-native-compile` and 335 under
+`Binaries/net8.0`. Prerequisite run 37221479537 has 1539 regular members: 1186
+under `out/b3-native-compile`, 344 under `Binaries/net8.0` and 9 under
+`build/b3-host-tests`. These member counts and roots are pinned separately to
+their already pinned run/head/artifact/full-archive bytes; no other root is admitted.
+
+Preflight checks every entry before creating any extraction output. It rejects
+absolute, dot, empty-component, backslash or noncanonical names; duplicate canonical
+paths including a file and directory of the same name; file-as-ancestor collisions;
+encryption, symlinks and unsupported modes. The previous 20000-member, 256MiB-file
+and 1GiB aggregate bounds remain, with 4096-character and 64-component path caps.
+All root counts must match. Extraction then hashes and inventories every permitted
+file. Only the existing `out/b3-native-compile` root is supplied to the inner
+coordinator; extra Binaries and host-test members are never loaded as code.
+The repaired 27-control source denominator retains all 21 parser controls and adds
+six archive admission controls. This is source-only until a new reviewed CI run.
+
 ## Tracing route
 
 Launch the disposable replay host under a resolved, hash-recorded strace from its

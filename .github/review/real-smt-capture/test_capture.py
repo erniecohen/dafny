@@ -135,4 +135,104 @@ def validate_epochs(trace,root_argv=None,extra=None):
       ['/dotnet','/replay.dll'] if root_argv is None else root_argv,'/dotnet','/worker.dll','/solver')
 
 
+# Archive admission controls use only synthetic ZIP data; no process is launched.
+import io
+import stat
+import tempfile
+from types import SimpleNamespace
+
+archive_gate=types.ModuleType('archive_gate_tested')
+archive_gate.__file__=str(Path(__file__).with_name('gate.py'))
+exec(compile(Path(archive_gate.__file__).read_bytes(),archive_gate.__file__,'exec'),archive_gate.__dict__)
+
+
+def archive_require(condition,message):
+    if not condition: raise ValueError(message)
+
+
+def archive_members(expected):
+    entries=[]
+    for root,count in expected['archiveMembers'].items():
+        for i in range(count):
+            entry=archive_gate.zipfile.ZipInfo(root+'/f'+str(i))
+            entry.external_attr=(stat.S_IFREG|0o644)<<16
+            entries.append(entry)
+    return entries
+
+
+class ArchiveControls(unittest.TestCase):
+    def preflight(self,entries,expected):
+        return archive_gate.preflight_members(SimpleNamespace(require=archive_require),entries,expected)
+
+    def test_original_archive_admits_exact_compile_and_binary_roots(self):
+        expected=archive_gate.PUBLIC[0]
+        self.assertEqual(expected['run'],37232113837)
+        self.assertEqual(expected['archiveMembers'],{'out/b3-native-compile':677,'Binaries/net8.0':335})
+        rows=self.preflight(archive_members(expected),expected)
+        self.assertEqual(len(rows),1012)
+
+    def test_prerequisite_archive_also_admits_exact_host_test_root(self):
+        expected=archive_gate.PUBLIC[1]
+        self.assertEqual(expected['run'],37221479537)
+        self.assertEqual(expected['archiveMembers'],{'out/b3-native-compile':1186,'Binaries/net8.0':344,'build/b3-host-tests':9})
+        rows=self.preflight(archive_members(expected),expected)
+        self.assertEqual(len(rows),1539)
+
+    def test_late_unknown_root_creates_no_extraction_output(self):
+        expected=archive_gate.PUBLIC[0]; entries=archive_members(expected)
+        entries[-1].filename='build/b3-host-tests/extra'
+        buffer=io.BytesIO()
+        with archive_gate.zipfile.ZipFile(buffer,'w') as zipped:
+            for entry in entries: zipped.writestr(entry,b'')
+        inner=SimpleNamespace(require=archive_require,read=lambda path,maximum:buffer.getvalue())
+        with tempfile.TemporaryDirectory() as directory:
+            destination=Path(directory)/'fresh'
+            with self.assertRaisesRegex(ValueError,'Unsafe/unexpected public archive path'):
+                archive_gate.extract(inner,Path('unused.zip'),destination,expected)
+            self.assertFalse(destination.exists())
+
+    def test_unsafe_paths_encryption_and_nonregular_modes_fail_preflight(self):
+        expected=archive_gate.PUBLIC[0]
+        cases=[('../escape',stat.S_IFREG,0),('/escape',stat.S_IFREG,0),
+          ('Binaries/net8.0/../escape',stat.S_IFREG,0),('Binaries\\net8.0/escape',stat.S_IFREG,0),
+          ('Binaries/net8.0//escape',stat.S_IFREG,0),('Binaries/net8.0/extra',stat.S_IFLNK,0),
+          ('Binaries/net8.0/extra',stat.S_IFIFO,0),('Binaries/net8.0/extra',stat.S_IFREG,1)]
+        for name,mode,flags in cases:
+            with self.subTest(name=name,mode=mode,flags=flags):
+                entries=archive_members(expected); entry=entries[-1]
+                entry.filename=name; entry.external_attr=(mode|0o644)<<16; entry.flag_bits=flags
+                with self.assertRaises(ValueError): self.preflight(entries,expected)
+
+    def test_canonical_duplicates_and_file_ancestors_fail_preflight(self):
+        expected=archive_gate.PUBLIC[0]
+        entries=archive_members(expected)
+        entries[-1].filename=entries[-2].filename+'/'
+        entries[-1].external_attr=(stat.S_IFDIR|0o755)<<16
+        with self.assertRaisesRegex(ValueError,'Duplicate canonical'):
+            self.preflight(entries,expected)
+        entries=archive_members(expected)
+        entries[-1].filename=entries[-2].filename+'/child'
+        with self.assertRaisesRegex(ValueError,'file is an ancestor'):
+            self.preflight(entries,expected)
+
+    def test_member_file_aggregate_and_path_bounds_fail_preflight(self):
+        expected=archive_gate.PUBLIC[0]
+        entries=archive_members(expected); entries.append(entries[-1])
+        with self.assertRaisesRegex(ValueError,'member count'):
+            self.preflight(entries,expected)
+        entries=archive_members(expected); entries[-1].file_size=256*1024*1024+1
+        with self.assertRaisesRegex(ValueError,'file mode/size bound'):
+            self.preflight(entries,expected)
+        entries=archive_members(expected)
+        for entry in entries[:5]: entry.file_size=256*1024*1024
+        with self.assertRaisesRegex(ValueError,'aggregate bound'):
+            self.preflight(entries,expected)
+        entries=archive_members(expected); entries[-1].filename='Binaries/net8.0/'+'x'*4096
+        with self.assertRaisesRegex(ValueError,'path bound'):
+            self.preflight(entries,expected)
+        entries=archive_members(expected); entries[-1].filename='Binaries/net8.0/'+'/'.join(['x']*64)
+        with self.assertRaisesRegex(ValueError,'path bound'):
+            self.preflight(entries,expected)
+
+
 if __name__ == '__main__': unittest.main()

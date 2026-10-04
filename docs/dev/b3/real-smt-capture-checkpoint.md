@@ -34,12 +34,35 @@ payload attestation. A command error may prevent a later check-sat, whose source
 explicit ToolError. No query, guard, solver option, seed or outcome is rewritten.
 
 This is an unexecuted source checkpoint. Python AST/XML/source-seal checks are
-static evidence only. Twenty-one parser regressions, the C# replay build, trace
+static evidence only. Twenty-one parser and six archive admission controls, the C# replay build, trace
 qualification and all eight worker cases require a future reviewed CI execution.
-No workflow routing is enabled here. Tracing overhead and file caps are diagnostic
+The enclosing scratch-only workflow routes the diagnostic. Tracing overhead and file caps are diagnostic
 instrumentation and cannot establish original acceptance or proof cost parity.
-The source seal is `4792f707a0f00dfd153478a9911065ceb55428fe5f688a79c714b39aa1778d03`
+The source seal is `3589db0edcf63e94808a2b254fae0e13b3d6d8f7ffb7948e5604b7ec3f336da4`
 for 19 files; the reviewed Git/CI source identity binds that declaration without
 claiming a signed origin attestation. The product ledger remains
 `v4.11.0 0e36fadf2a702df121bc9c0fe0b11e43e475e207` because only review tooling and
 documentation change.
+
+
+Public run [37240724688](https://github.com/erniecohen/dafny/actions/runs/37240724688)
+on source `f6ed9e2c6471db389f34c4fd6b0fccab16ee3d29` completed only diagnostic
+preflight. Its exact artifact is 392634483 bytes, SHA256
+`d40abddfcecc4870eab62e74c59417e2121d6271237b733a7ac68bfed68cb8a6`.
+Routing receipt SHA256 is
+`4a18c7b5a5079cd16af93022164fccb8fe53ac58d1a334c5e6c9a5cddf1a4450`;
+inner receipt SHA256 is
+`17ca82130551d0f0608a9334c2f059dbf994b4c420b7df7a10a9c5cd29f33771`.
+Exact strace setup passed, but archive extraction rejected the original artifact's
+legitimate `Binaries/net8.0` root with
+`ValueError: Unsafe/unexpected public archive path`. Three metadata/download stages
+had zero signals and no residual children. Zero parser controls, replay builds,
+workers and queries ran; workflow success supplies no semantic evidence.
+
+The source-only repair pins the two archives' complete member-root counts separately
+and performs every safety/inventory/bound check before extraction. All admitted
+members are hashed; the additional Binaries and host-test roots are never loaded.
+Six archive controls join the unchanged 21 parser controls, making a fixed combined
+denominator of 27. Original requests, worker/library, primitive formulas, projections,
+solver flags, budgets, tracer and ownership checks are unchanged. The former f6
+receipt/seal remains historical; this new seal requires a reviewed fresh run.

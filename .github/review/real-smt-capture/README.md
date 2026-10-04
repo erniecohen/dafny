@@ -19,7 +19,14 @@ python3 -B .github/review/real-smt-capture/gate.py NEW_OUTPUT_DIRECTORY
 ```
 
 The outer wrapper binds both public run/head/artifact metadata and exact ZIP
-bytes before bounded extraction. GH_TOKEN/GITHUB_TOKEN are available only to gh
+bytes before bounded extraction. It then preflights every archive member before
+creating an extraction directory. The original archive admits exactly 677 members
+under `out/b3-native-compile` and 335 under `Binaries/net8.0`; the prerequisite
+admits exactly 1186, 344 and 9 under `out/b3-native-compile`, `Binaries/net8.0`
+and `build/b3-host-tests`, respectively. Unknown roots, canonical duplicate paths,
+file-as-ancestor collisions, unsafe names/modes, symlinks, encryption and all
+inventory/path/file/aggregate bounds fail before extraction. Every extracted file
+is hashed and inventoried; the additional roots are data only and are not loaded. GH_TOKEN/GITHUB_TOKEN are available only to gh
 metadata/download stages. Their values never enter SDK, parser or trace scopes.
 The inner coordinator can also be invoked with the hash-qualified extracted inputs:
 
@@ -80,10 +87,17 @@ Twenty-one source parser regressions cover partial writes, failed writes, vector
 buffers, resumed I/O, dump gaps/missing bytes, orphan dumps, missing PID association,
 truncation, SMT framing, absent live image, wrong fork parent, PID reuse and exact
 executable epochs, including unsupported `execveat` boundaries. They do
-not invoke a solver or worker. The outer wrapper runs this fixed denominator before
-any traced replay. No control has been executed at this source checkpoint.
+not invoke a solver or worker. Six archive admission controls additionally cover
+both pinned layouts, late unknown roots with no extraction output, unsafe paths and
+modes, canonical duplicates, file ancestry and all admission bounds. The outer
+wrapper runs the fixed combined 27-control denominator before any traced replay.
+No control has been executed at this repaired source checkpoint.
 
 `DESIGN.md` gives the English mathematical and observational argument. The source
 seal declares all 19 utility/input files; the enclosing reviewed Git/CI receipt
-binds that declaration. It is no signed build or runtime attestation. No workflow
-routing is enabled by this checkpoint.
+binds that declaration. It is no signed build or runtime attestation. Workflow
+routing is enabled by the enclosing scratch-only review workflow. The first
+execution, run 37240724688, stopped at the original archive's legitimate
+`Binaries/net8.0` root: the former validator admitted only `out/b3-native-compile`.
+It ran zero parser controls, workers or queries. Its immutable failure receipt
+remains historical evidence; this layout repair requires a new reviewed execution.

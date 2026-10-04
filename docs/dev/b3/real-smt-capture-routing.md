@@ -8,10 +8,10 @@ checkpoint; a completed diagnostic job does not establish Real acceptance.
 
 The workflow checks the outer entry point's literal SHA256 before invoking it
 with `python3 -B`. That entry point requires the approved 19-file diagnostic seal
-`4792f707a0f00dfd153478a9911065ceb55428fe5f688a79c714b39aa1778d03`,
+`3589db0edcf63e94808a2b254fae0e13b3d6d8f7ffb7948e5604b7ec3f336da4`,
 captures bounded regular source files, checks every byte length and digest, and
 executes the captured `gate.py` bytes directly. No cached source-module bytecode
-is loaded. The original seal is unchanged by routing. The entry point records its
+is loaded. The archive-layout repair refreshes the seal; the original f6 receipt remains preserved. The entry point records its
 own hash, workflow hash and declared CI source identity, then rechecks the whole
 sealed payload after the diagnostic. These are review receipts, not a signed
 origin attestation.
@@ -52,3 +52,11 @@ zero exit; it is never relabeled acceptance. Prerequisite failure also produces 
 zero diagnostic exit and an outer failure receipt without starting proof stages.
 Unexpected entry-point or source-binding failures may fail the workflow while
 still uploading their available evidence.
+
+
+The first routed run 37240724688 stopped before parser/build/worker stages because
+the original archive included its legitimate `Binaries/net8.0` root. The source-only
+repair audits and pins each archive's permitted root counts and preflights all
+members before creating extraction output. Extra payload roots are inventoried and
+hashed but never loaded. The fixed control denominator is now 27 (21 unchanged
+parser controls plus six archive admission controls); the repaired route is unexecuted.
