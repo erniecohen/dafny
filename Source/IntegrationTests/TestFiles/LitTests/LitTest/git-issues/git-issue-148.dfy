@@ -1,5 +1,5 @@
 // RUN: %testDafnyForEachCompiler --refresh-exit-code=0 "%s"
-// RUN: %testDafnyForEachCompiler --refresh-exit-code=0 "%s" -- --optimize-erasable-datatype-wrapper=false
+// RUN: %testDafnyForEachCompiler --refresh-exit-code=0 "%s" -- --optimize-erasable-datatype-wrapper:false
 
 // Constructor discriminators are properties even when the datatype requires
 // a default-value descriptor for a generic parameter.
