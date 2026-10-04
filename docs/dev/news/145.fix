@@ -1,0 +1,1 @@
+Fix a translation crash when automatic induction chooses a codatatype prefix inequality as a trigger. The trigger uses prefix equality while the formula retains its logical negation.
