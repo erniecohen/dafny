@@ -55,7 +55,7 @@ public sealed class B3VerificationBackend : IVerificationBackend {
     }
     string? solverDigest = null;
     if (configurationError == null) {
-      try { solverDigest = await SolverDigestAsync(SolverPath(), cancellationToken); }
+      try { solverDigest = await SolverDigestAsync(SolverPath(), checked((int)options.TimeLimit * 1000), cancellationToken); }
       catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException or TimeoutException) {
         configurationOutcome = VerificationOutcome.ToolError;
         configurationError = "B3 solver identity could not be captured: " + exception.Message;
@@ -179,20 +179,11 @@ public sealed class B3VerificationBackend : IVerificationBackend {
   private string SolverPath() => SolverPath(options);
   private static string SolverPath(DafnyOptions options) => options.Get(BoogieOptionBag.SolverPath)?.FullName ??
     options.ProverOptions.LastOrDefault(option => option.StartsWith("PROVER_PATH=", StringComparison.Ordinal))?.Substring("PROVER_PATH=".Length) ?? "";
-  private static async Task<string> SolverDigestAsync(string path, CancellationToken cancellationToken) {
-    var file = new FileInfo(path);
-    file = file.ResolveLinkTarget(true) as FileInfo ?? file;
-    // Reject devices and FIFOs before opening: these report zero stat size.
-    if (file.Length is <= 0 or > 512L * 1024 * 1024) { throw new InvalidDataException("B3 solver executable exceeds file bounds"); }
+  private static async Task<string> SolverDigestAsync(string path, int timeoutMilliseconds, CancellationToken cancellationToken) {
     using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-    deadline.CancelAfter(TimeSpan.FromSeconds(5));
+    deadline.CancelAfter(Math.Min(timeoutMilliseconds, SolverFileIdentity.MaximumCaptureMilliseconds));
     try {
-      await using var stream = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read,
-        65536, FileOptions.Asynchronous | FileOptions.SequentialScan);
-      if (!stream.CanSeek || stream.Length is <= 0 or > 512L * 1024 * 1024) {
-        throw new InvalidDataException("B3 requires a bounded regular solver executable");
-      }
-      return Convert.ToHexString(await System.Security.Cryptography.SHA256.HashDataAsync(stream, deadline.Token)).ToLowerInvariant();
+      return await SolverFileIdentity.ComputeAsync(path, deadline.Token);
     } catch (OperationCanceledException exception) when (!cancellationToken.IsCancellationRequested) {
       throw new TimeoutException("B3 solver identity capture exceeded its deadline", exception);
     }

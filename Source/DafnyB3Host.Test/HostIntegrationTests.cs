@@ -140,6 +140,23 @@ public sealed class HostIntegrationTests {
     Assert.Empty(result.Attempts);
   }
 
+  [Theory]
+  [InlineData(0L)]
+  [InlineData(SolverFileIdentity.MaximumExecutableBytes + 1)]
+  public async Task EmptyAndOversizedSolverFilesCannotVerify(long length) {
+    using var package = new PackageFixture();
+    var executable = Path.Combine(package.Directory, "invalid-solver");
+    using (var file = File.OpenWrite(executable)) { file.SetLength(length); }
+    var request = Request(package.Package, Unit(new Check("sO0", new BooleanLiteral(true), false)), "sO0");
+    request = request with { Configuration = request.Configuration with {
+      SolverExecutable = executable, SolverSha256 = new string('b', 64) } };
+    var result = await Run(package.Package, request);
+    Assert.False(result.TraversalCompleted);
+    Assert.Equal(Outcome.ToolError, result.Outcome);
+    Assert.Contains("exceeds file bounds", result.Error);
+    Assert.Empty(result.Attempts);
+  }
+
   [Fact]
   public async Task WrongActualSolverVersionCannotVerify() {
     using var package = new PackageFixture();

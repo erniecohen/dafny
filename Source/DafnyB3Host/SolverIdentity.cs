@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Security.Cryptography;
 using System.Text;
 using DafnyB3Protocol;
 
@@ -8,7 +7,6 @@ namespace DafnyB3Host;
 /// <summary>Checks the exact executable before any proof query is sent to it.</summary>
 public static class SolverIdentity {
   private const int ProbeOutputBound = 16384;
-  private const long ExecutableSizeBound = 512L * 1024 * 1024;
 
   public static async Task ValidateAsync(Configuration configuration, CancellationToken cancellationToken = default) {
     if (configuration.SolverVersion != "5.1.0" || configuration.TimeoutMilliseconds <= 0 ||
@@ -18,18 +16,12 @@ public static class SolverIdentity {
     }
     cancellationToken.ThrowIfCancellationRequested();
     using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-    deadline.CancelAfter(TimeSpan.FromMilliseconds(Math.Min(configuration.TimeoutMilliseconds, 5000)));
+    deadline.CancelAfter(Math.Min(configuration.TimeoutMilliseconds, SolverFileIdentity.MaximumCaptureMilliseconds));
     var token = deadline.Token;
     try {
-      await using (var executable = new FileStream(configuration.SolverExecutable, FileMode.Open,
-        FileAccess.Read, FileShare.Read, 65536, FileOptions.Asynchronous | FileOptions.SequentialScan)) {
-        if (!executable.CanSeek || executable.Length is <= 0 or > ExecutableSizeBound) {
-          throw new InvalidDataException("B3 solver executable exceeds file bounds");
-        }
-        var digest = Convert.ToHexString(await SHA256.HashDataAsync(executable, token));
-        if (!string.Equals(digest, configuration.SolverSha256, StringComparison.OrdinalIgnoreCase)) {
-          throw new InvalidDataException("B3 solver executable digest mismatch");
-        }
+      var digest = await SolverFileIdentity.ComputeAsync(configuration.SolverExecutable, token);
+      if (!string.Equals(digest, configuration.SolverSha256, StringComparison.OrdinalIgnoreCase)) {
+        throw new InvalidDataException("B3 solver executable digest mismatch");
       }
       await ProbeAsync(configuration.SolverExecutable, token);
     } catch (OperationCanceledException exception) when (!cancellationToken.IsCancellationRequested) {
