@@ -403,6 +403,9 @@ namespace Microsoft.Dafny {
             }
 
             builder.Add(TrAssumeCmd(e.Origin, etran.CanCallAssumption(e)));
+            if (e.Member is DatatypeDestructor && ContainsCoRecursiveFunctionCall(e.Obj)) {
+              CheckSuspendedValueMembership(e, e.Type, builder, etran);
+            }
             break;
           }
         case SeqSelectExpr selectExpr: {
@@ -1644,6 +1647,27 @@ namespace Microsoft.Dafny {
       // cannot be assumed while checking the cluster's constructor fields.
       // Extreme predicates use this marker for their separate prefix proof rule.
       return call.CoCall == FunctionCallExpr.CoCallResolution.Yes && call.Function is not ExtremePredicate and not PrefixPredicate;
+    }
+
+
+    private static bool ContainsCoRecursiveFunctionCall(Expression expression) {
+      expression = expression.Resolved;
+      return expression is FunctionCallExpr call && IsCoRecursiveFunctionCall(call) ||
+             expression.SubExpressions.Any(ContainsCoRecursiveFunctionCall);
+    }
+
+    private void CheckSuspendedValueMembership(Expression expression, Type targetType,
+      BoogieStmtListBuilder builder, ExpressionTranslator etran) {
+      // A destructor of a suspended co-call must establish its result's type
+      // before static typing can supply refinement facts to another constructor.
+      var value = AdaptBoxing(expression.Origin, etran.TrExpr(expression), expression.Type, targetType);
+      var membership = GetWhereClause(expression.Origin, value, targetType, etran, NOALLOC);
+      if (membership != null) {
+        var description = new SubrangeCheck("co-recursive observation: ", expression.Type.ToString(),
+          targetType.ToString(), targetType.NormalizeExpandKeepConstraints().AsRedirectingType != null,
+          false, null, null);
+        builder.Add(Assert(expression.Origin, membership, description, builder.Context));
+      }
     }
 
     public void CheckSubsetType(ExpressionTranslator etran, Expression expr, Bpl.Expr selfCall, Type resultType,
