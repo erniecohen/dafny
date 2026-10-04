@@ -71,7 +71,7 @@ public class ExtendedNewtypeVarianceTests {
         }
         module Client {
           import P = Provider`API
-        """;
+        """ + Environment.NewLine;
       var rejected = await ResolveAsync(prefix +
         "newtype N<+T> = b: P.Base<T> | true witness * }");
       Assert.Contains(rejected.AllMessagesByLevel[ErrorLevel.Error], diagnostic =>
