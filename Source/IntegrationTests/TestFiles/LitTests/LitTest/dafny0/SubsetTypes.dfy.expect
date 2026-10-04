@@ -91,5 +91,5 @@ SubsetTypes.dfy(459,6): Error: assertion might not hold
 SubsetTypes.dfy(464,4): Error: assertion might not hold
 
 Dafny program verifier finished with 13 verified, 91 errors
-Total resources used is 694200
-Max resources used by VC is 72200
+Total resources used is 697000
+Max resources used by VC is 73800
