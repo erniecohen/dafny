@@ -31,6 +31,7 @@ public static class RawAstBuilder {
   public static Expr Expression(DafnyB3Protocol.Expression expression) => expression switch {
     BooleanLiteral literal => RawAst.Expr.create_BLiteral(literal.Value),
     IntegerLiteral literal => RawAst.Expr.create_ILiteral(BigInteger.Parse(literal.Value, System.Globalization.CultureInfo.InvariantCulture)),
+    RationalLiteral literal => Rational(literal),
     Variable variable => RawAst.Expr.create_IdExpr(S(variable.Name), false),
     Application application => RawAst.Expr.create_FunctionCallExpr(S(application.Name), Seq(application.Arguments.Select(Expression))),
     Operation operation => RawAst.Expr.create_OperatorExpr(Operator(operation.Operator), Seq(operation.Arguments.Select(Expression))),
@@ -72,10 +73,17 @@ public static class RawAstBuilder {
     DafnyB3Protocol.Operator.Multiply => RawAst.Operator.create_Times(),
     DafnyB3Protocol.Operator.Divide => RawAst.Operator.create_Div(),
     DafnyB3Protocol.Operator.Modulo => RawAst.Operator.create_Mod(),
+    DafnyB3Protocol.Operator.RealDivide => RawAst.Operator.create_RealDiv(),
+    DafnyB3Protocol.Operator.ToReal => RawAst.Operator.create_ToReal(),
+    DafnyB3Protocol.Operator.ToInt => RawAst.Operator.create_ToInt(),
     DafnyB3Protocol.Operator.Not => RawAst.Operator.create_LogicalNot(),
     DafnyB3Protocol.Operator.Negate => RawAst.Operator.create_UnaryMinus(),
     _ => throw new InvalidDataException("Unknown normalized operator")
   };
+  private static Expr Rational(RationalLiteral literal) {
+    var (numerator, denominator) = ProtocolValidation.ParseRationalLiteral(literal);
+    return RawAst.Expr.create_RLiteral(numerator, denominator);
+  }
   public static RuneString S(string value) => Sequence<Rune>.UnicodeFromString(value);
   private static ISequence<T> Seq<T>(IEnumerable<T> values) => Sequence<T>.FromArray(values.ToArray());
   private static _IOption<T> None<T>() => Option<T>.create_None();

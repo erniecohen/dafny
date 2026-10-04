@@ -26,7 +26,7 @@ if (mode == "crash-with-child" || mode == "hang-with-child") {
   await Task.Delay(Timeout.Infinite);
 }
 if (mode == "missing") { return 0; }
-if (mode == "truncated") { Console.Write("{\"version\":1"); return 0; }
+if (mode == "truncated") { Console.Write("{\"version\":" + Protocol.Version); return 0; }
 if (mode == "stderr") {
   for (var i = 0; i < 100; i++) { Console.Error.WriteLine(new string('e', 4096)); }
 }

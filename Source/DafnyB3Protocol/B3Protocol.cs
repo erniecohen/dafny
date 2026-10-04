@@ -6,9 +6,10 @@ namespace DafnyB3Protocol;
 
 /// <summary>Serializable normalized IR, independent of Boogie and generated B3 runtime types.</summary>
 public static class Protocol {
-  public const int Version = 1;
-  public const string NormalizerVersion = "experimental-1";
+  public const int Version = 2;
+  public const string NormalizerVersion = "experimental-2";
   public const int MaximumMessageBytes = 32 * 1024 * 1024;
+  public const int MaximumIntegerCharacters = 10000;
   public const int MaximumNodes = 100000;
   public const int MaximumDepth = 128;
   public static string GetProgramHash(Program program) =>
@@ -39,12 +40,13 @@ public sealed record Unit(string Name, IReadOnlyList<Binding> Variables, Stateme
 
 public enum Operator {
   IfThenElse, Equiv, Implies, And, Or, Equal, NotEqual, Less, LessEqual,
-  Add, Subtract, Multiply, Divide, Modulo, Not, Negate
+  Add, Subtract, Multiply, Divide, Modulo, RealDivide, ToReal, ToInt, Not, Negate
 }
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")]
 [JsonDerivedType(typeof(BooleanLiteral), "boolean")]
 [JsonDerivedType(typeof(IntegerLiteral), "integer")]
+[JsonDerivedType(typeof(RationalLiteral), "rational")]
 [JsonDerivedType(typeof(Variable), "variable")]
 [JsonDerivedType(typeof(Application), "application")]
 [JsonDerivedType(typeof(Operation), "operation")]
@@ -54,6 +56,7 @@ public enum Operator {
 public abstract record Expression(string Type);
 public sealed record BooleanLiteral(bool Value) : Expression("bool");
 public sealed record IntegerLiteral(string Value) : Expression("int");
+public sealed record RationalLiteral(string Numerator, string Denominator) : Expression("real");
 public sealed record Variable(string Name, string ResultType) : Expression(ResultType);
 public sealed record Application(string Name, string ResultType, IReadOnlyList<Expression> Arguments)
   : Expression(ResultType);
