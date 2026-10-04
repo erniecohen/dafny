@@ -67,7 +67,7 @@ class GhostCell {
   ghost var value: int
   ghost method MixedAssumed() modifies this {
     var a: int;
-    a, value :| assume P(a) && value == a;
+    a, value :| assume {:axiom} P(a) && value == a;
     assert a == 7 && value == 7;
   }
 }
