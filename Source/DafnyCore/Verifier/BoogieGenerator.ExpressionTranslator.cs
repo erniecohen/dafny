@@ -1263,8 +1263,8 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
 
       /// <summary>
       /// A lambda value is allocated in any good heap in which what it captures is allocated: its free variables, and
-      /// "this" if it uses it.  A lambda that uses the previous heap ("old", "fresh", "unchanged", a two-state function,
-      /// or a statement) or the heap at a label also captures that heap, which the heap must be or succeed.  The arrow
+      /// "this" if it uses it.  A lambda that uses the previous heap ("old", "fresh", "unchanged", a two-state function
+      /// or lemma) or the heap at a label also captures that heap, which the heap must be or succeed.  The arrow
       /// allocation axiom is an implication, from an allocated function value to its reads set and results
       /// (erniecohen/dafny#132), so this is how a lambda is known to be allocated.
       /// </summary>
@@ -1299,11 +1299,11 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
         if (usesThis != null) {
           captured = BplAnd(captured, BoogieGenerator.MkIsAlloc(new Bpl.IdentifierExpr(e.Origin, This, BoogieGenerator.TrType(usesThis)), usesThis, h));
         }
-        // A trigger cannot hold the lambda, which binds variables, so the value is a bound variable equal to it.
+        // A trigger cannot hold the lambda, which binds variables, so a let names its value.
         var fVar = BplBoundVar(varNameGen.FreshId("#f#"), Predef.HandleType, out var f);
         var allocated = BoogieGenerator.MkIsAlloc(f, e.Type.AsArrowType, h);
-        return new Bpl.ForallExpr(e.Origin, [hVar, fVar], BplTrigger(allocated),
-          BplImp(BplAnd(Bpl.Expr.Eq(f, TrExpr(e)), captured), allocated));
+        var rule = new Bpl.ForallExpr(e.Origin, [hVar], BplTrigger(allocated), BplImp(captured, allocated));
+        return new Bpl.LetExpr(e.Origin, [fVar], [TrExpr(e)], null, rule);
       }
 
       /// <summary>
