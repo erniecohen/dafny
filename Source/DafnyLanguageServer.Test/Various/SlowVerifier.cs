@@ -21,14 +21,14 @@ class SlowVerifier : IProgramVerifier {
 
   private readonly DafnyProgramVerifier verifier;
 
-  public async Task<IReadOnlyList<IVerificationTask>> GetVerificationTasksAsync(ExecutionEngine engine,
+  public async Task<IReadOnlyList<IVerificationWorkItem>> GetVerificationTasksAsync(IVerificationBackend backend,
     ResolutionResult resolution, ModuleDefinition moduleDefinition, CancellationToken cancellationToken) {
     var program = resolution.ResolvedProgram;
     var attributes = program.Modules().SelectMany(m => {
       return m.TopLevelDecls.OfType<TopLevelDeclWithMembers>().SelectMany(d => d.Members.Select(member => member.Attributes));
     }).ToList();
 
-    var tasks = await verifier.GetVerificationTasksAsync(engine, resolution, moduleDefinition, cancellationToken);
+    var tasks = await verifier.GetVerificationTasksAsync(backend, resolution, moduleDefinition, cancellationToken);
     if (attributes.Any(a => Attributes.Contains(a, "neverVerify"))) {
       tasks = tasks.Select(t => new NeverVerifiesImplementationTask(t)).ToList();
     }
@@ -36,26 +36,24 @@ class SlowVerifier : IProgramVerifier {
     return tasks;
   }
 
-  class NeverVerifiesImplementationTask : IVerificationTask {
-    private readonly IVerificationTask original;
-    private readonly Subject<IVerificationStatus> source;
+  class NeverVerifiesImplementationTask : IVerificationWorkItem {
+    private readonly IVerificationWorkItem original;
+    private readonly Subject<VerificationStatus> source;
 
-    public NeverVerifiesImplementationTask(IVerificationTask original) {
+    public NeverVerifiesImplementationTask(IVerificationWorkItem original) {
       this.original = original;
       source = new();
     }
 
-    public IVerificationTask FromSeed(int newSeed) {
+    public IVerificationWorkItem FromSeed(int newSeed) {
       return this;
     }
 
-    public IVerificationStatus CacheStatus => new Stale();
-    public ManualSplit Split => original.Split;
-    public Boogie.IToken ScopeToken => original.ScopeToken;
-    public string ScopeId => original.ScopeId;
-    public Boogie.IToken Token => original.Token;
+    public VerificationStatus CacheStatus => new VerificationStale();
+    public VerificationIdentity Identity => original.Identity;
+    public VerificationSourceInfo Source => original.Source;
 
-    public IObservable<IVerificationStatus> TryRun() {
+    public IObservable<VerificationStatus> TryRun() {
       return source;
     }
 

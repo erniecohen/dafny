@@ -93,13 +93,13 @@ public class ExceptionTests : ClientBasedLanguageServerTest {
       this.verifier = verifier;
     }
 
-    public Task<IReadOnlyList<IVerificationTask>> GetVerificationTasksAsync(ExecutionEngine engine,
+    public Task<IReadOnlyList<IVerificationWorkItem>> GetVerificationTasksAsync(IVerificationBackend backend,
       ResolutionResult resolution, ModuleDefinition moduleDefinition, CancellationToken cancellationToken) {
 
       if (tests.CrashOnPrepareVerification) {
         throw new TestException("testing crash");
       }
-      return verifier.GetVerificationTasksAsync(engine, resolution, moduleDefinition, cancellationToken);
+      return verifier.GetVerificationTasksAsync(backend, resolution, moduleDefinition, cancellationToken);
     }
   }
 

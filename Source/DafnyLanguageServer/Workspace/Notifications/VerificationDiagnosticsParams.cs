@@ -198,7 +198,7 @@ namespace Microsoft.Dafny.LanguageServer.Workspace.Notifications {
     public DateTime EndTime { get; protected set; }
     public int TimeSpent => (int)(Finished ? ((TimeSpan)(EndTime - StartTime)).TotalMilliseconds : Started ? (DateTime.Now - StartTime).TotalMilliseconds : 0);
     // Resources allocated at the end of the computation.
-    public long ResourceCount { get; set; } = 0;
+    public long? ResourceCount { get; set; } = 0;
 
     public List<TrackedNodeComponent> CoveredIds { get; set; } = [];
 
@@ -486,7 +486,7 @@ namespace Microsoft.Dafny.LanguageServer.Workspace.Notifications {
 
   public record AssertionBatchMetrics(
     int Time,
-    int ResourceCount,
+    int? ResourceCount,
     List<TrackedNodeComponent> CoveredIds
   );
 
@@ -516,9 +516,10 @@ namespace Microsoft.Dafny.LanguageServer.Workspace.Notifications {
       };
     }
 
+    public string? BackendScopeId { get; init; }
     private Implementation? implementation = null;
 
-    public void AddAssertionBatchMetrics(int vcNum, int milliseconds, int resourceCount, List<TrackedNodeComponent> coveredIds) {
+    public void AddAssertionBatchMetrics(int vcNum, int milliseconds, int? resourceCount, List<TrackedNodeComponent> coveredIds) {
       NewAssertionBatchMetrics[vcNum] = new AssertionBatchMetrics(milliseconds, resourceCount, coveredIds);
     }
 
@@ -563,6 +564,8 @@ namespace Microsoft.Dafny.LanguageServer.Workspace.Notifications {
     // The range of this node.
     Range Range
   ) : VerificationTree("Assertion", DisplayName, Identifier, Filename, Uri, Range, Range.Start) {
+    public string? BackendDescription { get; init; }
+
     public AssertionVerificationTree WithDuration(DateTime parentStartTime, int batchTime) {
       Started = true;
       Finished = true;

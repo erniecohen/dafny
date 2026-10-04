@@ -1,0 +1,1 @@
+Dafny verification orchestration now uses backend-neutral preparation, work-item, source and result contracts. The existing Boogie backend remains the default and retains its task execution and diagnostic rendering.

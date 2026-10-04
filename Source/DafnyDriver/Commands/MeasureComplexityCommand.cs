@@ -89,22 +89,25 @@ static class MeasureComplexityCommand {
     CliCompilation cliCompilation,
     IObservable<CanVerifyResult> verificationResults) {
 
-    PriorityQueue<VerificationTaskResult, int> worstPerformers = new();
+    PriorityQueue<VerificationWorkItemResult, int> worstPerformers = new();
 
     var totalResources = 0;
     var worstAmount = cliCompilation.Options.Get(TopX);
     verificationResults.Subscribe(result => {
       foreach (var taskResult in result.Results) {
         var runResult = taskResult.Result;
-        totalResources += runResult.ResourceCount;
-        worstPerformers.Enqueue(taskResult, runResult.ResourceCount);
+        if (runResult.ResourceCount is not { } resources) {
+          throw new InvalidOperationException("The selected verification backend does not provide resource counts");
+        }
+        totalResources += resources;
+        worstPerformers.Enqueue(taskResult, resources);
         if (worstPerformers.Count > worstAmount) {
           worstPerformers.Dequeue();
         }
       }
     });
     await verificationResults.WaitForComplete();
-    var decreasingWorst = new Stack<VerificationTaskResult>();
+    var decreasingWorst = new Stack<VerificationWorkItemResult>();
     while (worstPerformers.Count > 0) {
       decreasingWorst.Push(worstPerformers.Dequeue());
     }
@@ -113,7 +116,7 @@ static class MeasureComplexityCommand {
     await sw.WriteLineAsync($"The total consumed resources are {totalResources}");
     await sw.WriteLineAsync($"The most demanding {worstAmount} verification tasks consumed these resources:");
     foreach (var performer in decreasingWorst) {
-      var location = BoogieGenerator.ToDafnyToken(performer.Task.Token).OriginToString(cliCompilation.Options);
+      var location = performer.Task.Source.Origin.OriginToString(cliCompilation.Options);
       await sw.WriteLineAsync($"{location}: {performer.Result.ResourceCount}");
     }
   }

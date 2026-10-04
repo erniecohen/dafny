@@ -141,6 +141,30 @@ public class JsonVerificationLogger : IVerificationResultFormatLogger {
     verificationResultNode.Add(SerializeVerificationResult(scopeResult.Scope, scopeResult.Results.ToList()));
   }
 
+  public void LogNeutralScopeResults(NeutralVerificationScopeResult scope) {
+    var complete = scope.Results.All(part => part.Result.IsVerified);
+    var resources = scope.Results.All(part => part.Result.ResourceCount != null)
+      ? scope.Results.Sum(part => part.Result.ResourceCount!.Value) : (int?)null;
+    verificationResultNode.Add(new JsonObject {
+      ["name"] = scope.Name,
+      ["outcome"] = complete ? "Verified" : string.Join(",", scope.Results.Select(part => part.Result.Outcome).Distinct()),
+      ["traversalCompleted"] = scope.Results.All(part => part.Result.TraversalCompleted),
+      ["resourceCount"] = resources,
+      ["vcResults"] = new JsonArray(scope.Results.Select(part => (JsonNode)new JsonObject {
+        ["workId"] = part.Task.Identity.Key,
+        ["outcome"] = part.Result.Outcome.ToString(),
+        ["traversalCompleted"] = part.Result.TraversalCompleted,
+        ["runTime"] = part.Result.RunTime.ToString(),
+        ["resourceCount"] = part.Result.ResourceCount,
+        ["assertions"] = new JsonArray(part.Result.Assertions.Select(assertion => (JsonNode)new JsonObject {
+          ["id"] = assertion.Id, ["filename"] = assertion.Origin.Filepath,
+          ["line"] = assertion.Origin.line, ["col"] = assertion.Origin.col,
+          ["description"] = assertion.Description, ["outcome"] = assertion.Outcome.ToString()
+        }).ToArray())
+      }).ToArray())
+    });
+  }
+
   private readonly IList<JsonNode> verificationResultNode = new List<JsonNode>();
 
   public async Task Flush() {

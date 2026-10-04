@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Boogie;
@@ -12,7 +12,7 @@ namespace Microsoft.Dafny {
   /// Implementations of this interface are responsible to verify the correctness of a program.
   /// </summary>
   public interface IProgramVerifier {
-    Task<IReadOnlyList<IVerificationTask>> GetVerificationTasksAsync(ExecutionEngine engine,
+    Task<IReadOnlyList<IVerificationWorkItem>> GetVerificationTasksAsync(IVerificationBackend backend,
       ResolutionResult resolution,
       ModuleDefinition moduleDefinition,
       CancellationToken cancellationToken);

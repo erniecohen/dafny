@@ -16,7 +16,7 @@ using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 namespace Microsoft.Dafny.LanguageServer.Workspace;
 
 public record IdeVerificationTaskState(Range Range, PublishedVerificationStatus Status,
-  IReadOnlyList<Diagnostic> Diagnostics, bool HitErrorLimit, IVerificationTask Task, IVerificationStatus RawStatus);
+  IReadOnlyList<Diagnostic> Diagnostics, bool HitErrorLimit, IVerificationWorkItem Task, VerificationStatus RawStatus);
 
 public enum VerificationPreparationState { NotStarted, InProgress, Done }
 public record IdeCanVerifyState(VerificationPreparationState PreparationProgress,
@@ -178,8 +178,8 @@ public record IdeState(
     switch (e) {
       case DeterminedRootFiles determinedRootFiles:
         return await HandleDeterminedRootFiles(options, logger, projectDatabase, determinedRootFiles);
-      case BoogieUpdate boogieUpdate:
-        return HandleBoogieUpdate(options, logger, boogieUpdate);
+      case VerificationUpdate boogieUpdate:
+        return HandleVerificationUpdate(options, logger, boogieUpdate);
       case CanVerifyPartsIdentified canVerifyPartsIdentified:
         return HandleCanVerifyPartsUpdated(logger, canVerifyPartsIdentified);
       case FinishedParsing finishedParsing:
@@ -188,8 +188,8 @@ public record IdeState(
         return HandleFinishedResolution(options, logger, telemetryPublisher, finishedResolution);
       case InternalCompilationException internalCompilationException:
         return HandleInternalCompilationException(internalCompilationException);
-      case BoogieException boogieException:
-        return HandleBoogieException(boogieException);
+      case VerificationException boogieException:
+        return HandleVerificationException(boogieException);
       case NewDiagnostic newDiagnostic:
         return HandleNewDiagnostic(newDiagnostic);
       case ScheduledVerification scheduledVerification:
@@ -384,12 +384,11 @@ public record IdeState(
 
   private IdeState HandleCanVerifyPartsUpdated(ILogger logger, CanVerifyPartsIdentified canVerifyPartsIdentified) {
     var previousState = this;
-    var implementations = canVerifyPartsIdentified.Parts.Select(t => t.Split.Implementation).Distinct();
     var gutterIconManager = new GutterIconAndHoverVerificationDetailsManager(logger);
 
     var uri = canVerifyPartsIdentified.CanVerify.Origin.Uri;
-    gutterIconManager.ReportImplementationsBeforeVerification(previousState,
-      canVerifyPartsIdentified.CanVerify, implementations.ToArray());
+    gutterIconManager.ReportWorkItemsBeforeVerification(previousState,
+      canVerifyPartsIdentified.CanVerify, canVerifyPartsIdentified.Parts);
 
     var range = canVerifyPartsIdentified.CanVerify.NavigationRange.ToLspRange();
     var previousImplementations = previousState.CanVerifyStates[uri][range].VerificationTasks;
@@ -399,7 +398,7 @@ public record IdeState(
           var previous = previousImplementations.GetValueOrDefault(Compilation.GetTaskName(k));
           return new IdeVerificationTaskState(range, PublishedVerificationStatus.Queued,
             previous?.Diagnostics ?? Array.Empty<Diagnostic>(),
-            previous?.HitErrorLimit ?? false, k, new Stale());
+            previous?.HitErrorLimit ?? false, k, new VerificationStale());
         }), new List<Diagnostic>());
     return previousState with {
       CanVerifyStates = previousState.CanVerifyStates.SetItem(uri,
@@ -407,7 +406,7 @@ public record IdeState(
     };
   }
 
-  private IdeState HandleBoogieException(BoogieException boogieException) {
+  private IdeState HandleVerificationException(VerificationException boogieException) {
     var previousState = this;
 
     var name = Compilation.GetTaskName(boogieException.Task);
@@ -427,7 +426,7 @@ public record IdeState(
     };
     diagnostics = diagnostics.Concat(new[] { internalErrorDiagnostic }).ToList();
 
-    var view = new IdeVerificationTaskState(range, PublishedVerificationStatus.Error, diagnostics.ToList(), hitErrorLimit, boogieException.Task, new Stale());
+    var view = new IdeVerificationTaskState(range, PublishedVerificationStatus.Error, diagnostics.ToList(), hitErrorLimit, boogieException.Task, new VerificationStale());
 
     return previousState with {
       CanVerifyStates = previousState.CanVerifyStates.SetItem(uri,
@@ -437,11 +436,11 @@ public record IdeState(
     };
   }
 
-  private IdeState HandleBoogieUpdate(DafnyOptions options, ILogger logger, BoogieUpdate boogieUpdate) {
+  private IdeState HandleVerificationUpdate(DafnyOptions options, ILogger logger, VerificationUpdate boogieUpdate) {
     var previousState = this;
 
     var name = Compilation.GetTaskName(boogieUpdate.VerificationTask);
-    var status = StatusFromBoogieStatus(boogieUpdate.BoogieStatus);
+    var status = StatusFromVerificationStatus(boogieUpdate.Status);
     var uri = boogieUpdate.CanVerify.Origin.Uri;
     var range = boogieUpdate.CanVerify.NavigationRange.ToLspRange();
 
@@ -450,26 +449,28 @@ public record IdeState(
     var previousView = previousImplementations.GetValueOrDefault(name);
     var counterExamples = previousState.Counterexamples;
     bool hitErrorLimit = previousView?.HitErrorLimit ?? false;
-    IVerificationStatus rawStatus = boogieUpdate.BoogieStatus;
+    VerificationStatus rawStatus = boogieUpdate.Status;
     var diagnostics = previousView?.Diagnostics ?? Array.Empty<Diagnostic>();
-    if (boogieUpdate.BoogieStatus is Running) {
+    if (boogieUpdate.Status is VerificationRunning) {
       diagnostics = Array.Empty<Diagnostic>();
       hitErrorLimit = false;
     }
 
-    if (boogieUpdate.BoogieStatus is Completed completed) {
+    if (boogieUpdate.Status is VerificationCompleted completed) {
       // WarnContradictoryAssumptions should be computable after completing a single assertion batch.
       // And we should do this because it allows this warning to be shown when doing --filter-position on a single assertion
       // https://github.com/dafny-lang/dafny/issues/5039 
 
-      counterExamples = counterExamples.Concat(completed.Result.CounterExamples);
-      hitErrorLimit |= completed.Result.MaxCounterExamples == completed.Result.CounterExamples.Count;
+      if (completed.Result.BoogieResult != null) {
+        counterExamples = counterExamples.Concat(completed.Result.BoogieResult.CounterExamples);
+      }
+      hitErrorLimit |= completed.Result.HitErrorLimit;
       var newDiagnostics =
         Compilation.GetDiagnosticsFromResult(options, previousState.Uri, boogieUpdate.CanVerify,
           boogieUpdate.VerificationTask, completed.Result);
       diagnostics = newDiagnostics.Select(d => d.ToLspDiagnostic()).ToList();
       logger.LogTrace(
-        $"Completed received for {previousState.Input} and found #{diagnostics.Count} diagnostics and #{completed.Result.CounterExamples.Count} counterexamples.");
+        $"Completed received for {previousState.Input} and found #{diagnostics.Count} diagnostics and #{completed.Result.ErrorCount} counterexamples.");
     }
 
     var newCanVerifyDiagnostics = new List<Diagnostic>();
@@ -477,8 +478,8 @@ public record IdeState(
       hitErrorLimit, boogieUpdate.VerificationTask, rawStatus);
     var newTaskStates = previousVerificationResult.VerificationTasks.SetItem(name, taskState);
 
-    var scopeGroup = newTaskStates.Values.Where(s => s.Task.ScopeId == boogieUpdate.VerificationTask.ScopeId).ToList();
-    var allTasksAreCompleted = scopeGroup.All(s => s.Status >= PublishedVerificationStatus.Error);
+    var scopeGroup = newTaskStates.Values.Where(s => s.Task.Identity.ScopeId == boogieUpdate.VerificationTask.Identity.ScopeId).ToList();
+    var allTasksAreCompleted = scopeGroup.All(s => s.RawStatus is VerificationCompleted);
     if (allTasksAreCompleted) {
 
       var errorReporter = new ObservableErrorReporter(options, uri);
@@ -486,7 +487,7 @@ public record IdeState(
       errorReporter.Updates.Subscribe(d => verificationCoverageDiagnostics.Add(d.Diagnostic));
 
       ProofDependencyWarnings.ReportSuspiciousDependencies(options,
-        scopeGroup.Select(s => new VerificationTaskResult(s.Task, ((Completed)s.RawStatus).Result)),
+        scopeGroup.Select(s => new VerificationWorkItemResult(s.Task, ((VerificationCompleted)s.RawStatus).Result)),
         errorReporter, boogieUpdate.ProofDependencyManager);
 
       newCanVerifyDiagnostics = previousVerificationResult.Diagnostics.Concat(verificationCoverageDiagnostics.Select(d => d.ToLspDiagnostic())).ToList();
@@ -504,43 +505,33 @@ public record IdeState(
     };
   }
 
-  private void UpdateGutterIconTrees(ILogger logger, BoogieUpdate boogieUpdate, IReadOnlyList<IdeVerificationTaskState> scopeGroup) {
-    var gutterIconManager = new GutterIconAndHoverVerificationDetailsManager(logger);
-    if (boogieUpdate.BoogieStatus is Running && scopeGroup.Count(e => e.Status == PublishedVerificationStatus.Running) == 1) {
-      gutterIconManager.ReportVerifyImplementationRunning(this, boogieUpdate.VerificationTask.Split.Implementation);
+  private void UpdateGutterIconTrees(ILogger logger, VerificationUpdate update, IReadOnlyList<IdeVerificationTaskState> scopeGroup) {
+    var gutter = new GutterIconAndHoverVerificationDetailsManager(logger);
+    if (update.Status is VerificationRunning && scopeGroup.Count(e => e.Status == PublishedVerificationStatus.Running) == 1) {
+      gutter.ReportWorkItemRunning(this, update.VerificationTask);
     }
-
-    if (boogieUpdate.BoogieStatus is Completed completed) {
-      gutterIconManager.ReportAssertionBatchResult(this,
-        new AssertionBatchResult(boogieUpdate.VerificationTask.Split.Implementation, completed.Result));
+    if (update.Status is VerificationCompleted completed) {
+      gutter.ReportWorkItemResult(this, update.VerificationTask, completed.Result);
     }
-
-    if (scopeGroup.All(e => e.Status >= PublishedVerificationStatus.Error)) {
-      var results = scopeGroup.Select(e => e.RawStatus).OfType<Completed>().Select(c => c.Result).ToList();
-
-      foreach (var result in results) {
-        logger.LogDebug(
-          $"Possibly duplicate reporting assertion batch {result.VcNum}, version {Version}");
-        gutterIconManager.ReportAssertionBatchResult(this,
-          new AssertionBatchResult(boogieUpdate.VerificationTask.Split.Implementation, result));
+    if (scopeGroup.All(e => e.RawStatus is VerificationCompleted)) {
+      var results = scopeGroup.Select(e => ((VerificationCompleted)e.RawStatus).Result).ToList();
+      foreach (var item in scopeGroup) {
+        gutter.ReportWorkItemResult(this, item.Task, ((VerificationCompleted)item.RawStatus).Result);
       }
-
-      var resourceCount = results.Sum(e => e.ResourceCount);
-      var outcome = results.Select(e => Compilation.GetOutcome(e.Outcome)).Max();
-      gutterIconManager.ReportEndVerifyImplementation(this, boogieUpdate.VerificationTask.Split.Implementation, resourceCount, outcome);
+      gutter.ReportEndVerifyWorkItem(this, update.VerificationTask, results);
     }
   }
 
-  private static PublishedVerificationStatus StatusFromBoogieStatus(IVerificationStatus verificationStatus) {
+  private static PublishedVerificationStatus StatusFromVerificationStatus(VerificationStatus verificationStatus) {
     switch (verificationStatus) {
-      case Stale:
+      case VerificationStale:
         return PublishedVerificationStatus.Stale;
-      case Queued:
+      case VerificationQueued:
         return PublishedVerificationStatus.Queued;
-      case Running:
+      case VerificationRunning:
         return PublishedVerificationStatus.Running;
-      case Completed completed:
-        return completed.Result.Outcome == SolverOutcome.Valid
+      case VerificationCompleted completed:
+        return completed.Result.IsVerified
           ? PublishedVerificationStatus.Correct
           : PublishedVerificationStatus.Error;
       default:

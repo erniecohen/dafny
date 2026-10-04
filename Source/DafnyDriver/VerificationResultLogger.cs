@@ -22,8 +22,11 @@ namespace Microsoft.Dafny {
 
   public record VerificationScopeResult(VerificationScope Scope, IReadOnlyList<VerificationTaskResult> Results);
 
+  public record NeutralVerificationScopeResult(string Name, IOrigin Origin, IReadOnlyList<VerificationWorkItemResult> Results);
+
   interface IVerificationResultFormatLogger {
     void LogScopeResults(VerificationScopeResult result);
+    void LogNeutralScopeResults(NeutralVerificationScopeResult result);
     Task Flush();
   }
 
@@ -99,8 +102,32 @@ namespace Microsoft.Dafny {
     }
 
     public void Report(CanVerifyResult canVerifyResult) {
+      if (!canVerifyResult.Results.All(result => result.Task is BoogieVerificationWorkItem && result.Result.BoogieResult != null)) {
+        foreach (var group in canVerifyResult.Results.GroupBy(result => result.Task.Identity.ScopeId)) {
+          var scope = new NeutralVerificationScopeResult(group.Key, group.First().Task.Source.ScopeOrigin, group.ToList());
+          foreach (var formatLogger in formatLoggers) { formatLogger.LogNeutralScopeResults(scope); }
+          foreach (var part in scope.Results) {
+            var run = part.Result;
+            var testCase = new TestCase {
+              FullyQualifiedName = part.Task.Identity.Key,
+              ExecutorUri = new Uri("executor://dafnyverifier/v1"), Source = scope.Origin.Uri.LocalPath
+            };
+            var testResult = new TestResult(testCase) {
+              StartTime = run.StartTime, Duration = run.RunTime,
+              Outcome = run.IsVerified ? TestOutcome.Passed : TestOutcome.Failed,
+              ErrorMessage = run.IsVerified ? null : run.Outcome.ToString()
+            };
+            if (run.ResourceCount is { } resources) { testResult.SetPropertyValue(ResourceCountProperty, resources); }
+            if (part.Task.Identity.RandomSeed != 0) { testResult.SetPropertyValue(RandomSeedProperty, part.Task.Identity.RandomSeed); }
+            events.RaiseTestResult(new TestResultEventArgs(testResult));
+          }
+        }
+        return;
+      }
+      var nativeResults = canVerifyResult.Results.Select(result =>
+        new VerificationTaskResult(((BoogieVerificationWorkItem)result.Task).Task, result.Result.BoogieResult!));
       var scopeResults =
-        canVerifyResult.Results
+        nativeResults
           .GroupBy(v => new VerificationScope(v.Task.ScopeId, v.Task.ScopeToken))
           .Select(g => new VerificationScopeResult(g.Key, g.ToList())).ToList();
       foreach (var scopeResult in scopeResults) {

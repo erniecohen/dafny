@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
@@ -212,6 +212,101 @@ Send notifications about the verification status of each line in the program.
 
     canVerifyNode.PropagateChildrenErrorsUp();
     canVerifyNode.RecomputeAssertionBatchNodeDiagnostics();
+  }
+
+  public void ReportWorkItemsBeforeVerification(IdeState state, ICanVerify canVerify,
+    IReadOnlyList<IVerificationWorkItem> workItems) {
+    if (workItems.All(item => item is BoogieVerificationWorkItem)) {
+      ReportImplementationsBeforeVerification(state, canVerify,
+        workItems.Cast<BoogieVerificationWorkItem>().Select(item => item.Task.Split.Implementation).Distinct().ToArray());
+      return;
+    }
+    var tree = state.VerificationTrees.GetValueOrDefault(canVerify.Origin.Uri);
+    var owner = tree?.Children.OfType<TopLevelDeclMemberVerificationTree>()
+      .FirstOrDefault(node => node.Position == canVerify.Origin.GetLspPosition());
+    if (owner == null) { return; }
+    owner.ResetNewChildren();
+    foreach (var item in workItems.DistinctBy(item => item.Identity.ScopeId)) {
+      owner.AddNewChild(new ImplementationVerificationTree(
+        owner.DisplayName + ":" + item.Source.DisplayName, item.Source.DisplayName, item.Identity.ScopeId,
+        owner.Filename, owner.Uri, owner.Range, owner.Position) {
+        BackendScopeId = item.Identity.ScopeId, ResourceCount = null
+      });
+    }
+    owner.SaveNewChildren();
+    if (workItems.Count == 0) {
+      owner.Start(); owner.Stop(); owner.StatusVerification = GutterVerificationStatus.Verified;
+    }
+    owner.PropagateChildrenErrorsUp();
+  }
+
+  private static (TopLevelDeclMemberVerificationTree? Owner, ImplementationVerificationTree? Unit)
+    FindWorkItemTree(IdeState state, IVerificationWorkItem item) {
+    var tree = state.VerificationTrees.GetValueOrDefault(item.Source.CanVerify.Origin.Uri);
+    var owner = tree?.Children.OfType<TopLevelDeclMemberVerificationTree>()
+      .FirstOrDefault(node => node.Position == item.Source.CanVerify.Origin.GetLspPosition());
+    var unit = owner?.Children.OfType<ImplementationVerificationTree>()
+      .FirstOrDefault(node => node.BackendScopeId == item.Identity.ScopeId);
+    return (owner, unit);
+  }
+
+  public void ReportWorkItemRunning(IdeState state, IVerificationWorkItem item) {
+    if (item is BoogieVerificationWorkItem native) {
+      ReportVerifyImplementationRunning(state, native.Task.Split.Implementation); return;
+    }
+    var (owner, unit) = FindWorkItemTree(state, item);
+    owner?.Start(); unit?.Start(); owner?.PropagateChildrenErrorsUp();
+  }
+
+  public void ReportWorkItemResult(IdeState state, IVerificationWorkItem item, VerificationResult result) {
+    if (item is BoogieVerificationWorkItem native && result.BoogieResult != null) {
+      ReportAssertionBatchResult(state, new AssertionBatchResult(native.Task.Split.Implementation, result.BoogieResult));
+      return;
+    }
+    var (owner, unit) = FindWorkItemTree(state, item);
+    if (owner == null || unit == null || unit.NewChildren.OfType<AssertionVerificationTree>()
+      .Any(node => node.AssertionBatchNum == item.Identity.BatchId)) { return; }
+    var milliseconds = (int)result.RunTime.TotalMilliseconds;
+    unit.AddAssertionBatchMetrics(item.Identity.BatchId, milliseconds, result.ResourceCount, []);
+    foreach (var assertion in result.Assertions.Where(assertion => assertion.Origin.Uri == unit.Uri)) {
+      var node = new AssertionVerificationTree(assertion.Description, assertion.Id, unit.Filename,
+        unit.Uri, assertion.SecondaryOrigin?.GetLspPosition(), assertion.Origin.ReportingRange.ToLspRange()) {
+        BackendDescription = assertion.Description, AssertionBatchNum = item.Identity.BatchId,
+        StatusCurrent = CurrentStatus.Current, StatusVerification = assertion.Outcome switch {
+          VerificationOutcome.Verified => GutterVerificationStatus.Verified,
+          VerificationOutcome.Unknown => GutterVerificationStatus.Inconclusive,
+          _ => GutterVerificationStatus.Error
+        }, ResourceCount = result.ResourceCount
+      }.WithDuration(unit.StartTime, milliseconds);
+      unit.AddNewChild(node);
+      unit.Children.Add(node);
+    }
+    owner.PropagateChildrenErrorsUp();
+    owner.RecomputeAssertionBatchNodeDiagnostics();
+  }
+
+  public void ReportEndVerifyWorkItem(IdeState state, IVerificationWorkItem item, IReadOnlyList<VerificationResult> results) {
+    if (item is BoogieVerificationWorkItem native && results.All(result => result.BoogieResult != null)) {
+      ReportEndVerifyImplementation(state, native.Task.Split.Implementation,
+        results.Sum(result => result.BoogieResult!.ResourceCount),
+        results.Select(result => Compilation.GetOutcome(result.BoogieResult!.Outcome)).Max());
+      return;
+    }
+    var (owner, unit) = FindWorkItemTree(state, item);
+    if (owner == null || unit == null) { return; }
+    unit.Stop();
+    unit.ResourceCount = results.All(result => result.ResourceCount != null)
+      ? results.Sum(result => (long)result.ResourceCount!.Value) : null;
+    unit.StatusVerification = results.All(result => result.IsVerified)
+      ? GutterVerificationStatus.Verified : GutterVerificationStatus.Error;
+    owner.ResourceCount = owner.Children.All(child => child.ResourceCount != null)
+      ? owner.Children.Sum(child => child.ResourceCount) : null;
+    if (owner.Children.All(child => child.Finished)) {
+      owner.Stop();
+      owner.StatusVerification = owner.Children.All(child => child.StatusVerification == GutterVerificationStatus.Verified)
+        ? GutterVerificationStatus.Verified : GutterVerificationStatus.Error;
+    }
+    owner.PropagateChildrenErrorsUp(); owner.RecomputeAssertionBatchNodeDiagnostics();
   }
 
   /// <summary>

@@ -21,7 +21,7 @@ using Token = Microsoft.Dafny.Token;
 
 namespace DafnyDriver.Commands;
 
-public record CanVerifyResult(ICanVerify CanVerify, IReadOnlyList<VerificationTaskResult> Results);
+public record CanVerifyResult(ICanVerify CanVerify, IReadOnlyList<VerificationWorkItemResult> Results);
 
 
 public class CliCompilation {
@@ -49,7 +49,7 @@ public class CliCompilation {
 
     var input = new CompilationInput(options, 0, options.DafnyProject);
     var executionEngine = new ExecutionEngine(options, new EmptyVerificationResultCache(), DafnyMain.LargeThreadScheduler);
-    Compilation = createCompilation(executionEngine, input);
+    Compilation = createCompilation(new BoogieVerificationBackend(executionEngine), input);
   }
 
   public async Task<int> GetAndReportExitCode() {
@@ -90,14 +90,14 @@ public class CliCompilation {
     var telemetryPublisher = new CliTelemetryPublisher(factory.CreateLogger<TelemetryPublisherBase>());
     return new CliCompilation(CreateCompilation, options);
 
-    Compilation CreateCompilation(ExecutionEngine engine, CompilationInput input) =>
+    Compilation CreateCompilation(IVerificationBackend backend, CompilationInput input) =>
       new(factory.CreateLogger<Compilation>(), fileSystem,
         new TextDocumentLoader(factory.CreateLogger<ITextDocumentLoader>(),
           new DafnyLangParser(options, fileSystem, telemetryPublisher,
             factory.CreateLogger<DafnyLangParser>(),
             factory.CreateLogger<CachingParser>()),
           new DafnyLangSymbolResolver(factory.CreateLogger<DafnyLangSymbolResolver>(), factory.CreateLogger<CachingResolver>(), telemetryPublisher)),
-        new DafnyProgramVerifier(factory.CreateLogger<DafnyProgramVerifier>()), engine, input);
+        new DafnyProgramVerifier(factory.CreateLogger<DafnyProgramVerifier>()), backend, input);
   }
 
   public void Start() {
@@ -177,52 +177,24 @@ public class CliCompilation {
         }
       }
 
-      if (ev is BoogieException boogieException) {
+      if (ev is VerificationException boogieException) {
         var canVerifyResult = canVerifyResults[boogieException.CanVerify];
         canVerifyResult.Finished.SetException(boogieException.Exception);
       }
 
-      if (ev is BoogieUpdate { BoogieStatus: Completed completed } boogieUpdate) {
+      if (ev is VerificationUpdate { Status: VerificationCompleted completed } boogieUpdate) {
         var canVerifyResult = canVerifyResults[boogieUpdate.CanVerify];
         canVerifyResult.CompletedParts.Enqueue((boogieUpdate.VerificationTask, completed));
         var completedPartsCount = Interlocked.Increment(ref canVerifyResult.CompletedCount);
 
         if (Options.Get(CommonOptionBag.ProgressOption) == CommonOptionBag.ProgressLevel.Batch) {
-          var partOrigin = boogieUpdate.VerificationTask.Split.Token;
-
-          var wellFormedness = boogieUpdate.VerificationTask.Split.Implementation.Name.Contains("CheckWellFormed$");
-
-          string OriginDescription(IImplementationPartOrigin origin, bool outer) {
-            if (outer && origin is ImplementationRootOrigin) {
-              return (wellFormedness ? "contract consistency" : "entire body");
-            }
-            var result = origin switch {
-              PathOrigin pathOrigin => $"{OriginDescription(pathOrigin.Inner, false)}" +
-                                       $"after executing lines {string.Join(", ", pathOrigin.BranchTokens.Select(b => b.line))}",
-              RemainingAssertionsOrigin remainingAssertions => OriginDescription(remainingAssertions.Origin, false) + (outer ? "remaining assertions" : ""),
-              IsolatedAssertionOrigin isolateOrigin => $"{OriginDescription(isolateOrigin.Origin, false)}assertion at line {isolateOrigin.line}",
-              JumpOrigin returnOrigin => $"{OriginDescription(returnOrigin.Origin, false)}{JumpOriginKind(returnOrigin)} at line {returnOrigin.line}",
-              AfterSplitOrigin splitOrigin => $"{OriginDescription(splitOrigin.Inner, false)}assertions after split_here at line {splitOrigin.line}",
-              FocusOrigin focusOrigin =>
-                $"{OriginDescription(focusOrigin.Inner, false)}with focus " +
-                $"{string.Join(", ", focusOrigin.FocusChoices.Select(b => (b.DidFocus ? "+" : "-") + b.Token.line))}",
-              UntilFirstSplitOrigin untilFirstSplit => $"{OriginDescription(untilFirstSplit.Inner, false)}assertions until first split",
-              ImplementationRootOrigin => "",
-              _ => throw new ArgumentOutOfRangeException(nameof(origin), origin, null)
-            };
-            if (!outer && !string.IsNullOrEmpty(result)) {
-              result += ", ";
-            }
-            return result;
-          }
-
           var runResult = completed.Result;
           var timeString = runResult.RunTime.ToString("g");
           _ = Options.OutputWriter.Status(
             $"Verified {completedPartsCount}/{canVerifyResult.TaskCount} of {boogieUpdate.CanVerify.FullDafnyName}: " +
-            $"{OriginDescription(partOrigin, true)} - " +
-            $"{DescribeOutcome(Compilation.GetOutcome(runResult.Outcome))}" +
-            $" (time: {timeString}, resource count: {runResult.ResourceCount})");
+            $"{boogieUpdate.VerificationTask.Source.ProgressDescription} - " +
+            $"{DescribeOutcome(runResult.Outcome)}" +
+            $" (time: {timeString}, resource count: {runResult.ResourceCount?.ToString() ?? "unavailable"})");
         }
         if (completedPartsCount == canVerifyResult.TaskCount) {
           canVerifyResult.Finished.TrySetResult();
@@ -285,7 +257,7 @@ public class CliCompilation {
         }
 
         yield return new CanVerifyResult(canVerify,
-          results.CompletedParts.Select(c => new VerificationTaskResult(c.Task, c.Result.Result)).ToList());
+          results.CompletedParts.Select(c => new VerificationWorkItemResult(c.Task, c.Result.Result)).ToList());
 
         canVerifyResults.Remove(canVerify); // Free memory
         Compilation.ClearCanVerifyCache(canVerify);
@@ -294,9 +266,14 @@ public class CliCompilation {
     }
   }
 
-  private static string JumpOriginKind(JumpOrigin returnOrigin) {
-    return returnOrigin.IsolatedReturn is GotoCmd ? "continue" : "return";
-  }
+  public static string DescribeOutcome(VerificationOutcome outcome) => outcome switch {
+    VerificationOutcome.Verified => "verified successfully", VerificationOutcome.Failed => "could not be verified",
+    VerificationOutcome.Unknown => "was inconclusive", VerificationOutcome.TimedOut => "timed out",
+    VerificationOutcome.OutOfResource => "ran out of resources", VerificationOutcome.OutOfMemory => "ran out of memory",
+    VerificationOutcome.Cancelled => "was cancelled", VerificationOutcome.Unsupported => "is unsupported",
+    VerificationOutcome.ToolError => "ran into a tool error", VerificationOutcome.Bounded => "could not be verified",
+    _ => throw new ArgumentOutOfRangeException(nameof(outcome))
+  };
 
   public static string DescribeOutcome(VcOutcome outcome) {
     return outcome switch {
@@ -375,8 +352,8 @@ public class CliCompilation {
 
   }
 
-  private bool KeepVerificationTask(IVerificationTask task, LineRange range) {
-    return range.Contains(task.ScopeToken.line) || range.Contains(task.Token.line);
+  private bool KeepVerificationTask(IVerificationWorkItem task, LineRange range) {
+    return range.Contains(task.Source.ScopeOrigin.line) || range.Contains(task.Source.Origin.line);
   }
 }
 
@@ -391,4 +368,5 @@ record VerificationStatistics {
   public int SolverExceptionCount;
   public int TotalResourcesUsed;
   public int MaxVcResourcesUsed;
+  public bool ResourcesAvailable = true;
 }

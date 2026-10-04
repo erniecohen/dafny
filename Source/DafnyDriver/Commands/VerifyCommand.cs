@@ -89,34 +89,39 @@ public static class VerifyCommand {
     verificationResults.Subscribe(result => {
       foreach (var taskResult in result.Results) {
         var runResult = taskResult.Result;
-        Interlocked.Add(ref statistics.TotalResourcesUsed, runResult.ResourceCount);
-        lock (statistics) {
-          statistics.MaxVcResourcesUsed = Math.Max(statistics.MaxVcResourcesUsed, runResult.ResourceCount);
-        }
+        if (runResult.ResourceCount is { } resources) {
+          Interlocked.Add(ref statistics.TotalResourcesUsed, resources);
+          lock (statistics) { statistics.MaxVcResourcesUsed = Math.Max(statistics.MaxVcResourcesUsed, resources); }
+        } else { statistics.ResourcesAvailable = false; }
 
         switch (runResult.Outcome) {
-          case SolverOutcome.Valid:
-          case SolverOutcome.Bounded:
+          case VerificationOutcome.Verified:
+          case VerificationOutcome.Bounded:
             Interlocked.Increment(ref statistics.VerifiedSymbols);
-            Interlocked.Add(ref statistics.VerifiedAssertions, runResult.Asserts.Count);
+            Interlocked.Add(ref statistics.VerifiedAssertions, runResult.Assertions.Count);
             break;
-          case SolverOutcome.Invalid:
-            var total = runResult.Asserts.Count;
-            var errors = runResult.CounterExamples.Count;
+          case VerificationOutcome.Failed:
+            var total = runResult.Assertions.Count;
+            var errors = runResult.ErrorCount;
             Interlocked.Add(ref statistics.VerifiedAssertions, total - errors);
             Interlocked.Add(ref statistics.ErrorCount, errors);
             break;
-          case SolverOutcome.TimeOut:
+          case VerificationOutcome.TimedOut:
             Interlocked.Increment(ref statistics.TimeoutCount);
             break;
-          case SolverOutcome.OutOfMemory:
+          case VerificationOutcome.OutOfMemory:
             Interlocked.Increment(ref statistics.OutOfMemoryCount);
             break;
-          case SolverOutcome.OutOfResource:
+          case VerificationOutcome.OutOfResource:
             Interlocked.Increment(ref statistics.OutOfResourceCount);
             break;
-          case SolverOutcome.Undetermined:
+          case VerificationOutcome.Unknown:
             Interlocked.Increment(ref statistics.InconclusiveCount);
+            break;
+          case VerificationOutcome.Cancelled:
+          case VerificationOutcome.Unsupported:
+          case VerificationOutcome.ToolError:
+            Interlocked.Increment(ref statistics.SolverExceptionCount);
             break;
           default:
             throw new ArgumentOutOfRangeException();
@@ -134,8 +139,8 @@ public static class VerifyCommand {
         return (numberForUpRounding / performanceStatisticsDivisor) * performanceStatisticsDivisor;
       }
       var output = cliCompilation.Options.OutputWriter;
-      await output.Status($"Total resources used is {Round(statistics.TotalResourcesUsed)}");
-      await output.Status($"Max resources used by VC is {Round(statistics.MaxVcResourcesUsed)}");
+      await output.Status(statistics.ResourcesAvailable ? $"Total resources used is {Round(statistics.TotalResourcesUsed)}" : "Total resources used is unavailable");
+      await output.Status(statistics.ResourcesAvailable ? $"Max resources used by VC is {Round(statistics.MaxVcResourcesUsed)}" : "Max resources used by VC is unavailable");
     }
   }
 
@@ -187,10 +192,8 @@ public static class VerifyCommand {
       // We use an intermediate reporter so we can sort the diagnostics from all parts by token
       var batchReporter = new BatchErrorReporter(compilation.Options);
       foreach (var completed in result.Results) {
-        Compilation.ReportDiagnosticsInResult(compilation.Options, result.CanVerify.FullDafnyName,
-          BoogieGenerator.ToDafnyToken(completed.Task.Token),
-          (uint)completed.Result.RunTime.TotalSeconds,
-          completed.Result, batchReporter);
+        Compilation.ReportDiagnosticsInResult(compilation.Options, result.CanVerify,
+          completed.Task, completed.Result, batchReporter);
       }
 
       foreach (var diagnostic in batchReporter.AllMessages.Order()) {
@@ -231,7 +234,7 @@ public static class VerifyCommand {
       ProofDependencyWarnings.ReportSuspiciousDependencies(cliCompilation.Options, result.Results,
         resolution.ResolvedProgram.Reporter, resolution.ResolvedProgram.ProofDependencyManager);
 
-      foreach (var used in result.Results.SelectMany(part => part.Result.CoveredElements)) {
+      foreach (var used in result.Results.Where(part => part.Result.BoogieResult != null).SelectMany(part => part.Result.BoogieResult!.CoveredElements)) {
         usedDependencies.Add(used);
       }
     }, e => { }, () => { });
