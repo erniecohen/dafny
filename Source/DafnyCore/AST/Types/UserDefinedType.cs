@@ -429,6 +429,9 @@ public class UserDefinedType : NonProxyType, IHasReferences {
       var totalEqualitySupport = SupportsEquality;
       if (!totalEqualitySupport && ResolvedClass is TypeSynonymDeclBase synonymBase) {
         return synonymBase.IsRevealedInScope(Type.GetScope()) && synonymBase.RhsWithArgument(TypeArgs).PartiallySupportsEquality;
+      } else if (!totalEqualitySupport && ResolvedClass is NewtypeDecl { UseBaseReferenceCharacteristics: true } newtype &&
+                 newtype.IsRevealedInScope(Type.GetScope())) {
+        return newtype.ConcreteBaseType(TypeArgs).PartiallySupportsEquality;
       } else if (!totalEqualitySupport && ResolvedClass is IndDatatypeDecl dt && dt.IsRevealedInScope(Type.GetScope())) {
         // Equality is partially supported (at run time) for a datatype that
         //   * is inductive (because codatatypes never support equality), and

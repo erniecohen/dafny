@@ -346,7 +346,12 @@ namespace Microsoft.Dafny {
             applyExpr.PreType = CreatePreTypeProxy("apply expression result");
 
             Constraints.AddGuardedConstraint(() => {
-              if (e.Function.PreType.NormalizeWrtScope() is DPreType dp) {
+              if (e.Function.PreType.NormalizeWrtScope() is DPreType nominalFunctionPreType) {
+                var dp = resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+                  ? OperationPreType(nominalFunctionPreType) : nominalFunctionPreType;
+                if (dp == null) {
+                  return false;
+                }
                 if (!DPreType.IsArrowType(dp.Decl)) {
                   ReportError(e.Origin, "non-function expression (of type {0}) is called with parameters", e.Function.PreType);
                 } else {
@@ -356,6 +361,9 @@ namespace Microsoft.Dafny {
                       "wrong number of arguments to function application (function type '{0}' expects {1}, got {2})", e.Function.PreType,
                       arity, e.Args.Count);
                   } else {
+                    if (resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+                      e.Function = BaseOperationExpression(e.Function, dp);
+                    }
                     for (var i = 0; i < arity; i++) {
                       AddSubtypeConstraint(dp.Arguments[i], e.Args[i].PreType, e.Args[i].Origin,
                         "type mismatch for argument" + (arity == 1 ? "" : " " + i) + " (function expects {0}, got {1})");
@@ -1398,10 +1406,32 @@ namespace Microsoft.Dafny {
         return (null, null);
       }
 
-      if (resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases) && dReceiver.Decl is NewtypeDecl nominal) {
-        var nominalMembers = resolver.GetClassMembers(nominal);
-        if (nominalMembers == null || !nominalMembers.ContainsKey(memberName)) {
-          dReceiver = OperationPreType(dReceiver) ?? dReceiver;
+      if (resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+        // Registered member tables include base members. Select those members on
+        // their actual instantiated receiver, rather than pretending that a
+        // newtype tower has every base declaration's generic parent mapping.
+        var path = new HashSet<NewtypeDecl>();
+        while (dReceiver.DeclWithMembersBypassInternalSynonym() is NewtypeDecl nominal) {
+          var nominalMembers = resolver.GetClassMembers(nominal);
+          if (nominalMembers != null && nominalMembers.TryGetValue(memberName, out var declaredMember) &&
+              (declaredMember.EnclosingClass == nominal || declaredMember.EnclosingClass is TraitDecl trait && nominal.ParentTraitHeads.Contains(trait))) {
+            break;
+          }
+          if (dReceiver.Decl is not NewtypeDecl || !nominal.IsRevealedInScope(Type.GetScope()) ||
+              nominal.BasePreType == null || (!path.Add(nominal) && HasOperationViewCycle(nominal))) {
+            if (reportErrorOnMissingMember) {
+              ReportMemberNotFoundError(tok, memberName, null, nominal, resolutionContext);
+            }
+            return (null, null);
+          }
+          var substitution = PreType.PreTypeSubstMap(nominal.TypeArgs, dReceiver.Arguments);
+          if (nominal.BasePreType.Substitute(substitution).NormalizeWrtScope() is not DPreType visibleBase) {
+            if (reportErrorOnMissingMember) {
+              ReportError(tok, "type of the receiver is not fully determined at this program point");
+            }
+            return (null, null);
+          }
+          dReceiver = visibleBase;
         }
       }
       var receiverDecl = dReceiver.DeclWithMembersBypassInternalSynonym();
@@ -2064,7 +2094,9 @@ namespace Microsoft.Dafny {
       }
       if (r == null) {
         // e.Lhs denotes a function value, or at least it's used as if it were
-        var dp = Constraints.FindDefinedPreType(e.Lhs.PreType, false);
+        var nominalFunctionPreType = Constraints.FindDefinedPreType(e.Lhs.PreType, false);
+        var dp = resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases) && nominalFunctionPreType != null
+          ? OperationPreType(nominalFunctionPreType) : nominalFunctionPreType;
         if (dp != null && DPreType.IsArrowType(dp.Decl)) {
           // e.Lhs does denote a function value
           // In the general case, we'll resolve this as an ApplyExpr, but in the more common case of the Lhs
@@ -2109,7 +2141,9 @@ namespace Microsoft.Dafny {
               formals.Add(formal);
             }
             ResolveActualParameters(e.Bindings, formals, e.Origin, dp, resolutionContext, new Dictionary<TypeParameter, PreType>(), null);
-            r = new ApplyExpr(e.Lhs.Origin, e.Lhs, e.Args, e.CloseParen);
+            var function = resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+              ? BaseOperationExpression(e.Lhs, dp) : e.Lhs;
+            r = new ApplyExpr(e.Lhs.Origin, function, e.Args, e.CloseParen);
             ResolveExpression(r, resolutionContext);
             r.PreType = dp.Arguments.Last();
           }
