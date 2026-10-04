@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "scope": "fixed-three-disposable-nonproof-unavailable-metadata-controls",
+  "sourceManifestSha256": "2fc847ab499ae08e398cbd748426d476589e1c74365348f7c6eb252e5c23ecfb",
+  "nativeProofEnabled": false,
+  "solverExecutionEnabled": false,
+  "sourceOnlyUnexecuted": true,
+  "files": [
+    {
+      "path": ".github/review/B3-UNAVAILABLE-COORDINATOR.md",
+      "sha256": "d9c5ae1fd3cb3c81b98a906fce9ef2b5f742c283b5e1e59e2eabb4de58baad49",
+      "bytes": 5806
+    },
+    {
+      "path": ".github/review/b3-owned-process.py",
+      "sha256": "3978c8b30680f4157f7f8c8e8c9574d878a76bb80ba73c34faa5ad8f80eb242c",
+      "bytes": 15206
+    },
+    {
+      "path": ".github/review/b3-unavailable-controls.py",
+      "sha256": "3653d1771095a537ce2ca5fcf6b145c9477126517bd6a9960ff035474947681e",
+      "bytes": 17072
+    },
+    {
+      "path": ".github/review/base",
+      "sha256": "c991a035b5681782c5d6ce6ec0a1c5c62fa13f57ca64224b9eb192806e8bb47a",
+      "bytes": 49
+    },
+    {
+      "path": ".github/workflows/review.yml",
+      "sha256": "2e82419e45d447ec2d6498efb959eee420193614ec432f59410889faa6e2f936",
+      "bytes": 27542
+    }
+  ]
+}
