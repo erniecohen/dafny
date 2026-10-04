@@ -639,7 +639,7 @@ git-issues/git-issue-202.dfy	4	1 verified, 1 error	5
 git-issues/git-issue-2022.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-2026.dfy	4	0 verified, 1 error	19
 git-issues/git-issue-2040.dfy	2		11
-git-issues/git-issue-2064.dfy	2		13,14,15,16,35,36,37,51,52,53,54,60,66,67,68,69,74,76,77,81,83,84,89,98,100,101,108,134,158,161,179,183,204,207
+git-issues/git-issue-2064.dfy	2		13,14,15,16,35,36,37,51,52,53,54,59,60,66,67,68,69,74,76,77,81,83,84,89,98,100,101,108,134,158,161,179,183,204,207
 git-issues/git-issue-2068.dfy	2		4,5,10
 git-issues/git-issue-2074.dfy	2		5
 git-issues/git-issue-2100.dfy	0	0 verified, 0 errors	
