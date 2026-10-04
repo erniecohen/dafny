@@ -46,8 +46,8 @@ addition imposes no new model restriction in combination with `S`; it does not
 prove consistency of the entire prelude or of `S`. The shared switch also exposes the closed literal identities derived below.
 Those identities are entailed by the trusted literal definition, so the same
 model argument applies with both additions enabled. Inventory this again when
-adding another family; the reflexivity of heap succession (#94), below,
-does so.
+adding another family; the reflexivity of heap succession (#94) and the
+application trigger for allocation (#95), below, do so.
 
 The strict upper bound and lower bound are essential: the total native round
 trip is zero at `2^w`, and is `2^w - 1` at `-1`. Native conversions being total
@@ -430,7 +430,7 @@ Such a proof is sound only in a model in which `$HeapSucc(h, h)` holds.
 ### Combination with the other members
 
 The bounded round trips and the literal identities are entailed by the trusted
-theory `T`. So the models of
+theory `T`, and the application trigger below adds no formula. So the models of
 `T` with all members are the models of `T` with reflexivity, among them the
 inclusion model above (relative to the intended interpretation of the rest of
 `T`, as for the existing axioms).
@@ -448,6 +448,44 @@ stated for another; under the monomorphic encoding (`-typeEncoding:m`), where
 heaps are extensional, writing back a reference's own `alloc` box and
 transitivity with possibly equal end points are steps; and in #81's scenario,
 where the restoring write gives back a good heap, `assert false` still fails.
+
+## Allocation of function results at their applications (#95)
+
+[Issue 95](https://github.com/erniecohen/dafny/issues/95) (dafny-lang/dafny#1416):
+`assert forall o: O | o in F() :: allocated(o)` failed. A quantifier over
+references ranges over allocated ones, and the translation omits the `$IsAlloc`
+conjunct of a bound variable whose range is a collection (bounded pools with
+the virtue `IndependentOfAlloc_or_ExplicitAlloc`), since the members of a
+collection value are allocated. The existing alloc consequence axiom of `F` says
+so, but its only pattern is `$IsAlloc(F(args), T, $Heap)`, which nothing
+mentioned; `assert allocated(F());` made the program verify.
+
+With the option, that axiom gets a second pattern, at the function's
+applications:
+
+| function | existing axiom (unchanged) | added pattern |
+|---|---|---|
+| reads the heap | `F#canCall($Heap, args) ==> $IsAlloc(F($Heap, args), T, $Heap)` | `{ F($Heap, args) }` |
+| reads no heap | `F#canCall(args) && args allocated in $Heap && $IsGoodHeap($Heap) ==> $IsAlloc(F(args), T, $Heap)` | `{ F(args), $IsGoodHeap($Heap) }`, or `{ $IsGoodHeap($Heap) }` if `F(args)` has no bound variable |
+
+The last case is for an application without arguments, layer, reveal or type
+parameters, such as the issue's `f()`: a multi-pattern with a closed term is not
+used by Z3, and an earlier probe with `{ f(), $IsGoodHeap($Heap) }` left the
+issue's program failing. A function that reads no heap but whose specification
+does gets no added pattern.
+
+No formula changes, so the models are the same and no soundness argument is
+needed beyond the existing axiom's: every new instance is an instance of it.
+The cost is in instances: for a function that reads no heap, one for each pair
+of an application term and a good-heap term in a verification condition. The
+paired OFF/ON resource report of the standing CI records it.
+
+`git-issues/git-issue-1416.dfy` runs the issue's program and positive cases
+(results that are sets, sequences, maps, datatypes, generic, of heap-reading and
+of recursive functions, and in a state after an allocation) with the option off
+(they fail) and on (they verify), and vacuity controls in which the instances
+are in play and `assert false`, a membership, an inclusion and a bound on a
+field must fail, in both resolver modes.
 
 ## Standing CI for the shared option (#50)
 

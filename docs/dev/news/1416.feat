@@ -1,0 +1,1 @@
+The default-off `--additional-axioms` option also instantiates a function's existing allocation consequence axiom where the function is applied, so that members of a function's result are known to be allocated, as the translation of a quantifier over those members already takes them to be.

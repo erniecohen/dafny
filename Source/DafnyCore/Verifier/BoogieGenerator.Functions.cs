@@ -219,21 +219,38 @@ public partial class BoogieGenerator {
       Contract.Assert(whr != null); // since f.ResultType involves references, there should be an ISALLOC where clause
       if (whr != null) {
         Bpl.Expr ante = canCall;
+        // With --additional-axioms, the axiom is also instantiated where the function is applied, so that
+        // what it says about allocation is available without a mention of $IsAlloc of the result
+        // (erniecohen/dafny#95).  The option is checked before anything is built.
+        var additionalAxioms = options.Get(CommonOptionBag.AdditionalAxioms);
+        Bpl.Trigger applicationTrigger = null;
         if (readsHeap) {
           // all parameters are included in the CanCall, so that's the only antecedent we need
           Contract.Assert(formals.Contains(bvHeap));
+          if (additionalAxioms && f.ReadsHeap) {
+            // the application mentions every bound variable, the heap among them
+            applicationTrigger = new Bpl.Trigger(f.Origin, true, [funcAppl]);
+          }
         } else {
           // CanCall does not include the heap parameter but, since we will quantify over a heap, we need to
           // make sure the other parameters are connected to that heap
           Contract.Assert(f is not TwoStateFunction);
           ante = BplAnd(ante, parametersIsAlloc);
-          formals = Util.Cons(bvHeap, formals);
           var goodHeap = FunctionCall(f.Origin, BuiltinFunction.IsGoodHeap, null, etranHeap.HeapExpr);
+          if (additionalAxioms) {
+            // the application mentions every bound variable but the heap; a pattern must not be closed
+            applicationTrigger = new Bpl.Trigger(f.Origin, true, formals.Count == 0 ? [goodHeap] : [funcAppl, goodHeap]);
+          }
+          formals = Util.Cons(bvHeap, formals);
           ante = BplAnd(ante, goodHeap);
         }
 
         var axBody = BplImp(ante, whr);
-        var ax = BplForall(f.Origin, [], formals, null, BplTrigger(whr), axBody);
+        var triggers = BplTrigger(whr);
+        if (applicationTrigger != null) {
+          triggers.AddLast(applicationTrigger);
+        }
+        var ax = BplForall(f.Origin, [], formals, null, triggers, axBody);
         var allocConsequenceAxiom = new Bpl.Axiom(f.Origin, ax, "alloc consequence axiom for " + f.FullSanitizedName);
         AddOtherDefinition(boogieFunction, allocConsequenceAxiom);
       }

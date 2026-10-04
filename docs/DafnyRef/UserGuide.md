@@ -2383,7 +2383,9 @@ and what information it produces about the verification process.
   and 5.1.0 gates in both resolver modes. Other proof costs remain solver-dependent.
   It also makes heap succession reflexive on good heaps, so that a two-state
   function used as a value can be applied where its previous heap is the current
-  one.
+  one, and it instantiates a function's existing allocation axiom where the
+  function is applied, so that the members of a function's result are known to
+  be allocated.
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
 
 * `--manual-lemma-induction` - disables automatic inducntion for lemmas
