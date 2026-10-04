@@ -16,7 +16,8 @@ git-issues/boogie-issue-1168.dfy
 dafny4/GHC-MergeSort.dfy
 dafny4/Lucas-down.dfy
 # Upstream tests that record the verifier's resource counts, which the fixes for
-# #6534 and #6536 move (their expected outputs are updated on this line):
+# #6534 and #6536, and for #132 here, move (their expected outputs are updated on
+# this line):
 dafny0/CoinductiveProofs.dfy
 dafny0/SubsetTypes.dfy
 dafny1/SchorrWaite.dfy
@@ -257,3 +258,83 @@ git-issues/git-issue-113-dependency-provided-inhabited-false-negative.dfy
 git-issues/git-issue-113-dependency-provided-newtype-no-characteristic-negative.dfy
 git-issues/git-issue-113-dependency-provided-no-characteristic-negative.dfy
 git-issues/git-issue-113-dependency-revealed-control-positive.dfy
+
+# Regression and consistency controls for issue 146.
+git-issues/git-issue-146.dfy
+git-issues/git-issue-146-negative.dfy
+git-issues/git-issue-146-actual-arguments.dfy
+git-issues/git-issue-146-actual-arguments-negative.dfy
+
+# Regression and consistency controls for issue 145.
+git-issues/git-issue-145.dfy
+git-issues/git-issue-145-nonvacuity.dfy
+
+# Generic datatype constructor discriminator runtime regression.
+git-issues/git-issue-148.dfy
+
+# Regression and consistency controls for issue 141.
+git-issues/git-issue-141-datatype-cast-false-control.dfy
+git-issues/git-issue-141-datatype-cast-hidden-negative.dfy
+git-issues/git-issue-141-datatype-cast-hidden-nonvacuity.dfy
+git-issues/git-issue-141-datatype-cast-hidden-positive.dfy
+git-issues/git-issue-141-datatype-cast-invariant-negative.dfy
+git-issues/git-issue-141-datatype-cast-negative.dfy
+git-issues/git-issue-141-datatype-cast-resolver-negative.dfy
+git-issues/git-issue-141.dfy
+
+# Suspended co-recursive type-membership boundaries and compatibility controls.
+git-issues/git-issue-143-codatatype-abstemious-constructor-helper-negative.dfy
+git-issues/git-issue-143-codatatype-abstemious-constructor-helper-positive.dfy
+git-issues/git-issue-143-codatatype-abstemious-constructor-helper-typed-negative.dfy
+git-issues/git-issue-143-codatatype-abstemious-constructor-nat-helper-negative.dfy
+git-issues/git-issue-143-codatatype-arrow-application-negative.dfy
+git-issues/git-issue-143-codatatype-clean-even-nonvacuity-negative.dfy
+git-issues/git-issue-143-codatatype-clean-match-nonvacuity-negative.dfy
+git-issues/git-issue-143-codatatype-clean-nat-nonvacuity-negative.dfy
+git-issues/git-issue-143-codatatype-clean-raw-nonvacuity-negative.dfy
+git-issues/git-issue-143-codatatype-constructor-default-negative.dfy
+git-issues/git-issue-143-codatatype-constructor-double-default-negative.dfy
+git-issues/git-issue-143-codatatype-constructor-owned-default-nonvacuity-negative.dfy
+git-issues/git-issue-143-codatatype-constructor-owned-default-positive.dfy
+git-issues/git-issue-143-codatatype-destructive-guarded-observation-positive.dfy
+git-issues/git-issue-143-codatatype-destructive-tail-observation-positive.dfy
+git-issues/git-issue-143-codatatype-even-nonvacuity-negative.dfy
+git-issues/git-issue-143-codatatype-extreme-prefix-positive.dfy
+git-issues/git-issue-143-codatatype-field-first-negative.dfy
+git-issues/git-issue-143-codatatype-generic-constructor-default-negative.dfy
+git-issues/git-issue-143-codatatype-generic-field-negative.dfy
+git-issues/git-issue-143-codatatype-helper-default-negative.dfy
+git-issues/git-issue-143-codatatype-helper-let-negative.dfy
+git-issues/git-issue-143-codatatype-helper-match-negative.dfy
+git-issues/git-issue-143-codatatype-inductive-positive.dfy
+git-issues/git-issue-143-codatatype-lambda-container-negative.dfy
+git-issues/git-issue-143-codatatype-lambda-result-negative.dfy
+git-issues/git-issue-143-codatatype-let-field-negative.dfy
+git-issues/git-issue-143-codatatype-let-pattern-negative.dfy
+git-issues/git-issue-143-codatatype-let-tail-negative.dfy
+git-issues/git-issue-143-codatatype-match-field-negative.dfy
+git-issues/git-issue-143-codatatype-match-observation-positive.dfy
+git-issues/git-issue-143-codatatype-match-tail-negative.dfy
+git-issues/git-issue-143-codatatype-mutual-constructor-default-negative.dfy
+git-issues/git-issue-143-codatatype-mutual-field-negative.dfy
+git-issues/git-issue-143-codatatype-nat-field-negative.dfy
+git-issues/git-issue-143-codatatype-nested-payload-negative.dfy
+git-issues/git-issue-143-codatatype-ordinary-constant-default-positive.dfy
+git-issues/git-issue-143-codatatype-productive-positive.dfy
+git-issues/git-issue-143-codatatype-productive-runtime.dfy
+git-issues/git-issue-143-codatatype-raw-nonvacuity-negative.dfy
+git-issues/git-issue-143-codatatype-two-constructors-negative.dfy
+git-issues/git-issue-143-codatatype-typed-self-observation-negative.dfy
+git-issues/git-issue-143-codatatype-update-negative.dfy
+git-issues/git-issue-143.dfy
+
+# Character validity through numeric ancestors (#142).
+git-issues/git-issue-142.dfy
+git-issues/git-issue-142-negative.dfy
+git-issues/git-issue-142-legacy.dfy
+git-issues/git-issue-142-runtime.dfy
+# Preserve the original legacy character conversion range contract.
+git-issues/git-issue-356-errors.dfy
+
+# Allocation of function values from what they capture (#132 here).
+git-issues/github-issue-132.dfy

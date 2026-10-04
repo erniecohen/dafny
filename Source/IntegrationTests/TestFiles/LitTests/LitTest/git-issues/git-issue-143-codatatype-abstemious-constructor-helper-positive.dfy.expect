@@ -1,0 +1,5 @@
+git-issue-143-codatatype-abstemious-constructor-helper-positive.dfy(10,54): Error: co-recursive observation: value of expression (of type 'Stream') is not known to be an instance of type 'Stream'
+git-issue-143-codatatype-abstemious-constructor-helper-positive.dfy(14,0): Error: a postcondition could not be proved on this return path
+git-issue-143-codatatype-abstemious-constructor-helper-positive.dfy(13,30): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 2 errors
