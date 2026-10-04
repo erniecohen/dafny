@@ -100,7 +100,7 @@ public static class B3Normalizer {
     private bool hasScopeCommands;
     private readonly HashSet<Bpl.ReturnCmd> explicitReturns = new();
     private readonly Dictionary<string, Bpl.Function> functionOwners = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, (B3DefinitionVisibility.Frame Frame, Ir.Expression Condition)> checkMasks = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, (B3DefinitionVisibility.Frame Frame, Ir.Expression Condition, Bpl.Absy Origin)> checkMasks = new(StringComparer.Ordinal);
 
     public Normalization(Bpl.Program source, Bpl.Implementation unit, DafnyOptions options) {
       this.source = source; this.unit = unit; this.options = options;
@@ -143,6 +143,7 @@ public static class B3Normalizer {
       }
       var body = Structured(unit.StructuredStmts, entry, new Control());
       var exit = Exit(entry, null);
+      ValidateRawAssertionCoverage();
       // Discovering expressions above discovers every demanded global. Save entry state before any assumptions.
       var snapshots = oldNames.Select(pair => (Ir.Statement)new Ir.Assign(pair.Value.Name, Name(pair.Key))).ToList();
       var statements = snapshots.Concat(prologue).Append(body).Append(exit).ToArray();
@@ -272,8 +273,17 @@ public static class B3Normalizer {
 
     private IReadOnlyDictionary<string, IReadOnlyList<B3DefinitionContexts.Formula>> SelectDefinitions(IReadOnlyList<OwnedFormula> catalogue) {
       var result = new Dictionary<string, IReadOnlyList<B3DefinitionContexts.Formula>>(StringComparer.Ordinal);
-      var revealOperands = checkMasks.Values.Select(check => check.Frame)
-        .Where(frame => frame.Mode == Bpl.HideRevealCmd.Modes.Reveal).ToArray();
+      var must = visibility?.AnalyzeMust(catalogue.Select(formula => formula.Owner).Distinct().ToArray());
+      B3DefinitionVisibility.MustFrame Mask(Bpl.Absy origin) {
+        if (origin != null) { return must.Before(origin); }
+        var returns = unit.Blocks.Select(block => block.TransferCmd).OfType<Bpl.ReturnCmd>()
+          .Where(returned => !explicitReturns.Contains(returned)).ToArray();
+        return returns.Length == 0 ? B3DefinitionVisibility.MustFrame.Unreachable :
+          returns.Select(returned => must.After(returned)).Aggregate(B3DefinitionVisibility.MustFrame.Merge);
+      }
+      var mayRevealOperands = must == null ? Array.Empty<B3DefinitionVisibility.MustFrame>() :
+        must.NativeAssertionOperands().Concat(checkMasks.Values.Select(check => Mask(check.Origin)))
+          .Where(frame => frame.MayReveal).ToArray();
       foreach (var (id, check) in checkMasks) {
         var demanded = new HashSet<Bpl.Function>();
         var pending = new Stack<Ir.Expression>(); pending.Push(check.Condition);
@@ -288,10 +298,12 @@ public static class B3Normalizer {
               "Demanded visibility-sensitive definition is outside the guarded literal slice", demandedOwner.tok);
           }
         }
+        var pathMask = must == null ? null : Mask(check.Origin);
         result.Add(id, catalogue.Where(formula => demanded.Contains(formula.Owner) && check.Frame.IsRevealed(formula.Owner) &&
-          // Native mixed merge retains a Reveal operand and ignores Hide offsets. A Hide-mode
-          // target must be compatible with every potential Reveal operand from this unit.
-          (check.Frame.Mode == Bpl.HideRevealCmd.Modes.Reveal || revealOperands.All(frame => frame.IsRevealed(formula.Owner))))
+          // A native path split can remove predecessors and change the exact raw merge's mode.
+          // Preserve a sufficient owner premise under every retained path subset and mixed aggregate.
+          (formula.Owner.AlwaysRevealed || pathMask == null || pathMask.IsRevealed(formula.Owner) &&
+            (pathMask.AllReveal || mayRevealOperands.All(frame => frame.IsRevealed(formula.Owner)))))
           .Select(formula => formula.Formula).DistinctBy(formula => formula.Origin.Id).ToArray());
       }
       return result;
@@ -1096,7 +1108,7 @@ public static class B3Normalizer {
       var id = "sO" + role + (obligations.Count + 1);
       var frame = visibility == null ? B3DefinitionVisibility.Frame.AllRevealed :
         sourceAnchor == null ? FallthroughMask() : visibility.Before(sourceAnchor);
-      checkMasks.Add(id, (frame, expression));
+      checkMasks.Add(id, (frame, expression, sourceAnchor));
       var origin = BoogieGenerator.ToDafnyToken(token);
       obligations.Add(new Ir.SourceIdentity(id, origin.Uri?.AbsoluteUri ?? token.filename ?? "",
         Math.Max(0, token.line), Math.Max(0, token.col), description));
@@ -1125,8 +1137,29 @@ public static class B3Normalizer {
       }
     }
 
-    // Bounded inspection establishes that pure scope pushes/pops have no visibility command to affect.
-    // It also finds exactly the labels that require lexical exit wrappers.
+    // Resolve/Typecheck consumes Blocks, while this normalizer consumes StructuredStmts.
+    // Assert inventory is an explicit API boundary, not a producer-coherence assumption.
+    private void ValidateRawAssertionCoverage() {
+      var anchors = checkMasks.Values.Select(check => check.Origin).OfType<Bpl.AssertCmd>().ToHashSet();
+      var pending = new Stack<(Bpl.Cmd Command, int Depth)>();
+      Require(unit.Blocks.Count is > 0 and <= 256, "b3_cfg_correspondence", "Raw CFG exceeds correspondence bounds", unit.tok);
+      foreach (var block in unit.Blocks) { foreach (var command in block.Cmds) { pending.Push((command, 0)); } }
+      var visited = 0;
+      while (pending.Count > 0) {
+        var (command, depth) = pending.Pop();
+        Require(command != null && depth < Ir.Protocol.MaximumDepth && ++visited <= Ir.Protocol.MaximumNodes,
+          "b3_cfg_correspondence", "Raw command inventory exceeds correspondence bounds", unit.tok);
+        if (command is Bpl.AssertCmd assertion) {
+          Require(anchors.Contains(assertion), "b3_cfg_correspondence",
+            "Raw assertion has no original normalized assert or invariant anchor", assertion.tok);
+        }
+        if (command is Bpl.StateCmd state) {
+          foreach (var nested in state.Cmds) { pending.Push((nested, depth + 1)); }
+        }
+      }
+    }
+
+    // Bounded inspection also finds the labels requiring lexical exit wrappers.
     private void InspectControl(Bpl.StmtList root) {
       var pending = new Stack<(object Node, int Depth)>();
       pending.Push((root, 0));

@@ -68,6 +68,13 @@ public static class Program {
             attemptsMatched = results[0].Obligations.Select(identity => identity.Id).ToHashSet(StringComparer.Ordinal).SetEquals(attempts.Keys) &&
               results[0].Obligations.Select((identity, index) => attempts[identity.Id].Length == 1 && attempts[identity.Id][0].Outcome == targets[index]).All(value => value);
           }
+          if (entry.TryGetProperty("requireReachableCheckCoverage", out var reachable) && reachable.GetBoolean()) {
+            // These branch fixtures place every check on a reachable path. Several branch attempts are valid.
+            // This is fixture-specific coverage, never a general zero-attempt prohibition.
+            Require(results.Count == 1, "Reachable coverage fixture must select one original unit");
+            attemptsMatched &= results[0].Obligations.Select(identity => identity.Id).ToHashSet(StringComparer.Ordinal)
+              .SetEquals(completions.Single().Attempts.Select(attempt => attempt.ObligationId));
+          }
           var failedWitness = completions.SelectMany(completion => completion.Attempts).Any(attempt => attempt.Outcome == Ir.Outcome.Failed);
           var pass = allStrict && attemptsMatched && outcome == expected && (expected != Ir.Outcome.Failed || failedWitness);
           if (pass) { matched++; }
