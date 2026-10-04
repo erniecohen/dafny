@@ -247,6 +247,13 @@ public partial class BoogieGenerator {
 
           builder.Add(new Bpl.HavocCmd(s.Origin, bHavocLHSs));
 
+          // Well-formedness was checked on arbitrary typed copies of the simple LHSs.
+          // Reinstantiate its call permissions for the values selected by the havoc.
+          // CanCallAssumption preserves the constraint's short-circuit guards.
+          if (options.Get(CommonOptionBag.AdditionalAxioms)) {
+            builder.Add(TrAssumeCmd(s.Origin, etran.CanCallAssumption(s.Expr)));
+          }
+
           // End by doing the assume
           builder.Add(TrAssumeCmdWithDependencies(etran, s.Origin, s.Expr, "assign-such-that constraint"));
           builder.AddCaptureState(s); // just do one capture state--here, at the very end (that is, don't do one before the assume)
