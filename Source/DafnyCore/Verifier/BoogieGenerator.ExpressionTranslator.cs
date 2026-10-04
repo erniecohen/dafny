@@ -1794,7 +1794,7 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
           FunctionCallExpr e = (FunctionCallExpr)expr;
           Boogie.Expr r = CanCallAssumption(e.Receiver, cco);
           r = BplAnd(r, CanCallAssumption(e.Args, cco));
-          if (!(e.Function is SpecialFunction)) {
+          if (!(e.Function is SpecialFunction) && !IsCoRecursiveFunctionCall(e)) {
             Boogie.IdentifierExpr canCallFuncID = new Boogie.IdentifierExpr(expr.Origin, e.Function.FullSanitizedName + "#canCall", Boogie.Type.Bool);
             List<Boogie.Expr> args = FunctionInvocationArguments(e, null, null);
             Boogie.Expr canCallFuncAppl = new Boogie.NAryExpr(BoogieGenerator.GetToken(expr), new Boogie.FunctionCall(canCallFuncID), args);
