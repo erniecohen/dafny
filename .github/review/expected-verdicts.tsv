@@ -441,7 +441,7 @@ dafny4/Regression8.dfy	4	0 verified, 1 error	14
 dafny4/Regression9.dfy	0	2 verified, 0 errors	
 dafny4/SoftwareFoundations-Basics.dfy	4	53 verified, 1 error	41
 dafny4/UnionFind.dfy	4	44 verified, 0 errors, 2 out of resource; 3 out of resource	206,338
-dafny4/gcd.dfy	4	96 verified, 0 errors, 1 out of resource; 2 out of resource	253
+dafny4/gcd.dfy	4	95 verified, 0 errors, 2 out of resource; 3 out of resource	165,253
 dafny4/git-issue1.dfy	0	2 verified, 0 errors	
 dafny4/git-issue104.dfy	0	2 verified, 0 errors	
 dafny4/git-issue105.dfy	0	0 verified, 0 errors	
