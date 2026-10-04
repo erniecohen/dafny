@@ -162,6 +162,29 @@ projected33. Five use only bounded FIFO data/fault injection; one fixed non-veri
 Python writer intentionally times out and must retain a poisoned pidfd-cleanup
 receipt with zero residual children. No new control has been executed yet.
 
+## Exact decoded FD annotation grammar
+
+Run37242135132 printed pipe labels as all hexadecimal bytes under the already
+pinned `-xx -yy` options (for example inode17628). The earlier parser required a
+plain substring and therefore could not consume this observed format. Decode
+only a bounded exact decimal FD followed by one complete annotation. With any
+backslash, every byte must use lowercase `\xHH`; then UTF8 decoding must be exact.
+A decoded pipe label matches the whole `pipe:[positive-decimal-inode]` grammar,
+not a substring, with signed32-bit FD and unsigned64-bit inode bounds. Other
+fully decoded actual labels establish no pipe fact. Existing plain pipe tokens
+remain an exact legacy fixture route; mixed escaping is never interpreted.
+
+Parse pipe creation's entire bracketed argument into exactly two tokens, each with
+one complete pipe annotation, distinct FDs, the same positive inode and the same
+representation. This removes the former substring/findall admission. Owner,
+inherited-table, dup/fcntl and read/write checks still operate on those exact
+integer identities. There is no guessed descriptor provenance or changed query.
+Four new methods exercise the actual format, malformed/mixed/truncated/oversize
+forms, exact two-end rules and a complete synthetic worker/solver route that still
+rejects wrong inode and parent. They invoke no process. All prior33 method bodies
+are unchanged; the source-only projected total is37. These controls establish no
+runtime qualification until executed on the reviewed CI input.
+
 ## Ownership, exec identity and FD direction
 
 The coordinator must be an exclusive single-launch Linux subreaper with no initial

@@ -90,7 +90,7 @@ executable epochs, including unsupported `execveat` boundaries. They do
 not invoke a solver or worker. Six archive admission controls additionally cover
 both pinned layouts, late unknown roots with no extraction output, unsafe paths and
 modes, canonical duplicates, file ancestry and all admission bounds. The outer
-wrapper now requires a fixed combined 33-control denominator. The six new sink
+wrapper now requires a fixed combined 37-control denominator. The six new sink
 methods check fragmented order, exact cap, overflow, empty/non-EOF/deadline states,
 read/write/identity faults and one fixed non-verifier Python writer's owned timeout.
 That last negative control requires its stage to remain poisoned, its pidfd cleanup
@@ -120,3 +120,18 @@ acceptance parity follows. No resource limit is set: inherited FSIZE is recorded
 before/after, and a mismatch fails admission rather than changing runtime options.
 The pinned tracer closes its shared log before replay exec. Incomplete prefixes
 never enter complete FD/I/O analysis.
+
+
+The subsequent parser checkpoint recognizes the actual strace6.8 all-hexadecimal
+FD annotation labels observed in run37242135132. Each label is decoded only when
+all bytes use exact lowercase `\xHH`; mixed/truncated/suffixed tokens fail. A
+complete decoded pipe label must be `pipe:[positive-decimal-inode]`, bounded to a
+64-bit inode and signed32-bit FD. A pipe creation has exactly two full, distinct
+FD tokens with the same inode and representation. All existing pipe-owner,
+inheritance, duplication, exec/image and worker/solver stream guards remain.
+Exact plain pipe tokens are retained for the unchanged legacy synthetic fixtures;
+there is no mixed or permissive escape route. Four additional source-only methods
+cover observed syntax, malformed/bounded forms, exact ends, and a full synthetic
+FD route with wrong-inode/wrong-parent negatives. The27 historical methods and
+six sink methods keep their bodies unchanged, for37 projected controls. None of
+the new ten controls has run; no Real mathematical expectation is waived.

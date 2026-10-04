@@ -678,7 +678,7 @@ jobs:
           MSBUILDDISABLENODEREUSE: '1'
         run: |
           if [ "$B3_FOCUS_GATE" = real-smt-capture ]; then
-            echo '47aa7a87857d9cf2c4607a7b001770d4f583d9b1287ebe30fae0d0cbdd382668  .github/review/b3-real-smt-capture-gate.py' | sha256sum -c -
+            echo '8b0283442bff96c6ae80ba2aae956ab1b625cdfe5191c9e1f0c0704415ad8f4b  .github/review/b3-real-smt-capture-gate.py' | sha256sum -c -
             B3_COMPILE_ONLY='${{ inputs.b3_compile_only }}' python3 -B .github/review/b3-real-smt-capture-gate.py
           elif [ "$B3_FOCUS_GATE" = real-triage ]; then
             python3 .github/review/b3-real-triage-gate.py

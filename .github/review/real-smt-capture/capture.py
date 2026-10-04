@@ -49,10 +49,56 @@ def cstring(value):
     return bytes.fromhex(value[1:-1].replace('\\x', '')).decode('utf-8', errors='strict')
 
 
-def descriptor(value):
-    match = re.fullmatch(r'(\d+)<pipe:\[(\d+)\]>', value)
-    return (int(match[1]), int(match[2])) if match else None
+MAX_FD_LABEL_BYTES = 4096
 
+
+def fd_annotation(value):
+    require(len(value) <= 4*MAX_FD_LABEL_BYTES+32, 'FD annotation bound')
+    match = re.fullmatch(r'(0|[1-9][0-9]{0,9})<([^<>]+)>',value)
+    if match is None:
+        require(re.fullmatch(r'0|[1-9][0-9]{0,9}',value) is not None, 'Malformed/truncated FD annotation')
+        require(int(value) <= 2147483647, 'FD number bound')
+        return None
+    fd = int(match[1]); require(fd <= 2147483647, 'FD number bound')
+    label = match[2]
+    if '\\' in label:
+        require(re.fullmatch(r'(?:\\x[0-9a-f]{2})+',label) is not None, 'Mixed/truncated FD hex annotation')
+        data = bytes.fromhex(label.replace('\\x',''))
+        require(len(data) <= MAX_FD_LABEL_BYTES, 'Decoded FD annotation bound')
+        label = data.decode('utf-8',errors='strict'); style='hex'
+    else:
+        # Exact plain pipe labels remain solely for the existing legacy fixtures.
+        # There is no C/Python escape interpretation or permissive mixed route.
+        require(label.startswith('pipe:'), 'Unsupported plain FD annotation')
+        require(len(label) <= MAX_FD_LABEL_BYTES, 'Plain FD annotation bound')
+        style='legacy-plain-pipe'
+    return fd,label,style
+
+
+def pipe_descriptor(value):
+    annotated=fd_annotation(value)
+    if annotated is None: return None
+    fd,label,style=annotated
+    if not label.startswith('pipe'): return None
+    match=re.fullmatch(r'pipe:\[([1-9][0-9]{0,19})\]',label)
+    require(match is not None, 'Malformed pipe inode annotation')
+    inode=int(match[1]);require(inode <= 18446744073709551615, 'Pipe inode bound')
+    return fd,inode,style
+
+
+def descriptor(value):
+    parsed=pipe_descriptor(value)
+    return parsed[:2] if parsed is not None else None
+
+
+def pipe_ends(value):
+    require(len(value) <= 8*MAX_FD_LABEL_BYTES+80 and value.startswith('[') and value.endswith(']'), 'Malformed pipe ends')
+    tokens=split_arguments(value[1:-1])
+    require(len(tokens)==2, 'Expected exactly two pipe ends')
+    ends=[pipe_descriptor(x) for x in tokens]
+    require(all(x is not None for x in ends), 'Missing complete pipe inode annotation')
+    require(ends[0][0]!=ends[1][0] and ends[0][1]==ends[1][1] and ends[0][2]==ends[1][2], 'Pipe ends differ in FD/inode/encoding')
+    return [x[:2] for x in ends]
 
 def calls_from_trace(data):
     require(len(data) <= MAX_TRACE and data.endswith(b'\n'), 'Trace bound or truncated final line')
@@ -259,10 +305,10 @@ def analyze(data, ownership, images, solver_path, solver_sha, check_ids, worker_
         require(group in tables, 'Missing descriptor inheritance')
         table = tables[group]; name = call['name']; args = call['args']; returned = call['result']
         if name in ('pipe', 'pipe2') and returned == 0:
-            ends = re.findall(r'(\d+)<pipe:\[(\d+)\]>', args[0]); require(len(ends) == 2 and ends[0][1] == ends[1][1], 'Missing pipe inode')
-            for fd, inode in ends: table[int(fd)] = int(inode)
-            require(int(ends[0][1]) not in pipe_owners, 'Pipe inode reuse in capture')
-            pipe_owners[int(ends[0][1])] = group
+            ends = pipe_ends(args[0])
+            for fd, inode in ends: table[fd] = inode
+            require(ends[0][1] not in pipe_owners, 'Pipe inode reuse in capture')
+            pipe_owners[ends[0][1]] = group
         elif name in ('dup', 'dup2', 'dup3') and returned >= 0:
             source = descriptor(args[0])
             if source:

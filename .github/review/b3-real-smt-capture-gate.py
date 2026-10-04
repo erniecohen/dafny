@@ -13,7 +13,7 @@ import types
 
 ROOT = Path(__file__).resolve().parents[2]
 SEALED = ROOT / '.github/review/real-smt-capture'
-SOURCE_SEAL = 'fadf15e7a1680e197892223fd8a68467092a17a023e49ebc88d2d9c96d6b0018'
+SOURCE_SEAL = '9705bf021fd3e07f66aaa1a227321a447f09af368e11f5dd75b9dc23268e8640'
 MAX_SOURCE = 1024 * 1024
 
 

@@ -365,3 +365,82 @@ class TraceSinkControls(unittest.TestCase):
             finally:
                 sink.abort()
                 if owned_module.child_ids(os.getpid()):owned_module.drain_exclusive_children(10)
+
+
+def hex_fd(fd,label):
+    # Actual strace6.8 -xx -yy annotation spelling; no mixed plain/hex fragments.
+    return str(fd)+'<'+''.join('\\x'+f'{x:02x}' for x in label.encode())+'>'
+
+
+def hex_pipe(fd,inode):
+    return hex_fd(fd,'pipe:['+str(inode)+']')
+
+
+def complete_hex_pipe_fixture():
+    trace=exec_line(10,'/dotnet',['/dotnet','/replay.dll'])
+    def pipe(pid,left,right,inode):
+        return f'{pid} 1.0 pipe2([{hex_pipe(left,inode)}, {hex_pipe(right,inode)}], O_CLOEXEC) = 0\n'
+    def duplicate(pid,old,new,inode):
+        return f'{pid} 1.0 dup2({hex_pipe(old,inode)}, {new}) = {new}\n'
+    def io_call(pid,name,fd,inode,data):
+        text=f'{pid} 1.0 {name}({hex_pipe(fd,inode)}, {quoted(data.decode())}, {len(data)}) = {len(data)}\n'
+        return text+''.join(dump(data[i:i+16],i) for i in range(0,len(data),16))
+    trace+=pipe(10,3,4,1)+pipe(10,5,6,2)
+    trace+='10 1.0 vfork() = 20\n'+exec_line(20,'/dotnet',['/dotnet','/worker.dll'])
+    trace+=duplicate(20,3,0,1)+duplicate(20,6,1,2)
+    request=b'{"requestId":"r"}'
+    trace+=io_call(20,'read',0,1,request+b'\n')
+    trace+=pipe(20,7,8,3)+pipe(20,9,10,4)
+    trace+='20 1.0 vfork() = 30\n'+exec_line(30,'/solver',['/solver','-in','-smt2'])
+    trace+=duplicate(30,7,0,3)+duplicate(30,10,1,4)
+    commands=b'(set-option :smt.arith.solver 2)\n(set-option :rlimit 200000)\n(set-option :timeout 20000)\n(check-sat)\n'
+    responses=b'success\nsuccess\nsuccess\nunsat\n'
+    trace+=io_call(30,'read',0,3,commands)+io_call(30,'write',1,4,responses)
+    trace+=f'30 1.0 read({hex_pipe(0,3)}, "", 8) = 0\n'
+    completion={'attempts':[{'obligationId':'sCheck','outcome':'Verified'}]}
+    output=(json.dumps({'version':2,'requestId':'r','sequence':0,'processId':20,'isolatedProcessGroup':True})+'\n'+json.dumps(completion)+'\n').encode()
+    trace+=io_call(20,'write',1,2,output)
+    ownership=minimal_exec_trace()[1]
+    images=[{'identity':ownership['ownedProcesses'][-1]['identity'],'sha256':'f'*64,'argv':['/solver','-in','-smt2']}]
+    return trace.encode(),ownership,images,request,completion
+
+
+class HexFdAnnotationControls(unittest.TestCase):
+    def test_observed_all_hex_fd_annotations_decode_exact_pipe_ends(self):
+        # This literal was retained in run37242135132, including its inode.
+        observed=r'3<\x70\x69\x70\x65\x3a\x5b\x31\x37\x36\x32\x38\x5d>'
+        self.assertEqual(capture.descriptor(observed),(3,17628))
+        self.assertEqual(capture.pipe_ends('['+observed+', '+hex_pipe(4,17628)+']'),[(3,17628),(4,17628)])
+        self.assertIsNone(capture.descriptor(hex_fd(3,'/regular/file')))
+        self.assertEqual(capture.descriptor('3<pipe:[17628]>'),(3,17628))
+
+    def test_mixed_truncated_suffix_and_annotation_bounds_are_rejected(self):
+        bad=[r'3<pipe:\x5b2]>',r'3<\x70\x6>',hex_pipe(3,2)+'suffix',
+             hex_pipe(3,2)[:-1],hex_fd(3,'pipe:[2]suffix'),hex_fd(3,'pipe:[0]'),
+             hex_fd(3,'pipe:[18446744073709551616]'),hex_fd(3,'x'*(capture.MAX_FD_LABEL_BYTES+1))]
+        for value in bad:
+            with self.subTest(label=value[:80]),self.assertRaises(ValueError):capture.descriptor(value)
+        with self.assertRaises(ValueError):
+            capture.pipe_ends('['+hex_pipe(3,2)+', 4<pipe:[2]>]')
+
+    def test_pipe_creation_requires_two_distinct_fds_with_one_complete_inode(self):
+        bad=['['+hex_pipe(3,2)+']','['+hex_pipe(3,2)+', '+hex_pipe(4,3)+']',
+             '['+hex_pipe(3,2)+', '+hex_pipe(3,2)+']',
+             '['+hex_pipe(3,2)+', '+hex_pipe(4,2)+', '+hex_pipe(5,2)+']',
+             '['+hex_pipe(3,2)+', '+hex_fd(4,'/regular/file')+']',
+             '['+hex_pipe(3,2)+', '+hex_pipe(4,2)+']suffix']
+        for value in bad:
+            with self.subTest(ends=value[:80]),self.assertRaises(ValueError):capture.pipe_ends(value)
+
+    def test_full_hex_fd_fixture_retains_owner_inheritance_and_wrong_inode_failures(self):
+        trace,ownership,images,request,completion=complete_hex_pipe_fixture()
+        def analyze(data,owned):
+            return capture.analyze(data,owned,images,'/solver','f'*64,['sCheck'],'/worker.dll','/dotnet',request,completion,['/dotnet','/replay.dll'])
+        result=analyze(trace,ownership)
+        self.assertTrue(result['captureComplete'])
+        self.assertEqual(result['emittedCheckQueries'],[{'obligationId':'sCheck','commandIndex':3,'response':'unsat','attemptOutcome':'Verified'}])
+        self.assertEqual(result['workerInputSha256'],hashlib.sha256(request+b'\n').hexdigest())
+        wrong=trace.replace(('read('+hex_pipe(0,3)).encode(),('read('+hex_pipe(0,99)).encode(),1)
+        with self.assertRaisesRegex(ValueError,'inherited pipe topology'):analyze(wrong,ownership)
+        other=json.loads(json.dumps(ownership));other['ownedProcesses'][-1]['identity']['parent']=10
+        with self.assertRaisesRegex(ValueError,'pinned process parent'):analyze(trace,other)

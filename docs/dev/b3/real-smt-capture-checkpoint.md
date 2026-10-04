@@ -34,13 +34,13 @@ payload attestation. A command error may prevent a later check-sat, whose source
 explicit ToolError. No query, guard, solver option, seed or outcome is rewritten.
 
 The current FIFO sink delta is an unexecuted source checkpoint. AST/XML/seal checks
-are static only. It preserves the27 prior methods and adds six sink methods for a
-projected33. Source-only sink controls and all eight qualified worker cases require
+are static only. It preserves the27 prior methods and adds six sink methods and four exact FD annotation methods for a
+projected37. Source-only sink controls and all eight qualified worker cases require
 future reviewed CI execution. Historical27-control and SDK evidence below belongs
 to the prior archive-repair source, not this new sink.
 The enclosing scratch-only workflow routes the diagnostic. Tracing overhead and file caps are diagnostic
 instrumentation and cannot establish original acceptance or proof cost parity.
-The source seal is `fadf15e7a1680e197892223fd8a68467092a17a023e49ebc88d2d9c96d6b0018`
+The source seal is `9705bf021fd3e07f66aaa1a227321a447f09af368e11f5dd75b9dc23268e8640`
 for20files; the reviewed Git/CI source identity binds that declaration without
 claiming a signed origin attestation. The product ledger remains
 `v4.11.0 0e36fadf2a702df121bc9c0fe0b11e43e475e207` because only review tooling and
@@ -89,3 +89,13 @@ mutation. It keeps Program.cs, baseline packets, worker/library/solver, options 
 budgets unchanged. It records inherited FSIZE, rejects mismatch, distinguishes
 prefix/complete hashes and requires EOF after natural owned exit/reaping inside the
 original40s stage deadline. It introduces no axioms, query or acceptance claim.
+
+
+A separate source checkpoint repairs the observed all-hexadecimal FD annotation
+format under unchanged strace6.8 options. It admits only bounded all-or-none hex
+bytes (or exact legacy plain pipe fixtures), full positive inode labels and exact
+two-end pipe creation. Four synthetic methods include full worker/solver FD stream
+mapping plus wrong-inode/wrong-parent controls. Existing ownership/table/stream
+checks and all33 previous method bodies remain. The combined37-control source
+has not been executed; the observed startup failure remains the latest actual
+capture outcome.
