@@ -28,6 +28,8 @@ dafny verify example.dfy --verification-backend b3 \
 
 For an editor project, place `verification-backend = "b3"`, `b3-worker = "/path/to/DafnyB3Host.dll"`, and `solver-path = "/path/to/z3"` in `[options]`. Command-line values take precedence. The default worker location is `b3/DafnyB3Host.dll` beside Dafny. Worker binaries must stay beside their build manifest and library dependencies; changed or missing files fail validation. Boogie remains the default when the option is absent.
 
+The experimental B3 backend supports the `verify` command and editor verification. Selecting B3 for `build`, `run`, or `test` fails before compilation or worker lookup, including with `--no-verify`. Those commands still use the Boogie verification pipeline, so their B3 selection is rejected until they can use the backend-neutral pipeline.
+
 B3 uses a fresh isolated process for each generated checking unit. The time limit covers the unit, including worker startup and IO. It requires a positive time limit and currently supports Unix process groups, arithmetic solver 2, and ordinary Z3 invocation. Solver unknown, invalid packages, incomplete output, cancellation and unsupported input produce non-success outcomes. Models, proof dependencies and resource counts are unavailable in this slice; options requiring those capabilities fail explicitly.
 
 ## Running the backend gate

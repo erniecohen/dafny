@@ -101,3 +101,6 @@ git-issues/git-issue-118.dfy
 
 # B3 option rejection must not disappear behind an empty symbol selection.
 git-issues/git-issue-120.dfy
+
+# Compilation entrypoints must reject unsupported B3 selection before worker lookup.
+git-issues/git-issue-126.dfy

@@ -2365,6 +2365,8 @@ and what information it produces about the verification process.
   See [B3 support and build instructions](../dev/b3/README.md).
   In a project file use `verification-backend = "b3"` in `[options]`; the CLI
   overrides that setting. This selection also applies to editor verification.
+  The experimental B3 backend currently rejects `build`, `run`, and `test`,
+  including their `--no-verify` mode. Use `verify` for B3 verification.
 
 * `--b3-worker <path>` - locate a packaged `DafnyB3Host.dll`. Its build manifest
   and dependencies must be adjacent to it. The default location is
@@ -2839,4 +2841,3 @@ Dafny is capable of generating unit (runtime) tests. It does so by asking the pr
 for values of inputs to a method that cause the program to execute specific blocks or paths.
 A detailed description of how to do this is given in
 [a separate document](https://github.com/dafny-lang/dafny/blob/master/Source/DafnyTestGeneration/README.md).
-

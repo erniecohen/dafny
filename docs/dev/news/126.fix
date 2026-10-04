@@ -1,0 +1,1 @@
+Rejects experimental B3 selection in build, run, and test before compiler or worker initialization, including with --no-verify. These commands previously accepted the B3 option but verified through Boogie instead.
