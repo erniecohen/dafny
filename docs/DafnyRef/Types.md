@@ -384,6 +384,8 @@ unsigned arithmetic modulo 2^{number of bits}, like 2's-complement machine arith
   `-`            | 6 | bit-limited subtraction
 -----------------|------------------------------------
   `*`            | 7 | bit-limited multiplication
+  `/`            | 7 | unsigned division
+  `%`            | 7 | unsigned remainder
 -----------------|------------------------------------
   `&`            | 8 | bit-wise and
   `|`            | 8 | bit-wise or 
@@ -400,6 +402,13 @@ All operators bind more tightly than equality, disequality, and comparisons.
 All binary operators are left-associative, but the 
 bit-wise `&`, `|`, and `^` do not associate together (parentheses are required to disambiguate).
 The `+`, `|`, `^`, and `&` operators are commutative.
+
+For bit-vector operands `a` and `b`, `a / b` is the quotient rounded down,
+and `a % b` is the remainder of unsigned integer division.
+Both operands and the result have the same bit-vector type.
+For both operators, Dafny requires a proof that `b != 0`.
+The remainder satisfies `0 <= a % b < b`. For example,
+`(255 as bv8) / 16 == 15` and `(255 as bv8) % 16 == 15`.
 
 The right-hand operand of bit-shift operations is an `int` value,
 must be non-negative, and
@@ -432,7 +441,8 @@ method m() {
   assert (i + i) == (2 as bv4);
   assert (j - i) == (10 as bv4);
   assert (i * j) == (11 as bv4);
-  assert (i as int) / (j as int) == 3;
+  assert (i / j) == (3 as bv4);
+  assert (i % (2 as bv4)) == (1 as bv4);
   assert (j << 1) == (6 as bv4);
   assert (i << 1) == (2 as bv4);
   assert (i >> 1) == (4 as bv4);
