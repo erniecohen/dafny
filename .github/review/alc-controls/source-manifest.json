@@ -13,6 +13,11 @@
   },
   "files": [
     {
+      "path": ".gitattributes",
+      "sha256": "a79691a93b46e49ce460c26ef22afcc03d6eca1e63bf2edbc20e96159510f6c9",
+      "bytes": 14
+    },
+    {
       "path": "B3AlcGate.csproj",
       "sha256": "e6ad61c73d2486c84bb634d7be782742919e34970933f7a3150daed4609745dc",
       "bytes": 527
@@ -23,24 +28,24 @@
       "bytes": 9378
     },
     {
-      "path": "Run.cs",
-      "sha256": "e49403060f6d51607b7064dc6974ecfcde91285abc736786ab0866c4155ddd18",
-      "bytes": 11876
-    },
-    {
       "path": "Program.cs",
       "sha256": "a92b221bb7044bad58995886e8fdc98e101111e19cf385706f4a2d6ea462abba",
       "bytes": 4804
     },
     {
-      "path": "control-fixtures.json",
-      "sha256": "3014e644328a0d8ce5a962b28cd9a2c37234e6c227d2fe3c6b2a643e996259e9",
-      "bytes": 428
-    },
-    {
       "path": "README.md",
       "sha256": "90558f25bb757a90f21477e969aa993d26b8a0763db01527f4577c996c2eee1f",
       "bytes": 9758
+    },
+    {
+      "path": "Run.cs",
+      "sha256": "e49403060f6d51607b7064dc6974ecfcde91285abc736786ab0866c4155ddd18",
+      "bytes": 11876
+    },
+    {
+      "path": "control-fixtures.json",
+      "sha256": "3014e644328a0d8ce5a962b28cd9a2c37234e6c227d2fe3c6b2a643e996259e9",
+      "bytes": 428
     }
   ]
 }

@@ -26,7 +26,7 @@ try:
     assert {f['path'] for f in manifest['files']} == {p.name for p in sources.iterdir() if p.is_file() and p.name != 'source-manifest.json'}
     for f in manifest['files']:
         data = (sources / f['path']).read_bytes()
-        assert len(data) == f['bytes'] and hashlib.sha256(data).hexdigest() == f['sha256']
+        assert len(data) == f['bytes'] and hashlib.sha256(data).hexdigest() == f['sha256'], 'Changed isolation fixture bytes: ' + f['path']
     baseline = output / 'baseline'
     stage('baseline-input', ['gh', 'run', 'download', '37182760834', '-R', 'erniecohen/dafny', '-n', 'baseline-dafny', '-D', str(baseline)], 120)
     archive = baseline / 'baseline.tar.gz'
