@@ -7,7 +7,7 @@
   "patches": [
     {
       "file": "integration.patch",
-      "sha256": "930df166ffad9454fb9a2fb5ba8c2d892f031ff9c030bfcf65a2e7bccf241b87"
+      "sha256": "8fc741ef0db219f9135e480c26a3b9150e81b2d3feb42aa980d8eb4f4e3759ee"
     }
   ],
   "vendoredPaths": [
@@ -24,7 +24,7 @@
     "LICENSE": "e91686b267408f7ca5da770a3bb742911872b9cfcab2b1f4364263a86283d0cb",
     "README.md": "956e48ef8e9b1fa2be3ec1a2a6e979a17bf6a16ba2dbc9d3c44d6b8280cbf2c6",
     "doc/worker-library.md": "b1660772823dd6297366b541d16a296306b559c7fee63c2a6b8577ca2ef86ce0",
-    "integration.patch": "930df166ffad9454fb9a2fb5ba8c2d892f031ff9c030bfcf65a2e7bccf241b87",
+    "integration.patch": "8fc741ef0db219f9135e480c26a3b9150e81b2d3feb42aa980d8eb4f4e3759ee",
     "library/dfyconfig.toml": "b0a57d8fe24030e720edfd0f4d490be2b4011c0f8b66cfd6adbdb9a9946463c8",
     "src/Ast/Ast.dfy": "5d929eb44165880f94b3a5b9051d51c19b9a3b626aac9b7007d0ecb764ac793b",
     "src/Ast/AstValid.dfy": "6473a5b5c018f1eab55998956a72dcb8e8e92a02711ad2080b7b7007c39a21cf",
@@ -51,7 +51,7 @@
     "src/Semantics/Semantics.dfy": "8111d60733211106ed440e35518cc5b9ac752bb9c1765a004b353a9eb2815f3b",
     "src/Solver/DeclarationMarkers.dfy": "16400118a77aa3ce316e0ce02c3c132371d916d604003b8ba57202803624dc18",
     "src/Solver/ExternalSolvers.dfy": "9ddf48ea55d2f0d678b49f6074e328899ede823b5c6b9a389269097db34552dc",
-    "src/Solver/RSolver.dfy": "4c860fda3d8e6e88f29d0d9d09eb3322aad9001fb44a44de14125a302659925f",
+    "src/Solver/RSolver.dfy": "abdc2c5a8f2218a6997930b00eccdbc89596812e52495f4fda00d1ea9b68a8a3",
     "src/Solver/SmtEngines.dfy": "b692ee788a1052a3ddabc26c11afadca76a1643d44bf11424b10641e2444e616",
     "src/Solver/SolverConfiguration.dfy": "03df472f0bc0e2f16d4edd14116c8caf0a5c1323ff0f29423bc782d080a52401",
     "src/Solver/SolverExpr.dfy": "fc5b13bc523ab6338b866008fa5b8d27f39c2031d5cc153f4a708ac1a46409d8",

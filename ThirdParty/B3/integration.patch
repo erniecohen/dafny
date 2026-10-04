@@ -843,10 +843,10 @@ index c8588d5f308be90550d8284938250f59e5718f6d..1e282edb1ac18c0d6acd02b5c3579e55
 \ No newline at end of file
 +}
 diff --git a/src/Solver/RSolver.dfy b/src/Solver/RSolver.dfy
-index 7049b456747b6486558482d4127842c2a03c6f26..c205ade524694954acb3c23bf8ee2838926c3df6 100644
+index 7049b456747b6486558482d4127842c2a03c6f26..ac82d7fd819c0ad63443e873124bdc5b786c920c 100644
 --- a/src/Solver/RSolver.dfy
 +++ b/src/Solver/RSolver.dfy
-@@ -12,15 +12,19 @@ module RSolvers {
+@@ -12,15 +12,20 @@ module RSolvers {
    import opened Basics
    import CLI = CommandLineOptions
    import PrintUtil
@@ -856,6 +856,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..c205ade524694954acb3c23bf8ee2838
    export
 -    reveals RExpr, ROperator, RPattern
 +    reveals RExpr, ROperator, RPattern, PositiveDenominator
++    reveals SExpr
      provides RExpr.Eq, RExpr.Operator2ROperator, RExpr.OperatorToString
 +    provides RExpr.ToString, RExpr.ToSExpr
      provides RContext, CreateEmptyContext, Extend, ExtendWithEquality
@@ -869,7 +870,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..c205ade524694954acb3c23bf8ee2838
 
    // ===== RExpr =====
 
-@@ -37,9 +41,12 @@ module RSolvers {
+@@ -37,9 +42,12 @@ module RSolvers {
      }
    }
 
@@ -882,7 +883,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..c205ade524694954acb3c23bf8ee2838
      | CustomLiteral(s: string, typ: SolverExpr.SType)
      | Id(v: SolverExpr.SConstant)
      | FuncAppl(op: ROperator, args: seq<RExpr>)
-@@ -53,6 +60,7 @@ module RSolvers {
+@@ -53,6 +61,7 @@ module RSolvers {
        match this
        case Boolean(b) => SExpr.Boolean(b)
        case Integer(x) => SExpr.Integer(x)
@@ -890,7 +891,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..c205ade524694954acb3c23bf8ee2838
        case CustomLiteral(s, typ) =>
          if s in literalMapper then literalMapper[s] else SExpr.S(CustomLiteralToSExprName())
        case Id(v) => SExpr.Id(v)
-@@ -124,6 +132,9 @@ module RSolvers {
+@@ -124,6 +133,9 @@ module RSolvers {
        case Times => "*"
        case Div => "div"
        case Mod => "mod"
@@ -900,7 +901,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..c205ade524694954acb3c23bf8ee2838
        case LogicalNot => "not"
        case UnaryMinus => "-"
      }
-@@ -137,10 +148,12 @@ module RSolvers {
+@@ -137,10 +149,12 @@ module RSolvers {
        match this
        case Boolean(b) => if b then "true" else "false"
        case Integer(x) => Int2String(x)
@@ -914,7 +915,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..c205ade524694954acb3c23bf8ee2838
        case IfThenElse(guard, thn, els) =>
          "(if " + guard.ToString() + " " + thn.ToString() + " else " + els.ToString() + ")"
        case LetExpr(v, rhs, body) =>
-@@ -219,6 +232,10 @@ module RSolvers {
+@@ -219,6 +233,10 @@ module RSolvers {
        requires Valid()
        decreases depth
 
@@ -925,7 +926,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..c205ade524694954acb3c23bf8ee2838
      method PrintTrace()
        requires Valid()
        decreases depth
-@@ -248,6 +265,13 @@ module RSolvers {
+@@ -248,6 +266,13 @@ module RSolvers {
      {
      }
 
@@ -939,7 +940,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..c205ade524694954acb3c23bf8ee2838
      method PrintTrace()
        requires Valid()
        decreases depth
-@@ -289,6 +313,14 @@ module RSolvers {
+@@ -289,6 +314,14 @@ module RSolvers {
        print "  ", expr.ToString(), "\n";
      }
 
@@ -954,7 +955,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..c205ade524694954acb3c23bf8ee2838
      method PrintTrace()
        requires Valid()
        decreases depth
-@@ -343,6 +375,7 @@ module RSolvers {
+@@ -343,6 +376,7 @@ module RSolvers {
      const state: Solvers.SolverState<RContext>
      const axiomMap: map<Ast.Axiom, RExpr>
      const Options: CLI.CliOptions
@@ -962,7 +963,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..c205ade524694954acb3c23bf8ee2838
 
      ghost predicate Valid()
        reads Repr
-@@ -361,6 +394,7 @@ module RSolvers {
+@@ -361,6 +395,7 @@ module RSolvers {
        this.state := state;
        this.axiomMap := axiomMap;
        this.Options := options;
@@ -970,7 +971,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..c205ade524694954acb3c23bf8ee2838
        Repr := {this} + state.Repr;
      }
 
-@@ -370,7 +404,7 @@ module RSolvers {
+@@ -370,7 +405,7 @@ module RSolvers {
        map["%tag" := SExpr.S(Int2String(|state.declarations| + |state.additionalDeclaredNames|))]
      }
 
@@ -979,7 +980,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..c205ade524694954acb3c23bf8ee2838
        requires Valid()
        modifies Repr
        ensures Valid()
-@@ -382,8 +416,27 @@ module RSolvers {
+@@ -382,8 +417,27 @@ module RSolvers {
 
        state.Push(context); // do another Push; the parameter here is irrelevant and will soon be popped off again
        DeclareNewSymbols(expr);
@@ -1008,7 +1009,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..c205ade524694954acb3c23bf8ee2838
      }
 
      method SetContext(context: RContext)
-@@ -453,6 +506,7 @@ module RSolvers {
+@@ -453,6 +507,7 @@ module RSolvers {
        match r
        case Boolean(_) =>
        case Integer(_) =>
@@ -1016,7 +1017,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..c205ade524694954acb3c23bf8ee2838
        case CustomLiteral(s, typ) =>
          if s != "%tag" {
            var name := r.CustomLiteralToSExprName();
-@@ -546,7 +600,7 @@ module RSolvers {
+@@ -546,7 +601,7 @@ module RSolvers {
        ensures Valid() && state.Evolves()
      {
        match typ
@@ -1025,7 +1026,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..c205ade524694954acb3c23bf8ee2838
        case SUserType(decl) =>
          if decl !in state.declarations {
            state.DeclareType(decl, decl);
-@@ -557,8 +611,17 @@ module RSolvers {
+@@ -557,8 +612,17 @@ module RSolvers {
    method CreateEngine(axiomMap: map<Ast.Axiom, RExpr>, options: CLI.CliOptions) returns (r: Result<REngine, string>)
      ensures r.Success? ==> var smtEngine := r.value; smtEngine.Valid() && fresh(smtEngine.Repr)
    {
