@@ -13,6 +13,8 @@ def run(name, command, timeout=1800):
         status, text = result.returncode, result.stdout + result.stderr
     except subprocess.TimeoutExpired as error:
         status, text = "TIMEOUT", str(error)
+    if name == "smoke" and "Passed:" not in text:
+        status = "NO TEST RESULTS"
     (out / (name + ".txt")).write_text(text)
     records.append({"name": name, "status": status, "command": command})
     print(name, status, flush=True)
@@ -22,6 +24,7 @@ try:
     run("inventory", ["dotnet", "--info"])
     run("boogie", ["sh", "Scripts/fetch-boogie-packages.sh"])
     if run("build", ["dotnet", "build", "Source/Dafny.sln", "-c", "Release"]):
+        run("integration-build", ["dotnet", "build", "Source/IntegrationTests", "-c", "Release"])
         run("core-unit", ["dotnet", "test", "Source/DafnyCore.Test", "-c", "Release", "--no-build"])
         run("runtime-unit", ["dotnet", "test", "Source/DafnyRuntime.Tests", "-c", "Release", "--no-build"])
         run("smoke", ["dotnet", "test", "Source/IntegrationTests", "-c", "Release", "--no-build",
