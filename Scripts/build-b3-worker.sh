@@ -17,7 +17,7 @@ archive, source = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
 expected = 'ba06f4d5048ecf0cc40f79281230eb44b429fd73a8bbed5c4377a3d0ff010331'
 assert hashlib.sha256(archive.read_bytes()).hexdigest() == expected, 'Wrong bootstrap compiler archive'
 source_manifest = source / 'source-manifest.json'
-assert hashlib.sha256(source_manifest.read_bytes()).hexdigest() == '8525b69200d1c5d2e3e18e21a97f14aeb68009137b489093b9ff3046357162ac', 'Wrong B3 source manifest'
+assert hashlib.sha256(source_manifest.read_bytes()).hexdigest() == 'a6ecb742096ddf2f4a6dbcfefb847fdb17ff1fbda7bacf0fafd445f60d843976', 'Wrong B3 source manifest'
 manifest = json.loads(source_manifest.read_text())
 assert manifest['upstreamCommit'] == 'ea6e8a18dfe9e317d313de769291f989957dc5f2'
 actual = set()

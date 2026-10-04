@@ -140,3 +140,13 @@ Source inventory hashes describe the edited source only. The previous library
 bootstrap receipt does not apply after these edits. Fresh verification, both
 shared runtime target compilations, focused controls and actual corpus outcomes
 must be recorded before support is reported accepted.
+
+The runtime round-trip fixture extracts its expression through the exact
+resolver-created `LabeledStmt` with label `return` (`Ast/Resolver.dfy:784-789`),
+then requires the original one-Check Block (`Ast/StmtResolver.dfy:134-151`). The
+wrapper is part of procedure return control, not a printer transformation. The
+fixture previously expected that Block directly and failed before exercising
+resolved printing. All exact text, literal, coercion, precedence and denominator
+checks remain required after correcting extraction. This fixture-only repair
+changes no parser/printer/solver implementation or proof contract; its edited
+inventory still requires a fresh runtime receipt.
