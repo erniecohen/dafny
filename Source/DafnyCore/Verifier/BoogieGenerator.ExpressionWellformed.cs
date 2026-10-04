@@ -1023,6 +1023,14 @@ namespace Microsoft.Dafny {
             }
 
             if (e is ConversionExpr ee) {
+              // A representation-preserving cast still has to establish the target's
+              // instantiated membership before any target-typed result is assumed.
+              // Keep provided types opaque and use their nominal target Ty.
+              if ((ee.ToType.IsDatatype || ee.ToType.IsInternalTypeSynonym) &&
+                  !ee.ToType.IsRefType && !ee.E.Type.IsTraitType && !ee.ToType.IsArrowType) {
+                CheckSubrange(unaryExpr.Origin, etran.TrExpr(ee.E), ee.E.Type, ee.ToType,
+                  ee.E, builder, ee.messagePrefix);
+              }
               if (options.Get(CommonOptionBag.ExtendedNewtypeBases) && ee.IsBaseOperation &&
                   ee.Type.Equals(ee.ToType, true)) {
                 var operationSource = NewtypeOperationView.Get(ee.E.Type, preserveSubsetTypes: true);
