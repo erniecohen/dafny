@@ -4,6 +4,11 @@ The workflow records expected failures and exits zero. Acceptance requires this
 summary, every exact control/ownership receipt, unchanged source pins and process
 exit zero without cleanup intervention. Archived failed proof evidence stays failed.
 """
+import sys
+
+# Reviewed imports below execute captured source, never cached Python bodies.
+sys.dont_write_bytecode = True
+
 import hashlib
 import importlib.util
 import json
@@ -11,7 +16,6 @@ import os
 from pathlib import Path
 import shutil
 import signal
-import sys
 import tarfile
 
 SOURCES = Path('.github/review/alc-controls')
@@ -39,41 +43,122 @@ def load_json(path, bound=8388608):
     return json.loads(value)
 
 
-def module(name, path):
+def pinned_bytes(path, expected_sha, expected_bytes=None, bound=16777216):
+    assert path.is_file() and not path.is_symlink(), 'Pinned input is not a regular file'
+    with path.open('rb') as source:
+        value = source.read(bound + 1)
+    assert len(value) <= bound, 'Pinned input exceeded its bound'
+    assert expected_bytes is None or len(value) == expected_bytes, 'Pinned input size changed'
+    assert hashlib.sha256(value).hexdigest() == expected_sha, 'Pinned input bytes changed'
+    return value
+
+
+def file_pin(path):
+    assert path.is_file() and not path.is_symlink(), 'Built input is not a regular file'
+    with path.open('rb') as source:
+        value = source.read(16777217)
+    assert len(value) <= 16777216, 'Built input exceeded its bound'
+    return {'path': str(path.resolve()), 'sha256': hashlib.sha256(value).hexdigest(), 'bytes': len(value)}
+
+
+def module(name, path, pin):
+    assert sys.dont_write_bytecode and name not in sys.modules
+    # Compile exactly the checked source capture. SourceFileLoader.exec_module
+    # would be allowed to consume an existing .pyc even with bytecode writes off.
+    captured = pinned_bytes(path, pin['sha256'], pin['bytes'])
     spec = importlib.util.spec_from_file_location(name, path)
     assert spec and spec.loader
     value = importlib.util.module_from_spec(spec)
     sys.modules[name] = value
-    spec.loader.exec_module(value)
+    try:
+        exec(compile(captured, str(path), 'exec', dont_inherit=True), value.__dict__)
+    except BaseException:
+        sys.modules.pop(name, None)
+        raise
+    receipt['importedReviewedSources'].append({'path': str(path), 'sha256': pin['sha256'],
+        'bytes': len(captured), 'capturedSourceCompiled': True, 'cachedPythonBodyUsed': False})
     return value
+
+
+def frozen_source_pins(expected_coordinator_sha=None):
+    # This recheck intentionally has no platform or whole-directory inventory
+    # dependency: SDK obj/bin output is legitimate after the initial preflight.
+    manifest_bytes = pinned_bytes(SOURCES / 'source-manifest.json', SOURCE_SHA)
+    manifest = json.loads(manifest_bytes)
+    pins = {f['path']: f for f in manifest['files']}
+    assert len(pins) == len(manifest['files']) == 38
+    for relative, pin in pins.items():
+        pinned_bytes(SOURCES / relative, pin['sha256'], pin['bytes'])
+    boundary = manifest['unavailableMetadataBoundary']
+    assert boundary['controlCount'] == 3 and boundary['oneControlPerDisposableHost']
+    assert not boundary['nativeProofEnabled'] and not boundary['negativeControlsExecuted']
+    assert not boundary['completeMetadataAvailability'] and boundary['completeMetadataInventory']
+    coordinator_path = Path('.github/review/b3-unavailable-coordinator-manifest.json')
+    assert coordinator_path.is_file() and not coordinator_path.is_symlink()
+    with coordinator_path.open('rb') as source:
+        coordinator_bytes = source.read(8388609)
+    assert len(coordinator_bytes) <= 8388608
+    coordinator_sha = hashlib.sha256(coordinator_bytes).hexdigest()
+    assert expected_coordinator_sha is None or coordinator_sha == expected_coordinator_sha, 'Coordinator manifest changed'
+    coordinator_manifest = json.loads(coordinator_bytes)
+    assert coordinator_manifest['schemaVersion'] == 1 and coordinator_manifest['sourceManifestSha256'] == SOURCE_SHA
+    expected = ['.github/review/B3-UNAVAILABLE-COORDINATOR.md', '.github/review/b3-owned-process.py',
+                '.github/review/b3-unavailable-controls.py', '.github/review/base', '.github/workflows/review.yml']
+    assert [f['path'] for f in coordinator_manifest['files']] == expected
+    coordinator_pins = {f['path']: f for f in coordinator_manifest['files']}
+    for relative, pin in coordinator_pins.items():
+        captured = pinned_bytes(Path(relative), pin['sha256'], pin['bytes'])
+        if relative == '.github/review/base':
+            assert captured == b'v4.11.0 8333daa60e2f2ee456068369f94c141898cde875\n'
+    return manifest, coordinator_manifest, coordinator_sha
 
 
 def source_preflight():
     assert sys.platform == 'linux' and os.uname().machine == 'x86_64'
     assert sys.flags.optimize == 0, 'Receipt assertions must remain enabled'
-    assert sha(SOURCES / 'source-manifest.json') == SOURCE_SHA
-    manifest = load_json(SOURCES / 'source-manifest.json')
-    pins = {f['path']: f for f in manifest['files']}
-    assert len(pins) == len(manifest['files']) == 38
+    manifest, coordinator_manifest, coordinator_sha = frozen_source_pins()
     actual = {p.relative_to(SOURCES).as_posix() for p in SOURCES.rglob('*') if p.is_file() and p.name != 'source-manifest.json'}
-    assert set(pins) == actual
-    for relative, pin in pins.items():
-        path = SOURCES / relative
-        assert not path.is_symlink() and path.stat().st_size == pin['bytes'] and sha(path) == pin['sha256']
-    boundary = manifest['unavailableMetadataBoundary']
-    assert boundary['controlCount'] == 3 and boundary['oneControlPerDisposableHost']
-    assert not boundary['nativeProofEnabled'] and not boundary['negativeControlsExecuted']
-    assert not boundary['completeMetadataAvailability'] and boundary['completeMetadataInventory']
-    coordinator_manifest = load_json(Path('.github/review/b3-unavailable-coordinator-manifest.json'))
-    assert coordinator_manifest['schemaVersion'] == 1 and coordinator_manifest['sourceManifestSha256'] == SOURCE_SHA
-    expected = ['.github/review/B3-UNAVAILABLE-COORDINATOR.md', '.github/review/b3-owned-process.py',
-                '.github/review/b3-unavailable-controls.py', '.github/review/base', '.github/workflows/review.yml']
-    assert [f['path'] for f in coordinator_manifest['files']] == expected
-    for pin in coordinator_manifest['files']:
-        path = Path(pin['path'])
-        assert path.stat().st_size == pin['bytes'] and sha(path) == pin['sha256']
-    assert Path('.github/review/base').read_text().split() == ['v4.11.0', '8333daa60e2f2ee456068369f94c141898cde875']
-    return manifest, coordinator_manifest
+    assert {f['path'] for f in manifest['files']} == actual
+    return manifest, coordinator_manifest, coordinator_sha
+
+
+def recheck_boundary(name, host_pin, harness_pins=None, fresh_harness=None, archived_pins=None, compiled_manifest=None):
+    check = {'boundary': name, 'passed': False}
+    receipt['immutableInputChecks'].append(check)
+    try:
+        manifest, outer, outer_sha = frozen_source_pins(receipt['coordinatorManifestSha256'])
+        pinned_bytes(Path(host_pin['path']), host_pin['sha256'], host_pin['bytes'])
+        if fresh_harness is not None:
+            assert not fresh_harness.exists(), 'Build output must be fresh'
+            check['freshBuildOutputRequired'] = True
+            check['compiledManifestState'] = 'absent before fresh build'
+        if compiled_manifest is not None:
+            compiled_bytes = pinned_bytes(compiled_manifest, SOURCE_SHA)
+            assert compiled_bytes == pinned_bytes(SOURCES / 'source-manifest.json', SOURCE_SHA)
+            check['compiledSourceManifestSha256'] = SOURCE_SHA
+        if harness_pins is not None:
+            assert set(harness_pins) == {'B3AlcGate.dll', 'B3AlcGate.deps.json',
+                'B3AlcGate.runtimeconfig.json', 'source-manifest.json'}
+            for pin in harness_pins.values():
+                pinned_bytes(Path(pin['path']), pin['sha256'], pin['bytes'])
+            manifest_pin = harness_pins['source-manifest.json']
+            assert manifest_pin['sha256'] == SOURCE_SHA
+            assert pinned_bytes(Path(manifest_pin['path']), SOURCE_SHA, manifest_pin['bytes']) == pinned_bytes(SOURCES / 'source-manifest.json', SOURCE_SHA)
+            check['compiledSourceManifestSha256'] = SOURCE_SHA
+            check['harnessBundleSha256'] = {relative: pin['sha256'] for relative, pin in harness_pins.items()}
+        if archived_pins is not None:
+            archive_path, package_manifest_path, candidate_directory, candidate_files = archived_pins
+            assert sha(archive_path) == BASELINE_ARCHIVE_SHA and sha(package_manifest_path) == CANDIDATE_MANIFEST_SHA
+            exact_package(candidate_directory, candidate_files)
+            check['baselineArchiveSha256'] = BASELINE_ARCHIVE_SHA
+            check['candidatePackageManifestSha256'] = CANDIDATE_MANIFEST_SHA
+            check['candidateFileCount'] = len(candidate_files)
+        check.update({'passed': True, 'sourceManifestSha256': SOURCE_SHA,
+            'declaredSourceFilesChecked': len(manifest['files']), 'coordinatorManifestSha256': outer_sha,
+            'declaredCoordinatorFilesChecked': len(outer['files']), 'dotnetExecutableSha256': host_pin['sha256']})
+    except BaseException as error:
+        check['failure'] = type(error).__name__ + ': ' + str(error)
+        raise
 
 
 def safe_environment(download=False):
@@ -108,7 +193,8 @@ def exact_package(directory, files):
 OUTPUT.mkdir(parents=True, exist_ok=True)
 receipt = {'schemaVersion': 1, 'scope': 'three fixed disposable nonproof unavailable-metadata controls',
            'passed': False, 'stages': [], 'controls': [], 'fixedControlOrder': NAMES,
-           'nativeProofEnabled': False, 'solverExecuted': False, 'nativeQueryOrResourceParityEstablished': False}
+           'nativeProofEnabled': False, 'solverExecuted': False, 'nativeQueryOrResourceParityEstablished': False,
+           'immutableInputChecks': [], 'importedReviewedSources': [], 'pythonBytecodeWritesDisabled': True}
 owned = None
 cancelled = False
 
@@ -146,11 +232,13 @@ def stage(name, command, timeout=120, download=False, reject_descendants=False):
 
 
 try:
-    source_manifest, coordinator_manifest = source_preflight()
+    source_manifest, coordinator_manifest, coordinator_sha = source_preflight()
     receipt['sourceManifestSha256'] = SOURCE_SHA
-    receipt['coordinatorManifestSha256'] = sha(Path('.github/review/b3-unavailable-coordinator-manifest.json'))
+    receipt['coordinatorManifestSha256'] = coordinator_sha
     receipt['coordinatorSourcePins'] = coordinator_manifest['files']
-    owned = module('b3_owned_process', Path('.github/review/b3-owned-process.py'))
+    coordinator_pins = {f['path']: f for f in coordinator_manifest['files']}
+    owned = module('b3_owned_process', Path('.github/review/b3-owned-process.py'),
+                   coordinator_pins['.github/review/b3-owned-process.py'])
     receipt['subreaper'] = owned.enable_subreaper()
     stage('source-head', ['git', 'rev-parse', 'HEAD'], 10)
     receipt['head'] = (OUTPUT / 'source-head.txt').read_text().strip()
@@ -215,26 +303,33 @@ try:
         'priorLifecycleSourceManifestSha256': sha(lifecycle / 'harness/source-manifest.json'),
         'oldQualifiedSourceFilesByteUnchanged': 19}
     dotnet = Path(shutil.which('dotnet')).resolve()
-    receipt['dotnetExecutable'] = {'path': str(dotnet), 'sha256': sha(dotnet)}
+    receipt['dotnetExecutable'] = file_pin(dotnet)
     harness = OUTPUT / 'harness'
-    stage('nonproof-harness-build', [str(dotnet), 'build', str(SOURCES / 'B3AlcGate.csproj'), '-c', 'Release',
-                                  '-m:1', '-p:UseSharedCompilation=false',
-                                  '-p:StartupObject=B3AlcGate.UnavailableMetadataProgram',
-                                  '--output', str(harness), '--nologo'], 600)
-    assert sha(harness / 'source-manifest.json') == SOURCE_SHA
-    assert (harness / 'source-manifest.json').read_bytes() == (SOURCES / 'source-manifest.json').read_bytes()
-    receipt['harnessAssemblySha256'] = sha(harness / 'B3AlcGate.dll')
-    receipt['compiledSourceManifestSha256'] = sha(harness / 'source-manifest.json')
-    receipt['harnessDependenciesSha256'] = sha(harness / 'B3AlcGate.deps.json')
-    receipt['harnessRuntimeConfigSha256'] = sha(harness / 'B3AlcGate.runtimeconfig.json')
-    inspector = module('b3_unavailable_receipt_validation', SOURCES / 'unavailable-metadata-receipt-validation.py')
+    archived_pins = (archive, candidate_manifest, candidate, candidate_pin['files'])
+    recheck_boundary('before-build', receipt['dotnetExecutable'], fresh_harness=harness, archived_pins=archived_pins)
+    try:
+        stage('nonproof-harness-build', [str(dotnet), 'build', str(SOURCES / 'B3AlcGate.csproj'), '-c', 'Release',
+                                      '-m:1', '-p:UseSharedCompilation=false',
+                                      '-p:StartupObject=B3AlcGate.UnavailableMetadataProgram',
+                                      '--output', str(harness), '--nologo'], 600)
+    finally:
+        # Source/host pins are checked even when the SDK stage fails. Only a
+        # successful stage may declare a complete fresh compiled bundle below.
+        recheck_boundary('after-build-sources', receipt['dotnetExecutable'], archived_pins=archived_pins,
+                         compiled_manifest=harness / 'source-manifest.json')
+    harness_pins = {relative: file_pin(harness / relative) for relative in
+        ['B3AlcGate.dll', 'B3AlcGate.deps.json', 'B3AlcGate.runtimeconfig.json', 'source-manifest.json']}
+    receipt['harnessBundlePins'] = harness_pins
+    recheck_boundary('after-build', receipt['dotnetExecutable'], harness_pins, archived_pins=archived_pins)
+    receipt['harnessAssemblySha256'] = harness_pins['B3AlcGate.dll']['sha256']
+    receipt['compiledSourceManifestSha256'] = harness_pins['source-manifest.json']['sha256']
+    receipt['harnessDependenciesSha256'] = harness_pins['B3AlcGate.deps.json']['sha256']
+    receipt['harnessRuntimeConfigSha256'] = harness_pins['B3AlcGate.runtimeconfig.json']['sha256']
+    source_pins = {f['path']: f for f in source_manifest['files']}
+    inspector = module('b3_unavailable_receipt_validation', SOURCES / 'unavailable-metadata-receipt-validation.py',
+                       source_pins['unavailable-metadata-receipt-validation.py'])
     for name in NAMES:
-        # Recheck all immutable inputs before each fresh disposable context host.
-        assert sha(dotnet) == receipt['dotnetExecutable']['sha256']
-        assert sha(harness / 'B3AlcGate.dll') == receipt['harnessAssemblySha256']
-        assert sha(harness / 'source-manifest.json') == SOURCE_SHA
-        assert sha(candidate_manifest) == CANDIDATE_MANIFEST_SHA and sha(archive) == BASELINE_ARCHIVE_SHA
-        exact_package(candidate, candidate_pin['files'])
+        recheck_boundary('before-' + name, receipt['dotnetExecutable'], harness_pins, archived_pins=archived_pins)
         input_file = OUTPUT / (name + '-inputs.json')
         control_file = OUTPUT / (name + '.json')
         assert not input_file.exists() and not control_file.exists()
@@ -245,17 +340,30 @@ try:
                       'path': str((harness / 'source-manifest.json').resolve()), 'sha256': SOURCE_SHA},
                   'receipt': str(control_file.resolve())}
         input_file.write_text(json.dumps(inputs, indent=2) + '\n')
-        process = stage(name, [str(dotnet), str((harness / 'B3AlcGate.dll').resolve()), '--inputs', str(input_file.resolve())],
-                        50, reject_descendants=True)
+        try:
+            process = stage(name, [str(dotnet), str((harness / 'B3AlcGate.dll').resolve()), '--inputs', str(input_file.resolve())],
+                            50, reject_descendants=True)
+        finally:
+            # A failed or cancelled host also receives the complete post-boundary
+            # check after its bounded owned-process cleanup has completed.
+            recheck_boundary('after-' + name, receipt['dotnetExecutable'], harness_pins, archived_pins=archived_pins)
         assert process['signalCount'] == 0 and process['signals'] == [] and not process['poisoned']
         assert len(process['ownedProcesses']) == 1 and process['ownedProcesses'][0]['isRoot']
         assert process['ownedProcesses'][0]['exitObserved'] and process['ownedProcesses'][0]['reaped']
         control = load_json(control_file)
         assert control['control'] == name and control['harnessAssemblySha256'] == receipt['harnessAssemblySha256']
         inspector.inspect_unavailable_control(control, sha, SOURCE_SHA)
-        assert sha(harness / 'B3AlcGate.dll') == receipt['harnessAssemblySha256']
         receipt['controls'].append({'name': name, 'passed': True, 'receiptSha256': sha(control_file),
                                     'inputsSha256': sha(input_file), 'exactProcessStage': name})
+    recheck_boundary('final', receipt['dotnetExecutable'], harness_pins, archived_pins=archived_pins)
+    expected_checks = ['before-build', 'after-build-sources', 'after-build']
+    expected_checks += [boundary + name for name in NAMES for boundary in ['before-', 'after-']]
+    expected_checks += ['final']
+    assert [item['boundary'] for item in receipt['immutableInputChecks']] == expected_checks
+    assert all(item['passed'] for item in receipt['immutableInputChecks'])
+    assert [item['path'] for item in receipt['importedReviewedSources']] == [
+        '.github/review/b3-owned-process.py', str(SOURCES / 'unavailable-metadata-receipt-validation.py')]
+    assert all(item['capturedSourceCompiled'] and not item['cachedPythonBodyUsed'] for item in receipt['importedReviewedSources'])
     assert [c['name'] for c in receipt['controls']] == NAMES and not owned.child_ids(os.getpid())
     assert not cancelled
     receipt['passed'] = True

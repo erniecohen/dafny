@@ -8,8 +8,8 @@
   "files": [
     {
       "path": ".github/review/B3-UNAVAILABLE-COORDINATOR.md",
-      "sha256": "d9c5ae1fd3cb3c81b98a906fce9ef2b5f742c283b5e1e59e2eabb4de58baad49",
-      "bytes": 5806
+      "sha256": "92865cd8707ca49caaa890005dee909ef278cdb8d237936ddaf239192450f2c2",
+      "bytes": 7802
     },
     {
       "path": ".github/review/b3-owned-process.py",
@@ -18,8 +18,8 @@
     },
     {
       "path": ".github/review/b3-unavailable-controls.py",
-      "sha256": "3653d1771095a537ce2ca5fcf6b145c9477126517bd6a9960ff035474947681e",
-      "bytes": 17072
+      "sha256": "fc60e2cff65c277a7e35d636a77b7c74204d8439cc117545e85d387e25129cf3",
+      "bytes": 23928
     },
     {
       "path": ".github/review/base",

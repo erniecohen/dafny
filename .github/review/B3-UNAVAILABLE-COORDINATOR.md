@@ -14,13 +14,16 @@ project default and normal Program remain unchanged. Both native proof APIs in
 this source are explicitly disabled. The output source manifest must match the
 input manifest byte-for-byte; the built DLL, deps and runtimeconfig get distinct
 actual hashes in the new receipt. These are CI build declarations, not signed
-compiler-origin attestations.
+compiler-origin attestations. A build requires an absent fresh output directory;
+there is no prior compiled manifest to trust before that build. The exact compiled
+manifest is checked in the build's finally path, including failed SDK stages.
+Only a successful build can declare the complete new DLL/deps/runtimeconfig bundle.
 
 The baseline archive remains public run 37182760834, SHA256 `679b3569...`, original
 b07c source and Core `9e4eaf6a...`. The candidate remains the archived package from
 public run 37221204349, source `a6132c6758c863ec4a897e4ac1534dc727f0b006`, full package
 manifest `3d592286...` and Core `92824cdc...`. Every candidate file is compared with
-that exact inventory before each control. The C# host rechecks both packages and
+that exact inventory before and after each control. The C# host rechecks both packages and
 baseline archive. The candidate's earlier native smoke remains explicitly NOT GREEN;
 its successful compilation is only package provenance. The downloaded artifact also
 preserves the original eleven-control lifecycle receipts and their source pins,
@@ -28,7 +31,32 @@ without rerunning them or executing the archived solver.
 
 A separate coordinator manifest pins this document, the process supervisor, the
 coordinator, the corrected two-token review base and workflow routing. Assertions
-must be enabled. The process supervisor establishes an exclusive Linux subreaper,
+must be enabled. The original source manifest is pinned by its accepted literal
+hash; the separate coordinator manifest hash is captured at initial preflight and
+must remain exact. Platform checks and exact recursive source-directory inventory
+are an initial prerequisite. Subsequent checks reread only the declared 38 source
+files and five coordinator files, so legitimate SDK obj/bin output does not expand
+or weaken the frozen source scope.
+
+`immutableInputChecks` must contain exactly ten passing boundary records: before
+build, after-build-sources, after-build, then before/after each fixed control, and
+final. Every record checks the original 38 source pins, the unchanged five-file
+coordinator manifest and file pins, and the resolved dotnet bytes. After the fresh
+build, every control boundary checks the complete DLL/deps/runtimeconfig/compiled
+manifest bundle by original hash and size. Post-boundary checks run in finally
+paths even after a failed or cancelled control's owned cleanup. An input fault
+preserves NOT GREEN; a passing earlier stage cannot erase it. The baseline archive
+and complete candidate inventory are also rechecked at these boundaries.
+
+Reviewed Python helper and validator imports compile/execute a captured,
+hash-checked source-byte buffer in a fresh module namespace with the correct
+file/spec metadata. They never call SourceFileLoader.exec_module or consume a
+cached Python body. Python bytecode writes are disabled before these imports.
+The two imported captures, byte counts and exact hashes are recorded independently
+of later on-disk pin checks; the accepted validator source is unchanged. No harness
+or reviewed helper body is executed during a source-only check.
+
+The process supervisor establishes an exclusive Linux subreaper,
 with default SIGCHLD disposition, no initial children and no concurrent subprocess
 launcher. Every stage creates a new session and captures the actual direct child's
 PID/start-time/parent identity and pidfd before waiting. The control command is
