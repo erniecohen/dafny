@@ -28,7 +28,9 @@ dafny verify example.dfy --verification-backend b3 \
 
 For an editor project, place `verification-backend = "b3"`, `b3-worker = "/path/to/DafnyB3Host.dll"`, and `solver-path = "/path/to/z3"` in `[options]`. Command-line values take precedence. The default worker location is `b3/DafnyB3Host.dll` beside Dafny. Worker binaries must stay beside their build manifest and library dependencies; changed or missing files fail validation. Boogie remains the default when the option is absent.
 
-The experimental B3 backend supports the `verify` command and editor verification. Selecting B3 for `build`, `run`, or `test` fails before compilation or worker lookup, including with `--no-verify`. Those commands still use the Boogie verification pipeline, so their B3 selection is rejected until they can use the backend-neutral pipeline.
+The experimental B3 backend supports the `verify` command and editor verification. Selecting B3 for `build`, `run`, `test`, or `translate` fails before compilation or worker lookup, including with `--no-verify`. Those commands still use the Boogie verification pipeline, so their B3 selection is rejected until they can use the backend-neutral pipeline.
+
+Editor counterexample requests require a backend that provides models. B3 requests return an explicit JSON-RPC invalid-request error before verification starts. Cancelling a counterexample request stops its pending wait.
 
 `measure-complexity`, `generate-tests`, and `find-dead-code` require metrics or counterexample generation that this B3 slice does not provide. They explicitly reject B3 selection from the CLI or project file before preparation or generation. Test generation and dead-code analysis accept `--verification-backend boogie` to override a project's B3 setting.
 

@@ -1,0 +1,1 @@
+Editor counterexample requests reject verification backends that do not provide models before starting verification, and request cancellation stops waiting for unfinished verification.

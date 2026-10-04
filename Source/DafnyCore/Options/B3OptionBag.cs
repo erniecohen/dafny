@@ -6,7 +6,7 @@ namespace Microsoft.Dafny;
 public static class B3OptionBag {
   public enum Backend { Boogie, B3 }
   public static readonly Option<Backend> VerificationBackend = new("--verification-backend", () => Backend.Boogie,
-    "Select the verification backend: boogie (default) or the experimental b3 backend for verify and editor verification. B3 build, run, and test commands, unsupported constructs, and unsupported options fail explicitly.");
+    "Select the verification backend: boogie (default) or the experimental b3 backend for verify and editor verification. B3 build, run, test, and translate commands, unsupported constructs, and unsupported options fail explicitly.");
   public static readonly Option<FileInfo> Worker = new("--b3-worker",
     "Path to the packaged DafnyB3Host.dll and its adjacent build manifest. The default is b3/DafnyB3Host.dll beside Dafny.");
 

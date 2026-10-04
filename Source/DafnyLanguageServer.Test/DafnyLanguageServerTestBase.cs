@@ -104,6 +104,11 @@ lemma {:neverVerify} HasNeverVerifyAttribute(p: nat, q: nat)
 
     private Action<LanguageServerOptions> GetServerOptionsAction(Action<DafnyOptions> modifyOptions) {
       var dafnyOptions = DafnyOptions.CreateUsingOldParser(output);
+      // Source gates can select an explicitly pinned solver without changing production defaults.
+      var testSolverPath = Environment.GetEnvironmentVariable("DAFNY_TEST_SOLVER_PATH");
+      if (!string.IsNullOrWhiteSpace(testSolverPath)) {
+        dafnyOptions.Set(BoogieOptionBag.SolverPath, new System.IO.FileInfo(testSolverPath));
+      }
       dafnyOptions.Set(ProjectManager.UpdateThrottling, 0);
       dafnyOptions.Set(CachingProjectFileOpener.ProjectFileCacheExpiry, 0);
       modifyOptions?.Invoke(dafnyOptions);

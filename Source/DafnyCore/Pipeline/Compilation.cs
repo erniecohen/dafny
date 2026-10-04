@@ -58,6 +58,10 @@ public class Compilation : IDisposable {
   public DafnyProject Project => Input.Project;
   private readonly IVerificationBackend verificationBackend;
 
+  /// <summary>Read-only metadata for clients that require backend-specific results.</summary>
+  public string VerificationBackendName => verificationBackend.Name;
+  public VerificationCapabilities BackendCapabilities => verificationBackend.Capabilities;
+
   private readonly Subject<ICompilationEvent> updates = new();
   public IObservable<ICompilationEvent> Updates => updates;
 
