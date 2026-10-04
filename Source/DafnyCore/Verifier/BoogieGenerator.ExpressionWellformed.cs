@@ -1018,7 +1018,22 @@ namespace Microsoft.Dafny {
                   break;
                 }
               }
-              CheckResultToBeInType(unaryExpr.Origin, ee.E, ee.ToType, locals, builder, etran, ee.messagePrefix);
+              Type establishedArrowBase = null;
+              if (options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+                // The operand was checked above. Its exact visible carrier is an
+                // established premise, not a new destination introduction fact.
+                var checkedSource = NewtypeOperationView.Get(ee.E.Type, preserveSubsetTypes: true);
+                var checkedTarget = NewtypeOperationView.Get(ee.ToType, preserveSubsetTypes: true);
+                if (checkedSource.Status == NewtypeOperationView.ViewStatus.Resolved &&
+                    checkedTarget.Status == NewtypeOperationView.ViewStatus.Resolved &&
+                    checkedTarget.Path.Any(d => d is NewtypeDecl) &&
+                    checkedSource.BaseType.AsArrowType != null &&
+                    checkedSource.BaseType.Equals(checkedTarget.BaseType, true)) {
+                  establishedArrowBase = checkedSource.BaseType;
+                }
+              }
+              CheckResultToBeInType(unaryExpr.Origin, ee.E, ee.ToType, locals, builder, etran,
+                ee.messagePrefix, establishedArrowBase);
               if (options.Get(CommonOptionBag.ExtendedNewtypeBases) && ee.Type.Equals(ee.ToType, true)) {
                 var sourceView = NewtypeOperationView.Get(ee.E.Type, preserveSubsetTypes: true);
                 var destinationView = NewtypeOperationView.Get(ee.ToType, preserveSubsetTypes: true);

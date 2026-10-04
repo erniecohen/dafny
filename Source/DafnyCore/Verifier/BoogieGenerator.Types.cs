@@ -1439,7 +1439,7 @@ public partial class BoogieGenerator {
   /// <summary>
   /// Emit checks that "expr" (which may or may not be a value of type "expr.Type"!) is a value of type "toType".
   /// </summary>
-  void CheckResultToBeInType(IOrigin tok, Expression expr, Type toType, Variables locals, BoogieStmtListBuilder builder, ExpressionTranslator etran, string errorMsgPrefix = "") {
+  void CheckResultToBeInType(IOrigin tok, Expression expr, Type toType, Variables locals, BoogieStmtListBuilder builder, ExpressionTranslator etran, string errorMsgPrefix = "", Type establishedArrowBase = null) {
     Contract.Requires(tok != null);
     Contract.Requires(expr != null);
     Contract.Requires(toType != null);
@@ -1630,11 +1630,11 @@ public partial class BoogieGenerator {
       } else {
         be = ConvertExpression(expr.Origin, o, fromType, toTypeFamily);
       }
-      CheckResultToBeInType_Aux(tok, new BoogieWrapper(be, toTypeFamily), expr, toType.NormalizeExpandKeepConstraints(), builder, etran, errorMsgPrefix);
+      CheckResultToBeInType_Aux(tok, new BoogieWrapper(be, toTypeFamily), expr, toType.NormalizeExpandKeepConstraints(), builder, etran, errorMsgPrefix, establishedArrowBase);
     }
   }
 
-  void CheckResultToBeInType_Aux(IOrigin tok, Expression boogieExpr, Expression origExpr, Type toType, BoogieStmtListBuilder builder, ExpressionTranslator etran, string errorMsgPrefix) {
+  void CheckResultToBeInType_Aux(IOrigin tok, Expression boogieExpr, Expression origExpr, Type toType, BoogieStmtListBuilder builder, ExpressionTranslator etran, string errorMsgPrefix, Type establishedArrowBase = null) {
     Contract.Requires(tok != null);
     Contract.Requires(boogieExpr != null);
     Contract.Requires(origExpr != null);
@@ -1642,6 +1642,14 @@ public partial class BoogieGenerator {
     Contract.Requires(builder != null);
     Contract.Requires(etran != null);
     Contract.Requires(errorMsgPrefix != null);
+    if (options.Get(CommonOptionBag.ExtendedNewtypeBases) && establishedArrowBase != null &&
+        toType is UserDefinedType { ResolvedClass: SubsetTypeDecl } &&
+        toType.Equals(establishedArrowBase, true)) {
+      // An already checked operand establishes this exact subset/family and
+      // signature. Every enclosing destination newtype and differing subset
+      // still checks its own predicate below. No membership fact is assumed.
+      return;
+    }
     // First, check constraints of base types
     var udt = (UserDefinedType)toType;
     var rdt = (RedirectingTypeDecl)udt.ResolvedClass;
@@ -1660,7 +1668,7 @@ public partial class BoogieGenerator {
     }
 
     if (baseType.AsRedirectingType != null) {
-      CheckResultToBeInType_Aux(tok, boogieExpr, origExpr, baseType, builder, etran, errorMsgPrefix);
+      CheckResultToBeInType_Aux(tok, boogieExpr, origExpr, baseType, builder, etran, errorMsgPrefix, establishedArrowBase);
     }
     // Check any constraint defined in 'dd'
     if (rdt.Var != null) {
