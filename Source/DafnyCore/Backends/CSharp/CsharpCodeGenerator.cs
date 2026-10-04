@@ -395,7 +395,7 @@ namespace Microsoft.Dafny.Compilers {
       // even when its nominal type has no compiled default. Its storage slot must
       // not evaluate a ghost/opt-out witness or require unavailable defaults.
       var unavailableNewtypeDefault = enclosingTypeDecl is NewtypeDecl &&
-        Options.Get(CommonOptionBag.ExtendedNewtypeBases) && type.GetAutoInit() != AutoInitInfo.CompilableValue;
+        Options.Get(CommonOptionBag.ExtendedNewtypeBases) && type.GetAutoInit() != Type.AutoInitInfo.CompilableValue;
       var initializer = unavailableNewtypeDefault
         ? PlaceboValue(type, wr, enclosingTypeDecl.Origin, true)
         : DefaultValue(type, wr, enclosingTypeDecl.Origin, true);
