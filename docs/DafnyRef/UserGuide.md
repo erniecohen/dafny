@@ -384,6 +384,16 @@ the `--input` option on the command-line.
 is an argument to the program being run (and not to dafny itself).
 - If the `--` option is used, then anything after that option is a command-line argument to the program being run.
 
+The `--output` (or `-o`) option sets the output filename and location, as for `dafny build`.
+To use `[options] output` from a project file when running, enable `--project-output`
+or set `project-output = true` in the project file. This option defaults to false;
+without it, `run` retains its usual filename derived from the source file.
+Command-line `--output` takes precedence over the project setting.
+`output = "bin/result"` names files using `result` inside `bin`; `output = "bin"`
+names files using `bin` in the project directory. It does not select an output directory.
+`--project-output` also rejects compiler output paths without a filename stem,
+such as `bin/` and `.cs`, in `build`, `run` and `test`.
+
 During development, users must use `dafny run --allow-warnings` if they want to run their Dafny code when it contains warnings.
 
 Here are some examples:

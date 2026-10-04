@@ -160,6 +160,9 @@ The value may be a comma-separated list of files and folders.".TrimStart());
     IsHidden = true
   };
 
+  public static readonly Option<bool> ProjectOutput = new("--project-output",
+    "Use the project's output filename when running, and require a nonempty filename stem for compiler output. Defaults to false.");
+
   public static readonly Option<FileInfo> Output = new(["--output", "-o"],
     "Specify the filename and location for the generated target language files.") {
     ArgumentHelpName = "file",
@@ -680,6 +683,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(ShowHints, OptionScope.Cli);
     OptionRegistry.RegisterOption(Libraries, OptionScope.Module);
     OptionRegistry.RegisterOption(Output, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ProjectOutput, OptionScope.Cli);
     OptionRegistry.RegisterOption(PluginOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(Prelude, OptionScope.Cli);
     OptionRegistry.RegisterOption(Target, OptionScope.Cli);

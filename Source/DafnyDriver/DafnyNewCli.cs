@@ -65,7 +65,8 @@ public static class DafnyNewCli {
   }
 
   public delegate Task<int> ContinueWithOptions(DafnyOptions dafnyOptions, InvocationContext context);
-  public static void SetHandlerUsingDafnyOptionsContinuation(Command command, ContinueWithOptions continuation) {
+  public static void SetHandlerUsingDafnyOptionsContinuation(Command command, ContinueWithOptions continuation,
+    Func<Option, DafnyOptions, bool>? useProjectOption = null) {
 
     async Task Handle(InvocationContext context) {
       WritersConsole console = (WritersConsole)context.Console;
@@ -116,11 +117,22 @@ public static class DafnyNewCli {
         dafnyOptions.DafnyProject = project;
       }
 
+      // Process the opt-in before options whose project values depend on it.
+      if (command.Options.Contains(CommonOptionBag.ProjectOutput)) {
+        ProcessOption(context, CommonOptionBag.ProjectOutput, dafnyOptions);
+      }
+
       foreach (var option in command.Options) {
         if (option == CommonOptionBag.UseBaseFileName || option == DafnyProject.FindProjectOption) {
           continue;
         }
-        ProcessOption(context, option, dafnyOptions);
+        try {
+          ProcessOption(context, option, dafnyOptions, useProjectOption?.Invoke(option, dafnyOptions) ?? true);
+        } catch (ArgumentException e) {
+          context.ExitCode = (int)ExitValue.PREPROCESSING_ERROR;
+          await dafnyOptions.OutputWriter.Status($"Invalid value for option {option.Name}: {e.Message}");
+          return;
+        }
       }
 
       foreach (var option in command.Options) {
@@ -149,11 +161,14 @@ public static class DafnyNewCli {
     command.SetHandler(Handle);
   }
 
-  private static void ProcessOption(InvocationContext context, Option option, DafnyOptions dafnyOptions) {
+  private static void ProcessOption(InvocationContext context, Option option, DafnyOptions dafnyOptions,
+    bool useProjectOption = true) {
     var options = dafnyOptions.Options;
     var result = context.ParseResult.FindResultFor(option);
     object? projectFileValue = null;
-    var hasProjectFileValue = dafnyOptions.DafnyProject?.TryGetValue(option, out projectFileValue) ?? false;
+    var hasProjectFileValue = useProjectOption &&
+      (option.Arity.MaximumNumberOfValues > 1 || result == null || Equals(result.Token, null)) &&
+      (dafnyOptions.DafnyProject?.TryGetValue(option, out projectFileValue) ?? false);
     object value;
     if (option.Arity.MaximumNumberOfValues <= 1) {
       // If multiple values aren't allowed, CLI options take precedence over project file options
