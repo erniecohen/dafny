@@ -19,11 +19,15 @@ namespace Microsoft.Dafny.LanguageServer.IntegrationTest.Synchronization;
 public class ExtendedNewtypeCachingTest : ClientBasedLanguageServerTest {
   private const string EnabledProject = "[options]\nextended-newtype-bases = true\ngeneral-newtypes = true\ntype-system-refresh = true\n";
 
+  public override Task InitializeAsync() => Task.CompletedTask;
+
   private async Task Configure() => await SetUp(options => {
     options.Set(CommonOptionBag.ExtendedNewtypeBases, true);
     options.Set(CommonOptionBag.GeneralNewtypes, true);
     options.Set(CommonOptionBag.TypeSystemRefresh, true);
     options.Set(ProjectManager.Verification, VerifyOnMode.Never);
+    options.Set(CommonOptionBag.UseStandardLibraries, false);
+    options.ProverOptions.Add("SOLVER=noop");
   });
 
   private async Task AssertResolution(TextDocumentItem document, bool succeeds, string? message = null) {
@@ -67,19 +71,19 @@ public class ExtendedNewtypeCachingTest : ClientBasedLanguageServerTest {
     var directory = GetFreshTempPath();
     await CreateOpenAndWaitForResolve(EnabledProject, Path.Combine(directory, DafnyProject.FileName));
     const string use = " method NeedDefault<T(0)>() {} method Use() { NeedDefault<N>(); }";
-    var current = "newtype N = ORDINAL" + use;
+    var current = "datatype D = D newtype N = D" + use;
     var document = await CreateOpenAndWaitForResolve(current, Path.Combine(directory, "witness.dfy"));
     await AssertResolution(document, true);
     for (var repetition = 0; repetition < 2; repetition++) {
-      var updated = "newtype N = ORDINAL witness *" + use;
+      var updated = "datatype D = D newtype N = D witness *" + use;
       ApplyChange(ref document, new Range(0, 0, 0, current.Length), updated);
       current = updated;
       await AssertResolution(document, false, "support auto-initialization");
-      updated = "newtype N = o: ORDINAL | true witness 0" + use;
+      updated = "datatype D = D newtype N = d: D | true witness D" + use;
       ApplyChange(ref document, new Range(0, 0, 0, current.Length), updated);
       current = updated;
       await AssertResolution(document, true);
-      updated = "newtype N = ORDINAL" + use;
+      updated = "datatype D = D newtype N = D" + use;
       ApplyChange(ref document, new Range(0, 0, 0, current.Length), updated);
       current = updated;
       await AssertResolution(document, true);
