@@ -13,7 +13,7 @@ import types
 
 ROOT = Path(__file__).resolve().parents[2]
 SEALED = ROOT / '.github/review/real-smt-capture'
-SOURCE_SEAL = '3589db0edcf63e94808a2b254fae0e13b3d6d8f7ffb7948e5604b7ec3f336da4'
+SOURCE_SEAL = 'fadf15e7a1680e197892223fd8a68467092a17a023e49ebc88d2d9c96d6b0018'
 MAX_SOURCE = 1024 * 1024
 
 
@@ -43,7 +43,7 @@ def source_snapshot():
     raw = captured_regular(SEALED/'source-manifest.json',65536)
     require(hashlib.sha256(raw).hexdigest() == SOURCE_SEAL, 'Approved diagnostic source seal differs')
     manifest = json.loads(raw)
-    require(manifest['schemaVersion'] == 1 and manifest['diagnosticOnly'] is True and len(manifest['files']) == 19,
+    require(manifest['schemaVersion'] == 1 and manifest['diagnosticOnly'] is True and len(manifest['files']) == 20,
       'Approved diagnostic source inventory differs')
     captured = {}; total = 0
     for name,entry in manifest['files'].items():

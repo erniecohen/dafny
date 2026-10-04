@@ -236,3 +236,132 @@ class ArchiveControls(unittest.TestCase):
 
 
 if __name__ == '__main__': unittest.main()
+
+
+# Five controls use only coordinator-owned FIFOs/data. The sixth runs one fixed
+# disposable Python child (no verifier/worker/solver), with expected owned-pidfd
+# timeout cleanup. Its poisoned receipt must contain zero residual children.
+import hashlib
+import json
+import os
+import resource
+import sys
+import time
+from unittest import mock
+
+sink_module=types.ModuleType('trace_sink_tested')
+sink_module.__file__=str(Path(__file__).with_name('trace-sink.py'))
+exec(compile(Path(sink_module.__file__).read_bytes(),sink_module.__file__,'exec'),sink_module.__dict__)
+owned_module=types.ModuleType('trace_sink_owned_tested')
+owned_module.__file__=str(Path(__file__).with_name('owned-process.py'))
+exec(compile(Path(owned_module.__file__).read_bytes(),owned_module.__file__,'exec'),owned_module.__dict__)
+
+
+class TraceSinkControls(unittest.TestCase):
+    def test_fragmented_fifo_bytes_preserve_order_and_wait_for_owned_exit(self):
+        with tempfile.TemporaryDirectory() as directory:
+            sink=sink_module.TraceSink(Path(directory).resolve()/'trace',16)
+            writer=os.open(sink.fifo,os.O_WRONLY|os.O_NONBLOCK)
+            try:
+                os.write(writer,b'ab');sink.pump()
+                os.write(writer,b'cde');sink.pump()
+            finally:os.close(writer)
+            sink.pump()
+            self.assertFalse(sink.complete(False,time.monotonic()+10))
+            self.assertTrue(sink.complete(True,time.monotonic()+10))
+            self.assertEqual(sink.path.read_bytes(),b'abcde')
+            self.assertEqual(sink.receipt()['completeTraceSha256'],hashlib.sha256(b'abcde').hexdigest())
+            self.assertFalse(sink.fifo.exists())
+            sink.abort();sink.pump()
+            self.assertTrue(sink.receipt()['complete'])
+
+    def test_exact_byte_cap_requires_nonempty_eof_and_natural_completion(self):
+        with tempfile.TemporaryDirectory() as directory:
+            sink=sink_module.TraceSink(Path(directory).resolve()/'trace',8)
+            writer=os.open(sink.fifo,os.O_WRONLY|os.O_NONBLOCK)
+            try:
+                os.write(writer,b'12345678');sink.pump()
+                self.assertFalse(sink.complete(True,time.monotonic()+10))
+            finally:os.close(writer)
+            sink.pump()
+            self.assertTrue(sink.complete(True,time.monotonic()+10))
+            self.assertEqual(sink.receipt()['prefixBytes'],8)
+            self.assertFalse(sink.receipt()['overflowObserved'])
+            self.assertEqual(sink.receipt()['prefixSha256'],sink.receipt()['completeTraceSha256'])
+
+    def test_one_byte_and_large_block_overflow_never_write_beyond_cap(self):
+        for data in [b'123456789',b'x'*1024]:
+            with self.subTest(bytes=len(data)),tempfile.TemporaryDirectory() as directory:
+                sink=sink_module.TraceSink(Path(directory).resolve()/'trace',8)
+                writer=os.open(sink.fifo,os.O_WRONLY|os.O_NONBLOCK)
+                try:os.write(writer,data)
+                finally:os.close(writer)
+                with self.assertRaisesRegex(sink_module.SinkError,'byte cap'):sink.pump()
+                first=sink.failure;sink.abort();sink.pump();sink.abort()
+                self.assertEqual(sink.failure,first)
+                self.assertEqual(sink.path.read_bytes(),data[:8])
+                self.assertEqual(sink.receipt()['prefixBytes'],8)
+                self.assertEqual(sink.receipt()['observedBytes'],9)
+                self.assertTrue(sink.receipt()['overflowObserved'])
+                self.assertFalse(sink.complete(True,time.monotonic()+10))
+                self.assertIsNone(sink.receipt()['completeTraceSha256'])
+                self.assertFalse(sink.fifo.exists())
+
+    def test_empty_unconnected_and_expired_sinks_never_complete(self):
+        with tempfile.TemporaryDirectory() as directory:
+            sink=sink_module.TraceSink(Path(directory).resolve()/'trace',8)
+            try:
+                sink.pump();self.assertFalse(sink.complete(True,time.monotonic()+10))
+                writer=os.open(sink.fifo,os.O_WRONLY|os.O_NONBLOCK)
+                try:
+                    os.write(writer,b'a');sink.pump()
+                    self.assertFalse(sink.complete(True,time.monotonic()+10))
+                finally:os.close(writer)
+                sink.pump()
+                with self.assertRaisesRegex(sink_module.SinkError,'deadline'):sink.complete(True,time.monotonic()-1)
+                self.assertFalse(sink.receipt()['complete'])
+            finally:sink.abort()
+
+    def test_read_write_and_fifo_identity_faults_close_without_hiding_first_failure(self):
+        for kind in ['read','write','identity']:
+            with self.subTest(fault=kind),tempfile.TemporaryDirectory() as directory:
+                sink=sink_module.TraceSink(Path(directory).resolve()/'trace',8)
+                writer=os.open(sink.fifo,os.O_WRONLY|os.O_NONBLOCK)
+                try:os.write(writer,b'a')
+                finally:os.close(writer)
+                if kind=='identity':
+                    sink.fifo.unlink();os.mkfifo(sink.fifo,0o600)
+                    context=mock.patch.object(sink_module.os,'read',wraps=os.read)
+                else:context=mock.patch.object(sink_module.os,kind,side_effect=OSError('injected-'+kind))
+                with context,self.assertRaises(sink_module.SinkError):sink.pump()
+                first=sink.failure;sink.abort();sink.pump();sink.abort()
+                self.assertEqual(sink.failure,first)
+                self.assertTrue(sink.closed)
+                self.assertIsNone(sink.reader);self.assertIsNone(sink.target)
+                self.assertFalse(sink.complete(True,time.monotonic()+10))
+                self.assertIsNone(sink.receipt()['completeTraceSha256'])
+
+    def test_owned_nonverifier_writer_timeout_remains_poisoned_and_reaped(self):
+        ownership=owned_module.enable_subreaper()
+        before=resource.getrlimit(resource.RLIMIT_FSIZE)
+        with tempfile.TemporaryDirectory() as directory:
+            sink=sink_module.TraceSink(Path(directory).resolve()/'trace',64)
+            # Fixed source-only fixture: write a small prefix, then hold the FIFO.
+            # This child has no descendants and invokes no verifier or solver.
+            command=[sys.executable,'-B','-c',
+              'import os,sys,time;f=os.open(sys.argv[1],os.O_WRONLY);os.write(f,b"held");time.sleep(30)',str(sink.fifo)]
+            try:
+                with (Path(directory)/'child.log').open('xb') as log:
+                    row=owned_module.run_owned(command,log,{},1,io_pump=sink.pump,io_complete=sink.complete,io_abort=sink.abort)
+                self.assertFalse(row['passed']);self.assertTrue(row['poisoned'])
+                self.assertFalse(row['ioCompleted']);self.assertGreaterEqual(row['signalCount'],1)
+                self.assertEqual(row['remainingDirectChildren'],[])
+                self.assertEqual(owned_module.child_ids(os.getpid()),[])
+                self.assertTrue(all(x['exitObserved'] and x['reaped'] for x in row['ownedProcesses']))
+                self.assertEqual(sink.receipt()['prefixBytes'],4)
+                self.assertFalse(sink.receipt()['complete']);self.assertIsNone(sink.receipt()['completeTraceSha256'])
+                self.assertEqual(resource.getrlimit(resource.RLIMIT_FSIZE),before)
+                print('SINK_OWNED_NONVERIFIER_TIMEOUT='+json.dumps({'ownership':ownership,'stage':row,'sink':sink.receipt()},sort_keys=True),flush=True)
+            finally:
+                sink.abort()
+                if owned_module.child_ids(os.getpid()):owned_module.drain_exclusive_children(10)

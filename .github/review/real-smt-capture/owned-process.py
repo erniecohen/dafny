@@ -112,7 +112,8 @@ def pin_owned(pid, parent_pin, adopted=False):
         raise
 
 
-def run_owned(command, log, env, timeout, reject_descendants=False, observe=None, check_bounds=None):
+def run_owned(command, log, env, timeout, reject_descendants=False, observe=None, check_bounds=None,
+              io_pump=None, io_complete=None, io_abort=None):
     global cleanup_active, current_fault
     owner = identity(os.getpid())
     if child_ids(owner['pid']):
@@ -128,6 +129,8 @@ def run_owned(command, log, env, timeout, reject_descendants=False, observe=None
     process = None
     root_pid = None
     failures = result['failures']
+    io_broken = io_aborted = io_completed = False
+    result['ioCompletionRequired'] = io_complete is not None
 
     def fault(message):
         result['poisoned'] = True
@@ -135,6 +138,36 @@ def run_owned(command, log, env, timeout, reject_descendants=False, observe=None
             failures.append(str(message)[:4096])
         elif failures[-1] != 'failure-ledger-bound':
             failures[-1] = 'failure-ledger-bound'
+
+    def abort_io():
+        nonlocal io_aborted
+        if io_aborted: return
+        io_aborted = True
+        if io_abort is not None:
+            try: io_abort()
+            except BaseException as error: fault('I/O abort: '+type(error).__name__+': '+str(error))
+
+    def pump_io():
+        nonlocal io_broken
+        if io_pump is None or io_broken: return
+        try: io_pump()
+        except BaseException as error:
+            io_broken = True
+            fault('I/O pump: '+type(error).__name__+': '+str(error))
+            abort_io()
+
+    def complete_io(done):
+        nonlocal io_broken,io_completed
+        if io_complete is None: return True
+        if io_broken or failures: return False
+        try:
+            io_completed = bool(io_complete(done,started+timeout))
+            return io_completed
+        except BaseException as error:
+            io_broken = True
+            fault('I/O completion: '+type(error).__name__+': '+str(error))
+            abort_io()
+            return False
 
     def register(pid, parent_pin, adopted=False):
         nonlocal root_captured
@@ -158,8 +191,10 @@ def run_owned(command, log, env, timeout, reject_descendants=False, observe=None
         if entry['isRoot']:
             root_captured = True
         owned[pid] = entry
+        pump_io()
         if observe is not None:
             observe(entry)
+        pump_io()
         if adopted:
             result['subreaperAdoptionRequired'] = True
         if reject_descendants and not entry['isRoot']:
@@ -167,6 +202,7 @@ def run_owned(command, log, env, timeout, reject_descendants=False, observe=None
         return entry
 
     def scan():
+        pump_io()
         # The coordinator is an exclusive subreaper and spawns only this Popen
         # during the scope. Newly adopted direct children therefore belong to it.
         for pid in child_ids(owner['pid']):
@@ -180,6 +216,7 @@ def run_owned(command, log, env, timeout, reject_descendants=False, observe=None
                 continue
             if observe is not None:
                 observe(entry)
+            pump_io()
             actual = identity(entry['identity']['pid'])
             if actual['startTime'] != entry['identity']['startTime']:
                 raise RuntimeError('Live owned process identity changed')
@@ -211,10 +248,14 @@ def run_owned(command, log, env, timeout, reject_descendants=False, observe=None
             register(pid, owner, adopted=pid != root_pid)
 
     def reap():
+        pump_io()
         # Popen owns/reaps its root. Other identities can become direct children
         # through this subreaper; waitpid does not signal or change an unowned PID.
         for pid, entry in list(owned.items()):
             if entry["isRoot"]:
+                if process is not None and process.poll() is not None:
+                    entry['reaped'] = True
+                    entry['exitObserved'] = exited(entry['pidfd'])
                 continue
             if exited(entry['pidfd']):
                 entry['exitObserved'] = True
@@ -226,6 +267,10 @@ def run_owned(command, log, env, timeout, reject_descendants=False, observe=None
                     # The captured owned parent may have reaped it naturally.
                     if pid not in child_ids(owner['pid']):
                         entry['reaped'] = True
+
+    def owned_done():
+        if process is None or process.poll() is None or child_ids(owner['pid']): return False
+        return all(exited(entry['pidfd']) and entry['reaped'] for entry in owned.values()) and                all(entry['exitObserved'] and entry['reaped'] for entry in retired)
 
     def signal_owned(entry):
         if exited(entry['pidfd']):
@@ -274,7 +319,7 @@ def run_owned(command, log, env, timeout, reject_descendants=False, observe=None
         if root['identity']['group'] != root_pid or root['identity']['session'] != root_pid:
             raise RuntimeError('The owned root did not create its isolated session')
         while process.poll() is None:
-            scan()
+            pump_io(); scan(); pump_io()
             if check_bounds is not None:
                 check_bounds()
             if failures:
@@ -292,16 +337,22 @@ def run_owned(command, log, env, timeout, reject_descendants=False, observe=None
             scan(); reap()
             if check_bounds is not None:
                 check_bounds()
-            if all(exited(entry['pidfd']) for entry in owned.values()) and not child_ids(owner['pid']):
+            pump_io()
+            if owned_done() and complete_io(True):
                 break
             time.sleep(0.02)
         if process.poll() is None or any(not exited(e['pidfd']) for e in owned.values()) or child_ids(owner['pid']):
             fault('Owned processes survived normal stage completion')
+        pump_io()
+        if io_complete is not None and not complete_io(owned_done()):
+            fault('Owned I/O did not complete within the normal stage deadline')
     except BaseException as error:
         fault(type(error).__name__ + ': ' + str(error))
     finally:
         cleanup_active = True
+        pump_io()
         if failures:
+            abort_io()
             # Stop known roots/descendants before taking additional ownership scans,
             # so an inspection failure cannot leave the process running and forking.
             for entry in list(owned.values()):
@@ -309,6 +360,7 @@ def run_owned(command, log, env, timeout, reject_descendants=False, observe=None
                 except Exception as error: fault('signal: ' + type(error).__name__ + ': ' + str(error))
             deadline = time.monotonic() + 10
             while time.monotonic() < deadline:
+                pump_io()
                 try: scan()
                 except Exception as error: fault('drain-scan: ' + type(error).__name__ + ': ' + str(error))
                 for entry in list(owned.values()):
@@ -339,6 +391,14 @@ def run_owned(command, log, env, timeout, reject_descendants=False, observe=None
             result['remainingDirectChildren'] = child_ids(owner['pid'])
             if result['remainingDirectChildren']: fault('Direct children remain after owned cleanup')
         except Exception as error: fault('final-child-inspection: ' + type(error).__name__ + ': ' + str(error))
+        pump_io()
+        try:
+            if io_complete is not None and not complete_io(owned_done()):
+                fault('Owned I/O completion failed before stage acceptance')
+        except BaseException as error:
+            fault('Final I/O ownership: '+type(error).__name__+': '+str(error))
+        finally: abort_io()
+        result['ioCompleted'] = io_completed and not io_broken
         result["ownedProcesses"].extend(retired)
         for entry in owned.values():
             entry['exitObserved'] = exited(entry['pidfd'])
@@ -346,7 +406,8 @@ def run_owned(command, log, env, timeout, reject_descendants=False, observe=None
             result['ownedProcesses'].append({key: value for key, value in entry.items() if key != 'pidfd'})
             os.close(entry['pidfd'])
         result['passed'] = (result['exitCode'] == 0 and not failures and result['signalCount'] == 0 and
-                            result['remainingDirectChildren'] == [] and all(e['exitObserved'] for e in result['ownedProcesses']))
+                            result['remainingDirectChildren'] == [] and all(e['exitObserved'] for e in result['ownedProcesses']) and
+                            (io_complete is None or result['ioCompleted']))
         result['safetyElapsedSeconds'] = time.monotonic() - started
         current_fault = None
         cleanup_active = False

@@ -9,16 +9,16 @@
       "sha256": "e4e08097d38549ad31ec247c6a6786e6e80d404012db232baacb63140f85a704"
     },
     "DESIGN.md": {
-      "bytes": 20952,
-      "sha256": "db529766ae68ab6ffe16312f7454a146de9d8c54c1c5408971e309fe5937465d"
+      "bytes": 23157,
+      "sha256": "bfa39762f53b4e10871fac77307feaa368383c22aa961981cd3443e9182f196b"
     },
     "Program.cs": {
       "bytes": 9160,
       "sha256": "95c5b77198dfacb5a2cb51d868effcf01895d20147cc4fee03103dce22342231"
     },
     "README.md": {
-      "bytes": 6770,
-      "sha256": "101bc57d7601aa78ca2361fa6296bc1a57d72b0dd5dde43679e4851c9aba591a"
+      "bytes": 8131,
+      "sha256": "aeae1a84eed62af67cf057253bad3f992ca4fb4d85ec95c31aa8d007fc2a9bf6"
     },
     "Replay.csproj": {
       "bytes": 648,
@@ -61,24 +61,28 @@
       "sha256": "2375af81c8b1bbda28208a145bdfb37da3868856bcd2ce0e2aac721306c7d1e7"
     },
     "coordinator.py": {
-      "bytes": 24127,
-      "sha256": "f7d59899e3fb1b692ea140df7a6abaf31964a946535f848680bc7bcc473edd85"
+      "bytes": 27000,
+      "sha256": "09764f6d15561e6171d02f0ef8f5d6095853e659d0f23cb2756f6d84b9554225"
     },
     "gate.py": {
       "bytes": 14023,
-      "sha256": "f42ddd46fbb6203a61f2482a3fc2cb8b64c59b9330186572b0d96f1abb9ba289"
+      "sha256": "faf6a62f3934d5f27c56618536a3998e280916997caa6a768b4f287b117d635d"
     },
     "inputs.json": {
       "bytes": 3727,
       "sha256": "7b08e4b29bf8f5b6d5756a8311bfb3bd4ecc2a5b3a1275c22a056af2a6a41511"
     },
     "owned-process.py": {
-      "bytes": 18055,
-      "sha256": "3d26a5bbd4e02d837087185a6a25b757027b642798019cda3271c6e7b5713c8e"
+      "bytes": 20502,
+      "sha256": "a323322aec4d2df68d52ef73c3bea35009311ae2cf1d03312c1ad07a7f334a6c"
     },
     "test_capture.py": {
-      "bytes": 12728,
-      "sha256": "6fc69023afb2fb98965cb8ac4c32feec397c4ead0d483f763ad702fd6b51e05a"
+      "bytes": 20293,
+      "sha256": "9c46de53c198fa931187d62d96a3cb408f7f2926cc298a5e748f2bdc77dceeb8"
+    },
+    "trace-sink.py": {
+      "bytes": 9590,
+      "sha256": "bc86d00c528230a74c7ef2032878eb93a76c3dd6a71e7105da766825ba34f758"
     }
   }
 }

@@ -79,7 +79,7 @@ Every scope uses bounded owned-process cleanup. Only validated pidfds are signal
 by these coordinators; any required signal poisons its stage. Existing worker/client
 cleanup code is preserved, and its group-kill calls are distinct observations. The
 tracer's exit-kill option is an additional owned-tracee backstop. Parser cap overflow
-or cleanup faults cannot establish capture completeness. The 64MiB file cap and
+or cleanup faults cannot establish capture completeness. The 64MiB retained-trace cap and
 tracing overhead are diagnostic changes; observed outcomes and wall times cannot
 establish original execution or cost parity.
 
@@ -90,14 +90,33 @@ executable epochs, including unsupported `execveat` boundaries. They do
 not invoke a solver or worker. Six archive admission controls additionally cover
 both pinned layouts, late unknown roots with no extraction output, unsafe paths and
 modes, canonical duplicates, file ancestry and all admission bounds. The outer
-wrapper runs the fixed combined 27-control denominator before any traced replay.
-No control has been executed at this repaired source checkpoint.
+wrapper now requires a fixed combined 33-control denominator. The six new sink
+methods check fragmented order, exact cap, overflow, empty/non-EOF/deadline states,
+read/write/identity faults and one fixed non-verifier Python writer's owned timeout.
+That last negative control requires its stage to remain poisoned, its pidfd cleanup
+to be recorded, and no residual children. The other five invoke no child process.
+The new six controls have not been executed; historical run37242135132 passed the
+previous27, then stopped before any worker/solver launched.
 
 `DESIGN.md` gives the English mathematical and observational argument. The source
-seal declares all 19 utility/input files; the enclosing reviewed Git/CI receipt
+seal declares all 20 utility/input files; the enclosing reviewed Git/CI receipt
 binds that declaration. It is no signed build or runtime attestation. Workflow
 routing is enabled by the enclosing scratch-only review workflow. The first
 execution, run 37240724688, stopped at the original archive's legitimate
 `Binaries/net8.0` root: the former validator admitted only `out/b3-native-compile`.
 It ran zero parser controls, workers or queries. Its immutable failure receipt
 remains historical evidence; this layout repair requires a new reviewed execution.
+
+
+The new sink uses one fresh mode0600 FIFO for strace's output and one retained
+regular trace, with no extra executable or inherited descriptor. A bounded pump
+reads at most256KiB per call in the same coordinator thread. It retains at most
+64MiB and reads at most one extra sentinel byte; overflow and I/O faults poison the
+owned stage and stop later replays. A prefix hash/length is distinct from a complete
+trace hash. Natural completeness requires nonempty exact bytes, EOF after every
+owned identity exits/is reaped, a matching final file hash and completion inside the
+existing40s stage deadline. Backpressure can change instrumented timing; no cost or
+acceptance parity follows. No resource limit is set: inherited FSIZE is recorded
+before/after, and a mismatch fails admission rather than changing runtime options.
+The pinned tracer closes its shared log before replay exec. Incomplete prefixes
+never enter complete FD/I/O analysis.

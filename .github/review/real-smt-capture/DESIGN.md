@@ -107,7 +107,7 @@ implementation:
 ```
 strace --kill-on-exit -I 1 -f -ttt -yy -xx -s 256 \
   -e trace=%process,read,readv,write,writev,pipe,pipe2,dup,dup2,dup3,fcntl,close,close_range \
-  -e read=0 -e write=1 -o NEW_TRACE_FILE -- PINNED_DOTNET REPLAY_HOST --request FROZEN_REQUEST
+  -e read=0 -e write=1 -o NEW_PRIVATE_FIFO -- PINNED_DOTNET REPLAY_HOST --request FROZEN_REQUEST
 ```
 
 The official strace manual describes following children, descriptor decoding and
@@ -119,18 +119,48 @@ tracee PID association, including root records. Missing association fails captur
 [manual](https://man7.org/linux/man-pages/man1/strace.1.html),
 [v6.8 option implementation](https://github.com/strace/strace/blob/v6.8/src/strace.c).
 
-Keep one trace file per original request rather than unbounded per-thread files.
-Apply a 64MiB hard regular-file size cap to this diagnostic process scope and a
-bounded trace-growth monitor; retain an explicit truncation/cap failure. Also cap
-parsed syscall count, thread/process identities, reconstructed streams (1MiB each),
-receipt size and total request count before allocation. No silently truncated trace
-can qualify capture. These are instrumentation-only limits. They do not replace or
-increase the existing worker's 20-second whole-request deadline or 200k RU ceiling.
-The outer safety deadline permits only bounded cleanup after that worker deadline.
-The regular-file cap is inherited diagnostic instrumentation and must be recorded
-as such; it provides no equivalence claim about the original execution environment.
-Tracing changes scheduling and adds overhead: instrumented outcomes and elapsed time
-cannot establish original cost parity or repair original acceptance.
+Keep one retained trace per original request, with no per-thread fanout. Use
+one newly created mode0600 FIFO as the tracer output and one coordinator-owned
+nonblocking reader. Pin lstat/fstat type/device/inode; create the retained regular
+file exclusively. The read endpoint has CLOEXEC and subprocess close_fds excludes
+it. Strace6.8 closes its shared_log before replay exec (strace.c1475–1476/1646), so
+the output endpoint is not an added application descriptor. No output shell,
+collector executable, wrapper, thread or solver/runtime option is introduced.
+
+Pump in the existing ownership loop before/after observation, normal waits, grace,
+and failure drain. Each invocation reads at most256KiB in <=64KiB blocks. The FIFO
+provides bounded backpressure while the coordinator inspects identities/images.
+Retain <=64MiB and read at most one sentinel byte above that cap. Preserve an exact
+rolling prefix hash/length separately from the complete trace hash. Overflow,
+identity/read/write/disk faults poison the owned stage, close only coordinator-owned
+FDs and stop subsequent replays. Failure callbacks are idempotent and retain their
+first error; the existing validated pidfd drain still runs and any required signal
+remains failure. A truncated prefix never enters complete capture analysis.
+
+Complete I/O requires nonempty data and EOF only after the tracer/all registered
+owned identities have naturally exited and been reaped, within the original40s
+stage deadline. A read-zero before any writer connects does not qualify. Validate
+the final regular-file bytes against the rolling hash, flush/close and remove only
+the pinned FIFO before recording completeness. A sink-completion failure participates
+in the owned-stage passed calculation, rather than being a separate optional check.
+Parsed syscall/identity bounds and1MiB reconstructed streams remain unchanged.
+
+Do not set RLIMIT_FSIZE. Record inherited soft/hard limits before/after each stage
+and diagnostic; a mismatch fails rather than changing runtime switches. Historical
+run37242135132 retained only39348trace bytes, then .NET8.0.31 startup died with
+SIGXFSZ before worker/solver exec. The earlier scope-wide64MiB limit is inconsistent
+with the runtime's doublemapper memfd ftruncate2TiB (v8.0.31 doublemapping.cpp29,
+54–61). The causal syscall was outside the captured filter, so the diagnosis remains
+source-backed inference, not a captured attribution. See [pinned runtime source](https://github.com/dotnet/runtime/blob/v8.0.31/src/coreclr/minipal/Unix/doublemapping.cpp)
+and [runtime issue117819](https://github.com/dotnet/runtime/issues/117819).
+
+The sink only caps diagnostic output. It does not replace/increase the existing
+worker20s whole-request deadline or200k RU ceiling. Backpressure/tracing change
+scheduling, so instrumented outcomes cannot repair original acceptance or establish
+original cost parity. Six new sink control methods join the unchanged27 for a
+projected33. Five use only bounded FIFO data/fault injection; one fixed non-verifier
+Python writer intentionally times out and must retain a poisoned pidfd-cleanup
+receipt with zero residual children. No new control has been executed yet.
 
 ## Ownership, exec identity and FD direction
 

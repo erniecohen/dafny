@@ -33,13 +33,15 @@ require the fixed runtime's stable serialized buffers, without atomic kernel
 payload attestation. A command error may prevent a later check-sat, whose source attempt must remain
 explicit ToolError. No query, guard, solver option, seed or outcome is rewritten.
 
-This is an unexecuted source checkpoint. Python AST/XML/source-seal checks are
-static evidence only. Twenty-one parser and six archive admission controls, the C# replay build, trace
-qualification and all eight worker cases require a future reviewed CI execution.
+The current FIFO sink delta is an unexecuted source checkpoint. AST/XML/seal checks
+are static only. It preserves the27 prior methods and adds six sink methods for a
+projected33. Source-only sink controls and all eight qualified worker cases require
+future reviewed CI execution. Historical27-control and SDK evidence below belongs
+to the prior archive-repair source, not this new sink.
 The enclosing scratch-only workflow routes the diagnostic. Tracing overhead and file caps are diagnostic
 instrumentation and cannot establish original acceptance or proof cost parity.
-The source seal is `3589db0edcf63e94808a2b254fae0e13b3d6d8f7ffb7948e5604b7ec3f336da4`
-for 19 files; the reviewed Git/CI source identity binds that declaration without
+The source seal is `fadf15e7a1680e197892223fd8a68467092a17a023e49ebc88d2d9c96d6b0018`
+for20files; the reviewed Git/CI source identity binds that declaration without
 claiming a signed origin attestation. The product ledger remains
 `v4.11.0 0e36fadf2a702df121bc9c0fe0b11e43e475e207` because only review tooling and
 documentation change.
@@ -66,3 +68,24 @@ Six archive controls join the unchanged 21 parser controls, making a fixed combi
 denominator of 27. Original requests, worker/library, primitive formulas, projections,
 solver flags, budgets, tracer and ownership checks are unchanged. The former f6
 receipt/seal remains historical; this new seal requires a reviewed fresh run.
+
+
+Public diagnostic [37242135132](https://github.com/erniecohen/dafny/actions/runs/37242135132)
+passed exact archive extraction and27/27 controls, SDK/strace checks, replay build
+and control preparation. Artifact11317412968 is709614311bytes, SHA256
+`f9c5463f786ac8310d5d9f446c968d0618dae10149b7330f6f92aaeae388e13d`.
+Outer receipt is`c9e10805f14a4cec08586f31c79708227d86e704c126e18727cb6c30ddc542d4`,
+archive-gate receipt`40cd8c113c55e694cfdb8cb67be81de9ccd81ae8d7dc15ed1c8e76f5a7635094`,
+capture receipt`71e7ac44d9f8588666ffb73a55f8b7c00826b46da6be6ca698cadf62bf4d6a93`.
+The first original traced replay exited SIGXFSZ during .NET8.0.31 startup. Its trace
+is39348bytes/SHA256`8480d3068d938e07f3dc56f2105f389d57357aaec742acbda060fb4bb36b34e8`.
+No worker/solver exec, result or query was produced; the remaining seven cases did
+not run. All supervisor stages used zero signals and left no residual children;
+the traced stage remained poisoned. This is incomplete diagnostic evidence and
+changes none of the original strict mathematical expectations.
+
+The narrow source repair uses a bounded owned FIFO sink and no resource-limit
+mutation. It keeps Program.cs, baseline packets, worker/library/solver, options and
+budgets unchanged. It records inherited FSIZE, rejects mismatch, distinguishes
+prefix/complete hashes and requires EOF after natural owned exit/reaping inside the
+original40s stage deadline. It introduces no axioms, query or acceptance claim.

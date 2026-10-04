@@ -64,7 +64,7 @@ def load_source(name, digest):
 def seal():
     manifest = json.loads(read(HERE / 'source-manifest.json', 65536))
     require(manifest['schemaVersion'] == 1 and manifest['diagnosticOnly'] is True, 'Source seal schema')
-    expected = {'Program.cs','Replay.csproj','coordinator.py','capture.py','owned-process.py','inputs.json','DESIGN.md','README.md','test_capture.py','gate.py','.gitattributes'}
+    expected = {'Program.cs','Replay.csproj','coordinator.py','capture.py','owned-process.py','inputs.json','DESIGN.md','README.md','test_capture.py','trace-sink.py','gate.py','.gitattributes'}
     expected |= {'baseline/' + x + '-' + y for x in ['real-conversion','real-irrational'] for y in ['unit-0.request.json','unit-0.program.json']}
     expected |= {'baseline/real-universal-unit-' + str(i) + '.' + suffix for i in [0,1] for suffix in ['request.json','program.json']}
     require(set(manifest['files']) == expected, 'Source-sealed inventory differs')
@@ -123,15 +123,36 @@ def live_images(owned, expected, result):
     return observe
 
 
-def stage(owned, rows, name, command, output, env, timeout, observe=None, trace=None):
+def stage(owned, rows, name, command, output, env, timeout, observe=None, trace=None, sink=None, expected_fsize=None):
     log_path = output / (name + '.log')
+    before = tuple(resource.getrlimit(resource.RLIMIT_FSIZE))
+    require(expected_fsize is None or before == expected_fsize, 'Inherited file-size limit changed before stage')
     def bounds():
         require(log_path.stat().st_size <= MAX_LOG, 'Stage log bound')
         if trace is not None and trace.exists(): require(trace.stat().st_size <= MAX_TRACE, 'Trace file bound')
     with log_path.open('xb') as log:
-        receipt = owned.run_owned([str(x) for x in command],log,env,timeout,observe=observe,check_bounds=bounds)
-    receipt.update({'stage':name,'logSha256':sha(read(log_path,MAX_LOG)) if log_path.stat().st_size else None})
+        receipt = owned.run_owned([str(x) for x in command],log,env,timeout,observe=observe,check_bounds=bounds,
+          io_pump=sink.pump if sink else None,io_complete=sink.complete if sink else None,io_abort=sink.abort if sink else None)
+    after = tuple(resource.getrlimit(resource.RLIMIT_FSIZE))
+    receipt.update({'stage':name,'logSha256':None,
+      'inheritedFileSizeLimitBefore':list(before),'inheritedFileSizeLimitAfter':list(after),'fileSizeLimitPreserved':before==after})
+    if before != after:
+        receipt['passed']=False; receipt['poisoned']=True
+        receipt['failures'].append('Inherited file-size limit changed during stage')
+    if sink is not None:
+        receipt['traceSink']=sink.receipt()
+        if not sink.complete_trace or sink.failure is not None:
+            receipt['passed']=False; receipt['poisoned']=True
+            receipt['failures'].append('Trace sink did not finish naturally within the owned stage')
     rows.append(receipt)
+    try:
+        size=log_path.stat().st_size
+        require(size<=MAX_LOG,'Stage log exceeded evidence bound')
+        receipt['logSha256']=sha(read(log_path,MAX_LOG)) if size else None
+        receipt['logCaptureComplete']=True
+    except Exception as error:
+        receipt['passed']=False;receipt['poisoned']=True;receipt['logCaptureComplete']=False
+        receipt['failures'].append('Stage log evidence: '+type(error).__name__+': '+str(error))
     require(receipt['passed'], 'Owned stage failed: ' + name)
     return receipt
 
@@ -147,8 +168,10 @@ def main():
     require(all(x.is_absolute() for x in [args.captured_real_artifacts,args.prerequisite,args.dotnet,args.strace,args.output]), 'All diagnostic paths must be absolute')
     require(not args.output.exists(), 'Diagnostic output must be fresh')
     args.output.mkdir(parents=True)
+    inherited_fsize = tuple(resource.getrlimit(resource.RLIMIT_FSIZE))
     receipt = {'diagnosticOnly':True,'acceptanceClaimed':False,'instrumentedAcceptanceClaimed':False,
-      'stages':[],'cases':[],'mathematicalExpectationsWaived':False,'libraryRebuilt':False,'solverFlagsChanged':False}
+      'stages':[],'cases':[],'mathematicalExpectationsWaived':False,'libraryRebuilt':False,'solverFlagsChanged':False,
+      'inheritedFileSizeLimitBefore':list(inherited_fsize),'globalFileLimitChanged':False}
     owned = None
     try:
         hashes = seal(); manifest = json.loads(read(HERE/'inputs.json',65536))
@@ -156,6 +179,7 @@ def main():
         receipt['sourceSealSha256'] = sha(read(HERE/'source-manifest.json',65536))
         owned = load_source('owned-process.py',hashes['owned-process.py'])
         capture = load_source('capture.py',hashes['capture.py'])
+        sink_module = load_source('trace-sink.py',hashes['trace-sink.py'])
         receipt['ownership'] = owned.enable_subreaper()
         def interrupted(signum, frame):
             if not owned.record_cancellation('Coordinator cancellation signal ' + str(signum)): raise InterruptedError('Coordinator interrupted')
@@ -222,15 +246,15 @@ def main():
         receipt['dotnetExecutableSha256']=sha(read(dotnet)); receipt['straceExecutableSha256']=sha(read(tracer))
         env=filtered_environment(); receipt['environmentKeys']=sorted(env)
         receipt['environmentOverrides']={key:env[key] for key in ['UseSharedCompilation','DOTNET_CLI_TELEMETRY_OPTOUT','DOTNET_NOLOGO']}
-        stage(owned,receipt['stages'],'sdk-version',[dotnet,'--version'],args.output,env,30)
+        stage(owned,receipt['stages'],'sdk-version',[dotnet,'--version'],args.output,env,30,expected_fsize=inherited_fsize)
         require((args.output/'sdk-version.log').read_text().strip().startswith('8.'), 'Require .NET8 SDK')
-        stage(owned,receipt['stages'],'strace-version',[tracer,'--version'],args.output,env,30)
+        stage(owned,receipt['stages'],'strace-version',[tracer,'--version'],args.output,env,30,expected_fsize=inherited_fsize)
         require((args.output/'strace-version.log').read_text().splitlines()[0] == 'strace -- version 6.8',
           'Parser supports reviewed strace6.8 only')
         runner=args.output/'runner'
         require(seal()==hashes,'Diagnostic source changed before SDK build')
         stage(owned,receipt['stages'],'replay-build',[dotnet,'build',HERE/'Replay.csproj','--nologo','-c','Release','-o',runner,
-          '-p:B3CaptureProtocolAssembly='+str(protocol)],args.output,env,240)
+          '-p:B3CaptureProtocolAssembly='+str(protocol)],args.output,env,240,expected_fsize=inherited_fsize)
         require(seal()==hashes,'Diagnostic source changed after SDK build')
         executable=runner/'Replay.dll'
         require(sha(read(runner/'DafnyB3Protocol.dll',32*1024*1024)) == manifest['protocolAssemblySha256'], 'Built replay loaded protocol differs')
@@ -240,19 +264,19 @@ def main():
         runner_hashes={p.name:sha(read(p)) for p in runner_files}
         receipt['runnerFileHashes']=runner_hashes
         controls=args.output/'controls'
-        stage(owned,receipt['stages'],'prepare-controls',[dotnet,executable,'--mode','prepare','--baseline',HERE/'baseline','--output',controls],args.output,env,30)
+        stage(owned,receipt['stages'],'prepare-controls',[dotnet,executable,'--mode','prepare','--baseline',HERE/'baseline','--output',controls],args.output,env,30,expected_fsize=inherited_fsize)
         generated=json.loads(read(controls/'controls.json',65536))['rows']
         require([(x['name'],x['expected'],x['checkIds']) for x in generated] ==
           [(x['name'],x['expected'],x['checkIds']) for x in manifest['exploratory']], 'Exploratory fixture denominator differs')
         cases=[{**x,'path':HERE/x['request'],'exploratory':False} for x in manifest['baseline']]
         cases += [{**x,'path':controls/x['request'],'exploratory':True} for x in generated]
         require(len(cases)==8, 'Fixed diagnostic denominator differs')
-        original_limit=resource.getrlimit(resource.RLIMIT_FSIZE)
-        resource.setrlimit(resource.RLIMIT_FSIZE,(MAX_TRACE,min(original_limit[1],MAX_TRACE) if original_limit[1] != resource.RLIM_INFINITY else MAX_TRACE))
+        require(tuple(resource.getrlimit(resource.RLIMIT_FSIZE))==inherited_fsize, 'Inherited file-size limit changed before replay stages')
         receipt['instrumentationFileCapBytes']=MAX_TRACE
+        receipt['traceTransport']='bounded-private-fifo'
         for case in cases:
             row={'name':case['name'],'exploratory':case['exploratory'],'expected':case['expected'],'captureComplete':False,'mathematicalMatched':False}
-            receipt['cases'].append(row); images=[]
+            receipt['cases'].append(row); images=[]; sink=None
             trace=args.output/(case['name']+'.trace'); result=args.output/(case['name']+'.result.json')
             try:
                 require(seal()==hashes,'Diagnostic source changed before replay')
@@ -262,15 +286,17 @@ def main():
                 for name,digest in package_hashes.items(): require(sha(read(worker/name))==digest, 'Worker changed before replay')
                 require(sha(read(worker/'b3-worker-manifest.json'))==manifest['workerFingerprint'] and sha(read(solver))==manifest['solverSha256'], 'Manifest/solver changed before replay')
                 trace=args.output/(case['name']+'.trace'); result=args.output/(case['name']+'.result.json')
+                sink=sink_module.TraceSink(trace,MAX_TRACE)
                 command=[tracer,'--kill-on-exit','-I','1','-f','-ttt','-yy','-xx','-s','256',
                   '-e','trace=%process,read,readv,write,writev,pipe,pipe2,dup,dup2,dup3,fcntl,close,close_range',
-                  '-e','read=0','-e','write=1','-o',trace,'--',dotnet,executable,'--mode','replay',
+                  '-e','read=0','-e','write=1','-o',sink.fifo,'--',dotnet,executable,'--mode','replay',
                   '--request',case['path'],'--request-sha256',case['requestSha256'],'--worker',worker/'DafnyB3Host.dll',
                   '--dotnet',dotnet,'--expected',case['expected'],'--output',result]
                 ownership=stage(owned,receipt['stages'],case['name'],command,args.output,env,40,
-                  observe=live_images(owned,manifest['solverSha256'],images),trace=trace)
+                  observe=live_images(owned,manifest['solverSha256'],images),trace=trace,sink=sink,expected_fsize=inherited_fsize)
                 verdict=json.loads(read(result,1024*1024)); row['replay']=verdict
                 row['mathematicalMatched']=verdict['mathematicalMatched']; row['actualProofResourceCount']=None
+                require(sink.complete_trace and sink.failure is None, 'Incomplete trace sink cannot enter complete analysis')
                 row['traceSha256']=sha(read(trace,MAX_TRACE)); row['liveImages']=images
                 row['missedDescendantPinObservations']=ownership['transientDescendantObservations']
                 analysis=capture.analyze(read(trace,MAX_TRACE),ownership,images,SOLVER_PATH,manifest['solverSha256'],case['checkIds'],str(worker/'DafnyB3Host.dll'),str(dotnet),
@@ -282,11 +308,15 @@ def main():
             except Exception as error:
                 row['failure']=type(error).__name__+': '+str(error)
                 row['liveImages']=images
-                if any(not x['passed'] for x in receipt['stages']):
+                if isinstance(error,sink_module.SinkError) or (sink is not None and sink.failure is not None) or any(not x['passed'] for x in receipt['stages']):
                     receipt['executionPoisoned']=True; break
             finally:
-                if trace.exists() and 0 < trace.stat().st_size <= MAX_TRACE:
-                    row['traceSha256']=sha(read(trace,MAX_TRACE))
+                if sink is not None:
+                    sink.abort(); row['traceSink']=sink.receipt()
+                    row['retainedTracePrefixSha256']=row['traceSink']['prefixSha256']
+                    row['retainedTracePrefixBytes']=row['traceSink']['prefixBytes']
+                if sink is not None and trace.exists() and 0 < trace.stat().st_size <= MAX_TRACE:
+                    if sink.complete_trace and sink.failure is None: row['traceSha256']=sha(read(trace,MAX_TRACE))
                     try:
                         observations=capture.weak_observations(read(trace,MAX_TRACE),SOLVER_PATH)
                         for index,observation in enumerate(observations):
@@ -306,6 +336,7 @@ def main():
                 require(sha(read(worker/'b3-worker-manifest.json',65536))==manifest['workerFingerprint'], 'Worker manifest changed after replay')
                 require(sha(read(case['path'],1024*1024))==case['requestSha256'], 'Exact request changed after replay')
                 require(seal()==hashes,'Diagnostic source changed after replay')
+                require(tuple(resource.getrlimit(resource.RLIMIT_FSIZE))==inherited_fsize, 'Inherited file-size limit changed after replay')
         require(seal()==hashes, 'Diagnostic source changed after execution')
         receipt['diagnosticDenominatorComplete']=len(receipt['cases'])==8
         receipt['allCapturesComplete']=len(receipt['cases'])==8 and all(x['captureComplete'] for x in receipt['cases'])
@@ -313,6 +344,10 @@ def main():
     except Exception as error:
         receipt['failure']=type(error).__name__+': '+str(error)
     finally:
+        receipt['inheritedFileSizeLimitAfter']=list(resource.getrlimit(resource.RLIMIT_FSIZE))
+        if tuple(receipt['inheritedFileSizeLimitAfter']) != inherited_fsize:
+            receipt.setdefault('failure','Inherited file-size limit changed during diagnostic')
+            receipt['environmentMismatch']=True
         if owned is not None:
             try:
                 remaining=owned.child_ids(os.getpid()); receipt['remainingDirectChildren']=remaining
