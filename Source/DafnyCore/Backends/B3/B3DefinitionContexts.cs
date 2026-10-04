@@ -138,6 +138,7 @@ public static class B3DefinitionContexts {
     Ir.Assign assign => new object[] { assign.Value }, Ir.Check check => new object[] { check.Condition },
     Ir.Assume assume => new object[] { assume.Condition }, Ir.Application application => application.Arguments,
     Ir.Operation operation => operation.Arguments,
+    Ir.BitvectorOperation operation => operation.Arguments,
     Ir.Quantifier quantifier => new object[] { quantifier.Body }.Concat(quantifier.Patterns.SelectMany(pattern => pattern)),
     Ir.Let let => new object[] { let.Value, let.Body }, Ir.Label label => new object[] { label.Body },
     _ => Array.Empty<object>()

@@ -374,3 +374,51 @@ and add no synthetic background equation. This complements the existing local
 opaque controls and the five fresh-worker isolation launches, including two
 concurrent launches with permissive and restrictive masks. The imported controls
 remain pending until their exact worker receipts are inspected.
+
+
+## Schema-3 native word child traversal
+
+Both definition-demand discovery and context node accounting traverse every
+`Ir.BitvectorOperation.Arguments` child. A normalized native `IntToBitvector`
+whose integer argument calls an eligible guarded literal owner now contributes
+that same owner demand to `SelectDefinitions`. This does not recognize a new
+definition shape: the exact active source-owned formula, whole guards, pinned
+visibility analysis and must-availability sufficient guard remain required.
+Every loaded formula was already an eligible source premise for that original
+check. In a fixed source model, its truth therefore justifies selecting it even
+when the demanded call sits under a native word operation. Stable UF symbols,
+ordinary context, source check identities and learning order remain unchanged.
+This strengthens the previously incomplete target context only by those already
+reviewed complete guarded source formulas; it introduces no wrapper equation or
+new semantic recognition rule.
+
+Context traversal also counts nested word expressions in the original body and
+selected formulas. The existing per-program node/depth bound and aggregate
+replay estimate therefore cover those actual expression children. This tightens
+admission; it changes no retained expression or source premise. The 16-context,
+200,000 aggregate-node, 64 MiB aggregate-byte and original-unit deadline limits
+remain unchanged. `Replay` and `ValidatePartition` retain their exact contracts.
+Unsigned F/native N/standalone A wrapper recognition is outside this repair.
+
+`B3WordContextTraversalTests` adds two typed-Boogie structural controls and three
+aggregate-bound cases (five focused cases). The guarded demand under native
+int-to-word conversion loads its complete source implication only in the visible
+context. Its hidden replay retains the prior learned word equality, stable owner
+application and the original false goal. A missing-guard control checks that
+selection does not manufacture that guard or erase the false goal. These are
+structural source and replay checks, not worker-verdict evidence.
+
+The boundary inputs use balanced bv1 expression trees and eight distinct masks.
+A body contains one Block, one Assume of a word comparison and eight Check(true)
+goals. If the tree has n nodes, the body has n+20 nodes, the eight original
+identities add eight, and three one-node true formulas add six including their
+axiom nodes. Thus the conservative admission estimate is `8 * (n + 34)`.
+The ordinary premise says the word is at most 1 and is satisfiable for every bv1
+value. Tree sizes 24,965, 24,966 and 24,967 give estimates 199,992, 200,000 and
+200,008. The first two must be admitted, the last rejected specifically by the
+aggregate-node check. Each input separately satisfies protocol node/depth
+validation, and its message bytes and aggregate byte estimate have more than
+half their limits free. This distinguishes node accounting from a byte-limit
+rejection; the admission estimate is not a measured runtime node or resource
+count. These edited controls are source-only until executed on their exact
+compiler/library/solver pins.
