@@ -46,4 +46,8 @@
 // RUN: %exits-with 0 %baredafny verify "%S/Inputs/github-issue-36-positive.dfy" --solver-path "%review-z3-4.12.1" --additional-axioms:true --type-system-refresh:true --cores:1 --resource-limit:200000 --verification-time-limit:0 --show-snippets:false --use-basename-for-filename --error-limit:0 >> "%t"
 // RUN: echo "negative (axioms:true, Z3 4.12.1, type-system-refresh:true)" >> "%t"
 // RUN: %exits-with 4 %baredafny verify "%S/Inputs/github-issue-36-negative.dfy" --solver-path "%review-z3-4.12.1" --additional-axioms:true --type-system-refresh:true --cores:1 --resource-limit:200000 --verification-time-limit:0 --show-snippets:false --use-basename-for-filename --error-limit:0 >> "%t"
+// RUN: echo "runtime (type-system-refresh:false)" >> "%t"
+// RUN: %exits-with 0 %baredafny run "%S/Inputs/github-issue-36-runtime.dfy" --target:cs --solver-path "%review-z3" --additional-axioms --type-system-refresh:false --cores:1 --resource-limit:200000 --verification-time-limit:0 --show-snippets:false --use-basename-for-filename --error-limit:0 >> "%t"
+// RUN: echo "runtime (type-system-refresh:true)" >> "%t"
+// RUN: %exits-with 0 %baredafny run "%S/Inputs/github-issue-36-runtime.dfy" --target:cs --solver-path "%review-z3" --additional-axioms --type-system-refresh:true --cores:1 --resource-limit:200000 --verification-time-limit:0 --show-snippets:false --use-basename-for-filename --error-limit:0 >> "%t"
 // RUN: %diff "%s.expect" "%t"

@@ -4,7 +4,7 @@ predicate Partial(a: int) requires a != 0 { a == 7 }
 
 method Compiled() {
   assert P(7);
-  var a :| P(a);
+  var a :| 0 <= a <= 10 && P(a);
   assert a == 7;
 }
 
@@ -55,5 +55,19 @@ class Cell {
     assert At(value);
     var a :| At(a);
     assert a == value;
+  }
+}
+
+lemma Implication() {
+  var a :| a != 0 ==> Partial(a);
+  assert a == 0 || a == 7;
+}
+
+class GhostCell {
+  ghost var value: int
+  ghost method MixedAssumed() modifies this {
+    var a: int;
+    a, value :| assume P(a) && value == a;
+    assert a == 7 && value == 7;
   }
 }
