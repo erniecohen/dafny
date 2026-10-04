@@ -1,0 +1,11 @@
+git-issue-113-extended-newtypes-ordinal-errors.dfy(12,13): Error: value to be converted could not be proved to be a natural number
+git-issue-113-extended-newtypes-ordinal-errors.dfy(18,13): Error: result of operation could not be proved to satisfy newtype constraint for 'FiniteOrd'
+git-issue-113-extended-newtypes-ordinal-errors.dfy(23,16): Error: a negative integer cannot be converted to an Ord
+git-issue-113-extended-newtypes-ordinal-errors.dfy(29,4): Error: RHS of ORDINAL subtraction must be a natural number, but the given RHS could not be proved to be a natural number
+git-issue-113-extended-newtypes-ordinal-errors.dfy(35,4): Error: ORDINAL subtraction could not be proved to remain above limit ordinal (that is, RHS could not be proved to be sufficiently small)
+git-issue-113-extended-newtypes-ordinal-errors.dfy(41,17): Error: result of operation could not be proved to satisfy newtype constraint for 'AtMostOne'
+git-issue-113-extended-newtypes-ordinal-errors.dfy(47,23): Error: result of operation could not be proved to satisfy newtype constraint for 'PositiveOrd'
+git-issue-113-extended-newtypes-ordinal-errors.dfy(54,2): Error: assertion could not be proved
+git-issue-113-extended-newtypes-ordinal-errors.dfy(61,2): Error: assertion could not be proved
+
+Dafny program verifier finished with 4 verified, 9 errors

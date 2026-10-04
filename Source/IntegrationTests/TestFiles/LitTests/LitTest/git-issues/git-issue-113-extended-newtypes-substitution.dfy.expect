@@ -1,0 +1,4 @@
+git-issue-113-extended-newtypes-substitution.dfy(17,13): Error: result of operation could not be proved to satisfy newtype constraint for 'Singleton'
+git-issue-113-extended-newtypes-substitution.dfy(25,2): Error: assertion could not be proved
+
+Dafny program verifier finished with 1 verified, 2 errors

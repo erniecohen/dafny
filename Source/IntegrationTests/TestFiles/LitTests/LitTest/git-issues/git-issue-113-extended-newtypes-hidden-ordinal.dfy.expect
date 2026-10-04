@@ -1,0 +1,5 @@
+git-issue-113-extended-newtypes-hidden-ordinal.dfy(22,20): Error: member 'Offset' does not exist in newtype 'Ord'
+git-issue-113-extended-newtypes-hidden-ordinal.dfy(21,18): Error: type conversion to an ORDINAL type is allowed only from numeric and bitvector types, char, and ORDINAL (got Ord)
+git-issue-113-extended-newtypes-hidden-ordinal.dfy(37,20): Error: member 'Offset' does not exist in newtype 'Base'
+git-issue-113-extended-newtypes-hidden-ordinal.dfy(36,17): Error: type conversion to an ORDINAL type is allowed only from numeric and bitvector types, char, and ORDINAL (got Exposed<int>)
+4 resolution/type errors detected in git-issue-113-extended-newtypes-hidden-ordinal.dfy

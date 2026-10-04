@@ -1,0 +1,6 @@
+git-issue-113-existing-arrow-variance-control.dfy(8,2): Error: assertion could not be proved
+git-issue-113-existing-arrow-variance-control.dfy(12,2): Error: assertion could not be proved
+git-issue-113-existing-arrow-variance-control.dfy(15,2): Error: assertion could not be proved
+git-issue-113-existing-arrow-variance-control.dfy(18,2): Error: assertion could not be proved
+
+Dafny program verifier finished with 2 verified, 4 errors

@@ -1,0 +1,5 @@
+git-issue-113-extended-newtypes-witness-negative.dfy(6,53): Error: the given witness expression could not be proved to satisfy constraint
+git-issue-113-extended-newtypes-witness-negative.dfy(7,50): Error: the given witness expression could not be proved to satisfy constraint
+git-issue-113-extended-newtypes-witness-negative.dfy(8,56): Error: the given witness expression could not be proved to satisfy constraint
+
+Dafny program verifier finished with 0 verified, 3 errors

@@ -1,0 +1,5 @@
+git-issue-113-extended-newtypes-arrow-intermediate-negative.dfy(9,17): Error: result of operation could not be proved to satisfy subset type constraint for 'PositiveAtZero'
+git-issue-113-extended-newtypes-arrow-intermediate-negative.dfy(12,17): Error: result of operation could not be proved to satisfy newtype constraint for 'Impossible'
+git-issue-113-extended-newtypes-arrow-intermediate-negative.dfy(17,2): Error: assertion could not be proved
+
+Dafny program verifier finished with 1 verified, 3 errors

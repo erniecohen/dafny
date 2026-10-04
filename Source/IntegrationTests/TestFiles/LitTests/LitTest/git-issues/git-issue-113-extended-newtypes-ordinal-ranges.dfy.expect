@@ -1,0 +1,5 @@
+git-issue-113-extended-newtypes-ordinal-ranges.dfy(10,13): Error: ORDINAL value to be converted could not be proved to fit in char
+git-issue-113-extended-newtypes-ordinal-ranges.dfy(15,13): Error: ORDINAL value to be converted could not be proved to fit in CharView
+git-issue-113-extended-newtypes-ordinal-ranges.dfy(22,2): Error: assertion could not be proved
+
+Dafny program verifier finished with 3 verified, 3 errors

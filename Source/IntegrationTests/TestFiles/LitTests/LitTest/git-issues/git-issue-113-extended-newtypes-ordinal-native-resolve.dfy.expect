@@ -1,0 +1,2 @@
+git-issue-113-extended-newtypes-ordinal-native-resolve.dfy(4,29): Error: :nativeType can only be used on a newtype based on integers or bitvectors
+1 resolution/type errors detected in git-issue-113-extended-newtypes-ordinal-native-resolve.dfy
