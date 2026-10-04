@@ -163,4 +163,5 @@ test-b3:
 	(cd "${DIR}"; dotnet test Source/DafnyB3Normalizer.Test/DafnyB3Normalizer.Test.csproj -c Release)
 	(cd "${DIR}"; Source/DafnyB3Host.Test/run-tests.sh "$(B3_LIBRARY)" "$(Z3_PATH)")
 	(cd "${DIR}"; dotnet run --project Source/DafnyB3MapTheory.TestRunner -c Release -- --worker build/b3-host-tests/package/DafnyB3Host.dll --solver "$(Z3_PATH)" --solver-sha256 "$$(python3 -c 'import hashlib, pathlib, sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())' "$(Z3_PATH)")")
+	(cd "${DIR}"; dotnet run --project Source/DafnyB3Visibility.TestRunner -c Release -- --worker build/b3-host-tests/package/DafnyB3Host.dll --solver "$(Z3_PATH)" --solver-sha256 "$$(python3 -c 'import hashlib, pathlib, sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest())' "$(Z3_PATH)")")
 	(cd "${DIR}"; python3 Scripts/check-b3-integration.py Binaries/net8.0/Dafny.dll build/b3-host-tests/package/DafnyB3Host.dll "$(Z3_PATH)")

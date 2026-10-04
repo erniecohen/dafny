@@ -91,49 +91,46 @@ public sealed class B3VerificationBackend : IVerificationBackend {
       var config = new Configuration(SolverPath(), new[] { "-in", "-smt2" }, checked((int)options.TimeLimit * 1000),
         options.ResourceLimit, 1024 * 1024, options.GetOrOptionDefault(BoogieOptionBag.ArithmeticSolver),
         "5.1.0", solverDigest!);
-      var request = new Request(Protocol.Version, Guid.NewGuid().ToString("N"), Protocol.NormalizerVersion,
-        package!.Manifest.B3Commit, Protocol.GetProgramHash(normalized.Program), normalized.Program.Unit.Name,
-        normalized.Program, config, normalized.Obligations, package.Fingerprint);
-      // Work keys cover normalized bytes, worker/library bytes and all forwarded solver limits/options.
+      var contexts = normalized.Contexts ?? new[] { new B3VerificationContext("legacy", normalized.Program,
+        normalized.Obligations, Array.Empty<B3DefinitionOrigin>()) };
+      B3DefinitionContexts.ValidatePartition(normalized.Program, normalized.Obligations, contexts, implementation.tok);
+      var requests = contexts.Select(context => new Request(Protocol.Version, Guid.NewGuid().ToString("N"), Protocol.NormalizerVersion,
+        package!.Manifest.B3Commit, Protocol.GetProgramHash(context.Program), context.Program.Unit.Name,
+        context.Program, config, context.Obligations, package.Fingerprint)).ToArray();
+      // Work keys bind every mask's normalized bytes, worker/library bytes and forwarded limits/options.
       var configKey = System.Text.Json.JsonSerializer.Serialize(config, Protocol.JsonOptions);
-      var key = "b3:" + request.ProgramHash + ":" + package.Fingerprint + ":" + configKey;
+      var key = "b3:" + string.Join(":", requests.Select(request => request.ProgramHash)) + ":" + package!.Fingerprint + ":" + configKey;
       var origins = normalized.Obligations.ToDictionary(obligation => obligation.Id, obligation => SourceOriginFor(obligation, source.Origin));
       tasks.Add(new B3WorkItem(new VerificationIdentity(implementation.Name, key, 0, 0), source,
-        token => RunAsync(request, package, origins, source, token)));
+        token => RunAsync(requests, package, normalized.Obligations, origins, source, token)));
     }
     return tasks;
   }
 
-  private async Task<VerificationResult> RunAsync(Request request, WorkerPackage package,
-    IReadOnlyDictionary<string, IOrigin> origins, VerificationSourceInfo source, CancellationToken token) {
+  private async Task<VerificationResult> RunAsync(IReadOnlyList<Request> requests, WorkerPackage package,
+    IReadOnlyList<SourceIdentity> obligations, IReadOnlyDictionary<string, IOrigin> origins, VerificationSourceInfo source, CancellationToken token) {
     var started = DateTime.UtcNow;
     using var linked = CancellationTokenSource.CreateLinkedTokenSource(token, lifetime.Token);
-    Completion completion;
-    try {
-      await workers.WaitAsync(linked.Token);
+    B3ContextCompletion completion;
+    completion = await B3ContextCoordinator.RunAsync(requests, async (request, contextToken) => {
+      await workers.WaitAsync(contextToken);
       try {
-        // Revalidate immediately before launch; the worker also checks its own package.
-        if ((await WorkerPackage.LoadAsync(package.WorkerPath, linked.Token)).Fingerprint != package.Fingerprint) {
+        // Revalidate before each fresh process. No worker, solver or context cache is reused across masks.
+        if ((await WorkerPackage.LoadAsync(package.WorkerPath, contextToken)).Fingerprint != package.Fingerprint) {
           throw new InvalidDataException("B3 worker package changed after preparation");
         }
         var executable = package.WorkerPath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ? "dotnet" : package.WorkerPath;
         var arguments = executable == "dotnet" ? new[] { package.WorkerPath } : Array.Empty<string>();
-        completion = await new WorkerProcessClient(executable, arguments).RunAsync(request, linked.Token);
+        return await new WorkerProcessClient(executable, arguments).RunAsync(request, contextToken);
       } finally { workers.Release(); }
-    } catch (OperationCanceledException) {
-      completion = new Completion(Protocol.Version, request.RequestId, request.ProgramHash, request.UnitId,
-        request.B3Commit, false, Outcome.Cancelled, Array.Empty<Attempt>(), "B3 verification cancelled", request.WorkerFingerprint);
-    } catch (Exception exception) {
-      completion = new Completion(Protocol.Version, request.RequestId, request.ProgramHash, request.UnitId,
-        request.B3Commit, false, Outcome.ToolError, Array.Empty<Attempt>(), exception.Message, request.WorkerFingerprint);
-    }
+    }, linked.Token);
     var assertions = completion.Attempts.Select(attempt => new VerificationAssertion(attempt.ObligationId,
-      origins[attempt.ObligationId], null, request.Obligations.First(o => o.Id == attempt.ObligationId).Description,
+      origins[attempt.ObligationId], null, obligations.First(o => o.Id == attempt.ObligationId).Description,
       ConvertOutcome(attempt.Outcome))).ToArray();
     var diagnostics = completion.Attempts.Where(attempt => attempt.Outcome != Outcome.Verified)
       .Select(attempt => Diagnostic(origins[attempt.ObligationId],
         "B3 " + attempt.Outcome.ToString().ToLowerInvariant() + ": " +
-        request.Obligations.First(o => o.Id == attempt.ObligationId).Description +
+        obligations.First(o => o.Id == attempt.ObligationId).Description +
         (attempt.Reason == null ? "" : " (" + attempt.Reason + ")"))).ToList();
     if (completion.Error != null || completion.Outcome != Outcome.Verified && diagnostics.Count == 0) {
       diagnostics.Add(Diagnostic(source.Origin, "B3 " + completion.Outcome.ToString().ToLowerInvariant() + ": " +

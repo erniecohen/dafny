@@ -27,7 +27,13 @@ Changed backedges need separate initiation/preservation origins before support.
 
 `Pruner.GetRevealedState` merges assertion states across a native split. A B3
 context may use a stricter per-check state and a subset of eligible definitions;
-this is conservative incompleteness, not an exact split-parity claim. Source
+this is conservative incompleteness, not an exact split-parity claim. A target
+Reveal-mode operand that reveals an owner keeps that owner revealed under every
+native aggregate merge containing it. A Hide-mode target is eligible only if
+every potential Reveal-mode operand from the original check inventory also
+reveals that owner. Hide/Hide merges union their revealed offsets. This extra
+guard prevents a Hide-mode reveal from incorrectly supplying a definition when
+the native mixed aggregate retains another Reveal operand hiding it. Source
 functions remain declared even when a definition edge is hidden. Only
 Function-to-CanHide-Axiom edges are cut by that availability decision. A direct
 edge from a demanded function to its owned active definition is sufficient for
@@ -44,8 +50,11 @@ program, constructs Boogie verification tasks, or calls a Boogie prover.
 
 Each ordinary assertion maps to its exact command. A checked call requirement
 uses the original CallCmd entry state, since its reviewed desugaring introduces
-no visibility changes. Generated returns and checked postconditions require an
-exact return-site origin; ambiguous origins are unsupported. Invariant initiation
+no visibility changes. Explicit returns and checked postconditions use the exact return object.
+Runoff postconditions aggregate only the generated CFG return sites that are
+not source explicit returns; this is the native merge at those fallthroughs.
+When no runoff return exists, the extra static appended exit is unreachable and
+receives no definition premise. Ambiguous origins are unsupported. Invariant initiation
 and preservation share a visibility mask only when the source cycle contains no
 visibility changes. StateCmd assertions can inherit the enclosing command mask
 only when the state introduces no hide/reveal or scope commands. Missing,
@@ -83,7 +92,8 @@ is guessed. Guards, captures and nonliteral bodies outside this recognition are
 omitted or rejected at visibility-sensitive demand sites, never relabeled as
 supported definitions.
 
-The catalogue records exact typed formula hashes and source identities. Adding
+The catalogue records normalized typed formula-instance hashes, source axiom
+ordinals and source token line/column positions without source paths. Adding
 a formula for a check additionally requires a revealed owner and a direct
 source demand root at that check. Source-owned associations plus that root
 justify the native Function-to-Axiom path. Other declarations and dependencies
@@ -147,3 +157,52 @@ definition actually loaded must fail. Interleaved and concurrent contexts must
 show independent permissive/restrictive solver sessions. Unknown is inconclusive
 and cannot satisfy a negative control. Prior source hashes or bootstrap receipts
 do not establish acceptance for an edited tree.
+
+The remaining opaque function and constant routes additionally require exact
+active top-level declaration membership. Native/identity/Body substitutions keep
+the pinned object semantics. This protects the public typed-IR API from detached
+same-name objects aliasing active opaque symbols; producer name uniqueness alone
+is not used as an API correctness premise.
+
+## Executable acceptance controls
+
+`Source/DafnyB3Normalizer.Test/B3DefinitionContextTests.cs` checks active source
+ownership, intact guards, finite Bool instances, declaration object identity,
+original learning flags, mixed-mode availability and actual Dafny translation.
+`B3VisibilityTests.cs` checks source immutability, unchanged-visibility loops and
+explicit rejection of changing cycles or unequal outer scope stacks.
+`B3ContextCoordinatorTests.cs` checks exact aggregate outcomes, one shared
+original-unit deadline, cancellation cleanup and disjoint identities.
+
+The strict packaged-worker gate is `Source/DafnyB3Visibility.TestRunner`. It
+contains 17 typed Boogie/actual Dafny cases plus one five-launch session-isolation
+control. The typed Boogie fixtures explicitly attach their active source axioms
+to the exact function ownership metadata used by native pruning. Actual Dafny
+fixtures use only the producer's own metadata. Cases that require a definition
+also require a nonzero loaded source-origin manifest. Hidden and mixed-mode
+cases require zero loaded definitions. Linear typed Boogie cases require exact
+attempt outcomes and coverage; actual Dafny cases allow legitimately unreachable
+generated checks while requiring completed traversal, strict outcomes and a
+failed attempt for each expected failure. Unknown cannot pass.
+
+After the verified worker package exists, invoke:
+
+```sh
+dotnet run --project Source/DafnyB3Visibility.TestRunner -c Release -- \
+  --worker build/b3-host-tests/package/DafnyB3Host.dll \
+  --solver "$Z3_PATH" --solver-sha256 "$Z3_SHA256"
+```
+
+The solver digest is computed from the exact supplied file. The host independently
+checks that file's digest and Z3 5.1.0 version. The runner records observed compiler,
+normalizer assembly and worker identities; `--compiler-version` can require an
+exact expected informational version. The complete `make test-b3` target includes
+this gate after host/package preparation. The isolated and concurrent launches
+use new WorkerProcessClient instances and new processes. No solver flags are
+changed. The configured resource limit is forwarded to each fresh context;
+aggregate proof-resource totals remain unavailable. Replay work increases the
+number of solver sessions but cannot extend the original unit's wall deadline.
+
+These controls and this implementation are source checkpoints until executed on
+that exact edited source and pinned package. Prior Real, map and bootstrap gates
+do not establish G3 acceptance.

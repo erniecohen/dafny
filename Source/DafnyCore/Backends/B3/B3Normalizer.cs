@@ -17,7 +17,8 @@ namespace Microsoft.Dafny;
 #nullable enable
 public sealed record B3NormalizationDiagnostic(string Code, string Message, Bpl.IToken Token);
 public sealed record B3NormalizationResult(Ir.Program? Program, IReadOnlyList<Ir.SourceIdentity> Obligations,
-  IReadOnlyList<B3NormalizationDiagnostic> Diagnostics, IReadOnlyList<string> Approximations) {
+  IReadOnlyList<B3NormalizationDiagnostic> Diagnostics, IReadOnlyList<string> Approximations,
+  IReadOnlyList<B3VerificationContext>? Contexts = null) {
   public bool Success => Program != null && Diagnostics.Count == 0;
 }
 
@@ -32,6 +33,9 @@ public static class B3Normalizer {
     DafnyOptions options) {
     try {
       return new Normalization(program, implementation, options).Run();
+    } catch (B3DefinitionVisibility.Rejection rejected) {
+      return new B3NormalizationResult(null, Array.Empty<Ir.SourceIdentity>(),
+        new[] { new B3NormalizationDiagnostic("b3_visibility", rejected.Message, rejected.Token) }, Array.Empty<string>());
     } catch (Unsupported unsupported) {
       return new B3NormalizationResult(null, Array.Empty<Ir.SourceIdentity>(),
         new[] { new B3NormalizationDiagnostic(unsupported.Code, unsupported.Message, unsupported.Token) },
@@ -91,6 +95,12 @@ public static class B3Normalizer {
     private long bitvectorExpressionBits;
     private HashSet<Bpl.Function> ownedBitvectorFunctions;
     private Environment entry;
+    private B3DefinitionVisibility visibility;
+    private readonly List<Bpl.HideRevealCmd> visibilityCommands = new();
+    private bool hasScopeCommands;
+    private readonly HashSet<Bpl.ReturnCmd> explicitReturns = new();
+    private readonly Dictionary<string, Bpl.Function> functionOwners = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, (B3DefinitionVisibility.Frame Frame, Ir.Expression Condition)> checkMasks = new(StringComparer.Ordinal);
 
     public Normalization(Bpl.Program source, Bpl.Implementation unit, DafnyOptions options) {
       this.source = source; this.unit = unit; this.options = options;
@@ -109,6 +119,7 @@ public static class B3Normalizer {
       Require(unit.InParams.Count == unit.Proc.InParams.Count && unit.OutParams.Count == unit.Proc.OutParams.Count,
         "b3_formals", "Implementation/procedure formal lists differ", unit.tok);
       InspectControl(unit.StructuredStmts);
+      if (visibilityCommands.Count > 0 || hasScopeCommands) { visibility = new B3DefinitionVisibility(unit); }
       var formals = new Dictionary<Bpl.Variable, Ir.Expression>();
       for (var i = 0; i < unit.InParams.Count; i++) { formals.Add(unit.Proc.InParams[i], Name(unit.InParams[i])); }
       for (var i = 0; i < unit.OutParams.Count; i++) { formals.Add(unit.Proc.OutParams[i], Name(unit.OutParams[i])); }
@@ -131,19 +142,166 @@ public static class B3Normalizer {
         prologue.Add(new Ir.Assume(Expr(requires.Condition, entry)));
       }
       var body = Structured(unit.StructuredStmts, entry, new Control());
-      var exit = Exit(entry);
+      var exit = Exit(entry, null);
       // Discovering expressions above discovers every demanded global. Save entry state before any assumptions.
       var snapshots = oldNames.Select(pair => (Ir.Statement)new Ir.Assign(pair.Value.Name, Name(pair.Key))).ToList();
       var statements = snapshots.Concat(prologue).Append(body).Append(exit).ToArray();
       var normalized = new Ir.Program(types.Values.ToArray(), functions.Values.ToArray(), Array.Empty<Ir.Axiom>(),
         new Ir.Unit(Symbol("unit:" + unit.Name), variables.ToArray(), new Ir.Block(statements)));
+      var catalogue = LiteralDefinitions();
+      // Formula conversion can demand additional stable guard symbols. Use the same declarations in every replay.
+      normalized = normalized with { Types = types.Values.ToArray(), Functions = functions.Values.ToArray() };
       CheckOwnedBounds(normalized);
+      var selected = SelectDefinitions(catalogue);
+      var contexts = B3DefinitionContexts.Create(normalized, obligations.ToArray(), selected, unit.tok);
       return new B3NormalizationResult(normalized, obligations.ToArray(), Array.Empty<B3NormalizationDiagnostic>(),
-        new[] { "All source axioms, distinct-constant constraints and lambda equations are omitted. Ordinary nonidentity function definitions are omitted; exact typed integer division/modulo bodies and active always-revealed universal definitions substitute their native operations. Other demanded closed function instances and constants are uninterpreted. Direct reads of owned closed monomorphic store expressions use the read-over-write ITE identity; other map operations remain uninterpreted. Exact metadata-free complete-tuple forall read equalities are abstracted by an uninterpreted Bool predicate of their two map values. No global read-over-write or observation axioms are asserted. Map equality remains opaque without extensionality.",
+        new[] { "Outside reviewed guarded literal-definition contexts, source axioms, distinct-constant constraints and lambda equations are omitted. Ordinary nonidentity function definitions are omitted; exact typed integer division/modulo bodies and active always-revealed universal definitions substitute their native operations. Other demanded closed function instances and constants are uninterpreted. Direct reads of owned closed monomorphic store expressions use the read-over-write ITE identity; other map operations remain uninterpreted. Exact metadata-free complete-tuple forall read equalities are abstracted by an uninterpreted Bool predicate of their two map values. No global read-over-write or observation axioms are asserted. Map equality remains opaque without extensionality.",
           "StateCmd and call-temporary scope-entry where predicates are omitted: pinned scope passification appends raw predicates without current-incarnation substitution. Post-havoc where predicates are preserved." }
           .Concat(mapHelperOrigins.Values).Concat(mapObservationOrigins.Values)
-          .Concat(opaqueMapOrigins.OrderBy(s => s, StringComparer.Ordinal)).ToArray());
+          .Concat(opaqueMapOrigins.OrderBy(s => s, StringComparer.Ordinal))
+          .Concat(contexts.SelectMany(context => context.Definitions).DistinctBy(definition => definition.Id)
+            .Select(definition => "Active source definition instance: owner=" + definition.Owner + "; source-axiom=" + definition.AxiomOrdinal +
+              "; formula-sha256=" + definition.FormulaHash + "; instance=" + definition.Instance))
+          .ToArray(), contexts);
     }
+
+    private B3DefinitionVisibility.Frame FallthroughMask() {
+      var returns = unit.Blocks.Select(block => block.TransferCmd).OfType<Bpl.ReturnCmd>()
+        .Where(returned => !explicitReturns.Contains(returned)).ToArray();
+      if (returns.Length == 0) {
+        // All source fallthroughs are absent. This appended static exit is unreachable;
+        // retain its checks but add no definition premise for that synthetic position.
+        return new B3DefinitionVisibility.Frame(Bpl.HideRevealCmd.Modes.Hide,
+          System.Collections.Immutable.ImmutableHashSet<Bpl.Function>.Empty);
+      }
+      return returns.Select(returned => visibility.After(returned)).Aggregate(B3DefinitionVisibility.MergeFrames);
+    }
+
+    private sealed record OwnedFormula(Bpl.Function Owner, B3DefinitionContexts.Formula Formula);
+    private IReadOnlyList<OwnedFormula> LiteralDefinitions() {
+      var owners = functionOwners.Values.Concat(visibilityCommands.Where(command => command.Function != null)
+        .Select(command => command.Function)).Distinct().ToArray();
+      var catalogue = new List<OwnedFormula>();
+      foreach (var function in owners) {
+        if (!source.TopLevelDeclarations.Contains(function) || function.TypeParameters.Count != 0 ||
+            function.InParams.Count > 1 || function.InParams.Any(parameter => !parameter.TypedIdent.Type.IsBool || parameter.TypedIdent.WhereExpr != null) ||
+            function.OutParams.Count != 1 || !(function.OutParams[0].TypedIdent.Type.IsBool || function.OutParams[0].TypedIdent.Type.IsInt)) { continue; }
+        foreach (var axiom in function.DefinitionAxioms) {
+          if (!axiom.CanHide || !source.TopLevelDeclarations.Contains(axiom)) { continue; }
+          var body = axiom.Expr;
+          var binders = Array.Empty<Bpl.Variable>();
+          if (body is Bpl.ForallExpr quantified) {
+            if (quantified.TypeParameters.Count != 0 || quantified.Dummies.Count is < 1 or > 4 ||
+                quantified.Dummies.Any(dummy => !dummy.TypedIdent.Type.IsBool || dummy.TypedIdent.WhereExpr != null)) { continue; }
+            binders = quantified.Dummies.ToArray(); body = quantified.Body;
+          }
+          if (!GroundDefinition(body, binders.ToHashSet()) || !HasLiteralEquation(body, function, 0)) { continue; }
+          for (var instance = 0; instance < 1 << binders.Length; instance++) {
+            var values = binders.Select((binder, index) => new KeyValuePair<Bpl.Variable, Ir.Expression>(binder,
+              new Ir.BooleanLiteral((instance & (1 << index)) != 0))).ToDictionary(pair => pair.Key, pair => pair.Value);
+            var environment = new Environment(values, new Dictionary<Bpl.Variable, Ir.Expression>());
+            var condition = Expr(body, environment);
+            var ordinal = source.TopLevelDeclarations.ToList().IndexOf(axiom);
+            var hash = B3DefinitionContexts.FormulaHash(condition);
+            var instanceName = binders.Length == 0 ? "ground" : "bool-tuple-" + instance;
+            var origin = new B3DefinitionOrigin(Symbol(function.Name + ":" + ordinal + ":" + instanceName + ":" + hash),
+              function.Name, ordinal, hash, instanceName, Math.Max(0, axiom.tok.line), Math.Max(0, axiom.tok.col));
+            catalogue.Add(new OwnedFormula(function, new B3DefinitionContexts.Formula(origin, condition)));
+            Require(catalogue.Count <= 64, "b3_definition_limit", "Eligible definition instances exceed the bounded catalogue", axiom.tok);
+          }
+        }
+      }
+      foreach (var command in visibilityCommands.Where(command => command.Function != null)) {
+        Require(catalogue.Any(formula => ReferenceEquals(formula.Owner, command.Function)), "b3_visibility",
+          "Named hide/reveal requires an active owned guarded literal definition in the initial slice", command.tok);
+      }
+      if (visibilityCommands.Any(command => command.Function == null)) {
+        Require(catalogue.Count > 0, "b3_visibility", "Wildcard visibility requires a demanded eligible source definition", unit.tok);
+      }
+      return catalogue;
+    }
+
+    private bool GroundDefinition(Bpl.Expr root, HashSet<Bpl.Variable> bound) {
+      var pending = new Stack<(Bpl.Expr Expr, int Depth)>(); pending.Push((root, 0)); var count = 0;
+      while (pending.Count > 0) {
+        var (expression, depth) = pending.Pop();
+        if (depth >= Ir.Protocol.MaximumDepth || ++count > Ir.Protocol.MaximumNodes) { return false; }
+        switch (expression) {
+          case Bpl.LiteralExpr literal when literal.Val is bool or BigNum: break;
+          case Bpl.IdentifierExpr identifier when bound.Contains(identifier.Decl): break;
+          case Bpl.IdentifierExpr { Decl: Bpl.Constant constant } when source.TopLevelDeclarations.Contains(constant) &&
+              (constant.TypedIdent.Type.IsBool || constant.TypedIdent.Type.IsInt): break;
+          case Bpl.NAryExpr application:
+            if (application.Fun is Bpl.FunctionCall call) {
+              if (call.Func == null || call.Func.TypeParameters.Count != 0 ||
+                  !source.TopLevelDeclarations.Contains(call.Func) ||
+                  call.Func.InParams.Any(parameter => !(parameter.TypedIdent.Type.IsBool || parameter.TypedIdent.Type.IsInt)) ||
+                  call.Func.OutParams.Count != 1 || !(call.Func.OutParams[0].TypedIdent.Type.IsBool || call.Func.OutParams[0].TypedIdent.Type.IsInt)) { return false; }
+            } else if (application.Fun is not (Bpl.BinaryOperator or Bpl.UnaryOperator or Bpl.IfThenElse or Bpl.TypeCoercion)) { return false; }
+            foreach (var argument in application.Args) { pending.Push((argument, depth + 1)); }
+            break;
+          default: return false;
+        }
+      }
+      return true;
+    }
+
+    private bool HasLiteralEquation(Bpl.Expr expression, Bpl.Function owner, int depth) {
+      if (depth >= Ir.Protocol.MaximumDepth || expression is not Bpl.NAryExpr { Fun: Bpl.BinaryOperator binary } application) { return false; }
+      if (binary.Op == Bpl.BinaryOperator.Opcode.Imp && application.Args.Count == 2) {
+        return HasLiteralEquation(application.Args[1], owner, depth + 1);
+      }
+      if (binary.Op == Bpl.BinaryOperator.Opcode.And && application.Args.Count == 2) {
+        return application.Args.Any(argument => HasLiteralEquation(argument, owner, depth + 1));
+      }
+      return binary.Op == Bpl.BinaryOperator.Opcode.Eq && application.Args.Count == 2 &&
+        application.Args[0] is Bpl.NAryExpr { Fun: Bpl.FunctionCall call } defining &&
+        ReferenceEquals(call.Func, owner) && IsMonomorphic(defining) && defining.Args.Count == owner.InParams.Count &&
+        (owner.InParams.Count == 0 || defining.Args[0] is Bpl.LiteralExpr { Val: true }) &&
+        IsLiteralDefinitionValue(application.Args[1], 0);
+    }
+    private bool IsLiteralDefinitionValue(Bpl.Expr expression, int depth) {
+      if (depth >= Ir.Protocol.MaximumDepth) { return false; }
+      if (expression is Bpl.LiteralExpr literal) { return literal.Val is bool or BigNum; }
+      if (expression is Bpl.NAryExpr { Fun: Bpl.FunctionCall call } application && call.Func != null) {
+        var projection = IdentityProjection(call.Func);
+        return projection >= 0 && projection < application.Args.Count && IsLiteralDefinitionValue(application.Args[projection], depth + 1);
+      }
+      return false;
+    }
+
+    private IReadOnlyDictionary<string, IReadOnlyList<B3DefinitionContexts.Formula>> SelectDefinitions(IReadOnlyList<OwnedFormula> catalogue) {
+      var result = new Dictionary<string, IReadOnlyList<B3DefinitionContexts.Formula>>(StringComparer.Ordinal);
+      var revealOperands = checkMasks.Values.Select(check => check.Frame)
+        .Where(frame => frame.Mode == Bpl.HideRevealCmd.Modes.Reveal).ToArray();
+      foreach (var (id, check) in checkMasks) {
+        var demanded = new HashSet<Bpl.Function>();
+        var pending = new Stack<Ir.Expression>(); pending.Push(check.Condition);
+        while (pending.Count > 0) {
+          var expression = pending.Pop();
+          if (expression is Ir.Application application && functionOwners.TryGetValue(application.Name, out var owner)) { demanded.Add(owner); }
+          foreach (var child in ExpressionChildren(expression)) { pending.Push(child); }
+        }
+        if (visibilityCommands.Count > 0) {
+          foreach (var demandedOwner in demanded.Where(owner => owner.DefinitionAxioms.Any(axiom => axiom.CanHide))) {
+            Require(catalogue.Any(formula => ReferenceEquals(formula.Owner, demandedOwner)), "b3_visibility",
+              "Demanded visibility-sensitive definition is outside the guarded literal slice", demandedOwner.tok);
+          }
+        }
+        result.Add(id, catalogue.Where(formula => demanded.Contains(formula.Owner) && check.Frame.IsRevealed(formula.Owner) &&
+          // Native mixed merge retains a Reveal operand and ignores Hide offsets. A Hide-mode
+          // target must be compatible with every potential Reveal operand from this unit.
+          (check.Frame.Mode == Bpl.HideRevealCmd.Modes.Reveal || revealOperands.All(frame => frame.IsRevealed(formula.Owner))))
+          .Select(formula => formula.Formula).DistinctBy(formula => formula.Origin.Id).ToArray());
+      }
+      return result;
+    }
+    private static IEnumerable<Ir.Expression> ExpressionChildren(Ir.Expression expression) => expression switch {
+      Ir.Application application => application.Arguments, Ir.Operation operation => operation.Arguments,
+      Ir.Quantifier quantifier => new[] { quantifier.Body }.Concat(quantifier.Patterns.SelectMany(pattern => pattern)),
+      Ir.Let let => new[] { let.Value, let.Body }, Ir.Label label => new[] { label.Body },
+      _ => Array.Empty<Ir.Expression>()
+    };
 
     private Ir.Variable Fresh(string type) {
       var binding = new Ir.Binding("sV" + ++variableNumber, type);
@@ -162,6 +320,8 @@ public static class B3Normalizer {
     private Ir.Expression Variable(Bpl.Variable variable, Environment env, bool old) {
       if (env.Values.TryGetValue(variable, out var value)) { return value; }
       if (variable is Bpl.Constant constant) {
+        Require(source.TopLevelDeclarations.Contains(constant), "b3_declaration_identity",
+          "Opaque constant is not an active declaration in the typed source artifact", constant.tok);
         return Apply("constant:" + constant.Name, Type(constant.TypedIdent.Type), Array.Empty<Ir.Expression>());
       }
       if (old && variable is Bpl.GlobalVariable) {
@@ -380,12 +540,16 @@ public static class B3Normalizer {
                 "Called primitive arithmetic definition is outside the reviewed substitution routes", expression.tok);
               var projection = IdentityProjection(call.Func);
               if (projection >= 0 && projection < args.Length && args[projection].Type == type) { return args[projection]; }
+              Require(source.TopLevelDeclarations.Contains(call.Func), "b3_declaration_identity",
+                "Opaque function is not an active declaration in the typed source artifact", expression.tok);
               var instantiation = call.Func.TypeParameters.Count == 0 ? "" :
                 string.Join(",", call.Func.TypeParameters.Select(p => {
                   Require(application.TypeParameters != null, "b3_instantiation", "Missing resolved function instantiation", expression.tok);
                   return Type(application.TypeParameters[p]);
                 }));
-              return Apply("function:" + call.Func.Name + "<" + instantiation + ">", type, args);
+              var applied = (Ir.Application)Apply("function:" + call.Func.Name + "<" + instantiation + ">", type, args);
+              functionOwners[applied.Name] = call.Func;
+              return applied;
             default: throw new Unsupported("b3_operator", "Unsupported expression operator " + application.Fun.GetType().Name, expression.tok);
           }
         }
@@ -920,7 +1084,7 @@ public static class B3Normalizer {
     private void Where(Bpl.Expr where, Environment env, List<Ir.Statement> statements) {
       if (where != null) { statements.Add(new Ir.Assume(Expr(where, env))); }
     }
-    private Ir.Check Check(Bpl.Expr condition, Environment env, Bpl.IToken token, string description, Bpl.QKeyValue attributes, string role = "assert") {
+    private Ir.Check Check(Bpl.Expr condition, Environment env, Bpl.IToken token, string description, Bpl.QKeyValue attributes, string role = "assert", Bpl.Absy sourceAnchor = null) {
       var expression = Expr(condition, env);
       var subsumption = Bpl.QKeyValue.FindIntAttribute(attributes, "subsumption", -1);
       var mode = subsumption switch { 0 => Bpl.CoreOptions.SubsumptionOption.Never,
@@ -930,17 +1094,20 @@ public static class B3Normalizer {
         mode == Bpl.CoreOptions.SubsumptionOption.NotForQuantifiers &&
         expression is not Ir.Quantifier && condition is not Bpl.QuantifierExpr;
       var id = "sO" + role + (obligations.Count + 1);
+      var frame = visibility == null ? B3DefinitionVisibility.Frame.AllRevealed :
+        sourceAnchor == null ? FallthroughMask() : visibility.Before(sourceAnchor);
+      checkMasks.Add(id, (frame, expression));
       var origin = BoogieGenerator.ToDafnyToken(token);
       obligations.Add(new Ir.SourceIdentity(id, origin.Uri?.AbsoluteUri ?? token.filename ?? "",
         Math.Max(0, token.line), Math.Max(0, token.col), description));
       return new Ir.Check(id, expression, learn);
     }
-    private Ir.Statement Exit(Environment env) {
+    private Ir.Statement Exit(Environment env, Bpl.Absy sourceAnchor = null) {
       var statements = new List<Ir.Statement>();
       foreach (var ensures in unit.Proc.Ensures) {
         ValidateAttributes(ensures.Attributes, "ensures", ensures.tok);
         if (!ensures.Free) { statements.Add(Check(ensures.Condition, env, ensures.tok,
-          ensures.Description?.FailureDescription ?? "postcondition", null)); }
+          ensures.Description?.FailureDescription ?? "postcondition", null, "post", sourceAnchor)); }
         else if (ensures.CanAlwaysAssume()) { statements.Add(new Ir.Assume(Expr(ensures.Condition, env))); }
       }
       statements.Add(new Ir.Return());
@@ -981,14 +1148,14 @@ public static class B3Normalizer {
           case Bpl.WhileCmd loop:
             Push(loop.Body); foreach (var invariant in loop.Invariants) { Push(invariant); } break;
           case Bpl.StateCmd state: foreach (var command in state.Cmds) { Push(command); } break;
-          case Bpl.HideRevealCmd hide:
-            throw new Unsupported("b3_visibility", "Hide/reveal requires pinned pruning correspondence", hide.tok);
+          case Bpl.HideRevealCmd hide: visibilityCommands.Add(hide); break;
+          case Bpl.ChangeScope: hasScopeCommands = true; break;
           case Bpl.GotoCmd jump:
             ValidateAttributes(jump.Attributes, "goto", jump.tok);
             Require(jump.LabelNames != null && jump.LabelNames.Count == 1, "b3_transfer",
               "Only single-target lexical forward jumps are supported", jump.tok);
             jumpTargets.Add(jump.LabelNames[0]); break;
-          case Bpl.ReturnCmd returned: ValidateAttributes(returned.Attributes, "return", returned.tok); break;
+          case Bpl.ReturnCmd returned: explicitReturns.Add(returned); ValidateAttributes(returned.Attributes, "return", returned.tok); break;
         }
       }
       foreach (var target in jumpTargets.OrderBy(t => t, StringComparer.Ordinal)) { jumpLabels.Add(target, "sC" + ++controlNumber); }
@@ -1013,7 +1180,7 @@ public static class B3Normalizer {
         var nested = new Control(new Dictionary<string, string>(forward, StringComparer.Ordinal), control.Break);
         statements.AddRange(block.simpleCmds.Select(c => Command(c, env)));
         if (block.ec != null) { statements.Add(StructuredCommand(block.ec, env, nested, depth + 1, block)); }
-        else if (block.tc is Bpl.ReturnCmd and not Bpl.ReturnExprCmd) { statements.Add(Exit(env)); }
+        else if (block.tc is Bpl.ReturnCmd and not Bpl.ReturnExprCmd) { statements.Add(Exit(env, block.tc)); }
         else if (block.tc is Bpl.GotoCmd jump) {
           Require(jump.LabelNames.Count == 1 && nested.Forward.TryGetValue(jump.LabelNames[0], out _),
             "b3_transfer", "Backward, cross-region or multiple-target jumps are unsupported", jump.tok);
@@ -1089,7 +1256,7 @@ public static class B3Normalizer {
         ValidateAttributes(invariant.Attributes, "invariant", invariant.tok);
         if (invariant is Bpl.AssertCmd assertion) {
           checks.Add(Check(assertion.Expr, env, assertion.tok,
-            role == "init" ? "loop invariant initialization" : "loop invariant preservation", assertion.Attributes, role));
+            role == "init" ? "loop invariant initialization" : "loop invariant preservation", assertion.Attributes, role, assertion));
         } else if (invariant is Bpl.AssumeCmd && options.AlwaysAssumeFreeLoopInvariants) {
           checks.Add(new Ir.Assume(Expr(invariant.Expr, env)));
         } else { Require(invariant is Bpl.AssumeCmd, "b3_invariant", "Unknown invariant predicate", invariant.tok); }
@@ -1157,7 +1324,7 @@ public static class B3Normalizer {
         Bpl.HavocCmd havoc => havoc.Vars.Select(v => v.Decl),
         Bpl.CallCmd call => call.Outs.Where(v => v != null).Select(v => v.Decl).Concat(call.Proc.Modifies.Select(v => v.Decl)),
         Bpl.StateCmd state => state.Cmds.SelectMany(c => Assigned(c, depth + 1)).Except(state.Locals),
-        Bpl.PredicateCmd or Bpl.CommentCmd or Bpl.ChangeScope => Array.Empty<Bpl.Variable>(),
+        Bpl.PredicateCmd or Bpl.CommentCmd or Bpl.ChangeScope or Bpl.HideRevealCmd => Array.Empty<Bpl.Variable>(),
         _ => throw new Unsupported("b3_assigned_variables", "Unsupported natural-loop assignment command " + command.GetType().Name, command.tok)
       };
     }
@@ -1245,7 +1412,7 @@ public static class B3Normalizer {
       switch (command) {
         case Bpl.CommentCmd: return new Ir.Block(Array.Empty<Ir.Statement>());
         case Bpl.AssertCmd assertion: return Check(assertion.Expr, env, assertion.tok,
-          assertion.Description?.FailureDescription ?? "assertion", assertion.Attributes);
+          assertion.Description?.FailureDescription ?? "assertion", assertion.Attributes, "assert", assertion);
         case Bpl.AssumeCmd assumption: return new Ir.Assume(Expr(assumption.Expr, env));
         case Bpl.AssignCmd assignment: {
           Require(assignment.Lhss.All(lhs => lhs is Bpl.SimpleAssignLhs), "b3_map_assignment",
@@ -1266,8 +1433,7 @@ public static class B3Normalizer {
         }
         case Bpl.CallCmd call: return Call(call, env);
         case Bpl.ChangeScope: return new Ir.Block(Array.Empty<Ir.Statement>());
-        case Bpl.HideRevealCmd:
-          throw new Unsupported("b3_visibility", "Hide/reveal requires pinned pruning correspondence", command.tok);
+        case Bpl.HideRevealCmd: return new Ir.Block(Array.Empty<Ir.Statement>());
         default: throw new Unsupported("b3_command", "Unsupported command " + command.GetType().Name, command.tok);
       }
     }
@@ -1309,7 +1475,7 @@ public static class B3Normalizer {
       foreach (var requires in call.Proc.Requires) {
         ValidateAttributes(requires.Attributes, "callee requires", requires.tok);
         if (!requires.Free && !call.IsFree) { statements.Add(Check(requires.Condition, requirementAndWhere, call.tok,
-          requires.Description?.FailureDescription ?? "call precondition", call.Attributes)); }
+          requires.Description?.FailureDescription ?? "call precondition", call.Attributes, "call", call)); }
         else if (requires.CanAlwaysAssume()) { statements.Add(new Ir.Assume(Expr(requires.Condition, requirementAndWhere))); }
       }
       var modifiedGlobals = call.Proc.Modifies.Select(m => m.Decl).Distinct().ToArray();
