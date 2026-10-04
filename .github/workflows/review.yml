@@ -636,7 +636,7 @@ jobs:
         run: |
           if [ "$B3_FOCUS_GATE" = isolation ]; then
             python3 .github/review/b3-alc-controls.py
-          elif [ "$B3_FOCUS_GATE" = ide-regressions ] || [ "$B3_FOCUS_GATE" = maps ]; then
+          elif [ "$B3_FOCUS_GATE" = ide-regressions ] || [ "$B3_FOCUS_GATE" = maps ] || [ "$B3_FOCUS_GATE" = complete ]; then
             python3 .github/review/b3-focused-gate.py
           else
             python3 .github/review/b3-native-compile.py
