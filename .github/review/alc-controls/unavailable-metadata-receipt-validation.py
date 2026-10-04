@@ -34,8 +34,41 @@ BOOGIE_ROOTS = {
 }
 
 
+
+def inspect_exception_chain(chain):
+    assert isinstance(chain, dict) and chain['complete'] is True and chain['truncated'] is False
+    assert chain['captureFailure'] is None and chain['rejectedAggregateInnerCount'] is None
+    nodes = chain['nodes']
+    assert isinstance(nodes, list) and 1 <= len(nodes) <= 8
+    total = 0
+    allowed = ['System.IO.FileNotFoundException', 'System.Reflection.TargetInvocationException', 'System.AggregateException']
+    for depth, node in enumerate(nodes):
+        terminal = depth == len(nodes) - 1
+        assert node['depth'] == depth and type(node['depth']) is int
+        assert node['knownFrameworkType'] is True and node['type'] in allowed
+        assert type(node['hResult']) is int and -2147483648 <= node['hResult'] <= 2147483647
+        assert node['innerDepth'] == (None if terminal else depth + 1)
+        assert node['innerDepth'] is None or type(node['innerDepth']) is int
+        aggregate = node['type'] == 'System.AggregateException'
+        assert node['aggregateInnerCount'] == (1 if aggregate else None)
+        assert node['aggregateInnerCount'] is None or type(node['aggregateInnerCount']) is int
+        file_not_found = node['type'] == 'System.IO.FileNotFoundException'
+        assert node['fileName'] == (UNAVAILABLE_IDENTITY if file_not_found else None)
+        assert isinstance(node['type'], str) and isinstance(node['message'], str)
+        type_bytes, message_bytes = len(node['type'].encode('utf-8')), len(node['message'].encode('utf-8'))
+        file_bytes = 0 if node['fileName'] is None else len(node['fileName'].encode('utf-8'))
+        assert type_bytes <= 512 and message_bytes <= 4096 and file_bytes <= 4096
+        total += type_bytes + message_bytes + file_bytes
+        assert total <= 65536
+        if terminal:
+            assert file_not_found and node['message'] == DENIAL
+        else:
+            assert node['message'] != DENIAL
+    assert type(chain['textUtf8Bytes']) is int and chain['textUtf8Bytes'] == total
+
+
 def inspect_unavailable_control(receipt, sha, expected_manifest):
-    assert receipt['schemaVersion'] == 1
+    assert type(receipt['schemaVersion']) is int and receipt['schemaVersion'] == 2
     assert receipt['scope'] == 'prototype/fixed-disposable-nonproof-unavailable-metadata-denial-control'
     name = receipt['control']
     assert name in NAMES and receipt['expectedControlNames'] == NAMES
@@ -47,9 +80,11 @@ def inspect_unavailable_control(receipt, sha, expected_manifest):
     assert receipt['remainingDirectChildren'] == [] and receipt['onlyDefaultContextRemains']
     assert 0 <= receipt['stopwatchSafetyMilliseconds'] < 45000
     observation = receipt['observation']
-    assert observation['denialExceptionObserved'] and observation['triggerApiInvoked'] and observation['contextCollected']
+    assert observation['denialExceptionObserved'] is True and observation['triggerApiInvoked'] is True and observation['contextCollected'] is True
     assert observation['triggerApi'] == TRIGGERS[name]
-    assert DENIAL in observation['exceptionSummary'] and observation['schedulerCleanup'].startswith('not initialized:')
+    assert isinstance(observation['exceptionSummary'], str) and len(observation['exceptionSummary']) <= 4096
+    inspect_exception_chain(observation['exceptionChain'])
+    assert observation['schedulerCleanup'].startswith('not initialized:')
     common = receipt['commonClosure']
     assert common['scope'] == 'exact-common-managed-inventory-with-explicit-unavailable-metadata-and-runtime-denial'
     assert common['completeMetadataInventory'] and not common['completeMetadataAvailability']
@@ -59,10 +94,10 @@ def inspect_unavailable_control(receipt, sha, expected_manifest):
     assert common['requiredLaterControls'] == ['repeat', 'interleaved', 'reversed-order']
     assert common['roots'] == sorted(BOOGIE_ROOTS)
     state = common['runtimeDemandState']
-    assert state['poisoned'] and state['failures'] == [DENIAL]
+    assert state['poisoned'] is True and state['failures'] == [DENIAL]
     assert len(state['unavailableDemands']) == 1
     demand = state['unavailableDemands'][0]
-    assert demand['sequence'] == 1 and demand['denialCode'] == DENIAL and demand['exactDeclaredIdentity']
+    assert demand['sequence'] == 1 and demand['denialCode'] == DENIAL and demand['exactDeclaredIdentity'] is True
     assert demand['requestedIdentity'] == UNAVAILABLE_IDENTITY and demand['metadataOwnerSha256'] == OWNER_SHA256
     assert demand['route'] == ('private-load' if name == NAMES[1] else 'default-resolving')
     assert demand['context'] == ('unavailable-private-negative-control' if name == NAMES[1] else 'Default')

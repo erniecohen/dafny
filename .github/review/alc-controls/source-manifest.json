@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "source-only-separate-unavailable-metadata-runtime-denial-draft-uncompiled-unexecuted; all native proof APIs disabled",
+  "status": "source-only-schema2-detached-exception-chain-controls-uncompiled-unexecuted; all native proof APIs disabled",
   "scope": "explicit-unavailable-common-metadata-with-runtime-demand-denial-and-three-disposable-nonproof-controls",
   "targetFramework": "net8.0",
   "reviewedContracts": {
@@ -138,8 +138,8 @@
     },
     {
       "path": "UNAVAILABLE-METADATA-PLAN.md",
-      "sha256": "678268df330ddadef4ea1a0814b6d0812a99653c44cae60e2bd6a5a022be2dd8",
-      "bytes": 6717
+      "sha256": "c92715520c11a740b9d0aae9e07738af21a12f207e5731d4b7816ad9fd37f7e9",
+      "bytes": 8821
     },
     {
       "path": "UNAVAILABLE-METADATA-SOURCE-EVIDENCE.json",
@@ -148,8 +148,8 @@
     },
     {
       "path": "UnavailableMetadataControls.cs",
-      "sha256": "ddb13c6236df245f5bd6ab61ae417a00d75f18f07c7fdb55c89e223c97e96253",
-      "bytes": 15129
+      "sha256": "0896310416d8a1f680db180c7f06b2f943e0cd5df2aa95c55c262d76083dab1e",
+      "bytes": 20503
     },
     {
       "path": "UnavailableMetadataProgram.cs",
@@ -223,8 +223,8 @@
     },
     {
       "path": "unavailable-metadata-receipt-validation.py",
-      "sha256": "71caac837ef976fa4b447f4932bb487c705a5742c655ef456f44e04f7a8df3f0",
-      "bytes": 13502
+      "sha256": "2a7fd7dd2d5c6639cf5063ee3af0fd843c7ca789d4a7b9c9c521d15483900f2f",
+      "bytes": 15706
     }
   ],
   "baseSourceCommit": "a6132c6758c863ec4a897e4ac1534dc727f0b006",
@@ -278,6 +278,14 @@
       "source-review",
       "three-disposable-negative-controls",
       "separately-reviewed-proof-entrypoint-and-coordinator"
-    ]
-  }
+    ],
+    "controlReceiptSchemaVersion": 2,
+    "requiredCompleteExceptionChain": true,
+    "maximumExceptionChainDepth": 8,
+    "maximumExceptionChainTextUtf8Bytes": 65536,
+    "requiredTerminalException": "System.IO.FileNotFoundException/exact-denial-message/exact-requested-FileName/no-inner",
+    "branchingAggregateAccepted": false
+  },
+  "priorFailedNonproofSourceManifestSha256": "2fc847ab499ae08e398cbd748426d476589e1c74365348f7c6eb252e5c23ecfb",
+  "priorFailedNonproofPublicRun": 37233056845
 }

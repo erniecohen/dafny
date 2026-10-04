@@ -95,3 +95,37 @@ query/resource parity is claimed, and repeat/interleaved/reversed-order controls
 remain mandatory later. The supported caller-owned factory/API alternative is
 unimplemented. No binaries/packages, solver flags, query bytes, hashes, seeds or
 resource values have been rewritten.
+
+
+## Revised required schema2 exception evidence
+
+The original Default receipt from public run37233056845 remains NOT GREEN: its
+outer loader summary omitted the inner denial marker needed by the original
+inspector. This revised source is uncompiled/unexecuted; all three controls must
+be qualified afresh. No old receipt is retroactively accepted.
+
+Schema2 requires a complete nontruncated outer-to-inner exception chain, bounded
+at eight nodes and 65,536 UTF-8 text bytes, with 512-byte type names and 4,096-byte
+messages/FileNames. Detached fields include depth, exact type, exact framework
+type equality, raw message/FileName/HResult, next inner depth and aggregate count.
+Branching/empty aggregates and unknown types fail. The exact terminal framework
+FileNotFoundException must have the owned denial marker and requested identity
+FileName, no inner exception, and every wrapper FileNotFoundException must name
+that same identity. Singleton Aggregate and TargetInvocation wrappers are
+recorded; their presentation strings never replace the terminal facts.
+
+C# and the strict Python inspector independently match those required facts plus
+the unchanged exact one poisoned demand/route/identity/owner and trigger guards.
+Trigger flags are assigned at the actual call rather than copied from the denial
+verdict. Only detached strings/value records escape the noinline frame.
+exceptionSummary remains bounded diagnostic presentation. All 19 lifecycle files,
+the loader/denier, package bytes and disabled proof APIs remain unchanged; the
+new 38-file source manifest and coordinator pins are distinct from the failed gate.
+
+
+Structural capture validates known exact framework types, depth and singleton
+aggregates before reading any message getter; AggregateException.Message can
+otherwise format unbounded inner graphs. Rejected structure has explicit capture
+failure/aggregate-count facts and never claims a complete chain. Explain renders
+only bounded captured nodes or the capture rejection code. The strict inspector
+requires literal true trigger/denial/completeness booleans and no capture failure.

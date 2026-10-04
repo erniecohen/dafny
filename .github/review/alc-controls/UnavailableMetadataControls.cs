@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Runtime.Versioning;
+using System.Text;
 using System.Text.Json;
 
 namespace B3AlcGate;
@@ -11,8 +12,12 @@ namespace B3AlcGate;
 internal sealed record UnavailableControlInputs(string Control, string BaselineDirectory, string CandidateDirectory,
   string BaselineArchive, PinnedEvidence CandidatePackageManifest, string CandidateSourceCommit,
   PinnedEvidence SourceManifest, string Receipt);
+internal sealed record UnavailableExceptionNode(int Depth, string Type, bool KnownFrameworkType, string Message,
+  string? FileName, int HResult, int? InnerDepth, int? AggregateInnerCount);
+internal sealed record UnavailableExceptionChain(UnavailableExceptionNode[] Nodes, bool Complete, bool Truncated,
+  int TextUtf8Bytes, string? CaptureFailure, int? RejectedAggregateInnerCount);
 internal sealed record UnavailableControlObservation(bool DenialExceptionObserved, bool TriggerApiInvoked, string TriggerApi, string? ExceptionSummary,
-  AssemblyEntry[] PrivateLoaderLedger, string SchedulerCleanup, bool ContextCollected);
+  UnavailableExceptionChain? ExceptionChain, AssemblyEntry[] PrivateLoaderLedger, string SchedulerCleanup, bool ContextCollected);
 
 /// <summary>Exactly one fixed nonproof control per disposable host. Never runs Dafny or a solver.</summary>
 [SupportedOSPlatform("linux")]
@@ -74,7 +79,7 @@ internal static class UnavailableMetadataControls {
       }
       var state = shared.DemandState();
       var expectedRoute = input.Control == "private-unavailable-demand" ? "private-load" : "default-resolving";
-      NativeProofSmokeControls.Require(observation.DenialExceptionObserved && observation.TriggerApiInvoked && state.Poisoned &&
+      NativeProofSmokeControls.Require(observation.DenialExceptionObserved && IsDenial(observation.ExceptionChain) && observation.TriggerApiInvoked && state.Poisoned &&
         state.Failures.SequenceEqual(new[] { SharedCommonLibraries.DenialCode }) && state.UnavailableDemands.Length == 1 &&
         state.UnavailableDemands[0].Route == expectedRoute && state.UnavailableDemands[0].ExactDeclaredIdentity &&
         state.UnavailableDemands[0].RequestedIdentity == SharedCommonLibraries.UnavailableIdentity &&
@@ -105,13 +110,14 @@ internal static class UnavailableMetadataControls {
       failure = Append(failure, "Nonproof final host isolation failed.");
     }
     var passed = failure == null && observation is { DenialExceptionObserved: true, ContextCollected: true } &&
+      IsDenial(observation.ExceptionChain) && observation.TriggerApiInvoked &&
       closure is { CompleteMetadataInventory: true, CompleteMetadataAvailability: false } && closure.RuntimeDemandState.Poisoned &&
       closure.RuntimeDemandState.Failures.SequenceEqual(new[] { SharedCommonLibraries.DenialCode }) &&
       closure.RuntimeDemandState.UnavailableDemands.Length == 1 &&
       closure.RuntimeDemandState.UnavailableDemands[0].ExactDeclaredIdentity &&
       closure.RuntimeAssemblyLoads.All(load => load.Validated);
     var bytes = JsonSerializer.SerializeToUtf8Bytes(new {
-      schemaVersion = 1, scope = "prototype/fixed-disposable-nonproof-unavailable-metadata-denial-control",
+      schemaVersion = 2, scope = "prototype/fixed-disposable-nonproof-unavailable-metadata-denial-control",
       control = input.Control, expectedControlNames = Names, passed, failure,
       ordinaryProofCliEnabled = false, nativeProofExecuted = false, solverExecuted = false,
       completeMetadataInventory = closure?.CompleteMetadataInventory == true, completeMetadataAvailability = false,
@@ -129,9 +135,15 @@ internal static class UnavailableMetadataControls {
   [MethodImpl(MethodImplOptions.NoInlining)]
   private static UnavailableControlObservation ObserveDefaultDemand() {
     Exception? caught = null;
-    try { AssemblyLoadContext.Default.LoadFromAssemblyName(new(SharedCommonLibraries.UnavailableIdentity)); }
-    catch (Exception exception) { caught = exception; }
-    return new(IsDenial(caught), true, "AssemblyLoadContext.Default.LoadFromAssemblyName(exact-unavailable-identity)", caught == null ? null : Explain(caught), [], "not initialized: no product entrypoint invoked", true);
+    var invoked = false;
+    try {
+      var requested = new AssemblyName(SharedCommonLibraries.UnavailableIdentity);
+      invoked = true;
+      AssemblyLoadContext.Default.LoadFromAssemblyName(requested);
+    } catch (Exception exception) { caught = exception; }
+    var chain = caught == null ? null : CaptureExceptionChain(caught);
+    return new(IsDenial(chain), invoked, "AssemblyLoadContext.Default.LoadFromAssemblyName(exact-unavailable-identity)",
+      caught == null ? null : Explain(caught), chain, [], "not initialized: no product entrypoint invoked", true);
   }
 
   [MethodImpl(MethodImplOptions.NoInlining)]
@@ -149,7 +161,9 @@ internal static class UnavailableMetadataControls {
       invoked = true;
       method.Invoke(null, [typeof(OrdinaryEventFixture), nameof(OrdinaryEventFixture.Happened)]);
     } catch (Exception exception) { caught = exception; }
-    return new(IsDenial(caught), invoked, "System.Reactive.Linq.Observable.FromEventPattern(Type,string)", caught == null ? null : Explain(caught), [], "not initialized: pinned Reactive public surface only", true);
+    var chain = caught == null ? null : CaptureExceptionChain(caught);
+    return new(IsDenial(chain), invoked, "System.Reactive.Linq.Observable.FromEventPattern(Type,string)",
+      caught == null ? null : Explain(caught), chain, [], "not initialized: pinned Reactive public surface only", true);
   }
 
   private sealed record DetachedPrivate(UnavailableControlObservation Observation, WeakReference Context);
@@ -168,6 +182,8 @@ internal static class UnavailableMetadataControls {
     SharedProductContext? context = null;
     string? exceptionSummary = null;
     bool denial = false;
+    bool invoked = false;
+    UnavailableExceptionChain? exceptionChain = null;
     string? cleanupFailure = null;
     var ledger = Array.Empty<AssemblyEntry>();
     try {
@@ -175,8 +191,15 @@ internal static class UnavailableMetadataControls {
       context.LoadCoreForControl();
       shared.Audit("private-core-pinned-before-demand");
       using (context.EnterContextualReflection()) {
-        try { context.LoadFromAssemblyName(new(SharedCommonLibraries.UnavailableIdentity)); }
-        catch (Exception exception) { denial = IsDenial(exception); exceptionSummary = Explain(exception); }
+        try {
+          var requested = new AssemblyName(SharedCommonLibraries.UnavailableIdentity);
+          invoked = true;
+          context.LoadFromAssemblyName(requested);
+        } catch (Exception exception) {
+          exceptionChain = CaptureExceptionChain(exception);
+          denial = IsDenial(exceptionChain);
+          exceptionSummary = Explain(exception);
+        }
       }
       ledger = context.Snapshot();
     } catch (Exception exception) {
@@ -194,7 +217,9 @@ internal static class UnavailableMetadataControls {
     }
     // Detached only strings/records. No Assembly, Type, exception or scheduler root
     // survives this noinline frame. DafnyMain was never accessed or initialized.
-    return new(new(denial, denial, "Owned SharedProductContext.LoadFromAssemblyName(exact-unavailable-identity)", cleanupFailure == null ? exceptionSummary : Append(exceptionSummary, cleanupFailure), ledger, "not initialized: only pinned DafnyCore assembly metadata accessed", false),
+    return new(new(denial, invoked, "Owned SharedProductContext.LoadFromAssemblyName(exact-unavailable-identity)",
+      cleanupFailure == null ? exceptionSummary : Append(exceptionSummary, cleanupFailure), exceptionChain,
+      ledger, "not initialized: only pinned DafnyCore assembly metadata accessed", false),
       new WeakReference(context, trackResurrection: true));
   }
 
@@ -206,7 +231,8 @@ internal static class UnavailableMetadataControls {
     var root = manifest.RootElement;
     NativeProofSmokeControls.Require(root.GetProperty("schemaVersion").GetInt32() == 1 &&
       root.GetProperty("unavailableMetadataBoundary").GetProperty("nativeProofEnabled").GetBoolean() == false &&
-      root.GetProperty("unavailableMetadataBoundary").GetProperty("completeMetadataAvailability").GetBoolean() == false,
+      root.GetProperty("unavailableMetadataBoundary").GetProperty("completeMetadataAvailability").GetBoolean() == false &&
+      root.GetProperty("unavailableMetadataBoundary").GetProperty("controlReceiptSchemaVersion").GetInt32() == 2,
       "nonproof-source-manifest-scope-mismatch");
     var files = root.GetProperty("files").EnumerateArray().ToArray();
     NativeProofSmokeControls.Require(files.Length is > 0 and <= 64 && files.Select(f => f.GetProperty("path").GetString()).Distinct().Count() == files.Length,
@@ -222,15 +248,84 @@ internal static class UnavailableMetadataControls {
     return pin.Sha256;
   }
 
-  private static bool IsDenial(Exception? exception) {
-    for (var depth = 0; exception != null && depth < 8; depth++, exception = exception.InnerException) {
-      if (exception is FileNotFoundException && exception.Message == SharedCommonLibraries.DenialCode) { return true; }
+  private static UnavailableExceptionChain CaptureExceptionChain(Exception exception) {
+    // Validate structure first: AggregateException.Message formats inner messages.
+    // No message getter runs until the complete bounded singleton chain is known.
+    var frames = new List<(Exception Exception, int? AggregateCount)>();
+    Exception? current = exception;
+    while (current != null && frames.Count < 8) {
+      var actualType = current.GetType();
+      if (actualType != typeof(FileNotFoundException) && actualType != typeof(TargetInvocationException) &&
+          actualType != typeof(AggregateException)) {
+        return new([], false, false, 0, "unknown-exception-type", null);
+      }
+      int? aggregateCount = current is AggregateException aggregate ? aggregate.InnerExceptions.Count : null;
+      if (aggregateCount is not null && aggregateCount != 1) {
+        return new([], false, false, 0, "non-singleton-aggregate", aggregateCount);
+      }
+      frames.Add((current, aggregateCount));
+      current = current.InnerException;
     }
-    return false;
+    if (current != null) { return new([], false, true, 0, "exception-depth-bound", null); }
+    var nodes = new List<UnavailableExceptionNode>();
+    var bytes = 0;
+    foreach (var (frame, aggregateCount) in frames) {
+      var type = frame.GetType().FullName ?? "";
+      var message = frame.Message;
+      var fileName = (frame as FileNotFoundException)?.FileName;
+      var typeBytes = Encoding.UTF8.GetByteCount(type);
+      var messageBytes = Encoding.UTF8.GetByteCount(message);
+      var fileBytes = fileName == null ? 0 : Encoding.UTF8.GetByteCount(fileName);
+      var addedBytes = checked(typeBytes + messageBytes + fileBytes);
+      if (typeBytes > 512 || messageBytes > 4096 || fileBytes > 4096 || addedBytes > 65536 - bytes) {
+        return new(nodes.ToArray(), false, true, bytes, "exception-text-bound", null);
+      }
+      var depth = nodes.Count;
+      nodes.Add(new(depth, type, true, message, fileName, frame.HResult,
+        depth + 1 < frames.Count ? (int?)(depth + 1) : null, aggregateCount));
+      bytes += addedBytes;
+    }
+    return new(nodes.ToArray(), true, false, bytes, null, null);
+  }
+
+  private static bool IsDenial(UnavailableExceptionChain? chain) {
+    if (chain is not { Complete: true, Truncated: false, CaptureFailure: null, RejectedAggregateInnerCount: null } ||
+        chain.Nodes.Length is < 1 or > 8) { return false; }
+    var bytes = 0;
+    for (var index = 0; index < chain.Nodes.Length; index++) {
+      var node = chain.Nodes[index];
+      var terminal = index == chain.Nodes.Length - 1;
+      if (!node.KnownFrameworkType || node.Depth != index || node.InnerDepth != (terminal ? null : (int?)(index + 1))) { return false; }
+      var fileNotFound = node.Type == typeof(FileNotFoundException).FullName;
+      var aggregate = node.Type == typeof(AggregateException).FullName;
+      if (!fileNotFound && !aggregate && node.Type != typeof(TargetInvocationException).FullName) { return false; }
+      if (node.AggregateInnerCount != (aggregate ? (int?)1 : null) ||
+          (fileNotFound ? node.FileName != SharedCommonLibraries.UnavailableIdentity : node.FileName != null)) { return false; }
+      var typeBytes = Encoding.UTF8.GetByteCount(node.Type);
+      var messageBytes = Encoding.UTF8.GetByteCount(node.Message);
+      var fileBytes = node.FileName == null ? 0 : Encoding.UTF8.GetByteCount(node.FileName);
+      if (typeBytes > 512 || messageBytes > 4096 || fileBytes > 4096) { return false; }
+      bytes = checked(bytes + typeBytes + messageBytes + fileBytes);
+      if (bytes > 65536 || (!terminal && node.Message == SharedCommonLibraries.DenialCode)) { return false; }
+      if (terminal && (!fileNotFound || node.Message != SharedCommonLibraries.DenialCode)) { return false; }
+    }
+    return bytes == chain.TextUtf8Bytes;
   }
   private static string Explain(Exception exception) {
-    while ((exception is TargetInvocationException or AggregateException) && exception.InnerException is { } inner) { exception = inner; }
-    var text = exception.GetType().FullName + ": " + exception.Message;
+    var chain = CaptureExceptionChain(exception);
+    if (!chain.Complete || chain.Truncated || chain.CaptureFailure != null || chain.Nodes.Length == 0) {
+      return "Exception presentation omitted: " + (chain.CaptureFailure ?? "incomplete-chain") +
+        (chain.RejectedAggregateInnerCount is { } count ? "; aggregate inner count=" + count : "");
+    }
+    // Preserve the harmless generic outer FileNotFound presentation. Unwrap only
+    // the captured bounded reflection/aggregate wrappers; never inspect the graph.
+    var index = 0;
+    while (index + 1 < chain.Nodes.Length &&
+           chain.Nodes[index].Type is "System.Reflection.TargetInvocationException" or "System.AggregateException") {
+      index++;
+    }
+    var node = chain.Nodes[index];
+    var text = node.Type + ": " + node.Message;
     return text.Length <= 4096 ? text : text[..4096];
   }
   private static string Append(string? prior, string next) => prior == null ? next : prior + "\n" + next;

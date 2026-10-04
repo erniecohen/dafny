@@ -7,7 +7,7 @@ failures are recorded with job exit zero; acceptance requires `summary.json`, al
 three exact control receipts and all process-stage ownership receipts.
 
 The imported harness source is exactly the accepted 38-file manifest
-`2fc847ab499ae08e398cbd748426d476589e1c74365348f7c6eb252e5c23ecfb`.
+`0e746e8c8aab5e789f2c5c5a29f0e78eeaf1359b42c4a3b754207c73f4417dda`.
 All nineteen previously qualified lifecycle source files are unchanged. StartupObject
 is overridden at build time only to `B3AlcGate.UnavailableMetadataProgram`; the
 project default and normal Program remain unchanged. Both native proof APIs in
@@ -126,3 +126,11 @@ and the [Python pidfd signal API](https://docs.python.org/3.12/library/signal.ht
 The native shared-library proof path, optional-reference reachability beyond the
 fixed controls, fresh Boogie state, solver origin qualification and full default
 cost parity remain separate work. No unavailable assembly is treated as resolved.
+
+
+The new schema2 source includes complete bounded detached exception-chain facts.
+The old Default receipt remains NOT GREEN and cannot be passed by this inspector.
+All three fixed controls must run freshly after source review. Inner terminal
+type/message/FileName facts, independent trigger flags and exact runtime-demand
+poison/route evidence replace reliance on the outer presentation summary; no
+other package, loader, context, process or collection guard is relaxed.
