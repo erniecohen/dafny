@@ -12,19 +12,45 @@ github-issue-132-negative.dfy(21,2): Error: assertion might not hold
 github-issue-132-negative.dfy(29,2): Error: assertion might not hold
 github-issue-132-negative.dfy(41,2): Error: assertion might not hold
 github-issue-132-negative.dfy(49,2): Error: assertion might not hold
+github-issue-132-negative.dfy(61,2): Error: assertion might not hold
+github-issue-132-negative.dfy(70,2): Error: assertion might not hold
+github-issue-132-negative.dfy(82,2): Error: assertion might not hold
+github-issue-132-negative.dfy(92,2): Error: assertion might not hold
+github-issue-132-negative.dfy(104,2): Error: assertion might not hold
+github-issue-132-negative.dfy(114,2): Error: assertion might not hold
 
-Dafny program verifier finished with 0 verified, 5 errors
+Dafny program verifier finished with 1 verified, 11 errors
 negative (type-system-refresh:true)
 github-issue-132-negative.dfy(11,2): Error: assertion might not hold
 github-issue-132-negative.dfy(21,2): Error: assertion might not hold
 github-issue-132-negative.dfy(29,2): Error: assertion might not hold
 github-issue-132-negative.dfy(41,2): Error: assertion might not hold
 github-issue-132-negative.dfy(49,2): Error: assertion might not hold
+github-issue-132-negative.dfy(61,2): Error: assertion might not hold
+github-issue-132-negative.dfy(70,2): Error: assertion might not hold
+github-issue-132-negative.dfy(82,2): Error: assertion might not hold
+github-issue-132-negative.dfy(92,2): Error: assertion might not hold
+github-issue-132-negative.dfy(104,2): Error: assertion might not hold
+github-issue-132-negative.dfy(114,2): Error: assertion might not hold
 
-Dafny program verifier finished with 0 verified, 5 errors
+Dafny program verifier finished with 1 verified, 11 errors
 positive (type-system-refresh:false)
 
-Dafny program verifier finished with 16 verified, 0 errors
+Dafny program verifier finished with 19 verified, 0 errors
 positive (type-system-refresh:true)
 
-Dafny program verifier finished with 16 verified, 0 errors
+Dafny program verifier finished with 19 verified, 0 errors
+resolution (type-system-refresh:false)
+github-issue-132-resolution.dfy(11,16): Error: type parameter (T) passed to twostate lemma AllocatedNew must contain no references (got () ~> int)
+github-issue-132-resolution.dfy(16,5): Error: type 'NoRefs' declared as containing no reference types, but the RHS type (() ~> int) may contain reference types
+2 resolution/type errors detected in github-issue-132-resolution.dfy
+resolution (type-system-refresh:true)
+github-issue-132-resolution.dfy(11,16): Error: type parameter (T) passed to twostate lemma AllocatedNew must contain no references (got () ~> int)
+github-issue-132-resolution.dfy(16,5): Error: type 'NoRefs' declared as containing no reference types, but the RHS type (() ~> int) may contain reference types
+2 resolution/type errors detected in github-issue-132-resolution.dfy
+bounds (type-system-refresh:false)
+github-issue-132-bounds.dfy(4,2): Error: a forall expression involved in a predicate definition is not allowed to depend on the set of allocated references, but values of 'g' (of type '() ~> int') may contain references (see documentation for 'older' parameters)
+1 resolution/type errors detected in github-issue-132-bounds.dfy
+bounds (type-system-refresh:true)
+github-issue-132-bounds.dfy(4,2): Error: a forall expression involved in a predicate definition is not allowed to depend on the set of allocated references, but values of 'g' (of type '() ~> int') may contain references (see documentation for 'older' parameters)
+1 resolution/type errors detected in github-issue-132-bounds.dfy

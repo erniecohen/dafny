@@ -107,3 +107,28 @@ method StatementCallsTwoStateLemma(c: C) modifies c {
   assert allocated(f);
   assert old(allocated(f));
 }
+
+// A partial or total arrow reads nothing; when its arguments and result involve no references, its values
+// show none, so a datatype holding one is allocated in every heap, and it may instantiate a (!new) type
+// parameter and be quantified over in a predicate.
+datatype TBox = TBox(g: () -> int)
+
+method TotalArrowInDatatype() {
+  label L:
+  var n := new C();
+  var b := TBox(() => if n == n then 0 else 1);
+  assert old@L(allocated(b));
+}
+
+twostate lemma AllocatedNew<T(!new)>(new x: T) ensures old(allocated(x)) {}
+
+method TotalArrowNotNew() {
+  label L:
+  var n := new C();
+  var g := () => if n == n then 0 else 1;
+  AllocatedNew@L(g);
+}
+
+ghost predicate AllNonNegative(k: int) {
+  forall g: int -> int | g(k) >= 0 :: g(k) + 1 > 0
+}
