@@ -165,7 +165,7 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
       if (((DPreType)conversionExpr.PreType.Normalize()).Decl is ArrowTypeDecl) {
         // An operation view has the source's exact base signature. A subtype join
         // here can broaden a contravariant domain and create an invalid totality demand.
-        flows.Add(new FlowFromComputedArrowOperationType(expr, BaseOperationType));
+        flows.Add(new FlowFromComputedArrowOperationType(conversionExpr, BaseOperationType));
       } else {
         flows.Add(new FlowFromComputedType(expr, BaseOperationType, "base operation"));
       }
