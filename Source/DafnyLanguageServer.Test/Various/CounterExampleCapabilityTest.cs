@@ -8,6 +8,7 @@ using Microsoft.Dafny.LanguageServer.Handlers.Custom;
 using Microsoft.Dafny.LanguageServer.IntegrationTest.Extensions;
 using Microsoft.Dafny.LanguageServer.IntegrationTest.Util;
 using Microsoft.Dafny.LanguageServer.Workspace;
+using Microsoft.Dafny.LanguageServer.Workspace.Notifications;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -51,9 +52,14 @@ public class CounterExampleCapabilityTest : ClientBasedLanguageServerTest {
     Assert.Equal(ErrorCodes.InvalidRequest, responseException.ErrorCode);
     var manager = await Projects.GetProjectManager(request.TextDocument);
     Assert.NotNull(manager);
-    var state = await manager.States.FirstAsync().ToTask(CancellationToken);
-    Assert.NotEmpty(state.CanVerifyStates[document.Uri.ToUri()]);
-    Assert.All(state.CanVerifyStates[document.Uri.ToUri()].Values,
+    var uri = document.Uri.ToUri();
+    // The replayed state can still precede resolution. Require actual source units
+    // before checking that capability rejection left their verification unstarted.
+    var state = await manager.States.Where(candidate => candidate.Status == CompilationStatus.ResolutionSucceeded &&
+                                                       candidate.CanVerifyStates.TryGetValue(uri, out var sourceUnits) && sourceUnits.Count != 0).
+      FirstAsync().ToTask(CancellationToken);
+    Assert.NotEmpty(state.CanVerifyStates[uri]);
+    Assert.All(state.CanVerifyStates[uri].Values,
       verifiable => Assert.Equal(VerificationPreparationState.NotStarted, verifiable.PreparationProgress));
     telemetryPublisher.Verify(publisher => publisher.PublishTelemetry(It.IsAny<ImmutableDictionary<string, object>>()),
       Times.Never());
