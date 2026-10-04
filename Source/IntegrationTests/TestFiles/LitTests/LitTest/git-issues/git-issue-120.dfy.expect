@@ -1,1 +1,2 @@
-// CHECK-L: B3 requires --verification-time-limit between 1 and 2147483 seconds
+// CHECK-L: CLI: Error: B3 requires --verification-time-limit between 1 and 2147483 seconds
+// CHECK-NEXT-L: 1 resolution/type errors detected in git-issue-120.dfy

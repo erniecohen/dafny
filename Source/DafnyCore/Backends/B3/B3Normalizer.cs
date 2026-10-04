@@ -70,10 +70,11 @@ public static class B3Normalizer {
     private readonly Dictionary<Bpl.Variable, Ir.Variable> oldNames = new();
     private readonly Dictionary<string, Ir.Function> functions = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> types = new(StringComparer.Ordinal);
-    private readonly List<Ir.Axiom> mapAxioms = new();
     private readonly Dictionary<string, string> mapHelperOrigins = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> mapStoreNames = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> mapObservationOrigins = new(StringComparer.Ordinal);
     private readonly HashSet<string> opaqueMapOrigins = new(StringComparer.Ordinal);
-    private int mapTheoryEstimatedNodes;
+    private int mapReadEstimatedNodes;
     private readonly Dictionary<Bpl.Variable, (Bpl.Expr Expression, Environment Environment)> outputWhere = new();
     private readonly List<Ir.SourceIdentity> obligations = new();
     private readonly Dictionary<Bpl.LambdaExpr, string> lambdaNames = new();
@@ -129,13 +130,14 @@ public static class B3Normalizer {
       // Discovering expressions above discovers every demanded global. Save entry state before any assumptions.
       var snapshots = oldNames.Select(pair => (Ir.Statement)new Ir.Assign(pair.Value.Name, Name(pair.Key))).ToList();
       var statements = snapshots.Concat(prologue).Append(body).Append(exit).ToArray();
-      var normalized = new Ir.Program(types.Values.ToArray(), functions.Values.ToArray(), mapAxioms.ToArray(),
+      var normalized = new Ir.Program(types.Values.ToArray(), functions.Values.ToArray(), Array.Empty<Ir.Axiom>(),
         new Ir.Unit(Symbol("unit:" + unit.Name), variables.ToArray(), new Ir.Block(statements)));
       CheckOwnedBounds(normalized);
       return new B3NormalizationResult(normalized, obligations.ToArray(), Array.Empty<B3NormalizationDiagnostic>(),
-        new[] { "All source axioms, distinct-constant constraints, nonidentity function definitions and lambda equations are omitted. Demanded closed function instances and constants are uninterpreted. Direct closed monomorphic maps have only read-over-write helper equations; polymorphic maps remain uninterpreted. Map equality remains opaque without extensionality.",
+        new[] { "All source axioms, distinct-constant constraints, nonidentity function definitions and lambda equations are omitted. Demanded closed function instances and constants are uninterpreted. Direct reads of owned closed monomorphic store expressions use the read-over-write ITE identity; other map operations remain uninterpreted. Exact metadata-free complete-tuple forall read equalities are abstracted by an uninterpreted Bool predicate of their two map values. No global read-over-write or observation axioms are asserted. Map equality remains opaque without extensionality.",
           "StateCmd and call-temporary scope-entry where predicates are omitted: pinned scope passification appends raw predicates without current-incarnation substitution. Post-havoc where predicates are preserved." }
-          .Concat(mapHelperOrigins.Values).Concat(opaqueMapOrigins.OrderBy(s => s, StringComparer.Ordinal)).ToArray());
+          .Concat(mapHelperOrigins.Values).Concat(mapObservationOrigins.Values)
+          .Concat(opaqueMapOrigins.OrderBy(s => s, StringComparer.Ordinal)).ToArray());
     }
 
     private Ir.Variable Fresh(string type) {
@@ -232,52 +234,95 @@ public static class B3Normalizer {
           indexSorts.Select((sort, i) => arguments[i + 1].Type == sort).All(b => b) &&
           (!store || arguments[^1].Type == valueSort),
         "b3_map_signature", "Map operation differs from its resolved monomorphic signature", sourceApplication.tok);
-      AddMapHelpers(mapSort, indexSorts, valueSort, sourceApplication.tok);
-      return Apply(store ? "map-store" : "map-select", resultType, arguments);
+      if (!mapHelperOrigins.ContainsKey(mapSort)) {
+        mapHelperOrigins.Add(mapSort, "Monomorphic map helper origin: Boogie 73a0e214a87df85fc058270268c1d0706fd05bc9 " +
+          "TypeErasureArguments.cs:298-464; map=" + mapSort + "; indices=(" + string.Join(",", indexSorts) +
+          "); value=" + valueSort + "; encoding=direct-read-store-ITE; global-axioms=0");
+      }
+      if (store) {
+        var application = (Ir.Application)Apply("map-store", resultType, arguments);
+        mapStoreNames[mapSort] = application.Name;
+        return application;
+      }
+      return ReadMap(mapSort, indexSorts, valueSort, arguments[0], arguments.Skip(1).ToArray(), sourceApplication.tok, 0);
     }
 
-    private void AddMapHelpers(string mapSort, string[] indexSorts, string valueSort, Bpl.IToken token) {
-      if (mapHelperOrigins.ContainsKey(mapSort)) { return; }
+    private Ir.Expression ReadMap(string mapSort, string[] indexSorts, string valueSort,
+      Ir.Expression map, Ir.Expression[] indexes, Bpl.IToken token, int depth) {
+      Require(depth < Ir.Protocol.MaximumDepth, "b3_map_read_limit", "Nested map read lowering exceeds normalization bounds", token);
       var arity = indexSorts.Length;
-      Require(arity <= Ir.Protocol.MaximumNodes, "b3_map_theory_limit", "Map helper arity exceeds normalization bounds", token);
-      // Bound construction before allocating a quadratic family of quantified tuple-index expressions.
-      var estimate = ((long)arity + 1) * (6L * arity + 20);
-      Require(estimate <= Ir.Protocol.MaximumNodes - mapTheoryEstimatedNodes,
-        "b3_map_theory_limit", "Map helper equations exceed normalization bounds", token);
-      mapTheoryEstimatedNodes += (int)estimate;
-      Ir.Binding Bind(string sort) => new("sB" + ++boundNumber, sort);
-      Ir.Variable Var(Ir.Binding binding) => new(binding.Name, binding.Type);
-      var map = Bind(mapSort);
-      var indexes = indexSorts.Select(Bind).ToArray();
-      var value = Bind(valueSort);
-      var otherIndexes = indexSorts.Select(Bind).ToArray();
-      var indexValues = indexes.Select(Var).Cast<Ir.Expression>().ToArray();
-      var otherIndexValues = otherIndexes.Select(Var).Cast<Ir.Expression>().ToArray();
-      Ir.Application Select(Ir.Expression mapValue, Ir.Expression[] coordinates) =>
-        (Ir.Application)Apply("map-select", valueSort, new[] { mapValue }.Concat(coordinates).ToArray());
-      Ir.Application Store(Ir.Expression mapValue, Ir.Expression[] coordinates, Ir.Expression storedValue) =>
-        (Ir.Application)Apply("map-store", mapSort, new[] { mapValue }.Concat(coordinates).Append(storedValue).ToArray());
-      Ir.Operation Equal(Ir.Expression left, Ir.Expression right) => new(Ir.Operator.Equal, "bool", new[] { left, right });
-      var stored = Store(Var(map), indexValues, Var(value));
-      var sameRead = Select(stored, indexValues);
-      var explains = new[] { sameRead.Name, stored.Name };
-      var sameBindings = new[] { map }.Concat(indexes).Append(value).ToArray();
-      var noPatterns = Array.Empty<IReadOnlyList<Ir.Expression>>();
-      mapAxioms.Add(new Ir.Axiom(explains, new Ir.Quantifier(true, sameBindings, noPatterns, Equal(sameRead, Var(value)))));
-      var otherRead = Select(stored, otherIndexValues);
-      var originalRead = Select(Var(map), otherIndexValues);
-      var otherBindings = sameBindings.Concat(otherIndexes).ToArray();
-      for (var i = 0; i < arity; i++) {
-        // GenMapAxiom1 has one clause per component: equality here OR an unchanged read.
-        var unchanged = new Ir.Operation(Ir.Operator.Or, "bool", new Ir.Expression[] {
-          Equal(indexValues[i], otherIndexValues[i]), Equal(otherRead, originalRead)
-        });
-        mapAxioms.Add(new Ir.Axiom(explains, new Ir.Quantifier(true, otherBindings, noPatterns, unchanged)));
+      // Only this normalizer's typed store constructor can supply this provenance.
+      // A read through a variable or ordinary source function is never replaced by its past assignment.
+      if (map is not Ir.Application stored || !mapStoreNames.TryGetValue(mapSort, out var storeName) || stored.Name != storeName) {
+        return Apply("map-select", valueSort, new[] { map }.Concat(indexes).ToArray());
       }
-      mapHelperOrigins.Add(mapSort, "Monomorphic map helper origin: Boogie 73a0e214a87df85fc058270268c1d0706fd05bc9 " +
-        "TypeErasureArguments.cs:298-464; map=" + mapSort + "; indices=(" + string.Join(",", indexSorts) +
-        "); value=" + valueSort + "; select=" + sameRead.Name + "; store=" + stored.Name + "; equations=R0" +
-        string.Concat(Enumerable.Range(0, arity).Select(i => ",R1[" + i + "]")));
+      Require(stored.Type == mapSort && stored.Arguments.Count == arity + 2 && stored.Arguments[0].Type == mapSort &&
+          stored.Arguments[^1].Type == valueSort && indexes.Length == arity &&
+          indexSorts.Select((sort, i) => stored.Arguments[i + 1].Type == sort && indexes[i].Type == sort).All(b => b),
+        "b3_map_signature", "Owned store differs from the closed map signature", token);
+      // Bound generated nodes before allocating conjunctions. The final traversal also counts copied occurrences.
+      var estimate = 7L * arity + 8;
+      Require(estimate <= Ir.Protocol.MaximumNodes - mapReadEstimatedNodes,
+        "b3_map_read_limit", "Map read identities exceed normalization bounds", token);
+      mapReadEstimatedNodes += (int)estimate;
+      Ir.Expression sameIndex = new Ir.BooleanLiteral(true);
+      for (var i = 0; i < arity; i++) {
+        var equal = new Ir.Operation(Ir.Operator.Equal, "bool", new[] { stored.Arguments[i + 1], indexes[i] });
+        sameIndex = new Ir.Operation(Ir.Operator.And, "bool", new[] { sameIndex, equal });
+      }
+      var unchanged = ReadMap(mapSort, indexSorts, valueSort, stored.Arguments[0], indexes, token, depth + 1);
+      return new Ir.Operation(Ir.Operator.IfThenElse, valueSort, new[] { sameIndex, stored.Arguments[^1], unchanged });
+    }
+
+    private static Bpl.MapType ResolvedMapType(Bpl.Type type) {
+      for (var depth = 0; depth < Ir.Protocol.MaximumDepth; depth++) {
+        if (type is Bpl.TypeProxy proxy && ProxyTarget != null) { type = (Bpl.Type)ProxyTarget.GetValue(proxy); }
+        else if (type is Bpl.TypeSynonymAnnotation alias) { type = alias.ExpandedType; }
+        else { return type as Bpl.MapType; }
+      }
+      return null;
+    }
+
+    private bool TryMapObservationEquality(Bpl.QuantifierExpr quantifier, Environment env, bool old,
+      int depth, out Ir.Expression observation) {
+      observation = null;
+      // Metadata and all other quantifier shapes keep their existing translation.
+      if (quantifier is not Bpl.ForallExpr || quantifier.Attributes != null || quantifier.Triggers != null ||
+          quantifier.Body is not Bpl.NAryExpr { Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.Eq } } equality ||
+          equality.Args.Count != 2 ||
+          equality.Args[0] is not Bpl.NAryExpr { Fun: Bpl.MapSelect } left ||
+          equality.Args[1] is not Bpl.NAryExpr { Fun: Bpl.MapSelect } right ||
+          left.Args.Count == 0 || right.Args.Count == 0) { return false; }
+      var leftType = ResolvedMapType(left.Args[0].Type);
+      var rightType = ResolvedMapType(right.Args[0].Type);
+      if (leftType == null || rightType == null || leftType.TypeParameters.Count != 0 || rightType.TypeParameters.Count != 0 ||
+          leftType.Arguments.Count != quantifier.Dummies.Count || rightType.Arguments.Count != quantifier.Dummies.Count ||
+          left.Args.Count != quantifier.Dummies.Count + 1 || right.Args.Count != quantifier.Dummies.Count + 1) { return false; }
+      // Each complete tuple uses every binder exactly once, in the declared order on both sides.
+      for (var i = 0; i < quantifier.Dummies.Count; i++) {
+        if (left.Args[i + 1] is not Bpl.IdentifierExpr first || first.Decl != quantifier.Dummies[i] ||
+            right.Args[i + 1] is not Bpl.IdentifierExpr second || second.Decl != quantifier.Dummies[i] ||
+            Type(quantifier.Dummies[i].TypedIdent.Type) != Type(leftType.Arguments[i]) ||
+            Type(quantifier.Dummies[i].TypedIdent.Type) != Type(rightType.Arguments[i])) { return false; }
+      }
+      var mapSort = Type(leftType);
+      if (mapSort != Type(rightType) || Type(left.Type) != Type(leftType.Result) || Type(right.Type) != Type(rightType.Result)) { return false; }
+      var captured = new List<(Bpl.Variable Variable, bool Old)>();
+      FreeVariables(left.Args[0], new HashSet<Bpl.Variable>(), captured, old);
+      FreeVariables(right.Args[0], new HashSet<Bpl.Variable>(), captured, old);
+      if (captured.Any(capture => quantifier.Dummies.Contains(capture.Variable))) { return false; }
+      // Only the two map VALUES are captured, including their current/old environment substitutions.
+      var firstMap = Expr(left.Args[0], env, old, depth + 1);
+      var secondMap = Expr(right.Args[0], env, old, depth + 1);
+      Require(firstMap.Type == mapSort && secondMap.Type == mapSort,
+        "b3_map_signature", "Observation equality differs from its closed map signature", quantifier.tok);
+      observation = Apply("map-observation-equality:" + mapSort, "bool", new[] { firstMap, secondMap });
+      if (!mapObservationOrigins.ContainsKey(mapSort)) {
+        mapObservationOrigins.Add(mapSort, "Map observation equality abstraction: map=" + mapSort +
+          "; exact complete-tuple forall read equality is represented by an uninterpreted Bool predicate of the two map values; " +
+          "no observation instances, extensionality or reverse map equality are asserted. Other quantifiers remain unchanged.");
+      }
+      return true;
     }
 
     private Ir.Expression Expr(Bpl.Expr expression, Environment env, bool old = false, int depth = 0) {
@@ -320,6 +365,7 @@ public static class B3Normalizer {
           Require(quantifier.TypeParameters.Count == 0 && quantifier.Dummies.Count > 0,
             "b3_quantifier", "Type-polymorphic or empty quantifiers require specialization", quantifier.tok);
           Require(quantifier.Dummies.All(v => v.TypedIdent.WhereExpr == null), "b3_bound_where", "Bound-variable where clauses are unsupported", quantifier.tok);
+          if (TryMapObservationEquality(quantifier, env, old, depth, out var observation)) { return observation; }
           var bindings = quantifier.Dummies.Select(v => new Ir.Binding("sB" + ++boundNumber, Type(v.TypedIdent.Type))).ToArray();
           var nested = env.Bind(quantifier.Dummies.Select((v, i) => new KeyValuePair<Bpl.Variable, Ir.Expression>(v,
             new Ir.Variable(bindings[i].Name, bindings[i].Type))).ToDictionary(p => p.Key, p => p.Value));
@@ -468,7 +514,8 @@ public static class B3Normalizer {
         1 => Bpl.CoreOptions.SubsumptionOption.NotForQuantifiers, 2 => Bpl.CoreOptions.SubsumptionOption.Always,
         _ => options.UseSubsumption };
       var learn = mode == Bpl.CoreOptions.SubsumptionOption.Always ||
-        mode == Bpl.CoreOptions.SubsumptionOption.NotForQuantifiers && expression is not Ir.Quantifier;
+        mode == Bpl.CoreOptions.SubsumptionOption.NotForQuantifiers &&
+        expression is not Ir.Quantifier && condition is not Bpl.QuantifierExpr;
       var id = "sO" + role + (obligations.Count + 1);
       var origin = BoogieGenerator.ToDafnyToken(token);
       obligations.Add(new Ir.SourceIdentity(id, origin.Uri?.AbsoluteUri ?? token.filename ?? "",
