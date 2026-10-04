@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
@@ -47,14 +48,25 @@ public sealed class BoogieVerificationWorkItem : IVerificationWorkItem {
     var origin = BoogieGenerator.ToDafnyToken(task.Token);
     var scopeOrigin = BoogieGenerator.ToDafnyToken(task.ScopeToken);
     var owner = ((CanVerifyOrigin)task.ScopeToken).CanVerify;
-    var hidden = task.Split.HiddenFunctions.Select(f => f.tok).OfType<FromDafnyNode>()
-      .Select(n => n.Node).OfType<Function>().Distinct().OrderBy(f => f.Origin.Center).ToList();
+    // HiddenFunctions materializes lazy split blocks and runs pruning. Preserve the native
+    // lifecycle: Compilation reads it only for the selected declaration, before starting that task.
+    var hidden = new LazyReadOnlyList<Function>(() => task.Split.HiddenFunctions.Select(f => f.tok)
+      .OfType<FromDafnyNode>().Select(n => n.Node).OfType<Function>()
+      .Distinct().OrderBy(f => f.Origin.Center).ToList());
     var name = task.Split.Implementation.Name;
     var kind = name.StartsWith("CheckWellformed") ? VerificationUnitKind.Wellformedness :
       name.StartsWith("OverrideCheck") ? VerificationUnitKind.Override : VerificationUnitKind.Body;
     Source = new VerificationSourceInfo(owner, scopeOrigin, origin, kind,
       task.Split.Implementation.VerboseName, DescribePart(task.Split.Token,
         name.Contains("CheckWellFormed$"), true), hidden);
+  }
+
+  private sealed class LazyReadOnlyList<T>(Func<IReadOnlyList<T>> create) : IReadOnlyList<T> {
+    private readonly Lazy<IReadOnlyList<T>> items = new(create);
+    public int Count => items.Value.Count;
+    public T this[int index] => items.Value[index];
+    public IEnumerator<T> GetEnumerator() => items.Value.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
   }
 
   public VerificationStatus CacheStatus => ConvertStatus(Task.CacheStatus);
