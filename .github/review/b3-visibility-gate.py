@@ -114,15 +114,15 @@ def visibility():
     rows = [json.loads(line) for line in (output / 'visibility.txt').read_text().splitlines() if line.startswith('{')]
     expected = json.loads(Path('Source/DafnyB3Normalizer.Test/VisibilityInputs/cases.json').read_text())
     cases = [row for row in rows if row.get('kind') == 'visibility-case']
-    assert len(expected['cases']) == len(cases) == 27 and all(row['matched'] and row['allStrict'] and row['attemptsMatched'] for row in cases)
+    assert len(expected['cases']) == len(cases) == 29 and all(row['matched'] and row['allStrict'] and row['attemptsMatched'] for row in cases)
     assert {row['fixture'] for row in cases} == {case['file'] for case in expected['cases']}
     assert all(row['compilerVersion'] == '4.11.0+' + receipt['head'] and
                row['workerSourceFingerprint'] == receipt['sourceManifestSha256'] and
                row['solverVersion'] == '5.1.0' and row['solverSha256'] == receipt['solverSha256'] for row in cases)
     isolation = [row for row in rows if row.get('kind') == 'visibility-session-isolation']
     assert len(isolation) == 1 and isolation[0]['matched'] and len(isolation[0]['completions']) == 5
-    assert len(rows) == 29 and rows[-1] == {'kind': 'visibility-summary', 'matched': 28, 'total': 28, 'isolationMatched': True, 'passed': True}
-    receipt['visibility'] = {'cases': 27, 'sessionIsolationControls': 1, 'sessionIsolationLaunches': 5}
+    assert len(rows) == 31 and rows[-1] == {'kind': 'visibility-summary', 'matched': 30, 'total': 30, 'isolationMatched': True, 'passed': True}
+    receipt['visibility'] = {'cases': 29, 'sessionIsolationControls': 1, 'sessionIsolationLaunches': 5}
 
 
 try:
