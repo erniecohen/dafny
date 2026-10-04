@@ -483,7 +483,21 @@ namespace Microsoft.Dafny {
           FunctionCall(tok, "Set#FromBoogieMap", Predef.SetType, characteristicMap));
       }
 
+      private Expr WithFiniteViewAlias(IOrigin tok, FiniteSetView view, Func<FiniteSetView, Expr> body) {
+        // Boogie resolves triggers before lifting lambdas. Keep the exact map in
+        // a local definitional binding so triggers do not contain its lambda body.
+        var mapVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
+          BoogieGenerator.CurrentIdGenerator.FreshId("$finiteMap#"), Predef.ISetType));
+        var map = new Boogie.IdentifierExpr(tok, mapVar);
+        return new Boogie.LetExpr(tok, [mapVar], [view.CharacteristicMap], null,
+          body(FiniteView(tok, map)));
+      }
+
       private Expr DefineFiniteSetView(IOrigin tok, FiniteSetView view) {
+        return WithFiniteViewAlias(tok, view, aliased => DefineFiniteSetViewBound(tok, aliased));
+      }
+
+      private Expr DefineFiniteSetViewBound(IOrigin tok, FiniteSetView view) {
         var b = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
           BoogieGenerator.CurrentIdGenerator.FreshId("$finite#"), Predef.BoxType));
         var element = new Boogie.IdentifierExpr(tok, b);
@@ -568,6 +582,9 @@ namespace Microsoft.Dafny {
 
       private Expr DefineMapSelectedWitnesses(MapComprehension e) {
         var tok = GetToken(e);
+        var keysVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
+          BoogieGenerator.CurrentIdGenerator.FreshId("$choiceKeys#"), Predef.ISetType));
+        var keys = new Boogie.IdentifierExpr(tok, keysVar);
         var keyVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
           BoogieGenerator.CurrentIdGenerator.FreshId("$key#"), Predef.BoxType));
         var key = new Boogie.IdentifierExpr(tok, keyVar);
@@ -575,8 +592,11 @@ namespace Microsoft.Dafny {
         MapSelectedWitnesses(e, relation, out var projections);
         var inhabited = new Boogie.ExistsExpr(tok, relation.Dummies, relation.Body);
         var selected = Boogie.Expr.SelectTok(tok, relation, projections.ToArray());
-        return BplForall([keyVar], new Boogie.Trigger(tok, true, projections),
-          BplImp(inhabited, selected));
+        // Domain queries activate the choice fact. The exact domain map is named
+        // outside the quantifier to keep literal lambdas out of its trigger.
+        var choice = BplForall([keyVar], new Boogie.Trigger(tok, true,
+          [Boogie.Expr.SelectTok(tok, keys, key)]), BplImp(inhabited, selected));
+        return new Boogie.LetExpr(tok, [keysVar], [BuildMapComprehensionKeys(e)], null, choice);
       }
 
       private Expr TranslateMapComprehension(MapComprehension e) {
@@ -654,33 +674,35 @@ namespace Microsoft.Dafny {
 
       private Expr DefineSourceFiniteImage(ComprehensionExpr e, FiniteSetView view, Type imageType) {
         var tok = GetToken(e);
-        var allWitnessesFinite = BoundedPool.MissingBounds(e.BoundVars, e.Bounds,
-          BoundedPool.PoolVirtues.Finite).Count == 0;
-        Expr support = Boogie.Expr.True;
-        if (allWitnessesFinite) {
-          if (e.Bounds.Any(pool => pool is ExplicitAllocatedBoundedPool)) {
-            support = HeapExpr == null ? Boogie.Expr.False :
-              BoogieGenerator.FunctionCall(tok, BuiltinFunction.IsGoodHeap, null, HeapExpr);
+        return WithFiniteViewAlias(tok, view, aliased => {
+          var allWitnessesFinite = BoundedPool.MissingBounds(e.BoundVars, e.Bounds,
+            BoundedPool.PoolVirtues.Finite).Count == 0;
+          Expr support = Boogie.Expr.True;
+          if (allWitnessesFinite) {
+            if (e.Bounds.Any(pool => pool is ExplicitAllocatedBoundedPool)) {
+              support = HeapExpr == null ? Boogie.Expr.False :
+                BoogieGenerator.FunctionCall(tok, BuiltinFunction.IsGoodHeap, null, HeapExpr);
+            }
+          } else if (imageType.MayInvolveReferences) {
+            // Finite reference/image-carrier admission is relative to one finite
+            // allocation universe. Source call permissions alone do not establish
+            // this for arbitrary unallocated captures. Keep the actual predicate
+            // unchanged and require a uniform allocated image as a premise.
+            var heapVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
+              BoogieGenerator.CurrentIdGenerator.FreshId("$finiteHeap#"), Predef.HeapType));
+            var heap = new Boogie.IdentifierExpr(tok, heapVar);
+            var elementVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
+              BoogieGenerator.CurrentIdGenerator.FreshId("$finiteImage#"), Predef.BoxType));
+            var element = new Boogie.IdentifierExpr(tok, elementVar);
+            var selected = Boogie.Expr.SelectTok(tok, aliased.CharacteristicMap, element);
+            var allocated = BoogieGenerator.MkIsAllocBox(element, imageType, heap);
+            var uniformImage = BplForall([elementVar], new Boogie.Trigger(tok, true, [selected]),
+              BplImp(selected, allocated));
+            support = new Boogie.ExistsExpr(tok, [heapVar], BplAnd(
+              BoogieGenerator.FunctionCall(tok, BuiltinFunction.IsGoodHeap, null, heap), uniformImage));
           }
-        } else if (imageType.MayInvolveReferences) {
-          // Finite reference/image-carrier admission is relative to one finite
-          // allocation universe. Source call permissions alone do not establish
-          // this for arbitrary unallocated captures. Keep the actual predicate
-          // unchanged and require a uniform allocated image as a premise.
-          var heapVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
-            BoogieGenerator.CurrentIdGenerator.FreshId("$finiteHeap#"), Predef.HeapType));
-          var heap = new Boogie.IdentifierExpr(tok, heapVar);
-          var elementVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
-            BoogieGenerator.CurrentIdGenerator.FreshId("$finiteImage#"), Predef.BoxType));
-          var element = new Boogie.IdentifierExpr(tok, elementVar);
-          var selected = Boogie.Expr.SelectTok(tok, view.CharacteristicMap, element);
-          var allocated = BoogieGenerator.MkIsAllocBox(element, imageType, heap);
-          var uniformImage = BplForall([elementVar], new Boogie.Trigger(tok, true, [selected]),
-            BplImp(selected, allocated));
-          support = new Boogie.ExistsExpr(tok, [heapVar], BplAnd(
-            BoogieGenerator.FunctionCall(tok, BuiltinFunction.IsGoodHeap, null, heap), uniformImage));
-        }
-        return BplImp(support, DefineFiniteSetView(tok, view));
+          return BplImp(support, DefineFiniteSetViewBound(tok, aliased));
+        });
       }
 
       public Expr FiniteCollectionDefinition(ComprehensionExpr e) {

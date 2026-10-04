@@ -36,6 +36,32 @@ General images use equality with the actual boxed source term. The general-map
 witness relation includes source types and required allocation, and its chosen
 witness depends on the complete translated relation, including captures.
 
+## Map choices and captured environments
+
+The domain of a general map is the boxed image of its source key expression.
+For each key, its value is obtained from one source witness satisfying the
+same typed range/key relation. Every component of that witness receives the
+complete translated relation as its argument, so a single tuple choice can
+satisfy their coordinated property. Equal key expressions at different source
+environments do not force an incompatible shared witness.
+
+The old representation passed only the key to per-site witness projections.
+For a source function with body `map x: int | x == n :: 0 := x`, the chosen
+witness for key `0` consequently had no argument for the captured `n`.
+Using the source function at both `n = 0` and `n = 1` could constrain that
+same projection to equal both integers. The analogous defect occurs for
+`imap`: this choice problem is separate from the finite-support conversion
+principle. Removing only the finite-set bridge cannot repair it.
+
+The capture regressions request the two legitimate map values and then assert
+`false`; the repaired representation must preserve both values while rejecting
+that final assertion. Choice is a function of the complete witness predicate,
+including key, heap, type constraints, and source captures. This can be
+interpreted by selecting one tuple from each inhabited relation and returning
+its components; no injectivity assumption about source keys is required.
+The collision obligation still requires only that equal keys have equal values,
+so repeated keys with identical values remain accepted.
+
 ## Reference carrier admission
 
 A reference type is a finite source image carrier only relative to one valid

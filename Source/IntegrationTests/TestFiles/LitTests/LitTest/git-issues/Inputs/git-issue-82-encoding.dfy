@@ -23,7 +23,7 @@ ghost function Encoding82Guarded(n: int): bool {
 }
 
 ghost function Encoding82Typed(n: int): map<int, int> {
-  map x: Encoding82Tiny | true :: n := x
+  map x: Encoding82Tiny | true :: n + x := x
 }
 
 ghost function Encoding82Generic<T(!new)>(a: T): map<int, T> {

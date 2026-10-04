@@ -53,7 +53,7 @@ lemma LambdaReads(a: object?, b: object?, s: iset<object?>)
   var one := (x: int) requires 0 < x reads a => x;
   assert !one.requires(0);
   assert one.reads(1) == {a};
-  var finite := (x: int) reads set q: object? | q == a || q == b :: q => x;
+  var finite := (x: int) reads set q: object? | q in {a, b} :: q => x;
   assert finite.reads(0) == {a, b};
   var captured := (x: int) reads s => x;
   assert forall q: object? :: q in captured.reads(0) <==> q in s;

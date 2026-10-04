@@ -4,6 +4,10 @@
 // RUN: %baredafny verify "%s" --type-system-refresh:true --additional-axioms --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
 // RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-mixed-negative.dfy" --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
 // RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-empty-outer-negative.dfy" --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-spec-negative.dfy" --type-system-refresh:false --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-spec-negative.dfy" --type-system-refresh:false --additional-axioms --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-spec-negative.dfy" --type-system-refresh:true --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-spec-negative.dfy" --type-system-refresh:true --additional-axioms --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 type Empty = x: int | false witness *
@@ -87,4 +91,30 @@ lemma FiniteMapDomainAndMapCarrier(v: int) {
   assert map[false := true] in allBooleanMaps;
   var finiteMapImage := set i: int | 0 <= i < 2 :: map[true := i];
   assert finiteMapImage == {map[true := 0], map[true := 1]};
+}
+
+// Callers use only the opaque function contracts. These comprehensions occur in
+// postconditions, so their definitions must be available in common consequence
+// axioms, including when optional verification-only axioms are disabled.
+opaque ghost function OpaqueSuccessor(n: int): (s: set<int>)
+  ensures s == (set i: int | i == n :: i + 1)
+{
+  {n + 1}
+}
+
+opaque ghost function OpaqueConstantKey(n: int): (m: map<int, int>)
+  ensures m == (map i: int | i == n :: 0 := i)
+{
+  map[0 := n]
+}
+
+lemma UsesOpaqueComprehensionContracts(n: int) {
+  var s := OpaqueSuccessor(n);
+  assert n + 1 in s;
+  assert n !in s;
+  var m := OpaqueConstantKey(n);
+  assert m.Keys == {0};
+  assert m[0] == n;
+  var next := OpaqueConstantKey(n + 1);
+  assert next[0] == n + 1;
 }
