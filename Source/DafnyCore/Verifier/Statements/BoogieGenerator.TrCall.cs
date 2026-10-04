@@ -323,7 +323,15 @@ public partial class BoogieGenerator {
       } else {
         List<Expression> contextDecreases = codeContext.Decreases.Expressions;
         List<Expression> calleeDecreases = callee.Decreases.Expressions;
-        CheckCallTermination(tok, contextDecreases, calleeDecreases, null, receiver, substMap, directSubstMap, tySubst, etran, true, builder, codeContext.InferredDecreases, null);
+        // The caller's decreases clause is evaluated in the caller's state on entry, which old($Heap)
+        // denotes in a method.  A two-state lemma or function cannot change the heap, and in it old($Heap)
+        // is its previous heap, so there the state on entry is the current one.
+        var oldCaller = codeContext is not (TwoStateLemma or TwoStateFunction);
+        // The callee's decreases clause is evaluated in the callee's state, in which "old" denotes the
+        // previous heap of a two-state lemma: the heap at its label, if the call has one.
+        var calleeEtran = method is TwoStateLemma && atLabel != null ? etran.WithOld(etran.OldAt(atLabel)) : null;
+        CheckCallTermination(tok, contextDecreases, calleeDecreases, null, receiver, substMap, directSubstMap, tySubst, etran, oldCaller, builder, codeContext.InferredDecreases, null,
+          calleeEtran);
       }
     }
 
