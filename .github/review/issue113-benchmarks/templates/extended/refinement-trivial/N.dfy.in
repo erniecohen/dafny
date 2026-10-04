@@ -1,0 +1,39 @@
+newtype Value = b: int | true witness 0
+function Encode(b: int): Value
+  requires true
+{ b as Value }
+function Decode(v: Value): int { v as int }
+lemma RoundTrip(b: int)
+  requires true
+  ensures Decode(Encode(b)) == b
+{}
+lemma IntroductionFacts(b: int)
+  requires true
+  ensures true
+{}
+lemma ConcreteWitness() { var v := Encode(0); assert Decode(v) == 0; }
+method Work(n: nat) returns (checksum: int)
+  ensures 2 * checksum == n * (n + 1)
+{
+  var value := Encode(0);
+  var i := 0;
+  checksum := 0;
+  while i < n
+    invariant 0 <= i <= n
+    invariant Decode(value) == i
+    invariant true
+    invariant 2 * checksum == i * (i + 1)
+  {
+    var candidate := Decode(value) + 1;
+    assert true;
+    value := Encode(candidate);
+    checksum := checksum + Decode(value);
+    i := i + 1;
+  }
+}
+method Main() {
+  var warm := Work(@WARMUP@);
+  print "warmup:", warm, "\n";
+  var result := Work(@ITERATIONS@);
+  print "result:", result, "\n";
+}

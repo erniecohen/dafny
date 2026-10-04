@@ -1,0 +1,40 @@
+datatype Wrapper = Wrap(value: int)
+type Value = w: Wrapper | w.value >= 0 witness Wrap(0)
+function Encode(b: int): Value
+  requires b >= 0
+{ Wrap(b) as Value }
+function Decode(v: Value): int { v.value }
+lemma RoundTrip(b: int)
+  requires b >= 0
+  ensures Decode(Encode(b)) == b
+{}
+lemma IntroductionFacts(b: int)
+  requires b >= 0
+  ensures Decode(Encode(b)) >= 0
+{}
+lemma ConcreteWitness() { var v := Encode(0); assert Decode(v) == 0; }
+method Work(n: nat) returns (checksum: int)
+  ensures 2 * checksum == n * (n + 1)
+{
+  var value := Encode(0);
+  var i := 0;
+  checksum := 0;
+  while i < n
+    invariant 0 <= i <= n
+    invariant Decode(value) == i
+    invariant Decode(value) >= 0
+    invariant 2 * checksum == i * (i + 1)
+  {
+    var candidate := Decode(value) + 1;
+    assert candidate >= 0;
+    value := Encode(candidate);
+    checksum := checksum + Decode(value);
+    i := i + 1;
+  }
+}
+method Main() {
+  var warm := Work(2000);
+  print "warmup:", warm, "\n";
+  var result := Work(20000);
+  print "result:", result, "\n";
+}
