@@ -113,3 +113,6 @@ git-issues/git-issue-1461.dfy
 
 # Contextual lambda subset domains (#87 here).
 git-issues/git-issue-4949.dfy
+
+# Project and command-line compiler output filenames.
+git-issues/github-issue-104.dfy
