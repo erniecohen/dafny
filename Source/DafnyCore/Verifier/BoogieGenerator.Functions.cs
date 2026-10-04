@@ -798,8 +798,10 @@ public partial class BoogieGenerator {
           readsFacts = BplAnd(readsFacts, et.CanCallAssumption(frame.E));
         }
         var finiteSupport = et.FiniteReadsSupport(reads);
-        sink.AddTopLevelDeclaration(new Axiom(f.Origin,
-          BplForall(Concat(vars, bvars), BplTrigger(lhs_inner), BplImp(available, readsFacts))));
+        if (readsFacts is not Bpl.LiteralExpr { IsTrue: true }) {
+          sink.AddTopLevelDeclaration(new Axiom(f.Origin,
+            BplForall(Concat(vars, bvars), BplTrigger(lhs_inner), BplImp(available, readsFacts))));
+        }
         sink.AddTopLevelDeclaration(new Axiom(f.Origin,
           BplForall(Cons(bxVar, Concat(vars, bvars)), BplTrigger(lhs),
             BplImp(BplAnd(available, finiteSupport), Bpl.Expr.Eq(lhs, rhs)))));

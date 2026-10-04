@@ -4153,6 +4153,11 @@ namespace Microsoft.Dafny {
     /// </summary>
     void CreateMapComprehensionProjectionFunctions(MapComprehension mc) {
       Contract.Requires(mc != null && mc.TermLeft != null);
+      if (mc.ProjectionFunctionsSource != null) {
+        CreateMapComprehensionProjectionFunctions(mc.ProjectionFunctionsSource);
+        mc.ProjectionFunctions = mc.ProjectionFunctionsSource.ProjectionFunctions;
+        return;
+      }
       if (mc.ProjectionFunctions == null) {
         var varNameGen = CurrentIdGenerator.NestedFreshIdGenerator(string.Format("map$project${0}#", projectionFunctionCount));
         projectionFunctionCount++;

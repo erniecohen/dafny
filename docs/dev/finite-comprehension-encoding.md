@@ -77,8 +77,24 @@ complete witness domain is a finite union of finite fibers.
 | `ExplicitAllocatedBoundedPool` | Uniform finite allocated universe in one valid heap; the resolver preserves allocation-independence restrictions |
 | `AllocFreeBoundedPool` for reference types | Reference result carrier is finite in admitted source contexts; it is not a claim that arbitrary mathematical references are finite |
 | `OlderBoundedPool`, `SpecialAllocIndependenceAllocatedBoundedPool` | Allocation restrictions only; they supply no finite virtue |
-| Finite image carrier | `HasFinitePossibleValues` admits images over Boolean/character/enumeration/reference carriers, and finite key carriers, even when source witnesses are infinite |
+| Finite image carrier | `HasFinitePossibleValues` admits images over Boolean/character/enumeration/reference carriers, and actual finite map-value carriers, even when source witnesses are infinite |
 | `DatatypeInclusionBoundedPool` | A rank inequality is allocation independent, but does not establish finite support |
+
+### Finite key domains and finite map-value carriers
+
+`HasFinitePossibleValues` describes a carrier of whole values. For a map type
+both the key carrier and the value carrier must be finite: a partial map then
+has finitely many domain subsets and finitely many assignments per domain.
+A finite key carrier alone does not make all map values finite in number;
+`map<bool, int>` has infinitely many values, for example `map[true := i]` for
+every integer `i`.
+
+`BoundsDiscovery` therefore checks a set comprehension's element carrier or a
+map comprehension's key carrier directly. This preserves unbounded Boolean-key
+maps with arbitrary integer values, but rejects unbounded sets of those maps
+and maps using those complete maps as keys. Explicit finite witness bounds
+still admit either construction. Both resolver modes use this same formation
+check.
 
 ### Why datatype rank is not a finite bound
 

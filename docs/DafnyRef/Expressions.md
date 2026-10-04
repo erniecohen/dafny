@@ -1364,7 +1364,11 @@ establish a finite bound: there can be infinitely many datatype values below
 one rank. Use another finite bound, such as `d in aFiniteSet`, when the
 result type is not itself a finite carrier. The same restriction applies
 to finite map comprehensions. Infinite `iset` and `imap` comprehensions do
-not need this bound.
+not need this bound. The result carrier itself must be finite for this
+exception to apply: although each `map<bool, int>` has at most two keys,
+there are infinitely many such map values. A set comprehension producing
+those maps, or a map comprehension using them as keys, still needs finite
+witness bounds.
 
 Set comprehensions involving reference types such as
 

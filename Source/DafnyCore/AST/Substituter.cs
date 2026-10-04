@@ -1084,7 +1084,15 @@ namespace Microsoft.Dafny {
             newRange, newTerm, newAttrs);
         } else if (e is MapComprehension) {
           var mc = (MapComprehension)e;
-          newExpr = new MapComprehension(e.Origin, mc.Finite, newBoundVars, newRange, newTermLeft, newTerm, newAttrs);
+          var newMap = new MapComprehension(e.Origin, mc.Finite, newBoundVars, newRange, newTermLeft, newTerm, newAttrs);
+          if (ReferenceEquals(newBoundVars, mc.BoundVars)) {
+            // The projection signatures are unchanged. Their relation argument
+            // captures the substituted environment, so the declaration symbols
+            // can be shared without caching a translated relation or value.
+            newMap.ProjectionFunctionsSource = mc.ProjectionFunctionsSource ?? mc;
+            newMap.ProjectionFunctions = mc.ProjectionFunctions;
+          }
+          newExpr = newMap;
         } else if (expr is ForallExpr forallExpr) {
           newExpr = new ForallExpr(e.Origin, newBoundVars, newRange, newTerm, newAttrs);
         } else if (expr is ExistsExpr existsExpr) {

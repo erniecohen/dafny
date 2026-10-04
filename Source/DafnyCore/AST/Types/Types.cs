@@ -632,7 +632,9 @@ public abstract class Type : NodeWithOrigin {
         return true;
       }
       var mt = AsMapType;
-      if (mt != null && mt.Domain.HasFinitePossibleValues) {
+      if (mt != null && mt.Domain.HasFinitePossibleValues && mt.Range.HasFinitePossibleValues) {
+        // A finite key carrier bounds one map's domain, but the carrier of map
+        // values is finite only when its values also come from a finite carrier.
         return true;
       }
       var dt = AsDatatype;

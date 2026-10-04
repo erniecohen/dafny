@@ -17,11 +17,19 @@ public class MapComprehension : ComprehensionExpr, ICloneable<MapComprehension> 
   /// witness tuple and returns the representation of BoundVars[i]. Every component
   /// of a selected tuple receives the same predicate for the current key and
   /// environment; source-scoped facts establish their coordinated correctness.
-  /// The symbols are not copied by cloning, and translated predicates are never
-  /// cached here because their captures depend on the active translator.
+  /// Ordinary AST clones get new symbols. Substitution with the same BoundVars
+  /// shares the declaration source: relation parameters carry the changed captures,
+  /// while symbol identity keeps rebuilt characteristic lambdas equivalent.
+  /// Translated predicates are never cached here because their captures depend on
+  /// the active translator.
   /// </summary>
   [FilledInDuringTranslation]
   public List<Boogie.Function>? ProjectionFunctions;
+
+  // Same-binder substitutions share this source even before its symbols have
+  // been declared. Keeping only a currently-null symbol list would lose identity.
+  [FilledInDuringTranslation]
+  internal MapComprehension? ProjectionFunctionsSource;
 
   public MapComprehension Clone(Cloner cloner) {
     return new MapComprehension(cloner, this);

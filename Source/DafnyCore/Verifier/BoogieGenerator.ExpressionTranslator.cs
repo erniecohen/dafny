@@ -652,10 +652,43 @@ namespace Microsoft.Dafny {
         return lambda;
       }
 
+      private Expr DefineSourceFiniteImage(ComprehensionExpr e, FiniteSetView view, Type imageType) {
+        var tok = GetToken(e);
+        var allWitnessesFinite = BoundedPool.MissingBounds(e.BoundVars, e.Bounds,
+          BoundedPool.PoolVirtues.Finite).Count == 0;
+        Expr support = Boogie.Expr.True;
+        if (allWitnessesFinite) {
+          if (e.Bounds.Any(pool => pool is ExplicitAllocatedBoundedPool)) {
+            support = HeapExpr == null ? Boogie.Expr.False :
+              BoogieGenerator.FunctionCall(tok, BuiltinFunction.IsGoodHeap, null, HeapExpr);
+          }
+        } else if (imageType.MayInvolveReferences) {
+          // Finite reference/image-carrier admission is relative to one finite
+          // allocation universe. Source call permissions alone do not establish
+          // this for arbitrary unallocated captures. Keep the actual predicate
+          // unchanged and require a uniform allocated image as a premise.
+          var heapVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
+            BoogieGenerator.CurrentIdGenerator.FreshId("$finiteHeap#"), Predef.HeapType));
+          var heap = new Boogie.IdentifierExpr(tok, heapVar);
+          var elementVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
+            BoogieGenerator.CurrentIdGenerator.FreshId("$finiteImage#"), Predef.BoxType));
+          var element = new Boogie.IdentifierExpr(tok, elementVar);
+          var selected = Boogie.Expr.SelectTok(tok, view.CharacteristicMap, element);
+          var allocated = BoogieGenerator.MkIsAllocBox(element, imageType, heap);
+          var uniformImage = BplForall([elementVar], new Boogie.Trigger(tok, true, [selected]),
+            BplImp(selected, allocated));
+          support = new Boogie.ExistsExpr(tok, [heapVar], BplAnd(
+            BoogieGenerator.FunctionCall(tok, BuiltinFunction.IsGoodHeap, null, heap), uniformImage));
+        }
+        return BplImp(support, DefineFiniteSetView(tok, view));
+      }
+
       public Expr FiniteCollectionDefinition(ComprehensionExpr e) {
         return e switch {
-          SetComprehension { Finite: true } set => DefineFiniteSetView(GetToken(set), BuildSetComprehensionView(set)),
-          MapComprehension { Finite: true } map => DefineFiniteSetView(GetToken(map), BuildMapComprehensionDomain(map)),
+          SetComprehension { Finite: true } set =>
+            DefineSourceFiniteImage(set, BuildSetComprehensionView(set), set.Type.AsSetType.Arg),
+          MapComprehension { Finite: true } map =>
+            DefineSourceFiniteImage(map, BuildMapComprehensionDomain(map), map.Type.AsMapType.Domain),
           _ => Boogie.Expr.True
         };
       }

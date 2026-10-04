@@ -212,10 +212,15 @@ namespace Microsoft.Dafny {
 
             if ((e as SetComprehension)?.Finite == true || (e as MapComprehension)?.Finite == true) {
               // the comprehension had better produce a finite set
-              if (e.Type.HasFinitePossibleValues) {
-                // This means the set is finite, regardless of if the Range is bounded.  So, we don't give any error here.
-                // However, if this expression is used in a non-ghost context (which is not yet known at this stage of
-                // resolution), the resolver will generate an error about that later.
+              // Finiteness of a comprehension depends on the image/key carrier,
+              // not on the carrier of complete collection values. In particular,
+              // map<bool, int> has a finite domain but infinitely many map values.
+              var imageType = e is MapComprehension
+                ? e.Type.AsMapType.Domain
+                : e.Type.AsSetType.Arg;
+              if (imageType.HasFinitePossibleValues) {
+                // The image/key carrier is finite regardless of the witness range.
+                // Compilation still requires enumerable witness bounds, checked later.
               } else {
                 // we cannot be sure that the set/map really is finite
                 foreach (var bv in BoundedPool.MissingBounds(e.BoundVars, e.Bounds,
