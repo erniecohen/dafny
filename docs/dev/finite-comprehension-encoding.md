@@ -5,6 +5,10 @@ membership-preservation law from backend Boolean maps to finite sets. The
 conversion function remains total, but its membership equations are supplied
 only for actual finite source expressions under their source contexts.
 
+The [verdict and resource review](finite-comprehension-cost-review.md) records
+the complete prescribed corpus comparison, including remaining proof-budget
+failures and individual cost increases.
+
 ## Relative model and obligations
 
 Interpret `Set` as finite subsets of the box carrier. For a backend map `m`,
