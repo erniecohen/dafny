@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "Real B3 corpus passes all 29 controls; strict map acceptance, remaining IDE controls and full default-Boogie cost parity remain pending.",
+  "status": "Focused real B3 corpus passes all 36 controls, strict map acceptance 15/15 and IDE/regressions 40/40 plus 4/4. Combined package acceptance and full default-Boogie cost parity remain pending.",
   "entries": [
     {
       "kind": "default-backend verdict regression",
@@ -51,22 +51,22 @@
       "kind": "IDE counterexample response and project ownership controls",
       "evidence": "https://github.com/erniecohen/dafny/actions/runs/37201990430",
       "finding": "The outgoing capability error reached clients as -32603 instead of -32600. A root-change test also incorrectly expected an excluded source to retain its configured project.",
-      "repair": "The outgoing RPC error and project-ownership repairs passed focused run 37203719622. One counterexample fixture observed an initial state before resolution; a valid preflight fixture and resolved-state synchronization await execution.",
-      "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37203719622"
+      "repair": "All 40 focused IDE controls passed, including actual outgoing RPC codes, retained/excluded source ownership and error-free resolved nonempty units whose verification stays unstarted under capability rejection.",
+      "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37207692187"
     },
     {
       "kind": "integration regression selection",
       "evidence": "https://github.com/erniecohen/dafny/actions/runs/37201990430",
       "finding": "The scratch filter used method names for file-based regressions and selected zero tests. Its explicit denominator check failed.",
-      "repair": "DisplayName selected all four cases in focused run 37203719622; three passed and the empty-selection diagnostic expectation omitted its CLI prefix. The complete literal diagnostic correction awaits execution.",
-      "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37203719622"
+      "repair": "DisplayName selected exactly four cases and all passed, including the corrected complete empty-selection configuration diagnostic.",
+      "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37207692187"
     },
     {
       "kind": "strict map worker acceptance",
       "evidence": "https://github.com/erniecohen/dafny/actions/runs/37201990430",
       "finding": "Six of fifteen fixtures matched. Eight expected negatives and one tuple read-over-write positive returned Inconclusive under the pinned solver configuration; the opaque polymorphic negative returned Failed.",
-      "repair": "Replace global quantified helpers with the direct read-over-write ITE identity and conservatively abstract exact complete-tuple observation equality. The written model argument, strict verdict targets and scope exclusions are preserved. These source repairs await execution; Unknown remains a gate failure. Focused execution matched 14/15 verdict targets and 97/98 structural controls. Boolean observation equality was rewritten to equivalence by pinned type checking and missed the matcher; the narrowly typed correction awaits recheck.",
-      "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37206332514"
+      "repair": "Direct read-over-write ITE normalization and exact complete-tuple observation abstraction, including Boogie typed Boolean equivalence, passed all 15 strict worker verdict/attempt targets. No global map axioms, unknown waiver or solver configuration change was used.",
+      "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37207690631"
     },
     {
       "kind": "same-process default-backend comparison prerequisite",
@@ -74,6 +74,12 @@
       "evidence": "https://github.com/erniecohen/dafny/actions/runs/37206727693",
       "finding": "All four baseline/candidate help and malformed-command controls passed with pinned loaded Core identities, actual context collection and zero residual direct children.",
       "consequence": "This establishes loader/argument prerequisites, not native query equality or resource-count parity. A solver ownership supervisor is required before proof comparisons."
+    },
+    {
+      "kind": "superseded arithmetic exclusion fixture",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/37207690631",
+      "finding": "137/138 structural controls passed; the remaining row expected native integer division to be unsupported after its reviewed implementation. All 39 new integer cases and all 36 real-input cases passed.",
+      "repair": "Remove only the obsolete unsupported row; new typed native controls retain coverage. The corrected 137-control source awaits the combined gate."
     }
   ]
 }
