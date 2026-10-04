@@ -45,6 +45,7 @@ internal static class NativeLifecycleControls {
         fixtureSourceSha256 = input.FixtureSourceSha256, fixtureSha256 = input.FixtureSha256,
         fixtureBuildReceiptSha256 = input.BuildReceiptSha256, fixtureBuildDeclaration = input.BuildDeclaration,
         fixtureBuildEvidenceKind = "CI-declaration-not-signed-compiler-origin", delegatedPidCeiling = 300,
+        effectiveUid = GetEffectiveUserId(), privilegeScope = "explicit-privileged-ci-no-unprivileged-deployment-claim",
         noProductLoaded = NoProductLoaded(), invokesVerification = false, controls = results, failureCode = failure
       }, Json);
       if (bytes.Length > 1048576) { Console.Error.WriteLine("Lifecycle receipt bound exceeded."); return 2; }
@@ -397,6 +398,7 @@ internal static class NativeLifecycleControls {
   private static bool NoProductLoaded() => !AssemblyLoadContext.Default.Assemblies.Any(a =>
     (a.GetName().Name ?? "").StartsWith("Dafny", StringComparison.OrdinalIgnoreCase) ||
     (a.GetName().Name ?? "").StartsWith("Boogie", StringComparison.OrdinalIgnoreCase));
+  [DllImport("libc", EntryPoint = "geteuid")] private static extern uint GetEffectiveUserId();
   private static byte[] Pattern(int length, int factor, int offset) => Enumerable.Range(0, length).Select(i => (byte)((i * factor + offset) & 255)).ToArray();
   private static string Digest(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
   private static JsonDocument ReadJson(string path, int bound) {
