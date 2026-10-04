@@ -581,6 +581,14 @@ git-issues/git-issue-1347.dfy	0	0 verified, 0 errors
 git-issues/git-issue-1373.dfy	2		6,7
 git-issues/git-issue-1377.dfy	2		22,25,36,37,38,39
 git-issues/git-issue-1384.dfy	0	0 verified, 0 errors	
+git-issues/git-issue-141-datatype-cast-false-control.dfy	4	0 verified, 1 error	8
+git-issues/git-issue-141-datatype-cast-hidden-negative.dfy	4	2 verified, 2 errors	18,22
+git-issues/git-issue-141-datatype-cast-hidden-nonvacuity.dfy	4	4 verified, 1 error	31
+git-issues/git-issue-141-datatype-cast-hidden-positive.dfy	0	5 verified, 0 errors	
+git-issues/git-issue-141-datatype-cast-invariant-negative.dfy	4	0 verified, 2 errors	6,11
+git-issues/git-issue-141-datatype-cast-negative.dfy	4	0 verified, 7 errors	9,14,18,22,26,30,35
+git-issues/git-issue-141-datatype-cast-resolver-negative.dfy	2		5
+git-issues/git-issue-141.dfy	0	12 verified, 0 errors	
 git-issues/git-issue-1419.dfy	2		8,17,23,25,27,32,33,34,38,39,40,44,45,46,49,50,51,52,56,59,65,94,106,110,118,126,130,134,138,142,146,150,154,187,195,202,205,206,210,218,219,252,253,256,262,263,264,265
 git-issues/git-issue-1423.dfy	0	4 verified, 0 errors	
 git-issues/git-issue-1435.dfy	4	1 verified, 1 error	6
