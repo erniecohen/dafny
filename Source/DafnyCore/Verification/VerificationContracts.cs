@@ -23,7 +23,10 @@ public interface IVerificationBackend : IDisposable {
 
 /// <summary>The shared, pre-VC translation. A backend owns any subsequent mutation.</summary>
 public record VerificationPreparation(ResolutionResult Resolution, ModuleDefinition Module,
-  Microsoft.Boogie.Program IntermediateProgram);
+  Microsoft.Boogie.Program IntermediateProgram) {
+  /// <summary>Distinguishes reported translation errors from a legitimate empty program.</summary>
+  public bool TranslationHasErrors { get; init; }
+}
 
 public record VerificationIdentity(string ScopeId, string Key, int BatchId, int RandomSeed);
 public enum VerificationUnitKind { Body, Wellformedness, Override, Other }

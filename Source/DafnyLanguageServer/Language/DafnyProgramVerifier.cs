@@ -63,10 +63,9 @@ namespace Microsoft.Dafny.LanguageServer.Language {
           ExecutionEngine.PrintBplFile(program.Options, fileName, boogieProgram, false, false, program.Options.PrettyPrint);
         }
 
-        if (errorReporter.CountExceptVerifierAndCompiler(ErrorLevel.Error) != errorsBeforeTranslation) {
-          throw new InvalidOperationException("Verification preparation failed during translation");
-        }
-        return await backend.PrepareAsync(new VerificationPreparation(resolution, moduleDefinition, boogieProgram), cancellationToken);
+        return await backend.PrepareAsync(new VerificationPreparation(resolution, moduleDefinition, boogieProgram) {
+          TranslationHasErrors = errorReporter.CountExceptVerifierAndCompiler(ErrorLevel.Error) != errorsBeforeTranslation
+        }, cancellationToken);
       }
       finally {
         mutex.Release();
