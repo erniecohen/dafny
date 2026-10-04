@@ -454,6 +454,11 @@ public class UserDefinedType : NonProxyType, IHasReferences {
 
   public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes) {
     if (ResolvedClass is ArrowTypeDecl) {
+      // A value of a general arrow type may capture references, and its reads frame shows them
+      // (erniecohen/dafny#132).
+      return true;
+    } else if (ResolvedClass != null && (ArrowType.IsPartialArrowTypeName(ResolvedClass.Name) || ArrowType.IsTotalArrowTypeName(ResolvedClass.Name))) {
+      // A partial or total arrow reads nothing, so it shows references only through its arguments and result.
       return TypeArgs.Any(ta => ta.ComputeMayInvolveReferences(visitedDatatypes));
     } else if (ResolvedClass is ClassLikeDecl) {
       return true;
