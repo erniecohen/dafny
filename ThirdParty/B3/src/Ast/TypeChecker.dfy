@@ -374,9 +374,12 @@ module TypeChecker {
         case Div | Mod =>
           var _ :- ExpectOperandTypes(op, types, IntType);
           typ := IntType;
-        case RealDiv | ToInt =>
+        case RealDiv =>
           var _ :- ExpectOperandTypes(op, types, RealType);
-          typ := if op == ToInt then IntType else RealType;
+          typ := RealType;
+        case ToInt =>
+          var _ :- ExpectOperandTypes(op, types, RealType);
+          typ := IntType;
         case ToReal =>
           var _ :- ExpectOperandTypes(op, types, IntType);
           typ := RealType;

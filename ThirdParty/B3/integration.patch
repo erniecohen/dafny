@@ -241,7 +241,7 @@ index fac14413f30b2205e88828cfd90d88148ab4d473..bd0ea730b631299e4859ec264a186078
          print op.ToString();
          Expression(args[0], opStrength.SubexpressionPower(Side.Right, context));
 diff --git a/src/Ast/TypeChecker.dfy b/src/Ast/TypeChecker.dfy
-index 786d65a8a215e29ad86a110edd5d2154c42b1056..27b5a20613eca0c00805067881f9a1f5e8308160 100644
+index 786d65a8a215e29ad86a110edd5d2154c42b1056..6a3d5c5fcadf55d343e93d1683e6adcf6ac8e18b 100644
 --- a/src/Ast/TypeChecker.dfy
 +++ b/src/Ast/TypeChecker.dfy
 @@ -140,6 +140,7 @@ module TypeChecker {
@@ -290,7 +290,7 @@ index 786d65a8a215e29ad86a110edd5d2154c42b1056..27b5a20613eca0c00805067881f9a1f5
      case CustomLiteral(_, typ) =>
        return Success(typ);
      case IdExpr(v) =>
-@@ -358,11 +367,19 @@ module TypeChecker {
+@@ -358,11 +367,22 @@ module TypeChecker {
            }
            typ := BoolType;
          case Less | AtMost =>
@@ -303,16 +303,19 @@ index 786d65a8a215e29ad86a110edd5d2154c42b1056..27b5a20613eca0c00805067881f9a1f5
 +        case Div | Mod =>
            var _ :- ExpectOperandTypes(op, types, IntType);
            typ := IntType;
-+        case RealDiv | ToInt =>
++        case RealDiv =>
 +          var _ :- ExpectOperandTypes(op, types, RealType);
-+          typ := if op == ToInt then IntType else RealType;
++          typ := RealType;
++        case ToInt =>
++          var _ :- ExpectOperandTypes(op, types, RealType);
++          typ := IntType;
 +        case ToReal =>
 +          var _ :- ExpectOperandTypes(op, types, IntType);
 +          typ := RealType;
        }
        return Success(typ);
      case FunctionCallExpr(func, args) =>
-@@ -406,6 +423,21 @@ module TypeChecker {
+@@ -406,6 +426,21 @@ module TypeChecker {
        return Failure("closure must be elaborated before type checking");
    }
 
@@ -472,7 +475,7 @@ index 0000000000000000000000000000000000000000..fad28a0357ff194a9366140b382cc5cd
 +  }
 +}
 diff --git a/src/Parser/Parser.dfy b/src/Parser/Parser.dfy
-index da95bf4076e2a1a1510f9183fa76ca94797bdf6d..e988df9cd852ff63cf7478fa23bbddec1c4ec337 100644
+index da95bf4076e2a1a1510f9183fa76ca94797bdf6d..e67a70f2c49036b3b4158fbc9105dfcade72e8fc 100644
 --- a/src/Parser/Parser.dfy
 +++ b/src/Parser/Parser.dfy
 @@ -316,6 +316,7 @@ module Parser {
@@ -498,7 +501,7 @@ index da95bf4076e2a1a1510f9183fa76ca94797bdf6d..e988df9cd852ff63cf7478fa23bbddec
    }
 
 +  const parseSignedInteger: B<int> :=
-+    Sym("-").Option().I_I(Nat.I_e(W)).M2(MId, (minus, n) => if minus.Some? then -n else n)
++    Sym("-").Option().I_I(Nat.I_e(W)).M2(MId, (minus: Option<string>, n: nat) => if minus.Some? then -n else n)
 +
    function parseAtomicExpr(c: ExprRecSel): B<Expr> {
      Or([
