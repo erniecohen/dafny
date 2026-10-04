@@ -1513,7 +1513,12 @@ namespace Microsoft.Dafny {
             var dd = (NewtypeDecl)d;
             if (Options.Get(CommonOptionBag.ExtendedNewtypeBases) && dd.Constraint != null) {
               var ancestor = dd.BaseType.NormalizeToAncestorType();
-              if (ancestor.IsDatatype || ancestor.IsArrowType || ancestor.IsBigOrdinalType) {
+              // A hidden carrier or type parameter cannot justify predicate
+              // stability. Keep constrained parameters invariant until the base
+              // is known to belong to the existing general-newtype families.
+              // This admission check must not reveal hidden operations.
+              if (ancestor.IsDatatype || ancestor.IsArrowType || ancestor.IsBigOrdinalType ||
+                  ancestor.IsInternalTypeSynonym || ancestor.IsAbstractType || ancestor.IsTypeParameter) {
                 foreach (var tp in dd.TypeArgs.Where(tp => tp.Variance != TypeParameter.TPVariance.Non)) {
                   reporter.Error(MessageSource.Resolver, tp.Origin,
                     "a constrained newtype with an extended base only supports invariant type parameters");
