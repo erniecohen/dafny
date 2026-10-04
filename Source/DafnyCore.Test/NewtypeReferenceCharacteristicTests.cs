@@ -232,9 +232,20 @@ public class NewtypeReferenceCharacteristicTests {
     characteristics.ContainsNoReferenceTypes = noReferences;
     var provided = new InternalTypeSynonymDecl(SourceOrigin.NoToken, new Name("Provided"),
       characteristics, [], module, new ThrowOnSubstitution(), null);
-    var wrapped = Application(Newtype("Outer", Application(provided)));
-    Assert.Equal(!noReferences, wrapped.MayInvolveReferences);
-    Assert.Equal(!noReferences, wrapped.MayShowReferences);
+    var scope = new VisibilityScope("ProvidedReferenceScope");
+    provided.AddVisibilityScope(scope, true);
+    var outer = Newtype("Outer", Application(provided));
+    outer.AddVisibilityScope(scope, false);
+    var wrapped = Application(outer);
+    Type.PushScope(scope);
+    Type.EnableScopes();
+    try {
+      Assert.Equal(!noReferences, wrapped.MayInvolveReferences);
+      Assert.Equal(!noReferences, wrapped.MayShowReferences);
+    } finally {
+      Type.DisableScopes();
+      Type.PopScope(scope);
+    }
   }
 
   [Fact]
