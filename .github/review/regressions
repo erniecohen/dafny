@@ -125,3 +125,9 @@ git-issues/git-issue-1962.dfy
 
 # Function call permissions after assign-such-that (#36 here).
 git-issues/github-issue-36.dfy
+
+# Regression and consistency controls for issue 146.
+git-issues/git-issue-146.dfy
+git-issues/git-issue-146-negative.dfy
+git-issues/git-issue-146-actual-arguments.dfy
+git-issues/git-issue-146-actual-arguments-negative.dfy
