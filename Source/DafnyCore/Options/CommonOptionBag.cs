@@ -160,6 +160,9 @@ The value may be a comma-separated list of files and folders.".TrimStart());
     IsHidden = true
   };
 
+  public static readonly Option<bool> ProjectOutput = new("--project-output",
+    "Use the project's output filename when running, and require a nonempty filename stem for compiler output. Defaults to false.");
+
   public static readonly Option<FileInfo> Output = new(["--output", "-o"],
     "Specify the filename and location for the generated target language files.") {
     ArgumentHelpName = "file",
@@ -242,6 +245,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> AllowAxioms = new("--allow-axioms", () => false,
     "Prevents a warning from being generated for axioms, such as assume statements and functions or methods without a body, that don't have an {:axiom} attribute.") {
   };
+
+  public static readonly Option<bool> ContextualLambdaDomains = new("--contextual-lambda-domains", () => false,
+    "With the refreshed type system, infer omitted parameters of function-result lambdas from the declared arrow domain. Disabled by default.");
 
   public static readonly Option<bool> TypeSystemRefresh = new("--type-system-refresh", () => false,
     @"
@@ -677,6 +683,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(ShowHints, OptionScope.Cli);
     OptionRegistry.RegisterOption(Libraries, OptionScope.Module);
     OptionRegistry.RegisterOption(Output, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ProjectOutput, OptionScope.Cli);
     OptionRegistry.RegisterOption(PluginOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(Prelude, OptionScope.Cli);
     OptionRegistry.RegisterOption(Target, OptionScope.Cli);
@@ -694,6 +701,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(GeneralTraits, OptionScope.Cli);
     OptionRegistry.RegisterOption(GeneralNewtypes, OptionScope.Cli);
     OptionRegistry.RegisterOption(TypeSystemRefresh, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ContextualLambdaDomains, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationLogFormat, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerifyIncludedFiles, OptionScope.Cli);
     OptionRegistry.RegisterOption(DisableNonLinearArithmetic, OptionScope.Module);

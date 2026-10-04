@@ -71,6 +71,7 @@ public static class DafnyCommands {
 
   public static readonly IReadOnlyList<Option> ExecutionOptions = new Option[] {
     CommonOptionBag.Target,
+    CommonOptionBag.ProjectOutput,
     CommonOptionBag.SpillTranslation,
     CommonOptionBag.InternalIncludeRuntimeOptionForExecution,
     CommonOptionBag.ExecutionCoverageReport
@@ -106,6 +107,7 @@ public static class DafnyCommands {
     CommonOptionBag.GeneralTraits,
     CommonOptionBag.GeneralNewtypes,
     CommonOptionBag.TypeSystemRefresh,
+    CommonOptionBag.ContextualLambdaDomains,
     CommonOptionBag.TypeInferenceDebug,
     CommonOptionBag.NewTypeInferenceDebug,
     Method.ReadsClausesOnMethods,

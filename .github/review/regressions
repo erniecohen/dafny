@@ -112,5 +112,14 @@ git-issues/git-issue-1416.dfy
 # Reflexivity of heap succession at two-state function values (#94 here).
 git-issues/git-issue-1461.dfy
 
+# Contextual lambda subset domains (#87 here).
+git-issues/git-issue-4949.dfy
+
+# Project and command-line compiler output filenames.
+git-issues/github-issue-104.dfy
+
+# Generic subset fields must use the supplied C# cloning converter.
+git-issues/git-issue-5881.dfy
+
 # Allocation of function values from what they capture (#132 here).
 git-issues/github-issue-132.dfy
