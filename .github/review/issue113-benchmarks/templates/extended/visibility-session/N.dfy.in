@@ -1,0 +1,15 @@
+module Provider@MODULE_INDEX@ {
+  export API provides Value, Decode, Encode, RoundTrip reveals Box
+  export Visible reveals Value, Box, Decode, Encode, RoundTrip
+  datatype Box = Box(value: int)
+  newtype Value = Box
+  function Encode(b: Box): Value { b as Value }
+  function Decode(v: Value): Box { v as Box }
+  lemma RoundTrip(b: Box) ensures Decode(Encode(b)) == b {}
+}
+module Client@MODULE_INDEX@ {
+  import Hidden = Provider@MODULE_INDEX@`API
+  import Visible = Provider@MODULE_INDEX@`Visible
+  lemma HiddenRoundTrip(b: Hidden.Box) ensures Hidden.Decode(Hidden.Encode(b)) == b { Hidden.RoundTrip(b); }
+  lemma VisibleRoundTrip(b: Visible.Box) ensures Visible.Decode(Visible.Encode(b)) == b {}
+}
