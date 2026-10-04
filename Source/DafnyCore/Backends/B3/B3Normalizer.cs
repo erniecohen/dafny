@@ -33,6 +33,9 @@ public static class B3Normalizer {
     DafnyOptions options) {
     try {
       return new Normalization(program, implementation, options).Run();
+    } catch (B3StructuredCfgCorrespondence.Rejection rejected) {
+      return new B3NormalizationResult(null, Array.Empty<Ir.SourceIdentity>(),
+        new[] { new B3NormalizationDiagnostic("b3_cfg_correspondence", rejected.Message, rejected.Token) }, Array.Empty<string>());
     } catch (B3DefinitionVisibility.Rejection rejected) {
       return new B3NormalizationResult(null, Array.Empty<Ir.SourceIdentity>(),
         new[] { new B3NormalizationDiagnostic("b3_visibility", rejected.Message, rejected.Token) }, Array.Empty<string>());
@@ -118,6 +121,7 @@ public static class B3Normalizer {
       Require(unit.StructuredStmts != null, "b3_structure", "A structured pre-VC body is required", unit.tok);
       Require(unit.InParams.Count == unit.Proc.InParams.Count && unit.OutParams.Count == unit.Proc.OutParams.Count,
         "b3_formals", "Implementation/procedure formal lists differ", unit.tok);
+      B3StructuredCfgCorrespondence.Validate(unit);
       InspectControl(unit.StructuredStmts);
       if (visibilityCommands.Count > 0 || hasScopeCommands) { visibility = new B3DefinitionVisibility(unit); }
       var formals = new Dictionary<Bpl.Variable, Ir.Expression>();

@@ -69,7 +69,7 @@ Resolve and Typecheck inspect Blocks rather than StructuredStmts
 once (`Implementation.cs:400-403`). Typed input alone therefore does not establish
 that those two mutable representations still correspond.
 
-The bounded validator will use the exact producer at Boogie
+The bounded validator uses the exact producer at Boogie
 `73a0e214a87df85fc058270268c1d0706fd05bc9`,
 `Source/Core/AST/StructuredBoogie/BigBlocksResolutionContext.cs`:
 
@@ -79,7 +79,8 @@ The bounded validator will use the exact producer at Boogie
   `CreateBlocks:382-403,594-605` derives runoff and break transfers from them.
   `CheckLegalLabels:228-245` selects the nearest loop or named lexical enclosure.
 - `CreateBlocks:413-450` creates only exact Guard and Not(Guard) assumptions with
-  one empty partition attribute, and reuses every yield/invariant object at the
+  one empty partition attribute, including the pinned `Expr.Not` simplifications
+  (`Expression/AbsyExpr.cs:275-333`), and reuses every yield/invariant object at the
   loop header. `453-477` supplies the loop body, backedge and exit topology.
 - `CreateBlocks:494-525,527-584` supplies branch guards and exact successor order;
   conditional jump attributes are the original IfCmd attributes. Else-if guards
@@ -88,8 +89,8 @@ The bounded validator will use the exact producer at Boogie
   anonymous first block, otherwise creates a separate guard block; an empty
   prefix needs no extra block. The validator checks this placement.
 
-Reconstruct only owned expected descriptions in deterministic producer block
-order. Bind each generated label to the corresponding actual block, without
+The validator reconstructs only owned expected descriptions in deterministic
+producer block order. It binds each generated label to the corresponding actual block, without
 constructing native nodes, guessing label spellings or trusting mutable successor
 metadata. Require exact command object sequences, exact generated guard shapes,
 explicit transfer identities, matching goto names and resolved target objects,
@@ -230,6 +231,10 @@ is not used as an API correctness premise.
 `Source/DafnyB3Normalizer.Test/B3DefinitionContextTests.cs` checks active source
 ownership, intact guards, finite Bool instances, declaration object identity,
 original learning flags, mixed-mode availability and actual Dafny translation.
+`B3CfgCorrespondenceTests.cs` adds 20 producer-shape/mutation controls for ordinary
+commands, generated guards, branch/loop/break/return topology and complete block
+consumption. Raw-only false-assertion controls also cover nested StateCmd goals.
+The large-loop control now rejects at the earlier correspondence bound.
 `B3VisibilityTests.cs` checks source immutability, unchanged-visibility loops and
 explicit rejection of changing cycles or unequal outer scope stacks.
 `B3ContextCoordinatorTests.cs` checks exact aggregate outcomes, one shared
