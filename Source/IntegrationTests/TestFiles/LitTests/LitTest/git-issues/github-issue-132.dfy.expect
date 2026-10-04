@@ -48,9 +48,3 @@ resolution (type-system-refresh:true)
 github-issue-132-resolution.dfy(11,16): Error: type parameter (T) passed to twostate lemma AllocatedNew must contain no references (got () ~> int)
 github-issue-132-resolution.dfy(16,5): Error: type 'NoRefs' declared as containing no reference types, but the RHS type (() ~> int) may contain reference types
 2 resolution/type errors detected in github-issue-132-resolution.dfy
-bounds (type-system-refresh:false)
-github-issue-132-bounds.dfy(4,2): Error: a forall expression involved in a predicate definition is not allowed to depend on the set of allocated references, but values of 'g' (of type '() ~> int') may contain references (see documentation for 'older' parameters)
-1 resolution/type errors detected in github-issue-132-bounds.dfy
-bounds (type-system-refresh:true)
-github-issue-132-bounds.dfy(4,2): Error: a forall expression involved in a predicate definition is not allowed to depend on the set of allocated references, but values of 'g' (of type '() ~> int') may contain references (see documentation for 'older' parameters)
-1 resolution/type errors detected in github-issue-132-bounds.dfy
