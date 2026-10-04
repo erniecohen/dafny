@@ -6,7 +6,7 @@ The implementation reuses the existing typed, pre-VC Dafny-to-Boogie AST transla
 
 The branch implements an experimental bool/int slice with a supervised worker. It retains goals, state transitions, modular contracts and inductive loop checks, and rejects unhandled constructs. Source axioms, nonidentity definitions, distinctness constraints and lambda equations remain omitted. Direct closed monomorphic maps now have only the reviewed read-over-write helper laws; polymorphic maps and collection definitions remain conservative abstractions. The [map correspondence argument](map-helper-correspondence.md) and 15 strict worker verdict controls record the exact boundary. This is incomplete support, with real/bitvector and visibility coverage tracked below.
 
-The complete integration gate has not passed. Public [probe 37199018093](https://github.com/erniecohen/dafny/actions/runs/37199018093) compiled the CLI and passed 22 Core, 58 structural normalizer and 29 protocol controls, including the newline-write counterfactual. Its verifying library bootstrap then ran out of memory under the probe's one-GiB managed-heap cap; no downstream corpus or host result from that run counts as passed. [Probe 37200885683](https://github.com/erniecohen/dafny/actions/runs/37200885683) raises only the bootstrap cap and includes the current map and IDE migration/capability controls. Its result is pending.
+The complete integration gate has not passed. Public [run 37201990430](https://github.com/erniecohen/dafny/actions/runs/37201990430) compiled the CLI and passed 26 Core, 76 structural normalizer, 41 protocol and 24 host controls, including the newline-write counterfactual. Its pinned bootstrap verified all 557 B3 library batches, and all 29 real Dafny corpus controls passed. IDE checks passed 38/40; strict typed map checks matched 6/15. Eight map negatives and one tuple positive were inconclusive, so map acceptance remains failed. The integration-regression filter selected no tests and its denominator check failed; a corrected focused gate will require all four cases. Scratch job success alone is not acceptance.
 
 Focused default-Boogie checking confirms the translation-error repair, while exact full-suite resource-count parity remains unresolved. Repairs and pending checks are recorded in `discrepancies.json`. This checkpoint is not an experimental release candidate yet.
 
@@ -38,7 +38,7 @@ Editor counterexample requests require a backend that provides models. B3 reques
 
 B3 uses a fresh isolated process for each generated checking unit. The time limit covers the unit, including worker startup and IO. It requires a positive time limit and currently supports Unix process groups, arithmetic solver 2, and ordinary Z3 invocation. Solver unknown, invalid packages, incomplete output, cancellation and unsupported input produce non-success outcomes. Models, proof dependencies and resource counts are unavailable in this slice; options requiring those capabilities fail explicitly.
 
-Editor verification caching is unsupported. Keep `cache-verification = 0` (the default) in project options, or `--cache-verification 0` when starting `server`. Nonzero levels fail configuration preflight even for a source without verification units.
+Editor verification caching is unsupported. Keep `cache-verification = 0` (the default) in project options, or `--cache-verification 0` when starting `server`. Positive levels fail configuration preflight even for a source without verification units.
 
 ## Running the backend gate
 
