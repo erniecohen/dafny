@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
+using OmniSharp.Extensions.JsonRpc;
 using OmniSharp.Extensions.JsonRpc.Server;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35,7 +36,7 @@ namespace Microsoft.Dafny.LanguageServer.Handlers.Custom {
         if (projectManager != null) {
           var compilation = projectManager.Compilation;
           if ((compilation.BackendCapabilities & VerificationCapabilities.Counterexamples) == 0) {
-            throw new RequestException(ErrorCodes.InvalidRequest, null,
+            throw new RpcErrorException(ErrorCodes.InvalidRequest, null,
               $"The {compilation.VerificationBackendName} verification backend does not provide counterexample models.");
           }
 
@@ -53,7 +54,7 @@ namespace Microsoft.Dafny.LanguageServer.Handlers.Custom {
         logger.LogWarning("counter-examples requested for unloaded document {DocumentUri}",
           request.TextDocument.Uri);
         return new CounterExampleList();
-      } catch (RequestException) {
+      } catch (RpcErrorException) {
         // Capability rejection is an expected protocol response, not an internal fault.
         throw;
       } catch (OperationCanceledException) {

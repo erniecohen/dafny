@@ -92,26 +92,51 @@ public class B3ProjectMigrationTest : ClientBasedLanguageServerTest {
   }
 
   [Fact]
-  public async Task OrdinaryRootChangesUseOneReplacementAndNewRoots() {
-    await SetUp(options => options.Set(ProjectManager.Verification, VerifyOnMode.Never));
+  public async Task RootChangesRemapRetainedSourcesAndDetachExcludedSource() {
+    await SetUp(options => {
+      options.Set(ProjectManager.Verification, VerifyOnMode.Never);
+      options.WarnShadowing = false;
+    });
     var directory = GetFreshTempPath();
     Directory.CreateDirectory(directory);
     try {
       var projectPath = Path.Combine(directory, DafnyProject.FileName);
-      await File.WriteAllTextAsync(projectPath, "includes = [\"first.dfy\", \"second.dfy\"]");
+      await File.WriteAllTextAsync(projectPath, "includes = [\"first.dfy\", \"second.dfy\", \"third.dfy\"]");
       var (first, second) = await OpenTwoSources(directory);
+      var thirdDocument = CreateTestDocument("method Third() {}", Path.Combine(directory, "third.dfy"));
+      await File.WriteAllTextAsync(thirdDocument.Uri.ToUri().LocalPath, thirdDocument.Text);
+      await Projects.OpenDocument(thirdDocument);
+      var third = new TextDocumentIdentifier(thirdDocument.Uri);
       var previous = (await Projects.GetProjectManager(first))!;
+      Assert.Same(previous, await Projects.GetProjectManager(second));
+      Assert.Same(previous, await Projects.GetProjectManager(third));
       await previous.Compilation.Resolution;
       await FileTestExtensions.WriteWhenUnlocked(projectPath,
-        "includes = [\"first.dfy\"]\n[options]\nwarn-shadowing = true");
+        "includes = [\"first.dfy\", \"third.dfy\"]\n[options]\nwarn-shadowing = true");
       var replacement = (await Projects.GetProjectManager(first))!;
+      Assert.NotSame(previous, replacement);
       Assert.True(previous.IsDisposed);
-      Assert.Same(replacement, await Projects.GetProjectManager(second));
+      Assert.Same(replacement, await Projects.GetProjectManager(third));
       Assert.True(replacement.Compilation.Options.WarnShadowing);
       var roots = await replacement.Compilation.RootFiles;
-      Assert.Single(roots);
-      Assert.Equal(first.Uri.ToUri(), roots[0].Uri);
+      Assert.Equal(new[] { first.Uri.ToUri(), third.Uri.ToUri() }, roots.Select(root => root.Uri));
+      var detached = (await Projects.GetProjectManager(second))!;
+      Assert.NotSame(replacement, detached);
+      Assert.Equal(second.Uri.ToUri(), detached.Project.Uri);
+      Assert.False(detached.Compilation.Options.WarnShadowing);
+      Assert.Equal(second.Uri.ToUri(), Assert.Single(await detached.Compilation.RootFiles).Uri);
+      Assert.Equal(2, Projects.Managers.Count());
       await replacement.Compilation.Resolution;
+      await detached.Compilation.Resolution;
+
+      // Only retained sources keep the replacement alive after the excluded source moves away.
+      Projects.CloseDocument(first);
+      Assert.False(replacement.IsDisposed);
+      Projects.CloseDocument(third);
+      Assert.True(replacement.IsDisposed);
+      Assert.False(detached.IsDisposed);
+      Projects.CloseDocument(second);
+      Assert.True(detached.IsDisposed);
     } finally {
       Directory.Delete(directory, true);
     }
