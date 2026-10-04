@@ -1,0 +1,5 @@
+git-issue-143-codatatype-destructive-guarded-observation-positive.dfy(10,29): Error: co-recursive observation: value does not satisfy the subset constraints of 'nat'
+git-issue-143-codatatype-destructive-guarded-observation-positive.dfy(15,0): Error: a postcondition could not be proved on this return path
+git-issue-143-codatatype-destructive-guarded-observation-positive.dfy(14,30): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 2 errors

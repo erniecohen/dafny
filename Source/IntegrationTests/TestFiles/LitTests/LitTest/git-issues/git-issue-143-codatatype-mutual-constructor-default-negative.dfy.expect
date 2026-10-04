@@ -1,0 +1,4 @@
+git-issue-143-codatatype-mutual-constructor-default-negative.dfy(6,64): Error: co-recursive observation: value does not satisfy the subset constraints of 'Impossible'
+git-issue-143-codatatype-mutual-constructor-default-negative.dfy(6,64): Error: co-recursive observation: value does not satisfy the subset constraints of 'Impossible'
+
+Dafny program verifier finished with 1 verified, 2 errors
