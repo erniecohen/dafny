@@ -1,0 +1,5 @@
+git-issue-146-negative.dfy(17,4): Error: assertion could not be proved
+git-issue-146-negative.dfy(21,4): Error: assertion could not be proved
+git-issue-146-negative.dfy(26,4): Error: assertion could not be proved
+
+Dafny program verifier finished with 2 verified, 3 errors
