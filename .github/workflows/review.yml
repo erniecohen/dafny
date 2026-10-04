@@ -67,9 +67,7 @@ jobs:
       - name: Version
         id: version
         run: sh .github/review/version.sh | tee -a "$GITHUB_OUTPUT"
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+      - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -131,9 +129,7 @@ jobs:
         axioms: ['off', 'on']
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+      - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: dafny
@@ -234,9 +230,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+      - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: dafny
@@ -295,9 +289,7 @@ jobs:
         axioms: ['off', 'on']
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+      - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: dafny
@@ -397,9 +389,7 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+      - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -460,9 +450,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+      - uses: ./.github/actions/setup-dotnet
       - name: Boogie packages
         run: sh Scripts/fetch-boogie-packages.sh
       - name: Build resolver and language-server tests
@@ -547,9 +535,7 @@ jobs:
         run: |
           echo "tag ${{ github.ref_name }}, version ${{ needs.build.outputs.version }}"
           test "${{ github.ref_name }}" = "v${{ needs.build.outputs.version }}"
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+      - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

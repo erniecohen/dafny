@@ -1,0 +1,26 @@
+name: Issue 75 safe build migration probe
+on:
+  push:
+    branches: ['scratch/issue75/build-probe']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  migration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Record migration checks, including expected failures
+        run: python3 .github/review/issue75-build-probe.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue75-build-probe
+          path: issue75-probe
+          retention-days: 14

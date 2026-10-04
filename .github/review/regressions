@@ -208,3 +208,5 @@ git-issues/git-issue-143-codatatype-two-constructors-negative.dfy
 git-issues/git-issue-143-codatatype-typed-self-observation-negative.dfy
 git-issues/git-issue-143-codatatype-update-negative.dfy
 git-issues/git-issue-143.dfy
+# Build migration must preserve generated C# framework defaults.
+git-issues/github-issue-75.dfy
