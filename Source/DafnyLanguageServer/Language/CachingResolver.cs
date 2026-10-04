@@ -58,6 +58,13 @@ public class CachingResolver : ProgramResolver {
     return cache.SystemClassMembers!;
   }
 
+  public override void AddSystemClass(TopLevelDeclWithMembers declaration, Dictionary<string, MemberDecl> members) {
+    base.AddSystemClass(declaration, members);
+    // Bitvector types can be added after ResolveSystemModule. Their declarations are
+    // cached in Builtins, so retain their member tables for the next resolution too.
+    cache.SystemClassMembers![declaration] = members;
+  }
+
   protected override ModuleResolutionResult ResolveModuleDeclaration(CompilationData compilation, ModuleDecl decl) {
     var hash = GetHash(decl);
     hashes[decl] = hash;
