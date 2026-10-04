@@ -1,0 +1,61 @@
+original, option off (type-system-refresh:false)
+git-issue-1461-original.dfy(7,13): Error: function precondition could not be proved
+
+Dafny program verifier finished with 0 verified, 1 error
+original, option off (type-system-refresh:true)
+git-issue-1461-original.dfy(7,13): Error: function precondition could not be proved
+
+Dafny program verifier finished with 0 verified, 1 error
+positive, option off (type-system-refresh:false)
+git-issue-1461-positive.dfy(10,11): Error: function precondition could not be proved
+git-issue-1461-positive.dfy(12,11): Error: function precondition could not be proved
+git-issue-1461-positive.dfy(23,21): Error: assertion might not hold
+
+Dafny program verifier finished with 7 verified, 3 errors
+original (type-system-refresh:false)
+
+Dafny program verifier finished with 1 verified, 0 errors
+positive (type-system-refresh:false)
+
+Dafny program verifier finished with 9 verified, 0 errors
+negative (type-system-refresh:false)
+git-issue-1461-negative.dfy(10,4): Error: assertion might not hold
+git-issue-1461-negative.dfy(16,4): Error: assertion might not hold
+git-issue-1461-negative.dfy(22,22): Error: assertion might not hold
+git-issue-1461-negative.dfy(5,48): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 1 verified, 3 errors
+original (type-system-refresh:true)
+
+Dafny program verifier finished with 1 verified, 0 errors
+positive (type-system-refresh:true)
+
+Dafny program verifier finished with 9 verified, 0 errors
+negative (type-system-refresh:true)
+git-issue-1461-negative.dfy(10,4): Error: assertion might not hold
+git-issue-1461-negative.dfy(16,4): Error: assertion might not hold
+git-issue-1461-negative.dfy(22,22): Error: assertion might not hold
+git-issue-1461-negative.dfy(5,48): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 1 verified, 3 errors
+Boogie, extensional heaps (typeEncoding:m)
+git-issue-1461.bpl(37,3): Error: this assertion could not be proved
+Execution trace:
+    git-issue-1461.bpl(37,3): anon0
+git-issue-1461.bpl(53,3): Error: this assertion could not be proved
+Execution trace:
+    git-issue-1461.bpl(46,3): anon0
+
+Boogie program verifier finished with 3 verified, 2 errors
+Boogie, Dafny's encoding (typeEncoding:a)
+git-issue-1461.bpl(37,3): Error: this assertion could not be proved
+Execution trace:
+    git-issue-1461.bpl(37,3): anon0
+git-issue-1461.bpl(51,3): Error: this assertion could not be proved
+Execution trace:
+    git-issue-1461.bpl(46,3): anon0
+git-issue-1461.bpl(53,3): Error: this assertion could not be proved
+Execution trace:
+    git-issue-1461.bpl(46,3): anon0
+
+Boogie program verifier finished with 3 verified, 3 errors

@@ -1,0 +1,1 @@
+The default-off `--additional-axioms` option also makes heap succession reflexive on good heaps, so that a two-state function used as a value, or passed to another function, can be applied where its previous heap is the current one.

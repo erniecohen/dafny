@@ -46,7 +46,8 @@ addition imposes no new model restriction in combination with `S`; it does not
 prove consistency of the entire prelude or of `S`. The shared switch also exposes the closed literal identities derived below.
 Those identities are entailed by the trusted literal definition, so the same
 model argument applies with both additions enabled. Inventory this again when
-adding another family.
+adding another family; the reflexivity of heap succession (#94), below,
+does so.
 
 The strict upper bound and lower bound are essential: the total native round
 trip is zero at `2^w`, and is `2^w - 1` at `-1`. Native conversions being total
@@ -374,6 +375,79 @@ partial sweep was stopped. It supplies no whole-file green result. The
 20,000,000-RU per-query limit was not raised, and the failed grouped case is not
 made into an acceptance gate or used to redesign the axiom family.
 
+
+## Heap succession is reflexive (#94)
+
+[Issue 94](https://github.com/erniecohen/dafny/issues/94) (dafny-lang/dafny#1461):
+a two-state function used as a value is applied with `Requires0`, whose axiom
+needs `$HeapSucc(previous, current)`. Where the value was made at a method's
+entry, the two heaps are the same, and nothing proved `$HeapSucc(h, h)`. With
+the option, the prelude has one more axiom:
+
+```boogie
+axiom (forall h: Heap :: {:qid "additional_axioms_heap_succ_reflexive"} { $HeapSucc(h, h) }
+  $IsGoodHeap(h) ==> $HeapSucc(h, h));
+```
+
+It is in `DafnyPrelude.bpl` (and `Prelude/PreludeCore.bpl`) under
+`#if ADDITIONAL_AXIOMS`, and Dafny defines `ADDITIONAL_AXIOMS` when it reads the
+prelude only if the option is on, as it defines `UNICODE_CHAR` for
+`--unicode-char`. With the option off, the parsed prelude is the same as before.
+
+### Model
+
+Interpret `$HeapSucc(h, k)` as inclusion of the allocated references:
+`$Unbox(read(h, o, alloc)): bool ==> $Unbox(read(k, o, alloc)): bool` for every
+reference `o`. It is reflexive, so the new axiom holds, and each prelude axiom
+that concludes or uses `$HeapSucc` holds too:
+
+- transitivity, also without its `a != c` guard, and the monotonicity of `alloc`:
+  inclusion is transitive, and monotonicity is the definition;
+- the update axiom, with the guard of [#81](https://github.com/erniecohen/dafny/issues/81):
+  a write to another field or another reference leaves every `alloc` bit as it
+  was, and a write to `alloc` at `r` is a step only if `r` stays allocated when it
+  was. Without that guard there is no model with extensional heaps at all (#81),
+  so this member needs the guard, which is on by default;
+- `$HeapSuccGhost`, interpreted as inclusion together with equality of the
+  non-ghost fields, and the monotonicity of `$IsAlloc` and `$IsAllocBox`, which
+  depend on the heap through `alloc` only.
+
+The other axioms take `$HeapSucc(h0, h1)` as a hypothesis: `Seq#FromArray`,
+the frame axioms of functions and of arrow types, and the `#requires` and
+definition axioms of two-state functions. With `h0 = h1` the frame axioms
+conclude `F(h0) == F(h0)`, and the two-state axioms give the function's
+precondition and body with its previous heap equal to its current one, a state
+in which a two-state function's well-formedness is already checked, since the
+check assumes only `$HeapSucc(previous, current)`.
+
+The encoding already relies on reflexivity in its intended model. A two-state
+lemma's implementation assumes `$HeapSucc(previous$Heap, current$Heap)`, but a
+call does not check it, and at a method's entry it passes `old($Heap)` and
+`$Heap`, which are the same heap. The case `CallAtEntry` in
+`git-issues/Inputs/git-issue-1461-positive.dfy` verifies with the option off.
+Such a proof is sound only in a model in which `$HeapSucc(h, h)` holds.
+
+### Combination with the other members
+
+The bounded round trips and the literal identities are entailed by the trusted
+theory `T`. So the models of
+`T` with all members are the models of `T` with reflexivity, among them the
+inclusion model above (relative to the intended interpretation of the rest of
+`T`, as for the existing axioms).
+
+### Trigger and controls
+
+Z3 matches the pattern `$HeapSucc(h, h)` modulo equality: it fires where a term
+`$HeapSucc(a, b)` exists with `a = b` known, and not for every good heap.
+`git-issues/git-issue-1461.dfy` runs the issue's program with the option off (it
+fails) and on (it verifies), positive cases, and vacuity controls in which
+reflexivity is in play and `assert false` and two false assertions about the
+value must fail, in both resolver modes. A Boogie part appends procedures to the
+emitted program with the option: reflexivity holds on a good heap and is not
+stated for another; under the monomorphic encoding (`-typeEncoding:m`), where
+heaps are extensional, writing back a reference's own `alloc` box and
+transitivity with possibly equal end points are steps; and in #81's scenario,
+where the restoring write gives back a good heap, `assert false` still fails.
 
 ## Standing CI for the shared option (#50)
 

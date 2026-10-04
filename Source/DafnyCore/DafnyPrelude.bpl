@@ -640,6 +640,13 @@ axiom (forall a,b,c: Heap :: { $HeapSucc(a,b), $HeapSucc(b,c) }
   a != c ==> $HeapSucc(a,b) && $HeapSucc(b,c) ==> $HeapSucc(a,c));
 axiom (forall h: Heap, k: Heap :: { $HeapSucc(h,k) }
   $HeapSucc(h,k) ==> (forall o: ref :: { read(k, o, alloc) } $Unbox(read(h, o, alloc)) ==> $Unbox(read(k, o, alloc))));
+#if ADDITIONAL_AXIOMS
+// Heap succession is reflexive on good heaps (erniecohen/dafny#94, dafny-lang/dafny#1461).  It
+// holds in the model in which $HeapSucc(h, k) says that every reference allocated in h is
+// allocated in k; docs/dev/additional-axioms.md gives the argument.  --additional-axioms.
+axiom (forall h: Heap :: {:qid "additional_axioms_heap_succ_reflexive"} { $HeapSucc(h, h) }
+  $IsGoodHeap(h) ==> $HeapSucc(h, h));
+#endif
 
 function $HeapSuccGhost(Heap, Heap): bool;
 
