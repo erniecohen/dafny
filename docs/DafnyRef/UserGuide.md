@@ -2356,6 +2356,24 @@ and what information it produces about the verification process.
   by placing the attribute [`{:disable-nonlinear-arithmetic}`](#sec-disable-nonlinear-arithmetic) after the module keyword.
   The attribute optionally takes the value `false` to enable nonlinear arithmetic.
 
+* `--verification-backend boogie|b3` - select the verification backend. Boogie is
+  the default. B3 is an experimental backend that consumes Dafny's typed pre-VC
+  translation and runs a separate checked B3 worker. Unsupported constructs and
+  options, incomplete worker output and unavailable packages cause verification
+  failure. The initial bool/int slice uses a weaker context with source axioms
+  and map/lambda equations omitted; it may fail proofs that Boogie accepts.
+  See [B3 support and build instructions](../dev/b3/README.md).
+  In a project file use `verification-backend = "b3"` in `[options]`; the CLI
+  overrides that setting. This selection also applies to editor verification.
+
+* `--b3-worker <path>` - locate a packaged `DafnyB3Host.dll`. Its build manifest
+  and dependencies must be adjacent to it. The default location is
+  `b3/DafnyB3Host.dll` beside Dafny. B3 currently requires Unix process-group
+  isolation, Z3, arithmetic solver 2, and a positive verification time limit.
+  The time limit applies to the whole generated checking unit, including worker
+  startup and IO. Native Boogie model, proof-analysis and detailed metric options
+  are unsupported by this slice and produce explicit diagnostics.
+
 * `--arithmetic-solver N` - select Z3's arithmetic solver for modules without an
   explicit [`{:z3ArithmeticSolver N}`](#sec-z3-arithmetic-solver) attribute.
   The default is 2; values from 0 through 6 are accepted. Solver 6 can help with

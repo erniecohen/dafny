@@ -303,7 +303,7 @@ public class NormalizerTests {
     Assert.True(result.Success, string.Join("\n", result.Diagnostics.Select(d => d.Code + ": " + d.Message)));
     var request = new Ir.Request(Ir.Protocol.Version, "normalizer-test", Ir.Protocol.NormalizerVersion,
       new string('0', 40), Ir.Protocol.GetProgramHash(result.Program!), result.Program!.Unit.Name, result.Program,
-      new Ir.Configuration("z3", new[] { "-in", "-smt2" }, 1000, 10000, 100000, 2), result.Obligations);
+      new Ir.Configuration("z3", new[] { "-in", "-smt2" }, 1000, 10000, 100000, 2, "5.1.0", new string('d', 64)), result.Obligations, new string('f', 64));
     Ir.ProtocolValidation.ValidateRequest(request);
   }
 }

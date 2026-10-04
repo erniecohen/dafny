@@ -1,0 +1,1 @@
+Adds an opt-in experimental B3 verification backend with checked normalization of a bool/int subset, a supervised worker, and explicit non-success results for unsupported input or incomplete execution. Boogie remains the default.

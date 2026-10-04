@@ -1,5 +1,5 @@
 # Run these tasks even if eponymous files or folders exist
-.PHONY: test-dafny exe
+.PHONY: test-dafny test-b3 exe
 
 DIR=$(realpath $(dir $(firstword $(MAKEFILE_LIST))))
 
@@ -153,3 +153,13 @@ gen-deserializer:
 
 test-integration: gen-integration
 	(git status --porcelain || (echo 'Consider running `make gen-integration`'; exit 1; ))
+
+# Opt-in backend gate; B3_LIBRARY must come from the pinned verifying bootstrap.
+test-b3:
+	@test -n "$(B3_LIBRARY)" || (echo "Set B3_LIBRARY to the verified B3Library.dll" >&2; exit 64)
+	@test -n "$(Z3_PATH)" || (echo "Set Z3_PATH to Z3 5.1.0" >&2; exit 64)
+	(cd "${DIR}"; dotnet build Source/Dafny/Dafny.csproj -c Release)
+	(cd "${DIR}"; dotnet test Source/DafnyCore.Test/DafnyCore.Test.csproj -c Release --filter 'FullyQualifiedName~VerificationContractsTest|FullyQualifiedName~B3BackendSelectionTest|FullyQualifiedName~B3WorkItemTest')
+	(cd "${DIR}"; dotnet test Source/DafnyB3Normalizer.Test/DafnyB3Normalizer.Test.csproj -c Release)
+	(cd "${DIR}"; Source/DafnyB3Host.Test/run-tests.sh "$(B3_LIBRARY)" "$(Z3_PATH)")
+	(cd "${DIR}"; python3 Scripts/check-b3-integration.py Binaries/net8.0/Dafny.dll build/b3-host-tests/package/DafnyB3Host.dll "$(Z3_PATH)")

@@ -68,6 +68,8 @@ public sealed class WorkerProcessClient(string executable, IReadOnlyList<string>
         catch (Exception drainError) { error ??= new IOException("B3 stderr cleanup failed", drainError); }
       }
     }
+    // The deadline and caller cancellation also cover process/pipe cleanup.
+    if (token.IsCancellationRequested) { error ??= new OperationCanceledException(token); }
     if (error is null && completion is not null) { return completion; }
     var outcome = cancellationToken.IsCancellationRequested ? Outcome.Cancelled :
       error is OperationCanceledException ? Outcome.TimedOut : Outcome.ToolError;

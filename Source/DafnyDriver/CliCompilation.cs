@@ -48,8 +48,9 @@ public class CliCompilation {
     options.RunningBoogieFromCommandLine = true;
 
     var input = new CompilationInput(options, 0, options.DafnyProject);
-    var executionEngine = new ExecutionEngine(options, new EmptyVerificationResultCache(), DafnyMain.LargeThreadScheduler);
-    Compilation = createCompilation(new BoogieVerificationBackend(executionEngine), input);
+    var backend = VerificationBackendFactory.Create(options, () =>
+      new BoogieVerificationBackend(new ExecutionEngine(options, new EmptyVerificationResultCache(), DafnyMain.LargeThreadScheduler)));
+    Compilation = createCompilation(backend, input);
   }
 
   public async Task<int> GetAndReportExitCode() {
@@ -145,6 +146,11 @@ public class CliCompilation {
       }
 
     });
+    if (Options.GetOrOptionDefault(B3OptionBag.VerificationBackend) == B3OptionBag.Backend.B3 &&
+        Options.Get(VerifyCommand.FilterPosition) != null) {
+      Compilation.Reporter.Error(MessageSource.Project, Token.Cli,
+        "B3 does not currently support --filter-position; use --filter-symbol to select whole checking units");
+    }
     Compilation.Start();
   }
 

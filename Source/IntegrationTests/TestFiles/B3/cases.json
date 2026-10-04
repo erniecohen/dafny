@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "name": "true",
+      "file": "true.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "false",
+      "file": "false.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion"
+    },
+    {
+      "name": "integer",
+      "file": "integer.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "contract",
+      "file": "contract.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bad-postcondition",
+      "file": "bad-postcondition.dfy",
+      "exitCode": 4,
+      "diagnostic": "postcondition"
+    },
+    {
+      "name": "bad-precondition",
+      "file": "bad-precondition.dfy",
+      "exitCode": 4,
+      "diagnostic": "precondition"
+    },
+    {
+      "name": "branch",
+      "file": "branch.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bad-branch",
+      "file": "bad-branch.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion"
+    },
+    {
+      "name": "real",
+      "file": "real.dfy",
+      "exitCode": 4,
+      "diagnostic": "b3_primitive_type"
+    },
+    {
+      "name": "bitvector",
+      "file": "bitvector.dfy",
+      "exitCode": 4,
+      "diagnostic": "b3_primitive_type"
+    },
+    {
+      "name": "division",
+      "file": "division.dfy",
+      "exitCode": 4,
+      "diagnostic": "b3_arithmetic"
+    },
+    {
+      "name": "visibility",
+      "file": "visibility.dfy",
+      "exitCode": 4,
+      "diagnostic": "b3_visibility"
+    }
+  ]
+}

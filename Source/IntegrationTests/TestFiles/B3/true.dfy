@@ -1,0 +1,1 @@
+method T() { assert true; }

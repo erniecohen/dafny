@@ -83,6 +83,7 @@ Determine when to automatically verify the program. Choose from: Never, OnChange
   private readonly DafnyOptions serverOptions;
   private readonly CreateCompilation createCompilation;
   private BoogieVerificationBackend? boogieBackend;
+  private B3VerificationBackend? b3Backend;
   private readonly IFileSystem fileSystem;
   private readonly TelemetryPublisherBase telemetryPublisher;
   private readonly IProjectDatabase projectDatabase;
@@ -120,7 +121,7 @@ Determine when to automatically verify the program. Choose from: Never, OnChange
     latestIdeState = initialIdeState;
 
     observer = createIdeStateObserver(initialIdeState);
-    Compilation = this.createCompilation(GetBoogie(), compilationInput);
+    Compilation = this.createCompilation(GetVerificationBackend(), compilationInput);
 
     observerSubscription = Disposable.Empty;
   }
@@ -142,7 +143,7 @@ Determine when to automatically verify the program. Choose from: Never, OnChange
     latestIdeState = latestIdeState.Migrate(options, migrator, version, false);
 
     Compilation.Dispose();
-    Compilation = createCompilation(GetBoogie(), input);
+    Compilation = createCompilation(GetVerificationBackend(), input);
     var migratedUpdates = GetStates(Compilation);
     states = new ReplaySubject<IdeState>(1);
     var statesSubscription = observerSubscription =
@@ -162,7 +163,12 @@ Determine when to automatically verify the program. Choose from: Never, OnChange
     TriggerVerificationForFile(triggeringFile);
   }
 
-  private IVerificationBackend GetBoogie() {
+  private IVerificationBackend GetVerificationBackend() {
+    if (options.GetOrOptionDefault(B3OptionBag.VerificationBackend) == B3OptionBag.Backend.B3) {
+      b3Backend?.Dispose();
+      b3Backend = (B3VerificationBackend)VerificationBackendFactory.Create(options, () => throw new InvalidOperationException("Unexpected Boogie backend construction"));
+      return b3Backend;
+    }
     if (options.Get(ReuseSolvers)) {
       boogieBackend ??= new BoogieVerificationBackend(new ExecutionEngine(options, cache, scheduler));
     } else {
@@ -385,6 +391,7 @@ Determine when to automatically verify the program. Choose from: Never, OnChange
   public void Dispose() {
     IsDisposed = true;
     boogieBackend?.Dispose();
+    b3Backend?.Dispose();
     Compilation.Dispose();
     observerSubscription.Dispose();
     // Dispose the update scheduler after the observer subscription, to prevent accessing a disposed object.

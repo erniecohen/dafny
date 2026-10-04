@@ -939,6 +939,13 @@ namespace Microsoft.Dafny {
     }
 
     public void ProcessSolverOptions(ErrorReporter errorReporter, IOrigin token) {
+      if (GetOrOptionDefault(B3OptionBag.VerificationBackend) == B3OptionBag.Backend.B3) {
+        // Resolve only. The supervised B3 worker owns the bounded executable/version probe.
+        if (IsUsingZ3()) { SetZ3ExecutablePath(errorReporter, token, false); }
+        var b3Error = B3VerificationBackend.ValidateInvocation(this);
+        if (b3Error != null) { errorReporter.Error(MessageSource.Verifier, token, b3Error); }
+        return;
+      }
       if (IsUsingZ3()) {
         var z3Version = SetZ3ExecutablePath(errorReporter, token);
         SetZ3Options(z3Version);
@@ -1179,7 +1186,7 @@ namespace Microsoft.Dafny {
     /// For this to work, Dafny first tries any prover path explicitly provided by the user, then looks for for the copy
     /// distributed with Dafny, and finally looks in any directory in the system PATH environment variable.
     /// </summary>
-    private Version SetZ3ExecutablePath(ErrorReporter errorReporter, IOrigin token) {
+    private Version SetZ3ExecutablePath(ErrorReporter errorReporter, IOrigin token, bool probeVersion = true) {
       string confirmedProverPath = null;
       string nextStepsMessage = $"Please either provide a path to the `z3` executable using the `--solver-path <path>` option, manually place the `z3` directory next to the `dafny` executable you are using (this directory should contain `bin/z3-{DefaultZ3Version}` or `bin/z3-{DefaultZ3Version}.exe`), or set the PATH environment variable to also include a directory containing the `z3` executable.";
 
@@ -1226,8 +1233,9 @@ namespace Microsoft.Dafny {
       }
 
       if (confirmedProverPath is not null) {
+        if (!probeVersion) { confirmedProverPath = Path.GetFullPath(confirmedProverPath); }
         ProverOptions.Add($"{pp}{confirmedProverPath}");
-        return z3VersionPerPath.GetOrAdd(confirmedProverPath, GetZ3Version);
+        return probeVersion ? z3VersionPerPath.GetOrAdd(confirmedProverPath, GetZ3Version) : null;
       }
 
       errorReporter.Error(MessageSource.Verifier, DafnyProject.StartingToken, "Z3 is not found. " + nextStepsMessage);
