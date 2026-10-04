@@ -1,7 +1,8 @@
 # Native Real correspondence (issue 124)
 
-This note specifies the next experimental B3 primitive-theory extension. Its
-implementation and verification evidence are pending. The existing integer and
+This note specifies the experimental B3 native Real source extension. The source
+implementation and acceptance controls are present; fresh verification and
+runtime acceptance evidence are pending. The existing integer and
 map controls remain required. Bitvector support is a separate remaining P7
 extension; this Real phase does not narrow the backend's intended final scope.
 

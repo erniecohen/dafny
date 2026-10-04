@@ -151,7 +151,8 @@ module RSolvers {
       case CustomLiteral(s, typ) => PrintUtil.CustomLiteralToString(s, typ.ToString())
       case Id(v) => v.name
       case FuncAppl(op, args) =>
-        op.ToString() + "(" + RExprListToString(args, this) + ")"
+        var prefix := if op.BuiltInOperator? && op.name in {"to_real", "to_int"} then "#" else "";
+        prefix + op.ToString() + "(" + RExprListToString(args, this) + ")"
       case IfThenElse(guard, thn, els) =>
         "(if " + guard.ToString() + " " + thn.ToString() + " else " + els.ToString() + ")"
       case LetExpr(v, rhs, body) =>
