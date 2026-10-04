@@ -286,9 +286,10 @@ public static class B3Normalizer {
     private bool TryMapObservationEquality(Bpl.QuantifierExpr quantifier, Environment env, bool old,
       int depth, out Ir.Expression observation) {
       observation = null;
+      // Pinned type checking rewrites Bool equality to Iff; both express value equality here.
       // Metadata and all other quantifier shapes keep their existing translation.
       if (quantifier is not Bpl.ForallExpr || quantifier.Attributes != null || quantifier.Triggers != null ||
-          quantifier.Body is not Bpl.NAryExpr { Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.Eq } } equality ||
+          quantifier.Body is not Bpl.NAryExpr { Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.Eq or Bpl.BinaryOperator.Opcode.Iff } } equality ||
           equality.Args.Count != 2 ||
           equality.Args[0] is not Bpl.NAryExpr { Fun: Bpl.MapSelect } left ||
           equality.Args[1] is not Bpl.NAryExpr { Fun: Bpl.MapSelect } right ||
