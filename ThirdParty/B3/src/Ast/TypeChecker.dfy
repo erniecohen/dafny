@@ -141,6 +141,7 @@ module TypeChecker {
     case BLiteral(_) => true
     case ILiteral(_) => true
     case RLiteral(_, _) => true
+    case BvLiteral(_, _) => true
     case CustomLiteral(_, _) => true
     case IdExpr(_) => true
     case OperatorExpr(op, args) =>
@@ -160,6 +161,7 @@ module TypeChecker {
             args[0].HasType(RealType) && args[1].HasType(RealType)
           case ToReal => args[0].HasType(IntType)
           case ToInt => args[0].HasType(RealType)
+          case Bv(_, _, _, _) => BitvectorSignature(op, SeqMap(args, (arg: Expr) => arg.ExprType()))
           case LogicalNot =>
             args[0].HasType(BoolType)
           case UnaryMinus =>
@@ -337,6 +339,8 @@ module TypeChecker {
       return Success(IntType);
     case RLiteral(_, _) =>
       return Success(RealType);
+    case BvLiteral(_, width) =>
+      return Success(BitvectorType(width));
     case CustomLiteral(_, typ) =>
       return Success(typ);
     case IdExpr(v) =>
@@ -394,6 +398,15 @@ module TypeChecker {
         case ToReal =>
           var _ :- ExpectOperandTypes(op, types, IntType);
           typ := RealType;
+        case Bv(kind, width, _, _) =>
+          if !BitvectorSignature(op, types) { return Failure("invalid native bitvector signature: " + op.ToString()); }
+          forall i | 0 <= i < |args|
+            ensures args[i].ExprType() == types[i]
+          {
+            assert args[i].HasType(types[i]);
+          }
+          assert SeqMap(args, (arg: Expr) => arg.ExprType()) == types;
+          typ := expr.ExprType();
       }
       return Success(typ);
     case FunctionCallExpr(func, args) =>
@@ -435,6 +448,19 @@ module TypeChecker {
       return Success(typ);
     case ClosureExpr(_, _, _, _) =>
       return Failure("closure must be elaborated before type checking");
+  }
+
+  predicate BitvectorSignature(op: Operator, types: seq<Type>) {
+    op.Bv? && op.ParametersValid() && |types| == op.ArgumentCount() &&
+    match op.kind {
+      case IntToBv => types[0] == IntType
+      case BvToUnsignedInt => types[0] == BitvectorType(op.width)
+      case BvExtract =>
+        types[0].BitvectorType? && op.end <= types[0].width
+      case BvConcat =>
+        types[0].BitvectorType? && types[1].BitvectorType? && types[0].width + types[1].width == op.width
+      case _ => forall typ <- types :: typ == BitvectorType(op.width)
+    }
   }
 
   predicate IsNumericType(typ: Type) {

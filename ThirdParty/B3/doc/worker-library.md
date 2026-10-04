@@ -29,6 +29,21 @@ signatures fail before verification. Parser/printer and runtime controls are in
 `test/worker/RealTests.dfy`. The source extension requires a fresh verifying
 library build; an earlier library receipt does not apply to this source.
 
+Native positive-width bitvectors use `#bvW` types (1 <= W <= 4096),
+`#bv(value, W)` canonical unsigned literals, and typed primitive operations.
+The checked solver representation prints native SMT BitVec sorts, word literals,
+and indexed extraction/conversion heads. This language checkpoint includes
+modular arithmetic, bitwise operations, unsigned division/remainder/comparison,
+shifts, extraction, concatenation, and Int conversions. Rotations and the Dafny
+normalization routes are separate pending checkpoints. Invalid widths, values,
+indices, and signatures fail during resolution or type checking. The library
+rejects an aggregate native bitvector cost above 4,194,304 bits before consistency
+checking or solver startup; it counts expression results, declarations, bindings,
+and optional automatic invariant expressions. Runtime controls are in
+`test/worker/BitvectorTests.dfy`. This source extension is unverified until a fresh
+verifying library build and both shared target builds complete. The English
+correspondence plan also records the remaining semantic model boundary.
+
 The generated C# method returns `VerificationResults._IUnitResult`. Each attempt
 has a sequence number, description, breadcrumbs, outcome, and obligation ID.
 Place an obligation's ID on its outermost `RawAst.LabeledExpr` to retain that ID

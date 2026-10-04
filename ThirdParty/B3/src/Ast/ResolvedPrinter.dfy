@@ -340,6 +340,7 @@ module ResolvedPrinter {
     case BLiteral(value) => print value;
     case ILiteral(value) => print value;
     case RLiteral(n, d) => print "#real(", n, ", ", d, ")";
+    case BvLiteral(value, width) => print "#bv(", value, ", ", width, ")";
     case CustomLiteral(s, typ) => print CustomLiteralToString(s, typ.ToString());
     case IdExpr(v) =>
       match Raw.FromOldName(v.name) {
@@ -365,6 +366,10 @@ module ResolvedPrinter {
           ind.Space();
           Expression(args[2], opStrength.SubexpressionPower(Side.Right, context), format := ind);
         }
+      } else if op.Bv? {
+        print op.ToString(), "(", op.ParameterText();
+        if args != [] { print ", "; ExpressionList(args); }
+        print ")";
       } else if op in {Operator.ToReal, Operator.ToInt} && |args| == 1 {
         print op.ToString(), "(";
         Expression(args[0]);

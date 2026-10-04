@@ -1,9 +1,9 @@
 diff --git a/doc/worker-library.md b/doc/worker-library.md
 new file mode 100644
-index 0000000000000000000000000000000000000000..49766ad896749831e54acd3ffb8de6e7b43ba0ac
+index 0000000000000000000000000000000000000000..22a0d8c684d24eddef14ecfc28bcb163a229dba7
 --- /dev/null
 +++ b/doc/worker-library.md
-@@ -0,0 +1,61 @@
+@@ -0,0 +1,76 @@
 +# Checked worker library
 +
 +`library/dfyconfig.toml` builds the C# library without the command-line entry
@@ -34,6 +34,21 @@ index 0000000000000000000000000000000000000000..49766ad896749831e54acd3ffb8de6e7
 +signatures fail before verification. Parser/printer and runtime controls are in
 +`test/worker/RealTests.dfy`. The source extension requires a fresh verifying
 +library build; an earlier library receipt does not apply to this source.
++
++Native positive-width bitvectors use `#bvW` types (1 <= W <= 4096),
++`#bv(value, W)` canonical unsigned literals, and typed primitive operations.
++The checked solver representation prints native SMT BitVec sorts, word literals,
++and indexed extraction/conversion heads. This language checkpoint includes
++modular arithmetic, bitwise operations, unsigned division/remainder/comparison,
++shifts, extraction, concatenation, and Int conversions. Rotations and the Dafny
++normalization routes are separate pending checkpoints. Invalid widths, values,
++indices, and signatures fail during resolution or type checking. The library
++rejects an aggregate native bitvector cost above 4,194,304 bits before consistency
++checking or solver startup; it counts expression results, declarations, bindings,
++and optional automatic invariant expressions. Runtime controls are in
++`test/worker/BitvectorTests.dfy`. This source extension is unverified until a fresh
++verifying library build and both shared target builds complete. The English
++correspondence plan also records the remaining semantic model boundary.
 +
 +The generated C# method returns `VerificationResults._IUnitResult`. Each attempt
 +has a sequence number, description, breadcrumbs, outcome, and obligation ID.
@@ -80,42 +95,46 @@ index 0000000000000000000000000000000000000000..5fcc39b7a48da741b4be8d95a5895929
 +general-newtypes = true
 +standard-libraries = true
 diff --git a/src/Ast/Ast.dfy b/src/Ast/Ast.dfy
-index df4be4f4609776891cc644407267ba767c46ab5d..a0de72a239d4bdf7da3614b63c9310df7f88f912 100644
+index df4be4f4609776891cc644407267ba767c46ab5d..65bb6d8341ee317471af335e5a33a2c64e692594 100644
 --- a/src/Ast/Ast.dfy
 +++ b/src/Ast/Ast.dfy
-@@ -60,6 +60,7 @@ module Ast {
+@@ -60,6 +60,8 @@ module Ast {
    datatype Type =
      | BoolType
      | IntType
 +    | RealType
++    | BitvectorType(width: Types.BitvectorWidth)
      | TagType
      | UserType(decl: TypeDecl)
    {
-@@ -67,6 +68,7 @@ module Ast {
+@@ -67,6 +69,8 @@ module Ast {
        match this
        case BoolType => Types.BoolTypeName
        case IntType => Types.IntTypeName
 +      case RealType => Types.RealTypeName
++      case BitvectorType(width) => Types.BitvectorTypeName(width)
        case TagType => Types.TagTypeName
        case UserType(decl) => decl.Name
      }
-@@ -429,6 +431,7 @@ module Ast {
+@@ -429,6 +433,8 @@ module Ast {
    datatype Expr =
      | BLiteral(bvalue: bool)
      | ILiteral(ivalue: int)
 +    | RLiteral(numerator: int, denominator: int)
++    | BvLiteral(value: int, width: Types.BitvectorWidth)
      | CustomLiteral(s: string, typ: Type)
      | IdExpr(v: Variable)
      | OperatorExpr(op: Operator, args: seq<Expr>)
-@@ -442,6 +445,7 @@ module Ast {
+@@ -442,6 +448,8 @@ module Ast {
        match this
        case BLiteral(_) => BoolType
        case ILiteral(_) => IntType
 +      case RLiteral(_, _) => RealType
++      case BvLiteral(_, width) => BitvectorType(width)
        case CustomLiteral(_, typ) => typ
        case IdExpr(v) => v.typ
        case OperatorExpr(op, args) =>
-@@ -452,8 +456,10 @@ module Ast {
+@@ -452,8 +460,14 @@ module Ast {
              BoolType
            case Eq | Neq | Less | AtMost =>
              BoolType
@@ -125,75 +144,99 @@ index df4be4f4609776891cc644407267ba767c46ab5d..a0de72a239d4bdf7da3614b63c9310df
 +            if op.ArgumentCount() == |args| then args[0].ExprType() else IntType
 +          case Div | Mod | ToInt => IntType
 +          case RealDiv | ToReal => RealType
++          case Bv(kind, width, _, _) =>
++            if kind in {Raw.BitvectorOperator.BvUnsignedLess, Raw.BitvectorOperator.BvUnsignedLessEqual} then BoolType
++            else if kind == Raw.BitvectorOperator.BvToUnsignedInt then IntType
++            else if op.ParametersValid() then BitvectorType(width) else IntType
          }
        case FunctionCallExpr(func, args) => func.ResultType
        case LabeledExpr(_, body) => body.ExprType()
-@@ -470,7 +476,8 @@ module Ast {
+@@ -470,9 +484,12 @@ module Ast {
        match this
        case BLiteral(_) => true
        case ILiteral(_) => true
 -      case CustomLiteral(_, typ) => typ != BoolType && typ != IntType
 +      case RLiteral(_, denominator) => denominator > 0
-+      case CustomLiteral(_, typ) => typ != BoolType && typ != IntType && typ != RealType
++      case BvLiteral(value, width) => Types.BitvectorLiteralValid(value, width)
++      case CustomLiteral(_, typ) => typ != BoolType && typ != IntType && typ != RealType && !typ.BitvectorType?
        case IdExpr(_) => true
        case OperatorExpr(op, args) =>
++        && op.ParametersValid()
          && |args| == op.ArgumentCount()
-@@ -495,6 +502,7 @@ module Ast {
+         && forall arg <- args :: arg.WellFormed()
+       case FunctionCallExpr(func, args) =>
+@@ -495,6 +512,8 @@ module Ast {
        match this
        case BLiteral(value) => if value then "true" else "false"
        case ILiteral(value) => Int2String(value)
 +      case RLiteral(n, d) => "#real(" + Int2String(n) + ", " + Int2String(d) + ")"
++      case BvLiteral(value, width) => "#bv(" + Int2String(value) + ", " + Int2String(width) + ")"
        case CustomLiteral(s, typ) => PrintUtil.CustomLiteralToString(s, typ.ToString())
        case IdExpr(v) => v.name
        case OperatorExpr(op, args) =>
-@@ -504,6 +512,8 @@ module Ast {
+@@ -504,6 +523,10 @@ module Ast {
              "if " + args[0].ToString() +
              " " + args[1].ToString() +
              " else " + args[2].ToString(opStrength.SubexpressionPower(PrintUtil.Right, context))
++          else if op.Bv? then
++            op.ToString() + "(" + op.ParameterText() + (if args == [] then "" else ", " + ListToString(args)) + ")"
 +          else if op in {Operator.ToReal, Operator.ToInt} && |args| == 1 then
 +            op.ToString() + "(" + args[0].ToString() + ")"
            else if op.ArgumentCount() == 1 == |args| then
              op.ToString() + args[0].ToString(opStrength.SubexpressionPower(PrintUtil.Right, context))
            else if op.ArgumentCount() == 2 == |args| then
-@@ -579,6 +589,7 @@ module Ast {
+@@ -579,6 +602,8 @@ module Ast {
        match this
        case BLiteral(_) => {}
        case ILiteral(_) => {}
 +      case RLiteral(_, _) => {}
++      case BvLiteral(_, _) => {}
        case CustomLiteral(_, _) => {}
        case IdExpr(v) => {v}
        case OperatorExpr(_, args) => FreeVariablesInList(args)
 diff --git a/src/Ast/DomainInstantiation.dfy b/src/Ast/DomainInstantiation.dfy
-index 5d2c63274efdbc39001f362327e8926fa5a3f022..223e9aa164602fa808b1c6d96619aa969ceb90cd 100644
+index 5d2c63274efdbc39001f362327e8926fa5a3f022..1b258f37d11f79dc92f3380177b70299cc6ca5ff 100644
 --- a/src/Ast/DomainInstantiation.dfy
 +++ b/src/Ast/DomainInstantiation.dfy
-@@ -64,6 +64,7 @@ module DomainInstantiation {
+@@ -64,6 +64,8 @@ module DomainInstantiation {
      match typ
      case BoolType => BoolType
      case IntType => IntType
 +    case RealType => RealType
++    case BitvectorType(_) => typ
      case TagType => TagType
      case UserType(decl) => if decl in tm then tm[decl] else typ
    }
-@@ -221,10 +222,12 @@ module DomainInstantiation {
+@@ -221,10 +223,14 @@ module DomainInstantiation {
        instExpr := BLiteral(value);
      case ILiteral(value) =>
        instExpr := ILiteral(value);
 +    case RLiteral(numerator, denominator) =>
 +      instExpr := RLiteral(numerator, denominator);
++    case BvLiteral(value, width) =>
++      instExpr := BvLiteral(value, width);
      case CustomLiteral(s, typ) =>
        var ctyp := SubstituteType(typ, tm);
        // TODO: the following condition should be checked by disallowing custom literals from ever having a type-parameter type
 -      expect ctyp != BoolType && ctyp != IntType, "unchecked condition: domain instantiation should not allow custom-literal types to become bool or int";
-+      expect ctyp != BoolType && ctyp != IntType && ctyp != RealType, "unchecked condition: domain instantiation should not allow custom-literal types to become bool, int, or real";
++      expect ctyp != BoolType && ctyp != IntType && ctyp != RealType && !ctyp.BitvectorType?, "unchecked condition: domain instantiation should not allow custom-literal types to become bool, int, or real";
        instExpr := CustomLiteral(s, ctyp);
      case IdExpr(v) =>
        expect v in vm;
 diff --git a/src/Ast/ExprResolver.dfy b/src/Ast/ExprResolver.dfy
-index bee8cbfbd1a9effe7181f5cb0b06619a8454d3bd..a53a497e7be25744a8c5363792d80d1657a71c88 100644
+index bee8cbfbd1a9effe7181f5cb0b06619a8454d3bd..5bf39deead8d33519accddeeebed5884549eda89 100644
 --- a/src/Ast/ExprResolver.dfy
 +++ b/src/Ast/ExprResolver.dfy
-@@ -43,9 +43,14 @@ module ExprResolver {
+@@ -15,7 +15,7 @@ module ExprResolver {
+   datatype ExprResolverState = ExprResolverState(b3: Raw.Program, typeMap: map<string, TypeDecl>, ghost generatedTypes: set<string>, functionMap: map<string, Function>)
+   {
+     ghost predicate Valid() {
+-      forall typename :: b3.IsType(typename) || typename in generatedTypes <==> typename in BuiltInTypes || typename in typeMap
++      forall typename :: b3.IsType(typename) || typename in generatedTypes <==> IsBuiltInType(typename) || typename in typeMap
+     }
+   }
+
+@@ -43,9 +43,19 @@ module ExprResolver {
          r := BLiteral(value);
        case ILiteral(value) =>
          r := ILiteral(value);
@@ -202,37 +245,56 @@ index bee8cbfbd1a9effe7181f5cb0b06619a8454d3bd..a53a497e7be25744a8c5363792d80d16
 +          return Failure("real literal denominator must be positive");
 +        }
 +        r := RLiteral(numerator, denominator);
++      case BvLiteral(value, width) =>
++        if !BitvectorLiteralValid(value, width) {
++          return Failure("bitvector literal requires a positive bounded width and a canonical unsigned value");
++        }
++        r := BvLiteral(value, width);
        case CustomLiteral(s, typeName) =>
          var typ :- ResolveType(typeName, ers.typeMap);
 -        if typ == BoolType || typ == IntType {
-+        if typ == BoolType || typ == IntType || typ == RealType {
++        if typ == BoolType || typ == IntType || typ == RealType || typ.BitvectorType? {
            return Failure("custom literal is not allowed for a built-in type: " + PrintUtil.CustomLiteralToString(s, typeName));
          }
          r := CustomLiteral(s, typ);
-@@ -178,6 +183,7 @@ module ExprResolver {
+@@ -60,6 +70,7 @@ module ExprResolver {
+           return Failure("variable '" + name + "' cannot be used with 'old'; only inout-parameters can be, and only in two-state contexts");
+         }
+       case OperatorExpr(op, args) =>
++        if !op.ParametersValid() { return Failure("invalid or excessive native bitvector parameters"); }
+         if |args| != op.ArgumentCount() {
+           return Failure("operator " + op.ToString() + " expects " + Int2String(op.ArgumentCount()) + " arguments, got " + Int2String(|args|));
+         }
+@@ -178,6 +189,8 @@ module ExprResolver {
      match expr
      case BLiteral(_) => false
      case ILiteral(_) => false
 +    case RLiteral(_, _) => false
++    case BvLiteral(_, _) => false
      case CustomLiteral(_, _) => false
      case IdExpr(_) => false
      case OperatorExpr(_, args) =>
 diff --git a/src/Ast/ResolvedPrinter.dfy b/src/Ast/ResolvedPrinter.dfy
-index fac14413f30b2205e88828cfd90d88148ab4d473..bd0ea730b631299e4859ec264a1860788fe35f5b 100644
+index fac14413f30b2205e88828cfd90d88148ab4d473..f7fab443e8a1d4b2fae14d66eca4c18fac734fcb 100644
 --- a/src/Ast/ResolvedPrinter.dfy
 +++ b/src/Ast/ResolvedPrinter.dfy
-@@ -339,6 +339,7 @@ module ResolvedPrinter {
+@@ -339,6 +339,8 @@ module ResolvedPrinter {
      match expr
      case BLiteral(value) => print value;
      case ILiteral(value) => print value;
 +    case RLiteral(n, d) => print "#real(", n, ", ", d, ")";
++    case BvLiteral(value, width) => print "#bv(", value, ", ", width, ")";
      case CustomLiteral(s, typ) => print CustomLiteralToString(s, typ.ToString());
      case IdExpr(v) =>
        match Raw.FromOldName(v.name) {
-@@ -364,6 +365,10 @@ module ResolvedPrinter {
+@@ -364,6 +366,14 @@ module ResolvedPrinter {
            ind.Space();
            Expression(args[2], opStrength.SubexpressionPower(Side.Right, context), format := ind);
          }
++      } else if op.Bv? {
++        print op.ToString(), "(", op.ParameterText();
++        if args != [] { print ", "; ExpressionList(args); }
++        print ")";
 +      } else if op in {Operator.ToReal, Operator.ToInt} && |args| == 1 {
 +        print op.ToString(), "(";
 +        Expression(args[0]);
@@ -240,19 +302,73 @@ index fac14413f30b2205e88828cfd90d88148ab4d473..bd0ea730b631299e4859ec264a186078
        } else if op.ArgumentCount() == 1 == |args| {
          print op.ToString();
          Expression(args[0], opStrength.SubexpressionPower(Side.Right, context));
+diff --git a/src/Ast/Resolver.dfy b/src/Ast/Resolver.dfy
+index 92ff47538e3aca1188477fb9ef365a026bc651a0..3999ba49482d717726b20bf97c593306f10dfbfa 100644
+--- a/src/Ast/Resolver.dfy
++++ b/src/Ast/Resolver.dfy
+@@ -18,7 +18,7 @@ module Resolver {
+   import DomainInstantiation
+
+   ghost predicate GoodTypeMap(b3: Raw.Program, typeMap: map<string, TypeDecl>, generatedTypes: set<string> := {}) {
+-    forall typename :: b3.IsType(typename) || typename in generatedTypes <==> typename in BuiltInTypes || typename in typeMap
++    forall typename :: b3.IsType(typename) || typename in generatedTypes <==> IsBuiltInType(typename) || typename in typeMap
+   }
+
+   method Resolve(b3: Raw.Program, typeParameters: seq<TypeDecl>) returns (r: Result<Ast.Program, string>, ghost generatedTypes: set<string>)
+@@ -204,7 +204,7 @@ module Resolver {
+       // raw types were well-formed
+       && typeMap.Keys == typeParameterNames + (set typeDecl: Raw.TypeDecl <- b3.types :: typeDecl.name)
+       && NameAlignment(typeMap)
+-      && (forall typeDecl <- b3.types :: typeDecl.name !in BuiltInTypes && typeDecl.name !in typeParameterNames)
++      && (forall typeDecl <- b3.types :: !ReservedTypeName(typeDecl.name) && typeDecl.name !in typeParameterNames)
+       && (forall i, j :: 0 <= i < j < |b3.types| ==> b3.types[i].name != b3.types[j].name)
+       // resolved type declarations have legal, distinct names
+       && NamedDecl.Distinct(typeParameters + types)
+@@ -228,10 +228,10 @@ module Resolver {
+       assert name !in typeMap;
+       if !Raw.LegalVariableName(name) {
+         return Result<map<string, TypeDecl>, string>.Failure("type parameter is not a legal name: " + name), types;
+-      } else if name in BuiltInTypes {
++      } else if ReservedTypeName(name) {
+         return Result<map<string, TypeDecl>, string>.Failure("type parameter is not allowed to have the name of a built-in type: " + name), types;
+       }
+-      if name in BuiltInTypes {
++      if ReservedTypeName(name) {
+            return Result<map<string, TypeDecl>, string>.Failure("type parameter is not allowed to have the name of a built-in type: " + name), types;
+       }
+       NewNamePreservesLinearFormAndIsUnique(name, param, typeMap, typeParameters[..n]);
+@@ -248,7 +248,7 @@ module Resolver {
+       // typeMap organizes type-declaration objects correctly according to their names
+       invariant NameAlignment(typeMap)
+       // no user-defined type seen so far uses the name of a built-in type
+-      invariant forall typeDecl <- b3.types[..n] :: typeDecl.name !in BuiltInTypes && typeDecl.name !in typeParameterNames
++      invariant forall typeDecl <- b3.types[..n] :: !ReservedTypeName(typeDecl.name) && typeDecl.name !in typeParameterNames
+       // user-defined types seen so far have distinct names
+       invariant forall i, j :: 0 <= i < j < n ==> b3.types[i].name != b3.types[j].name
+       // resolved type declarations have distinct names and do not contain a double dot
+@@ -260,7 +260,7 @@ module Resolver {
+       var name := b3.types[n].name;
+       if !Raw.LegalVariableName(name) {
+         return Result<map<string, TypeDecl>, string>.Failure("user-defined type is not a legal name: " + name), types;
+-      } else if name in BuiltInTypes {
++      } else if ReservedTypeName(name) {
+         return Result<map<string, TypeDecl>, string>.Failure("user-defined type is not allowed to have the name of a built-in type: " + name), types;
+       } else if name in typeMap {
+         return Failure("duplicate type name: " + name), types;
 diff --git a/src/Ast/TypeChecker.dfy b/src/Ast/TypeChecker.dfy
-index 786d65a8a215e29ad86a110edd5d2154c42b1056..e2730139c24888affb832c2833a159379290c749 100644
+index 786d65a8a215e29ad86a110edd5d2154c42b1056..b5a51fcc66a07302f2488f9115c5413d212be52f 100644
 --- a/src/Ast/TypeChecker.dfy
 +++ b/src/Ast/TypeChecker.dfy
-@@ -140,6 +140,7 @@ module TypeChecker {
+@@ -140,6 +140,8 @@ module TypeChecker {
      match expr
      case BLiteral(_) => true
      case ILiteral(_) => true
 +    case RLiteral(_, _) => true
++    case BvLiteral(_, _) => true
      case CustomLiteral(_, _) => true
      case IdExpr(_) => true
      case OperatorExpr(op, args) =>
-@@ -151,19 +152,25 @@ module TypeChecker {
+@@ -151,19 +153,26 @@ module TypeChecker {
              args[0].HasType(BoolType) && args[1].HasType(BoolType)
            case Eq | Neq =>
              args[0].ExprType() == args[1].ExprType()
@@ -265,6 +381,7 @@ index 786d65a8a215e29ad86a110edd5d2154c42b1056..e2730139c24888affb832c2833a15937
 +            args[0].HasType(RealType) && args[1].HasType(RealType)
 +          case ToReal => args[0].HasType(IntType)
 +          case ToInt => args[0].HasType(RealType)
++          case Bv(_, _, _, _) => BitvectorSignature(op, SeqMap(args, (arg: Expr) => arg.ExprType()))
            case LogicalNot =>
              args[0].HasType(BoolType)
            case UnaryMinus =>
@@ -281,16 +398,18 @@ index 786d65a8a215e29ad86a110edd5d2154c42b1056..e2730139c24888affb832c2833a15937
      case QuantifierExpr(_, _, patterns, body) =>
        (forall tr <- patterns, e <- tr.exprs :: assert tr.WellFormed(); TypeCorrectExpr(e)) &&
        TypeCorrectExpr(body) && body.HasType(BoolType)
-@@ -328,6 +335,8 @@ module TypeChecker {
+@@ -328,6 +337,10 @@ module TypeChecker {
        return Success(BoolType);
      case ILiteral(_) =>
        return Success(IntType);
 +    case RLiteral(_, _) =>
 +      return Success(RealType);
++    case BvLiteral(_, width) =>
++      return Success(BitvectorType(width));
      case CustomLiteral(_, typ) =>
        return Success(typ);
      case IdExpr(v) =>
-@@ -358,11 +367,33 @@ module TypeChecker {
+@@ -358,11 +371,42 @@ module TypeChecker {
            }
            typ := BoolType;
          case Less | AtMost =>
@@ -323,13 +442,35 @@ index 786d65a8a215e29ad86a110edd5d2154c42b1056..e2730139c24888affb832c2833a15937
 +        case ToReal =>
 +          var _ :- ExpectOperandTypes(op, types, IntType);
 +          typ := RealType;
++        case Bv(kind, width, _, _) =>
++          if !BitvectorSignature(op, types) { return Failure("invalid native bitvector signature: " + op.ToString()); }
++          forall i | 0 <= i < |args|
++            ensures args[i].ExprType() == types[i]
++          {
++            assert args[i].HasType(types[i]);
++          }
++          assert SeqMap(args, (arg: Expr) => arg.ExprType()) == types;
++          typ := expr.ExprType();
        }
        return Success(typ);
      case FunctionCallExpr(func, args) =>
-@@ -406,6 +437,28 @@ module TypeChecker {
+@@ -406,6 +450,41 @@ module TypeChecker {
        return Failure("closure must be elaborated before type checking");
    }
 
++  predicate BitvectorSignature(op: Operator, types: seq<Type>) {
++    op.Bv? && op.ParametersValid() && |types| == op.ArgumentCount() &&
++    match op.kind {
++      case IntToBv => types[0] == IntType
++      case BvToUnsignedInt => types[0] == BitvectorType(op.width)
++      case BvExtract =>
++        types[0].BitvectorType? && op.end <= types[0].width
++      case BvConcat =>
++        types[0].BitvectorType? && types[1].BitvectorType? && types[0].width + types[1].width == op.width
++      case _ => forall typ <- types :: typ == BitvectorType(op.width)
++    }
++  }
++
 +  predicate IsNumericType(typ: Type) {
 +    typ == IntType || typ == RealType
 +  }
@@ -356,10 +497,17 @@ index 786d65a8a215e29ad86a110edd5d2154c42b1056..e2730139c24888affb832c2833a15937
      requires forall expr <- exprs :: expr.WellFormed()
      ensures r.Success? ==> forall expr <- exprs :: TypeCorrectExpr(expr)
 diff --git a/src/Ast/TypeResolver.dfy b/src/Ast/TypeResolver.dfy
-index 4c5dc1757890fbf95d92198237dd981da8305c34..3e40f007354fc14814a065f43fc153461cfe8c9c 100644
+index 4c5dc1757890fbf95d92198237dd981da8305c34..c6f21e7ce086ee6e60df2b049cdbfcaf75869cdc 100644
 --- a/src/Ast/TypeResolver.dfy
 +++ b/src/Ast/TypeResolver.dfy
-@@ -14,6 +14,8 @@ module TypeResolver {
+@@ -8,16 +8,21 @@ module TypeResolver {
+     provides Ast, Types, Wrappers
+
+   method ResolveType(typename: string, typeMap: map<string, TypeDecl>) returns (r: Result<Type, string>)
+-    ensures r.Success? ==> typename in BuiltInTypes || typename in typeMap
++    ensures r.Success? ==> IsBuiltInType(typename) || typename in typeMap
+   {
+     if typename == BoolTypeName {
        return Success(BoolType);
      } else if typename == IntTypeName {
        return Success(IntType);
@@ -368,12 +516,121 @@ index 4c5dc1757890fbf95d92198237dd981da8305c34..3e40f007354fc14814a065f43fc15346
      } else if typename == TagTypeName {
        return Success(TagType);
      }
+
++    var width := ParseBitvectorWidth(typename);
++    if width.Some? { return Success(BitvectorType(width.value)); }
++    if "#bv" <= typename { return Failure("invalid or excessive bitvector width: " + typename); }
+     if typename !in typeMap {
+       return Failure("unknown type: " + typename);
+     }
+diff --git a/src/Driver/BitvectorResources.dfy b/src/Driver/BitvectorResources.dfy
+new file mode 100644
+index 0000000000000000000000000000000000000000..1c145b62f639b041a3a28e84577f140a023d109c
+--- /dev/null
++++ b/src/Driver/BitvectorResources.dfy
+@@ -0,0 +1,96 @@
++// Resource accounting is not a logical premise: over-budget input is rejected before verification.
++module BitvectorResources {
++  import opened Ast
++  import Types
++
++  function TypeCost(typ: Type): nat { if typ.BitvectorType? then typ.width else 0 }
++  function VariableCost(v: Variable): nat { TypeCost(v.typ) }
++  function AutoInvariantCost(v: AutoInvVariable): nat
++    reads v
++  {
++    if v.maybeAutoInv.Some? then ExprCost(v.maybeAutoInv.value) else 0
++  }
++  function ParametersCost(vv: seq<PParameter>): nat
++    reads vv
++  {
++    if vv == [] then 0 else VariableCost(vv[0]) + AutoInvariantCost(vv[0]) + ParametersCost(vv[1..])
++  }
++  function VariablesCost(vv: seq<Variable>): nat {
++    if vv == [] then 0 else VariableCost(vv[0]) + VariablesCost(vv[1..])
++  }
++  function ExprCost(expr: Expr): nat {
++    TypeCost(expr.ExprType()) + match expr {
++      case BLiteral(_) | ILiteral(_) | RLiteral(_, _) | BvLiteral(_, _) | CustomLiteral(_, _) | IdExpr(_) => 0
++      case OperatorExpr(_, args) | FunctionCallExpr(_, args) => ExprsCost(args)
++      case LabeledExpr(_, body) => ExprCost(body)
++      case LetExpr(v, rhs, body) => VariableCost(v) + ExprCost(rhs) + ExprCost(body)
++      case QuantifierExpr(_, vv, patterns, body) =>
++        VariablesCost(vv) + PatternsCost(patterns) + ExprCost(body)
++      case ClosureExpr(_, _, _, _) => 0 // The library rejects every closure before this accounting pass.
++    }
++  }
++  function ExprsCost(exprs: seq<Expr>): nat {
++    if exprs == [] then 0 else ExprCost(exprs[0]) + ExprsCost(exprs[1..])
++  }
++  function PatternsCost(patterns: seq<Pattern>): nat {
++    if patterns == [] then 0 else ExprsCost(patterns[0].exprs) + PatternsCost(patterns[1..])
++  }
++  function AExprCost(ae: AExpr): nat
++    reads *
++  {
++    match ae case AExpr(e, _) => ExprCost(e) case AAssertion(s) => StmtCost(s)
++  }
++  function AExprsCost(ae: seq<AExpr>): nat
++    reads *
++  {
++    if ae == [] then 0 else AExprCost(ae[0]) + AExprsCost(ae[1..])
++  }
++  function ArgumentsCost(args: seq<CallArgument>): nat {
++    if args == [] then 0 else
++    (match args[0] case InArgument(e) => ExprCost(e) case OutgoingArgument(_, v) => VariableCost(v)) + ArgumentsCost(args[1..])
++  }
++  function StmtCost(stmt: Stmt): nat
++    reads *
++  {
++    match stmt
++    case VarDecl(v, initial, body) => VariableCost(v) + AutoInvariantCost(v) + (if initial.Some? then ExprCost(initial.value) else 0) + StmtCost(body)
++    case Assign(v, rhs) => VariableCost(v) + ExprCost(rhs)
++    case Reinit(vv) => VariablesCost(vv)
++    case Block(stmts) | Choose(stmts) => StmtsCost(stmts)
++    case Call(_, args) => ArgumentsCost(args)
++    case Check(cond, _) | Assert(cond, _) | Reach(cond, _) => ExprCost(cond)
++    case Assume(cond) | Probe(cond) => ExprCost(cond)
++    case AForall(v, body) => VariableCost(v) + StmtCost(body)
++    case Loop(invariants, body) => AExprsCost(invariants) + StmtCost(body)
++    case LabeledStmt(_, body) => StmtCost(body)
++    case Exit(_) => 0
++  }
++  function StmtsCost(stmts: seq<Stmt>): nat
++    reads *
++  {
++    if stmts == [] then 0 else StmtCost(stmts[0]) + StmtsCost(stmts[1..])
++  }
++  function FunctionsCost(functions: seq<Function>): nat
++    reads functions
++  {
++    if functions == [] then 0 else
++    TypeCost(functions[0].ResultType) + VariablesCost(functions[0].Parameters) +
++    (if functions[0].Definition.Some? then ExprsCost(functions[0].Definition.value.when) + ExprCost(functions[0].Definition.value.body) else 0) +
++    FunctionsCost(functions[1..])
++  }
++  function AxiomsCost(axioms: seq<Axiom>): nat {
++    if axioms == [] then 0 else ExprCost(axioms[0].Expr) + AxiomsCost(axioms[1..])
++  }
++  function ProceduresCost(procedures: seq<Procedure>): nat
++    reads *
++  {
++    if procedures == [] then 0 else
++    ParametersCost(procedures[0].Parameters) + AExprsCost(procedures[0].Pre) + AExprsCost(procedures[0].Post) +
++    (if procedures[0].Body.Some? then StmtCost(procedures[0].Body.value) else 0) + ProceduresCost(procedures[1..])
++  }
++  function ProgramCost(program: Program): nat
++    reads *
++  {
++    FunctionsCost(program.functions) + AxiomsCost(program.axioms) + ProceduresCost(program.procedures)
++  }
++}
 diff --git a/src/Driver/Library.dfy b/src/Driver/Library.dfy
 new file mode 100644
-index 0000000000000000000000000000000000000000..fad28a0357ff194a9366140b382cc5cda61afb08
+index 0000000000000000000000000000000000000000..7acebd196dccbd394cc3ac142cfd812a4e9cb452
 --- /dev/null
 +++ b/src/Driver/Library.dfy
-@@ -0,0 +1,118 @@
+@@ -0,0 +1,124 @@
 +module B3Library {
 +  import opened Std.Wrappers
 +  import Raw = RawAst
@@ -383,6 +640,8 @@ index 0000000000000000000000000000000000000000..fad28a0357ff194a9366140b382cc5cd
 +  import Verifier
 +  import VerificationResults
 +  import SolverConfiguration
++  import Types
++  import BitvectorResources
 +
 +  export
 +    provides CheckAndVerify
@@ -404,7 +663,7 @@ index 0000000000000000000000000000000000000000..fad28a0357ff194a9366140b382cc5cd
 +    }
 +    if !SupportedProgram(raw) {
 +      return VerificationResults.UnitResult(selectedProcedure, [], false,
-+        Some("unsupported: closure, reachability, custom literal, or unsafe SMT identifier"));
++        Some("unsupported: closure, reachability, custom literal, malformed native primitive, or unsafe SMT identifier"));
 +    }
 +    var resolution, _ := Resolver.Resolve(raw, []);
 +    if resolution.Failure? {
@@ -414,6 +673,9 @@ index 0000000000000000000000000000000000000000..fad28a0357ff194a9366140b382cc5cd
 +    var checked := TypeChecker.TypeCheck(program);
 +    if checked.IsFailure() {
 +      return VerificationResults.UnitResult(selectedProcedure, [], false, Some("invalid input: " + checked.error));
++    }
++    if BitvectorResources.ProgramCost(program) > Types.MaximumBitvectorBits {
++      return VerificationResults.UnitResult(selectedProcedure, [], false, Some("unsupported: aggregate native bitvector cost exceeds resource bound"));
 +    }
 +    checked := StaticConsistency.CheckConsistent(program);
 +    if checked.IsFailure() {
@@ -450,9 +712,10 @@ index 0000000000000000000000000000000000000000..fad28a0357ff194a9366140b382cc5cd
 +    match expr
 +    case BLiteral(_) | ILiteral(_) => true
 +    case RLiteral(_, d) => d > 0
++    case BvLiteral(value, width) => Types.BitvectorLiteralValid(value, width)
 +    case CustomLiteral(_, _) | ClosureExpr(_, _, _, _) => false
 +    case IdExpr(name, _) => SafeSymbol(name)
-+    case OperatorExpr(_, args) => forall e <- args :: SupportedExpression(e)
++    case OperatorExpr(op, args) => op.ParametersValid() && forall e <- args :: SupportedExpression(e)
 +    case FunctionCallExpr(name, args) => SafeSymbol(name) && forall e <- args :: SupportedExpression(e)
 +    case LabeledExpr(name, body) => SafeSymbol(name) && SupportedExpression(body)
 +    case LetExpr(name, optionalType, rhs, body) => SafeSymbol(name) &&
@@ -493,18 +756,20 @@ index 0000000000000000000000000000000000000000..fad28a0357ff194a9366140b382cc5cd
 +  }
 +}
 diff --git a/src/Parser/Parser.dfy b/src/Parser/Parser.dfy
-index da95bf4076e2a1a1510f9183fa76ca94797bdf6d..ea8d263d713d05ebd11861f991ba8b4b5660b8ab 100644
+index da95bf4076e2a1a1510f9183fa76ca94797bdf6d..0024e723f4dee8773188e043240c7ab2d944a3fd 100644
 --- a/src/Parser/Parser.dfy
 +++ b/src/Parser/Parser.dfy
-@@ -316,6 +316,7 @@ module Parser {
+@@ -316,7 +316,9 @@ module Parser {
      Or([
        T("bool"),
        T("int"),
 +      T("real"),
        T("tag"),
++      Sym("#bv").e_I(parseBitvectorWidthDigits).M(digits => "#bv" + digits),
        parseIdUse
      ])
-@@ -535,7 +536,8 @@ module Parser {
+
+@@ -535,7 +537,8 @@ module Parser {
        Or([
          Sym("*").M(_ => Operator.Times),
          T("div").M(_ => Operator.Div),
@@ -514,15 +779,54 @@ index da95bf4076e2a1a1510f9183fa76ca94797bdf6d..ea8d263d713d05ebd11861f991ba8b4b
        ]).I_I(parseUnaryExpr(c)).Rep()
        .M(opExprs => FoldLeft(e0, opExprs, (a, b: (Operator, Expr)) => OperatorExpr(b.0, [a, b.1])))
      )
-@@ -609,8 +611,16 @@ module Parser {
+@@ -609,8 +612,55 @@ module Parser {
      T("pattern").e_I(parseNonemptyCommaDelimitedSeq(c("expr"))).M(exprs => Pattern(exprs))
    }
 
++  const parseBitvectorWidthDigits: B<string> :=
++    CharTest((c: char) => '0' <= c <= '9', "bitvector width digit").Then((c: char) =>
++      CharTest((c: char) => '0' <= c <= '9', "bitvector width digit").Rep().M((digits: string) => [c] + digits)).I_e(W)
++
 +  const parseSignedInteger: B<int> :=
 +    Sym("-").Option().I_I(Nat.I_e(W)).M2(MId, (minus: Option<string>, n: int) => if minus.Some? then -n else n)
 +
++  function parseBitvectorOperator(c: ExprRecSel, kind: BitvectorOperator): B<Expr> {
++    Sym(kind.ToString()).e_I(parseParenthesized(
++      parseSignedInteger.I_e(Sym(",")).Then((width: int) =>
++        if kind == BitvectorOperator.BvExtract then
++          parseSignedInteger.I_e(Sym(",")).Then((start: int) =>
++            parseSignedInteger.I_e(Sym(",")).Then((end: int) =>
++              c("expr").M(e => OperatorExpr(Operator.Bv(kind, width, start, end), [e]))))
++        else if kind.ArgumentCount() == 1 then
++          c("expr").M(e => OperatorExpr(Operator.Bv(kind, width), [e]))
++        else
++          c("expr").I_e(Sym(",")).I_I(c("expr")).M2(MId,
++            (a: Expr, b: Expr) => OperatorExpr(Operator.Bv(kind, width), [a, b]))
++      )
++    ))
++  }
++
    function parseAtomicExpr(c: ExprRecSel): B<Expr> {
      Or([
++      parseBitvectorOperator(c, BitvectorOperator.BvAnd),
++      parseBitvectorOperator(c, BitvectorOperator.BvOr),
++      parseBitvectorOperator(c, BitvectorOperator.BvXor),
++      parseBitvectorOperator(c, BitvectorOperator.BvNot),
++      parseBitvectorOperator(c, BitvectorOperator.BvAdd),
++      parseBitvectorOperator(c, BitvectorOperator.BvSubtract),
++      parseBitvectorOperator(c, BitvectorOperator.BvMultiply),
++      parseBitvectorOperator(c, BitvectorOperator.BvUnsignedDivide),
++      parseBitvectorOperator(c, BitvectorOperator.BvUnsignedRemainder),
++      parseBitvectorOperator(c, BitvectorOperator.BvUnsignedLess),
++      parseBitvectorOperator(c, BitvectorOperator.BvUnsignedLessEqual),
++      parseBitvectorOperator(c, BitvectorOperator.BvShiftLeft),
++      parseBitvectorOperator(c, BitvectorOperator.BvLogicalShiftRight),
++      parseBitvectorOperator(c, BitvectorOperator.BvExtract),
++      parseBitvectorOperator(c, BitvectorOperator.BvConcat),
++      parseBitvectorOperator(c, BitvectorOperator.IntToBv),
++      parseBitvectorOperator(c, BitvectorOperator.BvToUnsignedInt),
++      Sym("#bv").e_I(parseParenthesized(parseSignedInteger.I_e(Sym(",")).I_I(parseSignedInteger)))
++        .M2(MId, (value: int, width: int) => BvLiteral(value, width)),
 +      Sym("#real").e_I(parseParenthesized(
 +        parseSignedInteger.I_e(Sym(",")).I_I(parseSignedInteger)
 +      )).M2(MId, (n, d) => RLiteral(n, d)),
@@ -532,21 +836,26 @@ index da95bf4076e2a1a1510f9183fa76ca94797bdf6d..ea8d263d713d05ebd11861f991ba8b4b
        T("true").M(_ => BLiteral(true)),
        Nat.I_e(W).M(n => ILiteral(n)),
 diff --git a/src/RawAst/Printer.dfy b/src/RawAst/Printer.dfy
-index 1736c0a16600d4619e29f18fa2629d4d4055ca7a..00442d0f6d0885767d9a1497fe6a074ecd635323 100644
+index 1736c0a16600d4619e29f18fa2629d4d4055ca7a..fc573a397978489a6635529408217c06c61b7203 100644
 --- a/src/RawAst/Printer.dfy
 +++ b/src/RawAst/Printer.dfy
-@@ -390,6 +390,7 @@ module Printer {
+@@ -390,6 +390,8 @@ module Printer {
      match expr
      case BLiteral(value) => print value;
      case ILiteral(value) => print value;
 +    case RLiteral(n, d) => print "#real(", n, ", ", d, ")";
++    case BvLiteral(value, width) => print "#bv(", value, ", ", width, ")";
      case CustomLiteral(s, typ) => print CustomLiteralToString(s, typ);
      case IdExpr(name, isOld) =>
        if isOld {
-@@ -415,6 +416,10 @@ module Printer {
+@@ -415,6 +417,14 @@ module Printer {
            ind.Space();
            Expression(args[2], opStrength.SubexpressionPower(Side.Right, context), format := ind);
          }
++      } else if op.Bv? {
++        print op.ToString(), "(", op.ParameterText();
++        if args != [] { print ", "; ExpressionList(args); }
++        print ")";
 +      } else if op in {Operator.ToReal, Operator.ToInt} && |args| == 1 {
 +        print op.ToString(), "(";
 +        Expression(args[0]);
@@ -555,10 +864,67 @@ index 1736c0a16600d4619e29f18fa2629d4d4055ca7a..00442d0f6d0885767d9a1497fe6a074e
          print op.ToString();
          Expression(args[0], opStrength.SubexpressionPower(Side.Right, context));
 diff --git a/src/RawAst/RawAst.dfy b/src/RawAst/RawAst.dfy
-index f645f42d228d581cf800a4c2ac0da696f2e20828..e6011a136d6b2f1250c62a3f2a1d6d484c6c430e 100644
+index f645f42d228d581cf800a4c2ac0da696f2e20828..2ba199b2549b2f948786a4c59b05fd8bb3ef1b87 100644
 --- a/src/RawAst/RawAst.dfy
 +++ b/src/RawAst/RawAst.dfy
-@@ -462,15 +462,16 @@ module RawAst {
+@@ -29,7 +29,7 @@ module RawAst {
+     //    - additional semantic rules
+     ghost predicate WellFormed(generatedTypes: set<string>) {
+       // user-defined types do not use the names of built-in types
+-      && (forall typ <- types :: typ.name !in BuiltInTypes)
++      && (forall typ <- types :: !ReservedTypeName(typ.name))
+       // user-defined types have distinct names
+       && (forall i, j :: 0 <= i < j < |types| ==> types[i] != types[j])
+       // procedures have distinct names
+@@ -46,7 +46,7 @@ module RawAst {
+     }
+
+     predicate IsType(typ: TypeName) {
+-      typ in BuiltInTypes || typ in signatureTypes || exists t <- types :: typ == t.name
++      IsBuiltInType(typ) || typ in signatureTypes || exists t <- types :: typ == t.name
+     }
+   }
+
+@@ -453,6 +453,38 @@ module RawAst {
+
+   // Expressions
+
++  datatype BitvectorOperator =
++    | BvAnd | BvOr | BvXor | BvNot
++    | BvAdd | BvSubtract | BvMultiply | BvUnsignedDivide | BvUnsignedRemainder
++    | BvUnsignedLess | BvUnsignedLessEqual | BvShiftLeft | BvLogicalShiftRight
++    | BvExtract | BvConcat | IntToBv | BvToUnsignedInt
++  {
++    function ArgumentCount(): nat {
++      if this in {BvNot, BvExtract, IntToBv, BvToUnsignedInt} then 1 else 2
++    }
++    function ToString(): string { "#" + SmtName() }
++    function SmtName(): string {
++      match this
++      case BvAnd => "bvand"
++      case BvOr => "bvor"
++      case BvXor => "bvxor"
++      case BvNot => "bvnot"
++      case BvAdd => "bvadd"
++      case BvSubtract => "bvsub"
++      case BvMultiply => "bvmul"
++      case BvUnsignedDivide => "bvudiv"
++      case BvUnsignedRemainder => "bvurem"
++      case BvUnsignedLess => "bvult"
++      case BvUnsignedLessEqual => "bvule"
++      case BvShiftLeft => "bvshl"
++      case BvLogicalShiftRight => "bvlshr"
++      case BvExtract => "extract"
++      case BvConcat => "concat"
++      case IntToBv => "int2bv"
++      case BvToUnsignedInt => "bv2int"
++    }
++  }
++
+   datatype Operator =
+     // ternary operators
+     | IfThenElse
+@@ -462,20 +494,38 @@ module RawAst {
      | LogicalAnd | LogicalOr
      | Eq | Neq
      | Less | AtMost
@@ -568,16 +934,38 @@ index f645f42d228d581cf800a4c2ac0da696f2e20828..e6011a136d6b2f1250c62a3f2a1d6d48
      | LogicalNot
      | UnaryMinus
 +    | ToReal | ToInt
++    | Bv(kind: BitvectorOperator, width: int, start: int := 0, end: int := 0)
    {
      function ArgumentCount(): nat {
        match this
++      case Bv(kind, _, _, _) => kind.ArgumentCount()
        case IfThenElse => 3
 -      case LogicalNot | UnaryMinus => 1
 +      case LogicalNot | UnaryMinus | ToReal | ToInt => 1
        case _ => 2
      }
 
-@@ -490,6 +491,9 @@ module RawAst {
++    predicate ParametersValid() {
++      match this
++      case Bv(kind, width, start, end) =>
++        0 < width <= MaximumBitvectorWidth &&
++        (if kind == BitvectorOperator.BvExtract then
++          0 <= start < end <= MaximumBitvectorWidth && width == end - start
++         else start == 0 && end == 0)
++      case _ => true
++    }
++    function ParameterText(): string {
++      if this.Bv? then Int2String(width) +
++        (if kind == BitvectorOperator.BvExtract then ", " + Int2String(start) + ", " + Int2String(end) else "")
++      else ""
++    }
+     function ToString(): string {
+       match this
++      case Bv(kind, _, _, _) => kind.ToString()
+       case IfThenElse => "if-then-else" // this case can be used in output (e.g., error messages), but does not lead to parseable syntax
+       case Equiv => "<==>"
+       case LogicalImp => "==>"
+@@ -490,11 +540,15 @@ module RawAst {
        case Times => "*"
        case Div => "div"
        case Mod => "mod"
@@ -587,7 +975,13 @@ index f645f42d228d581cf800a4c2ac0da696f2e20828..e6011a136d6b2f1250c62a3f2a1d6d48
        case LogicalNot => "!"
      }
 
-@@ -504,14 +508,15 @@ module RawAst {
+     function BindingStrength(): PrintUtil.BindingPower {
+       match this
++      case Bv(_, _, _, _) => PrintUtil.BindingPower(80, 80)
+       case IfThenElse => PrintUtil.BindingPower.EndlessOperator
+       case Equiv => PrintUtil.BindingPower(20, 20)
+       case LogicalImp => PrintUtil.BindingPower(31, 30)
+@@ -504,14 +558,16 @@ module RawAst {
        case Plus => PrintUtil.BindingPower(60, 60)
        case Minus => PrintUtil.BindingPower(60, 61)
        case Times => PrintUtil.BindingPower(70, 70)
@@ -602,31 +996,85 @@ index f645f42d228d581cf800a4c2ac0da696f2e20828..e6011a136d6b2f1250c62a3f2a1d6d48
      | BLiteral(bvalue: bool)
      | ILiteral(ivalue: int)
 +    | RLiteral(numerator: int, denominator: int)
++    | BvLiteral(value: int, width: int)
      | CustomLiteral(s: string, typ: TypeName)
      | IdExpr(name: string, isOld: bool := false)
      | OperatorExpr(op: Operator, args: seq<Expr>)
-@@ -525,6 +530,7 @@ module RawAst {
+@@ -525,11 +581,13 @@ module RawAst {
        match this
        case BLiteral(_) => true
        case ILiteral(_) => true
 +      case RLiteral(_, denominator) => denominator > 0
++      case BvLiteral(value, width) => BitvectorLiteralValid(value, width)
        case CustomLiteral(_, _) => true
        case IdExpr(name, isOld) =>
          (if isOld then OldName(name) else name) in scope
+-      case OperatorExpr(_, args) =>
+-        forall e <- args :: e.WellFormed(b3, scope)
++      case OperatorExpr(op, args) =>
++        op.ParametersValid() && forall e <- args :: e.WellFormed(b3, scope)
+       case FunctionCallExpr(name, args) =>
+         // TODO: name
+         forall e <- args :: e.WellFormed(b3, scope)
 diff --git a/src/RawAst/Types.dfy b/src/RawAst/Types.dfy
-index 9223b47bb6ac5924c24b7073ad60f0b3c6572420..c7f242969210f3f54201f27e41e7448a0cd03fbd 100644
+index 9223b47bb6ac5924c24b7073ad60f0b3c6572420..a85c586de95ce15ff6020bd6f97af325c9bbf84a 100644
 --- a/src/RawAst/Types.dfy
 +++ b/src/RawAst/Types.dfy
-@@ -5,6 +5,7 @@ module Types {
+@@ -1,10 +1,49 @@
+ module Types {
+-  // Types
++  import opened Std.Wrappers
++  import opened Basics
 
+   type TypeName = string
+-
    const BoolTypeName := "bool"
    const IntTypeName := "int"
 +  const RealTypeName := "real"
    const TagTypeName := "tag"
 -  const BuiltInTypes: set<TypeName> := {BoolTypeName, IntTypeName, TagTypeName}
-+  const BuiltInTypes: set<TypeName> := {BoolTypeName, IntTypeName, RealTypeName, TagTypeName}
- }
+-}
 \ No newline at end of file
++  const BuiltInTypes: set<TypeName> := {BoolTypeName, IntTypeName, RealTypeName, TagTypeName}
++  const MaximumBitvectorWidth := 4096
++  const MaximumBitvectorBits := 4194304
++  type BitvectorWidth = w: int | 0 < w <= MaximumBitvectorWidth witness 1
++
++  function BitvectorTypeName(width: int): string { "#bv" + Int2String(width) }
++  predicate ReservedTypeName(name: string) { name in BuiltInTypes || "#bv" <= name }
++  predicate IsBuiltInType(name: string) { name in BuiltInTypes || ParseBitvectorWidth(name).Some? }
++
++  // Parsing never raises a power or allocates an object proportional to an unchecked width.
++  function ParseBitvectorWidth(name: string): Option<BitvectorWidth> {
++    if !("#bv" <= name) || |name| < 4 || |name| > 7 || name[3] == '0' then None else
++    var width := ReadWidthDigits(name[3..], 0);
++    if 0 < width <= MaximumBitvectorWidth then Some(width) else None
++  }
++  function ReadWidthDigits(chars: string, value: int): int
++    decreases |chars|
++  {
++    if chars == "" then value else
++    if chars[0] < '0' || '9' < chars[0] then -1 else
++    var next := value * 10 + (chars[0] as int - '0' as int);
++    if next > MaximumBitvectorWidth then -1 else ReadWidthDigits(chars[1..], next)
++  }
++
++  // Squaring gives logarithmic recursion depth in the positive, bounded word width.
++  function WordBound(width: nat): nat
++    ensures WordBound(width) > 0
++  {
++    if width == 0 then 1 else
++    var half := WordBound(width / 2);
++    half * half * (if width % 2 == 0 then 1 else 2)
++  }
++  predicate BitvectorLiteralValid(value: int, width: int) {
++    0 < width <= MaximumBitvectorWidth && 0 <= value < WordBound(width)
++  }
++  datatype Word = Word(value: int, width: BitvectorWidth) {
++    predicate Valid() { 0 <= value < WordBound(width) }
++  }
++  type CanonicalWord = word: Word | word.Valid() witness Word(0, 1)
++}
 diff --git a/src/Solver/ExternalSolvers.dfy b/src/Solver/ExternalSolvers.dfy
 index c8588d5f308be90550d8284938250f59e5718f6d..1e282edb1ac18c0d6acd02b5c3579e552a743649 100644
 --- a/src/Solver/ExternalSolvers.dfy
@@ -843,19 +1291,21 @@ index c8588d5f308be90550d8284938250f59e5718f6d..1e282edb1ac18c0d6acd02b5c3579e55
 \ No newline at end of file
 +}
 diff --git a/src/Solver/RSolver.dfy b/src/Solver/RSolver.dfy
-index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474ffcab1695 100644
+index 7049b456747b6486558482d4127842c2a03c6f26..953987014f7918c5d58dd8ebfa94493f81bc5adf 100644
 --- a/src/Solver/RSolver.dfy
 +++ b/src/Solver/RSolver.dfy
-@@ -12,15 +12,18 @@ module RSolvers {
+@@ -12,34 +12,48 @@ module RSolvers {
    import opened Basics
    import CLI = CommandLineOptions
    import PrintUtil
 +  import VerificationResults
 +  import SolverConfiguration
++  import Types
 
    export
 -    reveals RExpr, ROperator, RPattern
-+    reveals RExpr, ROperator, RPattern, PositiveDenominator
++    reveals RExpr, ROperator, RPattern, PositiveDenominator, NativeBitvectorOperator
++    provides Types
      provides RExpr.Eq, RExpr.Operator2ROperator, RExpr.OperatorToString
      provides RContext, CreateEmptyContext, Extend, ExtendWithEquality
      provides Record, RecordTracePoint, PrintTrace
@@ -868,7 +1318,21 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
 
    // ===== RExpr =====
 
-@@ -37,9 +40,12 @@ module RSolvers {
+   type SExpr = SolverExpr.SExpr
+
++  type NativeBitvectorOperator = op: Ast.Operator | op.Bv? && op.ParametersValid()
++    witness Ast.Operator.Bv(Ast.Raw.BitvectorOperator.BvNot, 1)
++
+   datatype ROperator =
+     | BuiltInOperator(name: string)
++    | NativeBitvector(op: NativeBitvectorOperator)
+     | UserDefinedFunction(func: Ast.Function, decl: SolverExpr.STypedDeclaration, maybeTagger: Option<SolverExpr.STypedDeclaration>)
+   {
+     function ToString(): string {
+       match this
+       case BuiltInOperator(name) => name
++      case NativeBitvector(op) => op.ToString()
+       case UserDefinedFunction(func, decl, _) => decl.name
      }
    }
 
@@ -878,42 +1342,75 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
      | Boolean(b: bool)
      | Integer(x: int)
 +    | Rational(numerator: int, denominator: PositiveDenominator)
++    | Bitvector(word: Types.CanonicalWord)
      | CustomLiteral(s: string, typ: SolverExpr.SType)
      | Id(v: SolverExpr.SConstant)
      | FuncAppl(op: ROperator, args: seq<RExpr>)
-@@ -53,6 +59,7 @@ module RSolvers {
+@@ -53,12 +67,14 @@ module RSolvers {
        match this
        case Boolean(b) => SExpr.Boolean(b)
        case Integer(x) => SExpr.Integer(x)
 +      case Rational(n, d) => SExpr.Rational(n, d)
++      case Bitvector(word) => SExpr.Bitvector(word)
        case CustomLiteral(s, typ) =>
          if s in literalMapper then literalMapper[s] else SExpr.S(CustomLiteralToSExprName())
        case Id(v) => SExpr.Id(v)
-@@ -124,6 +131,9 @@ module RSolvers {
+       case FuncAppl(op, args) =>
+         var sargs := RExprListToSExprs(args, this, literalMapper);
+-        SExpr.FuncAppl(op.ToString(), sargs)
++        if op.NativeBitvector? then NativeBitvectorToSExpr(op.op, sargs) else SExpr.FuncAppl(op.ToString(), sargs)
+       case IfThenElse(guard, thn, els) =>
+         SExpr.FuncAppl("ite", [guard.ToSExpr(literalMapper), thn.ToSExpr(literalMapper), els.ToSExpr(literalMapper)])
+       case LetExpr(v, rhs, body) =>
+@@ -102,10 +118,18 @@ module RSolvers {
+         [SAnnotation("pattern", terms)] + PatternListToSAnnotationList(patterns[1..], parent, literalMapper)
+     }
+
++    static function NativeBitvectorToSExpr(op: NativeBitvectorOperator, args: seq<SExpr>): SExpr {
++      match op.kind
++      case IntToBv => SExpr.IndexedFuncAppl("int2bv", [op.width], args)
++      case BvExtract => SExpr.IndexedFuncAppl("extract", [op.end - 1, op.start], args)
++      case _ => SExpr.FuncAppl(op.kind.SmtName(), args)
++    }
++
+     static function Operator2ROperator(op: Ast.Operator): ROperator
+       requires op != Ast.Operator.IfThenElse && op != Ast.Operator.Neq
++      requires op.ParametersValid()
+     {
+-      BuiltInOperator(OperatorToString(op))
++      if op.Bv? then NativeBitvector(op) else BuiltInOperator(OperatorToString(op))
+     }
+
+     static function OperatorToString(op: Ast.Operator): string
+@@ -124,6 +148,10 @@ module RSolvers {
        case Times => "*"
        case Div => "div"
        case Mod => "mod"
 +      case RealDiv => "/"
 +      case ToReal => "to_real"
 +      case ToInt => "to_int"
++      case Bv(kind, _, _, _) => kind.SmtName()
        case LogicalNot => "not"
        case UnaryMinus => "-"
      }
-@@ -137,10 +147,12 @@ module RSolvers {
+@@ -137,10 +165,15 @@ module RSolvers {
        match this
        case Boolean(b) => if b then "true" else "false"
        case Integer(x) => Int2String(x)
 +      case Rational(n, d) => "#real(" + Int2String(n) + ", " + Int2String(d) + ")"
++      case Bitvector(word) => "#bv(" + Int2String(word.value) + ", " + Int2String(word.width) + ")"
        case CustomLiteral(s, typ) => PrintUtil.CustomLiteralToString(s, typ.ToString())
        case Id(v) => v.name
        case FuncAppl(op, args) =>
 -        op.ToString() + "(" + RExprListToString(args, this) + ")"
 +        var prefix := if op.BuiltInOperator? && op.name in {"to_real", "to_int"} then "#" else "";
-+        prefix + op.ToString() + "(" + RExprListToString(args, this) + ")"
++        if op.NativeBitvector? then
++          op.ToString() + "(" + op.op.ParameterText() + (if args == [] then "" else ", " + RExprListToString(args, this)) + ")"
++        else prefix + op.ToString() + "(" + RExprListToString(args, this) + ")"
        case IfThenElse(guard, thn, els) =>
          "(if " + guard.ToString() + " " + thn.ToString() + " else " + els.ToString() + ")"
        case LetExpr(v, rhs, body) =>
-@@ -219,6 +231,10 @@ module RSolvers {
+@@ -219,6 +252,10 @@ module RSolvers {
        requires Valid()
        decreases depth
 
@@ -924,7 +1421,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
      method PrintTrace()
        requires Valid()
        decreases depth
-@@ -248,6 +264,13 @@ module RSolvers {
+@@ -248,6 +285,13 @@ module RSolvers {
      {
      }
 
@@ -938,7 +1435,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
      method PrintTrace()
        requires Valid()
        decreases depth
-@@ -289,6 +312,14 @@ module RSolvers {
+@@ -289,6 +333,14 @@ module RSolvers {
        print "  ", expr.ToString(), "\n";
      }
 
@@ -953,7 +1450,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
      method PrintTrace()
        requires Valid()
        decreases depth
-@@ -343,6 +374,7 @@ module RSolvers {
+@@ -343,6 +395,7 @@ module RSolvers {
      const state: Solvers.SolverState<RContext>
      const axiomMap: map<Ast.Axiom, RExpr>
      const Options: CLI.CliOptions
@@ -961,7 +1458,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
 
      ghost predicate Valid()
        reads Repr
-@@ -361,6 +393,7 @@ module RSolvers {
+@@ -361,6 +414,7 @@ module RSolvers {
        this.state := state;
        this.axiomMap := axiomMap;
        this.Options := options;
@@ -969,7 +1466,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
        Repr := {this} + state.Repr;
      }
 
-@@ -370,7 +403,7 @@ module RSolvers {
+@@ -370,7 +424,7 @@ module RSolvers {
        map["%tag" := SExpr.S(Int2String(|state.declarations| + |state.additionalDeclaredNames|))]
      }
 
@@ -978,7 +1475,7 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
        requires Valid()
        modifies Repr
        ensures Valid()
-@@ -382,8 +415,27 @@ module RSolvers {
+@@ -382,8 +436,27 @@ module RSolvers {
 
        state.Push(context); // do another Push; the parameter here is irrelevant and will soon be popped off again
        DeclareNewSymbols(expr);
@@ -1007,24 +1504,34 @@ index 7049b456747b6486558482d4127842c2a03c6f26..6a875f5fc68d0e521751fdac6244474f
      }
 
      method SetContext(context: RContext)
-@@ -453,6 +505,7 @@ module RSolvers {
+@@ -453,6 +526,8 @@ module RSolvers {
        match r
        case Boolean(_) =>
        case Integer(_) =>
 +      case Rational(_, _) =>
++      case Bitvector(_) =>
        case CustomLiteral(s, typ) =>
          if s != "%tag" {
            var name := r.CustomLiteralToSExprName();
-@@ -546,7 +599,7 @@ module RSolvers {
+@@ -469,7 +544,7 @@ module RSolvers {
+         }
+       case FuncAppl(op, args) =>
+         match op {
+-          case BuiltInOperator(_) =>
++          case BuiltInOperator(_) | NativeBitvector(_) =>
+           case UserDefinedFunction(func, decl, maybeTagger) =>
+             if func !in state.declarations {
+               // declare the types in the function's signature
+@@ -546,7 +621,7 @@ module RSolvers {
        ensures Valid() && state.Evolves()
      {
        match typ
 -      case SBool | SInt =>
-+      case SBool | SInt | SReal =>
++      case SBool | SInt | SReal | SBitvector(_) =>
        case SUserType(decl) =>
          if decl !in state.declarations {
            state.DeclareType(decl, decl);
-@@ -557,8 +610,17 @@ module RSolvers {
+@@ -557,8 +632,17 @@ module RSolvers {
    method CreateEngine(axiomMap: map<Ast.Axiom, RExpr>, options: CLI.CliOptions) returns (r: Result<REngine, string>)
      ensures r.Success? ==> var smtEngine := r.value; smtEngine.Valid() && fresh(smtEngine.Repr)
    {
@@ -1150,43 +1657,54 @@ index 0000000000000000000000000000000000000000..8823cd0df6bd269dd4542fb687ed10dd
 +  const Default := Configuration("z3", ["-in", "-smt2"], 30000, 0, 1048576)
 +}
 diff --git a/src/Solver/SolverExpr.dfy b/src/Solver/SolverExpr.dfy
-index b04653d6f25cf55450c61b2edcc3007f4dd0632e..7de406b2348b4b665fd18ca371b7bc604bfc5bb8 100644
+index b04653d6f25cf55450c61b2edcc3007f4dd0632e..ee41184a684bb0718ca9caa5354f4fba432eae2b 100644
 --- a/src/Solver/SolverExpr.dfy
 +++ b/src/Solver/SolverExpr.dfy
-@@ -14,7 +14,7 @@ module SolverExpr {
+@@ -2,6 +2,7 @@ module SolverExpr {
+   import opened Std.Wrappers
+   import Std.Collections.Seq
+   import opened Basics
++  import Types
+   import opened DeclarationMarkers
+
+   export
+@@ -14,7 +15,7 @@ module SolverExpr {
      reveals SExprPrintConfig
      reveals SExpr
      provides SExpr.ToString
 -    provides SExpr.Boolean, SExpr.Integer, SExpr.EQ, SExpr.Id, SExpr.FuncAppl, SExpr.Eq, SExpr.Negation, SExpr.BigAnd
-+    provides SExpr.Boolean, SExpr.Integer, SExpr.Rational, SExpr.EQ, SExpr.Id, SExpr.FuncAppl, SExpr.Eq, SExpr.Negation, SExpr.BigAnd
++    provides SExpr.Boolean, SExpr.Integer, SExpr.Rational, SExpr.Bitvector, SExpr.IndexedFuncAppl, SExpr.EQ, SExpr.Id, SExpr.FuncAppl, SExpr.Eq, SExpr.Negation, SExpr.BigAnd
      provides Wrappers, DeclarationMarkers
 
    trait SDeclaration extends object {
-@@ -30,6 +30,7 @@ module SolverExpr {
+@@ -30,6 +31,8 @@ module SolverExpr {
    datatype SType =
      | SBool
      | SInt
 +    | SReal
++    | SBitvector(width: Types.BitvectorWidth)
      | SUserType(decl: STypeDecl)
    {
      static function TypesToSExpr(types: seq<SType>): SExpr {
-@@ -40,6 +41,7 @@ module SolverExpr {
+@@ -40,6 +43,8 @@ module SolverExpr {
        match this
        case SBool => S("Bool")
        case SInt => S("Int")
 +      case SReal => S("Real")
++      case SBitvector(width) => PP([S("_"), S("BitVec"), Integer(width)])
        case SUserType(name) => S(decl.name)
      }
 
-@@ -47,6 +49,7 @@ module SolverExpr {
+@@ -47,6 +52,8 @@ module SolverExpr {
        match this
        case SBool => "bool"
        case SInt => "int"
 +      case SReal => "real"
++      case SBitvector(width) => Types.BitvectorTypeName(width)
        case SUserType(name) => decl.name
      }
    }
-@@ -113,7 +116,12 @@ module SolverExpr {
+@@ -113,7 +120,21 @@ module SolverExpr {
        S(if b then TRUE else FALSE)
      }
      static function Integer(x: int): SExpr {
@@ -1197,6 +1715,15 @@ index b04653d6f25cf55450c61b2edcc3007f4dd0632e..7de406b2348b4b665fd18ca371b7bc60
 +      requires denominator > 0
 +    {
 +      FuncAppl("/", [FuncAppl("to_real", [Integer(numerator)]), FuncAppl("to_real", [Integer(denominator)])])
++    }
++    static function Bitvector(word: Types.CanonicalWord): SExpr {
++      PP([S("_"), S("bv" + Int2String(word.value)), Integer(word.width)])
++    }
++    static function IndexedFuncAppl(op: string, indices: seq<int>, args: seq<SExpr>): SExpr
++      requires forall i <- indices :: i >= 0
++    {
++      var head := PP([S("_"), S(op)] + SeqMap(indices, (i: int) => Integer(i)));
++      PP([head] + args)
      }
      static function Id(x: SConstant): SExpr {
        S(x.name)
@@ -1340,30 +1867,33 @@ index 628b2e40c42b0e296f9fd96d23c0d3c93043903b..498179859dc09cdc639e70ee0d0d7f57
 \ No newline at end of file
 +}
 diff --git a/src/Verifier/Incarnations.dfy b/src/Verifier/Incarnations.dfy
-index fa099cec059dbd3733ac320afce2ab9b8b1dc860..6b22c175c43a48ce7b5e94f4413e4056d8116c07 100644
+index fa099cec059dbd3733ac320afce2ab9b8b1dc860..9272932c69672d5a75ea354d63712d9b1f291020 100644
 --- a/src/Verifier/Incarnations.dfy
 +++ b/src/Verifier/Incarnations.dfy
-@@ -29,6 +29,7 @@ module Incarnations {
+@@ -29,6 +29,8 @@ module Incarnations {
        match typ
        case BoolType => SBool
        case IntType | TagType => SInt
 +      case RealType => SReal
++      case BitvectorType(width) => SBitvector(width)
        case UserType(decl) =>
          var _ := Expect(decl in typeMap, decl.Name);
          var sTypeDecl := typeMap[decl];
-@@ -132,6 +133,7 @@ module Incarnations {
+@@ -132,6 +134,8 @@ module Incarnations {
        match expr
        case BLiteral(_) =>
        case ILiteral(_) =>
 +      case RLiteral(_, _) =>
++      case BvLiteral(_, _) =>
        case CustomLiteral(_, _) =>
        case IdExpr(_) =>
        case OperatorExpr(_, args) =>
-@@ -189,6 +191,7 @@ module Incarnations {
+@@ -189,6 +193,8 @@ module Incarnations {
        match expr
        case BLiteral(value) => RExpr.Boolean(value)
        case ILiteral(value) => RExpr.Integer(value)
 +      case RLiteral(n, d) => RExpr.Rational(n, d)
++      case BvLiteral(value, width) => RExpr.Bitvector(Types.Word(value, width))
        case CustomLiteral(s, typ) => RExpr.CustomLiteral(s, declMap.Type2SType(typ))
        case IdExpr(v) =>
          var sv := SubstituteVariable(v);
@@ -2050,6 +2580,201 @@ index 0f46940420af48d6756e07008ce86f51e3097e66..0a1a2034f257859f24c6c6d0815d5415
 +  public Std.Wrappers.Result<dafny.Tuple0, dafny.DafnySequence<? extends dafny.CodePoint>> Dispose() {
 +    try { close(); return success(dafny.Tuple0._typeDescriptor(), dafny.Tuple0.create()); }
 +    catch (Exception e) { return failure(dafny.Tuple0._typeDescriptor(), "Solver cleanup failed: " + e); }
++  }
++}
+diff --git a/test/worker/BitvectorTests.dfy b/test/worker/BitvectorTests.dfy
+new file mode 100644
+index 0000000000000000000000000000000000000000..9e574d91712c303405f4805d8f84dba76bee0283
+--- /dev/null
++++ b/test/worker/BitvectorTests.dfy
+@@ -0,0 +1,189 @@
++module BitvectorWorkerTests {
++  import opened Std.Wrappers
++  import opened Basics
++  import Raw = RawAst
++  import Types
++  import Ast
++  import Parser
++  import Resolver
++  import TypeChecker
++  import Printer
++  import ResolvedPrinter
++  import SolverExpr
++  import RSolvers
++  import B3Library
++  import SolverConfiguration
++  import SB = Std.Parsers.StringBuilders
++
++  method Parse(text: string) returns (raw: Raw.Program) {
++    var parsed := SB.Apply(Parser.TopLevel, text);
++    expect parsed.ParseSuccess?;
++    return parsed.result;
++  }
++
++  method Resolve(text: string) returns (expr: Ast.Expr) {
++    var raw := Parse("procedure sP() { check " + text + " }");
++    var resolved, _ := Resolver.Resolve(raw, []);
++    expect resolved.Success?;
++    var program := resolved.value;
++    var checked := TypeChecker.TypeCheck(program);
++    expect checked.Pass?;
++    expect |program.procedures| == 1 && program.procedures[0].Body.Some?;
++    var body := program.procedures[0].Body.value;
++    expect body.Block? && |body.stmts| == 1 && body.stmts[0].Check?;
++    return body.stmts[0].cond;
++  }
++
++  @Test
++  method EveryTypedPrimitiveTextRoundTrips() {
++    var inputs := [
++      "#bvand(3, #bv(7, 3), #bv(3, 3)) == #bv(3, 3)",
++      "#bvor(3, #bv(4, 3), #bv(3, 3)) == #bv(7, 3)",
++      "#bvxor(3, #bv(7, 3), #bv(3, 3)) == #bv(4, 3)",
++      "#bvnot(1, #bv(1, 1)) == #bv(0, 1)",
++      "#bvadd(7, #bv(127, 7), #bv(1, 7)) == #bv(0, 7)",
++      "#bvsub(7, #bv(0, 7), #bv(1, 7)) == #bv(127, 7)",
++      "#bvmul(7, #bv(64, 7), #bv(2, 7)) == #bv(0, 7)",
++      "#bvudiv(7, #bv(127, 7), #bv(0, 7)) == #bv(127, 7)",
++      "#bvurem(7, #bv(127, 7), #bv(0, 7)) == #bv(127, 7)",
++      "#bvult(7, #bv(0, 7), #bv(127, 7))",
++      "#bvule(7, #bv(127, 7), #bv(127, 7))",
++      "#bvshl(7, #bv(1, 7), #bv(7, 7)) == #bv(0, 7)",
++      "#bvlshr(7, #bv(64, 7), #bv(127, 7)) == #bv(0, 7)",
++      "#extract(3, 2, 5, #bv(127, 7)) == #bv(7, 3)",
++      "#concat(7, #bv(3, 3), #bv(15, 4)) == #bv(63, 7)",
++      "#int2bv(4096, -1) == #int2bv(4096, -1)",
++      "#bv2int(67, #bv(73786976294838206464, 67)) == 73786976294838206464"
++    ];
++    for i := 0 to |inputs| {
++      var expr := Resolve(inputs[i]);
++      var text := expr.ToString();
++      var reparsed := Resolve(text);
++      expect reparsed.ToString() == text;
++    }
++  }
++
++  @Test
++  method NativeWordSMTPrintingKeepsWidthAndHighBits() {
++    var word := Types.Word(73786976294838206464, 67);
++    expect word.Valid();
++    var literal := SolverExpr.SExpr.Bitvector(word);
++    expect literal.ToString() == "(_ bv73786976294838206464 67)";
++    expect SolverExpr.SType.SBitvector(67).ToSExpr().ToString() == "(_ BitVec 67)";
++    expect SolverExpr.SType.SBitvector(67).ToString() == "#bv67";
++  }
++
++  @Test
++  method IndexedSMTHeadsComeFromTypedMetadata() {
++    var word := RSolvers.RExpr.Bitvector(Types.Word(127, 7));
++    var extract := RSolvers.RExpr.FuncAppl(
++      RSolvers.ROperator.NativeBitvector(Raw.Operator.Bv(Raw.BitvectorOperator.BvExtract, 3, 2, 5)), [word]);
++    expect extract.ToSExpr(map[]).ToString() == "((_ extract 4 2) (_ bv127 7))";
++    expect extract.ToString() == "#extract(3, 2, 5, #bv(127, 7))";
++    var conversion := RSolvers.RExpr.FuncAppl(
++      RSolvers.ROperator.NativeBitvector(Raw.Operator.Bv(Raw.BitvectorOperator.IntToBv, 7)), [RSolvers.RExpr.Integer(-1)]);
++    expect conversion.ToSExpr(map[]).ToString() == "((_ int2bv 7) (- 1))";
++    var reparsed := Resolve(extract.ToString() + " == #bv(7, 3)");
++    expect reparsed.OperatorExpr?;
++  }
++
++  @Test
++  method LiteralBoundsAreCheckedAtRawResolution() {
++    var invalid := ["#bv(0, 0)", "#bv(0, -1)", "#bv(0, 4097)", "#bv(-1, 7)", "#bv(128, 7)"];
++    for i := 0 to |invalid| {
++      var raw := Parse("procedure sP() { check " + invalid[i] + " == " + invalid[i] + " }");
++      var result, _ := Resolver.Resolve(raw, []);
++      expect result.Failure?;
++    }
++    expect Types.BitvectorLiteralValid(1, 1) && !Types.BitvectorLiteralValid(2, 1);
++    expect Types.WordBound(3) == 8 && Types.WordBound(7) == 128;
++    expect Types.BitvectorLiteralValid(0, 4096);
++  }
++
++  @Test
++  method WidthNamesAreCanonicalAndTheNamespaceIsReserved() {
++    expect Types.ParseBitvectorWidth("#bv1") == Some(1);
++    expect Types.ParseBitvectorWidth("#bv4096") == Some(4096);
++    var invalid := ["#bv0", "#bv01", "#bv-1", "#bv4097", "#bv10000000000000000000", "#bv7x"];
++    for i := 0 to |invalid| {
++      expect Types.ParseBitvectorWidth(invalid[i]).None?;
++      var raw := Raw.Program({}, [], [], [], [], [], [
++        Raw.Procedure("sP", [Raw.PParameter("sX", Raw.In, invalid[i], None)], [], [], Some(Raw.Block([])))]);
++      var rejected, _ := Resolver.Resolve(raw, []);
++      expect rejected.Failure?;
++    }
++    var declared := Raw.Program({}, [], [Raw.TypeDecl("#bv7", None)], [], [], [], []);
++    var rejectedDeclaration, _ := Resolver.Resolve(declared, []);
++    expect rejectedDeclaration.Failure?;
++  }
++
++  @Test
++  method MalformedPrimitiveParametersFailAtResolution() {
++    var invalid := [
++      "#bvadd(0, #bv(0, 1), #bv(0, 1))",
++      "#bvadd(4097, #bv(0, 1), #bv(0, 1))",
++      "#extract(3, 5, 2, #bv(0, 7))",
++      "#extract(2, 2, 5, #bv(0, 7))"
++    ];
++    for i := 0 to |invalid| {
++      var raw := Parse("procedure sP() { check " + invalid[i] + " == " + invalid[i] + " }");
++      var rejected, _ := Resolver.Resolve(raw, []);
++      expect rejected.Failure?;
++    }
++  }
++
++  @Test
++  method MixedWidthsAndWrongExtractionConcatOrConversionFailTyping() {
++    var invalid := [
++      "#bvadd(7, #bv(0, 7), #bv(0, 3)) == #bv(0, 7)",
++      "#extract(3, 5, 8, #bv(0, 7)) == #bv(0, 3)",
++      "#concat(7, #bv(0, 3), #bv(0, 3)) == #bv(0, 7)",
++      "#int2bv(7, #real(1, 1)) == #bv(0, 7)",
++      "#bv2int(7, #bv(0, 3)) == 0"
++    ];
++    for i := 0 to |invalid| {
++      var raw := Parse("procedure sP() { check " + invalid[i] + " }");
++      var resolved, _ := Resolver.Resolve(raw, []);
++      expect resolved.Success?;
++      var checked := TypeChecker.TypeCheck(resolved.value);
++      expect checked.IsFailure();
++    }
++  }
++
++  @Test
++  method RawAndResolvedPrintersExposeTheSameNativeForms() {
++    var raw := Parse("procedure sP() { check #bvand(7, #bv(127, 7), #bv(64, 7)) == #bv(64, 7) }");
++    var rawBody := raw.procedures[0].body.value;
++    expect rawBody.Block? && rawBody.stmts[0].Check?;
++    Printer.Expression(rawBody.stmts[0].cond);
++    print "\n";
++    var resolved := Resolve("#bvand(7, #bv(127, 7), #bv(64, 7)) == #bv(64, 7)");
++    ResolvedPrinter.Expression(resolved);
++    print "\n";
++    expect resolved.ToString() == "#bvand(7, #bv(127, 7), #bv(64, 7)) == #bv(64, 7)";
++  }
++
++  @Test
++  method AggregateNativeBitBudgetRejectsBeforeSolverStartup() {
++    var parameters := seq(1025, (i: int) => Raw.PParameter("sP" + Int2String(i), Raw.In, "#bv4096", None));
++    var raw := Raw.Program({}, [], [], [], [], [], [
++      Raw.Procedure("sP", parameters, [], [], Some(Raw.Block([Raw.Check(Raw.BLiteral(true))])))]);
++    var absent := SolverConfiguration.Configuration("b3-absent-solver", [], 1000, 0, 1048576);
++    var result := B3Library.CheckAndVerify(raw, "sP", absent);
++    expect !result.complete && result.error.Some? && result.attempts == [];
++    expect "unsupported: aggregate native bitvector cost" <= result.error.value;
++  }
++
++  @Test
++  method AutomaticInvariantExpressionsCountTowardTheSameBudget() {
++    var value := Raw.BvLiteral(0, 4096);
++    var autoInv := Raw.OperatorExpr(Raw.Eq, [value, value]);
++    var parameters := seq(513, (i: int) => Raw.PParameter("sP" + Int2String(i), Raw.In, "bool", Some(autoInv)));
++    var raw := Raw.Program({}, [], [], [], [], [], [
++      Raw.Procedure("sP", parameters, [], [], Some(Raw.Block([Raw.Check(Raw.BLiteral(true))])))]);
++    var absent := SolverConfiguration.Configuration("b3-absent-solver", [], 1000, 0, 1048576);
++    var result := B3Library.CheckAndVerify(raw, "sP", absent);
++    expect !result.complete && result.error.Some? && result.attempts == [];
++    expect "unsupported: aggregate native bitvector cost" <= result.error.value;
 +  }
 +}
 diff --git a/test/worker/RealTests.dfy b/test/worker/RealTests.dfy

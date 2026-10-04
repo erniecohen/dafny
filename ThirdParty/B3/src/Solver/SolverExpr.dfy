@@ -2,6 +2,7 @@ module SolverExpr {
   import opened Std.Wrappers
   import Std.Collections.Seq
   import opened Basics
+  import Types
   import opened DeclarationMarkers
 
   export
@@ -14,7 +15,7 @@ module SolverExpr {
     reveals SExprPrintConfig
     reveals SExpr
     provides SExpr.ToString
-    provides SExpr.Boolean, SExpr.Integer, SExpr.Rational, SExpr.EQ, SExpr.Id, SExpr.FuncAppl, SExpr.Eq, SExpr.Negation, SExpr.BigAnd
+    provides SExpr.Boolean, SExpr.Integer, SExpr.Rational, SExpr.Bitvector, SExpr.IndexedFuncAppl, SExpr.EQ, SExpr.Id, SExpr.FuncAppl, SExpr.Eq, SExpr.Negation, SExpr.BigAnd
     provides Wrappers, DeclarationMarkers
 
   trait SDeclaration extends object {
@@ -31,6 +32,7 @@ module SolverExpr {
     | SBool
     | SInt
     | SReal
+    | SBitvector(width: Types.BitvectorWidth)
     | SUserType(decl: STypeDecl)
   {
     static function TypesToSExpr(types: seq<SType>): SExpr {
@@ -42,6 +44,7 @@ module SolverExpr {
       case SBool => S("Bool")
       case SInt => S("Int")
       case SReal => S("Real")
+      case SBitvector(width) => PP([S("_"), S("BitVec"), Integer(width)])
       case SUserType(name) => S(decl.name)
     }
 
@@ -50,6 +53,7 @@ module SolverExpr {
       case SBool => "bool"
       case SInt => "int"
       case SReal => "real"
+      case SBitvector(width) => Types.BitvectorTypeName(width)
       case SUserType(name) => decl.name
     }
   }
@@ -122,6 +126,15 @@ module SolverExpr {
       requires denominator > 0
     {
       FuncAppl("/", [FuncAppl("to_real", [Integer(numerator)]), FuncAppl("to_real", [Integer(denominator)])])
+    }
+    static function Bitvector(word: Types.CanonicalWord): SExpr {
+      PP([S("_"), S("bv" + Int2String(word.value)), Integer(word.width)])
+    }
+    static function IndexedFuncAppl(op: string, indices: seq<int>, args: seq<SExpr>): SExpr
+      requires forall i <- indices :: i >= 0
+    {
+      var head := PP([S("_"), S(op)] + SeqMap(indices, (i: int) => Integer(i)));
+      PP([head] + args)
     }
     static function Id(x: SConstant): SExpr {
       S(x.name)

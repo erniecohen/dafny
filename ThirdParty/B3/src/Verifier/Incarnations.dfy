@@ -30,6 +30,7 @@ module Incarnations {
       case BoolType => SBool
       case IntType | TagType => SInt
       case RealType => SReal
+      case BitvectorType(width) => SBitvector(width)
       case UserType(decl) =>
         var _ := Expect(decl in typeMap, decl.Name);
         var sTypeDecl := typeMap[decl];
@@ -134,6 +135,7 @@ module Incarnations {
       case BLiteral(_) =>
       case ILiteral(_) =>
       case RLiteral(_, _) =>
+      case BvLiteral(_, _) =>
       case CustomLiteral(_, _) =>
       case IdExpr(_) =>
       case OperatorExpr(_, args) =>
@@ -192,6 +194,7 @@ module Incarnations {
       case BLiteral(value) => RExpr.Boolean(value)
       case ILiteral(value) => RExpr.Integer(value)
       case RLiteral(n, d) => RExpr.Rational(n, d)
+      case BvLiteral(value, width) => RExpr.Bitvector(Types.Word(value, width))
       case CustomLiteral(s, typ) => RExpr.CustomLiteral(s, declMap.Type2SType(typ))
       case IdExpr(v) =>
         var sv := SubstituteVariable(v);

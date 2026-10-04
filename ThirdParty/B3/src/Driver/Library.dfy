@@ -7,6 +7,8 @@ module B3Library {
   import Verifier
   import VerificationResults
   import SolverConfiguration
+  import Types
+  import BitvectorResources
 
   export
     provides CheckAndVerify
@@ -28,7 +30,7 @@ module B3Library {
     }
     if !SupportedProgram(raw) {
       return VerificationResults.UnitResult(selectedProcedure, [], false,
-        Some("unsupported: closure, reachability, custom literal, or unsafe SMT identifier"));
+        Some("unsupported: closure, reachability, custom literal, malformed native primitive, or unsafe SMT identifier"));
     }
     var resolution, _ := Resolver.Resolve(raw, []);
     if resolution.Failure? {
@@ -38,6 +40,9 @@ module B3Library {
     var checked := TypeChecker.TypeCheck(program);
     if checked.IsFailure() {
       return VerificationResults.UnitResult(selectedProcedure, [], false, Some("invalid input: " + checked.error));
+    }
+    if BitvectorResources.ProgramCost(program) > Types.MaximumBitvectorBits {
+      return VerificationResults.UnitResult(selectedProcedure, [], false, Some("unsupported: aggregate native bitvector cost exceeds resource bound"));
     }
     checked := StaticConsistency.CheckConsistent(program);
     if checked.IsFailure() {
@@ -74,9 +79,10 @@ module B3Library {
     match expr
     case BLiteral(_) | ILiteral(_) => true
     case RLiteral(_, d) => d > 0
+    case BvLiteral(value, width) => Types.BitvectorLiteralValid(value, width)
     case CustomLiteral(_, _) | ClosureExpr(_, _, _, _) => false
     case IdExpr(name, _) => SafeSymbol(name)
-    case OperatorExpr(_, args) => forall e <- args :: SupportedExpression(e)
+    case OperatorExpr(op, args) => op.ParametersValid() && forall e <- args :: SupportedExpression(e)
     case FunctionCallExpr(name, args) => SafeSymbol(name) && forall e <- args :: SupportedExpression(e)
     case LabeledExpr(name, body) => SafeSymbol(name) && SupportedExpression(body)
     case LetExpr(name, optionalType, rhs, body) => SafeSymbol(name) &&
