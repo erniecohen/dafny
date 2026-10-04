@@ -1652,7 +1652,7 @@ namespace Microsoft.Dafny {
       // A guarded co-recursive call is a suspended value. Its full result type
       // cannot be assumed while checking the cluster's constructor fields.
       // Extreme predicates use this marker for their separate prefix proof rule.
-      return call.CoCall == FunctionCallExpr.CoCallResolution.Yes && call.Function is not ExtremePredicate;
+      return call.CoCall == FunctionCallExpr.CoCallResolution.Yes && call.Function is not ExtremePredicate and not PrefixPredicate;
     }
 
     public void CheckSubsetType(ExpressionTranslator etran, Expression expr, Bpl.Expr selfCall, Type resultType,
