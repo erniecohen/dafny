@@ -16,7 +16,8 @@ git-issues/boogie-issue-1168.dfy
 dafny4/GHC-MergeSort.dfy
 dafny4/Lucas-down.dfy
 # Upstream tests that record the verifier's resource counts, which the fixes for
-# #6534 and #6536 move (their expected outputs are updated on this line):
+# #6534 and #6536, and for #132 here, move (their expected outputs are updated on
+# this line):
 dafny0/CoinductiveProofs.dfy
 dafny0/SubsetTypes.dfy
 dafny1/SchorrWaite.dfy
