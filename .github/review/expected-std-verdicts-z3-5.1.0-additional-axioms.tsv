@@ -834,7 +834,7 @@ Std Std.BulkActions.BatchReader.Invoke (override check)	Correct
 Std Std.BulkActions.BatchReader.Invoke (well-formedness)	Correct		
 Std Std.BulkActions.BatchReader.ProducedCount (override check)	Correct		
 Std Std.BulkActions.BatchReader.ProducedCount (well-formedness)	Correct		
-Std Std.BulkActions.BatchReader.Read (correctness)	OutOfResource		
+Std Std.BulkActions.BatchReader.Read (correctness)	Correct		
 Std Std.BulkActions.BatchReader.Read (well-formedness)	Correct		
 Std Std.BulkActions.BatchReader.Remaining (override check)	Correct		
 Std Std.BulkActions.BatchReader.Remaining (well-formedness)	Correct		
@@ -1782,7 +1782,7 @@ Std Std.Producers.LimitedProducer.Fill (well-formedness)	Correct
 Std Std.Producers.LimitedProducer.ForEach (correctness)	Correct		
 Std Std.Producers.LimitedProducer.ForEach (override check)	Correct		
 Std Std.Producers.LimitedProducer.ForEach (well-formedness)	Correct		
-Std Std.Producers.LimitedProducer.Invoke (correctness)	OutOfResource		
+Std Std.Producers.LimitedProducer.Invoke (correctness)	Correct		
 Std Std.Producers.LimitedProducer.Invoke (override check)	Correct		
 Std Std.Producers.LimitedProducer.Invoke (well-formedness)	Correct		
 Std Std.Producers.LimitedProducer.ProducedCount (override check)	Correct		
@@ -2188,7 +2188,7 @@ TargetSpecific-py Std.FileIO.WriteUTF8ToFile (correctness)	Correct
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (correctness)	Correct		
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (well-formedness)	Correct		
 TargetSpecific-py Std.PythonConcurrent.MutableMap.Get (well-formedness)	Correct		
-run Std	4	7586 verified, 2 errors, 24 out of resource	src/Std/Actions/BulkActions.dfy(221,18) src/Std/Actions/BulkActions.dfy(474,24) src/Std/Actions/Producers.dfy(1293,11) src/Std/Actions/Producers.dfy(1678,37) src/Std/Actions/Producers.dfy(1680,20) src/Std/Arithmetic/DivMod.dfy(1339,8) src/Std/Arithmetic/DivMod.dfy(728,8) src/Std/Arithmetic/DivMod.dfy(854,8) src/Std/Arithmetic/DivMod.dfy(899,8) src/Std/Arithmetic/DivMod.dfy(920,8) src/Std/Arithmetic/LittleEndianNat.dfy(50,30) src/Std/Arithmetic/Mul.dfy(154,22) src/Std/Arithmetic/Power.dfy(396,8) src/Std/Base64.dfy(1080,8) src/Std/Base64.dfy(1234,8) src/Std/Base64.dfy(415,37) src/Std/Base64.dfy(738,8) src/Std/Base64.dfy(783,8) src/Std/Base64.dfy(895,8) src/Std/Collections/Seq.dfy(1010,11) src/Std/Collections/Seq.dfy(1042,8) src/Std/Termination.dfy(125,17) src/Std/Termination.dfy(134,17) src/Std/Unicode/UnicodeEncodingForm.dfy(133,11) src/Std/Unicode/UnicodeStringsWithUnicodeChar.dfy(30,4)
+run Std	4	7590 verified, 2 errors, 20 out of resource	src/Std/Actions/BulkActions.dfy(474,24) src/Std/Actions/Producers.dfy(1678,37) src/Std/Arithmetic/DivMod.dfy(1339,8) src/Std/Arithmetic/DivMod.dfy(728,8) src/Std/Arithmetic/DivMod.dfy(854,8) src/Std/Arithmetic/DivMod.dfy(899,8) src/Std/Arithmetic/DivMod.dfy(920,8) src/Std/Arithmetic/LittleEndianNat.dfy(50,30) src/Std/Arithmetic/Mul.dfy(154,22) src/Std/Arithmetic/Power.dfy(396,8) src/Std/Base64.dfy(1080,8) src/Std/Base64.dfy(1234,8) src/Std/Base64.dfy(415,37) src/Std/Base64.dfy(738,8) src/Std/Base64.dfy(783,8) src/Std/Base64.dfy(895,8) src/Std/Collections/Seq.dfy(1010,11) src/Std/Collections/Seq.dfy(1042,8) src/Std/Termination.dfy(125,17) src/Std/Termination.dfy(134,17) src/Std/Unicode/UnicodeEncodingForm.dfy(133,11) src/Std/Unicode/UnicodeStringsWithUnicodeChar.dfy(30,4)
 run TargetSpecific-cs	0	15 verified, 0 errors	
 run TargetSpecific-go	0	16 verified, 0 errors	
 run TargetSpecific-java	0	15 verified, 0 errors	
