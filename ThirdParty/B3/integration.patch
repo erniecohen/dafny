@@ -241,7 +241,7 @@ index fac14413f30b2205e88828cfd90d88148ab4d473..bd0ea730b631299e4859ec264a186078
          print op.ToString();
          Expression(args[0], opStrength.SubexpressionPower(Side.Right, context));
 diff --git a/src/Ast/TypeChecker.dfy b/src/Ast/TypeChecker.dfy
-index 786d65a8a215e29ad86a110edd5d2154c42b1056..6a3d5c5fcadf55d343e93d1683e6adcf6ac8e18b 100644
+index 786d65a8a215e29ad86a110edd5d2154c42b1056..8b77f253227ddeef75643f38243ddfeb2db64e72 100644
 --- a/src/Ast/TypeChecker.dfy
 +++ b/src/Ast/TypeChecker.dfy
 @@ -140,6 +140,7 @@ module TypeChecker {
@@ -290,16 +290,27 @@ index 786d65a8a215e29ad86a110edd5d2154c42b1056..6a3d5c5fcadf55d343e93d1683e6adcf
      case CustomLiteral(_, typ) =>
        return Success(typ);
      case IdExpr(v) =>
-@@ -358,11 +367,22 @@ module TypeChecker {
+@@ -358,11 +367,33 @@ module TypeChecker {
            }
            typ := BoolType;
          case Less | AtMost =>
 -          var _ :- ExpectOperandTypes(op, types, IntType);
-+          var _ :- ExpectSameNumericOperands(op, types);
++          var numericType :- ExpectSameNumericOperands(op, types);
++          assert types[0] == numericType && types[1] == numericType;
++          assert args[0].HasType(types[0]) && args[1].HasType(types[1]);
++          assert args[0].ExprType() == numericType && args[1].ExprType() == numericType;
            typ := BoolType;
 -        case Plus | Minus | Times | Div | Mod | UnaryMinus =>
 +        case Plus | Minus | Times | UnaryMinus =>
 +          typ :- ExpectSameNumericOperands(op, types);
++          assert types[0] == typ;
++          assert args[0].HasType(types[0]);
++          assert args[0].ExprType() == typ;
++          if |args| == 2 {
++            assert types[1] == typ;
++            assert args[1].HasType(types[1]);
++            assert args[1].ExprType() == typ;
++          }
 +        case Div | Mod =>
            var _ :- ExpectOperandTypes(op, types, IntType);
            typ := IntType;
@@ -315,7 +326,7 @@ index 786d65a8a215e29ad86a110edd5d2154c42b1056..6a3d5c5fcadf55d343e93d1683e6adcf
        }
        return Success(typ);
      case FunctionCallExpr(func, args) =>
-@@ -406,6 +426,21 @@ module TypeChecker {
+@@ -406,6 +437,22 @@ module TypeChecker {
        return Failure("closure must be elaborated before type checking");
    }
 
@@ -326,6 +337,7 @@ index 786d65a8a215e29ad86a110edd5d2154c42b1056..6a3d5c5fcadf55d343e93d1683e6adcf
 +  method ExpectSameNumericOperands(op: Operator, types: seq<Type>) returns (r: Result<Type, string>)
 +    requires |types| > 0
 +    ensures r.Success? ==> IsNumericType(r.value) && forall t <- types :: t == r.value
++    ensures r.Success? ==> types[0] == r.value
 +  {
 +    var typ := types[0];
 +    if !IsNumericType(typ) || exists t <- types :: t != typ {
@@ -475,7 +487,7 @@ index 0000000000000000000000000000000000000000..fad28a0357ff194a9366140b382cc5cd
 +  }
 +}
 diff --git a/src/Parser/Parser.dfy b/src/Parser/Parser.dfy
-index da95bf4076e2a1a1510f9183fa76ca94797bdf6d..e67a70f2c49036b3b4158fbc9105dfcade72e8fc 100644
+index da95bf4076e2a1a1510f9183fa76ca94797bdf6d..ea8d263d713d05ebd11861f991ba8b4b5660b8ab 100644
 --- a/src/Parser/Parser.dfy
 +++ b/src/Parser/Parser.dfy
 @@ -316,6 +316,7 @@ module Parser {
@@ -501,7 +513,7 @@ index da95bf4076e2a1a1510f9183fa76ca94797bdf6d..e67a70f2c49036b3b4158fbc9105dfca
    }
 
 +  const parseSignedInteger: B<int> :=
-+    Sym("-").Option().I_I(Nat.I_e(W)).M2(MId, (minus: Option<string>, n: nat) => if minus.Some? then -n else n)
++    Sym("-").Option().I_I(Nat.I_e(W)).M2(MId, (minus: Option<string>, n: int) => if minus.Some? then -n else n)
 +
    function parseAtomicExpr(c: ExprRecSel): B<Expr> {
      Or([
