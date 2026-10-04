@@ -1,0 +1,38 @@
+original, option off (type-system-refresh:false)
+git-issue-1416-original.dfy(6,4): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+positive, option off (type-system-refresh:false)
+git-issue-1416-positive.dfy(16,2): Error: assertion might not hold
+git-issue-1416-positive.dfy(17,2): Error: assertion might not hold
+git-issue-1416-positive.dfy(19,2): Error: assertion might not hold
+git-issue-1416-positive.dfy(21,9): Error: assertion might not hold
+git-issue-1416-positive.dfy(28,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 5 errors
+original (type-system-refresh:false)
+
+Dafny program verifier finished with 1 verified, 0 errors
+positive (type-system-refresh:false)
+
+Dafny program verifier finished with 4 verified, 0 errors
+negative (type-system-refresh:false)
+git-issue-1416-negative.dfy(10,2): Error: assertion might not hold
+git-issue-1416-negative.dfy(15,2): Error: assertion might not hold
+git-issue-1416-negative.dfy(21,2): Error: assertion might not hold
+git-issue-1416-negative.dfy(26,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 4 errors
+original (type-system-refresh:true)
+
+Dafny program verifier finished with 1 verified, 0 errors
+positive (type-system-refresh:true)
+
+Dafny program verifier finished with 4 verified, 0 errors
+negative (type-system-refresh:true)
+git-issue-1416-negative.dfy(10,2): Error: assertion might not hold
+git-issue-1416-negative.dfy(15,2): Error: assertion might not hold
+git-issue-1416-negative.dfy(21,2): Error: assertion might not hold
+git-issue-1416-negative.dfy(26,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 4 errors

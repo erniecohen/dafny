@@ -1,0 +1,20 @@
+// Regression for the default-off shared additional-axioms option: what the alloc consequence axiom of a
+// function says is available where the function is applied (dafny-lang/dafny#1416).  Without the option,
+// the original and the positive cases fail.
+// RUN: echo "original, option off (type-system-refresh:false)" > "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-1416-original.dfy" --type-system-refresh:false --allow-axioms --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --verification-time-limit:60 --cores:1 >> "%t"
+// RUN: echo "positive, option off (type-system-refresh:false)" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-1416-positive.dfy" --type-system-refresh:false --allow-axioms --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --verification-time-limit:60 --cores:1 >> "%t"
+// RUN: echo "original (type-system-refresh:false)" >> "%t"
+// RUN: %exits-with 0 %baredafny verify "%S/Inputs/git-issue-1416-original.dfy" --additional-axioms --type-system-refresh:false --allow-axioms --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --verification-time-limit:60 --cores:1 >> "%t"
+// RUN: echo "positive (type-system-refresh:false)" >> "%t"
+// RUN: %exits-with 0 %baredafny verify "%S/Inputs/git-issue-1416-positive.dfy" --additional-axioms --type-system-refresh:false --allow-axioms --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --verification-time-limit:60 --cores:1 >> "%t"
+// RUN: echo "negative (type-system-refresh:false)" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-1416-negative.dfy" --additional-axioms --type-system-refresh:false --allow-axioms --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --verification-time-limit:60 --cores:1 >> "%t"
+// RUN: echo "original (type-system-refresh:true)" >> "%t"
+// RUN: %exits-with 0 %baredafny verify "%S/Inputs/git-issue-1416-original.dfy" --additional-axioms --type-system-refresh:true --allow-axioms --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --verification-time-limit:60 --cores:1 >> "%t"
+// RUN: echo "positive (type-system-refresh:true)" >> "%t"
+// RUN: %exits-with 0 %baredafny verify "%S/Inputs/git-issue-1416-positive.dfy" --additional-axioms --type-system-refresh:true --allow-axioms --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --verification-time-limit:60 --cores:1 >> "%t"
+// RUN: echo "negative (type-system-refresh:true)" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-1416-negative.dfy" --additional-axioms --type-system-refresh:true --allow-axioms --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --verification-time-limit:60 --cores:1 >> "%t"
+// RUN: %diff "%s.expect" "%t"
