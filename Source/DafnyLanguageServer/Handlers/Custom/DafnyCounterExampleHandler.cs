@@ -6,6 +6,8 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
+using OmniSharp.Extensions.JsonRpc.Server;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Dafny.LanguageServer.Workspace.Notifications;
@@ -29,13 +31,19 @@ namespace Microsoft.Dafny.LanguageServer.Handlers.Custom {
 
     public async Task<CounterExampleList> Handle(CounterExampleParams request, CancellationToken cancellationToken) {
       try {
-        var projectManager = await projects.GetProjectManager(request.TextDocument);
+        var projectManager = await projects.GetProjectManager(request.TextDocument).WaitAsync(cancellationToken);
         if (projectManager != null) {
+          var compilation = projectManager.Compilation;
+          if ((compilation.BackendCapabilities & VerificationCapabilities.Counterexamples) == 0) {
+            throw new RequestException(ErrorCodes.InvalidRequest, null,
+              $"The {compilation.VerificationBackendName} verification backend does not provide counterexample models.");
+          }
+
           var uri = request.TextDocument.Uri.ToUri();
-          await projectManager.VerifyEverythingAsync(uri);
+          await projectManager.VerifyEverythingAsync(uri).WaitAsync(cancellationToken);
 
           var state = await projectManager.States.
-            Where(s => FinishedVerifyingUri(s, uri)).FirstAsync();
+            Where(s => FinishedVerifyingUri(s, uri)).FirstAsync().ToTask(cancellationToken);
           logger.LogDebug($"counter-example handler retrieved IDE state, " +
                           $"canVerify count: {state.CanVerifyStates[uri].Count}, " +
                           $"counterExample count: {state.Counterexamples.Count}");
@@ -45,6 +53,9 @@ namespace Microsoft.Dafny.LanguageServer.Handlers.Custom {
         logger.LogWarning("counter-examples requested for unloaded document {DocumentUri}",
           request.TextDocument.Uri);
         return new CounterExampleList();
+      } catch (RequestException) {
+        // Capability rejection is an expected protocol response, not an internal fault.
+        throw;
       } catch (OperationCanceledException) {
         logger.LogWarning("counter-examples requested for unverified document {DocumentUri}",
           request.TextDocument.Uri);
