@@ -19,7 +19,7 @@ on:
       b3_focus_gate:
         description: Focused checks reusing the unchanged B3 library verified in public run 37201990430
         type: choice
-        options: [none, ide-regressions, maps, isolation, numeric-proof, complete]
+        options: [none, ide-regressions, maps, isolation, numeric-proof, visibility, complete]
         default: none
       b3_full_gate:
         description: Also run the verifying B3 worker bootstrap and real Dafny corpus with b3_compile_only
@@ -640,6 +640,8 @@ jobs:
             python3 .github/review/b3-focused-gate.py
           elif [ "$B3_FOCUS_GATE" = numeric-proof ]; then
             python3 .github/review/b3-numeric-proof.py
+          elif [ "$B3_FOCUS_GATE" = visibility ]; then
+            python3 .github/review/b3-visibility-gate.py
           else
             python3 .github/review/b3-native-compile.py
           fi
