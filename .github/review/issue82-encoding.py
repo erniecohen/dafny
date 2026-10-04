@@ -263,6 +263,12 @@ def conjunction(nodes):
     return result
 
 
+def backend_map_sort(sort):
+    # The emitted prelude names [Box]bool as ISet. It is a backend predicate
+    # map, whereas Set is the independent finite-set representation.
+    return sort.startswith("[") or sort == "ISet"
+
+
 def fixed_map_aliases(node):
     """Find exact dominating equalities for universally scoped map aliases.
 
@@ -273,7 +279,7 @@ def fixed_map_aliases(node):
     if node.op != "forall" or node.args[0].op != "==>":
         return {}
     own = {name for name, _ in node.bound}
-    maps = {name for name, sort in node.bound if sort.startswith("[")}
+    maps = {name for name, sort in node.bound if backend_map_sort(sort)}
     result = {}
     for guard in conjunctions(node.args[0].args[0]):
         if guard.op != "==":
@@ -345,6 +351,7 @@ class Statement:
     kind: str
     expr: Node
     context: str = ""
+    scope: str = ""
 
     @cached_property
     def source_contexts(self):
@@ -355,6 +362,17 @@ class Statement:
 def statements(text):
     ts = lex(text)
     result = []
+    implementation_scopes = []
+    for index, token in enumerate(ts):
+        if token != "implementation":
+            continue
+        name_index = index + 1
+        while ts[name_index] == "{":
+            name_index = mate(ts, name_index) + 1
+        name = ts[name_index]
+        body = next((name_index + 1 + offset for offset, part in tops(ts[name_index + 1:]) if part == "{"), None)
+        if body is not None:
+            implementation_scopes.append((body, mate(ts, body), name))
     for i, token in enumerate(ts):
         if token not in ("axiom", "assume", "assert", "requires", "ensures"):
             continue
@@ -367,7 +385,8 @@ def statements(text):
             if len(body) < 2 or body[1] != ":":
                 break
             body = body[mate(body, 0) + 1:]
-        result.append(Statement(token, parse(body)))
+        scope = next((name for start, end, name in implementation_scopes if start < i < end), "")
+        result.append(Statement(token, parse(body), scope=scope))
     return result
 
 
@@ -530,7 +549,7 @@ def audit(rows, decls, require_probe=True, lifted=False, source_triggers=True):
         if item not in findings:
             findings.append(item)
     original_rows = rows
-    rows = [Statement(row.kind, instantiate_fixed_map_aliases(expand_lets(row.expr)), row.context) for row in rows]
+    rows = [Statement(row.kind, instantiate_fixed_map_aliases(expand_lets(row.expr)), row.context, row.scope) for row in rows]
     available = set().union(*(contexts(row) for row in rows)) if rows else set()
     if require_probe:
         for marker in MARKERS:
@@ -545,7 +564,8 @@ def audit(rows, decls, require_probe=True, lifted=False, source_triggers=True):
                     continue
                 handles = {name for name, sort in n.bound if sort.startswith("[") and sort.endswith("HandleType")}
                 selector_trigger = any(term.op == "call" and term.text.startswith(("Reads", "Requires", "Apply"))
-                                       and contains(term, lambda z: z.op == "select" and z.args[0].op == "id" and z.args[0].text in handles)
+                                       and contains(term, lambda z: (z.op == "select" or z.op == "call" and z.text == "AtLayer")
+                                                    and z.args and z.args[0].op == "id" and z.args[0].text in handles)
                                        for pattern in n.triggers for term in pattern)
                 if selector_trigger and not handles <= set(fixed_map_aliases(n)):
                     fail("E08", "source arrow-selector family is not fixed to its actual closure lambda")
@@ -568,14 +588,14 @@ def audit(rows, decls, require_probe=True, lifted=False, source_triggers=True):
                             selected.op == "select" and selected.args[0].op == "id"):
                         arbitrary = selected.args[0].text
                         sort = next((typ for parent, _ in ancestors for name, typ in parent.bound if name == arbitrary), "")
-                        if sort.startswith("["):
+                        if backend_map_sort(sort):
                             fail("E01", "arbitrary-map finite membership preservation, including a renamed wrapper")
             if n.op == "call" and n.text == "SetRef_to_SetBox":
                 fail("E01", "reference-map finite bridge remains in a formula")
             if n.op == "call" and n.text == CONVERSION and n.args and n.args[0].op == "id":
                 argument = n.args[0].text
                 bound_type = next((typ for parent, _ in ancestors for name, typ in parent.bound if name == argument), "")
-                if bound_type.startswith("["):
+                if backend_map_sort(bound_type):
                     fail("E01", "finite conversion of an arbitrary quantified backend map")
         evidence["formulas"] += 1
     for d in defs:
@@ -592,7 +612,10 @@ def audit(rows, decls, require_probe=True, lifted=False, source_triggers=True):
         markers = contexts(row)
         if not markers:
             continue
-        context_defs = [d for d in defs if contexts(d.statement) & markers]
+        context_defs = [d for d in defs
+                        if ((row.scope and d.statement.scope == row.scope)
+                            or (contexts(d.statement) & markers and
+                                (not row.scope or not d.statement.scope or row.scope == d.statement.scope)))]
         for n, ancestors in walk(row.expr):
             if n.op != "call" or n.text != CONVERSION:
                 continue
@@ -710,12 +733,12 @@ def replace_node(node, old, new):
 
 
 def change(rows, statement, old, new):
-    return [Statement(row.kind, replace_node(row.expr, old, new), row.context) if row is statement else row for row in rows]
+    return [Statement(row.kind, replace_node(row.expr, old, new), row.context, row.scope) if row is statement else row for row in rows]
 
 
 def mutations(rows, decls):
     original_rows = rows
-    rows = [Statement(row.kind, instantiate_fixed_map_aliases(expand_lets(row.expr)), row.context) for row in rows]
+    rows = [Statement(row.kind, instantiate_fixed_map_aliases(expand_lets(row.expr)), row.context, row.scope) for row in rows]
     defs = definitions(rows)
     results = []
     def run(name, mutated, code):
@@ -899,6 +922,39 @@ class ParserTests(unittest.TestCase):
         guard = fixed_map_aliases(quantifier)["m"][1]
         dropped = change(rows, rows[0], guard, Node("literal", text="true"))
         errors, _ = audit(dropped, {}, require_probe=False)
+        self.assertIn("E01", {e["code"] for e in errors})
+
+    def test_arrow_family_atlayer_requires_actual_closure_guard(self):
+        text = "axiom (forall f: [LayerType]HandleType, l: LayerType, h: Heap, b: Box :: {Reads1(TInt, TInt, h, AtLayer(f, l), b)} f == (lambda layer: LayerType :: Handle(layer)) ==> Reads1(TInt, TInt, h, AtLayer(f, l), b) == Empty());"
+        rows = statements(text)
+        errors, _ = audit(rows, {}, require_probe=False)
+        self.assertNotIn("E08", {e["code"] for e in errors})
+        guard = fixed_map_aliases(rows[0].expr)["f"][1]
+        errors, _ = audit(change(rows, rows[0], guard, Node("literal", text="true")), {}, require_probe=False)
+        self.assertIn("E08", {e["code"] for e in errors})
+
+    def test_implementation_scope_preserves_local_capture_identity(self):
+        text = """implementation First() {
+          assume (forall m: ISet :: {Set#FromBoogieMap(m)} m == (lambda b: Box :: b == local)
+            ==> (forall x: Box :: {Set#IsMember(Set#FromBoogieMap(m), x)} Set#IsMember(Set#FromBoogieMap(m), x) <==> m[x]));
+          assume ResultEncoding82Conditional() == Set#FromBoogieMap((lambda b: Box :: b == local));
+        }
+        implementation Second() { assume Set#FromBoogieMap((lambda b: Box :: b == local)) == Other(); }
+        """
+        rows = statements(text)
+        self.assertEqual([row.scope for row in rows], ["First", "First", "Second"])
+        errors, _ = audit(rows, {}, require_probe=False)
+        self.assertNotIn("E02", {e["code"] for e in errors})
+        changed = change(rows, rows[1], calls(rows[1].expr, CONVERSION)[0].args[0].args[0].args[1], Node("id", text="changedCapture"))
+        errors, _ = audit(changed, {}, require_probe=False)
+        self.assertIn("E02", {e["code"] for e in errors})
+
+    def test_named_iset_backend_alias_requires_its_fixed_map_equality(self):
+        text = "axiom (forall m: ISet :: {Set#FromBoogieMap(m)} m == (lambda x: Box :: false) ==> (forall b: Box :: {Set#IsMember(Set#FromBoogieMap(m), b)} Set#IsMember(Set#FromBoogieMap(m), b) <==> m[b]));"
+        errors, _ = audit(statements(text), {}, require_probe=False)
+        self.assertNotIn("E01", {e["code"] for e in errors})
+        unguarded = text.replace("m == (lambda x: Box :: false) ==> ", "")
+        errors, _ = audit(statements(unguarded), {}, require_probe=False)
         self.assertIn("E01", {e["code"] for e in errors})
 
     def test_alias_equal_to_arbitrary_map_is_still_rejected(self):
