@@ -20,7 +20,7 @@ public class NormalizerTests {
     var checks = results.SelectMany(r => Statements(r.Program!.Unit.Body)).OfType<Ir.Check>().ToArray();
     Assert.Contains(checks, c => c.Condition is Ir.BooleanLiteral { Value: false });
     Assert.Contains(checks, c => c.Condition is Ir.BooleanLiteral { Value: true });
-    Assert.All(results, r => Assert.Empty(r.Program!.Axioms));
+    Assert.All(results.SelectMany(r => r.Program!.Axioms), axiom => Assert.Equal(2, axiom.Explains.Count));
     Assert.All(results.SelectMany(r => r.Obligations), o => Assert.Contains("B3NormalizerTests.dfy", o.Uri));
   }
 
@@ -113,6 +113,69 @@ public class NormalizerTests {
     Assert.Single(result.Program!.Types);
     Assert.Empty(result.Program.Axioms);
     Assert.DoesNotContain(result.Program.Types, t => t.Contains("Array"));
+  }
+
+  public static IEnumerable<object[]> MapTheoryInputs() {
+    var directory = Path.Combine(AppContext.BaseDirectory, "MapTheoryInputs");
+    using var manifest = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(directory, "cases.json")));
+    foreach (var entry in manifest.RootElement.GetProperty("cases").EnumerateArray()) {
+      yield return new object[] { entry.GetProperty("file").GetString()!, entry.GetProperty("expectedAxioms").GetInt32(),
+        entry.GetProperty("expectedChecks").GetInt32(), entry.GetProperty("expectedHelpers").GetInt32(),
+        entry.GetProperty("containsLiteralFalse").GetBoolean() };
+    }
+  }
+
+  [Theory]
+  [MemberData(nameof(MapTheoryInputs))]
+  public void TypedMapTheoryInputsPreserveEveryCheckAndValidateOwnedHelpers(string file, int axiomCount,
+    int checkCount, int helperCount, bool containsLiteralFalse) {
+    // The manifest's verdict targets require the separate worker/native gate; this test normalizes only.
+    var result = Boogie(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "MapTheoryInputs", file)));
+    Validate(result);
+    Assert.Equal(axiomCount, result.Program!.Axioms.Count);
+    Assert.Equal(checkCount, result.Obligations.Count);
+    Assert.Equal(helperCount, result.Approximations.Count(a => a.StartsWith("Monomorphic map helper origin:")));
+    Assert.All(result.Program.Axioms, axiom => {
+      Assert.Equal(2, axiom.Explains.Count);
+      Assert.True(Assert.IsType<Ir.Quantifier>(axiom.Condition).Universal);
+    });
+    if (containsLiteralFalse) {
+      Assert.Contains(Statements(result.Program.Unit.Body).OfType<Ir.Check>(), check => check.Condition is Ir.BooleanLiteral { Value: false });
+    }
+    if (file == "polymorphic-opaque.bpl") {
+      Assert.Contains(result.Approximations, a => a.StartsWith("Polymorphic map sort "));
+    }
+  }
+
+  [Fact]
+  public async Task RealDafnyMapReadsDemandClosedHelpersWithoutCollectionDefinitions() {
+    var results = await Dafny("method Read(m: imap<int, int>, key: int) requires key in m { assert m[key] == m[key]; }");
+    Assert.All(results, Validate);
+    Assert.Contains(results, r => r.Approximations.Any(a => a.StartsWith("Monomorphic map helper origin:")));
+    Assert.All(results, r => Assert.Contains(r.Approximations, a => a.Contains("nonidentity function definitions and lambda equations are omitted")));
+  }
+
+  [Fact]
+  public void MapHelperGenerationDoesNotMutateSourceAndHasDeterministicOrigins() {
+    var options = Options();
+    var source = ParseBoogie("type M = [int, bool]int; procedure P(m: M); implementation P(m: M) { assert m[0, true := 1][0, false] == m[0, false]; }", options);
+    var before = Emit(source, options);
+    var first = B3Normalizer.Normalize(source, source.Implementations.Single(), options);
+    var second = B3Normalizer.Normalize(source, source.Implementations.Single(), options);
+    Validate(first); Validate(second);
+    Assert.Equal(before, Emit(source, options));
+    Assert.Equal(Ir.Protocol.GetProgramHash(first.Program!), Ir.Protocol.GetProgramHash(second.Program!));
+    Assert.Equal(first.Approximations, second.Approximations);
+    Assert.Contains(first.Approximations, a => a.Contains("indices=(int,bool)") && a.Contains("equations=R0,R1[0],R1[1]"));
+  }
+
+  [Fact]
+  public void ExcessiveMapTheoryFailsBeforeQuadraticConstruction() {
+    var indexes = string.Join(",", Enumerable.Repeat("0", 200));
+    var mapType = "[" + string.Join(",", Enumerable.Repeat("int", 200)) + "]int";
+    var result = Boogie("procedure P(m: " + mapType + "); implementation P(m: " + mapType + ") { assert m[" + indexes + " := 1][" + indexes + "] == 1; }");
+    Assert.False(result.Success); Assert.Null(result.Program); Assert.Empty(result.Obligations);
+    Assert.Contains(result.Diagnostics, d => d.Code == "b3_map_theory_limit");
   }
 
   [Theory]

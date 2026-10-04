@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><IsPackable>false</IsPackable></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../DafnyB3Protocol/DafnyB3Protocol.csproj" />
+    <Content Include="../DafnyB3Normalizer.Test/MapTheoryInputs/**/*" Link="MapTheoryInputs/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(DafnyNormalizerReferenceDirectory)' == ''">
+    <ProjectReference Include="../DafnyCore/DafnyCore.csproj" />
+  </ItemGroup>
+  <!-- Match the structural normalizer tests' exact-compiler linked-source build option. -->
+  <ItemGroup Condition="'$(DafnyNormalizerReferenceDirectory)' != ''">
+    <Reference Include="$(DafnyNormalizerReferenceDirectory)/*.dll" />
+    <Compile Include="../DafnyCore/Backends/B3/B3Normalizer.cs" Link="B3Normalizer.cs" />
+  </ItemGroup>
+</Project>

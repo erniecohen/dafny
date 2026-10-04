@@ -12,8 +12,6 @@ public class ServerCommand {
   }
 
   static ServerCommand() {
-    DafnyOptions.RegisterLegacyBinding(LanguageServer.VerifySnapshots, (options, u) => options.VerifySnapshots = (int)u);
-
     OptionRegistry.RegisterOption(ProjectManager.Verification, OptionScope.Cli);
     OptionRegistry.RegisterOption(GhostStateDiagnosticCollector.GhostIndicators, OptionScope.Cli);
     OptionRegistry.RegisterOption(GutterIconAndHoverVerificationDetailsManager.LineVerificationStatus, OptionScope.Cli);

@@ -1,0 +1,196 @@
+{
+  "schemaVersion": 1,
+  "scope": "direct-closed-monomorphic-map-read-over-write",
+  "status": "unexecuted-verdict-controls",
+  "cases": [
+    {
+      "file": "read-same.bpl",
+      "expectedB3": "Verified",
+      "expectedBoogie": "Verified",
+      "expectedAxioms": 2,
+      "expectedChecks": 1,
+      "expectedHelpers": 1,
+      "containsLiteralFalse": false,
+      "expectedAttempts": [
+        "Verified"
+      ]
+    },
+    {
+      "file": "read-other.bpl",
+      "expectedB3": "Verified",
+      "expectedBoogie": "Verified",
+      "expectedAxioms": 2,
+      "expectedChecks": 1,
+      "expectedHelpers": 1,
+      "containsLiteralFalse": false,
+      "expectedAttempts": [
+        "Verified"
+      ]
+    },
+    {
+      "file": "read-wrong.bpl",
+      "expectedB3": "Failed",
+      "expectedBoogie": "Failed",
+      "expectedAxioms": 2,
+      "expectedChecks": 1,
+      "expectedHelpers": 1,
+      "containsLiteralFalse": false,
+      "expectedAttempts": [
+        "Failed"
+      ]
+    },
+    {
+      "file": "false-with-theory.bpl",
+      "expectedB3": "Failed",
+      "expectedBoogie": "Failed",
+      "expectedAxioms": 2,
+      "expectedChecks": 2,
+      "expectedHelpers": 1,
+      "containsLiteralFalse": true,
+      "expectedAttempts": [
+        "Verified",
+        "Failed"
+      ]
+    },
+    {
+      "file": "weak-equality.bpl",
+      "expectedB3": "Failed",
+      "expectedBoogie": "Failed",
+      "expectedAxioms": 2,
+      "expectedChecks": 2,
+      "expectedHelpers": 1,
+      "containsLiteralFalse": true,
+      "expectedAttempts": [
+        "Verified",
+        "Failed"
+      ]
+    },
+    {
+      "file": "tuple-other.bpl",
+      "expectedB3": "Verified",
+      "expectedBoogie": "Verified",
+      "expectedAxioms": 3,
+      "expectedChecks": 2,
+      "expectedHelpers": 1,
+      "containsLiteralFalse": false,
+      "expectedAttempts": [
+        "Verified",
+        "Verified"
+      ]
+    },
+    {
+      "file": "aliases.bpl",
+      "expectedB3": "Verified",
+      "expectedBoogie": "Verified",
+      "expectedAxioms": 2,
+      "expectedChecks": 2,
+      "expectedHelpers": 1,
+      "containsLiteralFalse": false,
+      "expectedAttempts": [
+        "Verified",
+        "Verified"
+      ]
+    },
+    {
+      "file": "nested.bpl",
+      "expectedB3": "Verified",
+      "expectedBoogie": "Verified",
+      "expectedAxioms": 4,
+      "expectedChecks": 2,
+      "expectedHelpers": 2,
+      "containsLiteralFalse": false,
+      "expectedAttempts": [
+        "Verified",
+        "Verified"
+      ]
+    },
+    {
+      "file": "nullary.bpl",
+      "expectedB3": "Verified",
+      "expectedBoogie": "Verified",
+      "expectedAxioms": 1,
+      "expectedChecks": 1,
+      "expectedHelpers": 1,
+      "containsLiteralFalse": false,
+      "expectedAttempts": [
+        "Verified"
+      ]
+    },
+    {
+      "file": "polymorphic-opaque.bpl",
+      "expectedB3": "Failed",
+      "expectedBoogie": "Verified",
+      "expectedAxioms": 0,
+      "expectedChecks": 1,
+      "expectedHelpers": 0,
+      "containsLiteralFalse": false,
+      "expectedAttempts": [
+        "Failed"
+      ]
+    },
+    {
+      "file": "box-left-inverse-omitted.bpl",
+      "expectedB3": "Failed",
+      "expectedBoogie": "Verified",
+      "expectedAxioms": 2,
+      "expectedChecks": 2,
+      "expectedHelpers": 1,
+      "containsLiteralFalse": false,
+      "expectedAttempts": [
+        "Verified",
+        "Failed"
+      ]
+    },
+    {
+      "file": "box-reverse-invalid.bpl",
+      "expectedB3": "Failed",
+      "expectedBoogie": "Failed",
+      "expectedAxioms": 2,
+      "expectedChecks": 2,
+      "expectedHelpers": 1,
+      "containsLiteralFalse": false,
+      "expectedAttempts": [
+        "Verified",
+        "Failed"
+      ]
+    },
+    {
+      "file": "bool-read-wrong.bpl",
+      "expectedB3": "Failed",
+      "expectedBoogie": "Failed",
+      "expectedAxioms": 2,
+      "expectedChecks": 1,
+      "expectedHelpers": 1,
+      "containsLiteralFalse": false,
+      "expectedAttempts": [
+        "Failed"
+      ]
+    },
+    {
+      "file": "bool-false-with-theory.bpl",
+      "expectedB3": "Failed",
+      "expectedBoogie": "Failed",
+      "expectedAxioms": 2,
+      "expectedChecks": 2,
+      "expectedHelpers": 1,
+      "containsLiteralFalse": true,
+      "expectedAttempts": [
+        "Verified",
+        "Failed"
+      ]
+    },
+    {
+      "file": "bool-weak-equality.bpl",
+      "expectedB3": "Failed",
+      "expectedBoogie": "Failed",
+      "expectedAxioms": 2,
+      "expectedChecks": 2,
+      "expectedHelpers": 1,
+      "containsLiteralFalse": true,
+      "expectedAttempts": [
+        "Verified",
+        "Failed"
+      ]
+    }
+  ]
+}
