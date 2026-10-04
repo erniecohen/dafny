@@ -1336,6 +1336,19 @@ namespace Microsoft.Dafny {
         }
       }
 
+      // Newtype bases are fully resolved here. Include visible nominal field
+      // paths in the existing codatatype dependency graph before choosing SCCs.
+      if (Options.Get(CommonOptionBag.ExtendedNewtypeBases) && reporter.Count(ErrorLevel.Error) == prevErrorCount) {
+        foreach (var datatype in declarations.OfType<CoDatatypeDecl>()) {
+          foreach (var formal in datatype.Ctors.SelectMany(ctor => ctor.Formals)) {
+            var dependency = NewtypeOperationView.CoDatatypeType(formal.Type, true).AsCoDatatype;
+            if (dependency != null && dependency.EnclosingModuleDefinition == datatype.EnclosingModuleDefinition) {
+              codatatypeDependencies.AddEdge(datatype, dependency);
+            }
+          }
+        }
+      }
+
       // Set the SccRepr field of codatatypes
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
         foreach (var repr in codatatypeDependencies.TopologicallySortedComponents()) {
@@ -1352,7 +1365,7 @@ namespace Microsoft.Dafny {
           bool dealsWithCodatatypes = false;
           foreach (var m in module.CallGraph.GetSCC(repr)) {
             var f = m as Function;
-            if (f != null && f.ResultType.InvolvesCoDatatype) {
+            if (f != null && NewtypeOperationView.InvolvesCoDatatype(f.ResultType, Options.Get(CommonOptionBag.ExtendedNewtypeBases))) {
               dealsWithCodatatypes = true;
               break;
             }
@@ -1362,7 +1375,7 @@ namespace Microsoft.Dafny {
           foreach (var m in module.CallGraph.GetSCC(repr)) {
             var f = m as Function;
             if (f != null && f.Body != null) {
-              var checker = new CoCallResolution(f, dealsWithCodatatypes);
+              var checker = new CoCallResolution(f, dealsWithCodatatypes, Options.Get(CommonOptionBag.ExtendedNewtypeBases));
               checker.CheckCoCalls(f.Body);
               coCandidates.AddRange(checker.FinalCandidates);
               hasIntraClusterCallsInDestructiveContexts |= checker.HasIntraClusterCallsInDestructiveContexts;
@@ -1772,7 +1785,9 @@ namespace Microsoft.Dafny {
                 }
               } else {
                 var binExpr = (BinaryExpr)e; // each "coConclusion" is either a FunctionCallExpr or a BinaryExpr
-                focalCodatatypeEquality.Add(binExpr.E0.Type.AsCoDatatype ?? binExpr.E1.Type.AsCoDatatype);
+                focalCodatatypeEquality.Add(
+                  NewtypeOperationView.CoDatatypeType(binExpr.E0.Type, Options.Get(CommonOptionBag.ExtendedNewtypeBases)).AsCoDatatype ??
+                  NewtypeOperationView.CoDatatypeType(binExpr.E1.Type, Options.Get(CommonOptionBag.ExtendedNewtypeBases)).AsCoDatatype);
               }
             }
           }

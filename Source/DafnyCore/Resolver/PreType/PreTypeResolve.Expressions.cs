@@ -317,7 +317,9 @@ namespace Microsoft.Dafny {
             // and desugar it into some kind of nested let expression.
             Constraints.AddGuardedConstraint(() => {
               var nominalRootPreType = e.Root.PreType;
-              if (OperationPreType(nominalRootPreType) is DPreType tentativeRootPreType) {
+              var rootOperationPreType = resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+                ? OperationPreType(nominalRootPreType) : nominalRootPreType.NormalizeWrtScope() as DPreType;
+              if (rootOperationPreType is DPreType tentativeRootPreType) {
                 if (tentativeRootPreType.Decl is DatatypeDecl datatypeDecl) {
                   var needsReintroduction = !PreType.Same(nominalRootPreType, tentativeRootPreType);
                   e.Root = BaseOperationExpression(e.Root, tentativeRootPreType);
@@ -682,7 +684,7 @@ namespace Microsoft.Dafny {
               foreach (var lhs in e.LHSs) {
                 var rhsPreType = i < e.RHSs.Count ? e.RHSs[i].PreType : CreatePreTypeProxy("let RHS");
                 ResolveCasePattern(lhs, rhsPreType, resolutionContext);
-                if (lhs.Ctor != null && i < e.RHSs.Count && OperationPreType(rhsPreType) is { Decl: DatatypeDecl } operationPreType) {
+                if (lhs.Ctor != null && i < e.RHSs.Count && PatternOperationPreType(rhsPreType) is { Decl: DatatypeDecl } operationPreType) {
                   e.RHSs[i] = BaseOperationExpression(e.RHSs[i], operationPreType);
                 }
                 // Check for duplicate names now, because not until after resolving the case pattern do we know if identifiers inside it refer to bound variables or nullary constructors
@@ -2521,7 +2523,7 @@ namespace Microsoft.Dafny {
 
       // Use the base only for constructor lookup and component signatures. A
       // variable pattern must retain the original nominal sourcePreType.
-      var operationSourcePreType = OperationPreType(sourcePreType);
+      var operationSourcePreType = PatternOperationPreType(sourcePreType);
       var dtd = operationSourcePreType?.Decl as DatatypeDecl;
       List<PreType> sourceTypeArguments = null;
       // Find the constructor in the given datatype

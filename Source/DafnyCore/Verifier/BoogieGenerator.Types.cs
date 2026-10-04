@@ -1671,13 +1671,20 @@ public partial class BoogieGenerator {
       } else if (fromType.IsBigOrdinalType || options.Get(CommonOptionBag.ExtendedNewtypeBases) && fromTypeFamily.IsBigOrdinalType) {
         PutSourceIntoLocal();
         var oi = FunctionCall(tok, "ORD#Offset", Bpl.Type.Int, o);
-        int toWidth = 16;
-        var toBound = BaseTypes.BigNum.FromBigInt(BigInteger.One << toWidth); // 1 << toWidth
-        var bound = Bpl.Expr.Literal(toBound);
-        var boundsCheck = Bpl.Expr.Lt(oi, bound);
-        var dafnyBound = new BinaryExpr(expr.Origin, BinaryExpr.Opcode.LeftShift, Expression.CreateIntLiteral(expr.Origin, 1), Expression.CreateIntLiteral(expr.Origin, toWidth));
         var offset = new ExprDotName(expr.Origin, expr, new Name("Offset"), null);
-        var dafnyBoundsCheck = new BinaryExpr(expr.Origin, BinaryExpr.Opcode.Lt, offset, dafnyBound);
+        Bpl.Expr boundsCheck;
+        Expression dafnyBoundsCheck;
+        if (options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+          boundsCheck = FunctionCall(tok, BuiltinFunction.IsChar, null, oi);
+          dafnyBoundsCheck = Utils.MakeCharBoundsCheck(options, offset);
+        } else {
+          int toWidth = 16;
+          var toBound = BaseTypes.BigNum.FromBigInt(BigInteger.One << toWidth); // 1 << toWidth
+          var bound = Bpl.Expr.Literal(toBound);
+          boundsCheck = Bpl.Expr.Lt(oi, bound);
+          var dafnyBound = new BinaryExpr(expr.Origin, BinaryExpr.Opcode.LeftShift, Expression.CreateIntLiteral(expr.Origin, 1), Expression.CreateIntLiteral(expr.Origin, toWidth));
+          dafnyBoundsCheck = new BinaryExpr(expr.Origin, BinaryExpr.Opcode.Lt, offset, dafnyBound);
+        }
         builder.Add(Assert(tok, boundsCheck, new ConversionFit("ORDINAL value", toType, dafnyBoundsCheck, errorMsgPrefix), builder.Context));
       }
 

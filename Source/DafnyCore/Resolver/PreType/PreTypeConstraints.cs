@@ -682,7 +682,12 @@ namespace Microsoft.Dafny {
       }
 
       var pt = (DPreType)preType;
-      var ancestorPt = PreTypeResolver.NewTypeAncestor(pt);
+      var useScopedView = options.Get(CommonOptionBag.ExtendedNewtypeBases) && pt.Decl is NewtypeDecl &&
+        check is not CommonConfirmationBag.IsNewtypeBaseTypeLegacy and not CommonConfirmationBag.IsNewtypeBaseTypeGeneral;
+      var ancestorPt = useScopedView ? PreTypeResolver.OperationPreType(pt) : PreTypeResolver.NewTypeAncestor(pt);
+      if (ancestorPt == null) {
+        return false;
+      }
       var ancestorDecl = ancestorPt.Decl;
       var familyDeclName = ancestorDecl.Name;
       switch (check) {

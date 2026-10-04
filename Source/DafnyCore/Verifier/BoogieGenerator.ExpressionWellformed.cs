@@ -886,6 +886,9 @@ namespace Microsoft.Dafny {
                       case FunctionCallExpr.CoCallResolution.NoBecauseFunctionHasPostcondition:
                         hint = "note that only functions without any ensures clause can be called co-recursively";
                         break;
+                      case FunctionCallExpr.CoCallResolution.NoBecauseFunctionHasConstrainedReturnType:
+                        hint = "note that functions with a constrained codatatype newtype result cannot be called co-recursively";
+                        break;
                       case FunctionCallExpr.CoCallResolution.NoBecauseIsNotGuarded:
                         hint = "note that the call is not sufficiently guarded to be used co-recursively";
                         break;
@@ -1182,6 +1185,9 @@ namespace Microsoft.Dafny {
                 if (e.InCompiledContext) {
                   // Helper to check if a type contains fp32 (directly or indirectly)
                   bool ContainsFp32(Type type, ISet<DatatypeDecl> visitedDatatypes) {
+                    if (options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+                      return FloatingPointOperationView.Contains(type, true);
+                    }
                     type = type.NormalizeExpand();
 
                     if (type is Fp32Type) {
@@ -1203,6 +1209,9 @@ namespace Microsoft.Dafny {
 
                   // Helper to check if a type contains fp64 (directly or indirectly)
                   bool ContainsFp64(Type type, ISet<DatatypeDecl> visitedDatatypes) {
+                    if (options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+                      return FloatingPointOperationView.Contains(type, false);
+                    }
                     type = type.NormalizeExpand();
 
                     if (type is Fp64Type) {
@@ -1222,8 +1231,14 @@ namespace Microsoft.Dafny {
                     return false;
                   }
 
+                  // Direct floating newtypes use the same NaN/signed-zero checks as
+                  // their carrier; structural floating fields use the check below.
+                  var equalityType0 = options.Get(CommonOptionBag.ExtendedNewtypeBases)
+                    ? NewtypeOperationView.Get(e.E0.Type).BaseType ?? e.E0.Type : e.E0.Type;
+                  var equalityType1 = options.Get(CommonOptionBag.ExtendedNewtypeBases)
+                    ? NewtypeOperationView.Get(e.E1.Type).BaseType ?? e.E1.Type : e.E1.Type;
                   // Check for fp32/fp64 equality first, as they require special preconditions
-                  if (e.E0.Type.IsFloatingPointType || e.E1.Type.IsFloatingPointType) {
+                  if (equalityType0.IsFloatingPointType || equalityType1.IsFloatingPointType) {
                     // fp32/fp64 support equality with preconditions per spec section 5.3
                     // Well-formedness: !x.IsNaN && !y.IsNaN && !(x.IsZero && y.IsZero && x.IsNegative != y.IsNegative)
 
@@ -1239,30 +1254,30 @@ namespace Microsoft.Dafny {
                     }
 
                     // Check NaN preconditions
-                    if (e.E0.Type.IsFp32Type) {
+                    if (equalityType0.IsFp32Type) {
                       var isNaN = GenerateFp32Check(e.E0, "fp32_is_nan");
                       builder.Add(Assert(GetToken(e.E0), Bpl.Expr.Not(isNaN),
                         new FloatEqualityPrecondition(e.E0, new Fp32Type()), builder.Context, wfOptions.AssertKv));
                     }
-                    if (e.E0.Type.IsFp64Type) {
+                    if (equalityType0.IsFp64Type) {
                       var isNaN = GenerateFp64Check(e.E0, "fp64_is_nan");
                       builder.Add(Assert(GetToken(e.E0), Bpl.Expr.Not(isNaN),
                         new FloatEqualityPrecondition(e.E0, new Fp64Type()), builder.Context, wfOptions.AssertKv));
                     }
 
-                    if (e.E1.Type.IsFp32Type) {
+                    if (equalityType1.IsFp32Type) {
                       var isNaN = GenerateFp32Check(e.E1, "fp32_is_nan");
                       builder.Add(Assert(GetToken(e.E1), Bpl.Expr.Not(isNaN),
                         new FloatEqualityPrecondition(e.E1, new Fp32Type()), builder.Context, wfOptions.AssertKv));
                     }
-                    if (e.E1.Type.IsFp64Type) {
+                    if (equalityType1.IsFp64Type) {
                       var isNaN = GenerateFp64Check(e.E1, "fp64_is_nan");
                       builder.Add(Assert(GetToken(e.E1), Bpl.Expr.Not(isNaN),
                         new FloatEqualityPrecondition(e.E1, new Fp64Type()), builder.Context, wfOptions.AssertKv));
                     }
 
                     // Check signed zero precondition: !(x.IsZero && y.IsZero && x.IsNegative != y.IsNegative)
-                    if (e.E0.Type.IsFp32Type && e.E1.Type.IsFp32Type) {
+                    if (equalityType0.IsFp32Type && equalityType1.IsFp32Type) {
                       var e0IsZero = GenerateFp32Check(e.E0, "fp32_is_zero");
                       var e1IsZero = GenerateFp32Check(e.E1, "fp32_is_zero");
                       var e0IsNegative = GenerateFp32Check(e.E0, "fp32_is_negative");
@@ -1276,7 +1291,7 @@ namespace Microsoft.Dafny {
                       builder.Add(Assert(GetToken(expr), Bpl.Expr.Not(bothZerosDifferentSign),
                         new FloatSignedZeroEqualityPrecondition(e.E0, e.E1, new Fp32Type()), builder.Context, wfOptions.AssertKv));
                     }
-                    if (e.E0.Type.IsFp64Type && e.E1.Type.IsFp64Type) {
+                    if (equalityType0.IsFp64Type && equalityType1.IsFp64Type) {
                       var e0IsZero = GenerateFp64Check(e.E0, "fp64_is_zero");
                       var e1IsZero = GenerateFp64Check(e.E1, "fp64_is_zero");
                       var e0IsNegative = GenerateFp64Check(e.E0, "fp64_is_negative");

@@ -206,7 +206,7 @@ namespace Microsoft.Dafny {
         }
         ResolveExpression(s.RHS, resolutionContext);
         ResolveCasePattern(s.LHS, s.RHS.PreType, resolutionContext);
-        if (s.LHS.Ctor != null && OperationPreType(s.RHS.PreType) is { Decl: DatatypeDecl } operationPreType) {
+        if (s.LHS.Ctor != null && PatternOperationPreType(s.RHS.PreType) is { Decl: DatatypeDecl } operationPreType) {
           s.RHS = BaseOperationExpression(s.RHS, operationPreType);
         }
         // Check for duplicate names now, because not until after resolving the case pattern do we know if identifiers inside it refer to bound variables or nullary constructors

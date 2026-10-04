@@ -1576,10 +1576,11 @@ namespace Microsoft.Dafny {
           var b = new Bpl.NAryExpr(tok, new Bpl.FunctionCall(GetReadonlyField(dtor)), new List<Bpl.Expr> { B });
           var ty = dtor.Type;
           Bpl.Expr q;
-          var codecl = ty.AsCoDatatype;
+          var coType = NewtypeOperationView.CoDatatypeType(ty, options.Get(CommonOptionBag.ExtendedNewtypeBases));
+          var codecl = coType.AsCoDatatype;
           if (codecl != null && codecl.SscRepr == dt.SscRepr) {
-            var lexprs = Map(ty.TypeArgs, tt => tt.Subst(lsu));
-            var rexprs = Map(ty.TypeArgs, tt => tt.Subst(rsu));
+            var lexprs = Map(coType.TypeArgs, tt => tt.Subst(lsu));
+            var rexprs = Map(coType.TypeArgs, tt => tt.Subst(rsu));
             q = CoEqualCall(codecl, lexprs, rexprs, k, l, a, b);
           } else {
             // ordinary equality; let the usual translation machinery figure out the translation
