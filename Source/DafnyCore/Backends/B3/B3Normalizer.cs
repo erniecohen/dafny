@@ -332,6 +332,7 @@ public static class B3Normalizer {
     }
     private static IEnumerable<Ir.Expression> ExpressionChildren(Ir.Expression expression) => expression switch {
       Ir.Application application => application.Arguments, Ir.Operation operation => operation.Arguments,
+      Ir.BitvectorOperation operation => operation.Arguments,
       Ir.Quantifier quantifier => new[] { quantifier.Body }.Concat(quantifier.Patterns.SelectMany(pattern => pattern)),
       Ir.Let let => new[] { let.Value, let.Body }, Ir.Label label => new[] { label.Body },
       _ => Array.Empty<Ir.Expression>()
