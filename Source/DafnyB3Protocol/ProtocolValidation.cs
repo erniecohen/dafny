@@ -26,6 +26,8 @@ public static class ProtocolValidation {
     Require(configuration.ArithmeticSolver == 2, "This B3 protocol version supports arithmetic solver 2 only");
     Require(configuration.SolverArguments.SequenceEqual(new[] { "-in", "-smt2" }),
       "Unsupported solver arguments");
+    var count = 0;
+    long bitvectorBits = 0;
     var types = new HashSet<string>(StringComparer.Ordinal) { "bool", "int", "real" };
     foreach (var type in request.Program.Types) {
       Name(type);
@@ -35,10 +37,10 @@ public static class ProtocolValidation {
     foreach (var function in request.Program.Functions) {
       Name(function.Name);
       Require(functions.TryAdd(function.Name, function), "Duplicate function");
-      Require(types.Contains(function.ResultType), "Unknown function result type");
-      Bindings(function.Parameters, types);
+      ChargeType(function.ResultType);
+      Bindings(function.Parameters);
     }
-    var scope = Bindings(request.Program.Unit.Variables, types);
+    var scope = Bindings(request.Program.Unit.Variables);
     Name(request.Program.Unit.Name);
     var obligations = new HashSet<string>(StringComparer.Ordinal);
     foreach (var source in request.Obligations) {
@@ -48,7 +50,6 @@ public static class ProtocolValidation {
         "Invalid source identity");
     }
     var seenChecks = new HashSet<string>(StringComparer.Ordinal);
-    var count = 0;
     foreach (var axiom in request.Program.Axioms) {
       foreach (var function in axiom.Explains) {
         Require(functions.ContainsKey(function), "Unknown axiom association");
@@ -59,13 +60,30 @@ public static class ProtocolValidation {
     Stmt(request.Program.Unit.Body, new HashSet<string>(), 0);
     Require(seenChecks.SetEquals(obligations), "Static obligation manifest differs from unit checks");
 
+    void ChargeType(string type) {
+      Require(types.Contains(type) || TryBitvectorWidth(type, out _), "Unknown normalized type");
+      if (TryBitvectorWidth(type, out var width)) {
+        bitvectorBits += width;
+        Require(bitvectorBits <= Protocol.MaximumBitvectorBits, "Aggregate native bitvector cost exceeds resource bound");
+      }
+    }
+    Dictionary<string, string> Bindings(IReadOnlyList<Binding> bindings, int depth = 0) {
+      var result = new Dictionary<string, string>(StringComparer.Ordinal);
+      foreach (var binding in bindings) {
+        Visit(depth);
+        Name(binding.Name);
+        ChargeType(binding.Type);
+        Require(result.TryAdd(binding.Name, binding.Type), "Duplicate binding");
+      }
+      return result;
+    }
     void Visit(int depth) {
       Require(depth <= Protocol.MaximumDepth && ++count <= Protocol.MaximumNodes,
         "Normalized program exceeds resource bounds");
     }
     void Expr(Expression expression, IReadOnlyDictionary<string, string> environment, int depth) {
       Visit(depth);
-      Require(types.Contains(expression.Type), "Unknown expression type");
+      ChargeType(expression.Type);
       switch (expression) {
         case BooleanLiteral boolean:
           Require(boolean.Type == "bool", "Invalid boolean literal type");
@@ -77,6 +95,13 @@ public static class ProtocolValidation {
           break;
         case RationalLiteral rational:
           ParseRationalLiteral(rational);
+          break;
+        case BitvectorLiteral word:
+          ParseBitvectorLiteral(word);
+          break;
+        case BitvectorOperation bitvectorOperation:
+          foreach (var argument in bitvectorOperation.Arguments) { Expr(argument, environment, depth + 1); }
+          ValidateBitvectorOperation(bitvectorOperation);
           break;
         case Variable variable:
           Require(environment.TryGetValue(variable.Name, out var type) && type == variable.Type,
@@ -97,7 +122,7 @@ public static class ProtocolValidation {
           ValidateOperation(operation);
           break;
         case Quantifier quantifier:
-          var bound = Bindings(quantifier.Bindings, types);
+          var bound = Bindings(quantifier.Bindings, depth + 1);
           var nested = new Dictionary<string, string>(environment);
           foreach (var binding in bound) { nested[binding.Key] = binding.Value; }
           Expr(quantifier.Body, nested, depth + 1);
@@ -108,7 +133,9 @@ public static class ProtocolValidation {
           }
           break;
         case Let let:
+          Visit(depth + 1);
           Name(let.Binding.Name);
+          ChargeType(let.Binding.Type);
           Expr(let.Value, environment, depth + 1);
           Require(let.Binding.Type == let.Value.Type, "Ill-typed let binding");
           var letScope = new Dictionary<string, string>(environment) { [let.Binding.Name] = let.Binding.Type };
@@ -134,11 +161,15 @@ public static class ProtocolValidation {
           Expr(assign.Value, scope, depth + 1);
           Require(scope.TryGetValue(assign.Variable, out var type) && type == assign.Value.Type,
             "Unknown or ill-typed assignment target");
+          ChargeType(scope[assign.Variable]);
           break;
         case Havoc havoc:
           Require(havoc.Variables.Distinct().Count() == havoc.Variables.Count,
             "Repeated havoc target");
-          foreach (var variable in havoc.Variables) { Require(scope.ContainsKey(variable), "Unknown havoc target"); }
+          foreach (var variable in havoc.Variables) {
+            Require(scope.ContainsKey(variable), "Unknown havoc target");
+            ChargeType(scope[variable]);
+          }
           break;
         case Check check:
           Require(obligations.Contains(check.ObligationId), "Unknown check identity");
@@ -205,15 +236,6 @@ public static class ProtocolValidation {
     }
   }
 
-  private static Dictionary<string, string> Bindings(IReadOnlyList<Binding> bindings, HashSet<string> types) {
-    var result = new Dictionary<string, string>(StringComparer.Ordinal);
-    foreach (var binding in bindings) {
-      Name(binding.Name);
-      Require(types.Contains(binding.Type) && result.TryAdd(binding.Name, binding.Type),
-        "Duplicate or ill-typed binding");
-    }
-    return result;
-  }
   private static void ValidateOperation(Operation operation) {
     var args = operation.Arguments;
     var arity = operation.Operator switch {
@@ -239,6 +261,58 @@ public static class ProtocolValidation {
     };
     Require(valid, "Invalid operator signature");
   }
+  /// <summary>Canonical positive bounded #bv width; malformed reserved spellings never become user types.</summary>
+  public static bool TryBitvectorWidth(string type, out int width) {
+    width = 0;
+    if (type is not { Length: >= 4 and <= 7 } || !type.StartsWith("#bv", StringComparison.Ordinal) || type[3] == '0') {
+      return false;
+    }
+    for (var i = 3; i < type.Length; i++) {
+      if (type[i] is < '0' or > '9') { width = 0; return false; }
+      width = width * 10 + type[i] - '0';
+      if (width > Protocol.MaximumBitvectorWidth) { width = 0; return false; }
+    }
+    return width > 0;
+  }
+
+  public static BigInteger ParseBitvectorLiteral(BitvectorLiteral literal) {
+    Require(literal.Width is > 0 and <= Protocol.MaximumBitvectorWidth &&
+      literal.Type == Protocol.BitvectorTypeName(literal.Width), "Invalid bounded bitvector literal width or type");
+    Require(literal.Value is { Length: > 0 } && literal.Value.Length <= Protocol.MaximumBitvectorLiteralCharacters &&
+      (literal.Value == "0" || literal.Value[0] != '0') &&
+      literal.Value.All(character => character is >= '0' and <= '9'), "Invalid canonical unsigned bitvector numeral");
+    var value = BigInteger.Parse(literal.Value, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture);
+    Require(value >= 0 && value < (BigInteger.One << literal.Width), "Bitvector literal exceeds its word width");
+    return value;
+  }
+
+  public static void ValidateBitvectorOperation(BitvectorOperation operation) {
+    Require(Enum.IsDefined(operation.Operator) && operation.Width is > 0 and <= Protocol.MaximumBitvectorWidth,
+      "Invalid native bitvector operator or width");
+    var extract = operation.Operator == BitvectorOperator.Extract;
+    Require(extract
+      ? operation.Start >= 0 && operation.Start < operation.End && operation.End <= Protocol.MaximumBitvectorWidth &&
+        operation.Width == operation.End - operation.Start
+      : operation.Start == 0 && operation.End == 0, "Invalid native bitvector indices");
+    var args = operation.Arguments;
+    var unary = operation.Operator is BitvectorOperator.Not or BitvectorOperator.Extract or
+      BitvectorOperator.IntToBitvector or BitvectorOperator.BitvectorToUnsignedInt;
+    Require(args.Count == (unary ? 1 : 2), "Invalid native bitvector arity");
+    var wordType = Protocol.BitvectorTypeName(operation.Width);
+    var valid = operation.Operator switch {
+      BitvectorOperator.IntToBitvector => operation.Type == wordType && args[0].Type == "int",
+      BitvectorOperator.BitvectorToUnsignedInt => operation.Type == "int" && args[0].Type == wordType,
+      BitvectorOperator.Extract => operation.Type == wordType && TryBitvectorWidth(args[0].Type, out var inputWidth) &&
+        operation.End <= inputWidth,
+      BitvectorOperator.Concat => operation.Type == wordType && TryBitvectorWidth(args[0].Type, out var leftWidth) &&
+        TryBitvectorWidth(args[1].Type, out var rightWidth) && leftWidth + rightWidth == operation.Width,
+      BitvectorOperator.UnsignedLess or BitvectorOperator.UnsignedLessEqual => operation.Type == "bool" &&
+        args.All(argument => argument.Type == wordType),
+      _ => operation.Type == wordType && args.All(argument => argument.Type == wordType)
+    };
+    Require(valid, "Invalid native bitvector signature");
+  }
+
   private static bool IsNumeric(string type) => type is "int" or "real";
 
   public static (BigInteger Numerator, BigInteger Denominator) ParseRationalLiteral(RationalLiteral literal) {

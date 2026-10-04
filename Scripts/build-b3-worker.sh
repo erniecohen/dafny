@@ -17,7 +17,7 @@ archive, source = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
 expected = 'ba06f4d5048ecf0cc40f79281230eb44b429fd73a8bbed5c4377a3d0ff010331'
 assert hashlib.sha256(archive.read_bytes()).hexdigest() == expected, 'Wrong bootstrap compiler archive'
 source_manifest = source / 'source-manifest.json'
-assert hashlib.sha256(source_manifest.read_bytes()).hexdigest() == 'b4953a5ae3b02f64291078a988b071fa730846c62380c0213448d3fd8de173af', 'Wrong B3 source manifest'
+assert hashlib.sha256(source_manifest.read_bytes()).hexdigest() == 'fc7045a5823bf6336e2b2d25eb8098c192e9d1f03b30af8277d561aa68838600', 'Wrong B3 source manifest'
 manifest = json.loads(source_manifest.read_text())
 assert manifest['upstreamCommit'] == 'ea6e8a18dfe9e317d313de769291f989957dc5f2'
 actual = set()
@@ -50,7 +50,7 @@ python3 - "$root/ThirdParty/B3/source-manifest.json" "$output/package" <<'MANIFE
 import hashlib, json, pathlib, sys
 source, package = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
 files = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(package.iterdir()) if p.is_file() and p.suffix in ('.dll', '.json') and p.name != 'b3-worker-manifest.json'}
-manifest = {'version': 2, 'b3Commit': 'ea6e8a18dfe9e317d313de769291f989957dc5f2', 'normalizerVersion': 'experimental-2',
+manifest = {'version': 3, 'b3Commit': 'ea6e8a18dfe9e317d313de769291f989957dc5f2', 'normalizerVersion': 'experimental-3',
  'bootstrapCompiler': '4.11.0+fcb2042d.review.a171069d', 'sourceFingerprint': hashlib.sha256(source.read_bytes()).hexdigest(), 'files': files}
 (package / 'b3-worker-manifest.json').write_text(json.dumps(manifest, separators=(',', ':')) + '\n')
 MANIFEST

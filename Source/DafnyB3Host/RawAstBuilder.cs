@@ -32,6 +32,8 @@ public static class RawAstBuilder {
     BooleanLiteral literal => RawAst.Expr.create_BLiteral(literal.Value),
     IntegerLiteral literal => RawAst.Expr.create_ILiteral(BigInteger.Parse(literal.Value, System.Globalization.CultureInfo.InvariantCulture)),
     RationalLiteral literal => Rational(literal),
+    BitvectorLiteral literal => RawAst.Expr.create_BvLiteral(ProtocolValidation.ParseBitvectorLiteral(literal), literal.Width),
+    BitvectorOperation operation => Bitvector(operation),
     Variable variable => RawAst.Expr.create_IdExpr(S(variable.Name), false),
     Application application => RawAst.Expr.create_FunctionCallExpr(S(application.Name), Seq(application.Arguments.Select(Expression))),
     Operation operation => RawAst.Expr.create_OperatorExpr(Operator(operation.Operator), Seq(operation.Arguments.Select(Expression))),
@@ -80,6 +82,31 @@ public static class RawAstBuilder {
     DafnyB3Protocol.Operator.Negate => RawAst.Operator.create_UnaryMinus(),
     _ => throw new InvalidDataException("Unknown normalized operator")
   };
+  private static Expr Bitvector(BitvectorOperation operation) {
+    ProtocolValidation.ValidateBitvectorOperation(operation);
+    RawAst._IBitvectorOperator kind = operation.Operator switch {
+      DafnyB3Protocol.BitvectorOperator.And => RawAst.BitvectorOperator.create_BvAnd(),
+      DafnyB3Protocol.BitvectorOperator.Or => RawAst.BitvectorOperator.create_BvOr(),
+      DafnyB3Protocol.BitvectorOperator.Xor => RawAst.BitvectorOperator.create_BvXor(),
+      DafnyB3Protocol.BitvectorOperator.Not => RawAst.BitvectorOperator.create_BvNot(),
+      DafnyB3Protocol.BitvectorOperator.Add => RawAst.BitvectorOperator.create_BvAdd(),
+      DafnyB3Protocol.BitvectorOperator.Subtract => RawAst.BitvectorOperator.create_BvSubtract(),
+      DafnyB3Protocol.BitvectorOperator.Multiply => RawAst.BitvectorOperator.create_BvMultiply(),
+      DafnyB3Protocol.BitvectorOperator.UnsignedDivide => RawAst.BitvectorOperator.create_BvUnsignedDivide(),
+      DafnyB3Protocol.BitvectorOperator.UnsignedRemainder => RawAst.BitvectorOperator.create_BvUnsignedRemainder(),
+      DafnyB3Protocol.BitvectorOperator.UnsignedLess => RawAst.BitvectorOperator.create_BvUnsignedLess(),
+      DafnyB3Protocol.BitvectorOperator.UnsignedLessEqual => RawAst.BitvectorOperator.create_BvUnsignedLessEqual(),
+      DafnyB3Protocol.BitvectorOperator.ShiftLeft => RawAst.BitvectorOperator.create_BvShiftLeft(),
+      DafnyB3Protocol.BitvectorOperator.LogicalShiftRight => RawAst.BitvectorOperator.create_BvLogicalShiftRight(),
+      DafnyB3Protocol.BitvectorOperator.Extract => RawAst.BitvectorOperator.create_BvExtract(),
+      DafnyB3Protocol.BitvectorOperator.Concat => RawAst.BitvectorOperator.create_BvConcat(),
+      DafnyB3Protocol.BitvectorOperator.IntToBitvector => RawAst.BitvectorOperator.create_IntToBv(),
+      DafnyB3Protocol.BitvectorOperator.BitvectorToUnsignedInt => RawAst.BitvectorOperator.create_BvToUnsignedInt(),
+      _ => throw new InvalidDataException("Unknown normalized bitvector operator")
+    };
+    return RawAst.Expr.create_OperatorExpr(RawAst.Operator.create_Bv(kind, operation.Width, operation.Start, operation.End),
+      Seq(operation.Arguments.Select(Expression)));
+  }
   private static Expr Rational(RationalLiteral literal) {
     var (numerator, denominator) = ProtocolValidation.ParseRationalLiteral(literal);
     return RawAst.Expr.create_RLiteral(numerator, denominator);

@@ -97,8 +97,10 @@ public class RealProtocolTests {
   }
 
   [Theory]
-  [InlineData(1, "experimental-2")]
-  [InlineData(2, "experimental-1")]
+  [InlineData(1, "experimental-3")]
+  [InlineData(2, "experimental-3")]
+  [InlineData(3, "experimental-2")]
+  [InlineData(3, "experimental-1")]
   public void PreviousProtocolOrNormalizerCannotReachRealVerification(int version, string normalizer) {
     var request = Request(new RationalLiteral("1", "1")) with { Version = version, NormalizerVersion = normalizer };
     Assert.Throws<InvalidDataException>(() => ProtocolValidation.ValidateRequest(request));

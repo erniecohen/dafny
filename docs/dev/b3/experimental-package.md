@@ -5,7 +5,7 @@ The initial bool/int subset archive passed clean-install controls in public
 on source `f927757337371038a61406a3b107543ca2b72f77`. It used the unchanged
 library whose 557 proof batches passed in public run 37201990430, plus the
 reviewed Z3 5.1.0 Linux x64 executable. That receipt remains evidence for the
-initial archive only. Native Real changes the library proof source and protocol;
+initial archive only. Native Real and the positive-width bitvector language change the library proof source and protocol;
 new packaging and checking fail closed until a fresh exact library hash, verified
 batch count and public proof receipt are recorded. `package-manifest.json` records their exact hashes and source/build
 identities. CLI metadata/source identities are build declarations; immutable file

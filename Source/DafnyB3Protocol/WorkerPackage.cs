@@ -10,7 +10,7 @@ public sealed record WorkerManifest(int Version, string B3Commit, string Normali
 public sealed record WorkerPackage(string WorkerPath, string Fingerprint, WorkerManifest Manifest) {
   public const string UpstreamCommit = "ea6e8a18dfe9e317d313de769291f989957dc5f2";
   public const string BootstrapCompiler = "4.11.0+fcb2042d.review.a171069d";
-  public const string SourceFingerprint = "b4953a5ae3b02f64291078a988b071fa730846c62380c0213448d3fd8de173af";
+  public const string SourceFingerprint = "fc7045a5823bf6336e2b2d25eb8098c192e9d1f03b30af8277d561aa68838600";
   public const string ManifestFileName = "b3-worker-manifest.json";
   public const int MaximumManifestBytes = 65536;
   public const long MaximumPackageBytes = 512L * 1024 * 1024;

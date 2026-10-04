@@ -17,11 +17,11 @@ ROOT = Path(__file__).resolve().parent.parent
 ARCHIVE_MAX_BYTES = 1024 * 1024 * 1024
 MAX_BYTES = ARCHIVE_MAX_BYTES - 4 * 1024 * 1024
 MAX_FILES = 2048
-# Real changes the proof source; record a fresh inspected public receipt before packaging.
+# Native Real and bitvectors change the proof source; record a fresh inspected public receipt before packaging.
 LIBRARY_SHA = None
 VERIFIED_BATCHES = None
 VERIFICATION_EVIDENCE = None
-SOURCE_SHA = 'b4953a5ae3b02f64291078a988b071fa730846c62380c0213448d3fd8de173af'
+SOURCE_SHA = 'fc7045a5823bf6336e2b2d25eb8098c192e9d1f03b30af8277d561aa68838600'
 SOLVER_SHA = 'b4e0b3483ce37817230b20d6cad48390eb6a3aefde1d93342ad6dc763f24bc23'
 LAUNCHER_BYTES = b'#!/bin/sh\nset -eu\npackage_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nexec dotnet "$package_root/cli/Dafny.dll" "$@"\n'
 
@@ -74,7 +74,7 @@ def capture(directory, limit):
 
 def require_verification_receipt():
     if not isinstance(LIBRARY_SHA, str) or not re.fullmatch('[0-9a-f]{64}', LIBRARY_SHA) or not isinstance(VERIFIED_BATCHES, int) or VERIFIED_BATCHES <= 0 or not isinstance(VERIFICATION_EVIDENCE, str) or not VERIFICATION_EVIDENCE.startswith('https://github.com/erniecohen/dafny/actions/runs/'):
-        raise ValueError('Native Real package requires a fresh inspected library verification receipt')
+        raise ValueError('Native arithmetic package requires a fresh inspected library verification receipt')
 
 
 def build(options):
@@ -91,8 +91,8 @@ def build(options):
     if len(manifest_data) > 65536:
         raise ValueError('Oversized worker manifest')
     manifest = json.loads(manifest_data)
-    for key, expected in {'version': 2, 'b3Commit': 'ea6e8a18dfe9e317d313de769291f989957dc5f2',
-                          'normalizerVersion': 'experimental-2',
+    for key, expected in {'version': 3, 'b3Commit': 'ea6e8a18dfe9e317d313de769291f989957dc5f2',
+                          'normalizerVersion': 'experimental-3',
                           'bootstrapCompiler': '4.11.0+fcb2042d.review.a171069d',
                           'sourceFingerprint': SOURCE_SHA}.items():
         if manifest.get(key) != expected:

@@ -1291,7 +1291,7 @@ index c8588d5f308be90550d8284938250f59e5718f6d..1e282edb1ac18c0d6acd02b5c3579e55
 \ No newline at end of file
 +}
 diff --git a/src/Solver/RSolver.dfy b/src/Solver/RSolver.dfy
-index 7049b456747b6486558482d4127842c2a03c6f26..953987014f7918c5d58dd8ebfa94493f81bc5adf 100644
+index 7049b456747b6486558482d4127842c2a03c6f26..a751fd0a7b51bd9385cd5b052e0703ae4082d32c 100644
 --- a/src/Solver/RSolver.dfy
 +++ b/src/Solver/RSolver.dfy
 @@ -12,34 +12,48 @@ module RSolvers {
@@ -1304,9 +1304,10 @@ index 7049b456747b6486558482d4127842c2a03c6f26..953987014f7918c5d58dd8ebfa94493f
 
    export
 -    reveals RExpr, ROperator, RPattern
+-    provides RExpr.Eq, RExpr.Operator2ROperator, RExpr.OperatorToString
 +    reveals RExpr, ROperator, RPattern, PositiveDenominator, NativeBitvectorOperator
 +    provides Types
-     provides RExpr.Eq, RExpr.Operator2ROperator, RExpr.OperatorToString
++    provides RExpr.Eq, RExpr.ToString, RExpr.ToSExpr, RExpr.Operator2ROperator, RExpr.OperatorToString
      provides RContext, CreateEmptyContext, Extend, ExtendWithEquality
      provides Record, RecordTracePoint, PrintTrace
      reveals REngine
@@ -1657,7 +1658,7 @@ index 0000000000000000000000000000000000000000..8823cd0df6bd269dd4542fb687ed10dd
 +  const Default := Configuration("z3", ["-in", "-smt2"], 30000, 0, 1048576)
 +}
 diff --git a/src/Solver/SolverExpr.dfy b/src/Solver/SolverExpr.dfy
-index b04653d6f25cf55450c61b2edcc3007f4dd0632e..ee41184a684bb0718ca9caa5354f4fba432eae2b 100644
+index b04653d6f25cf55450c61b2edcc3007f4dd0632e..6e94e57ca030eb2d8a34ee0ed84a2636f8f33328 100644
 --- a/src/Solver/SolverExpr.dfy
 +++ b/src/Solver/SolverExpr.dfy
 @@ -2,6 +2,7 @@ module SolverExpr {
@@ -1668,15 +1669,17 @@ index b04653d6f25cf55450c61b2edcc3007f4dd0632e..ee41184a684bb0718ca9caa5354f4fba
    import opened DeclarationMarkers
 
    export
-@@ -14,7 +15,7 @@ module SolverExpr {
+@@ -14,8 +15,8 @@ module SolverExpr {
      reveals SExprPrintConfig
      reveals SExpr
      provides SExpr.ToString
 -    provides SExpr.Boolean, SExpr.Integer, SExpr.EQ, SExpr.Id, SExpr.FuncAppl, SExpr.Eq, SExpr.Negation, SExpr.BigAnd
+-    provides Wrappers, DeclarationMarkers
 +    provides SExpr.Boolean, SExpr.Integer, SExpr.Rational, SExpr.Bitvector, SExpr.IndexedFuncAppl, SExpr.EQ, SExpr.Id, SExpr.FuncAppl, SExpr.Eq, SExpr.Negation, SExpr.BigAnd
-     provides Wrappers, DeclarationMarkers
++    provides Types, Wrappers, DeclarationMarkers
 
    trait SDeclaration extends object {
+     const name: string
 @@ -30,6 +31,8 @@ module SolverExpr {
    datatype SType =
      | SBool

@@ -47,8 +47,10 @@ public class WorkerPackageTests {
   }
 
   [Theory]
-  [InlineData(1, "experimental-2")]
-  [InlineData(2, "experimental-1")]
+  [InlineData(1, "experimental-3")]
+  [InlineData(2, "experimental-3")]
+  [InlineData(3, "experimental-2")]
+  [InlineData(3, "experimental-1")]
   public void PreviousWorkerIdentityCannotBeRelabelledForReal(int version, string normalizer) {
     using var fixture = new PackageFixture();
     var manifest = JsonSerializer.Deserialize<WorkerManifest>(File.ReadAllText(fixture.Manifest), Protocol.JsonOptions)!;

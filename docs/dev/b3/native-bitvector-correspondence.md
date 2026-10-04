@@ -1,6 +1,6 @@
 # Issue 124: native bitvector implementation and correspondence plan
 
-This is a source-reviewed English design, not an implementation or verification receipt. It continues the supplied plan's P7 and section 5.7. The complete scope remains native positive-width bitvectors, the existing width-zero encoding, unsigned operations, shifts, rotations, extraction, concatenation, and conversions. The small first fragment below is a checkpoint toward that scope.
+This records the English design and prepared source checkpoints. It is not a verification receipt. It continues the supplied plan's P7 and section 5.7. The complete scope remains native positive-width bitvectors, the existing width-zero encoding, unsigned operations, shifts, rotations, extraction, concatenation, and conversions. The small first fragment below is a checkpoint toward that scope.
 
 ## Frozen source basis
 
@@ -151,3 +151,31 @@ Dafny producer: `BoogieGenerator.cs` AddBitvectorFunction / AddBitvectorShiftFun
 Pinned Boogie: `Source/VCExpr/Boogie2VCExpr.cs:436,746-780,1542` word literals, extract/concat, actual Body substitution; `Source/Provers/SMTLib/SMTLibLineariser.cs:237-260,879-920,1012-1042` effective builtin, low-bit literal, indexed printing; `Source/Core/AST/Expression/AbsyExpr.cs:1081-1091,4008-4113` BvConst and extraction bounds; `Source/Core/AST/AbsyType.cs` BvType; `Source/Core/AST/Absy.cs:511-559` CanHide default; `Source/VCGeneration/Prune/{AxiomVisitor,DependencyEvaluator,FunctionVisitor,Pruner}.cs` trigger edges, transitive demands and hideability; `Source/Core/StandardVisitor.cs:1362-1376` confirms the read-only function visitor traverses the actual Body.
 
 B3/bridge: `ThirdParty/B3/src/RawAst/{Types,RawAst,Values,Printer}.dfy`; `src/Ast/{Ast,Resolver,TypeResolver,ExprResolver,TypeChecker,DomainInstantiation,FunctionDesugaring,ResolvedPrinter}.dfy`; `src/Parser/Parser.dfy`; `src/Driver/Library.dfy`; `src/Verifier/Incarnations.dfy`; `src/Solver/{RSolver,SolverExpr,Solvers}.dfy`. Bridge paths: `Source/DafnyCore/Backends/B3/B3Normalizer.cs`, `Source/DafnyB3Protocol/{B3Protocol,ProtocolValidation,WorkerPackage}.cs`, `Source/DafnyB3Host/RawAstBuilder.cs`, and the worker build/package/source-inventory scripts and every identity fixture.
+
+## Prepared source checkpoints
+
+The checked shared language now has native word sorts and canonical literals,
+all 17 nonrotation primitives listed above, parser/printer forms, every resolved
+visitor, and solver declaration/printing support. Its executable library entry
+checks raw widths, literal ranges, metadata and signatures, and rejects aggregate
+bit cost before static consistency checking or solver startup. Optional automatic
+invariant expressions count toward that cost as well. Ten worker controls are
+prepared; none is a proof or runtime receipt for this source checkpoint.
+
+Schema 3 / normalizer `experimental-3` carries distinct word-literal and typed
+bitvector-operation records. Width, extraction indices and result sort are checked
+data. Protocol admission charges function signatures, state/bound/let bindings,
+every word expression result, assignment targets and havoc targets. Width validation
+precedes bounded BigInteger shifts or parsing. The host maps only the closed enum
+to Raw constructors, then the executable library checks the entire constructed
+program again. JSON/schema and runtime controls include exact wide values,
+malformed direct Raw input, universal word identities and satisfiable high-bit
+witnesses. Old protocol/worker identities cannot be relabelled for this extension.
+
+These two source checkpoints do not yet enable Dafny BV normalization, native
+rotations, the conversion wrapper route, or BV0 recognition. Those are explicit
+remaining checkpoints in the complete plan, not omitted scope. The source inventory,
+patch and package source pins change with this language; package release remains
+fail-closed until an inspected fresh proof/build receipt is recorded. Shared C# and
+Java compilation, whole-library proofs and prepared controls are unexecuted for
+this source. No prior verified library hash establishes these additions.

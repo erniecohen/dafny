@@ -16,7 +16,7 @@ module SolverExpr {
     reveals SExpr
     provides SExpr.ToString
     provides SExpr.Boolean, SExpr.Integer, SExpr.Rational, SExpr.Bitvector, SExpr.IndexedFuncAppl, SExpr.EQ, SExpr.Id, SExpr.FuncAppl, SExpr.Eq, SExpr.Negation, SExpr.BigAnd
-    provides Wrappers, DeclarationMarkers
+    provides Types, Wrappers, DeclarationMarkers
 
   trait SDeclaration extends object {
     const name: string

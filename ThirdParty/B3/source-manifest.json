@@ -7,7 +7,7 @@
   "patches": [
     {
       "file": "integration.patch",
-      "sha256": "e0244c22b3df3d0859196257a6c91acff5f8662b9ff8bd58a44e2d47b3f5be81"
+      "sha256": "758d41685f8768a7deea851b9b282772c5668abc3db1556f737f3ef017c4a6d9"
     }
   ],
   "vendoredPaths": [
@@ -24,7 +24,7 @@
     "LICENSE": "e91686b267408f7ca5da770a3bb742911872b9cfcab2b1f4364263a86283d0cb",
     "README.md": "956e48ef8e9b1fa2be3ec1a2a6e979a17bf6a16ba2dbc9d3c44d6b8280cbf2c6",
     "doc/worker-library.md": "eb236634b48e8abf23f1a452904915e8c5e8b3b5c0b9b62d2548514e7a07a248",
-    "integration.patch": "e0244c22b3df3d0859196257a6c91acff5f8662b9ff8bd58a44e2d47b3f5be81",
+    "integration.patch": "758d41685f8768a7deea851b9b282772c5668abc3db1556f737f3ef017c4a6d9",
     "library/dfyconfig.toml": "b0a57d8fe24030e720edfd0f4d490be2b4011c0f8b66cfd6adbdb9a9946463c8",
     "src/Ast/Ast.dfy": "f69bb0f6ec6dadc0e0be071e89ea9b4ee0a7815bc331873d704b0e82c5c2ea52",
     "src/Ast/AstValid.dfy": "6473a5b5c018f1eab55998956a72dcb8e8e92a02711ad2080b7b7007c39a21cf",
@@ -52,10 +52,10 @@
     "src/Semantics/Semantics.dfy": "8111d60733211106ed440e35518cc5b9ac752bb9c1765a004b353a9eb2815f3b",
     "src/Solver/DeclarationMarkers.dfy": "16400118a77aa3ce316e0ce02c3c132371d916d604003b8ba57202803624dc18",
     "src/Solver/ExternalSolvers.dfy": "9ddf48ea55d2f0d678b49f6074e328899ede823b5c6b9a389269097db34552dc",
-    "src/Solver/RSolver.dfy": "de42ea475fab556c22f1c8876ba8debd3d4b1030171760785ffe59d0f381376d",
+    "src/Solver/RSolver.dfy": "ddf8aa79f03b0b18548f3186b2384b9c79d1b098468a1743241691f76a132980",
     "src/Solver/SmtEngines.dfy": "b692ee788a1052a3ddabc26c11afadca76a1643d44bf11424b10641e2444e616",
     "src/Solver/SolverConfiguration.dfy": "03df472f0bc0e2f16d4edd14116c8caf0a5c1323ff0f29423bc782d080a52401",
-    "src/Solver/SolverExpr.dfy": "737460f46f719746ebf6716344f16cbe1c45884a5a164a1525a787c957e04e1d",
+    "src/Solver/SolverExpr.dfy": "25dddf4998cfb75e01348b256d0fd10b0a32f7b4f7ea1fba8da21cb1a2eff0f5",
     "src/Solver/Solvers.dfy": "802382377d265d9d5a45e6f02b9c5a916684cd03a56b3bb2fcbc2fc93fe9bc8f",
     "src/Solver/TestExternalSolvers.dfy": "83a6680b64953410aa4e2a8c866e5ef8b428a49f9f1619cbc443363eb632e5d9",
     "src/Util/Basics.dfy": "ff6ab98ef622a54ef9b759421480551f86a8c40e46a0e27a2632aca7f9550416",

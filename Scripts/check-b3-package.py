@@ -122,7 +122,7 @@ def check(options):
     if (package / 'dafny').read_bytes() != packager.LAUNCHER_BYTES or digest((package / 'cli/b3/B3Library.dll').read_bytes()) != packager.LIBRARY_SHA or digest((package / 'solver/z3').read_bytes()) != packager.SOLVER_SHA:
         raise ValueError('Unexpected launcher, library or solver bytes')
     worker = json.loads((package / 'cli/b3/b3-worker-manifest.json').read_text())
-    if worker['version'] != 2 or worker['b3Commit'] != manifest['b3Commit'] or worker['sourceFingerprint'] != packager.SOURCE_SHA or worker['normalizerVersion'] != 'experimental-2' or worker['bootstrapCompiler'] != '4.11.0+fcb2042d.review.a171069d':
+    if worker['version'] != 3 or worker['b3Commit'] != manifest['b3Commit'] or worker['sourceFingerprint'] != packager.SOURCE_SHA or worker['normalizerVersion'] != 'experimental-3' or worker['bootstrapCompiler'] != '4.11.0+fcb2042d.review.a171069d':
         raise ValueError('Unsupported installed worker identity')
     for name, sha in worker['files'].items():
         if Path(name).name != name or digest((package / 'cli/b3' / name).read_bytes()) != sha:
