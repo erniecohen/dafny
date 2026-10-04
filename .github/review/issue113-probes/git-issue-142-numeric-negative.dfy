@@ -34,7 +34,7 @@ lemma NominalOverflow() {
 }
 
 lemma CharacterTargetConstraint() {
-  var source := '\u00C8' as CharView;
+  var source := 'È' as CharView;
   var c := source as Ascii; // ERROR: valid char, false destination predicate
 }
 

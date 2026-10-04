@@ -44,3 +44,13 @@ lemma WidthZeroAndSmallWidth() {
   assert (zero as int) == 0;
   assert (small as int) == 65;
 }
+
+lemma BitvectorScalarRoundTrip(b: bv22)
+  requires (b as int) < 0xD800 || 0xE000 <= (b as int) < 0x110000
+  ensures ((b as CharView) as int) == (b as int)
+{}
+lemma OrdinalScalarRoundTrip(o: ORDINAL)
+  requires o.IsNat
+  requires o.Offset < 0xD800 || 0xE000 <= o.Offset < 0x110000
+  ensures ((o as CharView) as int) == o.Offset
+{}
