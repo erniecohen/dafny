@@ -173,7 +173,16 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
       // Pre-types omit subset refinements, including total/no-reads arrow families.
       // A synthetic base view must recover them from its nominal source during refinement.
       PreType2TypeUtil.Combine(conversionExpr.ToType, conversionExpr.PreType, conversionExpr.IsBaseOperation);
-      expr.Type = conversionExpr.ToType;
+      if (conversionExpr.IsBaseOperation && conversionExpr.PreType.Normalize() is DPreType { Decl: ArrowTypeDecl }) {
+        // Combine can retain an explicit head, and Expression.Type normalizes away
+        // outer proxies. Give this projection an owned target before parent flows
+        // capture it, and share that target with its checked conversion type.
+        var target = new TypeRefinementWrapper(conversionExpr.ToType.Normalize());
+        conversionExpr.ToType = target;
+        conversionExpr.UnnormalizedType = target;
+      } else {
+        expr.Type = conversionExpr.ToType;
+      }
       return;
     }
 

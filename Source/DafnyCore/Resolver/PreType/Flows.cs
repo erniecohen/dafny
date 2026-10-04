@@ -476,23 +476,27 @@ class FlowFromComputedType : FlowIntoExpr {
 // it is not a least-supertype inference site. Share the source's refined actuals
 // and preserve the complete arrow family and domain/result signature.
 class FlowFromComputedArrowOperationType : Flow {
-  private readonly Expression sink;
+  private readonly ConversionExpr sink;
+  private readonly TypeRefinementWrapper target;
   private readonly System.Func<Type> getType;
 
-  public FlowFromComputedArrowOperationType(Expression sink, System.Func<Type> getType)
+  public FlowFromComputedArrowOperationType(ConversionExpr sink, System.Func<Type> getType)
     : base(sink.Origin, "arrow base operation") {
     this.sink = sink;
+    // PreTypeToType installed this owned proxy before any parent flow captured it.
+    // ToType and UnnormalizedType share it, so checking and translating the cast
+    // see the same exact signature. This flow is its only outer-target writer.
+    target = (TypeRefinementWrapper)sink.UnnormalizedType;
+    Contract.Assert(ReferenceEquals(sink.ToType, target));
     this.getType = getType;
   }
 
   public override bool Update(FlowContext context) {
-    var wrapper = TypeRefinementWrapper.NormalizeSansRefinementWrappers(sink.UnnormalizedType) as TypeRefinementWrapper;
-    Contract.Assert(wrapper != null);
     var source = getType();
-    if (EqualTypes(wrapper.T, source)) {
+    if (EqualTypes(target.T, source)) {
       return false;
     }
-    wrapper.T = source;
+    target.T = source;
     return true;
   }
 
