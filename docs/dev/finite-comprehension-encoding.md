@@ -135,7 +135,11 @@ allocation axiom in `BoogieGenerator.Types.cs`; commuting its binders introduces
 no new principle. All enclosing lambda type, allocation, range, formation, and
 permission guards remain. Pure applications use `$OneHeap` consistently in
 both the selector and the allocation target. No relation to an actual current
-or previous heap is inferred, and global arrow axioms and patterns are unchanged.
+or previous heap is inferred, and global arrow axioms and patterns are unchanged. A generic
+composition control returns a freshly allocated reference, proves its exact
+value and that it was unallocated in a labeled earlier heap, and still rejects
+a final assertion of false. This exercises the intermediate callback result
+without granting allocation in an unrelated heap.
 
 ## Reference carrier admission
 
