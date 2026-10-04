@@ -42,7 +42,7 @@ namespace Microsoft.Dafny.LanguageServer.Language {
         var errorReporter = (ObservableErrorReporter)program.Reporter;
 
         cancellationToken.ThrowIfCancellationRequested();
-        var errorsBeforeTranslation = errorReporter.Count(ErrorLevel.Error);
+        var errorsBeforeTranslation = errorReporter.CountExceptVerifierAndCompiler(ErrorLevel.Error);
 
         var boogieProgram = await DafnyMain.LargeStackFactory.StartNew(() => {
           Type.ResetScopes();
@@ -63,7 +63,7 @@ namespace Microsoft.Dafny.LanguageServer.Language {
           ExecutionEngine.PrintBplFile(program.Options, fileName, boogieProgram, false, false, program.Options.PrettyPrint);
         }
 
-        if (errorReporter.Count(ErrorLevel.Error) != errorsBeforeTranslation) {
+        if (errorReporter.CountExceptVerifierAndCompiler(ErrorLevel.Error) != errorsBeforeTranslation) {
           throw new InvalidOperationException("Verification preparation failed during translation");
         }
         return await backend.PrepareAsync(new VerificationPreparation(resolution, moduleDefinition, boogieProgram), cancellationToken);

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.Boogie;
+using Microsoft.Dafny;
 
 namespace DafnyDriver.Commands;
 
