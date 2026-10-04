@@ -129,7 +129,8 @@ public static class B3Normalizer {
         new Ir.Unit(Symbol("unit:" + unit.Name), variables.ToArray(), new Ir.Block(statements)));
       CheckOwnedBounds(normalized);
       return new B3NormalizationResult(normalized, obligations.ToArray(), Array.Empty<B3NormalizationDiagnostic>(),
-        new[] { "All source axioms, distinct-constant constraints, nonidentity function definitions, and map/lambda equations are omitted. Demanded closed function instances, constants and maps are uninterpreted; verification therefore uses a weaker context." });
+        new[] { "All source axioms, distinct-constant constraints, nonidentity function definitions, and map/lambda equations are omitted. Demanded closed function instances, constants and maps are uninterpreted; verification therefore uses a weaker context.",
+          "StateCmd and call-temporary scope-entry where predicates are omitted: pinned scope passification appends raw predicates without current-incarnation substitution. Post-havoc where predicates are preserved." });
     }
 
     private Ir.Variable Fresh(string type) {
@@ -680,7 +681,9 @@ public static class B3Normalizer {
         case Bpl.HavocCmd havoc: return Havoc(havoc.Vars.Select(v => v.Decl).ToArray(), env);
         case Bpl.StateCmd state: {
           var statements = new List<Ir.Statement> { new Ir.Havoc(state.Locals.Select(v => Name(v).Name).ToArray()) };
-          foreach (var local in state.Locals) { Where(local.TypedIdent.WhereExpr, env, statements); }
+          // Pinned StateCmd passification appends raw where predicates, without incarnation substitution.
+          // Evaluating them in the current environment can strengthen the context after an outer variable changes.
+          // Omit this entry-only context; explicit havocs still retain their normal where assumptions.
           statements.AddRange(state.Cmds.Select(c => Command(c, env)));
           return new Ir.Block(statements.ToArray());
         }
@@ -720,13 +723,11 @@ public static class B3Normalizer {
       // Unmodified globals in an ensures-old expression denote current pre/post-call values.
       var callee = new Environment(substitutions, callOld, oldFallbackIsCurrent: true);
       var requirementAndWhere = new Environment(substitutions, caller.OldGlobals);
-      // CallCmd's temporary output where clauses already exist when its StateCmd is entered.
-      // They are assumed with fresh input/output temporaries before evaluating/saving actual inputs,
-      // then assumed again after the joint output/frame havoc below.
+      // The pinned call's StateCmd entry appends output where predicates without incarnation substitution.
+      // Conservatively omit that entry-only context, and preserve the post-havoc where schedule below.
       var callEntry = new List<Ir.Statement>();
       var temporaryNames = substitutions.Values.Cast<Ir.Variable>().Select(v => v.Name).ToArray();
       if (temporaryNames.Length > 0) { callEntry.Add(new Ir.Havoc(temporaryNames)); }
-      foreach (var output in call.Proc.OutParams) { Where(output.TypedIdent.WhereExpr, requirementAndWhere, callEntry); }
       statements.InsertRange(0, callEntry);
       foreach (var requires in call.Proc.Requires) {
         ValidateAttributes(requires.Attributes, "callee requires", requires.tok);
