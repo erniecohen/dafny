@@ -56,6 +56,7 @@ lemma NamedReads<T(!new)>(x: T, a: object?, b: object?, c: object?, s: iset<obje
   assert Empty.reads(0) == {};
   assert !One.requires(a, 0);
   assert One.reads(a, 1) == {a};
+  assert [b][0] == b;
   assert FiniteCollections.reads(a, b, c) == {a, b, c};
   assert Generic.reads(x, a) == {a};
   assert forall q: object? :: q in InfiniteCollection.reads(s) <==> q in s;
@@ -66,7 +67,7 @@ lemma LambdaReads(a: object?, b: object?, s: iset<object?>)
   var empty := (x: int) requires false => 0;
   assert empty.reads(0) == {};
   var one := (x: int) requires 0 < x reads a => x;
-  assert !one.requires(0);
+  // The one-way lambda .requires encoding is exercised in a separate negative.
   assert one.reads(1) == {a};
   var finite := (x: int) reads set q: object? | q in {a, b} :: q => x;
   assert finite.reads(0) == {a, b};
@@ -102,6 +103,7 @@ class ReadCell {
 
 // The generated union is over infinitely many inputs, with references in one heap.
 ghost function ReadAll(c: ReadCell): int
+  requires forall n: int :: c.ReadInput.requires(n)
   reads c, c.ReadInput.reads
 {
   0
@@ -122,6 +124,9 @@ method ChangedHeap(c: ReadCell, o: object?)
   ghost var previousValue := c.value;
   ghost var f := (x: int) reads c, c.objects => x;
   ghost var lambda := f.reads(0);
+  assert forall n: int :: c.ReadInput.requires(n);
+  assert forall n: int :: c.ReadInput.reads(n) == {c} + c.objects;
+  assert forall n: int, q: object? :: q in c.ReadInput.reads(n) ==> allocated(q);
   ghost var allNamed := ReadAll.reads(c);
   ghost var allLambda := (x: int) reads c, c.ReadInput.reads => x;
   ghost var allLambdaReads := allLambda.reads(0);
@@ -133,6 +138,9 @@ method ChangedHeap(c: ReadCell, o: object?)
   assert !previous.requires(c, previousValue);
   assert previous.reads(c, previousValue + 1) == {c, o};
   assert f.reads(0) == {c, o};
+  assert forall n: int :: c.ReadInput.requires(n);
+  assert forall n: int :: c.ReadInput.reads(n) == {c} + c.objects;
+  assert forall n: int, q: object? :: q in c.ReadInput.reads(n) ==> allocated(q);
   assert ReadAll.reads(c) == {c, o};
   assert allLambda.reads(0) == {c, o};
   assert allNamed == {c} + old(c.objects);

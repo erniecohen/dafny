@@ -8,6 +8,9 @@ ghost function ReadFamily(f: int -> set<object?>): int
 lemma GeneratedReadsRemainConsistent(o: object?)
 {
   var family: int -> set<object?> := (x: int) => {o};
+  ghost var finite := {o};
+  assert forall n: int :: family(n) == finite;
+  assert forall n: int, q: object? :: q in family(n) ==> allocated(q);
   var named := ReadFamily.reads(family);
   var outer := (x: int) reads family => x;
   var lambda := outer.reads(0);

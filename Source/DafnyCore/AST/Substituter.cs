@@ -1086,11 +1086,10 @@ namespace Microsoft.Dafny {
           var mc = (MapComprehension)e;
           var newMap = new MapComprehension(e.Origin, mc.Finite, newBoundVars, newRange, newTermLeft, newTerm, newAttrs);
           if (ReferenceEquals(newBoundVars, mc.BoundVars)) {
-            // The projection signatures are unchanged. Their relation argument
-            // captures the substituted environment, so the declaration symbols
-            // can be shared without caching a translated relation or value.
+            // The witness representation is unchanged. Keep its stable source
+            // identity; each generator owns the declarations for its own backend
+            // types, and relation arguments carry the substituted environment.
             newMap.ProjectionFunctionsSource = mc.ProjectionFunctionsSource ?? mc;
-            newMap.ProjectionFunctions = mc.ProjectionFunctions;
           }
           newExpr = newMap;
         } else if (expr is ForallExpr forallExpr) {

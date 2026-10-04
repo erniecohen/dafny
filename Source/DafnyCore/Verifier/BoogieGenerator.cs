@@ -4172,26 +4172,26 @@ namespace Microsoft.Dafny {
     /// and translated environment. All components of one choice use that same
     /// predicate; their coordinated correctness is supplied at the source use.
     /// </summary>
-    void CreateMapComprehensionProjectionFunctions(MapComprehension mc) {
+    private readonly Dictionary<MapComprehension, List<Bpl.Function>> mapComprehensionProjectionFunctions = new();
+
+    List<Bpl.Function> GetMapComprehensionProjectionFunctions(MapComprehension mc) {
       Contract.Requires(mc != null && mc.TermLeft != null);
-      if (mc.ProjectionFunctionsSource != null) {
-        CreateMapComprehensionProjectionFunctions(mc.ProjectionFunctionsSource);
-        mc.ProjectionFunctions = mc.ProjectionFunctionsSource.ProjectionFunctions;
-        return;
-      }
-      if (mc.ProjectionFunctions == null) {
+      var source = mc.ProjectionFunctionsSource ?? mc;
+      if (!mapComprehensionProjectionFunctions.TryGetValue(source, out var projections)) {
         var varNameGen = CurrentIdGenerator.NestedFreshIdGenerator(string.Format("map$project${0}#", projectionFunctionCount));
         projectionFunctionCount++;
         var witnessPredicateType = new Bpl.MapType(mc.Origin, [], mc.BoundVars.ConvertAll(bv => TrType(bv.Type)), Bpl.Type.Bool);
-        mc.ProjectionFunctions = [];
+        projections = [];
         foreach (var bv in mc.BoundVars) {
           var arg = BplFormalVar(null, witnessPredicateType, false);
           var res = BplFormalVar(null, TrType(bv.Type), true);
           var projectFn = new Bpl.Function(mc.Origin, varNameGen.FreshId(string.Format("#{0}#", bv.Name)), [arg], res);
-          mc.ProjectionFunctions.Add(projectFn);
+          projections.Add(projectFn);
           sink.AddTopLevelDeclaration(projectFn);
         }
+        mapComprehensionProjectionFunctions.Add(source, projections);
       }
+      return projections;
     }
 
     int projectionFunctionCount = 0;

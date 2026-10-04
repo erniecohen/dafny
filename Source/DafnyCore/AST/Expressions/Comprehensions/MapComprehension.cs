@@ -12,22 +12,14 @@ public class MapComprehension : ComprehensionExpr, ICloneable<MapComprehension> 
   public Expression? TermLeft;
 
   /// <summary>
-  /// Translation-only projections for a general map comprehension, in the final
-  /// BoundVars order. Projection i takes a predicate on the complete backend
-  /// witness tuple and returns the representation of BoundVars[i]. Every component
-  /// of a selected tuple receives the same predicate for the current key and
-  /// environment; source-scoped facts establish their coordinated correctness.
-  /// Ordinary AST clones get new symbols. Substitution with the same BoundVars
-  /// shares the declaration source: relation parameters carry the changed captures,
-  /// while symbol identity keeps rebuilt characteristic lambdas equivalent.
-  /// Translated predicates are never cached here because their captures depend on
-  /// the active translator.
+  /// Stable source identity for same-binder substitutions of a general map
+  /// comprehension. Its projections accept the complete witness predicate, so
+  /// current captures are supplied by the relation parameter rather than cached.
+  /// Sharing the source keeps rebuilt characteristic lambdas equivalent within
+  /// one translation. Ordinary AST clones rebind variables and get a new source.
+  /// Boogie declarations belong to each generator: retaining them on this AST
+  /// would reuse backend type identities across module or repeated translations.
   /// </summary>
-  [FilledInDuringTranslation]
-  public List<Boogie.Function>? ProjectionFunctions;
-
-  // Same-binder substitutions share this source even before its symbols have
-  // been declared. Keeping only a currently-null symbol list would lose identity.
   [FilledInDuringTranslation]
   internal MapComprehension? ProjectionFunctionsSource;
 

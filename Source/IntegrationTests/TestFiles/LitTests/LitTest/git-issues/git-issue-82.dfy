@@ -1,17 +1,17 @@
-// RUN: %baredafny verify "%s" --type-system-refresh:false --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" > "%t"
-// RUN: %baredafny verify "%s" --type-system-refresh:true --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
-// RUN: %baredafny verify "%s" --type-system-refresh:false --additional-axioms --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
-// RUN: %baredafny verify "%s" --type-system-refresh:true --additional-axioms --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
-// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-mixed-negative.dfy" --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
-// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-empty-outer-negative.dfy" --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
-// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-spec-negative.dfy" --type-system-refresh:false --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
-// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-spec-negative.dfy" --type-system-refresh:false --additional-axioms --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
-// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-spec-negative.dfy" --type-system-refresh:true --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
-// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-spec-negative.dfy" --type-system-refresh:true --additional-axioms --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
-// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-lambda-alloc-negative.dfy" --type-system-refresh:false --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
-// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-lambda-alloc-negative.dfy" --type-system-refresh:false --additional-axioms --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
-// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-lambda-alloc-negative.dfy" --type-system-refresh:true --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
-// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-lambda-alloc-negative.dfy" --type-system-refresh:true --additional-axioms --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%z3" >> "%t"
+// RUN: %baredafny verify "%s" --type-system-refresh:false --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%review-z3" > "%t"
+// RUN: %baredafny verify "%s" --type-system-refresh:true --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%review-z3" >> "%t"
+// RUN: %baredafny verify "%s" --type-system-refresh:false --additional-axioms --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%review-z3" >> "%t"
+// RUN: %baredafny verify "%s" --type-system-refresh:true --additional-axioms --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%review-z3" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-mixed-negative.dfy" --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%review-z3" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-empty-outer-negative.dfy" --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%review-z3" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-spec-negative.dfy" --type-system-refresh:false --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%review-z3" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-spec-negative.dfy" --type-system-refresh:false --additional-axioms --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%review-z3" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-spec-negative.dfy" --type-system-refresh:true --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%review-z3" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-spec-negative.dfy" --type-system-refresh:true --additional-axioms --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%review-z3" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-lambda-alloc-negative.dfy" --type-system-refresh:false --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%review-z3" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-lambda-alloc-negative.dfy" --type-system-refresh:false --additional-axioms --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%review-z3" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-lambda-alloc-negative.dfy" --type-system-refresh:true --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%review-z3" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-82-lambda-alloc-negative.dfy" --type-system-refresh:true --additional-axioms --show-snippets:false --use-basename-for-filename --allow-warnings --solver-path "%review-z3" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 type Empty = x: int | false witness *
@@ -20,10 +20,15 @@ type Small = x: int | 0 <= x < 2 witness 0
 
 datatype Enum = Left | Right
 
-ghost function BooleanImage(): set<bool> { set i: int | true :: i == 0 }
+// This trigger names the unbounded integer witness without changing its image.
+ghost function ImageWitness82(i: int): int { i }
+
+ghost function BooleanImage(): set<bool> {
+  set i: int {:trigger ImageWitness82(i)} | true :: i == 0
+}
 
 ghost function EnumerationImage(): set<Enum> {
-  set i: int | true :: if i == 0 then Left else Right
+  set i: int {:trigger ImageWitness82(i)} | true :: if i == 0 then Left else Right
 }
 
 ghost function Identity<A(!new)>(xs: set<A>): set<A> { set x: A | x in xs }
@@ -57,6 +62,7 @@ lemma EmptyAndFiniteCarriers() {
   {
     var sourceValue := if b then 0 else 1;
     assert (sourceValue == 0) == b;
+    assert ImageWitness82(sourceValue) == sourceValue;
     assert (sourceValue == 0) in BooleanImage();
   }
   assert BooleanImage() == {false, true};
@@ -65,6 +71,7 @@ lemma EmptyAndFiniteCarriers() {
   {
     var sourceValue := if e.Left? then 0 else 1;
     assert (if sourceValue == 0 then Left else Right) == e;
+    assert ImageWitness82(sourceValue) == sourceValue;
     assert (if sourceValue == 0 then Left else Right) in EnumerationImage();
   }
   assert EnumerationImage() == {Left, Right};
@@ -151,13 +158,16 @@ lemma SingletonImage82(i: int)
 {}
 
 lemma FiniteDomainWithInfiniteWitnesses() {
-  var m := map i: int | true :: i == 0 := 0;
+  // The identity call also gives the generated key-existence quantifier a term
+  // containing its integer witness under the default map-trigger policy.
+  var m := map i: int | true :: ImageWitness82(i) == 0 := 0;
   forall b: bool
     ensures b in m
   {
     var sourceValue := if b then 0 else 1;
     assert (sourceValue == 0) == b;
-    assert (sourceValue == 0) in m;
+    assert ImageWitness82(sourceValue) == sourceValue;
+    assert (ImageWitness82(sourceValue) == 0) in m;
   }
   assert m.Keys == {false, true};
   assert m[false] == 0;

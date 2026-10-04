@@ -1,0 +1,6 @@
+// CHECK-NOT: Error:
+// CHECK: git-issue-82-reads-unavailable-negative.dfy\(9,[0-9]+\): Error: function precondition could not be proved
+// CHECK: git-issue-82-reads-unavailable-negative.dfy\(9,[0-9]+\): Error: function precondition could not be proved
+// CHECK-NOT: Error:
+// CHECK: Dafny program verifier finished with [0-9]+ verified, 2 errors
+// CHECK-NOT: Error:

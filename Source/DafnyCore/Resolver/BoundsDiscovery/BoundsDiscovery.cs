@@ -215,9 +215,10 @@ namespace Microsoft.Dafny {
               // Finiteness of a comprehension depends on the image/key carrier,
               // not on the carrier of complete collection values. In particular,
               // map<bool, int> has a finite domain but infinitely many map values.
+              var collectionType = e.Type.NormalizeToAncestorType();
               var imageType = e is MapComprehension
-                ? e.Type.AsMapType.Domain
-                : e.Type.AsSetType.Arg;
+                ? collectionType.AsMapType.Domain
+                : collectionType.AsSetType.Arg;
               if (imageType.HasFinitePossibleValues) {
                 // The image/key carrier is finite regardless of the witness range.
                 // Compilation still requires enumerable witness bounds, checked later.

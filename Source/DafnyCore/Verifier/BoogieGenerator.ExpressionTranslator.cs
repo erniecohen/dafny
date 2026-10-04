@@ -581,12 +581,12 @@ namespace Microsoft.Dafny {
 
       private Dictionary<IVariable, Expression> MapSelectedWitnesses(MapComprehension e,
         Expr relation, out List<Expr> projections) {
-        BoogieGenerator.CreateMapComprehensionProjectionFunctions(e);
+        var projectionFunctions = BoogieGenerator.GetMapComprehensionProjectionFunctions(e);
         projections = [];
         var subst = new Dictionary<IVariable, Expression>();
         for (var i = 0; i < e.BoundVars.Count; i++) {
           var projection = new Boogie.NAryExpr(GetToken(e),
-            new Boogie.FunctionCall(e.ProjectionFunctions[i]), [relation]);
+            new Boogie.FunctionCall(projectionFunctions[i]), [relation]);
           projections.Add(projection);
           subst.Add(e.BoundVars[i], new BoogieWrapper(projection, e.BoundVars[i].Type));
         }
@@ -727,9 +727,9 @@ namespace Microsoft.Dafny {
       public Expr FiniteCollectionDefinition(ComprehensionExpr e) {
         return e switch {
           SetComprehension { Finite: true } set =>
-            DefineSourceFiniteImage(set, BuildSetComprehensionView(set), set.Type.AsSetType.Arg),
+            DefineSourceFiniteImage(set, BuildSetComprehensionView(set), set.Type.NormalizeToAncestorType().AsSetType.Arg),
           MapComprehension { Finite: true } map =>
-            DefineSourceFiniteImage(map, BuildMapComprehensionDomain(map), map.Type.AsMapType.Domain),
+            DefineSourceFiniteImage(map, BuildMapComprehensionDomain(map), map.Type.NormalizeToAncestorType().AsMapType.Domain),
           _ => Boogie.Expr.True
         };
       }
@@ -1470,8 +1470,13 @@ namespace Microsoft.Dafny {
             new Boogie.Trigger(tok, true, [applySelector])));
         var quantifiedFacts = BplForall(environment.LayerBinders.Concat(environment.Binders).ToList(), trigger,
           BplImp(guard, facts));
-        return new Boogie.LetExpr(tok, [familyVar],
+        var guardedFacts = new Boogie.LetExpr(tok, [familyVar],
           [BuildLambdaHandleFamily(e, BuildLambdaEnvironment(e))], null, quantifiedFacts);
+        // With no reads expressions the characteristic predicate is constant
+        // false, independent of the lambda's arguments, heap, and precondition.
+        // Its exact empty finite view therefore needs no formal-domain premise.
+        // The caller still preserves every enclosing source guard.
+        return reads.Count == 0 ? BplAnd(footprintFact, guardedFacts) : guardedFacts;
       }
 
       public Expression DesugarMatchExpr(MatchExpr e) {

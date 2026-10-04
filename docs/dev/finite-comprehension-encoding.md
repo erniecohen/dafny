@@ -127,9 +127,13 @@ Lambda source well-formedness checks havoc a good successor heap and introduce
 formal variables with `GetWhereClause(..., ISALLOC)`. Common lambda facts must
 therefore guard their child call facts and footprint definitions with both the
 boxed source type and allocatedness in that same lambda heap, as well as the
-actual formation-heap succession and source range. The value and its `.requires`
-translation retain their own descriptor; a stronger availability premise for
-facts does not change the lambda's predicate or footprint. In particular, merely
+actual formation-heap succession and source range. An effect-free arrow has a
+total empty `.reads` selector, including arguments outside the allocated formal
+universe or where its body precondition is false. Its characteristic predicate
+is the constant false map, independent of arguments, heap, and layer. This exact
+empty-footprint definition is supplied at formation without the lambda's formal
+domain guard; enclosing source guards and all child-call guards remain intact. The value and its `.requires` translation retain their own descriptor;
+a stronger availability premise for facts does not change the lambda's predicate or footprint. In particular, merely
 typed unallocated backend arguments do not inherit child function permissions
 that were checked only for allocated source formals.
 
@@ -199,7 +203,9 @@ map comprehension's key carrier directly. This preserves unbounded Boolean-key
 maps with arbitrary integer values, but rejects unbounded sets of those maps
 and maps using those complete maps as keys. Explicit finite witness bounds
 still admit either construction. Both resolver modes use this same formation
-check.
+check. Collection newtypes are normalized to their ancestor set/map before
+extracting that element/key carrier, without changing the underlying finite
+carrier classification.
 
 ### Why datatype rank is not a finite bound
 
@@ -247,3 +253,24 @@ it does not claim an executed Dafny-source false proof. A satisfiable ground
 fragment also does not certify the complete repaired backend theory. Real
 Dafny-generated mixed finite/infinite queries, live assertion-failure controls,
 and the full prescribed repository gates remain separate validation obligations.
+
+## Executable pipeline audit
+
+The `Finite-support encoding and boundary controls` CI job runs
+`.github/review/issue82-audit.py` against the packaged verifier and Z3 5.1.0.
+It captures the companion source's Boogie before and after lambda lifting and
+named, actual solver queries from that source and the mixed finite/infinite
+control. `.github/review/issue82-encoding.py` parses those artifacts to check
+scope, typed witnesses, canonical representation, capture identity, and valid
+patterns. Targeted mutations must be detected, including equivalent renamed
+preservation wrappers; a symbol-name search alone is insufficient.
+
+A backend map returning an already-finite `Set` is not a characteristic map:
+selecting such a value and testing its membership does not convert an arbitrary
+Boolean predicate into a finite set. The SMT boundary check distinguishes these
+operations structurally and retains the arbitrary Boolean-map mutations.
+
+The isolated diagonal fixture must return `sat`, `unsat`, and `sat` for the
+repaired, old-bridge mutation, and mutation without the extra diagonal controls.
+The real mixed source must fail solely at its live assertion of false. Missing
+pipeline stages, invalid Boogie, solver failure, or a safety timeout fail the job.

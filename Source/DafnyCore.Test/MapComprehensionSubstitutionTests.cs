@@ -1,9 +1,11 @@
+using DafnyCore.Test.Resolver.Cardinality;
 using Microsoft.Dafny;
 using Bpl = Microsoft.Boogie;
 using DafnyType = Microsoft.Dafny.Type;
 
 namespace DafnyCore.Test;
 
+[Collection("Cardinality resolution")]
 public class MapComprehensionSubstitutionTests {
   [Theory]
   [InlineData(true)]
@@ -27,23 +29,19 @@ public class MapComprehensionSubstitutionTests {
   [Theory]
   [InlineData(true)]
   [InlineData(false)]
-  public void SameBinderSubstitutionSharesDeclaredProjections(bool finite) {
+  public void SameBinderSubstitutionSharesStableSourceIdentity(bool finite) {
     var original = CreateMap(finite, out var capturedKey);
-    original.ProjectionFunctions = CreateProjections();
 
     var substituted = SubstituteKey(original, capturedKey, Integer(7));
 
     Assert.Same(original.BoundVars, substituted.BoundVars);
     Assert.Same(original, substituted.ProjectionFunctionsSource);
-    Assert.Same(original.ProjectionFunctions, substituted.ProjectionFunctions);
-    Assert.Same(original.ProjectionFunctions[0], substituted.ProjectionFunctions![0]);
-    Assert.Same(original.ProjectionFunctions[1], substituted.ProjectionFunctions[1]);
   }
 
   [Theory]
   [InlineData(true)]
   [InlineData(false)]
-  public void RepeatedSubstitutionSharesSourceBeforeProjectionsAreDeclared(bool finite) {
+  public void RepeatedSubstitutionSharesTheOriginalSource(bool finite) {
     var original = CreateMap(finite, out var capturedKey);
     var nextKey = new BoundVar(Token.NoToken, "nextKey", DafnyType.Int);
     var first = SubstituteKey(original, capturedKey, new IdentifierExpr(Token.NoToken, nextKey));
@@ -51,15 +49,8 @@ public class MapComprehensionSubstitutionTests {
 
     Assert.NotSame(first, second);
     Assert.Same(original.BoundVars, second.BoundVars);
-    Assert.Null(first.ProjectionFunctions);
-    Assert.Null(second.ProjectionFunctions);
     Assert.Same(original, first.ProjectionFunctionsSource);
     Assert.Same(original, second.ProjectionFunctionsSource);
-
-    // Declaration can happen after substitution; both copies still name its source.
-    original.ProjectionFunctions = CreateProjections();
-    Assert.Same(original.ProjectionFunctions, first.ProjectionFunctionsSource!.ProjectionFunctions);
-    Assert.Same(original.ProjectionFunctions, second.ProjectionFunctionsSource!.ProjectionFunctions);
   }
 
   [Theory]
@@ -67,13 +58,11 @@ public class MapComprehensionSubstitutionTests {
   [InlineData(false)]
   public void OrdinaryCloneRebindsVariablesAndDropsProjectionMetadata(bool finite) {
     var original = CreateMap(finite, out var capturedKey);
-    original.ProjectionFunctions = CreateProjections();
     var substituted = SubstituteKey(original, capturedKey, Integer(7));
 
     var clone = Assert.IsType<MapComprehension>(
       new Cloner(cloneResolvedFields: true).CloneExpr(substituted));
 
-    Assert.Null(clone.ProjectionFunctions);
     Assert.Null(clone.ProjectionFunctionsSource);
     Assert.NotSame(substituted.BoundVars, clone.BoundVars);
     Assert.Equal(substituted.BoundVars.Count, clone.BoundVars.Count);
@@ -105,17 +94,39 @@ public class MapComprehensionSubstitutionTests {
     return Assert.IsType<MapComprehension>(substituter.Substitute(map));
   }
 
-  private static List<Bpl.Function> CreateProjections() {
-    var predicateType = new Bpl.MapType(Token.NoToken, [], [Bpl.Type.Int, Bpl.Type.Bool], Bpl.Type.Bool);
-    return [Projection("projectX", predicateType, Bpl.Type.Int),
-      Projection("projectY", predicateType, Bpl.Type.Bool)];
-  }
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task RepeatedAndImportedTranslationsOwnTheirProjectionDeclarations(bool refresh) {
+    var (program, reporter) = await CardinalitySourceTests.ResolveAsync("""
+      module First {
+        ghost function G<T(!new)>(value: T): map<int, T> {
+          map x: T | x == value :: 0 := x
+        }
+      }
+      module Second {
+        import F = First
+        ghost function H(value: bool): map<int, bool> {
+          F.G(value)
+        }
+      }
+      """, refresh);
+    Assert.Equal(0, reporter.ErrorCount);
 
-  private static Bpl.Function Projection(string name, Bpl.Type predicateType, Bpl.Type resultType) {
-    var predicate = new Bpl.Formal(Token.NoToken,
-      new Bpl.TypedIdent(Token.NoToken, "predicate", predicateType), true);
-    var result = new Bpl.Formal(Token.NoToken,
-      new Bpl.TypedIdent(Token.NoToken, "result", resultType), false);
-    return new Bpl.Function(Token.NoToken, name, [predicate], result);
+    // Resolution and translation have global scope state and are serialized by
+    // the production verifier. Repeated generators must still own distinct
+    // backend declarations for the same resolved source, including imports.
+    var translations = BoogieGenerator.Translate(program, reporter).ToList();
+    translations.AddRange(BoogieGenerator.Translate(program, reporter));
+    Assert.Equal(4, translations.Count);
+    var declarations = new HashSet<Bpl.Function>();
+    foreach (var (_, backend) in translations) {
+      var projections = backend.TopLevelDeclarations.OfType<Bpl.Function>()
+        .Where(function => function.Name.StartsWith("map$project$")).ToList();
+      Assert.NotEmpty(projections);
+      Assert.All(projections, projection => Assert.True(declarations.Add(projection)));
+      Assert.Equal(0, backend.Resolve(program.Options));
+      Assert.Equal(0, backend.Typecheck(program.Options));
+    }
   }
 }
