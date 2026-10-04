@@ -1647,6 +1647,15 @@ namespace Microsoft.Dafny {
             CheckVariance(dd.Rhs, dd, TypeParameter.TPVariance.Co, false);
           } else if (d is NewtypeDecl) {
             var dd = (NewtypeDecl)d;
+            if (Options.Get(CommonOptionBag.ExtendedNewtypeBases) && dd.Constraint != null) {
+              var ancestor = dd.BaseType.NormalizeToAncestorType();
+              if (ancestor.IsDatatype || ancestor.IsArrowType || ancestor.IsBigOrdinalType) {
+                foreach (var tp in dd.TypeArgs.Where(tp => tp.Variance != TypeParameter.TPVariance.Non)) {
+                  reporter.Error(MessageSource.Resolver, tp.Origin,
+                    "a constrained newtype with an extended base only supports invariant type parameters");
+                }
+              }
+            }
             CheckVariance(dd.BaseType, dd, TypeParameter.TPVariance.Co, false);
           } else if (d is DatatypeDecl) {
             var dd = (DatatypeDecl)d;

@@ -1530,7 +1530,7 @@ public partial class BoogieGenerator {
           new BinaryExpr(expr.Origin, BinaryExpr.Opcode.Le, new LiteralExpr(expr.Origin, 0), intExpr),
           new BinaryExpr(expr.Origin, BinaryExpr.Opcode.Lt, intExpr, dafnyBound)
         );
-      } else if (fromType.IsBigOrdinalType) {
+      } else if (fromType.IsBigOrdinalType || options.Get(CommonOptionBag.ExtendedNewtypeBases) && fromTypeFamily.IsBigOrdinalType) {
         var bound = Bpl.Expr.Literal(toBound);
         var oi = FunctionCall(tok, "ORD#Offset", Bpl.Type.Int, o);
         boundsCheck = Bpl.Expr.Lt(oi, bound);
@@ -1545,7 +1545,7 @@ public partial class BoogieGenerator {
         builder.Add(Assert(tok, boundsCheck, new ConversionFit("value", toType, dafnyBoundsCheck, errorMsgPrefix), builder.Context));
       }
 
-    } else if (toType.IsCharType) {
+    } else if (toType.IsCharType || options.Get(CommonOptionBag.ExtendedNewtypeBases) && toTypeFamily.IsCharType) {
       if (fromType.IsNumericBased(Type.NumericPersuasion.Int)) {
         PutSourceIntoLocal();
         var boundsCheck = FunctionCall(Token.NoToken, BuiltinFunction.IsChar, null, o);
@@ -1572,7 +1572,7 @@ public partial class BoogieGenerator {
           var dafnyBoundsCheck = new BinaryExpr(expr.Origin, BinaryExpr.Opcode.Lt, expr, dafnyBound);
           builder.Add(Assert(tok, boundsCheck, new ConversionFit("bit-vector value", toType, dafnyBoundsCheck, errorMsgPrefix), builder.Context));
         }
-      } else if (fromType.IsBigOrdinalType) {
+      } else if (fromType.IsBigOrdinalType || options.Get(CommonOptionBag.ExtendedNewtypeBases) && fromTypeFamily.IsBigOrdinalType) {
         PutSourceIntoLocal();
         var oi = FunctionCall(tok, "ORD#Offset", Bpl.Type.Int, o);
         int toWidth = 16;
@@ -1617,7 +1617,7 @@ public partial class BoogieGenerator {
       } else if (options.Get(CommonOptionBag.ExtendedNewtypeBases) && fromTypeFamily.IsBigOrdinalType) {
         // Preserve the entire ordinal for same-carrier casts, including limits.
         be = ConvertExpression(expr.Origin, o, fromTypeFamily, toTypeFamily);
-      } else if (fromType.IsBigOrdinalType) {
+      } else if (fromType.IsBigOrdinalType || options.Get(CommonOptionBag.ExtendedNewtypeBases) && fromTypeFamily.IsBigOrdinalType) {
         be = FunctionCall(expr.Origin, "ORD#Offset", Bpl.Type.Int, o);
         be = ConvertExpression(expr.Origin, be, Dafny.Type.Int, toType);
       } else {
@@ -1774,6 +1774,11 @@ public partial class BoogieGenerator {
           }
         });
       codeContext = ghostCodeContext;
+    } else if (decl is NewtypeDecl { InheritsBaseDefault: true } && decl.Constraint == null) {
+      // Only an unconstrained declaration can inherit an established base default.
+      // No source witness or existence assumption is fabricated for an empty base.
+      witnessCheckBuilder.Add(Assert(decl.Tok, Bpl.Expr.Literal(baseType.HasCompilableValue),
+        new WitnessCheck("the base type has no known compiled default; provide a witness or witness *"), builder.Context));
     } else if (decl.WitnessKind == SubsetTypeDecl.WKind.CompiledZero) {
       var witness = Zero(decl.Tok, baseType);
       if (witness == null) {

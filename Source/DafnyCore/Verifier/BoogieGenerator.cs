@@ -2496,6 +2496,11 @@ namespace Microsoft.Dafny {
       } else if (pat.Arguments != null) {
         Contract.Assert(pat.Ctor != null);  // follows from successful resolution
         Contract.Assert(pat.Arguments.Count == pat.Ctor.Destructors.Count);  // follows from successful resolution
+        if (options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+            NewtypeOperationView.Get(rhsType).BaseType is { } baseType &&
+            baseType.AsDatatype == pat.Ctor.EnclosingDatatype) {
+          rhsType = baseType;
+        }
         rhsType = rhsType.Normalize();
         Contract.Assert(rhsType is UserDefinedType && ((UserDefinedType)rhsType).ResolvedClass != null);
         var rhsTypeUdt = (UserDefinedType)rhsType;
