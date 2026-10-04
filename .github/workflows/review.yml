@@ -367,7 +367,9 @@ jobs:
   axiom-resources:
     name: Additional-axiom resource comparisons
     needs: [suite, stdlib]
-    if: always() && needs.suite.result == 'success'
+    # Also after a failed standard-library job, but not after a cancellation, which can leave its
+    # artifacts missing (#133).
+    if: ${{ !cancelled() && needs.suite.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
