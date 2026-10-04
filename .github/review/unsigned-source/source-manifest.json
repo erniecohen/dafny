@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "diagnosticOnly": true,
+  "files": {
+    ".gitattributes": {
+      "bytes": 14,
+      "sha256": "a79691a93b46e49ce460c26ef22afcc03d6eca1e63bf2edbc20e96159510f6c9"
+    },
+    "Program.cs": {
+      "bytes": 21589,
+      "sha256": "29ccfc9be9661a63ef043c579f1cf1246b928def61df60cde93b92ea49e02082"
+    },
+    "README.md": {
+      "bytes": 3723,
+      "sha256": "9e464c7d4a53c9cf8806d4e1a0ae2092b7a5c31502a1113557c88b47e4771db4"
+    },
+    "UnsignedSourceProbe.csproj": {
+      "bytes": 821,
+      "sha256": "8758d175e51b9b5a69a55004900508c3a63a552e960f18b3ac56047d6d466d67"
+    },
+    "coordinator.py": {
+      "bytes": 17673,
+      "sha256": "ba9906cbf53c5fba4acf370ab9b8f8deaa830662f8d79443c87993879423e235"
+    },
+    "fixture.dfy": {
+      "bytes": 201,
+      "sha256": "7a88712dd0e3f04549981d39986dd16f81898d9f431e4c24c2122d8f9e994b29"
+    },
+    "gate.py": {
+      "bytes": 2540,
+      "sha256": "550ee3f683250a63811bbda6a1c8e2a85d976eca0121496fd1052df9e720a963"
+    },
+    "inputs.json": {
+      "bytes": 14168,
+      "sha256": "4e4dd781a3976ca284a51ca4f78f69fee85a375d83ba57582839b0023be99557"
+    },
+    "nuget.config": {
+      "bytes": 113,
+      "sha256": "2142cfb2dfa2c7feefbe40fabcc68b0dfecadafa99a1db9b70239d977cf2a7ef"
+    },
+    "owned-process.py": {
+      "bytes": 18055,
+      "sha256": "3d26a5bbd4e02d837087185a6a25b757027b642798019cda3271c6e7b5713c8e"
+    }
+  },
+  "rootFiles": {
+    ".github/workflows/review.yml": {
+      "bytes": 29941,
+      "sha256": "f82d06f0ceffc5780ed3ce371f7f363923fd787c5d7bde60ed42be82fb31179b"
+    }
+  }
+}
