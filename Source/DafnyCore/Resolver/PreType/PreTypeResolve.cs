@@ -277,6 +277,59 @@ namespace Microsoft.Dafny {
       return preType;
     }
 
+    private DPreType OperationPreType(PreType nominal) {
+      var current = nominal.NormalizeWrtScope() as DPreType;
+      if (!resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+        return current;
+      }
+      var path = new HashSet<NewtypeDecl>();
+      while (current?.Decl is NewtypeDecl declaration) {
+        if (!declaration.IsRevealedInScope(Type.GetScope()) || declaration.BasePreType == null) {
+          return null;
+        }
+        if (!path.Add(declaration) && HasOperationViewCycle(declaration)) {
+          return null;
+        }
+        var substitution = PreType.PreTypeSubstMap(declaration.TypeArgs, current.Arguments);
+        current = declaration.BasePreType.Substitute(substitution).NormalizeWrtScope() as DPreType;
+      }
+      return current;
+    }
+
+    private static bool HasOperationViewCycle(NewtypeDecl root) {
+      // Inspect declaration dependencies without unfolding instantiated bases. Repeated
+      // finite Id<Id<int>> instantiations are legal; Id's raw base is a parameter.
+      var pending = new Stack<PreType>();
+      var seen = new HashSet<NewtypeDecl>();
+      pending.Push(root.BasePreType);
+      while (pending.Count != 0) {
+        if (pending.Pop()?.Normalize() is not DPreType type) {
+          continue;
+        }
+        foreach (var argument in type.Arguments) {
+          pending.Push(argument);
+        }
+        if (type.Decl is NewtypeDecl declaration) {
+          if (declaration == root) {
+            return true;
+          }
+          if (seen.Add(declaration)) {
+            pending.Push(declaration.BasePreType);
+          }
+        }
+      }
+      return false;
+    }
+
+    private Expression BaseOperationExpression(Expression expression, DPreType view) {
+      if (view == null || PreType.Same(expression.PreType, view)) {
+        return expression;
+      }
+      return new ConversionExpr(expression.Origin, expression, new InferredTypeProxy()) {
+        PreType = view
+      };
+    }
+
     [CanBeNull]
     public static string AncestorName(PreType preType) {
       return preType.Normalize() is not DPreType dp ? null : AncestorPreType(dp)?.Decl.Name;
@@ -888,7 +941,11 @@ namespace Microsoft.Dafny {
           resolver.ReportError(ResolutionErrors.ErrorId.r_newtype_base_undetermined, nd.Origin,
             $"base type of {nd.WhatKindAndName} is not fully determined; add an explicit type for bound variable '{nd.Var.Name}'");
         };
-        if (resolver.Options.Get(CommonOptionBag.GeneralNewtypes)) {
+        if (resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+            AncestorName(nd.BasePreType) == PreType.TypeNameORDINAL) {
+          // Capability admission is deliberately separate from the existing mode.
+          // Other families remain rejected until their operations and representation are complete.
+        } else if (resolver.Options.Get(CommonOptionBag.GeneralNewtypes)) {
           AddConfirmation(PreTypeConstraints.CommonConfirmationBag.IsNewtypeBaseTypeGeneral, nd.BasePreType, nd.Origin,
             $"a newtype ('{nd.Name}') must be based on some non-reference, non-trait, non-arrow, non-ORDINAL, non-datatype type (got {{0}})",
             onProxyAction);
