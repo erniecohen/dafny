@@ -585,10 +585,10 @@ git-issues/git-issue-1419.dfy	2		8,17,23,25,27,32,33,34,38,39,40,44,45,46,49,50,
 git-issues/git-issue-1423.dfy	0	4 verified, 0 errors	
 git-issues/git-issue-1435.dfy	4	1 verified, 1 error	6
 git-issues/git-issue-1458.dfy	2		10
-git-issues/git-issue-146-actual-arguments-negative.dfy	2		7,8
-git-issues/git-issue-146-actual-arguments.dfy	2		7,8
-git-issues/git-issue-146-negative.dfy	2		7,10
-git-issues/git-issue-146.dfy	2		7,10
+git-issues/git-issue-146-actual-arguments-negative.dfy	4	1 verified, 1 error	16
+git-issues/git-issue-146-actual-arguments.dfy	0	2 verified, 0 errors	
+git-issues/git-issue-146-negative.dfy	4	2 verified, 3 errors	17,21,26
+git-issues/git-issue-146.dfy	0	5 verified, 0 errors	
 git-issues/git-issue-1479.dfy	4	1 verified, 2 errors	16,33
 git-issues/git-issue-151.dfy	2		37,39,40,42
 git-issues/git-issue-1514.dfy	1		
