@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "status": "source-only-native-supervisor-uncompiled-unexecuted; argument-control execution is recorded separately",
-  "scope": "non-verifying-argument-controls-and-cli-disabled-owned-native-supervisor-source",
+  "status": "source-only-fixed-lifecycle-controls-uncompiled-unexecuted; prior argument-control execution recorded separately",
+  "scope": "non-verifying-argument-and-fixed-native-lifecycle-controls-proof-cli-disabled",
   "targetFramework": "net8.0",
   "reviewedContracts": {
     "dafnySourceCommit": "63f38e9163d1c596ef57afe3e34b5c161e9069a4",
@@ -23,8 +23,8 @@
     },
     {
       "path": "B3AlcGate.csproj",
-      "sha256": "590e4acd326b283be1344aa63fd6bfb36d46bb68e38229f5a91fd2becd65e107",
-      "bytes": 786
+      "sha256": "e36ea98c88b8fb2ff649ebcf60c462d5d577bee5ff6809cd7f9013fe5169d89a",
+      "bytes": 1135
     },
     {
       "path": "Isolation.cs",
@@ -32,19 +32,29 @@
       "bytes": 10279
     },
     {
+      "path": "LIFECYCLE-CONTROLS.md",
+      "sha256": "54ffd478084542989731b704062f78d33e370af1dee6f7cd4f4bc2928dc4c08b",
+      "bytes": 5318
+    },
+    {
       "path": "LIFECYCLE.md",
-      "sha256": "a625759c04d6e1fed1df1ef855ecbae50c3b03b563b91a188e2a97a933a89685",
-      "bytes": 8993
+      "sha256": "100e254a9864c5141ae9643ef2c0554a6b464a4d5f59b75d9524263cf6b51c1d",
+      "bytes": 9217
+    },
+    {
+      "path": "NativeLifecycleControls.cs",
+      "sha256": "034e57c1d7497a0cbd495890c8baef4d1268260d75e9ca981362c89cfff9f78b",
+      "bytes": 29751
     },
     {
       "path": "NativeProofSupervisor.cs",
-      "sha256": "9cc48cfb0e2fb17156bab19489074824586e77a7bcc29f2254db6eb71212bab6",
-      "bytes": 30285
+      "sha256": "ddee5265aee373c8f6f4e9d903342fd68bf9b55b91324d9bbff923eb4ce78f7e",
+      "bytes": 32588
     },
     {
       "path": "Program.cs",
-      "sha256": "883d01f2d07196f79cca1468e77038efae48dba67c4affe7220afc3dfa1a838f",
-      "bytes": 4798
+      "sha256": "cefa5de0df4b2b6fa6f0ea829f1c6499cf874640e50e4055811ee589eb31069c",
+      "bytes": 5051
     },
     {
       "path": "README.md",
@@ -62,14 +72,29 @@
       "bytes": 456
     },
     {
+      "path": "lifecycle-control-fixtures.json",
+      "sha256": "6cb5275d85bba9cf9a121f311668e2c81974bb8a67b24375c56fe47a8c47532a",
+      "bytes": 777
+    },
+    {
+      "path": "lifecycle-seal-probe.py",
+      "sha256": "de180737146fed765b18933f47d20b4d072e0e73377ec64f85b71ba4ff365639",
+      "bytes": 3801
+    },
+    {
+      "path": "native-lifecycle-fixture.c",
+      "sha256": "a024e57dec09d99b38449b8d277a91f8ea2a6e646982ebc5ec0e9cbcd18618ce",
+      "bytes": 4129
+    },
+    {
       "path": "native-proof-fixtures.json",
       "sha256": "bb8517210d4a6fc2392828ab7eec360c14b67361473b6d59341b4fc5eb0c2b72",
       "bytes": 1951
     },
     {
       "path": "native-solver-wrapper.py",
-      "sha256": "d4c9e3139fc22b823f8e6341d9412adbbc238d7e0471f0a31d61e62f64bd8413",
-      "bytes": 12717
+      "sha256": "015708bafca1e91d000ded227d02770f334623fa62a6d8359cdf3237b0de9e5b",
+      "bytes": 13587
     },
     {
       "path": "proof-fixtures/false.dfy",
@@ -92,6 +117,8 @@
     "minimumKernelForExecutableMemfd": "6.3",
     "solverImage": "bounded-native-ELF-sealed-executable-memfd",
     "proofCliEnabled": false,
-    "runtimeEvidenceEstablished": false
+    "runtimeEvidenceEstablished": false,
+    "lifecycleCliEnabled": true,
+    "lifecycleRuntimeEvidenceEstablished": false
   }
 }
