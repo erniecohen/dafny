@@ -97,7 +97,7 @@ public class ProgramResolver {
     return Task.CompletedTask;
   }
 
-  public void AddSystemClass(TopLevelDeclWithMembers topLevelDeclWithMembers, Dictionary<string, MemberDecl> memberDictionary) {
+  public virtual void AddSystemClass(TopLevelDeclWithMembers topLevelDeclWithMembers, Dictionary<string, MemberDecl> memberDictionary) {
     classMembers[topLevelDeclWithMembers] = memberDictionary;
   }
 
