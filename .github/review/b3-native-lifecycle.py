@@ -181,7 +181,7 @@ finally:
                         os.close(leaf_fd)
                     os.rmdir(name, dir_fd=parent_fd)
                 assert (parent.stat().st_dev, parent.stat().st_ino) == parent_identity, 'Caller parent identity changed'
-                parent.rmdir()
+                subprocess.run(['sudo', 'rmdir', '--', str(parent)], check=True, timeout=20)
             receipt['callerDelegationRemoved'] = True
         except Exception as error:
             receipt['passed'] = False
