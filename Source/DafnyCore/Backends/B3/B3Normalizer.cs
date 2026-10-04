@@ -39,6 +39,9 @@ public static class B3Normalizer {
     } catch (B3DefinitionVisibility.Rejection rejected) {
       return new B3NormalizationResult(null, Array.Empty<Ir.SourceIdentity>(),
         new[] { new B3NormalizationDiagnostic("b3_visibility", rejected.Message, rejected.Token) }, Array.Empty<string>());
+    } catch (B3UnsignedWrappers.Rejection rejected) {
+      return new B3NormalizationResult(null, Array.Empty<Ir.SourceIdentity>(),
+        new[] { new B3NormalizationDiagnostic("b3_unsigned_wrapper", rejected.Message, rejected.Token) }, Array.Empty<string>());
     } catch (Unsupported unsupported) {
       return new B3NormalizationResult(null, Array.Empty<Ir.SourceIdentity>(),
         new[] { new B3NormalizationDiagnostic(unsupported.Code, unsupported.Message, unsupported.Token) },
@@ -97,6 +100,7 @@ public static class B3Normalizer {
     private long numericCharacters;
     private long bitvectorExpressionBits;
     private HashSet<Bpl.Function> ownedBitvectorFunctions;
+    private B3UnsignedWrappers unsignedWrappers;
     private Environment entry;
     private B3DefinitionVisibility visibility;
     private readonly List<Bpl.HideRevealCmd> visibilityCommands = new();
@@ -121,6 +125,7 @@ public static class B3Normalizer {
       Require(unit.InParams.Count == unit.Proc.InParams.Count && unit.OutParams.Count == unit.Proc.OutParams.Count,
         "b3_formals", "Implementation/procedure formal lists differ", unit.tok);
       B3StructuredCfgCorrespondence.Validate(unit);
+      unsignedWrappers = new B3UnsignedWrappers(source, unit);
       InspectControl(unit.StructuredStmts);
       visibility = new B3DefinitionVisibility(unit);
       var formals = new Dictionary<Bpl.Variable, Ir.Expression>();
@@ -158,8 +163,15 @@ public static class B3Normalizer {
       CheckOwnedBounds(normalized);
       var selected = SelectDefinitions(catalogue);
       var contexts = B3DefinitionContexts.Create(normalized, obligations.ToArray(), selected, unit.tok);
+      var lowered = unsignedWrappers.Lower(normalized, obligations.ToArray(), selected, contexts);
+      if (!ReferenceEquals(lowered, normalized)) {
+        CheckOwnedBounds(lowered);
+        var finalContexts = B3DefinitionContexts.Create(lowered, obligations.ToArray(), selected, unit.tok);
+        unsignedWrappers.ValidateContexts(contexts, finalContexts);
+        normalized = lowered; contexts = finalContexts;
+      }
       return new B3NormalizationResult(normalized, obligations.ToArray(), Array.Empty<B3NormalizationDiagnostic>(),
-        new[] { "Outside reviewed guarded literal-definition contexts, source axioms, distinct-constant constraints and lambda equations are omitted. Reviewed typed Int/Real arithmetic and conversion routes preserve native primitives, actual Body expansions and eligible active always-revealed universal definitions. Positive-width word primitives preserve exact owned semantic declarations or accepted actual typed Body expansions; exact literal Int/Bool Bodies of Int-alias functions are preserved. Other demanded closed function instances and constants are uninterpreted. Direct reads of owned closed monomorphic store expressions use the read-over-write ITE identity; other map operations remain uninterpreted. Exact metadata-free complete-tuple forall read equalities are abstracted by an uninterpreted Bool predicate of their two map values. No global read-over-write or observation axioms are asserted. Map equality remains opaque without extensionality.",
+        new[] { "Outside reviewed guarded literal-definition contexts, source axioms, distinct-constant constraints and lambda equations are omitted. Reviewed typed Int/Real arithmetic and conversion routes preserve native primitives, actual Body expansions and eligible active always-revealed universal definitions. Positive-width word primitives preserve exact owned semantic declarations or accepted actual typed Body expansions; exact literal Int/Bool Bodies of Int-alias functions are preserved. Exact unsigned wrappers are substituted only after direct raw-command witnesses and every retained G3 occurrence are independently certified against an owned nonhideable source equality. Other demanded closed function instances and constants are uninterpreted. Direct reads of owned closed monomorphic store expressions use the read-over-write ITE identity; other map operations remain uninterpreted. Exact metadata-free complete-tuple forall read equalities are abstracted by an uninterpreted Bool predicate of their two map values. No global read-over-write or observation axioms are asserted. Map equality remains opaque without extensionality.",
           "StateCmd and call-temporary scope-entry where predicates are omitted: pinned scope passification appends raw predicates without current-incarnation substitution. Post-havoc where predicates are preserved." }
           .Concat(mapHelperOrigins.Values).Concat(mapObservationOrigins.Values)
           .Concat(opaqueMapOrigins.OrderBy(s => s, StringComparer.Ordinal))
@@ -584,6 +596,7 @@ public static class B3Normalizer {
                 }));
               var applied = (Ir.Application)Apply("function:" + call.Func.Name + "<" + instantiation + ">", type, args);
               functionOwners[applied.Name] = call.Func;
+              unsignedWrappers.Capture(application, applied);
               return applied;
             default: throw new Unsupported("b3_operator", "Unsupported expression operator " + application.Fun.GetType().Name, expression.tok);
           }
@@ -1489,7 +1502,10 @@ public static class B3Normalizer {
         }
       }
     }
-    private Ir.Statement Command(Bpl.Cmd command, Environment env) {
+    private Ir.Statement Command(Bpl.Cmd command, Environment env) =>
+      unsignedWrappers.InCommand(command, () => CommandCore(command, env));
+
+    private Ir.Statement CommandCore(Bpl.Cmd command, Environment env) {
       if (command is Bpl.ICarriesAttributes attributed) { ValidateAttributes(attributed.Attributes, "command", command.tok); }
       switch (command) {
         case Bpl.CommentCmd: return new Ir.Block(Array.Empty<Ir.Statement>());

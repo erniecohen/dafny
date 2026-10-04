@@ -62,3 +62,5 @@ Required controls include:
 - Satisfiable high-bit word and conversion contexts in which assert false still fails, alongside positive arithmetic identities and explicit negative/narrowing guards. Strict old corpus expectations and fresh complete checked-library/worker/actual-corpus receipts remain required.
 
 This checkpoint adds no source assumptions, target axioms, option changes or acceptance claims. Full original bitvector/backend scope remains open beyond this smallest direct-source route.
+
+The subsequent [source implementation checkpoint](unsigned-wrapper-source-checkpoint.md) records the exact implemented boundary and unexecuted control inventory. It does not turn this conditional English argument into an acceptance receipt.

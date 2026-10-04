@@ -375,6 +375,58 @@
       "exitCode": 4,
       "diagnostic": "assertion",
       "outcome": "failed"
+    },
+    {
+      "name": "bitvector-unsigned-direct",
+      "file": "bitvector-unsigned-direct.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-unsigned-range",
+      "file": "bitvector-unsigned-range.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-unsigned-round-trip",
+      "file": "bitvector-unsigned-round-trip.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-unsigned-wrong-sign",
+      "file": "bitvector-unsigned-wrong-sign.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-unsigned-wrong-bound",
+      "file": "bitvector-unsigned-wrong-bound.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-unsigned-bad-fit",
+      "file": "bitvector-unsigned-bad-fit.dfy",
+      "exitCode": 4,
+      "diagnostic": "might not fit in bv1",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-unsigned-false",
+      "file": "bitvector-unsigned-false.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-unsigned-spec-unsupported",
+      "file": "bitvector-unsigned-spec-unsupported.dfy",
+      "exitCode": 4,
+      "diagnostic": "b3_unsigned_wrapper"
     }
   ]
 }

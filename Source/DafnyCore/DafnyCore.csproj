@@ -61,6 +61,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="DafnyCore.Test" />
+    <InternalsVisibleTo Include="DafnyB3Normalizer.Test" />
   </ItemGroup>
 
 </Project>

@@ -2369,6 +2369,12 @@ and what information it produces about the verification process.
   See [B3 support and build instructions](../dev/b3/README.md).
   In a project file use `verification-backend = "b3"` in `[options]`; the CLI
   overrides that setting. This selection also applies to editor verification.
+  Native word-to-integer conversions have a bounded direct raw-command route
+  based on the exact emitted source wrapper and its retained context. A wrapper
+  reached through a specification, call, where clause, synthesized guard or
+  actual function Body outside that route produces `b3_unsigned_wrapper` or the
+  existing Body diagnostic. No conversion-fit check is removed and this route
+  does not require `--additional-axioms`.
   The experimental B3 backend currently rejects `build`, `run`, `test`, and `translate`,
   including their `--no-verify` mode. Use `verify` for B3 verification.
   B3 also rejects `measure-complexity`, `generate-tests`, and `find-dead-code`,

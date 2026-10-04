@@ -258,9 +258,10 @@ public class B3BitvectorNormalizationTests {
   }
 
   [Fact]
-  public void TheActualDafnyUnsignedWrapperIsNotInferredFromAnActiveLookingEquality() {
+  public void AGuardedUnsignedWrapperDoesNotAcquireNativeRecognition() {
     var result = Boogie("function {:bvbuiltin \"bv2int\"} Native(x: bv3): int; function nat_from_bv3(x: bv3): int; " +
-      "axiom (forall x: bv3 :: { nat_from_bv3(x) } 0 <= nat_from_bv3(x) && nat_from_bv3(x) < 8 && nat_from_bv3(x) == Native(x)); " +
+      "axiom (forall x: bv3 :: { nat_from_bv3(x) } x == 0bv3 ==> " +
+      "(0 <= nat_from_bv3(x) && nat_from_bv3(x) < 8 && nat_from_bv3(x) == Native(x))); " +
       "procedure P(x: bv3); implementation P(x: bv3) { assert nat_from_bv3(x) == 0; }");
     Validate(result); Assert.IsType<Ir.Application>(Left(result)); Assert.Empty(result.Program!.Axioms);
   }
