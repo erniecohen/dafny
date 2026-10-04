@@ -1,73 +1,69 @@
-# Closed monomorphic map helpers
+# Conservative monomorphic map normalization
 
-This P4 slice adds two source-backed families of facts for direct typed Boogie `MapSelect` and `MapStore` expressions. It is a correspondence argument and a proposed executable control gate, not a formal proof of the normalizer. The implementation and controls must compile and run on the exact recorded source before they provide executable evidence.
+This P4 slice rewrites direct typed reads of owned store expressions and abstracts one exact observation-equality form. The repairs are source-only until compiled and executed on the exact package. Their correspondence argument is not a formal proof of the normalizer.
 
-## Scope and new facts
+## Scope and identity
 
-A demanded map type is eligible only when it has no map type parameters and all index/result types are closed and accepted by the normalizer. Type aliases and resolved proxies are observed without mutation. Each distinct eligible map signature retains an opaque sort and owns exactly one select/store pair. Both functions are associated with every helper axiom so the B3 worker can load the equations when either function is demanded. There are no native SMT arrays.
-
-For a map `m`, index tuple `i`, value `v`, and tuple `j` of the same closed signature, the new equations are:
+For closed monomorphic maps, the normalizer uses:
 
 ```text
-R0:    select(store(m, i, v), i) = v
-R1[k]: i[k] = j[k] OR select(store(m, i, v), j) = select(m, j)
+select(store(m,i,v),j) =
+  if (AND over k: i[k] == j[k]) then v else select(m,j)
 ```
 
-All variables are universally quantified. There is one R1 clause per coordinate, so a difference in any one coordinate suffices for an unchanged read. R1 is not a clause requiring every coordinate to differ. Nullary maps have only R0. The helpers use empty trigger lists, matching this pinned native equation family; no trigger or performance equivalence is claimed.
+The empty conjunction is true. Nested owned store expressions are peeled recursively, and every coordinate participates. The normalized program has zero global ROW axioms. Maps retain opaque sorts and ordinary equality. There are no native arrays, extensionality, reverse casts, store idempotence/commutativity or lambda equations.
 
-Map equality remains ordinary equality on the opaque carrier. The helpers introduce no extensionality, reverse cast, store idempotence/commutativity, source axiom, lambda equation, or nonidentity prelude definition. Polymorphic map operations keep their former uninterpreted signatures and record that no read-over-write equations were emitted. Map assignment syntax remains rejected; a store expression on the right-hand side of a simple assignment is eligible.
+Only a validated store expression constructed by this normalizer supplies store provenance. Reads through variables or ordinary source functions remain uninterpreted. Earlier assignments are never substituted or guessed: after `n := m[0 := 1]`, the source-valid check `n[0] == 1` may remain unproved. A state-aware local-instantiation pass needs separate review. Reviewed identity projection may expose an owned store expression; this rewrite inspects no hidden definition.
 
-## Pinned source evidence
+Complete resolved signatures are checked. Polymorphic map operations retain uninterpreted signatures. Estimates bound generated nodes before allocation, and the final traversal counts copied occurrences and rejects excessive size/depth without partial IR.
 
-The reference package is Boogie `3.5.5-review.37e4435d`, source commit `73a0e214a87df85fc058270268c1d0706fd05bc9`, with provenance recorded in [semantic-correspondence.md](semantic-correspondence.md).
+## Source evidence and model interpretation
 
-The Arguments map builder creates select/store functions and adds `GenMapAxiom0` and `GenMapAxiom1` in lines 253-262. `GenMapAxiom0` states the same-index read equality in lines 298-351. `GenMapAxiom1` creates one universally quantified disjunction per index/type component in lines 353-464. A closed monomorphic map fixes all native abstraction type arguments and has no bound map type arguments, leaving precisely R0 and the value-coordinate R1 clauses above. The source explicitly omits extensionality. [Map builder and equations](https://github.com/erniecohen/boogie/blob/73a0e214a87df85fc058270268c1d0706fd05bc9/Source/VCExpr/TypeErasure/TypeErasureArguments.cs#L253).
+The reference package is Boogie `3.5.5-review.37e4435d`, source `73a0e214a87df85fc058270268c1d0706fd05bc9`. Its Arguments encoding generates:
 
-Primitive typed values reaching native universal-carrier parameters are put in canonical encode/decode form by `AssembleOpExpression`, lines 604-650. Cast creation supplies the forward left inverse in `TypeErasure.cs`, lines 175-189. The reviewed Arguments encoding's `GenReverseCastAxiom` returns true, lines 48-79; it does not assert that every universal-carrier element is an integer or Boolean. The typed helpers do not restore that invalid reverse direction. [Argument canonicalization](https://github.com/erniecohen/boogie/blob/73a0e214a87df85fc058270268c1d0706fd05bc9/Source/VCExpr/TypeErasure/TypeErasureArguments.cs#L604), [forward cast law](https://github.com/erniecohen/boogie/blob/73a0e214a87df85fc058270268c1d0706fd05bc9/Source/VCExpr/TypeErasure/TypeErasure.cs#L175), [reverse cast omission](https://github.com/erniecohen/boogie/blob/73a0e214a87df85fc058270268c1d0706fd05bc9/Source/VCExpr/TypeErasure/TypeErasureArguments.cs#L48).
+```text
+R0: select(store(m,i,v),i) = v
+R1[k]: i[k] = j[k] OR select(store(m,i,v),j) = select(m,j)
+```
 
-These native internal casts are distinct from Dafny prelude `$Box`/`$Unbox` functions. Demanded nonidentity prelude instances remain uninterpreted and their defining/source axioms remain omitted. A direct `[int]Box` map therefore gets read-over-write equations on opaque Box values, without a `$Box`/`$Unbox` round trip or an unguarded reverse Box equation.
+All coordinate equalities imply the stored value by congruence and R0. Otherwise one coordinate differs, and that R1 clause implies the original read. These exhaustive cases prove the expression identity for every source map, tuple and value, including nullary tuples. [Pinned equations](https://github.com/erniecohen/boogie/blob/73a0e214a87df85fc058270268c1d0706fd05bc9/Source/VCExpr/TypeErasure/TypeErasureArguments.cs#L298).
 
-## Source-model interpretation argument
+Interpret opaque sorts and ordinary functions by their source carriers and interpretations. Primitive coordinates use canonical encoding, whose forward decoder is a left inverse; encoding therefore preserves equality and inequality. Primitive results decode to the source value. No unguarded reverse cast law is required. [Argument canonicalization](https://github.com/erniecohen/boogie/blob/73a0e214a87df85fc058270268c1d0706fd05bc9/Source/VCExpr/TypeErasure/TypeErasureArguments.cs#L604), [forward cast](https://github.com/erniecohen/boogie/blob/73a0e214a87df85fc058270268c1d0706fd05bc9/Source/VCExpr/TypeErasure/TypeErasure.cs#L175), [reverse cast omission](https://github.com/erniecohen/boogie/blob/73a0e214a87df85fc058270268c1d0706fd05bc9/Source/VCExpr/TypeErasure/TypeErasureArguments.cs#L48).
 
-Consider a model of the pinned native Arguments encoding of an accepted source unit. Interpret each normalized primitive sort by the corresponding primitive domain and each opaque closed sort by the corresponding source carrier, using the native universal carrier where erasure requires it. Interpret a closed map select/store pair by its native pair at the fixed closed type arguments. Native primitive arguments are encoded canonically and primitive select results are decoded; opaque arguments/results retain their native carrier interpretation.
+Every rewritten expression agrees with its source expression under this interpretation. Remaining unconstrained operations enlarge the model class: normalized validity implies reference validity in the intended direction, while normalized countermodels need not extend to the omitted prelude.
 
-For R0, the native same-index equation gives the encoded stored value. Decoding a primitive result gives the original value by the forward left inverse. An opaque result needs no primitive decoding. For R1, unequal typed primitive coordinates have unequal encodings: equality of the encodings would imply equality after applying the forward decoder. Unequal opaque coordinates already retain that inequality. The native clause for that coordinate then equates the two reads, and any result decoding preserves equality. No reverse cast premise is used.
+Independently, maps may be total functions paired with arbitrary identity tags. Select reads the function and store updates it while retaining a tag. Equal reads do not force equal tags or map identities. This consistency model explains the nonextensionality controls; it is an English argument, not an executed proof.
 
-Consequently, this interpretation satisfies every added helper equation and agrees with the source expressions. It extends the projection of a source model with the owned helper declarations. This is the direction needed for normalized validity to imply reference validity. It is not a claim that every model of the earlier free-UF abstraction satisfies the helpers, nor that every normalized countermodel extends to the full prelude. Calls, state and loops still rely on their separately recorded correspondence restrictions.
+## Observation equality abstraction
 
-There is also an independent consistency model for the helper theory: for one signature, take a map to be a total function on index tuples paired with a tag from a two-element set. Select applies the function; store updates that function at the specified tuple and preserves the tag. R0 and every R1 hold. Different tags allow unequal maps whose reads agree at every tuple. This construction demonstrates why the equations alone need not force extensionality; it is an English model argument, not an executed proof or a formalization.
+Only this exact shape is replaced by a fresh, consistently named uninterpreted Boolean function of the two map values:
 
-## Demand records and bounds
+```text
+forall i[0], ..., i[n-1] ::
+  select(m, i[0], ..., i[n-1]) == select(n, i[0], ..., i[n-1])
+```
 
-`Approximations` now includes one `Monomorphic map helper origin:` record per eligible demanded signature. It records the exact Boogie source commit/line range, opaque map sort, index/result sorts, select/store names, and emitted R0/R1 roles. Polymorphic demands have a separate explicit omission record. Helper equations and function names are deterministic for the same typed source and traversal.
+Both maps must have the same closed monomorphic resolved signature. The bound variables must form the complete index tuple, each used once and in declaration order on both sides. The map-value expressions may contain current/old variables, substitutions or ordinary pure function applications, but may not depend on any of these index binders. Partial, repeated or permuted tuples, unused extra binders, extra guards, additional index captures, type-polymorphic maps and non-equality bodies retain the original quantifier translation. Quantifiers with attributes or explicit triggers also retain that translation. No source function name supplies eligibility.
 
-A pre-allocation bound rejects a helper family whose estimated construction exceeds the protocol node ceiling. A subsequent traversal counts every helper axiom's expression graph along with the unit and declaration manifest. Unsupported normalization produces no partial program or static obligation manifest.
+For each source model, interpret the new function `ObsEq(m,n)` as exactly the universal read-equality relation over that signature's complete index carrier. It is a pure function of two map values; alpha-renamed binders do not change that relation. Thus every replaced formula has its original truth value in this model extension, whether it occurs positively or negatively. Normalizing the two map expressions through the ordinary environment also preserves their enclosing binders, call-input substitutions and distinct current/old state values. This argument relies on the complete tuple and absence of bound-index captures; it does not justify replacing a guarded or partially quantified formula by the same relation.
 
-## Controls and executable verdict gate
+The normalized predicate has no axioms or instances. Its unconstrained interpretations enlarge the model class, and do not strengthen the original context. In particular, observation equality implies neither raw map equality nor any individual read equality in the normalized program. The source-valid pointwise consequence `ObsEq(m,n) ==> select(m,0)==select(n,0)` can remain unproved. No reflexivity, symmetry, extensionality, reverse equality or observation premise is added. Under `subsumption 1`, an original top-level quantified assertion retains its nonlearning classification even though its owned condition is now an application.
 
-[MapTheoryInputs/cases.json](../../../Source/DafnyB3Normalizer.Test/MapTheoryInputs/cases.json) records fixture-specific structural counts and verdict targets. At introduction, all verdict targets below are **unexecuted**. The xUnit controls parse, resolve, typecheck, normalize and validate owned IR; they do not invoke a prover. Additional controls exercise deterministic origins, source nonmutation, excessive map arity, and actual Dafny `imap<int,int>` read translation. That Dafny control establishes normalization coverage only: collection operations and heap update functions have not gained defining equations.
+An independent tagged-function consistency model can assign equal observations to two distinct map tags. Interpreting `ObsEq` by their function components satisfies the weak-equality negative fixture's assumptions and leaves `assert false` false. Executing that fixture on the worker remains a required anti-vacuity control; this model argument is not an observed verdict.
 
-| Typed BPL fixture | B3 target | Native target | Purpose |
-| --- | --- | --- | --- |
-| `read-same` | Verified | Verified | R0 |
-| `read-other` | Verified | Verified | R1 under unequal indices |
-| `read-wrong` | Failed | Failed | Incorrect stored value |
-| `false-with-theory` | Failed | Failed | Literal false with helpers demanded |
-| `weak-equality` | Failed | Failed | Equal reads and unequal maps must remain consistent |
-| `tuple-other` | Verified | Verified | Each tuple coordinate independently triggers R1 |
-| `aliases` | Verified | Verified | Equivalent closed signatures share helpers |
-| `nested` | Verified | Verified | Nested closed map results demand separate signatures |
-| `nullary` | Verified | Verified | R0 with no R1 |
-| `polymorphic-opaque` | Failed | Verified | Omitted polymorphic map theory |
-| `box-left-inverse-omitted` | Failed | Verified | Source Box law remains omitted |
-| `box-reverse-invalid` | Failed | Failed | No unguarded reverse Box law |
-| `bool-read-wrong` | Failed | Failed | Finite Bool-index/value wrong value |
-| `bool-false-with-theory` | Failed | Failed | Finite Bool-index/value literal false |
-| `bool-weak-equality` | Failed | Failed | Finite Bool-index/value nonextensionality |
+## Operational diagnosis
 
-The finite Boolean-index/Boolean-value negative controls complement the integer cases. Quantified read-over-write axioms with infinite integer domains can make SAT countermodel construction difficult for a UF-map solver. Unknown is a gate failure and is not relabeled as a Failed verdict or mathematical evidence. The integer targets remain in the strict gate; any need for a different operational encoding requires a separate review.
+The earlier global quantified-helper package ran in [public gate 37201990430](https://github.com/erniecohen/dafny/actions/runs/37201990430). Six of fifteen cases matched. Eight expected-negative cases and the second positive tuple-coordinate check returned `Inconclusive`, reason `(incomplete quantifiers)`. The helper-free polymorphic omission control returned `Failed` as expected.
 
-The separate [DafnyB3MapTheory.TestRunner](../../../Source/DafnyB3MapTheory.TestRunner/Program.cs) submits these exact typed BPL normalizations through `WorkerProcessClient`. After building a verified worker package and obtaining the pinned Z3 5.1.0 executable, run it through the project's validation workflow:
+The pinned worker disables `smt.mbqi` and `auto_config`. Boolean index/value domains do not remove quantification over the opaque map carrier. Universal R0 over integer values also requires infinitely many distinguishable maps. These repairs change no solver option and accept no unknown as a failure verdict. The weak-equality fixtures' exact complete-tuple read-equality assumptions now use the separately reviewed `ObsEq` abstraction; other source quantifiers remain an operational boundary.
+
+## Strict controls
+
+[MapTheoryInputs/cases.json](../../../Source/DafnyB3Normalizer.Test/MapTheoryInputs/cases.json) retains every original positive, false, wrong-value, nonextensionality, polymorphism and boxing verdict target. All static axiom counts are zero. Each demanded direct map-operation signature retains a deterministic `Monomorphic map helper origin:` record identifying the ITE encoding and pinned source equations; this does not claim global axioms were loaded. A separate `Map observation equality abstraction:` record describes each demanded observation-predicate signature. The manifest and strict runner check both origin counts and export them with the actual request/verdict evidence.
+
+Structural controls cover tuple differences, nested stores, lexical bound indices, nonmutation, deterministic origins, excessive depth and assignment opacity. Observation controls cover complete/partial/repeated/permuted tuples, extra guards/captures, metadata, both polarities, no pointwise/reverse premises, call-input substitutions, and current/old captures across assignment. They do not invoke a prover. The repairs remain uncompiled and unexecuted until their exact gate runs.
+
+The strict [map runner](../../../Source/DafnyB3MapTheory.TestRunner/Program.cs) remains a normal `make test-b3` stage after building the verified worker package:
 
 ```sh
 dotnet run --project Source/DafnyB3MapTheory.TestRunner --no-restore -- \
@@ -75,8 +71,4 @@ dotnet run --project Source/DafnyB3MapTheory.TestRunner --no-restore -- \
   --timeout-ms 30000 --rlimit 1000000
 ```
 
-`make test-b3` includes this strict verdict runner after building/testing the host package and before the Dafny integration corpus. It computes the solver-file digest portably from the exact supplied `Z3_PATH`; the worker still requires and checks version 5.1.0 and checks that digest before launching it. This is a required gate stage, not a workerless xUnit skip.
-
-Use `--dotnet` to select the worker launcher, `--fixtures` to select the exact fixture directory, and `--emit-directory` to export normalized request packets. The runner reports fixture SHA256, normalizer assembly identity/SHA256, normalizer version, B3 commit, bootstrap compiler, worker source/package fingerprint, solver version/digest, program hash, helper origins and typed completion attempts.
-
-Success requires `TraversalCompleted`, no completion error, the exact expected outcome, and every per-check attempt outcome specified in the fixture manifest. In particular, the anti-vacuity fixtures require the first read-over-write check to be Verified and the subsequent invalid/false check to be Failed. Every fixture here has linear reachable checks, so the runner also requires the actual attempt IDs to cover its static check manifest, with exactly one attempt per check. That fixture-specific requirement is not a general protocol rule: unreachable checks may legitimately have zero attempts. Missing tools, parse/type errors, unsupported normalization, unknown, timeout, resource exhaustion, malformed protocol responses or a mismatch return nonzero. Nothing is silently skipped or counted green. This runner executes B3 verdicts only; native targets require the separate pinned native gate. Gate admission, source review and structural acceptance alone do not establish the target verdicts.
+Run via the project's queued validation workflow. The runner checks exact package/solver identities and exports owned requests with `--emit-directory`. Success requires actual traversal completion, no error, exact aggregate outcome, fixture-specific check coverage, and every expected attempt outcome. These fixtures have linear reachable checks; the coverage requirement is not generalized to unreachable checks. Unknown, timeout, missing tools, malformed responses and every mismatch fail. No case is waived or silently skipped. The operational repair is a target for the exact gate, not a claim that SAT/UNSAT outcomes have already been obtained.

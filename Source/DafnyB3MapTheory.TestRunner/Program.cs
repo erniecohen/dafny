@@ -42,6 +42,8 @@ public static class Program {
           Require(result.Obligations.Count == entry.GetProperty("expectedChecks").GetInt32(), "Wrong static check manifest");
           var origins = result.Approximations.Where(a => a.StartsWith("Monomorphic map helper origin:")).ToArray();
           Require(origins.Length == entry.GetProperty("expectedHelpers").GetInt32(), "Wrong helper origin manifest");
+          var observations = result.Approximations.Where(a => a.StartsWith("Map observation equality abstraction:")).ToArray();
+          Require(observations.Length == entry.GetProperty("expectedObservations").GetInt32(), "Wrong observation abstraction manifest");
           var request = new Ir.Request(Ir.Protocol.Version, "map-theory-" + Path.GetFileNameWithoutExtension(file),
             Ir.Protocol.NormalizerVersion, Ir.WorkerPackage.UpstreamCommit, Ir.Protocol.GetProgramHash(program),
             program.Unit.Name, program,
@@ -77,7 +79,8 @@ public static class Program {
             normalizerAssemblySha256 = assemblyDigest, b3Commit = package.Manifest.B3Commit,
             bootstrapCompiler = package.Manifest.BootstrapCompiler, workerSourceFingerprint = package.Manifest.SourceFingerprint,
             workerFingerprint = package.Fingerprint, solverVersion = "5.1.0", solverSha256 = settings.SolverSha256,
-            request.ProgramHash, helperOrigins = origins, expected, completion.Outcome, completion.TraversalCompleted,
+            request.ProgramHash, helperOrigins = origins, observationOrigins = observations,
+            expected, completion.Outcome, completion.TraversalCompleted,
             checkCoverageComplete = covered, expectedAttempts, attemptTargetsMatched,
             completion.Attempts, completion.Error, matched = pass });
         } catch (Exception exception) {
