@@ -150,7 +150,14 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
 
     } else if (expr is ConversionExpr { IsBaseOperation: true } conversionExpr) {
       Type BaseOperationType() {
-        var view = NewtypeOperationView.Get(conversionExpr.E.Type, ((DPreType)conversionExpr.PreType.Normalize()).Decl, preserveSubsetTypes: true);
+        var expected = ((DPreType)conversionExpr.PreType.Normalize()).Decl;
+        var view = NewtypeOperationView.Get(conversionExpr.E.Type, expected, preserveSubsetTypes: true);
+        if (expected is ArrowTypeDecl &&
+            (view.Status != NewtypeOperationView.ViewStatus.Resolved || view.BaseType?.AsArrowType?.ResolvedClass != expected)) {
+          // A hidden or unresolved carrier cannot replace a resolved arrow signature.
+          // Preserve any total/partial subset on a successful projection below.
+          return TypeRefinementWrapper.NormalizeSansBottom(expr);
+        }
         // Keep the current lower bound until the source view is determined.
         // Successful resolution supplies the concrete, instantiated visible base.
         return view.BaseType ?? TypeRefinementWrapper.NormalizeSansBottom(expr);
