@@ -134,7 +134,7 @@ public sealed class NativeProofSupervisor : IProofLifecycleSupervisor {
       try {
         leafDirectory = capturedLeaf = Native.OpenChildDirectory(parentDirectory, Path.GetFileName(leaf));
         ValidateOwnedLeaf();
-        if (!File.Exists(OwnedPath("cgroup.kill"))) { throw new PlatformNotSupportedException("Owned cgroup.kill is required for failure cleanup."); }
+        using (Native.OpenOwnedKillFile(leafDirectory)) { } // Permission/capability check on an empty leaf; no write or signal.
       } catch { capturedLeaf?.Dispose(); parentDirectory.Dispose(); throw; }
       monitor = Task.Run(() => {
         while (!stop.IsCancellationRequested) {
@@ -466,10 +466,14 @@ public sealed class NativeProofSupervisor : IProofLifecycleSupervisor {
       if (fd < 0) { throw new IOException("Owned child directory open failed: " + Marshal.GetLastPInvokeError()); }
       return new((nint)fd, ownsHandle: true);
     }
-    public static void KillOwnedCgroup(SafeFileHandle leaf) {
+    public static SafeFileHandle OpenOwnedKillFile(SafeFileHandle leaf) {
       var fd = OpenAt(leaf, "cgroup.kill", 1 | 0x80000 | 0x20000); // O_WRONLY | O_CLOEXEC | O_NOFOLLOW
       if (fd < 0) { throw new IOException("Owned cgroup.kill open failed: " + Marshal.GetLastPInvokeError()); }
-      using var output = new FileStream(new SafeFileHandle((nint)fd, ownsHandle: true), FileAccess.Write);
+      return new((nint)fd, ownsHandle: true);
+    }
+    public static void KillOwnedCgroup(SafeFileHandle leaf) {
+      using var descriptor = OpenOwnedKillFile(leaf);
+      using var output = new FileStream(descriptor, FileAccess.Write);
       output.WriteByte((byte)'1');
       output.Flush();
     }
