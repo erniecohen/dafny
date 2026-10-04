@@ -95,6 +95,16 @@ capture can then expose an interpreted `if` expression inside a pattern.
 Equality-guarded aliases prevent that expansion without changing the source
 value, predicate, choice relation, or availability condition.
 
+An outer finite comprehension can capture a source binder in an expression
+such as `n + i` while its nested choice or finite-view fact has only alias
+patterns. If no source trigger is available, the common permission quantifier
+uses a multi-pattern of canonical boxes for its retained native integer, real,
+or Boolean binders. This fallback requires finite source bounds and known
+nonempty binder types. It preserves the existing quantifier body, all source
+and type guards, and the prior binder-trimming result. Explicit or disabled
+source triggers, unbounded witnesses, and modeled box representations receive
+no fallback.
+
 Pure arrow calls use the distinguished `$OneHeap` selector. An additional
 multi-pattern pairs that exact application with `IsGoodHeap(futureHeap)` to
 cover the otherwise absent future-heap binder. It changes matching only:
@@ -114,6 +124,18 @@ When an empty-reads lambda has no body or range call facts, its unconditional
 constant-empty definition already entails the whole guarded consequence.
 The translator omits only that redundant quantified formula; it changes no
 value, precondition, or permission.
+
+Lambda common facts also include source-local instances of the existing
+allocated-arrow result theorem. For the actual selector heap `h`, the premises
+are `IsGoodHeap(h)`, allocation of the function at its base arrow type,
+allocation of every boxed actual argument, and `RequiresN(..., h, ...)`.
+Together they imply allocation of `ApplyN(..., h, ...)` at its result type in
+that same heap. This is direct universal instantiation of the existing nested
+allocation axiom in `BoogieGenerator.Types.cs`; commuting its binders introduces
+no new principle. All enclosing lambda type, allocation, range, formation, and
+permission guards remain. Pure applications use `$OneHeap` consistently in
+both the selector and the allocation target. No relation to an actual current
+or previous heap is inferred, and global arrow axioms and patterns are unchanged.
 
 ## Reference carrier admission
 

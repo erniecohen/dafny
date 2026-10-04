@@ -676,6 +676,53 @@ namespace Microsoft.Dafny {
         return BplForall([familyVar, keyVar], triggers, BplImp(premise, selected));
       }
 
+      private sealed class ScopedCollectionFactVisitor : Boogie.StandardVisitor {
+        public bool Found { get; private set; }
+
+        public override Boogie.BinderExpr VisitBinderExpr(Boogie.BinderExpr node) {
+          // These aliases occur only in the guarded definitions emitted for a
+          // source collection and its selected witnesses.
+          Found |= node is Boogie.ForallExpr && node.Dummies.Any(variable =>
+            variable.Name.StartsWith("$finiteMap#", StringComparison.Ordinal) ||
+            variable.Name.StartsWith("$choiceFamily#", StringComparison.Ordinal));
+          return base.VisitBinderExpr(node);
+        }
+      }
+
+      private Expr AddFiniteComprehensionCanCallTrigger(ComprehensionExpr source,
+        List<Tuple<Boogie.Variable, Boogie.Expr>> sourceBinders, Expr childFacts) {
+        if (source is not (SetComprehension { Finite: true } or MapComprehension { Finite: true }) ||
+            childFacts is not Boogie.ForallExpr { Triggers: null } quantified ||
+            !options.AutoTriggers || Attributes.Contains(source.Attributes, "trigger") ||
+            Attributes.Contains(source.Attributes, "autotriggers") ||
+            source.Bounds == null || source.Bounds.Count != source.BoundVars.Count) {
+          return childFacts;
+        }
+        var facts = new ScopedCollectionFactVisitor();
+        facts.Visit(quantified.Body);
+        if (!facts.Found) {
+          return childFacts;
+        }
+        var patterns = new List<Expr>();
+        foreach (var variable in quantified.Dummies) {
+          var index = sourceBinders.FindIndex(pair => ReferenceEquals(pair.Item1, variable));
+          var nativeType = variable.TypedIdent.Type;
+          if (index < 0 || !source.BoundVars[index].Type.IsNonempty || source.Bounds[index] == null ||
+              !source.Bounds[index].Virtues.HasFlag(BoundedPool.PoolVirtues.Finite) ||
+              (nativeType != Boogie.Type.Int && nativeType != Boogie.Type.Real && nativeType != Boogie.Type.Bool)) {
+            return childFacts;
+          }
+          patterns.Add(BoogieGenerator.ApplyBox(GetToken(source), new Boogie.IdentifierExpr(variable.tok, variable)));
+        }
+        // BplForallTrim has already retained exactly the needed binders and all
+        // their type/empty-domain guards. A nested alias trigger cannot cover an
+        // enclosing source binder whose capture was lifted as an expression
+        // such as n+i. Canonical boxes let actual source witnesses activate the
+        // unchanged guarded facts. Restrict the fallback to finite native bounds.
+        quantified.Triggers = new Boogie.Trigger(GetToken(source), true, patterns);
+        return quantified;
+      }
+
       private Expr TranslateMapComprehension(MapComprehension e) {
         var tok = GetToken(e);
         var keys = BuildMapComprehensionKeys(e);
@@ -1483,16 +1530,20 @@ namespace Microsoft.Dafny {
       private Expr LambdaCanCallAssumption(LambdaExpr e, CanCallOptions cco) {
         var environment = BuildLambdaEnvironment(e);
         var et = environment.Translator;
+        // These source-scoped facts now retain formal allocation premises. Make
+        // existing arrow result-allocation consequences available at the actual
+        // applications used in this lambda, including pure applications at OneHeap.
+        var lambdaOptions = (cco ?? new CanCallOptions(false, null)).WithArrowAllocationFacts();
         var reads = e.Reads.Expressions.ConvertAll(environment.Substituter.SubstFrameExpr);
-        var bodyFacts = et.CanCallAssumption(Substitute(e.Body, null, environment.Substitution), cco);
+        var bodyFacts = et.CanCallAssumption(Substitute(e.Body, null, environment.Substitution), lambdaOptions);
         Expr readsFacts = Boogie.Expr.True;
         foreach (var frame in reads) {
-          readsFacts = BplAnd(readsFacts, et.CanCallAssumption(frame.E, cco));
+          readsFacts = BplAnd(readsFacts, et.CanCallAssumption(frame.E, lambdaOptions));
         }
         var footprintFact = et.DefineFiniteSetView(GetToken(e), et.BuildBoxedReadsFootprint(GetToken(e), reads));
         readsFacts = BplAnd(readsFacts, BplImp(et.FiniteReadsSupport(reads), footprintFact));
         var range = e.Range == null ? null : Substitute(e.Range, null, environment.Substitution);
-        var rangeFacts = range == null ? Boogie.Expr.True : et.CanCallAssumption(range, cco);
+        var rangeFacts = range == null ? Boogie.Expr.True : et.CanCallAssumption(range, lambdaOptions);
         if (reads.Count == 0 && bodyFacts is Boogie.LiteralExpr { IsTrue: true } &&
             rangeFacts is Boogie.LiteralExpr { IsTrue: true }) {
           // The only fact is the constant empty footprint, already independent
@@ -1559,6 +1610,28 @@ namespace Microsoft.Dafny {
         // Its exact empty finite view therefore needs no formal-domain premise.
         // The caller still preserves every enclosing source guard.
         return reads.Count == 0 ? BplAnd(footprintFact, guardedFacts) : guardedFacts;
+      }
+
+      private Expr ArrowApplicationAllocationFact(ApplyExpr e) {
+        var arrow = e.Function.Type.AsArrowType;
+        var heap = HeapExprForArrow(e.Function.Type);
+        var function = TrExpr(e.Function);
+        var types = Map(arrow.TypeArgs, BoogieGenerator.TypeToTy);
+        var arguments = e.Args.ConvertAll(argument =>
+          BoogieGenerator.BoxIfNotNormallyBoxed(argument.Origin, TrExpr(argument), argument.Type));
+        var selectorArguments = Concat(types, Cons(heap, Cons(function, arguments)));
+        var allocated = BoogieGenerator.MkIsAlloc(function, BoogieGenerator.ClassTyCon(arrow, types), heap);
+        for (var i = 0; i < arguments.Count; i++) {
+          allocated = BplAnd(allocated, BoogieGenerator.MkIsAllocBox(arguments[i], arrow.Args[i], heap));
+        }
+        var requires = FunctionCall(e.Origin, Requires(e.Args.Count), Boogie.Type.Bool, selectorArguments);
+        var goodHeap = BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, heap);
+        var applied = FunctionCall(e.Origin, Apply(e.Args.Count), Predef.BoxType, selectorArguments);
+        var resultAllocated = BoogieGenerator.MkIsAllocBox(applied, arrow.Result, heap);
+        // This is an instance of the existing allocated-arrow result axiom in
+        // Types.cs. Every premise and the exact selector heap remain explicit;
+        // it does not connect OneHeap to a current or previous heap.
+        return BplImp(BplAnd(BplAnd(goodHeap, allocated), requires), resultAllocated);
       }
 
       public Expression DesugarMatchExpr(MatchExpr e) {
@@ -2082,11 +2155,17 @@ namespace Microsoft.Dafny {
                 e.Args.ConvertAll(arg => TrArg(arg)))));
 
           var requiresk = FunctionCall(e.Origin, Requires(e.Args.Count), Boogie.Type.Bool, args);
-          return BplAnd(
+          var facts = BplAnd(
             BplAnd(
               Cons(CanCallAssumption(e.Function, cco),
                 e.Args.ConvertAll(ee => CanCallAssumption(ee, cco)))),
             requiresk);
+          var resultCarrier = e.Type.NormalizeToAncestorType();
+          if (cco is { ArrowAllocationFacts: true } &&
+              (resultCarrier.MayInvolveReferences || resultCarrier.IsArrowType)) {
+            facts = BplAnd(facts, ArrowApplicationAllocationFact(e));
+          }
+          return facts;
 
         } else if (expr is FunctionCallExpr) {
           FunctionCallExpr e = (FunctionCallExpr)expr;
@@ -2192,6 +2271,7 @@ namespace Microsoft.Dafny {
           // Produce the quantified CanCall expression, with a suitably reduced set of bound variables
           var tr = BoogieGenerator.TrTrigger(this, e.Attributes, expr.Origin);
           var childFacts = BplForallTrim(bvarsAndAntecedents, tr, canCall, possiblyEmpty);
+          childFacts = AddFiniteComprehensionCanCallTrigger(e, bvarsAndAntecedents, childFacts);
           if (e is MapComprehension { IsGeneralMapComprehension: true } generalMap) {
             childFacts = BplAnd(childFacts, DefineMapSelectedWitnesses(generalMap));
           }
@@ -2256,6 +2336,7 @@ namespace Microsoft.Dafny {
 
     public class CanCallOptions {
       public bool SkipIsA;
+      public readonly bool ArrowAllocationFacts;
 
       public readonly Function EnclosingFunction; // self-call allowance is applied to the enclosing function
       public readonly bool SelfCallAllowanceAlsoForOverride;
@@ -2264,11 +2345,18 @@ namespace Microsoft.Dafny {
         return f == EnclosingFunction || (SelfCallAllowanceAlsoForOverride && f == EnclosingFunction.OverriddenFunction);
       }
 
-      public CanCallOptions(bool skipIsA, Function enclosingFunction, bool selfCallAllowanceAlsoForOverride = false) {
+      public CanCallOptions WithArrowAllocationFacts() {
+        return ArrowAllocationFacts ? this :
+          new CanCallOptions(SkipIsA, EnclosingFunction, SelfCallAllowanceAlsoForOverride, true);
+      }
+
+      public CanCallOptions(bool skipIsA, Function enclosingFunction, bool selfCallAllowanceAlsoForOverride = false,
+        bool arrowAllocationFacts = false) {
         Contract.Assert(!selfCallAllowanceAlsoForOverride ||
                         (enclosingFunction.OverriddenFunction != null &&
                          enclosingFunction.Ins.Count == enclosingFunction.OverriddenFunction.Ins.Count));
         this.SkipIsA = skipIsA;
+        this.ArrowAllocationFacts = arrowAllocationFacts;
         this.EnclosingFunction = enclosingFunction;
         this.SelfCallAllowanceAlsoForOverride = selfCallAllowanceAlsoForOverride;
       }

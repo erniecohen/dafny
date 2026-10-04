@@ -18,7 +18,19 @@ ghost function CapturedIMap(n: int): imap<int, int> {
   imap x: int | x == n :: 0 := x
 }
 
+// The domain-trigger mode needs a source tuple term to instantiate its
+// existential witness. This contract proves membership for every captured pair.
+lemma CapturedTupleDomain(a: int, b: bool)
+  ensures 0 in CapturedTuple(a, b).Keys
+{
+  var witnessPair := (a, b);
+  assert witnessPair.0 == a;
+  assert witnessPair.1 == b;
+}
+
 lemma TwoCapturedEnvironments(a: int, b: int) {
+  CapturedTupleDomain(a, false);
+  CapturedTupleDomain(b, true);
   assert CapturedMap(a).Keys == {0};
   assert CapturedMap(a)[0] == a;
   assert CapturedMap(b)[0] == b;
