@@ -11,9 +11,17 @@ type WrappedTotal(!new) = Id<int -> int>
 type NestedPartial(!new) = Id<Id<int --> int>>
 type NestedTotal(!new) = Id<Id<int -> int>>
 
+lemma AllPureValues<T(!new)>()
+  ensures forall value: T {:trigger allocated(value)} :: allocated(value)
+{}
+
 lemma PurePartial(x: WrappedPartial)
-  ensures forall f: WrappedPartial :: allocated(f)
-{}
+  ensures forall f: WrappedPartial {:trigger allocated(f)} :: allocated(f)
+{
+  AllPureValues<WrappedPartial>();
+}
 lemma PureTotal(x: WrappedTotal)
-  ensures forall f: WrappedTotal :: allocated(f)
-{}
+  ensures forall f: WrappedTotal {:trigger allocated(f)} :: allocated(f)
+{
+  AllPureValues<WrappedTotal>();
+}
