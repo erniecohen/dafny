@@ -101,3 +101,6 @@ git-issues/github-issue-111.dfy
 
 # Heap-update succession (#81 here).
 git-issues/git-issue-2463.dfy
+
+# Termination of two-state recursion (#93 here).
+git-issues/git-issue-1462.dfy
