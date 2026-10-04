@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "controls": [
     {
-      "name": "version",
-      "arguments": ["--version"],
+      "name": "help",
+      "arguments": ["--help"],
       "expectedExitCode": 0,
-      "requiredOutput": "4.11.0"
+      "requiredOutput": "The Dafny CLI enables working with Dafny"
     },
     {
       "name": "malformed-command",

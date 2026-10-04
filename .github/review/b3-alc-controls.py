@@ -39,17 +39,43 @@ try:
     receipt['baselineSource'] = 'b07c038737d6713b6d1a5848d7568bdc972de7dd'
     receipt['baselineArtifactRun'] = 37182760834
     receipt['baselineArchiveSha256'] = hashlib.sha256(archive.read_bytes()).hexdigest()
+    baseline_core_sha256 = hashlib.sha256((baseline / 'dafny/DafnyCore.dll').read_bytes()).hexdigest()
+    assert baseline_core_sha256 == '9e4eaf6a52cc7ed29d8df5e2185ce00032382a9e9be54688bbcfda2262c865b9', 'Baseline DafnyCore pin changed'
     stage('packages', ['sh', 'Scripts/fetch-boogie-packages.sh'])
     stage('candidate-build', ['dotnet', 'build', 'Source/Dafny/Dafny.csproj', '-c', 'Release', '-m:1', '-p:UseSharedCompilation=false', '--nologo'])
+    candidate_core_sha256 = hashlib.sha256(Path('Binaries/net8.0/DafnyCore.dll').read_bytes()).hexdigest()
+    product_pins = {
+        'baseline': {'identity': 'DafnyCore, Version=4.11.0.0, Culture=neutral, PublicKeyToken=null',
+                     'informationalVersion': '4.11.0+fcb2042d.review.a171069d', 'sha256': baseline_core_sha256},
+        'candidate': {'identity': 'DafnyCore, Version=4.11.0.0, Culture=neutral, PublicKeyToken=null',
+                      'informationalVersion': '4.11.0+' + receipt['head'], 'sha256': candidate_core_sha256}}
+    receipt['productAssemblyPins'] = product_pins
     stage('harness-build', ['dotnet', 'build', str(sources / 'B3AlcGate.csproj'), '-c', 'Release', '-m:1', '-p:UseSharedCompilation=false', '--output', str(output / 'harness'), '--nologo'])
     controls_path = output / 'controls.json'
     stage('controls', ['timeout', '--kill-after=10s', '180s', 'dotnet', str(output / 'harness/B3AlcGate.dll'), '--baseline', str(baseline / 'dafny'), '--candidate', 'Binaries/net8.0', '--receipt', str(controls_path)], 200)
     controls = json.loads(controls_path.read_text())
+    assert controls['schemaVersion'] == 1 and controls['scope'] == 'prototype/non-verifying-controls'
+    assert controls['sourceManifestSha256'] == hashlib.sha256((sources / 'source-manifest.json').read_bytes()).hexdigest(), 'Wrong executed source manifest'
+    assert controls['harnessAssemblySha256'] == hashlib.sha256((output / 'harness/B3AlcGate.dll').read_bytes()).hexdigest(), 'Wrong executed harness assembly'
     assert controls['controlsPassed'] and len(controls['runs']) == 4
     assert [(r['product'], r['control'], r['exitCode']) for r in controls['runs']] == [
-        ('baseline', 'version', 0), ('baseline', 'malformed-command', 1),
-        ('candidate', 'version', 0), ('candidate', 'malformed-command', 1)]
+        ('baseline', 'help', 0), ('baseline', 'malformed-command', 1),
+        ('candidate', 'help', 0), ('candidate', 'malformed-command', 1)]
     assert all(r['contextCollected'] and not r['failure'] and not r['remainingDirectChildren'] for r in controls['runs'])
+    fixtures = {control['name']: control for control in json.loads((sources / 'control-fixtures.json').read_text())['controls']}
+    for run in controls['runs']:
+        fixture = fixtures[run['control']]
+        assert run['arguments'] == fixture['arguments'] and run['exitCode'] == fixture['expectedExitCode'], 'Wrong argument control receipt'
+        assert fixture['requiredOutput'] in run['output'] + run['errorOutput'], 'Missing product argument-path diagnostic'
+        expected = product_pins[run['product']]
+        loaded_core = [entry for entry in run['loaderLedger']
+                       if entry['kind'] == 'private-loaded' and entry['identity'].startswith('DafnyCore,')]
+        assert len(loaded_core) == 1, 'Missing or duplicate loaded product identity: ' + run['product']
+        actual = loaded_core[0]
+        assert all(actual[key] == expected[key] for key in expected), 'Loaded product identity/hash mismatch: ' + run['product']
+        expected_path = baseline / 'dafny/DafnyCore.dll' if run['product'] == 'baseline' else Path('Binaries/net8.0/DafnyCore.dll')
+        assert Path(actual['path']) == expected_path.resolve(), 'Loaded product assembly escaped its package: ' + run['product']
+        assert run['proofCleanup'] is None, 'Non-verifying control acquired a proof scope'
     receipt['passed'] = True
 except Exception as error:
     receipt['failure'] = str(error)

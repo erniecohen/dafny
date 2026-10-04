@@ -1,15 +1,17 @@
 {
   "schemaVersion": 1,
-  "status": "experimental-source; execution status is reported by scratch gate receipts",
-  "scope": "four-non-verifying-argument-controls-and-guarded-verification-entrypoint",
+  "status": "experimental-source; help/identity repair is uncompiled and unexecuted; scratch receipts report execution",
+  "scope": "four-non-verifying-help-malformed-controls-product-identity-and-guarded-verification-entrypoint",
   "targetFramework": "net8.0",
   "reviewedContracts": {
-    "dafnySourceCommit": "f5f6cdde451f6e1f3a0ba11ed2a9c10e35366401",
+    "dafnySourceCommit": "63f38e9163d1c596ef57afe3e34b5c161e9069a4",
     "boogieSourceCommit": "73a0e214a87df85fc058270268c1d0706fd05bc9",
     "entrypoint": "Microsoft.Dafny.DafnyBackwardsCompatibleCli.MainWithWriters(TextWriter,TextWriter,TextReader,string[]) -> Task<int>",
     "entrypointSource": "Source/DafnyDriver/Legacy/DafnyBackwardsCompatibleCli.cs",
     "schedulerSource": "Source/DafnyCore/DafnyMain.cs",
-    "schedulerImplementationSource": "Source/ExecutionEngine/CustomStackSizePoolTaskScheduler.cs"
+    "schedulerImplementationSource": "Source/ExecutionEngine/CustomStackSizePoolTaskScheduler.cs",
+    "helpSource": "Source/DafnyDriver/DafnyNewCli.cs",
+    "productAssemblyIdentity": "DafnyCore, Version=4.11.0.0, Culture=neutral, PublicKeyToken=null"
   },
   "files": [
     {
@@ -24,28 +26,28 @@
     },
     {
       "path": "Isolation.cs",
-      "sha256": "54a783dae330be7fdef29f6ce630ffd6b65c26124fe897d277576633b4e3b901",
-      "bytes": 9453
+      "sha256": "27cabb6280782adee2120034fbff476457ad4e5296374e3d4dc86520e452d4af",
+      "bytes": 10279
     },
     {
       "path": "Program.cs",
-      "sha256": "a92b221bb7044bad58995886e8fdc98e101111e19cf385706f4a2d6ea462abba",
-      "bytes": 4804
+      "sha256": "883d01f2d07196f79cca1468e77038efae48dba67c4affe7220afc3dfa1a838f",
+      "bytes": 4798
     },
     {
       "path": "README.md",
-      "sha256": "1fbbe5987c51afccd3bc717550e6cba95814d0c17c8e650a773987984fe87936",
-      "bytes": 9887
+      "sha256": "e2adbed4e43f80bb7b6252d994f39e38926e51c0cbbf8a1cbf293f4f5806dc01",
+      "bytes": 11596
     },
     {
       "path": "Run.cs",
-      "sha256": "e49403060f6d51607b7064dc6974ecfcde91285abc736786ab0866c4155ddd18",
-      "bytes": 11876
+      "sha256": "8be30511e09359c74a5c4ca9fe48956039461f85cb3a53d8a739ae5328f004e7",
+      "bytes": 11867
     },
     {
       "path": "control-fixtures.json",
-      "sha256": "3014e644328a0d8ce5a962b28cd9a2c37234e6c227d2fe3c6b2a643e996259e9",
-      "bytes": 428
+      "sha256": "649ab280af52e64bd851fc08d2ba1339e42863eda6f23fc76a658c699eccd0ed",
+      "bytes": 456
     }
   ]
 }

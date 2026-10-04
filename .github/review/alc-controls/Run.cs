@@ -34,7 +34,7 @@ public static class Runs {
 
   public static RunReceipt RunControl(Product product, string name, string[] arguments) {
     var allowed = name switch {
-      "version" => new[] { "--version" },
+      "help" => new[] { "--help" },
       "malformed-command" => new[] { "__b3_alc_invalid_command_6f60f0eb__" },
       _ => throw new ArgumentException("Only the two non-verifying controls are implemented.")
     };
@@ -190,7 +190,7 @@ public static class Runs {
     var type = core.GetType("Microsoft.Dafny.DafnyMain", throwOnError: true)!;
     var field = type.GetField("LargeThreadScheduler", BindingFlags.Public | BindingFlags.Static)
       ?? throw new MissingFieldException(type.FullName, "LargeThreadScheduler");
-    // This may initialize DafnyMain even for --version. The bounded processor check
+    // This may initialize DafnyMain even for --help. The bounded processor check
     // contains the effect; immediately dispose its per-context worker threads.
     if (field.GetValue(null) is not IDisposable scheduler) {
       throw new InvalidOperationException("The private large-stack scheduler is not disposable.");

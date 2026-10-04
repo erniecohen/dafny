@@ -30,8 +30,8 @@ internal static class Program {
       var fixtures = JsonSerializer.Deserialize<Fixtures>(File.ReadAllText(fixturePath), Json)
         ?? throw new InvalidDataException("No control fixtures.");
       if (fixtures.SchemaVersion != 1 || fixtures.Controls.Length != 2 ||
-          !fixtures.Controls.Select(c => c.Name).SequenceEqual(["version", "malformed-command"]) ||
-          fixtures.Controls.Any(c => c.ExpectedExitCode != (c.Name == "version" ? 0 : 1) || string.IsNullOrEmpty(c.RequiredOutput))) {
+          !fixtures.Controls.Select(c => c.Name).SequenceEqual(["help", "malformed-command"]) ||
+          fixtures.Controls.Any(c => c.ExpectedExitCode != (c.Name == "help" ? 0 : 1) || string.IsNullOrEmpty(c.RequiredOutput))) {
         throw new InvalidDataException("The two fixed non-verifying controls are required.");
       }
       var framework = Framework.Witness();

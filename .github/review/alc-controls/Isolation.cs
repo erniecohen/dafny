@@ -6,7 +6,7 @@ namespace B3AlcGate;
 
 public sealed record Product(string Label, string Directory);
 public sealed record AssemblyEntry(string Kind, string RequestedIdentity, string Identity,
-  string Context, string Path, string Sha256);
+  string Context, string Path, string Sha256, string? InformationalVersion = null);
 
 /// <summary>Framework-only host. Never returns null for an unresolved managed dependency.</summary>
 internal sealed class ProductContext : AssemblyLoadContext {
@@ -83,6 +83,14 @@ internal sealed class ProductContext : AssemblyLoadContext {
   }
 
   public AssemblyEntry[] Snapshot() {
+    var core = Assemblies.SingleOrDefault(a => a.GetName().Name == "DafnyCore")
+      ?? throw new InvalidOperationException("The argument control did not load its private DafnyCore assembly.");
+    var informationalVersion = core.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+    if (core.FullName != "DafnyCore, Version=4.11.0.0, Culture=neutral, PublicKeyToken=null" ||
+        informationalVersion == null ||
+        !(informationalVersion == "4.11.0" || informationalVersion.StartsWith("4.11.0+", StringComparison.Ordinal))) {
+      throw new InvalidOperationException("The loaded product does not have the required Dafny 4.11 assembly identity.");
+    }
     foreach (var assembly in Assemblies) {
       if (GetLoadContext(assembly) != this || trusted.ContainsKey(assembly.GetName().Name ?? "")) {
         throw new InvalidOperationException("A shared assembly was loaded privately.");
@@ -127,7 +135,7 @@ internal sealed class ProductContext : AssemblyLoadContext {
   private void Record(string kind, string requested, Assembly assembly) {
     var path = System.IO.Path.GetFullPath(assembly.Location);
     var entry = new AssemblyEntry(kind, requested, assembly.FullName ?? "", GetLoadContext(assembly)?.Name ?? "",
-      path, Framework.Sha256(path));
+      path, Framework.Sha256(path), assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion);
     lock (ledger) {
       if (!ledger.Contains(entry)) {
         ledger.Add(entry);
