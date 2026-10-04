@@ -11,7 +11,7 @@ import xml.etree.ElementTree as ET
 output = Path('out/b3-native-compile')
 output.mkdir(parents=True, exist_ok=True)
 mode = os.environ['B3_FOCUS_GATE']
-assert mode in {'ide-regressions', 'maps'}
+assert mode in {'ide-regressions', 'maps', 'complete'}
 receipt = {'mode': mode, 'head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
            'verifiedLibraryRun': 37201990430, 'stages': [], 'passed': False}
 
@@ -78,7 +78,8 @@ def verified_inputs():
     for src, name in [(library, 'B3Library.dll'), (solver, 'z3'),
                       (original / 'summary.json', 'original-summary.json'),
                       (original / 'worker/library/resources.csv', 'library-resources.csv'),
-                      (original / 'worker-bootstrap.txt', 'original-bootstrap.txt')]:
+                      (original / 'worker-bootstrap.txt', 'original-bootstrap.txt'),
+                      (solver.parent.parent / 'LICENSE.txt', 'Z3-LICENSE.txt')]:
         shutil.copyfile(src, inputs / name)
     (inputs / 'z3').chmod(0o755)
     shutil.rmtree(reuse)
@@ -87,6 +88,30 @@ def verified_inputs():
 def passing_tests(directory, count):
     tests = ET.parse(output / directory / 'result.trx').findall('.//{http://microsoft.com/schemas/VisualStudio/TeamTest/2010}UnitTestResult')
     assert tests and (count is None or len(tests) == count) and all(t.get('outcome') == 'Passed' for t in tests), f'Expected {count or "nonzero"} passing {directory} checks'
+
+def require_corpus():
+    results = json.loads((output / 'corpus/summary.json').read_text())['results']
+    assert len(results) == 36 and all(r['passed'] for r in results), 'Require all 36 real-input controls'
+
+
+def package_controls(solver):
+    archive = output / 'dafny-b3-experimental-linux-x64.tar.gz'
+    second = output / 'reproducibility.tar.gz'
+    common = ['python3', 'Scripts/package-b3-experimental.py', '--cli', 'Binaries/net8.0',
+              '--worker', 'build/b3-host-tests/package', '--solver', solver,
+              '--solver-license', str(output / 'inputs/Z3-LICENSE.txt'), '--source-commit', receipt['head']]
+    if not run('package-build', common + ['--output', str(archive)]):
+        return
+    if not run('package-rebuild', common + ['--output', str(second)]):
+        return
+    first = json.loads((output / 'package-build.txt').read_text())
+    other = json.loads((output / 'package-rebuild.txt').read_text())
+    assert first['archiveSha256'] == other['archiveSha256'], 'Experimental archive is not reproducible'
+    receipt['packageArchiveSha256'] = first['archiveSha256']
+    second.unlink()
+    run('clean-install', ['python3', 'Scripts/check-b3-package.py', '--archive', str(archive),
+                          '--archive-sha256', first['archiveSha256'], '--output', str(output / 'clean-install')])
+
 
 try:
     library, solver = verified_inputs()
@@ -100,15 +125,19 @@ try:
         if environment:
             command = ['env', *environment, *command]
         return run(directory, command, lambda: passing_tests(directory, count))
-    if prerequisite and mode == 'ide-regressions':
+    if prerequisite and mode == 'complete':
+        test('contracts', 'Source/DafnyCore.Test/DafnyCore.Test.csproj', 'FullyQualifiedName~VerificationContractsTest|FullyQualifiedName~B3BackendSelectionTest|FullyQualifiedName~B3WorkItemTest', 26)
+    if prerequisite and mode in {'ide-regressions', 'complete'}:
         selector = 'FullyQualifiedName~B3CacheVerificationTest|FullyQualifiedName~B3ProjectMigrationTest|FullyQualifiedName~IdeStateObserverRetirementTest|FullyQualifiedName~CounterExampleCapabilityTest|FullyQualifiedName~ProjectManagerDatabaseTest|FullyQualifiedName~ProjectFilesTest|FullyQualifiedName~MultipleFilesProjectTest|FullyQualifiedName~CompetingProjectFilesTest|FullyQualifiedName~AdditionalAxiomsTest|FullyQualifiedName~CounterexamplesStillWorksIfNothingHasBeenVerified'
         test('language-server', 'Source/DafnyLanguageServer.Test/DafnyLanguageServer.Test.csproj', selector, 40, ['DAFNY_TEST_SOLVER_PATH=' + solver])
         test('regressions', 'Source/IntegrationTests/IntegrationTests.csproj', 'DisplayName~git-issue-118.dfy|DisplayName~git-issue-120.dfy|DisplayName~git-issue-126.dfy|DisplayName~git-issue-126-capabilities.dfy', 4)
-    elif prerequisite:
-        test('normalizer', 'Source/DafnyB3Normalizer.Test/DafnyB3Normalizer.Test.csproj')
+    if prerequisite and mode in {'maps', 'complete'}:
+        test('normalizer', 'Source/DafnyB3Normalizer.Test/DafnyB3Normalizer.Test.csproj', count=137 if mode == 'complete' else None)
         if run('host', ['bash', 'Source/DafnyB3Host.Test/run-tests.sh', library, solver]):
             run('map-theory', ['dotnet', 'run', '--project', 'Source/DafnyB3MapTheory.TestRunner', '-c', 'Release', '--', '--worker', str(Path('build/b3-host-tests/package/DafnyB3Host.dll').resolve()), '--solver', solver, '--solver-sha256', receipt['solverSha256'], '--emit-directory', str(output / 'map-requests')])
-            run('corpus', ['python3', 'Scripts/check-b3-integration.py', 'Binaries/net8.0/Dafny.dll', 'build/b3-host-tests/package/DafnyB3Host.dll', solver])
+            run('corpus', ['python3', 'Scripts/check-b3-integration.py', 'Binaries/net8.0/Dafny.dll', 'build/b3-host-tests/package/DafnyB3Host.dll', solver, '--output', str(output / 'corpus')], lambda: require_corpus())
+            if mode == 'complete':
+                package_controls(solver)
     receipt['passed'] = prerequisite and all(s['exitCode'] == 0 for s in receipt['stages'])
 except Exception as error:
     receipt['stages'].append({'stage': 'prerequisite', 'exitCode': 1, 'error': str(error)})
