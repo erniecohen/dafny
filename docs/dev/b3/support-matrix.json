@@ -6,7 +6,7 @@
     {
       "construct": "Boolean and integer expressions, method contracts, calls, parallel assignment, havoc, old and structured branches",
       "disposition": "normalized",
-      "evidence": "Public native compile probe passed 51 normalizer controls before the scope-entry where repair; complete real Dafny verdict gate pending."
+      "evidence": "Public native compile probe 37196523946 passed 53 normalizer controls before the latest identity-activation guard; complete real Dafny verdict gate pending."
     },
     {
       "construct": "Closed representation sorts, maps, lambdas and ordinary functions",
@@ -20,7 +20,7 @@
     {
       "construct": "Inductive loops, breaks, continues, forward lexical exits",
       "disposition": "source compiled with structural controls; end-to-end acceptance pending",
-      "evidence": "Public probe 37195114156 compiled the previous source and passed 51 structural controls. Two additional mutable-global anti-vacuity controls and the current complete verdict gate remain pending."
+      "evidence": "Public probe 37196523946 compiled the previous source and passed 53 structural controls. Five additional identity-activation controls and the current complete verdict gate remain pending."
     }
   ],
   "optionSupport": [
