@@ -23,7 +23,7 @@ def stage(name, command, timeout=1200):
 try:
     sources = Path('.github/review/alc-controls')
     manifest = json.loads((sources / 'source-manifest.json').read_text())
-    assert {f['path'] for f in manifest['files']} == {p.name for p in sources.iterdir() if p.is_file() and p.name != 'source-manifest.json'}
+    assert {f['path'] for f in manifest['files']} == {p.relative_to(sources).as_posix() for p in sources.rglob('*') if p.is_file() and p.name != 'source-manifest.json'}
     for f in manifest['files']:
         data = (sources / f['path']).read_bytes()
         assert len(data) == f['bytes'] and hashlib.sha256(data).hexdigest() == f['sha256'], 'Changed isolation fixture bytes: ' + f['path']
