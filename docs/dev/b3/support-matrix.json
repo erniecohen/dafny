@@ -15,8 +15,8 @@
     },
     {
       "construct": "Direct closed monomorphic raw map select/store",
-      "disposition": "reviewed read-over-write helpers; strict executable gate failed",
-      "limits": "Only R0 and one R1 disjunction per index coordinate. No extensionality, source Box laws, collection definitions or polymorphic map equations.",
+      "disposition": "reviewed direct read-over-write ITE and observation abstraction; repaired source awaits executable acceptance",
+      "limits": "Zero global map axioms. Only direct reads of owned store expressions are rewritten. Exact complete-tuple read equality uses an uninterpreted Bool predicate; no pointwise consequences, extensionality, source Box laws, collection definitions or polymorphic map equations.",
       "evidence": "Public run 37201990430 matched 6/15 strict typed map controls. Eight negatives and one tuple positive were Inconclusive; source model argument remains in map-helper-correspondence.md. No map release acceptance."
     },
     {
