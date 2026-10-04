@@ -63,6 +63,19 @@ public class B3VisibilityTests {
       check => Assert.False(analysis.After(check).IsRevealed(program.Functions.Single())));
   }
 
+  [Fact]
+  public void EqualTopFramesCannotHideDifferentOuterScopeFramesAtAJoin() {
+    var (source, _) = Parse("""
+      function F(): int; procedure P(); implementation P() {
+        hide *;
+        if (*) { reveal F; push; hide *; } else { push; hide *; }
+        assert true; pop;
+      }
+      """);
+    var rejection = Assert.Throws<B3DefinitionVisibility.Rejection>(() => new B3DefinitionVisibility(source.Implementations.Single()));
+    Assert.Contains("outer scope stacks", rejection.Message);
+  }
+
   internal static (Bpl.Program Program, DafnyOptions Options) Parse(string text) {
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();

@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "file": "visible.bpl",
+      "kind": "boogie",
+      "owner": "F",
+      "ownedAxiom": 0,
+      "expectedB3": "Verified",
+      "expectedAttempts": [
+        "Verified"
+      ],
+      "minimumLoadedDefinitions": 1
+    },
+    {
+      "file": "guard-missing.bpl",
+      "kind": "boogie",
+      "owner": "F",
+      "ownedAxiom": 0,
+      "expectedB3": "Failed",
+      "expectedAttempts": [
+        "Failed"
+      ],
+      "minimumLoadedDefinitions": 1
+    },
+    {
+      "file": "learn-hide.bpl",
+      "kind": "boogie",
+      "owner": "F",
+      "ownedAxiom": 0,
+      "expectedB3": "Verified",
+      "expectedAttempts": [
+        "Verified",
+        "Verified"
+      ],
+      "minimumLoadedDefinitions": 1
+    },
+    {
+      "file": "learn-hide-false.bpl",
+      "kind": "boogie",
+      "owner": "F",
+      "ownedAxiom": 0,
+      "expectedB3": "Failed",
+      "expectedAttempts": [
+        "Verified",
+        "Verified",
+        "Failed"
+      ],
+      "minimumLoadedDefinitions": 1
+    },
+    {
+      "file": "nonlearning-hide.bpl",
+      "kind": "boogie",
+      "owner": "F",
+      "ownedAxiom": 0,
+      "expectedB3": "Failed",
+      "expectedAttempts": [
+        "Verified",
+        "Failed"
+      ],
+      "minimumLoadedDefinitions": 1
+    },
+    {
+      "file": "hidden.bpl",
+      "kind": "boogie",
+      "owner": "F",
+      "ownedAxiom": 0,
+      "expectedB3": "Failed",
+      "expectedAttempts": [
+        "Failed"
+      ],
+      "minimumLoadedDefinitions": 0,
+      "maximumLoadedDefinitions": 0
+    },
+    {
+      "file": "wildcard-reveal.bpl",
+      "kind": "boogie",
+      "owner": "F",
+      "ownedAxiom": 0,
+      "expectedB3": "Verified",
+      "expectedAttempts": [
+        "Verified"
+      ],
+      "minimumLoadedDefinitions": 1
+    },
+    {
+      "file": "loaded-false.bpl",
+      "kind": "boogie",
+      "owner": "F",
+      "ownedAxiom": 0,
+      "expectedB3": "Failed",
+      "expectedAttempts": [
+        "Failed"
+      ],
+      "minimumLoadedDefinitions": 1
+    },
+    {
+      "file": "finite-bool.bpl",
+      "kind": "boogie",
+      "owner": "F",
+      "ownedAxiom": 0,
+      "expectedB3": "Verified",
+      "expectedAttempts": [
+        "Verified"
+      ],
+      "minimumLoadedDefinitions": 2
+    },
+    {
+      "file": "finite-bool-guard-missing.bpl",
+      "kind": "boogie",
+      "owner": "F",
+      "ownedAxiom": 0,
+      "expectedB3": "Failed",
+      "expectedAttempts": [
+        "Failed"
+      ],
+      "minimumLoadedDefinitions": 2
+    },
+    {
+      "file": "mixed-mode.bpl",
+      "kind": "boogie",
+      "owner": "F",
+      "ownedAxiom": 0,
+      "expectedB3": "Failed",
+      "expectedAttempts": [
+        "Failed",
+        "Verified"
+      ],
+      "minimumLoadedDefinitions": 0,
+      "maximumLoadedDefinitions": 0
+    },
+    {
+      "file": "nested-scope-learn.bpl",
+      "kind": "boogie",
+      "owner": "F",
+      "ownedAxiom": 0,
+      "expectedB3": "Verified",
+      "expectedAttempts": [
+        "Verified",
+        "Verified"
+      ],
+      "minimumLoadedDefinitions": 1
+    },
+    {
+      "file": "dafny-learn-hide.dfy",
+      "kind": "dafny",
+      "expectedB3": "Verified",
+      "minimumLoadedDefinitions": 1
+    },
+    {
+      "file": "dafny-learn-hide-false.dfy",
+      "kind": "dafny",
+      "expectedB3": "Failed",
+      "minimumLoadedDefinitions": 1
+    },
+    {
+      "file": "dafny-opaque-reveal.dfy",
+      "kind": "dafny",
+      "expectedB3": "Verified",
+      "minimumLoadedDefinitions": 1
+    },
+    {
+      "file": "dafny-hidden.dfy",
+      "kind": "dafny",
+      "expectedB3": "Failed",
+      "minimumLoadedDefinitions": 0,
+      "maximumLoadedDefinitions": 0
+    },
+    {
+      "file": "dafny-stable-loop.dfy",
+      "kind": "dafny",
+      "expectedB3": "Verified",
+      "minimumLoadedDefinitions": 1
+    }
+  ],
+  "isolationFixture": "nonlearning-hide.bpl",
+  "isolationExpected": [
+    "Failed",
+    "Verified",
+    "Failed",
+    "Verified",
+    "Failed"
+  ]
+}

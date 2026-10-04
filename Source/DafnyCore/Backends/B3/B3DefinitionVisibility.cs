@@ -38,6 +38,10 @@ public sealed class B3DefinitionVisibility {
   public B3DefinitionVisibility(Bpl.Implementation implementation) {
     var blocks = implementation.Blocks;
     Require(blocks.Count is > 0 and <= 256, "Visibility CFG exceeds the audited block bound", implementation.tok);
+    Require(blocks.Distinct().Count() == blocks.Count && blocks.Sum(block => (long)block.Cmds.Count + 1) <= Ir.Protocol.MaximumNodes,
+      "Visibility CFG has duplicate blocks or exceeds the node bound", implementation.tok);
+    Require(blocks.Sum(block => block.TransferCmd is Bpl.GotoCmd jump ? (long)(jump.LabelTargets?.Count ?? 0) : 0) <= Ir.Protocol.MaximumNodes,
+      "Visibility CFG exceeds the edge bound", implementation.tok);
     var ownedBlocks = new Dictionary<Bpl.Block, Node[]>();
     foreach (var block in blocks) {
       var commands = block.Cmds.Cast<Bpl.Absy>().Append(block.TransferCmd).ToArray();
@@ -55,15 +59,16 @@ public sealed class B3DefinitionVisibility {
         "Visibility CFG has an unresolved or external successor", jump.tok);
       foreach (var successor in jump.LabelTargets) { Edge(ownedBlocks[block][^1], ownedBlocks[successor][0]); }
     }
-    HasVisibilityCommands = nodes.Keys.OfType<Bpl.HideRevealCmd>().Any();
+    HasVisibilityCommands = nodes.Keys.Any(command => command is Bpl.HideRevealCmd or Bpl.ChangeScope);
     foreach (var node in nodes.Values) {
       if (node.Source is Bpl.StateCmd state) { AddNested(state.Cmds, node, 0); }
     }
     if (!HasVisibilityCommands) { return; }
     // A raw loop-header mask does not distinguish native initiation from preservation.
     // Until the induction CFG has its own visibility origins, reject visibility changes in cycles.
+    var reachabilitySteps = 0;
     foreach (var node in nodes.Values.Where(node => node.Source is Bpl.HideRevealCmd)) {
-      Require(!Reaches(node, node), "Visibility changes on a CFG cycle require induction-role mapping", node.Source.tok);
+      Require(!Reaches(node, node, ref reachabilitySteps), "Visibility changes on a CFG cycle require induction-role mapping", node.Source.tok);
     }
     Run();
     foreach (var node in nodes.Values.Where(node => node.Source is Bpl.ReturnCmd)) {
@@ -90,16 +95,18 @@ public sealed class B3DefinitionVisibility {
     foreach (var command in commands) {
       Require(command is not Bpl.HideRevealCmd && command is not Bpl.ChangeScope,
         "StateCmd visibility or scope changes require a separate CFG mapping", command.tok);
-      Require(!nodes.ContainsKey(command) && nestedOrigins.TryAdd(command, parent),
+      Require(nodes.Count + nestedOrigins.Count < Ir.Protocol.MaximumNodes && !nodes.ContainsKey(command) && nestedOrigins.TryAdd(command, parent),
         "Shared nested command has ambiguous visibility origin", command.tok);
       if (command is Bpl.StateCmd nested) { AddNested(nested.Cmds, parent, depth + 1); }
     }
   }
   private static void Edge(Node first, Node second) { first.Next.Add(second); second.Previous.Add(first); }
-  private static bool Reaches(Node from, Node target) {
+  private static bool Reaches(Node from, Node target, ref int steps) {
     var pending = new Stack<Node>(from.Next); var seen = new HashSet<Node>();
     while (pending.Count > 0) {
-      var node = pending.Pop(); if (node == target) { return true; }
+      var node = pending.Pop();
+      Require(++steps <= Ir.Protocol.MaximumNodes * 16, "Visibility cycle traversal exceeds its bound", target.Source.tok);
+      if (node == target) { return true; }
       if (!seen.Add(node)) { continue; }
       foreach (var next in node.Next) { pending.Push(next); }
     }
@@ -159,10 +166,12 @@ public sealed class B3DefinitionVisibility {
   private static ImmutableStack<Frame> Update(Bpl.Absy source, ImmutableStack<Frame> stack) {
     Require(!stack.IsEmpty, "Unbalanced visibility scope", source.tok);
     if (source is Bpl.ChangeScope scope) {
+      Require(scope.Mode is Bpl.ChangeScope.Modes.Push or Bpl.ChangeScope.Modes.Pop, "Unknown visibility scope mode", source.tok);
       Require(scope.Mode != Bpl.ChangeScope.Modes.Pop || stack.Count() > 1, "Visibility scope pop has no matching push", source.tok);
       return scope.Mode == Bpl.ChangeScope.Modes.Push ? stack.Push(stack.Peek()) : stack.Pop();
     }
     if (source is Bpl.HideRevealCmd hide) {
+      Require(hide.Mode is Bpl.HideRevealCmd.Modes.Hide or Bpl.HideRevealCmd.Modes.Reveal, "Unknown hide/reveal mode", source.tok);
       var state = stack.Peek();
       var next = hide.Function == null ? new Frame(hide.Mode, ImmutableHashSet<Bpl.Function>.Empty) :
         state with { Offset = hide.Mode == state.Mode ? state.Offset.Remove(hide.Function) : state.Offset.Add(hide.Function) };

@@ -151,7 +151,10 @@ public class NormalizerTests {
     var results = await Dafny("method Read(m: imap<int, int>, key: int) requires key in m { assert m[key] == m[key]; }");
     Assert.All(results, Validate);
     Assert.Contains(results, r => r.Approximations.Any(a => a.StartsWith("Monomorphic map helper origin:")));
-    Assert.All(results, r => Assert.Contains(r.Approximations, a => a.Contains("All source axioms, distinct-constant constraints and lambda equations are omitted")));
+    Assert.All(results, r => {
+      Assert.Contains(r.Approximations, a => a.Contains("Outside reviewed guarded literal-definition contexts, source axioms"));
+      Assert.All(r.Contexts!, context => Assert.Empty(context.Definitions));
+    });
   }
 
   [Fact]

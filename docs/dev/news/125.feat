@@ -1,0 +1,1 @@
+The experimental opt-in B3 backend can normalize bounded source-owned guarded literal definitions with scoped hide/reveal masks and fresh solver-context replay. Unsupported definitions, changing visibility backedges and ambiguous scope origins fail closed.
