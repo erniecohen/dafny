@@ -61,6 +61,18 @@ unchecked result facts would also restore the reproduced contradictions. A
 more permissive rule needs a separate sound derivation of the finite observation
 being used, without assuming the suspended value's full type membership.
 
+The development repository comparison also records changed verdicts for existing
+programs: `dafny3/Abstemious.dfy` (five errors in suspended helper and destructor
+observations), `dafny3/WideTrees.dfy` (one coinductive postcondition),
+`dafny3/Zip.dfy` (five coinductive postconditions), and `dafny4/Circ.dfy` (one
+coinductive postcondition). Those programs previously verified. The latter proof
+losses extend beyond constructor-body observations: suppressing the shared
+callability collector also withholds automatic callability propagation when
+co-recursive definitions are unfolded in later proofs. The repair does not claim
+to retain every previously accepted coinductive proof. These outcomes are recorded
+by [the development comparison](https://github.com/erniecohen/dafny/actions/runs/37228257735)
+and the verifier-suite verdicts, rather than hidden by removing the programs.
+
 Ordinary productive definitions whose immediate payloads are established retain
 universal observations for natural-number, refined even-number, generic, mutual,
 and multiple-constructor streams. Constant defaults and defaults observing an
