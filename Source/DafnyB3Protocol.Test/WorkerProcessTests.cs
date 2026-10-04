@@ -64,6 +64,13 @@ public class WorkerProcessTests {
       Obligations = new[] { new SourceIdentity("sO0", "test.dfy", 1, 1, new string('x', 1024 * 1024)) }
     };
     var payloadLength = JsonSerializer.SerializeToUtf8Bytes(request, Protocol.JsonOptions).Length;
+    // Linux pipes count page slots. Consume whole pages so unread bytes can fill the entire capacity.
+    var padding = (Environment.SystemPageSize - payloadLength % Environment.SystemPageSize) % Environment.SystemPageSize;
+    request = request with { Obligations = new[] { request.Obligations[0] with {
+      Description = request.Obligations[0].Description + new string('x', padding)
+    } } };
+    payloadLength = JsonSerializer.SerializeToUtf8Bytes(request, Protocol.JsonOptions).Length;
+    Assert.Equal(0, payloadLength % Environment.SystemPageSize);
     var fixture = Environment.GetEnvironmentVariable("B3_WORKER_FIXTURE")
       ?? Path.Combine(AppContext.BaseDirectory, "worker-fixture", "WorkerFixture.dll");
     var pidFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
