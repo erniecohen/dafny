@@ -110,3 +110,6 @@ git-issues/git-issue-1416.dfy
 
 # Reflexivity of heap succession at two-state function values (#94 here).
 git-issues/git-issue-1461.dfy
+
+# Contextual lambda subset domains (#87 here).
+git-issues/git-issue-4949.dfy

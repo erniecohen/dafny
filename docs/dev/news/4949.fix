@@ -1,0 +1,1 @@
+Add the opt-in --contextual-lambda-domains option to infer omitted parameters of function-result lambdas from the declared arrow domain in the refreshed type system.
