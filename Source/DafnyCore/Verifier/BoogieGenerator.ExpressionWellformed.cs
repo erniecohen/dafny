@@ -1109,9 +1109,10 @@ namespace Microsoft.Dafny {
                   } else {
                     Contract.Assert(!e.E0.Type.SupportsEquality); // otherwise, CanCompareWith would have returned "true" above
                     Contract.Assert(!e.E1.Type.SupportsEquality); // otherwise, CanCompareWith would have returned "true" above
-                    Contract.Assert(e.E0.Type.PartiallySupportsEquality); // otherwise, the code wouldn't have got passed the resolver
-                    Contract.Assert(e.E1.Type.PartiallySupportsEquality); // otherwise, the code wouldn't have got passed the resolver
-                    var dt = e.E0.Type.AsIndDatatype;
+                    Contract.Assert(e.E0.Type.PartiallySupportsEquality); // otherwise, the code wouldn't have got past the resolver
+                    Contract.Assert(e.E1.Type.PartiallySupportsEquality); // otherwise, the code wouldn't have got past the resolver
+                    var dt = options.Get(CommonOptionBag.ExtendedNewtypeBases)
+                      ? NewtypeOperationView.Get(e.E0.Type).BaseType.AsIndDatatype : e.E0.Type.AsIndDatatype;
                     Contract.Assert(dt != null); // only inductive datatypes support equality partially
 
                     // to compare the datatype values for equality, there must not be any possibility that either of the datatype
@@ -1338,7 +1339,9 @@ namespace Microsoft.Dafny {
             // check that source expression is created from one of the legal source constructors, then proceed according to the .ResolvedExpression
             var correctConstructor = BplOr(e.LegalSourceConstructors.ConvertAll(
               ctor => FunctionCall(e.Origin, ctor.QueryField.FullSanitizedName, Bpl.Type.Bool, etran.TrExpr(e.Root))));
-            if (e.LegalSourceConstructors.Count == e.Type.AsDatatype.Ctors.Count) {
+            var updateDatatype = options.Get(CommonOptionBag.ExtendedNewtypeBases)
+              ? NewtypeOperationView.Get(e.Type).BaseType.AsDatatype : e.Type.AsDatatype;
+            if (e.LegalSourceConstructors.Count == updateDatatype.Ctors.Count) {
               // Every constructor has this destructor; no need to check anything
             } else {
               builder.Add(Assert(GetToken(expr), correctConstructor,

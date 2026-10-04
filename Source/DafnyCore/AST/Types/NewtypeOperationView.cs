@@ -8,7 +8,7 @@ public static class NewtypeOperationView {
   public readonly record struct View(ViewStatus Status, Type NominalType, Type BaseType,
     IReadOnlyList<TopLevelDecl> Path);
 
-  public static View Get(Type nominal) {
+  public static View Get(Type nominal, TopLevelDecl stopAt = null) {
     var path = new List<TopLevelDecl>();
     var declarations = new HashSet<TopLevelDecl>();
     var current = nominal;
@@ -16,6 +16,9 @@ public static class NewtypeOperationView {
       current = current.NormalizeAndAdjustForScope();
       if (current is TypeProxy || current is UserDefinedType { ResolvedClass: null }) {
         return new View(ViewStatus.Undetermined, nominal, null, path);
+      }
+      if (stopAt != null && current is UserDefinedType { ResolvedClass: var declarationAtStep } && declarationAtStep == stopAt) {
+        return new View(ViewStatus.Resolved, nominal, current, path);
       }
       if (current is UserDefinedType { ResolvedClass: TypeSynonymDecl synonym } alias) {
         if (!declarations.Add(synonym) && HasDeclarationCycle(synonym)) {

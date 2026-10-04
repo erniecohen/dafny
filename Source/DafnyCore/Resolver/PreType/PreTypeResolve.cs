@@ -296,7 +296,7 @@ namespace Microsoft.Dafny {
       return current;
     }
 
-    private static bool HasOperationViewCycle(NewtypeDecl root) {
+    internal static bool HasOperationViewCycle(NewtypeDecl root) {
       // Inspect declaration dependencies without unfolding instantiated bases. Repeated
       // finite Id<Id<int>> instantiations are legal; Id's raw base is a parameter.
       var pending = new Stack<PreType>();
@@ -326,7 +326,8 @@ namespace Microsoft.Dafny {
         return expression;
       }
       return new ConversionExpr(expression.Origin, expression, new InferredTypeProxy()) {
-        PreType = view
+        PreType = view,
+        IsBaseOperation = true
       };
     }
 
@@ -631,8 +632,9 @@ namespace Microsoft.Dafny {
     }
 
     bool IsConversionCompatible(DPreType fromType, DPreType toType) {
-      var fromAncestor = AncestorPreType(fromType);
-      var toAncestor = AncestorPreType(toType);
+      var extendedNewtypeBases = resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases);
+      var fromAncestor = extendedNewtypeBases ? OperationPreType(fromType) : AncestorPreType(fromType);
+      var toAncestor = extendedNewtypeBases ? OperationPreType(toType) : AncestorPreType(toType);
       if (fromAncestor == null || toAncestor == null) {
         return false;
       }
