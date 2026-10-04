@@ -4,7 +4,9 @@ Tracking issue: [#116](https://github.com/erniecohen/dafny/issues/116).
 
 The implementation reuses the existing typed, pre-VC Dafny-to-Boogie AST translation. Boogie remains the default backend. B3 normalization, verification and result reporting must not invoke Boogie VC generation or proving. A separately pinned .NET worker will construct RawAst and run B3 resolution, type checking and static consistency checks before verification.
 
-The branch is implementing an experimental bool/int slice with a supervised worker. The initial normalizer omits source axioms and map/lambda equations, leaving a weaker context. It retains goals, state transitions and contracts, and rejects unhandled constructs. This is conservative verification support; full prelude, loop, real/bitvector and visibility coverage remains tracked below. The support matrix records validated cases as they become available.
+The branch is implementing an experimental bool/int slice with a supervised worker. The initial normalizer omits source axioms and map/lambda equations, leaving a weaker context. It retains goals, state transitions and contracts, and rejects unhandled constructs. This is conservative verification support; full prelude, loop, real/bitvector and visibility coverage remains tracked below. The support matrix records validated cases as they become available. Loop lowering is a source checkpoint with a written correspondence argument; its compilation and verdict checks remain pending.
+
+The complete integration gate has not passed. Worker controls passed before the latest integration changes, while the default-Boogie comparison found a translation-error regression and resource-count differences. Repairs and their pending checks are recorded in `discrepancies.json`. This checkpoint is not an experimental release candidate yet.
 
 ## Building and selecting the worker
 

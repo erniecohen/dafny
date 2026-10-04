@@ -1,5 +1,27 @@
 {
   "schemaVersion": 1,
-  "status": "no differential runs performed",
-  "entries": []
+  "status": "Initial default-Boogie differential reports contain regressions; repairs await validation. Real B3 differential gate pending.",
+  "entries": [
+    {
+      "kind": "default-backend verdict regression",
+      "program": "Source/IntegrationTests/TestFiles/LitTests/LitTest/dafny0/Fuel.dfy",
+      "initialCandidate": "c063fbeb87500f422f281b23d39518ce38798ce1",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/37182760834",
+      "finding": "Shared translation errors aborted the neutral preparation path while the previous backend continued reporting diagnostics.",
+      "repair": "A translation-error receipt preserves the existing Boogie path and blocks B3. Focused recheck pending."
+    },
+    {
+      "kind": "default-backend cost regression",
+      "scope": "Standard library source; Z3 5.1.0, default options",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/37182760834",
+      "finding": "All 2190 declaration verdicts matched, with 58 resource-count differences.",
+      "repair": "An eager hidden-function/pruning projection was made lazy at its original lifecycle point. Cause and exact resource parity remain unconfirmed."
+    },
+    {
+      "kind": "deliberate conservative approximation",
+      "scope": "B3 normalization",
+      "finding": "Source axioms, nonidentity definitions, distinctness constraints and map/lambda equations are omitted.",
+      "consequence": "Proofs relying on those facts can fail; this is incomplete support. Normalization retains checks and state transitions."
+    }
+  ]
 }

@@ -98,3 +98,6 @@ git-issues/github-issue-85.dfy
 
 # Preserve native verification behavior across the neutral backend boundary.
 git-issues/git-issue-118.dfy
+
+# B3 option rejection must not disappear behind an empty symbol selection.
+git-issues/git-issue-120.dfy
