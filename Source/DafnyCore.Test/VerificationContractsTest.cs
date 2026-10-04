@@ -1,4 +1,5 @@
 using Microsoft.Dafny;
+using Microsoft.Dafny.LanguageServer.Workspace;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 
@@ -85,6 +86,54 @@ public class VerificationContractsTest {
       Assert.Empty(received);
       Assert.NotNull(error);
     }
+  }
+
+
+  [Theory]
+  [InlineData(ErrorLevel.Info)]
+  [InlineData(ErrorLevel.Warning)]
+  public void NonSuccessCannotBeHiddenByNonErrorDiagnostics(ErrorLevel level) {
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    var owner = new DiagnosticOwner();
+    var task = new DiagnosticWorkItem(owner);
+    var diagnostic = new DafnyDiagnostic(MessageSource.Verifier, "", Token.NoToken.ReportingRange,
+      new[] { "backend detail" }, level, Array.Empty<DafnyRelatedInformation>());
+    foreach (var outcome in new[] { VerificationOutcome.Failed, VerificationOutcome.Unknown,
+      VerificationOutcome.TimedOut, VerificationOutcome.OutOfResource, VerificationOutcome.OutOfMemory,
+      VerificationOutcome.Unsupported, VerificationOutcome.ToolError, VerificationOutcome.Cancelled }) {
+      var result = new VerificationResult(outcome, new[] { diagnostic }, Array.Empty<VerificationAssertion>(),
+        true, DateTime.UnixEpoch, TimeSpan.Zero, null, 0);
+      var reporter = new BatchErrorReporter(options);
+      Compilation.ReportDiagnosticsInResult(options, owner, task, result, reporter);
+      Assert.Equal(1, reporter.Count(ErrorLevel.Error));
+      Assert.Contains(diagnostic, reporter.AllMessages);
+      var ideDiagnostics = Compilation.GetDiagnosticsFromResult(options, new Uri("file:///test.dfy"),
+        owner, task, result);
+      Assert.Contains(diagnostic, ideDiagnostics);
+      Assert.Equal(outcome == VerificationOutcome.Cancelled ? 0 : 1,
+        ideDiagnostics.Count(item => item.Level == ErrorLevel.Error));
+    }
+  }
+
+  private sealed class DiagnosticOwner : Method {
+    public DiagnosticOwner() : base(Token.NoToken, new Name(Token.NoToken, "M"), null, false, false,
+      [], [], [], [], new Specification<FrameExpression>(), new Specification<Expression>([], null),
+      [], new Specification<FrameExpression>([], null), null, Token.NoToken) { }
+    public override string FullDafnyName => "M";
+  }
+
+  private sealed class DiagnosticWorkItem : IVerificationWorkItem {
+    public DiagnosticWorkItem(ICanVerify owner) {
+      Source = new VerificationSourceInfo(owner, Token.NoToken, Token.NoToken, VerificationUnitKind.Body,
+        "M", "entire body", Array.Empty<Function>());
+    }
+    public VerificationIdentity Identity => new("M", "M0", 0, 0);
+    public VerificationSourceInfo Source { get; }
+    public VerificationStatus CacheStatus => new VerificationStale();
+    public IVerificationWorkItem FromSeed(int newSeed) => this;
+    public IObservable<VerificationStatus>? TryRun() => null;
+    public bool IsIdle => true;
+    public void Cancel() { }
   }
 
 }

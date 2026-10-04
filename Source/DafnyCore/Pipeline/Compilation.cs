@@ -559,7 +559,10 @@ public class Compilation : IDisposable {
   public static List<DafnyDiagnostic> GetDiagnosticsFromResult(DafnyOptions options, Uri uri, ICanVerify canVerify,
     IVerificationWorkItem task, VerificationResult result) {
     if (task is not BoogieVerificationWorkItem native || result.BoogieResult == null) {
-      return result.Diagnostics.ToList();
+      if (result.Outcome == VerificationOutcome.Cancelled) { return result.Diagnostics.ToList(); }
+      var backendReporter = new BatchErrorReporter(options);
+      ReportDiagnosticsInResult(options, canVerify, task, result, backendReporter);
+      return backendReporter.AllMessages;
     }
     var errorReporter = new ObservableErrorReporter(options, uri);
     List<DafnyDiagnostic> diagnostics = [];
@@ -571,13 +574,13 @@ public class Compilation : IDisposable {
 
   public static void ReportDiagnosticsInResult(DafnyOptions options, ICanVerify canVerify,
     IVerificationWorkItem task, VerificationResult result, ErrorReporter reporter) {
-    if (result.BoogieResult != null) {
+    if (task is BoogieVerificationWorkItem && result.BoogieResult != null) {
       // Retain the legacy CLI diagnostic parameters and formatting exactly.
       ReportDiagnosticsInResult(options, canVerify.FullDafnyName, task.Source.Origin,
         (uint)result.RunTime.TotalSeconds, result.BoogieResult, reporter);
     } else {
       foreach (var diagnostic in result.Diagnostics) { reporter.MessageCore(diagnostic); }
-      if (!result.IsVerified && result.Diagnostics.Count == 0) {
+      if (!result.IsVerified && !result.Diagnostics.Any(diagnostic => diagnostic.Level == ErrorLevel.Error)) {
         reporter.Error(MessageSource.Verifier, task.Source.Origin,
           $"Verification {result.Outcome.ToString().ToLowerInvariant()} for '{canVerify.FullDafnyName}'");
       }
