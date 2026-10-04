@@ -404,6 +404,8 @@ namespace Microsoft.Dafny.Compilers {
       List<TypeParameter> typeDescriptorParams;
       if (enclosingTypeDecl is DatatypeDecl dtDecl) {
         typeDescriptorParams = UsedTypeParameters(dtDecl, true);
+      } else if (enclosingTypeDecl is NewtypeDecl && Options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+        typeDescriptorParams = enclosingTypeDecl.TypeArgs.Where(NeedsTypeDescriptor).ToList();
       } else {
         typeDescriptorParams = enclosingTypeDecl.TypeArgs;
       }
@@ -1265,16 +1267,25 @@ namespace Microsoft.Dafny.Compilers {
         wEnum.WriteLine($"for (var j = lo; j < hi; j++) {{ yield return ({GetNativeTypeName(nt.NativeType)})j; }}");
       }
       if (nt.WitnessKind == SubsetTypeDecl.WKind.Compiled) {
-        var wStmts = w.Fork();
-        var witness = Expr(nt.Witness, false, wStmts).ToString();
-        string typeName;
-        if (nt.NativeType == null) {
-          typeName = TypeName(nt.BaseType, cw.StaticMemberWriter, nt.Origin);
+        if (Options.Get(CommonOptionBag.ExtendedNewtypeBases) && nt.TypeArgs.Count != 0) {
+          var typeName = nt.NativeType == null ? TypeName(nt.BaseType, w, nt.Origin) : GetNativeTypeName(nt.NativeType);
+          var parameters = nt.TypeArgs.Where(NeedsTypeDescriptor).Comma(tp => $"{DafnyTypeDescriptor}<{tp.GetCompileName(Options)}> {FormatTypeDescriptorVariable(tp.GetCompileName(Options))}");
+          var wWitness = w.NewBlock($"public static {typeName} Witness({parameters})");
+          var wStmts = wWitness.Fork();
+          var witness = Expr(nt.Witness, false, wStmts).ToString();
+          wWitness.WriteLine($"return {(nt.NativeType == null ? witness : $"({typeName})({witness})")};");
         } else {
-          typeName = GetNativeTypeName(nt.NativeType);
-          witness = $"({typeName})({witness})";
+          var wStmts = w.Fork();
+          var witness = Expr(nt.Witness, false, wStmts).ToString();
+          string typeName;
+          if (nt.NativeType == null) {
+            typeName = TypeName(nt.BaseType, cw.StaticMemberWriter, nt.Origin);
+          } else {
+            typeName = GetNativeTypeName(nt.NativeType);
+            witness = $"({typeName})({witness})";
+          }
+          DeclareField("Witness", true, true, true, typeName, witness, cw);
         }
-        DeclareField("Witness", true, true, true, typeName, witness, cw);
       }
       EmitTypeDescriptorMethod(nt, w);
       GenerateIsMethod(nt, cw.StaticMemberWriter);
@@ -1741,7 +1752,9 @@ namespace Microsoft.Dafny.Compilers {
       } else if (cl is NewtypeDecl) {
         var td = (NewtypeDecl)cl;
         if (td.Witness != null) {
-          return TypeName_UDT(FullTypeName(udt), udt, wr, udt.Origin) + ".Witness";
+          var witness = TypeName_UDT(FullTypeName(udt), udt, wr, udt.Origin) + ".Witness";
+          return Options.Get(CommonOptionBag.ExtendedNewtypeBases) && td.TypeArgs.Count != 0
+            ? $"{witness}({TypeArgumentInstantiation.ListFromClass(td, udt.TypeArgs).Where(ta => NeedsTypeDescriptor(ta.Formal)).Comma(ta => TypeDescriptor(ta.Actual, wr, tok))})" : witness;
         } else if (td.NativeType != null) {
           return "0";
         } else {
@@ -1883,6 +1896,9 @@ namespace Microsoft.Dafny.Compilers {
         List<Type> relevantTypeArgs;
         if (cl is DatatypeDecl dt) {
           relevantTypeArgs = UsedTypeParameters(dt, udt.TypeArgs, true).ConvertAll(ta => ta.Actual);
+        } else if (cl is NewtypeDecl && Options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+          relevantTypeArgs = TypeArgumentInstantiation.ListFromClass(cl, udt.TypeArgs)
+            .Where(ta => NeedsTypeDescriptor(ta.Formal)).Select(ta => ta.Actual).ToList();
         } else {
           relevantTypeArgs = type.TypeArgs;
         }
