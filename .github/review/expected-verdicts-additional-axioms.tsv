@@ -597,6 +597,8 @@ git-issues/git-issue-142-runtime.dfy	0	1 verified, 0 errors
 git-issues/git-issue-142.dfy	0	10 verified, 0 errors	
 git-issues/git-issue-1423.dfy	0	4 verified, 0 errors	
 git-issues/git-issue-1435.dfy	4	1 verified, 1 error	6
+git-issues/git-issue-145-nonvacuity.dfy	4	2 verified, 2 errors	9,15
+git-issues/git-issue-145.dfy	0	6 verified, 0 errors	
 git-issues/git-issue-1458.dfy	2		10
 git-issues/git-issue-146-actual-arguments-negative.dfy	4	1 verified, 1 error	16
 git-issues/git-issue-146-actual-arguments.dfy	0	2 verified, 0 errors	
