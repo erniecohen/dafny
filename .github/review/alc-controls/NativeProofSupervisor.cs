@@ -7,6 +7,13 @@ using Microsoft.Win32.SafeHandles;
 
 namespace B3AlcGate;
 
+// Immutable observation of an actual supervisor membership read. It is telemetry,
+// never signalling authority, a test injection, or permission to accept another fault.
+internal sealed record OwnedLiveCapObservation(int ObservedLiveMembers, string FailureCode, string FailureMessage);
+internal interface IOwnedLiveCapObservation {
+  OwnedLiveCapObservation? LiveCapObservation { get; }
+}
+
 /// <summary>Source-only Linux ownership implementation. Program.Main does not enable it.</summary>
 [SupportedOSPlatform("linux")]
 public sealed class NativeProofSupervisor : IProofLifecycleSupervisor {
@@ -146,7 +153,7 @@ public sealed class NativeProofSupervisor : IProofLifecycleSupervisor {
     }
   }
 
-  private sealed class Scope : IProofRunScope {
+  private sealed class Scope : IProofRunScope, IOwnedLiveCapObservation {
     private readonly string root;
     private readonly string parent;
     private readonly string leaf;
@@ -166,6 +173,8 @@ public sealed class NativeProofSupervisor : IProofLifecycleSupervisor {
     private readonly CancellationTokenSource stop = new();
     private readonly Task monitor;
     private string? monitorFailure;
+    private OwnedLiveCapObservation? liveCapObservation;
+    public OwnedLiveCapObservation? LiveCapObservation => Volatile.Read(ref liveCapObservation);
     private bool cleaned;
     private bool disposed;
     private bool admissionClosed;
@@ -196,12 +205,12 @@ public sealed class NativeProofSupervisor : IProofLifecycleSupervisor {
         return;
       }
       if (tracked.Count >= 4096) { throw new InvalidDataException("More than 4096 historical owned process identities."); }
-      if (!ReadOwnedMembers().Contains(identity.Pid) || Identity.Read(identity.Pid).StartTime != identity.StartTime) {
+      if (!ReadBoundedOwnedMembers().Contains(identity.Pid) || Identity.Read(identity.Pid).StartTime != identity.StartTime) {
         throw new InvalidDataException("Ownership identity changed before pidfd capture.");
       }
       var descriptor = Native.OpenPidFd(identity.Pid);
       try {
-        if (Identity.Read(identity.Pid).StartTime != identity.StartTime || !ReadOwnedMembers().Contains(identity.Pid)) {
+        if (Identity.Read(identity.Pid).StartTime != identity.StartTime || !ReadBoundedOwnedMembers().Contains(identity.Pid)) {
           throw new InvalidDataException("Ownership identity changed during pidfd capture.");
         }
         tracked.Add((identity.Pid, identity.StartTime), new(identity, descriptor, kind));
@@ -232,8 +241,7 @@ public sealed class NativeProofSupervisor : IProofLifecycleSupervisor {
     }
 
     private void TrackMembers() {
-      var members = ReadOwnedMembers();
-      if (members.Length > 256) { throw new InvalidDataException("More than 256 owned live processes."); }
+      var members = ReadBoundedOwnedMembers();
       foreach (var pid in members) {
         if (tracked.Values.Any(p => p.Identity.Pid == pid && !Native.Exited(p.Handle))) { continue; }
         // An exclusive leaf provides inherited descendant ownership, including reparenting
@@ -243,6 +251,20 @@ public sealed class NativeProofSupervisor : IProofLifecycleSupervisor {
           // A naturally exiting member can disappear between kernel snapshots.
         }
       }
+      // The group may have grown while an earlier, smaller snapshot was tracked.
+      // Publish its exact cap fault before another long scan can hold the ledger lock.
+      _ = ReadBoundedOwnedMembers();
+    }
+
+    private int[] ReadBoundedOwnedMembers() {
+      var members = ReadOwnedMembers();
+      if (members.Length > 256) {
+        var observation = new OwnedLiveCapObservation(members.Length, "live-owned-process-cap-exceeded",
+          "More than 256 owned live processes.");
+        Interlocked.CompareExchange(ref liveCapObservation, observation, null);
+        throw new InvalidDataException(observation.FailureMessage);
+      }
+      return members;
     }
 
     public ProofCleanup StopAndAssertNoOwnedSolvers(TimeSpan safetyDeadline) {
@@ -296,7 +318,7 @@ public sealed class NativeProofSupervisor : IProofLifecycleSupervisor {
         processes = monitorStopped ? tracked.Values.Select(p => new { p.Identity, p.Kind }).ToArray() : [],
         liveOwnedProcesses = live, populated = leafRemoved ? (bool?)false : null,
         finalMembers = leafRemoved ? Array.Empty<int>() : null, leafRemoved, monitorStopped,
-        signalRequests, fallbackRequests, streamReceipts, failures, admissionClosed
+        signalRequests, fallbackRequests, streamReceipts, failures, admissionClosed, liveCapObservation = LiveCapObservation
       }, Json);
       File.WriteAllBytes(evidence, evidenceBytes);
       if (failures.Count != 0) { throw new InvalidOperationException("Native ownership cleanup failed; evidence: " + evidence); }
