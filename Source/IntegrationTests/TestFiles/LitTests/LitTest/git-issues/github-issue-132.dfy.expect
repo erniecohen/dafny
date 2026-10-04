@@ -1,37 +1,37 @@
 original (type-system-refresh:false)
-github-issue-132-original.dfy(14,2): Error: assertion might not hold
+github-issue-132-original.dfy(14,2): Error: assertion could not be proved
 
 Dafny program verifier finished with 2 verified, 1 error
 original (type-system-refresh:true)
-github-issue-132-original.dfy(14,2): Error: assertion might not hold
+github-issue-132-original.dfy(14,2): Error: assertion could not be proved
 
 Dafny program verifier finished with 2 verified, 1 error
 negative (type-system-refresh:false)
-github-issue-132-negative.dfy(11,2): Error: assertion might not hold
-github-issue-132-negative.dfy(21,2): Error: assertion might not hold
-github-issue-132-negative.dfy(29,2): Error: assertion might not hold
-github-issue-132-negative.dfy(41,2): Error: assertion might not hold
-github-issue-132-negative.dfy(49,2): Error: assertion might not hold
-github-issue-132-negative.dfy(61,2): Error: assertion might not hold
-github-issue-132-negative.dfy(70,2): Error: assertion might not hold
-github-issue-132-negative.dfy(82,2): Error: assertion might not hold
-github-issue-132-negative.dfy(92,2): Error: assertion might not hold
-github-issue-132-negative.dfy(104,2): Error: assertion might not hold
-github-issue-132-negative.dfy(114,2): Error: assertion might not hold
+github-issue-132-negative.dfy(11,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(21,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(29,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(41,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(49,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(61,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(70,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(82,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(92,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(104,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(114,2): Error: assertion could not be proved
 
 Dafny program verifier finished with 1 verified, 11 errors
 negative (type-system-refresh:true)
-github-issue-132-negative.dfy(11,2): Error: assertion might not hold
-github-issue-132-negative.dfy(21,2): Error: assertion might not hold
-github-issue-132-negative.dfy(29,2): Error: assertion might not hold
-github-issue-132-negative.dfy(41,2): Error: assertion might not hold
-github-issue-132-negative.dfy(49,2): Error: assertion might not hold
-github-issue-132-negative.dfy(61,2): Error: assertion might not hold
-github-issue-132-negative.dfy(70,2): Error: assertion might not hold
-github-issue-132-negative.dfy(82,2): Error: assertion might not hold
-github-issue-132-negative.dfy(92,2): Error: assertion might not hold
-github-issue-132-negative.dfy(104,2): Error: assertion might not hold
-github-issue-132-negative.dfy(114,2): Error: assertion might not hold
+github-issue-132-negative.dfy(11,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(21,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(29,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(41,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(49,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(61,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(70,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(82,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(92,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(104,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(114,2): Error: assertion could not be proved
 
 Dafny program verifier finished with 1 verified, 11 errors
 positive (type-system-refresh:false)
