@@ -842,7 +842,7 @@ public class NormalizerTests {
     var labels = string.Join(" ", Enumerable.Range(0, 257).Select(i => "next" + i + ": assert true;"));
     var result = Boogie("procedure P(); implementation P() { while (*) invariant true; { } " + labels + " }");
     Assert.False(result.Success); Assert.Null(result.Program); Assert.Empty(result.Obligations);
-    Assert.Contains(result.Diagnostics, d => d.Code == "b3_cfg_limit");
+    Assert.Contains(result.Diagnostics, d => d.Code == "b3_cfg_correspondence");
   }
 
   [Fact]

@@ -18,6 +18,7 @@
     <Reference Include="$(DafnyNormalizerReferenceDirectory)/*.dll" />
     <Compile Include="../DafnyCore/Backends/B3/B3Normalizer.cs" Link="B3Normalizer.cs" />
     <Compile Include="../DafnyCore/Backends/B3/B3DefinitionVisibility.cs" Link="B3DefinitionVisibility.cs" />
+    <Compile Include="../DafnyCore/Backends/B3/B3StructuredCfgCorrespondence.cs" Link="B3StructuredCfgCorrespondence.cs" />
     <Compile Include="../DafnyCore/Backends/B3/B3DefinitionMustVisibility.cs" Link="B3DefinitionMustVisibility.cs" />
     <Compile Include="../DafnyCore/Backends/B3/B3DefinitionContexts.cs" Link="B3DefinitionContexts.cs" />
     <Compile Include="../DafnyCore/Backends/B3/B3ContextCoordinator.cs" Link="B3ContextCoordinator.cs" />
