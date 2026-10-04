@@ -26,7 +26,7 @@ public static class ProtocolValidation {
     Require(configuration.ArithmeticSolver == 2, "This B3 protocol version supports arithmetic solver 2 only");
     Require(configuration.SolverArguments.SequenceEqual(new[] { "-in", "-smt2" }),
       "Unsupported solver arguments");
-    var types = new HashSet<string>(StringComparer.Ordinal) { "bool", "int" };
+    var types = new HashSet<string>(StringComparer.Ordinal) { "bool", "int", "real" };
     foreach (var type in request.Program.Types) {
       Name(type);
       Require(types.Add(type), "Duplicate/reserved type name");
@@ -71,9 +71,12 @@ public static class ProtocolValidation {
           Require(boolean.Type == "bool", "Invalid boolean literal type");
           break;
         case IntegerLiteral integer:
-          Require(integer.Type == "int" && integer.Value.Length <= 10000 &&
+          Require(integer.Type == "int" && integer.Value.Length <= Protocol.MaximumIntegerCharacters &&
             BigInteger.TryParse(integer.Value, System.Globalization.NumberStyles.AllowLeadingSign,
               System.Globalization.CultureInfo.InvariantCulture, out _), "Invalid exact integer literal");
+          break;
+        case RationalLiteral rational:
+          ParseRationalLiteral(rational);
           break;
         case Variable variable:
           Require(environment.TryGetValue(variable.Name, out var type) && type == variable.Type,
@@ -214,7 +217,7 @@ public static class ProtocolValidation {
   private static void ValidateOperation(Operation operation) {
     var args = operation.Arguments;
     var arity = operation.Operator switch {
-      Operator.IfThenElse => 3, Operator.Not or Operator.Negate => 1, _ => 2
+      Operator.IfThenElse => 3, Operator.Not or Operator.Negate or Operator.ToReal or Operator.ToInt => 1, _ => 2
     };
     Require(Enum.IsDefined(operation.Operator) && args.Count == arity, "Invalid operator arity");
     var valid = operation.Operator switch {
@@ -223,12 +226,35 @@ public static class ProtocolValidation {
       Operator.Equiv or Operator.Implies or Operator.And or Operator.Or =>
         operation.Type == "bool" && args.All(argument => argument.Type == "bool"),
       Operator.Equal or Operator.NotEqual => operation.Type == "bool" && args[0].Type == args[1].Type,
-      Operator.Less or Operator.LessEqual => operation.Type == "bool" && args.All(argument => argument.Type == "int"),
+      Operator.Less or Operator.LessEqual => operation.Type == "bool" &&
+        IsNumeric(args[0].Type) && args[0].Type == args[1].Type,
       Operator.Not => operation.Type == "bool" && args[0].Type == "bool",
-      _ => operation.Type == "int" && args.All(argument => argument.Type == "int")
+      Operator.Add or Operator.Subtract or Operator.Multiply or Operator.Negate =>
+        IsNumeric(operation.Type) && args.All(argument => argument.Type == operation.Type),
+      Operator.Divide or Operator.Modulo => operation.Type == "int" && args.All(argument => argument.Type == "int"),
+      Operator.RealDivide => operation.Type == "real" && args.All(argument => argument.Type == "real"),
+      Operator.ToReal => operation.Type == "real" && args[0].Type == "int",
+      Operator.ToInt => operation.Type == "int" && args[0].Type == "real",
+      _ => false
     };
     Require(valid, "Invalid operator signature");
   }
+  private static bool IsNumeric(string type) => type is "int" or "real";
+
+  public static (BigInteger Numerator, BigInteger Denominator) ParseRationalLiteral(RationalLiteral literal) {
+    Require(literal.Type == "real" && literal.Numerator is { Length: > 0 } &&
+      literal.Denominator is { Length: > 0 } &&
+      literal.Numerator.Length <= Protocol.MaximumIntegerCharacters &&
+      literal.Denominator.Length <= Protocol.MaximumIntegerCharacters, "Invalid bounded rational literal");
+    var style = System.Globalization.NumberStyles.AllowLeadingSign;
+    var culture = System.Globalization.CultureInfo.InvariantCulture;
+    var validNumerator = BigInteger.TryParse(literal.Numerator, style, culture, out var numerator);
+    var validDenominator = BigInteger.TryParse(literal.Denominator, style, culture, out var denominator);
+    Require(validNumerator && validDenominator && denominator > 0,
+      "Invalid exact rational literal or nonpositive denominator");
+    return (numerator, denominator);
+  }
+
   private static void Name(string name) {
     Require(!string.IsNullOrEmpty(name) && name[0] == 's' && name.Length <= 4096 &&
       name.All(character => char.IsAsciiLetterOrDigit(character)), "Illegal normalized name");

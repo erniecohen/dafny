@@ -1,8 +1,13 @@
 # Experimental B3 package
 
-This package contains the Dafny CLI, the B3 worker, the library whose 557 proof
-batches passed in public run 37201990430, and the reviewed Z3 5.1.0 Linux x64
-executable. `package-manifest.json` records their exact hashes and source/build
+The initial bool/int subset archive passed clean-install controls in public
+[run 37209385158](https://github.com/erniecohen/dafny/actions/runs/37209385158)
+on source `f927757337371038a61406a3b107543ca2b72f77`. It used the unchanged
+library whose 557 proof batches passed in public run 37201990430, plus the
+reviewed Z3 5.1.0 Linux x64 executable. That receipt remains evidence for the
+initial archive only. Native Real changes the library proof source and protocol;
+new packaging and checking fail closed until a fresh exact library hash, verified
+batch count and public proof receipt are recorded. `package-manifest.json` records their exact hashes and source/build
 identities. CLI metadata/source identities are build declarations; immutable file
 hashes and the public build receipt provide review evidence, not signed source
 attestation. The generated B3 library remains a trusted compiler artifact; its
@@ -27,7 +32,8 @@ Do not interpret a successful archive build as complete backend acceptance.
 Rebuild from the source checkout with `Scripts/package-b3-experimental.py`,
 passing the built CLI directory, published worker directory, reviewed solver
 and its license, exact CLI source commit, and output archive. The script binds
-the unchanged verified library and source manifest to the public proof receipt.
+the exact verified library and source manifest to the inspected public proof
+receipt. Source inventory hashes alone cannot authorize a new library package.
 The checker requires the archive SHA256 from the independent builder/public
 build receipt. A self-declared package manifest is not its origin check.
 Archive metadata and gzip timestamps are deterministic; input binary hashes
