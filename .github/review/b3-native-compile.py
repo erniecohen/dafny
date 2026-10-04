@@ -4,10 +4,12 @@ No verified-library artifact is reused. Expected failures exit zero and remain
 NOT GREEN in summary.json. Complete backend/default compatibility is outside
 this selected gate, even when every declared stage passes.
 """
-import csv, hashlib, json, os, pathlib, re, runpy, signal, subprocess
+import csv, ctypes, hashlib, json, os, pathlib, re, runpy, signal, subprocess, time
+from pathlib import Path
 import xml.etree.ElementTree as ET
 output=pathlib.Path('out/b3-native-compile');output.mkdir(parents=True,exist_ok=True)
 commands=[
+ ('source-head',['git','rev-parse','HEAD']),
  ('packages',['sh','Scripts/fetch-boogie-packages.sh']),
  ('compiler',['dotnet','build','Source/Dafny/Dafny.csproj','-c','Release','-m:1','-p:UseSharedCompilation=false','--nologo']),
  ('contracts',['dotnet','test','Source/DafnyCore.Test/DafnyCore.Test.csproj','-c','Release','-m:1','-p:UseSharedCompilation=false','--filter','FullyQualifiedName~VerificationContractsTest|FullyQualifiedName~B3BackendSelectionTest|FullyQualifiedName~B3WorkItemTest','--results-directory',str(output/'contracts'),'--logger','trx;LogFileName=result.trx','--nologo']),
@@ -42,12 +44,21 @@ expected_tests={'contracts':26,'normalizer':333,'protocol':163,'language-server'
 expected_controls={'worker-runtime':37,'host':74,'corpus':59,'map-theory':17,
                    'visibility':29,'visibility-session-isolation':1,'visibility-isolation-launches':5}
 proof_receipt=None
-head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+head=None
+cleanup_poisoned=False
+MAXIMUM_STAGE_LOG_BYTES=32 * 1024 * 1024
+STAGE_TIMEOUT_SECONDS=1800
+NATURAL_CHILD_GRACE_SECONDS=5
+MAXIMUM_CHILD_DIAGNOSTICS=64
+stage_environment={**os.environ,'GRADLE_OPTS':'-Dorg.gradle.daemon=false'}
 source_receipt={}
 results=[]
 def validate(name):
- global proof_receipt
- if name in expected_tests:
+ global proof_receipt, head
+ if name=='source-head':
+  head=(output/'source-head.txt').read_text().strip()
+  assert re.fullmatch('[0-9a-f]{40}',head), 'Invalid source revision'
+ elif name in expected_tests:
   tests=ET.parse(output/name/'result.trx').findall('.//{http://microsoft.com/schemas/VisualStudio/TeamTest/2010}UnitTestResult')
   assert len(tests)==expected_tests[name] and all(t.get('outcome')=='Passed' for t in tests), 'Incomplete '+name+' denominator'
  elif name=='worker-bootstrap':
@@ -103,44 +114,201 @@ def validate(name):
   assert len(isolation)==1 and isolation[0]['matched'] and len(isolation[0]['completions'])==5, 'Incomplete fresh isolation launches'
   assert isolation[0]['solverVersion']=='5.1.0' and isolation[0]['solverSha256']==solver_digest and isolation[0]['workerFingerprint']==cases[0]['workerFingerprint']
   assert len(rows)==31 and rows[-1]=={'kind':'visibility-summary','matched':30,'total':30,'isolationMatched':True,'passed':True}
+def direct_children():
+    children = set()
+    for task in Path('/proc/self/task').iterdir():
+        children.update(int(pid) for pid in (task / 'children').read_text().split())
+    return children
+
+
+def cleanup_children():
+    # This dedicated receipt process owns only its stage invocations. Subreaper
+    # adoption retains orphaned children even when their Unix sessions differ.
+    signalled = 0
+    for sig in [signal.SIGTERM, signal.SIGKILL]:
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            while True:
+                try:
+                    if os.waitpid(-1, os.WNOHANG)[0] == 0:
+                        break
+                except ChildProcessError:
+                    break
+            children = direct_children()
+            if not children:
+                return signalled
+            for pid in children:
+                try:
+                    fd = os.pidfd_open(pid)
+                    try:
+                        # Recheck adoption after opening the handle. The signal targets
+                        # this process instance; a reused numeric PID is never killed.
+                        if pid in direct_children():
+                            signal.pidfd_send_signal(fd, sig)
+                            signalled += 1
+                    finally:
+                        os.close(fd)
+                except ProcessLookupError:
+                    pass
+            time.sleep(0.01)
+    raise RuntimeError('Owned CLI descendants remained after bounded cleanup')
+
+
+def reap_exited_children():
+ while True:
+  try:
+   if os.waitpid(-1,os.WNOHANG)[0]==0:
+    return
+  except ChildProcessError:
+   return
+
+
+def child_diagnostics(stage_pid):
+ children=sorted(direct_children())
+ records=[]
+ for pid in children[:MAXIMUM_CHILD_DIAGNOSTICS]:
+  record={'pid':pid,'kind':'stage-root' if pid==stage_pid else 'adopted-child'}
+  try:
+   with (Path('/proc')/str(pid)/'stat').open('rb') as stream:
+    stat=stream.read(4096)
+   suffix=stat[stat.rindex(b')')+2:].split()
+   record['startTimeTicks']=int(suffix[19])
+   with (Path('/proc')/str(pid)/'comm').open('rb') as stream:
+    record['comm']=stream.read(128).decode('utf-8',errors='replace').rstrip('\n')
+   with (Path('/proc')/str(pid)/'cmdline').open('rb') as stream:
+    command=stream.read(4097)
+   record['cmdline']=command[:4096].replace(b'\0',b' ').decode('utf-8',errors='replace')
+   record['cmdlineTruncated']=len(command)>4096
+   record['sessionId']=os.getsid(pid)
+   record['stillOwned']=pid in direct_children()
+  except Exception as error:
+   record['inspectionError']=(type(error).__name__+': '+str(error))[:256]
+  records.append(record)
+ return {'childCount':len(children),'records':records,'recordsTruncated':len(children)>MAXIMUM_CHILD_DIAGNOSTICS}
+
+
+def run_stage(name, command):
+ global cleanup_poisoned
+ log_path=output/(name+'.txt')
+ actual_code=None
+ failure=None
+ process=None
+ residual=residual_before_grace=None
+ cleanup_count=remaining=0
+ before_cleanup={'childCount':0,'records':[],'recordsTruncated':False}
+ try:
+  assert not cleanup_poisoned and not direct_children(), 'Require empty owned child scope before each stage'
+  with log_path.open('wb') as log:
+   process=subprocess.Popen(command,stdout=log,stderr=subprocess.STDOUT,start_new_session=True,
+     cwd="ThirdParty/B3" if name in {"worker-runtime","worker-java"} else None,env=stage_environment)
+   deadline=time.monotonic()+STAGE_TIMEOUT_SECONDS
+   while process.poll() is None:
+    if time.monotonic()>=deadline or log_path.stat().st_size>MAXIMUM_STAGE_LOG_BYTES:
+     raise TimeoutError('Stage safety deadline or output byte bound exceeded')
+    time.sleep(0.01)
+   actual_code=process.wait()
+   if time.monotonic()>=deadline:
+    raise TimeoutError('Stage safety deadline exceeded')
+   residual_before_grace=len(direct_children())
+   if residual_before_grace:
+    grace_deadline=min(deadline,time.monotonic()+NATURAL_CHILD_GRACE_SECONDS)
+    while time.monotonic()<grace_deadline:
+     if log_path.stat().st_size>MAXIMUM_STAGE_LOG_BYTES:
+      raise TimeoutError('Stage output byte bound exceeded during natural-exit grace')
+     reap_exited_children()
+     if not direct_children():
+      break
+     time.sleep(0.01)
+    reap_exited_children()
+   if time.monotonic()>=deadline:
+    raise TimeoutError('Stage safety deadline exceeded during natural-exit grace')
+   residual=len(direct_children())
+   if residual:
+    failure='Completed stage left adopted children after bounded natural-exit grace'
+ except Exception as error:
+  failure=type(error).__name__+': '+str(error)
+ finally:
+  try:
+   before_cleanup=child_diagnostics(process.pid if process is not None else None)
+   if before_cleanup['childCount'] and failure is None:
+    failure='Stage left adopted children before bounded cleanup'
+  except Exception as error:
+   before_cleanup={'inspectionError':(type(error).__name__+': '+str(error))[:256]}
+  try:
+   cleanup_count=cleanup_children()
+   if process is not None:
+    process.wait(timeout=5)
+   remaining=len(direct_children())
+   assert remaining==0, 'Owned stage children remained after bounded cleanup'
+  except Exception as error:
+   cleanup_poisoned=True
+   cleanup_count=None # The bounded helper did not return its final signal count.
+   failure=(failure+'; ' if failure else '')+'Cleanup failed: '+str(error)
+   try:
+    remaining=len(direct_children())
+   except Exception:
+    remaining=None
+ if cleanup_count and failure is None:
+  failure='Stage required forced adopted-child cleanup'
+ log_bytes=log_path.stat().st_size if log_path.exists() else 0
+ truncated=log_bytes>MAXIMUM_STAGE_LOG_BYTES
+ if truncated:
+  failure=(failure+'; ' if failure else '')+'Output byte bound exceeded'
+  # Keep a bounded failed-stage log prefix after the cleanup attempt.
+  with log_path.open('r+b') as log:
+   log.truncate(MAXIMUM_STAGE_LOG_BYTES)
+ log_prefix=b''
+ if log_path.exists():
+  with log_path.open('rb') as log:
+   log_prefix=log.read(MAXIMUM_STAGE_LOG_BYTES)
+ code=actual_code if failure is None else 124 if failure.startswith('TimeoutError:') else 2
+ if code==0:
+  try:
+   validate(name)
+  except Exception as error:
+   failure=type(error).__name__+': '+str(error)
+   code=1
+ return {'stage':name,'exitCode':code,'actualProcessExitCode':actual_code,'command':command,
+   'failure':failure,'residualChildrenBeforeGrace':residual_before_grace,
+   'residualChildrenAtCompletion':residual,'cleanupSignals':cleanup_count,
+   'naturalChildGraceSeconds':NATURAL_CHILD_GRACE_SECONDS,'childrenBeforeCleanup':before_cleanup,
+   'remainingAdoptedChildren':remaining,'cleanupPoisoned':cleanup_poisoned,
+   'maximumLogBytes':MAXIMUM_STAGE_LOG_BYTES,'observedLogBytes':log_bytes,'logTruncated':truncated,
+   'safetyDeadlineSeconds':STAGE_TIMEOUT_SECONDS,
+   'hashedLogBytes':len(log_prefix),'logSha256':hashlib.sha256(log_prefix).hexdigest() if log_path.exists() else None}
+
+
+setup_stage='child-scope'
 try:
+ assert Path('/proc/self/task').exists() and hasattr(os,'pidfd_open') and hasattr(signal,'pidfd_send_signal'), 'Requires Linux child-subreaper/pidfd ownership cleanup'
+ assert not direct_children() and ctypes.CDLL(None,use_errno=True).prctl(36,1,0,0,0)==0, 'Require an empty dedicated child-subreaper scope'
+ setup_stage='source-inventory'
  # Reuse only the source inventory validator, never a compiled library or proof cache.
  runpy.run_path('.github/review/b3-bitvector-proof.py',run_name='b3_inventory')['validate_source'](source_receipt)
 except Exception as error:
- results.append({'stage':'source-inventory','exitCode':1,'error':type(error).__name__+': '+str(error)})
+ results.append({'stage':setup_stage,'exitCode':1,'error':type(error).__name__+': '+str(error)})
  commands=[]
 for name,command in commands:
- with (output/(name+'.txt')).open('w') as log:
-  try:
-   if name in {'map-theory','visibility'}:
-    command[command.index('PINNED_SOLVER_DIGEST')]=hashlib.sha256(pathlib.Path(solver).read_bytes()).hexdigest()
-   if name=='visibility':
-    command[command.index('EXACT_COMPILER_VERSION')]='4.11.0+'+head
-   with subprocess.Popen(command,stdout=log,stderr=subprocess.STDOUT,start_new_session=True,
-     cwd="ThirdParty/B3" if name in {"worker-runtime","worker-java"} else None) as process:
-    try:
-     code=process.wait(timeout=1800)
-    except subprocess.TimeoutExpired:
-     # Reap the entire stage, including descendant solver processes.
-     try: os.killpg(process.pid,signal.SIGTERM)
-     except ProcessLookupError: pass
-     try: process.wait(timeout=10)
-     except subprocess.TimeoutExpired: pass
-     try: os.killpg(process.pid,signal.SIGKILL)
-     except ProcessLookupError: pass
-     process.wait(timeout=10)
-     raise
-   if code == 0:
-    log.flush()
-    validate(name)
-  except subprocess.TimeoutExpired:
-   log.write('Stage exceeded its safety timeout\n');code=124
-  except Exception as error:
-   log.write(type(error).__name__+': '+str(error)+'\n');code=1
- results.append({'stage':name,'exitCode':code,'command':command})
- print(name,code,flush=True)
+ try:
+  if name in {'map-theory','visibility'}:
+   command[command.index('PINNED_SOLVER_DIGEST')]=hashlib.sha256(pathlib.Path(solver).read_bytes()).hexdigest()
+  if name=='visibility':
+   command[command.index('EXACT_COMPILER_VERSION')]='4.11.0+'+head
+  result=run_stage(name,command)
+ except Exception as error:
+  result={'stage':name,'exitCode':1,'command':command,'error':type(error).__name__+': '+str(error)}
+ results.append(result)
+ code=result['exitCode']
+ print(name,code,result.get('failure') or result.get('error') or '',flush=True)
  if code!=0:
-  print((output/(name+'.txt')).read_text()[-12000:],flush=True)
+  log_path=output/(name+'.txt')
+  if log_path.exists():
+   with log_path.open('rb') as captured:
+    captured.seek(max(0,log_path.stat().st_size-12000))
+    print(captured.read(12000).decode('utf-8',errors='replace'),flush=True)
+  # Failed drain poisons this owned scope and prevents every subsequent stage.
+  if cleanup_poisoned:
+   break
   # These terminal checks share only successfully built inputs; record every independent verdict.
   if name not in {'worker-java','corpus','language-server','regressions','map-theory','visibility'}:
    break
@@ -148,7 +316,9 @@ passed=len(results)==len(commands) and all(r['exitCode']==0 for r in results)
 (output/'summary.json').write_text(json.dumps({'passed':passed,'fullGate':full_gate,'head':head,'stages':results,
  'sourceInventory':source_receipt,'libraryProof':proof_receipt,'completeLibraryVerified':proof_receipt is not None,
  'libraryBinaryProduced':proof_receipt is not None,'expectedTestCounts':expected_tests,'expectedControlCounts':expected_controls,
- 'defaultCompatibilityVerified':False},indent=2)+'\n')
+ 'defaultCompatibilityVerified':False,'cleanupPoisoned':cleanup_poisoned,
+ 'cleanupScope':'Dedicated Linux child-subreaper with pidfd-signalled validated owned adopted children',
+ 'stageEnvironmentOverrides':{'GRADLE_OPTS':stage_environment['GRADLE_OPTS']}},indent=2)+'\n')
 with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:
  summary.write('B3 native compilation probe: '+('PASS' if passed else 'NOT GREEN')+'\n\n')
  for result in results: summary.write('- '+result['stage']+': exit '+str(result['exitCode'])+'\n')
