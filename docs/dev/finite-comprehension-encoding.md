@@ -79,14 +79,6 @@ prevent capture, and self-dependent equations retain their existential binder.
 This avoids asking the solver to invent an arithmetic witness solely to enable
 an already justified choice fact; it introduces no additional choice principle.
 
-When a top-level equality fixes a witness to a term independent of that witness,
-the choice premise uses existential equality elimination:
-`exists x :: x == t && P(x)` is equivalent to `P(t)`. The translator substitutes
-by fresh declaration identity, retaining every other type, subset, allocation,
-range, and key conjunct, as well as the remaining binders. A self-dependent
-equality is retained. This removes no source restriction and does not change the
-selected relation or its coordinated projection tuple.
-
 ## Aliases in solver patterns
 
 Finite-view and lambda-family aliases are universally quantified and guarded
