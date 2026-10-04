@@ -648,6 +648,38 @@ namespace Microsoft.Dafny {
         return remaining.Count == 0 ? body : new Boogie.ExistsExpr(tok, remaining, body);
       }
 
+      private Expr MapTupleWitnessCandidate(MapComprehension e, Expr key, Boogie.LambdaExpr witness) {
+        if (e.TermLeft.Resolved is not DatatypeValue { Ctor.EnclosingDatatype: TupleTypeDecl } tuple ||
+            tuple.Arguments.Count != e.BoundVars.Count) {
+          return null;
+        }
+        var indices = new List<int>();
+        foreach (var argument in tuple.Arguments) {
+          if (argument.Resolved is not IdentifierExpr identifier) {
+            return null;
+          }
+          var index = e.BoundVars.FindIndex(variable => ReferenceEquals(variable, identifier.Var));
+          if (index < 0 || indices.Contains(index)) {
+            return null;
+          }
+          indices.Add(index);
+        }
+        // These are candidate witnesses, not inverse assumptions about the key.
+        // Keep the complete original predicate, especially every source type,
+        // subset, allocation, range, and canonical boxed-key conjunct.
+        var candidate = witness.Body;
+        var tupleValue = BoogieGenerator.UnboxUnlessInherentlyBoxed(key, e.TermLeft.Type);
+        for (var position = 0; position < indices.Count; position++) {
+          var index = indices[position];
+          var destructor = tuple.Ctor.Destructors[position];
+          var field = new Boogie.NAryExpr(GetToken(e),
+            new Boogie.FunctionCall(BoogieGenerator.GetReadonlyField(destructor)), [tupleValue]);
+          var value = BoogieGenerator.CondApplyUnbox(GetToken(e), field, destructor.Type, e.BoundVars[index].Type);
+          candidate = new MapWitnessSubstituter(witness.Dummies[index], value).VisitExpr(candidate);
+        }
+        return candidate;
+      }
+
       private Expr DefineMapSelectedWitnesses(MapComprehension e) {
         var tok = GetToken(e);
         var familyType = new Boogie.MapType(tok, [], [Predef.BoxType], MapWitnessRelationType(e));
@@ -661,6 +693,12 @@ namespace Microsoft.Dafny {
         MapSelectedWitnesses(e, relation, out var projections);
         var witness = BuildMapWitnessRelation(e, key);
         var inhabited = MapWitnessInhabited(tok, witness);
+        var tupleCandidate = MapTupleWitnessCandidate(e, key, witness);
+        if (tupleCandidate != null) {
+          // P(candidate) implies exists witnesses :: P(witnesses). Retain that
+          // existential; this redundant disjunct only exposes its direct witness.
+          inhabited = BplOr(inhabited, tupleCandidate);
+        }
         var selected = Boogie.Expr.SelectTok(tok, relation, projections.ToArray());
         // The value uses this same relation family. Each projection access can
         // activate their joint choice fact, with no lambda inside the trigger.
@@ -1542,7 +1580,9 @@ namespace Microsoft.Dafny {
           readsFacts = BplAnd(readsFacts, et.CanCallAssumption(frame.E, lambdaOptions));
         }
         var footprintFact = et.DefineFiniteSetView(GetToken(e), et.BuildBoxedReadsFootprint(GetToken(e), reads));
-        readsFacts = BplAnd(readsFacts, BplImp(et.FiniteReadsSupport(reads), footprintFact));
+        if (reads.Count != 0) {
+          readsFacts = BplAnd(readsFacts, BplImp(et.FiniteReadsSupport(reads), footprintFact));
+        }
         var range = e.Range == null ? null : Substitute(e.Range, null, environment.Substitution);
         var rangeFacts = range == null ? Boogie.Expr.True : et.CanCallAssumption(range, lambdaOptions);
         if (reads.Count == 0 && bodyFacts is Boogie.LiteralExpr { IsTrue: true } &&
@@ -1554,10 +1594,6 @@ namespace Microsoft.Dafny {
         Expr facts = BplAnd(readsFacts, bodyFacts);
         if (range != null) {
           facts = BplAnd(rangeFacts, BplImp(et.TrExpr(range), facts));
-          if (reads.Count == 0) {
-            // An effect-free arrow's .reads is total even when its body precondition is false.
-            facts = BplAnd(facts, readsFacts);
-          }
         }
         // Lambda source well-formedness checks its formals with ISALLOC in this
         // future heap. Export child permissions only under those same premises.
@@ -1609,7 +1645,8 @@ namespace Microsoft.Dafny {
         // With no reads expressions the characteristic predicate is constant
         // false, independent of the lambda's arguments, heap, and precondition.
         // Its exact empty finite view therefore needs no formal-domain premise.
-        // The caller still preserves every enclosing source guard.
+        // Emit this closed fact once: D && (forall x :: G ==> D && F) is equivalent
+        // to D && (forall x :: G ==> F). The caller preserves enclosing source guards.
         return reads.Count == 0 ? BplAnd(footprintFact, guardedFacts) : guardedFacts;
       }
 
