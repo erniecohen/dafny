@@ -1438,12 +1438,14 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
 
       /// <summary>
       /// Whether the expression uses the previous heap in a way that ComputeFreeVariables does not report:
-      /// a two-state function, called or as a value, or a statement, which may call a two-state lemma.
+      /// a two-state function without a label, called or as a value, or a call of a two-state lemma without
+      /// a label in a statement of the expression.  None of these occurs in a one-state context, whose
+      /// translation has no previous heap.
       /// </summary>
       private static bool UsesPreviousHeap(Expression e) {
-        return e is StmtExpr
-          || e is FunctionCallExpr { Function: TwoStateFunction, AtLabel: null }
-          || e is MemberSelectExpr { Member: TwoStateFunction, AtLabel: null }
+        return e is FunctionCallExpr { Function: TwoStateFunction, AtLabel: null }
+          || e is MemberSelectExpr { Member: TwoStateFunction or TwoStateLemma, AtLabel: null }
+          || (e is StmtExpr s && s.S.SubExpressionsIncludingTransitiveSubStatements.Any(UsesPreviousHeap))
           || e.SubExpressions.Any(UsesPreviousHeap);
       }
 
