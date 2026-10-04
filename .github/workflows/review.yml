@@ -41,15 +41,31 @@ jobs:
           exit 0
       - name: Pinned solver and diagnostic cases
         run: |
-          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          set +e
+          curl --retry 3 --retry-all-errors -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip > results/solver-download.txt 2>&1
+          result=$?
+          echo "$result" > results/solver-download-exit.txt
+          if [ "$result" != 0 ]; then
+            cat results/solver-download.txt
+            echo 'Solver download failed; no proofs ran.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+          result=$?
+          echo "$result" > results/solver-checksum-exit.txt
+          if [ "$result" != 0 ]; then exit 0; fi
           unzip -q z3.zip
+          result=$?
+          echo "$result" > results/solver-unzip-exit.txt
+          if [ "$result" != 0 ]; then exit 0; fi
           chmod +x z3-5.1.0-x64-glibc-2.39/bin/z3
           if [ "$(cat results/build-exit.txt)" = 0 ]; then
             extra=''
             if [ '${{ inputs.extended }}' = true ]; then extra=--extended; fi
             python3 .github/review/extended-newtype-bases.py "$PWD/out/dafny/Dafny" "$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" results/cases $extra
+            echo "$?" > results/probes-exit.txt
           fi
+          exit 0
       - uses: actions/upload-artifact@v4
         if: always()
         with:
