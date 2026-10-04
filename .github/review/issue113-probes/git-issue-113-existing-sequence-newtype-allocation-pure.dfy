@@ -1,0 +1,17 @@
+class C {
+  var x: int
+  var next: C?
+  constructor () { x := 0; next := null; }
+  function F(): C reads this { this }
+  twostate function P(): C? reads this { old(next) }
+}
+newtype Wrapped = values: seq<() ~> int> | true witness []
+method Pure() {
+  label L:
+  var f: () ~> int := () => 0;
+  var values := [f] as Wrapped;
+  var produce := () => values;
+  assert old@L(allocated(produce));
+  assert old@L(allocated(produce()));
+  assert ((produce() as seq<() ~> int>)[0])() == 0;
+}
