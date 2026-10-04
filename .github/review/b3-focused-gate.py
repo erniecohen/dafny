@@ -108,6 +108,7 @@ try:
         test('normalizer', 'Source/DafnyB3Normalizer.Test/DafnyB3Normalizer.Test.csproj')
         if run('host', ['bash', 'Source/DafnyB3Host.Test/run-tests.sh', library, solver]):
             run('map-theory', ['dotnet', 'run', '--project', 'Source/DafnyB3MapTheory.TestRunner', '-c', 'Release', '--', '--worker', str(Path('build/b3-host-tests/package/DafnyB3Host.dll').resolve()), '--solver', solver, '--solver-sha256', receipt['solverSha256'], '--emit-directory', str(output / 'map-requests')])
+            run('corpus', ['python3', 'Scripts/check-b3-integration.py', 'Binaries/net8.0/Dafny.dll', 'build/b3-host-tests/package/DafnyB3Host.dll', solver])
     receipt['passed'] = prerequisite and all(s['exitCode'] == 0 for s in receipt['stages'])
 except Exception as error:
     receipt['stages'].append({'stage': 'prerequisite', 'exitCode': 1, 'error': str(error)})
