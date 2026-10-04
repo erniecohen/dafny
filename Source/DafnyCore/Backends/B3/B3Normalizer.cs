@@ -70,10 +70,10 @@ public static class B3Normalizer {
     private readonly Dictionary<Bpl.Variable, Ir.Variable> oldNames = new();
     private readonly Dictionary<string, Ir.Function> functions = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> types = new(StringComparer.Ordinal);
-    private readonly List<Ir.Axiom> mapAxioms = new();
     private readonly Dictionary<string, string> mapHelperOrigins = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> mapStoreNames = new(StringComparer.Ordinal);
     private readonly HashSet<string> opaqueMapOrigins = new(StringComparer.Ordinal);
-    private int mapTheoryEstimatedNodes;
+    private int mapReadEstimatedNodes;
     private readonly Dictionary<Bpl.Variable, (Bpl.Expr Expression, Environment Environment)> outputWhere = new();
     private readonly List<Ir.SourceIdentity> obligations = new();
     private readonly Dictionary<Bpl.LambdaExpr, string> lambdaNames = new();
@@ -129,11 +129,11 @@ public static class B3Normalizer {
       // Discovering expressions above discovers every demanded global. Save entry state before any assumptions.
       var snapshots = oldNames.Select(pair => (Ir.Statement)new Ir.Assign(pair.Value.Name, Name(pair.Key))).ToList();
       var statements = snapshots.Concat(prologue).Append(body).Append(exit).ToArray();
-      var normalized = new Ir.Program(types.Values.ToArray(), functions.Values.ToArray(), mapAxioms.ToArray(),
+      var normalized = new Ir.Program(types.Values.ToArray(), functions.Values.ToArray(), Array.Empty<Ir.Axiom>(),
         new Ir.Unit(Symbol("unit:" + unit.Name), variables.ToArray(), new Ir.Block(statements)));
       CheckOwnedBounds(normalized);
       return new B3NormalizationResult(normalized, obligations.ToArray(), Array.Empty<B3NormalizationDiagnostic>(),
-        new[] { "All source axioms, distinct-constant constraints, nonidentity function definitions and lambda equations are omitted. Demanded closed function instances and constants are uninterpreted. Direct closed monomorphic maps have only read-over-write helper equations; polymorphic maps remain uninterpreted. Map equality remains opaque without extensionality.",
+        new[] { "All source axioms, distinct-constant constraints, nonidentity function definitions and lambda equations are omitted. Demanded closed function instances and constants are uninterpreted. Direct reads of owned closed monomorphic store expressions use the read-over-write ITE identity; other map operations remain uninterpreted. No global read-over-write axioms are asserted. Map equality remains opaque without extensionality.",
           "StateCmd and call-temporary scope-entry where predicates are omitted: pinned scope passification appends raw predicates without current-incarnation substitution. Post-havoc where predicates are preserved." }
           .Concat(mapHelperOrigins.Values).Concat(opaqueMapOrigins.OrderBy(s => s, StringComparer.Ordinal)).ToArray());
     }
@@ -232,52 +232,44 @@ public static class B3Normalizer {
           indexSorts.Select((sort, i) => arguments[i + 1].Type == sort).All(b => b) &&
           (!store || arguments[^1].Type == valueSort),
         "b3_map_signature", "Map operation differs from its resolved monomorphic signature", sourceApplication.tok);
-      AddMapHelpers(mapSort, indexSorts, valueSort, sourceApplication.tok);
-      return Apply(store ? "map-store" : "map-select", resultType, arguments);
+      if (!mapHelperOrigins.ContainsKey(mapSort)) {
+        mapHelperOrigins.Add(mapSort, "Monomorphic map helper origin: Boogie 73a0e214a87df85fc058270268c1d0706fd05bc9 " +
+          "TypeErasureArguments.cs:298-464; map=" + mapSort + "; indices=(" + string.Join(",", indexSorts) +
+          "); value=" + valueSort + "; encoding=direct-read-store-ITE; global-axioms=0");
+      }
+      if (store) {
+        var application = (Ir.Application)Apply("map-store", resultType, arguments);
+        mapStoreNames[mapSort] = application.Name;
+        return application;
+      }
+      return ReadMap(mapSort, indexSorts, valueSort, arguments[0], arguments.Skip(1).ToArray(), sourceApplication.tok, 0);
     }
 
-    private void AddMapHelpers(string mapSort, string[] indexSorts, string valueSort, Bpl.IToken token) {
-      if (mapHelperOrigins.ContainsKey(mapSort)) { return; }
+    private Ir.Expression ReadMap(string mapSort, string[] indexSorts, string valueSort,
+      Ir.Expression map, Ir.Expression[] indexes, Bpl.IToken token, int depth) {
+      Require(depth < Ir.Protocol.MaximumDepth, "b3_map_read_limit", "Nested map read lowering exceeds normalization bounds", token);
       var arity = indexSorts.Length;
-      Require(arity <= Ir.Protocol.MaximumNodes, "b3_map_theory_limit", "Map helper arity exceeds normalization bounds", token);
-      // Bound construction before allocating a quadratic family of quantified tuple-index expressions.
-      var estimate = ((long)arity + 1) * (6L * arity + 20);
-      Require(estimate <= Ir.Protocol.MaximumNodes - mapTheoryEstimatedNodes,
-        "b3_map_theory_limit", "Map helper equations exceed normalization bounds", token);
-      mapTheoryEstimatedNodes += (int)estimate;
-      Ir.Binding Bind(string sort) => new("sB" + ++boundNumber, sort);
-      Ir.Variable Var(Ir.Binding binding) => new(binding.Name, binding.Type);
-      var map = Bind(mapSort);
-      var indexes = indexSorts.Select(Bind).ToArray();
-      var value = Bind(valueSort);
-      var otherIndexes = indexSorts.Select(Bind).ToArray();
-      var indexValues = indexes.Select(Var).Cast<Ir.Expression>().ToArray();
-      var otherIndexValues = otherIndexes.Select(Var).Cast<Ir.Expression>().ToArray();
-      Ir.Application Select(Ir.Expression mapValue, Ir.Expression[] coordinates) =>
-        (Ir.Application)Apply("map-select", valueSort, new[] { mapValue }.Concat(coordinates).ToArray());
-      Ir.Application Store(Ir.Expression mapValue, Ir.Expression[] coordinates, Ir.Expression storedValue) =>
-        (Ir.Application)Apply("map-store", mapSort, new[] { mapValue }.Concat(coordinates).Append(storedValue).ToArray());
-      Ir.Operation Equal(Ir.Expression left, Ir.Expression right) => new(Ir.Operator.Equal, "bool", new[] { left, right });
-      var stored = Store(Var(map), indexValues, Var(value));
-      var sameRead = Select(stored, indexValues);
-      var explains = new[] { sameRead.Name, stored.Name };
-      var sameBindings = new[] { map }.Concat(indexes).Append(value).ToArray();
-      var noPatterns = Array.Empty<IReadOnlyList<Ir.Expression>>();
-      mapAxioms.Add(new Ir.Axiom(explains, new Ir.Quantifier(true, sameBindings, noPatterns, Equal(sameRead, Var(value)))));
-      var otherRead = Select(stored, otherIndexValues);
-      var originalRead = Select(Var(map), otherIndexValues);
-      var otherBindings = sameBindings.Concat(otherIndexes).ToArray();
-      for (var i = 0; i < arity; i++) {
-        // GenMapAxiom1 has one clause per component: equality here OR an unchanged read.
-        var unchanged = new Ir.Operation(Ir.Operator.Or, "bool", new Ir.Expression[] {
-          Equal(indexValues[i], otherIndexValues[i]), Equal(otherRead, originalRead)
-        });
-        mapAxioms.Add(new Ir.Axiom(explains, new Ir.Quantifier(true, otherBindings, noPatterns, unchanged)));
+      // Only this normalizer's typed store constructor can supply this provenance.
+      // A read through a variable or ordinary source function is never replaced by its past assignment.
+      if (map is not Ir.Application stored || !mapStoreNames.TryGetValue(mapSort, out var storeName) || stored.Name != storeName) {
+        return Apply("map-select", valueSort, new[] { map }.Concat(indexes).ToArray());
       }
-      mapHelperOrigins.Add(mapSort, "Monomorphic map helper origin: Boogie 73a0e214a87df85fc058270268c1d0706fd05bc9 " +
-        "TypeErasureArguments.cs:298-464; map=" + mapSort + "; indices=(" + string.Join(",", indexSorts) +
-        "); value=" + valueSort + "; select=" + sameRead.Name + "; store=" + stored.Name + "; equations=R0" +
-        string.Concat(Enumerable.Range(0, arity).Select(i => ",R1[" + i + "]")));
+      Require(stored.Type == mapSort && stored.Arguments.Count == arity + 2 && stored.Arguments[0].Type == mapSort &&
+          stored.Arguments[^1].Type == valueSort && indexes.Length == arity &&
+          indexSorts.Select((sort, i) => stored.Arguments[i + 1].Type == sort && indexes[i].Type == sort).All(b => b),
+        "b3_map_signature", "Owned store differs from the closed map signature", token);
+      // Bound generated nodes before allocating conjunctions. The final traversal also counts copied occurrences.
+      var estimate = 7L * arity + 8;
+      Require(estimate <= Ir.Protocol.MaximumNodes - mapReadEstimatedNodes,
+        "b3_map_read_limit", "Map read identities exceed normalization bounds", token);
+      mapReadEstimatedNodes += (int)estimate;
+      Ir.Expression sameIndex = new Ir.BooleanLiteral(true);
+      for (var i = 0; i < arity; i++) {
+        var equal = new Ir.Operation(Ir.Operator.Equal, "bool", new[] { stored.Arguments[i + 1], indexes[i] });
+        sameIndex = new Ir.Operation(Ir.Operator.And, "bool", new[] { sameIndex, equal });
+      }
+      var unchanged = ReadMap(mapSort, indexSorts, valueSort, stored.Arguments[0], indexes, token, depth + 1);
+      return new Ir.Operation(Ir.Operator.IfThenElse, valueSort, new[] { sameIndex, stored.Arguments[^1], unchanged });
     }
 
     private Ir.Expression Expr(Bpl.Expr expression, Environment env, bool old = false, int depth = 0) {

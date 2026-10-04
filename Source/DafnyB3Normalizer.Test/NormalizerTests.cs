@@ -20,7 +20,7 @@ public class NormalizerTests {
     var checks = results.SelectMany(r => Statements(r.Program!.Unit.Body)).OfType<Ir.Check>().ToArray();
     Assert.Contains(checks, c => c.Condition is Ir.BooleanLiteral { Value: false });
     Assert.Contains(checks, c => c.Condition is Ir.BooleanLiteral { Value: true });
-    Assert.All(results.SelectMany(r => r.Program!.Axioms), axiom => Assert.Equal(2, axiom.Explains.Count));
+    Assert.All(results, result => Assert.Empty(result.Program!.Axioms));
     Assert.All(results.SelectMany(r => r.Obligations), o => Assert.Contains("B3NormalizerTests.dfy", o.Uri));
   }
 
@@ -135,10 +135,7 @@ public class NormalizerTests {
     Assert.Equal(axiomCount, result.Program!.Axioms.Count);
     Assert.Equal(checkCount, result.Obligations.Count);
     Assert.Equal(helperCount, result.Approximations.Count(a => a.StartsWith("Monomorphic map helper origin:")));
-    Assert.All(result.Program.Axioms, axiom => {
-      Assert.Equal(2, axiom.Explains.Count);
-      Assert.True(Assert.IsType<Ir.Quantifier>(axiom.Condition).Universal);
-    });
+    Assert.Empty(result.Program.Axioms);
     if (containsLiteralFalse) {
       Assert.Contains(Statements(result.Program.Unit.Body).OfType<Ir.Check>(), check => check.Condition is Ir.BooleanLiteral { Value: false });
     }
@@ -156,7 +153,7 @@ public class NormalizerTests {
   }
 
   [Fact]
-  public void MapHelperGenerationDoesNotMutateSourceAndHasDeterministicOrigins() {
+  public void MapReadLoweringDoesNotMutateSourceAndHasDeterministicOrigins() {
     var options = Options();
     var source = ParseBoogie("type M = [int, bool]int; procedure P(m: M); implementation P(m: M) { assert m[0, true := 1][0, false] == m[0, false]; }", options);
     var before = Emit(source, options);
@@ -166,16 +163,63 @@ public class NormalizerTests {
     Assert.Equal(before, Emit(source, options));
     Assert.Equal(Ir.Protocol.GetProgramHash(first.Program!), Ir.Protocol.GetProgramHash(second.Program!));
     Assert.Equal(first.Approximations, second.Approximations);
-    Assert.Contains(first.Approximations, a => a.Contains("indices=(int,bool)") && a.Contains("equations=R0,R1[0],R1[1]"));
+    Assert.Contains(first.Approximations, a => a.Contains("indices=(int,bool)") && a.Contains("encoding=direct-read-store-ITE; global-axioms=0"));
   }
 
   [Fact]
-  public void ExcessiveMapTheoryFailsBeforeQuadraticConstruction() {
+  public void ExcessiveTupleReadDepthDoesNotProducePartialIr() {
     var indexes = string.Join(",", Enumerable.Repeat("0", 200));
     var mapType = "[" + string.Join(",", Enumerable.Repeat("int", 200)) + "]int";
     var result = Boogie("procedure P(m: " + mapType + "); implementation P(m: " + mapType + ") { assert m[" + indexes + " := 1][" + indexes + "] == 1; }");
     Assert.False(result.Success); Assert.Null(result.Program); Assert.Empty(result.Obligations);
-    Assert.Contains(result.Diagnostics, d => d.Code == "b3_map_theory_limit");
+    Assert.Contains(result.Diagnostics, d => d.Code == "b3_owned_ir_limit");
+  }
+
+  [Fact]
+  public void DirectTupleReadTestsEveryCoordinateAndNestedStoresPeelWithoutAxioms() {
+    var tuple = Boogie("procedure P(m: [int,bool]int, i: int, v: int); implementation P(m: [int,bool]int, i: int, v: int) { assert m[i,true := v][i,false] == m[i,false]; }");
+    Validate(tuple);
+    var check = Assert.Single(Statements(tuple.Program!.Unit.Body).OfType<Ir.Check>());
+    var identity = Assert.IsType<Ir.Operation>(Assert.IsType<Ir.Operation>(check.Condition).Arguments[0]);
+    Assert.Equal(Ir.Operator.IfThenElse, identity.Operator);
+    var conjunction = Assert.IsType<Ir.Operation>(identity.Arguments[0]);
+    Assert.Equal(Ir.Operator.And, conjunction.Operator);
+    var booleanCoordinate = Assert.IsType<Ir.Operation>(conjunction.Arguments[1]);
+    Assert.Equal(new Ir.BooleanLiteral(true), booleanCoordinate.Arguments[0]);
+    Assert.Equal(new Ir.BooleanLiteral(false), booleanCoordinate.Arguments[1]);
+    Assert.IsType<Ir.Application>(identity.Arguments[2]);
+    Assert.Empty(tuple.Program.Axioms);
+
+    var nested = Boogie("procedure P(m: [int]int); implementation P(m: [int]int) { assert m[0 := 1][1 := 2][0] == 1; }");
+    Validate(nested);
+    var nestedCheck = Assert.Single(Statements(nested.Program!.Unit.Body).OfType<Ir.Check>());
+    Assert.Equal(2, Expressions(nestedCheck.Condition).OfType<Ir.Operation>().Count(op => op.Operator == Ir.Operator.IfThenElse));
+    Assert.Empty(nested.Program.Axioms);
+  }
+
+  [Fact]
+  public void ReadsThroughAssignedVariablesHaveNoGuessedStoreProvenance() {
+    var result = Boogie("procedure P(m: [int]int); implementation P(m: [int]int) { var n: [int]int; n := m[0 := 1]; assert n[0] == 1; n := m; assert n[0] == 1; }");
+    Validate(result);
+    var checks = Statements(result.Program!.Unit.Body).OfType<Ir.Check>().ToArray();
+    Assert.Equal(2, checks.Length);
+    foreach (var check in checks) {
+      var read = Assert.IsType<Ir.Application>(Assert.IsType<Ir.Operation>(check.Condition).Arguments[0]);
+      Assert.IsType<Ir.Variable>(read.Arguments[0]);
+      Assert.DoesNotContain(Expressions(check.Condition).OfType<Ir.Operation>(), op => op.Operator == Ir.Operator.IfThenElse);
+    }
+    Assert.Empty(result.Program.Axioms);
+  }
+
+  [Fact]
+  public void DirectReadIdentityRetainsTheLexicalIndexBinder() {
+    var result = Boogie("procedure P(m: [int]int); implementation P(m: [int]int) { assert (forall i: int :: m[i := 1][i] == 1); }");
+    Validate(result);
+    var quantifier = Assert.IsType<Ir.Quantifier>(Assert.Single(Statements(result.Program!.Unit.Body).OfType<Ir.Check>()).Condition);
+    var identity = Assert.IsType<Ir.Operation>(Assert.IsType<Ir.Operation>(quantifier.Body).Arguments[0]);
+    Assert.Equal(Ir.Operator.IfThenElse, identity.Operator);
+    Assert.Contains(Expressions(identity).OfType<Ir.Variable>(), variable => variable.Name == quantifier.Bindings[0].Name);
+    Assert.Empty(result.Program.Axioms);
   }
 
   [Theory]
@@ -732,6 +776,19 @@ public class NormalizerTests {
       foreach (var child in Statements(labeled.Body)) { yield return child; }
     }
   }
+  private static IEnumerable<Ir.Expression> Expressions(Ir.Expression expression) {
+    yield return expression;
+    IEnumerable<Ir.Expression> children = expression switch {
+      Ir.Application application => application.Arguments,
+      Ir.Operation operation => operation.Arguments,
+      Ir.Quantifier quantifier => new[] { quantifier.Body }.Concat(quantifier.Patterns.SelectMany(pattern => pattern)),
+      Ir.Let let => new[] { let.Value, let.Body },
+      Ir.Label label => new[] { label.Body },
+      _ => Array.Empty<Ir.Expression>()
+    };
+    foreach (var child in children.SelectMany(Expressions)) { yield return child; }
+  }
+
   private static void Validate(B3NormalizationResult result) {
     Assert.True(result.Success, string.Join("\n", result.Diagnostics.Select(d => d.Code + ": " + d.Message)));
     var request = new Ir.Request(Ir.Protocol.Version, "normalizer-test", Ir.Protocol.NormalizerVersion,
