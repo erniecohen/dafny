@@ -25,12 +25,14 @@ public class B3BackendSelectionTest {
     Assert.Equal("B3 does not support --cache-verification; use 0",
       B3VerificationBackend.ValidateInvocation(options));
   }
-  [Fact]
-  public void B3SolverPreparationDoesNotExecuteTheSolverInTheParent() {
+  [Theory]
+  [InlineData(-1)] // Native options sentinel: caching is disabled.
+  [InlineData(0)] // Modern CLI and editor default.
+  public void B3SolverPreparationDoesNotExecuteTheSolverInTheParent(int cacheLevel) {
     var path = Path.GetTempFileName();
     try {
       // This is deliberately not an executable: a parent Process.Start would fail.
-      var options = new DafnyOptions(DafnyOptions.Default);
+      var options = new DafnyOptions(DafnyOptions.Default) { VerifySnapshots = cacheLevel };
       options.Set(B3OptionBag.VerificationBackend, B3OptionBag.Backend.B3);
       options.TimeLimit = 20;
       options.ProverOptions.Add("PROVER_PATH=" + path);
