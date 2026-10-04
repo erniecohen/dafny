@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "scope": "direct-closed-monomorphic-map-read-store-identity",
+  "scope": "direct-closed-monomorphic-map-read-store-identity-and-observation-abstraction",
   "status": "unexecuted-repair-targets; prior quantified-helper gate matched 6/15",
   "cases": [
     {
@@ -13,7 +13,8 @@
       "containsLiteralFalse": false,
       "expectedAttempts": [
         "Verified"
-      ]
+      ],
+      "expectedObservations": 0
     },
     {
       "file": "read-other.bpl",
@@ -25,7 +26,8 @@
       "containsLiteralFalse": false,
       "expectedAttempts": [
         "Verified"
-      ]
+      ],
+      "expectedObservations": 0
     },
     {
       "file": "read-wrong.bpl",
@@ -37,7 +39,8 @@
       "containsLiteralFalse": false,
       "expectedAttempts": [
         "Failed"
-      ]
+      ],
+      "expectedObservations": 0
     },
     {
       "file": "false-with-theory.bpl",
@@ -50,7 +53,8 @@
       "expectedAttempts": [
         "Verified",
         "Failed"
-      ]
+      ],
+      "expectedObservations": 0
     },
     {
       "file": "weak-equality.bpl",
@@ -63,7 +67,8 @@
       "expectedAttempts": [
         "Verified",
         "Failed"
-      ]
+      ],
+      "expectedObservations": 1
     },
     {
       "file": "tuple-other.bpl",
@@ -76,7 +81,8 @@
       "expectedAttempts": [
         "Verified",
         "Verified"
-      ]
+      ],
+      "expectedObservations": 0
     },
     {
       "file": "aliases.bpl",
@@ -89,7 +95,8 @@
       "expectedAttempts": [
         "Verified",
         "Verified"
-      ]
+      ],
+      "expectedObservations": 0
     },
     {
       "file": "nested.bpl",
@@ -102,7 +109,8 @@
       "expectedAttempts": [
         "Verified",
         "Verified"
-      ]
+      ],
+      "expectedObservations": 0
     },
     {
       "file": "nullary.bpl",
@@ -114,7 +122,8 @@
       "containsLiteralFalse": false,
       "expectedAttempts": [
         "Verified"
-      ]
+      ],
+      "expectedObservations": 0
     },
     {
       "file": "polymorphic-opaque.bpl",
@@ -126,7 +135,8 @@
       "containsLiteralFalse": false,
       "expectedAttempts": [
         "Failed"
-      ]
+      ],
+      "expectedObservations": 0
     },
     {
       "file": "box-left-inverse-omitted.bpl",
@@ -139,7 +149,8 @@
       "expectedAttempts": [
         "Verified",
         "Failed"
-      ]
+      ],
+      "expectedObservations": 0
     },
     {
       "file": "box-reverse-invalid.bpl",
@@ -152,7 +163,8 @@
       "expectedAttempts": [
         "Verified",
         "Failed"
-      ]
+      ],
+      "expectedObservations": 0
     },
     {
       "file": "bool-read-wrong.bpl",
@@ -164,7 +176,8 @@
       "containsLiteralFalse": false,
       "expectedAttempts": [
         "Failed"
-      ]
+      ],
+      "expectedObservations": 0
     },
     {
       "file": "bool-false-with-theory.bpl",
@@ -177,7 +190,8 @@
       "expectedAttempts": [
         "Verified",
         "Failed"
-      ]
+      ],
+      "expectedObservations": 0
     },
     {
       "file": "bool-weak-equality.bpl",
@@ -190,7 +204,8 @@
       "expectedAttempts": [
         "Verified",
         "Failed"
-      ]
+      ],
+      "expectedObservations": 1
     }
   ]
 }

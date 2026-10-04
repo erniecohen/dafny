@@ -121,6 +121,7 @@ public class NormalizerTests {
     foreach (var entry in manifest.RootElement.GetProperty("cases").EnumerateArray()) {
       yield return new object[] { entry.GetProperty("file").GetString()!, entry.GetProperty("expectedAxioms").GetInt32(),
         entry.GetProperty("expectedChecks").GetInt32(), entry.GetProperty("expectedHelpers").GetInt32(),
+        entry.GetProperty("expectedObservations").GetInt32(),
         entry.GetProperty("containsLiteralFalse").GetBoolean() };
     }
   }
@@ -128,13 +129,14 @@ public class NormalizerTests {
   [Theory]
   [MemberData(nameof(MapTheoryInputs))]
   public void TypedMapTheoryInputsPreserveEveryCheckAndValidateOwnedHelpers(string file, int axiomCount,
-    int checkCount, int helperCount, bool containsLiteralFalse) {
+    int checkCount, int helperCount, int observationCount, bool containsLiteralFalse) {
     // The manifest's verdict targets require the separate worker/native gate; this test normalizes only.
     var result = Boogie(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "MapTheoryInputs", file)));
     Validate(result);
     Assert.Equal(axiomCount, result.Program!.Axioms.Count);
     Assert.Equal(checkCount, result.Obligations.Count);
     Assert.Equal(helperCount, result.Approximations.Count(a => a.StartsWith("Monomorphic map helper origin:")));
+    Assert.Equal(observationCount, result.Approximations.Count(a => a.StartsWith("Map observation equality abstraction:")));
     Assert.Empty(result.Program.Axioms);
     if (containsLiteralFalse) {
       Assert.Contains(Statements(result.Program.Unit.Body).OfType<Ir.Check>(), check => check.Condition is Ir.BooleanLiteral { Value: false });
@@ -219,6 +221,124 @@ public class NormalizerTests {
     var identity = Assert.IsType<Ir.Operation>(Assert.IsType<Ir.Operation>(quantifier.Body).Arguments[0]);
     Assert.Equal(Ir.Operator.IfThenElse, identity.Operator);
     Assert.Contains(Expressions(identity).OfType<Ir.Variable>(), variable => variable.Name == quantifier.Bindings[0].Name);
+    Assert.Empty(result.Program.Axioms);
+  }
+
+  [Fact]
+  public void ObservationEqualityCapturesMapValuesAndIsConsistentAcrossBothPolarities() {
+    var result = Boogie("type M = [int]int; procedure P(m: M, n: M); requires (forall i: int :: m[i] == n[i]); implementation P(m: M, n: M) { assert !(forall j: int :: m[j] == n[j]); assert m != n; }");
+    Validate(result);
+    var assumption = Assert.IsType<Ir.Application>(Assert.Single(Statements(result.Program!.Unit.Body).OfType<Ir.Assume>()).Condition);
+    Assert.Equal("bool", assumption.Type);
+    Assert.Equal(2, assumption.Arguments.Count);
+    Assert.All(assumption.Arguments, argument => Assert.IsType<Ir.Variable>(argument));
+    var checks = Statements(result.Program.Unit.Body).OfType<Ir.Check>().ToArray();
+    var negated = Assert.IsType<Ir.Operation>(checks[0].Condition);
+    Assert.Equal(Ir.Operator.Not, negated.Operator);
+    var observation = Assert.IsType<Ir.Application>(negated.Arguments[0]);
+    Assert.Equal(assumption.Name, observation.Name);
+    Assert.Equal(assumption.Arguments.ToArray(), observation.Arguments.ToArray());
+    Assert.Equal(Ir.Operator.NotEqual, Assert.IsType<Ir.Operation>(checks[1].Condition).Operator);
+    Assert.Contains(result.Approximations, note => note.StartsWith("Map observation equality abstraction:"));
+    Assert.Empty(result.Program.Axioms);
+  }
+
+  [Theory]
+  [InlineData("forall i,j: int :: m[i,j] == n[i,j]", true)]
+  [InlineData("forall i: int :: m[i,0] == n[i,0]", false)]
+  [InlineData("forall i,j: int :: m[i,i] == n[i,i]", false)]
+  [InlineData("forall i,j: int :: m[j,i] == n[j,i]", false)]
+  [InlineData("forall i,j: int :: m[i,j] == n[j,i]", false)]
+  [InlineData("forall i,j,k: int :: m[i,j] == n[i,j]", false)]
+  [InlineData("forall i,j: int :: i >= 0 ==> m[i,j] == n[i,j]", false)]
+  [InlineData("forall i,j: int :: m[i+g,j] == n[i+g,j]", false)]
+  [InlineData("exists i,j: int :: m[i,j] == n[i,j]", false)]
+  [InlineData("forall i,j: int :: { m[i,j] } m[i,j] == n[i,j]", false)]
+  [InlineData("forall i,j: int :: {:weight 1} m[i,j] == n[i,j]", false)]
+  public void ObservationMatchingRequiresExactlyTheCompleteOrderedTuple(string formula, bool abstracted) {
+    var result = Boogie("procedure P(m: [int,int]int, n: [int,int]int, g: int); implementation P(m: [int,int]int, n: [int,int]int, g: int) { assert (" + formula + "); }");
+    Validate(result);
+    var condition = Assert.Single(Statements(result.Program!.Unit.Body).OfType<Ir.Check>()).Condition;
+    if (abstracted) { Assert.IsType<Ir.Application>(condition); }
+    else { Assert.IsType<Ir.Quantifier>(condition); }
+    Assert.Equal(abstracted, result.Approximations.Any(note => note.StartsWith("Map observation equality abstraction:")));
+    Assert.Empty(result.Program.Axioms);
+  }
+
+  [Fact]
+  public void AMapExpressionDependingOnTheIndexBinderIsNotAbstracted() {
+    var result = Boogie("function F(i: int): [int]int; procedure P(n: [int]int); implementation P(n: [int]int) { assert (forall i: int :: F(i)[i] == n[i]); }");
+    Validate(result);
+    Assert.IsType<Ir.Quantifier>(Assert.Single(Statements(result.Program!.Unit.Body).OfType<Ir.Check>()).Condition);
+    Assert.DoesNotContain(result.Approximations, note => note.StartsWith("Map observation equality abstraction:"));
+  }
+
+  [Fact]
+  public void ObservationAbstractionDoesNotGuessMapOperationsFromFunctionNames() {
+    var result = Boogie("function select(m: [int]int, i: int): int; procedure P(m: [int]int, n: [int]int); implementation P(m: [int]int, n: [int]int) { assert (forall i: int :: select(m,i) == select(n,i)); }");
+    Validate(result);
+    Assert.IsType<Ir.Quantifier>(Assert.Single(Statements(result.Program!.Unit.Body).OfType<Ir.Check>()).Condition);
+    Assert.DoesNotContain(result.Approximations, note => note.StartsWith("Map observation equality abstraction:"));
+  }
+
+  [Fact]
+  public void ObservationAbstractionKeepsTypePolymorphicMapsOpaque() {
+    var result = Boogie("procedure P(m: <T>[T]bool, n: <T>[T]bool); implementation P(m: <T>[T]bool, n: <T>[T]bool) { assert (forall i: int :: m[i] == n[i]); }");
+    Validate(result);
+    Assert.IsType<Ir.Quantifier>(Assert.Single(Statements(result.Program!.Unit.Body).OfType<Ir.Check>()).Condition);
+    Assert.DoesNotContain(result.Approximations, note => note.StartsWith("Map observation equality abstraction:"));
+    Assert.Contains(result.Approximations, note => note.StartsWith("Polymorphic map sort "));
+  }
+
+  [Fact]
+  public void ObservationAbstractionPreservesNotForQuantifiersSubsumption() {
+    var result = Boogie("procedure P(m: [int]int, n: [int]int); implementation P(m: [int]int, n: [int]int) { assert {:subsumption 1} (forall i: int :: m[i] == n[i]); }");
+    Validate(result);
+    var check = Assert.Single(Statements(result.Program!.Unit.Body).OfType<Ir.Check>());
+    Assert.IsType<Ir.Application>(check.Condition);
+    Assert.False(check.Learn);
+  }
+
+  [Fact]
+  public void ObservationEqualityHasNoPointwiseOrReverseEqualityPremises() {
+    var result = Boogie("procedure P(m: [int]int, n: [int]int); requires (forall i: int :: m[i] == n[i]); implementation P(m: [int]int, n: [int]int) { assert m[0] == n[0]; assert m == n; }");
+    Validate(result);
+    Assert.IsType<Ir.Application>(Assert.Single(Statements(result.Program!.Unit.Body).OfType<Ir.Assume>()).Condition);
+    var checks = Statements(result.Program.Unit.Body).OfType<Ir.Check>().ToArray();
+    var pointwise = Assert.IsType<Ir.Operation>(checks[0].Condition);
+    Assert.All(pointwise.Arguments, argument => Assert.IsType<Ir.Application>(argument));
+    Assert.All(Assert.IsType<Ir.Operation>(checks[1].Condition).Arguments, argument => Assert.IsType<Ir.Variable>(argument));
+    Assert.Empty(result.Program.Axioms);
+    Assert.Equal(2, result.Obligations.Count);
+  }
+
+  [Fact]
+  public void ObservationEqualityKeepsOldAndCurrentMapCapturesSeparateAfterAssignment() {
+    var result = Boogie("var g: [int]int; procedure P(m: [int]int); modifies g; implementation P(m: [int]int) { assert (forall i: int :: old(g)[i] == g[i]); g := m; assert (forall i: int :: old(g)[i] == g[i]); }");
+    Validate(result);
+    var statements = Statements(result.Program!.Unit.Body).ToArray();
+    var snapshot = statements.OfType<Ir.Assign>().First();
+    var captures = statements.OfType<Ir.Check>().Select(check => Assert.IsType<Ir.Application>(check.Condition)).ToArray();
+    Assert.Equal(2, captures.Length);
+    Assert.Equal(captures[0].Name, captures[1].Name);
+    foreach (var observation in captures) {
+      var old = Assert.IsType<Ir.Variable>(observation.Arguments[0]);
+      var current = Assert.IsType<Ir.Variable>(observation.Arguments[1]);
+      Assert.Equal(snapshot.Variable, old.Name);
+      Assert.NotEqual(old.Name, current.Name);
+    }
+    Assert.Contains(statements.OfType<Ir.Assign>(), assignment => assignment.Variable == ((Ir.Variable)captures[1].Arguments[1]).Name);
+  }
+
+  [Fact]
+  public void CallObservationChecksCaptureTheSavedActualMapInputs() {
+    var result = Boogie("procedure Q(a: [int]int, b: [int]int); requires (forall i: int :: a[i] == b[i]); procedure P(m: [int]int, n: [int]int); implementation P(m: [int]int, n: [int]int) { call Q(m,n); }");
+    Validate(result);
+    var statements = Statements(result.Program!.Unit.Body).ToArray();
+    var observation = Assert.IsType<Ir.Application>(Assert.Single(statements.OfType<Ir.Check>()).Condition);
+    var captured = observation.Arguments.Select(argument => Assert.IsType<Ir.Variable>(argument).Name).ToArray();
+    Assert.Equal(2, captured.Length);
+    Assert.All(captured, name => Assert.Contains(statements.OfType<Ir.Assign>(), assignment => assignment.Variable == name));
     Assert.Empty(result.Program.Axioms);
   }
 

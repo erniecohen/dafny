@@ -72,6 +72,7 @@ public static class B3Normalizer {
     private readonly Dictionary<string, string> types = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> mapHelperOrigins = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> mapStoreNames = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> mapObservationOrigins = new(StringComparer.Ordinal);
     private readonly HashSet<string> opaqueMapOrigins = new(StringComparer.Ordinal);
     private int mapReadEstimatedNodes;
     private readonly Dictionary<Bpl.Variable, (Bpl.Expr Expression, Environment Environment)> outputWhere = new();
@@ -133,9 +134,10 @@ public static class B3Normalizer {
         new Ir.Unit(Symbol("unit:" + unit.Name), variables.ToArray(), new Ir.Block(statements)));
       CheckOwnedBounds(normalized);
       return new B3NormalizationResult(normalized, obligations.ToArray(), Array.Empty<B3NormalizationDiagnostic>(),
-        new[] { "All source axioms, distinct-constant constraints, nonidentity function definitions and lambda equations are omitted. Demanded closed function instances and constants are uninterpreted. Direct reads of owned closed monomorphic store expressions use the read-over-write ITE identity; other map operations remain uninterpreted. No global read-over-write axioms are asserted. Map equality remains opaque without extensionality.",
+        new[] { "All source axioms, distinct-constant constraints, nonidentity function definitions and lambda equations are omitted. Demanded closed function instances and constants are uninterpreted. Direct reads of owned closed monomorphic store expressions use the read-over-write ITE identity; other map operations remain uninterpreted. Exact metadata-free complete-tuple forall read equalities are abstracted by an uninterpreted Bool predicate of their two map values. No global read-over-write or observation axioms are asserted. Map equality remains opaque without extensionality.",
           "StateCmd and call-temporary scope-entry where predicates are omitted: pinned scope passification appends raw predicates without current-incarnation substitution. Post-havoc where predicates are preserved." }
-          .Concat(mapHelperOrigins.Values).Concat(opaqueMapOrigins.OrderBy(s => s, StringComparer.Ordinal)).ToArray());
+          .Concat(mapHelperOrigins.Values).Concat(mapObservationOrigins.Values)
+          .Concat(opaqueMapOrigins.OrderBy(s => s, StringComparer.Ordinal)).ToArray());
     }
 
     private Ir.Variable Fresh(string type) {
@@ -272,6 +274,57 @@ public static class B3Normalizer {
       return new Ir.Operation(Ir.Operator.IfThenElse, valueSort, new[] { sameIndex, stored.Arguments[^1], unchanged });
     }
 
+    private static Bpl.MapType ResolvedMapType(Bpl.Type type) {
+      for (var depth = 0; depth < Ir.Protocol.MaximumDepth; depth++) {
+        if (type is Bpl.TypeProxy proxy && ProxyTarget != null) { type = (Bpl.Type)ProxyTarget.GetValue(proxy); }
+        else if (type is Bpl.TypeSynonymAnnotation alias) { type = alias.ExpandedType; }
+        else { return type as Bpl.MapType; }
+      }
+      return null;
+    }
+
+    private bool TryMapObservationEquality(Bpl.QuantifierExpr quantifier, Environment env, bool old,
+      int depth, out Ir.Expression observation) {
+      observation = null;
+      // Metadata and all other quantifier shapes keep their existing translation.
+      if (quantifier is not Bpl.ForallExpr || quantifier.Attributes != null || quantifier.Triggers != null ||
+          quantifier.Body is not Bpl.NAryExpr { Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.Eq } } equality ||
+          equality.Args.Count != 2 ||
+          equality.Args[0] is not Bpl.NAryExpr { Fun: Bpl.MapSelect } left ||
+          equality.Args[1] is not Bpl.NAryExpr { Fun: Bpl.MapSelect } right ||
+          left.Args.Count == 0 || right.Args.Count == 0) { return false; }
+      var leftType = ResolvedMapType(left.Args[0].Type);
+      var rightType = ResolvedMapType(right.Args[0].Type);
+      if (leftType == null || rightType == null || leftType.TypeParameters.Count != 0 || rightType.TypeParameters.Count != 0 ||
+          leftType.Arguments.Count != quantifier.Dummies.Count || rightType.Arguments.Count != quantifier.Dummies.Count ||
+          left.Args.Count != quantifier.Dummies.Count + 1 || right.Args.Count != quantifier.Dummies.Count + 1) { return false; }
+      // Each complete tuple uses every binder exactly once, in the declared order on both sides.
+      for (var i = 0; i < quantifier.Dummies.Count; i++) {
+        if (left.Args[i + 1] is not Bpl.IdentifierExpr first || first.Decl != quantifier.Dummies[i] ||
+            right.Args[i + 1] is not Bpl.IdentifierExpr second || second.Decl != quantifier.Dummies[i] ||
+            Type(quantifier.Dummies[i].TypedIdent.Type) != Type(leftType.Arguments[i]) ||
+            Type(quantifier.Dummies[i].TypedIdent.Type) != Type(rightType.Arguments[i])) { return false; }
+      }
+      var mapSort = Type(leftType);
+      if (mapSort != Type(rightType) || Type(left.Type) != Type(leftType.Result) || Type(right.Type) != Type(rightType.Result)) { return false; }
+      var captured = new List<(Bpl.Variable Variable, bool Old)>();
+      FreeVariables(left.Args[0], new HashSet<Bpl.Variable>(), captured, old);
+      FreeVariables(right.Args[0], new HashSet<Bpl.Variable>(), captured, old);
+      if (captured.Any(capture => quantifier.Dummies.Contains(capture.Variable))) { return false; }
+      // Only the two map VALUES are captured, including their current/old environment substitutions.
+      var firstMap = Expr(left.Args[0], env, old, depth + 1);
+      var secondMap = Expr(right.Args[0], env, old, depth + 1);
+      Require(firstMap.Type == mapSort && secondMap.Type == mapSort,
+        "b3_map_signature", "Observation equality differs from its closed map signature", quantifier.tok);
+      observation = Apply("map-observation-equality:" + mapSort, "bool", new[] { firstMap, secondMap });
+      if (!mapObservationOrigins.ContainsKey(mapSort)) {
+        mapObservationOrigins.Add(mapSort, "Map observation equality abstraction: map=" + mapSort +
+          "; exact complete-tuple forall read equality is represented by an uninterpreted Bool predicate of the two map values; " +
+          "no observation instances, extensionality or reverse map equality are asserted. Other quantifiers remain unchanged.");
+      }
+      return true;
+    }
+
     private Ir.Expression Expr(Bpl.Expr expression, Environment env, bool old = false, int depth = 0) {
       Require(expression != null && depth < Ir.Protocol.MaximumDepth && ++expressionCount <= Ir.Protocol.MaximumNodes,
         "b3_expression_limit", "Missing expression or normalization resource bound exceeded", expression?.tok ?? unit.tok);
@@ -312,6 +365,7 @@ public static class B3Normalizer {
           Require(quantifier.TypeParameters.Count == 0 && quantifier.Dummies.Count > 0,
             "b3_quantifier", "Type-polymorphic or empty quantifiers require specialization", quantifier.tok);
           Require(quantifier.Dummies.All(v => v.TypedIdent.WhereExpr == null), "b3_bound_where", "Bound-variable where clauses are unsupported", quantifier.tok);
+          if (TryMapObservationEquality(quantifier, env, old, depth, out var observation)) { return observation; }
           var bindings = quantifier.Dummies.Select(v => new Ir.Binding("sB" + ++boundNumber, Type(v.TypedIdent.Type))).ToArray();
           var nested = env.Bind(quantifier.Dummies.Select((v, i) => new KeyValuePair<Bpl.Variable, Ir.Expression>(v,
             new Ir.Variable(bindings[i].Name, bindings[i].Type))).ToDictionary(p => p.Key, p => p.Value));
@@ -460,7 +514,8 @@ public static class B3Normalizer {
         1 => Bpl.CoreOptions.SubsumptionOption.NotForQuantifiers, 2 => Bpl.CoreOptions.SubsumptionOption.Always,
         _ => options.UseSubsumption };
       var learn = mode == Bpl.CoreOptions.SubsumptionOption.Always ||
-        mode == Bpl.CoreOptions.SubsumptionOption.NotForQuantifiers && expression is not Ir.Quantifier;
+        mode == Bpl.CoreOptions.SubsumptionOption.NotForQuantifiers &&
+        expression is not Ir.Quantifier && condition is not Bpl.QuantifierExpr;
       var id = "sO" + role + (obligations.Count + 1);
       var origin = BoogieGenerator.ToDafnyToken(token);
       obligations.Add(new Ir.SourceIdentity(id, origin.Uri?.AbsoluteUri ?? token.filename ?? "",
