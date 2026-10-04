@@ -73,6 +73,7 @@ module B3Library {
   predicate SupportedExpression(expr: Raw.Expr) {
     match expr
     case BLiteral(_) | ILiteral(_) => true
+    case RLiteral(_, d) => d > 0
     case CustomLiteral(_, _) | ClosureExpr(_, _, _, _) => false
     case IdExpr(name, _) => SafeSymbol(name)
     case OperatorExpr(_, args) => forall e <- args :: SupportedExpression(e)

@@ -1,6 +1,6 @@
 diff --git a/doc/worker-library.md b/doc/worker-library.md
 new file mode 100644
-index 0000000..c4307d8
+index 0000000000000000000000000000000000000000..c4307d8850fdc23318ae6a995d3777c10ae2b34b
 --- /dev/null
 +++ b/doc/worker-library.md
 @@ -0,0 +1,52 @@
@@ -58,7 +58,7 @@ index 0000000..c4307d8
 +must not be described as such a theorem.
 diff --git a/library/dfyconfig.toml b/library/dfyconfig.toml
 new file mode 100644
-index 0000000..5fcc39b
+index 0000000000000000000000000000000000000000..5fcc39b7a48da741b4be8d95a5895929de9f3001
 --- /dev/null
 +++ b/library/dfyconfig.toml
 @@ -0,0 +1,8 @@
@@ -70,12 +70,280 @@ index 0000000..5fcc39b
 +general-traits = "datatype"
 +general-newtypes = true
 +standard-libraries = true
+diff --git a/src/Ast/Ast.dfy b/src/Ast/Ast.dfy
+index df4be4f4609776891cc644407267ba767c46ab5d..a0de72a239d4bdf7da3614b63c9310df7f88f912 100644
+--- a/src/Ast/Ast.dfy
++++ b/src/Ast/Ast.dfy
+@@ -60,6 +60,7 @@ module Ast {
+   datatype Type =
+     | BoolType
+     | IntType
++    | RealType
+     | TagType
+     | UserType(decl: TypeDecl)
+   {
+@@ -67,6 +68,7 @@ module Ast {
+       match this
+       case BoolType => Types.BoolTypeName
+       case IntType => Types.IntTypeName
++      case RealType => Types.RealTypeName
+       case TagType => Types.TagTypeName
+       case UserType(decl) => decl.Name
+     }
+@@ -429,6 +431,7 @@ module Ast {
+   datatype Expr =
+     | BLiteral(bvalue: bool)
+     | ILiteral(ivalue: int)
++    | RLiteral(numerator: int, denominator: int)
+     | CustomLiteral(s: string, typ: Type)
+     | IdExpr(v: Variable)
+     | OperatorExpr(op: Operator, args: seq<Expr>)
+@@ -442,6 +445,7 @@ module Ast {
+       match this
+       case BLiteral(_) => BoolType
+       case ILiteral(_) => IntType
++      case RLiteral(_, _) => RealType
+       case CustomLiteral(_, typ) => typ
+       case IdExpr(v) => v.typ
+       case OperatorExpr(op, args) =>
+@@ -452,8 +456,10 @@ module Ast {
+             BoolType
+           case Eq | Neq | Less | AtMost =>
+             BoolType
+-          case Plus | Minus | Times | Div | Mod | UnaryMinus =>
+-            IntType
++          case Plus | Minus | Times | UnaryMinus =>
++            if op.ArgumentCount() == |args| then args[0].ExprType() else IntType
++          case Div | Mod | ToInt => IntType
++          case RealDiv | ToReal => RealType
+         }
+       case FunctionCallExpr(func, args) => func.ResultType
+       case LabeledExpr(_, body) => body.ExprType()
+@@ -470,7 +476,8 @@ module Ast {
+       match this
+       case BLiteral(_) => true
+       case ILiteral(_) => true
+-      case CustomLiteral(_, typ) => typ != BoolType && typ != IntType
++      case RLiteral(_, denominator) => denominator > 0
++      case CustomLiteral(_, typ) => typ != BoolType && typ != IntType && typ != RealType
+       case IdExpr(_) => true
+       case OperatorExpr(op, args) =>
+         && |args| == op.ArgumentCount()
+@@ -495,6 +502,7 @@ module Ast {
+       match this
+       case BLiteral(value) => if value then "true" else "false"
+       case ILiteral(value) => Int2String(value)
++      case RLiteral(n, d) => "#real(" + Int2String(n) + ", " + Int2String(d) + ")"
+       case CustomLiteral(s, typ) => PrintUtil.CustomLiteralToString(s, typ.ToString())
+       case IdExpr(v) => v.name
+       case OperatorExpr(op, args) =>
+@@ -504,6 +512,8 @@ module Ast {
+             "if " + args[0].ToString() +
+             " " + args[1].ToString() +
+             " else " + args[2].ToString(opStrength.SubexpressionPower(PrintUtil.Right, context))
++          else if op in {Operator.ToReal, Operator.ToInt} && |args| == 1 then
++            op.ToString() + "(" + args[0].ToString() + ")"
+           else if op.ArgumentCount() == 1 == |args| then
+             op.ToString() + args[0].ToString(opStrength.SubexpressionPower(PrintUtil.Right, context))
+           else if op.ArgumentCount() == 2 == |args| then
+@@ -579,6 +589,7 @@ module Ast {
+       match this
+       case BLiteral(_) => {}
+       case ILiteral(_) => {}
++      case RLiteral(_, _) => {}
+       case CustomLiteral(_, _) => {}
+       case IdExpr(v) => {v}
+       case OperatorExpr(_, args) => FreeVariablesInList(args)
+diff --git a/src/Ast/DomainInstantiation.dfy b/src/Ast/DomainInstantiation.dfy
+index 5d2c63274efdbc39001f362327e8926fa5a3f022..223e9aa164602fa808b1c6d96619aa969ceb90cd 100644
+--- a/src/Ast/DomainInstantiation.dfy
++++ b/src/Ast/DomainInstantiation.dfy
+@@ -64,6 +64,7 @@ module DomainInstantiation {
+     match typ
+     case BoolType => BoolType
+     case IntType => IntType
++    case RealType => RealType
+     case TagType => TagType
+     case UserType(decl) => if decl in tm then tm[decl] else typ
+   }
+@@ -221,10 +222,12 @@ module DomainInstantiation {
+       instExpr := BLiteral(value);
+     case ILiteral(value) =>
+       instExpr := ILiteral(value);
++    case RLiteral(numerator, denominator) =>
++      instExpr := RLiteral(numerator, denominator);
+     case CustomLiteral(s, typ) =>
+       var ctyp := SubstituteType(typ, tm);
+       // TODO: the following condition should be checked by disallowing custom literals from ever having a type-parameter type
+-      expect ctyp != BoolType && ctyp != IntType, "unchecked condition: domain instantiation should not allow custom-literal types to become bool or int";
++      expect ctyp != BoolType && ctyp != IntType && ctyp != RealType, "unchecked condition: domain instantiation should not allow custom-literal types to become bool, int, or real";
+       instExpr := CustomLiteral(s, ctyp);
+     case IdExpr(v) =>
+       expect v in vm;
+diff --git a/src/Ast/ExprResolver.dfy b/src/Ast/ExprResolver.dfy
+index bee8cbfbd1a9effe7181f5cb0b06619a8454d3bd..a53a497e7be25744a8c5363792d80d1657a71c88 100644
+--- a/src/Ast/ExprResolver.dfy
++++ b/src/Ast/ExprResolver.dfy
+@@ -43,9 +43,14 @@ module ExprResolver {
+         r := BLiteral(value);
+       case ILiteral(value) =>
+         r := ILiteral(value);
++      case RLiteral(numerator, denominator) =>
++        if denominator <= 0 {
++          return Failure("real literal denominator must be positive");
++        }
++        r := RLiteral(numerator, denominator);
+       case CustomLiteral(s, typeName) =>
+         var typ :- ResolveType(typeName, ers.typeMap);
+-        if typ == BoolType || typ == IntType {
++        if typ == BoolType || typ == IntType || typ == RealType {
+           return Failure("custom literal is not allowed for a built-in type: " + PrintUtil.CustomLiteralToString(s, typeName));
+         }
+         r := CustomLiteral(s, typ);
+@@ -178,6 +183,7 @@ module ExprResolver {
+     match expr
+     case BLiteral(_) => false
+     case ILiteral(_) => false
++    case RLiteral(_, _) => false
+     case CustomLiteral(_, _) => false
+     case IdExpr(_) => false
+     case OperatorExpr(_, args) =>
+diff --git a/src/Ast/ResolvedPrinter.dfy b/src/Ast/ResolvedPrinter.dfy
+index fac14413f30b2205e88828cfd90d88148ab4d473..bd0ea730b631299e4859ec264a1860788fe35f5b 100644
+--- a/src/Ast/ResolvedPrinter.dfy
++++ b/src/Ast/ResolvedPrinter.dfy
+@@ -339,6 +339,7 @@ module ResolvedPrinter {
+     match expr
+     case BLiteral(value) => print value;
+     case ILiteral(value) => print value;
++    case RLiteral(n, d) => print "#real(", n, ", ", d, ")";
+     case CustomLiteral(s, typ) => print CustomLiteralToString(s, typ.ToString());
+     case IdExpr(v) =>
+       match Raw.FromOldName(v.name) {
+@@ -364,6 +365,10 @@ module ResolvedPrinter {
+           ind.Space();
+           Expression(args[2], opStrength.SubexpressionPower(Side.Right, context), format := ind);
+         }
++      } else if op in {Operator.ToReal, Operator.ToInt} && |args| == 1 {
++        print op.ToString(), "(";
++        Expression(args[0]);
++        print ")";
+       } else if op.ArgumentCount() == 1 == |args| {
+         print op.ToString();
+         Expression(args[0], opStrength.SubexpressionPower(Side.Right, context));
+diff --git a/src/Ast/TypeChecker.dfy b/src/Ast/TypeChecker.dfy
+index 786d65a8a215e29ad86a110edd5d2154c42b1056..27b5a20613eca0c00805067881f9a1f5e8308160 100644
+--- a/src/Ast/TypeChecker.dfy
++++ b/src/Ast/TypeChecker.dfy
+@@ -140,6 +140,7 @@ module TypeChecker {
+     match expr
+     case BLiteral(_) => true
+     case ILiteral(_) => true
++    case RLiteral(_, _) => true
+     case CustomLiteral(_, _) => true
+     case IdExpr(_) => true
+     case OperatorExpr(op, args) =>
+@@ -151,19 +152,25 @@ module TypeChecker {
+             args[0].HasType(BoolType) && args[1].HasType(BoolType)
+           case Eq | Neq =>
+             args[0].ExprType() == args[1].ExprType()
+-          case Less | AtMost | Plus | Minus | Times | Div | Mod =>
++          case Less | AtMost | Plus | Minus | Times =>
++            IsNumericType(args[0].ExprType()) && args[0].ExprType() == args[1].ExprType()
++          case Div | Mod =>
+             args[0].HasType(IntType) && args[1].HasType(IntType)
++          case RealDiv =>
++            args[0].HasType(RealType) && args[1].HasType(RealType)
++          case ToReal => args[0].HasType(IntType)
++          case ToInt => args[0].HasType(RealType)
+           case LogicalNot =>
+             args[0].HasType(BoolType)
+           case UnaryMinus =>
+-            args[0].HasType(IntType)
++            IsNumericType(args[0].ExprType())
+       }
+     case FunctionCallExpr(func, args) =>
+       forall i :: 0 <= i < |args| ==> TypeCorrectExpr(args[i]) && args[i].HasType(func.Parameters[i].typ)
+     case LabeledExpr(lbl, body) =>
+       TypeCorrectExpr(body)
+     case LetExpr(v, rhs, body) =>
+-      rhs.HasType(v.typ) && TypeCorrectExpr(body)
++      TypeCorrectExpr(rhs) && rhs.HasType(v.typ) && TypeCorrectExpr(body)
+     case QuantifierExpr(_, _, patterns, body) =>
+       (forall tr <- patterns, e <- tr.exprs :: assert tr.WellFormed(); TypeCorrectExpr(e)) &&
+       TypeCorrectExpr(body) && body.HasType(BoolType)
+@@ -328,6 +335,8 @@ module TypeChecker {
+       return Success(BoolType);
+     case ILiteral(_) =>
+       return Success(IntType);
++    case RLiteral(_, _) =>
++      return Success(RealType);
+     case CustomLiteral(_, typ) =>
+       return Success(typ);
+     case IdExpr(v) =>
+@@ -358,11 +367,19 @@ module TypeChecker {
+           }
+           typ := BoolType;
+         case Less | AtMost =>
+-          var _ :- ExpectOperandTypes(op, types, IntType);
++          var _ :- ExpectSameNumericOperands(op, types);
+           typ := BoolType;
+-        case Plus | Minus | Times | Div | Mod | UnaryMinus =>
++        case Plus | Minus | Times | UnaryMinus =>
++          typ :- ExpectSameNumericOperands(op, types);
++        case Div | Mod =>
+           var _ :- ExpectOperandTypes(op, types, IntType);
+           typ := IntType;
++        case RealDiv | ToInt =>
++          var _ :- ExpectOperandTypes(op, types, RealType);
++          typ := if op == ToInt then IntType else RealType;
++        case ToReal =>
++          var _ :- ExpectOperandTypes(op, types, IntType);
++          typ := RealType;
+       }
+       return Success(typ);
+     case FunctionCallExpr(func, args) =>
+@@ -406,6 +423,21 @@ module TypeChecker {
+       return Failure("closure must be elaborated before type checking");
+   }
+
++  predicate IsNumericType(typ: Type) {
++    typ == IntType || typ == RealType
++  }
++
++  method ExpectSameNumericOperands(op: Operator, types: seq<Type>) returns (r: Result<Type, string>)
++    requires |types| > 0
++    ensures r.Success? ==> IsNumericType(r.value) && forall t <- types :: t == r.value
++  {
++    var typ := types[0];
++    if !IsNumericType(typ) || exists t <- types :: t != typ {
++      return Failure("operator " + op.ToString() + " requires operands of one numeric type");
++    }
++    return Success(typ);
++  }
++
+   method CheckExprList(exprs: seq<Expr>) returns (r: Result<seq<Type>, string>)
+     requires forall expr <- exprs :: expr.WellFormed()
+     ensures r.Success? ==> forall expr <- exprs :: TypeCorrectExpr(expr)
+diff --git a/src/Ast/TypeResolver.dfy b/src/Ast/TypeResolver.dfy
+index 4c5dc1757890fbf95d92198237dd981da8305c34..3e40f007354fc14814a065f43fc153461cfe8c9c 100644
+--- a/src/Ast/TypeResolver.dfy
++++ b/src/Ast/TypeResolver.dfy
+@@ -14,6 +14,8 @@ module TypeResolver {
+       return Success(BoolType);
+     } else if typename == IntTypeName {
+       return Success(IntType);
++    } else if typename == RealTypeName {
++      return Success(RealType);
+     } else if typename == TagTypeName {
+       return Success(TagType);
+     }
 diff --git a/src/Driver/Library.dfy b/src/Driver/Library.dfy
 new file mode 100644
-index 0000000..bf0611d
+index 0000000000000000000000000000000000000000..fad28a0357ff194a9366140b382cc5cda61afb08
 --- /dev/null
 +++ b/src/Driver/Library.dfy
-@@ -0,0 +1,117 @@
+@@ -0,0 +1,118 @@
 +module B3Library {
 +  import opened Std.Wrappers
 +  import Raw = RawAst
@@ -151,6 +419,7 @@ index 0000000..bf0611d
 +  predicate SupportedExpression(expr: Raw.Expr) {
 +    match expr
 +    case BLiteral(_) | ILiteral(_) => true
++    case RLiteral(_, d) => d > 0
 +    case CustomLiteral(_, _) | ClosureExpr(_, _, _, _) => false
 +    case IdExpr(name, _) => SafeSymbol(name)
 +    case OperatorExpr(_, args) => forall e <- args :: SupportedExpression(e)
@@ -193,8 +462,143 @@ index 0000000..bf0611d
 +    case Return => true
 +  }
 +}
+diff --git a/src/Parser/Parser.dfy b/src/Parser/Parser.dfy
+index da95bf4076e2a1a1510f9183fa76ca94797bdf6d..e988df9cd852ff63cf7478fa23bbddec1c4ec337 100644
+--- a/src/Parser/Parser.dfy
++++ b/src/Parser/Parser.dfy
+@@ -316,6 +316,7 @@ module Parser {
+     Or([
+       T("bool"),
+       T("int"),
++      T("real"),
+       T("tag"),
+       parseIdUse
+     ])
+@@ -535,7 +536,8 @@ module Parser {
+       Or([
+         Sym("*").M(_ => Operator.Times),
+         T("div").M(_ => Operator.Div),
+-        T("mod").M(_ => Operator.Mod)
++        T("mod").M(_ => Operator.Mod),
++        SymNotPrefix("/", ["//", "/*"]).M(_ => Operator.RealDiv)
+       ]).I_I(parseUnaryExpr(c)).Rep()
+       .M(opExprs => FoldLeft(e0, opExprs, (a, b: (Operator, Expr)) => OperatorExpr(b.0, [a, b.1])))
+     )
+@@ -609,8 +611,16 @@ module Parser {
+     T("pattern").e_I(parseNonemptyCommaDelimitedSeq(c("expr"))).M(exprs => Pattern(exprs))
+   }
+
++  const parseSignedInteger: B<int> :=
++    Sym("-").Option().I_I(Nat.I_e(W)).M2(MId, (minus, n) => if minus.Some? then -n else n)
++
+   function parseAtomicExpr(c: ExprRecSel): B<Expr> {
+     Or([
++      Sym("#real").e_I(parseParenthesized(
++        parseSignedInteger.I_e(Sym(",")).I_I(parseSignedInteger)
++      )).M2(MId, (n, d) => RLiteral(n, d)),
++      Sym("#to_real").e_I(parseParenthesized(c("expr"))).M(e => OperatorExpr(ToReal, [e])),
++      Sym("#to_int").e_I(parseParenthesized(c("expr"))).M(e => OperatorExpr(ToInt, [e])),
+       T("false").M(_ => BLiteral(false)),
+       T("true").M(_ => BLiteral(true)),
+       Nat.I_e(W).M(n => ILiteral(n)),
+diff --git a/src/RawAst/Printer.dfy b/src/RawAst/Printer.dfy
+index 1736c0a16600d4619e29f18fa2629d4d4055ca7a..00442d0f6d0885767d9a1497fe6a074ecd635323 100644
+--- a/src/RawAst/Printer.dfy
++++ b/src/RawAst/Printer.dfy
+@@ -390,6 +390,7 @@ module Printer {
+     match expr
+     case BLiteral(value) => print value;
+     case ILiteral(value) => print value;
++    case RLiteral(n, d) => print "#real(", n, ", ", d, ")";
+     case CustomLiteral(s, typ) => print CustomLiteralToString(s, typ);
+     case IdExpr(name, isOld) =>
+       if isOld {
+@@ -415,6 +416,10 @@ module Printer {
+           ind.Space();
+           Expression(args[2], opStrength.SubexpressionPower(Side.Right, context), format := ind);
+         }
++      } else if op in {Operator.ToReal, Operator.ToInt} && |args| == 1 {
++        print op.ToString(), "(";
++        Expression(args[0]);
++        print ")";
+       } else if op.ArgumentCount() == 1 == |args| {
+         print op.ToString();
+         Expression(args[0], opStrength.SubexpressionPower(Side.Right, context));
+diff --git a/src/RawAst/RawAst.dfy b/src/RawAst/RawAst.dfy
+index f645f42d228d581cf800a4c2ac0da696f2e20828..e6011a136d6b2f1250c62a3f2a1d6d484c6c430e 100644
+--- a/src/RawAst/RawAst.dfy
++++ b/src/RawAst/RawAst.dfy
+@@ -462,15 +462,16 @@ module RawAst {
+     | LogicalAnd | LogicalOr
+     | Eq | Neq
+     | Less | AtMost
+-    | Plus | Minus | Times | Div | Mod
++    | Plus | Minus | Times | Div | Mod | RealDiv
+     // unary operators
+     | LogicalNot
+     | UnaryMinus
++    | ToReal | ToInt
+   {
+     function ArgumentCount(): nat {
+       match this
+       case IfThenElse => 3
+-      case LogicalNot | UnaryMinus => 1
++      case LogicalNot | UnaryMinus | ToReal | ToInt => 1
+       case _ => 2
+     }
+
+@@ -490,6 +491,9 @@ module RawAst {
+       case Times => "*"
+       case Div => "div"
+       case Mod => "mod"
++      case RealDiv => "/"
++      case ToReal => "#to_real"
++      case ToInt => "#to_int"
+       case LogicalNot => "!"
+     }
+
+@@ -504,14 +508,15 @@ module RawAst {
+       case Plus => PrintUtil.BindingPower(60, 60)
+       case Minus => PrintUtil.BindingPower(60, 61)
+       case Times => PrintUtil.BindingPower(70, 70)
+-      case Div | Mod => PrintUtil.BindingPower(70, 71)
+-      case LogicalNot | UnaryMinus => PrintUtil.BindingPower(80, 80)
++      case Div | Mod | RealDiv => PrintUtil.BindingPower(70, 71)
++      case LogicalNot | UnaryMinus | ToReal | ToInt => PrintUtil.BindingPower(80, 80)
+     }
+   }
+
+   datatype Expr =
+     | BLiteral(bvalue: bool)
+     | ILiteral(ivalue: int)
++    | RLiteral(numerator: int, denominator: int)
+     | CustomLiteral(s: string, typ: TypeName)
+     | IdExpr(name: string, isOld: bool := false)
+     | OperatorExpr(op: Operator, args: seq<Expr>)
+@@ -525,6 +530,7 @@ module RawAst {
+       match this
+       case BLiteral(_) => true
+       case ILiteral(_) => true
++      case RLiteral(_, denominator) => denominator > 0
+       case CustomLiteral(_, _) => true
+       case IdExpr(name, isOld) =>
+         (if isOld then OldName(name) else name) in scope
+diff --git a/src/RawAst/Types.dfy b/src/RawAst/Types.dfy
+index 9223b47bb6ac5924c24b7073ad60f0b3c6572420..c7f242969210f3f54201f27e41e7448a0cd03fbd 100644
+--- a/src/RawAst/Types.dfy
++++ b/src/RawAst/Types.dfy
+@@ -5,6 +5,7 @@ module Types {
+
+   const BoolTypeName := "bool"
+   const IntTypeName := "int"
++  const RealTypeName := "real"
+   const TagTypeName := "tag"
+-  const BuiltInTypes: set<TypeName> := {BoolTypeName, IntTypeName, TagTypeName}
++  const BuiltInTypes: set<TypeName> := {BoolTypeName, IntTypeName, RealTypeName, TagTypeName}
+ }
+\ No newline at end of file
 diff --git a/src/Solver/ExternalSolvers.dfy b/src/Solver/ExternalSolvers.dfy
-index c8588d5..1e282ed 100644
+index c8588d5f308be90550d8284938250f59e5718f6d..1e282edb1ac18c0d6acd02b5c3579e552a743649 100644
 --- a/src/Solver/ExternalSolvers.dfy
 +++ b/src/Solver/ExternalSolvers.dfy
 @@ -2,138 +2,99 @@ module ExternalSolvers {
@@ -202,16 +606,16 @@ index c8588d5..1e282ed 100644
    import opened Std.Wrappers
    import opened OSProcesses
 +  import SolverConfiguration
- 
+
    export
      reveals SolverSelection
 -    provides StartSmtSolverProcess, Send
 -    provides Wrappers, OSProcesses
 +    provides StartSmtSolverProcess, StartConfiguredSolver, Send
 +    provides Wrappers, OSProcesses, SolverConfiguration
- 
+
    datatype SolverSelection = Z3 | CVC5
- 
+
    method StartSmtSolverProcess(which: SolverSelection, printLog: bool) returns (r: Result<OSProcess, string>)
      ensures r.Success? ==> var process := r.value; process.Valid() && fresh(process)
    {
@@ -230,7 +634,7 @@ index c8588d5..1e282ed 100644
 +      SolverConfiguration.Configuration("cvc5", ["--incremental"], 30000, 0, 1048576, SolverConfiguration.CVC5);
 +    r := StartConfiguredSolver(configuration, printLog);
 +  }
- 
+
 -    match which {
 -      case Z3 =>
 -        var _ :- Send(process, "(set-option :auto_config false)", printLog);
@@ -277,7 +681,7 @@ index c8588d5..1e282ed 100644
 -
      return Success(process);
    }
- 
+
    method Send(process: OSProcess, cmd: string, printLog: bool) returns (r: Result<string, string>)
      requires process.Valid()
      modifies process
@@ -409,19 +813,20 @@ index c8588d5..1e282ed 100644
 \ No newline at end of file
 +}
 diff --git a/src/Solver/RSolver.dfy b/src/Solver/RSolver.dfy
-index 7049b45..1b38138 100644
+index 7049b456747b6486558482d4127842c2a03c6f26..df018a9cc52c191a559c3dabf6e1d466c5903ac7 100644
 --- a/src/Solver/RSolver.dfy
 +++ b/src/Solver/RSolver.dfy
-@@ -12,6 +12,8 @@ module RSolvers {
+@@ -12,15 +12,18 @@ module RSolvers {
    import opened Basics
    import CLI = CommandLineOptions
    import PrintUtil
 +  import VerificationResults
 +  import SolverConfiguration
- 
+
    export
-     reveals RExpr, ROperator, RPattern
-@@ -19,8 +21,9 @@ module RSolvers {
+-    reveals RExpr, ROperator, RPattern
++    reveals RExpr, ROperator, RPattern, PositiveDenominator
+     provides RExpr.Eq, RExpr.Operator2ROperator, RExpr.OperatorToString
      provides RContext, CreateEmptyContext, Extend, ExtendWithEquality
      provides Record, RecordTracePoint, PrintTrace
      reveals REngine
@@ -430,13 +835,52 @@ index 7049b45..1b38138 100644
 +    provides CreateEngine, CreateConfiguredEngine, REngine.Repr, REngine.Valid, REngine.Prove, REngine.Options
 +    provides REngine.Attempts, REngine.FailureReason, REngine.Dispose
 +    provides SolverExpr, Solvers, Ast, CLI, Wrappers, VerificationResults, SolverConfiguration
- 
+
    // ===== RExpr =====
- 
-@@ -219,6 +222,10 @@ module RSolvers {
+
+@@ -37,9 +40,12 @@ module RSolvers {
+     }
+   }
+
++  type PositiveDenominator = d: int | d > 0 witness 1
++
+   datatype RExpr =
+     | Boolean(b: bool)
+     | Integer(x: int)
++    | Rational(numerator: int, denominator: PositiveDenominator)
+     | CustomLiteral(s: string, typ: SolverExpr.SType)
+     | Id(v: SolverExpr.SConstant)
+     | FuncAppl(op: ROperator, args: seq<RExpr>)
+@@ -53,6 +59,7 @@ module RSolvers {
+       match this
+       case Boolean(b) => SExpr.Boolean(b)
+       case Integer(x) => SExpr.Integer(x)
++      case Rational(n, d) => SExpr.Rational(n, d)
+       case CustomLiteral(s, typ) =>
+         if s in literalMapper then literalMapper[s] else SExpr.S(CustomLiteralToSExprName())
+       case Id(v) => SExpr.Id(v)
+@@ -124,6 +131,9 @@ module RSolvers {
+       case Times => "*"
+       case Div => "div"
+       case Mod => "mod"
++      case RealDiv => "/"
++      case ToReal => "to_real"
++      case ToInt => "to_int"
+       case LogicalNot => "not"
+       case UnaryMinus => "-"
+     }
+@@ -137,6 +147,7 @@ module RSolvers {
+       match this
+       case Boolean(b) => if b then "true" else "false"
+       case Integer(x) => Int2String(x)
++      case Rational(n, d) => "#real(" + Int2String(n) + ", " + Int2String(d) + ")"
+       case CustomLiteral(s, typ) => PrintUtil.CustomLiteralToString(s, typ.ToString())
+       case Id(v) => v.name
+       case FuncAppl(op, args) =>
+@@ -219,6 +230,10 @@ module RSolvers {
        requires Valid()
        decreases depth
- 
+
 +    method Breadcrumbs() returns (r: seq<string>)
 +      requires Valid()
 +      decreases depth
@@ -444,10 +888,10 @@ index 7049b45..1b38138 100644
      method PrintTrace()
        requires Valid()
        decreases depth
-@@ -248,6 +255,13 @@ module RSolvers {
+@@ -248,6 +263,13 @@ module RSolvers {
      {
      }
- 
+
 +    method Breadcrumbs() returns (r: seq<string>)
 +      requires Valid()
 +      decreases depth
@@ -458,10 +902,10 @@ index 7049b45..1b38138 100644
      method PrintTrace()
        requires Valid()
        decreases depth
-@@ -289,6 +303,14 @@ module RSolvers {
+@@ -289,6 +311,14 @@ module RSolvers {
        print "  ", expr.ToString(), "\n";
      }
- 
+
 +    method Breadcrumbs() returns (r: seq<string>)
 +      requires Valid()
 +      decreases depth
@@ -473,33 +917,33 @@ index 7049b45..1b38138 100644
      method PrintTrace()
        requires Valid()
        decreases depth
-@@ -343,6 +365,7 @@ module RSolvers {
+@@ -343,6 +373,7 @@ module RSolvers {
      const state: Solvers.SolverState<RContext>
      const axiomMap: map<Ast.Axiom, RExpr>
      const Options: CLI.CliOptions
 +    var Attempts: seq<VerificationResults.Attempt>
- 
+
      ghost predicate Valid()
        reads Repr
-@@ -361,6 +384,7 @@ module RSolvers {
+@@ -361,6 +392,7 @@ module RSolvers {
        this.state := state;
        this.axiomMap := axiomMap;
        this.Options := options;
 +      this.Attempts := [];
        Repr := {this} + state.Repr;
      }
- 
-@@ -370,7 +394,7 @@ module RSolvers {
+
+@@ -370,7 +402,7 @@ module RSolvers {
        map["%tag" := SExpr.S(Int2String(|state.declarations| + |state.additionalDeclaredNames|))]
      }
- 
+
 -    method Prove(context: RContext, expr: RExpr) returns (result: Solvers.ProofResult)
 +    method Prove(context: RContext, expr: RExpr, description: string := "", obligationId: string := "") returns (result: Solvers.ProofResult)
        requires Valid()
        modifies Repr
        ensures Valid()
-@@ -382,8 +406,27 @@ module RSolvers {
- 
+@@ -382,8 +414,27 @@ module RSolvers {
+
        state.Push(context); // do another Push; the parameter here is irrelevant and will soon be popped off again
        DeclareNewSymbols(expr);
 -      result := state.Prove(expr.ToSExpr(LiteralMapper()));
@@ -525,9 +969,26 @@ index 7049b45..1b38138 100644
 +    {
 +      state.Dispose();
      }
- 
+
      method SetContext(context: RContext)
-@@ -557,8 +600,17 @@ module RSolvers {
+@@ -453,6 +504,7 @@ module RSolvers {
+       match r
+       case Boolean(_) =>
+       case Integer(_) =>
++      case Rational(_, _) =>
+       case CustomLiteral(s, typ) =>
+         if s != "%tag" {
+           var name := r.CustomLiteralToSExprName();
+@@ -546,7 +598,7 @@ module RSolvers {
+       ensures Valid() && state.Evolves()
+     {
+       match typ
+-      case SBool | SInt =>
++      case SBool | SInt | SReal =>
+       case SUserType(decl) =>
+         if decl !in state.declarations {
+           state.DeclareType(decl, decl);
+@@ -557,8 +609,17 @@ module RSolvers {
    method CreateEngine(axiomMap: map<Ast.Axiom, RExpr>, options: CLI.CliOptions) returns (r: Result<REngine, string>)
      ensures r.Success? ==> var smtEngine := r.value; smtEngine.Valid() && fresh(smtEngine.Repr)
    {
@@ -548,7 +1009,7 @@ index 7049b45..1b38138 100644
      var state := new Solvers.SolverState(solver);
      var smtEngine := new REngine.New(state, axiomMap, options);
 diff --git a/src/Solver/SmtEngines.dfy b/src/Solver/SmtEngines.dfy
-index 717b1ea..e125262 100644
+index 717b1eaee6fb38483c81928c68b96ec1198e5f22..e125262613156c5419721e5044a8be572cf96a3f 100644
 --- a/src/Solver/SmtEngines.dfy
 +++ b/src/Solver/SmtEngines.dfy
 @@ -9,7 +9,7 @@ module SmtEngines {
@@ -565,7 +1026,7 @@ index 717b1ea..e125262 100644
      const process: OSProcesses.OSProcess
      const printLog: bool
 +    var failure: Option<string>
- 
+
      // The following variable seeks to explain the state of the solver engine
      ghost var CommandStacks: List<List<string>>
 @@ -59,6 +60,7 @@ module SmtEngines {
@@ -575,7 +1036,7 @@ index 717b1ea..e125262 100644
 +      failure := None;
        CommandStacks := PushCommandStack(Nil);
      }
- 
+
 @@ -83,7 +85,7 @@ module SmtEngines {
        requires Valid()
        requires CommandStacks.Cons?
@@ -588,7 +1049,7 @@ index 717b1ea..e125262 100644
 @@ -97,7 +99,17 @@ module SmtEngines {
          CommandStacks := AddCommand(CommandStacks, cmd);
        }
- 
+
 +      // The ghost stack records client traversal even after a session is poisoned.
 +      // It is not a claim that failed commands were accepted by the solver.
 +      if failure.Some? { return Failure(failure.value); }
@@ -601,12 +1062,12 @@ index 717b1ea..e125262 100644
 +    {
 +      failure
      }
- 
+
      ghost predicate Valid()
 @@ -174,11 +186,22 @@ module SmtEngines {
        r := SendCmd(CMD_GET_MODEL);
      }
- 
+
 +    method GetReasonUnknown() returns (r: Result<string, string>)
 +      requires Valid()
 +      modifies this, this.process
@@ -630,7 +1091,7 @@ index 717b1ea..e125262 100644
 \ No newline at end of file
 diff --git a/src/Solver/SolverConfiguration.dfy b/src/Solver/SolverConfiguration.dfy
 new file mode 100644
-index 0000000..8823cd0
+index 0000000000000000000000000000000000000000..8823cd0df6bd269dd4542fb687ed10dda33814ee
 --- /dev/null
 +++ b/src/Solver/SolverConfiguration.dfy
 @@ -0,0 +1,18 @@
@@ -652,8 +1113,59 @@ index 0000000..8823cd0
 +
 +  const Default := Configuration("z3", ["-in", "-smt2"], 30000, 0, 1048576)
 +}
+diff --git a/src/Solver/SolverExpr.dfy b/src/Solver/SolverExpr.dfy
+index b04653d6f25cf55450c61b2edcc3007f4dd0632e..7de406b2348b4b665fd18ca371b7bc604bfc5bb8 100644
+--- a/src/Solver/SolverExpr.dfy
++++ b/src/Solver/SolverExpr.dfy
+@@ -14,7 +14,7 @@ module SolverExpr {
+     reveals SExprPrintConfig
+     reveals SExpr
+     provides SExpr.ToString
+-    provides SExpr.Boolean, SExpr.Integer, SExpr.EQ, SExpr.Id, SExpr.FuncAppl, SExpr.Eq, SExpr.Negation, SExpr.BigAnd
++    provides SExpr.Boolean, SExpr.Integer, SExpr.Rational, SExpr.EQ, SExpr.Id, SExpr.FuncAppl, SExpr.Eq, SExpr.Negation, SExpr.BigAnd
+     provides Wrappers, DeclarationMarkers
+
+   trait SDeclaration extends object {
+@@ -30,6 +30,7 @@ module SolverExpr {
+   datatype SType =
+     | SBool
+     | SInt
++    | SReal
+     | SUserType(decl: STypeDecl)
+   {
+     static function TypesToSExpr(types: seq<SType>): SExpr {
+@@ -40,6 +41,7 @@ module SolverExpr {
+       match this
+       case SBool => S("Bool")
+       case SInt => S("Int")
++      case SReal => S("Real")
+       case SUserType(name) => S(decl.name)
+     }
+
+@@ -47,6 +49,7 @@ module SolverExpr {
+       match this
+       case SBool => "bool"
+       case SInt => "int"
++      case SReal => "real"
+       case SUserType(name) => decl.name
+     }
+   }
+@@ -113,7 +116,12 @@ module SolverExpr {
+       S(if b then TRUE else FALSE)
+     }
+     static function Integer(x: int): SExpr {
+-      S(Int2String(x))
++      if x < 0 then PP([S("-"), S(Int2String(-x))]) else S(Int2String(x))
++    }
++    static function Rational(numerator: int, denominator: int): SExpr
++      requires denominator > 0
++    {
++      FuncAppl("/", [FuncAppl("to_real", [Integer(numerator)]), FuncAppl("to_real", [Integer(denominator)])])
+     }
+     static function Id(x: SConstant): SExpr {
+       S(x.name)
 diff --git a/src/Solver/Solvers.dfy b/src/Solver/Solvers.dfy
-index 0aae508..a8928ff 100644
+index 0aae5087aed316bdae9cd7482554afc47308bebe..a8928ff96ca5f27c57137789dd298281a0e50b90 100644
 --- a/src/Solver/Solvers.dfy
 +++ b/src/Solver/Solvers.dfy
 @@ -8,16 +8,18 @@ module Solvers {
@@ -669,19 +1181,19 @@ index 0aae508..a8928ff 100644
 -    provides Smt, Basics, SolverExpr, DeclarationMarkers
 +    provides SolverState.AddAssumption, SolverState.Prove, SolverState.FailureReason, SolverState.Dispose
 +    provides Smt, Basics, SolverExpr, DeclarationMarkers, Wrappers
- 
+
    datatype ProofResult =
      | Proved
      | Unproved(reason: string)
 +    | Inconclusive(reason: string)
 +    | ToolError(reason: string)
- 
+
    datatype StackItem<Memo> = StackItem(memo: Memo, decls: set<DeclarationMarker>, names: set<string>)
    
 @@ -157,7 +159,22 @@ module Solvers {
        smtEngine.DeclareFunction(name, inputTpe.ToString(), outputTpe.ToString());
      }
- 
+
 -    method Prove(expr: SExpr) returns (result: ProofResult)
 +    function FailureReason(): Option<string>
 +      requires Valid()
@@ -703,7 +1215,7 @@ index 0aae508..a8928ff 100644
        modifies Repr
        ensures Valid() && stack == old(stack)
 @@ -168,19 +185,25 @@ module Solvers {
- 
+
        var satness := smtEngine.CheckSat();
        if satness.Failure? {
 -        result := Unproved(satness.error);
@@ -737,7 +1249,7 @@ index 0aae508..a8928ff 100644
    }
  }
 diff --git a/src/Util/OSProcesses.dfy b/src/Util/OSProcesses.dfy
-index 628b2e4..4981798 100644
+index 628b2e40c42b0e296f9fd96d23c0d3c93043903b..498179859dc09cdc639e70ee0d0d7f575ccbafa5 100644
 --- a/src/Util/OSProcesses.dfy
 +++ b/src/Util/OSProcesses.dfy
 @@ -4,28 +4,43 @@ module OSProcesses {
@@ -747,11 +1259,11 @@ index 628b2e4..4981798 100644
 -    provides OSProcess.Send, OSProcess.ReadLine
 +    provides OSProcess.Send, OSProcess.ReadLine, OSProcess.ReadResponse, OSProcess.Dispose
      provides Wrappers
- 
+
    class {:extern} OSProcess {
      ghost predicate {:extern} Valid()
      function {:extern} ExecutableName(): string
- 
+
 +    // The external boundary guarantees wrapper integrity, not solver truth.
      @Axiom
 -    static method {:extern} Create(executable: string, arguments: string) returns (r: Result<OSProcess, string>)
@@ -759,14 +1271,14 @@ index 628b2e4..4981798 100644
 +      timeoutMilliseconds: nat, maximumResponseCharacters: nat)
 +      returns (r: Result<OSProcess, string>)
        ensures r.Success? ==> var p := r.value; p.Valid() && fresh(p)
- 
+
      @Axiom
      method {:extern} Send(msg: string) returns (r: Result<(), string>)
        requires Valid()
        modifies this
 -      ensures r.Success? ==> Valid()
 +      ensures Valid()
- 
+
 -    // A return of Success(None) means the process output has signaled an end-of-file
 +    // Success(None) means EOF before a response. IO and truncation are failures.
      @Axiom
@@ -791,9 +1303,37 @@ index 628b2e4..4981798 100644
 -}
 \ No newline at end of file
 +}
+diff --git a/src/Verifier/Incarnations.dfy b/src/Verifier/Incarnations.dfy
+index fa099cec059dbd3733ac320afce2ab9b8b1dc860..6b22c175c43a48ce7b5e94f4413e4056d8116c07 100644
+--- a/src/Verifier/Incarnations.dfy
++++ b/src/Verifier/Incarnations.dfy
+@@ -29,6 +29,7 @@ module Incarnations {
+       match typ
+       case BoolType => SBool
+       case IntType | TagType => SInt
++      case RealType => SReal
+       case UserType(decl) =>
+         var _ := Expect(decl in typeMap, decl.Name);
+         var sTypeDecl := typeMap[decl];
+@@ -132,6 +133,7 @@ module Incarnations {
+       match expr
+       case BLiteral(_) =>
+       case ILiteral(_) =>
++      case RLiteral(_, _) =>
+       case CustomLiteral(_, _) =>
+       case IdExpr(_) =>
+       case OperatorExpr(_, args) =>
+@@ -189,6 +191,7 @@ module Incarnations {
+       match expr
+       case BLiteral(value) => RExpr.Boolean(value)
+       case ILiteral(value) => RExpr.Integer(value)
++      case RLiteral(n, d) => RExpr.Rational(n, d)
+       case CustomLiteral(s, typ) => RExpr.CustomLiteral(s, declMap.Type2SType(typ))
+       case IdExpr(v) =>
+         var sv := SubstituteVariable(v);
 diff --git a/src/Verifier/VerificationResults.dfy b/src/Verifier/VerificationResults.dfy
 new file mode 100644
-index 0000000..83ae804
+index 0000000000000000000000000000000000000000..83ae8048cb9220964bfb2ec26390a3c37a91e2a3
 --- /dev/null
 +++ b/src/Verifier/VerificationResults.dfy
 @@ -0,0 +1,10 @@
@@ -808,7 +1348,7 @@ index 0000000..83ae804
 +    complete: bool, error: Option<string>)
 +}
 diff --git a/src/Verifier/Verifier.dfy b/src/Verifier/Verifier.dfy
-index 6c9d940..5f7988a 100644
+index 6c9d940f6ce3f9c5af841a0b9589389b53479796..5f7988ab72e577ae2ab87c2f600d075e716d0799 100644
 --- a/src/Verifier/Verifier.dfy
 +++ b/src/Verifier/Verifier.dfy
 @@ -11,14 +11,39 @@ module Verifier {
@@ -817,13 +1357,13 @@ index 6c9d940..5f7988a 100644
    import CLI = CommandLineOptions
 +  import VerificationResults
 +  import SolverConfiguration
- 
+
    export
 -    provides Verify
 -    provides Ast, AstValid, CLI, StaticConsistency
 +    provides Verify, VerifySelected
 +    provides Ast, AstValid, CLI, StaticConsistency, VerificationResults, SolverConfiguration
- 
+
    method Verify(b3: Ast.Program, options: CLI.CliOptions)
      requires AstValid.Program(b3)
    {
@@ -851,10 +1391,10 @@ index 6c9d940..5f7988a 100644
 +  {
 +    units := [];
      // Create STypeDecl and SConstant declarations for the B3 types, taggers, and functions
- 
+
      var typeMap := map[];
 @@ -58,8 +83,11 @@ module Verifier {
- 
+
      for i := 0 to |b3.procedures| {
        var proc := b3.procedures[i];
 -      print "Verifying ", proc.Name, " ...\n";
@@ -866,11 +1406,11 @@ index 6c9d940..5f7988a 100644
 +      }
      }
    }
- 
+
 @@ -71,13 +99,15 @@ module Verifier {
      }
    }
- 
+
 -  method VerifyProcedure(proc: Ast.Procedure, context_in: RSolvers.RContext, declMap: I.DeclMappings, axiomMap: map<Axiom, RSolvers.RExpr>, options: CLI.CliOptions)
 +  method VerifyProcedure(proc: Ast.Procedure, context_in: RSolvers.RContext, declMap: I.DeclMappings, axiomMap: map<Axiom, RSolvers.RExpr>, options: CLI.CliOptions,
 +    configuration: SolverConfiguration.Configuration, printDiagnostics: bool)
@@ -898,7 +1438,7 @@ index 6c9d940..5f7988a 100644
 +    var failure := smtEngine.FailureReason();
 +    return VerificationResults.UnitResult(proc.Name, smtEngine.Attempts, true, failure);
    }
- 
+
    method CreateProcIncarnations(parameters: seq<PParameter>, declMap: I.DeclMappings)
 @@ -312,7 +345,7 @@ module Verifier {
      match stmt
@@ -928,10 +1468,10 @@ index 6c9d940..5f7988a 100644
 +      ProveAndReport(context, rCond, location, smtEngine, if cond.LabeledExpr? then cond.lbl.Name else "");
        context := RSolvers.Extend(context, rCond);
    }
- 
+
 @@ -508,20 +543,22 @@ module Verifier {
    }
- 
+
    // print error if `context ==> expr` cannot be proved by `smtEngine`.
 -  method ProveAndReport(context: RSolvers.RContext, expr: RSolvers.RExpr, location: Location, smtEngine: RSolvers.REngine)
 +  method ProveAndReport(context: RSolvers.RContext, expr: RSolvers.RExpr, location: Location, smtEngine: RSolvers.REngine, obligationId: string := "")
@@ -959,10 +1499,10 @@ index 6c9d940..5f7988a 100644
        }
 +    }
    }
- 
+
    method ReportUnreachedReachStatements(stmt: Stmt, procOutcomes: ProcedureOutcomes) {
 diff --git a/target/cs/src/OSProcess.cs b/target/cs/src/OSProcess.cs
-index b2d364e..0ffa7cc 100644
+index b2d364e50e375e1efeb27daf866460476d243e0b..0ffa7cccec649e8eecfadbb53bbf78f4c28a3720 100644
 --- a/target/cs/src/OSProcess.cs
 +++ b/target/cs/src/OSProcess.cs
 @@ -1,70 +1,211 @@
@@ -973,7 +1513,7 @@ index b2d364e..0ffa7cc 100644
 +using System.Numerics;
 +using System.Text;
 +using System.Threading.Tasks;
- 
+
  namespace OSProcesses {
 -  
 -  public class OSProcess {
@@ -991,7 +1531,7 @@ index b2d364e..0ffa7cc 100644
 +    private readonly StringBuilder stderr = new StringBuilder();
 +    private readonly object stderrLock = new object();
 +    private bool disposed;
- 
+
 -    public static Std.Wrappers._IResult<OSProcess, Dafny.ISequence<Dafny.Rune>> Create(Dafny.ISequence<Dafny.Rune> executable, Dafny.ISequence<Dafny.Rune> arguments)
 -    {
 -      var execName = executable.ToVerbatimString(false);
@@ -999,7 +1539,7 @@ index b2d364e..0ffa7cc 100644
 +    private OSProcess(Dafny.ISequence<Dafny.Rune> executable) {
 +      executableName = executable;
 +    }
- 
+
 -      var p = new OSProcess(executable);
 -      try {
 -        var startInfo = new ProcessStartInfo(execName, args);
@@ -1010,7 +1550,7 @@ index b2d364e..0ffa7cc 100644
 -        startInfo.CreateNoWindow = true;
 +    private static Dafny.ISequence<Dafny.Rune> Text(string value) =>
 +      Dafny.Sequence<Dafny.Rune>.UnicodeFromString(value);
- 
+
 -        p.process = Process.Start(startInfo);
 -        if (p.process == null) {
 -          var errorMessage = Dafny.Sequence<Dafny.Rune>.UnicodeFromString($"Failed to start '{executable}' process");
@@ -1070,7 +1610,7 @@ index b2d364e..0ffa7cc 100644
 +          Text("Could not start solver: " + ex.Message));
        }
 +    }
- 
+
 -      return Std.Wrappers.Result<OSProcess, Dafny.ISequence<Dafny.Rune>>.create_Success(p);
 +    public Dafny.ISequence<Dafny.Rune> ExecutableName() => executableName;
 +
@@ -1079,7 +1619,7 @@ index b2d364e..0ffa7cc 100644
 +      lock (stderrLock) { diagnostic = stderr.ToString(); }
 +      return ex.Message + (diagnostic.Length == 0 ? "" : "\nSolver stderr: " + diagnostic);
      }
- 
+
 -    public OSProcess(Dafny.ISequence<Dafny.Rune> executable) {
 -      executableName = executable;
 +    public Std.Wrappers._IResult<_System._ITuple0, Dafny.ISequence<Dafny.Rune>> Send(
@@ -1096,7 +1636,7 @@ index b2d364e..0ffa7cc 100644
 +        return Std.Wrappers.Result<_System._ITuple0, Dafny.ISequence<Dafny.Rune>>.create_Failure(Text(message));
 +      }
      }
- 
+
 -    public Dafny.ISequence<Dafny.Rune> ExecutableName() {
 -      return executableName;
 +    private Std.Wrappers._IResult<Std.Wrappers._IOption<Dafny.ISequence<Dafny.Rune>>, Dafny.ISequence<Dafny.Rune>> Read(Func<string?> reader) {
@@ -1115,7 +1655,7 @@ index b2d364e..0ffa7cc 100644
 +        return Std.Wrappers.Result<Std.Wrappers._IOption<Dafny.ISequence<Dafny.Rune>>, Dafny.ISequence<Dafny.Rune>>.create_Failure(Text(message));
 +      }
      }
- 
+
 -    public Std.Wrappers._IResult<_System._ITuple0, Dafny.ISequence<Dafny.Rune>> Send(Dafny.ISequence<Dafny.Rune> cmdDafny) {
 -      var cmd = cmdDafny.ToVerbatimString(false);
 -      input.WriteLine(cmd);
@@ -1135,7 +1675,7 @@ index b2d364e..0ffa7cc 100644
 +    // and S-expressions. EOF within a frame is never a successful partial response.
 +    public Std.Wrappers._IResult<Std.Wrappers._IOption<Dafny.ISequence<Dafny.Rune>>, Dafny.ISequence<Dafny.Rune>> ReadResponse() =>
 +      Read(() => ReadSmtResponse(output, maximumResponseCharacters));
- 
+
 -      var r = Std.Wrappers.Result<_System._ITuple0, Dafny.ISequence<Dafny.Rune>>.create_Success(_System.Tuple0.create());
 -      return r;
 +    public static string? ReadSmtResponse(TextReader reader, int maximumCharacters) {
@@ -1194,7 +1734,7 @@ index b2d364e..0ffa7cc 100644
 +        next = reader.Read();
 +      }
      }
- 
+
 -    public Std.Wrappers._IResult<Std.Wrappers._IOption<Dafny.ISequence<Dafny.Rune>>, Dafny.ISequence<Dafny.Rune>> ReadLine()
 -    {
 -      var line = output.ReadLine();
@@ -1224,18 +1764,18 @@ index b2d364e..0ffa7cc 100644
    }
  }
 diff --git a/target/java/src/OSProcess.java b/target/java/src/OSProcess.java
-index 0f46940..0a1a203 100644
+index 0f46940420af48d6756e07008ce86f51e3097e66..0a1a2034f257859f24c6c6d0815d5415db033787 100644
 --- a/target/java/src/OSProcess.java
 +++ b/target/java/src/OSProcess.java
 @@ -1,91 +1,174 @@
  package OSProcesses;
- 
+
  import java.io.*;
 +import java.math.BigInteger;
 +import java.nio.charset.StandardCharsets;
 +import java.util.ArrayList;
 +import java.util.concurrent.*;
- 
+
  public class OSProcess {
 -    private dafny.DafnySequence<? extends dafny.CodePoint> executableName;
 -    private Process process;
@@ -1251,7 +1791,7 @@ index 0f46940..0a1a203 100644
 +    Thread t = new Thread(r, "b3-solver-io"); t.setDaemon(true); return t;
 +  });
 +  private boolean disposed;
- 
+
 -    public static Std.Wrappers.Result<OSProcess, dafny.DafnySequence<? extends dafny.CodePoint>> Create(
 -        dafny.DafnySequence<? extends dafny.CodePoint> executable,
 -        dafny.DafnySequence<? extends dafny.CodePoint> arguments)
@@ -1259,7 +1799,7 @@ index 0f46940..0a1a203 100644
 -      String execName = executable.verbatimString();
 -      String args = arguments.verbatimString();
 +  private OSProcess(dafny.DafnySequence<? extends dafny.CodePoint> executable) { executableName = executable; }
- 
+
 -      OSProcess p = new OSProcess(executable);
 -      try {
 -          ProcessBuilder pb = new ProcessBuilder(execName, args); // TODO: is this right if "arguments" contains several arguments?
@@ -1274,7 +1814,7 @@ index 0f46940..0a1a203 100644
 +  private static <T> Std.Wrappers.Result<T, dafny.DafnySequence<? extends dafny.CodePoint>> failure(dafny.TypeDescriptor<T> t, String message) {
 +    return Std.Wrappers.Result.create_Failure(t, textType(), dafny.DafnySequence.asUnicodeString(message));
 +  }
- 
+
 -          p.input = new PrintWriter(p.process.getOutputStream(), true);
 -          p.output = new BufferedReader(new InputStreamReader(p.process.getInputStream()));
 -
@@ -1325,12 +1865,12 @@ index 0f46940..0a1a203 100644
 +      return failure(dafny.TypeDescriptor.reference(OSProcess.class), "Could not start solver: " + e.getMessage());
      }
 +  }
- 
+
 -    public OSProcess(dafny.DafnySequence<? extends dafny.CodePoint> executable) {
 -        executableName = executable;
 -    }
 +  public dafny.DafnySequence<? extends dafny.CodePoint> ExecutableName() { return executableName; }
- 
+
 -    public dafny.DafnySequence<? extends dafny.CodePoint> ExecutableName() {
 -        return executableName;
 +  private <T> T deadline(Callable<T> operation) throws Exception {
@@ -1350,7 +1890,7 @@ index 0f46940..0a1a203 100644
 +      return failure(dafny.Tuple0._typeDescriptor(), message);
      }
 +  }
- 
+
 -    public Std.Wrappers.Result<dafny.Tuple0, dafny.DafnySequence<? extends dafny.CodePoint>> Send(
 -        dafny.DafnySequence<? extends dafny.CodePoint> cmdDafny)
 -    {
@@ -1388,7 +1928,7 @@ index 0f46940..0a1a203 100644
 +      return text.length() == 0 ? null : text.toString();
 +    });
 +  }
- 
+
 -    public Std.Wrappers.Result<Std.Wrappers.Option<dafny.DafnySequence<? extends dafny.CodePoint>>, dafny.DafnySequence<? extends dafny.CodePoint>> ReadLine()
 -    {
 -        String line;
@@ -1447,7 +1987,7 @@ index 0f46940..0a1a203 100644
 +      }
 +    });
 +  }
- 
+
 -        dafny.DafnySequence<? extends dafny.CodePoint> dafnyLine = dafny.DafnySequence.asUnicodeString(line);
 -        Std.Wrappers.Option<dafny.DafnySequence<? extends dafny.CodePoint>> some =
 -            Std.Wrappers.Option.<dafny.DafnySequence<? extends dafny.CodePoint>>create_Some(
@@ -1478,7 +2018,7 @@ index 0f46940..0a1a203 100644
 +}
 diff --git a/test/worker/WorkerTests.dfy b/test/worker/WorkerTests.dfy
 new file mode 100644
-index 0000000..beab359
+index 0000000000000000000000000000000000000000..beab3598c8624358f6187ef2ca3444ca55a70e18
 --- /dev/null
 +++ b/test/worker/WorkerTests.dfy
 @@ -0,0 +1,175 @@
@@ -1659,7 +2199,7 @@ index 0000000..beab359
 +}
 diff --git a/test/worker/dfyconfig.toml b/test/worker/dfyconfig.toml
 new file mode 100644
-index 0000000..4917334
+index 0000000000000000000000000000000000000000..4917334093767f53c9f8bf3d727c721e72acde55
 --- /dev/null
 +++ b/test/worker/dfyconfig.toml
 @@ -0,0 +1,8 @@
@@ -1673,7 +2213,7 @@ index 0000000..4917334
 +standard-libraries = true
 diff --git a/test/worker/fake-solver.py b/test/worker/fake-solver.py
 new file mode 100644
-index 0000000..3d667b8
+index 0000000000000000000000000000000000000000..3d667b879db1ecef95f9325d0ac0b0405d007b1b
 --- /dev/null
 +++ b/test/worker/fake-solver.py
 @@ -0,0 +1,59 @@

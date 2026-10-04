@@ -16,7 +16,7 @@ module RSolvers {
   import SolverConfiguration
 
   export
-    reveals RExpr, ROperator, RPattern
+    reveals RExpr, ROperator, RPattern, PositiveDenominator
     provides RExpr.Eq, RExpr.Operator2ROperator, RExpr.OperatorToString
     provides RContext, CreateEmptyContext, Extend, ExtendWithEquality
     provides Record, RecordTracePoint, PrintTrace
@@ -40,9 +40,12 @@ module RSolvers {
     }
   }
 
+  type PositiveDenominator = d: int | d > 0 witness 1
+
   datatype RExpr =
     | Boolean(b: bool)
     | Integer(x: int)
+    | Rational(numerator: int, denominator: PositiveDenominator)
     | CustomLiteral(s: string, typ: SolverExpr.SType)
     | Id(v: SolverExpr.SConstant)
     | FuncAppl(op: ROperator, args: seq<RExpr>)
@@ -56,6 +59,7 @@ module RSolvers {
       match this
       case Boolean(b) => SExpr.Boolean(b)
       case Integer(x) => SExpr.Integer(x)
+      case Rational(n, d) => SExpr.Rational(n, d)
       case CustomLiteral(s, typ) =>
         if s in literalMapper then literalMapper[s] else SExpr.S(CustomLiteralToSExprName())
       case Id(v) => SExpr.Id(v)
@@ -127,6 +131,9 @@ module RSolvers {
       case Times => "*"
       case Div => "div"
       case Mod => "mod"
+      case RealDiv => "/"
+      case ToReal => "to_real"
+      case ToInt => "to_int"
       case LogicalNot => "not"
       case UnaryMinus => "-"
     }
@@ -140,6 +147,7 @@ module RSolvers {
       match this
       case Boolean(b) => if b then "true" else "false"
       case Integer(x) => Int2String(x)
+      case Rational(n, d) => "#real(" + Int2String(n) + ", " + Int2String(d) + ")"
       case CustomLiteral(s, typ) => PrintUtil.CustomLiteralToString(s, typ.ToString())
       case Id(v) => v.name
       case FuncAppl(op, args) =>
@@ -496,6 +504,7 @@ module RSolvers {
       match r
       case Boolean(_) =>
       case Integer(_) =>
+      case Rational(_, _) =>
       case CustomLiteral(s, typ) =>
         if s != "%tag" {
           var name := r.CustomLiteralToSExprName();
@@ -589,7 +598,7 @@ module RSolvers {
       ensures Valid() && state.Evolves()
     {
       match typ
-      case SBool | SInt =>
+      case SBool | SInt | SReal =>
       case SUserType(decl) =>
         if decl !in state.declarations {
           state.DeclareType(decl, decl);

@@ -316,6 +316,7 @@ module Parser {
     Or([
       T("bool"),
       T("int"),
+      T("real"),
       T("tag"),
       parseIdUse
     ])
@@ -535,7 +536,8 @@ module Parser {
       Or([
         Sym("*").M(_ => Operator.Times),
         T("div").M(_ => Operator.Div),
-        T("mod").M(_ => Operator.Mod)
+        T("mod").M(_ => Operator.Mod),
+        SymNotPrefix("/", ["//", "/*"]).M(_ => Operator.RealDiv)
       ]).I_I(parseUnaryExpr(c)).Rep()
       .M(opExprs => FoldLeft(e0, opExprs, (a, b: (Operator, Expr)) => OperatorExpr(b.0, [a, b.1])))
     )
@@ -609,8 +611,16 @@ module Parser {
     T("pattern").e_I(parseNonemptyCommaDelimitedSeq(c("expr"))).M(exprs => Pattern(exprs))
   }
 
+  const parseSignedInteger: B<int> :=
+    Sym("-").Option().I_I(Nat.I_e(W)).M2(MId, (minus, n) => if minus.Some? then -n else n)
+
   function parseAtomicExpr(c: ExprRecSel): B<Expr> {
     Or([
+      Sym("#real").e_I(parseParenthesized(
+        parseSignedInteger.I_e(Sym(",")).I_I(parseSignedInteger)
+      )).M2(MId, (n, d) => RLiteral(n, d)),
+      Sym("#to_real").e_I(parseParenthesized(c("expr"))).M(e => OperatorExpr(ToReal, [e])),
+      Sym("#to_int").e_I(parseParenthesized(c("expr"))).M(e => OperatorExpr(ToInt, [e])),
       T("false").M(_ => BLiteral(false)),
       T("true").M(_ => BLiteral(true)),
       Nat.I_e(W).M(n => ILiteral(n)),

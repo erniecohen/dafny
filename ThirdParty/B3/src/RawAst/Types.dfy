@@ -5,6 +5,7 @@ module Types {
 
   const BoolTypeName := "bool"
   const IntTypeName := "int"
+  const RealTypeName := "real"
   const TagTypeName := "tag"
-  const BuiltInTypes: set<TypeName> := {BoolTypeName, IntTypeName, TagTypeName}
+  const BuiltInTypes: set<TypeName> := {BoolTypeName, IntTypeName, RealTypeName, TagTypeName}
 }
