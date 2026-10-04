@@ -613,3 +613,56 @@ comparisons remain strict. A successful probe is not an acceptance run: inspect
 every difference, document its reason, commit ON expectations separately, and
 run ordinary strict CI before proposing the change. Future snapshot changes
 follow the same reviewed-verdict policy as the OFF files.
+
+## Call permissions after assign-such-that (#36)
+
+With the shared option, after the actual left-hand variables are havoced, the
+translator assumes `CanCallAssumption(constraint)` before assuming the constraint.
+This supplies local instances of existing call permissions, rather than a new
+function definition or quantified axiom. It uses the original can-call builder,
+so no literal or heap-succession member is additionally invoked at this site.
+With the option off the builder is not called and the emitted statement list is
+unchanged.
+
+### Derivation
+
+The existing translation checks the constraint's well-formedness on fresh,
+arbitrary copies of every simple left-hand variable. Inside that check it assumes
+only the copies' type antecedents, then checks function preconditions, reads
+permissions and other definedness obligations along the constraint's evaluation
+paths. These obligations must hold for every tuple satisfying those type
+antecedents, independently of which tuple will be selected. For each evaluated
+function application those checks justify the existing function `#canCall`
+permission; for a higher-order application they establish its `RequiresN`.
+After the actual variables are havoced, their existing type antecedents are
+assumed. Substituting those actual values for the arbitrary copies therefore
+justifies the same can-call facts. Non-simple left-hand locations, allowed only
+with `:| assume`, are already havoced before the well-formedness check and are
+unchanged between it and this assumption. The heap and other variables likewise
+remain unchanged.
+
+`CanCallAssumption` preserves implication, conjunction, disjunction and
+conditional evaluation guards. It does not grant permission to a call on a
+branch whose guard is false. A precondition occurring later in a conjunction
+cannot justify an earlier partial call. The new assumption follows both the
+well-formedness check and the existing existence check; it does not assume that
+an empty type has an inhabitant or that an impossible constraint has a witness.
+A failed check still fails verification. Predicate opacity, fuel and reveals
+continue to control whether a permitted call's body is available.
+
+The argument is relative to the trusted well-formedness and function-definition
+encoding. Each permission is a local instance justified by those checks, so
+combining it with bounded round trips, literal identities, reflexive heap
+succession and result-allocation instances introduces no additional semantic
+restriction. The new permissions can expose more existing definition instances
+and change proof costs, which is why they share the default-off option.
+
+### Controls
+
+`git-issues/github-issue-36.dfy` retains the original program and exercises
+compiled and ghost statements, multiple and existing left-hand variables,
+heap-reading predicates, guarded partial predicates and higher-order calls.
+Negative cases retain failures for missing preconditions, missing witnesses,
+opaque definitions, inactive disjunction/conditional branches, a wrong selected
+value, and `assert false` after the predicate has been triggered. Both resolvers
+run with the option off and on under pinned Z3 5.1.0 and 4.12.1.

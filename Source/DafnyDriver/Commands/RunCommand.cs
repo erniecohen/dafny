@@ -45,6 +45,7 @@ public static class RunCommand {
       Inputs,
       MainOverride,
       CommonOptionBag.BuildFile,
+      CommonOptionBag.Output,
     }.Concat(DafnyCommands.ExecutionOptions).
       Concat(DafnyCommands.ConsoleOutputOptions).
       Concat(DafnyCommands.ResolverOptions);
@@ -59,13 +60,16 @@ public static class RunCommand {
     }
     DafnyNewCli.SetHandlerUsingDafnyOptionsContinuation(result, async (options, context) => {
       await CheckForMistypedDafnyOption(context, options);
+      // Preserve the hidden --build alias when --output is absent.
+      options.DafnyPrintCompiledFile = options.Get(CommonOptionBag.Output)?.FullName ??
+        options.Get(CommonOptionBag.BuildFile)?.FullName;
       options.MainArgs = context.ParseResult.GetValueForArgument(UserProgramArguments).ToList();
       options.Compile = true;
       options.RunAfterCompile = true;
       options.ForceCompile = options.Get(BoogieOptionBag.NoVerify);
 
       return await SynchronousCliCompilation.Run(options);
-    });
+    }, useProjectOption: (option, options) => option != CommonOptionBag.Output || options.Get(CommonOptionBag.ProjectOutput));
     return result;
   }
 

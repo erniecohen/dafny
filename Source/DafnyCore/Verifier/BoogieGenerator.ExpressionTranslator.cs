@@ -1222,7 +1222,9 @@ namespace Microsoft.Dafny {
         Boogie.Type elType = BoogieGenerator.TrType(elmtType);
         Boogie.Type dType = BoogieGenerator.TrType(domainType);
         Boogie.Expr e0 = e.E0 == null ? null : TrExpr(e.E0);
-        if (e0 != null && e.E0.Type.IsBitVectorType) {
+        // Sequence and array positions are integers; map keys retain their declared type.
+        if (e0 != null && e.E0.Type.IsBitVectorType &&
+            (!options.Get(CommonOptionBag.BitvectorMapKeys) || seqType is not MapType)) {
           e0 = BoogieGenerator.ConvertExpression(GetToken(e.E0), e0, e.E0.Type, Type.Int);
         }
         Boogie.Expr e1 = e.E1 == null ? null : TrExpr(e.E1);

@@ -117,3 +117,17 @@ git-issues/git-issue-82-maps.dfy
 git-issues/git-issue-82-reads.dfy
 git-issues/git-issue-82-bounds.dfy
 git-issues/git-issue-82-newtypes.dfy
+# Contextual lambda subset domains (#87 here).
+git-issues/git-issue-4949.dfy
+
+# Project and command-line compiler output filenames.
+git-issues/github-issue-104.dfy
+
+# Generic subset fields must use the supplied C# cloning converter.
+git-issues/git-issue-5881.dfy
+
+# Bitvector map lookup keys (#112 here).
+git-issues/git-issue-1962.dfy
+
+# Function call permissions after assign-such-that (#36 here).
+git-issues/github-issue-36.dfy
