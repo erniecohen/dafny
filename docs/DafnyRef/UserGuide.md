@@ -392,7 +392,7 @@ Command-line `--output` takes precedence over the project setting.
 `output = "bin/result"` names files using `result` inside `bin`; `output = "bin"`
 names files using `bin` in the project directory. It does not select an output directory.
 `--project-output` also rejects compiler output paths without a filename stem,
-such as `bin/` and `.cs`, in `build`, `run` and `test`.
+such as empty values, `.`, `..`, `bin/` and `.cs`, in `build`, `run` and `test`.
 
 During development, users must use `dafny run --allow-warnings` if they want to run their Dafny code when it contains warnings.
 

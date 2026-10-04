@@ -165,6 +165,18 @@ public static class DafnyNewCli {
     bool useProjectOption = true) {
     var options = dafnyOptions.Options;
     var result = context.ParseResult.FindResultFor(option);
+    if (option == CommonOptionBag.Output && dafnyOptions.Get(CommonOptionBag.ProjectOutput)) {
+      object? rawValue = null;
+      if (result != null && !Equals(result.Token, null)) {
+        rawValue = result.Tokens[0].Value;
+      } else {
+        dafnyOptions.DafnyProject?.Options.TryGetValue(option.Name, out rawValue);
+      }
+      // Full-path conversion turns an empty value or . / .. into a directory name.
+      if (rawValue is string path && (path.Length == 0 || Path.GetFileName(path) is "." or "..")) {
+        throw new ArgumentException("Invalid output filename: specify a filename with a nonempty stem, not a directory.");
+      }
+    }
     object? projectFileValue = null;
     var hasProjectFileValue = useProjectOption &&
       (option != CommonOptionBag.Output || result == null || Equals(result.Token, null)) &&
