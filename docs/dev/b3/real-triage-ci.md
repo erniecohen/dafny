@@ -9,7 +9,8 @@ diagnostic artifact, never a full acceptance result.
 The reviewed inner source seal is
 `941ef16e0f1e9d4d79120f8ff77b45c42a5475365823dbe63f16b09bfb02feb3`.
 All eight sealed source files and their byte lengths must match before the
-coordinator imports its helpers. They are checked again after the build and
+coordinator imports its helpers. The local Git attributes force the sealed
+project file to LF so a fresh checkout preserves its exact approved bytes. They are checked again after the build and
 diagnostic stages. The source seal's `csharpCompiled=false` and
 `proofOrWorkerExecuted=false` describe that source checkpoint; later runtime
 evidence belongs to the separate execution receipt.
