@@ -1,0 +1,2 @@
+# Every sealed byte, including the project XML, must survive checkout unchanged.
+* text eol=lf

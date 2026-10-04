@@ -76,6 +76,6 @@ not invoke a solver or worker. The outer wrapper runs this fixed denominator bef
 any traced replay. No control has been executed at this source checkpoint.
 
 `DESIGN.md` gives the English mathematical and observational argument. The source
-seal declares all 18 utility/input files; the enclosing reviewed Git/CI receipt
+seal declares all 19 utility/input files; the enclosing reviewed Git/CI receipt
 binds that declaration. It is no signed build or runtime attestation. No workflow
 routing is enabled by this checkpoint.

@@ -30,8 +30,8 @@ static evidence only. Fifteen parser regressions, the C# replay build, trace
 qualification and all eight worker cases require a future reviewed CI execution.
 No workflow routing is enabled here. Tracing overhead and file caps are diagnostic
 instrumentation and cannot establish original acceptance or proof cost parity.
-The source seal is `80857907497401c7d413a7c5e8d8d446752adaf919753a48596b820b1472be1c`
-for 18 files; the reviewed Git/CI source identity binds that declaration without
+The source seal is `98c9b875d0fb254cbc0c4137b142e88730f198a51b191b82a85f8441ff544289`
+for 19 files; the reviewed Git/CI source identity binds that declaration without
 claiming a signed origin attestation. The product ledger remains
 `v4.11.0 0e36fadf2a702df121bc9c0fe0b11e43e475e207` because only review tooling and
 documentation change.

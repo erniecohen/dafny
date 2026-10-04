@@ -4,6 +4,10 @@
   "sourceOnlyCheckpoint": true,
   "libraryRebuilt": false,
   "files": {
+    ".gitattributes": {
+      "bytes": 95,
+      "sha256": "e4e08097d38549ad31ec247c6a6786e6e80d404012db232baacb63140f85a704"
+    },
     "DESIGN.md": {
       "bytes": 17332,
       "sha256": "bba4c36155020c6e007cd04903a6bcdf3eb2d100829ddf7f1f0c433ef2efb30e"
@@ -14,7 +18,7 @@
     },
     "README.md": {
       "bytes": 4914,
-      "sha256": "a371e5bd645bec606eabafdfa28f6d86d5f14842b845055ef21ad50cd18421e0"
+      "sha256": "aad2d0ecafa4b9e3fbca7ff9aa835952e27fb309a686fff8dda712964ecaaa46"
     },
     "Replay.csproj": {
       "bytes": 648,
@@ -57,8 +61,8 @@
       "sha256": "59feeebb34c9569fdb526335b4dbcd8d0c3637188938c896a91089490b576f3f"
     },
     "coordinator.py": {
-      "bytes": 21780,
-      "sha256": "27834a822d119e8712f9791a4b57d4e69082fb0ff4a6fadf10a7cf64c869301e"
+      "bytes": 21797,
+      "sha256": "3ef71bbe32c747cf62c311c340bea91f7eaeaa0fb5f83c2927cd85eeeddc0bad"
     },
     "gate.py": {
       "bytes": 12328,
