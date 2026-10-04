@@ -915,10 +915,12 @@ namespace Microsoft.Dafny {
                 }
               }
               Bpl.Expr canCallFuncAppl = new Bpl.NAryExpr(GetToken(expr), new Bpl.FunctionCall(canCallFuncID), args);
-              builder.Add(TrAssumeCmd(callExpr.Origin, allowance == null ? canCallFuncAppl : BplOr(etran.TrExpr(allowance), canCallFuncAppl)));
+              if (!IsCoRecursiveFunctionCall(e)) {
+                builder.Add(TrAssumeCmd(callExpr.Origin, allowance == null ? canCallFuncAppl : BplOr(etran.TrExpr(allowance), canCallFuncAppl)));
+              }
 
               var returnType = e.Type.AsDatatype;
-              if (returnType != null && returnType.Ctors.Count == 1) {
+              if (!IsCoRecursiveFunctionCall(e) && returnType != null && returnType.Ctors.Count == 1) {
                 var correctConstructor = FunctionCall(e.Origin, returnType.Ctors[0].QueryField.FullSanitizedName, Bpl.Type.Bool, etran.TrExpr(e));
                 // There is only one constructor, so the value must be been constructed by it; might as well assume that here.
                 builder.Add(TrAssumeCmd(callExpr.Origin, correctConstructor));
@@ -1427,6 +1429,13 @@ namespace Microsoft.Dafny {
           new IsAllocated("array", null, obj), builder.Context));
       }
       return array;
+    }
+
+    private static bool IsCoRecursiveFunctionCall(FunctionCallExpr call) {
+      // A guarded co-recursive call is a suspended value. Its full result type
+      // cannot be assumed while checking the cluster's constructor fields.
+      // Extreme predicates use this marker for their separate prefix proof rule.
+      return call.CoCall == FunctionCallExpr.CoCallResolution.Yes && call.Function is not ExtremePredicate;
     }
 
     public void CheckSubsetType(ExpressionTranslator etran, Expression expr, Bpl.Expr selfCall, Type resultType,
