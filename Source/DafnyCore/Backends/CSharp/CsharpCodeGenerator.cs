@@ -857,6 +857,8 @@ namespace Microsoft.Dafny.Compilers {
       }
 
       string PrintConvertedExpr(string name, Type fromType) {
+        // Subset types are erased; their underlying type determines the converter.
+        fromType = fromType.NormalizeExpand();
         var constructorIndex = nonGhostTypeArgs.IndexOf(fromType.AsTypeParameter);
         if (constructorIndex != -1) {
           return $"converter{constructorIndex}({name})";
