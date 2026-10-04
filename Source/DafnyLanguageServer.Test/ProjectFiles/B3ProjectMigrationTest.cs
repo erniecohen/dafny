@@ -38,7 +38,7 @@ public class B3ProjectMigrationTest : ClientBasedLanguageServerTest {
       var (first, second) = await OpenTwoSources(directory);
       var previous = (await Projects.GetProjectManager(first))!;
       var resolution = (await previous.Compilation.Resolution)!;
-      await previous.VerifyEverythingAsync();
+      await previous.VerifyEverythingAsync(null);
       var oldTasks = verifier.Items.Where(item => ReferenceEquals(item.Resolution, resolution)).ToList();
       Assert.Equal(2, oldTasks.Count);
       await Task.WhenAll(oldTasks.Select(item => item.Started.Task)).WaitAsync(CancellationToken);

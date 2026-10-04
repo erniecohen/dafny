@@ -1,0 +1,1 @@
+B3 solver identity checks use the configured verification deadline, capped at 30 seconds, and enforce executable file bounds throughout hashing. Parent preparation and worker validation share the same file-identity implementation.
