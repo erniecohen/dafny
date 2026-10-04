@@ -87,6 +87,24 @@ public class ProtocolTests {
     Assert.Throws<InvalidDataException>(() => ProtocolValidation.ValidateRequest(request with {
       UnitId = program.Unit.Name, Program = program, ProgramHash = Protocol.GetProgramHash(program) }));
   }
+  [Theory]
+  [InlineData(Protocol.MaximumDepth - 1, true)]
+  [InlineData(Protocol.MaximumDepth, false)]
+  public void LogicalDepthBoundIsIndependentOfJsonContainerDepth(int nesting, bool valid) {
+    Expression condition = new BooleanLiteral(true);
+    for (var i = 0; i < nesting; i++) {
+      condition = new Operation(Operator.Not, "bool", new[] { condition });
+    }
+    var request = CreateRequest(new Check("sO0", condition, false));
+    var json = JsonSerializer.Serialize(request, Protocol.JsonOptions);
+    var restored = JsonSerializer.Deserialize<Request>(json, Protocol.JsonOptions)!;
+    if (valid) {
+      ProtocolValidation.ValidateRequest(restored);
+      Assert.Equal(request.ProgramHash, Protocol.GetProgramHash(restored.Program));
+    } else {
+      Assert.Throws<InvalidDataException>(() => ProtocolValidation.ValidateRequest(restored));
+    }
+  }
   [Fact]
   public void UnknownJsonFieldsAreRejected() {
     var json = JsonSerializer.Serialize(CreateRequest(), Protocol.JsonOptions);

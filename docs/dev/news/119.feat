@@ -1,3 +1,5 @@
 Adds a pinned B3 source component, a structured library entrypoint and a bounded worker protocol. Solver command failures, unknown results, incomplete responses and cleanup failures cannot produce successful verification.
 
 Worker package loading bounds manifest and library bytes before hashing, honors cancellation and a deadline, and request transmission keeps its terminating newline under the unit deadline.
+
+The B3 protocol allows the JSON containers required by its logical nesting bound and rejects over-bound logical expressions explicitly.
