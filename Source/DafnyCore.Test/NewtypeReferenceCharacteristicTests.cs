@@ -179,6 +179,36 @@ public class NewtypeReferenceCharacteristicTests {
     Assert.True(wrapped.MayShowReferences);
     Assert.Equal(Type.AncestorTypeKind.Cyclic,
       Application(subset).NormalizeToAncestorTypeChecked(preserveSubsetTypes: true).Kind);
+    var actual = Parameter("Actual");
+    var identity = Newtype("Identity", new UserDefinedType(actual), actual);
+    var throughActual = Application(identity, Application(subset));
+    Assert.Equal(Type.AncestorTypeKind.Cyclic, throughActual.NormalizeToAncestorTypeChecked().Kind);
+    Assert.Equal(Type.AncestorTypeKind.Cyclic,
+      throughActual.NormalizeToAncestorTypeChecked(preserveSubsetTypes: true).Kind);
+  }
+
+  [Fact]
+  public void GenericProjectionIntoAnExpandingSubsetCycleIsConservative() {
+    var element = Parameter("Element");
+    var declaration = Newtype("Expanding", Type.Int, element);
+    var selected = Parameter("Selected");
+    var bound = new BoundVar(SourceOrigin.NoToken, "x", new UserDefinedType(selected));
+    var subset = new SubsetTypeDecl(SourceOrigin.NoToken, new Name("Select"), TypeParameterCharacteristics.Default(),
+      [selected], module, bound, new LiteralExpr(SourceOrigin.NoToken, true),
+      SubsetTypeDecl.WKind.CompiledZero, null, null);
+    selected.Parent = subset;
+    selected.PositionalIndex = 0;
+    declaration.BaseType = Application(subset, Application(declaration, new SeqType(new UserDefinedType(element))));
+    var actual = Parameter("Actual");
+    var identity = Newtype("Identity", new UserDefinedType(actual), actual);
+    var wrapped = Application(identity, Application(declaration, Type.Int));
+    Assert.Equal(Type.AncestorTypeKind.Cyclic, wrapped.NormalizeToAncestorTypeChecked().Kind);
+    // First Identity's raw RHS is a parameter; Select's raw RHS is also a parameter.
+    // The entered Expanding declaration supplies the cycle witness.
+    Assert.Equal(Type.AncestorTypeKind.Cyclic,
+      wrapped.NormalizeToAncestorTypeChecked(preserveSubsetTypes: true).Kind);
+    Assert.True(wrapped.MayInvolveReferences);
+    Assert.True(wrapped.MayShowReferences);
   }
 
   [Fact]

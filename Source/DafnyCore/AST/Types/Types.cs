@@ -220,7 +220,11 @@ public abstract class Type : NodeWithOrigin {
               current is UserDefinedType { ResolvedClass: SubsetTypeDecl stoppedSubset }) {
             // Stopping at a subset must not hide a mixed redirecting cycle
             // that would otherwise be found by following its instantiated RHS.
-            var cycle = RedirectingTypeCycleAnalysis.TryFindCycle((RedirectingTypeDecl)firstNewtype ?? stoppedSubset, GetScope());
+            IEnumerable<RedirectingTypeDecl> roots = visited != null
+              ? visited.Cast<RedirectingTypeDecl>()
+              : firstNewtype == null ? [] : [firstNewtype];
+            var cycle = RedirectingTypeCycleAnalysis.Analyze(roots.Append(stoppedSubset), GetScope())
+              .FindCycles().FirstOrDefault()?.Witness;
             if (cycle != null) {
               return new AncestorTypeResult(AncestorTypeKind.Cyclic, null, cycle);
             }
