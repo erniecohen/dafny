@@ -32,7 +32,7 @@ public class NewtypeReferenceCharacteristicTests {
 
   private sealed class ModeProbe : Type {
     public bool? Mode;
-    public ISet<DatatypeDecl> Context;
+    public ISet<DatatypeDecl>? Context;
     public override string TypeName(DafnyOptions options, ModuleDefinition context, bool parseAble = false) =>
       "mode probe";
     public override Type Subst(IDictionary<TypeParameter, Type> subst) => this;
