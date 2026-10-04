@@ -13,11 +13,6 @@ lemma {:induction false} NoInduction(s: Stream<int>, t: Stream<int>, k: nat)
   ensures (s !=#[k] t) <==> ((s as Stream<int>) !=#[k] (t as Stream<int>))
 {}
 
-lemma ZeroDepth(s: Stream<int>, t: Stream<int>)
-  ensures s ==#[0] t
-  ensures !(s !=#[0] t)
-{}
-
 lemma DistinctHeads(s: Stream<int>, t: Stream<int>)
   requires s.head != t.head
   ensures s !=#[1] t
