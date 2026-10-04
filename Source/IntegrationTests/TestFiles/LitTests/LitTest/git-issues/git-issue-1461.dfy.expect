@@ -39,26 +39,23 @@ git-issue-1461-negative.dfy(5,48): Related location: this proposition could not 
 
 Dafny program verifier finished with 1 verified, 3 errors
 Boogie, extensional heaps (typeEncoding:m)
-git-issue-1461.bpl(39,3): Error: this assertion could not be proved
+git-issue-1461.bpl(23,3): Error: this assertion could not be proved
 Execution trace:
-    git-issue-1461.bpl(39,3): anon0
-git-issue-1461.bpl(55,3): Error: this assertion could not be proved
+    git-issue-1461.bpl(13,3): anon0
+git-issue-1461.bpl(37,3): Error: this assertion could not be proved
 Execution trace:
-    git-issue-1461.bpl(48,3): anon0
+    git-issue-1461.bpl(30,3): anon0
 
-Boogie program verifier finished with 3 verified, 2 errors
+Boogie program verifier finished with 0 verified, 2 errors
 Boogie, Dafny's encoding (typeEncoding:a)
-git-issue-1461.bpl(20,3): Error: this assertion could not be proved
+git-issue-1461.bpl(21,3): Error: this assertion could not be proved
 Execution trace:
-    git-issue-1461.bpl(16,3): anon0
-git-issue-1461.bpl(39,3): Error: this assertion could not be proved
+    git-issue-1461.bpl(13,3): anon0
+git-issue-1461.bpl(23,3): Error: this assertion could not be proved
 Execution trace:
-    git-issue-1461.bpl(39,3): anon0
-git-issue-1461.bpl(53,3): Error: this assertion could not be proved
+    git-issue-1461.bpl(13,3): anon0
+git-issue-1461.bpl(37,3): Error: this assertion could not be proved
 Execution trace:
-    git-issue-1461.bpl(48,3): anon0
-git-issue-1461.bpl(55,3): Error: this assertion could not be proved
-Execution trace:
-    git-issue-1461.bpl(48,3): anon0
+    git-issue-1461.bpl(30,3): anon0
 
-Boogie program verifier finished with 2 verified, 4 errors
+Boogie program verifier finished with 0 verified, 3 errors

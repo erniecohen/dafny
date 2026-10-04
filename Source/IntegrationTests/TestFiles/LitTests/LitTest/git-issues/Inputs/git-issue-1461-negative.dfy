@@ -1,4 +1,4 @@
-// Vacuity controls: reflexivity is in play in each method, and none may verify.
+// Vacuity controls: a two-state function is used as a value in each method, and none may verify.
 class C {
   var x: int
 

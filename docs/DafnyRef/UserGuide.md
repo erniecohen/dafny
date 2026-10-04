@@ -2381,9 +2381,9 @@ and what information it produces about the verification process.
   arguments and conversion checks. Shared function/type axioms are unchanged.
   The unchanged round-trip and shift-by-zero examples pass the pinned Z3 4.12.1
   and 5.1.0 gates in both resolver modes. Other proof costs remain solver-dependent.
-  It also makes heap succession reflexive on good heaps, so that a two-state
-  function used as a value can be applied where its previous heap is the current
-  one, and it instantiates a function's existing allocation axiom where the
+  It also assumes that heap succession is reflexive at the previous heap of a
+  two-state function used as a value, so that the value can be applied where that
+  heap is the current one, and it instantiates a function's existing allocation axiom where the
   function is applied, so that the members of a function's result are known to
   be allocated.
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).

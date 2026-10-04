@@ -46,8 +46,8 @@ addition imposes no new model restriction in combination with `S`; it does not
 prove consistency of the entire prelude or of `S`. The shared switch also exposes the closed literal identities derived below.
 Those identities are entailed by the trusted literal definition, so the same
 model argument applies with both additions enabled. Inventory this again when
-adding another family; the reflexivity of heap succession (#94) and the
-application trigger for allocation (#95), below, do so.
+adding another family; the instances of reflexivity of heap succession (#94)
+and the application trigger for allocation (#95), below, do so.
 
 The strict upper bound and lower bound are essential: the total native round
 trip is zero at `2^w`, and is `2^w - 1` at `-1`. Native conversions being total
@@ -376,29 +376,45 @@ partial sweep was stopped. It supplies no whole-file green result. The
 made into an acceptance gate or used to redesign the axiom family.
 
 
-## Heap succession is reflexive (#94)
+## Heap succession is reflexive at two-state function values (#94)
 
 [Issue 94](https://github.com/erniecohen/dafny/issues/94) (dafny-lang/dafny#1461):
 a two-state function used as a value is applied with `Requires0`, whose axiom
-needs `$HeapSucc(previous, current)`. Where the value was made at a method's
-entry, the two heaps are the same, and nothing proved `$HeapSucc(h, h)`. With
-the option, the prelude has one more axiom:
+needs `$HeapSucc(previous, current)`. A handle made at a method's entry has the
+same heap for both, and nothing proved `$HeapSucc(h, h)`, so
+`var q := p; assume q();` failed although `assume p();` verified.
+
+With the option, `CanCallAssumptionForVerification`, which already adds the
+closed literal identities below, also adds, for each two-state function that
+the expression uses as a value,
 
 ```boogie
-axiom (forall h: Heap :: {:qid "additional_axioms_heap_succ_reflexive"} { $HeapSucc(h, h) }
-  $IsGoodHeap(h) ==> $HeapSucc(h, h));
+$IsGoodHeap(H) ==> $HeapSucc(H, H)
 ```
 
-It is in `DafnyPrelude.bpl` (and `Prelude/PreludeCore.bpl`) under
-`#if ADDITIONAL_AXIOMS`, and Dafny defines `ADDITIONAL_AXIOMS` when it reads the
-prelude only if the option is on, as it defines `UNICODE_CHAR` for
-`--unicode-char`. With the option off, the parsed prelude is the same as before.
+where `H` is the previous heap the function's handle captures, as `TrExpr` gives
+it (`old($Heap)`, or the heap of `old@L` around it). These are instances of
+reflexivity, local to the verification context; shared function and type
+axioms do not get them. With the option off nothing is collected or emitted.
+
+### Why not one axiom
+
+The first version added `axiom (forall h: Heap :: { $HeapSucc(h, h) }
+$IsGoodHeap(h) ==> $HeapSucc(h, h));` to the prelude under the option. In the
+paired CI it made one standard-library declaration fail with Z3 4.12.1 and the
+option on, `ConcatenatedProducer.Invoke` (`Std/Actions/Producers.dfy(1678,37)`,
+"assertion might not hold", within its limit), in
+[run 37178760521](https://github.com/erniecohen/dafny/actions/runs/37178760521).
+Isolated with `--filter-symbol`: the declaration verifies with the option off,
+with the option on and every member but that axiom, and with the unchanged
+build; it fails with the axiom alone and the option off. That declaration makes
+no two-state function value, so the local instances leave it as it was.
 
 ### Model
 
 Interpret `$HeapSucc(h, k)` as inclusion of the allocated references:
 `$Unbox(read(h, o, alloc)): bool ==> $Unbox(read(k, o, alloc)): bool` for every
-reference `o`. It is reflexive, so the new axiom holds, and each prelude axiom
+reference `o`. It is reflexive, so every instance holds, and each prelude axiom
 that concludes or uses `$HeapSucc` holds too:
 
 - transitivity, also without its `a != c` guard, and the monotonicity of `alloc`:
@@ -432,23 +448,21 @@ Such a proof is sound only in a model in which `$HeapSucc(h, h)` holds.
 
 The bounded round trips and the literal identities are entailed by the trusted
 theory `T`, and the application trigger below adds no formula. So the models of
-`T` with all members are the models of `T` with reflexivity, among them the
+`T` with all members include those of `T` with reflexivity, among them the
 inclusion model above (relative to the intended interpretation of the rest of
 `T`, as for the existing axioms).
 
-### Trigger and controls
+### Controls
 
-Z3 matches the pattern `$HeapSucc(h, h)` modulo equality: it fires where a term
-`$HeapSucc(a, b)` exists with `a = b` known, and not for every good heap.
 `git-issues/git-issue-1461.dfy` runs the issue's program with the option off (it
-fails) and on (it verifies), positive cases, and vacuity controls in which
-reflexivity is in play and `assert false` and two false assertions about the
-value must fail, in both resolver modes. A Boogie part appends procedures to the
-emitted program with the option: reflexivity holds on a good heap and is not
-stated for another; under the monomorphic encoding (`-typeEncoding:m`), where
-heaps are extensional, writing back a reference's own `alloc` box and
-transitivity with possibly equal end points are steps; and in #81's scenario,
-where the restoring write gives back a good heap, `assert false` still fails.
+fails) and on (it verifies), positive cases (three of them fail with the option
+off), and vacuity controls in which a two-state function value is used and
+`assert false` and two false assertions about the value must fail, in both
+resolver modes. A Boogie part appends procedures to the program emitted with the
+option and assumes the instance at every heap they make: in #81's scenario,
+where under the monomorphic encoding (`-typeEncoding:m`) the restoring write
+gives back the original heap, and after an allocation, `assert false` still
+fails, under that encoding and Dafny's.
 
 ## Allocation of function results at their applications (#95)
 

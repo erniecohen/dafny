@@ -1,56 +1,38 @@
-// Appended to the Boogie program that Dafny emits with --additional-axioms, with its prelude.  Under
-// the monomorphic type encoding, heaps are native, extensional arrays.
+// Appended to the Boogie program that Dafny emits with --additional-axioms, with its prelude.  With the
+// option, Dafny assumes  $IsGoodHeap(h) ==> $HeapSucc(h, h)  at the previous heap h of each two-state
+// function used as a value.  These procedures assume that instance at every heap they make, and check
+// that it is consistent with the update axioms of erniecohen/dafny#81.  Under the monomorphic type
+// encoding, heaps are native, extensional arrays.
 
-procedure Issue1461_Reflexive(h: Heap)
-{
-  assume $IsGoodHeap(h);
-  assert $HeapSucc(h, h);
-}
-
-// A write of the box a reference holds gives back the same heap under the monomorphic encoding,
-// and reflexivity makes it a step.  Under Dafny's encoding it is a different heap, and not a step:
-// the only write to alloc that is one writes $Box(true) (erniecohen/dafny#81).
-procedure Issue1461_WriteBack(h: Heap, r: ref)
-{
-  var h1: Heap;
-  assume $IsGoodHeap(h);
-  assume $Unbox(read(h, r, alloc)): bool;
-  h1 := update(h, r, alloc, read(h, r, alloc));
-  assume $IsGoodHeap(h1);
-  assert $HeapSucc(h, h1);
-}
-
-// Transitivity does not apply to equal end points, and reflexivity covers them.
-procedure Issue1461_Transitive(h: Heap, r: ref, f: Field, i: int, x: Box)
-{
-  var h1, h2: Heap;
-  assume $IsGoodHeap(h);
-  assume f != alloc;
-  h1 := update(h, r, f, x);
-  assume $IsGoodHeap(h1);
-  h2 := update(h1, r, IndexField(i), x);
-  assume $IsGoodHeap(h2);
-  assert $HeapSucc(h, h2);
-}
-
-// Only good heaps.
-procedure Issue1461_NotGood(h: Heap)
-{
-  assert $HeapSucc(h, h);
-}
-
-// Vacuity, together with the guard of erniecohen/dafny#81: the restoring write gives back the
-// heap that held the unallocated reference, which is good, and it succeeds itself.
+// The scenario of #81: allocate an unallocated reference, then write back the box it held.  The heap
+// this gives back is the original one under the monomorphic encoding, and so a successor of itself.
 procedure Issue1461_Restore(h: Heap, r: ref)
 {
   var b0: Box;
   var h1, h2: Heap;
   assume $IsGoodHeap(h);
+  assume $IsGoodHeap(h) ==> $HeapSucc(h, h);
   b0 := read(h, r, alloc);
   assume !($Unbox(b0): bool);
   h1 := update(h, r, alloc, $Box(true));
+  assume $IsGoodHeap(h1) ==> $HeapSucc(h1, h1);
   h2 := update(h1, r, alloc, b0);
+  assume $IsGoodHeap(h2) ==> $HeapSucc(h2, h2);
   assert h2 == h;  // extensionality, under the monomorphic encoding only
   assert $HeapSucc(h2, h);
+  assert false;
+}
+
+// An allocation, with the instance at both heaps.
+procedure Issue1461_Allocate(h: Heap, r: ref)
+{
+  var h1: Heap;
+  assume $IsGoodHeap(h);
+  assume $IsGoodHeap(h) ==> $HeapSucc(h, h);
+  assume !($Unbox(read(h, r, alloc)): bool);
+  h1 := update(h, r, alloc, $Box(true));
+  assume $IsGoodHeap(h1);
+  assume $IsGoodHeap(h1) ==> $HeapSucc(h1, h1);
+  assert $HeapSucc(h, h1) && $HeapSucc(h1, h1);
   assert false;
 }

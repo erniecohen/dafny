@@ -1,5 +1,6 @@
-// Regression for the default-off shared additional-axioms option: heap succession is reflexive on good
-// heaps (dafny-lang/dafny#1461).  Without the option, the original and three of the positive cases fail.
+// Regression for the default-off shared additional-axioms option: heap succession is reflexive at the
+// previous heap of a two-state function used as a value (dafny-lang/dafny#1461).  Without the option, the
+// original and three of the positive cases fail.
 // RUN: echo "original, option off (type-system-refresh:false)" > "%t"
 // RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-1461-original.dfy" --type-system-refresh:false --allow-axioms --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --verification-time-limit:60 --cores:1 >> "%t"
 // RUN: echo "original, option off (type-system-refresh:true)" >> "%t"

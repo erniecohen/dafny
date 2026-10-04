@@ -719,9 +719,6 @@ namespace Microsoft.Dafny {
       if (options.Get(CommonOptionBag.UnicodeCharacters)) {
         defines.Add("UNICODE_CHAR");
       }
-      if (options.Get(CommonOptionBag.AdditionalAxioms)) {
-        defines.Add("ADDITIONAL_AXIOMS");
-      }
       int errorCount = BplParser.Parse(preludePath, defines, out var prelude);
       if (prelude == null || errorCount > 0) {
         return null;
