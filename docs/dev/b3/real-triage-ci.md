@@ -7,7 +7,7 @@ and the default `none` focus remain unchanged. A zero job exit delivers a
 diagnostic artifact, never a full acceptance result.
 
 The reviewed inner source seal is
-`941ef16e0f1e9d4d79120f8ff77b45c42a5475365823dbe63f16b09bfb02feb3`.
+`ee52260407c245d9f6ab93a1b5002c1c2992b75cd995b79fb321d146c6177aaa`.
 All eight sealed source files and their byte lengths must match before the
 coordinator imports its helpers. The local Git attributes force the sealed
 project file to LF so a fresh checkout preserves its exact approved bytes. They are checked again after the build and
@@ -53,16 +53,29 @@ Both coordinators require an initially empty dedicated Linux child-subreaper
 scope and use the reviewed pidfd adopted-child cleanup helper. Every stage has
 an output byte bound, wall-clock safety deadline and empty-child boundary. The
 outer coordinator also has a 40-minute safety deadline below the unchanged
-45-minute workflow job cap. A timeout, forced cleanup or leftover child keeps
-that stage failed; a failed drain prevents later stages. The wrapper removes the
-GitHub token environment variables before invoking the inner build/proof
-coordinator. These are process-tree ownership controls; no cgroup containment,
-escaped-runtime or signed provenance attestation is claimed.
+45-minute workflow job cap. Both stage helpers allow at most ten seconds of
+natural child exit/reaping after the main child exits, capped by the existing
+stage deadline. That grace sends no signals and keeps output bounds. The actual
+inner build environment appends `-Dorg.gradle.daemon=false` to `GRADLE_OPTS`;
+this disables persistent daemon use but does not promise that Gradle cannot fork
+a disposable single-use JVM. A timeout, child remaining after grace or forced
+cleanup keeps that stage failed; a failed drain prevents later stages. Bounded
+PID/comm/command-line/start-time observations before grace and before cleanup
+are diagnostic evidence, separate from pidfd signal ownership. The wrapper
+removes the GitHub token environment variables before invoking the inner
+build/proof coordinator. These are process-tree ownership controls; no cgroup
+containment, escaped-runtime or signed provenance attestation is claimed.
 
 Every outer command, actual process exit, cleanup result and log/captured-output
 hash is recorded, with the inner strict receipt embedded and hash-bound. The
 artifact upload retains its existing `if: always()` guard. The outer `passed`
 field deliberately remains false: inspect the original strict booleans and
 separately labeled exploratory results. Current-corpus or Java success is
-reported only for those focused stages. This source checkpoint has not been
-built or executed.
+reported only for those focused stages. The first diagnostic
+[run 37227920873](https://github.com/erniecohen/dafny/actions/runs/37227920873)
+validated its archive, prerequisites and original source seal, but a Gradle child
+outlived the otherwise successful compiler build. Its owned cleanup failed that
+stage before any triage request or Real proof execution. This lifecycle repair
+has not been executed; it changes neither the C# source, fixtures, queries nor
+resource limits. The original `941ef16e0f1e9d4d79120f8ff77b45c42a5475365823dbe63f16b09bfb02feb3`
+source checkpoint remains preserved separately; this repair has a fresh seal.

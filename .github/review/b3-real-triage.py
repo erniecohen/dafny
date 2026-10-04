@@ -70,6 +70,90 @@ def direct_children():
     return children
 
 
+NATURAL_EXIT_GRACE_SECONDS = 10
+CHILD_DIAGNOSTIC_LIMIT = 32
+
+
+def reap_exited_children(deadline):
+    reaped = 0
+    while time.monotonic() < deadline:
+        try:
+            if os.waitpid(-1, os.WNOHANG)[0] == 0:
+                return reaped
+            reaped += 1
+        except ChildProcessError:
+            return reaped
+        except InterruptedError:
+            continue
+    return reaped
+
+
+def natural_child_exit(stage_deadline, check_output):
+    # The main Popen child has already been waited. Reap only naturally exited
+    # adopted children here; this phase must never send a signal or reset a timer.
+    started = time.monotonic()
+    stop = min(stage_deadline, started + NATURAL_EXIT_GRACE_SECONDS)
+    reaped = 0
+    while True:
+        check_output()
+        now = time.monotonic()
+        if now >= stage_deadline:
+            raise TimeoutError('Stage deadline expired during natural child-exit grace')
+        reaped += reap_exited_children(stop)
+        remaining = len(direct_children())
+        now = time.monotonic()
+        if now >= stage_deadline:
+            raise TimeoutError('Stage deadline expired during natural child-exit grace')
+        if not remaining or now >= stop:
+            return {'maximumSeconds': NATURAL_EXIT_GRACE_SECONDS,
+                    'waitedSeconds': time.monotonic() - started,
+                    'naturallyReapedChildren': reaped, 'remainingChildren': remaining}
+        time.sleep(min(0.01, stop - now))
+
+
+def child_diagnostics():
+    # Bounded observations only, never an additional signal-ownership premise.
+    result = {'maximumRecords': CHILD_DIAGNOSTIC_LIMIT, 'observedChildCount': None,
+              'recordsTruncated': False, 'records': []}
+    try:
+        children = sorted(direct_children())
+        result['observedChildCount'] = len(children)
+        result['recordsTruncated'] = len(children) > CHILD_DIAGNOSTIC_LIMIT
+        for pid in children[:CHILD_DIAGNOSTIC_LIMIT]:
+            record = {'pid': pid, 'stableDirectChildObservation': False}
+            result['records'].append(record)
+            try:
+                def read_proc(name, maximum):
+                    with Path('/proc', str(pid), name).open('rb') as stream:
+                        data = stream.read(maximum + 1)
+                    return data[:maximum], len(data) > maximum
+
+                def identity():
+                    data, truncated = read_proc('stat', 4096)
+                    fields = data.decode('utf-8', errors='replace').rpartition(')')[2].split()
+                    require(not truncated and len(fields) >= 20, 'Incomplete child stat observation')
+                    return {'state': fields[0], 'parentPid': int(fields[1]),
+                            'startTimeTicks': int(fields[19])}
+
+                before = identity()
+                comm, comm_truncated = read_proc('comm', 256)
+                command_line, command_truncated = read_proc('cmdline', 4096)
+                after = identity()
+                record.update(before)
+                record.update({'comm': comm.decode('utf-8', errors='replace').rstrip('\n'),
+                               'commTruncated': comm_truncated,
+                               'commandLine': command_line.rstrip(b'\0').decode('utf-8', errors='replace').split('\0'),
+                               'commandLineTruncated': command_truncated,
+                               'stableDirectChildObservation': before['startTimeTicks'] == after['startTimeTicks'] and
+                                   before['parentPid'] == os.getpid() and after['parentPid'] == os.getpid() and
+                                   pid in direct_children()})
+            except Exception as error:
+                record['observationError'] = type(error).__name__
+    except Exception as error:
+        result['observationError'] = type(error).__name__
+    return result
+
+
 def cleanup_children():
     # Same dedicated child-subreaper/pidfd ownership helper as check-b3-package.py.
     # Adoption retains orphaned workers even when they have a different Unix session.
@@ -212,7 +296,8 @@ def main():
     args.output.mkdir(parents=True)
     stages = []; errors = []; receipt = None; original_cli = []; corpus_scope = None; expected_corpus = {}
     environment = {**os.environ, 'PATH': str(args.dotnet.parent) + os.pathsep + os.environ.get('PATH', ''),
-                   'DOTNET_CLI_TELEMETRY_OPTOUT': '1', 'DOTNET_SKIP_FIRST_TIME_EXPERIENCE': '1'}
+                   'DOTNET_CLI_TELEMETRY_OPTOUT': '1', 'DOTNET_SKIP_FIRST_TIME_EXPERIENCE': '1',
+                   'GRADLE_OPTS': (os.environ.get('GRADLE_OPTS', '') + ' -Dorg.gradle.daemon=false').strip()}
     cleanup_poisoned = False
 
     def run(name, command, timeout=1800, cwd=ROOT):
@@ -220,6 +305,12 @@ def main():
         require(not cleanup_poisoned and not direct_children(), 'Require empty owned child scope before each stage')
         log = args.output / (name + '.txt')
         actual_code = None; failure = None; process = None; residual = 0; cleanup_count = 0
+        at_completion = None; before_cleanup = None; natural_exit = None
+
+        def check_output():
+            if log.stat().st_size > 32 * 1024 * 1024:
+                raise TimeoutError('Stage output byte bound exceeded')
+
         try:
             with log.open('wb') as stream:
                 process = subprocess.Popen([str(value) for value in command], cwd=cwd, stdout=stream,
@@ -231,11 +322,14 @@ def main():
                     time.sleep(0.01)
                 actual_code = process.wait()
                 residual = len(direct_children())
-                if residual:
-                    failure = 'Completed stage left adopted descendants'
+                at_completion = child_diagnostics()
+                natural_exit = natural_child_exit(deadline, check_output)
+                if natural_exit['remainingChildren']:
+                    failure = 'Completed stage left adopted descendants after natural-exit grace'
         except Exception as error:
             failure = type(error).__name__ + ': ' + str(error)
         finally:
+            before_cleanup = child_diagnostics()
             try:
                 cleanup_count = cleanup_children()
                 if process is not None:
@@ -251,7 +345,9 @@ def main():
         code = actual_code if failure is None else 124 if failure.startswith('TimeoutError:') else 2
         stages.append({'stage': name, 'exitCode': code, 'actualProcessExitCode': actual_code,
                        'command': [str(value) for value in command], 'failure': failure,
-                       'residualChildrenAtCompletion': residual, 'cleanupSignals': cleanup_count,
+                       'residualChildrenAtCompletion': residual, 'naturalExitGrace': natural_exit,
+                       'childDiagnosticsAtCompletion': at_completion, 'childDiagnosticsBeforeCleanup': before_cleanup,
+                       'cleanupSignals': cleanup_count, 'gradleDaemonProperty': '-Dorg.gradle.daemon=false',
                        'cleanupPoisoned': cleanup_poisoned, 'logSha256': digest(log) if log.exists() and log.stat().st_size else None,
                        'remainingAdoptedChildren': len(direct_children())})
         print(name, code, flush=True)

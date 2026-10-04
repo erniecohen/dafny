@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "scope": "Real corpus diagnostic source checkpoint; no full acceptance claim",
-  "inspectedCompilerSource": "66b36bc1d5326115f96e1faf7d466d0f5f0ed67e",
+  "scope": "Real corpus diagnostic build-lifecycle source checkpoint; no full acceptance claim",
+  "inspectedCompilerSource": "ae857e116f0f8cc071c35ae7648ff39de7442b21",
   "sourceOnly": true,
   "csharpCompiled": false,
   "proofOrWorkerExecuted": false,
@@ -18,8 +18,8 @@
   },
   "files": {
     ".github/review/b3-real-triage.py": {
-      "bytes": 24289,
-      "sha256": "41baf3a8ac3805197c98b6c2f60057d55d141643eb00819a04a2ed33bf3a7fad"
+      "bytes": 28950,
+      "sha256": "6be1699f6f2e6c24021063dca39616c88151bf6d644d7da9537ee37ac2614d09"
     },
     ".github/review/real-triage/Program.cs": {
       "bytes": 19722,
@@ -46,8 +46,11 @@
       "sha256": "925b5eb9479d2650cd1882e07cb5d658807f8c3ba647ab1680c6b15cbb0894ca"
     },
     "docs/dev/b3/real-corpus-triage.md": {
-      "bytes": 10588,
-      "sha256": "956c69accbe4a9eb832c13d081f37a3503de95477888498c874195d1e60911bb"
+      "bytes": 11903,
+      "sha256": "cd920e42978664e4ceee558f71fda149a77405cc64fd0764ee6e81c7c0a26711"
     }
-  }
+  },
+  "previousSourceSealSha256": "941ef16e0f1e9d4d79120f8ff77b45c42a5475365823dbe63f16b09bfb02feb3",
+  "priorDiagnosticRun": 37227920873,
+  "priorDiagnosticBoundary": "Prerequisite validated; compiler exit zero but adopted child required cleanup; no triage requests or Real proofs ran"
 }

@@ -152,14 +152,33 @@ retains its existing ownership/timeout cleanup. The coordinator additionally
 requires Linux pidfd support and an initially empty dedicated child-subreaper
 scope, using the same adopted-child ownership helper as
 [check-b3-package.py](../../../Scripts/check-b3-package.py). Each stage starts a
-new Unix session. On a timeout or failure, bounded TERM/KILL cleanup signals
-only validated adopted child instances through pidfds, including orphaned worker
-sessions. Every later stage requires an empty child scope; any forced cleanup
-or positive-stage leftover invalidates that stage, and a failed drain prevents
-later stages. This is a dedicated coordinator process-tree scope, without a
-cgroup containment or escaped-runtime claim. The receipt records residual
-children, cleanup signals, final membership and log hashes. The supplied absolute
-.NET path also prefixes PATH for the existing corpus/worker launchers.
+new Unix session. After the main child exits, natural exit and reaping have at
+most ten seconds within the existing stage deadline; that grace sends no signals
+and does not extend a stage or worker budget. Output limits remain enforced. The
+actual build environment appends `-Dorg.gradle.daemon=false` to `GRADLE_OPTS`.
+Gradle documents this property, but a disposable single-use JVM can still fork
+and stop after the build. See the official
+[Gradle daemon documentation](https://docs.gradle.org/current/userguide/gradle_daemon.html).
 
-This source draft has not been compiled or executed. Emitted artifacts and
-actual budget comparisons remain pending on the exact reviewed source.
+On a timeout or failure, bounded TERM/KILL cleanup signals only validated adopted
+child instances through pidfds, including orphaned worker sessions. Every later
+stage requires an empty child scope; any child remaining after natural-exit grace
+or any forced cleanup invalidates that stage, and a failed drain prevents later
+stages. This is a dedicated coordinator process-tree scope, without a cgroup
+containment or escaped-runtime claim. Before grace and before cleanup, the receipt
+captures at most 32 direct-child PID, comm, command-line and start-time observations.
+Each comm is limited to 256 bytes, each command line and stat read to 4,096 bytes;
+races and truncation are explicit. These observations do not authorize signals.
+Residual counts, natural reaping, cleanup signals, final membership and log hashes
+remain separate. The supplied absolute .NET path also prefixes PATH for the
+existing corpus/worker launchers.
+
+The first focused diagnostic
+[run 37227920873](https://github.com/erniecohen/dafny/actions/runs/37227920873)
+validated its prerequisite and source seal. Its compiler process exited zero,
+but one adopted child remained; cleanup sent 34 signals and left zero residual
+children. The compiler log reported a Gradle daemon. The stage therefore failed
+before emitting any triage requests or running Real proofs. This operational
+failure provides no Real correspondence result. The lifecycle repair is a fresh
+source-only checkpoint; it has not been executed. Actual emitted artifacts and
+budget comparisons remain pending.

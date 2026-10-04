@@ -19,7 +19,7 @@ PUBLIC_ARTIFACT = 11311016429
 PUBLIC_ARTIFACT_NAME = 'b3-native-compile'
 PUBLIC_ARCHIVE_SHA = '76be6dadc245884a15c52b0b94d6eef8f16c96caed2d12ed23b3956c91e617fe'
 PUBLIC_ARCHIVE_BYTES = 145457636
-INNER_SEAL = '941ef16e0f1e9d4d79120f8ff77b45c42a5475365823dbe63f16b09bfb02feb3'
+INNER_SEAL = 'ee52260407c245d9f6ab93a1b5002c1c2992b75cd995b79fb321d146c6177aaa'
 SOURCE = 'a6ecb742096ddf2f4a6dbcfefb847fdb17ff1fbda7bacf0fafd445f60d843976'
 SOLVER = 'b4e0b3483ce37817230b20d6cad48390eb6a3aefde1d93342ad6dc763f24bc23'
 SEAL_PATH = '.github/review/real-triage/source-manifest.json'
@@ -157,6 +157,12 @@ def main():
             residual = signals = 0
             capture = captured_stdout or log_path
             capture_stream = None
+            at_completion = None; before_cleanup = None; natural_exit = None
+
+            def check_output():
+                if capture.stat().st_size > maximum or log_path.stat().st_size > 32 * 1024 * 1024:
+                    raise TimeoutError('Outer stage output byte bound exceeded')
+
             try:
                 with log_path.open('wb') as log:
                     if captured_stdout is not None:
@@ -171,13 +177,16 @@ def main():
                         time.sleep(0.01)
                     code = process.wait()
                     residual = len(inner.direct_children())
-                    if residual:
-                        failure = 'Completed outer stage left adopted descendants'
+                    at_completion = inner.child_diagnostics()
+                    natural_exit = inner.natural_child_exit(stop, check_output)
+                    if natural_exit['remainingChildren']:
+                        failure = 'Completed outer stage left adopted descendants after natural-exit grace'
             except Exception as error:
                 failure = type(error).__name__ + ': ' + str(error)
             finally:
                 if capture_stream is not None:
                     capture_stream.close()
+                before_cleanup = inner.child_diagnostics()
                 try:
                     signals = inner.cleanup_children()
                     if process is not None:
@@ -194,6 +203,8 @@ def main():
                 failure = 'Outer log byte bound exceeded'
             receipt['stages'].append({'stage': name, 'command': [str(value) for value in command], 'exitCode': code,
                                       'failure': failure, 'residualChildrenAtCompletion': residual,
+                                      'naturalExitGrace': natural_exit, 'childDiagnosticsAtCompletion': at_completion,
+                                      'childDiagnosticsBeforeCleanup': before_cleanup,
                                       'cleanupSignals': signals, 'remainingAdoptedChildren': len(inner.direct_children()),
                                       'logSha256': digest(log_path) if log_path.exists() and log_path.stat().st_size else None,
                                       'capturedStdoutSha256': digest(capture) if capture.exists() and capture.stat().st_size else None})
