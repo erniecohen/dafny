@@ -116,3 +116,9 @@ git-issues/git-issue-4949.dfy
 
 # Project and command-line compiler output filenames.
 git-issues/github-issue-104.dfy
+
+# Character validity through numeric ancestors (#142).
+git-issues/git-issue-142.dfy
+git-issues/git-issue-142-negative.dfy
+git-issues/git-issue-142-legacy.dfy
+git-issues/git-issue-142-runtime.dfy

@@ -1,0 +1,1 @@
+Character and bitvector newtype casts retain character validity checks and no longer produce invalid Boogie integer/character comparisons. Bitvector and ORDINAL conversions now check Unicode scalar validity in Unicode mode and code-unit bounds in legacy mode.
