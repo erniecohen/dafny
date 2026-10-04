@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 
 out = Path("issue75-probe")
 out.mkdir(exist_ok=True)
@@ -24,13 +25,15 @@ try:
     run("inventory", ["dotnet", "--info"])
     run("boogie", ["sh", "Scripts/fetch-boogie-packages.sh"])
     if run("build", ["dotnet", "build", "Source/Dafny.sln", "-c", "Release"]):
-        run("integration-build", ["dotnet", "build", "Source/IntegrationTests", "-c", "Release"])
+        if "--units-only" not in sys.argv:
+            run("integration-build", ["dotnet", "build", "Source/IntegrationTests", "-c", "Release"])
         run("core-unit", ["dotnet", "test", "Source/DafnyCore.Test", "-c", "Release", "--no-build"])
         run("runtime-unit", ["dotnet", "test", "Source/DafnyRuntime.Tests", "-c", "Release", "--no-build"])
-        run("driver-process", ["dotnet", "test", "Source/DafnyDriver.Test", "-c", "Release", "--no-build",
-                               "--filter", "FullyQualifiedName~LanguageServerProcessTest"])
-        run("smoke", ["dotnet", "test", "Source/IntegrationTests", "-c", "Release", "--no-build",
-                      "--filter", "DisplayName~github-issue-75.dfy|DisplayName~github-issue-104.dfy"])
+        if "--units-only" not in sys.argv:
+            run("driver-process", ["dotnet", "test", "Source/DafnyDriver.Test", "-c", "Release", "--no-build",
+                                   "--filter", "FullyQualifiedName~LanguageServerProcessTest"])
+            run("smoke", ["dotnet", "test", "Source/IntegrationTests", "-c", "Release", "--no-build",
+                          "--filter", "DisplayName~github-issue-75.dfy|DisplayName~github-issue-104.dfy"])
 except Exception as error:
     records.append({"name": "probe exception", "status": str(error)})
 finally:

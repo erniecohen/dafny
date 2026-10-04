@@ -1,7 +1,7 @@
 name: Issue 75 safe build migration probe
 on:
   push:
-    branches: ['scratch/issue75/build-probe']
+    branches: ['scratch/issue75/build-probe', 'scratch/issue75/unit-probe']
   workflow_dispatch:
 permissions:
   contents: read
@@ -28,7 +28,10 @@ jobs:
           unzip -q z3h.zip -d Binaries/z3/bin
           cp z3-5.1.0-x64-glibc-2.39/bin/z3 Binaries/z3/bin/z3-5.1.0
       - name: Record migration checks, including expected failures
-        run: python3 .github/review/issue75-build-probe.py
+        run: |
+          args=()
+          if [ "$GITHUB_REF_NAME" = scratch/issue75/unit-probe ]; then args+=(--units-only); fi
+          python3 .github/review/issue75-build-probe.py "${args[@]}"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
