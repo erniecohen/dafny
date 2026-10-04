@@ -1246,6 +1246,14 @@ denotes a _(possibly) infinite map_.  In most regards, `imap<T,U>` is
 like `map<T,U>`, but a map of type `imap<T,U>` is allowed to have an
 infinite domain.
 
+The default-off verifier option `--bitvector-map-keys` preserves the declared
+bitvector type of a `map` or `imap` key at a lookup. Without it, this fork's
+legacy verification encoding converts bitvector lookup keys to integers, which
+can prevent an update followed by lookup at the same key from verifying.
+Sequence and array indices continue to be converted to integers.
+The setting can also be enabled with `bitvector-map-keys = true` in the
+`[options]` section of `dfyconfig.toml`.
+
 A map can be formed using a _map display_ expression (see [Section 9.30](#sec-map-display-expression)),
 which is a possibly empty, ordered list of _maplets_, each maplet having the
 form `t := u` where `t` is an expression of type `T` and `u` is an
