@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "scope": "pinned-z3-executable-origin-technical-evidence",
+  "solverSha256": "b4e0b3483ce37817230b20d6cad48390eb6a3aefde1d93342ad6dc763f24bc23",
+  "solverVersion": "5.1.0",
+  "sourceTag": "z3-5.1.0",
+  "sourceCommit": "0b6cdcdbc65da25ef0f73ac9da210574d0f66cf8",
+  "sourceFiles": [
+    {"path": "src/shell/CMakeLists.txt", "sha256": "824cdba928ed05ae6eec724bbf7105858a1cc70637285942882406bcc74380e2"},
+    {"path": "src/shell/main.cpp", "sha256": "d8cbdc4696b0795bb3c0496df530acf11b6ceb2f593037b7a94bed9b5ac5c304"},
+    {"path": "src/shell/smtlib_frontend.cpp", "sha256": "d53f4d5e9bbebeb09326e0774ea0e682bc1b8a237896c916614d0722adef45d0"}
+  ],
+  "linkStrategy": "direct-core-objects-no-libz3",
+  "inputStrategy": "-in-selects-stdin-no-input-filename",
+  "permittedArguments": [["-version"], ["-smt2", "-in"]],
+  "sourceAnalysis": [
+    {"path": "src/shell/CMakeLists.txt", "lines": "1-54", "fact": "The shell links component objects directly rather than loading libz3 by executable-origin lookup."},
+    {"path": "src/shell/main.cpp", "lines": "210-211,437", "fact": "-in sets standard input; the SMT frontend receives the explicit input-file pointer, which is absent for the fixed -smt2 -in launch."},
+    {"path": "src/shell/smtlib_frontend.cpp", "lines": "157-187", "fact": "With no file_name, the frontend parses std::cin; file opening is conditional on an explicit file_name."}
+  ],
+  "expectedActualImageInspection": {
+    "elfClass": 64,
+    "endianness": "little",
+    "machine": 62,
+    "interpreter": "/lib64/ld-linux-x86-64.so.2",
+    "neededLibraries": ["libstdc++.so.6", "libm.so.6", "libgcc_s.so.1", "libc.so.6", "ld-linux-x86-64.so.2"],
+    "rpathRunpath": [],
+    "forbiddenOriginStringsFound": [],
+    "forbiddenUndefinedSymbolsFound": []
+  },
+  "evidenceBoundary": "Exact image/source inspection for the fixed native Z3 version and stdin SMT modes; actual proof batches/replies still required; no arbitrary-image or native-cost-parity guarantee."
+}

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "scope": "prototype/six-fixed-native-proof-smoke-controls",
+  "status": "private-source-draft-uncompiled-unexecuted-no-cli-route",
+  "caseOrder": [
+    "baseline/true", "candidate/true",
+    "baseline/reachable-false", "candidate/reachable-false",
+    "baseline/fuel", "candidate/fuel"
+  ],
+  "controls": [
+    {"name": "true", "source": "proof-fixtures/true.dfy", "routine": "NativeTrue", "expectedCliExitCode": 0, "sha256": "bf2c7f7498a9221291dbc5244c3725f0fb9af93b741638595bdc11f3b83d24e6"},
+    {"name": "reachable-false", "source": "proof-fixtures/false.dfy", "routine": "NativeFalse", "expectedCliExitCode": 4, "requiredDiagnostic": "assertion might not hold", "sha256": "a50e9615c8b49eefe55a458f6f4df613f11164406074b9a011f7f389aad2dc8e"},
+    {"name": "fuel", "source": "proof-fixtures/fuel.dfy", "routine": "NativeFuel", "expectedCliExitCode": 0, "sha256": "55a2d36861839f955e222ab8b2ae6f838645ef013e8610b588f391bbe61c3206"}
+  ],
+  "smokeBudgets": {"cores": 1, "verificationTimeLimitSeconds": 20, "resourceLimit": 200000, "invocationSafetySeconds": 60},
+  "ordinaryProofCliEnabled": false,
+  "nativeQueryOrResourceParityEstablished": false
+}

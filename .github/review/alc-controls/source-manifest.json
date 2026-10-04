@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "status": "source-only-fixed-lifecycle-controls-uncompiled-unexecuted; prior argument-control execution recorded separately",
-  "scope": "non-verifying-argument-and-fixed-native-lifecycle-controls-proof-cli-disabled",
+  "status": "source-only-fixed-six-native-proof-smoke-controls-uncompiled-unexecuted; prior lifecycle evidence recorded separately",
+  "scope": "fixed-six-native-proof-smoke-api-with-unchanged-qualified-lifecycle-sources-no-cli-route",
   "targetFramework": "net8.0",
   "reviewedContracts": {
     "dafnySourceCommit": "63f38e9163d1c596ef57afe3e34b5c161e9069a4",
@@ -14,6 +14,26 @@
     "productAssemblyIdentity": "DafnyCore, Version=4.11.0.0, Culture=neutral, PublicKeyToken=null",
     "nativeSupervisorSourceBase": "ee83db89e2720a4d7302eb45afcb7e0625d63934",
     "solverExitUnsubscribeSource": "Source/Provers/SMTLib/SMTLibProcess.cs"
+  },
+  "priorLifecycleQualification": {
+    "publicRunId": 37215797270,
+    "publicSourceCommit": "875e97e70198459993803a3ac5f41db703eb8938",
+    "receiptSha256": "60992bd42a47fbc9e3fca7294253d182947dd8ddfd4977d76361818bac2576bd",
+    "sourceManifestSha256": "e25b41f0d0fb6c29708d64cccc5c4b945bd64f177054156db667688243cf9a42",
+    "harnessAssemblySha256": "ec2e3910a0cdc4871a1c1c52b540c6e302b09fd83d1e47e509ab1d91855db680",
+    "unchangedPriorSourceFiles": 19,
+    "qualificationScope": "fixed-eleven-lifecycle-controls-in-privileged-linux-x64-ci-no-Dafny-proof",
+    "distinctNewHarnessAssemblyRequired": true
+  },
+  "nativeSmokeBoundary": {
+    "caseCount": 6,
+    "cliRouteEnabled": false,
+    "newHarnessCompiled": false,
+    "nativeProofExecuted": false,
+    "nativeQueryOrResourceParityEstablished": false,
+    "resourceContract": "final-raw-rlimit-per-actual-reset-VC-group-no-reply-adjustments",
+    "platform": "linux-x64",
+    "privilegeScope": "explicit-effective-uid-zero-no-unprivileged-deployment-claim"
   },
   "files": [
     {
@@ -42,9 +62,34 @@
       "bytes": 9674
     },
     {
+      "path": "NATIVE-FORMAT-CONTRACTS.md",
+      "sha256": "85e20e7343c2845f0fef8daeecaa3af83ca3cacebe14aaf9c7bad18f70cd080b",
+      "bytes": 4329
+    },
+    {
+      "path": "NativeElfOrigin.cs",
+      "sha256": "6b021ae43b2c927854434fb2738505c44078fa33b16365116e6113d38fb1f9a9",
+      "bytes": 8236
+    },
+    {
       "path": "NativeLifecycleControls.cs",
       "sha256": "9bec4b88f150913f8ed379ecdd57a7352f3e4f8ee35d8bc98361313a5fc15f60",
       "bytes": 31598
+    },
+    {
+      "path": "NativeProofEvidence.cs",
+      "sha256": "59c4a1622f82ee91f6c5c0b04d200e0bf1bafe12d2c5ea9896cf315e883840d0",
+      "bytes": 22169
+    },
+    {
+      "path": "NativeProofSmokeControls.cs",
+      "sha256": "d5254577ff91bf0867acd99a66d55930e64acad940c9572c2515e5434fe395bb",
+      "bytes": 29386
+    },
+    {
+      "path": "NativeProofSmokeProgram.cs",
+      "sha256": "89c0d44a8504efdc5e8e6229845ef192b4df007d7755fb86a94d488f70df0d31",
+      "bytes": 1209
     },
     {
       "path": "NativeProofSupervisor.cs",
@@ -92,6 +137,11 @@
       "bytes": 1951
     },
     {
+      "path": "native-proof-smoke-fixtures.json",
+      "sha256": "676d2c43b5854a8f99fec2adb2f9ac6279240d5eb98655f088bce67e1037186e",
+      "bytes": 1176
+    },
+    {
       "path": "native-solver-wrapper.py",
       "sha256": "015708bafca1e91d000ded227d02770f334623fa62a6d8359cdf3237b0de9e5b",
       "bytes": 13587
@@ -110,16 +160,11 @@
       "path": "proof-fixtures/true.dfy",
       "sha256": "bf2c7f7498a9221291dbc5244c3725f0fb9af93b741638595bdc11f3b83d24e6",
       "bytes": 49
+    },
+    {
+      "path": "solver-origin-technical-evidence.json",
+      "sha256": "a64314c9ee010e48e19bdf9ede2ae6260b2dfbd857540a9b1c06010c5e6638af",
+      "bytes": 1993
     }
-  ],
-  "nativeSupervisorBoundary": {
-    "platform": "linux-x64",
-    "minimumKernelForExecutableMemfd": "6.3",
-    "solverImage": "bounded-native-ELF-sealed-executable-memfd",
-    "proofCliEnabled": false,
-    "runtimeEvidenceEstablished": false,
-    "lifecycleCliEnabled": true,
-    "lifecycleRuntimeEvidenceEstablished": false,
-    "lifecycleCiPrivilegeScope": "explicit-effective-uid-zero-no-unprivileged-deployment-claim"
-  }
+  ]
 }
