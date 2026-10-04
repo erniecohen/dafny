@@ -1386,6 +1386,12 @@ namespace Microsoft.Dafny {
         return (null, null);
       }
 
+      if (resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases) && dReceiver.Decl is NewtypeDecl nominal) {
+        var nominalMembers = resolver.GetClassMembers(nominal);
+        if (nominalMembers == null || !nominalMembers.ContainsKey(memberName)) {
+          dReceiver = OperationPreType(dReceiver) ?? dReceiver;
+        }
+      }
       var receiverDecl = dReceiver.DeclWithMembersBypassInternalSynonym();
       if (receiverDecl is TopLevelDeclWithMembers receiverDeclWithMembers) {
 
@@ -1885,7 +1891,8 @@ namespace Microsoft.Dafny {
           expr.Lhs.Resolved != null);
         if (member != null) {
           if (!member.IsStatic) {
-            var receiver = expr.Lhs;
+            var receiver = resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+              ? BaseOperationExpression(expr.Lhs, tentativeReceiverPreType) : expr.Lhs;
             AddSubtypeConstraint(tentativeReceiverPreType, receiver.PreType, expr.Origin,
               $"receiver type ({{1}}) does not have a member named '{name}'");
             r = ResolveExprDotCall(expr.Origin, expr.SuffixNameNode, receiver, tentativeReceiverPreType, member, args, expr.OptTypeArguments,

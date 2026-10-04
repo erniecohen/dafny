@@ -278,6 +278,10 @@ true - (requires --type-system-refresh) A newtype can be based on any non-refere
     IsHidden = true
   };
 
+  public static readonly Option<bool> ExtendedNewtypeBases = new("--extended-newtype-bases", () => false,
+    "Permit additional value-type newtype bases. Requires --general-newtypes and --type-system-refresh. " +
+    "The current implementation admits ORDINAL; other additional families remain diagnosed until their complete implementation is available.");
+
   public static readonly Option<bool> TypeInferenceDebug = new("--type-inference-trace", () => false,
     @"
 false - Don't print type-inference debug information.
@@ -500,6 +504,8 @@ Value implementations must retain their type parameters in compatible parent pos
     DafnyOptions.RegisterLegacyUi(GeneralNewtypes, DafnyOptions.ParseBoolean, "Language feature selection", "generalNewtypes", @"
 0 (default) - A newtype can only be based on numeric types or another newtype.
 1 - (requires /typeSystemRefresh:1) A newtype can be based on any non-reference, non-trait, non-arrow, non-ORDINAL type.".TrimStart(), false);
+    DafnyOptions.RegisterLegacyUi(ExtendedNewtypeBases, DafnyOptions.ParseBoolean, "Language feature selection", "extendedNewtypeBases",
+      "0 (default) - Retain existing general-newtype base restrictions.\n1 - Permit implemented extended value bases; requires /generalNewtypes:1 and /typeSystemRefresh:1.", false);
     DafnyOptions.RegisterLegacyUi(TypeInferenceDebug, DafnyOptions.ParseBoolean, "Language feature selection", "titrace", @"
 0 (default) - Don't print type-inference debug information.
 1 - Print type-inference debug information.".TrimStart(), defaultValue: false);
@@ -700,6 +706,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(TypeInferenceDebug, OptionScope.Cli);
     OptionRegistry.RegisterOption(GeneralTraits, OptionScope.Cli);
     OptionRegistry.RegisterOption(GeneralNewtypes, OptionScope.Cli);
+    OptionRegistry.RegisterGlobalOption(ExtendedNewtypeBases,
+      (reporter, origin, prefix, option, localValue, libraryValue) =>
+        OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));
     OptionRegistry.RegisterOption(TypeSystemRefresh, OptionScope.Cli);
     OptionRegistry.RegisterOption(ContextualLambdaDomains, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationLogFormat, OptionScope.Cli);

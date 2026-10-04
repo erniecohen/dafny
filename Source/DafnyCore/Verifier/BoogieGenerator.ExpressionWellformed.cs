@@ -1024,7 +1024,9 @@ namespace Microsoft.Dafny {
               case BinaryExpr.ResolvedOpcode.Sub:
               case BinaryExpr.ResolvedOpcode.Mul:
                 CheckWellformed(e.E1, wfOptions, locals, builder, etran);
-                if (e.ResolvedOp == BinaryExpr.ResolvedOpcode.Sub && e.E0.Type.IsBigOrdinalType) {
+                if (e.ResolvedOp == BinaryExpr.ResolvedOpcode.Sub &&
+                    (e.E0.Type.IsBigOrdinalType || options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+                     e.E0.Type.NormalizeToAncestorType().IsBigOrdinalType)) {
                   var rhsIsNat = FunctionCall(binaryExpr.Origin, "ORD#IsNat", Bpl.Type.Bool, etran.TrExpr(e.E1));
                   builder.Add(Assert(GetToken(expr), rhsIsNat,
                     new OrdinalSubtractionIsNatural(e.E1), builder.Context));
