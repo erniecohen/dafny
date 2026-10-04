@@ -1,0 +1,9 @@
+git-issue-141-datatype-cast-negative.dfy(9,27): Error: value of expression (of type 'Box<int>') is not known to be an instance of type 'Box<nat>'
+git-issue-141-datatype-cast-negative.dfy(14,21): Error: value of expression (of type 'Box<int>') is not known to be an instance of type 'Box<nat>'
+git-issue-141-datatype-cast-negative.dfy(18,26): Error: value of expression (of type 'List<int>') is not known to be an instance of type 'List<nat>'
+git-issue-141-datatype-cast-negative.dfy(22,26): Error: value of expression (of type 'Box<Box<int>>') is not known to be an instance of type 'Box<Box<nat>>'
+git-issue-141-datatype-cast-negative.dfy(26,26): Error: value of expression (of type 'Box<seq<int>>') is not known to be an instance of type 'Box<seq<nat>>'
+git-issue-141-datatype-cast-negative.dfy(30,26): Error: value of expression (of type '(nat, int)') is not known to be an instance of type '(nat, nat)'
+git-issue-141-datatype-cast-negative.dfy(35,26): Error: value of expression (of type 'Callback<int>') is not known to be an instance of type 'Callback<nat>'
+
+Dafny program verifier finished with 0 verified, 7 errors
