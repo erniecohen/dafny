@@ -16,6 +16,11 @@ on:
     branches: ['review/**', 'dev']
   workflow_dispatch:
     inputs:
+      b3_focus_gate:
+        description: Focused checks reusing the unchanged B3 library verified in public run 37201990430
+        type: choice
+        options: [none, ide-regressions, maps]
+        default: none
       b3_full_gate:
         description: Also run the verifying B3 worker bootstrap and real Dafny corpus with b3_compile_only
         type: boolean
@@ -622,12 +627,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           B3_FULL_GATE: ${{ inputs.b3_full_gate }}
+          B3_FOCUS_GATE: ${{ inputs.b3_focus_gate }}
           B3_BUILD_CORES: '2'
           DOTNET_PROCESSOR_COUNT: '1'
           DOTNET_GCHeapHardLimit: '40000000'
           DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER: '1'
           MSBUILDDISABLENODEREUSE: '1'
-        run: python3 .github/review/b3-native-compile.py
+        run: |
+          if [ "$B3_FOCUS_GATE" = ide-regressions ] || [ "$B3_FOCUS_GATE" = maps ]; then
+            python3 .github/review/b3-focused-gate.py
+          else
+            python3 .github/review/b3-native-compile.py
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
