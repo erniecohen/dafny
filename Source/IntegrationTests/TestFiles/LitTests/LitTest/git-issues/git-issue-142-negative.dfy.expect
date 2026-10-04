@@ -1,0 +1,14 @@
+git-issue-142-negative.dfy(10,28): Error: bit-vector value to be converted might not fit in char
+git-issue-142-negative.dfy(14,28): Error: bit-vector value to be converted might not fit in char
+git-issue-142-negative.dfy(18,31): Error: ORDINAL value to be converted might not fit in char
+git-issue-142-negative.dfy(22,30): Error: bit-vector value to be converted might not fit in char
+git-issue-142-negative.dfy(26,33): Error: ORDINAL value to be converted might not fit in char
+git-issue-142-negative.dfy(31,13): Error: bit-vector value to be converted might not fit in CharView
+git-issue-142-negative.dfy(36,13): Error: bit-vector value to be converted might not fit in CharView
+git-issue-142-negative.dfy(41,18): Error: result of operation might violate newtype constraint for 'Ascii'
+git-issue-142-negative.dfy(46,18): Error: result of operation might violate newtype constraint for 'Ascii'
+git-issue-142-negative.dfy(50,13): Error: ORDINAL value to be converted might not fit in CharView
+git-issue-142-negative.dfy(50,13): Error: value to be converted might be bigger than every natural number
+git-issue-142-negative.dfy(57,2): Error: assertion might not hold
+
+Dafny program verifier finished with 1 verified, 12 errors
