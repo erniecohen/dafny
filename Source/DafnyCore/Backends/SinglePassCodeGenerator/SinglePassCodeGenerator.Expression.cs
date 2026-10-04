@@ -318,6 +318,10 @@ namespace Microsoft.Dafny.Compilers {
               // conversion is a no-op -- almost, because it may need a cast to deal with bounded type parameters
               var w = EmitDowncastIfNecessary(e.E.Type, e.ToType, e.Origin, wr);
               EmitExpr(e.E, inLetExprBody, w, wStmts);
+            } else if (Options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+                       Type.Equals(fromType.NormalizeToAncestorType(), toType.NormalizeToAncestorType())) {
+              // Exact-base identity casts preserve the value and allocate no wrapper.
+              EmitExpr(e.E, inLetExprBody, wr, wStmts);
             } else {
               EmitConversionExpr(e.E, fromType, toType, inLetExprBody, wr, wStmts);
             }

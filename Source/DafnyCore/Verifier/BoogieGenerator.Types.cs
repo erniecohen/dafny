@@ -1560,7 +1560,9 @@ public partial class BoogieGenerator {
       builder.Add(Assert(tok, isExact, new IsExactlyRepresentableAsFloat(expr, new Fp32Type(), errorMsgPrefix), builder.Context));
     }
 
-    if (fromType.IsBigOrdinalType && !toType.IsBigOrdinalType) {
+    if (options.Get(CommonOptionBag.ExtendedNewtypeBases)
+          ? fromTypeFamily.IsBigOrdinalType && !toTypeFamily.IsBigOrdinalType
+          : fromType.IsBigOrdinalType && !toType.IsBigOrdinalType) {
       PutSourceIntoLocal();
       Bpl.Expr boundsCheck = FunctionCall(tok, "ORD#IsNat", Bpl.Type.Bool, o);
       builder.Add(Assert(tok, boundsCheck, new ConversionIsNatural(errorMsgPrefix, expr), builder.Context));
@@ -1679,7 +1681,7 @@ public partial class BoogieGenerator {
         builder.Add(Assert(tok, boundsCheck, new ConversionFit("ORDINAL value", toType, dafnyBoundsCheck, errorMsgPrefix), builder.Context));
       }
 
-    } else if (toType.IsBigOrdinalType) {
+    } else if (toType.IsBigOrdinalType || options.Get(CommonOptionBag.ExtendedNewtypeBases) && toTypeFamily.IsBigOrdinalType) {
       if (fromType.IsNumericBased(Type.NumericPersuasion.Int)) {
         PutSourceIntoLocal();
         Bpl.Expr boundsCheck = Bpl.Expr.Le(Bpl.Expr.Literal(0), o);
@@ -1708,6 +1710,9 @@ public partial class BoogieGenerator {
         be = ConvertExpression(expr.Origin, o, fromType, toType);
       } else if (fromType.IsCharType) {
         be = ConvertExpression(expr.Origin, o, Dafny.Type.Int, toType);
+      } else if (options.Get(CommonOptionBag.ExtendedNewtypeBases) && fromTypeFamily.IsBigOrdinalType) {
+        // Preserve the entire ordinal for same-carrier casts, including limits.
+        be = ConvertExpression(expr.Origin, o, fromTypeFamily, toTypeFamily);
       } else if (fromType.IsBigOrdinalType) {
         be = FunctionCall(expr.Origin, "ORD#Offset", Bpl.Type.Int, o);
         be = ConvertExpression(expr.Origin, be, Dafny.Type.Int, toType);
@@ -1735,7 +1740,8 @@ public partial class BoogieGenerator {
       baseType = ((SubsetTypeDecl)rdt).RhsWithArgument(udt.TypeArgs);
       kind = "subset type";
     } else if (rdt is NewtypeDecl) {
-      baseType = ((NewtypeDecl)rdt).BaseType;
+      baseType = options.Get(CommonOptionBag.ExtendedNewtypeBases)
+        ? ((NewtypeDecl)rdt).ConcreteBaseType(udt.TypeArgs) : ((NewtypeDecl)rdt).BaseType;
       kind = "newtype";
     } else {
       baseType = ((TypeSynonymDecl)rdt).RhsWithArgument(udt.TypeArgs);

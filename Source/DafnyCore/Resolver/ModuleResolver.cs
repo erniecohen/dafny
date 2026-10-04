@@ -1152,6 +1152,13 @@ namespace Microsoft.Dafny {
 
       int prevErrorCount = reporter.Count(ErrorLevel.Error);
 
+      if (Options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+          (!Options.Get(CommonOptionBag.GeneralNewtypes) || !Options.Get(CommonOptionBag.TypeSystemRefresh))) {
+        reporter.Error(MessageSource.Resolver, Token.NoToken,
+          "use of --extended-newtype-bases requires --general-newtypes and --type-system-refresh");
+        return;
+      }
+
       if (Options.Get(CommonOptionBag.GeneralNewtypes) && !Options.Get(CommonOptionBag.TypeSystemRefresh)) {
         reporter.Error(MessageSource.Resolver, Token.NoToken, "use of --general-newtypes requires --type-system-refresh");
         return;
