@@ -353,9 +353,8 @@ namespace Microsoft.Dafny {
         bounds.Add(new DatatypeBoundedPool(bvType.AsDatatype));
       } else if (bvType.IsNumericBased(Type.NumericPersuasion.Int)) {
         bounds.Add(new AssignSuchThatStmt.WiggleWaggleBound());
-      } else if (!bv.Type.MayInvolveReferences) {
-        // bv.Type, not its ancestor: a partial or total arrow involves no references when its arguments and
-        // result do not, but its ancestor, the general arrow, may (erniecohen/dafny#132)
+      } else if (!bvType.MayInvolveReferences) {
+        // in the next line, use bv.Type, even though we compared with bvType
         bounds.Add(new AllocFreeBoundedPool(bv.Type));
       }
 

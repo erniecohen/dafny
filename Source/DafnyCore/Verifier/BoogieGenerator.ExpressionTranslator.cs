@@ -1292,7 +1292,7 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
           captured = BplAnd(captured, BplOr(Bpl.Expr.Eq(heap, h), BoogieGenerator.HeapSucc(heap, h)));
         }
         foreach (var v in fvs.OrderBy(v => v.UniqueName)) {
-          if (v.Type.MayInvolveReferences) {
+          if (v.Type.MayShowReferences) {
             captured = BplAnd(captured, BoogieGenerator.MkIsAlloc(BoogieGenerator.TrVar(e.Origin, v), v.Type, h));
           }
         }
