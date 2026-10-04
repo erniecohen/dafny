@@ -145,13 +145,23 @@ def main(output_arg):
             if name in os.environ:download_env[name]=os.environ[name]
         receipt['downloadEnvironmentKeys']=sorted(download_env);receipt['sdkAndRunnerEnvironmentKeys']=sorted(env)
         gh=Path(shutil.which('gh') or '').resolve(strict=True);dotnet=Path(shutil.which('dotnet') or '').resolve(strict=True)
-        receipt['executables']={path.name:{'bytes':len(read(path)),'sha256':sha(read(path))} for path in [gh,dotnet]}
+        receipt['executables']={}
+        for path in [gh,dotnet]:
+            captured=read(path)
+            receipt['executables'][path.name]={'bytes':len(captured),'sha256':sha(captured)}
+        def validate_executables():
+            for path in [gh,dotnet]:
+                captured=read(path);expected=receipt['executables'][path.name]
+                require(len(captured)==expected['bytes'] and sha(captured)==expected['sha256'],
+                        'SDK/download executable changed: '+path.name)
         def stage(name,command,log,maximum=MAX_LOG,timeout=120,environment=env,checks=None):
-            require(seal()==hashes,'Source changed before stage')
+            require(seal()==hashes,'Source changed before stage');validate_executables()
             def bounds():
                 require(log.stat().st_size<=maximum,'Stage output bound')
                 if checks is not None:checks()
-            with log.open('xb') as stream: row=owned.run_owned([str(x) for x in command],stream,environment,timeout,check_bounds=bounds)
+            try:
+                with log.open('xb') as stream: row=owned.run_owned([str(x) for x in command],stream,environment,timeout,check_bounds=bounds)
+            finally: validate_executables()
             row.update({'stage':name,'outputBytes':log.stat().st_size,'outputSha256':sha(read(log,maximum,allow_empty=True))})
             receipt['stages'].append(row)
             require(seal()==hashes,'Source changed after stage');require(row['passed'],'Owned stage failed: '+name)
@@ -189,13 +199,20 @@ def main(output_arg):
             else:shutil.copyfile(binaries/name,target)
             target.chmod(0o444)
         validate_binaries(probe,inputs['assemblyFiles'])
-        runner=probe/'UnsignedSourceProbe.dll';runner_hash=sha(read(runner));receipt['runnerSha256']=runner_hash
+        runner=probe/'UnsignedSourceProbe.dll';runner_files={}
+        for name in ['UnsignedSourceProbe.dll','UnsignedSourceProbe.deps.json','UnsignedSourceProbe.runtimeconfig.json']:
+            captured=read(probe/name)
+            runner_files[name]={'bytes':len(captured),'sha256':sha(captured)}
+        receipt['runnerFiles']=runner_files;receipt['runnerSha256']=runner_files[runner.name]['sha256']
+        validate_binaries(probe,runner_files)
         typed=output/'typed';typed.mkdir()
         def typed_bounds():
             paths=list(typed.iterdir());require(len(paths)<=20 and sum(path.stat().st_size for path in paths)<=MAX_RECEIPT,'Typed output aggregate8MiB/20file bound')
-        stage('typed-source-capture',[dotnet,runner,HERE/'fixture.dfy',typed,inputs['fixtureSha256']],output/'typed-capture.log',timeout=120,checks=typed_bounds)
-        validate_binaries(binaries,inputs['assemblyFiles'],exact=True);validate_binaries(probe,inputs['assemblyFiles'])
-        require(sha(read(runner))==runner_hash,'Diagnostic runner changed during capture')
+        try:
+            stage('typed-source-capture',[dotnet,runner,HERE/'fixture.dfy',typed,inputs['fixtureSha256']],output/'typed-capture.log',timeout=120,checks=typed_bounds)
+        finally:
+            validate_binaries(binaries,inputs['assemblyFiles'],exact=True);validate_binaries(probe,inputs['assemblyFiles'])
+            validate_binaries(probe,runner_files)
         typed_bounds();diagnostic=json.loads(read(typed/'typed-source.json',MAX_RECEIPT))
         require(diagnostic['diagnosticOnly'] is True and diagnostic['acceptanceClaimed'] is False and
           diagnostic['verificationAttempted'] is False and diagnostic['allUnitsCaptured'] is True and
@@ -206,7 +223,7 @@ def main(output_arg):
         receipt['diagnosticReceiptSha256']=sha(read(typed/'typed-source.json',MAX_RECEIPT))
         receipt['normalizationOutcomes']=[{'index':unit['index'],'name':unit['name'],**unit['normalization']} for unit in diagnostic['units']]
         require(seal()==hashes,'Frozen source changed after capture')
-        for path in [gh,dotnet]:require(sha(read(path))==receipt['executables'][path.name]['sha256'],'SDK/download executable changed')
+        validate_executables()
         require(sha(read(archive,16*1024*1024))==inputs['archiveSha256'],'Public archive changed after capture')
         receipt['diagnosticReceiptProduced']=True
     except Exception as error:receipt['failure']=type(error).__name__+': '+str(error)

@@ -21,8 +21,10 @@ The inventory assigns deterministic IDs by actual reference identity and reports
 all raw commands, StateCmd containment, transfers, procedure predicates, where
 predicates and structured If/While guards. Each guard includes independently
 matched raw positive and negative assumptions, the original source child paths,
-resolved function/declaration identities and exact partition attributes. Names
-are descriptive; they grant no semantic recognition. Complement matching is a
+resolved function/declaration identities and exact partition attributes. These
+flattened reference/complement matches are observations, not owner-specific
+producer-branch or G3 availability certificates. Names are descriptive; they
+grant no semantic recognition. Complement matching is a
 read-only copy of the current CFG validator's finite shapes and creates no
 Boogie expression. The inventory is compared before/after normalization.
 The original source is emitted with the exact printer overload setting
@@ -34,8 +36,12 @@ all DLLs (including 13 Boogie DLLs), dependency/runtimeconfig files and prelude.
 The source-sealed coordinator loads Python modules from captured source bytes,
 checks public metadata/archive bytes, and checks all captured inputs before and
 after the SDK build and runner. Only the tiny diagnostic is built against those
-captured assemblies; the Dafny compiler is not rebuilt. Restore uses an empty
-package-source list. Authentication variables exist only in download stages;
+captured assemblies; the Dafny compiler is not rebuilt. The generated runner
+DLL, dependency file and runtime configuration are bound together by actual
+bytes and hashes before execution and rechecked afterward. Recorded `dotnet`
+and `gh` image bytes/hashes are checked before and after every stage. Restore
+uses an empty package-source list. Authentication variables exist only in
+download stages;
 they are excluded from SDK and runner descendants.
 
 Each stage uses the unchanged reviewed Linux owned-process helper: dedicated
