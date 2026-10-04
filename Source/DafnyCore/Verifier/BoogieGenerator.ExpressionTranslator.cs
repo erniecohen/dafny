@@ -1331,7 +1331,7 @@ namespace Microsoft.Dafny {
         var bvar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
           BoogieGenerator.CurrentIdGenerator.FreshId("$reads#"), Predef.BoxType));
         var box = new Boogie.IdentifierExpr(tok, bvar);
-        var reference = FunctionCall(tok, BuiltinFunction.Unbox, Predef.RefType, box);
+        var reference = BoogieGenerator.FunctionCall(tok, BuiltinFunction.Unbox, Predef.RefType, box);
         var body = BplAnd(BoogieGenerator.MkIsBox(box, BoogieGenerator.program.SystemModuleManager.ObjectQ()),
           BoogieGenerator.InRWClause(tok, reference, null, reads, this, null, null));
         return FiniteView(tok, new Boogie.LambdaExpr(tok, [], [bvar], null, body));
