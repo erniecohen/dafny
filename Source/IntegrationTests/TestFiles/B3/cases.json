@@ -72,6 +72,36 @@
       "file": "visibility.dfy",
       "exitCode": 4,
       "diagnostic": "b3_visibility"
+    },
+    {
+      "name": "loop",
+      "file": "loop.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bad-loop-initialization",
+      "file": "bad-loop-initialization.dfy",
+      "exitCode": 4,
+      "diagnostic": "loop invariant initialization"
+    },
+    {
+      "name": "bad-loop-preservation",
+      "file": "bad-loop-preservation.dfy",
+      "exitCode": 4,
+      "diagnostic": "loop invariant preservation"
+    },
+    {
+      "name": "break-continuation",
+      "file": "break-continuation.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion"
+    },
+    {
+      "name": "loop-continue",
+      "file": "loop-continue.dfy",
+      "exitCode": 0,
+      "diagnostic": null
     }
   ]
 }

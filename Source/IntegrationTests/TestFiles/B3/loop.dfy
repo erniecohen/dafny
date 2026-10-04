@@ -1,0 +1,1 @@
+method T(n: nat) returns (i: int) ensures i == n { i := 0; while i < n invariant 0 <= i <= n { i := i + 1; } }

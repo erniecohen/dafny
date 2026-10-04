@@ -49,6 +49,10 @@ run('time-limit', corpus / 'true.dfy', 4, 'requires --verification-time-limit', 
 run('isolation', corpus / 'true.dfy', 4, 'unsupported by B3', ['--isolate-assertions'])
 run('filter-position', corpus / 'false.dfy', 1, 'does not currently support --filter-position', ['--filter-position', 'false.dfy:1'])
 run('missing-worker', corpus / 'true.dfy', 4, 'worker package is unavailable or invalid', ['--b3-worker', str(args.output / 'absent.dll')])
+run('solver-help', corpus / 'true.dfy', 4, 'unsupported by B3', ['--solver-option-help'])
+run('passive-print', corpus / 'true.dfy', 4, 'unsupported by B3', ['--pprint', str(args.output / 'passive.bpl')])
+run('split-print', corpus / 'true.dfy', 4, 'unsupported by B3', ['--sprint', str(args.output / 'split.bpl')])
+run('empty-selection-failure', corpus / 'true.dfy', 4, 'unsupported by B3', ['--filter-symbol', 'Absent', '--solver-option-help'])
 run('symbol-filter', corpus / 'bad-precondition.dfy', 0, None, ['--filter-symbol', 'P'])
 parse_source = args.output / 'parse-error.dfy'
 parse_source.write_text('method Broken( {\n')

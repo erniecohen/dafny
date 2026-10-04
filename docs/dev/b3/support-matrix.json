@@ -16,6 +16,11 @@
     {
       "construct": "Native real and bitvector theories, integer division/modulo/power, visibility, loops and unrestricted control flow",
       "disposition": "unsupported or pending separate semantic package"
+    },
+    {
+      "construct": "Inductive loops, breaks, continues, forward lexical exits",
+      "disposition": "implemented source checkpoint; unverified",
+      "evidence": "Written correspondence and 51 focused normalizer cases; compilation and verdict gate pending"
     }
   ],
   "optionSupport": [
@@ -40,7 +45,10 @@
         "solver-option",
         "solver-plugin",
         "boogie",
-        "proof analysis and model/coverage options"
+        "proof analysis and model/coverage options",
+        "solver-option-help",
+        "sprint",
+        "pprint"
       ],
       "disposition": "explicit rejection"
     }
