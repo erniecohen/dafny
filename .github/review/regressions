@@ -45,3 +45,6 @@ git-issues/git-issue-142.dfy
 git-issues/git-issue-142-negative.dfy
 git-issues/git-issue-142-legacy.dfy
 git-issues/git-issue-142-runtime.dfy
+
+# Preserve the legacy character-conversion contract.
+git-issues/git-issue-356-errors.dfy
