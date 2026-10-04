@@ -10,7 +10,7 @@ public sealed record RunReceipt(string Product, string Control, string[] Argumen
   string SchedulerCleanup, bool ContextCollected, int[] RemainingDirectChildren, ProofCleanup? ProofCleanup);
 
 /// <summary>
-/// No implementation ships in this prototype. Verification requires an audited transparent
+/// The source-only NativeProofSupervisor remains unexecuted. Verification requires an audited transparent
 /// solver wrapper/supervisor that owns every solver process group and its descendant ledger.
 /// The wrapper must forward bytes unchanged, and cleanup must occur after CLI results/logs.
 /// </summary>

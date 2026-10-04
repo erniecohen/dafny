@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "status": "source-only-unexecuted-not-enabled",
+  "solverVersion": "5.1.0",
+  "entrypoint": "Runs.RunVerification",
+  "controls": [
+    { "source": "proof-fixtures/true.dfy", "expectedCliExitCode": 0 },
+    { "source": "proof-fixtures/false.dfy", "expectedCliExitCode": 4, "requiredDiagnostic": "assertion might not hold" },
+    { "source": "proof-fixtures/fuel.dfy", "expectedCliExitCode": 0 }
+  ],
+  "requiredBeforeSuccess": ["complete-owned-process-receipt", "zero-populated-owned-cgroup", "actual-alc-unload", "unchanged-framework-witness"],
+  "nativeQueryAndResourceParityEstablished": false
+}
