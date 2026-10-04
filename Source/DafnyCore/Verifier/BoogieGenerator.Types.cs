@@ -1661,8 +1661,28 @@ public partial class BoogieGenerator {
     if (rdt.Var != null) {
       // TODO: use TrSplitExpr
       var typeMap = TypeParameter.SubstitutionMap(rdt.TypeArgs, udt.TypeArgs);
+      Expression constraintValue = boogieExpr;
+      if (options.Get(CommonOptionBag.ExtendedNewtypeBases) && boogieExpr is BoogieWrapper wrapper) {
+        var formalType = rdt.Var.Type.Subst(typeMap);
+        var valueView = NewtypeOperationView.Get(wrapper.Type, preserveSubsetTypes: true);
+        var sourceView = NewtypeOperationView.Get(origExpr.Type, preserveSubsetTypes: true);
+        var formalView = NewtypeOperationView.Get(formalType, preserveSubsetTypes: true);
+        if (valueView.Status == NewtypeOperationView.ViewStatus.Resolved &&
+            sourceView.Status == NewtypeOperationView.ViewStatus.Resolved &&
+            formalView.Status == NewtypeOperationView.ViewStatus.Resolved &&
+            valueView.BaseType.AsArrowType is { } valueArrow &&
+            sourceView.BaseType.AsArrowType is { } sourceArrow &&
+            formalView.BaseType.AsArrowType is { } formalArrow &&
+            valueArrow.Equals(formalArrow, true) && sourceArrow.Equals(formalArrow, true)) {
+          // Base constraints were checked above. Substitute at the predicate's
+          // exact instantiated binder type, so arrow reads/requires/application
+          // use the same heap convention as the declaration's predicate.
+          // The existing handle is unchanged; no membership fact is assumed.
+          constraintValue = new BoogieWrapper(wrapper.Expr, formalType);
+        }
+      }
       var dafnyConstraint = Substitute(rdt.Constraint, null, new() { { rdt.Var, origExpr } }, typeMap);
-      var boogieConstraint = Substitute(rdt.Constraint, null, new() { { rdt.Var, boogieExpr } }, typeMap);
+      var boogieConstraint = Substitute(rdt.Constraint, null, new() { { rdt.Var, constraintValue } }, typeMap);
 
       var canCall = etran.CanCallAssumption(boogieConstraint);
       var constraint = etran.TrExpr(boogieConstraint);
