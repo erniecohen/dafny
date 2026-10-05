@@ -29,6 +29,8 @@ jobs:
             echo "$?" > out/build.exit
             OBLIGATION_INVENTORY_CAPTURE=out/obligation-producers.json dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation > out/core.log 2>&1
             echo "$?" > out/core.exit
+            dotnet test Source/DafnyCore.Test -c Release --no-build --filter FullyQualifiedName~Obligation > out/core-inventory-gate.log 2>&1
+            echo "$?" > out/core-inventory-gate.exit
             dotnet build Source/DafnyLanguageServer.Test -c Release > out/editor-build.log 2>&1
             echo "$?" > out/editor-build.exit
             mkdir -p out/tests

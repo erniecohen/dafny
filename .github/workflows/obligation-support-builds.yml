@@ -39,6 +39,8 @@ jobs:
           if [ '${{ matrix.line }}' = development ]; then
             OBLIGATION_INVENTORY_CAPTURE=out/obligation-producers.json dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation > out/core.log 2>&1
             echo "$?" > out/core.exit
+            dotnet test Source/DafnyCore.Test -c Release --no-build --filter FullyQualifiedName~Obligation > out/core-inventory-gate.log 2>&1
+            echo "$?" > out/core-inventory-gate.exit
             mkdir -p out/tests
             test_directory=$(find Source/DafnyCore.Test/bin/Release -maxdepth 1 -type d -name 'net*' | head -1)
             cp -R "$test_directory" out/tests/core
