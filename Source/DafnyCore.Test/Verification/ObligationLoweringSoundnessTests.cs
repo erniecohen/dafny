@@ -40,7 +40,7 @@ public class ObligationLoweringSoundnessTests {
     async Task<string[]> ResultBindings(bool enabled) {
       var programs = await ObligationLoweringTests.Translate(source, enabled);
       var implementation = programs.SelectMany(p => p.Implementations)
-        .Single(p => p.Name.Contains("CheckWellFormed") && p.Name.EndsWith(".F"));
+        .Single(p => p.Name.Contains("CheckWellformed") && p.Name.EndsWith(".F"));
       return implementation.Blocks.SelectMany(b => b.Cmds).OfType<Microsoft.Boogie.AssumeCmd>()
         .Select(c => ObligationFingerprint.Expression(c.Expr))
         .Where(e => e.Contains(".F") && e.Contains("ExistsExpr")).ToArray();
