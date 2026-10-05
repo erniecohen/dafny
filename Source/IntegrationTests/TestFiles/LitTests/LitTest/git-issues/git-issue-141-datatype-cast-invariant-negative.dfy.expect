@@ -1,0 +1,4 @@
+git-issue-141-datatype-cast-invariant-negative.dfy(6,21): Error: value of expression (of type 'Invariant<int>') is not known to be an instance of type 'Invariant<nat>'
+git-issue-141-datatype-cast-invariant-negative.dfy(11,26): Error: value of expression (of type 'Invariant<int>') is not known to be an instance of type 'Invariant<nat>'
+
+Dafny program verifier finished with 0 verified, 2 errors
