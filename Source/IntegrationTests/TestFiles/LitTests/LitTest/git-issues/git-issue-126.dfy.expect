@@ -5,5 +5,5 @@
 // CHECK-L: B3 verification disabled (--no-verify); no proof was attempted.
 // CHECK-L: b3-skip-run
 // CHECK-L: B3 verification disabled (--no-verify); no proof was attempted.
-// CHECK-L: Error: The experimental B3 verification backend is supported by 'dafny verify' and editor verification; build, run, test, and translate are unsupported.
-// CHECK-L: Error: The experimental B3 verification backend is supported by 'dafny verify' and editor verification; build, run, test, and translate are unsupported.
+// CHECK-L: Error: The experimental B3 verification backend is supported by 'dafny verify', modern build/run/test, and editor verification; translate and legacy compilation are unsupported.
+// CHECK-L: Error: The experimental B3 verification backend is supported by 'dafny verify', modern build/run/test, and editor verification; translate and legacy compilation are unsupported.
