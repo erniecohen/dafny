@@ -673,5 +673,25 @@
     "name": "quantified-ite-explicit",
     "expected": 0,
     "group": "generated"
+  },
+  {
+    "name": "recursive-equivalence",
+    "expected": 0,
+    "group": "fuel-equivalence"
+  },
+  {
+    "name": "recursive-equivalence-negative",
+    "expected": 4,
+    "group": "fuel-equivalence"
+  },
+  {
+    "name": "recursive-equivalence-negated-negative",
+    "expected": 4,
+    "group": "fuel-equivalence"
+  },
+  {
+    "name": "recursive-equivalence-nonvacuity",
+    "expected": 4,
+    "group": "fuel-equivalence"
   }
 ]
