@@ -1,0 +1,16 @@
+PASS refresh-false-build-false-boogie-false-runtime-true
+PASS refresh-false-build-false-boogie-false-runtime-false
+PASS refresh-false-build-false-boogie-true-runtime-true
+PASS refresh-false-build-false-boogie-true-runtime-false
+PASS refresh-false-build-true-boogie-false-runtime-true
+PASS refresh-false-build-true-boogie-false-runtime-false
+PASS refresh-false-build-true-boogie-true-runtime-true
+PASS refresh-false-build-true-boogie-true-runtime-false
+PASS refresh-true-build-false-boogie-false-runtime-true
+PASS refresh-true-build-false-boogie-false-runtime-false
+PASS refresh-true-build-false-boogie-true-runtime-true
+PASS refresh-true-build-false-boogie-true-runtime-false
+PASS refresh-true-build-true-boogie-false-runtime-true
+PASS refresh-true-build-true-boogie-false-runtime-false
+PASS refresh-true-build-true-boogie-true-runtime-true
+PASS refresh-true-build-true-boogie-true-runtime-false

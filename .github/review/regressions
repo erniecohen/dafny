@@ -258,3 +258,5 @@ git-issues/github-issue-132.dfy
 
 # Generic constant-field lambda actual type substitution (#132 development port).
 dafny0/BoundedPolymorphismCompilation.dfy
+# Existing run --build alias with nonempty Boogie options; preserves output placement.
+git-issues/github-issue-104-build-boogie.dfy
