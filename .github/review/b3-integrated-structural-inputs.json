@@ -6,7 +6,11 @@
     ".github/review/b3-integrated-structural-commands.json",
     "docs/dev/b3/integrated-structural-focus-plan.md",
     "docs/dev/b3/integrated-structural-trx-buffer.md",
-    ".github/workflows/review.yml"
+    ".github/workflows/review.yml",
+    ".github/review/b3-integrated-structural-export.py",
+    ".github/review/b3-integrated-structural-export-schema.json",
+    ".github/review/b3-integrated-structural-export-summary-source.json",
+    "docs/dev/b3/integrated-structural-export-plan.md"
   ],
   "census": {
     "bytes": 527987,
@@ -537,6 +541,31 @@
     "bytes": 19897,
     "path": "docs/dev/b3/integrated-structural-focus-plan.md",
     "sha256": "d83a4758734fd2635b197c0c95e00bc62418ffbf250a81dd34e8de75f3f2d76c"
+  },
+  "exportAdmission": {
+    "helper": {
+      "bytes": 36506,
+      "path": ".github/review/b3-integrated-structural-export.py",
+      "sha256": "66e6f047ddb5faf11c09101b8dfbdac5a5e6e65166b987b57cc671c770db8ce5"
+    },
+    "plan": {
+      "bytes": 22743,
+      "path": "docs/dev/b3/integrated-structural-export-plan.md",
+      "sha256": "5a3e87957cb6d5b892c008f87f8da9eefd05252bb48206d2294798b4c94373d8"
+    },
+    "schema": {
+      "bytes": 7855,
+      "path": ".github/review/b3-integrated-structural-export-schema.json",
+      "sha256": "154e9c8f9b9e881b100c5f6819a6e7ffc6d73d4926a78d4fb0c1930aca494b7d"
+    },
+    "sourceParent": "70fa80cc578b6f54c48f5a0c7ce103a31d7d0a42",
+    "status": "source-only-unexecuted",
+    "summarySource": {
+      "bytes": 4536,
+      "path": ".github/review/b3-integrated-structural-export-summary-source.json",
+      "sha256": "5804500afd49e30a9cdaf3d9d34d51ca7a0e9806dd6ded51220028570997d32e"
+    },
+    "uploadPolicy": "full exacttrue plus ready exacttrue -> fixed original root and fixed receipt; nonfull plus ready exacttrue -> only fixed receipt; all other values -> neither path"
   },
   "implementationHead": "51d527e0aa4fd428f4d42c881496f9d32dcb6001",
   "implementationTree": "b4c23d98ce3bc30cbbcca5ccefee04eb9e1b051a",

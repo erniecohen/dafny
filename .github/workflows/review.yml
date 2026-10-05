@@ -623,7 +623,7 @@ jobs:
           from pathlib import Path
           path = Path('.github/review/b3-integrated-structural-focus.py')
           expected_bytes = 78732
-          expected_sha256 = '5013927aba08ecdc71de88e96ebfe16e4f4c786a60057a158587aadf4466b64a'
+          expected_sha256 = '4b7277c77e26d9df7eb916679090eb281afb6f7fb99f0d6c052dbc095da1cb06'
           try:
               assert all(not ancestor.is_symlink() for ancestor in path.parents)
               descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
@@ -657,9 +657,164 @@ jobs:
                   'executionAcceptance': False}, indent=2) + '\n')
               print('NOT GREEN: structural coordinator startup or preservation failed', flush=True)
           PYCODE
-      - uses: actions/upload-artifact@v4
+      - name: Bounded structural export selection
+        id: structural_export
         if: always()
+        run: |
+          python3 - <<'PYEXPORT'
+          import hashlib, json, os, re, stat, sys, time, types
+          expected_inputs = {'bytes': 29696, 'sha256': 'ea41b4449255525a5238b3631900f5d1f047a3e00f8355fdafc6587c3a9251e3'}
+          expected_helper = {'bytes': 36506, 'sha256': '66e6f047ddb5faf11c09101b8dfbdac5a5e6e65166b987b57cc671c770db8ce5'}
+          expected_coordinator = {'bytes': 78732, 'sha256': '4b7277c77e26d9df7eb916679090eb281afb6f7fb99f0d6c052dbc095da1cb06'}
+          source_pins = {'parent': '70fa80cc578b6f54c48f5a0c7ce103a31d7d0a42',
+              'product': '450e374a40eb6125b540d55833a9cfe71484ab02',
+              'coordinator': expected_coordinator, 'inputs': expected_inputs, 'helper': expected_helper}
+          full_packet = metadata_ready = False
+          metadata_deadline = time.monotonic() + 60
+          directory_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
+          def export_tick():
+              assert time.monotonic() < metadata_deadline
+          def record(info):
+              return (info.st_dev, info.st_ino, info.st_mode, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+          def captured_source(name, expected):
+              assert time.monotonic() < metadata_deadline
+              parts = name.split('/')
+              directory = os.open('.', directory_flags)
+              try:
+                  for part in parts[:-1]:
+                      child = os.open(part, directory_flags, dir_fd=directory)
+                      os.close(directory)
+                      directory = child
+                  descriptor = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=directory)
+                  try:
+                      before = os.fstat(descriptor)
+                      assert stat.S_ISREG(before.st_mode) and before.st_size == expected['bytes'] <= 1024 * 1024
+                      chunks, remaining, attempted = [], expected['bytes'], 0
+                      while remaining:
+                          assert time.monotonic() < metadata_deadline
+                          request = min(65536, remaining)
+                          attempted += request
+                          assert attempted <= expected['bytes']
+                          chunk = os.read(descriptor, request)
+                          assert len(chunk) == request
+                          chunks.append(chunk)
+                          remaining -= len(chunk)
+                      assert not os.read(descriptor, 1) and record(os.fstat(descriptor)) == record(before)
+                      assert record(os.stat(parts[-1], dir_fd=directory, follow_symlinks=False)) == record(before)
+                  finally:
+                      os.close(descriptor)
+              finally:
+                  os.close(directory)
+              data = b''.join(chunks)
+              assert hashlib.sha256(data).hexdigest() == expected['sha256']
+              assert time.monotonic() < metadata_deadline
+              return data
+          def rejected_packet(error_type):
+              export_tick()
+              # No original metadata is invented when startup/preservation was unavailable.
+              head = os.environ.get('GITHUB_SHA', '')
+              head = head if re.fullmatch('[0-9a-f]{40}', head) else None
+              packet = {'schemaVersion': 1, 'scope': 'integrated-current-source-structural-export-only',
+                  'exportAdmitted': False, 'fullPacketSelectedForUpload': False, 'structuralAcceptance': False,
+                  'backendAccepted': False, 'completeLibraryVerified': False, 'libraryBinaryProduced': False,
+                  'workerRuntimeVerified': False, 'cliVerified': False, 'corpusVerified': False,
+                  'regressionRuntimeVerified': False, 'defaultCompatibilityVerified': False,
+                  'head': head, 'headEvidence': 'workflow-dispatch-metadata-only', 'sourcePins': source_pins,
+                  'exportFault': {'category': 'export-startup-or-preservation', 'errorType': error_type[:128]},
+                  'originalSummary': {'captured': False, 'interpretationStatus': 'unavailable'},
+                  'originalSummaryPassed': {'status': 'unavailable'}, 'originalPrimaryFailure': {'status': 'unavailable'},
+                  'originalFinalError': {'status': 'unavailable'}, 'originalArtifactFailure': {'status': 'unavailable'},
+                  'originalInventory': {'complete': False}, 'maximumMetadataPacketBytes': 65536,
+                  'preservationScope': 'Bounded own descriptor write/size; no selfhash or future completed-read claim',
+                  'timingScope': 'Selected metadata only; no uploader/service acknowledgement'}
+              data = (json.dumps(packet, sort_keys=True, separators=(',', ':'), ensure_ascii=True) + '\n').encode()
+              assert len(data) <= 16384
+              export_tick()
+              base = os.open('.', directory_flags)
+              out = metadata = descriptor = None
+              try:
+                  try: os.mkdir('out', 0o700, dir_fd=base)
+                  except FileExistsError: pass
+                  export_tick()
+                  out = os.open('out', directory_flags, dir_fd=base)
+                  try: os.mkdir('b3-integrated-structural-export', 0o700, dir_fd=out)
+                  except FileExistsError: pass
+                  export_tick()
+                  metadata = os.open('b3-integrated-structural-export', directory_flags, dir_fd=out)
+                  out_identity, metadata_identity = record(os.fstat(out))[:3], record(os.fstat(metadata))[:3]
+                  count = 0
+                  with os.scandir(metadata) as entries:
+                      for entry in entries:
+                          export_tick()
+                          count += 1
+                          assert count == 1 and entry.name == 'export.json'
+                  flags = os.O_WRONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
+                  try: before = os.stat('export.json', dir_fd=metadata, follow_symlinks=False)
+                  except FileNotFoundError:
+                      descriptor = os.open('export.json', flags | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=metadata)
+                  else:
+                      assert stat.S_ISREG(before.st_mode) and before.st_size <= 65536
+                      descriptor = os.open('export.json', flags, dir_fd=metadata)
+                      assert record(os.fstat(descriptor)) == record(before)
+                  export_tick()
+                  os.ftruncate(descriptor, 0)
+                  assert os.write(descriptor, data) == len(data)
+                  export_tick()
+                  after = os.fstat(descriptor)
+                  assert stat.S_ISREG(after.st_mode) and after.st_size == len(data)
+                  assert record(os.stat('export.json', dir_fd=metadata, follow_symlinks=False)) == record(after)
+                  assert record(os.stat('out', dir_fd=base, follow_symlinks=False))[:3] == out_identity
+                  assert record(os.stat('b3-integrated-structural-export', dir_fd=out, follow_symlinks=False))[:3] == metadata_identity
+                  count = 0
+                  with os.scandir(metadata) as entries:
+                      for entry in entries:
+                          export_tick()
+                          count += 1
+                          assert count == 1 and entry.name == 'export.json'
+                  assert count == 1
+                  assert record(os.stat('export.json', dir_fd=metadata, follow_symlinks=False)) == record(after)
+                  export_tick()
+                  return True
+              finally:
+                  for descriptor in [descriptor, metadata, out, base]:
+                      if descriptor is not None: os.close(descriptor)
+          try:
+              inputs = json.loads(captured_source('.github/review/b3-integrated-structural-inputs.json', expected_inputs))
+              assert inputs['exportAdmission']['helper'] == {'path': '.github/review/b3-integrated-structural-export.py', **expected_helper}
+              captured = captured_source('.github/review/b3-integrated-structural-export.py', expected_helper)
+              module = types.ModuleType('b3_integrated_structural_export')
+              exec(compile(captured, '.github/review/b3-integrated-structural-export.py', 'exec'), module.__dict__)
+              decision = module.run_export(source_pins, os.environ.get('GITHUB_SHA', ''), metadata_deadline)
+              assert type(decision) is dict and set(decision) == {'full_packet', 'metadata_ready'}
+              assert all(type(value) is bool for value in decision.values())
+              full_packet, metadata_ready = decision['full_packet'], decision['metadata_ready']
+              assert not full_packet or metadata_ready
+              if not metadata_ready:
+                  metadata_ready = rejected_packet('BoundedExportPreservationUnavailable')
+          except BaseException as error:
+              full_packet = False
+              try: metadata_ready = rejected_packet(type(error).__name__)
+              except BaseException: metadata_ready = False
+          finally:
+              # Missing output is also false in both artifact conditions.
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as stream:
+                  stream.write('full_packet=' + ('true' if full_packet and metadata_ready else 'false') + '\n')
+                  stream.write('metadata_ready=' + ('true' if metadata_ready else 'false') + '\n')
+              print('Full packet selected' if full_packet and metadata_ready else 'NOT GREEN: bounded metadata-only selection' if metadata_ready else 'NOT GREEN: no bounded export packet available', flush=True)
+          PYEXPORT
+      - name: Upload admitted bounded structural packet
+        uses: actions/upload-artifact@v4
+        if: ${{ always() && steps.structural_export.outputs.full_packet == 'true' && steps.structural_export.outputs.metadata_ready == 'true' }}
         with:
           name: b3-integrated-structural
-          path: out/b3-integrated-structural
+          path: |
+            out/b3-integrated-structural
+            out/b3-integrated-structural-export/export.json
+          retention-days: 30
+      - name: Upload bounded unqualified export rejection
+        uses: actions/upload-artifact@v4
+        if: ${{ always() && steps.structural_export.outputs.full_packet != 'true' && steps.structural_export.outputs.metadata_ready == 'true' }}
+        with:
+          name: b3-integrated-structural
+          path: out/b3-integrated-structural-export/export.json
           retention-days: 30
