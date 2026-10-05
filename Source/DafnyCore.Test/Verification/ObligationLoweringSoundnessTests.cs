@@ -21,7 +21,7 @@ public class ObligationLoweringSoundnessTests {
   }
   [Fact]
   public async Task BooleanFunctionResultsKeepTheirValueFuelInterface() {
-    const string source = "ghost predicate P(n:int) decreases n { n<=0 || P(n-1) } ghost function F():bool { exists n:int :: P(n) }";
+    const string source = "ghost predicate P(n:int) decreases n { n<=0 || P(n-1) } ghost function F(): (r:bool) ensures r { exists n:int :: P(n) }";
     async Task<string[]> ResultBindings(bool enabled) {
       var programs = await ObligationLoweringTests.Translate(source, enabled);
       var implementation = programs.SelectMany(p => p.Implementations)
