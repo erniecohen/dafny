@@ -1,0 +1,3 @@
+git-issue-143-codatatype-constructor-default-negative.dfy(7,33): Error: cannot prove termination; try supplying a decreases clause (note that a call can be co-recursive only if all intra-cluster calls are in non-destructive contexts)
+
+Dafny program verifier finished with 1 verified, 1 error

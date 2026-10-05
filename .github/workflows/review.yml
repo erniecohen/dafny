@@ -1,316 +1,110 @@
-name: Issue 113 native function law diagnostic
+# Diagnostic binary reuse only. No build or golden update. Wrapper success is
+# never a proof verdict; exact canonical receipts retain their scope.
+name: review
 on:
   workflow_dispatch:
 permissions:
   contents: read
   actions: read
 concurrency:
-  group: issue113-default-off-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 env:
   DOTNET_NOLOGO: 'true'
   DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
 jobs:
-  plan:
+  native-law-safety-reuse:
+    if: github.repository == 'erniecohen/dafny' && startsWith(github.ref, 'refs/heads/scratch/')
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
+    timeout-minutes: 230
     steps:
       - uses: actions/checkout@v4
-      - name: Explicit requested workload
-        id: matrix
         continue-on-error: true
-        run: python3 .github/review/issue113-default-off/focus_matrix.py workflow-request.json --candidate 'true' --github-output
-      - uses: actions/upload-artifact@v4
         with:
-          name: default-off-workflow-request
-          path: workflow-request.json
-          retention-days: 30
-  compilers:
-    needs: plan
-    runs-on: ubuntu-24.04
-    timeout-minutes: 120
-    steps:
+          path: diagnostic
       - uses: actions/checkout@v4
+        continue-on-error: true
         with:
-          path: harness
-      - uses: actions/checkout@v4
-        with:
-          ref: 4e50e86cde6ab2ef6cab0762ffc4df59d646dc15
-          path: candidate-source
+          ref: c1a360c4f77534ae2485049c880eb85e05d88989
+          path: frozen
       - uses: actions/setup-dotnet@v4
+        continue-on-error: true
         with:
           dotnet-version: 8.0.425
+      - uses: actions/setup-java@v4
+        continue-on-error: true
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        continue-on-error: true
+        with:
+          node-version: '20'
+      - uses: actions/setup-go@v5
+        continue-on-error: true
+        with:
+          go-version: '1.24.1'
       - uses: actions/download-artifact@v4
         continue-on-error: true
         with:
-          name: default-off-compilers-shipped
-          run-id: 37325330127
           github-token: ${{ github.token }}
-          path: reused-compilers
-      - name: Exact two actual public compilers, no rebuild
+          repository: erniecohen/dafny
+          run-id: 37263875970
+          name: issue113-same-source-compiler
+          path: artifacts/harness
+      - uses: actions/download-artifact@v4
         continue-on-error: true
-        run: |
-          mkdir -p results/baseline results/final
-          git -C harness rev-parse HEAD > results/harness-source.txt
-          set +e
-          for side in baseline final; do
-            python3 harness/.github/review/issue113-default-off/reuse_compiler.py "$side" reused-compilers "out/$side/dafny" "results/$side" > "results/$side/identity.txt" 2>&1
-            identity_exit=$?
-            echo "$identity_exit" > "results/$side/identity-exit.txt"
-            if [ "$identity_exit" != 0 ]; then continue; fi
-            "out/$side/dafny/Dafny" --version > "results/$side/compiler-version.txt" 2>&1
-            version_exit=$?
-            echo "$version_exit" > "results/$side/compiler-version-exit.txt"
-            if [ "$version_exit" != 0 ]; then continue; fi
-            python3 - "$side" <<'PYCODE'
-          import json,sys
-          from pathlib import Path
-          side=sys.argv[1]
-          record=json.loads(Path('harness/.github/review/issue113-default-off/reused-compilers.json').read_text())['arms'][side]
-          raise SystemExit(0 if Path('results',side,'compiler-version.txt').read_text().strip()==record['actual_version'] else 1)
-          PYCODE
-            echo "$?" > "results/$side/reused-version-guard-exit.txt"
-          done
-          exit 0
-      - name: Build only the exact diagnostic native-law source proposal
-        continue-on-error: true
-        run: |
-          mkdir -p results/candidate
-          set +e
-          python3 harness/.github/review/issue113-default-off/candidate_compose.py candidate-source results/candidate/source.json > results/candidate/compose.txt 2>&1
-          composition_exit=$?
-          echo "$composition_exit" > results/candidate/compose-exit.txt
-          if [ "$composition_exit" != 0 ]; then exit 0; fi
-          sh candidate-source/Scripts/fetch-boogie-packages.sh > results/candidate/dependencies.txt 2>&1
-          dependencies_exit=$?
-          echo "$dependencies_exit" > results/candidate/dependencies-exit.txt
-          if [ "$dependencies_exit" != 0 ]; then exit 0; fi
-          revision=$(python3 -c "import json; print(json.load(open('harness/.github/review/issue113-default-off/spec.json'))['candidate']['source_revision_id'])")
-          (cd candidate-source && dotnet publish Source/Dafny/Dafny.csproj -c Release -o "$GITHUB_WORKSPACE/out/candidate/dafny" -p:SourceRevisionId="$revision") > results/candidate/build.txt 2>&1
-          build_exit=$?
-          echo "$build_exit" > results/candidate/build-exit.txt
-          if [ "$build_exit" != 0 ]; then exit 0; fi
-          out/candidate/dafny/Dafny --version > results/candidate/compiler-version.txt 2>&1
-          echo "$?" > results/candidate/compiler-version-exit.txt
-          python3 - <<'PYCODE'
-          import json
-          from pathlib import Path
-          spec=json.loads(Path('harness/.github/review/issue113-default-off/spec.json').read_text())['candidate']
-          raise SystemExit(0 if Path('results/candidate/compiler-version.txt').read_text().strip()=='4.11.0+'+spec['source_revision_id'] else 1)
-          PYCODE
-          echo "$?" > results/candidate/candidate-version-guard-exit.txt
-          tar -C out/candidate -czf results/candidate/dafny.tar.gz dafny
-          python3 harness/.github/review/issue113-default-off/prepare.py identity shipped out/candidate/dafny/Dafny results/candidate/compiler-components.json --side candidate --archive results/candidate/dafny.tar.gz > results/candidate/identity.txt 2>&1
-          echo "$?" > results/candidate/identity-exit.txt
-          exit 0
-      - uses: actions/upload-artifact@v4
-        if: always()
         with:
+          github-token: ${{ github.token }}
+          repository: erniecohen/dafny
+          run-id: 37347177735
           name: default-off-compilers-shipped
-          path: results
-          retention-days: 30
-  paired:
-    needs: [compilers, plan]
-    if: always()
-    runs-on: ubuntu-24.04
-    timeout-minutes: 240
-    strategy:
-      fail-fast: false
-      max-parallel: 12
-      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          path: harness
-      - name: Original input pin
-        id: pin
+          path: artifacts/candidate
+      - name: Record immutable artifact identities and install runtime prerequisites
+        if: always()
+        continue-on-error: true
         env:
-          LINE: ${{ matrix.line }}
-        continue-on-error: true
+          GH_TOKEN: ${{ github.token }}
         run: |
-          python3 - <<'PY'
-          import json,os
-          from pathlib import Path
-          source=json.loads(Path('harness/.github/review/issue113-default-off/spec.json').read_text())['lines'][os.environ['LINE']]
-          with open(os.environ['GITHUB_OUTPUT'],'a') as output:
-            output.write('old='+source['original']+'\n')
-          PY
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.pin.outputs.old }}
-          path: inputs
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.425
-      - uses: actions/download-artifact@v4
-        with:
-          name: default-off-compilers-${{ matrix.line }}
-          path: compilers
-      - name: Pinned solver and source-input receipt
-        env:
-          LINE: ${{ matrix.line }}
-          SOLVER_AXIS: ${{ matrix.solver }}
+          mkdir -p native-law-safety-observations/setup
+          gh api repos/erniecohen/dafny/actions/artifacts/11326237732 > native-law-safety-observations/setup/old-artifact.json
+          gh api repos/erniecohen/dafny/actions/artifacts/11361575690 > native-law-safety-observations/setup/candidate-artifact.json
+          npm --prefix frozen install --no-save --package-lock=false bignumber.js@9.1.2 > native-law-safety-observations/setup/npm-stdout.txt 2> native-law-safety-observations/setup/npm-stderr.txt
+          printf '%s\n' "$HOME/go/bin" >> "$GITHUB_PATH"
+          go install golang.org/x/tools/cmd/goimports@v0.31.0 > native-law-safety-observations/setup/goimports-stdout.txt 2> native-law-safety-observations/setup/goimports-stderr.txt
+          curl -fsSL --retry 2 --max-time 200 -o native-law-safety-observations/setup/z3-5.1.0.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          curl -fsSL --retry 2 --max-time 200 -o native-law-safety-observations/setup/z3-4.12.1.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.12.1-x64-ubuntu-24.04-bin.zip
+      - name: Prepare exact old harness with candidate compiler overlay
+        if: always()
         continue-on-error: true
-        run: |
-          mkdir -p setup
-          python3 harness/.github/review/issue113-default-off/prepare.py inputs "$LINE" inputs setup/inputs.json
-          python3 - <<'PY'
-          import json,os
-          from pathlib import Path
-          spec=json.loads(Path('harness/.github/review/issue113-default-off/spec.json').read_text())
-          version='5.1.0' if os.environ['SOLVER_AXIS']=='5.1.0' else spec['lines'][os.environ['LINE']]['reference_solver']
-          solver=spec['solver_5_1_0'] if version=='5.1.0' else spec['reference_solvers'][version]
-          Path('setup/solver.json').write_text(json.dumps(dict(version=version,**solver),indent=2)+'\n')
-          with open(os.environ['GITHUB_ENV'],'a') as output:
-            output.write('SOLVER_URL='+solver['url']+'\nSOLVER_SHA='+solver['sha256']+'\nSOLVER_VERSION='+version+'\n')
-          PY
-      - name: Download and check the pinned solver
+        run: python3 diagnostic/.github/review/native-law-safety/reuse.py prepare
+      - name: Independently discover unchanged source-root cases
+        if: always()
         continue-on-error: true
-        run: |
-          set +e
-          curl --retry 3 --retry-all-errors -fsSLo setup/solver.zip "$SOLVER_URL"
-          echo "$?" > setup/solver-download-exit.txt
-          echo "$SOLVER_SHA  setup/solver.zip" | sha256sum -c - > setup/solver-checksum.txt 2>&1
-          checksum_exit=$?
-          echo "$checksum_exit" > setup/solver-checksum-exit.txt
-          if [ "$checksum_exit" = 0 ]; then
-            unzip -q setup/solver.zip -d solver
-            echo "$?" > setup/solver-unzip-exit.txt
-            if [ "$SOLVER_VERSION" = 5.1.0 ]; then
-              solver_executable="$PWD/solver/z3-5.1.0-x64-glibc-2.39/bin/z3"
-            else
-              solver_executable="$PWD/solver/z3-$SOLVER_VERSION"
-            fi
-            chmod +x "$solver_executable"
-            "$solver_executable" --version > setup/solver-version.txt 2>&1
-            echo "$?" > setup/solver-version-exit.txt
-            echo "SOLVER=$solver_executable" >> "$GITHUB_ENV"
-          fi
-          exit 0
-      - name: Pinned review solver for separate literal82 cohort
-        if: matrix.cohort == 'repair82-literal'
+        run: python3 diagnostic/.github/review/native-law-safety/reuse.py discover
+      - name: Run original 97-root literal harness with its original oracles
+        if: always()
         continue-on-error: true
-        run: |
-          set +e
-          python3 - <<'PYCODE'
-          import json,os
-          from pathlib import Path
-          item=json.loads(Path('harness/.github/review/issue113-default-off/spec.json').read_text())['solver_5_1_0']
-          with open(os.environ['GITHUB_ENV'],'a') as output:
-            output.write('REVIEW_SOLVER_URL='+item['url']+'\nREVIEW_SOLVER_SHA='+item['sha256']+'\n')
-          PYCODE
-          echo "$?" > setup/review-solver-selection-exit.txt
-          exit 0
-      - name: Download the separately pinned literal82 review solver
-        if: matrix.cohort == 'repair82-literal'
+        run: python3 diagnostic/.github/review/native-law-safety/reuse.py run
+      - name: Record diagnostic report without upgrading acceptance
+        if: always()
         continue-on-error: true
-        run: |
-          set +e
-          curl --retry 3 --retry-all-errors -fsSLo setup/review-solver.zip "$REVIEW_SOLVER_URL"
-          echo "$?" > setup/review-solver-download-exit.txt
-          echo "$REVIEW_SOLVER_SHA  setup/review-solver.zip" | sha256sum -c - > setup/review-solver-checksum.txt 2>&1
-          checksum_exit=$?
-          echo "$checksum_exit" > setup/review-solver-checksum-exit.txt
-          if [ "$checksum_exit" = 0 ]; then
-            unzip -q setup/review-solver.zip -d review-solver
-            echo "$?" > setup/review-solver-unzip-exit.txt
-            review_solver="$PWD/review-solver/z3-5.1.0-x64-glibc-2.39/bin/z3"
-            chmod +x "$review_solver"
-            "$review_solver" --version > setup/review-solver-version.txt 2>&1
-            echo "$?" > setup/review-solver-version-exit.txt
-            echo "REVIEW_SOLVER=$review_solver" >> "$GITHUB_ENV"
-          fi
-          exit 0
-      - name: Matched old-source compiler pairs
-        env:
-          LINE: ${{ matrix.line }}
-          COHORT: ${{ matrix.cohort }}
-          MODE: ${{ matrix.mode }}
-          AXIOMS: ${{ matrix.axioms }}
-          SHARD: ${{ matrix.shard }}
-          PART: ${{ matrix.part }}
-          JOBS: ${{ matrix.jobs }}
-          INCLUDE_CANDIDATE: 'true'
-        continue-on-error: true
-        run: |
-          mkdir -p run-metadata
-          set +e
-          python3 - <<'PY'
-          import json,os
-          from pathlib import Path
-          required=[Path('setup/solver-checksum-exit.txt'),Path('setup/solver-unzip-exit.txt'),Path('setup/solver-version-exit.txt')]
-          if os.environ['COHORT']=='repair82-literal':
-            required += [Path('setup/review-solver-'+name+'-exit.txt') for name in ['selection','download','checksum','unzip','version']]
-          sides=['baseline','final']+(['candidate'] if os.environ['INCLUDE_CANDIDATE']=='true' else [])
-          for side in sides:
-            required += [Path('compilers')/side/(name+'-exit.txt') for name in ['build','identity','compiler-version']]
-            required += [Path('compilers')/side/('candidate-version-guard-exit.txt' if side=='candidate' else 'reused-version-guard-exit.txt')]
-          missing=[str(file) for file in required if not file.exists() or file.read_text().strip()!='0']
-          Path('run-metadata/prerequisites.json').write_text(json.dumps(dict(missing_or_failed=missing),indent=2)+'\n')
-          raise SystemExit(125 if missing else 0)
-          PY
-          prerequisite_exit=$?
-          echo "$prerequisite_exit" > run-metadata/prerequisites-exit.txt
-          if [ "$prerequisite_exit" != 0 ]; then exit 0; fi
-          mkdir -p out/baseline out/final
-          tar -C out/baseline -xzf compilers/baseline/dafny.tar.gz
-          tar -C out/final -xzf compilers/final/dafny.tar.gz
-          extra=()
-          if [ "$INCLUDE_CANDIDATE" = true ]; then
-            mkdir -p out/candidate
-            tar -C out/candidate -xzf compilers/candidate/dafny.tar.gz
-            extra+=(--candidate "$PWD/out/candidate/dafny/Dafny" --candidate-identity compilers/candidate/compiler-components.json --candidate-version compilers/candidate/compiler-version.txt)
-          fi
-          if [ "$COHORT" = repair82-literal ]; then
-            python3 harness/.github/review/issue113-default-off/repair82.py run \
-              --baseline "$PWD/out/baseline/dafny/Dafny" --final "$PWD/out/final/dafny/Dafny" \
-              --baseline-identity compilers/baseline/compiler-components.json --final-identity compilers/final/compiler-components.json \
-              --baseline-version compilers/baseline/compiler-version.txt --final-version compilers/final/compiler-version.txt \
-              --default-solver "$SOLVER" --review-solver "$REVIEW_SOLVER" \
-              --default-solver-version setup/solver-version.txt --review-solver-version setup/review-solver-version.txt \
-              --output measurements --shard "$SHARD" "${extra[@]}" > run-metadata/runner.txt 2>&1
-          else
-          python3 harness/.github/review/issue113-default-off/parser_focus.py \
-            --baseline "$PWD/out/baseline/dafny/Dafny" --final "$PWD/out/final/dafny/Dafny" \
-            --baseline-identity compilers/baseline/compiler-components.json --final-identity compilers/final/compiler-components.json \
-            --baseline-version compilers/baseline/compiler-version.txt --final-version compilers/final/compiler-version.txt \
-            --inputs "$PWD/inputs" --solver "$SOLVER" --solver-version setup/solver-version.txt \
-            --axioms "$AXIOMS" --output measurements "${extra[@]}" > run-metadata/runner.txt 2>&1
-          fi
-          echo "$?" > run-metadata/runner-exit.txt
-          tail -20 run-metadata/runner.txt
-          exit 0
+        run: python3 diagnostic/.github/review/native-law-safety/reuse.py report
       - uses: actions/upload-artifact@v4
         if: always()
+        continue-on-error: true
         with:
-          name: default-off-${{ matrix.tag }}
+          name: native-law-safety-reuse-observations
+          retention-days: 14
           path: |
-            setup/*.json
-            setup/*.txt
-            run-metadata
-            measurements
-          compression-level: 9
-          retention-days: 30
-  report:
-    needs: [plan, compilers, paired]
-    if: always()
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: default-off-*
-          path: observations
-      - name: Exact denominators, differences and incomplete outcomes
-        continue-on-error: true
-        run: python3 .github/review/issue113-default-off/parser_focus.py aggregate observations default-off-report.json
-      - uses: actions/upload-artifact@v4
+            native-law-safety-observations
+            frozen/Source/IntegrationTests/bin/Release/net8.0/TestFiles/LitTests/LitTest/**/Output/**
+            diagnostic/.github/review/native-law-safety/spec.json
+            diagnostic/.github/review/native-law-safety/cohort/cohort.json
+            diagnostic/.github/review/native-law-safety/supplemental/*.dfy
+      - name: Keep the diagnostic workflow status separate from raw verdicts
         if: always()
-        with:
-          name: default-off-report
-          path: default-off-report.json
-          retention-days: 30
+        run: |
+          printf '%s\n' 'Raw canonical results are retained in the artifact. Derived semantic and supplemental projections are not executed here. No source adoption or complete gate verdict is implied.' >> "$GITHUB_STEP_SUMMARY"
+          exit 0

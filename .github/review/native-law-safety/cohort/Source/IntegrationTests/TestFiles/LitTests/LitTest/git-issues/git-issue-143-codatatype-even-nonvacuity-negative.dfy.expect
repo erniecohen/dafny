@@ -1,0 +1,4 @@
+git-issue-143-codatatype-even-nonvacuity-negative.dfy(11,2): Error: assertion might not hold
+git-issue-143-codatatype-even-nonvacuity-negative.dfy(12,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 2 errors

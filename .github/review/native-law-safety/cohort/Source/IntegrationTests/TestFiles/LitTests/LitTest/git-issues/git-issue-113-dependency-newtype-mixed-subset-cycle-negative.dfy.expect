@@ -1,0 +1,2 @@
+git-issue-113-dependency-newtype-mixed-subset-cycle-negative.dfy(6,8): Error: cycle among redirecting types (newtypes, subset types, type synonyms): N -> S -> N
+1 resolution/type errors detected in git-issue-113-dependency-newtype-mixed-subset-cycle-negative.dfy
