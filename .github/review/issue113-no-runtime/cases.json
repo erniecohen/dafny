@@ -1,0 +1,37 @@
+[
+  {
+    "id": "nominal-generic-companion",
+    "source": "nominal-generic-companion.dfy",
+    "requires_extended": true
+  },
+  {
+    "id": "nominal-generic-witness",
+    "source": "nominal-generic-witness.dfy",
+    "requires_extended": true
+  },
+  {
+    "id": "raw-generic-companion",
+    "source": "raw-generic-companion.dfy",
+    "requires_extended": false
+  },
+  {
+    "id": "raw-generic-witness",
+    "source": "raw-generic-witness.dfy",
+    "requires_extended": false
+  },
+  {
+    "id": "subset-generic-companion",
+    "source": "subset-generic-companion.dfy",
+    "requires_extended": false
+  },
+  {
+    "id": "subset-generic-witness",
+    "source": "subset-generic-witness.dfy",
+    "requires_extended": false
+  },
+  {
+    "id": "numeric-generic-witness",
+    "source": "numeric-generic-witness.dfy",
+    "requires_extended": false
+  }
+]
