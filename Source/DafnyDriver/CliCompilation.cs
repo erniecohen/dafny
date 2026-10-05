@@ -34,6 +34,7 @@ public class CliCompilation : IDisposable {
   private IDisposable? ownedLoggerFactory;
   private int backendReleased;
   private int ownedDisposed;
+  private readonly IReadOnlyList<DafnyDiagnostic> admissionDiagnostics;
   public bool DidVerification { get; private set; }
 
   private CliCompilation(
@@ -55,6 +56,7 @@ public class CliCompilation : IDisposable {
     options.RunningBoogieFromCommandLine = true;
 
     this.ownedBackend = ownedBackend;
+    admissionDiagnostics = preparedInputs?.AdmissionDiagnostics ?? Array.Empty<DafnyDiagnostic>();
     var input = new CompilationInput(options, 0, options.DafnyProject) {
       PreparedRootFiles = preparedInputs?.RootFiles
     };
@@ -223,6 +225,9 @@ public class CliCompilation : IDisposable {
         Options.Get(VerifyCommand.FilterPosition) != null) {
       Compilation.Reporter.Error(MessageSource.Project, Token.Cli,
         "B3 does not currently support --filter-position; use --filter-symbol to select whole checking units");
+    }
+    foreach (var diagnostic in admissionDiagnostics) {
+      Compilation.Reporter.MessageCore(diagnostic);
     }
     Compilation.Start();
   }

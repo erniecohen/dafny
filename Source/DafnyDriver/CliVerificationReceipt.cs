@@ -77,6 +77,7 @@ internal sealed class CliVerificationReceipt {
 internal sealed class CliVerificationLedger {
   private sealed class ModuleInventory {
     internal CliModulePreparationState State;
+    internal bool Released;
     internal readonly Dictionary<VerificationIdentity, UnitInventory> Units = new();
   }
   private sealed record UnitInventory(IVerificationWorkItem Task, VerificationIdentity Identity, ICanVerify Owner) {
@@ -170,6 +171,19 @@ internal sealed class CliVerificationLedger {
     }
   }
 
+  internal void ReleaseModule(ModuleDefinition module) {
+    EnsureOpen();
+    if (!modules.TryGetValue(module, out var inventory) || inventory.State != CliModulePreparationState.Completed ||
+        inventory.Released || inventory.Units.Values.Any(unit => !unit.Completed ||
+          unit.Identity != unit.Task.Identity || !ReferenceEquals(unit.Owner, unit.Task.Source.CanVerify))) {
+      Reject("A module's complete prepared/result inventory was not released intact");
+      return;
+    }
+    inventory.Released = true;
+    // Keep only the finite identity ledger and digest/count; release normalized task/AST closures.
+    inventory.Units.Clear();
+  }
+
   internal void Reject(string reason) { rejection ??= reason; }
 
   internal CliVerificationReceipt Seal(bool diagnosticsAccepted, CancellationToken cancellationToken) {
@@ -178,7 +192,7 @@ internal sealed class CliVerificationLedger {
     if (cancellationToken.IsCancellationRequested) { Reject("Verification was cancelled"); }
     if (!diagnosticsAccepted) { Reject("The compilation has fatal diagnostics"); }
     if (!selection.Matches(options)) { Reject("The verification selection changed during compilation"); }
-    if (modules.Values.Any(m => m.State != CliModulePreparationState.Completed || m.Units.Values.Any(u => !u.Completed))) {
+    if (modules.Values.Any(m => m.State != CliModulePreparationState.Completed || !m.Released)) {
       Reject("Not every admitted module and checking unit completed");
     }
     var digest = Convert.ToHexString(inventoryHash.GetHashAndReset()).ToLowerInvariant();

@@ -257,6 +257,35 @@ public abstract class ExecutableBackend : IExecutableBackend {
     SinglePassCodeGenerator.WriteFromStream(rd, outputWriter);
   }
 
+  /// <summary>Only finite supported B3 configuration is forwarded; no internal Boogie strings become flags.</summary>
+  internal static IReadOnlyList<string> B3DafnyChildArguments(DafnyOptions options,
+    string targetFilename, bool verify) {
+    if (options.GetOrOptionDefault(B3OptionBag.VerificationBackend) != B3OptionBag.Backend.B3) {
+      throw new InvalidOperationException("B3 child arguments require B3 selection");
+    }
+    var args = new List<string> { "--verification-backend", "b3" };
+    if (options.Get(B3OptionBag.Worker) is { } worker) {
+      args.Add("--b3-worker"); args.Add(worker.FullName);
+    }
+    var solver = options.Get(BoogieOptionBag.SolverPath)?.FullName ??
+      options.ProverOptions.LastOrDefault(option => option.StartsWith("PROVER_PATH=", StringComparison.Ordinal))?
+        .Substring("PROVER_PATH=".Length);
+    if (!string.IsNullOrEmpty(solver)) {
+      args.Add("--solver-path"); args.Add(solver);
+    }
+    args.Add("--verification-time-limit=" + options.TimeLimit.ToString(System.Globalization.CultureInfo.InvariantCulture));
+    args.Add("--resource-limit=" + options.ResourceLimit.ToString(System.Globalization.CultureInfo.InvariantCulture));
+    args.Add("--cores=" + options.VcsCores.ToString(System.Globalization.CultureInfo.InvariantCulture));
+    args.Add("--arithmetic-solver=" + options.GetOrOptionDefault(BoogieOptionBag.ArithmeticSolver)
+      .ToString(System.Globalization.CultureInfo.InvariantCulture));
+    if (!verify || options.Get(BoogieOptionBag.NoVerify)) { args.Add("--no-verify"); }
+    args.Add(targetFilename);
+    // Program arguments remain exact values and cannot be reinterpreted as child compiler options.
+    args.Add("--");
+    args.AddRange(options.MainArgs);
+    return args.AsReadOnly();
+  }
+
   protected async Task<bool> RunTargetDafnyProgram(string targetFilename, IDafnyOutputWriter outputWriter, bool verify) {
 
     /*
@@ -273,6 +302,9 @@ public abstract class ExecutableBackend : IExecutableBackend {
       .Prepend(targetFilename);
     if (!verify) {
       args = args.Prepend("--no-verify");
+    }
+    if (opt.GetOrOptionDefault(B3OptionBag.VerificationBackend) == B3OptionBag.Backend.B3) {
+      args = B3DafnyChildArguments(opt, targetFilename, verify);
     }
     args = args
       .Prepend("--target:cs")

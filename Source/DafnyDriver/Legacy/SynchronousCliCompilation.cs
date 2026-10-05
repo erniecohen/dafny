@@ -85,7 +85,7 @@ namespace Microsoft.Dafny {
 
     public static async Task<(ExitValue ExitValue,
       List<DafnyFile> DafnyFiles,
-      List<string> OtherFiles)> GetDafnyFiles(DafnyOptions options) {
+      List<string> OtherFiles)> GetDafnyFiles(DafnyOptions options, ErrorReporter admissionReporter = null) {
       if (options.Printer is NullPrinter) {
         options.Printer = new DafnyConsolePrinter(options);
       }
@@ -100,7 +100,7 @@ namespace Microsoft.Dafny {
       var otherFiles = new List<string>();
       var outputWriter = options.OutputWriter;
 
-      var consoleErrorReporter = new ConsoleErrorReporter(options);
+      var consoleErrorReporter = admissionReporter ?? new ConsoleErrorReporter(options);
       if (options.DafnyProject != null) {
         options.DafnyProject.Errors.CopyDiagnostics(consoleErrorReporter);
         if (options.DafnyProject.Errors.HasErrors) {
@@ -217,7 +217,7 @@ namespace Microsoft.Dafny {
         // This creates issues with separate compilation and will be addressed in https://github.com/dafny-lang/dafny/pull/4877
         var asLibrary = !options.Get(CommonOptionBag.TranslateStandardLibrary);
 
-        var reporter = new ConsoleErrorReporter(options);
+        var reporter = admissionReporter ?? new ConsoleErrorReporter(options);
         if (options.CompilerName is null or "cs" or "java" or "go" or "py" or "js") {
           var targetName = options.CompilerName ?? "notarget";
           var stdlibDooUri = DafnyMain.StandardLibrariesDooUriTarget[targetName];

@@ -13,10 +13,13 @@ namespace DafnyDriver.Commands;
 internal sealed class PreparedCliInputs {
   public IReadOnlyList<DafnyFile> RootFiles { get; }
   public ReadOnlyCollection<string> ForeignFiles { get; }
+  public IReadOnlyList<DafnyDiagnostic> AdmissionDiagnostics { get; }
 
-  private PreparedCliInputs(IReadOnlyList<DafnyFile> rootFiles, IReadOnlyList<string> foreignFiles) {
+  private PreparedCliInputs(IReadOnlyList<DafnyFile> rootFiles, IReadOnlyList<string> foreignFiles,
+    IReadOnlyList<DafnyDiagnostic> diagnostics) {
     RootFiles = Array.AsReadOnly(rootFiles.ToArray());
     ForeignFiles = Array.AsReadOnly(foreignFiles.ToArray());
+    AdmissionDiagnostics = Array.AsReadOnly(diagnostics.ToArray());
   }
 
   public static async Task<(ExitValue ExitValue, PreparedCliInputs? Inputs)> PrepareAsync(
@@ -27,9 +30,19 @@ internal sealed class PreparedCliInputs {
       return (ExitValue.PREPROCESSING_ERROR, null);
     }
     options.Backend = target;
-    var (exitValue, files, foreignFiles) = await SynchronousCliCompilation.GetDafnyFiles(options);
+    var admission = new BatchErrorReporter(options);
+    var (exitValue, files, foreignFiles) = await SynchronousCliCompilation.GetDafnyFiles(options, admission);
     cancellationToken.ThrowIfCancellationRequested();
-    return exitValue == ExitValue.SUCCESS
-      ? (exitValue, new PreparedCliInputs(files, foreignFiles)) : (exitValue, null);
+    if (exitValue != ExitValue.SUCCESS || admission.ErrorCount != 0 ||
+        admission.AllMessages.Any(diagnostic => diagnostic.Level == ErrorLevel.Warning) &&
+        !options.Get(CommonOptionBag.AllowWarnings)) {
+      var console = new ConsoleErrorReporter(options);
+      foreach (var diagnostic in admission.AllMessages) { console.MessageCore(diagnostic); }
+      if (exitValue == ExitValue.SUCCESS) {
+        exitValue = admission.ErrorCount != 0 ? ExitValue.PREPROCESSING_ERROR : ExitValue.DAFNY_ERROR;
+      }
+      return (exitValue, null);
+    }
+    return (ExitValue.SUCCESS, new PreparedCliInputs(files, foreignFiles, admission.AllMessages));
   }
 }

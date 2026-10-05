@@ -75,6 +75,7 @@ internal static class ModernCliVerification {
         }
       } finally {
         foreach (var task in prepared) { task.Cancel(); }
+        ledger.ReleaseModule(module);
         compilation.Compilation.ClearModuleCache(module);
       }
     }

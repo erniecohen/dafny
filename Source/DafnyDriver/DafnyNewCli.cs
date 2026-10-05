@@ -320,7 +320,9 @@ public static class DafnyNewCli {
       dependencyOptions.CliRootSourceUris.Clear();
       dependencyOptions.Compile = true;
       dependencyOptions.RunAfterCompile = false;
-      var exitCode = await SynchronousCliCompilation.Run(dependencyOptions);
+      var exitCode = options.GetOrOptionDefault(B3OptionBag.VerificationBackend) == B3OptionBag.Backend.B3
+        ? await ModernCliCompilation.Run(dependencyOptions, ModernCliCompilation.CurrentInputCancellation)
+        : await SynchronousCliCompilation.Run(dependencyOptions);
       if (exitCode == 0 && libraryBackend.DooPath != null) {
         var dooUri = new Uri(libraryBackend.DooPath);
         await foreach (var dooResult in DafnyFile.HandleDooFile(fileSystem, reporter, options, dooUri, uriOrigin, true)) {

@@ -10,6 +10,9 @@ namespace Microsoft.Dafny;
 
 /// <summary>Modern build/run/test dispatch; the default and legacy driver remain unchanged.</summary>
 public static class ModernCliCompilation {
+  private static readonly AsyncLocal<CancellationToken> inputCancellation = new();
+  internal static CancellationToken CurrentInputCancellation => inputCancellation.Value;
+
   public static Task<int> Run(DafnyOptions options, CancellationToken cancellationToken = default) =>
     options.GetOrOptionDefault(B3OptionBag.VerificationBackend) == B3OptionBag.Backend.B3
       ? RunB3Async(options, cancellationToken, ModernCliServices.Default)
@@ -23,6 +26,8 @@ public static class ModernCliCompilation {
       return (int)ExitValue.PREPROCESSING_ERROR;
     }
     CliCompilation? compilation = null;
+    var previousInputCancellation = inputCancellation.Value;
+    inputCancellation.Value = cancellationToken;
     try {
       var (inputExit, inputs) = await PreparedCliInputs.PrepareAsync(options, cancellationToken);
       if (inputExit != ExitValue.SUCCESS || inputs == null) {
@@ -67,7 +72,7 @@ public static class ModernCliCompilation {
       if (!compiled) { return (int)ExitValue.COMPILE_ERROR; }
       return (int)await compilation.GetAndReportExitValue();
     } catch (OperationCanceledException) {
-      await options.OutputWriter.Status("B3 compilation cancelled; compilation/execution was not authorized.");
+      await options.OutputWriter.Status("B3 compilation cancelled.");
       return (int)ExitValue.VERIFICATION_ERROR;
     } catch (UnsupportedFeatureException exception) {
       compilation?.Compilation.Reporter.Error(MessageSource.Compiler, GeneratorErrors.ErrorId.f_unsupported_feature,
@@ -83,6 +88,7 @@ public static class ModernCliCompilation {
     } finally {
       compilation?.Dispose();
       options.XmlSink?.Close();
+      inputCancellation.Value = previousInputCancellation;
     }
   }
 
