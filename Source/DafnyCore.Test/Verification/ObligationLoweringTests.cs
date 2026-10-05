@@ -145,6 +145,41 @@ public class ObligationLoweringTests {
     Assert.All(implicitChecks,c=>Assert.Contains(ObligationFingerprint.Expression(c.Expr),explicitChecks));
   }
 
+  [Theory]
+  [InlineData("Identity(exists n:int :: P(n))", false)]
+  [InlineData("f(exists n:int :: P(n))", false)]
+  [InlineData("[exists n:int :: P(n)][0]", false)]
+  [InlineData("(var b := exists n:int :: P(n); b)", false)]
+  [InlineData("Identity(exists n:int :: P(n))", true)]
+  [InlineData("f(exists n:int :: P(n))", true)]
+  [InlineData("[exists n:int :: P(n)][0]", true)]
+  [InlineData("(var b := exists n:int :: P(n); b)", true)]
+  public async Task BooleanValueEdgesDoNotInheritPropositionFuel(string expression, bool refresh) {
+    var source = "ghost predicate P(n:int) decreases n { n<=0 || P(n-1) } " +
+      "ghost predicate Identity(b:bool) { b } lemma L(f:bool->bool) { assert " + expression + "; }";
+    var comparisons = 0;
+    await Translate(source, true, refresh, package => {
+      if (package.Inputs.Preparation != BoogieGenerator.ObligationPreparation.CheckedExpression) { return; }
+      string Content(VerificationExpressionUse use) {
+        var translator = package.Inputs.Translator.WithVerificationUse(use);
+        if (package.Source.Resolved is FunctionCallExpr call) {
+          return string.Join(";", translator.FunctionInvocationArguments(call, null, null)
+            .Select(ObligationFingerprint.Expression));
+        }
+        return ObligationFingerprint.Expression(translator.TrExpr(package.Source));
+      }
+      var value = Content(VerificationExpressionUse.Value);
+      Assert.Equal(value, Content(VerificationExpressionUse.Check));
+      Assert.Equal(value, Content(VerificationExpressionUse.Summary));
+      var permission = package.Inputs.Translator.WithVerificationUse(VerificationExpressionUse.Value)
+        .CanCallAssumption(package.Source);
+      Assert.Equal(ObligationFingerprint.Expression(permission), ObligationFingerprint.Expression(
+        package.Inputs.Translator.WithVerificationUse(VerificationExpressionUse.Check).CanCallAssumption(package.Source)));
+      comparisons++;
+    });
+    Assert.True(comparisons > 0);
+  }
+
   [Fact]
   public async Task ExplicitAndImplicitOldAllocationUseTheSameTypedPredicate() {
     const string source = "class C {} twostate lemma Use(c:C) {} lemma L(c:C) { assert old(allocated(c)); Use(c); }";

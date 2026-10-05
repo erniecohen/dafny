@@ -43,7 +43,9 @@ for refresh in [False,True]:
  for axioms in [False,True]:
   for name in ["negative-subset","negative-guarded-constraint","negative-subset-vacuity",
     "negative-self-postcondition","negative-self-postcondition-let","negative-allocation-vacuity",
-    "negative-old-argument","negative-forall","negative-higher-precondition","negative-ordered-contract"]:
+    "negative-old-argument","negative-forall","negative-higher-precondition","negative-ordered-contract",
+    "negative-boolean-value-argument","negative-boolean-value-higher-order",
+    "negative-boolean-value-container","negative-boolean-value-let"]:
    for isolate in [False,True]:
     code,output=verify(name,refresh,axioms,isolate=isolate)
     assert code==4 and "error" in output and "parse errors" not in output,output

@@ -77,6 +77,8 @@ The immutable policy is `(use, polarity, mayAdjustFuel)`:
 | forall range/term | reverse/same polarity |
 | exists range/term | same/same polarity |
 | ITE test | value use; both branches retain parent polarity |
+| function/application arguments, receivers, exact-let RHSs and container contents | value use |
+| can-call arguments and conditional permission guards | value use |
 | equivalence operands in a check | positive check recipe for each operand |
 | equality, continuation equivalence and other non-monotone operands | value use |
 | old or labeled-old | same policy with the selected heap |
@@ -97,6 +99,14 @@ irrelevance axioms equate permitted layers, so the equivalence in either polarit
 still denotes the same proposition. This is a local definition bridge, with no
 new reveal, SCC permission, or global fuel increase. Its continuation uses value
 operands; negative and non-vacuity controls exercise both equivalence polarities.
+
+A Boolean argument has no monotone relationship to its enclosing function call:
+its callee can negate it. Argument, receiver, exact-let RHS and container-value
+edges therefore use the value recipe, including the terms in can-call permissions.
+Non-Boolean expressions switch to value use at their translation root. Only
+logical connective, quantifier and branch-result edges retain proposition polarity.
+This preserves the argument's original heap, representation and fuel interface;
+it does not equate a fuel-zero argument with a fuel-one argument.
 
 Fuel usage is a result of a particular translation, separate from diagnostic
 counters. Fresh roots/splits observe their own usage; their descendants share
@@ -219,7 +229,9 @@ the result is a set. Its declared frame and termination prerequisites remain.
 The typed fingerprint normalizes lexical binder alpha-renaming only. It retains
 function/operator applications, quantifier kinds and ordered multi-patterns,
 attributes, types, ground identifiers, `Lit`, box/unbox, membership, heaps, fuel,
-can-call, guards and checked/free roles. It substitutes no administrative
+can-call and checked/free roles within the pieces and summary. The package
+content fingerprint excludes the separate input guard and preparation metadata;
+pair tests check those explicitly, and complete command emission retains them. It substitutes no administrative
 temporary or independent witness. Complete Boogie emission and selected passive
 Boogie/SMT inputs accompany the structural package tests; proof dependencies and
 scope availability are reviewed in command emission as well as expression content.
