@@ -1,0 +1,205 @@
+[
+  {
+    "repository": "dotnet/roslyn",
+    "commit": "3fb752d448006a3144a60ccf181d745e555422f9",
+    "path": "src/Compilers/Core/MSBuildTask/Csc.cs",
+    "url": "https://raw.githubusercontent.com/dotnet/roslyn/3fb752d448006a3144a60ccf181d745e555422f9/src/Compilers/Core/MSBuildTask/Csc.cs",
+    "bytes": 41150,
+    "sha256": "1b66eab6964523eaafc4665d738d91912139998509b05d8bc400dc628a33afa3",
+    "gitBlobSha1": "d4cde85cf8e7ae393eea4d8b46ef7f670ccb0ef6"
+  },
+  {
+    "repository": "dotnet/roslyn",
+    "commit": "3fb752d448006a3144a60ccf181d745e555422f9",
+    "path": "src/Compilers/Core/MSBuildTask/ManagedCompiler.cs",
+    "url": "https://raw.githubusercontent.com/dotnet/roslyn/3fb752d448006a3144a60ccf181d745e555422f9/src/Compilers/Core/MSBuildTask/ManagedCompiler.cs",
+    "bytes": 51044,
+    "sha256": "4384e857f884722708102cb91aa90319424901ba06e10fc3903a366fc5f34b71",
+    "gitBlobSha1": "68ceaeecff8597f50716eb99781c81e7214232ec"
+  },
+  {
+    "repository": "dotnet/roslyn",
+    "commit": "3fb752d448006a3144a60ccf181d745e555422f9",
+    "path": "src/Compilers/Core/MSBuildTask/Microsoft.CSharp.Core.targets",
+    "url": "https://raw.githubusercontent.com/dotnet/roslyn/3fb752d448006a3144a60ccf181d745e555422f9/src/Compilers/Core/MSBuildTask/Microsoft.CSharp.Core.targets",
+    "bytes": 11625,
+    "sha256": "b43e423242fb46e8b184e852847d6703ee6f9addb9b97bf0d66fef3ab6f62477",
+    "gitBlobSha1": "241ad2307c9451d8377ef81caa88ec5e1408ceb4"
+  },
+  {
+    "repository": "dotnet/roslyn",
+    "commit": "3fb752d448006a3144a60ccf181d745e555422f9",
+    "path": "src/Compilers/Core/MSBuildTask/Microsoft.Managed.Core.targets",
+    "url": "https://raw.githubusercontent.com/dotnet/roslyn/3fb752d448006a3144a60ccf181d745e555422f9/src/Compilers/Core/MSBuildTask/Microsoft.Managed.Core.targets",
+    "bytes": 18722,
+    "sha256": "32923131b19035c06b99ff26f23ee2b7edb5393b7f8b1f53b09690c93031a277",
+    "gitBlobSha1": "4436b3841f61d0998d56aabdeab6fa2d88220f7e"
+  },
+  {
+    "repository": "dotnet/msbuild",
+    "commit": "02bf66295b64ab368d12933041f7281aad186a2d",
+    "path": "src/Build/Instance/TaskRegistry.cs",
+    "url": "https://raw.githubusercontent.com/dotnet/msbuild/02bf66295b64ab368d12933041f7281aad186a2d/src/Build/Instance/TaskRegistry.cs",
+    "bytes": 96692,
+    "sha256": "8233b81d864d1c27f69aec7afec9fb8673d8633e9d06e1797a72bb3624575e65",
+    "gitBlobSha1": "598819b3cd40c55974026c59f522c7b4b5ba0799"
+  },
+  {
+    "repository": "dotnet/msbuild",
+    "commit": "02bf66295b64ab368d12933041f7281aad186a2d",
+    "path": "src/Build/BackEnd/Components/RequestBuilder/TargetBuilder.cs",
+    "url": "https://raw.githubusercontent.com/dotnet/msbuild/02bf66295b64ab368d12933041f7281aad186a2d/src/Build/BackEnd/Components/RequestBuilder/TargetBuilder.cs",
+    "bytes": 45469,
+    "sha256": "69fc4a6d961bf9289ada48775c02cde95ab5c53d96d88b128353afcbf8955bcc",
+    "gitBlobSha1": "6ff9319f3eb82293d3b01dd3352e78799c0b4a6a"
+  },
+  {
+    "repository": "dotnet/msbuild",
+    "commit": "02bf66295b64ab368d12933041f7281aad186a2d",
+    "path": "src/Tasks/Copy.cs",
+    "url": "https://raw.githubusercontent.com/dotnet/msbuild/02bf66295b64ab368d12933041f7281aad186a2d/src/Tasks/Copy.cs",
+    "bytes": 48105,
+    "sha256": "297b465c02be731a69f2615ea1a1490150b00d6c7eded0a5759a1c7efbe46046",
+    "gitBlobSha1": "e6663e9b12e9705e30dd889b80f841b015b6ecc1"
+  },
+  {
+    "repository": "dotnet/msbuild",
+    "commit": "02bf66295b64ab368d12933041f7281aad186a2d",
+    "path": "src/Tasks/RoslynCodeTaskFactory/RoslynCodeTaskFactory.cs",
+    "url": "https://raw.githubusercontent.com/dotnet/msbuild/02bf66295b64ab368d12933041f7281aad186a2d/src/Tasks/RoslynCodeTaskFactory/RoslynCodeTaskFactory.cs",
+    "bytes": 35668,
+    "sha256": "7e1183fa268e3ef29dd06baea4c795795546dcf31a2744e98aa6c5254efba589",
+    "gitBlobSha1": "7989a98917a3174c056bfaea5562f731640f8334"
+  },
+  {
+    "repository": "dotnet/sdk",
+    "commit": "3de3fdf172d1856dd54425902527024c11b40b9d",
+    "path": "eng/Version.Details.xml",
+    "url": "https://raw.githubusercontent.com/dotnet/sdk/3de3fdf172d1856dd54425902527024c11b40b9d/eng/Version.Details.xml",
+    "bytes": 30289,
+    "sha256": "98a6daadcdd22df5d04ae903ad9992aa4ce9b4c027ccc426b54a877469492e51",
+    "gitBlobSha1": "e80e863dfe57bd40c7e409bac8611881cfd89e8b"
+  },
+  {
+    "repository": "dotnet/msbuild",
+    "commit": "02bf66295b64ab368d12933041f7281aad186a2d",
+    "path": "src/Build/Instance/TaskFactories/AssemblyTaskFactory.cs",
+    "url": "https://raw.githubusercontent.com/dotnet/msbuild/02bf66295b64ab368d12933041f7281aad186a2d/src/Build/Instance/TaskFactories/AssemblyTaskFactory.cs",
+    "bytes": 30879,
+    "sha256": "c8a08b1112d764d643c56f1380937256a2cee791b62fec33f2c5060c36136b5f",
+    "gitBlobSha1": "a830764d0539640cb6c8760e5cc0252068553655"
+  },
+  {
+    "repository": "dotnet/msbuild",
+    "commit": "02bf66295b64ab368d12933041f7281aad186a2d",
+    "path": "src/Tasks/FileIO/GetFileHash.cs",
+    "url": "https://raw.githubusercontent.com/dotnet/msbuild/02bf66295b64ab368d12933041f7281aad186a2d/src/Tasks/FileIO/GetFileHash.cs",
+    "bytes": 5396,
+    "sha256": "f331f399efb0c0c48fae8584a8750a7e532fcbf5e9b08cbaf5029c5704e5742d",
+    "gitBlobSha1": "2d1ec4f53081b5e2c36351dd2b198fa056111811"
+  },
+  {
+    "repository": "dotnet/msbuild",
+    "commit": "02bf66295b64ab368d12933041f7281aad186a2d",
+    "path": "src/Tasks/Microsoft.Common.tasks",
+    "url": "https://raw.githubusercontent.com/dotnet/msbuild/02bf66295b64ab368d12933041f7281aad186a2d/src/Tasks/Microsoft.Common.tasks",
+    "bytes": 19424,
+    "sha256": "fcbf3e4e2f3716689a26a449e289a0f85216695b47d71f6b559f41f9106d1f30",
+    "gitBlobSha1": "35018eb1918be2eecf2083322b209d92c621ee73"
+  },
+  {
+    "repository": "dotnet/msbuild",
+    "commit": "02bf66295b64ab368d12933041f7281aad186a2d",
+    "path": "src/Framework/ITask.cs",
+    "url": "https://raw.githubusercontent.com/dotnet/msbuild/02bf66295b64ab368d12933041f7281aad186a2d/src/Framework/ITask.cs",
+    "bytes": 1502,
+    "sha256": "c9944f58bb3e86aca2e732dad27eeb008d086b99a13f97105ac3513d4716b187",
+    "gitBlobSha1": "b4265a70113ceee6b69c5c256fbd3ab4a0ee2b24"
+  },
+  {
+    "repository": "dotnet/msbuild",
+    "commit": "02bf66295b64ab368d12933041f7281aad186a2d",
+    "path": "src/Framework/ITaskItem.cs",
+    "url": "https://raw.githubusercontent.com/dotnet/msbuild/02bf66295b64ab368d12933041f7281aad186a2d/src/Framework/ITaskItem.cs",
+    "bytes": 3613,
+    "sha256": "47b1906d9c894d89ed003b0dd0e10cafdc9ca97f284609296523cf39517cb2cc",
+    "gitBlobSha1": "a69eeec483c2740e24b0443c5d2a281ae11a97af"
+  },
+  {
+    "repository": "dotnet/msbuild",
+    "commit": "02bf66295b64ab368d12933041f7281aad186a2d",
+    "path": "src/Tasks/Microsoft.CSharp.CurrentVersion.targets",
+    "url": "https://raw.githubusercontent.com/dotnet/msbuild/02bf66295b64ab368d12933041f7281aad186a2d/src/Tasks/Microsoft.CSharp.CurrentVersion.targets",
+    "bytes": 21185,
+    "sha256": "6cb2b5bdf0e593d01d5879b1ed59a5c4b0466b119464b5e8a5328544cb1de5ed",
+    "gitBlobSha1": "772d1bbcf8e82c12ed3d80373f518e18f0383b8d"
+  },
+  {
+    "repository": "dotnet/msbuild",
+    "commit": "02bf66295b64ab368d12933041f7281aad186a2d",
+    "path": "src/Tasks/Microsoft.Common.CurrentVersion.targets",
+    "url": "https://raw.githubusercontent.com/dotnet/msbuild/02bf66295b64ab368d12933041f7281aad186a2d/src/Tasks/Microsoft.Common.CurrentVersion.targets",
+    "bytes": 371859,
+    "sha256": "c37f5fd59a0e17d4db166b8fe861ad0faf3d521d11fbf37732f734fc4d5e95d7",
+    "gitBlobSha1": "4080585a710edc99150b224a0e1287fdeccbff76"
+  },
+  {
+    "repository": "dotnet/msbuild",
+    "commit": "02bf66295b64ab368d12933041f7281aad186a2d",
+    "path": "src/Shared/TypeLoader.cs",
+    "url": "https://raw.githubusercontent.com/dotnet/msbuild/02bf66295b64ab368d12933041f7281aad186a2d/src/Shared/TypeLoader.cs",
+    "bytes": 21120,
+    "sha256": "2f8849d28b5102125b404961ae86523a42c78c41ea37386b7193038c257df61a",
+    "gitBlobSha1": "f9426436f8d62a356d1ae05ba30662910263133a"
+  },
+  {
+    "repository": "dotnet/msbuild",
+    "commit": "02bf66295b64ab368d12933041f7281aad186a2d",
+    "path": "src/Utilities/ToolTask.cs",
+    "url": "https://raw.githubusercontent.com/dotnet/msbuild/02bf66295b64ab368d12933041f7281aad186a2d/src/Utilities/ToolTask.cs",
+    "bytes": 77263,
+    "sha256": "92fe221cc30ee4da0dc9c4ae82314c892aab30d81d3817ca8a69fe874768f1fc",
+    "gitBlobSha1": "2443ff50c43117bf050df466fbbb463736f98111"
+  },
+  {
+    "repository": "dotnet/roslyn",
+    "commit": "3fb752d448006a3144a60ccf181d745e555422f9",
+    "path": "src/Compilers/Core/MSBuildTask/ManagedToolTask.cs",
+    "url": "https://raw.githubusercontent.com/dotnet/roslyn/3fb752d448006a3144a60ccf181d745e555422f9/src/Compilers/Core/MSBuildTask/ManagedToolTask.cs",
+    "bytes": 7037,
+    "sha256": "894026d7e93f814877c00f3ea7f976782e0f5b7647e8daae1d655b52eb59c25a",
+    "gitBlobSha1": "c12dfc3eb08cf6333aaf33353523c2e2c3d68f37"
+  },
+  {
+    "repository": "dotnet/roslyn",
+    "commit": "3fb752d448006a3144a60ccf181d745e555422f9",
+    "path": "src/Compilers/Core/MSBuildTask/Utilities.cs",
+    "url": "https://raw.githubusercontent.com/dotnet/roslyn/3fb752d448006a3144a60ccf181d745e555422f9/src/Compilers/Core/MSBuildTask/Utilities.cs",
+    "bytes": 7523,
+    "sha256": "37fe745d00a160ff1d1cec4efd6ee723065706ee894ae4b326aecf4b79561682",
+    "gitBlobSha1": "4dc156b01f2aa6e47a411e0d9f41090fe90973e0"
+  },
+  {
+    "repository": "dotnet/roslyn",
+    "commit": "3fb752d448006a3144a60ccf181d745e555422f9",
+    "path": "src/Compilers/Shared/RuntimeHostInfo.cs",
+    "url": "https://raw.githubusercontent.com/dotnet/roslyn/3fb752d448006a3144a60ccf181d745e555422f9/src/Compilers/Shared/RuntimeHostInfo.cs",
+    "bytes": 3579,
+    "sha256": "d5420d2af3a615564ad00ffade8840f7d0461878fcc92d7a3fcbb17f4833aa69",
+    "gitBlobSha1": "0f08c684f7ef9d502c79d0103283e468d6a4898d"
+  },
+  {
+    "repository": "dotnet/msbuild",
+    "commit": "02bf66295b64ab368d12933041f7281aad186a2d",
+    "path": "src/Build/BackEnd/Components/RequestBuilder/TaskBuilder.cs",
+    "url": "https://raw.githubusercontent.com/dotnet/msbuild/02bf66295b64ab368d12933041f7281aad186a2d/src/Build/BackEnd/Components/RequestBuilder/TaskBuilder.cs",
+    "bytes": 60906,
+    "sha256": "6d44a14ad0829b1d7b27f64983bbf1b49d86b90b7472a0b68da2defabc062779",
+    "gitBlobSha1": "6bc0dd7fc236f977350c4376e300d6be59e70a63",
+    "reviewLines": [
+      "650-652",
+      "824-832",
+      "978-980"
+    ]
+  }
+]

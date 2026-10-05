@@ -1,0 +1,2551 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Inert fixed SDK target-boundary observation schema proposal v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "slot",
+    "sequence",
+    "owner",
+    "targetBodyExecution",
+    "taskParametersObserved",
+    "status",
+    "properties",
+    "itemSets",
+    "sourceSeal",
+    "helperImageSha256"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "slot": {
+      "enum": [
+        "ResolvePackageAssets.before",
+        "ResolvePackageAssets.after",
+        "ResolveTargetingPackAssets.before",
+        "ResolveTargetingPackAssets.after",
+        "ResolveLockFileCopyLocalFiles.before",
+        "ResolveLockFileCopyLocalFiles.after",
+        "_HandlePackageFileConflicts.before",
+        "_HandlePackageFileConflicts.after",
+        "GenerateBuildDependencyFile.before",
+        "GenerateBuildDependencyFile.after"
+      ]
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9
+    },
+    "owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "projectRelativePath",
+        "framework",
+        "configuration"
+      ],
+      "properties": {
+        "projectRelativePath": {
+          "const": "Source/Dafny/Dafny.csproj"
+        },
+        "framework": {
+          "const": "net8.0"
+        },
+        "configuration": {
+          "const": "Release"
+        }
+      }
+    },
+    "targetBodyExecution": {
+      "const": "not-observed"
+    },
+    "taskParametersObserved": {
+      "const": false
+    },
+    "status": {
+      "const": "complete-boundary-observation"
+    },
+    "properties": {
+      "type": "array",
+      "minItems": 65,
+      "maxItems": 65,
+      "prefixItems": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "MSBuildProjectFullPath"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "MSBuildProjectDirectory"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "MSBuildProjectName"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "MSBuildVersion"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "MSBuildToolsPath"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "MSBuildSDKsPath"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "RoslynTargetsPath"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "MicrosoftNETBuildTasksAssembly"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "TargetFramework"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "TargetFrameworkIdentifier"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "TargetFrameworkVersion"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "_TargetFrameworkVersionWithoutV"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "TargetFrameworkDirectory"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "TargetPlatformIdentifier"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "TargetPlatformVersion"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "Configuration"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "Platform"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "DesignTimeBuild"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "SkipResolvePackageAssets"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "ProjectAssetsFile"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "ProjectAssetsCacheFile"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "ProjectDepsFilePath"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "MicrosoftNETPlatformLibrary"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "SelfContained"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "RuntimeIdentifier"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "RuntimeIdentifiers"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "RuntimeIdentifierGraphPath"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "CopyLocalLockFileAssemblies"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "CopyLocalRuntimeTargetAssets"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "UseAppHostFromAssetsFile"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "EnsureRuntimePackageDependencies"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "EnsureNETCoreAppRuntime"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "MarkPackageReferencesAsExternallyResolved"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "DisablePackageAssetsCache"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "DisableLockFileFrameworks"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "DisableTransitiveProjectReferences"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "DisableTransitiveFrameworkReferences"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "VerifyMatchingImplicitPackageVersion"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "SatelliteResourceLanguages"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "DefaultImplicitPackages"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "GenerateErrorForMissingTargetingPacks"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "_NuGetRestoreSupported"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "NetCoreTargetingPackRoot"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "PackageConflictPreferredPackages"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "GenerateDependencyFile"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "IncludeMainProjectInDepsFile"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "IncludeFileVersionsInDependencyFile"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "IncludeProjectsNotInAssetsFileInDepsFile"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "AssemblyName"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "TargetExt"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "Version"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "Language"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "CompilerApiVersion"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "EmitAssetsLogMessages"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "DotNetAppHostExecutableNameWithoutExtension"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "_DotNetAppHostExecutableNameWithoutExtension"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "PackAsToolShimRuntimeIdentifiers"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "ContinueOnError"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "UsingNETSdkDefaults"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "MSBuildAllProjects"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "UseSharedCompilation"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "CustomAfterMicrosoftCommonTargets"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "GenerateAssemblyInfo"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "OutputPath"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "IntermediateOutputPath"
+            },
+            "value": {
+              "$ref": "#/$defs/returnedValue"
+            }
+          }
+        }
+      ],
+      "items": false
+    },
+    "itemSets": {
+      "type": "array",
+      "minItems": 46,
+      "maxItems": 46,
+      "prefixItems": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "PackageReference"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "RuntimeFramework"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "ExpectedPlatformPackages"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "_PackAsToolShimRuntimeIdentifiers"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "FrameworkReference"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "ResolvedTargetingPack"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "ResolvedFrameworkReference"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "ResolvedRuntimePack"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "TransitiveFrameworkReference"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "_UsedRuntimeFramework"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "Reference"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "Analyzer"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "ResolvedCompileFileDefinitions"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "RuntimeCopyLocalItems"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "NativeCopyLocalItems"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "ResourceCopyLocalItems"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "RuntimeTargetsCopyLocalItems"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "ReferenceCopyLocalPaths"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "_ContentCopyLocalItems"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "_ResolvedCopyLocalBuildAssets"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "_NativeRestoredAppHostNETCore"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "PlatformManifestsFromTargetingPacks"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "PackageConflictPlatformManifests"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "PackageConflictOverrides"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "_RuntimeAssetsForConflictResolution"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "_ReferencesWithoutConflicts"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "_AnalyzersWithoutConflicts"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "_ReferenceCopyLocalPathsWithoutConflicts"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "_ConflictPackageFiles"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "RuntimePackAsset"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "ReferencePath"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "ReferenceDependencyPaths"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "ReferenceSatellitePaths"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "_ReferenceAssemblies"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "UserRuntimeAssembly"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "IntermediateSatelliteAssembliesWithTargetPath"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "DependencyFileCompilerOptions"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "_ValidRuntimeIdentifierPlatformsForAssets"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "_KnownRuntimeIdentiferPlatforms"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "_KnownRuntimeIdentifierPlatformsForTargetFramework"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "_ExcludedKnownRuntimeIdentiferPlatforms"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "AssetsFilePackageFolder"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "PackageDependencies"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "ProjectReference"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "RuntimeHostConfigurationOption"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "arrayBinding",
+            "rows"
+          ],
+          "properties": {
+            "name": {
+              "const": "_ApphostsForShimRuntimeIdentifiersResolvePackageAssets"
+            },
+            "arrayBinding": {
+              "enum": [
+                "null",
+                "array"
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 4096,
+              "items": {
+                "$ref": "#/$defs/itemRow"
+              }
+            }
+          }
+        }
+      ],
+      "items": false
+    },
+    "sourceSeal": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "helperImageSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "$defs": {
+    "returnedValue": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 131072
+    },
+    "itemRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ordinal",
+        "itemSpec",
+        "metadata",
+        "metadataPresence"
+      ],
+      "properties": {
+        "ordinal": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4095
+        },
+        "itemSpec": {
+          "$ref": "#/$defs/returnedValue"
+        },
+        "metadataPresence": {
+          "const": "not-observed"
+        },
+        "metadata": {
+          "type": "array",
+          "minItems": 44,
+          "maxItems": 44,
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            },
+            {
+              "$ref": "#/$defs/returnedValue"
+            }
+          ],
+          "items": false
+        }
+      }
+    }
+  },
+  "$comment": "Additional finite consumer checks: fixed metadata field tuple from selector; exact UTF16 units and escaped-byte budgets; ordinary strings<=16384 UTF16 units, MSBuildAllProjects<=131072; contiguous row/sequence ordinals; null array has zero rows; before precedes corresponding after; unique slots; surrogate validity; duplicate rows retained; target-body execution/task parameters not attested. Revision2 independent compiler return/ExitCode belongs to immutable preload/bootstrap evidence; frame inputs must be associated with that first control/marker by the later consumer. No actual task-input or compiler process-argv claim is added."
+}

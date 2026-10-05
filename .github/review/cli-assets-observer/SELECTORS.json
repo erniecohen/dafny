@@ -1,0 +1,738 @@
+{
+  "status": "finite-English-data-proposal-v2; no implementation or execution approval",
+  "schemaVersion": 2,
+  "parentHead": "5502f2fdd2c396aeaa7bc26acd5dfcc3b2176371",
+  "productHead": "572ebc88e6e3078d4dbe65f7a1f2eab3767307d2",
+  "runId": 37260061599,
+  "currentFiles": [
+    {
+      "path": ".github/review/b3-if-guard-corpus.py",
+      "bytes": 94845,
+      "sha256": "969c98d96a976bc00cd22c04de6b5315f1ed7b462d7b403e89515660e4ebe435"
+    },
+    {
+      "path": ".github/review/b3-if-guard-corpus-inputs.json",
+      "bytes": 196536,
+      "sha256": "2635ec0d5a38dee6eefac6a0cf1f7e4157d123cb146dc70a46215d7f1499424e"
+    },
+    {
+      "path": ".github/workflows/review.yml",
+      "bytes": 33095,
+      "sha256": "8375b63d86a72e53a86001bf7a79c3b28c318b55f9028bfd603869e722668bab"
+    },
+    {
+      "path": "Source/Dafny/Dafny.csproj",
+      "bytes": 1511,
+      "sha256": "2e9cbf5206127d7ebffcd2eb392972752c28544e32518136b15df77af713c29a"
+    },
+    {
+      "path": "Source/Directory.Build.props",
+      "bytes": 189,
+      "sha256": "c64878d57ebb96760ed8891499919dc08ee9dd0cbfdcacb0ac992953577d1781"
+    }
+  ],
+  "unchangedQualifier": {
+    "function": "capture_cli_dependency_inputs",
+    "bytes": 8740,
+    "sha256": "f1359f42b87aa694d999a1ef4b2de5a0705c67f90fba3b114cdce9c9dfc85e45",
+    "assertAstNodes": 23,
+    "copiedOwnershipFunctions": [
+      "direct_children",
+      "cleanup_children",
+      "reap_exited_children",
+      "reap_completed_adopted_children",
+      "child_diagnostics",
+      "run_stage"
+    ],
+    "selectedCorpusCases": [
+      {
+        "name": "bitvector-unsigned-if-guard",
+        "file": "bitvector-unsigned-if-guard.dfy",
+        "exitCode": 0,
+        "diagnostic": null
+      },
+      {
+        "name": "bitvector-unsigned-if-guard-false",
+        "file": "bitvector-unsigned-if-guard-false.dfy",
+        "exitCode": 4,
+        "diagnostic": "assertion",
+        "outcome": "failed"
+      }
+    ]
+  },
+  "owner": {
+    "project": "Source/Dafny/Dafny.csproj",
+    "targetFramework": "net8.0",
+    "configuration": "Release",
+    "sdkVersion": "8.0.425",
+    "platform": "AnyCPU",
+    "designTimeBuild": "not true",
+    "projectReferences": "excluded from helper compilation/capture; unchanged SDK builds"
+  },
+  "import": {
+    "extensionProperty": "CustomAfterMicrosoftCommonTargets",
+    "path": "{ownedRoot}/source/B3AssetsObserver.targets",
+    "requiredChangedBuildArgument": "-p:CustomAfterMicrosoftCommonTargets={ownedRoot}/source/B3AssetsObserver.targets",
+    "ownNamespacePrefix": "B3AssetsObserver",
+    "overrideExistingExtension": "forbidden; prove fixed original default absent-file case from source/environment/input closure; reject an existing user/default extension; unknown closure fails observer preparation",
+    "implementationSha256": null
+  },
+  "slots": [
+    {
+      "id": "ResolvePackageAssets.before",
+      "target": "ResolvePackageAssets",
+      "position": "before",
+      "targetSource": "Microsoft.PackageDependencyResolution.targets",
+      "targetSourceLines": "230-339",
+      "bodyExecution": "not-observed",
+      "taskParameterCapture": false
+    },
+    {
+      "id": "ResolvePackageAssets.after",
+      "target": "ResolvePackageAssets",
+      "position": "after",
+      "targetSource": "Microsoft.PackageDependencyResolution.targets",
+      "targetSourceLines": "230-339",
+      "bodyExecution": "not-observed",
+      "taskParameterCapture": false
+    },
+    {
+      "id": "ResolveTargetingPackAssets.before",
+      "target": "ResolveTargetingPackAssets",
+      "position": "before",
+      "targetSource": "Microsoft.NET.Sdk.FrameworkReferenceResolution.targets",
+      "targetSourceLines": "395-437",
+      "bodyExecution": "not-observed",
+      "taskParameterCapture": false
+    },
+    {
+      "id": "ResolveTargetingPackAssets.after",
+      "target": "ResolveTargetingPackAssets",
+      "position": "after",
+      "targetSource": "Microsoft.NET.Sdk.FrameworkReferenceResolution.targets",
+      "targetSourceLines": "395-437",
+      "bodyExecution": "not-observed",
+      "taskParameterCapture": false
+    },
+    {
+      "id": "ResolveLockFileCopyLocalFiles.before",
+      "target": "ResolveLockFileCopyLocalFiles",
+      "position": "before",
+      "targetSource": "Microsoft.PackageDependencyResolution.targets",
+      "targetSourceLines": "516-536",
+      "bodyExecution": "not-observed",
+      "taskParameterCapture": false
+    },
+    {
+      "id": "ResolveLockFileCopyLocalFiles.after",
+      "target": "ResolveLockFileCopyLocalFiles",
+      "position": "after",
+      "targetSource": "Microsoft.PackageDependencyResolution.targets",
+      "targetSourceLines": "516-536",
+      "bodyExecution": "not-observed",
+      "taskParameterCapture": false
+    },
+    {
+      "id": "_HandlePackageFileConflicts.before",
+      "target": "_HandlePackageFileConflicts",
+      "position": "before",
+      "targetSource": "Microsoft.NET.ConflictResolution.targets",
+      "targetSourceLines": "25-66",
+      "bodyExecution": "not-observed",
+      "taskParameterCapture": false
+    },
+    {
+      "id": "_HandlePackageFileConflicts.after",
+      "target": "_HandlePackageFileConflicts",
+      "position": "after",
+      "targetSource": "Microsoft.NET.ConflictResolution.targets",
+      "targetSourceLines": "25-66",
+      "bodyExecution": "not-observed",
+      "taskParameterCapture": false
+    },
+    {
+      "id": "GenerateBuildDependencyFile.before",
+      "target": "GenerateBuildDependencyFile",
+      "position": "before",
+      "targetSource": "Microsoft.NET.Sdk.targets",
+      "targetSourceLines": "248-324",
+      "bodyExecution": "not-observed",
+      "taskParameterCapture": false
+    },
+    {
+      "id": "GenerateBuildDependencyFile.after",
+      "target": "GenerateBuildDependencyFile",
+      "position": "after",
+      "targetSource": "Microsoft.NET.Sdk.targets",
+      "targetSourceLines": "248-324",
+      "bodyExecution": "not-observed",
+      "taskParameterCapture": false
+    }
+  ],
+  "evaluatedProperties": [
+    "MSBuildProjectFullPath",
+    "MSBuildProjectDirectory",
+    "MSBuildProjectName",
+    "MSBuildVersion",
+    "MSBuildToolsPath",
+    "MSBuildSDKsPath",
+    "RoslynTargetsPath",
+    "MicrosoftNETBuildTasksAssembly",
+    "TargetFramework",
+    "TargetFrameworkIdentifier",
+    "TargetFrameworkVersion",
+    "_TargetFrameworkVersionWithoutV",
+    "TargetFrameworkDirectory",
+    "TargetPlatformIdentifier",
+    "TargetPlatformVersion",
+    "Configuration",
+    "Platform",
+    "DesignTimeBuild",
+    "SkipResolvePackageAssets",
+    "ProjectAssetsFile",
+    "ProjectAssetsCacheFile",
+    "ProjectDepsFilePath",
+    "MicrosoftNETPlatformLibrary",
+    "SelfContained",
+    "RuntimeIdentifier",
+    "RuntimeIdentifiers",
+    "RuntimeIdentifierGraphPath",
+    "CopyLocalLockFileAssemblies",
+    "CopyLocalRuntimeTargetAssets",
+    "UseAppHostFromAssetsFile",
+    "EnsureRuntimePackageDependencies",
+    "EnsureNETCoreAppRuntime",
+    "MarkPackageReferencesAsExternallyResolved",
+    "DisablePackageAssetsCache",
+    "DisableLockFileFrameworks",
+    "DisableTransitiveProjectReferences",
+    "DisableTransitiveFrameworkReferences",
+    "VerifyMatchingImplicitPackageVersion",
+    "SatelliteResourceLanguages",
+    "DefaultImplicitPackages",
+    "GenerateErrorForMissingTargetingPacks",
+    "_NuGetRestoreSupported",
+    "NetCoreTargetingPackRoot",
+    "PackageConflictPreferredPackages",
+    "GenerateDependencyFile",
+    "IncludeMainProjectInDepsFile",
+    "IncludeFileVersionsInDependencyFile",
+    "IncludeProjectsNotInAssetsFileInDepsFile",
+    "AssemblyName",
+    "TargetExt",
+    "Version",
+    "Language",
+    "CompilerApiVersion",
+    "EmitAssetsLogMessages",
+    "DotNetAppHostExecutableNameWithoutExtension",
+    "_DotNetAppHostExecutableNameWithoutExtension",
+    "PackAsToolShimRuntimeIdentifiers",
+    "ContinueOnError",
+    "UsingNETSdkDefaults",
+    "MSBuildAllProjects",
+    "UseSharedCompilation",
+    "CustomAfterMicrosoftCommonTargets",
+    "GenerateAssemblyInfo",
+    "OutputPath",
+    "IntermediateOutputPath"
+  ],
+  "itemSets": [
+    "PackageReference",
+    "RuntimeFramework",
+    "ExpectedPlatformPackages",
+    "_PackAsToolShimRuntimeIdentifiers",
+    "FrameworkReference",
+    "ResolvedTargetingPack",
+    "ResolvedFrameworkReference",
+    "ResolvedRuntimePack",
+    "TransitiveFrameworkReference",
+    "_UsedRuntimeFramework",
+    "Reference",
+    "Analyzer",
+    "ResolvedCompileFileDefinitions",
+    "RuntimeCopyLocalItems",
+    "NativeCopyLocalItems",
+    "ResourceCopyLocalItems",
+    "RuntimeTargetsCopyLocalItems",
+    "ReferenceCopyLocalPaths",
+    "_ContentCopyLocalItems",
+    "_ResolvedCopyLocalBuildAssets",
+    "_NativeRestoredAppHostNETCore",
+    "PlatformManifestsFromTargetingPacks",
+    "PackageConflictPlatformManifests",
+    "PackageConflictOverrides",
+    "_RuntimeAssetsForConflictResolution",
+    "_ReferencesWithoutConflicts",
+    "_AnalyzersWithoutConflicts",
+    "_ReferenceCopyLocalPathsWithoutConflicts",
+    "_ConflictPackageFiles",
+    "RuntimePackAsset",
+    "ReferencePath",
+    "ReferenceDependencyPaths",
+    "ReferenceSatellitePaths",
+    "_ReferenceAssemblies",
+    "UserRuntimeAssembly",
+    "IntermediateSatelliteAssembliesWithTargetPath",
+    "DependencyFileCompilerOptions",
+    "_ValidRuntimeIdentifierPlatformsForAssets",
+    "_KnownRuntimeIdentiferPlatforms",
+    "_KnownRuntimeIdentifierPlatformsForTargetFramework",
+    "_ExcludedKnownRuntimeIdentiferPlatforms",
+    "AssetsFilePackageFolder",
+    "PackageDependencies",
+    "ProjectReference",
+    "RuntimeHostConfigurationOption",
+    "_ApphostsForShimRuntimeIdentifiersResolvePackageAssets"
+  ],
+  "metadataGetters": [
+    "FullPath",
+    "Identity",
+    "OriginalItemSpec",
+    "HintPath",
+    "ReferenceSourceTarget",
+    "NuGetPackageId",
+    "NuGetPackageVersion",
+    "NuGetSourceType",
+    "NuGetIsFrameworkReference",
+    "Version",
+    "FrameworkName",
+    "FrameworkReferenceName",
+    "FrameworkReferenceVersion",
+    "TargetFramework",
+    "TargetingPackFormat",
+    "Profile",
+    "Path",
+    "PackageDirectory",
+    "PathInPackage",
+    "PackageConflictPreferredPackages",
+    "OverriddenPackages",
+    "CopyLocal",
+    "CopyToPublishDirectory",
+    "CopyToOutputDirectory",
+    "DestinationSubPath",
+    "DestinationSubDirectory",
+    "TargetPath",
+    "AssetType",
+    "RuntimeIdentifier",
+    "Culture",
+    "ConflictItemType",
+    "Private",
+    "ExternallyResolved",
+    "Resolved",
+    "IsImplicitlyDefined",
+    "Name",
+    "Publish",
+    "Aliases",
+    "SourceType",
+    "SourcePath",
+    "AssemblyVersion",
+    "FileVersion",
+    "TargetFrameworkIdentifier",
+    "TargetFrameworkVersion"
+  ],
+  "metadataPresence": "not-observed; returned-null/returned-empty/returned-string remain distinct, no absent inference",
+  "compiler": {
+    "registeredTask": "Microsoft.CodeAnalysis.BuildTasks.Csc",
+    "registrationSource": "src/Tasks/Microsoft.Common.tasks:106-109",
+    "sourceVersion": "dotnet/roslyn@3fb752d448006a3144a60ccf181d745e555422f9",
+    "taskAssembly": "{sdkRoot}/Roslyn/Microsoft.Build.Tasks.CodeAnalysis.dll",
+    "parameters": {
+      "TargetType": "Library",
+      "OutputAssembly": "{ownedRoot}/build/B3AssetsObserver.dll",
+      "Sources": [
+        "{ownedRoot}/source/B3AssetsObserver.cs"
+      ],
+      "References": [
+        "{sdkRoot}/ref/netstandard.dll",
+        "{sdkRoot}/ref/Microsoft.Build.Framework.dll"
+      ],
+      "UseSharedCompilation": false,
+      "NoConfig": true,
+      "NoStandardLib": true,
+      "Deterministic": true,
+      "Optimize": false,
+      "EmitDebugInformation": false,
+      "LangVersion": "12",
+      "Nullable": "enable",
+      "CheckForOverflowUnderflow": true,
+      "AllowUnsafeBlocks": false,
+      "ProvideCommandLineArgs": true,
+      "SkipCompilerExecution": false,
+      "Utf8Output": true,
+      "WarningLevel": 4,
+      "TreatWarningsAsErrors": false
+    },
+    "explicitlyUnboundEmpty": [
+      "ToolPath",
+      "ToolExe",
+      "HostObject",
+      "AdditionalLibPaths",
+      "AddModules",
+      "Analyzers",
+      "AdditionalFiles",
+      "AnalyzerConfigFiles",
+      "EmbeddedFiles",
+      "Resources",
+      "LinkResources",
+      "ResponseFiles",
+      "ApplicationConfiguration",
+      "CodeAnalysisRuleSet",
+      "Features",
+      "DefineConstants",
+      "DocumentationFile",
+      "KeyFile",
+      "KeyContainer",
+      "Win32Resource",
+      "Win32Manifest",
+      "SourceLink",
+      "PathMap",
+      "EnvironmentVariables",
+      "Timeout"
+    ],
+    "taskOutputItems": "B3AssetsObserverCompilerArguments",
+    "continueOnError": "WarnAndContinue",
+    "noSecondSdkEvaluation": true,
+    "coreClrCompilerChild": "SDK Csc normally launches dotnet exec csc.dll; this is an owned compiler host, not another build/evaluation",
+    "extraInvocations": [
+      "one owned SDK compiler child",
+      "one fixed isolated Python pre-load preservation child"
+    ],
+    "preservationChild": {
+      "interpreter": "{resolvedCurrentPython}",
+      "arguments": [
+        "-I",
+        "-S",
+        "-B",
+        "{ownedRoot}/source/preserve-observer.py",
+        "--preserve-before-load",
+        "{ownedRoot}/control/compiler-inputs.txt",
+        "{compilerControlSha256}"
+      ],
+      "maximumSeconds": 10,
+      "network": false,
+      "subprocesses": false,
+      "sdkEvaluation": false,
+      "recursiveScan": false,
+      "sourceImplementationSha256": null,
+      "flags": "-I -S -B; Python 3.12 Linux x64; no user/site/PYTHONPATH imports or pyc writes",
+      "invocationLimit": 1,
+      "outputKind": "diagnostic zero exit, bounded failure receipt; success marker only on complete first preservation",
+      "explicitImports": [
+        "sys",
+        "posix",
+        "time",
+        "_sha2"
+      ],
+      "compilerControlFormat": {
+        "encoding": "ASCII, exact LF, fixed ordered 14 rows, terminal LF, no embedded CR/LF/NUL or non-ASCII, exact bounded raw SHA256 passed separately",
+        "rows": [
+          "B3AssetsObserverPreload/1",
+          "sourcePath",
+          "sourceSha256",
+          "helperDllPath",
+          "netstandardReferencePath",
+          "netstandardReferenceSha256",
+          "buildFrameworkReferencePath",
+          "buildFrameworkReferenceSha256",
+          "compilerArgumentsPath",
+          "declaredCompilerOptionsSha256",
+          "preservationOutputRoot",
+          "sourceSeal",
+          "compilerLastTaskResult",
+          "compilerExitCode"
+        ],
+        "resultFieldsAreIndependent": true
+      },
+      "startupAllowedModuleNames": [
+        "sys",
+        "builtins",
+        "_frozen_importlib",
+        "_imp",
+        "_thread",
+        "_warnings",
+        "_weakref",
+        "_io",
+        "marshal",
+        "posix",
+        "_frozen_importlib_external",
+        "time",
+        "zipimport",
+        "_codecs",
+        "codecs",
+        "encodings",
+        "encodings.aliases",
+        "encodings.utf_8",
+        "abc",
+        "_abc",
+        "io",
+        "_sha2"
+      ],
+      "moduleOriginRules": {
+        "builtInOrFrozen": "bound to exact interpreter image; origin classification recorded, not file-invented",
+        "namedSource": [
+          "codecs.py",
+          "abc.py",
+          "io.py",
+          "encodings/__init__.py",
+          "encodings/aliases.py",
+          "encodings/utf_8.py"
+        ],
+        "sha2Native": "either builtin explicitly listed by the captured interpreter, or the fixed Python 3.12 Linux-x64 _sha2 extension under its captured stdlib/lib-dynload; exact ABI filename and bytes must be frozen before source execution",
+        "unexpected": "fail observation preparation; no alternate version/module/crypto fallback"
+      },
+      "maximumModuleIdentities": 32
+    },
+    "helperLoadedAssemblyAnchors": [
+      "typeof(B3AssetsObserver.CaptureTask).Assembly",
+      "typeof(Microsoft.Build.Framework.ITask).Assembly",
+      "typeof(System.Object).Assembly",
+      "typeof(System.IO.FileStream).Assembly",
+      "typeof(System.Security.Cryptography.SHA256).Assembly"
+    ],
+    "helperLoadedAssemblyAnchorScope": "Exact fixed API/type assembly anchors only, not complete CLR/native dependency or physical loading attestation",
+    "resultCapture": {
+      "ownExitCodeProperty": "B3AssetsObserverCscExitCode",
+      "initialOwnExitCode": "unobserved",
+      "taskOutputParameter": "ExitCode",
+      "ownLastTaskResultProperty": "B3AssetsObserverCscLastTaskResult",
+      "captureTiming": "immediately after Csc, before any later task",
+      "lastTaskResultValues": [
+        "true",
+        "false",
+        "unobserved"
+      ],
+      "exitCodeValues": "unobserved or exact canonical signed int32 decimal <=11 ASCII units",
+      "requireForMarkerAndLoad": {
+        "exitCode": "0",
+        "lastTaskResult": "true",
+        "completeFirstPreservation": true
+      },
+      "intrinsicAloneIsSuccessProof": false,
+      "partialOrFailedBytes": "bounded accepted=false diagnostics only; no marker/load",
+      "sdkPropertyMutation": false
+    }
+  },
+  "limits": {
+    "originalStageDeadlineSeconds": 1800,
+    "unchangedWholeArtifactBytes": 268435456,
+    "observerAggregateBytes": 67108864,
+    "frames": 10,
+    "frameBytes": 8388608,
+    "allFrameBytes": 29360128,
+    "arrayRows": 4096,
+    "frameRows": 8192,
+    "allFrameRows": 65536,
+    "metadataGetsPerFrame": 450000,
+    "stringUtf16Units": 16384,
+    "importListUtf16Units": 131072,
+    "allFrameStringUtf16Units": 2097152,
+    "jsonDepth": 12,
+    "serializerBufferBytes": 65536,
+    "serializerSecondsPerFrame": 5,
+    "rawAssetsBytes": 16777216,
+    "tableFileBytes": 1048576,
+    "tableAggregateBytes": 8388608,
+    "selectedPackRows": 4,
+    "tableCandidates": 12,
+    "helperSourceBytes": 262144,
+    "helperDllBytes": 524288,
+    "bootstrapMetadataBytes": 65536,
+    "compilerArgumentRows": 256,
+    "compilerArgumentUtf16Units": 65536,
+    "helperAndBootstrapAggregateBytes": 8388608,
+    "observerFailureReceiptBytes": 32768,
+    "capturedPythonModuleFiles": 32,
+    "capturedPythonModuleBytes": 8388608,
+    "sdkCompilerIdentityFileBytes": 33554432,
+    "sdkCompilerIdentityPassBytes": 67108864,
+    "sdkCompilerIdentityBufferBytes": 65536,
+    "apiAnchorIdentityFileBytes": 33554432,
+    "apiAnchorIdentityFrameBytes": 67108864
+  },
+  "selectedCompilerFiles": [
+    "Microsoft.Common.tasks",
+    "Microsoft.Build.dll",
+    "Microsoft.Build.Framework.dll",
+    "Microsoft.Build.Tasks.Core.dll",
+    "Microsoft.Build.Utilities.Core.dll",
+    "MSBuild.dll",
+    "MSBuild.deps.json",
+    "MSBuild.runtimeconfig.json",
+    "Roslyn/Microsoft.Build.Tasks.CodeAnalysis.dll",
+    "Roslyn/Microsoft.Build.Tasks.CodeAnalysis.deps.json",
+    "Roslyn/Microsoft.CSharp.Core.targets",
+    "Roslyn/Microsoft.Managed.Core.targets",
+    "Roslyn/bincore/csc.dll",
+    "Roslyn/bincore/csc.deps.json",
+    "Roslyn/bincore/csc.runtimeconfig.json",
+    "Roslyn/bincore/Microsoft.CodeAnalysis.dll",
+    "Roslyn/bincore/Microsoft.CodeAnalysis.CSharp.dll",
+    "ref/netstandard.dll",
+    "ref/Microsoft.Build.Framework.dll"
+  ],
+  "tableCandidates": {
+    "ownerRows": "ResolvedTargetingPack",
+    "requiredRoot": "{resolvedDotnetRoot}/packs",
+    "files": [
+      "data/PlatformManifest.txt",
+      "data/PackageOverrides.txt",
+      "data/FrameworkList.xml"
+    ],
+    "ordering": "owner-row ordinal then the fixed three-file order; duplicates retained as rows, byte copies keyed by hash",
+    "claim": "source-derived candidate paths, not attested SDK opens or selected winners",
+    "unknownOrAbsent": "explicit record, never exclusion admission",
+    "soleSelectionSlot": "ResolveTargetingPackAssets.after",
+    "laterFrames": "arrays recorded normally; only rehash already selected fixed paths; no new roles or retroactive selection"
+  },
+  "plannedImplementationPinsRequiredBeforeReview": [
+    "B3AssetsObserver.targets",
+    "B3AssetsObserver.cs",
+    "preserve-observer.py",
+    "finite observer inputs JSON",
+    "coordinator delta",
+    "review.yml delta",
+    "any bootstrap control/schema",
+    "all 19 compiler SDK distribution byte identities",
+    "resolved Python executable and named imported module-byte identities"
+  ],
+  "noAdmissionRules": true,
+  "noCliOrWorkerBeforeUnchangedQualifierPasses": true,
+  "serialization": {
+    "wireEncoding": "ASCII JSON: literal printable ASCII except quote/backslash; standard short escapes for controls where fixed; otherwise exact UTF16 \\uHHHH pairs; reject unmatched surrogates",
+    "stringSizing": "bounded exact character walk computes escaped JSON bytes before observer-owned encoding/output allocation",
+    "returnedValues": "JSON null, empty string, and nonempty string distinct; metadata absence remains not observed",
+    "metadataWireForm": "fixed ordered 44-value tuple, names declared once in the fixed contract; no per-row names/dictionaries",
+    "propertiesWireForm": "fixed ordered 65 {name,value} entries; name tuple must match exact selector"
+  },
+  "identityDispositions": {
+    "sdk19": "hash-only using unchanged existing identity records; bounded exact19-role streams",
+    "alsoPreservedSdkSubset": [
+      "ref/netstandard.dll",
+      "ref/Microsoft.Build.Framework.dll"
+    ],
+    "preservedSubsetBudgetField": "helperAndBootstrapAggregateBytes",
+    "apiAnchors": "hash-only partial API/type assembly identity roles, not full CLR/native closure",
+    "pythonModules": "capturedPythonModuleFiles/capturedPythonModuleBytes apply only explicit module closure; interpreter separate existing bound",
+    "newCurrentByteAttestation": false
+  },
+  "unmetPrerequisites": {
+    "fullOriginalImportClosure": false,
+    "defaultExtensionAbsentCase": false,
+    "lastTaskResultSensitivityAudit": false,
+    "actualPythonBytePins": false,
+    "actualCurrentSdk19Pins": false,
+    "managedNoFollowReaderSourceApproved": false,
+    "actualBodyExecutionApproved": false
+  },
+  "historicalCompilerCatalog": {
+    "runId": 37260061599,
+    "artifactId": 11324089161,
+    "artifactZipBytes": 29195019,
+    "artifactZipSha256": "9ae92bf37ad14a3d4e9164d516d692895d8ff8c665e66fccb71dc261cce5c6bb",
+    "member": "toolchain-files.json",
+    "memberBytes": 3491626,
+    "memberSha256": "e5a7a227a6dd29bc2ed442accb16ec1389acfbe4e27ce640b8085dae983cb5ee",
+    "sdkDirectory": "/usr/share/dotnet/sdk/8.0.425",
+    "rows": [
+      {
+        "path": "Microsoft.Common.tasks",
+        "bytes": 19535,
+        "sha256": "2efe4ff8c8f33cd1a29615d08572870d0ca9aad6f5c7dad3bb202e336524ba58"
+      },
+      {
+        "path": "Microsoft.Build.dll",
+        "bytes": 5334016,
+        "sha256": "b84c012fcee96aa6669fe68483030508a3f9f733037ba79da139a54033600943"
+      },
+      {
+        "path": "Microsoft.Build.Framework.dll",
+        "bytes": 759296,
+        "sha256": "8dea28613db6f068060a2933ab208b593d915dbaa834b846cebcc99915f21f0e"
+      },
+      {
+        "path": "Microsoft.Build.Tasks.Core.dll",
+        "bytes": 2585600,
+        "sha256": "1b72409bc24615fa0e8b1ddf6af55c7a45911f280e5ccf3197eb0a00f31b5bad"
+      },
+      {
+        "path": "Microsoft.Build.Utilities.Core.dll",
+        "bytes": 731136,
+        "sha256": "847abd9fb316b76c761330e463b42194b7468330d733795c16c3c51fe64e7866"
+      },
+      {
+        "path": "MSBuild.dll",
+        "bytes": 827392,
+        "sha256": "98293c2c17a936b30bf31056686b5d3df8254f02471e2049b5e3367f0db92015"
+      },
+      {
+        "path": "MSBuild.deps.json",
+        "bytes": 132777,
+        "sha256": "9383b4cfb58a9ebf101a4f16a1932f5940984cec4273b79b0bfef8abd8b29c63"
+      },
+      {
+        "path": "MSBuild.runtimeconfig.json",
+        "bytes": 329,
+        "sha256": "43d32a4e6bb7d9ad2e60bdab48925681cb9be2184ed67c3fce3c1324fa8ffe6a"
+      },
+      {
+        "path": "Roslyn/Microsoft.Build.Tasks.CodeAnalysis.dll",
+        "bytes": 324096,
+        "sha256": "5edf3f19ac833cba727b0b17443342edca1bd9bfe4363310a9aa9d3d5bdc15a9"
+      },
+      {
+        "path": "Roslyn/Microsoft.Build.Tasks.CodeAnalysis.deps.json",
+        "bytes": 15100,
+        "sha256": "3022b0392cc0b56f7dbee27e3d88786d4e06ebb83e9cf51ad715d2925208440c"
+      },
+      {
+        "path": "Roslyn/Microsoft.CSharp.Core.targets",
+        "bytes": 11827,
+        "sha256": "a8e4fea9c54f782faa552fab3cbe4ed398a6a8d3db02081601a3cc19ad7a9c66"
+      },
+      {
+        "path": "Roslyn/Microsoft.Managed.Core.targets",
+        "bytes": 19076,
+        "sha256": "ef42c17e2c4037b4d715b1463bac44f6e59fad1294458d10ba2c03115c983acd"
+      },
+      {
+        "path": "Roslyn/bincore/csc.dll",
+        "bytes": 122880,
+        "sha256": "fc7ffc9a9c6a9b124644fd79011d00c3be95b736f7c857fc610005c19f5d7005"
+      },
+      {
+        "path": "Roslyn/bincore/csc.deps.json",
+        "bytes": 13626,
+        "sha256": "0be4be860b146db7ce8bfbb2085ecd78734739ea236a6dd75cc797526fe8f130"
+      },
+      {
+        "path": "Roslyn/bincore/csc.runtimeconfig.json",
+        "bytes": 389,
+        "sha256": "265de300ef0050155e0f909f522b98b1953a6ad6a2c5b1482238bdc7ced051f9"
+      },
+      {
+        "path": "Roslyn/bincore/Microsoft.CodeAnalysis.dll",
+        "bytes": 8257536,
+        "sha256": "332f42cac13bc94a24fe8580f7e2b61fb68e08e58acc7216bc25c6d3b6eb386e"
+      },
+      {
+        "path": "Roslyn/bincore/Microsoft.CodeAnalysis.CSharp.dll",
+        "bytes": 18601984,
+        "sha256": "9dc7d90b980fcbc74e559c8ec786be6f3b694d06c64ffcbfe9362bd4242ca0a9"
+      },
+      {
+        "path": "ref/netstandard.dll",
+        "bytes": 1319560,
+        "sha256": "1799854d01a89d141fecc4c4548b01e51fa57118c9b18eac66a752f3bbe98c02"
+      },
+      {
+        "path": "ref/Microsoft.Build.Framework.dll",
+        "bytes": 179984,
+        "sha256": "25368414ce6f3bed389a69124d4bf344245d4bae930b3b4481c7db6b47ef48ec"
+      }
+    ],
+    "totalBytes": 39256139,
+    "maxBytes": 18601984,
+    "apphostCatalogEntryPresent": false,
+    "currentPins": false
+  }
+}
