@@ -166,6 +166,8 @@ jobs:
           with open(os.environ['GITHUB_ENV'],'a') as output:
             output.write('SOLVER_URL='+solver['url']+'\nSOLVER_SHA='+solver['sha256']+'\nSOLVER_VERSION='+version+'\n')
           PY
+      - name: Download and check the pinned solver
+        run: |
           set +e
           curl --retry 3 --retry-all-errors -fsSLo setup/solver.zip "$SOLVER_URL"
           echo "$?" > setup/solver-download-exit.txt
