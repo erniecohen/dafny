@@ -443,6 +443,8 @@ jobs:
       - name: Obligation lowering inventory and structural comparisons
         run: dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation --logger "console;verbosity=normal"
       - name: Editor obligation option changes invalidate verification results
+        env:
+          Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
         run: dotnet test Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~ConsistentObligationChecksTest --logger "console;verbosity=normal"
       - name: Editor option changes invalidate verification results
         run: dotnet test Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~AdditionalAxiomsTest --logger "console;verbosity=normal"

@@ -1,5 +1,5 @@
 name: Obligation focused diagnostics
-# Capture the local-call induction comparison with the source inventory.
+# Capture diagnostic provenance, local-call induction, and changed suite cases.
 on:
   workflow_dispatch:
   push:
@@ -28,14 +28,16 @@ jobs:
           if [ "$build_result" -eq 0 ]; then
             OBLIGATION_INVENTORY_CAPTURE=out/diagnostic/obligation-producers.json dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation > out/diagnostic/core.log 2>&1
             echo "$?" > out/diagnostic/core.exit
-            dotnet test Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~ConsistentObligationChecksTest > out/diagnostic/editor.log 2>&1
-            echo "$?" > out/diagnostic/editor.exit
             curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
             echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
             if [ "$?" -eq 0 ]; then
               unzip -q z3.zip
               chmod +x z3-5.1.0-x64-glibc-2.39/bin/z3
-              python3 .github/review/assertion-invariance.py out/dafny/Dafny z3-5.1.0-x64-glibc-2.39/bin/z3 out/diagnostic/behavior --all-resolvers --shipped
+              Z3="$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" dotnet test Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~ConsistentObligationChecksTest > out/diagnostic/editor.log 2>&1
+              echo "$?" > out/diagnostic/editor.exit
+              python3 .github/review/obligation-lit-focus.py out/dafny/Dafny z3-5.1.0-x64-glibc-2.39/bin/z3 out/diagnostic/lit
+              echo "$?" > out/diagnostic/lit.exit
+              python3 .github/review/assertion-invariance.py out/dafny/Dafny z3-5.1.0-x64-glibc-2.39/bin/z3 out/diagnostic/behavior --all-resolvers --shipped --cases issue100-original,issue100-explicit,issue100-final-true,subset-short,subset-short-explicit,negative-self-postcondition-let
               echo "$?" > out/diagnostic/behavior.exit
             fi
           fi
