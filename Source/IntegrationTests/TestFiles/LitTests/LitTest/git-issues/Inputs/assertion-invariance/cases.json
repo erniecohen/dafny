@@ -743,5 +743,30 @@
     "name": "negative-boolean-value-membership",
     "expected": 4,
     "group": "negative"
+  },
+  {
+    "name": "nonvacuity-boolean-value-argument",
+    "expected": 4,
+    "group": "negative"
+  },
+  {
+    "name": "nonvacuity-boolean-value-higher-order",
+    "expected": 4,
+    "group": "negative"
+  },
+  {
+    "name": "nonvacuity-boolean-value-container",
+    "expected": 4,
+    "group": "negative"
+  },
+  {
+    "name": "nonvacuity-boolean-value-let",
+    "expected": 4,
+    "group": "negative"
+  },
+  {
+    "name": "nonvacuity-boolean-value-membership",
+    "expected": 4,
+    "group": "negative"
   }
 ]

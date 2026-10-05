@@ -106,6 +106,12 @@ logical connective, quantifier and branch-result edges retain proposition polari
 This preserves the argument's original heap, representation and fuel interface;
 it does not equate a fuel-zero argument with a fuel-one argument.
 
+The Boolean value fixtures start with the quantified Boolean proposition as an
+explicit input premise. They check congruence of that value through calls,
+containers, exact lets and membership, plus false alternatives and non-vacuity
+continuations. They do not claim new existential witness inference: omitting the
+premise in these examples is rejected by both the baseline and the enabled build.
+
 Fuel usage is a result of a particular translation, separate from diagnostic
 counters. Fresh roots/splits observe their own usage; their descendants share
 that observation. An earlier unrelated translator counter cannot change whether
@@ -240,6 +246,21 @@ checksum, exit/outcomes and total/maximum-batch resource counts. The unchanged
 The final quantified assertion and `assert true` are explanatory comparisons.
 Subset #2107's short/recursive variants and #4217/#2170/#2185/#5148 remain separate
 cases. Historical reports are baselined before interpreting a success as a fix.
+
+In #100, the final explicit assertion supplies a local postcondition check and
+its permitted quantified summary before the procedure's ensures check. The
+enabled method-exit adapter supplies that same local recipe without changing
+the source. The forall proof body also retains an obligation continuation when
+it is the method's final statement; its local scopes no longer depend on a later
+assertion. The original checked procedure ensures and quantified export remain.
+The recorded successful reproducer uses one ordinary batch for the lemma; a
+new assertion-isolation setting or fresh per-assertion budget is not its repair.
+
+The complete let-bound self-postcondition contradiction tracked in
+[issue 166](https://github.com/erniecohen/dafny/issues/166) is a separate,
+pre-existing default-path soundness defect. The enabled permission traversal
+rejects it; default-off compatibility does not imply that the baseline theory
+is sound.
 
 Negative controls cover false/recursive subset constraints, guarded permissions,
 casts and both sides of numeric bounds, non-null/index/domain/destructor/division
