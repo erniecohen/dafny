@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DafnyCore.Verifier;
 using Bpl = Microsoft.Boogie;
 
 namespace Microsoft.Dafny;
@@ -41,6 +42,33 @@ public partial class BoogieGenerator {
     proofDependencies?.AddProofDependencyId(summary, origin,
       new AssumptionDependency(false, "checked guarded obligation", condition));
     builder.Add(summary);
+  }
+
+  private void CheckMethodPostconditions(MethodOrConstructor method, IOrigin returnOrigin,
+    BoogieStmtListBuilder builder, ExpressionTranslator etran) {
+    // The declared contract WF procedure establishes permissions in clause order.
+    // Check each clause locally at this exit, then publish its guarded summary.
+    // The procedure's checked ensures remain as the final semantic bridge.
+    foreach (var ensures in ConjunctsOf(method.Ens)) {
+      builder.Add(TrAssumeCmd(ensures.E.Origin, etran.CanCallAssumption(ensures.E)));
+      var lowering = LowerProposition(builder.Context, ensures.E, etran);
+      var (error, success) = CustomErrorMessage(ensures.Attributes);
+      var description = new EnsuresDescription(ensures.E, error, success);
+      foreach (var piece in lowering.Pieces) {
+        if (!piece.IsChecked) { continue; }
+        var check = piece.E;
+        if (piece.Tok.IsInherited(currentModule)) {
+          check = BplImp(new Bpl.IdentifierExpr(returnOrigin, "$_reverifyPost", Bpl.Type.Bool), check);
+        }
+        builder.Add(AssertAndForget(builder.Context, new NestedOrigin(returnOrigin, piece.Tok), check, description));
+      }
+      var guard = ensures.E.Origin.IsInherited(currentModule)
+        ? new Bpl.IdentifierExpr(returnOrigin, "$_reverifyPost", Bpl.Type.Bool) : Bpl.Expr.True;
+      var summary = TrAssumeCmd(returnOrigin, BplImp(guard, lowering.Summary));
+      proofDependencies?.AddProofDependencyId(summary, returnOrigin,
+        new AssumptionDependency(false, "checked method postcondition", ensures.E));
+      builder.Add(summary);
+    }
   }
 
   private Bpl.Expr AllocationObligation(IOrigin origin, Bpl.Expr value, Type type,

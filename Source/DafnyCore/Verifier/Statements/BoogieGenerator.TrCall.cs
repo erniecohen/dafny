@@ -364,6 +364,26 @@ public partial class BoogieGenerator {
       // of the predicate.
       call.IsFree = true;
     }
+    if (options.Get(CommonOptionBag.ConsistentObligationChecks) && !call.IsFree) {
+      var callEtran = method is TwoStateLemma ? new ExpressionTranslator(etran, etran.HeapExpr) : etran;
+      if (method is TwoStateLemma && atLabel != null) {
+        callEtran = new ExpressionTranslator(this, Predef, etran.HeapExpr, etran.OldAt(atLabel).HeapExpr, etran.scope);
+      }
+      foreach (var requirement in ConjunctsOf(callee.Req)) {
+        var instantiated = Substitute(requirement.E, receiver, substMap, tySubst);
+        builder.Add(TrAssumeCmd(tok, callEtran.CanCallAssumption(instantiated)));
+        var lowering = LowerProposition(builder.Context, instantiated, callEtran, applyInduction: false);
+        var (error, success) = CustomErrorMessage(requirement.Attributes);
+        var direct = Substitute(requirement.E, receiver, directSubstMap, tySubst);
+        var description = new PreconditionSatisfied(direct, error, success);
+        foreach (var piece in lowering.Pieces) {
+          if (piece.IsChecked) {
+            builder.Add(AssertAndForget(builder.Context, new NestedOrigin(tok, piece.Tok), piece.E, description));
+          }
+        }
+        builder.Add(TrAssumeCmdWithDependencies(callEtran, tok, instantiated, "checked method precondition"));
+      }
+    }
     builder.Add(call);
 
     // Unbox results as needed

@@ -825,10 +825,15 @@ namespace Microsoft.Dafny {
       var beforeOutTrackers = DefiniteAssignmentTrackers;
       m.Outs.ForEach(p => AddExistingDefiniteAssignmentTracker(p, m.IsGhost));
       // translate the body
-      TrStmt(m.Body, builder, localVariables, etran);
+      var bodyBuilder = options.Get(CommonOptionBag.ConsistentObligationChecks)
+        ? builder.WithContext(builder.Context with { ReturnPosition = false }) : builder;
+      TrStmt(m.Body, bodyBuilder, localVariables, etran);
       m.Outs.ForEach(p => CheckDefiniteAssignmentReturn(m.Body.EndToken, p, builder));
       if (m is { FunctionFromWhichThisIsByMethodDecl: { ByMethodTok: { } } fun }) {
         AssumeCanCallForByMethodDecl(m, builder);
+      }
+      if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+        CheckMethodPostconditions(m, m.Body.EndToken, builder, etran);
       }
       var stmts = builder.Collect(m.Body.StartToken); // EndToken might make more sense, but it requires updating most of the regression tests.
       DefiniteAssignmentTrackers = beforeOutTrackers;

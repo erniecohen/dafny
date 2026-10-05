@@ -72,6 +72,10 @@ public partial class BoogieGenerator {
             AssumeCanCallForByMethodDecl(method2, builder);
           }
 
+          if (options.Get(CommonOptionBag.ConsistentObligationChecks) && codeContext is MethodOrConstructor returningMethod) {
+            CheckMethodPostconditions(returningMethod, returnStmt1.Origin, builder, etran);
+          }
+
           foreach (var _ in Enumerable.Range(0, builder.Context.ScopeDepth)) {
             builder.Add(new ChangeScope(returnStmt1.Origin, ChangeScope.Modes.Pop));
           }

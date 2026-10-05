@@ -35,6 +35,7 @@ for case in cases:
        f"--consistent-obligation-checks:{str(enabled).lower()}",
        "--boogie","/normalizeDeclarationOrder:0","--boogie",f"/randomSeed:{seed}",
        "--bprint",str(directory/"program.bpl"),
+       "--solver-log",str(directory/"solver.smt2"),
        "--log-format",f"csv;LogFileName={directory/'resources.csv'}"]
      if args.shipped: command.append(f"--additional-axioms:{str(axioms).lower()}")
      result=capture(command)
@@ -42,12 +43,12 @@ for case in cases:
      batches=[]
      if (directory/"resources.csv").exists():
       with (directory/"resources.csv").open() as f: batches=list(csv.DictReader(f))
-     resources=[int(row.get("ResourceCount","0") or "0") for row in batches]
-     outcomes=sorted(set(row.get("Outcome","") for row in batches))
+     resources=[int(row.get("TestResult.ResourceCount","0") or "0") for row in batches]
+     outcomes=sorted(set(row.get("TestResult.Outcome","") for row in batches))
      row={"name":name,"case":case,"refresh":refresh,"axioms":axioms,"enabled":enabled,"seed":seed,
       "source_sha256":hashlib.sha256(source.read_bytes()).hexdigest(),"command":command,
       "exit":result.returncode,"total_ru":sum(resources),"max_batch_ru":max(resources,default=0),
-      "outcomes":outcomes,"summary":result.stdout.splitlines()[-1:]}
+      "outcomes":outcomes,"summary":[line for line in result.stdout.splitlines() if "Dafny program verifier" in line]}
      # A rejected negative is useful only when proof checks fail, not parsing, timeout or resource exhaustion.
      expected=case.get("expected",0)
      row["accepted_expectation"]=result.returncode==expected and not any(
