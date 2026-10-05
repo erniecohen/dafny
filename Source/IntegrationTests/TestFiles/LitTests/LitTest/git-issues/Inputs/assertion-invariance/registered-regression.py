@@ -13,7 +13,7 @@ help_result=subprocess.run(["dotnet",str(assembly),"verify","--help"],text=True,
 assert "--consistent-obligation-checks" in help_result.stdout
 print("PASS CLI option help")
 
-def verify(name,refresh=False,axioms=False,enabled=True,project=False,override=None):
+def verify(name,refresh=False,axioms=False,enabled=True,project=False,override=None,isolate=False):
  source=work/"dfyconfig.toml" if project else fixtures/(name+".dfy")
  command=["dotnet",str(assembly),"verify",str(source),"--solver-path",str(solver),
   "--cores","1","--resource-limit","16000000","--verification-time-limit","30",
@@ -21,6 +21,7 @@ def verify(name,refresh=False,axioms=False,enabled=True,project=False,override=N
   f"--additional-axioms:{str(axioms).lower()}","--boogie","/normalizeDeclarationOrder:0"]
  if not project or override is not None:
   command.append(f"--consistent-obligation-checks:{str(enabled if override is None else override).lower()}")
+ if isolate: command.append("--isolate-assertions")
  result=subprocess.run(command,text=True,capture_output=True,timeout=120)
  output=result.stdout+result.stderr
  assert not any(t in output.lower() for t in ["out of resource","timed out","internal error","unhandled exception"]),output
@@ -43,8 +44,9 @@ for refresh in [False,True]:
   for name in ["negative-subset","negative-guarded-constraint","negative-subset-vacuity",
     "negative-self-postcondition","negative-self-postcondition-let","negative-allocation-vacuity",
     "negative-old-argument","negative-forall","negative-higher-precondition","negative-ordered-contract"]:
-   code,output=verify(name,refresh,axioms)
-   assert code==4 and "error" in output and "parse errors" not in output,output
+   for isolate in [False,True]:
+    code,output=verify(name,refresh,axioms,isolate=isolate)
+    assert code==4 and "error" in output and "parse errors" not in output,output
 print("PASS false controls")
 (work/"subset.dfy").write_text((fixtures/"subset-short.dfy").read_text())
 (work/"dfyconfig.toml").write_text("[options]\nconsistent-obligation-checks = true\n")
