@@ -110,8 +110,8 @@ need a new background axiom.
 
 ## Dependencies and review controls
 
-[Issue #132](https://github.com/erniecohen/dafny/issues/132) supplies the independently
-reviewed function-allocation rule now integrated in source. Its one-way reads/result
+[Issue #132](https://github.com/erniecohen/dafny/issues/132) supplies the separately owned
+function-allocation candidate now integrated in source. Its one-way reads/result
 consequences and specific captured-value introductions remain separate from this
 feature. Both characteristic modes forward through exact visible nominal bases;
 partial/total arrow subsets and explicit provided `(!new)` promises are retained.
@@ -140,12 +140,7 @@ are separate obligations from this source/verification argument.
 
 ## Current focused evidence and publication boundary
 
-The [b573 public matrix](https://github.com/erniecohen/dafny/actions/runs/37233978383)
-accepts 336/336 cases at each source/proof stage, 140/140 backend builds,
-420/420 matching runtimes and 140/140 matching C# steady profiles. C# updates
-now match base allocations; generic tuple C#/Go failure is repaired. These are
-exact-source focused results. Translator legacy CLI notices are retained, and
-codatatype allocation profiling remains unavailable in its earlier corpus.
+The [completed public performance report](extended-newtype-bases-performance.md) records the final shipped product at `95f0e4c8e1b80c95cf8aff397d7acd3ffb9c62e6`. Its 978 proof samples include 954 completed positive proofs and 24 depth-1000 wrapper process caps. All 300 ordinary builds and 900 runtime samples complete. C# allocation equality is measured in 14 families; codatatype allocation is unavailable. The report retains proof-cost differences, native build warnings and missing hidden artifact metadata. It does not establish the full canonical gate or default-off compatibility.
 
 The [820 integrated controls](https://github.com/erniecohen/dafny/actions/runs/37233880455)
 still cannot prove four generic pointwise arrow-coercion equalities in both the
@@ -182,7 +177,7 @@ other runtime sources; each original codatatype runtime still has ten matching
 combinations. Recovering the contracts through checked proof bodies preserves
 the separately measured empty-body automatic proof loss.
 
-Both current product lines now contain the reviewed allocation source and admit
+Both current product lines now contain the candidate allocation source and admit
 all three arrow families. The pending focused diagnostics and required full gates
 still determine final acceptance; these older exact-source diagnostics do not
 stand in for them.

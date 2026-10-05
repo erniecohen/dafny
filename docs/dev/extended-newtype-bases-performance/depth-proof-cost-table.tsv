@@ -1,0 +1,57 @@
+solver	id	feature_on	samples	exits	median_ru	VC_batches	complete
+4.12.1	depth-1/B	False	3	0,0,0	9674	2	True
+4.12.1	depth-1/B	True	3	0,0,0	9674	2	True
+4.12.1	depth-1/N	True	3	0,0,0	12794	3	True
+4.12.1	depth-1/W-erased	False	3	0,0,0	11445	2	True
+4.12.1	depth-1/W-erased	True	3	0,0,0	11445	2	True
+4.12.1	depth-1/W-materialized	False	3	0,0,0	11445	2	True
+4.12.1	depth-1/W-materialized	True	3	0,0,0	11445	2	True
+4.12.1	depth-10/B	False	3	0,0,0	9674	2	True
+4.12.1	depth-10/B	True	3	0,0,0	9674	2	True
+4.12.1	depth-10/N	True	3	0,0,0	36599	12	True
+4.12.1	depth-10/W-erased	False	3	0,0,0	25514	2	True
+4.12.1	depth-10/W-erased	True	3	0,0,0	25514	2	True
+4.12.1	depth-10/W-materialized	False	3	0,0,0	25514	2	True
+4.12.1	depth-10/W-materialized	True	3	0,0,0	25514	2	True
+4.12.1	depth-100/B	False	3	0,0,0	9674	2	True
+4.12.1	depth-100/B	True	3	0,0,0	9674	2	True
+4.12.1	depth-100/N	True	3	0,0,0	268469	102	True
+4.12.1	depth-100/W-erased	False	3	0,0,0	166822	2	True
+4.12.1	depth-100/W-erased	True	3	0,0,0	166822	2	True
+4.12.1	depth-100/W-materialized	False	3	0,0,0	166822	2	True
+4.12.1	depth-100/W-materialized	True	3	0,0,0	166822	2	True
+4.12.1	depth-1000/B	False	3	0,0,0	9674	2	True
+4.12.1	depth-1000/B	True	3	0,0,0	9674	2	True
+4.12.1	depth-1000/N	True	3	0,0,0	2593169	1002	True
+4.12.1	depth-1000/W-erased	False	3	124,124,124		0	False
+4.12.1	depth-1000/W-erased	True	3	124,124,124		0	False
+4.12.1	depth-1000/W-materialized	False	3	124,124,124		0	False
+4.12.1	depth-1000/W-materialized	True	3	124,124,124		0	False
+5.1.0	depth-1/B	False	3	0,0,0	9604	2	True
+5.1.0	depth-1/B	True	3	0,0,0	9604	2	True
+5.1.0	depth-1/N	True	3	0,0,0	12680	3	True
+5.1.0	depth-1/W-erased	False	3	0,0,0	11445	2	True
+5.1.0	depth-1/W-erased	True	3	0,0,0	11445	2	True
+5.1.0	depth-1/W-materialized	False	3	0,0,0	11445	2	True
+5.1.0	depth-1/W-materialized	True	3	0,0,0	11445	2	True
+5.1.0	depth-10/B	False	3	0,0,0	9604	2	True
+5.1.0	depth-10/B	True	3	0,0,0	9604	2	True
+5.1.0	depth-10/N	True	3	0,0,0	36485	12	True
+5.1.0	depth-10/W-erased	False	3	0,0,0	25514	2	True
+5.1.0	depth-10/W-erased	True	3	0,0,0	25514	2	True
+5.1.0	depth-10/W-materialized	False	3	0,0,0	25514	2	True
+5.1.0	depth-10/W-materialized	True	3	0,0,0	25514	2	True
+5.1.0	depth-100/B	False	3	0,0,0	9604	2	True
+5.1.0	depth-100/B	True	3	0,0,0	9604	2	True
+5.1.0	depth-100/N	True	3	0,0,0	268355	102	True
+5.1.0	depth-100/W-erased	False	3	0,0,0	166822	2	True
+5.1.0	depth-100/W-erased	True	3	0,0,0	166822	2	True
+5.1.0	depth-100/W-materialized	False	3	0,0,0	166822	2	True
+5.1.0	depth-100/W-materialized	True	3	0,0,0	166822	2	True
+5.1.0	depth-1000/B	False	3	0,0,0	9604	2	True
+5.1.0	depth-1000/B	True	3	0,0,0	9604	2	True
+5.1.0	depth-1000/N	True	3	0,0,0	2593055	1002	True
+5.1.0	depth-1000/W-erased	False	3	124,124,124		0	False
+5.1.0	depth-1000/W-erased	True	3	124,124,124		0	False
+5.1.0	depth-1000/W-materialized	False	3	124,124,124		0	False
+5.1.0	depth-1000/W-materialized	True	3	124,124,124		0	False
