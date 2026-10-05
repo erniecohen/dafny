@@ -45,7 +45,9 @@ for refresh in [False,True]:
     "negative-self-postcondition","negative-self-postcondition-let","negative-allocation-vacuity",
     "negative-old-argument","negative-forall","negative-higher-precondition","negative-ordered-contract",
     "negative-boolean-value-argument","negative-boolean-value-higher-order",
-    "negative-boolean-value-container","negative-boolean-value-let","negative-boolean-value-membership"]:
+    "negative-boolean-value-container","negative-boolean-value-let","negative-boolean-value-membership",
+    "nonvacuity-boolean-value-argument","nonvacuity-boolean-value-higher-order",
+    "nonvacuity-boolean-value-container","nonvacuity-boolean-value-let","nonvacuity-boolean-value-membership"]:
    for isolate in [False,True]:
     code,output=verify(name,refresh,axioms,isolate=isolate)
     assert code==4 and "error" in output and "parse errors" not in output,output
