@@ -22,3 +22,21 @@ git-issue-82-rank-positive.dfy(19,11): Warning: Could not find a trigger for thi
 git-issue-82-rank-positive.dfy(40,13): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
 
 Dafny program verifier finished with 3 verified, 0 errors
+git-issue-82-antitone-set.dfy(3,2): Error: the result of a set comprehension must be finite, but Dafny's heuristics can't figure out how to produce a bounded set of values for 'x'
+1 resolution/type errors detected in git-issue-82-antitone-set.dfy
+git-issue-82-antitone-set.dfy(3,2): Error: the result of a set comprehension must be finite, but Dafny's heuristics can't figure out how to produce a bounded set of values for 'x'
+1 resolution/type errors detected in git-issue-82-antitone-set.dfy
+git-issue-82-antitone-map.dfy(3,2): Error: the result of a map comprehension must be finite, but Dafny's heuristics can't figure out how to produce a bounded set of values for 'x'
+1 resolution/type errors detected in git-issue-82-antitone-map.dfy
+git-issue-82-antitone-map.dfy(3,2): Error: the result of a map comprehension must be finite, but Dafny's heuristics can't figure out how to produce a bounded set of values for 'x'
+1 resolution/type errors detected in git-issue-82-antitone-map.dfy
+
+Dafny program verifier finished with 1 verified, 0 errors
+
+Dafny program verifier finished with 1 verified, 0 errors
+git-issue-82-dependent-negative.dfy(15,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+git-issue-82-dependent-negative.dfy(15,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
