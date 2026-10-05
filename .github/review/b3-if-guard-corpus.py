@@ -1198,16 +1198,20 @@ def capture_cli_dependency_inputs(observe=False):
     copied = {row['path']: row for row in cli_rows}
     total = 0
     for library, declaration in sorted(target.items()):
+        if observe:
+            # Establish this identity before the unchanged lookup can fail.
+            observe_asset_context('library', library=library, target=target_name,
+                libraryVersion=library.rsplit('/', 1)[1] if '/' in library else None,
+                metadataLookupCompleted=False, declarationType=None, metadataType=None,
+                packageMetadataPath=None, packageRoot=str(package_root), targetFramework=None)
         metadata = assets['libraries'][library]
         if observe:
+            observe_asset_context('library-lookup', metadataLookupCompleted=True)
             try:
-                observe_asset_context('library', library=library, target=target_name,
-                    libraryVersion=library.rsplit('/', 1)[1] if '/' in library else None,
-                    declarationType=declaration.get('type'), metadataType=metadata.get('type'),
-                    packageMetadataPath=metadata.get('path'), packageRoot=str(package_root),
+                observe_asset_context('library-metadata', declarationType=declaration.get('type'),
+                    metadataType=metadata.get('type'), packageMetadataPath=metadata.get('path'),
                     targetFramework=declaration.get('framework'))
             except Exception as error:
-                asset_observation['pending'] = None
                 asset_preservation_fault('library-context', error)
         assert metadata['type'] == declaration['type']
         if metadata['type'] == 'project':
