@@ -1,0 +1,380 @@
+{
+  "executed": false,
+  "files": [
+    {
+      "bytes": 15823,
+      "gitBlob": "21c46e4568477517a029c218b75147523a61688a",
+      "mode": "100644",
+      "original13Seam": true,
+      "path": "Source/DafnyDriver/CliCompilation.cs",
+      "sha256": "51307c24df61dfebb161a59f817c68979d78db803b60b73ed0d8ba3857ce2e58"
+    },
+    {
+      "bytes": 37176,
+      "gitBlob": "3714cc6e2c67d023499e8a4b89b431cb35e8b8eb",
+      "mode": "100644",
+      "original13Seam": true,
+      "path": "Source/DafnyDriver/Legacy/SynchronousCliCompilation.cs",
+      "sha256": "492daa02bee6a5565221e6328477e019127b44ae021a65a21f70098f109a6adf"
+    },
+    {
+      "bytes": 910,
+      "gitBlob": "42232ea1c67300866297e1213e3942b5d83fb3ad",
+      "mode": "100644",
+      "original13Seam": true,
+      "path": "Source/DafnyDriver/Commands/BuildCommand.cs",
+      "sha256": "f721ba53816c2cc3b138e629c8deee0c3c641016d648f52b4ded95f064d7f862"
+    },
+    {
+      "bytes": 4116,
+      "gitBlob": "29c9cc384d67fc54a37ccba1dd78b7914e482c5e",
+      "mode": "100644",
+      "original13Seam": true,
+      "path": "Source/DafnyDriver/Commands/RunCommand.cs",
+      "sha256": "46319ef0c1ee7a502efcbd745b5ca707f9873ced4ab2d571b214bbd29b161654"
+    },
+    {
+      "bytes": 2219,
+      "gitBlob": "6cd26b9b4a48d3cca7a0e8f255e231478c351f43",
+      "mode": "100644",
+      "original13Seam": true,
+      "path": "Source/DafnyDriver/Commands/TestCommand.cs",
+      "sha256": "2ced132cccdd154ef7f92eeb87c4ca91367b0a877705943243ab213c6b52be1e"
+    },
+    {
+      "bytes": 12119,
+      "gitBlob": "e641fa4a2dda1593ebf2f7a3e33db9cdfd942abd",
+      "mode": "100644",
+      "original13Seam": true,
+      "path": "Source/DafnyDriver/Commands/VerifyCommand.cs",
+      "sha256": "e926a1250ba4a111bb4ed87af2e35f039b40a42066eb717bd8dfec6507e4fe9a"
+    },
+    {
+      "bytes": 13679,
+      "gitBlob": "1928cf07c57597b54e395734b92b00f548319c39",
+      "mode": "100644",
+      "original13Seam": true,
+      "path": "Source/DafnyDriver/DafnyNewCli.cs",
+      "sha256": "44f5c19f68668be1ff854735a57c2ef35ee2eb6c5459c3407c6d61cf1842fd60"
+    },
+    {
+      "bytes": 30162,
+      "gitBlob": "c7cc406b4d2b13005115fef057468fa348f1b3c7",
+      "mode": "100644",
+      "original13Seam": true,
+      "path": "Source/DafnyCore/Pipeline/Compilation.cs",
+      "sha256": "c4f43a24811e0ec83ba2453a5cb301aad5c6dc8ad0f39d1f0e9bce52dd9d97a4"
+    },
+    {
+      "bytes": 4370,
+      "gitBlob": "0cf49b5a275f2b0a58f4a2115c377f90292ad2c9",
+      "mode": "100644",
+      "original13Seam": true,
+      "path": "Source/DafnyCore/Verification/VerificationContracts.cs",
+      "sha256": "0f1e150022d2036d4091f2b04e30260ddf28666ee03fa396853320045204ca5f"
+    },
+    {
+      "bytes": 854,
+      "gitBlob": "387f39170aa8d8047f5db9d7e179b1d57b9a2648",
+      "mode": "100644",
+      "original13Seam": true,
+      "path": "Source/DafnyCore/Options/B3OptionBag.cs",
+      "sha256": "5dd9bff4fe0b67e15a0dc069fc868a245c2b3a8f6cb40c6e80c2632ea1f1b685"
+    },
+    {
+      "bytes": 9157,
+      "gitBlob": "2ba2775ab22bc157d16f6ec84cafabdd42176282",
+      "mode": "100644",
+      "original13Seam": true,
+      "path": "Source/DafnyCore/DooFile.cs",
+      "sha256": "a7aef76272bcab87478d5237b7bd78ed52db9f807801b6a0530dfd5b3c6d35b9"
+    },
+    {
+      "bytes": 5816,
+      "gitBlob": "fb8e734a57e72840fb903d2d36472302a2a2bc0f",
+      "mode": "100644",
+      "original13Seam": true,
+      "path": "Source/DafnyCore/Options/TranslationRecord.cs",
+      "sha256": "48f7b15de256ee1608a0b58f4c0666bea368023bf9da0f31b13f5b50816720ee"
+    },
+    {
+      "bytes": 10442,
+      "gitBlob": "ab335a1a1495a5607bdface7cf9999bfa696b356",
+      "mode": "100644",
+      "original13Seam": true,
+      "path": "Source/DafnyCore/Rewriters/RunAllTestsMainMethod.cs",
+      "sha256": "ec7c61ddc92a205568e0a6a37403571623bf22cbf201108a90df486f4bda79e7"
+    },
+    {
+      "bytes": 579,
+      "gitBlob": "f954bf3ab7be28570f01b23279bd8c7979e34c3e",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyCore/Verification/VerificationBackendFactory.cs",
+      "sha256": "57536224d633987329c99c8a809fa74bd3515e49f1b08177e6f1db66f5d77774"
+    },
+    {
+      "bytes": 561,
+      "gitBlob": "fdf493fc276757cde748b54ecf403964e6785c0e",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyCore/Pipeline/IProgramVerifier.cs",
+      "sha256": "adbd2003995381d7325664650249c7453ed87624d143683853e686cc137d1310"
+    },
+    {
+      "bytes": 3466,
+      "gitBlob": "441125e33b03a2947a99545f47249b7e0c73f97b",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyCore/Pipeline/TextDocumentLoader.cs",
+      "sha256": "aaca638edbe517d532e648a2b8ea9143d50505a981d160f27777282f743d8edf"
+    },
+    {
+      "bytes": 542,
+      "gitBlob": "dbe56b565b41866281cb5c71ef651b5b724a0346",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyCore/Pipeline/CompilationInput.cs",
+      "sha256": "7f5b991fd4f36e85b3aba3e306ef4455451b61b90d1c4d148e44dc9d9785f87b"
+    },
+    {
+      "bytes": 326,
+      "gitBlob": "97199236bebe7d26dd0b32d86d52c4d752da609a",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyCore/Pipeline/ResolutionResult.cs",
+      "sha256": "4eb94cb59e946fc98fac1ca72cb4e602cf6fcd8d46c4f32a5e5c275f224ca07c"
+    },
+    {
+      "bytes": 3334,
+      "gitBlob": "970e754821c0c8ae81add9e1c94e539ad59270ca",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyLanguageServer/Language/DafnyProgramVerifier.cs",
+      "sha256": "d235c892f9c6fa32f3f0fa32f8e8dc7f0c28af104bcfce7136b7f03c65c60bcf"
+    },
+    {
+      "bytes": 2701,
+      "gitBlob": "6c8e0ab3a9871a7d601d673e3bd40415ae396910",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyLanguageServer/Language/Symbols/DafnyLangSymbolResolver.cs",
+      "sha256": "97f91ad6e26539c0965435cf4bf322fd651462c481049844c43dcb77d2ca281f"
+    },
+    {
+      "bytes": 19744,
+      "gitBlob": "4de85d5120d666f87d0c83a56ce06fbbfda7f6fc",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyCore/Backends/B3/B3VerificationBackend.cs",
+      "sha256": "6dbbb18ace8eae1ace5e087b31115054cf834b4cfae446a56b6ccac7bdfec67c"
+    },
+    {
+      "bytes": 3679,
+      "gitBlob": "a664a90ad0d1b349f49642197c4c5b671deec7c9",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyCore/Backends/Library/LibraryBackend.cs",
+      "sha256": "934e0f211bace912673de170b4c535ab1acaf35163359bfd8b7457fdeadc40dc"
+    },
+    {
+      "bytes": 12506,
+      "gitBlob": "3e2a5a1547a85906bcecba6c8a25a1d5368ef748",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyCore/Backends/ExecutableBackend.cs",
+      "sha256": "c98a880c40c91bad48cd33e4e7072741a4dbd5814a8a18686094c6a6050fdc7c"
+    },
+    {
+      "bytes": 9998,
+      "gitBlob": "813c0d4079f1beec652f03f5900f0c675f8c88de",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyCore/Plugins/IExecutableBackend.cs",
+      "sha256": "78e96086a253bbe1fe5e0281f523a8f181e5c0f124c4be25f976bcbc39a33439"
+    },
+    {
+      "bytes": 5383,
+      "gitBlob": "310f0419b5745abd7616fd674cc4eeb41d80eeac",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyCore/AST/Program.cs",
+      "sha256": "af4136899b18cda3a30829a5b65d83d0547a875c04fcd3f38c0435b20805b2e7"
+    },
+    {
+      "bytes": 13184,
+      "gitBlob": "b7cae02e3f061fb43a59ab4633123950ea065378",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyCore/AST/Grammar/ProgramParser.cs",
+      "sha256": "b4416afad617591304c7671a3478256ba73920d65aaaaf341c1d9f7cadbf3d91"
+    },
+    {
+      "bytes": 4973,
+      "gitBlob": "00d47a75d913b69018c2553c923cd2ddf9801d8f",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyCore/Options/DafnyCommands.cs",
+      "sha256": "843fe0d005e731584200bfb4906959e0fad8ca8bb44c70a34ab5fa29dd625bf3"
+    },
+    {
+      "bytes": 9284,
+      "gitBlob": "a753815412b008302ef9318e54b73d4f57d90b34",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyCore/Options/BoogieOptionBag.cs",
+      "sha256": "c77018b79412ac1070788a25620db094325f6e7f31f38a3a58c8a003126720ce"
+    },
+    {
+      "bytes": 40675,
+      "gitBlob": "33763e94c93a47156b18e2e450fa7fe604df626e",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyCore/Options/CommonOptionBag.cs",
+      "sha256": "f533e456d1944aa56a0079d0f009196311e1165a2221b823846e861af389595a"
+    },
+    {
+      "bytes": 2524,
+      "gitBlob": "b2b9596a1fcc60c0adb8ebed6165de3c96271adb",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyCore/Options/OptionRegistry.cs",
+      "sha256": "d275d6f823dee0bef03c3ea6892091e72799d98ed16249696c1813a699facbac"
+    },
+    {
+      "bytes": 4338,
+      "gitBlob": "0bd6aba69092954b5296db5cbecf4254896c1ab1",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyCore/Options/OptionCompatibility.cs",
+      "sha256": "68e2413e6c30f40bfe480b8bf05447fd47926dfd8c9a91fb63108000b4f219b9"
+    },
+    {
+      "bytes": 65329,
+      "gitBlob": "d3ce475063b7a06b6edc6f324556b70249c40749",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyCore/DafnyOptions.cs",
+      "sha256": "914db40faabcf85ecb588e3497a76a4c8a29b73fe9eb9ea1d9229cad695c6875"
+    },
+    {
+      "bytes": 12252,
+      "gitBlob": "0afc5bd095c5b1d6a5181b7642be2cac2f84aec1",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyCore/DafnyFile.cs",
+      "sha256": "9accab4faab6ee82fffe4e006274c2d87be7a3eb867eef457af114b317ca08fd"
+    },
+    {
+      "bytes": 2195,
+      "gitBlob": "bb7765c213254f668b414df98c006edad0516912",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyCore/Rewriters/RewriterCollection.cs",
+      "sha256": "e3f18f197e0579a07829355db22e3c6304d9b2d3b99f09def114d071074ed376"
+    },
+    {
+      "bytes": 5786,
+      "gitBlob": "43734d5e6f42e973fb7a8a639456d26557eb5609",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyCore/Rewriters/IRewriter.cs",
+      "sha256": "91ab7518762e6be9a3f80e5a57bac0e9b32a23d3546ac4674647326d9d0c3cc1"
+    },
+    {
+      "bytes": 15003,
+      "gitBlob": "da9d7f774690160097345df9b9d5898439bd8ba1",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyCore/Resolver/ProgramResolver.cs",
+      "sha256": "c22aca98e31f1773e784ad1fdc1724f7fd58d54cc626b9026ffc20a8bd586503"
+    },
+    {
+      "bytes": 1655,
+      "gitBlob": "88e293a22f21168ddcac4115a65926d1ded6d69d",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyDriver/Commands/TranslateCommand.cs",
+      "sha256": "5797e3e06f1d28777cd5d05b0654e1fc69a94d534dcd37c9483881448a411974"
+    },
+    {
+      "bytes": 1050,
+      "gitBlob": "213993d20e052fd682ada2a7af47709e2a40d516",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyDriver/Commands/ResolveCommand.cs",
+      "sha256": "db7189adb29724930a388039fda97abd31b5cb3885ac1fc0aecf2fb3746973ff"
+    },
+    {
+      "bytes": 1008,
+      "gitBlob": "54e9b3a897661e8f31b76fd97ff205ea98eb09b9",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyDriver/Commands/AuditCommand.cs",
+      "sha256": "ecfd73de8f5fa3a7958585d05195cd6021c29c06827977725843a0687da79fd0"
+    },
+    {
+      "bytes": 4513,
+      "gitBlob": "9208f7ce71997ec77d8ac100f47794337ce89c44",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyDriver/Legacy/DafnyBackwardsCompatibleCli.cs",
+      "sha256": "90193d7e68300d0057349c702d179d9244c0d0c095a439912169dabe8cb689f5"
+    },
+    {
+      "bytes": 506,
+      "gitBlob": "6cc610da02384edcdafc48e663160e0714531e60",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/DafnyDriver/CliCanVerifyState.cs",
+      "sha256": "55e84d8812060020610745acbbe7093b18a48e9d593dabd9998f554eb2bd1ba4"
+    },
+    {
+      "bytes": 1147,
+      "gitBlob": "c2e54b69c40d9dcd4deef9cf3e3b0b86b74b4382",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-126.dfy",
+      "sha256": "98bb11aefb556a2a5dbedfd14414199c3433e2ccbb932049fda24d10edc04143"
+    },
+    {
+      "bytes": 1224,
+      "gitBlob": "fc52638fb684dc286ef83e20216b2ed22d556315",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-126.dfy.expect",
+      "sha256": "22e753a1f33a2fa3877a932048057d0eccd9ea857b8e0acb10302b9edef39a4b"
+    },
+    {
+      "bytes": 12815,
+      "gitBlob": "415610dca74721938067bbb41c1f0e800e6f45e4",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "docs/dev/b3/README.md",
+      "sha256": "33ea8c597bc0fe26f7e24df595cce06c0ee1d7894c3d13680d078a0bc5e7940e"
+    },
+    {
+      "bytes": 3745,
+      "gitBlob": "6e9096de340fc5662e09a4d286bfabb5cd9114c7",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "docs/dev/b3/work-items.json",
+      "sha256": "021f58e4ff6d3e199f3db70ce521b1689b117f55f3286d77c429ab64534164bb"
+    },
+    {
+      "bytes": 3984,
+      "gitBlob": "a57d7576c5e412af62c58ec665dbeb2f0f51e002",
+      "mode": "100644",
+      "original13Seam": false,
+      "path": "docs/dev/b3/support-matrix.json",
+      "sha256": "8768e50304f5459a1264fbc5b66ff2996c6bd80fea77df35e8934c4b6371a869"
+    }
+  ],
+  "implementationParent": "51d527e0aa4fd428f4d42c881496f9d32dcb6001",
+  "implemented": false,
+  "initialSeamCount": 13,
+  "lastProduct": "450e374a40eb6125b540d55833a9cfe71484ab02",
+  "pathCount": 46,
+  "schema": "b3-modern-command-source-inputs-v1",
+  "sourceOnly": true
+}

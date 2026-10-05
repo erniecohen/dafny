@@ -1,0 +1,684 @@
+{
+  "actualCliCaseCount": null,
+  "compiledTestDenominator": null,
+  "currentTestInventoriesChanged": false,
+  "existingIssue126Rows": 8,
+  "logicalScenarioCount": 67,
+  "proposedRowDisposition": {
+    "buildRunTestRowsToReplaceWithMeaningfulControls": 6,
+    "translateRejectionRowsToRetain": 2
+  },
+  "rows": [
+    {
+      "case": "verified-complete",
+      "executed": false,
+      "expectedRelation": "all prepared units IsVerified, all scope dispositions complete; one compiler continuation",
+      "group": "neutral-gate",
+      "id": "N01",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "verified-incomplete",
+      "executed": false,
+      "expectedRelation": "reject even if an outcome says Verified; no compiler/runtime",
+      "group": "neutral-gate",
+      "id": "N02",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "failed",
+      "executed": false,
+      "expectedRelation": "nonzero verification error; no compiler/runtime",
+      "group": "neutral-gate",
+      "id": "N03",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "unknown",
+      "executed": false,
+      "expectedRelation": "nonzero verification error; no compiler/runtime",
+      "group": "neutral-gate",
+      "id": "N04",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "timed-out",
+      "executed": false,
+      "expectedRelation": "nonzero verification error; no compiler/runtime",
+      "group": "neutral-gate",
+      "id": "N05",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "out-of-resource",
+      "executed": false,
+      "expectedRelation": "nonzero verification error; no compiler/runtime",
+      "group": "neutral-gate",
+      "id": "N06",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "out-of-memory",
+      "executed": false,
+      "expectedRelation": "nonzero verification error; no compiler/runtime",
+      "group": "neutral-gate",
+      "id": "N07",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "cancelled",
+      "executed": false,
+      "expectedRelation": "cancellation, including after terminal and before compiler boundary, rejects; no compiler/runtime",
+      "group": "neutral-gate",
+      "id": "N08",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "unsupported",
+      "executed": false,
+      "expectedRelation": "nonzero source diagnostic; no compiler/runtime",
+      "group": "neutral-gate",
+      "id": "N09",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "tool-error",
+      "executed": false,
+      "expectedRelation": "nonzero; no compiler/runtime",
+      "group": "neutral-gate",
+      "id": "N10",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "bounded",
+      "executed": false,
+      "expectedRelation": "not IsVerified; no compiler/runtime",
+      "group": "neutral-gate",
+      "id": "N11",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "preparation-exception-before-parts-identified",
+      "executed": false,
+      "expectedRelation": "owned awaited preparation Failed even before part inventory/lazy yields; cannot become empty-success; no compiler/runtime",
+      "group": "neutral-gate",
+      "id": "N12",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "missing-terminal-or-unit",
+      "executed": false,
+      "expectedRelation": "expected prepared ID inventory versus terminal+stream completion incomplete; no compiler/runtime",
+      "group": "neutral-gate",
+      "id": "N13",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "duplicate-or-out-of-scope-unit",
+      "executed": false,
+      "expectedRelation": "receipt rejected; no compiler/runtime",
+      "group": "neutral-gate",
+      "id": "N14",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "legitimate-empty",
+      "executed": false,
+      "expectedRelation": "explicit successfully prepared zero-unit or no-obligation disposition; no fabricated proved result",
+      "group": "neutral-gate",
+      "id": "N15",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "unprepared-empty",
+      "executed": false,
+      "expectedRelation": "empty collection alone cannot authorize verified compilation",
+      "group": "neutral-gate",
+      "id": "N16",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "warnings-fatal",
+      "executed": false,
+      "expectedRelation": "existing warning policy prevents target generation",
+      "group": "neutral-gate",
+      "id": "N17",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "same-resolved-program",
+      "executed": false,
+      "expectedRelation": "compiler receives verified resolved Program; source change after parse cannot cause a second parse/verified-status reuse",
+      "group": "neutral-gate",
+      "id": "N18",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "null-resolution-can-verifies",
+      "executed": false,
+      "expectedRelation": "null eligibility despite empty yielded results is rejected; no empty-scope permission",
+      "group": "neutral-gate",
+      "id": "N19",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "terminal-without-normal-stream-completion",
+      "executed": false,
+      "expectedRelation": "RequireCompletion normal completion is necessary; later error/truncation/cancellation prevents compiler/runtime",
+      "group": "neutral-gate",
+      "id": "N20",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "build: complete-positive",
+      "executed": false,
+      "expectedRelation": "verify through selected B3 before compile; only complete positive may compile/run",
+      "group": "modern-command",
+      "id": "C11",
+      "implemented": false,
+      "kind": "proposed actual CLI control",
+      "passed": false
+    },
+    {
+      "case": "build: actual-failure",
+      "executed": false,
+      "expectedRelation": "verify through selected B3 before compile; only complete positive may compile/run",
+      "group": "modern-command",
+      "id": "C12",
+      "implemented": false,
+      "kind": "proposed actual CLI control",
+      "passed": false
+    },
+    {
+      "case": "build: actual-unsupported",
+      "executed": false,
+      "expectedRelation": "verify through selected B3 before compile; only complete positive may compile/run",
+      "group": "modern-command",
+      "id": "C13",
+      "implemented": false,
+      "kind": "proposed actual CLI control",
+      "passed": false
+    },
+    {
+      "case": "build: no-verify-missing-worker-and-solver",
+      "executed": false,
+      "expectedRelation": "resolve/compile without translation, preparation, worker/solver lookup or Boogie engine; report not attempted",
+      "group": "modern-command",
+      "id": "C14",
+      "implemented": false,
+      "kind": "proposed actual CLI control",
+      "passed": false
+    },
+    {
+      "case": "build: project-b3-cli-boogie",
+      "executed": false,
+      "expectedRelation": "CLI wins; exactly selected backend factory/verification path",
+      "group": "effective-options",
+      "id": "O11",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "build: project-boogie-cli-b3",
+      "executed": false,
+      "expectedRelation": "CLI wins; exactly selected backend factory/verification path",
+      "group": "effective-options",
+      "id": "O12",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "build: dependency-complete",
+      "executed": false,
+      "expectedRelation": "dependency uses copied effective backend; failed dependency cannot publish accepted doo or continue parent",
+      "group": "project-dependency",
+      "id": "D11",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "build: dependency-failed",
+      "executed": false,
+      "expectedRelation": "dependency uses copied effective backend; failed dependency cannot publish accepted doo or continue parent",
+      "group": "project-dependency",
+      "id": "D12",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "run: complete-positive",
+      "executed": false,
+      "expectedRelation": "verify through selected B3 before compile; only complete positive may compile/run",
+      "group": "modern-command",
+      "id": "C21",
+      "implemented": false,
+      "kind": "proposed actual CLI control",
+      "passed": false
+    },
+    {
+      "case": "run: actual-failure",
+      "executed": false,
+      "expectedRelation": "verify through selected B3 before compile; only complete positive may compile/run",
+      "group": "modern-command",
+      "id": "C22",
+      "implemented": false,
+      "kind": "proposed actual CLI control",
+      "passed": false
+    },
+    {
+      "case": "run: actual-unsupported",
+      "executed": false,
+      "expectedRelation": "verify through selected B3 before compile; only complete positive may compile/run",
+      "group": "modern-command",
+      "id": "C23",
+      "implemented": false,
+      "kind": "proposed actual CLI control",
+      "passed": false
+    },
+    {
+      "case": "run: no-verify-missing-worker-and-solver",
+      "executed": false,
+      "expectedRelation": "resolve/compile without translation, preparation, worker/solver lookup or Boogie engine; report not attempted",
+      "group": "modern-command",
+      "id": "C24",
+      "implemented": false,
+      "kind": "proposed actual CLI control",
+      "passed": false
+    },
+    {
+      "case": "run: project-b3-cli-boogie",
+      "executed": false,
+      "expectedRelation": "CLI wins; exactly selected backend factory/verification path",
+      "group": "effective-options",
+      "id": "O21",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "run: project-boogie-cli-b3",
+      "executed": false,
+      "expectedRelation": "CLI wins; exactly selected backend factory/verification path",
+      "group": "effective-options",
+      "id": "O22",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "run: dependency-complete",
+      "executed": false,
+      "expectedRelation": "dependency uses copied effective backend; failed dependency cannot publish accepted doo or continue parent",
+      "group": "project-dependency",
+      "id": "D21",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "run: dependency-failed",
+      "executed": false,
+      "expectedRelation": "dependency uses copied effective backend; failed dependency cannot publish accepted doo or continue parent",
+      "group": "project-dependency",
+      "id": "D22",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "test: complete-positive",
+      "executed": false,
+      "expectedRelation": "verify through selected B3 before compile; only complete positive may compile/run",
+      "group": "modern-command",
+      "id": "C31",
+      "implemented": false,
+      "kind": "proposed actual CLI control",
+      "passed": false
+    },
+    {
+      "case": "test: actual-failure",
+      "executed": false,
+      "expectedRelation": "verify through selected B3 before compile; only complete positive may compile/run",
+      "group": "modern-command",
+      "id": "C32",
+      "implemented": false,
+      "kind": "proposed actual CLI control",
+      "passed": false
+    },
+    {
+      "case": "test: actual-unsupported",
+      "executed": false,
+      "expectedRelation": "verify through selected B3 before compile; only complete positive may compile/run",
+      "group": "modern-command",
+      "id": "C33",
+      "implemented": false,
+      "kind": "proposed actual CLI control",
+      "passed": false
+    },
+    {
+      "case": "test: no-verify-missing-worker-and-solver",
+      "executed": false,
+      "expectedRelation": "resolve/compile without translation, preparation, worker/solver lookup or Boogie engine; report not attempted",
+      "group": "modern-command",
+      "id": "C34",
+      "implemented": false,
+      "kind": "proposed actual CLI control",
+      "passed": false
+    },
+    {
+      "case": "test: project-b3-cli-boogie",
+      "executed": false,
+      "expectedRelation": "CLI wins; exactly selected backend factory/verification path",
+      "group": "effective-options",
+      "id": "O31",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "test: project-boogie-cli-b3",
+      "executed": false,
+      "expectedRelation": "CLI wins; exactly selected backend factory/verification path",
+      "group": "effective-options",
+      "id": "O32",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "test: dependency-complete",
+      "executed": false,
+      "expectedRelation": "dependency uses copied effective backend; failed dependency cannot publish accepted doo or continue parent",
+      "group": "project-dependency",
+      "id": "D31",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "test: dependency-failed",
+      "executed": false,
+      "expectedRelation": "dependency uses copied effective backend; failed dependency cannot publish accepted doo or continue parent",
+      "group": "project-dependency",
+      "id": "D32",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "run: verification enabled",
+      "executed": false,
+      "expectedRelation": "B3 choice/config and effective skip forwarded explicitly; existing doo dependency trust retained",
+      "group": "library-child",
+      "id": "L01",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "run: no-verify",
+      "executed": false,
+      "expectedRelation": "B3 choice/config and effective skip forwarded explicitly; existing doo dependency trust retained",
+      "group": "library-child",
+      "id": "L02",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "test: verification enabled",
+      "executed": false,
+      "expectedRelation": "B3 choice/config and effective skip forwarded explicitly; existing doo dependency trust retained",
+      "group": "library-child",
+      "id": "L03",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "test: no-verify",
+      "executed": false,
+      "expectedRelation": "B3 choice/config and effective skip forwarded explicitly; existing doo dependency trust retained",
+      "group": "library-child",
+      "id": "L04",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "completed-doo",
+      "executed": false,
+      "expectedRelation": "optional informational current-scope receipt; compatible format/trust rules; no fabricated solver version",
+      "group": "provenance",
+      "id": "P01",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "skipped-doo",
+      "executed": false,
+      "expectedRelation": "NoVerify true remains serialized; informational status disabled; verifying consumer incompatibility unchanged",
+      "group": "provenance",
+      "id": "P02",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "failed-doo",
+      "executed": false,
+      "expectedRelation": "no accepted output creation after failed/unsupported verification",
+      "group": "provenance",
+      "id": "P03",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "existing-boogie-doo",
+      "executed": false,
+      "expectedRelation": "load under current trust/option checks; no claim of B3 reverification",
+      "group": "provenance",
+      "id": "P04",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "foreign-target-file",
+      "executed": false,
+      "expectedRelation": "single prepared input list and single parse; preserve existing target file classification/content and identity",
+      "group": "input-ownership",
+      "id": "I01",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "stdin",
+      "executed": false,
+      "expectedRelation": "single prepared input list and single parse; preserve existing target file classification/content and identity",
+      "group": "input-ownership",
+      "id": "I02",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "target-compile-failure",
+      "executed": false,
+      "expectedRelation": "compile exit nonzero; no runtime success",
+      "group": "target-continuation",
+      "id": "T01",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "runtime-failure",
+      "executed": false,
+      "expectedRelation": "runtime exit nonzero; no verification-success substitution",
+      "group": "target-continuation",
+      "id": "T02",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "run-arguments",
+      "executed": false,
+      "expectedRelation": "main choice and argument bytes/order preserved",
+      "group": "target-continuation",
+      "id": "T03",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "legacy-b3",
+      "executed": false,
+      "expectedRelation": "explicit nonzero capability rejection; no Boogie fallback",
+      "group": "retained-capability-gates",
+      "id": "R01",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "translate-b3",
+      "executed": false,
+      "expectedRelation": "explicit nonzero capability rejection; no Boogie fallback",
+      "group": "retained-capability-gates",
+      "id": "R02",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "b3-hidden-no-verify",
+      "executed": false,
+      "expectedRelation": "nonzero capability error; cannot conceal skipped verification",
+      "group": "skip-options",
+      "id": "S01",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "b3-no-verify-vc-dump",
+      "executed": false,
+      "expectedRelation": "explicit capability error in this first checkpoint; no VC execution or fabricated success",
+      "group": "skip-options",
+      "id": "S02",
+      "implemented": false,
+      "kind": "proposed orchestration control",
+      "passed": false
+    },
+    {
+      "case": "build: verification enabled",
+      "executed": false,
+      "expectedRelation": "existing synchronous route/options/output/provenance behavior retained",
+      "group": "boogie-default",
+      "id": "B01",
+      "implemented": false,
+      "kind": "proposed compatibility snapshot",
+      "passed": false
+    },
+    {
+      "case": "build: no-verify",
+      "executed": false,
+      "expectedRelation": "existing synchronous route/options/output/provenance behavior retained",
+      "group": "boogie-default",
+      "id": "B02",
+      "implemented": false,
+      "kind": "proposed compatibility snapshot",
+      "passed": false
+    },
+    {
+      "case": "run: verification enabled",
+      "executed": false,
+      "expectedRelation": "existing synchronous route/options/output/provenance behavior retained",
+      "group": "boogie-default",
+      "id": "B03",
+      "implemented": false,
+      "kind": "proposed compatibility snapshot",
+      "passed": false
+    },
+    {
+      "case": "run: no-verify",
+      "executed": false,
+      "expectedRelation": "existing synchronous route/options/output/provenance behavior retained",
+      "group": "boogie-default",
+      "id": "B04",
+      "implemented": false,
+      "kind": "proposed compatibility snapshot",
+      "passed": false
+    },
+    {
+      "case": "test: verification enabled",
+      "executed": false,
+      "expectedRelation": "existing synchronous route/options/output/provenance behavior retained",
+      "group": "boogie-default",
+      "id": "B05",
+      "implemented": false,
+      "kind": "proposed compatibility snapshot",
+      "passed": false
+    },
+    {
+      "case": "test: no-verify",
+      "executed": false,
+      "expectedRelation": "existing synchronous route/options/output/provenance behavior retained",
+      "group": "boogie-default",
+      "id": "B06",
+      "implemented": false,
+      "kind": "proposed compatibility snapshot",
+      "passed": false
+    }
+  ],
+  "schema": "b3-modern-command-proposed-controls-v1"
+}
