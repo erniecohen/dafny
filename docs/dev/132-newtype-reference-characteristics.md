@@ -42,6 +42,13 @@ The complete universal fixtures call the checked `AllPureValues<T(!new)>` theore
 
 ## Regression and acceptance scope
 
-The package registers 16 existing-language bodies: 13 newtype/opaque characteristic controls and three fresh, pure, and preallocated sequence-capture controls. It does not admit the extended base categories from issue #113. Each original body and body-start line is retained; only the registration basename and feature-specific RUN comments change. The owner's compiler has no extended-base option, so the redundant second toggle RUN is retained as a non-executable comment. Shipped `--additional-axioms=false` remains explicit.
+The package registers 16 existing-language bodies: 13 newtype/opaque characteristic controls and three fresh, pure, and preallocated sequence-capture controls. It does not admit the extended base categories from issue #113. Each original body and body-start line is retained; only the registration basename and feature-specific RUN comments change. The owner's compiler has no extended-base option. The first verification/diff pair keeps explicit `--additional-axioms=false` and its existing `.expect`. The second pair runs the identical body with explicit `--additional-axioms=true` and compares a separate `.axioms-on.expect`. The body, contract, error line numbers, and first-run oracle remain unchanged.
 
 Expected status classes are carried as source proposals. No golden outputs are fabricated or mechanically reused. Record-only output capture, reasoned golden review, and the strict focused/full scratch gates must complete on the isolated owner-based branch before publication. Trusted queued verification under the separately required toolchain remains a distinct acceptance claim.
+
+
+## Explicit additional-axiom compatibility scope
+
+The newtype reference-characteristic and capture rules are independent of the additional-axiom option. Every one of the 16 existing-language regression bodies is nevertheless exercised in both option modes by the registered upstream harness. In particular, the capture and inhabited false controls must retain their intended errors with the additional-axiom instances enabled as well as disabled.
+
+The suite verdict extractor executes the first literal RUN. These files deliberately keep that RUN's explicit false selector, which takes precedence over the suite job's global true selector. Consequently an “axioms on” suite row alone is not evidence that these 16 bodies exercised the option. The second literal RUN is explicit true; its separate expected output is captured from actual execution, reviewed, and then checked with expectation updating disabled. New on-mode outputs must not replace or silently regenerate the existing off-mode oracle. Capture consistency is separate from a strict final full gate, and no expected verdict table is changed by the header restoration.
