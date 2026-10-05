@@ -24,7 +24,7 @@ import zipfile
 
 ROOT = Path.cwd().resolve()
 INPUTS_PATH = Path('.github/review/b3-integrated-structural-inputs.json')
-INPUTS_SHA256 = "52fc55aa157673ba1acd2b761938ae6fe9e0ced0e0216154aa8764454ab007e0"
+INPUTS_SHA256 = "a4accbe4a3dd1de90bf73cd1edc2f3d0e789279b328fb1db43f691ac5a287f3c"
 INPUTS_BYTES = 28318
 FOCUSED_CONTROL_COUNT = 583
 MAXIMUM_FILE_BYTES = 512 * 1024 * 1024
@@ -853,23 +853,29 @@ def validate_source_initial():
                            ['mode', 'gitBlob', 'bytes', 'sha256', 'checkoutBytes', 'checkoutSha256'])
             pins[row['path']] = row
     assert len(pins) == 81
-    materialized = {row['path'] for row in inputs['checkoutMaterializations']}
+    for group in ['checkoutMaterializations', 'untouchedCheckoutFiles']:
+        assert inputs[group] == command_data[group]
+        assert table_seal(inputs[group]) == command_data[group + 'SealSha256']
+    materialized = {row['path']: row for row in inputs['checkoutMaterializations']}
+    assert len(materialized) == len(inputs['checkoutMaterializations']) == 43
     before = []
     for name, row in sorted(pins.items()):
         assert source_tree[name] == parent_tree[name] == {'mode': row['mode'], 'gitBlob': row['gitBlob']}
         committed = git_bytes('show', inputs['implementationHead'] + ':' + name)
         assert len(committed) == row['bytes'] and digest_bytes(committed) == row['sha256']
         observed = file_record(Path(name))
-        permitted = [{'bytes': row['checkoutBytes'], 'sha256': row['checkoutSha256']}]
-        if name in materialized:
-            permitted.append({'bytes': row['bytes'], 'sha256': row['sha256']})
+        materialization = materialized.get(name)
+        if materialization is None:
+            permitted = [{'bytes': row['checkoutBytes'], 'sha256': row['checkoutSha256']}]
+        else:
+            assert materialization['mode'] == row['mode'] and materialization['gitBlob'] == row['gitBlob']
+            assert materialization['gitBytes'] == row['bytes'] and materialization['gitSha256'] == row['sha256']
+            permitted = [{'bytes': materialization['gitBytes'], 'sha256': materialization['gitSha256']},
+                         {'bytes': materialization['checkoutBytes'], 'sha256': materialization['checkoutSha256']}]
         assert observed in permitted, 'Initial source representation differs'
         before.append({'path': name, 'observed': observed})
     for key in ['englishPlan', 'trxBufferAddendum']:
         captured_pinned_bytes(Path(inputs[key]['path']), inputs[key])
-    for group in ['checkoutMaterializations', 'untouchedCheckoutFiles']:
-        assert inputs[group] == command_data[group]
-        assert table_seal(inputs[group]) == command_data[group + 'SealSha256']
     source_receipt['beforeCheckoutPreparation'] = before
     source_receipt['checkoutBytePreparation'] = prepare_checkout_bytes(source_tree)
     source_rows = worktree_records(source_tree)

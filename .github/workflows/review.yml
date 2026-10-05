@@ -622,8 +622,8 @@ jobs:
           import hashlib, json, os, stat, sys, traceback, types
           from pathlib import Path
           path = Path('.github/review/b3-integrated-structural-focus.py')
-          expected_bytes = 78218
-          expected_sha256 = '61806171e73a1e76d0e0a5e453ea8f7db568a8c3b9981b1c4f49098bcf1d11f4'
+          expected_bytes = 78732
+          expected_sha256 = '5013927aba08ecdc71de88e96ebfe16e4f4c786a60057a158587aadf4466b64a'
           try:
               assert all(not ancestor.is_symlink() for ancestor in path.parents)
               descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)

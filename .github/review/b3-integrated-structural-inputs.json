@@ -534,9 +534,9 @@
     "run_stage"
   ],
   "englishPlan": {
-    "bytes": 17831,
+    "bytes": 19897,
     "path": "docs/dev/b3/integrated-structural-focus-plan.md",
-    "sha256": "00a72b12e2f7fb8db105597601a2ac3d6ea1432bae12bd4c756837ccb80bb0f8"
+    "sha256": "d83a4758734fd2635b197c0c95e00bc62418ffbf250a81dd34e8de75f3f2d76c"
   },
   "implementationHead": "51d527e0aa4fd428f4d42c881496f9d32dcb6001",
   "implementationTree": "b4c23d98ce3bc30cbbcca5ccefee04eb9e1b051a",
