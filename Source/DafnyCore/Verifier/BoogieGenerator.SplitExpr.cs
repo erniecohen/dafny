@@ -411,7 +411,7 @@ namespace Microsoft.Dafny {
                 adjustFuelForExists = false;
               } // based on the above comment, we use the etran with correct fuel amount already. No need to adjust anymore.
               var etranBoost = etran.LayerOffset(1);
-                            var r = etran.TrExpr(expr);
+              var r = etran.TrExpr(expr);
               var needsTokenAdjustment = TrSplitNeedsTokenAdjustment(expr);
               if (needsTokenAdjustment) {
                 r.tok = new ForceCheckOrigin(expr.Origin);

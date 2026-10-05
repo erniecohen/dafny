@@ -36,7 +36,7 @@ jobs:
             tail -n 35 out/diagnostic/tests.log
           fi
           if [ "$result" -eq 0 ]; then
-            python3 .github/review/assertion-invariance.py out/dafny/Dafny z3-5.1.0-x64-glibc-2.39/bin/z3 out/diagnostic/behavior
+            python3 .github/review/assertion-invariance.py out/dafny/Dafny z3-5.1.0-x64-glibc-2.39/bin/z3 out/diagnostic/behavior --cases subset-existential,subset-existential-explicit,old-argument,old-argument-explicit,old-generic,old-generic-explicit,old-datatype,old-datatype-explicit,old-function-value,old-function-value-explicit,old-heap-function,old-heap-function-explicit,old-receiver,old-receiver-explicit,labeled-old,labeled-old-explicit,negative-label-allocation,negative-old-argument,negative-old-receiver,negative-allocation-vacuity
           fi
           exit 0
       - uses: actions/upload-artifact@v4

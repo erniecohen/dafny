@@ -365,10 +365,8 @@ public partial class BoogieGenerator {
       call.IsFree = true;
     }
     if (options.Get(CommonOptionBag.ConsistentObligationChecks) && !call.IsFree) {
-      var callEtran = method is TwoStateLemma ? new ExpressionTranslator(etran, etran.HeapExpr) : etran;
-      if (method is TwoStateLemma && atLabel != null) {
-        callEtran = new ExpressionTranslator(this, Predef, etran.HeapExpr, etran.OldAt(atLabel).HeapExpr, etran.scope);
-      }
+      var callEtran = method is TwoStateLemma
+        ? etran.WithVerificationOldHeap(etran.OldAt(atLabel).HeapExpr) : etran;
       foreach (var requirement in ConjunctsOf(callee.Req)) {
         var instantiated = Substitute(requirement.E, receiver, substMap, tySubst);
         builder.Add(TrAssumeCmd(tok, callEtran.CanCallAssumption(instantiated)));

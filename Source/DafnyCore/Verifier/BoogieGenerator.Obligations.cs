@@ -98,6 +98,16 @@ public partial class BoogieGenerator {
         applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, readsFrame,
         modifiesFrame, stripLits, context);
 
+    internal ExpressionTranslator WithVerificationOldHeap(Bpl.Expr oldHeap) {
+      var clone = WithVerificationContext(verificationContext);
+      var old = new ExpressionTranslator(BoogieGenerator, Predef, oldHeap, This,
+        applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, scope,
+        readsFrame, modifiesFrame, stripLits, verificationContext) { fuelUsage = fuelUsage };
+      old.oldEtran = old;
+      clone.oldEtran = old;
+      return clone;
+    }
+
     internal ExpressionTranslator WithVerificationPolarity(bool positive) => verificationContext == null
       ? this : WithVerificationContext(verificationContext with { Positive = positive });
 
