@@ -52,14 +52,16 @@
         "codex/b3-124-unsigned-integration",
         "codex/b3-124-if-guard-certificates",
         "codex/b3-124-real-roundtrip",
-        "codex/b3-124-opaque-ground-projection"
+        "codex/b3-124-opaque-ground-projection",
+        "codex/b3-124-opaque-ground-compile-fix"
       ],
       "diagnosticBranches": [
         "codex/b3-124-if-guard-focus-identity",
         "codex/b3-124-real-trace-inspection",
         "codex/b3-124-if-guard-corpus",
         "codex/b3-124-real-roundtrip-focus",
-        "codex/b3-124-if-guard-corpus-assets"
+        "codex/b3-124-if-guard-corpus-assets",
+        "codex/b3-124-opaque-ground-focus"
       ]
     },
     "P8": {
@@ -78,7 +80,8 @@
       "diagnosticBranches": [
         "codex/b3-126-shared-native-routing",
         "codex/b3-126-retention-inventory",
-        "codex/b3-126-retention-elf-catalog"
+        "codex/b3-126-retention-elf-catalog",
+        "codex/b3-126-retention-nofollow"
       ]
     },
     "P10": {
