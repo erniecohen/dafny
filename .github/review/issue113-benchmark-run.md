@@ -1,0 +1,7 @@
+# Current issue 113 performance diagnostic
+
+This scratch workflow measures product `4e50e86cde6ab2ef6cab0762ffc4df59d646dc15`, Source tree `9c2bb48a778ee2abd6ef10f8a0d72f7843a16af5`, and compiler version `4.11.0+fcb2042d.review.c9c7622d`. It excludes the separate issue 165 proposal. The existing product-diff version policy, portable product bytes, complete published compiler bundle, and all 149 benchmark source/helper files are checked independently.
+
+The frozen 36-job matrix preserves the source contracts, direct-base/newtype/materialized-wrapper/optimized-wrapper arms, solver options, seed, resource ceilings, process safety caps and original runtime prerequisites. It requests 978 observations in each of resolve, translate and verify; 300 ordinary backend builds, 900 runtime samples, 60 separate C# allocation-profile builds and 300 profile samples. The historical second-solver profiles remain separate diagnostic comparisons. Setup/version/metadata operations are outside those workload denominators.
+
+Each phase records its actual exits, resource counts, diagnostics and component identity. Capped depth cases, missing or unsupported backend/profile results, warnings and runtime prerequisite failures remain findings. The workflow records failures and raw step outcomes while completing diagnostic orchestration; Actions success is not whole-feature or performance acceptance. Original benchmark bodies, fixture inputs, expectations and measurement helpers are unchanged.

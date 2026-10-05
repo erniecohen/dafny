@@ -1,0 +1,35 @@
+codatatype Stream = Cons(head: nat, tail: Stream)
+function From(n: nat): Stream { Cons(n, From(n + 1)) }
+lemma ObserveFrom(n: nat)
+  ensures From(n).head == n
+  ensures From(n).tail == From(n + 1)
+{}
+type Value = Stream
+function Encode(b: Stream): Value { b }
+function Decode(v: Value): Stream { v }
+lemma RoundTrip(b: Stream) ensures Decode(Encode(b)) == b {}
+lemma ConcreteWitness() { var v := Encode(From(0)); assert Decode(v).head == 0; }
+method Work(n: nat) returns (checksum: int)
+  ensures 2 * checksum == n * (n - 1)
+{
+  var value := Encode(From(0));
+  var i := 0;
+  checksum := 0;
+  while i < n
+    invariant 0 <= i <= n
+    invariant Decode(value) == From(i)
+    invariant 2 * checksum == i * (i - 1)
+  {
+    ObserveFrom(i);
+    var view := Decode(value);
+    checksum := checksum + view.head;
+    value := Encode(view.tail);
+    i := i + 1;
+  }
+}
+method Main() {
+  var warm := Work(@WARMUP@);
+  print "warmup:", warm, "\n";
+  var result := Work(@ITERATIONS@);
+  print "result:", result, "\n";
+}
