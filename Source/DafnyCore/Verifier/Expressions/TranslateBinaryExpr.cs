@@ -27,14 +27,14 @@ public partial class BoogieGenerator {
       Expr e0 = (binaryExpr.ResolvedOp == BinaryExpr.ResolvedOpcode.Imp
         ? operandEtran.NegateVerificationPolarity() : operandEtran).TrExpr(binaryExpr.E0);
       if (binaryExpr.ResolvedOp == BinaryExpr.ResolvedOpcode.InSet) {
-        return TrInSet(GetToken(binaryExpr), e0, binaryExpr.E1, binaryExpr.E0.Type, binaryExpr.E1.Type.NormalizeToAncestorType().AsSetType.Finite, false, out var pr);  // let TrInSet translate e.E1
+        return operandEtran.TrInSet(GetToken(binaryExpr), e0, binaryExpr.E1, binaryExpr.E0.Type, binaryExpr.E1.Type.NormalizeToAncestorType().AsSetType.Finite, false, out var pr);  // let TrInSet translate e.E1
       } else if (binaryExpr.ResolvedOp == BinaryExpr.ResolvedOpcode.NotInSet) {
-        Expr arg = TrInSet(GetToken(binaryExpr), e0, binaryExpr.E1, binaryExpr.E0.Type, binaryExpr.E1.Type.NormalizeToAncestorType().AsSetType.Finite, false, out var pr);  // let TrInSet translate e.E1
+        Expr arg = operandEtran.TrInSet(GetToken(binaryExpr), e0, binaryExpr.E1, binaryExpr.E0.Type, binaryExpr.E1.Type.NormalizeToAncestorType().AsSetType.Finite, false, out var pr);  // let TrInSet translate e.E1
         return Expr.Unary(GetToken(binaryExpr), UnaryOperator.Opcode.Not, arg);
       } else if (binaryExpr.ResolvedOp == BinaryExpr.ResolvedOpcode.InMultiSet) {
-        return TrInMultiSet(GetToken(binaryExpr), e0, binaryExpr.E1, binaryExpr.E0.Type, false); // let TrInMultiSet translate e.E1
+        return operandEtran.TrInMultiSet(GetToken(binaryExpr), e0, binaryExpr.E1, binaryExpr.E0.Type, false); // let TrInMultiSet translate e.E1
       } else if (binaryExpr.ResolvedOp == BinaryExpr.ResolvedOpcode.NotInMultiSet) {
-        Expr arg = TrInMultiSet(GetToken(binaryExpr), e0, binaryExpr.E1, binaryExpr.E0.Type, false);  // let TrInMultiSet translate e.E1
+        Expr arg = operandEtran.TrInMultiSet(GetToken(binaryExpr), e0, binaryExpr.E1, binaryExpr.E0.Type, false);  // let TrInMultiSet translate e.E1
         return Expr.Unary(GetToken(binaryExpr), UnaryOperator.Opcode.Not, arg);
       }
       Expr e1 = operandEtran.TrExpr(binaryExpr.E1);

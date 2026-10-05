@@ -733,5 +733,15 @@
     "name": "negative-boolean-value-let",
     "expected": 4,
     "group": "negative"
+  },
+  {
+    "name": "boolean-value-membership",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "negative-boolean-value-membership",
+    "expected": 4,
+    "group": "negative"
   }
 ]
