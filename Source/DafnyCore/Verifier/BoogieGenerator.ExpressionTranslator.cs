@@ -2576,6 +2576,11 @@ namespace Microsoft.Dafny {
           new CanCallOptions(SkipIsA, EnclosingFunction, SelfCallAllowanceAlsoForOverride, true);
       }
 
+      public CanCallOptions WithoutArrowAllocationFacts() {
+        return ArrowAllocationFacts ?
+          new CanCallOptions(SkipIsA, EnclosingFunction, SelfCallAllowanceAlsoForOverride) : this;
+      }
+
       public CanCallOptions(bool skipIsA, Function enclosingFunction, bool selfCallAllowanceAlsoForOverride = false,
         bool arrowAllocationFacts = false) {
         Contract.Assert(!selfCallAllowanceAlsoForOverride ||

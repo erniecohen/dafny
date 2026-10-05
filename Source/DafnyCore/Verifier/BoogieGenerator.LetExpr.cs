@@ -46,8 +46,11 @@ namespace Microsoft.Dafny {
             canCallRHS = BplAnd(canCallRHS, CanCallAssumption(rhs, cco));
           }
 
+          // Keep the self-call allowance (#166).  Under --consistent-obligation-checks the
+          // body takes the caller's options as they are; otherwise it takes them without the
+          // arrow allocation facts, which exact-let bodies omitted before.
           var bodyCanCall = CanCallAssumption(expr.Body,
-            options.Get(CommonOptionBag.ConsistentObligationChecks) ? cco : null);
+            options.Get(CommonOptionBag.ConsistentObligationChecks) ? cco : cco?.WithoutArrowAllocationFacts());
           // We'd like to compute the free variables if "bodyCanCall". It would be nice to use the Boogie
           // routine Bpl.Expr.ComputeFreeVariables for this purpose. However, calling it requires the Boogie
           // expression to be resolved. Instead, we do the cheesy thing of computing the set of names of
