@@ -67,9 +67,7 @@ jobs:
       - name: Version
         id: version
         run: sh .github/review/version.sh | tee -a "$GITHUB_OUTPUT"
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+      - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -79,7 +77,7 @@ jobs:
       - name: Build
         run: |
           dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny \
-            -p:SourceRevisionId=${{ steps.version.outputs.revision }}
+            -p:GeneratePackageOnBuild=false -p:SourceRevisionId=${{ steps.version.outputs.revision }}
       - name: Check the version it reports
         run: |
           v=$(dotnet out/dafny/Dafny.dll --version | head -1)
@@ -131,9 +129,7 @@ jobs:
         axioms: ['off', 'on']
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+      - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: dafny
@@ -234,9 +230,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+      - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: dafny
@@ -295,9 +289,7 @@ jobs:
         axioms: ['off', 'on']
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+      - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: dafny
@@ -397,9 +389,7 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+      - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -460,9 +450,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+      - uses: ./.github/actions/setup-dotnet
       - name: Boogie packages
         run: sh Scripts/fetch-boogie-packages.sh
       - name: Build resolver and language-server tests
@@ -473,7 +461,7 @@ jobs:
         run: |
           dotnet test Source/DafnyCore.Test -c Release --no-build \
             --logger "console;verbosity=normal" \
-            --filter "FullyQualifiedName~DafnyCore.Test.RedirectingTypeDependencyTrackerTests|FullyQualifiedName~DafnyCore.Test.NumericAncestryTests|FullyQualifiedName~DafnyCore.Test.ScopeCheckpointTest|FullyQualifiedName~MapComprehensionSubstitutionTests" \
+            --filter "FullyQualifiedName~DafnyCore.Test.RedirectingTypeDependencyTrackerTests|FullyQualifiedName~DafnyCore.Test.NumericAncestryTests|FullyQualifiedName~DafnyCore.Test.NumericAncestryAllocationTests|FullyQualifiedName~DafnyCore.Test.ScopeCheckpointTest|FullyQualifiedName~MapComprehensionSubstitutionTests" \
             --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none
       - name: Test newtype-cycle edits in both resolver modes
         run: |
@@ -502,9 +490,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+      - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: dafny
@@ -547,9 +533,7 @@ jobs:
         run: |
           echo "tag ${{ github.ref_name }}, version ${{ needs.build.outputs.version }}"
           test "${{ github.ref_name }}" = "v${{ needs.build.outputs.version }}"
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+      - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -561,7 +545,7 @@ jobs:
           RUNTIME_IDENTIFIER: ${{ matrix.rid }}
         run: |
           dotnet publish Source/Dafny/Dafny.csproj -c Release -r ${{ matrix.rid }} --self-contained \
-            -o out/dafny -p:SourceRevisionId=${{ needs.build.outputs.revision }}
+            -o out/dafny -p:GeneratePackageOnBuild=false -p:SourceRevisionId=${{ needs.build.outputs.revision }}
           rm -f out/dafny/*.pdb
           mv out/dafny/Dafny out/dafny/dafny
           for f in LICENSE.txt NOTICES.txt REVIEW.md; do if [ -f "$f" ]; then cp "$f" out/dafny/; fi; done
