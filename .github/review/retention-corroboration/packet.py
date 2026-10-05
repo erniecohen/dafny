@@ -19,7 +19,7 @@ SCANNER = Path('.github/review/retention-inventory/inventory.py')
 OLD_SHA = 'b2e0e676f8c279e25358330ac3a91e740a12ddce319fd9aaedc5f1bd508dbc90'
 SCANNER_SHA = '01b1522c9405f95f82c6da1f56ff7185d5b83c2b80c7732b8a52accd83664d1b'
 SELECTOR_SHA = '3f68c8c766dc6742b3144a83909c2f6a97c36b8382e49b97ccbd184fa6c5383a'
-WIRE_SCHEMA_SHA = 'e23c0524657b33f97d7a0411fa2fafbdab68beb506cfc8dcf493034a7bcff122'
+WIRE_SCHEMA_SHA = 'a4c69b49db14b219e22186f9472a46210b1f7bd80b513d0b781b7457f31bb303'
 START = time.monotonic()
 WORK = globals().get('_ROUTE_WORK_DEADLINE', START + 600)
 if type(WORK) not in {int, float} or WORK > START + 600:

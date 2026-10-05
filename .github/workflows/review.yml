@@ -979,7 +979,7 @@ jobs:
                       length += len(block)
                       chunks.append(block)
                   captured = b''.join(chunks)
-                  if identity(before) != identity(os.fstat(descriptor)) or identity(before) != identity(os.stat(path.name, dir_fd=parent, follow_symlinks=False)) or len(captured) != 19137 or hashlib.sha256(captured).hexdigest() != '5e5d0cb24cb73fedd1a61ffab79a0315172c5e365b6a630cb63d47fd992a8b31':
+                  if identity(before) != identity(os.fstat(descriptor)) or identity(before) != identity(os.stat(path.name, dir_fd=parent, follow_symlinks=False)) or len(captured) != 19137 or hashlib.sha256(captured).hexdigest() != 'b3963361dde6a0d7e7851a02c2309d91bdb9834991bce7b4f652ae816bf57cf3':
                       raise ValueError('Fixed corroboration routing byte pin rejected.')
               finally:
                   if descriptor is not None:

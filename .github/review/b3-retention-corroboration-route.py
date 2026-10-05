@@ -10,10 +10,10 @@ from pathlib import Path
 
 SOURCE = Path('.github/review/retention-corroboration')
 OUTPUT = Path('out/b3-retention-corroboration-routing')
-SOURCE_SHA = '9b2fc99dd3c0aeb771eafde597b4d9f6f7503d5e93298ee1ff19f70d95104c1a'
-PACKET_SHA = '3871b0b5620d700868ae893efb839113acc396fb3d07a5891a2a4c9e598498e2'
+SOURCE_SHA = 'd1b0ee23e2c516cf35e836929c1b3034470110127b0d5df4631a847db98a4b49'
+PACKET_SHA = '86791a5cb1f03d00998ec240de3fbc7cd5776596d3a1090f05da45a9943aa6dd'
 PACKET_BYTES = 93233
-WIRE_SCHEMA_SHA = 'e23c0524657b33f97d7a0411fa2fafbdab68beb506cfc8dcf493034a7bcff122'
+WIRE_SCHEMA_SHA = 'a4c69b49db14b219e22186f9472a46210b1f7bd80b513d0b781b7457f31bb303'
 PHASE_DEADLINE = globals().get('_ROUTE_WORK_DEADLINE', time.monotonic() + 600)
 if type(PHASE_DEADLINE) not in {int, float} or PHASE_DEADLINE > time.monotonic() + 600:
     raise ValueError('Routing cannot widen the fixed work deadline.')
