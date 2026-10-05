@@ -61,7 +61,8 @@
         "codex/b3-124-if-guard-corpus",
         "codex/b3-124-real-roundtrip-focus",
         "codex/b3-124-if-guard-corpus-assets",
-        "codex/b3-124-opaque-ground-focus"
+        "codex/b3-124-opaque-ground-focus",
+        "codex/b3-124-opaque-ground-focus-compile-fix"
       ]
     },
     "P8": {
