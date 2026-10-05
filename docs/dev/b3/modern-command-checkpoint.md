@@ -43,3 +43,11 @@ The orchestration backend deliberately disables real package/solver preparation 
 The issue126 integration regression retains eight CLI rows: three enabled modern B3 unsupported-configuration failures, three ordinary skip build/run/test rows with missing worker and solver paths, and the two unchanged translate capability failures. The test source is separate from the main source so its synthesized runner cannot conflict with Main. These are unexecuted direct CLI controls; none is a successful genuine B3 worker/solver verification case. Genuine enabled positive/negative modern command cases require separately admitted current CLI and exact worker/library/solver closure. Existing corpus expectations and full native/default verdict/resource gates remain unchanged and pending for this new source.
 
 No normalizer, protocol, worker, vendor, semantic primitive or source/model proof changes are included. Current SDK/raw-assets evidence and execution prerequisites remain independent; this checkpoint does not satisfy them. Existing library receipts cannot stand in for current command acceptance.
+
+## Diagnostic wording successor
+
+The initial source freeze is `0cda7aac76472136cc4022e5201043b327cdd692`, with product `9e5e5cb46daa537ff74d45a30d54c88599dd80a1`. A separately reviewed narrow successor corrects the B3-only legacy/translate rejection so its text agrees with the modern command interface described above. The intended message is:
+
+> Error: The experimental B3 verification backend is supported by 'dafny verify', modern build/run/test, and editor verification; translate and legacy compilation are unsupported.
+
+Only that production literal and its two expected text lines change. The rejection conditions and exit codes, all eight integration command rows, all 95 source-defined xUnit identities across 33 methods, default dispatch, library formats/trust and semantic source remain unchanged. The existing help and manual already state this interface. Source inventories and the review-base ledger will bind the successor product after the wording change. No compiler, tests, worker, solver, target runtime, proof, publication or compatibility measurement is claimed by this English checkpoint.
