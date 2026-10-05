@@ -1,4 +1,5 @@
 name: Obligation focused diagnostics
+# Capture the local-call induction comparison with the source inventory.
 on:
   workflow_dispatch:
   push:
