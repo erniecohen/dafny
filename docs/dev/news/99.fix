@@ -1,0 +1,1 @@
+Fix a verifier crash when substituting bound variables in a forall statement within a function expression with the refreshed type system.
