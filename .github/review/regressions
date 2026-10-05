@@ -41,3 +41,6 @@ traits/cardinality-independent-facades.dfy
 
 # Documentation of an explicitly reference-only trait hierarchy.
 dafnydoc/doc1/TestDafnyDoc.dfy
+
+# Existing run --build alias with nonempty Boogie options; preserves output placement.
+git-issues/github-issue-104-build-boogie.dfy
