@@ -147,3 +147,6 @@ git-issues/git-issue-132-newtype-revealed-control-positive.dfy
 git-issues/git-issue-132-newtype-sequence-allocation-negative.dfy
 git-issues/git-issue-132-newtype-sequence-allocation-preallocated.dfy
 git-issues/git-issue-132-newtype-sequence-allocation-pure.dfy
+
+# Generic constant-field lambda actual type substitution (#132 development port).
+dafny0/BoundedPolymorphismCompilation.dfy
