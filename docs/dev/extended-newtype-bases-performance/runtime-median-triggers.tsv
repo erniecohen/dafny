@@ -1,0 +1,7 @@
+family	target	reference	median_delta_percent	N_samples_ms	reference_samples_ms	smallest_cross_sample_delta_percent	all_N_above_reference	all_cross_above_10_percent
+arrow-adapter	java	W-erased	11.009	29.181,38.775,40.234	34.930,29.802,41.968	-30.468	False	False
+arrow-coercion	java	B	27.713	28.090,19.326,28.955	30.220,21.994,17.144	-36.050	False	False
+arrow-coercion	java	W-erased	26.471	28.090,19.326,28.955	30.538,19.225,22.210	-36.716	False	False
+function-creation	java	B	78.333	24.266,26.659,25.428	14.259,13.482,22.141	9.595	True	False
+refinement-quantified	java	W-erased	54.188	19.129,21.009,12.263	11.974,21.304,12.407	-42.437	False	False
+refinement-quantified	py	B	15.138	11.303,12.913,12.420	10.950,10.650,10.787	3.221	True	False
