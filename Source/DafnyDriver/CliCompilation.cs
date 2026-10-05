@@ -24,16 +24,21 @@ namespace DafnyDriver.Commands;
 public record CanVerifyResult(ICanVerify CanVerify, IReadOnlyList<VerificationWorkItemResult> Results);
 
 
-public class CliCompilation {
+public class CliCompilation : IDisposable {
   public Compilation Compilation { get; }
   private readonly ConcurrentDictionary<MessageSource, int> errorsPerSource = new();
   private int errorCount;
   private int warningCount;
+  private readonly IVerificationBackend? ownedBackend;
+  private IDisposable? ownedDiagnosticsSubscription;
+  private IDisposable? ownedLoggerFactory;
   public bool DidVerification { get; private set; }
 
   private CliCompilation(
     CreateCompilation createCompilation,
-    DafnyOptions options) {
+    DafnyOptions options,
+    PreparedCliInputs? preparedInputs = null,
+    IVerificationBackend? ownedBackend = null) {
     Options = options;
 
     if (options.DafnyProject == null) {
@@ -47,8 +52,11 @@ public class CliCompilation {
 
     options.RunningBoogieFromCommandLine = true;
 
-    var input = new CompilationInput(options, 0, options.DafnyProject);
-    var backend = VerificationBackendFactory.Create(options, () =>
+    this.ownedBackend = ownedBackend;
+    var input = new CompilationInput(options, 0, options.DafnyProject) {
+      PreparedRootFiles = preparedInputs?.RootFiles
+    };
+    var backend = ownedBackend ?? VerificationBackendFactory.Create(options, () =>
       new BoogieVerificationBackend(new ExecutionEngine(options, new EmptyVerificationResultCache(), DafnyMain.LargeThreadScheduler)));
     Compilation = createCompilation(backend, input);
   }
@@ -101,6 +109,52 @@ public class CliCompilation {
         new DafnyProgramVerifier(factory.CreateLogger<DafnyProgramVerifier>()), backend, input);
   }
 
+  internal static CliCompilation CreatePreparedB3(DafnyOptions options, PreparedCliInputs inputs,
+    Func<IVerificationBackend>? createBackend = null) {
+    if (options.GetOrOptionDefault(B3OptionBag.VerificationBackend) != B3OptionBag.Backend.B3) {
+      throw new InvalidOperationException("A prepared B3 continuation requires the B3 backend");
+    }
+    var backend = createBackend?.Invoke() ?? VerificationBackendFactory.Create(options,
+      () => throw new InvalidOperationException("A modern B3 continuation cannot create a Boogie backend"));
+    if (backend.Name != "b3") {
+      backend.Dispose();
+      throw new InvalidOperationException("The selected continuation backend is not B3");
+    }
+    var fileSystem = OnDiskFileSystem.Instance;
+    ILoggerFactory factory = new LoggerFactory();
+    try {
+      var telemetryPublisher = new CliTelemetryPublisher(factory.CreateLogger<TelemetryPublisherBase>());
+      var result = new CliCompilation(CreateCompilation, options, inputs, backend) {
+        ownedLoggerFactory = factory
+      };
+      return result;
+
+      Compilation CreateCompilation(IVerificationBackend selected, CompilationInput input) =>
+        new(factory.CreateLogger<Compilation>(), fileSystem,
+          new TextDocumentLoader(factory.CreateLogger<ITextDocumentLoader>(),
+            new DafnyLangParser(options, fileSystem, telemetryPublisher,
+              factory.CreateLogger<DafnyLangParser>(), factory.CreateLogger<CachingParser>()),
+            new DafnyLangSymbolResolver(factory.CreateLogger<DafnyLangSymbolResolver>(),
+              factory.CreateLogger<CachingResolver>(), telemetryPublisher)),
+          new DafnyProgramVerifier(factory.CreateLogger<DafnyProgramVerifier>()), selected, input);
+    } catch {
+      backend.Dispose();
+      factory.Dispose();
+      throw;
+    }
+  }
+
+  /// <summary>Only the prepared modern continuation owns its backend and subscriptions.</summary>
+  public void Dispose() {
+    if (ownedBackend == null) {
+      return;
+    }
+    Compilation.Dispose();
+    ownedDiagnosticsSubscription?.Dispose();
+    ownedBackend.Dispose();
+    ownedLoggerFactory?.Dispose();
+  }
+
   public void Start() {
     if (Compilation.Started) {
       throw new InvalidOperationException("Compilation was already started");
@@ -113,7 +167,7 @@ public class CliCompilation {
     };
 
     var internalExceptionsFound = 0;
-    Compilation.Updates.Subscribe(ev => {
+    var diagnosticsSubscription = Compilation.Updates.Subscribe(ev => {
       if (ev is NewDiagnostic newDiagnostic) {
         if (newDiagnostic.Diagnostic.Level == ErrorLevel.Error) {
           errorsPerSource.AddOrUpdate(newDiagnostic.Diagnostic.Source,
@@ -146,6 +200,9 @@ public class CliCompilation {
       }
 
     });
+    if (ownedBackend != null) {
+      ownedDiagnosticsSubscription = diagnosticsSubscription;
+    }
     if (Options.GetOrOptionDefault(B3OptionBag.VerificationBackend) == B3OptionBag.Backend.B3 &&
         Options.Get(VerifyCommand.FilterPosition) != null) {
       Compilation.Reporter.Error(MessageSource.Project, Token.Cli,

@@ -110,7 +110,8 @@ public class Compilation : IDisposable {
 
     verificationTickets.Enqueue(Unit.Default);
 
-    RootFiles = DetermineRootFiles();
+    RootFiles = input.PreparedRootFiles == null
+      ? DetermineRootFiles() : ConsumePreparedRootFiles(input.PreparedRootFiles);
     ParsedProgram = ParseAsync();
     Resolution = ResolveAsync();
 
@@ -141,6 +142,16 @@ public class Compilation : IDisposable {
     Project.Errors.CopyDiagnostics(errorReporter);
 
     started.TrySetResult();
+  }
+
+
+  private async Task<IReadOnlyList<DafnyFile>> ConsumePreparedRootFiles(IReadOnlyList<DafnyFile> roots) {
+    await started.Task;
+    cancellationSource.Token.ThrowIfCancellationRequested();
+    // Own the list before publication. DafnyFile preserves its admitted per-file options and trust policy.
+    var owned = Array.AsReadOnly(roots.ToArray());
+    updates.OnNext(new DeterminedRootFiles(Project, owned));
+    return owned;
   }
 
   private async Task<IReadOnlyList<DafnyFile>> DetermineRootFiles() {

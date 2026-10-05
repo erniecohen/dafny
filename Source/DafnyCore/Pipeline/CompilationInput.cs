@@ -9,6 +9,13 @@ namespace Microsoft.Dafny {
   /// </summary>
   public record CompilationInput(DafnyOptions Options, int Version, DafnyProject Project) {
 
+    /// <summary>
+    /// A constructor-owned CLI input. When present, file admission has already happened once;
+    /// Compilation must not reread project roots, libraries or standard input.
+    /// </summary>
+    public IReadOnlyList<DafnyFile>? PreparedRootFiles { get; init; }
+
+
     public override string ToString() {
       return $"URI: {Uri}, Version: {Version}";
     }

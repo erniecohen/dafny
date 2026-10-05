@@ -236,7 +236,7 @@ namespace Microsoft.Dafny {
       return (ExitValue.SUCCESS, dafnyFiles, otherFiles);
     }
 
-    private static IExecutableBackend GetBackend(DafnyOptions options) {
+    internal static IExecutableBackend GetBackend(DafnyOptions options) {
       if (options.Backend?.TargetId == options.CompilerName) {
         return options.Backend;
       }
