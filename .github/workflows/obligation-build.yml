@@ -1,0 +1,35 @@
+name: Obligation probe binaries
+on:
+  workflow_dispatch:
+  push:
+    branches: [scratch/codex/issue100-review]
+    paths: [.github/workflows/obligation-build.yml]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - name: Capture self-contained build
+        run: |
+          mkdir -p out
+          set +e
+          git rev-parse HEAD > out/source.txt
+          sh Scripts/fetch-boogie-packages.sh > out/packages.log 2>&1
+          echo "$?" > out/packages.exit
+          sh .github/review/version.sh > out/version.txt 2>&1
+          revision=$(sed -n 's/^revision=//p' out/version.txt)
+          RUNTIME_IDENTIFIER=osx-arm64 dotnet publish Source/Dafny/Dafny.csproj -c Release -r osx-arm64 --self-contained -o out/dafny -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$revision" > out/build.log 2>&1
+          echo "$?" > out/build.exit
+          rm -f out/dafny/*.pdb
+          tar -czf obligation-osx-arm64.tar.gz out
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: obligation-osx-arm64
+          path: obligation-osx-arm64.tar.gz
+          retention-days: 30
