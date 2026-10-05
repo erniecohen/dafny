@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "parentHead": "5502f2fdd2c396aeaa7bc26acd5dfcc3b2176371",
+  "productHead": "572ebc88e6e3078d4dbe65f7a1f2eab3767307d2",
+  "status": "SOURCE-ONLY; no repository/helper/compiler/coordinator body executed; no current execution prerequisites filled",
+  "sourceFiles": [
+    {
+      "path": ".github/review/cli-assets-observer/PLAN.md",
+      "bytes": 37271,
+      "sha256": "4319b70e39e9b3484739e99f734f864e29bcae75056e8acaf10ad338c50585f8"
+    },
+    {
+      "path": ".github/review/cli-assets-observer/SELECTORS.json",
+      "bytes": 25769,
+      "sha256": "522877cdf11635723cc70266b83006bca7812dec810af9e63b34449ed0fea93d"
+    },
+    {
+      "path": ".github/review/cli-assets-observer/FRAME-SCHEMA.json",
+      "bytes": 60498,
+      "sha256": "f000d128ecfe103b488d17a6b5e274f20734b9cd0b5b4e48719835e70cc5ad48"
+    },
+    {
+      "path": ".github/review/cli-assets-observer/PRIMARY-SOURCE-PINS.json",
+      "bytes": 10388,
+      "sha256": "8a85318164c33b270a0c0146ebf3401a79fec07ab1537d60decf6628cb22c881"
+    },
+    {
+      "path": ".github/review/cli-assets-observer/EXECUTION-PINS.json",
+      "bytes": 739,
+      "sha256": "107d783be989ed5fae09dc068ded8fa59f2f97a61b3945059b552ec67094c749"
+    },
+    {
+      "path": ".github/review/cli-assets-observer/B3AssetsObserver.cs",
+      "bytes": 52858,
+      "sha256": "d5e75d95782083f0275e3a0bf1da9fc6cf764e7f6fd273adc985400336508efb"
+    },
+    {
+      "path": ".github/review/cli-assets-observer/B3AssetsObserver.targets",
+      "bytes": 75533,
+      "sha256": "a878cf1c22cea7604cf2a019f910e4fffc799dd27d382acd5d36adf0132d76bf"
+    },
+    {
+      "path": ".github/review/cli-assets-observer/preserve-observer.py",
+      "bytes": 19084,
+      "sha256": "4c41cd15014cdf17b66f3a07696ebcb30468ab9816ed78bbccd7fe909bdd59e4"
+    }
+  ],
+  "sourceFilesSealSha256": "4ac2f260cb30f42b591cb488dc6df2dfd51b9ba636aea2a57ebdd14bf0f757db",
+  "originalImportRepresentationComplete": false,
+  "ownEntryModule": "Fixed preserve-observer.py __main__ identity separately bound; unchanged22 runtime-name allowlist; total32 cap",
+  "preparedSourceNames": [
+    "B3AssetsObserver.cs",
+    "B3AssetsObserver.targets",
+    "preserve-observer.py",
+    "declared-options.txt",
+    "anchors.txt",
+    "python-pins.txt",
+    "B3AssetsObserver.inputs.props",
+    "bootstrap-pins.txt"
+  ],
+  "firstRoleNames": [
+    "helper.dll",
+    "compiler-inputs.txt",
+    "source.cs",
+    "targets.xml",
+    "preserve.py",
+    "anchors.txt",
+    "python-pins.txt",
+    "declared-options.txt",
+    "inputs.props",
+    "netstandard.dll",
+    "build-framework.dll",
+    "bootstrap-pins.txt",
+    "compiler-arguments.txt"
+  ],
+  "scope": "Observation only; no copy/exclusion/Registry or CLR-selection admission; unmet activation premises require separate source/data review"
+}

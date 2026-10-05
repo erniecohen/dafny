@@ -44,6 +44,541 @@ CLI_PATH = Path('Binaries/net8.0')
 
 
 
+# This is evidence-only. No runtime/copy/exclusion admission is added. Unfilled
+# current byte/import/ABI prerequisites decline before the fixed import/build.
+OBSERVER_PATH = Path('.github/review/cli-assets-observer')
+OBSERVER_INPUTS = OBSERVER_PATH / 'observer-inputs.json'
+OBSERVER_WORK = Path('out/b3-sdk-observer-work')
+OBSERVER_OUTPUT = OUTPUT_PATH / 'sdk-observer'
+
+
+def observer_tick():
+    assert time.monotonic() <= observer_deadline, 'Observer bounded data inspection deadline'
+
+
+def observer_path(path):
+    text = str(path)
+    assert re.fullmatch(r'/[A-Za-z0-9_./-]{1,4095}', text) and not text.endswith('/')
+    parts = text[1:].split('/')
+    assert len(parts) <= 128 and all(part not in {'', '.', '..'} and len(part) <= 255 for part in parts)
+    return parts
+
+
+def observer_stat(info):
+    return (info.st_dev, info.st_ino, info.st_mode, info.st_nlink, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+
+
+def observer_read(path, maximum, keep=False):
+    # All ancestors and the leaf are opened without following links. Bounds
+    # precede buffering; actual consumed bytes and descriptor identities matter.
+    observer_tick()
+    parts = observer_path(path)
+    descriptors = []
+    initial = []
+    fd = None
+    try:
+        descriptor = os.open('/', os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC)
+        descriptors.append(descriptor); initial.append(observer_stat(os.fstat(descriptor)))
+        for part in parts[:-1]:
+            observer_tick()
+            descriptor = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=descriptors[-1])
+            descriptors.append(descriptor); initial.append(observer_stat(os.fstat(descriptor)))
+        fd = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK, dir_fd=descriptors[-1])
+        before = os.fstat(fd)
+        assert stat.S_ISREG(before.st_mode) and 0 <= before.st_size <= maximum, 'Observer regular file size bound'
+        count = 0; digest = hashlib.sha256(); blocks = [] if keep else None
+        while True:
+            observer_tick()
+            block = os.read(fd, 65536)
+            if not block:
+                break
+            count += len(block)
+            assert count <= maximum and count <= before.st_size, 'Observer file grew past first bound'
+            digest.update(block)
+            if keep:
+                blocks.append(block)
+        assert count == before.st_size and observer_stat(os.fstat(fd)) == observer_stat(before)
+        assert [observer_stat(os.fstat(item)) for item in descriptors] == initial, 'Observer ancestor identity changed'
+        record = {'bytes': count, 'sha256': digest.hexdigest()}
+        return (record, b''.join(blocks)) if keep else record
+    finally:
+        if fd is not None:
+            os.close(fd)
+        for descriptor in reversed(descriptors):
+            os.close(descriptor)
+
+
+def observer_json(path, maximum):
+    record, raw = observer_read(path, maximum, True)
+    # Depth, ASCII payload, control bytes and string tokens are bounded before
+    # json.loads. Duplicate object keys fail; no schema/plugin body is imported.
+    assert raw and all(byte < 128 for byte in raw), 'Observer JSON must be ASCII'
+    depth = 0; string = escaped = False
+    for byte in raw:
+        observer_tick()
+        if string:
+            if escaped:
+                escaped = False
+            elif byte == 92:
+                escaped = True
+            elif byte == 34:
+                string = False
+            else:
+                assert byte >= 32, 'Observer unescaped control'
+        elif byte == 34:
+            string = True
+        elif byte in (91, 123):
+            depth += 1; assert depth <= 12, 'Observer JSON depth'
+        elif byte in (93, 125):
+            depth -= 1; assert depth >= 0
+    assert depth == 0 and not string and not escaped
+    def unique(pairs):
+        assert len(pairs) <= 128
+        value = {}
+        for key, item in pairs:
+            assert key not in value, 'Observer duplicate JSON key'
+            value[key] = item
+        return value
+    value = json.loads(raw, object_pairs_hook=unique)
+    assert observer_read(path, maximum) == record, 'Actually parsed observer bytes changed'
+    return value, record
+
+
+def observer_lines(path, maximum=65536):
+    record, raw = observer_read(path, maximum, True)
+    assert raw and raw.endswith(b'\n') and raw.count(b'\n') <= 64
+    assert all(byte == 10 or 32 <= byte <= 126 for byte in raw), 'Observer ASCII LF metadata'
+    return raw.decode('ascii').splitlines(), record
+
+
+
+def observer_write(path, data, maximum):
+    assert type(data) is bytes and len(data) <= maximum
+    parts = observer_path(path); descriptors = []; fd = None
+    try:
+        descriptor = os.open('/', os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC); descriptors.append(descriptor)
+        for part in parts[:-1]:
+            observer_tick()
+            descriptor = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=descriptors[-1]); descriptors.append(descriptor)
+        fd = os.open(parts[-1],os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC,0o600,dir_fd=descriptors[-1])
+        offset = 0
+        while offset < len(data):
+            observer_tick(); count = os.write(fd,data[offset:offset+65536]); assert count > 0; offset += count
+        assert os.fstat(fd).st_size == len(data)
+    finally:
+        if fd is not None: os.close(fd)
+        for descriptor in reversed(descriptors): os.close(descriptor)
+    assert observer_read(path,maximum) == {'bytes':len(data),'sha256':digest_bytes(data)}
+
+def observer_source_contract():
+    global observer_contract, observer_selector, observer_execution
+    # The finite manifest is source-bound, and does not contain its own digest.
+    observer_contract = read_bounded_json(OBSERVER_INPUTS, 65536)
+    assert observer_contract['schemaVersion'] == 1 and observer_contract['parentHead'] == '5502f2fdd2c396aeaa7bc26acd5dfcc3b2176371'
+    assert observer_contract['productHead'] == inputs['productCommit']
+    rows = observer_contract['sourceFiles']
+    expected = ['PLAN.md', 'SELECTORS.json', 'FRAME-SCHEMA.json', 'PRIMARY-SOURCE-PINS.json',
+                'EXECUTION-PINS.json', 'B3AssetsObserver.cs', 'B3AssetsObserver.targets', 'preserve-observer.py']
+    assert [row['path'] for row in rows] == [str(OBSERVER_PATH / name) for name in expected]
+    assert seal(rows) == observer_contract['sourceFilesSealSha256']
+    for row in rows:
+        maximum = 262144 if Path(row['path']).name in {'B3AssetsObserver.cs', 'B3AssetsObserver.targets', 'preserve-observer.py', 'PLAN.md'} else 65536
+        assert row['bytes'] <= maximum and file_record(Path(row['path'])) == {key: row[key] for key in ['bytes', 'sha256']}
+        assert git_bytes('show', head + ':' + row['path']) == Path(row['path']).read_bytes()
+    observer_selector = read_bounded_json(OBSERVER_PATH / 'SELECTORS.json', 65536)
+    observer_execution = read_bounded_json(OBSERVER_PATH / 'EXECUTION-PINS.json', 65536)
+    assert len(observer_selector['slots']) == 10 and len(observer_selector['evaluatedProperties']) == 65
+    assert len(observer_selector['itemSets']) == 46 and len(observer_selector['metadataGetters']) == 44
+    assert len(observer_selector['selectedCompilerFiles']) == 19
+    assert len(set(observer_selector['selectedCompilerFiles'])) == 19
+    assert observer_selector['unchangedQualifier']['selectedCorpusCases'] == inputs['selectedCorpusCases']
+    tree = ast.parse(Path(__file__).read_text())
+    node = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'capture_cli_dependency_inputs')
+    body = ''.join(Path(__file__).read_text().splitlines(keepends=True)[node.lineno - 1:node.end_lineno]).encode()
+    expected_qualifier = observer_selector['unchangedQualifier']
+    assert len(body) == expected_qualifier['bytes'] and digest_bytes(body) == expected_qualifier['sha256']
+    assert sum(isinstance(item, ast.Assert) for item in ast.walk(node)) == 23
+    validate_copied_helper()
+    observer_receipt.update({'sourceFiles': rows, 'sourceFilesSealSha256': seal(rows),
+        'contract': file_record(OBSERVER_INPUTS), 'unchangedQualifierSha256': digest_bytes(body),
+        'executionPrerequisites': observer_execution['prerequisites'], 'executionPrerequisitesFilled': False})
+
+
+def observer_check_runtime_pins():
+    # These exact current data fields are initially null/false. Historical
+    # source catalogs never become current pins by inference or substitution.
+    execution = observer_execution
+    assert sys.platform == 'linux' and os.uname().machine == 'x86_64' and sys.maxsize == 9223372036854775807, 'Fixed Linux-x64 descriptor ABI only'
+    assert observer_contract['originalImportRepresentationComplete'] is True, 'SDK-relative audit cannot yet represent all default user-extension directories'
+    assert execution['schemaVersion'] == 1 and execution['sourceExecutionAuthorized'] is True, 'Observer source execution is not authorized/frozen'
+    required = ['fullOriginalImportClosure', 'defaultExtensionAbsentCase', 'lastTaskResultSensitivityAudit',
+                'actualPythonBytePins', 'actualCurrentSdk19Pins', 'managedNoFollowReaderSourceApproved', 'actualAssemblyAnchorPins']
+    assert set(execution['prerequisites']) == set(required) and all(execution['prerequisites'][key] is True for key in required), 'Observer current prerequisites unfilled'
+    audit = execution['originalImportAudit']
+    assert type(audit) is dict and set(audit) == {'sourceReviewSha256', 'parentHead', 'trackedFiles', 'sdkFiles', 'environment', 'absentDefaultExtensions', 'defaultExtensionAbsentCase', 'lastTaskResultSensitivityAudit'}
+    assert audit['parentHead'] == observer_contract['parentHead'] and re.fullmatch('[0-9a-f]{64}', audit['sourceReviewSha256'])
+    assert audit['defaultExtensionAbsentCase'] is True and audit['lastTaskResultSensitivityAudit'] is True
+    assert 1 <= len(audit['trackedFiles']) <= 256 and 1 <= len(audit['sdkFiles']) <= 256
+    assert len(audit['environment']) <= 128 and 1 <= len(audit['absentDefaultExtensions']) <= 8
+    assert set(audit['environment']) >= {'CustomAfterMicrosoftCommonTargets', 'CustomBeforeMicrosoftCommonTargets', 'MSBuildExtensionsPath', 'MSBuildExtensionsPath32', 'MSBuildExtensionsPath64', 'MSBuildUserExtensionsPath'}
+    assert all(value is None or type(value) is str and len(value) <= 4096 for value in audit['environment'].values())
+    assert {name: os.environ.get(name) for name in audit['environment']} == audit['environment'], 'Original import-affecting environment differs'
+    assert audit['environment']['CustomAfterMicrosoftCommonTargets'] in (None, ''), 'Do not override original user extension'
+    sdk_root = Path(toolchain_rows['executable']['resolvedPath']).parent / 'sdk' / observer_selector['owner']['sdkVersion']
+    assert source_receipt['actualSdkSelection']['sdkVersion'] == '8.0.425'
+    def rows_pinned(rows, root, maximum, aggregate, key):
+        assert type(rows) is list and len({row['path'] for row in rows}) == len(rows)
+        charged = 0
+        for row in rows:
+            observer_tick()
+            assert set(row) == {'path', 'bytes', 'sha256'} and type(row['bytes']) is int and 0 <= row['bytes'] <= maximum
+            assert re.fullmatch('[0-9a-f]{64}', row['sha256']) and not Path(row['path']).is_absolute() and '..' not in Path(row['path']).parts
+            charged += row['bytes']; assert charged <= aggregate
+            actual = observer_read(root / row['path'], maximum)
+            assert actual == {name: row[name] for name in ['bytes', 'sha256']}, key + ' changed'
+    rows_pinned(audit['trackedFiles'], ROOT, 262144, 8 * 1024 * 1024, 'Original tracked import closure')
+    rows_pinned(audit['sdkFiles'], sdk_root, 33554432, 67108864, 'Original SDK import/intrinsic closure')
+    for relative in audit['absentDefaultExtensions']:
+        assert type(relative) is str and not Path(relative).is_absolute() and '..' not in Path(relative).parts
+        observer_absent(sdk_root / relative)
+    sdk = execution['sdkDistribution']
+    assert type(sdk) is dict and set(sdk) == {'version', 'directory', 'files'} and sdk['version'] == '8.0.425' and sdk['directory'] == str(sdk_root)
+    assert [row['path'] for row in sdk['files']] == observer_selector['selectedCompilerFiles']
+    rows_pinned(sdk['files'], sdk_root, 33554432, 67108864, 'Current SDK compiler19')
+    catalog = next(row for row in toolchain_rows['directories'] if row['path'] == str(sdk_root))
+    catalog_by_path = {row['path']: row for row in catalog['files']}
+    assert all(catalog_by_path[row['path']] == row for row in sdk['files']), 'Current SDK19 detached from original toolchain inventory'
+    python = execution['pythonRuntime']
+    assert type(python) is dict and set(python) == {'version', 'platform', 'executable', 'modules'}
+    assert python['version'] == '3.12' and python['platform'] == 'linux' and sys.version_info[:2] == (3, 12) and sys.platform == 'linux'
+    exe = python['executable']; assert set(exe) == {'path', 'bytes', 'sha256'} and exe['path'] == str(Path(sys.executable).resolve(strict=True))
+    assert observer_read(Path(exe['path']), MAXIMUM_FILE_BYTES) == {key: exe[key] for key in ['bytes','sha256']}
+    modules = python['modules']; allowed = observer_selector['compiler']['preservationChild']['startupAllowedModuleNames']
+    assert 1 <= len(modules) <= 32 and len({row['name'] for row in modules}) == len(modules)
+    assert {row['name'] for row in modules} <= set(allowed) and {'sys','posix','time','_sha2'} <= {row['name'] for row in modules}
+    total = 0
+    for row in modules:
+        assert set(row) == {'name', 'kind', 'origin', 'bytes', 'sha256'} and row['kind'] in {'builtin','frozen','source','extension'}
+        assert re.fullmatch('[0-9a-f]{64}', row['sha256'])
+        if row['kind'] in {'builtin','frozen'}:
+            assert row['origin'] == ('built-in' if row['kind'] == 'builtin' else 'frozen') and row['bytes'] == 0 and row['sha256'] == exe['sha256']
+        else:
+            assert type(row['bytes']) is int and 0 <= row['bytes'] <= 8388608
+            total += row['bytes']; assert total <= 8388608
+            assert observer_read(Path(row['origin']), 8388608) == {key: row[key] for key in ['bytes','sha256']}
+    anchors = execution['assemblyAnchors']
+    assert type(anchors) is list and [row['role'] for row in anchors] == ['ITask','Object','FileStream','SHA256']
+    total = 0
+    toolchain_paths = {str(Path(directory['path']) / row['path']): {key: row[key] for key in ['bytes','sha256']}
+                       for directory in toolchain_rows['directories'] for row in directory['files']}
+    for row in anchors:
+        assert set(row) == {'role','path','bytes','sha256'} and row['path'] in toolchain_paths
+        total += row['bytes']; assert total <= 67108864 and row['bytes'] <= 33554432
+        actual = observer_read(Path(row['path']), 33554432)
+        assert actual == {key: row[key] for key in ['bytes','sha256']} == toolchain_paths[row['path']]
+    abi = execution['linuxDescriptorAbi']
+    assert type(abi) is dict and set(abi) == {'sourceReviewSha256','architecture','libc','constants','statBytes','primaryFiles'}
+    assert re.fullmatch('[0-9a-f]{64}', abi['sourceReviewSha256']) and abi['architecture'] == 'linux-x64' and abi['libc'] == 'glibc'
+    assert abi['statBytes'] == 144 and abi['constants'] == {'O_DIRECTORY':65536,'O_NOFOLLOW':131072,'O_CLOEXEC':524288,'O_NONBLOCK':2048,'O_CREAT':64,'O_EXCL':128}
+    assert 1 <= len(abi['primaryFiles']) <= 16 and all(set(row) == {'url','bytes','sha256'} and row['url'].startswith('https://') and re.fullmatch('[0-9a-f]{64}',row['sha256']) and 0 < row['bytes'] <= 1048576 for row in abi['primaryFiles'])
+    return {'sdkRoot':str(sdk_root), 'sdk19SealSha256':seal(sdk['files']), 'pythonSealSha256':seal(python), 'anchorsSealSha256':seal(anchors),
+            'importAuditSha256':seal(audit), 'linuxAbiSha256':seal(abi), 'scope':'Filesystem/source-review prerequisite identities; no atomic execution-image attestation'}
+
+
+def observer_absent(path):
+    # A held parent descriptor distinguishes absence from an unreadable route.
+    parts = observer_path(path); descriptors = []; initial = []
+    try:
+        fd = os.open('/', os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC); descriptors.append(fd); initial.append(observer_stat(os.fstat(fd)))
+        for part in parts[:-1]:
+            observer_tick()
+            fd = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=descriptors[-1]); descriptors.append(fd); initial.append(observer_stat(os.fstat(fd)))
+        before = observer_stat(os.fstat(fd))
+        try:
+            os.stat(parts[-1], dir_fd=fd, follow_symlinks=False)
+        except FileNotFoundError:
+            assert observer_stat(os.fstat(fd)) == before
+            assert [observer_stat(os.fstat(item)) for item in descriptors] == initial
+        else:
+            raise AssertionError('Original default extension exists; no override permitted')
+    finally:
+        for fd in reversed(descriptors): os.close(fd)
+
+
+def observer_prepare():
+    global observer_deadline, observer_generated_rows
+    observer_deadline = time.monotonic() + 30
+    pins = observer_check_runtime_pins()
+    assert not OBSERVER_WORK.exists() and not OBSERVER_WORK.is_symlink() and not OBSERVER_OUTPUT.exists()
+    (OBSERVER_WORK / 'source').mkdir(parents=True, exist_ok=False)
+    (OBSERVER_WORK / 'build').mkdir(); (OBSERVER_WORK / 'control').mkdir()
+    OBSERVER_OUTPUT.mkdir(exist_ok=False)
+    (OBSERVER_OUTPUT / 'prepared').mkdir(exist_ok=False)
+    work = str((ROOT / OBSERVER_WORK).absolute()); evidence = str((ROOT / OBSERVER_OUTPUT).absolute())
+    sdk_root = pins['sdkRoot']; dotnet_root = str(Path(toolchain_rows['executable']['resolvedPath']).parent)
+    owner = str(ROOT / 'Source/Dafny/Dafny.csproj')
+    for value in (work,evidence,sdk_root,dotnet_root,owner): observer_path(value)
+    for name in ['B3AssetsObserver.cs','B3AssetsObserver.targets','preserve-observer.py']:
+        data = (OBSERVER_PATH / name).read_bytes(); assert len(data) <= 262144
+        observer_write(ROOT / OBSERVER_WORK / 'source' / name,data,262144)
+    options = json.dumps(observer_selector['compiler']['parameters'], sort_keys=True, separators=(',',':')).encode('ascii') + b'\n'
+    assert len(options) <= 65536
+    observer_write(ROOT / OBSERVER_WORK / 'source/declared-options.txt',options,65536)
+    anchors = ['B3AssetsObserverAnchors/1'] + ['|'.join((row['role'],row['path'],str(row['bytes']),row['sha256'])) for row in observer_execution['assemblyAnchors']]
+    python = observer_execution['pythonRuntime']; exe = python['executable']
+    py_rows = ['B3AssetsObserverPython/1','|'.join((exe['path'],str(exe['bytes']),exe['sha256']))]
+    py_rows.extend('|'.join((row['name'],row['kind'],row['origin'],str(row['bytes']),row['sha256'])) for row in python['modules'])
+    for name, rows in [('anchors.txt',anchors),('python-pins.txt',py_rows)]:
+        data = ('\n'.join(rows)+'\n').encode('ascii'); assert len(data) <= 65536
+        observer_write(ROOT / OBSERVER_WORK / 'source' / name,data,65536)
+    sdk_files = {row['path']:row for row in observer_execution['sdkDistribution']['files']}
+    source_sha = next(row['sha256'] for row in observer_contract['sourceFiles'] if row['path'].endswith('/B3AssetsObserver.cs'))
+    props = {'WorkRoot':work,'EvidenceRoot':evidence,'OwnerProject':owner,'OwnerDirectory':str(Path(owner).parent),
+        'SdkRoot':sdk_root,'DotnetRoot':dotnet_root,'Python':exe['path'],'HelperSourceHash':source_sha,
+        'NetstandardHash':sdk_files['ref/netstandard.dll']['sha256'],'BuildFrameworkHash':sdk_files['ref/Microsoft.Build.Framework.dll']['sha256'],
+        'CompilerOptionsHash':digest_bytes(options),'SourceSeal':observer_contract['sourceFilesSealSha256']}
+    # Fixed grammar forbids XML/MSBuild interpolation metacharacters in paths.
+    assert all(re.fullmatch(r'[A-Za-z0-9_./-]+', value) for value in props.values())
+    text = '<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003"><PropertyGroup>\n'
+    text += ''.join('<B3AssetsObserver'+key+'>'+value+'</B3AssetsObserver'+key+'>\n' for key,value in props.items())
+    text += '</PropertyGroup></Project>\n'
+    assert len(text.encode('ascii')) <= 65536
+    observer_write(ROOT / OBSERVER_WORK / 'source/B3AssetsObserver.inputs.props',text.encode('ascii'),65536)
+    roles = [('source.cs','B3AssetsObserver.cs'),('targets.xml','B3AssetsObserver.targets'),('preserve.py','preserve-observer.py'),
+             ('anchors.txt','anchors.txt'),('python-pins.txt','python-pins.txt'),('declared-options.txt','declared-options.txt'),('inputs.props','B3AssetsObserver.inputs.props')]
+    bootstrap = ['B3AssetsObserverBootstrap/1',props['SourceSeal'],owner,props['CompilerOptionsHash']]
+    for role,name in roles:
+        live = ROOT / OBSERVER_WORK / 'source' / name; record = observer_read(live, 262144 if role in {'source.cs','targets.xml','preserve.py'} else 65536)
+        bootstrap.append('|'.join((str(live),role,str(record['bytes']),record['sha256'])))
+    for role,name in [('netstandard.dll','ref/netstandard.dll'),('build-framework.dll','ref/Microsoft.Build.Framework.dll')]:
+        row = sdk_files[name]; bootstrap.append('|'.join((sdk_root+'/'+name,role,str(row['bytes']),row['sha256'])))
+    text = '\n'.join(bootstrap)+'\n'; assert len(text.encode('ascii')) <= 65536
+    observer_write(ROOT / OBSERVER_WORK / 'source/bootstrap-pins.txt',text.encode('ascii'),65536)
+    observer_generated_rows = directory_records(OBSERVER_WORK / 'source')
+    assert len(observer_generated_rows) == 8
+    assert sum(row['bytes'] for row in observer_generated_rows) <= 8388608
+    prepared_names = ['B3AssetsObserver.cs','B3AssetsObserver.targets','preserve-observer.py','declared-options.txt',
+                      'anchors.txt','python-pins.txt','B3AssetsObserver.inputs.props','bootstrap-pins.txt']
+    prepared = []; total = 0
+    for index,name in enumerate(prepared_names):
+        maximum = 262144 if index < 3 else 65536
+        live = ROOT / OBSERVER_WORK / 'source' / name
+        record,data = observer_read(live,maximum,True)
+        copied = ROOT / OBSERVER_OUTPUT / 'prepared' / name
+        total += len(data); assert total <= 8388608
+        observer_write(copied,data,maximum)
+        prepared.append('|'.join((str(live),str(copied),str(record['bytes']),record['sha256'])))
+    prepared_bytes = ('\n'.join(prepared)+'\n').encode('ascii')
+    assert total+len(prepared_bytes) <= 8388608
+    observer_write(ROOT / OBSERVER_OUTPUT / 'prepared/inventory.txt',prepared_bytes,65536)
+    observer_receipt.update({'prepared':True,'executionPrerequisitesFilled':True,'runtimePrerequisitePins':pins,
+        'generatedSourceFiles':observer_generated_rows,'generatedSourceSealSha256':seal(observer_generated_rows),
+        'scratchRoot':str(OBSERVER_WORK),'evidenceRoot':str(OBSERVER_OUTPUT),'compilerBuildInvoked':False})
+
+
+def observer_boundary(stage, when):
+    global observer_deadline
+    if not observer_receipt.get('prepared'):
+        return
+    observer_deadline = time.monotonic() + 30
+    assert directory_records(OBSERVER_WORK / 'source') == observer_generated_rows, 'Fixed observer scratch source changed'
+    assert observer_check_runtime_pins() == observer_receipt['runtimePrerequisitePins']
+    if observer_first_rows is not None:
+        assert observer_inventory(ROOT / OBSERVER_OUTPUT / 'first') == observer_first_rows, 'Observer first preserved bytes changed'
+    observer_receipt['boundaries'].append({'stage':stage,'boundary':when,'generatedSourceSealSha256':seal(observer_generated_rows),
+        'runtimePrerequisitePins':observer_receipt['runtimePrerequisitePins'],'firstInputSealSha256':seal(observer_first_rows) if observer_first_rows is not None else None})
+
+
+def observer_inventory(directory):
+    rows = []; total = 0; descriptors = []; pending = []; initial = []
+    try:
+        parts = observer_path(directory)
+        fd = os.open('/',os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC)
+        descriptors.append(fd); initial.append(observer_stat(os.fstat(fd)))
+        for part in parts:
+            observer_tick()
+            fd = os.open(part,os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC,dir_fd=fd)
+            descriptors.append(fd); initial.append(observer_stat(os.fstat(fd)))
+        pending.append((fd,''))
+        while pending:
+            observer_tick(); parent,relative = pending.pop()
+            with os.scandir(parent) as entries:
+                for entry in entries:
+                    observer_tick(); assert not entry.is_symlink() and entry.name not in {'','.', '..'}
+                    child = (relative+'/' if relative else '')+entry.name
+                    if entry.is_dir(follow_symlinks=False):
+                        assert len(descriptors) < 256
+                        fd = os.open(entry.name,os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC,dir_fd=parent)
+                        descriptors.append(fd); initial.append(observer_stat(os.fstat(fd))); pending.append((fd,child))
+                    else:
+                        record = observer_read(directory / child,16777216)
+                        total += record['bytes']; assert total <= 67108864 and len(rows) < 256
+                        rows.append({'path':child,**record})
+        assert [observer_stat(os.fstat(fd)) for fd in descriptors] == initial
+    finally:
+        for fd in reversed(descriptors): os.close(fd)
+    return sorted(rows,key=lambda row:row['path'])
+
+
+def observer_value_units(value, maximum):
+    if value is None: return 0
+    assert type(value) is str and len(value) <= maximum
+    units = len(value.encode('utf-16-le',errors='strict')) // 2
+    assert units <= maximum
+    return units
+
+
+def observer_collect():
+    global observer_deadline, observer_first_rows
+    # Called after the unchanged CLI qualifier (also from its finally on failure).
+    # Observation faults are separate; they never replace its primary exception.
+    observer_deadline = time.monotonic() + 60
+    observer_receipt['collectionAttempted'] = True
+    try:
+        assert observer_receipt.get('prepared'), 'Observer was not prepared'
+        rows = observer_inventory(ROOT / OBSERVER_OUTPUT)
+        observer_receipt['files'] = rows; observer_receipt['directoryBytes'] = sum(row['bytes'] for row in rows)
+        first = ROOT / OBSERVER_OUTPUT / 'first'
+        inventory, _ = observer_lines(first / 'inventory.txt')
+        roles = ['helper.dll','compiler-inputs.txt','source.cs','targets.xml','preserve.py','anchors.txt','python-pins.txt',
+                 'declared-options.txt','inputs.props','netstandard.dll','build-framework.dll','bootstrap-pins.txt','compiler-arguments.txt']
+        assert len(inventory) == 13
+        preserved = []
+        for ordinal,line in enumerate(inventory):
+            fields = line.split('|'); assert len(fields) == 4
+            live,copied,length,sha256 = fields
+            assert re.fullmatch(r'0|[1-9][0-9]{0,9}',length) and re.fullmatch('[0-9a-f]{64}',sha256)
+            assert copied == str(first / roles[ordinal])
+            pin = {'bytes':int(length),'sha256':sha256}; maximum = 524288 if ordinal == 0 else 262144 if roles[ordinal] in {'source.cs','targets.xml','preserve.py'} else 8388608 if ordinal in {9,10} else 65536
+            assert pin['bytes'] <= maximum and observer_read(Path(live),maximum) == pin == observer_read(Path(copied),maximum)
+            preserved.append({'role':roles[ordinal],'livePath':live,'artifactPath':str(Path(copied).relative_to(output)) ,**pin})
+        work = ROOT / OBSERVER_WORK; sdk = Path(observer_receipt['runtimePrerequisitePins']['sdkRoot'])
+        lives = [work/'build/B3AssetsObserver.dll',work/'control/compiler-inputs.txt',work/'source/B3AssetsObserver.cs',work/'source/B3AssetsObserver.targets',
+                 work/'source/preserve-observer.py',work/'source/anchors.txt',work/'source/python-pins.txt',work/'source/declared-options.txt',work/'source/B3AssetsObserver.inputs.props',
+                 sdk/'ref/netstandard.dll',sdk/'ref/Microsoft.Build.Framework.dll',work/'source/bootstrap-pins.txt',work/'control/compiler-arguments.txt']
+        assert [row['livePath'] for row in preserved] == [str(path) for path in lives]
+        control, control_pin = observer_lines(first/'compiler-inputs.txt'); association,_ = observer_lines(first/'association.txt'); ready,_ = observer_lines(first/'ready')
+        assert len(control) == 14 and control[0] == 'B3AssetsObserverPreload/1' and control[12:] == ['true','0']
+        assert control[1] == str(lives[2]) and control[2] == preserved[2]['sha256'] and control[3] == str(lives[0])
+        assert control[4] == str(lives[9]) and control[5] == preserved[9]['sha256'] and control[6] == str(lives[10]) and control[7] == preserved[10]['sha256']
+        assert control[8] == str(lives[12]) and control[9] == preserved[7]['sha256'] and control[10] == str(ROOT/OBSERVER_OUTPUT)
+        assert control[11] == observer_contract['sourceFilesSealSha256']
+        image = preserved[0]['sha256']
+        assert association == ['B3AssetsObserverFirst/1',control[11],str(lives[0]),image,str(ROOT/'Source/Dafny/Dafny.csproj'),control_pin['sha256'],str(lives[3])]
+        assert ready == [image]
+        observer_first_rows = observer_inventory(first)
+        assert {row['path'] for row in observer_first_rows} == set(roles+['inventory.txt','association.txt','ready'])
+        prepared_rows = observer_inventory(ROOT / OBSERVER_OUTPUT / 'prepared')
+        assert sum(row['bytes'] for row in observer_first_rows+prepared_rows) <= 8388608
+        observer_receipt['preparedFiles'] = prepared_rows
+        observer_receipt.update({'firstFiles':observer_first_rows,'firstFilesSealSha256':seal(observer_first_rows),'firstInputAssociations':preserved,
+            'compilerExitCodeObserved':'0','compilerLastTaskResultObserved':'true','completeFirstPreservation':True,'helperImageSha256':image})
+        frames = []; total_rows = frame_bytes = 0
+        overall_deadline = observer_deadline
+        slot_sequences = {}
+        frame_names = [row['path'] for row in rows if row['path'].startswith('frames/')]
+        assert frame_names == ['frames/'+str(i).zfill(2)+'.json' for i in range(10)], 'All ten complete frames required; no partial frame is admitted'
+        keys = {'schemaVersion','slot','sequence','owner','targetBodyExecution','taskParametersObserved','status','properties','itemSets','sourceSeal','helperImageSha256'}
+        for ordinal,name in enumerate(frame_names):
+            observer_deadline = min(overall_deadline,time.monotonic()+5)
+            frame,pin = observer_json(ROOT / OBSERVER_OUTPUT / name,8388608)
+            assert set(frame) == keys and type(frame['schemaVersion']) is int and frame['schemaVersion'] == 1 and type(frame['sequence']) is int and frame['sequence'] == ordinal
+            assert frame['slot'] in {row['id'] for row in observer_selector['slots']} and frame['slot'] not in slot_sequences
+            slot_sequences[frame['slot']] = ordinal
+            assert frame['owner'] == {'projectRelativePath':'Source/Dafny/Dafny.csproj','framework':'net8.0','configuration':'Release'}
+            assert frame['targetBodyExecution'] == 'not-observed' and frame['taskParametersObserved'] is False and frame['status'] == 'complete-boundary-observation'
+            assert frame['sourceSeal'] == control[11] and frame['helperImageSha256'] == image
+            props = frame['properties']; itemsets = frame['itemSets']
+            assert type(props) is list and len(props) == 65 and type(itemsets) is list and len(itemsets) == 46
+            units = sum(observer_value_units(row['value'],131072 if index == 59 else 16384) for index,row in enumerate(props))
+            assert all(set(row) == {'name','value'} and row['name'] == observer_selector['evaluatedProperties'][index] for index,row in enumerate(props))
+            values = [row['value'] for row in props]
+            assert values[0] == str(ROOT/'Source/Dafny/Dafny.csproj') and values[8] == 'net8.0' and values[15:17] == ['Release','AnyCPU'] and str(values[17]).lower() != 'true' and values[61] == str(lives[3])
+            count = 0
+            for index,items in enumerate(itemsets):
+                observer_tick(); assert set(items) == {'name','arrayBinding','rows'} and items['name'] == observer_selector['itemSets'][index] and items['arrayBinding'] in {'null','array'}
+                assert type(items['rows']) is list and len(items['rows']) <= 4096 and (items['arrayBinding'] != 'null' or items['rows'] == [])
+                count += len(items['rows']); assert count <= 8192 and count*88 <= 450000
+                for number,row in enumerate(items['rows']):
+                    observer_tick(); assert set(row) == {'ordinal','itemSpec','metadataPresence','metadata'} and type(row['ordinal']) is int and row['ordinal'] == number and row['metadataPresence'] == 'not-observed'
+                    assert type(row['metadata']) is list and len(row['metadata']) == 44
+                    units += observer_value_units(row['itemSpec'],16384)
+                    units += sum(observer_value_units(value,16384) for value in row['metadata'])
+                    assert units <= 2097152
+            total_rows += count; frame_bytes += pin['bytes']; assert total_rows <= 65536 and frame_bytes <= 29360128
+            assert units <= 2097152
+            frames.append({'slot':frame['slot'],'sequence':ordinal,'path':name,**pin,'rowCount':count,'stringUtf16Units':units,'metadataGetsUpperBoundSharedTwoPass':count*88})
+            observer_deadline = overall_deadline
+        assert all(slot_sequences[row['target']+'.before'] < slot_sequences[row['target']+'.after'] for row in observer_selector['slots'])
+        observer_receipt['frames'] = frames
+        raw,pin = observer_json(ROOT / OBSERVER_OUTPUT / 'raw-assets/identity.json',32768)
+        assert set(raw) == {'schemaVersion','slot','path','bytes','sha256','targetBodyExecution','parsed'} and raw['schemaVersion'] == 1 and raw['slot'] == 'ResolvePackageAssets.before' and raw['targetBodyExecution'] == 'not-observed' and raw['parsed'] is False
+        assert raw['path'] == str(ROOT/'Source/Dafny/obj/project.assets.json')
+        raw_pin = {key:raw[key] for key in ['bytes','sha256']}
+        assert observer_read(Path(raw['path']),16777216) == raw_pin == observer_read(ROOT / OBSERVER_OUTPUT / 'raw-assets/project.assets.json',16777216)
+        assert raw_assets_snapshot is not None and {key:raw_assets_snapshot[key] for key in ['bytes','sha256']} == raw_pin, 'Observer raw assets differ from unchanged qualifier first buffer'
+        observer_receipt['rawAssetsAssociation'] = {'identity':raw,'record':pin,'unchangedQualifierFirstPinMatched':True}
+        selected,pin = observer_json(ROOT / OBSERVER_OUTPUT / 'tables/selection.json',32768)
+        assert set(selected) == {'schemaVersion','slot','actualSdkOpenObserved','candidates'} and selected['schemaVersion'] == 1 and selected['slot'] == 'ResolveTargetingPackAssets.after' and selected['actualSdkOpenObserved'] is False
+        selection_sequence = slot_sequences['ResolveTargetingPackAssets.after']
+        selected_frame,_ = observer_json(ROOT / OBSERVER_OUTPUT / ('frames/'+str(selection_sequence).zfill(2)+'.json'),8388608)
+        packs = selected_frame['itemSets'][5]['rows']; assert len(packs) <= 4
+        candidates = selected['candidates']; tails = observer_selector['tableCandidates']['files']
+        assert len(candidates) == len(packs)*3 and len(candidates) <= 12
+        total = 0
+        for index,row in enumerate(candidates):
+            assert set(row) == {'ownerOrdinal','packPath','path','status','bytes','sha256'} and row['ownerOrdinal'] == index//3 and row['packPath'] == packs[index//3]['metadata'][16]
+            assert row['path'] == row['packPath']+'/'+tails[index%3] and row['packPath'].startswith(str(Path(toolchain_rows['executable']['resolvedPath']).parent/'packs')+'/')
+            if row['status'] == 'absent':
+                assert row['bytes'] is None and row['sha256'] is None; observer_absent(Path(row['path']))
+            else:
+                assert row['status'] == 'source-derived-candidate-bytes' and type(row['bytes']) is int and row['bytes'] <= 1048576
+                actual = {key:row[key] for key in ['bytes','sha256']}; total += row['bytes']; assert total <= 8388608
+                assert observer_read(Path(row['path']),1048576) == actual == observer_read(ROOT / OBSERVER_OUTPUT / ('tables/'+row['sha256']+'.bin'),1048576)
+        observer_receipt['tableCandidates'] = {'selection':selected,'record':pin,'actualSdkOpenObserved':False}
+        expected_paths = {'first/'+name for name in roles+['inventory.txt','association.txt','ready']}
+        expected_paths |= {'prepared/'+name for name in ['B3AssetsObserver.cs','B3AssetsObserver.targets','preserve-observer.py','declared-options.txt','anchors.txt','python-pins.txt','B3AssetsObserver.inputs.props','bootstrap-pins.txt','inventory.txt']}
+        expected_paths |= {'raw-assets/project.assets.json','raw-assets/identity.json','tables/selection.json'}
+        expected_paths |= {row['path'] for row in frames}
+        expected_paths |= {'anchors/'+str(i).zfill(2)+'.json' for i in range(10)}
+        expected_paths |= {'tables/'+row['sha256']+'.bin' for row in candidates if row['status'] == 'source-derived-candidate-bytes'}
+        assert {row['path'] for row in rows} == expected_paths, 'Unknown/missing observer evidence role'
+        for ordinal in range(10):
+            anchor,pin = observer_json(ROOT / OBSERVER_OUTPUT / ('anchors/'+str(ordinal).zfill(2)+'.json'),32768)
+            assert set(anchor) == {'schemaVersion','scope','atomicImageAttestation','roles'} and anchor['schemaVersion'] == 1 and anchor['scope'] == 'named-type-assembly-anchors-only' and anchor['atomicImageAttestation'] is False
+            expected = [{'role':'CaptureTask','path':str(lives[0]),'bytes':preserved[0]['bytes'],'sha256':image}]+observer_execution['assemblyAnchors']
+            assert len(anchor['roles']) == 5
+            for row,goal in zip(anchor['roles'],expected):
+                assert set(row) == {'role','assemblyName','location','bytes','sha256'} and row['role'] == goal['role'] and row['location'] == goal['path'] and observer_value_units(row['assemblyName'],4096) > 0
+                assert {key:row[key] for key in ['bytes','sha256']} == {key:goal[key] for key in ['bytes','sha256']}
+        assert not any(row['path'].startswith('faults/') or row['path'].endswith('.partial') or row['path'].endswith('.prefix') or row['path']=='bootstrap-failure.txt' for row in rows), 'Fault/partial observer evidence remains unqualified'
+        observer_receipt.update({'completeBoundaryObservation':True,'observerAcceptedForDiagnosticScope':True,'framesCount':10,'allRows':total_rows,
+            'allFrameBytes':frame_bytes,'tableReadBytesDuplicatedRoles':total})
+    except Exception as error:
+        observer_receipt['observationFaults'].append({'type':type(error).__name__,'accepted':False})
+    # The observation never certifies task input, table opens or CLR selection.
+    observer_receipt.update({'taskInputAttested':False,'actualSdkOpensObserved':False,'clrSelectionAttested':False,'copyDispositionAccepted':False,'registryAdmissionChanged':False})
+
+
+def observer_final():
+    global observer_deadline
+    if not observer_receipt.get('prepared'): return
+    if not observer_receipt['collectionAttempted']:
+        observer_collect()
+    observer_deadline = time.monotonic()+60
+    try:
+        rows = observer_inventory(ROOT/OBSERVER_OUTPUT)
+        if observer_receipt.get('files') is not None:
+            assert rows == observer_receipt['files'], 'Observer first collection bytes changed before finalization'
+        observer_receipt['finalFiles'] = rows; observer_receipt['finalFilesSealSha256'] = seal(rows)
+        observer_boundary('finalization','final')
+        size = len(json.dumps(observer_receipt,sort_keys=True,separators=(',',':')).encode())
+        assert size <= 1048576 and sum(row['bytes'] for row in rows)+size <= 67108864, 'Observer aggregate includes receipt bytes and failed/partial growth'
+    except Exception as error:
+        observer_receipt['observationFaults'].append({'type':type(error).__name__,'accepted':False,'scope':'finalization'})
+        observer_receipt['observerAcceptedForDiagnosticScope'] = False
+
+
 def digest_bytes(data):
     return hashlib.sha256(data).hexdigest()
 
@@ -712,6 +1247,7 @@ def validate_source_initial():
         'checkoutSelectionLabelsScope': 'Inherited original 35-focus EOL labels; current CLI project selection is bound by actual resolved assets',
         'toolchainSealSha256': seal(toolchain_rows), 'gh': gh_rows,
         'selectedDispatch': validate_selection(inputs)})
+    observer_source_contract()
 
 
 def boundary(stage, when):
@@ -739,6 +1275,7 @@ def boundary(stage, when):
               'prerequisiteSealSha256': seal(prerequisite_rows) if prerequisite_rows is not None else None,
               'cliSealSha256': seal(cli_rows) if cli_rows is not None else None,
               'cliDependenciesSealSha256': seal(cli_dependencies) if cli_dependencies is not None else None}
+    observer_boundary(stage, when)
     boundary_receipts.append(result)
     return result
 
@@ -1408,7 +1945,10 @@ def validate(name):
     elif name == 'packages':
         package_receipt = package_records()
     elif name == 'cli-build':
-        capture_cli()
+        try:
+            capture_cli()
+        finally:
+            observer_collect()
     elif name == 'cli-version':
         cli_version = (output / 'cli-version.txt').read_text().strip()
         assert cli_version == '4.11.0+' + head, 'Current CLI informational identity differs'
@@ -1513,6 +2053,12 @@ def main():
     global boundary_receipts, corpus_receipts, stage_environment, cleanup_poisoned
     global compiled_snapshots, compiled_stage_acceptance, failure_observations, STAGE_TIMEOUT_SECONDS, MAXIMUM_STAGE_LOG_BYTES
     global raw_assets_snapshot, raw_assets_failures, asset_observation, asset_preservation_faults, observed_cli_deps
+    global observer_contract, observer_selector, observer_execution, observer_receipt, observer_deadline, observer_generated_rows, observer_first_rows
+    observer_contract = observer_selector = observer_execution = observer_generated_rows = observer_first_rows = None
+    observer_deadline = time.monotonic()+30
+    observer_receipt = {'prepared':False,'compilerBuildInvoked':False,'collectionAttempted':False,
+        'observerAcceptedForDiagnosticScope':False,'boundaries':[],'observationFaults':[],
+        'scope':'Fixed SDK target-boundary evidence only; original23 qualification unchanged; no task-input/copy/CLR admission'}
     output = OUTPUT_PATH
     output.mkdir(parents=True, exist_ok=False)
     head = source_tree = source_rows = toolchain_rows = gh_rows = None
@@ -1563,12 +2109,16 @@ def main():
             if name == 'archived-prerequisites':
                 reserve += 48 * 1024 * 1024
             elif name == 'cli-build':
-                reserve += 64 * 1024 * 1024
+                reserve += 64 * 1024 * 1024 + 64 * 1024 * 1024
             elif name in {case['name'] for case in inputs['selectedCorpusCases']}:
                 reserve += 24 * 1024 * 1024
             remaining = MAXIMUM_ARTIFACT_BYTES - sum(row['bytes'] for row in directory_records(output)) - reserve
             assert remaining >= 1024 * 1024, 'Insufficient bounded evidence space for next stage'
             MAXIMUM_STAGE_LOG_BYTES = min(32 * 1024 * 1024, remaining)
+            if name == 'cli-build':
+                observer_prepare()
+                command = command + ['-p:CustomAfterMicrosoftCommonTargets=' + str(ROOT / OBSERVER_WORK / 'source/B3AssetsObserver.targets')]
+                observer_receipt['compilerBuildInvoked'] = True
             result = run_with_boundaries(name, command)
             results.append(result)
             if name == 'archived-prerequisites' and prerequisite_receipt is not None:
@@ -1586,6 +2136,7 @@ def main():
         try:
             preservation_failures = validate_compiled_artifact_snapshots()
             preservation_failures.extend(validate_asset_preservation_final())
+            observer_final()
         except Exception as error:
             preservation_failures.append({'scope': 'export', 'failure': type(error).__name__ + ': ' + str(error)})
         try:
@@ -1601,7 +2152,8 @@ def main():
         passed = (len(results) == 7 and all(row['exitCode'] == 0 for row in results)
             and all(compiled_stage_acceptance.values()) and len(corpus_receipts) == 2
             and all(row['matched'] for row in corpus_receipts) and prerequisite_receipt is not None and prerequisite_receipt['qualified']
-            and final_error is None and not preservation_failures and not cleanup_poisoned)
+            and final_error is None and not preservation_failures and not cleanup_poisoned
+            and observer_receipt['observerAcceptedForDiagnosticScope'])
         receipt = {'passed': passed, 'scope': 'unsigned-if-guard-corpus', 'head': head,
             'focusedCorpusCountExpected': 2, 'focusedCorpusMatched': sum(row['matched'] for row in corpus_receipts),
             'archivedPrerequisitesQualified': prerequisite_receipt is not None and prerequisite_receipt['qualified'],
@@ -1617,7 +2169,7 @@ def main():
             'failureObservations': failure_observations, 'artifactPreservationFailures': preservation_failures,
             'rawAssetsSnapshot': raw_assets_snapshot, 'rawAssetsFailureObservations': raw_assets_failures,
             'resolvedAssetObservation': {key: value for key, value in asset_observation.items() if key != 'completedAssets'},
-            'assetPreservationFaults': asset_preservation_faults,
+            'assetPreservationFaults': asset_preservation_faults, 'sdkObserver': observer_receipt,
             'primaryFailure': next(({'stage': row['stage'], 'actualProcessExitCode': row.get('actualProcessExitCode'),
                 'failure': row.get('failure'), 'boundaryFailure': row.get('boundaryFailure')}
                 for row in results if row['exitCode'] != 0), None),

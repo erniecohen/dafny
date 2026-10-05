@@ -500,3 +500,56 @@ and all other execution prerequisites therefore remain false/null. A separately
 reviewed finite source/data revision must represent every required directory and
 its actual content/absence before activation; this checkpoint is not complete
 original-import correspondence and cannot activate that unrepresented case.
+
+## Draft implementation checkpoint and fixed evidence disposition
+
+This source implementation adds the ten-hook targets, fixed capture task and
+owned preservation script. The coordinator retains the original seven stages,
+one CLI build, corpus fixtures,23-assertion dependency qualifier and six process
+ownership functions. Only the fixed extension argument can be added to that
+single CLI build, after every execution prerequisite has been qualified. The
+source checkpoint leaves all such pins false/null and explicitly leaves original
+import representation incomplete, so it rejects preparation before adding the
+extension or starting that build. The source draft has not been compiled or run.
+
+The19 current SDK compiler roles are hash-only and must match the existing
+toolchain inventory; only the two approved reference assemblies enter first-copy
+evidence. The managed API observation has exactly five ordered assembly anchors:
+the fresh own `CaptureTask` output plus `ITask`, `Object`, `FileStream` and
+`SHA256`. The four external type-anchor rows must be independently frozen. This
+is a partial API identity boundary, not full CLR/native loading attestation.
+
+The source/control/compiler scratch directory is outside the uploaded subtree.
+Eight exact generated own source/metadata files are copied exclusively before
+the build under a fixed `prepared` role inventory. This retains actual emitted
+source even if compilation or preloading later faults. Prepared copies and their
+inventory are charged jointly with all first source/ref/helper/bootstrap copies
+to the existing8MiB evidence budget and64MiB observer aggregate. SDK compiler
+producer emission itself is not bounded by the512KiB helper capture limit. An
+oversized/failed image receives only bounded incomplete prefix evidence and
+never a ready marker or helper load permission. Partial files and failed writes
+remain unqualified and count toward the existing aggregate and artifact caps.
+
+Actual hook sequence is observed; no global ordering of the five targets is
+assumed. Completeness requires ten unique slots, contiguous sequence0-9 and each
+paired before preceding its after. Source/array/row identities and every field
+are retained without grouping or deduplication. Initial and final44-get passes
+share450000; their joint preflight can conservatively reject below8192 rows.
+Both named-anchor read passes share64MiB for each hook. The sole selected-pack
+owner slot remains `ResolveTargetingPackAssets.after`; later frames only rehash
+its fixed candidate paths. Absence/unreadable roles do not establish exclusion.
+
+Observer collection occurs after the unchanged CLI qualifier, including its
+failure path. An observer fault has a separate incomplete receipt and cannot
+replace the original build/qualifier error. Final inspection retains every known
+complete, failed and partial role, rejects unknown evidence roles for completeness
+and rechecks immutable first/live bytes. No failure observation becomes an
+acceptance input. The unchanged256MiB cap applies to the whole uploaded artifact,
+not to all SDK working files or compiler producer emission.
+
+The prospective current-pin data shape is intentionally unfilled. All filled
+fields and the remaining import/ABI/Python/SDK source premises require separate
+actual source/data review before any execution. These source files supply no
+Registry admission, runtime copy disposition, framework substitution, task-input
+certificate, table-open record or successful CLR-selection claim. All original
+Real and unsigned corpus expectations remain unchanged.

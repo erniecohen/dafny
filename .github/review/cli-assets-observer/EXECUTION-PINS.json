@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "status": "SOURCE-ONLY; pre-execution source-review prerequisites are unfilled",
+  "sourceExecutionAuthorized": false,
+  "prerequisites": {
+    "fullOriginalImportClosure": false,
+    "defaultExtensionAbsentCase": false,
+    "lastTaskResultSensitivityAudit": false,
+    "actualPythonBytePins": false,
+    "actualCurrentSdk19Pins": false,
+    "managedNoFollowReaderSourceApproved": false,
+    "actualAssemblyAnchorPins": false
+  },
+  "originalImportAudit": null,
+  "sdkDistribution": null,
+  "pythonRuntime": null,
+  "assemblyAnchors": null,
+  "linuxDescriptorAbi": null,
+  "scope": "Future filled byte/closure pins require separate complete source review; no Registry/copy/exclusion or CLR-selection admission"
+}
