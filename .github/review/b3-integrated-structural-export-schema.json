@@ -166,6 +166,7 @@
     "historicalTable": "prospectiveV2AdmissionFields",
     "historicalV2SchemaBytes": 5103,
     "historicalV2SchemaSha256": "d917b4a37ceee085cf9f67f9d785f1f5c1019f1480d862922a6050ee202129d1",
+    "maximumJsonDepthMeaning": "maximum64 includes root depth1; every descendant value including scalar leaves increments depth; selected primary object reparses at depth2",
     "maximumJsonTokensMeaning": "lexical scalar/key and punctuation tokens including opening/closing braces/brackets, colons and commas; whitespace excluded; selected reparse charged again",
     "metadataOnlyRequires": {
       "full_packet": "non-true",
