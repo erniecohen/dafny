@@ -138,6 +138,18 @@ def resolve(name, allowed, until=WORK, track=True):
         if stat.S_ISLNK(info.st_mode):
             require(len(links) < 8, 'alias-hop-cap')
             target = os.readlink(trial)
+            # A parent step after a target component would require walking that
+            # component (possibly another alias) before '..'. Lexical normpath
+            # cannot establish its kernel meaning. Fail rather than claiming
+            # a different file was the configured alias's actual endpoint.
+            component_seen = False
+            for component in target.split('/'):
+                if component in {'', '.'}:
+                    continue
+                if component == '..':
+                    require(not component_seen, 'alias-parent-after-component-not-supported')
+                else:
+                    component_seen = True
             replacement = posixpath.normpath(target if target.startswith('/') else posixpath.join('/' + '/'.join(done), target))
             endpoint = posixpath.normpath(posixpath.join(replacement, *todo))
             if endpoint not in allowed or forbidden_path(endpoint):
@@ -280,6 +292,13 @@ def source_pins(until=WORK):
     require(base == b'v4.11.0 8333daa60e2f2ee456068369f94c141898cde875\n', 'product-base-changed')
     outer_raw, outer_pin = source_read('.github/review/b3-retention-corroboration-manifest.json', until=until)
     outer = strict_json(outer_raw)
+    require(set(outer) == {'schemaVersion', 'scope', 'sourceManifestSha256', 'compileOnlyRequired',
+            'fullGatePermitted', 'newArchivesPermitted', 'SDKToolTargetOrProofExecutionPermitted', 'files'}
+            and type(outer['schemaVersion']) is int and outer['schemaVersion'] == 1
+            and outer['scope'] == 'fixed-finite-read-only-retention-corroboration-routing'
+            and outer['compileOnlyRequired'] is True and outer['fullGatePermitted'] is False
+            and outer['newArchivesPermitted'] is False and outer['SDKToolTargetOrProofExecutionPermitted'] is False,
+            'outer-exact-schema-and-false-boundaries')
     require(outer['sourceManifestSha256'] == pin['sha256'] and
             [p['path'] for p in outer['files']] == [str(SOURCE / 'source-manifest.json'),
              '.github/review/b3-retention-corroboration-route.py', '.github/review/base', '.github/workflows/review.yml'],

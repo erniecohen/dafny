@@ -9,9 +9,9 @@ from pathlib import Path
 
 SOURCE = Path('.github/review/retention-corroboration')
 OUTPUT = Path('out/b3-retention-corroboration-routing')
-SOURCE_SHA = '15a5a15fb2fc33780c95b6ca2662bd249f22a33dd730b6c2436d12d0207c80b1'
-PACKET_SHA = '2d77f222343600167372011cf6591567328817e4e74a155b8b38b3b18d4045ac'
-PACKET_BYTES = 68604
+SOURCE_SHA = '3f4530a045f4813f27ef1e03695fcfdd9a8308cdc197d39646908c21f19ef35d'
+PACKET_SHA = 'ccb483eac6a1c76b8d0f20cd4cacafb065e608620d6ad9c907df4b2c710ab8de'
+PACKET_BYTES = 69914
 EXPECTED = {'B3_FOCUS_GATE': 'retention-corroboration', 'B3_COMPILE_ONLY': 'true',
             'B3_FULL_GATE': 'false', 'B3_BINARIES': 'false',
             'B3_RESOLVER_PROBE': 'false', 'B3_ADDITIONAL_AXIOMS_PROBE': 'false'}
@@ -81,6 +81,13 @@ def main():
                 raise ValueError('Declared corroboration source changed.')
         raw, outer_pin = read('.github/review/b3-retention-corroboration-manifest.json')
         outer = document(raw)
+        if (set(outer) != {'schemaVersion', 'scope', 'sourceManifestSha256', 'compileOnlyRequired',
+                'fullGatePermitted', 'newArchivesPermitted', 'SDKToolTargetOrProofExecutionPermitted', 'files'}
+                or type(outer['schemaVersion']) is not int or outer['schemaVersion'] != 1
+                or outer['scope'] != 'fixed-finite-read-only-retention-corroboration-routing'
+                or outer['compileOnlyRequired'] is not True or outer['fullGatePermitted'] is not False
+                or outer['newArchivesPermitted'] is not False or outer['SDKToolTargetOrProofExecutionPermitted'] is not False):
+            raise ValueError('Fixed outer routing schema or false execution boundary changed.')
         if outer['sourceManifestSha256'] != SOURCE_SHA or [p['path'] for p in outer['files']] != [
                 '.github/review/retention-corroboration/source-manifest.json', '.github/review/b3-retention-corroboration-route.py',
                 '.github/review/base', '.github/workflows/review.yml']:

@@ -933,14 +933,14 @@ jobs:
               if any(p.is_symlink() for p in [path.absolute(), *path.absolute().parents]):
                   raise ValueError('Fixed corroboration routing alias rejected.')
               before = path.lstat()
-              if not stat.S_ISREG(before.st_mode) or before.st_size != 7739:
+              if not stat.S_ISREG(before.st_mode) or before.st_size != 8462:
                   raise ValueError('Fixed corroboration routing size rejected.')
               with path.open('rb') as stream:
-                  captured = stream.read(7739 + 1)
+                  captured = stream.read(8462 + 1)
                   opened = os.fstat(stream.fileno())
               identity = lambda s: (s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
               if identity(before) != identity(opened) or identity(opened) != identity(path.lstat()) or \
-                    len(captured) != 7739 or hashlib.sha256(captured).hexdigest() != 'c46d48011b37e54febaca57957553e9159fa645b4b607c8e51124c26f4049125':
+                    len(captured) != 8462 or hashlib.sha256(captured).hexdigest() != '1479bd6ce692cc59db845ad608e5365d6e0a39faaa72746ca61c00a79f7c7632':
                   raise ValueError('Fixed corroboration routing byte pin rejected.')
               # Execute only captured, checked source; no import cache or old scanner.
               namespace = {'__name__': '__main__', '__file__': str(path)}
