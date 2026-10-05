@@ -59,6 +59,9 @@ public static class RunCommand {
     }
     DafnyNewCli.SetHandlerUsingDafnyOptionsContinuation(result, async (options, context) => {
       await CheckForMistypedDafnyOption(context, options);
+      if (options.Get(CommonOptionBag.BuildFile) is { } buildFile) {
+        options.DafnyPrintCompiledFile = buildFile.FullName;
+      }
       options.MainArgs = context.ParseResult.GetValueForArgument(UserProgramArguments).ToList();
       options.Compile = true;
       options.RunAfterCompile = true;
