@@ -36,7 +36,11 @@ internal sealed class PreparedCliInputs {
     if (exitValue != ExitValue.SUCCESS || admission.ErrorCount != 0 ||
         admission.AllMessages.Any(diagnostic => diagnostic.Level == ErrorLevel.Warning) &&
         !options.Get(CommonOptionBag.AllowWarnings)) {
-      var console = new ConsoleErrorReporter(options);
+      ErrorReporter console = options.DiagnosticsFormat switch {
+        DafnyOptions.DiagnosticsFormats.PlainText => new ConsoleErrorReporter(options),
+        DafnyOptions.DiagnosticsFormats.JSON => new JsonConsoleErrorReporter(options),
+        _ => throw new ArgumentOutOfRangeException()
+      };
       foreach (var diagnostic in admission.AllMessages) { console.MessageCore(diagnostic); }
       if (exitValue == ExitValue.SUCCESS) {
         exitValue = admission.ErrorCount != 0 ? ExitValue.PREPROCESSING_ERROR : ExitValue.DAFNY_ERROR;

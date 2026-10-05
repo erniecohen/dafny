@@ -88,7 +88,12 @@ public static class VerifyCommand {
   internal static async Task VerifyAndReportPreparedAsync(CliCompilation compilation,
     ResolutionResult resolution, IAsyncEnumerable<CanVerifyResult> results, CancellationToken cancellationToken) {
     using Subject<CanVerifyResult> reported = new();
-    ReportVerificationDiagnostics(compilation, reported);
+    // This consumer only formats published diagnostics. Its legacy on-error default throws
+    // synchronously and would prevent later owned consumers from observing the source failure.
+    // Preserve that failure on their raw stream, while completing this diagnostics-only view.
+    var diagnosticResults = System.Reactive.Linq.Observable.Catch<CanVerifyResult, Exception>(reported,
+      _ => System.Reactive.Linq.Observable.Empty<CanVerifyResult>());
+    ReportVerificationDiagnostics(compilation, diagnosticResults);
     var summary = ReportVerificationSummary(compilation, reported);
     var dependencies = ReportProofDependencies(compilation, resolution, reported);
     var logged = LogVerificationResults(compilation, resolution, reported);
