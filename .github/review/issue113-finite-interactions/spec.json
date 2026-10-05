@@ -1,0 +1,1093 @@
+{
+  "schema_version": 1,
+  "source_only_preparation": true,
+  "unexecuted": true,
+  "cases": [
+    {
+      "id": "git-issue-113-finite-support-160-allocation-proof-negative",
+      "group": "datatype",
+      "file": "fixtures/git-issue-113-finite-support-160-allocation-proof-negative.dfy",
+      "source_sha256": "7e20710d2f6c0266231ef31fe043956714b155e8e310ad1b54f62747d8023962",
+      "body_without_RUN_lines_sha256": "7e20710d2f6c0266231ef31fe043956714b155e8e310ad1b54f62747d8023962",
+      "literal_RUNs": [],
+      "command_origin": "new explicit diagnostic proposal; draft has no RUN",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=true",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "intended proof rejection",
+      "contract_review": "A freshly allocated C is captured through a nominal datatype by a lambda and by a finite mapped lambda. Neither closure was allocated in the method entry heap. Both old(allocated(...)) assertions must fail.",
+      "unmeasured_intended_exit": 4,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [
+        {
+          "line": 12,
+          "column_1based": 3,
+          "source_line": "  assert old(allocated(f)); // Intended soundness rejection: the fresh capture was unavailable.",
+          "term": "assert old(allocated("
+        },
+        {
+          "line": 19,
+          "column_1based": 3,
+          "source_line": "  assert old(allocated(callbacks[0]));",
+          "term": "assert old(allocated("
+        }
+      ],
+      "original_contract_lines": [],
+      "original_arm": null,
+      "unexecuted": true
+    },
+    {
+      "id": "git-issue-113-finite-support-160-datatype-tuple-positive",
+      "group": "datatype",
+      "file": "fixtures/git-issue-113-finite-support-160-datatype-tuple-positive.dfy",
+      "source_sha256": "eb9c45207eba29674ebdd54a189a238f1af96faa21b0baf94f5e6df864d79c9e",
+      "body_without_RUN_lines_sha256": "eb9c45207eba29674ebdd54a189a238f1af96faa21b0baf94f5e6df864d79c9e",
+      "literal_RUNs": [],
+      "command_origin": "new explicit diagnostic proposal; draft has no RUN",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=true",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "universal proof",
+      "contract_review": "UniversalImage accepts every n>=0 and proves membership/value for every i with 0<=i<n; nominal tuple target predicates remain in the map witness.",
+      "unmeasured_intended_exit": 0,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [],
+      "original_contract_lines": [
+        {
+          "line": 9,
+          "source_line": "  requires 0 <= n"
+        },
+        {
+          "line": 16,
+          "source_line": "  requires 0 <= n"
+        },
+        {
+          "line": 17,
+          "source_line": "  ensures forall i: int | 0 <= i < n ::"
+        },
+        {
+          "line": 22,
+          "source_line": "    ensures ((i, n) as Key) in Image(n)"
+        },
+        {
+          "line": 23,
+          "source_line": "    ensures Image(n)[((i, n) as Key)].value == i"
+        }
+      ],
+      "original_arm": null,
+      "unexecuted": true
+    },
+    {
+      "id": "git-issue-113-finite-support-160-finite-key-positive",
+      "group": "datatype",
+      "file": "fixtures/git-issue-113-finite-support-160-finite-key-positive.dfy",
+      "source_sha256": "749bab6f3c81f79c42d4ac5c6288fa3360139428172c3fb2c7e73523e328f41c",
+      "body_without_RUN_lines_sha256": "749bab6f3c81f79c42d4ac5c6288fa3360139428172c3fb2c7e73523e328f41c",
+      "literal_RUNs": [],
+      "command_origin": "new explicit diagnostic proposal; draft has no RUN",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=true",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "universal proof",
+      "contract_review": "For arbitrary integer n, the infinite integer witness domain maps to exactly two Boolean keys with key-consistent nominal datatype values; prove both lookups for all n. The integer witnesses -1 and0 are load-bearing existential witnesses for the two Boolean keys, supporting the arbitrary-n map contract; they do not replace or restrict the universal contract.",
+      "unmeasured_intended_exit": 0,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [],
+      "original_contract_lines": [
+        {
+          "line": 12,
+          "source_line": "  ensures true in BooleanTable(n) && false in BooleanTable(n)"
+        },
+        {
+          "line": 13,
+          "source_line": "  ensures BooleanTable(n)[true].value == n"
+        },
+        {
+          "line": 14,
+          "source_line": "  ensures BooleanTable(n)[false].value == n + 1"
+        }
+      ],
+      "original_arm": null,
+      "unexecuted": true
+    },
+    {
+      "id": "git-issue-113-finite-support-160-lambda-codatatype-positive",
+      "group": "datatype",
+      "file": "fixtures/git-issue-113-finite-support-160-lambda-codatatype-positive.dfy",
+      "source_sha256": "a8b1c51b1ce7e86ccf85feeae47efa8f3e14961ab5ec2065888f799a492a1d8b",
+      "body_without_RUN_lines_sha256": "a8b1c51b1ce7e86ccf85feeae47efa8f3e14961ab5ec2065888f799a492a1d8b",
+      "literal_RUNs": [],
+      "command_origin": "new explicit diagnostic proposal; draft has no RUN",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=true",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "universal proof",
+      "contract_review": "For arbitrary reference-free T and arbitrary Wrapped<T> stream, pure and mapped thunks return the selected current or tail head. No new allocation hypothesis, inhabited witness substitution or weakened stream contract.",
+      "unmeasured_intended_exit": 0,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [],
+      "original_contract_lines": [
+        {
+          "line": 15,
+          "source_line": "  ensures HeadThunk(s)() == s.head"
+        },
+        {
+          "line": 16,
+          "source_line": "  ensures true in MappedHeads(s) && false in MappedHeads(s)"
+        },
+        {
+          "line": 17,
+          "source_line": "  ensures MappedHeads(s)[true]() == s.head"
+        },
+        {
+          "line": 18,
+          "source_line": "  ensures MappedHeads(s)[false]() == s.tail.head"
+        }
+      ],
+      "original_arm": null,
+      "unexecuted": true
+    },
+    {
+      "id": "git-issue-113-finite-support-160-lambda-codatatype-proof-negative",
+      "group": "datatype",
+      "file": "fixtures/git-issue-113-finite-support-160-lambda-codatatype-proof-negative.dfy",
+      "source_sha256": "ffda6513cbe545458d220d2b8719092eb24c3d2d2bf1daa642aa82ad2bb3f1b0",
+      "body_without_RUN_lines_sha256": "ffda6513cbe545458d220d2b8719092eb24c3d2d2bf1daa642aa82ad2bb3f1b0",
+      "literal_RUNs": [],
+      "command_origin": "new explicit diagnostic proposal; draft has no RUN",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=true",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "intended proof rejection",
+      "contract_review": "Positive has witness1 and is mathematically nonempty. The corecursive constructor must reject its wrong0 field cast even when a suspended lambda returns the same co-family and the overall result is a trivial nominal wrapper. This file contains no final-false anti-vacuity claim from the invalid declaration.",
+      "unmeasured_intended_exit": 4,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [
+        {
+          "line": 9,
+          "column_1based": 3,
+          "source_line": "  Outer(Bad() as Outer, () => (Bad() as Outer), 0 as Positive) as WrappedOuter",
+          "term": "Outer(Bad() as Outer"
+        }
+      ],
+      "original_contract_lines": [],
+      "original_arm": null,
+      "unexecuted": true
+    },
+    {
+      "id": "git-issue-113-finite-support-160-map-carrier-resolver-negative",
+      "group": "datatype",
+      "file": "fixtures/git-issue-113-finite-support-160-map-carrier-resolver-negative.dfy",
+      "source_sha256": "21453b421c8791c6fd42d23f7f757aafef7852cd001e012c241318f6b7190cb3",
+      "body_without_RUN_lines_sha256": "21453b421c8791c6fd42d23f7f757aafef7852cd001e012c241318f6b7190cb3",
+      "literal_RUNs": [],
+      "command_origin": "new explicit diagnostic proposal; draft has no RUN",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=true",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "resolver rejection",
+      "contract_review": "map<bool,WrappedPayload<int>> is an infinite carrier despite its finite domain; the infinite set of all such maps cannot acquire a finite bound.",
+      "unmeasured_intended_exit": 2,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [
+        {
+          "line": 7,
+          "column_1based": 3,
+          "source_line": "  set m: map<bool, WrappedPayload<int>> | true",
+          "term": "set "
+        }
+      ],
+      "original_contract_lines": [],
+      "original_arm": null,
+      "unexecuted": true
+    },
+    {
+      "id": "git-issue-113-finite-support-160-mapped-capture-positive",
+      "group": "datatype",
+      "file": "fixtures/git-issue-113-finite-support-160-mapped-capture-positive.dfy",
+      "source_sha256": "97e2028acf1e2d6c3f995b866efaa653f97145bf2445d219c4c2fd1a0db9ba82",
+      "body_without_RUN_lines_sha256": "97e2028acf1e2d6c3f995b866efaa653f97145bf2445d219c4c2fd1a0db9ba82",
+      "literal_RUNs": [],
+      "command_origin": "new explicit diagnostic proposal; draft has no RUN",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=true",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "universal proof",
+      "contract_review": "For arbitrary n,m the same comprehension at n,m,n+1 must retain captured key and value arguments and the complete nominal tuple predicate, without projection-cache cross-contamination.",
+      "unmeasured_intended_exit": 0,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [],
+      "original_contract_lines": [
+        {
+          "line": 12,
+          "source_line": "  ensures ((0, n) as Key) in Captured(n)"
+        },
+        {
+          "line": 13,
+          "source_line": "  ensures Captured(n)[((0, n) as Key)].value == n"
+        },
+        {
+          "line": 14,
+          "source_line": "  ensures Captured(n)[((1, n) as Key)].value == n + 1"
+        },
+        {
+          "line": 15,
+          "source_line": "  ensures Captured(m)[((0, m) as Key)].value == m"
+        },
+        {
+          "line": 16,
+          "source_line": "  ensures Captured(n + 1)[((1, n + 1) as Key)].value == n + 2"
+        }
+      ],
+      "original_arm": null,
+      "unexecuted": true
+    },
+    {
+      "id": "git-issue-113-finite-support-160-rank-resolver-negative",
+      "group": "datatype",
+      "file": "fixtures/git-issue-113-finite-support-160-rank-resolver-negative.dfy",
+      "source_sha256": "e153af65cc8ad346230fcd18dee0986145bb68ba4ca9a63d8927b410bfc156a0",
+      "body_without_RUN_lines_sha256": "e153af65cc8ad346230fcd18dee0986145bb68ba4ca9a63d8927b410bfc156a0",
+      "literal_RUNs": [],
+      "command_origin": "new explicit diagnostic proposal; draft has no RUN",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=true",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "resolver rejection",
+      "contract_review": "Rank-only pools are allocation independent but not finite. Container(iset of arbitrarily many Leaf(int)) admits infinitely many lower-rank leaves. Raw and nominal forms must reject finite set formation.",
+      "unmeasured_intended_exit": 2,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [
+        {
+          "line": 9,
+          "column_1based": 3,
+          "source_line": "  set d: Leaf | d < c",
+          "term": "set "
+        },
+        {
+          "line": 14,
+          "column_1based": 3,
+          "source_line": "  set d: Leaf | d < c",
+          "term": "set "
+        }
+      ],
+      "original_contract_lines": [],
+      "original_arm": null,
+      "unexecuted": true
+    },
+    {
+      "id": "git-issue-113-finite-support-160-tuple-cast-proof-negative",
+      "group": "datatype",
+      "file": "fixtures/git-issue-113-finite-support-160-tuple-cast-proof-negative.dfy",
+      "source_sha256": "97cadda18e21a2555f9e2a6a69bbcc593c01449c3b183e8a0c09860d99d503c3",
+      "body_without_RUN_lines_sha256": "97cadda18e21a2555f9e2a6a69bbcc593c01449c3b183e8a0c09860d99d503c3",
+      "literal_RUNs": [],
+      "command_origin": "new explicit diagnostic proposal; draft has no RUN",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=true",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "intended proof rejection",
+      "contract_review": "Explicit finite witnesses include -1; the full tuple target predicate requires the second component to be nat, so the cast must fail. The parameterized i<0 ordinary cast remains a separate direct control.",
+      "unmeasured_intended_exit": 4,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [
+        {
+          "line": 4,
+          "column_1based": 32,
+          "source_line": "  map i: int | i in {-1, 0} :: ((0, i) as (nat, nat)) := i",
+          "term": "((0, i) as (nat, nat))"
+        },
+        {
+          "line": 4,
+          "column_1based": 33,
+          "source_line": "  map i: int | i in {-1, 0} :: ((0, i) as (nat, nat)) := i",
+          "term": "(0, i) as (nat, nat)"
+        },
+        {
+          "line": 10,
+          "column_1based": 18,
+          "source_line": "  var invalid := (0, i) as (nat, nat);",
+          "term": "(0, i) as (nat, nat)"
+        }
+      ],
+      "original_contract_lines": [
+        {
+          "line": 8,
+          "source_line": "  requires i < 0"
+        }
+      ],
+      "original_arm": null,
+      "unexecuted": true
+    },
+    {
+      "id": "git-issue-113-finite-support-160-lambda-codatatype-nonvacuity-proof-negative",
+      "group": "datatype",
+      "file": "fixtures/git-issue-113-finite-support-160-lambda-codatatype-nonvacuity-proof-negative.dfy",
+      "source_sha256": "2d369d9e82ee7edfa3a4cef7a7f0a1b2ebcf7274f0932db2daad922728388f34",
+      "body_without_RUN_lines_sha256": "2d369d9e82ee7edfa3a4cef7a7f0a1b2ebcf7274f0932db2daad922728388f34",
+      "literal_RUNs": [],
+      "command_origin": "new explicit diagnostic proposal; draft has no RUN",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=true",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "inhabited control",
+      "contract_review": "RepeatOne constructs a valid nonempty Positive-headed nominal stream (head1). An observing lambda is then proved to return1 before a final false assertion; the entire program is separate from Bad and its invalid field membership assumptions. This is inhabited nonvacuity evidence, not a universal observation proof.",
+      "unmeasured_intended_exit": 4,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [
+        {
+          "line": 16,
+          "column_1based": 3,
+          "source_line": "  assert false;",
+          "term": "assert false"
+        }
+      ],
+      "original_contract_lines": [],
+      "original_arm": null,
+      "unexecuted": true
+    },
+    {
+      "id": "finite-arrow-map-positive-raw",
+      "group": "arrow",
+      "file": "fixtures/finite-arrow-map-positive-raw.dfy",
+      "source_sha256": "c873fd6b75ad19010a3568850074bad732e77b8d4a72026c8e8c77e0ff8fb3b6",
+      "body_without_RUN_lines_sha256": "f804f53c63aa83d09c41b957165ea4b7980cfbdf0697a1531ab2b0d1e925d516",
+      "literal_RUNs": [
+        {
+          "line": 1,
+          "literal": "%verify --type-system-refresh=true --general-newtypes=true --extended-newtype-bases=false --cores=1 --resource-limit=16000000 --show-snippets=false --boogie /normalizeDeclarationOrder:0 \"%s\" > \"%t\""
+        }
+      ],
+      "command_origin": "unchanged literal %verify RUN; macro defaults expanded from pinned Source",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=false",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "universal proof",
+      "contract_review": "Universal arbitrary generic mapper/value and arbitrary flag; exact singleton map key/value contracts plus separate captures; preallocated capture positive. Source-only proposed proof; trigger/body completion may be necessary after measurement.",
+      "unmeasured_intended_exit": 0,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [],
+      "original_contract_lines": [
+        {
+          "line": 12,
+          "source_line": "  ensures BuildMap(f,value)(flag).Keys == {0}"
+        },
+        {
+          "line": 13,
+          "source_line": "  ensures BuildMap(f,value)(flag)[0] == f(value)"
+        },
+        {
+          "line": 23,
+          "source_line": "  ensures BuildMap(f,a)(flag)[0] == f(a)"
+        },
+        {
+          "line": 24,
+          "source_line": "  ensures BuildMap(g,b)(flag)[0] == g(b)"
+        }
+      ],
+      "original_arm": "raw",
+      "unexecuted": true
+    },
+    {
+      "id": "finite-arrow-map-inhabited-false-raw",
+      "group": "arrow",
+      "file": "fixtures/finite-arrow-map-inhabited-false-raw.dfy",
+      "source_sha256": "6c98047b94052de525e3f77f08bb8b10d0bd604bdda6981354c6e621483b3ac9",
+      "body_without_RUN_lines_sha256": "cdcb7152c86e04184ad12b62190d393dc02354b5d4910b46f449365afec75515",
+      "literal_RUNs": [
+        {
+          "line": 1,
+          "literal": "%exits-with 4 %verify --type-system-refresh=true --general-newtypes=true --extended-newtype-bases=false --cores=1 --resource-limit=16000000 --show-snippets=false --boogie /normalizeDeclarationOrder:0 \"%s\" > \"%t\""
+        }
+      ],
+      "command_origin": "unchanged literal %verify RUN; macro defaults expanded from pinned Source",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=false",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "inhabited control",
+      "contract_review": "All complete universal map contracts retained. Fresh current result equals c and !past allocated(c) establish a concrete live heap before final false. Require sole final false in FreshFiniteCapture; earlier positive-premise failures do not establish nonvacuity.",
+      "unmeasured_intended_exit": 4,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [
+        {
+          "line": 51,
+          "column_1based": 3,
+          "source_line": "  assert false;",
+          "term": "assert false"
+        }
+      ],
+      "original_contract_lines": [
+        {
+          "line": 12,
+          "source_line": "  ensures BuildMap(f,value)(flag).Keys == {0}"
+        },
+        {
+          "line": 13,
+          "source_line": "  ensures BuildMap(f,value)(flag)[0] == f(value)"
+        },
+        {
+          "line": 23,
+          "source_line": "  ensures BuildMap(f,a)(flag)[0] == f(a)"
+        },
+        {
+          "line": 24,
+          "source_line": "  ensures BuildMap(g,b)(flag)[0] == g(b)"
+        }
+      ],
+      "original_arm": "raw",
+      "unexecuted": true
+    },
+    {
+      "id": "finite-arrow-map-past-capture-negative-raw",
+      "group": "arrow",
+      "file": "fixtures/finite-arrow-map-past-capture-negative-raw.dfy",
+      "source_sha256": "34998747645da7025eaadc027c72fccfad302bfa21cd2709b4deb92d260b8e92",
+      "body_without_RUN_lines_sha256": "489928b237ab42cae6b0f221cfa6d1cfce047eb0c0c72c7406c88fc07dde2674",
+      "literal_RUNs": [
+        {
+          "line": 1,
+          "literal": "%exits-with 4 %verify --type-system-refresh=true --general-newtypes=true --extended-newtype-bases=false --cores=1 --resource-limit=16000000 --show-snippets=false --boogie /normalizeDeclarationOrder:0 \"%s\" > \"%t\""
+        }
+      ],
+      "command_origin": "unchanged literal %verify RUN; macro defaults expanded from pinned Source",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=false",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "intended proof rejection",
+      "contract_review": "Same live current result and fresh object boundary. Finite map/empty reads may not allocate the captured maker in the old heap. Require the past maker allocation assertion to fail.",
+      "unmeasured_intended_exit": 4,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [
+        {
+          "line": 38,
+          "column_1based": 3,
+          "source_line": "  assert old@Before(allocated(maker));",
+          "term": "assert old@Before(allocated(maker))"
+        },
+        {
+          "line": 51,
+          "column_1based": 3,
+          "source_line": "  assert old@Before(allocated(maker));",
+          "term": "assert old@Before(allocated(maker))"
+        }
+      ],
+      "original_contract_lines": [
+        {
+          "line": 12,
+          "source_line": "  ensures BuildMap(f,value)(flag).Keys == {0}"
+        },
+        {
+          "line": 13,
+          "source_line": "  ensures BuildMap(f,value)(flag)[0] == f(value)"
+        },
+        {
+          "line": 23,
+          "source_line": "  ensures BuildMap(f,a)(flag)[0] == f(a)"
+        },
+        {
+          "line": 24,
+          "source_line": "  ensures BuildMap(g,b)(flag)[0] == g(b)"
+        }
+      ],
+      "original_arm": "raw",
+      "unexecuted": true
+    },
+    {
+      "id": "finite-codata-observer-positive-raw",
+      "group": "arrow",
+      "file": "fixtures/finite-codata-observer-positive-raw.dfy",
+      "source_sha256": "cfd21017281fc419dfddad0a234f2cb15c3618c2c11b4f9b7d5d41d3ce8972d8",
+      "body_without_RUN_lines_sha256": "6df1a486e3751db071d88ce0b32d2b325050c5a158f88dabe7c25f88641d5674",
+      "literal_RUNs": [
+        {
+          "line": 1,
+          "literal": "%verify --type-system-refresh=true --general-newtypes=true --extended-newtype-bases=false --cores=1 --resource-limit=16000000 --show-snippets=false --boogie /normalizeDeclarationOrder:0 \"%s\" > \"%t\""
+        }
+      ],
+      "command_origin": "unchanged literal %verify RUN; macro defaults expanded from pinned Source",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=false",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "universal proof",
+      "contract_review": "Productive exact Stream identity recursion retained; arbitrary n:Positive and x:int establish legitimate outside-body observation through nominal/raw lambda and finite map. Nonempty Positive has witness1; consumer obtains full source carrier before destructor.",
+      "unmeasured_intended_exit": 0,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [],
+      "original_contract_lines": [
+        {
+          "line": 12,
+          "source_line": "  ensures FiniteObserver(Repeat(n))(x) == n"
+        }
+      ],
+      "original_arm": "raw",
+      "unexecuted": true
+    },
+    {
+      "id": "finite-codata-observer-inhabited-false-raw",
+      "group": "arrow",
+      "file": "fixtures/finite-codata-observer-inhabited-false-raw.dfy",
+      "source_sha256": "55fa0d690f5c6725b8338dd759f7a63e5557cfb1afd03b6509b5729d9d9a1e77",
+      "body_without_RUN_lines_sha256": "43909d0e741cf1e04b77f1f50037b03fb0e461913c8145cb38b79919600957e6",
+      "literal_RUNs": [
+        {
+          "line": 1,
+          "literal": "%exits-with 4 %verify --type-system-refresh=true --general-newtypes=true --extended-newtype-bases=false --cores=1 --resource-limit=16000000 --show-snippets=false --boogie /normalizeDeclarationOrder:0 \"%s\" > \"%t\""
+        }
+      ],
+      "command_origin": "unchanged literal %verify RUN; macro defaults expanded from pinned Source",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=false",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "inhabited control",
+      "contract_review": "Productive ordinary observed Positive value exists and equals1 before the sole last false; preserve ObserveContract universal source body and contracts. This input contains no invalid Bad declaration.",
+      "unmeasured_intended_exit": 4,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [
+        {
+          "line": 20,
+          "column_1based": 87,
+          "source_line": "lemma LiveControl() { ObserveContract(1,0); assert FiniteObserver(Repeat(1))(0) == 1; assert false; }",
+          "term": "assert false"
+        }
+      ],
+      "original_contract_lines": [
+        {
+          "line": 12,
+          "source_line": "  ensures FiniteObserver(Repeat(n))(x) == n"
+        }
+      ],
+      "original_arm": "raw",
+      "unexecuted": true
+    },
+    {
+      "id": "finite-codata-suspended-observation-negative-raw",
+      "group": "arrow",
+      "file": "fixtures/finite-codata-suspended-observation-negative-raw.dfy",
+      "source_sha256": "776469c1ec6f3cf188791b46e6cb847e7c7ec0c6c87816216ebfa1e2597cd3bf",
+      "body_without_RUN_lines_sha256": "0f9aba9e9fae89facb3fe7687b435a516b192f79094d9d6f54927fdd98e6d7a5",
+      "literal_RUNs": [
+        {
+          "line": 1,
+          "literal": "%exits-with 4 %verify --type-system-refresh=true --general-newtypes=true --extended-newtype-bases=false --cores=1 --resource-limit=16000000 --show-snippets=false --boogie /normalizeDeclarationOrder:0 \"%s\" > \"%t\""
+        }
+      ],
+      "command_origin": "unchanged literal %verify RUN; macro defaults expanded from pinned Source",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=false",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "intended proof rejection",
+      "contract_review": "Positive is nonempty with witness1. A suspended co-call observed inside a lambda/finite-map witness must not justify an introduction of zero into Positive: 0*demand(0) is zero. Bad must reject at source productivity/membership or the explicit wrong-zero cast boundary. No downstream client is treated as nonvacuity; separate productive Positive controls supply that scope.",
+      "unmeasured_intended_exit": 4,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [
+        {
+          "line": 8,
+          "column_1based": 57,
+          "source_line": "  var demand := ((x:int) => (map i:int | i == x :: 0 := (Bad() as Refined).field)[0]) as Observe;",
+          "term": "(Bad() as Refined).field"
+        },
+        {
+          "line": 9,
+          "column_1based": 16,
+          "source_line": "  var wrong := (0 * demand(0)) as Positive;",
+          "term": "(0 * demand(0)) as Positive"
+        },
+        {
+          "line": 10,
+          "column_1based": 3,
+          "source_line": "  R(Bad() as Refined,wrong) as RefinedN",
+          "term": "R(Bad() as Refined,wrong)"
+        }
+      ],
+      "original_contract_lines": [],
+      "original_arm": "raw",
+      "unexecuted": true
+    },
+    {
+      "id": "finite-arrow-map-positive-nominal",
+      "group": "arrow",
+      "file": "fixtures/finite-arrow-map-positive-nominal.dfy",
+      "source_sha256": "d13e97023f3ac634ce6848d37d35c33878b71b2315e450bf0b39e4b56d849587",
+      "body_without_RUN_lines_sha256": "64234356879967e81c93a91b827f771163e18117a5ffa76cea3cee14e4497d05",
+      "literal_RUNs": [
+        {
+          "line": 1,
+          "literal": "%verify --type-system-refresh=true --general-newtypes=true --extended-newtype-bases=true --cores=1 --resource-limit=16000000 --show-snippets=false --boogie /normalizeDeclarationOrder:0 \"%s\" > \"%t\""
+        }
+      ],
+      "command_origin": "unchanged literal %verify RUN; macro defaults expanded from pinned Source",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=true",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "universal proof",
+      "contract_review": "Universal arbitrary generic mapper/value and arbitrary flag; exact singleton map key/value contracts plus separate captures; preallocated capture positive. Source-only proposed proof; trigger/body completion may be necessary after measurement.",
+      "unmeasured_intended_exit": 0,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [],
+      "original_contract_lines": [
+        {
+          "line": 12,
+          "source_line": "  ensures BuildMap(f,value)(flag).Keys == {0}"
+        },
+        {
+          "line": 13,
+          "source_line": "  ensures BuildMap(f,value)(flag)[0] == f(value)"
+        },
+        {
+          "line": 23,
+          "source_line": "  ensures BuildMap(f,a)(flag)[0] == f(a)"
+        },
+        {
+          "line": 24,
+          "source_line": "  ensures BuildMap(g,b)(flag)[0] == g(b)"
+        }
+      ],
+      "original_arm": "nominal",
+      "unexecuted": true
+    },
+    {
+      "id": "finite-arrow-map-inhabited-false-nominal",
+      "group": "arrow",
+      "file": "fixtures/finite-arrow-map-inhabited-false-nominal.dfy",
+      "source_sha256": "c5184c789661e4da69e9ec0a4229f44cb19be6fc71d5dd3f5b92be8005df832c",
+      "body_without_RUN_lines_sha256": "0cc837bdecc1fb5fbc6c14a4a407c39bf4609c876d628f7a76839637839de8eb",
+      "literal_RUNs": [
+        {
+          "line": 1,
+          "literal": "%exits-with 4 %verify --type-system-refresh=true --general-newtypes=true --extended-newtype-bases=true --cores=1 --resource-limit=16000000 --show-snippets=false --boogie /normalizeDeclarationOrder:0 \"%s\" > \"%t\""
+        }
+      ],
+      "command_origin": "unchanged literal %verify RUN; macro defaults expanded from pinned Source",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=true",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "inhabited control",
+      "contract_review": "All complete universal map contracts retained. Fresh current result equals c and !past allocated(c) establish a concrete live heap before final false. Require sole final false in FreshFiniteCapture; earlier positive-premise failures do not establish nonvacuity.",
+      "unmeasured_intended_exit": 4,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [
+        {
+          "line": 51,
+          "column_1based": 3,
+          "source_line": "  assert false;",
+          "term": "assert false"
+        }
+      ],
+      "original_contract_lines": [
+        {
+          "line": 12,
+          "source_line": "  ensures BuildMap(f,value)(flag).Keys == {0}"
+        },
+        {
+          "line": 13,
+          "source_line": "  ensures BuildMap(f,value)(flag)[0] == f(value)"
+        },
+        {
+          "line": 23,
+          "source_line": "  ensures BuildMap(f,a)(flag)[0] == f(a)"
+        },
+        {
+          "line": 24,
+          "source_line": "  ensures BuildMap(g,b)(flag)[0] == g(b)"
+        }
+      ],
+      "original_arm": "nominal",
+      "unexecuted": true
+    },
+    {
+      "id": "finite-arrow-map-past-capture-negative-nominal",
+      "group": "arrow",
+      "file": "fixtures/finite-arrow-map-past-capture-negative-nominal.dfy",
+      "source_sha256": "1efc64a43bf3ece65dc912822c8487d70b1ec54656c61c710d370e585c272daf",
+      "body_without_RUN_lines_sha256": "aef9a3833cf5697ce8f1f64e8bc6025814ec2213456b3d69375ecceae58ac5e6",
+      "literal_RUNs": [
+        {
+          "line": 1,
+          "literal": "%exits-with 4 %verify --type-system-refresh=true --general-newtypes=true --extended-newtype-bases=true --cores=1 --resource-limit=16000000 --show-snippets=false --boogie /normalizeDeclarationOrder:0 \"%s\" > \"%t\""
+        }
+      ],
+      "command_origin": "unchanged literal %verify RUN; macro defaults expanded from pinned Source",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=true",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "intended proof rejection",
+      "contract_review": "Same live current result and fresh object boundary. Finite map/empty reads may not allocate the captured maker in the old heap. Require the past maker allocation assertion to fail.",
+      "unmeasured_intended_exit": 4,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [
+        {
+          "line": 38,
+          "column_1based": 3,
+          "source_line": "  assert old@Before(allocated(maker));",
+          "term": "assert old@Before(allocated(maker))"
+        },
+        {
+          "line": 51,
+          "column_1based": 3,
+          "source_line": "  assert old@Before(allocated(maker));",
+          "term": "assert old@Before(allocated(maker))"
+        }
+      ],
+      "original_contract_lines": [
+        {
+          "line": 12,
+          "source_line": "  ensures BuildMap(f,value)(flag).Keys == {0}"
+        },
+        {
+          "line": 13,
+          "source_line": "  ensures BuildMap(f,value)(flag)[0] == f(value)"
+        },
+        {
+          "line": 23,
+          "source_line": "  ensures BuildMap(f,a)(flag)[0] == f(a)"
+        },
+        {
+          "line": 24,
+          "source_line": "  ensures BuildMap(g,b)(flag)[0] == g(b)"
+        }
+      ],
+      "original_arm": "nominal",
+      "unexecuted": true
+    },
+    {
+      "id": "finite-codata-observer-positive-nominal",
+      "group": "arrow",
+      "file": "fixtures/finite-codata-observer-positive-nominal.dfy",
+      "source_sha256": "ae5710dfdfa66a3250fb0e3d573250168053cb93446d0ed0843af364019c6773",
+      "body_without_RUN_lines_sha256": "57b0f64d1c86fe0e54718ba6fbefe1b7c3e5dc9f01c87fd2f21cd077b3d06dee",
+      "literal_RUNs": [
+        {
+          "line": 1,
+          "literal": "%verify --type-system-refresh=true --general-newtypes=true --extended-newtype-bases=true --cores=1 --resource-limit=16000000 --show-snippets=false --boogie /normalizeDeclarationOrder:0 \"%s\" > \"%t\""
+        }
+      ],
+      "command_origin": "unchanged literal %verify RUN; macro defaults expanded from pinned Source",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=true",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "universal proof",
+      "contract_review": "Productive exact Stream identity recursion retained; arbitrary n:Positive and x:int establish legitimate outside-body observation through nominal/raw lambda and finite map. Nonempty Positive has witness1; consumer obtains full source carrier before destructor.",
+      "unmeasured_intended_exit": 0,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [],
+      "original_contract_lines": [
+        {
+          "line": 12,
+          "source_line": "  ensures FiniteObserver(Repeat(n))(x) == n"
+        }
+      ],
+      "original_arm": "nominal",
+      "unexecuted": true
+    },
+    {
+      "id": "finite-codata-observer-inhabited-false-nominal",
+      "group": "arrow",
+      "file": "fixtures/finite-codata-observer-inhabited-false-nominal.dfy",
+      "source_sha256": "32c684f66db3f77685cdf5c4c56f442905ea964684426d2b15dd6258931a44cb",
+      "body_without_RUN_lines_sha256": "63889007412c2838ffca03d0fbb25aca15d25e76c82c1d70c942471d937c3452",
+      "literal_RUNs": [
+        {
+          "line": 1,
+          "literal": "%exits-with 4 %verify --type-system-refresh=true --general-newtypes=true --extended-newtype-bases=true --cores=1 --resource-limit=16000000 --show-snippets=false --boogie /normalizeDeclarationOrder:0 \"%s\" > \"%t\""
+        }
+      ],
+      "command_origin": "unchanged literal %verify RUN; macro defaults expanded from pinned Source",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=true",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "inhabited control",
+      "contract_review": "Productive ordinary observed Positive value exists and equals1 before the sole last false; preserve ObserveContract universal source body and contracts. This input contains no invalid Bad declaration.",
+      "unmeasured_intended_exit": 4,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [
+        {
+          "line": 20,
+          "column_1based": 87,
+          "source_line": "lemma LiveControl() { ObserveContract(1,0); assert FiniteObserver(Repeat(1))(0) == 1; assert false; }",
+          "term": "assert false"
+        }
+      ],
+      "original_contract_lines": [
+        {
+          "line": 12,
+          "source_line": "  ensures FiniteObserver(Repeat(n))(x) == n"
+        }
+      ],
+      "original_arm": "nominal",
+      "unexecuted": true
+    },
+    {
+      "id": "finite-codata-suspended-observation-negative-nominal",
+      "group": "arrow",
+      "file": "fixtures/finite-codata-suspended-observation-negative-nominal.dfy",
+      "source_sha256": "1daefba502810d6c3d38d3b02d7d64633e22af1bbb73f07cf33c265229acfa01",
+      "body_without_RUN_lines_sha256": "14193e310c4b9d8e6b693d15ee9be3bb05861e461d4d1ad5740b4a525e76c8be",
+      "literal_RUNs": [
+        {
+          "line": 1,
+          "literal": "%exits-with 4 %verify --type-system-refresh=true --general-newtypes=true --extended-newtype-bases=true --cores=1 --resource-limit=16000000 --show-snippets=false --boogie /normalizeDeclarationOrder:0 \"%s\" > \"%t\""
+        }
+      ],
+      "command_origin": "unchanged literal %verify RUN; macro defaults expanded from pinned Source",
+      "own_arguments_before_source": [
+        "--type-system-refresh=true",
+        "--general-newtypes=true",
+        "--extended-newtype-bases=true",
+        "--cores=1",
+        "--resource-limit=16000000",
+        "--show-snippets=false",
+        "--boogie",
+        "/normalizeDeclarationOrder:0"
+      ],
+      "semantic_role": "intended proof rejection",
+      "contract_review": "Positive is nonempty with witness1. A suspended co-call observed inside a lambda/finite-map witness must not justify an introduction of zero into Positive: 0*demand(0) is zero. Bad must reject at source productivity/membership or the explicit wrong-zero cast boundary. No downstream client is treated as nonvacuity; separate productive Positive controls supply that scope.",
+      "unmeasured_intended_exit": 4,
+      "actual_counts": null,
+      "accepted_counts": null,
+      "intended_rejection_locations": [
+        {
+          "line": 8,
+          "column_1based": 57,
+          "source_line": "  var demand := ((x:int) => (map i:int | i == x :: 0 := (Bad() as Refined).field)[0]) as Observe;",
+          "term": "(Bad() as Refined).field"
+        },
+        {
+          "line": 9,
+          "column_1based": 16,
+          "source_line": "  var wrong := (0 * demand(0)) as Positive;",
+          "term": "(0 * demand(0)) as Positive"
+        },
+        {
+          "line": 10,
+          "column_1based": 3,
+          "source_line": "  R(Bad() as Refined,wrong) as RefinedN",
+          "term": "R(Bad() as Refined,wrong)"
+        }
+      ],
+      "original_contract_lines": [],
+      "original_arm": "nominal",
+      "unexecuted": true
+    }
+  ],
+  "source_programs": 22,
+  "datatype_programs": 10,
+  "arrow_programs": 12,
+  "AX_projections": [
+    "false",
+    "true"
+  ],
+  "expected_physical_invocations": 44,
+  "compiler": {
+    "product": "4e50e86cde6ab2ef6cab0762ffc4df59d646dc15",
+    "original_build_source_commit": "31f49205d82e73a8db944ef0b9c2be063736d72c",
+    "source_tree": "9c2bb48a778ee2abd6ef10f8a0d72f7843a16af5",
+    "core_tree": "1be0fe66bc603a9fc279e522e925be22417a7c41",
+    "driver_tree": "208a4277a53e6dc068f5ed2f36e5824a6097bece",
+    "boundary": "Public build scratch commit has identical complete Source tree to the requested product; recording/workflow changes are outside Source."
+  },
+  "compiler_version": "4.11.0+fcb2042d.review.c9c7622d",
+  "source_files": 6543,
+  "verify_macro_source": {
+    "path": "Source/IntegrationTests/LitTests.cs",
+    "source_commit": "31f49205d82e73a8db944ef0b9c2be063736d72c",
+    "sha256": "72911d040daa17c39ce45f15dc8ef10b0aacdf07c61d8fb0899b484e126e8cf0"
+  },
+  "verify_macro_defaults": [
+    "verify",
+    "--type-system-refresh",
+    "--general-traits=datatype",
+    "--general-newtypes",
+    "--use-basename-for-filename",
+    "--show-snippets:false",
+    "--standard-libraries:false",
+    "--cores:2",
+    "--verification-time-limit:300",
+    "--resource-limit:50e6"
+  ],
+  "solver": {
+    "version": "5.1.0",
+    "url": "https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip",
+    "archive_sha256": "f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a",
+    "expected_version_line": "Z3 version 5.1.0 - 64 bit"
+  },
+  "wall_clock_safety_seconds": 600,
+  "observation_policy": {
+    "raw_stdout_stderr": true,
+    "csv_json_bpl_requested": true,
+    "no_new_seed_option": true,
+    "AX": "Two explicit derived options; original RUN has no AX option, never labelled literal AX.",
+    "canonical_RUN_execution": false,
+    "negative_reach": "Exact raw locations retained. Intended exits alone do not establish rejection at the intended obligation.",
+    "count_oracles": "No invented verified/error counts or goldens. All counts remain actual measurements.",
+    "acceptance": "Diagnostic complete means observation closure only; proof acceptance and final negative/nonvacuity classification require semantic review.",
+    "failures": "OOR/timeouts/warnings/missing artifacts/guard failures remain explicit; never accepted."
+  }
+}
