@@ -577,6 +577,22 @@ git-issues/git-issue-1253.dfy	2		5
 git-issues/git-issue-1256.dfy	4	15 verified, 2 errors	21,22
 git-issues/git-issue-1277.dfy	4	0 verified, 2 errors	11
 git-issues/git-issue-1309.dfy	2		23
+git-issues/git-issue-132-newtype-finite-actual-positive-triggered.dfy	0	2 verified, 0 errors	
+git-issues/git-issue-132-newtype-general-arrow-characteristic-negative.dfy	2		8,9,10
+git-issues/git-issue-132-newtype-hidden-characteristic-negative.dfy	2		13
+git-issues/git-issue-132-newtype-mixed-subset-cycle-negative.dfy	2		6
+git-issues/git-issue-132-newtype-partial-total-positive.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-132-newtype-partial-total-universal-proof-nonvacuity.dfy	4	1 verified, 3 errors	16,21,25
+git-issues/git-issue-132-newtype-partial-total-universal-proof.dfy	0	7 verified, 0 errors	
+git-issues/git-issue-132-newtype-provided-characteristic-positive.dfy	0	0 verified, 0 errors	
+git-issues/git-issue-132-newtype-provided-inhabited-false-negative.dfy	4	0 verified, 1 error	17
+git-issues/git-issue-132-newtype-provided-newtype-no-characteristic-negative.dfy	2		15,16
+git-issues/git-issue-132-newtype-provided-no-characteristic-negative.dfy	2		16,17,18,19,20,21
+git-issues/git-issue-132-newtype-reference-characteristic-negative.dfy	2		9,10,13
+git-issues/git-issue-132-newtype-revealed-control-positive.dfy	0	0 verified, 0 errors	
+git-issues/git-issue-132-newtype-sequence-allocation-negative.dfy	4	2 verified, 1 error	20
+git-issues/git-issue-132-newtype-sequence-allocation-preallocated.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-132-newtype-sequence-allocation-pure.dfy	0	3 verified, 0 errors	
 git-issues/git-issue-1347.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-1373.dfy	2		6,7
 git-issues/git-issue-1377.dfy	2		22,25,36,37,38,39
