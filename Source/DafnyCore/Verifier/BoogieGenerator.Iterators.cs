@@ -159,7 +159,7 @@ namespace Microsoft.Dafny {
         var e = formal.DefaultValue;
         CheckWellformed(e, new WFOptions(null, false, false, true), localVariables, builder, etran.WithReadsFrame(etran.readsFrame, null));
         builder.Add(new Bpl.AssumeCmd(e.Origin, etran.CanCallAssumptionForVerification(e)));
-        CheckSubrange(e.Origin, etran.TrExpr(e), e.Type, formal.Type, e, builder);
+        CheckSubrange(e.Origin, etran.TrExpr(e), e.Type, formal.Type, e, builder, etran: etran);
       }
       // check well-formedness of the preconditions, and then assume each one of them
       var wfOptions = new WFOptions();

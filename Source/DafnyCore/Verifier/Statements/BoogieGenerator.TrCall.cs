@@ -82,7 +82,7 @@ public partial class BoogieGenerator {
       }
 
       Bpl.Expr bRhs = bLhss[i];  // the RHS (bRhs) of the assignment to the actual call-LHS (lhs) was a LHS (bLhss[i]) in the Boogie call statement
-      CheckSubrange(lhs.Origin, bRhs, s.Method.Outs[i].Type.Subst(tySubst), rhsTypeConstraint, null, builder);
+      CheckSubrange(lhs.Origin, bRhs, s.Method.Outs[i].Type.Subst(tySubst), rhsTypeConstraint, null, builder, etran: etran);
       bRhs = CondApplyBox(lhs.Origin, bRhs, lhs.Type, lhsType);
 
       lhsBuilders[i](bRhs, false, builder, etran);
@@ -224,7 +224,7 @@ public partial class BoogieGenerator {
         builder.Add(new CommentCmd("ProcessCallStmt: CheckSubrange"));
         // Check the subrange without boxing
         var beforeBox = etran.TrExpr(actual);
-        CheckSubrange(actual.Origin, beforeBox, actual.Type, formal.Type.Subst(tySubst), actual, builder);
+        CheckSubrange(actual.Origin, beforeBox, actual.Type, formal.Type.Subst(tySubst), actual, builder, etran: etran);
         bActual = AdaptBoxing(actual.Origin, beforeBox, actual.Type, formal.Type.Subst(tySubst));
         dActual = actual;
       }
@@ -241,7 +241,7 @@ public partial class BoogieGenerator {
     // check that its arguments were all available at that time as well.
     if (etran.UsesOldHeap) {
       if (!method.IsStatic && !(method is Constructor)) {
-        Bpl.Expr wh = GetWhereClause(receiver.Origin, etran.TrExpr(receiver), receiver.Type, etran, ISALLOC, true);
+        Bpl.Expr wh = AllocationObligation(receiver.Origin, etran.TrExpr(receiver), receiver.Type, etran);
         if (wh != null) {
           var desc = new IsAllocated("receiver argument", "in the state in which the method is invoked", receiver);
           builder.Add(Assert(receiver.Origin, wh, desc, builder.Context));
@@ -249,7 +249,7 @@ public partial class BoogieGenerator {
       }
       for (int i = 0; i < Args.Count; i++) {
         Expression ee = Args[i];
-        Bpl.Expr wh = GetWhereClause(ee.Origin, etran.TrExpr(ee), ee.Type, etran, ISALLOC, true);
+        Bpl.Expr wh = AllocationObligation(ee.Origin, etran.TrExpr(ee), ee.Type, etran);
         if (wh != null) {
           var desc = new IsAllocated("argument", "in the state in which the method is invoked", ee);
           builder.Add(Assert(ee.Origin, wh, desc, builder.Context));
@@ -257,7 +257,7 @@ public partial class BoogieGenerator {
       }
     } else if (method is TwoStateLemma) {
       if (!method.IsStatic) {
-        Bpl.Expr wh = GetWhereClause(receiver.Origin, etran.TrExpr(receiver), receiver.Type, etran.OldAt(atLabel), ISALLOC, true);
+        Bpl.Expr wh = AllocationObligation(receiver.Origin, etran.TrExpr(receiver), receiver.Type, etran.OldAt(atLabel));
         if (wh != null) {
           var desc = new IsAllocated("receiver argument", "in the two-state lemma's previous state", receiver, atLabel);
           builder.Add(Assert(receiver.Origin, wh, desc, builder.Context));
@@ -268,7 +268,7 @@ public partial class BoogieGenerator {
         var formal = callee.Ins[i];
         if (formal.IsOld) {
           Expression ee = Args[i];
-          Bpl.Expr wh = GetWhereClause(ee.Origin, etran.TrExpr(ee), ee.Type, etran.OldAt(atLabel), ISALLOC, true);
+          Bpl.Expr wh = AllocationObligation(ee.Origin, etran.TrExpr(ee), ee.Type, etran.OldAt(atLabel));
           if (wh != null) {
             var pIdx = Args.Count == 1 ? "" : " at index " + i;
             var desc = new IsAllocated(
@@ -371,6 +371,24 @@ public partial class BoogieGenerator {
       // uninterpreted) anyway, so the refined module will have checked the call precondition for all possible definitions
       // of the predicate.
       call.IsFree = true;
+    }
+    if (options.Get(CommonOptionBag.ConsistentObligationChecks) && !call.IsFree) {
+      var callEtran = method is TwoStateLemma
+        ? etran.WithVerificationOldHeap(etran.OldAt(atLabel).HeapExpr) : etran;
+      foreach (var requirement in ConjunctsOf(callee.Req)) {
+        var instantiated = Substitute(requirement.E, receiver, substMap, tySubst);
+        builder.Add(TrAssumeCmd(tok, callEtran.CanCallAssumptionForVerification(instantiated)));
+        var lowering = LowerProposition(builder.Context, instantiated, callEtran, applyInduction: false);
+        var (error, success) = CustomErrorMessage(requirement.Attributes);
+        var direct = Substitute(requirement.E, receiver, directSubstMap, tySubst);
+        var description = new PreconditionSatisfied(direct, error, success);
+        foreach (var piece in lowering.Pieces) {
+          if (piece.IsChecked) {
+            builder.Add(AssertAndForget(builder.Context, new NestedOrigin(tok, piece.Tok), piece.E, description));
+          }
+        }
+        builder.Add(TrAssumeCmdWithDependencies(callEtran, tok, instantiated, "checked method precondition"));
+      }
     }
     builder.Add(call);
 

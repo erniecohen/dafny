@@ -13,6 +13,7 @@ namespace Microsoft.Dafny {
   public partial class BoogieGenerator {
     public partial class ExpressionTranslator {
       private DafnyOptions options;
+      private readonly VerificationExpressionContext verificationContext;
 
       // HeapExpr == null ==> translation of pure (no-heap) expression
       readonly Boogie.Expr _the_heap_expr;
@@ -53,6 +54,17 @@ namespace Microsoft.Dafny {
       internal readonly FuelSetting layerInterCluster;
       internal readonly FuelSetting layerIntraCluster = null;  // a value of null says to do the same as for inter-cluster calls
       public int Statistics_CustomLayerFunctionCount = 0;
+      // A translation result, independent of the diagnostic counters. Clones within
+      // one occurrence share it; every split/root starts a fresh observation.
+      private sealed class FuelUsage { public bool Used; }
+      private FuelUsage fuelUsage;
+      internal bool FuelWasUsed => fuelUsage?.Used == true;
+      internal ExpressionTranslator StartFuelTracking() {
+        var clone = WithVerificationContext(verificationContext);
+        clone.fuelUsage = new FuelUsage();
+        if (clone.oldEtran != null) { clone.oldEtran.fuelUsage = clone.fuelUsage; }
+        return clone;
+      }
       public int Statistics_HeapAsQuantifierCount = 0;
       public int Statistics_HeapUses = 0;
       public readonly bool stripLits = false;
@@ -75,7 +87,7 @@ namespace Microsoft.Dafny {
       /// </summary>
       ExpressionTranslator(BoogieGenerator boogieGenerator, PredefinedDecls predef, Boogie.Expr heap, string thisVar,
         Function applyLimitedCurrentFunction, FuelSetting layerInterCluster, FuelSetting layerIntraCluster, IFrameScope scope,
-        string readsFrame, string modifiesFrame, bool stripLits) {
+        string readsFrame, string modifiesFrame, bool stripLits, VerificationExpressionContext verificationContext = null) {
 
         Contract.Requires(boogieGenerator != null);
         Contract.Requires(predef != null);
@@ -100,6 +112,7 @@ namespace Microsoft.Dafny {
         this.modifiesFrame = modifiesFrame;
         this.stripLits = stripLits;
         this.options = boogieGenerator.options;
+        this.verificationContext = verificationContext;
       }
 
       public static Boogie.IdentifierExpr HeapIdentifierExpr(PredefinedDecls predef, Boogie.IToken heapToken) {
@@ -138,19 +151,20 @@ namespace Microsoft.Dafny {
       }
 
       public ExpressionTranslator(ExpressionTranslator etran, Boogie.Expr heap)
-        : this(etran.BoogieGenerator, etran.Predef, heap, etran.This, etran.applyLimited_CurrentFunction, etran.layerInterCluster, etran.layerIntraCluster, etran.scope, etran.readsFrame, etran.modifiesFrame, etran.stripLits) {
+        : this(etran.BoogieGenerator, etran.Predef, heap, etran.This, etran.applyLimited_CurrentFunction, etran.layerInterCluster, etran.layerIntraCluster, etran.scope, etran.readsFrame, etran.modifiesFrame, etran.stripLits, etran.verificationContext) {
         Contract.Requires(etran != null);
+        fuelUsage = etran.fuelUsage;
       }
 
       public ExpressionTranslator WithReadsFrame(string newReadsFrame, IFrameScope frameScope) {
-        return new ExpressionTranslator(BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, frameScope, newReadsFrame, modifiesFrame, stripLits);
+        return new ExpressionTranslator(BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, frameScope, newReadsFrame, modifiesFrame, stripLits, verificationContext) { fuelUsage = fuelUsage };
       }
       public ExpressionTranslator WithReadsFrame(string newReadsFrame) {
-        return new ExpressionTranslator(BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, scope, newReadsFrame, modifiesFrame, stripLits);
+        return new ExpressionTranslator(BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, scope, newReadsFrame, modifiesFrame, stripLits, verificationContext) { fuelUsage = fuelUsage };
       }
 
       public ExpressionTranslator WithModifiesFrame(string newModifiesFrame) {
-        return new ExpressionTranslator(BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, scope, readsFrame, newModifiesFrame, stripLits);
+        return new ExpressionTranslator(BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, scope, readsFrame, newModifiesFrame, stripLits, verificationContext) { fuelUsage = fuelUsage };
       }
 
       internal IOrigin GetToken(Expression expression) {
@@ -163,7 +177,8 @@ namespace Microsoft.Dafny {
           Contract.Ensures(Contract.Result<ExpressionTranslator>() != null);
 
           if (oldEtran == null) {
-            oldEtran = new ExpressionTranslator(BoogieGenerator, Predef, new Boogie.OldExpr(HeapExpr.tok, HeapExpr), This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, scope, readsFrame, modifiesFrame, stripLits);
+            oldEtran = new ExpressionTranslator(BoogieGenerator, Predef, new Boogie.OldExpr(HeapExpr.tok, HeapExpr), This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, scope, readsFrame, modifiesFrame, stripLits, verificationContext);
+            oldEtran.fuelUsage = fuelUsage;
             oldEtran.oldEtran = oldEtran;
           }
           return oldEtran;
@@ -191,7 +206,7 @@ namespace Microsoft.Dafny {
 
       public ExpressionTranslator WithHeapVariable(string heapVariableName) {
         var heapAt = new Boogie.IdentifierExpr(Token.NoToken, heapVariableName, Predef.HeapType);
-        return new ExpressionTranslator(BoogieGenerator, Predef, heapAt, This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, scope, readsFrame, modifiesFrame, stripLits);
+        return new ExpressionTranslator(BoogieGenerator, Predef, heapAt, This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, scope, readsFrame, modifiesFrame, stripLits, verificationContext) { fuelUsage = fuelUsage };
       }
 
       public bool UsesOldHeap {
@@ -205,7 +220,7 @@ namespace Microsoft.Dafny {
         Contract.Requires(layerArgument != null);
         Contract.Ensures(Contract.Result<ExpressionTranslator>() != null);
 
-        return CloneExpressionTranslator(this, BoogieGenerator, Predef, HeapExpr, This, null, new FuelSetting(BoogieGenerator, 0, layerArgument), new FuelSetting(BoogieGenerator, 0, layerArgument), readsFrame, modifiesFrame, stripLits);
+        return CloneExpressionTranslator(this, BoogieGenerator, Predef, HeapExpr, This, null, new FuelSetting(BoogieGenerator, 0, layerArgument), new FuelSetting(BoogieGenerator, 0, layerArgument), readsFrame, modifiesFrame, stripLits, verificationContext);
       }
 
       internal ExpressionTranslator WithCustomFuelSetting(CustomFuelSettings customSettings) {
@@ -213,7 +228,7 @@ namespace Microsoft.Dafny {
         Contract.Requires(customSettings != null);
         Contract.Ensures(Contract.Result<ExpressionTranslator>() != null);
 
-        return CloneExpressionTranslator(this, BoogieGenerator, Predef, HeapExpr, This, null, layerInterCluster.WithContext(customSettings), layerIntraCluster.WithContext(customSettings), readsFrame, modifiesFrame, stripLits);
+        return CloneExpressionTranslator(this, BoogieGenerator, Predef, HeapExpr, This, null, layerInterCluster.WithContext(customSettings), layerIntraCluster.WithContext(customSettings), readsFrame, modifiesFrame, stripLits, verificationContext);
       }
 
       public ExpressionTranslator ReplaceLayer(Boogie.Expr layerArgument) {
@@ -221,12 +236,12 @@ namespace Microsoft.Dafny {
         Contract.Requires(layerArgument != null);
         Contract.Ensures(Contract.Result<ExpressionTranslator>() != null);
 
-        return CloneExpressionTranslator(this, BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, layerInterCluster.WithLayer(layerArgument), layerIntraCluster.WithLayer(layerArgument), readsFrame, modifiesFrame, stripLits);
+        return CloneExpressionTranslator(this, BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, layerInterCluster.WithLayer(layerArgument), layerIntraCluster.WithLayer(layerArgument), readsFrame, modifiesFrame, stripLits, verificationContext);
       }
 
       public ExpressionTranslator WithNoLits() {
         Contract.Ensures(Contract.Result<ExpressionTranslator>() != null);
-        return CloneExpressionTranslator(this, BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, readsFrame, modifiesFrame, true);
+        return CloneExpressionTranslator(this, BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, readsFrame, modifiesFrame, true, verificationContext);
       }
 
       public ExpressionTranslator LimitedFunctions(Function applyLimited_CurrentFunction, Boogie.Expr layerArgument) {
@@ -234,29 +249,32 @@ namespace Microsoft.Dafny {
         Contract.Requires(layerArgument != null);
         Contract.Ensures(Contract.Result<ExpressionTranslator>() != null);
 
-        return CloneExpressionTranslator(this, BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, /* layerArgument */ layerInterCluster, new FuelSetting(BoogieGenerator, 0, layerArgument), readsFrame, modifiesFrame, stripLits);
+        return CloneExpressionTranslator(this, BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, /* layerArgument */ layerInterCluster, new FuelSetting(BoogieGenerator, 0, layerArgument), readsFrame, modifiesFrame, stripLits, verificationContext);
       }
 
       public ExpressionTranslator LayerOffset(int offset) {
         Contract.Requires(0 <= offset);
         Contract.Ensures(Contract.Result<ExpressionTranslator>() != null);
 
-        return CloneExpressionTranslator(this, BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, layerInterCluster.Offset(offset), layerIntraCluster, readsFrame, modifiesFrame, stripLits);
+        return CloneExpressionTranslator(this, BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, layerInterCluster.Offset(offset), layerIntraCluster, readsFrame, modifiesFrame, stripLits, verificationContext);
       }
 
       public ExpressionTranslator DecreaseFuel(int offset) {
         Contract.Requires(0 <= offset);
         Contract.Ensures(Contract.Result<ExpressionTranslator>() != null);
 
-        return CloneExpressionTranslator(this, BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, layerInterCluster.Decrease(offset), layerIntraCluster, readsFrame, modifiesFrame, stripLits);
+        return CloneExpressionTranslator(this, BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, layerInterCluster.Decrease(offset), layerIntraCluster, readsFrame, modifiesFrame, stripLits, verificationContext);
       }
 
       private static ExpressionTranslator CloneExpressionTranslator(ExpressionTranslator orig,
         BoogieGenerator boogieGenerator, PredefinedDecls predef, Boogie.Expr heap, string thisVar,
-        Function applyLimited_CurrentFunction, FuelSetting layerInterCluster, FuelSetting layerIntraCluster, string readsFrame, string modifiesFrame, bool stripLits) {
-        var et = new ExpressionTranslator(boogieGenerator, predef, heap, thisVar, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, orig.scope, readsFrame, modifiesFrame, stripLits);
+        Function applyLimited_CurrentFunction, FuelSetting layerInterCluster, FuelSetting layerIntraCluster, string readsFrame, string modifiesFrame, bool stripLits, VerificationExpressionContext verificationContext = null) {
+        verificationContext ??= orig.verificationContext;
+        var et = new ExpressionTranslator(boogieGenerator, predef, heap, thisVar, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, orig.scope, readsFrame, modifiesFrame, stripLits, verificationContext);
+        et.fuelUsage = orig.fuelUsage;
         if (orig.oldEtran != null) {
-          var etOld = new ExpressionTranslator(boogieGenerator, predef, orig.Old.HeapExpr, thisVar, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, orig.scope, readsFrame, modifiesFrame, stripLits);
+          var etOld = new ExpressionTranslator(boogieGenerator, predef, orig.Old.HeapExpr, thisVar, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, orig.scope, readsFrame, modifiesFrame, stripLits, verificationContext);
+          etOld.fuelUsage = orig.fuelUsage;
           etOld.oldEtran = etOld;
           et.oldEtran = etOld;
         }
@@ -442,7 +460,7 @@ namespace Microsoft.Dafny {
       }
 
       private Expr TranslateIfThenElseExpr(ITEExpr iteExpr) {
-        var g = RemoveLit(TrExpr(iteExpr.Test));
+        var g = RemoveLit(AsVerificationValue().TrExpr(iteExpr.Test));
         var thn = BoogieGenerator.AdaptBoxing(iteExpr.Thn.Origin, BoogieGenerator.RemoveLit(TrExpr(iteExpr.Thn)), iteExpr.Thn.Type, iteExpr.Type);
         var els = BoogieGenerator.AdaptBoxing(iteExpr.Els.Origin, BoogieGenerator.RemoveLit(TrExpr(iteExpr.Els)), iteExpr.Els.Type, iteExpr.Type);
         return new NAryExpr(GetToken(iteExpr), new IfThenElse(GetToken(iteExpr)), new List<Boogie.Expr> { g, thn, els });
@@ -887,7 +905,17 @@ namespace Microsoft.Dafny {
         } else {
           List<Variable> bvars = [];
           var bodyEtran = this;
-          if (e is ExistsExpr && BoogieGenerator.stmtContext == StmtType.ASSERT && BoogieGenerator.adjustFuelForExists) {
+          if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+            if (verificationContext is { MayAdjustFuel: true } context &&
+                (e is ExistsExpr) == context.Positive) {
+              bodyEtran = context.Use switch {
+                VerificationExpressionUse.Check => bodyEtran.DecreaseFuel(1),
+                VerificationExpressionUse.Summary => bodyEtran.LayerOffset(1),
+                _ => bodyEtran
+              };
+              bodyEtran = bodyEtran.WithSelectedVerificationFuel();
+            }
+          } else if (e is ExistsExpr && BoogieGenerator.stmtContext == StmtType.ASSERT && BoogieGenerator.adjustFuelForExists) {
             // assert exists need decrease fuel by 1
             bodyEtran = bodyEtran.DecreaseFuel(1);
             // set adjustFuelForExists to false so that we don't keep decrease the fuel in cases like the expr below.
@@ -908,7 +936,7 @@ namespace Microsoft.Dafny {
           Boogie.Trigger tr = BoogieGenerator.TrTrigger(bodyEtran, e.Attributes, GetToken(e), bvars, null, null);
 
           if (e.Range != null) {
-            antecedent = BplAnd(antecedent, bodyEtran.TrExpr(e.Range));
+            antecedent = BplAnd(antecedent, (e is ForallExpr ? bodyEtran.NegateVerificationPolarity() : bodyEtran).TrExpr(e.Range));
           }
           Boogie.Expr body = bodyEtran.TrExpr(e.Term);
 
@@ -949,7 +977,8 @@ namespace Microsoft.Dafny {
 
       private Expr TranslateUnaryOpExpression(UnaryOpExpr opExpr) {
         var e = opExpr;
-        Boogie.Expr arg = TrExpr(e.E);
+        Boogie.Expr arg = (e.ResolvedOp == UnaryOpExpr.ResolvedOpcode.BoolNot
+          ? NegateVerificationPolarity() : this).TrExpr(e.E);
         switch (e.ResolvedOp) {
           case UnaryOpExpr.ResolvedOpcode.Lit:
             return MaybeLit(arg);
@@ -1020,7 +1049,9 @@ namespace Microsoft.Dafny {
             // Translate with $IsAllocBox, even if it requires boxing the argument. This has the effect of giving
             // both the $IsAllocBox and $IsAlloc forms, because the axioms that connects these two is triggered
             // by $IsAllocBox.
-            return BoogieGenerator.MkIsAllocBox(BoxIfNecessary(e.E.Origin, TrExpr(e.E), e.E.Type), e.E.Type, HeapExpr);
+            return options.Get(CommonOptionBag.ConsistentObligationChecks)
+              ? BoogieGenerator.ExplicitAllocationPredicate(e.E.Origin, TrExpr(e.E), e.E.Type, HeapExpr)
+              : BoogieGenerator.MkIsAllocBox(BoxIfNecessary(e.E.Origin, TrExpr(e.E), e.E.Type), e.E.Type, HeapExpr);
           case UnaryOpExpr.ResolvedOpcode.Assigned:
             string name = null;
             switch (e.E.Resolved) {
@@ -1097,13 +1128,19 @@ namespace Microsoft.Dafny {
           Boogie.Expr layerArgument;
           Boogie.Expr revealArgument;
           var etran = this;
-          if (e.Function.ContainsQuantifier && BoogieGenerator.stmtContext == StmtType.ASSUME && BoogieGenerator.adjustFuelForExists) {
+          if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+            if (e.Function.ContainsQuantifier && verificationContext is {
+                  Use: VerificationExpressionUse.Summary, Positive: true, MayAdjustFuel: true }) {
+              etran = etran.LayerOffset(1).WithSelectedVerificationFuel();
+            }
+          } else if (e.Function.ContainsQuantifier && BoogieGenerator.stmtContext == StmtType.ASSUME && BoogieGenerator.adjustFuelForExists) {
             // we need to increase fuel functions that contain quantifier expr in the assume context.
             etran = etran.LayerOffset(1);
             BoogieGenerator.adjustFuelForExists = false;
           }
           if (e.Function.IsFuelAware()) {
             Statistics_CustomLayerFunctionCount++;
+            if (fuelUsage != null) { fuelUsage.Used = true; }
             ModuleDefinition module = e.Function.EnclosingClass.EnclosingModuleDefinition;
             if (etran.applyLimited_CurrentFunction != null &&
                 etran.layerIntraCluster != null &&
@@ -1126,7 +1163,10 @@ namespace Microsoft.Dafny {
           var id = new Boogie.IdentifierExpr(GetToken(e), e.Function.FullSanitizedName, ty);
 
           var args = FunctionInvocationArguments(e, layerArgument, revealArgument, false, out var argsAreLit);
-          Expr result = new Boogie.NAryExpr(GetToken(e), new Boogie.FunctionCall(id), args);
+          Expr result = options.Get(CommonOptionBag.ConsistentObligationChecks) &&
+            e.Function.Name == "requires" && e.Function.EnclosingClass is ArrowTypeDecl arrow
+              ? BoogieGenerator.HigherOrderRequirement(GetToken(e), arrow.Arity, args)
+              : new Boogie.NAryExpr(GetToken(e), new Boogie.FunctionCall(id), args);
           result = BoogieGenerator.CondApplyUnbox(GetToken(e), result, e.Function.ResultType, e.Type);
 
           bool callIsLit = argsAreLit
@@ -1507,6 +1547,7 @@ namespace Microsoft.Dafny {
         if (HeapExpr != null) {
           translator = translator.WithOld(Old);
         }
+        translator = NestedValueTranslator(translator);
         var layerBinders = new List<Variable>();
         var layer = BplBoundVar(generator.FreshId("#ly#"), Predef.LayerType, layerBinders);
         translator = translator.WithLayer(layer);
@@ -1699,6 +1740,14 @@ namespace Microsoft.Dafny {
         // Types.cs. Every premise and the exact selector heap remain explicit;
         // it does not connect OneHeap to a current or previous heap.
         return BplImp(BplAnd(BplAnd(goodHeap, allocated), requires), resultAllocated);
+      }
+
+      private ExpressionTranslator NestedValueTranslator(ExpressionTranslator nested) {
+        if (verificationContext == null) { return nested; }
+        nested = nested.WithVerificationContext(verificationContext with { Use = VerificationExpressionUse.Value });
+        nested.fuelUsage = fuelUsage;
+        if (nested.oldEtran != null) { nested.oldEtran.fuelUsage = fuelUsage; }
+        return nested;
       }
 
       public Expression DesugarMatchExpr(MatchExpr e) {
@@ -2180,7 +2229,8 @@ namespace Microsoft.Dafny {
             // The type arguments are substituted too: the right-hand side is stated in terms of the enclosing
             // type's type parameters, which are not in scope here (and BplForallTrim may keep a bound
             // variable's type antecedent, which mentions them).
-            r = CanCallAssumption(Substitute(rhs, e.Obj, new Dictionary<IVariable, Expression>(), e.TypeArgumentSubstitutionsWithParents()));
+            r = CanCallAssumption(Substitute(rhs, e.Obj, new Dictionary<IVariable, Expression>(), e.TypeArgumentSubstitutionsWithParents()),
+              options.Get(CommonOptionBag.ConsistentObligationChecks) ? cco : null);
           }
           return r;
         } else if (expr is SeqSelectExpr) {
@@ -2221,7 +2271,9 @@ namespace Microsoft.Dafny {
               Cons(TrExpr(e.Function),
                 e.Args.ConvertAll(arg => TrArg(arg)))));
 
-          var requiresk = FunctionCall(e.Origin, Requires(e.Args.Count), Boogie.Type.Bool, args);
+          var requiresk = options.Get(CommonOptionBag.ConsistentObligationChecks)
+            ? BoogieGenerator.HigherOrderRequirement(e.Origin, e.Args.Count, args)
+            : FunctionCall(e.Origin, Requires(e.Args.Count), Boogie.Type.Bool, args);
           var facts = BplAnd(
             BplAnd(
               Cons(CanCallAssumption(e.Function, cco),
@@ -2273,7 +2325,8 @@ namespace Microsoft.Dafny {
             Token.NoToken) {
             Type = e.Initializer.Type.AsArrowType.Result
           };
-          var canCall = CanCallAssumption(dafnyInitApplication);
+          var canCall = CanCallAssumption(dafnyInitApplication,
+            options.Get(CommonOptionBag.ConsistentObligationChecks) ? cco : null);
 
           dafnyInitApplication = new ApplyExpr(e.Origin, new BoogieWrapper(initF, e.Initializer.Type),
             [new BoogieWrapper(index, Type.Int)],

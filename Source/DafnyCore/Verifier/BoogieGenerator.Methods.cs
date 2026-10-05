@@ -608,10 +608,10 @@ namespace Microsoft.Dafny {
           var e = formal.DefaultValue;
           CheckWellformed(e, wfo, localVariables, builder, etran.WithReadsFrame(etran.readsFrame, null)); // No scope for default parameters
           builder.Add(new Boogie.AssumeCmd(e.Origin, etran.CanCallAssumptionForVerification(e)));
-          CheckSubrange(e.Origin, etran.TrExpr(e), e.Type, formal.Type, e, builder);
+          CheckSubrange(e.Origin, etran.TrExpr(e), e.Type, formal.Type, e, builder, etran: etran);
 
           if (formal.IsOld) {
-            Boogie.Expr wh = GetWhereClause(e.Origin, etran.TrExpr(e), e.Type, etran.Old, ISALLOC, true);
+            Boogie.Expr wh = AllocationObligation(e.Origin, etran.TrExpr(e), e.Type, etran.Old);
             if (wh != null) {
               var desc = new IsAllocated("default value", "in the two-state lemma's previous state", e);
               builder.Add(Assert(e.Origin, wh, desc, builder.Context));
@@ -834,10 +834,15 @@ namespace Microsoft.Dafny {
       var beforeOutTrackers = DefiniteAssignmentTrackers;
       m.Outs.ForEach(p => AddExistingDefiniteAssignmentTracker(p, m.IsGhost));
       // translate the body
-      TrStmt(m.Body, builder, localVariables, etran);
+      var bodyBuilder = options.Get(CommonOptionBag.ConsistentObligationChecks)
+        ? builder.WithContext(builder.Context with { ReturnPosition = false }) : builder;
+      TrStmt(m.Body, bodyBuilder, localVariables, etran);
       m.Outs.ForEach(p => CheckDefiniteAssignmentReturn(m.Body.EndToken, p, builder));
       if (m is { FunctionFromWhichThisIsByMethodDecl: { ByMethodTok: { } } fun }) {
         AssumeCanCallForByMethodDecl(m, builder);
+      }
+      if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+        CheckMethodPostconditions(m, m.Body.EndToken, builder, etran);
       }
       var stmts = builder.Collect(m.Body.StartToken); // EndToken might make more sense, but it requires updating most of the regression tests.
       DefiniteAssignmentTrackers = beforeOutTrackers;

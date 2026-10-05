@@ -72,6 +72,10 @@ public partial class BoogieGenerator {
             AssumeCanCallForByMethodDecl(method2, builder);
           }
 
+          if (options.Get(CommonOptionBag.ConsistentObligationChecks) && codeContext is MethodOrConstructor returningMethod) {
+            CheckMethodPostconditions(returningMethod, returnStmt1.Origin, builder, etran);
+          }
+
           foreach (var _ in Enumerable.Range(0, builder.Context.ScopeDepth)) {
             builder.Add(new ChangeScope(returnStmt1.Origin, ChangeScope.Modes.Pop));
           }
@@ -438,7 +442,7 @@ public partial class BoogieGenerator {
           void AddResultCommands(BoogieStmtListBuilder returnBuilder, Expression result) {
             Contract.Assert(pat.Expr.Type != null);
             var bResult = etran.TrExpr(result);
-            CheckSubrange(result.Origin, bResult, rhs.Type, pat.Expr.Type, rhs, returnBuilder);
+            CheckSubrange(result.Origin, bResult, rhs.Type, pat.Expr.Type, rhs, returnBuilder, etran: etran);
             returnBuilder.Add(TrAssumeCmdWithDependenciesAndExtend(etran, rhs.Origin, rhs,
               e => Bpl.Expr.Eq(boogieTupleReference, AdaptBoxing(rhs.Origin, e, rhs.Type, pat.Expr.Type))));
           }
@@ -448,7 +452,7 @@ public partial class BoogieGenerator {
           builder.Add(new CommentCmd("CheckWellformedWithResult: any expression"));
           builder.Add(TrAssumeCmd(rhs.Origin, MkIs(boogieTupleReference, pat.Expr.Type)));
 
-          CheckCasePatternShape(pat, rhs, boogieTupleReference, rhs.Origin, pat.Expr.Type, builder);
+          CheckCasePatternShape(pat, rhs, boogieTupleReference, rhs.Origin, pat.Expr.Type, builder, etran);
           builder.Add(TrAssumeCmdWithDependenciesAndExtend(etran, varDeclPattern.Origin, pat.Expr,
             e => Expr.Eq(e, boogieTupleReference), "variable declaration"));
           break;

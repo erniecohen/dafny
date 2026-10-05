@@ -13,7 +13,10 @@ public partial class BoogieGenerator {
       var e0Type = binaryExpr.E0.Type.NormalizeToAncestorType(); // used when making decisions about what Boogie operator/functions to use
       bool isReal = e0Type.IsNumericBased(Type.NumericPersuasion.Real);
       int bvWidth = e0Type.IsBitVectorType ? e0Type.AsBitVectorType.Width : -1;  // -1 indicates "not a bitvector type"
-      Expr e0 = TrExpr(binaryExpr.E0);
+      var operandEtran = binaryExpr.ResolvedOp is BinaryExpr.ResolvedOpcode.And or
+        BinaryExpr.ResolvedOpcode.Or or BinaryExpr.ResolvedOpcode.Imp ? this : AsVerificationValue();
+      Expr e0 = (binaryExpr.ResolvedOp == BinaryExpr.ResolvedOpcode.Imp
+        ? operandEtran.NegateVerificationPolarity() : operandEtran).TrExpr(binaryExpr.E0);
       if (binaryExpr.ResolvedOp == BinaryExpr.ResolvedOpcode.InSet) {
         return TrInSet(GetToken(binaryExpr), e0, binaryExpr.E1, binaryExpr.E0.Type, binaryExpr.E1.Type.NormalizeToAncestorType().AsSetType.Finite, false, out var pr);  // let TrInSet translate e.E1
       } else if (binaryExpr.ResolvedOp == BinaryExpr.ResolvedOpcode.NotInSet) {
@@ -25,7 +28,7 @@ public partial class BoogieGenerator {
         Expr arg = TrInMultiSet(GetToken(binaryExpr), e0, binaryExpr.E1, binaryExpr.E0.Type, false);  // let TrInMultiSet translate e.E1
         return Expr.Unary(GetToken(binaryExpr), UnaryOperator.Opcode.Not, arg);
       }
-      Expr e1 = TrExpr(binaryExpr.E1);
+      Expr e1 = operandEtran.TrExpr(binaryExpr.E1);
       BinaryOperator.Opcode bOpcode;
       Boogie.Type typ;
       var oe0 = e0;

@@ -216,3 +216,6 @@ git-issues/git-issue-48.dfy
 git-issues/git-issue-48-cast.dfy
 git-issues/git-issue-48-incompatible.dfy
 git-issues/git-issue-48-contravariant.dfy
+
+# Consistent obligation checks and project option precedence.
+git-issues/git-issue-100.dfy

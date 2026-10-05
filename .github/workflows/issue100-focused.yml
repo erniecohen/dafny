@@ -1,0 +1,48 @@
+name: Obligation focused diagnostics
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - name: Capture build and tests
+        run: |
+          mkdir -p out/diagnostic
+          set +e
+          sh Scripts/fetch-boogie-packages.sh > out/diagnostic/packages.log 2>&1
+          echo "$?" > out/diagnostic/packages.exit
+          sh .github/review/version.sh > out/diagnostic/version.txt 2>&1
+          revision=$(sed -n 's/^revision=//p' out/diagnostic/version.txt)
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$revision" > out/diagnostic/build.log 2>&1
+          build_result=$?
+          echo "$build_result" > out/diagnostic/build.exit
+          if [ "$build_result" -eq 0 ]; then
+            OBLIGATION_INVENTORY_CAPTURE=out/diagnostic/obligation-producers.json dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation > out/diagnostic/core.log 2>&1
+            echo "$?" > out/diagnostic/core.exit
+            dotnet test Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~ConsistentObligationChecksTest > out/diagnostic/editor.log 2>&1
+            echo "$?" > out/diagnostic/editor.exit
+            curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+            echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+            if [ "$?" -eq 0 ]; then
+              unzip -q z3.zip
+              chmod +x z3-5.1.0-x64-glibc-2.39/bin/z3
+              python3 .github/review/assertion-invariance.py out/dafny/Dafny z3-5.1.0-x64-glibc-2.39/bin/z3 out/diagnostic/behavior --all-resolvers --shipped
+              echo "$?" > out/diagnostic/behavior.exit
+            fi
+          fi
+          tail -n 40 out/diagnostic/build.log
+          if [ -f out/diagnostic/core.log ]; then tail -n 35 out/diagnostic/core.log; fi
+          if [ -f out/diagnostic/editor.log ]; then tail -n 35 out/diagnostic/editor.log; fi
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue100-focused
+          path: out/diagnostic
+          retention-days: 90
+          compression-level: 9
