@@ -3,6 +3,8 @@
 Expected failures exit zero after bounded owned cleanup and remain NOT GREEN.
 A passing receipt qualifies only fresh current-source Core/test compilation and
 these 35 controls. It proves no library, worker, corpus or default parity claim.
+The first compiled snapshots retain immutable pins; changed later outputs are
+separate, unqualified failure observations and never replace acceptance inputs.
 """
 import ctypes
 import hashlib
@@ -574,6 +576,7 @@ def validate(name):
     elif name == 'core-build':
         core_rows = generated_records(core_output, ['DafnyCore.dll', 'DafnyCore.deps.json',
             'DafnyB3Protocol.dll', 'DafnyRuntime.dll', 'DafnyPrelude.bpl'])
+        preserve_compiled_snapshot(name, 'current-core', core_output, core_rows)
         core_dependencies = capture_core_dependency_inputs()
         assert next(row for row in core_rows if row['path'] == 'DafnyPrelude.bpl')['sha256'] == \
             file_record(Path('Source/DafnyCore/DafnyPrelude.bpl'))['sha256']
@@ -583,6 +586,8 @@ def validate(name):
     elif name == 'normalizer-build':
         test_rows = generated_records(test_output, ['DafnyB3Normalizer.Test.dll', 'DafnyB3Normalizer.Test.deps.json',
             'DafnyB3Normalizer.Test.runtimeconfig.json', 'DafnyCore.dll', 'DafnyB3Protocol.dll', 'DafnyRuntime.dll', 'DafnyPrelude.bpl'])
+        (output / 'test-files.json').write_text(json.dumps(test_rows, indent=2) + '\n')
+        preserve_compiled_snapshot(name, 'current-tests', test_output, test_rows)
         source_receipt['testBoogieAssemblies'] = verify_boogie_assemblies(test_output)
         test_flat = {row['path']: row for row in test_rows}
         for row in core_dependencies['files']:
@@ -598,7 +603,6 @@ def validate(name):
         assert len(core_libraries) == 1 and core_libraries[0]['type'] == 'project', 'Tests use an alternate Core reference'
         runtime = json.loads((test_output / 'DafnyB3Normalizer.Test.runtimeconfig.json').read_text())
         assert runtime['runtimeOptions']['tfm'] == 'net8.0'
-        (output / 'test-files.json').write_text(json.dumps(test_rows, indent=2) + '\n')
     elif name == 'guard-focus':
         test_receipt = validate_trx()
     else:
@@ -818,6 +822,15 @@ def run_with_boundaries(name, command):
                 result['exitCode'] = 1
     result['beforeBoundary'] = before
     result['afterBoundary'] = after
+    if name in compiled_stage_acceptance:
+        accepted = (result['exitCode'] == 0 and before is not None and after is not None
+                    and not cleanup_poisoned)
+        compiled_stage_acceptance[name] = accepted
+        for snapshot in compiled_snapshots:
+            if snapshot['stage'] == name:
+                snapshot['accepted'] = accepted and snapshot['copyComplete']
+    if result['exitCode'] != 0:
+        capture_failure_observations(name)
     return result
 
 
@@ -854,23 +867,145 @@ def source_head_child():
     print(json.dumps(values))
 
 
-def copy_compiled_artifacts():
-    candidates = [('current-core', core_output, core_rows), ('current-tests', test_output, test_rows)]
-    observed = directory_records(output)
-    expected_bytes = (sum(row['bytes'] for row in observed) +
-        sum(sum(row['bytes'] for row in rows) for _, _, rows in candidates if rows is not None))
-    assert expected_bytes < MAXIMUM_ARTIFACT_BYTES - 4 * 1024 * 1024, 'Complete current compiled artifacts exceed aggregate bound'
-    for label, directory, rows in candidates:
+def copy_inventory_snapshot(directory, destination, rows):
+    # Freeze only this finite regular-file inventory. Partial copies are retained
+    # for diagnosis but never marked complete or qualified by the caller.
+    assert directory_records(directory) == rows, 'Compiled outputs changed before snapshot'
+    assert all(not path.is_symlink() for path in [directory, *directory.parents])
+    assert not destination.exists() and not destination.is_symlink(), 'Snapshot already exists'
+    assert all(not path.is_symlink() for path in destination.parents)
+    expected_bytes = sum(row['bytes'] for row in directory_records(output)) + sum(row['bytes'] for row in rows)
+    assert expected_bytes < MAXIMUM_ARTIFACT_BYTES - 4 * 1024 * 1024, 'Complete compiled snapshot exceeds aggregate bound'
+    destination.mkdir(parents=True)
+    for row in rows:
+        relative = Path(row['path'])
+        assert not relative.is_absolute() and relative.as_posix() == row['path']
+        assert relative.parts and all(part not in {'.', '..'} for part in relative.parts)
+        source = directory / relative
+        target = destination / relative
+        assert all(not path.is_symlink() for path in source.parents)
+        assert file_record(source) == {key: row[key] for key in ['bytes', 'sha256']}, 'Snapshot source bytes changed'
+        target.parent.mkdir(parents=True, exist_ok=True)
+        digest = hashlib.sha256()
+        length = 0
+        with source.open('rb') as original, target.open('xb') as copied:
+            while chunk := original.read(1024 * 1024):
+                length += len(chunk)
+                assert length <= row['bytes'], 'Snapshot source grew beyond its frozen byte count'
+                digest.update(chunk)
+                copied.write(chunk)
+        assert length == row['bytes'] and digest.hexdigest() == row['sha256'], 'Snapshot bytes changed during copy'
+    assert directory_records(directory) == rows, 'Compiled outputs changed during snapshot'
+    assert directory_records(destination) == rows, 'Preserved compiled snapshot differs'
+
+
+def preserve_compiled_snapshot(stage, role, directory, rows):
+    assert not any(row['role'] == role for row in compiled_snapshots), 'First compiled pins cannot be replaced'
+    destination = output / 'compiled' / (stage + '-' + role)
+    record = {'stage': stage, 'role': role, 'accepted': False, 'copyComplete': False,
+              'artifactPath': destination.relative_to(output).as_posix(), 'files': rows,
+              'sealSha256': seal(rows), 'copyFailure': None, 'finalSnapshotValidated': False}
+    compiled_snapshots.append(record)
+    try:
+        copy_inventory_snapshot(directory, destination, rows)
+        record['copyComplete'] = True
+    except Exception as error:
+        record['copyFailure'] = type(error).__name__ + ': ' + str(error)
+        raise
+
+
+def inventory_delta(expected, observed):
+    before = {row['path']: row for row in expected or []}
+    after = {row['path']: row for row in observed or []}
+    result = []
+    for path in sorted(before.keys() | after.keys()):
+        if before.get(path) != after.get(path):
+            result.append({'path': path, 'change': 'added' if path not in before else 'removed' if path not in after else 'changed',
+                           'initial': before.get(path), 'observed': after.get(path)})
+    return result
+
+
+def capture_failure_observations(stage):
+    for role, directory, initial in [('current-core', core_output, core_rows),
+                                     ('current-tests', test_output, test_rows)]:
+        record = {'stage': stage, 'role': role, 'accepted': False, 'initialCaptured': initial is not None,
+                  'initialSealSha256': seal(initial) if initial is not None else None,
+                  'observedFiles': None, 'observedSealSha256': None, 'delta': None,
+                  'artifactPath': None, 'copyComplete': False, 'observationFailure': None, 'copyFailure': None}
+        failure_observations.append(record)
+        try:
+            if not directory.exists() and not directory.is_symlink():
+                record['missing'] = True
+                record['observedFiles'] = []
+                record['observedSealSha256'] = seal([])
+                record['delta'] = inventory_delta(initial, [])
+                continue
+            observed = directory_records(directory)
+            record['observedFiles'] = observed
+            record['observedSealSha256'] = seal(observed)
+            record['delta'] = inventory_delta(initial, observed)
+            first = next((row for row in compiled_snapshots if row['role'] == role), None)
+            if initial is not None and observed == initial and first is not None and first['copyComplete']:
+                assert directory_records(output / first['artifactPath']) == initial, 'Initial snapshot changed'
+                record['artifactPath'] = first['artifactPath']
+                record['copyComplete'] = True
+                record['usesInitialSnapshot'] = True
+                continue
+            destination = output / 'failure-observed' / (stage + '-' + role)
+            record['artifactPath'] = destination.relative_to(output).as_posix()
+            try:
+                copy_inventory_snapshot(directory, destination, observed)
+                record['copyComplete'] = True
+            except Exception as error:
+                record['copyFailure'] = type(error).__name__ + ': ' + str(error)
+        except Exception as error:
+            record['observationFailure'] = type(error).__name__ + ': ' + str(error)
+
+
+def validate_compiled_artifact_snapshots():
+    failures = []
+    # Validate immutable first copies independently of changed live outputs.
+    for record in compiled_snapshots:
+        try:
+            assert record['copyComplete'], 'First compiled snapshot is incomplete'
+            assert directory_records(output / record['artifactPath']) == record['files'], 'First compiled snapshot bytes changed'
+            record['finalSnapshotValidated'] = True
+        except Exception as error:
+            record['accepted'] = False
+            failures.append({'role': record['role'], 'scope': 'first-snapshot',
+                             'failure': type(error).__name__ + ': ' + str(error)})
+    needs_observation = False
+    for role, directory, rows in [('current-core', core_output, core_rows), ('current-tests', test_output, test_rows)]:
         if rows is not None:
-            assert directory_records(directory) == rows, 'Current artifact bytes changed before preservation'
-            shutil.copytree(directory, output / label)
-            assert directory_records(output / label) == rows, 'Preserved current artifacts differ'
+            observed = None
+            try:
+                observed = directory_records(directory)
+                assert observed == rows, 'Current artifact bytes changed before preservation'
+            except Exception as error:
+                needs_observation |= observed is None or not any(record['role'] == role and
+                    record['observedFiles'] == observed for record in failure_observations)
+                failures.append({'role': role, 'scope': 'live-output',
+                                 'failure': type(error).__name__ + ': ' + str(error)})
+    if needs_observation:
+        capture_failure_observations('final-export')
+    for record in failure_observations:
+        if record['copyComplete']:
+            try:
+                assert directory_records(output / record['artifactPath']) == record['observedFiles'], 'Failure observation snapshot changed'
+            except Exception as error:
+                record['copyComplete'] = False
+                record['copyFailure'] = type(error).__name__ + ': ' + str(error)
+        for key in ['observationFailure', 'copyFailure']:
+            if record[key] is not None:
+                failures.append({'role': record['role'], 'scope': 'failure-observation', 'failure': record[key]})
+    return failures
 
 
 def main():
     global inputs, output, head, source_tree, source_rows, toolchain_rows, source_receipt
     global core_output, test_output, core_rows, test_rows, test_receipt, package_receipt, boundary_receipts, java_runtime_jar, core_dependencies
     global stage_environment, cleanup_poisoned
+    global compiled_snapshots, compiled_stage_acceptance, failure_observations
     output = Path('out/b3-if-guard-focus')
     output.mkdir(parents=True, exist_ok=False)
     head = None
@@ -881,12 +1016,16 @@ def main():
     test_output = Path('Source/DafnyB3Normalizer.Test/bin/Release/net8.0')
     core_rows = test_rows = test_receipt = package_receipt = java_runtime_jar = core_dependencies = None
     cleanup_poisoned = False
+    compiled_snapshots = []
+    compiled_stage_acceptance = {'core-build': False, 'normalizer-build': False}
+    failure_observations = []
     stage_environment = {**os.environ, 'GRADLE_OPTS': '-Dorg.gradle.daemon=false', 'UseSharedCompilation': 'false',
         'DOTNET_PROCESSOR_COUNT': '1', 'DOTNET_GCHeapHardLimit': '40000000',
         'DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER': '1', 'MSBUILDDISABLENODEREUSE': '1',
         'DafnyNormalizerReferenceDirectory': ''}
     results = []
     final_error = None
+    preservation_failures = []
     try:
         assert Path('/proc/self/task').exists() and hasattr(os, 'pidfd_open') and hasattr(signal, 'pidfd_send_signal')
         assert not direct_children() and ctypes.CDLL(None, use_errno=True).prctl(36, 1, 0, 0, 0) == 0
@@ -900,7 +1039,8 @@ def main():
             ('source-head', [sys.executable, str(Path(__file__).resolve()), '--source-head']),
             ('packages', ['sh', 'Scripts/fetch-boogie-packages.sh']),
             ('core-build', ['dotnet', 'build', 'Source/DafnyCore/DafnyCore.csproj', *build_flags]),
-            ('normalizer-build', ['dotnet', 'build', 'Source/DafnyB3Normalizer.Test/DafnyB3Normalizer.Test.csproj', *build_flags]),
+            ('normalizer-build', ['dotnet', 'build', 'Source/DafnyB3Normalizer.Test/DafnyB3Normalizer.Test.csproj', *build_flags,
+                '--no-dependencies']),
             ('guard-focus', ['dotnet', 'test', 'Source/DafnyB3Normalizer.Test/DafnyB3Normalizer.Test.csproj',
                 '-c', 'Release', '--no-build', '--no-restore', '-p:DafnyNormalizerReferenceDirectory=',
                 '--filter', FILTER, '--results-directory', str(output / 'focused'),
@@ -911,7 +1051,7 @@ def main():
             print(name, result['exitCode'], result.get('failure') or result.get('boundaryFailure') or '', flush=True)
             if result['exitCode'] != 0 or cleanup_poisoned:
                 break
-        copy_compiled_artifacts()
+        preservation_failures = validate_compiled_artifact_snapshots()
     except Exception as error:
         final_error = type(error).__name__ + ': ' + str(error)
     finally:
@@ -925,7 +1065,9 @@ def main():
                 final_error += '; final bounded cleanup signals=' + str(signals)
             except Exception as cleanup_error:
                 final_error += '; final cleanup failed: ' + str(cleanup_error)
-        passed = len(results) == 5 and all(result['exitCode'] == 0 for result in results) and final_error is None and not cleanup_poisoned
+        passed = (len(results) == 5 and all(result['exitCode'] == 0 for result in results)
+                  and all(compiled_stage_acceptance.values()) and final_error is None
+                  and not preservation_failures and not cleanup_poisoned)
         receipt = {'passed': passed, 'scope': 'unsigned-if-guard', 'head': head,
             'focusedControlCountExpected': 35, 'fullNormalizerCountSourceDefined': 469, 'corpusCountSourceDefined': 79,
             'completeLibraryVerified': False, 'libraryBinaryProduced': False, 'workerRuntimeVerified': False,
@@ -933,6 +1075,11 @@ def main():
             'source': source_receipt, 'stages': results, 'stageBoundaries': boundary_receipts,
             'packages': package_receipt, 'resolvedCoreDependencies': core_dependencies, 'javaRuntimeDependency': java_runtime_jar,
             'focusedControls': test_receipt, 'finalError': final_error,
+            'compiledStageAcceptance': compiled_stage_acceptance, 'compiledSnapshots': compiled_snapshots,
+            'failureObservations': failure_observations, 'artifactPreservationFailures': preservation_failures,
+            'primaryFailure': next(({'stage': result['stage'], 'actualProcessExitCode': result.get('actualProcessExitCode'),
+                'failure': result.get('failure'), 'boundaryFailure': result.get('boundaryFailure')}
+                for result in results if result['exitCode'] != 0), None),
             'cleanupPoisoned': cleanup_poisoned, 'maximumArtifactBytes': MAXIMUM_ARTIFACT_BYTES,
             'provenanceScope': 'Filesystem byte pins at stage boundaries; not atomic execution-image attestation',
             'ownershipScope': 'Dedicated Linux child-subreaper/pidfd scope; no cgroup or arbitrary escape claim'}
