@@ -1701,6 +1701,71 @@ namespace Microsoft.Dafny {
         return BplImp(BplAnd(BplAnd(goodHeap, allocated), requires), resultAllocated);
       }
 
+      // A source-scoped consequence of pure application semantics, rather than
+      // an instance of the native Apply axiom: the native theory does not connect
+      // Apply at OneHeap with Apply at an unrelated good heap. Retain the
+      // actual-heap, type, allocation, precondition and capture guards.
+      private Expr PureArrowApplicationAllocationFact(ApplyExpr e) {
+        if (!e.Function.Type.IsArrowTypeWithoutReadEffects || HeapExpr == null ||
+            HeapExpr is Boogie.IdentifierExpr { Name: "$OneHeap" }) {
+          return Expr.True;
+        }
+        var heap = HeapExpr;
+        var arrow = e.Function.Type.AsArrowType;
+        var function = TrExpr(e.Function);
+        var types = Map(arrow.TypeArgs, BoogieGenerator.TypeToTy);
+        var arguments = e.Args.ConvertAll(argument =>
+          BoogieGenerator.BoxIfNotNormallyBoxed(argument.Origin, TrExpr(argument), argument.Type));
+        var selectorArguments = Concat(types,
+          Cons(BoogieGenerator.NewOneHeapExpr(e.Origin), Cons(function, arguments)));
+        Expr guard = BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, heap);
+        guard = BplAnd(guard, BoogieGenerator.MkIs(function, BoogieGenerator.ClassTyCon(arrow, types)));
+        guard = BplAnd(guard, BoogieGenerator.MkIsAlloc(function, BoogieGenerator.ClassTyCon(arrow, types), heap));
+        for (var i = 0; i < arguments.Count; i++) {
+          guard = BplAnd(guard, BoogieGenerator.MkIs(arguments[i], types[i], true));
+          guard = BplAnd(guard, BoogieGenerator.MkIsAllocBox(arguments[i], arrow.Args[i], heap));
+        }
+        guard = BplAnd(guard, FunctionCall(e.Origin, Requires(e.Args.Count), Boogie.Type.Bool, selectorArguments));
+        var reads = FunctionCall(e.Origin, Reads(e.Args.Count), Predef.SetType, selectorArguments);
+        var empty = BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.SetEmpty, Predef.BoxType);
+        guard = BplAnd(guard, BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.SetEqual, null, reads, empty));
+
+        // Retain actual captures as well as the allocated function and arguments.
+        // This also keeps a captured previous/labeled heap at or before this heap.
+        bool usesHeap = false, usesOldHeap = false;
+        var heapAt = new HashSet<Label>();
+        Type usesThis = null;
+        var fvs = new HashSet<IVariable>();
+        FreeVariablesUtil.ComputeFreeVariables(BoogieGenerator.options, e, fvs,
+          ref usesHeap, ref usesOldHeap, heapAt, ref usesThis, true);
+        usesOldHeap |= UsesPreviousHeap(e);
+        var capturedHeaps = new List<Expr>();
+        if (usesOldHeap) {
+          capturedHeaps.Add(Old.HeapExpr);
+        }
+        foreach (var label in heapAt.OrderBy(label => label.Name)) {
+          capturedHeaps.Add(OldAt(label).HeapExpr);
+        }
+        foreach (var capturedHeap in capturedHeaps) {
+          if (capturedHeap == null) {
+            return Expr.True;
+          }
+          guard = BplAnd(guard, BoogieGenerator.HeapSameOrSucc(capturedHeap, heap));
+        }
+        foreach (var v in fvs.OrderBy(v => v.UniqueName)) {
+          if (v.Type.MayShowReferences) {
+            guard = BplAnd(guard, BoogieGenerator.MkIsAlloc(BoogieGenerator.TrVar(e.Origin, v), v.Type, heap));
+          }
+        }
+        if (usesThis != null) {
+          guard = BplAnd(guard, BoogieGenerator.MkIsAlloc(
+            new Boogie.IdentifierExpr(e.Origin, This, BoogieGenerator.TrType(usesThis)), usesThis, heap));
+        }
+        var applied = FunctionCall(e.Origin, Apply(e.Args.Count), Predef.BoxType, selectorArguments);
+        var resultAllocated = BoogieGenerator.MkIsAllocBox(applied, arrow.Result, heap);
+        return BplImp(guard, resultAllocated);
+      }
+
       /// <summary>
       /// A lambda value is allocated in any good heap in which what it captures is allocated: its free variables, and
       /// "this" if it uses it.  A lambda that uses the previous heap ("old", "fresh", "unchanged", a two-state function
@@ -2289,6 +2354,7 @@ namespace Microsoft.Dafny {
           if (cco is { ArrowAllocationFacts: true } &&
               (resultCarrier.MayInvolveReferences || resultCarrier.IsArrowType)) {
             facts = BplAnd(facts, ArrowApplicationAllocationFact(e));
+            facts = BplAnd(facts, PureArrowApplicationAllocationFact(e));
           }
           return facts;
 

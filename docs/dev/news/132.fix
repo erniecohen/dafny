@@ -4,3 +4,5 @@ Newtype wrappers now preserve the reference characteristics of their visible ins
 
 
 Statement expressions now exclude their own proof locals, statement binders and local heap labels from lambda captures while retaining genuine outer captures and heap dependencies. This preserves allocation proofs for lambdas containing assertion, calculation and pattern-matching proof blocks.
+
+Pure callback applications retain result allocation in their actual invocation heap when the function, arguments and captures are allocated there and the precondition holds. This guarded default consequence preserves nested callback and parser composition proofs after the unsound reads-to-allocation converse is removed.

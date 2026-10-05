@@ -244,3 +244,6 @@ dafny0/BoundedPolymorphismCompilation.dfy
 # Proof locals and statement binders are not lambda captures (#132).
 git-issues/github-issue-132-statement-binders-positive.dfy
 git-issues/github-issue-132-statement-binders-negative.dfy
+
+# Pure callback allocation retains current-heap positives and old-heap/false negatives.
+git-issues/github-issue-132-pure-callback.dfy
