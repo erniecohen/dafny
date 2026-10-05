@@ -11,8 +11,17 @@ public class MapComprehension : ComprehensionExpr, ICloneable<MapComprehension> 
   public bool Finite;
   public Expression? TermLeft;
 
+  /// <summary>
+  /// Stable source identity for same-binder substitutions of a general map
+  /// comprehension. Its projections accept the complete witness predicate, so
+  /// current captures are supplied by the relation parameter rather than cached.
+  /// Sharing the source keeps rebuilt characteristic lambdas equivalent within
+  /// one translation. Ordinary AST clones rebind variables and get a new source.
+  /// Boogie declarations belong to each generator: retaining them on this AST
+  /// would reuse backend type identities across module or repeated translations.
+  /// </summary>
   [FilledInDuringTranslation]
-  public List<Boogie.Function>? ProjectionFunctions;  // filled in during translation (and only for general map comprehensions where "TermLeft != null")
+  internal MapComprehension? ProjectionFunctionsSource;
 
   public MapComprehension Clone(Cloner cloner) {
     return new MapComprehension(cloner, this);

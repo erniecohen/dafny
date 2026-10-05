@@ -473,7 +473,7 @@ jobs:
         run: |
           dotnet test Source/DafnyCore.Test -c Release --no-build \
             --logger "console;verbosity=normal" \
-            --filter "FullyQualifiedName~DafnyCore.Test.RedirectingTypeDependencyTrackerTests|FullyQualifiedName~DafnyCore.Test.NumericAncestryTests|FullyQualifiedName~DafnyCore.Test.ScopeCheckpointTest" \
+            --filter "FullyQualifiedName~DafnyCore.Test.RedirectingTypeDependencyTrackerTests|FullyQualifiedName~DafnyCore.Test.NumericAncestryTests|FullyQualifiedName~DafnyCore.Test.ScopeCheckpointTest|FullyQualifiedName~MapComprehensionSubstitutionTests" \
             --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none
       - name: Test newtype-cycle edits in both resolver modes
         run: |
@@ -494,6 +494,38 @@ jobs:
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~IncrementalBitvectorMembersTest" \
             --blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none
+
+  finite-support:
+    name: Finite-support encoding and boundary controls
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: dafny
+      - name: Unpack Dafny
+        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
+      - name: Pinned solver
+        run: |
+          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
+          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+          echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
+      - name: Check packaged translation and conditional boundary
+        run: |
+          python3 .github/review/issue82-audit.py --dafny "$PWD/out/dafny/Dafny" \
+            --z3 "$Z3" --output finite-support-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: finite-support-results
+          path: finite-support-results
+          retention-days: 90
 
   binaries:
     name: Binaries (${{ matrix.rid }})
@@ -560,7 +592,7 @@ jobs:
 
   release:
     name: GitHub release
-    needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, axiom-resources]
+    needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, finite-support, axiom-resources]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     timeout-minutes: 15

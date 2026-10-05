@@ -14,8 +14,11 @@ public class DatatypeInclusionBoundedPool : BoundedPool {
     IsIndDatatype = isIndDatatype;
   }
 
+  // A strict rank inequality is an allocation-independent bound, but it does
+  // not bound the number of datatype values. In particular, an iset-valued
+  // constructor argument can force infinitely many values below one rank.
   public override PoolVirtues Virtues =>
-    (IsIndDatatype ? PoolVirtues.Finite : PoolVirtues.None) | PoolVirtues.IndependentOfAlloc | PoolVirtues.IndependentOfAlloc_or_ExplicitAlloc;
+    PoolVirtues.IndependentOfAlloc | PoolVirtues.IndependentOfAlloc_or_ExplicitAlloc;
   public override int Preference() => 2;
   public override BoundedPool Clone(Cloner cloner) {
     return this;

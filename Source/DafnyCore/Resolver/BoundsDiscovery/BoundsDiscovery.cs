@@ -212,10 +212,16 @@ namespace Microsoft.Dafny {
 
             if ((e as SetComprehension)?.Finite == true || (e as MapComprehension)?.Finite == true) {
               // the comprehension had better produce a finite set
-              if (e.Type.HasFinitePossibleValues) {
-                // This means the set is finite, regardless of if the Range is bounded.  So, we don't give any error here.
-                // However, if this expression is used in a non-ghost context (which is not yet known at this stage of
-                // resolution), the resolver will generate an error about that later.
+              // Finiteness of a comprehension depends on the image/key carrier,
+              // not on the carrier of complete collection values. In particular,
+              // map<bool, int> has a finite domain but infinitely many map values.
+              var collectionType = e.Type.NormalizeToAncestorType();
+              var imageType = e is MapComprehension
+                ? collectionType.AsMapType.Domain
+                : collectionType.AsSetType.Arg;
+              if (imageType.HasFinitePossibleValues) {
+                // The image/key carrier is finite regardless of the witness range.
+                // Compilation still requires enumerable witness bounds, checked later.
               } else {
                 // we cannot be sure that the set/map really is finite
                 foreach (var bv in BoundedPool.MissingBounds(e.BoundVars, e.Bounds,
@@ -792,7 +798,7 @@ namespace Microsoft.Dafny {
             } else if (op == BinaryExpr.ResolvedOpcode.Gt || op == BinaryExpr.ResolvedOpcode.Ge) {
               u = whereIsBv == 0 ? jBounds.LowerBound : jBounds.UpperBound;
             }
-            if (u != null && !FreeVariables(u).Contains(bv) && IsMonotonic(u, boundVars[j], true)) {
+            if (u != null && !FreeVariables(u).Contains(bv) && IsMonotonic(thatSide, boundVars[j], true)) {
               thatSide = BoogieGenerator.Substitute(thatSide, boundVars[j], u);
               fvThatSide = FreeVariables(thatSide);
               continue;

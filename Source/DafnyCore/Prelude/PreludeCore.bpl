@@ -399,11 +399,6 @@ axiom (forall a: ClassName, b: ClassName :: { TypeTuple(a,b) }
 
 type HandleType;
 
-function SetRef_to_SetBox(s: [ref]bool): Set;
-axiom (forall s: [ref]bool, bx: Box :: { Set#IsMember(SetRef_to_SetBox(s), bx) }
-  Set#IsMember(SetRef_to_SetBox(s), bx) == s[$Unbox(bx): ref]);
-axiom (forall s: [ref]bool :: { SetRef_to_SetBox(s) }
-  $Is(SetRef_to_SetBox(s), TSet(Tclass._System.object?())));
 
 // Functions ApplyN, RequiresN, and ReadsN are generated on demand by the translator,
 // but Apply1 is referred to in the prelude, so its definition is hardcoded here.
@@ -691,15 +686,9 @@ procedure $IterCollectNewObjects(prevHeap: Heap, newHeap: Heap, this: ref, NW: F
 
 #include "Sets.bpl"
 
-// FIXME: Finite-set comprehensions are translated into Boogie lambda expressions for Boogie maps and then converted,
-// using function Set#FromBoogieMap, to a set. The use of Boogie lambda expressions is convenient, since Boogie
-// performs lambda lifting on them. However, this is NOT right, because it allows ANY lambda to be converted
-// into a finite set. This should be fixed by doing the lambda lifting directly in Dafny and not use Boogie lambda
-// expressions.
+// Total conversion symbol, without unrestricted membership preservation.
+// The translator defines only justified finite source images under their contexts.
 function Set#FromBoogieMap([Box]bool): Set;
-axiom (forall m: [Box]bool, bx: Box ::
-  { Set#IsMember(Set#FromBoogieMap(m), bx) }
-  Set#IsMember(Set#FromBoogieMap(m), bx) == m[bx]);
 
 // ---------------------------------------------------------------
 // -- Axiomatization of isets -------------------------------------
