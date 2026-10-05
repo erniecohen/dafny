@@ -37,7 +37,7 @@ method MatchLocal(c: C) {
 }
 
 method BindingGuard(c: C) {
-  var f := () => (assert true by { if x: C :| Identity(x) == c { assert x == c; } } 0);
+  var f := () => (assert true by { if x: C :| x in {c} && Identity(x) == c { assert x == c; } } 0);
   assert allocated(f);
   assert f() == 0;
 }

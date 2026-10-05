@@ -4,4 +4,4 @@ Newtype wrappers now preserve the reference characteristics of their visible ins
 
 Keep the existing bounded-polymorphism compiler regression registered with the allocation controls: a generic constant-field lambda must be instantiated at the selected receiver's actual type arguments. The shipped constant-field substitution already provides this map and is unchanged.
 
-Statement expressions now exclude their own proof locals and statement binders from lambda captures while retaining genuine outer captures and heap dependencies. This preserves allocation proofs for lambdas containing assertion, calculation and pattern-matching proof blocks.
+Statement expressions now exclude their own proof locals, statement binders and local heap labels from lambda captures while retaining genuine outer captures and heap dependencies. This preserves allocation proofs for lambdas containing assertion, calculation and pattern-matching proof blocks.
