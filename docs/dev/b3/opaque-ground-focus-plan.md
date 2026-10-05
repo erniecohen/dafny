@@ -51,3 +51,5 @@ and the exact primary failure. PASS qualifies current Core/test compilation and
 these123 structural controls only. The new issue124 expectation remains proposed,
 unexecuted syntax until an independently approved actual regression run. No source
 body, build, test, proof or coordinator is run by this source checkpoint.
+
+The adapted inherited functions are `test_source_for_class`, `validate_declared_source_before_preparation`, `validate_selection`, `validate_source_initial`, `validate_trx`, `validate`, `main`. The added function is `validate_phase_b_manifest`. The other36 inherited function bodies, including all six ownership helpers, are byte-identical. Current source binds56 canonical/checkout implementation records and the full49-row Phase B product inventory. The unchanged old76 control data retain their original seals; the new47 precede them. The manifest remains historical at the parent workflow dependency, and that exact exception carries no product-body relaxation.

@@ -3972,8 +3972,8 @@
   ],
   "englishPlan": {
     "path": "docs/dev/b3/opaque-ground-focus-plan.md",
-    "bytes": 3569,
-    "sha256": "132d7c4dffc7774d7e2ed5da6104bf574ea2b871a71301efc90763bc64c43969"
+    "bytes": 4235,
+    "sha256": "475c0127b39d93d3133704e7859520cf5e06f63000e621c8022547ca3b7c06e2"
   },
   "existingJobsRequiredSkipped": [
     "build",
@@ -5523,5 +5523,272 @@
     "path": ".github/review/b3-real-roundtrip-focus.py",
     "bytes": 69940,
     "sha256": "dd35367ea5d44f88dea6388d8c62faaa0d31b32f5ebc595d4da4ae63b88ed74f"
-  }
+  },
+  "borrowedCoordinatorFunctionRecords": [
+    {
+      "function": "digest_bytes",
+      "bytes": 68,
+      "sha256": "465f44fd51c31eafd1064d5c571818eb4540d8ba8b7455952ad5929ae4f03205"
+    },
+    {
+      "function": "seal",
+      "bytes": 108,
+      "sha256": "c8b862cfef2a0a3735159e13bc7f7a744fe99ee60b2fb2f2433b7e0b0262b25e"
+    },
+    {
+      "function": "file_record",
+      "bytes": 646,
+      "sha256": "b17f0e655565df45bbd8f097e3603e9cb12e60691ff14aa5a049624538baae6d"
+    },
+    {
+      "function": "directory_records",
+      "bytes": 845,
+      "sha256": "c7d4a1556f60352343df74779d342765a6ceae531ed47bf3fead3219b7826735"
+    },
+    {
+      "function": "git_bytes",
+      "bytes": 505,
+      "sha256": "2fc866439709285d9d6a8fe61ccde2b59ff8b84dd7757fcd2962b60aa20570bd"
+    },
+    {
+      "function": "tree_records",
+      "bytes": 620,
+      "sha256": "7e9a344935007fa9955a4538b37eab381b408cc1bc1f0e3ced36501836e11403"
+    },
+    {
+      "function": "worktree_records",
+      "bytes": 2423,
+      "sha256": "052caf6a4fd5d8061cbaa7a19d0f045d27a88b1cd7957525c59cbe7194411bcf"
+    },
+    {
+      "function": "prepare_checkout_bytes",
+      "bytes": 3083,
+      "sha256": "a0db89a8ddb9510786d31cca8bfac47ba2ed2ba92e9fa39c70e1c33b6b45864f"
+    },
+    {
+      "function": "test_source_for_class",
+      "bytes": 350,
+      "sha256": "3ae6e87e929a62c3a2895cee71770632a66f3d1ffae97aef8682b514ba508eca"
+    },
+    {
+      "function": "source_method_signature",
+      "bytes": 650,
+      "sha256": "cced67ae3323fe9652c67eaed40a2252b299614b5eb0624d3882ba07e177f92a"
+    },
+    {
+      "function": "execution_controls_from_source",
+      "bytes": 2028,
+      "sha256": "52db82e4cd2a975c97c8bcd24e6d0920f36f57e53ba28f2847e740f7e7f5b555"
+    },
+    {
+      "function": "extract_controls",
+      "bytes": 773,
+      "sha256": "2f72a7c256d9924b9f2e73ee609133eca9efef146b83f1430533471913fa9412"
+    },
+    {
+      "function": "fixture_record",
+      "bytes": 1077,
+      "sha256": "efa909555b62a73977a6ac556d3b60d9fdbee7d0b05565fa5b75c1bd58721d9e"
+    },
+    {
+      "function": "captured_pinned_bytes",
+      "bytes": 848,
+      "sha256": "674b135179ac57249c13a37f3453ca5a2fd37fcc5ecad9273a3670ec14ca52a3"
+    },
+    {
+      "function": "phase_a_fixture_record",
+      "bytes": 1092,
+      "sha256": "bda4258717fb2fae4e6185bb9076e1617fc3f40bac4438f7f16b6014fb220514"
+    },
+    {
+      "function": "validate_declared_source_before_preparation",
+      "bytes": 2997,
+      "sha256": "a59ef449cd0b88128e70d7ceb701cb0fa4cc6117e3c96071cdcc746830ebdf38"
+    },
+    {
+      "function": "validate_selection",
+      "bytes": 972,
+      "sha256": "a683f15835f3779a4afcb963f37adef3c06d3724214b2fe941fb790ab824b566"
+    },
+    {
+      "function": "capture_toolchain",
+      "bytes": 1699,
+      "sha256": "36d51333d0ad2027de2500248467ce3ab94e7c3e02ddf0487e9104f8a8c150d2"
+    },
+    {
+      "function": "validate_source_initial",
+      "bytes": 5226,
+      "sha256": "612b7dfa6fc2981a39957c3ffbfec09c1b79e24115aab876202a6989cab508f3"
+    },
+    {
+      "function": "validate_copied_helper",
+      "bytes": 825,
+      "sha256": "d480ecfd3879296861faed94346f8a4bfde26035476cf157f3fd5afd17d68477"
+    },
+    {
+      "function": "boundary",
+      "bytes": 1750,
+      "sha256": "ccf309dd1c51339ea4af9d7ff3e1ccfa2931852cdc46bc580ee536362f7070a6"
+    },
+    {
+      "function": "package_records",
+      "bytes": 514,
+      "sha256": "bfc0bfd14cd69f0869fa5f079e75fc0a3fad11ec4cecc7cc952af8f0e407c412"
+    },
+    {
+      "function": "pinned_boogie_assembly_entries",
+      "bytes": 1167,
+      "sha256": "dc9a8f7a202573fb6681716c98c35190a77bc195c3a23cb7c4025a32f4911290"
+    },
+    {
+      "function": "verify_boogie_assemblies",
+      "bytes": 748,
+      "sha256": "52dcc79ed2e319ba7908a58a0e51777b7f986c19650a1481c2f20b4e1c039aeb"
+    },
+    {
+      "function": "capture_core_dependency_inputs",
+      "bytes": 4215,
+      "sha256": "84e34be8d4ddd970035a93488a5fdecb4c2f4a3f7f1a903b692e70670fa40859"
+    },
+    {
+      "function": "generated_records",
+      "bytes": 238,
+      "sha256": "873f3a61931e2ee22443fdf4e380d4124c3885031a4db5fd4f71d7882445b095"
+    },
+    {
+      "function": "validate_trx",
+      "bytes": 3571,
+      "sha256": "784d42da5b05d12892ba8205dfffc13384e2eb4ff10b6907f797e189d8432dda"
+    },
+    {
+      "function": "validate",
+      "bytes": 3482,
+      "sha256": "f9432386d3a8e43d21a059ed4017cec6063a466d66357097b929f056d6708c0f"
+    },
+    {
+      "function": "direct_children",
+      "bytes": 200,
+      "sha256": "297c87908128aa9d3e52c88b225c8682cccd605bf1c430217acca544597c67bb"
+    },
+    {
+      "function": "cleanup_children",
+      "bytes": 1336,
+      "sha256": "65efc55ed0e2c7d54ce235b3af7deef6d9fd516183bc7ca2e6753e37b64c3076"
+    },
+    {
+      "function": "reap_exited_children",
+      "bytes": 136,
+      "sha256": "726f2e4e800ea9b761033a8455a2d9bdbcce702b186d0f580d86e0aee1d4157c"
+    },
+    {
+      "function": "reap_completed_adopted_children",
+      "bytes": 779,
+      "sha256": "c18e700bc74e12685a96273ef6e94b3257ac9d7e392c3d5c4d6519bfd5fe077c"
+    },
+    {
+      "function": "child_diagnostics",
+      "bytes": 1102,
+      "sha256": "b4ccf393abb8fbf1a90c4f4d7be6a6abfb8ccebd84f8087036b18c8d35587cbf"
+    },
+    {
+      "function": "run_stage",
+      "bytes": 4271,
+      "sha256": "c4f6355f8f86181502a05f86164e35435602d9625eb47e42a1ea1cf828e290b9"
+    },
+    {
+      "function": "run_with_boundaries",
+      "bytes": 1291,
+      "sha256": "05092b68198c1c31baf5aab23fb918b17bb2202cc051a1c0ad715d4f9e834e71"
+    },
+    {
+      "function": "bounded_tool_stdout",
+      "bytes": 1141,
+      "sha256": "e2545f7ec2d1bbd9b70831527ec272a0dd2740f9e765423e468bd075f33b73e0"
+    },
+    {
+      "function": "source_head_child",
+      "bytes": 406,
+      "sha256": "b17459b0bb3e8a22d2e3bb9f20b4a5e764b16bf231ba39a13e234cf711503d2e"
+    },
+    {
+      "function": "copy_inventory_snapshot",
+      "bytes": 2064,
+      "sha256": "42e9d7da946d9a7c46619178edbe02514bdc478fa8bcd9e4893b778a1e5231b7"
+    },
+    {
+      "function": "preserve_compiled_snapshot",
+      "bytes": 769,
+      "sha256": "8b31a08507508351c870f65a672a4bd3ec65d256e6a8fad428fb5c09d226ff29"
+    },
+    {
+      "function": "inventory_delta",
+      "bytes": 511,
+      "sha256": "bd5cec1e1efa8e84920009d07958c53d0bbc33236fe2f6ccbc978a9c263d4f2b"
+    },
+    {
+      "function": "capture_failure_observations",
+      "bytes": 2201,
+      "sha256": "7da41bb55b1356bdfb885b2fb858ca0272a44e77345471b2961dcd837384a60e"
+    },
+    {
+      "function": "validate_compiled_artifact_snapshots",
+      "bytes": 2158,
+      "sha256": "a4a147a341e8cf96f78642173324ab89f51da05986102947e7452277aaa85177"
+    },
+    {
+      "function": "main",
+      "bytes": 7139,
+      "sha256": "5b257176e8ec770e3a2e76c59e81078b6127567e1b7ee83602b779fedb7580ba"
+    }
+  ],
+  "unchangedCoordinatorFunctions": [
+    "digest_bytes",
+    "seal",
+    "file_record",
+    "directory_records",
+    "git_bytes",
+    "tree_records",
+    "worktree_records",
+    "prepare_checkout_bytes",
+    "source_method_signature",
+    "execution_controls_from_source",
+    "extract_controls",
+    "fixture_record",
+    "captured_pinned_bytes",
+    "phase_a_fixture_record",
+    "capture_toolchain",
+    "validate_copied_helper",
+    "boundary",
+    "package_records",
+    "pinned_boogie_assembly_entries",
+    "verify_boogie_assemblies",
+    "capture_core_dependency_inputs",
+    "generated_records",
+    "direct_children",
+    "cleanup_children",
+    "reap_exited_children",
+    "reap_completed_adopted_children",
+    "child_diagnostics",
+    "run_stage",
+    "run_with_boundaries",
+    "bounded_tool_stdout",
+    "source_head_child",
+    "copy_inventory_snapshot",
+    "preserve_compiled_snapshot",
+    "inventory_delta",
+    "capture_failure_observations",
+    "validate_compiled_artifact_snapshots"
+  ],
+  "adaptedCoordinatorFunctions": [
+    "test_source_for_class",
+    "validate_declared_source_before_preparation",
+    "validate_selection",
+    "validate_source_initial",
+    "validate_trx",
+    "validate",
+    "main"
+  ],
+  "addedCoordinatorFunctions": [
+    "validate_phase_b_manifest"
+  ]
 }

@@ -29,7 +29,7 @@ on:
       b3_focus_gate:
         description: Select a focused B3 receipt (scratch branches only)
         type: choice
-        options: [none, bitvector-proof, unsigned-if-guard]
+        options: [none, bitvector-proof, unsigned-if-guard, opaque-ground]
         default: none
 
       binaries:
@@ -72,7 +72,7 @@ env:
 
 jobs:
   build:
-    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && !inputs.b3_compile_only && !inputs.b3_full_gate }}
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && inputs.b3_focus_gate != 'opaque-ground' && !inputs.b3_compile_only && !inputs.b3_full_gate }}
     name: Build (Release)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -137,7 +137,7 @@ jobs:
           retention-days: 14
 
   suite:
-    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && !inputs.b3_compile_only && !inputs.b3_full_gate }}
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && inputs.b3_focus_gate != 'opaque-ground' && !inputs.b3_compile_only && !inputs.b3_full_gate }}
     name: Verifier suite (axioms ${{ matrix.axioms }}, shard ${{ matrix.shard }} of 4)
     needs: build
     runs-on: ubuntu-24.04
@@ -191,7 +191,7 @@ jobs:
           retention-days: 90
 
   verdicts:
-    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && !inputs.b3_compile_only && !inputs.b3_full_gate }}
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && inputs.b3_focus_gate != 'opaque-ground' && !inputs.b3_compile_only && !inputs.b3_full_gate }}
     name: Verdicts (axioms ${{ matrix.axioms }})
     needs: [build, suite]
     runs-on: ubuntu-24.04
@@ -247,7 +247,7 @@ jobs:
           retention-days: 90
 
   resolver:
-    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && !inputs.b3_compile_only && !inputs.b3_full_gate }}
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && inputs.b3_focus_gate != 'opaque-ground' && !inputs.b3_compile_only && !inputs.b3_full_gate }}
     name: Resolver matrix (both modes)
     needs: build
     runs-on: ubuntu-24.04
@@ -302,7 +302,7 @@ jobs:
           retention-days: 90
 
   stdlib:
-    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && !inputs.b3_compile_only && !inputs.b3_full_gate }}
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && inputs.b3_focus_gate != 'opaque-ground' && !inputs.b3_compile_only && !inputs.b3_full_gate }}
     name: Standard library (Z3 ${{ matrix.z3 }}, axioms ${{ matrix.axioms }})
     needs: build
     runs-on: ubuntu-24.04
@@ -388,7 +388,7 @@ jobs:
   axiom-resources:
     name: Additional-axiom resource comparisons
     needs: [suite, stdlib]
-    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && !inputs.b3_compile_only && !inputs.b3_full_gate && (always() && needs.suite.result == 'success') }}
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && inputs.b3_focus_gate != 'opaque-ground' && !inputs.b3_compile_only && !inputs.b3_full_gate && (always() && needs.suite.result == 'success') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -411,7 +411,7 @@ jobs:
           retention-days: 90
 
   regressions:
-    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && !inputs.b3_compile_only && !inputs.b3_full_gate }}
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && inputs.b3_focus_gate != 'opaque-ground' && !inputs.b3_compile_only && !inputs.b3_full_gate }}
     name: Regression tests (upstream harness)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -475,7 +475,7 @@ jobs:
 
 
   resolver-tests:
-    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && !inputs.b3_compile_only && !inputs.b3_full_gate }}
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && inputs.b3_focus_gate != 'opaque-ground' && !inputs.b3_compile_only && !inputs.b3_full_gate }}
     name: Resolver unit tests and language-server recovery
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -506,7 +506,7 @@ jobs:
   binaries:
     name: Binaries (${{ matrix.rid }})
     needs: build
-    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && !inputs.b3_compile_only && !inputs.b3_full_gate && (github.ref_type == 'tag' || inputs.binaries) }}
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && inputs.b3_focus_gate != 'opaque-ground' && !inputs.b3_compile_only && !inputs.b3_full_gate && (github.ref_type == 'tag' || inputs.binaries) }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
@@ -569,7 +569,7 @@ jobs:
   release:
     name: GitHub release
     needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, axiom-resources]
-    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && !inputs.b3_compile_only && !inputs.b3_full_gate && (github.ref_type == 'tag') }}
+    if: ${{ inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && inputs.b3_focus_gate != 'opaque-ground' && !inputs.b3_compile_only && !inputs.b3_full_gate && (github.ref_type == 'tag') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -638,7 +638,7 @@ jobs:
 
 
   b3-native-compile:
-    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.b3_compile_only || inputs.b3_full_gate) && inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && startsWith(github.ref, 'refs/heads/scratch/') }}
+    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.b3_compile_only || inputs.b3_full_gate) && inputs.b3_focus_gate != 'bitvector-proof' && inputs.b3_focus_gate != 'unsigned-if-guard' && inputs.b3_focus_gate != 'opaque-ground' && startsWith(github.ref, 'refs/heads/scratch/') }}
     name: B3 compiler and optional fresh BV integration receipt
     runs-on: ubuntu-24.04
     timeout-minutes: 120
@@ -714,5 +714,88 @@ jobs:
         with:
           name: b3-unsigned-if-guard
           path: out/b3-if-guard-focus
+          if-no-files-found: error
+          retention-days: 14
+
+  b3-opaque-ground-focus:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.b3_focus_gate == 'opaque-ground' && inputs.b3_compile_only && !inputs.b3_full_gate && !inputs.binaries && !inputs.resolver_probe && !inputs.additional_axioms_probe && startsWith(github.ref, 'refs/heads/scratch/') }}
+    name: B3 opaque preparation 123-control compile receipt
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Record fresh Core/test compilation and the exact 123-control focus
+        env:
+          B3_INPUT_B3_FOCUS_GATE: ${{ inputs.b3_focus_gate }}
+          B3_INPUT_B3_COMPILE_ONLY: ${{ inputs.b3_compile_only }}
+          B3_INPUT_B3_FULL_GATE: ${{ inputs.b3_full_gate }}
+          B3_INPUT_BINARIES: ${{ inputs.binaries }}
+          B3_INPUT_RESOLVER_PROBE: ${{ inputs.resolver_probe }}
+          B3_INPUT_ADDITIONAL_AXIOMS_PROBE: ${{ inputs.additional_axioms_probe }}
+          DOTNET_PROCESSOR_COUNT: '1'
+          DOTNET_GCHeapHardLimit: '40000000'
+          DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER: '1'
+          MSBUILDDISABLENODEREUSE: '1'
+          GRADLE_OPTS: -Dorg.gradle.daemon=false
+        run: |
+          python3 - <<'PY_SOURCE'
+          import hashlib, json, os, stat, sys
+          from pathlib import Path
+          source = Path('.github/review/b3-opaque-ground-focus.py')
+          expected_bytes = 73608
+          expected_sha256 = '979ae36f8b22a4141b98429234cd2e434fd3ed132f9805e30fc7cc0eed888af8'
+          invoked = False
+          try:
+              assert all(not parent.is_symlink() for parent in source.parents), 'Coordinator ancestor symlink'
+              before = source.lstat()
+              assert stat.S_ISREG(before.st_mode) and before.st_size == expected_bytes, 'Coordinator kind/length differs'
+              descriptor = os.open(source, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW)
+              with os.fdopen(descriptor, 'rb') as stream:
+                  actual = os.fstat(stream.fileno())
+                  assert stat.S_ISREG(actual.st_mode) and (actual.st_dev, actual.st_ino) == (before.st_dev, before.st_ino)
+                  captured = stream.read(expected_bytes + 1)
+              assert len(captured) == expected_bytes and hashlib.sha256(captured).hexdigest() == expected_sha256, 'Coordinator source hash differs'
+              compiled = compile(captured, str(source.resolve()), 'exec')
+              invoked = True
+              exec(compiled, {'__file__': str(source.resolve()), '__name__': '__main__'})
+          except SystemExit as result:
+              if result.code in (0, None):
+                  raise
+              failure = 'Unexpected coordinator exit: ' + str(result.code)
+          except BaseException as result:
+              failure = type(result).__name__ + ': ' + str(result)
+          output = Path('out/b3-opaque-ground-focus')
+          output.mkdir(parents=True, exist_ok=True)
+          receipt = {'passed': False, 'scope': 'opaque-ground-phase-B',
+              'coordinatorInvoked': invoked, 'sourceCaptureOrUnexpectedFailure': failure[:4096],
+              'focusedControlCountExpected': 123, 'phaseBControlCountExpected': 47, 'phaseAControlCountExpected': 41,
+              'guardInteractionControlCountExpected': 35, 'completeLibraryVerified': False,
+              'libraryBinaryProduced': False, 'workerRuntimeVerified': False, 'corpusVerified': False,
+              'regressionRuntimeVerified': False, 'defaultCompatibilityVerified': False, 'backendAccepted': False,
+              'coordinatorSourceExpected': {'bytes': expected_bytes, 'sha256': expected_sha256},
+              'pythonVersion': sys.version, 'ownershipScope': 'No acceptance on capture/unexpected failure'}
+          (output / 'source-capture-failure.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          print('NOT GREEN: bounded source capture or coordinator receipt failed')
+          if summary := os.environ.get('GITHUB_STEP_SUMMARY'):
+              with open(summary, 'a') as stream:
+                  stream.write('## Opaque ground preparation focus\n\nNOT GREEN: source capture or unexpected coordinator failure; see artifact.\n')
+          raise SystemExit(0)
+          PY_SOURCE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b3-opaque-ground-focus
+          path: out/b3-opaque-ground-focus
           if-no-files-found: error
           retention-days: 14
