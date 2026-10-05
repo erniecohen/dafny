@@ -263,7 +263,7 @@ B3AssetsObserverI00, B3AssetsObserverI01, B3AssetsObserverI02, B3AssetsObserverI
       st.Seen[slot] = true; // An attempted faulted hook cannot be retried as fresh.
       if (slot % 2 == 1 && !st.Completed[slot - 1]) throw new CaptureFault("after-without-complete-before");
       st.CheckFirst(Tick);
-      st.AnchorReadBytes = 0;
+      st.AnchorReadBudget = new ReadBudget(67108864);
       var snap = TakeSnapshot(st);
       if (snap.Properties[8] != "net8.0" || snap.Properties[15] != "Release" || snap.Properties[16] != "AnyCPU" ||
           String.Equals(snap.Properties[17], "true", StringComparison.OrdinalIgnoreCase) ||
@@ -430,6 +430,24 @@ B3AssetsObserverI00, B3AssetsObserverI01, B3AssetsObserverI02, B3AssetsObserverI
     internal FileIdentity(long bytes, string hash) { Bytes = bytes; Hash = hash; }
     internal bool Same(FileIdentity other) => Bytes == other.Bytes && Hash == other.Hash;
   }
+  internal sealed class ReadBudget {
+    internal readonly long Limit;
+    internal long Requested, Consumed;
+    internal ReadBudget(long limit) {
+      if (limit <= 0 || limit > 67108864) throw new CaptureFault("read-budget-limit");
+      Limit = limit;
+    }
+    internal int Request(int wanted) {
+      int count = checked((int)Math.Min(wanted, Limit - Requested));
+      if (count <= 0 || count > 65536) throw new CaptureFault("attempted-read-budget");
+      Requested = checked(Requested + count);
+      return count;
+    }
+    internal void Received(int count) {
+      Consumed = checked(Consumed + count);
+      if (Consumed < 0 || Consumed > Requested || Requested > Limit) throw new CaptureFault("read-accounting");
+    }
+  }
   internal static class Files {
     internal static string Hex(byte[] bytes) {
       const string digits = "0123456789abcdef";
@@ -437,19 +455,25 @@ B3AssetsObserverI00, B3AssetsObserverI01, B3AssetsObserverI02, B3AssetsObserverI
       for (int i = 0; i < bytes.Length; i++) { result[2 * i] = digits[bytes[i] >> 4]; result[2 * i + 1] = digits[bytes[i] & 15]; }
       return new string(result);
     }
-    internal static FileIdentity Read(string path, long maximum, Action tick, Action<byte[], int>? consume = null, Action<int>? attempted = null) {
+    internal static FileIdentity Read(string path, long maximum, Action tick, Action<byte[], int>? consume = null, ReadBudget? attempted = null) {
       using (var route = new Route(path)) using (var handle = route.ReadHandle()) {
         Native.Stat before = Native.Info(handle);
         if ((before.Mode & 61440) != 32768 || before.Size < 0 || before.Size > maximum) throw new CaptureFault("regular-file-length");
-        using (var stream = new FileStream(handle, FileAccess.Read, 65536, false)) using (var hash = SHA256.Create()) {
+        using (var stream = new FileStream(handle, FileAccess.Read, 1, false)) using (var hash = SHA256.Create()) {
           byte[] buffer = new byte[65536]; long length = 0;
-          while (true) {
-            tick(); int count = stream.Read(buffer, 0, buffer.Length); if (count == 0) break;
-            attempted?.Invoke(count);
+          while (length < before.Size) {
+            tick(); int wanted = checked((int)Math.Min(buffer.Length, before.Size - length));
+            int requested = attempted == null ? wanted : attempted.Request(wanted);
+            int count = stream.Read(buffer, 0, requested);
+            attempted?.Received(count);
+            if (count == 0) throw new CaptureFault("short-file");
             length = checked(length + count);
-            if (length > maximum || length > before.Size) throw new CaptureFault("file-growing");
             hash.TransformBlock(buffer, 0, count, null, 0); consume?.Invoke(buffer, count);
           }
+          tick(); int probeRequest = attempted == null ? 1 : attempted.Request(1);
+          int probe = stream.Read(buffer, 0, probeRequest);
+          attempted?.Received(probe);
+          if (probe != 0) throw new CaptureFault("file-growing");
           hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
           if (length != before.Size || !before.Same(Native.Info(handle))) throw new CaptureFault("file-changed");
           route.Stable(); tick(); return new FileIdentity(length, Hex(hash.Hash!));
@@ -475,7 +499,9 @@ B3AssetsObserverI00, B3AssetsObserverI01, B3AssetsObserverI02, B3AssetsObserverI
     internal readonly string Root, Seal, OwnerPath, OwnerDirectory, ImagePath, ImageHash, ImportPath;
     internal readonly bool[] Seen = new bool[10], Completed = new bool[10];
     internal int Sequence, Rows, Faults;
-    internal long Bytes, FrameBytes, TableBytes, AnchorReadBytes;
+    internal long Bytes, FrameBytes;
+    internal ReadBudget AnchorReadBudget = new ReadBudget(67108864);
+    private readonly ReadBudget tableReadBudget = new ReadBudget(8388608);
     private readonly string[] first, prepared;
     private readonly string[] anchors;
     private string? rawPath;
@@ -575,7 +601,6 @@ B3AssetsObserverI00, B3AssetsObserverI01, B3AssetsObserverI02, B3AssetsObserverI
       var assemblies = new System.Reflection.Assembly[] { typeof(CaptureTask).Assembly, typeof(ITask).Assembly,
         typeof(Object).Assembly, typeof(FileStream).Assembly, typeof(SHA256).Assembly };
       string[] names = { "CaptureTask", "ITask", "Object", "FileStream", "SHA256" };
-      Action<int> charge = count => { AnchorReadBytes = checked(AnchorReadBytes + count); if (AnchorReadBytes > 67108864) throw new CaptureFault("anchor-read-aggregate"); };
       // Hash once, retain only five bounded identity records, then serialize
       // without rereading all anchors inside a counting/writing double pass.
       var records = new List<Tuple<string, string, string, FileIdentity>>(5);
@@ -585,7 +610,7 @@ B3AssetsObserverI00, B3AssetsObserverI01, B3AssetsObserverI02, B3AssetsObserverI
         if (i != 0) { var fields = Parse(anchors[i], 4); if (fields[0] != names[i]) throw new CaptureFault("anchor-role");
           path = fields[1]; size = Decimal(fields[2]); hash = fields[3]; }
         if (location != path || size > 33554432 || !HashGrammar(hash)) throw new CaptureFault("anchor-location-or-pin");
-        var info = Files.Read(location, size, tick, null, charge);
+        var info = Files.Read(location, size, tick, null, AnchorReadBudget);
         if ((i != 0 && info.Bytes != size) || info.Hash != hash) throw new CaptureFault("anchor-bytes-changed");
         string fullName = assemblies[i].FullName ?? throw new CaptureFault("missing-anchor-name");
         if (fullName.Length > 4096) throw new CaptureFault("anchor-name-limit");
@@ -635,16 +660,13 @@ B3AssetsObserverI00, B3AssetsObserverI01, B3AssetsObserverI02, B3AssetsObserverI
             using (var route = new Route(candidate)) {
               if (!route.Absent(tick)) {
                 string temporary = "tables/candidate-" + (i * 3 + Array.IndexOf(tails, tail)).ToString("D2", System.Globalization.CultureInfo.InvariantCulture) + ".partial";
-                info = Copy(candidate, temporary, 1048576, tick, count => {
-                  TableBytes = checked(TableBytes + count);
-                  if (TableBytes > 8388608) throw new CaptureFault("table-read-aggregate");
-                });
+                info = Copy(candidate, temporary, 1048576, tick, tableReadBudget);
                 string destination = "tables/" + info.Hash + ".bin";
                 using (var copyRoute = new Route(Root + "/" + destination, true)) {
                   if (copyRoute.Absent(tick)) {
                     Publish(temporary, destination);
                   } else {
-                    if (!Files.Read(Root + "/" + destination, 1048576, tick).Same(info)) throw new CaptureFault("table-copy-changed");
+                    if (!Files.Read(Root + "/" + destination, 1048576, tick, null, tableReadBudget).Same(info)) throw new CaptureFault("table-copy-changed");
                     using (var duplicate = new Route(Root + "/" + temporary))
                       if (Native.UnlinkAt(Native.Fd(duplicate.Parent), duplicate.Leaf, 0) != 0) throw new CaptureFault("duplicate-prefix-unlink");
                   }
@@ -667,10 +689,11 @@ B3AssetsObserverI00, B3AssetsObserverI01, B3AssetsObserverI02, B3AssetsObserverI
       }, tick, 32768);
     }
     internal void RecheckTables(Action tick) {
+      var budget = new ReadBudget(8388608);
       foreach (var row in tables) {
         tick(); using (var route = new Route(row.Item1)) {
           if (row.Item2 == null) { if (!route.Absent(tick)) throw new CaptureFault("table-absence-changed-or-unqualified"); }
-          else if (!Files.Read(row.Item1, 1048576, tick).Same(row.Item2)) throw new CaptureFault("table-bytes-changed");
+          else if (!Files.Read(row.Item1, 1048576, tick, null, budget).Same(row.Item2)) throw new CaptureFault("table-bytes-changed");
         }
       }
     }
@@ -678,7 +701,7 @@ B3AssetsObserverI00, B3AssetsObserverI01, B3AssetsObserverI02, B3AssetsObserverI
       if (count < 0 || checked(Bytes + count) > 67108864) throw new CaptureFault("observer-output-aggregate");
       Bytes += count;
     }
-    internal FileIdentity Copy(string source, string destination, long maximum, Action tick, Action<int>? attempted = null) {
+    internal FileIdentity Copy(string source, string destination, long maximum, Action tick, ReadBudget? attempted = null) {
       using (var route = new Route(Root + "/" + destination, true)) using (var handle = route.CreateHandle())
       using (var stream = new FileStream(handle, FileAccess.Write, 65536, false)) {
         return Files.Read(source, maximum, tick, (buffer, count) => { Charge(count); stream.Write(buffer, 0, count); }, attempted);

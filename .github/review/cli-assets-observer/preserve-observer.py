@@ -77,7 +77,27 @@ class Route:
         self.fds.clear()
 
 
-def read_file(path, maximum, consume=None, prefix=False):
+class ReadBudget:
+    # Requested bytes are charged before each read, including EOF and errors.
+    def __init__(self, limit):
+        self.limit = limit
+        self.requested = 0
+        self.consumed = 0
+
+    def request(self, wanted):
+        count = min(wanted, self.limit - self.requested)
+        if count <= 0 or count > 65536:
+            raise ValueError('attempted read budget')
+        self.requested += count
+        return count
+
+    def received(self, count):
+        self.consumed += count
+        if not 0 <= self.consumed <= self.requested <= self.limit:
+            raise ValueError('read accounting')
+
+
+def read_file(path, maximum, consume=None, prefix=False, budget=None, exact_bytes=None):
     tick()
     route = Route(path)
     fd = None
@@ -89,20 +109,32 @@ def read_file(path, maximum, consume=None, prefix=False):
             raise ValueError('not regular')
         if before.st_size > maximum and not prefix:
             raise ValueError('file size bound')
+        if exact_bytes is not None and before.st_size != exact_bytes:
+            raise ValueError('exact pinned length differs before stream')
         target = min(before.st_size, maximum)
         digest = _sha2.sha256()
         count = 0
         while count < target:
             tick()
-            block = posix.read(fd, min(65536, target - count))
+            wanted = min(65536, target - count)
+            requested = budget.request(wanted) if budget is not None else wanted
+            block = posix.read(fd, requested)
+            if budget is not None:
+                budget.received(len(block))
             if not block:
                 raise ValueError('short file')
             count += len(block)
             digest.update(block)
             if consume is not None:
                 consume(block)
-        if not prefix and posix.read(fd, 1):
-            raise ValueError('file grew')
+        if not prefix:
+            tick()
+            requested = budget.request(1) if budget is not None else 1
+            probe = posix.read(fd, requested)
+            if budget is not None:
+                budget.received(len(probe))
+            if probe:
+                raise ValueError('file grew')
         if identity(before) != identity(posix.fstat(fd)):
             raise ValueError('file changed')
         route.stable()
@@ -241,6 +273,7 @@ def python_identity(work, own_path, own_size, own_hash):
         raise ValueError('owned entry source bytes')
     pins = {}
     consumed = 0
+    module_budget = ReadBudget(8 * 1024 * 1024)
     for row in rows[2:]:
         fields = row.split('|')
         if len(fields) != 5 or fields[0] not in allowed or fields[0] in pins:
@@ -261,7 +294,7 @@ def python_identity(work, own_path, own_size, own_hash):
         else:
             size = decimal(length, 8 * 1024 * 1024)
             consumed += size
-            if consumed > 8 * 1024 * 1024 or read_file(origin, size)[:2] != (size, digest):
+            if consumed > 8 * 1024 * 1024 or read_file(origin, size, budget=module_budget, exact_bytes=size)[:2] != (size, digest):
                 raise ValueError('module byte pins')
     return names
 

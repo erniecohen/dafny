@@ -6,8 +6,8 @@
   "sourceFiles": [
     {
       "path": ".github/review/cli-assets-observer/PLAN.md",
-      "bytes": 37271,
-      "sha256": "4319b70e39e9b3484739e99f734f864e29bcae75056e8acaf10ad338c50585f8"
+      "bytes": 38938,
+      "sha256": "d414f1b24649e02b10737e8f4d72acb4ed69132bbd289a5e1f9c9bdf27b7875a"
     },
     {
       "path": ".github/review/cli-assets-observer/SELECTORS.json",
@@ -31,8 +31,8 @@
     },
     {
       "path": ".github/review/cli-assets-observer/B3AssetsObserver.cs",
-      "bytes": 52858,
-      "sha256": "d5e75d95782083f0275e3a0bf1da9fc6cf764e7f6fd273adc985400336508efb"
+      "bytes": 53855,
+      "sha256": "7cc9eda8d8b62b05cf72a11a84b7da2c727e4e98b9d6a8ab3146d272c6b61ae7"
     },
     {
       "path": ".github/review/cli-assets-observer/B3AssetsObserver.targets",
@@ -41,11 +41,21 @@
     },
     {
       "path": ".github/review/cli-assets-observer/preserve-observer.py",
-      "bytes": 19084,
-      "sha256": "4c41cd15014cdf17b66f3a07696ebcb30468ab9816ed78bbccd7fe909bdd59e4"
+      "bytes": 20380,
+      "sha256": "c9b153615c5fc516681d9f038f96a3b454510c1237f8e19cb3211c36818bf3ca"
+    },
+    {
+      "path": ".github/review/cli-assets-observer/ATTEMPTED-READ-PLAN.md",
+      "bytes": 7098,
+      "sha256": "73cd9e7c60ff67169dafab5437eefe76cc24ddbb9148b54062144b21a796c1b1"
+    },
+    {
+      "path": ".github/review/cli-assets-observer/ATTEMPTED-READ-PRIMARY.json",
+      "bytes": 375,
+      "sha256": "13ba11628ff94c1b02a44bd75f76b3b4fb38e1944fcc92ddbee6e55459fd87aa"
     }
   ],
-  "sourceFilesSealSha256": "4ac2f260cb30f42b591cb488dc6df2dfd51b9ba636aea2a57ebdd14bf0f757db",
+  "sourceFilesSealSha256": "9f8c2e52e636d2e157e42a7790e5000376e2054727749be902cfbb8569c19a57",
   "originalImportRepresentationComplete": false,
   "ownEntryModule": "Fixed preserve-observer.py __main__ identity separately bound; unchanged22 runtime-name allowlist; total32 cap",
   "preparedSourceNames": [

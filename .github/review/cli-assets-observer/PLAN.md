@@ -553,3 +553,30 @@ actual source/data review before any execution. These source files supply no
 Registry admission, runtime copy disposition, framework substitution, task-input
 certificate, table-open record or successful CLR-selection claim. All original
 Real and unsigned corpus expectations remain unchanged.
+
+
+## Attempted-read source repair checkpoint
+
+The separately reviewed ATTEMPTED-READ-PLAN.md binds a narrow attempted-input
+repair. Each named coordinator import/SDK/module/anchor pass owns a nonrefundable
+requested-byte ledger. Requests and EOF probes are admitted before reading; failed
+or short calls do not refund requests. Exact pinned length mismatches decline
+before streaming. Reports distinguish requested attempted bytes from successful
+bytes; output growth remains separate. These are finite per-pass limits, not an
+all-stage cumulative input limit. Other fixed integrity reads retain their
+per-file, finite-role and deadline bounds.
+
+The preservation child's existing8MiB module identity pass includes every module
+read and probe. First-copy output8MiB remains distinct. Both managed API-anchor
+passes share one64MiB frame ledger; table selection, duplicate candidate/copy
+checks and failures share one8MiB ledger, with each later fixed table recheck
+separately bounded by8MiB. Read FileStreams use bufferSize1; exact runtime1219
+source selects managed buffering only above1. This primary-source fact does not
+attest the installed runtime. Per-file content limits remain unchanged and every
+growth probe stays within its applicable shared attempted-input allowance.
+
+This checkpoint has not executed or compiled. All execution prerequisite pins
+and originalImportRepresentationComplete remain false/null. Selector, frame
+schema, original qualifier/ownership helpers, product and workflow are unchanged.
+The original995 source receipt retains its read-budget blockers as history; a
+new source freeze and independent review are required before publication.

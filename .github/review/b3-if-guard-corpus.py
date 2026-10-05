@@ -68,7 +68,31 @@ def observer_stat(info):
     return (info.st_dev, info.st_ino, info.st_mode, info.st_nlink, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
 
 
-def observer_read(path, maximum, keep=False):
+class ObserverReadBudget:
+    """Nonrefundable requested-byte admission for one fixed read pass."""
+    def __init__(self, limit, scope):
+        assert type(limit) is int and 0 < limit <= 67108864
+        self.limit = limit
+        self.requested = self.consumed = 0
+        self.record = {'scope': scope, 'limitBytes': limit, 'requestedAttemptedBytes': 0, 'successfulReadBytes': 0}
+        passes = observer_receipt.setdefault('attemptedReadPasses', [])
+        assert len(passes) < 128, 'Observer finite read-pass inventory'
+        passes.append(self.record)
+
+    def request(self, wanted):
+        count = min(wanted, self.limit - self.requested)
+        assert 0 < count <= 65536, 'Observer attempted-read budget exhausted'
+        self.requested += count
+        self.record['requestedAttemptedBytes'] = self.requested
+        return count
+
+    def received(self, count):
+        self.consumed += count
+        assert 0 <= self.consumed <= self.requested <= self.limit
+        self.record['successfulReadBytes'] = self.consumed
+
+
+def observer_read(path, maximum, keep=False, budget=None, exact_bytes=None):
     # All ancestors and the leaf are opened without following links. Bounds
     # precede buffering; actual consumed bytes and descriptor identities matter.
     observer_tick()
@@ -86,17 +110,27 @@ def observer_read(path, maximum, keep=False):
         fd = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK, dir_fd=descriptors[-1])
         before = os.fstat(fd)
         assert stat.S_ISREG(before.st_mode) and 0 <= before.st_size <= maximum, 'Observer regular file size bound'
+        assert exact_bytes is None or before.st_size == exact_bytes, 'Observer exact pinned length differs before stream'
         count = 0; digest = hashlib.sha256(); blocks = [] if keep else None
-        while True:
+        while count < before.st_size:
             observer_tick()
-            block = os.read(fd, 65536)
-            if not block:
-                break
+            wanted = min(65536, before.st_size - count)
+            requested = budget.request(wanted) if budget is not None else wanted
+            block = os.read(fd, requested)
+            if budget is not None:
+                budget.received(len(block))
+            assert block, 'Observer short file'
             count += len(block)
-            assert count <= maximum and count <= before.st_size, 'Observer file grew past first bound'
             digest.update(block)
             if keep:
                 blocks.append(block)
+        # The single EOF/growth probe shares the same attempted-input ledger.
+        observer_tick()
+        requested = budget.request(1) if budget is not None else 1
+        probe = os.read(fd, requested)
+        if budget is not None:
+            budget.received(len(probe))
+        assert not probe, 'Observer file grew past first bound'
         assert count == before.st_size and observer_stat(os.fstat(fd)) == observer_stat(before)
         assert [observer_stat(os.fstat(item)) for item in descriptors] == initial, 'Observer ancestor identity changed'
         record = {'bytes': count, 'sha256': digest.hexdigest()}
@@ -178,7 +212,8 @@ def observer_source_contract():
     assert observer_contract['productHead'] == inputs['productCommit']
     rows = observer_contract['sourceFiles']
     expected = ['PLAN.md', 'SELECTORS.json', 'FRAME-SCHEMA.json', 'PRIMARY-SOURCE-PINS.json',
-                'EXECUTION-PINS.json', 'B3AssetsObserver.cs', 'B3AssetsObserver.targets', 'preserve-observer.py']
+                'EXECUTION-PINS.json', 'B3AssetsObserver.cs', 'B3AssetsObserver.targets', 'preserve-observer.py',
+                'ATTEMPTED-READ-PLAN.md', 'ATTEMPTED-READ-PRIMARY.json']
     assert [row['path'] for row in rows] == [str(OBSERVER_PATH / name) for name in expected]
     assert seal(rows) == observer_contract['sourceFilesSealSha256']
     for row in rows:
@@ -229,12 +264,13 @@ def observer_check_runtime_pins():
     def rows_pinned(rows, root, maximum, aggregate, key):
         assert type(rows) is list and len({row['path'] for row in rows}) == len(rows)
         charged = 0
+        budget = ObserverReadBudget(aggregate, key)
         for row in rows:
             observer_tick()
             assert set(row) == {'path', 'bytes', 'sha256'} and type(row['bytes']) is int and 0 <= row['bytes'] <= maximum
             assert re.fullmatch('[0-9a-f]{64}', row['sha256']) and not Path(row['path']).is_absolute() and '..' not in Path(row['path']).parts
             charged += row['bytes']; assert charged <= aggregate
-            actual = observer_read(root / row['path'], maximum)
+            actual = observer_read(root / row['path'], maximum, budget=budget, exact_bytes=row['bytes'])
             assert actual == {name: row[name] for name in ['bytes', 'sha256']}, key + ' changed'
     rows_pinned(audit['trackedFiles'], ROOT, 262144, 8 * 1024 * 1024, 'Original tracked import closure')
     rows_pinned(audit['sdkFiles'], sdk_root, 33554432, 67108864, 'Original SDK import/intrinsic closure')
@@ -257,6 +293,7 @@ def observer_check_runtime_pins():
     assert 1 <= len(modules) <= 32 and len({row['name'] for row in modules}) == len(modules)
     assert {row['name'] for row in modules} <= set(allowed) and {'sys','posix','time','_sha2'} <= {row['name'] for row in modules}
     total = 0
+    module_budget = ObserverReadBudget(8388608, 'Python module identity pass')
     for row in modules:
         assert set(row) == {'name', 'kind', 'origin', 'bytes', 'sha256'} and row['kind'] in {'builtin','frozen','source','extension'}
         assert re.fullmatch('[0-9a-f]{64}', row['sha256'])
@@ -265,16 +302,17 @@ def observer_check_runtime_pins():
         else:
             assert type(row['bytes']) is int and 0 <= row['bytes'] <= 8388608
             total += row['bytes']; assert total <= 8388608
-            assert observer_read(Path(row['origin']), 8388608) == {key: row[key] for key in ['bytes','sha256']}
+            assert observer_read(Path(row['origin']), 8388608, budget=module_budget, exact_bytes=row['bytes']) == {key: row[key] for key in ['bytes','sha256']}
     anchors = execution['assemblyAnchors']
     assert type(anchors) is list and [row['role'] for row in anchors] == ['ITask','Object','FileStream','SHA256']
     total = 0
+    anchor_budget = ObserverReadBudget(67108864, 'External managed anchor identity pass')
     toolchain_paths = {str(Path(directory['path']) / row['path']): {key: row[key] for key in ['bytes','sha256']}
                        for directory in toolchain_rows['directories'] for row in directory['files']}
     for row in anchors:
         assert set(row) == {'role','path','bytes','sha256'} and row['path'] in toolchain_paths
         total += row['bytes']; assert total <= 67108864 and row['bytes'] <= 33554432
-        actual = observer_read(Path(row['path']), 33554432)
+        actual = observer_read(Path(row['path']), 33554432, budget=anchor_budget, exact_bytes=row['bytes'])
         assert actual == {key: row[key] for key in ['bytes','sha256']} == toolchain_paths[row['path']]
     abi = execution['linuxDescriptorAbi']
     assert type(abi) is dict and set(abi) == {'sourceReviewSha256','architecture','libc','constants','statBytes','primaryFiles'}
