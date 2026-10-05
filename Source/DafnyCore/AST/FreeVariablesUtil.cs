@@ -117,9 +117,16 @@ namespace Microsoft.Dafny {
       bool uHeap = false, uOldHeap = false;
       Type uThis = null;
       if (expr is StmtExpr stmtExpr && includeStatements) {
+        var statementFvs = new HashSet<IVariable>();
         foreach (var subExpression in stmtExpr.S.SubExpressionsIncludingTransitiveSubStatements) {
-          ComputeFreeVariables(options, subExpression, fvs, ref uHeap, ref uOldHeap, freeHeapAtVariables, ref uThis, includeStatements);
+          ComputeFreeVariables(options, subExpression, statementFvs, ref uHeap, ref uOldHeap, freeHeapAtVariables, ref uThis, includeStatements);
         }
+        // Resolved variable identities distinguish proof locals from genuine outer captures.
+        // A statement binder has no scope in the expression following the statement.
+        foreach (var statement in stmtExpr.S.DescendantsAndSelf) {
+          statementFvs.ExceptWith(StatementBoundVariables(statement));
+        }
+        fvs.UnionWith(statementFvs);
       }
       foreach (var subExpression in expr.SubExpressions) {
         ComputeFreeVariables(options, subExpression, fvs, ref uHeap, ref uOldHeap, freeHeapAtVariables, ref uThis, includeStatements);
@@ -160,6 +167,36 @@ namespace Microsoft.Dafny {
                    Select(id => id.BoundVar)) {
           fvs.Remove(v);
         }
+      }
+    }
+
+    private static IEnumerable<IVariable> StatementBoundVariables(Statement statement) {
+      switch (statement) {
+        case VarDeclStmt varDecl:
+          return varDecl.Locals;
+        case VarDeclPattern pattern:
+          return pattern.LocalVars;
+        case ForallStmt forall:
+          return forall.BoundVars;
+        case ForLoopStmt loop:
+          return new[] { loop.LoopIndex };
+        case MatchStmt match:
+          return match.Cases.SelectMany(c => c.Arguments ?? new List<BoundVar>());
+        case NestedMatchStmt { Flattened: { } flattened }:
+          return flattened.DescendantsAndSelf.SelectMany(StatementBoundVariables);
+        case NestedMatchStmt nestedMatch:
+          return nestedMatch.Cases.SelectMany(c => c.Pat.DescendantsAndSelf).
+            OfType<IdPattern>().Where(id => id.Arguments == null).Select(id => id.BoundVar);
+        case IfStmt { IsBindingGuard: true, Guard: ExistsExpr guard }:
+          return guard.BoundVars;
+        case AlternativeStmt alternative:
+          return alternative.Alternatives.Where(a => a.IsBindingGuard).
+            SelectMany(a => ((ExistsExpr)a.Guard).BoundVars);
+        case AlternativeLoopStmt alternativeLoop:
+          return alternativeLoop.Alternatives.Where(a => a.IsBindingGuard).
+            SelectMany(a => ((ExistsExpr)a.Guard).BoundVars);
+        default:
+          return Enumerable.Empty<IVariable>();
       }
     }
   }

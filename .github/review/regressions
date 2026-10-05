@@ -150,3 +150,7 @@ git-issues/git-issue-132-newtype-sequence-allocation-pure.dfy
 
 # Generic constant-field lambda actual type substitution (#132 development port).
 dafny0/BoundedPolymorphismCompilation.dfy
+
+# Proof locals and statement binders are not lambda captures (#132).
+git-issues/github-issue-132-statement-binders-positive.dfy
+git-issues/github-issue-132-statement-binders-negative.dfy
