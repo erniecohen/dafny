@@ -227,6 +227,14 @@ public class B3RealRoundTripTests {
     Assert.False(Assert.IsType<Ir.BooleanLiteral>(Assert.IsType<Ir.Label>(after[0].Condition).Body).Value);
     Assert.Equal("sNumericLabel", Assert.IsType<Ir.Label>(after[1].Condition).Name);
     Assert.False(Assert.IsType<Ir.BooleanLiteral>(after[2].Condition).Value);
+    var submitted = Assert.Single(prepared.Requests);
+    var configurationHash = B3RealContextPreparation.ConfigurationHash(submitted.Configuration);
+    var originalArguments = Assert.IsType<string[]>(request.Configuration.SolverArguments);
+    Assert.NotSame(originalArguments, submitted.Configuration.SolverArguments);
+    originalArguments[0] = "-untrusted-mutation";
+    Assert.Equal(new[] { "-in", "-smt2" }, submitted.Configuration.SolverArguments);
+    Assert.Equal(configurationHash, B3RealContextPreparation.ConfigurationHash(submitted.Configuration));
+    Assert.Matches("^[0-9a-f]{64}$", configurationHash);
   }
 
   [Fact]

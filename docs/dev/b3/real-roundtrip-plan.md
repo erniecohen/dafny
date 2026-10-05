@@ -159,3 +159,22 @@ checkout lengths/hashes separately. The project file has CRLF checkout bytes und
 `.gitattributes`; its canonical Git blob has LF bytes. Other payload files in this
 checkpoint have identical Git and checkout bytes. This inventory is source evidence,
 not a compilation, test, proof or signed build receipt.
+
+
+## Owned submitted configuration identity
+
+After preparation, the work key must use each forwarded owned Configuration in
+its original mask order. The pre-capture Configuration is no longer authoritative:
+its SolverArguments may still be a caller-owned collection. Hashing it after the
+source association check would bind a different snapshot if that collection changes.
+
+Compute a SHA-256 digest from the existing bounded canonical JSON buffer for each
+prepared request's Configuration. Include its mask ID, original Program hash,
+final Program hash and configuration digest in the work key, preserving all mask
+and configuration distinctions. Serialize one owned configuration at a time under
+the existing 32MiB request ceiling; its bytes are a subset of the already admitted
+request. Never serialize the live configuration for this key. This changes cache
+identity only and leaves every forwarded solver argument, limit and option intact.
+The existing metadata Fact must verify that mutating the original SolverArguments
+array after preparation changes neither the owned forwarded arguments nor their
+digest. The fixed 18-method/41-case structural census does not expand.

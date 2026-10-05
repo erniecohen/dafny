@@ -180,10 +180,10 @@
   ],
   "files": {
     "Source/DafnyCore/Backends/B3/B3RealContextPreparation.cs": {
-      "bytes": 22901,
-      "sha256": "cfff28d5bf68eaae03685716a116d90d1aa7941b6167330355273211c09fd697",
-      "checkoutBytes": 22901,
-      "checkoutSha256": "cfff28d5bf68eaae03685716a116d90d1aa7941b6167330355273211c09fd697",
+      "bytes": 23108,
+      "sha256": "3a648ec7fde03b950205db010481e0706ac19b4ae8647cd53bc1f9d77e93c9f2",
+      "checkoutBytes": 23108,
+      "checkoutSha256": "3a648ec7fde03b950205db010481e0706ac19b4ae8647cd53bc1f9d77e93c9f2",
       "checkoutTransform": "identity"
     },
     "Source/DafnyCore/Backends/B3/B3RealRoundTrip.cs": {
@@ -201,17 +201,17 @@
       "checkoutTransform": "identity"
     },
     "Source/DafnyCore/Backends/B3/B3VerificationBackend.cs": {
-      "bytes": 19362,
-      "sha256": "999940016198c4a63fa4c70da16bf0ca3ad5d36d3d5b956b55230d1910405692",
-      "checkoutBytes": 19362,
-      "checkoutSha256": "999940016198c4a63fa4c70da16bf0ca3ad5d36d3d5b956b55230d1910405692",
+      "bytes": 19448,
+      "sha256": "4bdca7f2034e5827a9e2952aa9a38c446a3cda0323d2b3e2db889104a2534883",
+      "checkoutBytes": 19448,
+      "checkoutSha256": "4bdca7f2034e5827a9e2952aa9a38c446a3cda0323d2b3e2db889104a2534883",
       "checkoutTransform": "identity"
     },
     "Source/DafnyB3Normalizer.Test/B3RealRoundTripTests.cs": {
-      "bytes": 29813,
-      "sha256": "8821afcfb01d7db0cf58687df35c99c5848b146b1b3120fa787ff60b754b0e81",
-      "checkoutBytes": 29813,
-      "checkoutSha256": "8821afcfb01d7db0cf58687df35c99c5848b146b1b3120fa787ff60b754b0e81",
+      "bytes": 30434,
+      "sha256": "cc18d4e198bde82880557a9d7c9f92bd3c8b14a3ccc33179442bf2b3e4974804",
+      "checkoutBytes": 30434,
+      "checkoutSha256": "cc18d4e198bde82880557a9d7c9f92bd3c8b14a3ccc33179442bf2b3e4974804",
       "checkoutTransform": "identity"
     },
     "Source/DafnyB3Normalizer.Test/DafnyB3Normalizer.Test.csproj": {
@@ -222,10 +222,10 @@
       "checkoutTransform": ".gitattributes text eol=crlf"
     },
     "docs/dev/b3/real-roundtrip-plan.md": {
-      "bytes": 10575,
-      "sha256": "9a195368eae35a7e62e07ea4f08b7dda382b062149c70b0758852f1cb22734e8",
-      "checkoutBytes": 10575,
-      "checkoutSha256": "9a195368eae35a7e62e07ea4f08b7dda382b062149c70b0758852f1cb22734e8",
+      "bytes": 11752,
+      "sha256": "051df86a07ceaefba6b5b3154e4e28fe5fdb75434b21e596c85190f3dacf0b8f",
+      "checkoutBytes": 11752,
+      "checkoutSha256": "051df86a07ceaefba6b5b3154e4e28fe5fdb75434b21e596c85190f3dacf0b8f",
       "checkoutTransform": "identity"
     },
     "docs/dev/news/124.fix": {

@@ -185,6 +185,10 @@ internal static class B3RealContextPreparation {
     var buffer = Json(program);
     return Convert.ToHexString(SHA256.HashData(buffer.WrittenSpan)).ToLowerInvariant();
   }
+  internal static string ConfigurationHash(Ir.Configuration configuration) {
+    var buffer = Json(configuration);
+    return Convert.ToHexString(SHA256.HashData(buffer.WrittenSpan)).ToLowerInvariant();
+  }
   internal static int JsonSize<T>(T value, int limit = Ir.Protocol.MaximumMessageBytes) => Json(value, limit).Count;
   internal static bool JsonEqual<T>(T left, T right) => Json(left).WrittenSpan.SequenceEqual(Json(right).WrittenSpan);
   private static BoundedBuffer Json<T>(T value, int limit = Ir.Protocol.MaximumMessageBytes) {

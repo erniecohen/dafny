@@ -108,11 +108,12 @@ public sealed class B3VerificationBackend : IVerificationBackend {
       }
       var requests = prepared.Requests;
       // Bind original source snapshots, the checked relation version and final submitted bytes separately.
-      var preparationKey = B3RealContextPreparation.ProducerVersion + ":" + string.Join(":", prepared.Evidence.Select(evidence =>
-        evidence.MaskId + ":" + evidence.OriginalProgramHash + ":" + evidence.FinalProgramHash));
+      // Configuration digests come only from the owned forwarded requests, in the same mask order.
+      var preparationKey = B3RealContextPreparation.ProducerVersion + ":" + string.Join(":", prepared.Evidence.Select((evidence, index) =>
+        evidence.MaskId + ":" + evidence.OriginalProgramHash + ":" + evidence.FinalProgramHash + ":" +
+        B3RealContextPreparation.ConfigurationHash(requests[index].Configuration)));
       // Work keys also bind worker/library bytes and forwarded limits/options.
-      var configKey = System.Text.Json.JsonSerializer.Serialize(config, Protocol.JsonOptions);
-      var key = "b3:" + preparationKey + ":" + string.Join(":", requests.Select(request => request.ProgramHash)) + ":" + package!.Fingerprint + ":" + configKey;
+      var key = "b3:" + preparationKey + ":" + string.Join(":", requests.Select(request => request.ProgramHash)) + ":" + package!.Fingerprint;
       var origins = normalized.Obligations.ToDictionary(obligation => obligation.Id, obligation => SourceOriginFor(obligation, source.Origin));
       tasks.Add(new B3WorkItem(new VerificationIdentity(implementation.Name, key, 0, 0), source,
         token => RunAsync(requests, package, normalized.Obligations, origins, source, token)));
