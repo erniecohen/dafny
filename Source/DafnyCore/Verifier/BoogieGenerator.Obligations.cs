@@ -62,7 +62,7 @@ public partial class BoogieGenerator {
         }
         builder.Add(AssertAndForget(builder.Context, new NestedOrigin(returnOrigin, piece.Tok), check, description));
       }
-      var guard = ensures.E.Origin.IsInherited(currentModule)
+      Bpl.Expr guard = ensures.E.Origin.IsInherited(currentModule)
         ? new Bpl.IdentifierExpr(returnOrigin, "$_reverifyPost", Bpl.Type.Bool) : Bpl.Expr.True;
       var summary = TrAssumeCmd(returnOrigin, BplImp(guard, lowering.Summary));
       proofDependencies?.AddProofDependencyId(summary, returnOrigin,
