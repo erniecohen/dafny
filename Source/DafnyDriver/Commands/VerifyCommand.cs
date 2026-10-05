@@ -81,6 +81,31 @@ public static class VerifyCommand {
     return await compilation.GetAndReportExitCode();
   }
 
+  /// <summary>
+  /// Reuse CLI consumers around a caller-owned, complete B3 preparation stream. The original
+  /// options-based handler and native observable publication order are deliberately unchanged.
+  /// </summary>
+  internal static async Task VerifyAndReportPreparedAsync(CliCompilation compilation,
+    ResolutionResult resolution, IAsyncEnumerable<CanVerifyResult> results, CancellationToken cancellationToken) {
+    using Subject<CanVerifyResult> reported = new();
+    ReportVerificationDiagnostics(compilation, reported);
+    var summary = ReportVerificationSummary(compilation, reported);
+    var dependencies = ReportProofDependencies(compilation, resolution, reported);
+    var logged = LogVerificationResults(compilation, resolution, reported);
+    try {
+      await foreach (var result in results.WithCancellation(cancellationToken)) {
+        reported.OnNext(result);
+      }
+      reported.OnCompleted();
+    } catch (Exception exception) {
+      reported.OnError(exception);
+      // All consumers own subscriptions to this subject; observe their failures before returning.
+      try { await Task.WhenAll(summary, dependencies, logged); } catch { }
+      throw;
+    }
+    await Task.WhenAll(summary, dependencies, logged);
+  }
+
   public static async Task ReportVerificationSummary(
     CliCompilation cliCompilation,
     IObservable<CanVerifyResult> verificationResults) {

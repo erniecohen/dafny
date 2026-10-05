@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable enable
+using System;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using System.Collections.Generic;
 using System.Linq;

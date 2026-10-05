@@ -64,7 +64,7 @@ public static class RunCommand {
       options.RunAfterCompile = true;
       options.ForceCompile = options.Get(BoogieOptionBag.NoVerify);
 
-      return await SynchronousCliCompilation.Run(options);
+      return await ModernCliCompilation.Run(options, context.GetCancellationToken());
     });
     return result;
   }

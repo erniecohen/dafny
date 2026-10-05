@@ -111,7 +111,7 @@ public class Compilation : IDisposable {
     verificationTickets.Enqueue(Unit.Default);
 
     RootFiles = input.PreparedRootFiles == null
-      ? DetermineRootFiles() : ConsumePreparedRootFiles(input.PreparedRootFiles);
+      ? DetermineRootFiles() : ConsumePreparedRootFiles(Array.AsReadOnly(input.PreparedRootFiles.ToArray()));
     ParsedProgram = ParseAsync();
     Resolution = ResolveAsync();
 
@@ -148,10 +148,10 @@ public class Compilation : IDisposable {
   private async Task<IReadOnlyList<DafnyFile>> ConsumePreparedRootFiles(IReadOnlyList<DafnyFile> roots) {
     await started.Task;
     cancellationSource.Token.ThrowIfCancellationRequested();
-    // Own the list before publication. DafnyFile preserves its admitted per-file options and trust policy.
-    var owned = Array.AsReadOnly(roots.ToArray());
-    updates.OnNext(new DeterminedRootFiles(Project, owned));
-    return owned;
+    // The constructor copied this list before any asynchronous input/parsing task could start.
+    // DafnyFile preserves its admitted per-file options and trust policy.
+    updates.OnNext(new DeterminedRootFiles(Project, roots));
+    return roots;
   }
 
   private async Task<IReadOnlyList<DafnyFile>> DetermineRootFiles() {
@@ -334,6 +334,31 @@ public class Compilation : IDisposable {
     }
 
     return [];
+  }
+
+  /// <summary>
+  /// Prepare an entire module for the owned modern B3 compiler continuation. This is awaited
+  /// before any per-owner event or task is consumed; the native CLI/IDE cache path is unchanged.
+  /// </summary>
+  public async Task<IReadOnlyList<IVerificationWorkItem>> PrepareModuleForCompilationAsync(
+    ModuleDefinition module, CancellationToken cancellationToken) {
+    if (VerificationBackendName != "b3") {
+      throw new InvalidOperationException("The modern preparation inventory is only available for B3");
+    }
+    using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+      cancellationToken, cancellationSource.Token);
+    var resolution = await Resolution.WaitAsync(linked.Token);
+    if (resolution == null || resolution.HasErrors || resolution.CanVerifies == null ||
+        !BoogieGenerator.ShouldVerifyModule(resolution.ResolvedProgram, module)) {
+      throw new InvalidOperationException("A module preparation requires the current resolved verification scope");
+    }
+    var errorsBefore = errorReporter.CountExceptVerifierAndCompiler(ErrorLevel.Error);
+    var tasks = await verifier.GetVerificationTasksAsync(verificationBackend, resolution, module, linked.Token);
+    linked.Token.ThrowIfCancellationRequested();
+    if (errorReporter.CountExceptVerifierAndCompiler(ErrorLevel.Error) != errorsBefore) {
+      throw new InvalidOperationException("Shared translation reported errors before its module inventory completed");
+    }
+    return Array.AsReadOnly(tasks.ToArray());
   }
 
   public async Task<bool> VerifyCanVerify(ICanVerify canVerify, Func<IVerificationWorkItem, bool> taskFilter,

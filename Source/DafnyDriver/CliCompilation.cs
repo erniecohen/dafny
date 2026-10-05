@@ -32,6 +32,8 @@ public class CliCompilation : IDisposable {
   private readonly IVerificationBackend? ownedBackend;
   private IDisposable? ownedDiagnosticsSubscription;
   private IDisposable? ownedLoggerFactory;
+  private int backendReleased;
+  private int ownedDisposed;
   public bool DidVerification { get; private set; }
 
   private CliCompilation(
@@ -149,10 +151,24 @@ public class CliCompilation : IDisposable {
     if (ownedBackend == null) {
       return;
     }
-    Compilation.Dispose();
+    if (Interlocked.Exchange(ref ownedDisposed, 1) != 0) {
+      return;
+    }
+    ReleaseOwnedBackend();
     ownedDiagnosticsSubscription?.Dispose();
-    ownedBackend.Dispose();
     ownedLoggerFactory?.Dispose();
+  }
+
+  internal void ReleaseOwnedBackend() {
+    if (ownedBackend != null && Interlocked.Exchange(ref backendReleased, 1) == 0) {
+      Compilation.Dispose();
+      ownedBackend.Dispose();
+    }
+  }
+
+  internal void MarkCompilationVerificationAttempted() {
+    DidVerification = true;
+    VerifiedAssertions = false;
   }
 
   public void Start() {

@@ -15,11 +15,11 @@ public static class BuildCommand {
       result.AddOption(option);
     }
 
-    DafnyNewCli.SetHandlerUsingDafnyOptionsContinuation(result, (options, _) => {
+    DafnyNewCli.SetHandlerUsingDafnyOptionsContinuation(result, (options, context) => {
       options.Compile = true;
       options.RunAfterCompile = false;
       options.ForceCompile = options.Get(BoogieOptionBag.NoVerify) || options.Get(BoogieOptionBag.HiddenNoVerify);
-      return SynchronousCliCompilation.Run(options);
+      return ModernCliCompilation.Run(options, context.GetCancellationToken());
     });
     return result;
   }
