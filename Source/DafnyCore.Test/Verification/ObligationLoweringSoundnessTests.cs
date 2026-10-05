@@ -19,4 +19,19 @@ public class ObligationLoweringSoundnessTests {
     var text = ObligationFingerprint.Emit(await ObligationLoweringTests.Translate(source, true));
     Assert.DoesNotContain("free ensures {:always_assume} _module.__default.F#canCall(i#0);", text);
   }
+  [Fact]
+  public async Task SynthesizedConstraintChecksKeepSourceDiagnosticLocations() {
+    const string source="lemma L() { var n:nat := -1; }";
+    var programs=await ObligationLoweringTests.Translate(source,true);
+    var checks=programs.SelectMany(p=>p.Implementations).SelectMany(p=>p.Blocks)
+      .SelectMany(b=>b.Cmds).OfType<Microsoft.Boogie.AssertCmd>().ToList();
+    Assert.NotEmpty(checks);
+    foreach (var check in checks) {
+      var origin=BoogieGenerator.ToDafnyToken(check.tok);
+      Assert.NotNull(origin.Uri);
+      Assert.All(ErrorReporterExtensions.CreateDiagnosticRelatedInformationFor(origin,true),
+        related=>Assert.NotNull(related.Range.Uri));
+    }
+  }
+
 }

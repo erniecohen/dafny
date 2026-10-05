@@ -36,13 +36,28 @@ public partial class BoogieGenerator {
       preparation: ObligationPreparation.GuardedIntroduction, guard: guard);
     foreach (var piece in lowering.Pieces) {
       if (piece.IsChecked) {
-        builder.Add(AssertAndForget(builder.Context, new NestedOrigin(origin, piece.Tok), BplImp(guard, piece.E), description));
+        builder.Add(AssertAndForget(builder.Context, ObligationOrigin(origin, piece.Tok), BplImp(guard, piece.E), description));
       }
     }
     var summary = TrAssumeCmd(origin, BplImp(guard, lowering.Summary));
     proofDependencies?.AddProofDependencyId(summary, origin,
       new AssumptionDependency(false, "checked guarded obligation", condition));
     builder.Add(summary);
+  }
+
+  private static IOrigin ObligationOrigin(IOrigin source, IOrigin piece) {
+    // Synthesized built-in constraints can have NoToken origins. Related
+    // locations must identify real source text; the obligation itself retains
+    // the original boundary's location and message.
+    static bool HasSourceLocations(IOrigin origin) {
+      if (origin.Uri == null || origin.line <= 0) { return false; }
+      return origin switch {
+        NestedOrigin nested => HasSourceLocations(nested.Outer) && HasSourceLocations(nested.Inner),
+        OriginWrapper wrapper => HasSourceLocations(wrapper.WrappedOrigin),
+        _ => true
+      };
+    }
+    return HasSourceLocations(piece) ? new NestedOrigin(source, piece) : source;
   }
 
   private void CheckMethodPostconditions(MethodOrConstructor method, IOrigin returnOrigin,
@@ -62,7 +77,7 @@ public partial class BoogieGenerator {
         if (piece.Tok.IsInherited(currentModule)) {
           check = BplImp(new Bpl.IdentifierExpr(returnOrigin, "$_reverifyPost", Bpl.Type.Bool), check);
         }
-        builder.Add(AssertAndForget(builder.Context, new NestedOrigin(returnOrigin, piece.Tok), check, description));
+        builder.Add(AssertAndForget(builder.Context, ObligationOrigin(returnOrigin, piece.Tok), check, description));
       }
       Bpl.Expr guard = ensures.E.Origin.IsInherited(currentModule) ||
         lowering.Pieces.Any(piece => piece.IsChecked && piece.Tok.IsInherited(currentModule))

@@ -384,7 +384,7 @@ public partial class BoogieGenerator {
         var description = new PreconditionSatisfied(direct, error, success);
         foreach (var piece in lowering.Pieces) {
           if (piece.IsChecked) {
-            builder.Add(AssertAndForget(builder.Context, new NestedOrigin(tok, piece.Tok), piece.E, description));
+            builder.Add(AssertAndForget(builder.Context, ObligationOrigin(tok, piece.Tok), piece.E, description));
           }
         }
         builder.Add(TrAssumeCmdWithDependencies(callEtran, tok, instantiated, "checked method precondition"));
