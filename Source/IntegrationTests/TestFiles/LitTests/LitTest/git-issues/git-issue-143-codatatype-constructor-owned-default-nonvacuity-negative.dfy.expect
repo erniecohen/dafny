@@ -1,0 +1,3 @@
+git-issue-143-codatatype-constructor-owned-default-nonvacuity-negative.dfy(8,68): Error: assertion could not be proved
+
+Dafny program verifier finished with 2 verified, 1 error

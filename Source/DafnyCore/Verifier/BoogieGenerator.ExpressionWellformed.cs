@@ -403,6 +403,9 @@ namespace Microsoft.Dafny {
             }
 
             builder.Add(TrAssumeCmd(e.Origin, etran.CanCallAssumption(e)));
+            if (e.Member is DatatypeDestructor && ContainsCoRecursiveFunctionCall(e.Obj)) {
+              CheckSuspendedValueMembership(e, e.Type, builder, etran);
+            }
             break;
           }
         case SeqSelectExpr selectExpr: {
@@ -660,7 +663,10 @@ namespace Microsoft.Dafny {
             for (int i = 0; i < dtv.Ctor.Formals.Count; i++) {
               var formal = dtv.Ctor.Formals[i];
               var arg = dtv.Arguments[i];
-              if (arg is not DefaultValueExpression) {
+              // A default was proved only under typed formal inputs. Substitution
+              // with a suspended call does not establish that premise.
+              var suspendedDefault = arg is DefaultValueExpression && ContainsCoRecursiveFunctionCall(arg);
+              if (arg is not DefaultValueExpression || suspendedDefault) {
                 CheckWellformed(arg, wfOptions, locals, builder, etran);
               }
               // Cannot use the datatype's formals, so we substitute the inferred type args:
@@ -669,6 +675,9 @@ namespace Microsoft.Dafny {
                 su[p.Item1] = p.Item2;
               }
               Type ty = formal.Type.Subst(su);
+              if (suspendedDefault) {
+                CheckSuspendedValueMembership(arg, ty, builder, etran);
+              }
               CheckSubrange(arg.Origin, etran.TrExpr(arg), arg.Type, ty, arg, builder);
             }
 
@@ -711,9 +720,12 @@ namespace Microsoft.Dafny {
                 Expression ee = e.Args[i];
                 directSubstMap.Add(p, ee);
 
-                if (!(ee is DefaultValueExpression)) {
+                if (ee is not DefaultValueExpression || ContainsCoRecursiveFunctionCall(ee)) {
                   CheckWellformedWithResult(ee, wfOptions, locals, builder, etran, (returnBuilder, result) => {
                     CheckSubrange(result.Origin, etran.TrExpr(result), ee.Type, et, ee, returnBuilder);
+                    if (!IsCoRecursiveFunctionCall(e) && ContainsCoRecursiveFunctionCall(ee)) {
+                      CheckSuspendedValueMembership(result, et, returnBuilder, etran);
+                    }
                   });
                 }
                 Bpl.Cmd cmd = Bpl.Cmd.SimpleAssign(p.Origin, lhs, AdaptBoxing(p.Origin, etran.TrExpr(ee), Cce.NonNull(ee.Type), et));
@@ -920,10 +932,12 @@ namespace Microsoft.Dafny {
               Bpl.IdentifierExpr canCallFuncID = new Bpl.IdentifierExpr(callExpr.Origin, e.Function.FullSanitizedName + "#canCall", Bpl.Type.Bool);
               List<Bpl.Expr> args = etran.FunctionInvocationArguments(e, null, null);
               Bpl.Expr canCallFuncAppl = new Bpl.NAryExpr(GetToken(expr), new Bpl.FunctionCall(canCallFuncID), args);
-              builder.Add(TrAssumeCmd(callExpr.Origin, allowance == null ? canCallFuncAppl : BplOr(etran.TrExpr(allowance), canCallFuncAppl)));
+              if (!IsCoRecursiveFunctionCall(e)) {
+                builder.Add(TrAssumeCmd(callExpr.Origin, allowance == null ? canCallFuncAppl : BplOr(etran.TrExpr(allowance), canCallFuncAppl)));
+              }
 
               var returnType = e.Type.AsDatatype;
-              if (returnType != null && returnType.Ctors.Count == 1) {
+              if (!IsCoRecursiveFunctionCall(e) && returnType != null && returnType.Ctors.Count == 1) {
                 var correctConstructor = FunctionCall(e.Origin, returnType.Ctors[0].QueryField.FullSanitizedName, Bpl.Type.Bool, etran.TrExpr(e));
                 // There is only one constructor, so the value must be been constructed by it; might as well assume that here.
                 builder.Add(TrAssumeCmd(callExpr.Origin, correctConstructor));
@@ -1646,6 +1660,41 @@ namespace Microsoft.Dafny {
       return array;
     }
 
+    private static bool IsCoRecursiveFunctionCall(FunctionCallExpr call) {
+      // A guarded co-recursive call is a suspended value. Its full result type
+      // cannot be assumed while checking the cluster's constructor fields.
+      // Extreme predicates use this marker for their separate prefix proof rule.
+      return call.CoCall == FunctionCallExpr.CoCallResolution.Yes && call.Function is not ExtremePredicate and not PrefixPredicate;
+    }
+
+
+    private static bool ContainsCoRecursiveFunctionCall(Expression expression) {
+      expression = expression.Resolved;
+      return expression is FunctionCallExpr call && IsCoRecursiveFunctionCall(call) ||
+             expression.SubExpressions.Any(ContainsCoRecursiveFunctionCall);
+    }
+
+    internal void CheckCoRecursiveValueMembership(Expression expression, Type targetType,
+      BoogieStmtListBuilder builder, ExpressionTranslator etran) {
+      if (ContainsCoRecursiveFunctionCall(expression)) {
+        CheckSuspendedValueMembership(expression, targetType, builder, etran);
+      }
+    }
+
+    private void CheckSuspendedValueMembership(Expression expression, Type targetType,
+      BoogieStmtListBuilder builder, ExpressionTranslator etran) {
+      // A destructor of a suspended co-call must establish its result's type
+      // before static typing can supply refinement facts to another constructor.
+      var value = AdaptBoxing(expression.Origin, etran.TrExpr(expression), expression.Type, targetType);
+      var membership = GetWhereClause(expression.Origin, value, targetType, etran, NOALLOC);
+      if (membership != null) {
+        var description = new SubrangeCheck("co-recursive observation: ", expression.Type.ToString(),
+          targetType.ToString(), targetType.NormalizeExpandKeepConstraints().AsRedirectingType != null,
+          false, null, null);
+        builder.Add(Assert(expression.Origin, membership, description, builder.Context));
+      }
+    }
+
     public void CheckSubsetType(ExpressionTranslator etran, Expression expr, Bpl.Expr selfCall, Type resultType,
       BoogieStmtListBuilder builder, string comment) {
 
@@ -1817,6 +1866,11 @@ namespace Microsoft.Dafny {
           var rIe = new Bpl.IdentifierExpr(rhs.Origin, r);
 
           void CheckPostconditionForRhs(BoogieStmtListBuilder innerBuilder, Expression body) {
+            // Check the original RHS before a generated binding supplies type facts.
+            // The callback result may no longer contain the suspended source call.
+            if (ContainsCoRecursiveFunctionCall(rhs)) {
+              CheckSuspendedValueMembership(body, pat.Expr.Type, innerBuilder, etran);
+            }
             CheckSubsetType(etran, body, rIe, pat.Expr.Type, innerBuilder, "let expression binding RHS well-formed");
           }
 

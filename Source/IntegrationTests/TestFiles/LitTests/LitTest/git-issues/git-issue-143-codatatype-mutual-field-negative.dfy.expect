@@ -1,0 +1,4 @@
+git-issue-143-codatatype-mutual-field-negative.dfy(7,41): Error: result of operation could not be proved to satisfy subset type constraint for 'Impossible'
+git-issue-143-codatatype-mutual-field-negative.dfy(8,41): Error: result of operation could not be proved to satisfy subset type constraint for 'Impossible'
+
+Dafny program verifier finished with 1 verified, 2 errors

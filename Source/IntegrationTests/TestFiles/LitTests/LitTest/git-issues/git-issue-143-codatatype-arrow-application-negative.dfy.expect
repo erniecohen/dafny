@@ -1,0 +1,3 @@
+git-issue-143-codatatype-arrow-application-negative.dfy(7,67): Error: cannot prove termination; try supplying a decreases clause (note that the call is not sufficiently guarded to be used co-recursively)
+
+Dafny program verifier finished with 1 verified, 1 error
