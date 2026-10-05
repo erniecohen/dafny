@@ -1,3 +1,9 @@
+# Historical focused-diagnostic note
+
+The text below describes an earlier six-job, three-arm callback diagnostic, including its proposed native-law candidate. It is retained as historical package context. The current workflow runs only the 38-job baseline/final default-off comparison described in [full-reuse-review.md](full-reuse-review.md); it neither builds nor executes that candidate. The 93 literal cohort compiler invocations include intended resolver failures and do not all reach proof.
+
+---
+
 # Native function law focused diagnostic
 
 This six-job diagnostic always measures three arms: the exact baselinebbf and

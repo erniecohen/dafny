@@ -5,107 +5,245 @@ permissions:
   contents: read
   actions: read
 concurrency:
-  group: issue113-default-off-${{ github.ref }}
+  group: issue113-full-default-off-reuse-${{ github.ref }}
   cancel-in-progress: false
 env:
   DOTNET_NOLOGO: 'true'
   DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
 jobs:
-  compilers:
+  plan:
     if: github.repository == 'erniecohen/dafny' && startsWith(github.ref, 'refs/heads/scratch/')
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 15
+    outputs:
+      matrix: ${{ steps.request.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - id: checkout_harness
+        uses: actions/checkout@v4
         continue-on-error: true
         with:
           path: harness
-      - uses: actions/checkout@v4
+      - id: request
+        name: Freeze the exact38-job request without extra language axes
+        continue-on-error: true
+        run: |
+          mkdir -p plan-results
+          set +e
+          git -C harness rev-parse HEAD > plan-results/harness-source.txt 2>&1
+          python3 harness/.github/review/issue113-default-off/ci_reuse_pair.py check-package > plan-results/package-check.txt 2>&1
+          echo "$?" > plan-results/package-check-exit.txt
+          python3 harness/.github/review/issue113-default-off/matrix.py plan-results/workflow-request.json --refresh false --semantic-unicode false --github-output > plan-results/matrix.txt 2>&1
+          echo "$?" > plan-results/matrix-exit.txt
+          python3 harness/.github/review/issue113-default-off/ci_reuse_pair.py denominators > plan-results/denominators.json 2> plan-results/denominators.err
+          echo "$?" > plan-results/denominators-exit.txt
+          exit 0
+      - id: summary
+        continue-on-error: true
+        if: always()
+        run: |
+          printf '%s\n' 'This scratch request is diagnostic. Missing setup or observations remain incomplete; Actions success is not proof or cost acceptance.' >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+      - id: step_outcomes
+        name: Preserve raw action outcomes through the preceding summary
+        if: always()
+        continue-on-error: true
+        env:
+          RAW_STEPS_JSON: ${{ toJSON(steps) }}
+        run: |
+          mkdir -p plan-results
+          set +e
+          python3 - <<'PY_RAW_STEPS'
+          import json, os
+          from pathlib import Path
+          raw = os.environ['RAW_STEPS_JSON']
+          json.loads(raw)
+          Path('plan-results/steps-before-upload.json').write_text(raw + '\n')
+          PY_RAW_STEPS
+          echo "$?" > plan-results/steps-collector-exit.txt
+          exit 0
+      - id: upload_request
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        if: always()
+        with:
+          name: full-default-off-request
+          path: plan-results
+          retention-days: 30
+
+  paired:
+    needs: plan
+    if: always() && needs.plan.outputs.matrix != '' && github.repository == 'erniecohen/dafny' && startsWith(github.ref, 'refs/heads/scratch/')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - id: checkout_harness
+        uses: actions/checkout@v4
         continue-on-error: true
         with:
-          ref: 4e50e86cde6ab2ef6cab0762ffc4df59d646dc15
-          path: candidate-source
-      - uses: actions/setup-dotnet@v4
+          path: harness
+      - id: checkout_inputs
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: 4b2742fb9924eed47c7bd40779e4283a1e65ce6d
+          path: original-inputs
+      - id: setup_dotnet
+        uses: actions/setup-dotnet@v4
         continue-on-error: true
         with:
           dotnet-version: 8.0.425
-      - uses: actions/download-artifact@v4
+      - id: download_compilers
+        uses: actions/download-artifact@v4
         continue-on-error: true
         with:
           name: default-off-compilers-shipped
-          run-id: 37325330127
+          run-id: 37347177735
           github-token: ${{ github.token }}
-          path: reused-compilers
-      - name: Exact two actual public compilers, no rebuild
+          path: retained-compilers
+      - id: artifact_api
+        name: Record fresh public artifact API provenance after download
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p paired-results/setup retained-compilers
+          set +e
+          gh api repos/erniecohen/dafny/actions/artifacts/11361575690 > retained-compilers/artifact-api.json 2> paired-results/setup/artifact-api.err
+          echo "$?" > paired-results/setup/artifact-api-exit.txt
+          cp retained-compilers/artifact-api.json paired-results/setup/artifact-api.json
+          exit 0
+      - id: prepare
+        name: Guard exact archived two-arm sources and install both named solvers
         continue-on-error: true
         run: |
-          mkdir -p results/baseline results/final
-          git -C harness rev-parse HEAD > results/harness-source.txt
+          mkdir -p paired-results/setup
           set +e
-          for side in baseline final; do
-            python3 harness/.github/review/issue113-default-off/reuse_compiler.py "$side" reused-compilers "out/$side/dafny" "results/$side" > "results/$side/identity.txt" 2>&1
-            identity_exit=$?
-            echo "$identity_exit" > "results/$side/identity-exit.txt"
-            if [ "$identity_exit" != 0 ]; then continue; fi
-            "out/$side/dafny/Dafny" --version > "results/$side/compiler-version.txt" 2>&1
-            version_exit=$?
-            echo "$version_exit" > "results/$side/compiler-version-exit.txt"
-            if [ "$version_exit" != 0 ]; then continue; fi
-            python3 - "$side" <<'PYCODE'
-          import json,sys
-          from pathlib import Path
-          side=sys.argv[1]
-          record=json.loads(Path('harness/.github/review/issue113-default-off/reused-compilers.json').read_text())['arms'][side]
-          raise SystemExit(0 if Path('results',side,'compiler-version.txt').read_text().strip()==record['actual_version'] else 1)
-          PYCODE
-            echo "$?" > "results/$side/reused-version-guard-exit.txt"
-          done
+          python3 harness/.github/review/issue113-default-off/ci_reuse_pair.py prepare --harness harness --inputs original-inputs --download retained-compilers --root paired-results > paired-results/setup/prepare.txt 2>&1
+          echo "$?" > paired-results/setup/prepare-adapter-exit.txt
           exit 0
-      - name: Build only the opt-in exact-actual #165 source proposal
+      - id: observe
+        name: Retain paired original literal commands, verdicts, BPL and resource logs
         continue-on-error: true
+        env:
+          MATRIX_TAG: ${{ matrix.tag }}
         run: |
-          mkdir -p results/candidate
+          mkdir -p paired-results/execution
           set +e
-          python3 harness/.github/review/issue113-default-off/candidate_compose.py candidate-source results/candidate/source.json > results/candidate/compose.txt 2>&1
-          composition_exit=$?
-          echo "$composition_exit" > results/candidate/compose-exit.txt
-          if [ "$composition_exit" != 0 ]; then exit 0; fi
-          sh candidate-source/Scripts/fetch-boogie-packages.sh > results/candidate/dependencies.txt 2>&1
-          dependencies_exit=$?
-          echo "$dependencies_exit" > results/candidate/dependencies-exit.txt
-          if [ "$dependencies_exit" != 0 ]; then exit 0; fi
-          revision=$(python3 -c "import json; print(json.load(open('harness/.github/review/issue113-default-off/spec.json'))['candidate']['source_revision_id'])")
-          (cd candidate-source && dotnet publish Source/Dafny/Dafny.csproj -c Release -o "$GITHUB_WORKSPACE/out/candidate/dafny" -p:SourceRevisionId="$revision") > results/candidate/build.txt 2>&1
-          build_exit=$?
-          echo "$build_exit" > results/candidate/build-exit.txt
-          if [ "$build_exit" != 0 ]; then exit 0; fi
-          python3 harness/.github/review/issue113-default-off/candidate_compose.py candidate-source results/candidate/source.json --check-existing > results/candidate/post-build-source-guard.txt 2>&1
-          source_guard_exit=$?
-          echo "$source_guard_exit" > results/candidate/post-build-source-guard-exit.txt
-          if [ "$source_guard_exit" != 0 ]; then exit 0; fi
-          out/candidate/dafny/Dafny --version > results/candidate/compiler-version.txt 2>&1
-          echo "$?" > results/candidate/compiler-version-exit.txt
-          python3 - <<'PYCODE'
-          import json
-          from pathlib import Path
-          spec=json.loads(Path('harness/.github/review/issue113-default-off/spec.json').read_text())['candidate']
-          raise SystemExit(0 if Path('results/candidate/compiler-version.txt').read_text().strip()=='4.11.0+'+spec['source_revision_id'] else 1)
-          PYCODE
-          echo "$?" > results/candidate/candidate-version-guard-exit.txt
-          tar -C out/candidate -czf results/candidate/dafny.tar.gz dafny
-          python3 harness/.github/review/issue113-default-off/prepare.py identity shipped out/candidate/dafny/Dafny results/candidate/compiler-components.json --side candidate --archive results/candidate/dafny.tar.gz > results/candidate/identity.txt 2>&1
-          echo "$?" > results/candidate/identity-exit.txt
+          python3 harness/.github/review/issue113-default-off/ci_reuse_pair.py observe --harness harness --inputs original-inputs --download retained-compilers --root paired-results --tag "$MATRIX_TAG" > paired-results/execution/observer.txt 2>&1
+          echo "$?" > paired-results/execution/observer-adapter-exit.txt
           exit 0
-      - uses: actions/upload-artifact@v4
-        continue-on-error: true
+      - id: finalize
+        name: Mandatory post-execution source, archive, full-bundle and solver checks
         if: always()
+        continue-on-error: true
+        run: |
+          mkdir -p paired-results/setup
+          set +e
+          python3 harness/.github/review/issue113-default-off/ci_reuse_pair.py finalize --harness harness --inputs original-inputs --download retained-compilers --root paired-results > paired-results/setup/finalize.txt 2>&1
+          echo "$?" > paired-results/setup/finalize-adapter-exit.txt
+          exit 0
+      - id: summary
+        continue-on-error: true
+        name: Preserve actual diagnostics without an Actions-green acceptance claim
+        if: always()
+        run: |
+          printf '%s\n' 'Requested baseline/final pairs and original checks are retained with raw failures. No candidate overlay, rebuild, oracle update, proof-green or cost-parity claim is made.' >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+      - id: step_outcomes
+        name: Preserve raw action outcomes through the preceding summary
+        if: always()
+        continue-on-error: true
+        env:
+          RAW_STEPS_JSON: ${{ toJSON(steps) }}
+        run: |
+          mkdir -p paired-results/setup
+          set +e
+          python3 - <<'PY_RAW_STEPS'
+          import json, os
+          from pathlib import Path
+          raw = os.environ['RAW_STEPS_JSON']
+          json.loads(raw)
+          Path('paired-results/setup/steps-before-upload.json').write_text(raw + '\n')
+          PY_RAW_STEPS
+          echo "$?" > paired-results/setup/steps-collector-exit.txt
+          exit 0
+      - id: upload_pair
+        uses: actions/upload-artifact@v4
+        if: always()
+        continue-on-error: true
         with:
-          name: default-off-compilers-shipped
-          path: results
+          name: full-default-off-${{ matrix.tag }}
+          path: |
+            paired-results/*-phase.json
+            paired-results/setup
+            paired-results/execution
+            paired-results/observations
+            !paired-results/setup/**/dafny.tar.gz
           retention-days: 30
-      - name: Preserve diagnostic status without claiming build or proof acceptance
+
+  report:
+    needs: [plan, paired]
+    if: always() && github.repository == 'erniecohen/dafny' && startsWith(github.ref, 'refs/heads/scratch/')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - id: checkout_harness
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          path: harness
+      - id: download_observations
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: full-default-off-*
+          path: observations
+      - id: compare
+        name: Compare every requested denominator and retain incomplete outcomes
+        continue-on-error: true
+        run: |
+          mkdir -p final-report
+          set +e
+          python3 harness/.github/review/issue113-default-off/run.py aggregate observations final-report/frozen-comparison-report.json --workflow-request observations/full-default-off-request/workflow-request.json > final-report/aggregate.txt 2>&1
+          echo "$?" > final-report/aggregate-exit.txt
+          python3 harness/.github/review/issue113-default-off/full_reuse_report.py observations final-report/closure-report.json > final-report/closure.txt 2>&1
+          echo "$?" > final-report/closure-exit.txt
+          exit 0
+      - id: summary
+        continue-on-error: true
         if: always()
         run: |
-          printf '%s\n' 'Exact build, composition, version and archive identity receipts are retained. No standalone proof workload is executed and no source adoption is implied.' >> "$GITHUB_STEP_SUMMARY"
+          printf '%s\n' 'Default-off verdict/BPL/declaration/batch resources are observations requiring independent review. Missing jobs, crashes, caps, warnings and original proof failures remain visible; no expected output has changed.' >> "$GITHUB_STEP_SUMMARY"
           exit 0
+      - id: step_outcomes
+        name: Preserve raw action outcomes through the preceding summary
+        if: always()
+        continue-on-error: true
+        env:
+          RAW_STEPS_JSON: ${{ toJSON(steps) }}
+        run: |
+          mkdir -p final-report
+          set +e
+          python3 - <<'PY_RAW_STEPS'
+          import json, os
+          from pathlib import Path
+          raw = os.environ['RAW_STEPS_JSON']
+          json.loads(raw)
+          Path('final-report/steps-before-upload.json').write_text(raw + '\n')
+          PY_RAW_STEPS
+          echo "$?" > final-report/steps-collector-exit.txt
+          exit 0
+      - id: upload_report
+        uses: actions/upload-artifact@v4
+        if: always()
+        continue-on-error: true
+        with:
+          name: full-default-off-report
+          path: final-report
+          retention-days: 30
