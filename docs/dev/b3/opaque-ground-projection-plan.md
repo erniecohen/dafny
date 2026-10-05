@@ -246,3 +246,65 @@ Phase B: 15 structural methods / 47 cases:
 | `ProjectionBoundsDeclineWithoutAllocatingOversizedWitness` | below, at, above same witness limit (3) |
 | `G3DefinitionContextsCannotBorrowSingletonCertificate` | nonempty definition mask, different-context certificate reuse (2) |
 
+
+## Implemented source checkpoint
+
+The producer version is `opaque-ground-singletons-1`. The producer and independent
+checker are in `Source/DafnyCore/Backends/B3/B3OpaqueGroundProjection.cs` and
+`B3OpaqueGroundProjectionRelation.cs`. `B3RealContextPreparation` returns its
+already captured immutable definition-origin arrays. `B3VerificationBackend`
+composes the two preparations after original partition validation and binds both
+versions, the original/Phase A/Phase B hashes, mask order, final owned configuration
+digests and the package fingerprint. The shared original-unit deadline and
+completion mapping are unchanged.
+
+The first audit requires every nested collection to be an initialized
+`ImmutableArray`, matching Phase A's controlled producer. It walks all expression
+and statement constructors, including unsupported barrier subtrees, before any
+hash/JSON encoder or recipe. It rejects inconsistent base/derived expression types.
+It charges the original 100000-node/depth128 and 400000-slot per-request bounds,
+200000 nodes/800000 slots for all masks, escaped-string upper bytes and bounded
+actual serialized request bytes. Mask/evidence/definition strings are included in
+escaped-text admission. This is a controlled producer boundary, with no arbitrary
+atomicity or source-certificate claim for caller-forged result records.
+
+Before target arrays, all masks receive a conservative output reserve of escaped
+text plus512 bytes per visited node,64 per input slot and4096 per header. Copies
+and replacement slots are counted by occurrence; projection introduces no larger
+expression subtree. The same32MiB/64MiB and depth/node bounds apply. Recipes and
+table/set insertions are charged to a200000-slot and800000-work shared optional
+allowance. Relation allowance is reserved as12 times admitted nodes plus4 times
+admitted slots plus128 per mask, before target materialization. Optional reserve,
+work or witness exhaustion forwards every owned Phase A request unchanged.
+Well-typed semantic ineligibility forwards that mask unchanged. Invalid ownership,
+association, types/hashes/evidence or a failed relation rejects preparation.
+
+The independent relation captures just one original/target pair per call, under
+Phase A's bounded capture admission, and releases that local pair before proceeding
+to the next mask. Its budget is shared across the original unit. It reclassifies
+all declarations, the ground/numeric grammar, definite Bool assignments and exact
+terminal Return independently. It compares retained expressions in lockstep rather
+than serializing every ancestor or trusting producer recipes. An unchanged request
+has an explicit byte-exact relation branch; it need not meet the projected grammar.
+No extra relation pair is retained to obtain an aggregate snapshot.
+
+`B3OpaqueGroundProjectionTests.cs` has exactly the15 methods/47 cases above. The
+fixtures construct current schema3 typed IR; they do not claim to be a historical
+Dafny emission or a worker verdict. The numeric-false row retains the false child
+of an And while erasing its opaque predicate sibling and rejects a forged true
+replacement. The below/at/above rows use one measured witness-slot requirement,
+with an additional assertion that exhaustion falls back across16 masks. The
+malformed-typed row also rejects a base/derived Type disagreement.
+
+`git-issues/git-issue-124.dfy` contains two original source checks for the ordinary
+backend: reassertion of its unchanged `x*x==2.0` precondition, and literal false
+under the realizable `x==0.0` precondition. The proposed expectation requires the
+positive filter to verify and the negative filter to report one assertion error.
+That expectation is unexecuted. The existing B3 irrational corpus, solver options,
+old expectation files, workflows, protocol and vendored worker/library sources
+are unchanged. The prior Phase A manifest remains historical; the separate Phase B
+manifest binds current composition and unchanged correspondence dependencies.
+
+This checkpoint has no compilation, structural-test, proof, worker or corpus
+execution evidence. Unknown remains unsuccessful. Native/source parity, proof
+cost and Real acceptance require separately reviewed runtime gates.

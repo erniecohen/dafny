@@ -95,23 +95,26 @@ public sealed class B3VerificationBackend : IVerificationBackend {
         normalized.Obligations, Array.Empty<B3DefinitionOrigin>()) };
       B3DefinitionContexts.ValidatePartition(normalized.Program, normalized.Obligations, contexts, implementation.tok);
       B3RealPreparedRequests prepared;
+      B3OpaqueGroundPreparedRequests projected;
       try {
         // Internal headers only: capture bounds must precede hashing/ProtocolValidation on live trees.
         var originals = contexts.Select(context => new Request(Protocol.Version, Guid.NewGuid().ToString("N"), Protocol.NormalizerVersion,
           package!.Manifest.B3Commit, string.Empty, context.Program.Unit.Name,
           context.Program, config, context.Obligations, package.Fingerprint)).ToArray();
         prepared = B3RealContextPreparation.Prepare(contexts, originals, implementation.tok);
+        projected = B3OpaqueGroundProjection.Prepare(prepared, implementation.tok);
       } catch (B3RealPreparationRejection rejection) {
         tasks.Add(Blocked(source, implementation.Name, VerificationOutcome.Unsupported,
           "b3_real_preparation: " + rejection.Message));
         continue;
       }
-      var requests = prepared.Requests;
+      var requests = projected.Requests;
       // Bind original source snapshots, the checked relation version and final submitted bytes separately.
       // Configuration digests come only from the owned forwarded requests, in the same mask order.
-      var preparationKey = B3RealContextPreparation.ProducerVersion + ":" + string.Join(":", prepared.Evidence.Select((evidence, index) =>
-        evidence.MaskId + ":" + evidence.OriginalProgramHash + ":" + evidence.FinalProgramHash + ":" +
-        B3RealContextPreparation.ConfigurationHash(requests[index].Configuration)));
+      var preparationKey = B3RealContextPreparation.ProducerVersion + ":" + B3OpaqueGroundProjection.ProducerVersion + ":" +
+        string.Join(":", prepared.Evidence.Select((evidence, index) => evidence.MaskId + ":" + evidence.OriginalProgramHash + ":" +
+          evidence.FinalProgramHash + ":" + projected.Evidence[index].InputProgramHash + ":" + projected.Evidence[index].FinalProgramHash + ":" +
+          B3RealContextPreparation.ConfigurationHash(requests[index].Configuration)));
       // Work keys also bind worker/library bytes and forwarded limits/options.
       var key = "b3:" + preparationKey + ":" + string.Join(":", requests.Select(request => request.ProgramHash)) + ":" + package!.Fingerprint;
       var origins = normalized.Obligations.ToDictionary(obligation => obligation.Id, obligation => SourceOriginFor(obligation, source.Origin));

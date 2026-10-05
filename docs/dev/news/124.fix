@@ -1,2 +1,4 @@
 
 The opt-in experimental B3 backend prepares bounded typed integer/Real round trips using assignment-derived substitutions and an independent relation check. It preserves checks, source identities, declarations, learning and solver settings. This source checkpoint awaits compilation and runtime acceptance.
+
+The opt-in backend also prepares an axiom-free straight-line ground fragment by projecting opaque singleton sorts and unused literal/copy Bool assignments. A separate checker preserves numeric assumptions, all checks, learning, source identities and solver settings. This source checkpoint is uncompiled; Real corpus acceptance is pending.

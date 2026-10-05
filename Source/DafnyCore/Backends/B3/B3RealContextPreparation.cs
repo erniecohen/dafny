@@ -22,7 +22,8 @@ internal sealed record B3RealPreparationLimits(int MaximumRows = 1024,
 internal sealed record B3RealPreparationEvidence(string ProducerVersion, string MaskId,
   string OriginalProgramHash, string FinalProgramHash, bool Applied, string? DeclineReason);
 internal sealed record B3RealPreparedRequests(IReadOnlyList<Ir.Request> Requests,
-  IReadOnlyList<B3RealPreparationEvidence> Evidence);
+  IReadOnlyList<B3RealPreparationEvidence> Evidence,
+  ImmutableArray<ImmutableArray<B3DefinitionOrigin>> Definitions);
 
 internal sealed class B3RealPreparationRejection : Exception {
   internal IToken Token { get; }
@@ -132,7 +133,8 @@ internal static class B3RealContextPreparation {
         }
       }
       AssertSourceUnchanged(contexts, requests, originals, witnesses, token);
-      return new(submitted.ToImmutableArray(), evidence.ToImmutableArray());
+      return new(submitted.ToImmutableArray(), evidence.ToImmutableArray(),
+        witnesses.Select(witness => witness.Definitions).ToImmutableArray());
     } catch (B3RealPreparationRejection) { throw; }
       catch (Exception error) when (error is InvalidDataException or JsonException or OverflowException or ArgumentException or
           IndexOutOfRangeException or NullReferenceException) {

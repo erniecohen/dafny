@@ -27,6 +27,8 @@
     <Compile Include="../DafnyCore/Backends/B3/B3RealContextPreparation.cs" Link="B3RealContextPreparation.cs" />
     <Compile Include="../DafnyCore/Backends/B3/B3RealRoundTrip.cs" Link="B3RealRoundTrip.cs" />
     <Compile Include="../DafnyCore/Backends/B3/B3RealRoundTripRelation.cs" Link="B3RealRoundTripRelation.cs" />
+    <Compile Include="../DafnyCore/Backends/B3/B3OpaqueGroundProjection.cs" Link="B3OpaqueGroundProjection.cs" />
+    <Compile Include="../DafnyCore/Backends/B3/B3OpaqueGroundProjectionRelation.cs" Link="B3OpaqueGroundProjectionRelation.cs" />
     <Content Include="$(DafnyNormalizerReferenceDirectory)/DafnyPrelude.bpl" Link="DafnyPrelude.bpl" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
