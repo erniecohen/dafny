@@ -291,6 +291,29 @@ namespace Microsoft.Dafny {
         return new Boogie.IdentifierExpr(tok, frameName, ty);
       }
 
+      // Only value translation is shortened; all cast membership and
+      // destination obligations remain in the unchanged well-formedness path.
+      private static bool IsDirectNewtypeHeadConversion(ConversionExpr conversion) {
+        if (conversion.E.Type is not UserDefinedType { ResolvedClass: NewtypeDecl sourceDeclaration } source ||
+            conversion.ToType is not UserDefinedType { ResolvedClass: NewtypeDecl targetDeclaration } target ||
+            source.TypeArgs.Count != 0 || target.TypeArgs.Count != 0 ||
+            sourceDeclaration.TypeArgs.Count != 0 || targetDeclaration.TypeArgs.Count != 0 ||
+            sourceDeclaration.IsCyclic || targetDeclaration.IsCyclic ||
+            !sourceDeclaration.IsRevealedInScope(Type.GetScope()) ||
+            !targetDeclaration.IsRevealedInScope(Type.GetScope()) ||
+            conversion.Type is not UserDefinedType { ResolvedClass: NewtypeDecl } result ||
+            result.TypeArgs.Count != 0 || !ReferenceEquals(result.ResolvedClass, targetDeclaration) ||
+            !result.Equals(target, true)) {
+          return false;
+        }
+        // Compare raw instantiated heads. With no parameters, this performs no
+        // substitution, alias/proxy expansion, operation view or ancestry walk.
+        return sourceDeclaration.BaseType is UserDefinedType sourceBase && sourceBase.TypeArgs.Count == 0 &&
+               ReferenceEquals(sourceBase.ResolvedClass, targetDeclaration) ||
+          targetDeclaration.BaseType is UserDefinedType targetBase && targetBase.TypeArgs.Count == 0 &&
+               ReferenceEquals(targetBase.ResolvedClass, sourceDeclaration);
+      }
+
       public Boogie.IdentifierExpr ArbitraryBoxValue() {
         Contract.Ensures(Contract.Result<Boogie.IdentifierExpr>() != null);
         return new Boogie.IdentifierExpr(Token.NoToken, "$ArbitraryBoxValue", Predef.BoxType);
@@ -380,6 +403,13 @@ namespace Microsoft.Dafny {
           case UnaryOpExpr opExpr:
             return TranslateUnaryOpExpression(opExpr);
           case ConversionExpr conversionExpr: {
+              if (options.Get(CommonOptionBag.ExtendedNewtypeBases) && IsDirectNewtypeHeadConversion(conversionExpr)) {
+                Expression operand = conversionExpr.E;
+                while (operand.Resolved is ConversionExpr nested && IsDirectNewtypeHeadConversion(nested)) {
+                  operand = nested.E;
+                }
+                return TrExpr(operand);
+              }
               return BoogieGenerator.ConvertExpression(GetToken(conversionExpr), TrExpr(conversionExpr.E), conversionExpr.E.Type, conversionExpr.ToType);
             }
           case TypeTestExpr testExpr: {
