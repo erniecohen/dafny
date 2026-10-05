@@ -1,0 +1,243 @@
+{
+  "public_run_url": "https://github.com/erniecohen/dafny/actions/runs/37357169410",
+  "measured_harness_head": "ec224fdbc8c5bcba488ba92f1a387f737b555d42",
+  "product": "4e50e86cde6ab2ef6cab0762ffc4df59d646dc15",
+  "Source_tree": "9c2bb48a778ee2abd6ef10f8a0d72f7843a16af5",
+  "compiler_version": "4.11.0+fcb2042d.review.c9c7622d",
+  "rows": 167,
+  "reports": 168,
+  "actual_or_admission_rows": 4494,
+  "all15_CSharp_Work_bodies_N_B_equal": true,
+  "missing_hidden_generated_members": 120,
+  "quantifier_instantiation_counters_available": 0,
+  "artifacts": [
+    {
+      "id": 11364917578,
+      "name": "performance-compiler",
+      "digest": "sha256:1e9f8d01886bcd22d7685fdb72faa569d447ebfe88eba03cb14f19ccf6e78fbd",
+      "size_in_bytes": 9554423
+    },
+    {
+      "id": 11364788988,
+      "name": "performance-extended-arrow-adapter-4.12.1-0",
+      "digest": "sha256:25705d8fd84afa1d59d8324ffd89f7d612c0ae6cbb7263a6d4f51441cc1c7489",
+      "size_in_bytes": 988166
+    },
+    {
+      "id": 11364674891,
+      "name": "performance-extended-arrow-adapter-5.1.0-0",
+      "digest": "sha256:2cd2fd7323e84f9b606194ec7a24b28816618e993a0d7da8ea1cfbbe07b7dbf0",
+      "size_in_bytes": 11011613
+    },
+    {
+      "id": 11364792723,
+      "name": "performance-extended-arrow-coercion-4.12.1-0",
+      "digest": "sha256:a835a63f4aeff4e36da2b682d9e0f127910ed8d3ed68b82d33e390bf7e6b2533",
+      "size_in_bytes": 920510
+    },
+    {
+      "id": 11365341850,
+      "name": "performance-extended-arrow-coercion-5.1.0-0",
+      "digest": "sha256:347f2a8f6fc6fdf912c7691975e5521d0ea6c0e6f45ba250b2d47d3a3458430e",
+      "size_in_bytes": 10930842
+    },
+    {
+      "id": 11364644994,
+      "name": "performance-extended-codatatype-lazy-4.12.1-0",
+      "digest": "sha256:fa3c745c3d6ad40d78c9f25907a9fe21db762c584aa0b6a8dbf88a6404be5fe0",
+      "size_in_bytes": 910788
+    },
+    {
+      "id": 11364604832,
+      "name": "performance-extended-codatatype-lazy-5.1.0-0",
+      "digest": "sha256:3303a47121c39a42427119c57fe57f51cf09f161381add95e8989e6b5e2b7862",
+      "size_in_bytes": 10941285
+    },
+    {
+      "id": 11365292417,
+      "name": "performance-extended-datatype-ghost-update-4.12.1-0",
+      "digest": "sha256:5f4f8a89c9b55c7ddc7394aaa1484854cdadd7a50ad944637f4791a9118fc892",
+      "size_in_bytes": 937899
+    },
+    {
+      "id": 11365915792,
+      "name": "performance-extended-datatype-ghost-update-5.1.0-0",
+      "digest": "sha256:22a5f2a52228ea401458e2314c81b2eace51ba77651d82e8e2a925d571563633",
+      "size_in_bytes": 10994917
+    },
+    {
+      "id": 11365510940,
+      "name": "performance-extended-datatype-nested-update-4.12.1-0",
+      "digest": "sha256:11bd5fc8abf7556b65ce9ec2e3bab4d61050652ff0cf3e632b7e296abb1c3f8c",
+      "size_in_bytes": 947602
+    },
+    {
+      "id": 11365312060,
+      "name": "performance-extended-datatype-nested-update-5.1.0-0",
+      "digest": "sha256:db61c4a7baae02ccc8fe4f6da8680929714fde8fa88a1b409fc592ded3b8f19a",
+      "size_in_bytes": 11012725
+    },
+    {
+      "id": 11365262458,
+      "name": "performance-extended-datatype-root-update-4.12.1-0",
+      "digest": "sha256:f7adcf602300e07587ba41017d14809e413fbd1ab952fe01a3c7d9c0708089eb",
+      "size_in_bytes": 937674
+    },
+    {
+      "id": 11365391866,
+      "name": "performance-extended-datatype-root-update-5.1.0-0",
+      "digest": "sha256:9ef8d94cb7d7379e5d9ea1bc9deaff12bee03f0a15ff6a87d467d93f91557425",
+      "size_in_bytes": 10995179
+    },
+    {
+      "id": 11365865715,
+      "name": "performance-extended-ordinal-finite-4.12.1-0",
+      "digest": "sha256:01a407f84524964c51a8b92bd9358392fe12987f991b5f1b4d4015f19537341d",
+      "size_in_bytes": 820900
+    },
+    {
+      "id": 11364619334,
+      "name": "performance-extended-ordinal-finite-5.1.0-0",
+      "digest": "sha256:6d27765266f43be5f878e7297a30a70ab39ed1c480329c95d5b21aafc96ec58f",
+      "size_in_bytes": 10775860
+    },
+    {
+      "id": 11365137929,
+      "name": "performance-extended-ordinal-finite-refinement-4.12.1-0",
+      "digest": "sha256:b268b62a5abbdc8487ff2bd783ba6a9a2b41fece35f9c5fa363d548f8d55303c",
+      "size_in_bytes": 908709
+    },
+    {
+      "id": 11366190112,
+      "name": "performance-extended-ordinal-finite-refinement-5.1.0-0",
+      "digest": "sha256:d1d7ee2a0ad2ce0d810000fe31d437f9773df54ae8a00c7f3098850eb43ee46f",
+      "size_in_bytes": 10908492
+    },
+    {
+      "id": 11365536893,
+      "name": "performance-extended-refinement-local-4.12.1-0",
+      "digest": "sha256:109a873cd0f2bfdec2d6eb926805a43cefd95df415dab1c84a5de8ba34f35f9c",
+      "size_in_bytes": 972880
+    },
+    {
+      "id": 11366210087,
+      "name": "performance-extended-refinement-local-5.1.0-0",
+      "digest": "sha256:7fa3c7935a9a81f23adfae3dcd86fb95501b5022e325340b30136924b2b49ab7",
+      "size_in_bytes": 10945060
+    },
+    {
+      "id": 11366115414,
+      "name": "performance-extended-refinement-quantified-4.12.1-0",
+      "digest": "sha256:b7053eda5dbc43a2950e56350b5b060134345b5e839f4eb001fb8ac00496f28e",
+      "size_in_bytes": 987165
+    },
+    {
+      "id": 11365287701,
+      "name": "performance-extended-refinement-quantified-5.1.0-0",
+      "digest": "sha256:5d804ba44e12e3e199b6bf3b2dbf121108f04cd53df4966827caecbb246a0416",
+      "size_in_bytes": 11061740
+    },
+    {
+      "id": 11365093188,
+      "name": "performance-extended-refinement-trivial-4.12.1-0",
+      "digest": "sha256:95ac1de0aff9e6e20e5174ff813af383d28c7446e76236f2dd9ff27a4079b7d5",
+      "size_in_bytes": 965762
+    },
+    {
+      "id": 11364798500,
+      "name": "performance-extended-refinement-trivial-5.1.0-0",
+      "digest": "sha256:863fe963d9a17a2ef6c18d8b0e82bad13c099722ca1961021bff931c7fffd5cf",
+      "size_in_bytes": 10941269
+    },
+    {
+      "id": 11365148144,
+      "name": "performance-extended-tree-observation-4.12.1-0",
+      "digest": "sha256:db58bdb920f11f1bad4a940c92ba649c8c046e0f3b07a5eb2d3427491dba069a",
+      "size_in_bytes": 951328
+    },
+    {
+      "id": 11364948239,
+      "name": "performance-extended-tree-observation-5.1.0-0",
+      "digest": "sha256:a229ae592895264acfd6dcac795f51c40303731527a201180ffcc9a6e6ea965c",
+      "size_in_bytes": 11007573
+    },
+    {
+      "id": 11366186332,
+      "name": "performance-extended-visibility-session-4.12.1-0",
+      "digest": "sha256:6bbe372ac1362e8dcb9ea4dad759a202c1d2acf156029ca2ad6ec9b12fa4f00f",
+      "size_in_bytes": 64203442
+    },
+    {
+      "id": 11365014461,
+      "name": "performance-extended-visibility-session-5.1.0-0",
+      "digest": "sha256:9aabe83579b600f24081df76f31788101be254331763f6533a70d7bbde1f9bd5",
+      "size_in_bytes": 64203412
+    },
+    {
+      "id": 11367377823,
+      "name": "performance-fixtures-depth-4.12.1-0",
+      "digest": "sha256:05cdd7383d6ecc2d4bd577f3bc601a3835f64b58116adca9a7a89c40f8ec7776",
+      "size_in_bytes": 5832409
+    },
+    {
+      "id": 11367378028,
+      "name": "performance-fixtures-depth-5.1.0-0",
+      "digest": "sha256:35d8bba9c506087a5aa5bbc75fadc883611de88c48b9d02bc7d58584e1ed0c53",
+      "size_in_bytes": 5785696
+    },
+    {
+      "id": 11365218273,
+      "name": "performance-fixtures-function-creation-4.12.1-0",
+      "digest": "sha256:cf177e8dd6d6bbde25d2630cfd52a064f83696d322c906376f286d9b9040d41f",
+      "size_in_bytes": 893776
+    },
+    {
+      "id": 11366370053,
+      "name": "performance-fixtures-function-creation-5.1.0-0",
+      "digest": "sha256:62e9421d0e039a5d35452b4219ad7d715d6380edca16d7f34c108ce801c92a03",
+      "size_in_bytes": 10878778
+    },
+    {
+      "id": 11365576784,
+      "name": "performance-fixtures-function-identity-4.12.1-0",
+      "digest": "sha256:f28f5b6e038aa68fac023038256219d488c268bdcd7406cf134df5cd5edfc1de",
+      "size_in_bytes": 877548
+    },
+    {
+      "id": 11366155865,
+      "name": "performance-fixtures-function-identity-5.1.0-0",
+      "digest": "sha256:82d05d1b54528c02c6b3cff8a3ceb4d003e571c3eeede8dc44101c043715d629",
+      "size_in_bytes": 10852025
+    },
+    {
+      "id": 11364963475,
+      "name": "performance-fixtures-generic-boundary-4.12.1-0",
+      "digest": "sha256:a8d2260a49b08d53499c9c1d79753da095ab8ff76cc6afd343a1a7195c24223d",
+      "size_in_bytes": 861789
+    },
+    {
+      "id": 11365303140,
+      "name": "performance-fixtures-generic-boundary-5.1.0-0",
+      "digest": "sha256:dfd23edad93d028d2e575a4f383942a15c22b467bd92bc9b53b355577efe2bcb",
+      "size_in_bytes": 10869281
+    },
+    {
+      "id": 11365656836,
+      "name": "performance-fixtures-generic-nesting-4.12.1-0",
+      "digest": "sha256:28b6a075f96e698e478ee2fffebe0fce0c999e4e97f5dc82ddc3daeb6d41626a",
+      "size_in_bytes": 2310217
+    },
+    {
+      "id": 11366270570,
+      "name": "performance-fixtures-generic-nesting-5.1.0-0",
+      "digest": "sha256:1c0b76989f35e1f6f4cfdefd2b9a471a4872e0712e26924439db9180da2320bc",
+      "size_in_bytes": 2310301
+    }
+  ],
+  "derived_data_sha256": {
+    "workload-comparison.csv": "b4550328e471f17e1a695cfa5e2bf6a802ad5fa24df0a77b0deab0d6b8eb83ff",
+    "csharp-work-body-comparison.json": "217aef829427fb45481cc0c3a27c443d9034ffb72143d34afb24cd0082d73c7d"
+  },
+  "complete_feature_or_performance_acceptance": false,
+  "boundary": "Public diagnostic observations only. Missing/capped/warning scopes remain explicit. Proof data repeated by backend is one shared verifier sample set, not additional runs. Work equality covers that method only; no whole-code, solver-query or absent-artifact closure claim."
+}
