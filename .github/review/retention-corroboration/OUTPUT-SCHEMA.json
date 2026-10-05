@@ -1,0 +1,743 @@
+{
+  "conceptualProjection": {
+    "DirectoryObservation": {
+      "boundedNamesSha256": "directories[].boundedNamesSha256 in present variant",
+      "changed": "directories[].changed in present variant",
+      "eligiblePresence": "directories[].eligiblePresence in present variant",
+      "exactEligibleNames": "keys of directories[].eligiblePresence, matched against selector.eligibleNames; absent variant has no entries",
+      "fault": "summary terminal/finalization/observation ledger; failed directory group may have no returned list; no successful per-directory fault field is emitted",
+      "lstatAfter": "directories[].lstatAfter is now descriptor fstat after enumeration; unavailable for absent variant",
+      "lstatBefore": "directories[].lstatBefore is now descriptor fstat before enumeration; unavailable for absent variant",
+      "selectorPath": "directories[].selectorPath",
+      "totalImmediateCount": "directories[].totalImmediateCount in present variant"
+    },
+    "ELFObservation": {
+      "DT_NEEDED": "observation.binary.DT_NEEDED",
+      "DT_RPATH": "observation.binary.DT_RPATH",
+      "DT_RUNPATH": "observation.binary.DT_RUNPATH",
+      "DT_SONAME": "observation.binary.DT_SONAME",
+      "PT_INTERP": "observation.binary.PT_INTERP",
+      "e_ehsize": "observation.binary.e_ehsize",
+      "e_ident": "not detached: parser checks magic/class/endian/version against pinned bytes; no full e_ident observation is claimed",
+      "e_machine": "observation.binary.e_machine",
+      "e_type": "observation.binary.e_type",
+      "e_version": "observation.binary.e_version",
+      "fileObservation": "enclosing observation.file (implicit owner)",
+      "programHeaderFacts": "observation.binary.programHeaderOffset/programHeaderEntrySize/programHeaderCount",
+      "staticMetadataComplete": "observation.binary.staticMetadataComplete",
+      "unsupportedFact": "observation.captureFault; binary is null on failure"
+    },
+    "FileObservation": {
+      "archivedComparison": "observation.archivedComparison",
+      "bytes": "observation.file.bytes",
+      "captureFault": "observation.captureFault or summary fault ledger",
+      "kind": "observation.kind",
+      "linkObservations": "observation.file.linkObservations",
+      "presence": "observation.file.presence; errors instead make file null and set captureFault (collapsed outcome)",
+      "readAfter": "observation.file.readAfter",
+      "readBefore": "observation.file.readBefore",
+      "requestedPath": "observation.file.requestedPath",
+      "resolvedPath": "observation.file.resolvedPath",
+      "selectorId": "observation.selectorId",
+      "sha256": "observation.file.sha256",
+      "stable": "observation.file.stable; absence has no captured-file stability"
+    },
+    "PEObservation": {
+      "AssemblyRefRows": "observation.binary.AssemblyRefRows",
+      "MVID": "observation.binary.MVIDHex (raw16-byte hex)",
+      "assemblyIdentity": "observation.binary.assemblyIdentity",
+      "customAttributeStringFacts": "observation.binary.customAttributeStringFacts",
+      "fileObservation": "enclosing observation.file (implicit owner)",
+      "malformedOrUnsupported": "observation.captureFault; binary is null on failure; #- and pointer tables are unsupported",
+      "metadataBounds": "observation.binary.metadataBytes/metadataTableRows; other validation is source-enforced, not a detached region inventory"
+    },
+    "PackageObservation": {
+      "ambiguities": "terminal/fault ledger codes; no inline successful-record ambiguity list is emitted",
+      "architecture": "packages[].statusRecord.architecture when present; otherwise unavailable",
+      "exactName": "packages[].packageName; statusRecord.exactName when present",
+      "exactSelectorMatches": "packages[].infoFiles[].selectedEntries",
+      "matchingInfoFiles": "packages[].infoFiles; legacy statusRecord.matchingInfoFiles remains empty and does not assert file matches",
+      "selectedFields": "packages[].statusRecord.selectedFields when present",
+      "selectedParagraphSha256": "packages[].statusRecord.paragraphSha256 when present",
+      "sourceDeclaration": "packages[].statusRecord.selectedFields.Source when present; otherwise unavailable",
+      "status": "packages[].statusRecord.selectedFields.Status when present; otherwise unavailable",
+      "version": "packages[].statusRecord.selectedFields.Version when present; otherwise unavailable"
+    },
+    "PacketSummary": {
+      "SDKExecuted": "summary.SDKExecuted = false",
+      "analyzerExecuted": "summary.analyzerExecuted = false",
+      "archivedReference": "summary.archiveReference",
+      "captureCompleted": "summary.captureCompleted (data completeness only)",
+      "changedRunnerFacts": "observations[].archivedComparison; no separate changed-only inventory is synthesized",
+      "collectorExecuted": "summary.collectorExecuted = false",
+      "completeDynamicLoadClosure": "summary.completeDynamicLoadClosure = false",
+      "exactSelectorCount": "summary.exactSelectorCountExpected/exactSelectorCountObserved",
+      "finalizationFaults": "summary.finalizationFaults",
+      "fourPendingSourceContracts": "summary.fourOriginalSourceContractsRemainPending = true",
+      "fullDiagnosticEnabled": "summary.fullDiagnosticEnabled = false",
+      "newRunnerFacts": "corroboration observations/packages/directories; new input inventories are detached in evidence, not duplicated in summary",
+      "nineOriginalMissingEdges": "summary.nineOriginalMissingEdgesRemainUnresolved = true",
+      "packageParagraphCount": "summary.counts.selectedStatusParagraphs",
+      "primaryFault": "summary.primaryFault",
+      "reviewedRunnerClosure": "summary.reviewedRunnerClosure = false",
+      "schemaVersion": "summary.schemaVersion = 2 (wire protocol, not SELECTORS schemaVersion1)",
+      "selectorDocumentSha256": "summary.selectorDocumentSha256",
+      "sourcePinsAfter": "summary.sourcePinsAfter",
+      "sourcePinsBefore": "summary.sourcePinsBefore",
+      "targetExecuted": "summary.targetExecuted = false",
+      "textReadBytes": "summary.counts.inputTextBytes (complete captured body bytes including status); attempted bytes additionally explicit",
+      "textReadCount": "summary.counts.inputTextReads (complete captured role reads); attempted reads additionally explicit"
+    },
+    "TextObservation": {
+      "UTF8Complete": "observation.text.UTF8Complete",
+      "contentDisposition": "observation.text.contentDisposition; invalid encoding and parser errors collapse to hash-only-rejected-content; absent text is null, not a disposition enum",
+      "fileObservation": "enclosing observation.file (implicit owner)",
+      "forbiddenContentFault": "observation.text.forbiddenContentFault",
+      "parsedRecords": "observation.text.parsedRecords",
+      "parserKind": "observation.text.parserKind",
+      "textBytes": "observation.text.textBytes",
+      "textSha256": "observation.text.textSha256",
+      "unfollowedReferenceCount": "observation.text.unfollowedReferenceCount; null after rejection"
+    }
+  },
+  "frozenConceptualRequiredNamesEnforcedUnchanged": false,
+  "inputAndScopeWidened": false,
+  "interpretation": "wire_record executes finite required/allowed key and primitive-type checks from this exact source-pinned document; source validation additionally enforces budgets, constants, selected owners, hashes and data denominators. The projection is reviewed explanation, not a permission or fabricated fact.",
+  "records": {
+    "Absence": {
+      "variants": {
+        "record": {
+          "allowed": [
+            "errno",
+            "parentPath",
+            "parentBefore",
+            "parentAfter",
+            "parentReadableNoFollow"
+          ],
+          "fieldTypes": {
+            "errno": "int",
+            "parentAfter": "dict",
+            "parentBefore": "dict",
+            "parentPath": "str",
+            "parentReadableNoFollow": "bool"
+          },
+          "required": [
+            "errno",
+            "parentPath",
+            "parentBefore",
+            "parentAfter",
+            "parentReadableNoFollow"
+          ],
+          "type": "dict"
+        }
+      }
+    },
+    "DirectoryObservation": {
+      "variants": {
+        "absent": {
+          "allowed": [
+            "selectorPath",
+            "resolution",
+            "entries"
+          ],
+          "fieldTypes": {
+            "entries": "null",
+            "resolution": "dict",
+            "selectorPath": "str"
+          },
+          "required": [
+            "selectorPath",
+            "resolution",
+            "entries"
+          ],
+          "type": "dict"
+        },
+        "present": {
+          "allowed": [
+            "selectorPath",
+            "resolution",
+            "lstatBefore",
+            "lstatAfter",
+            "eligiblePresence",
+            "totalImmediateCount",
+            "boundedNamesSha256",
+            "unknownImmediateCount",
+            "changed",
+            "recursive"
+          ],
+          "fieldTypes": {
+            "boundedNamesSha256": "str",
+            "changed": "bool",
+            "eligiblePresence": "dict",
+            "lstatAfter": "dict",
+            "lstatBefore": "dict",
+            "recursive": "bool",
+            "resolution": "dict",
+            "selectorPath": "str",
+            "totalImmediateCount": "int",
+            "unknownImmediateCount": "int"
+          },
+          "required": [
+            "selectorPath",
+            "resolution",
+            "lstatBefore",
+            "lstatAfter",
+            "eligiblePresence",
+            "totalImmediateCount",
+            "boundedNamesSha256",
+            "unknownImmediateCount",
+            "changed",
+            "recursive"
+          ],
+          "type": "dict"
+        }
+      }
+    },
+    "ELFObservation": {
+      "variants": {
+        "loadable": {
+          "allowed": [
+            "e_type",
+            "e_machine",
+            "e_version",
+            "e_ehsize",
+            "programHeaderOffset",
+            "programHeaderEntrySize",
+            "programHeaderCount",
+            "PT_INTERP",
+            "DT_NEEDED",
+            "DT_SONAME",
+            "DT_RPATH",
+            "DT_RUNPATH",
+            "staticMetadataComplete",
+            "noExportsEnumerated"
+          ],
+          "fieldTypes": {
+            "DT_NEEDED": "list",
+            "DT_RPATH": "nullable-str",
+            "DT_RUNPATH": "nullable-str",
+            "DT_SONAME": "nullable-str",
+            "PT_INTERP": "nullable-str",
+            "e_ehsize": "int",
+            "e_machine": "int",
+            "e_type": "int",
+            "e_version": "int",
+            "noExportsEnumerated": "bool",
+            "programHeaderCount": "int",
+            "programHeaderEntrySize": "int",
+            "programHeaderOffset": "int",
+            "staticMetadataComplete": "bool"
+          },
+          "required": [
+            "e_type",
+            "e_machine",
+            "e_version",
+            "e_ehsize",
+            "programHeaderOffset",
+            "programHeaderEntrySize",
+            "programHeaderCount",
+            "PT_INTERP",
+            "DT_NEEDED",
+            "DT_SONAME",
+            "DT_RPATH",
+            "DT_RUNPATH",
+            "staticMetadataComplete",
+            "noExportsEnumerated"
+          ],
+          "type": "dict"
+        },
+        "relocatable": {
+          "allowed": [
+            "e_type",
+            "e_machine",
+            "e_version",
+            "e_ehsize",
+            "programHeaderOffset",
+            "programHeaderEntrySize",
+            "programHeaderCount",
+            "PT_INTERP",
+            "DT_NEEDED",
+            "DT_SONAME",
+            "DT_RPATH",
+            "DT_RUNPATH",
+            "staticMetadataComplete",
+            "noExportsEnumerated",
+            "outsideLoadGraph"
+          ],
+          "fieldTypes": {
+            "DT_NEEDED": "list",
+            "DT_RPATH": "nullable-str",
+            "DT_RUNPATH": "nullable-str",
+            "DT_SONAME": "nullable-str",
+            "PT_INTERP": "nullable-str",
+            "e_ehsize": "int",
+            "e_machine": "int",
+            "e_type": "int",
+            "e_version": "int",
+            "noExportsEnumerated": "bool",
+            "outsideLoadGraph": "bool",
+            "programHeaderCount": "int",
+            "programHeaderEntrySize": "int",
+            "programHeaderOffset": "int",
+            "staticMetadataComplete": "bool"
+          },
+          "required": [
+            "e_type",
+            "e_machine",
+            "e_version",
+            "e_ehsize",
+            "programHeaderOffset",
+            "programHeaderEntrySize",
+            "programHeaderCount",
+            "PT_INTERP",
+            "DT_NEEDED",
+            "DT_SONAME",
+            "DT_RPATH",
+            "DT_RUNPATH",
+            "staticMetadataComplete",
+            "noExportsEnumerated",
+            "outsideLoadGraph"
+          ],
+          "type": "dict"
+        },
+        "unavailable": {
+          "type": "null"
+        }
+      }
+    },
+    "FileObservation": {
+      "variants": {
+        "record": {
+          "allowed": [
+            "requestedPath",
+            "presence",
+            "resolvedPath",
+            "linkObservations",
+            "absence",
+            "readBefore",
+            "readAfter",
+            "bytes",
+            "sha256",
+            "stable"
+          ],
+          "fieldTypes": {
+            "absence": "nullable-dict",
+            "bytes": "nullable-int",
+            "linkObservations": "list",
+            "presence": "str",
+            "readAfter": "nullable-dict",
+            "readBefore": "nullable-dict",
+            "requestedPath": "str",
+            "resolvedPath": "nullable-str",
+            "sha256": "nullable-str",
+            "stable": "bool"
+          },
+          "required": [
+            "requestedPath",
+            "presence",
+            "resolvedPath",
+            "linkObservations",
+            "absence",
+            "readBefore",
+            "readAfter",
+            "bytes",
+            "sha256",
+            "stable"
+          ],
+          "type": "dict"
+        },
+        "unavailable": {
+          "type": "null"
+        }
+      }
+    },
+    "Observation": {
+      "variants": {
+        "record": {
+          "allowed": [
+            "selectorId",
+            "group",
+            "kind",
+            "file",
+            "archivedComparison",
+            "text",
+            "binary",
+            "captureFault"
+          ],
+          "fieldTypes": {
+            "archivedComparison": "str",
+            "binary": "nullable-dict",
+            "captureFault": "nullable-dict",
+            "file": "nullable-dict",
+            "group": "str",
+            "kind": "str",
+            "selectorId": "str",
+            "text": "nullable-dict"
+          },
+          "required": [
+            "selectorId",
+            "group",
+            "kind",
+            "file",
+            "archivedComparison",
+            "text",
+            "binary",
+            "captureFault"
+          ],
+          "type": "dict"
+        }
+      }
+    },
+    "PEObservation": {
+      "variants": {
+        "record": {
+          "allowed": [
+            "assemblyIdentity",
+            "AssemblyRefRows",
+            "MVIDHex",
+            "customAttributeStringFacts",
+            "metadataBytes",
+            "metadataTableRows",
+            "customAttributeConstructorsInvoked",
+            "assemblyLoaded"
+          ],
+          "fieldTypes": {
+            "AssemblyRefRows": "list",
+            "MVIDHex": "str",
+            "assemblyIdentity": "dict",
+            "assemblyLoaded": "bool",
+            "customAttributeConstructorsInvoked": "bool",
+            "customAttributeStringFacts": "list",
+            "metadataBytes": "int",
+            "metadataTableRows": "list"
+          },
+          "required": [
+            "assemblyIdentity",
+            "AssemblyRefRows",
+            "MVIDHex",
+            "customAttributeStringFacts",
+            "metadataBytes",
+            "metadataTableRows",
+            "customAttributeConstructorsInvoked",
+            "assemblyLoaded"
+          ],
+          "type": "dict"
+        },
+        "unavailable": {
+          "type": "null"
+        }
+      }
+    },
+    "PackageInfo": {
+      "variants": {
+        "absent": {
+          "allowed": [
+            "suffix",
+            "absence",
+            "file",
+            "selectedEntries"
+          ],
+          "fieldTypes": {
+            "absence": "list",
+            "file": "null",
+            "selectedEntries": "list",
+            "suffix": "str"
+          },
+          "required": [
+            "suffix",
+            "absence",
+            "file",
+            "selectedEntries"
+          ],
+          "type": "dict"
+        },
+        "record": {
+          "allowed": [
+            "suffix",
+            "absence",
+            "file",
+            "selectedEntries",
+            "withheldEntryCount",
+            "withheldEntriesSha256",
+            "arbitraryOwnedFilesOpened"
+          ],
+          "fieldTypes": {
+            "absence": "list",
+            "arbitraryOwnedFilesOpened": "bool",
+            "file": "dict",
+            "selectedEntries": "list",
+            "suffix": "str",
+            "withheldEntriesSha256": "str",
+            "withheldEntryCount": "int"
+          },
+          "required": [
+            "suffix",
+            "absence",
+            "file",
+            "selectedEntries",
+            "withheldEntryCount",
+            "withheldEntriesSha256",
+            "arbitraryOwnedFilesOpened"
+          ],
+          "type": "dict"
+        }
+      }
+    },
+    "PackageObservation": {
+      "variants": {
+        "record": {
+          "allowed": [
+            "packageName",
+            "statusRecord",
+            "infoFiles",
+            "missingPackage"
+          ],
+          "fieldTypes": {
+            "infoFiles": "list",
+            "missingPackage": "bool",
+            "packageName": "str",
+            "statusRecord": "nullable-dict"
+          },
+          "required": [
+            "packageName",
+            "statusRecord",
+            "infoFiles",
+            "missingPackage"
+          ],
+          "type": "dict"
+        }
+      }
+    },
+    "PackageStatus": {
+      "variants": {
+        "record": {
+          "allowed": [
+            "exactName",
+            "architecture",
+            "paragraphSha256",
+            "selectedFields",
+            "matchingInfoFiles",
+            "declaredOwnershipOnly"
+          ],
+          "fieldTypes": {
+            "architecture": "str",
+            "declaredOwnershipOnly": "bool",
+            "exactName": "str",
+            "matchingInfoFiles": "list",
+            "paragraphSha256": "str",
+            "selectedFields": "dict"
+          },
+          "required": [
+            "exactName",
+            "architecture",
+            "paragraphSha256",
+            "selectedFields",
+            "matchingInfoFiles",
+            "declaredOwnershipOnly"
+          ],
+          "type": "dict"
+        },
+        "unavailable": {
+          "type": "null"
+        }
+      }
+    },
+    "PacketEvidence": {
+      "variants": {
+        "record": {
+          "allowed": [
+            "schemaVersion",
+            "scope",
+            "observations",
+            "packages",
+            "directories",
+            "historicalText"
+          ],
+          "fieldTypes": {
+            "directories": "nullable-list",
+            "historicalText": "nullable-list",
+            "observations": "list",
+            "packages": "nullable-dict",
+            "schemaVersion": "int",
+            "scope": "str"
+          },
+          "required": [
+            "schemaVersion",
+            "scope",
+            "observations",
+            "packages",
+            "directories",
+            "historicalText"
+          ],
+          "type": "dict"
+        }
+      }
+    },
+    "PacketSummary": {
+      "variants": {
+        "record": {
+          "allowed": [
+            "SDKExecuted",
+            "analyzerExecuted",
+            "archiveReference",
+            "captureCompleted",
+            "changedRunnerFactsAreNewInputs",
+            "collectorExecuted",
+            "completeDynamicLoadClosure",
+            "counts",
+            "exactSelectorCountExpected",
+            "exactSelectorCountObserved",
+            "faultLedgerOverflow",
+            "finalizationFaults",
+            "fourOriginalSourceContractsRemainPending",
+            "frozenConceptualRequiredNamesEnforcedUnchanged",
+            "fullDiagnosticEnabled",
+            "historicalDataReused",
+            "interpreter",
+            "nativeProofOrCostParityAccepted",
+            "newArchiveDownloaded",
+            "nineOriginalMissingEdgesRemainUnresolved",
+            "observationFaults",
+            "originalScannerInvokedOrImported",
+            "outputReservationsBeforeSummary",
+            "passed",
+            "primaryFault",
+            "reviewedRunnerClosure",
+            "schemaVersion",
+            "scope",
+            "selectorDocumentSha256",
+            "sourcePinsAfter",
+            "sourcePinsBefore",
+            "stabilityScope",
+            "targetExecuted",
+            "terminalWorkFault",
+            "wireSchemaCaptured",
+            "wireSchemaSha256",
+            "evidence",
+            "publicationFault"
+          ],
+          "fieldTypes": {
+            "SDKExecuted": "bool",
+            "analyzerExecuted": "bool",
+            "captureCompleted": "bool",
+            "changedRunnerFactsAreNewInputs": "bool",
+            "collectorExecuted": "bool",
+            "completeDynamicLoadClosure": "bool",
+            "counts": "dict",
+            "exactSelectorCountExpected": "int",
+            "exactSelectorCountObserved": "int",
+            "faultLedgerOverflow": "bool",
+            "finalizationFaults": "list",
+            "fourOriginalSourceContractsRemainPending": "bool",
+            "frozenConceptualRequiredNamesEnforcedUnchanged": "bool",
+            "fullDiagnosticEnabled": "bool",
+            "historicalDataReused": "bool",
+            "nativeProofOrCostParityAccepted": "bool",
+            "newArchiveDownloaded": "bool",
+            "nineOriginalMissingEdgesRemainUnresolved": "bool",
+            "observationFaults": "list",
+            "originalScannerInvokedOrImported": "bool",
+            "outputReservationsBeforeSummary": "dict",
+            "passed": "bool",
+            "primaryFault": "nullable-dict",
+            "reviewedRunnerClosure": "bool",
+            "schemaVersion": "int",
+            "scope": "str",
+            "sourcePinsAfter": "nullable-dict",
+            "sourcePinsBefore": "nullable-dict",
+            "targetExecuted": "bool",
+            "terminalWorkFault": "nullable-dict",
+            "wireSchemaCaptured": "bool",
+            "wireSchemaSha256": "str"
+          },
+          "required": [
+            "SDKExecuted",
+            "analyzerExecuted",
+            "archiveReference",
+            "captureCompleted",
+            "changedRunnerFactsAreNewInputs",
+            "collectorExecuted",
+            "completeDynamicLoadClosure",
+            "counts",
+            "exactSelectorCountExpected",
+            "exactSelectorCountObserved",
+            "faultLedgerOverflow",
+            "finalizationFaults",
+            "fourOriginalSourceContractsRemainPending",
+            "frozenConceptualRequiredNamesEnforcedUnchanged",
+            "fullDiagnosticEnabled",
+            "historicalDataReused",
+            "interpreter",
+            "nativeProofOrCostParityAccepted",
+            "newArchiveDownloaded",
+            "nineOriginalMissingEdgesRemainUnresolved",
+            "observationFaults",
+            "originalScannerInvokedOrImported",
+            "outputReservationsBeforeSummary",
+            "passed",
+            "primaryFault",
+            "reviewedRunnerClosure",
+            "schemaVersion",
+            "scope",
+            "selectorDocumentSha256",
+            "sourcePinsAfter",
+            "sourcePinsBefore",
+            "stabilityScope",
+            "targetExecuted",
+            "terminalWorkFault",
+            "wireSchemaCaptured",
+            "wireSchemaSha256"
+          ],
+          "type": "dict"
+        }
+      }
+    },
+    "TextObservation": {
+      "variants": {
+        "record": {
+          "allowed": [
+            "contentDisposition",
+            "UTF8Complete",
+            "textBytes",
+            "textSha256",
+            "parserKind",
+            "parsedRecords",
+            "publicTextArtifact",
+            "forbiddenContentFault",
+            "unfollowedReferenceCount"
+          ],
+          "fieldTypes": {
+            "UTF8Complete": "bool",
+            "contentDisposition": "str",
+            "forbiddenContentFault": "nullable-str",
+            "parsedRecords": "nullable-dict",
+            "parserKind": "str",
+            "publicTextArtifact": "nullable-dict",
+            "textBytes": "int",
+            "textSha256": "str",
+            "unfollowedReferenceCount": "nullable-int"
+          },
+          "required": [
+            "contentDisposition",
+            "UTF8Complete",
+            "textBytes",
+            "textSha256",
+            "parserKind",
+            "parsedRecords",
+            "publicTextArtifact",
+            "forbiddenContentFault",
+            "unfollowedReferenceCount"
+          ],
+          "type": "dict"
+        },
+        "unavailable": {
+          "type": "null"
+        }
+      }
+    }
+  },
+  "schemaVersion": 2,
+  "scope": "finite-corroboration-explicit-wire-schema-and-conceptual-projection",
+  "selectorDocumentSha256": "3f68c8c766dc6742b3144a83909c2f6a97c36b8382e49b97ccbd184fa6c5383a",
+  "unknownFieldsAllowedOutsideDeclaredOptionalKeys": false
+}

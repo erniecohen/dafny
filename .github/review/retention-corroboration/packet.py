@@ -19,14 +19,18 @@ SCANNER = Path('.github/review/retention-inventory/inventory.py')
 OLD_SHA = 'b2e0e676f8c279e25358330ac3a91e740a12ddce319fd9aaedc5f1bd508dbc90'
 SCANNER_SHA = '01b1522c9405f95f82c6da1f56ff7185d5b83c2b80c7732b8a52accd83664d1b'
 SELECTOR_SHA = '3f68c8c766dc6742b3144a83909c2f6a97c36b8382e49b97ccbd184fa6c5383a'
+WIRE_SCHEMA_SHA = 'e23c0524657b33f97d7a0411fa2fafbdab68beb506cfc8dcf493034a7bcff122'
 START = time.monotonic()
-WORK = START + 600
+WORK = globals().get('_ROUTE_WORK_DEADLINE', START + 600)
+if type(WORK) not in {int, float} or WORK > START + 600:
+    raise ValueError('Internal routing deadline cannot widen the 600-second work budget.')
 TEXT_MAX = 4 * 1024 ** 2
 TEXT_TOTAL = 64 * 1024 ** 2
 FILE_MAX = 512 * 1024 ** 2
 FILE_TOTAL = 8 * 1024 ** 3
 REPORT_MAX = 32 * 1024 ** 2
 COUNTS = {'inputTextReads': 0, 'inputTextBytes': 0, 'statusTextBytes': 0, 'selectedStatusParagraphs': 0,
+          'attemptedInputTextReads': 0, 'attemptedInputTextBytes': 0, 'attemptedStatusBytes': 0,
           'hashFileBytes': 0, 'controlReads': 0, 'controlBytes': 0}
 ROWS = []
 CHECKS = []
@@ -36,7 +40,10 @@ FAULT_OVERFLOW = False
 CURRENT = None
 ALLOWED = set()
 DOC = None
+WIRE = None
 NATIVE_IMAGES = set()
+OUTPUT_COUNTS = {'publicTextBytesReserved': 0, 'JSONReportBytesReserved': 0, 'allArtifactBytesReserved': 0}
+OUTPUT_DESCRIPTOR = None
 
 
 class Fault(Exception):
@@ -58,11 +65,13 @@ def sha(body):
     return hashlib.sha256(body).hexdigest()
 
 
-def strict_json(body):
+def strict_json(body, until=WORK):
     require(len(body) <= REPORT_MAX, 'JSON-byte-cap')
     depth = members = 0
     quoted = escaped = False
-    for c in body.decode('utf-8'):
+    for i, c in enumerate(body.decode('utf-8')):
+        if i % 4096 == 0:
+            deadline(until)
         if quoted:
             if escaped:
                 escaped = False
@@ -108,6 +117,110 @@ def forbidden_path(name):
             or base.endswith(('.key', '.p12', '.pfx', '.kdbx')))
 
 
+def directory_descriptor(name, until=WORK):
+    require(type(name) is str and name.startswith('/') and name == posixpath.normpath(name)
+            and len(name) <= 4096 and '\x00' not in name, 'descriptor-directory-path')
+    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
+    descriptor = os.open('/', flags)
+    try:
+        for component in name.split('/')[1:]:
+            if not component:
+                continue
+            deadline(until)
+            expected = os.stat(component, dir_fd=descriptor, follow_symlinks=False)
+            require(stat.S_ISDIR(expected.st_mode), 'descriptor-ancestor-not-directory')
+            child = os.open(component, flags, dir_fd=descriptor)
+            try:
+                require(identity(expected) == identity(os.fstat(child))
+                        == identity(os.stat(component, dir_fd=descriptor, follow_symlinks=False)),
+                        'descriptor-ancestor-changed')
+            except BaseException:
+                os.close(child)
+                raise
+            os.close(descriptor)
+            descriptor = child
+        require(stat.S_ISDIR(os.fstat(descriptor).st_mode), 'descriptor-directory-type')
+        return descriptor
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
+def fresh_output_directory(relative, until):
+    path = Path(relative)
+    require(not path.is_absolute() and all(n not in {'', '.', '..'} for n in path.parts), 'fixed-output-relative-path')
+    parent = directory_descriptor(str(Path('.').absolute()), until)
+    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
+    try:
+        for i, component in enumerate(path.parts):
+            deadline(until)
+            try:
+                os.mkdir(component, mode=0o700, dir_fd=parent)
+            except FileExistsError:
+                require(i != len(path.parts) - 1, 'fresh-packet-output')
+            expected = os.stat(component, dir_fd=parent, follow_symlinks=False)
+            require(stat.S_ISDIR(expected.st_mode), 'output-parent-directory-type')
+            child = os.open(component, flags, dir_fd=parent)
+            try:
+                require(identity(expected) == identity(os.fstat(child))
+                        == identity(os.stat(component, dir_fd=parent, follow_symlinks=False)), 'output-directory-changed')
+            except BaseException:
+                os.close(child)
+                raise
+            os.close(parent)
+            parent = child
+        return parent
+    except BaseException:
+        os.close(parent)
+        raise
+
+
+def output_descriptor(public_text=False, until=WORK):
+    require(OUTPUT_DESCRIPTOR is not None, 'owned-output-descriptor-required')
+    parent = os.dup(OUTPUT_DESCRIPTOR)
+    if not public_text:
+        return parent
+    try:
+        deadline(until)
+        try:
+            os.mkdir('public-text', mode=0o700, dir_fd=parent)
+        except FileExistsError:
+            pass
+        expected = os.stat('public-text', dir_fd=parent, follow_symlinks=False)
+        require(stat.S_ISDIR(expected.st_mode), 'public-text-directory-type')
+        child = os.open('public-text', os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=parent)
+        try:
+            require(identity(expected) == identity(os.fstat(child))
+                    == identity(os.stat('public-text', dir_fd=parent, follow_symlinks=False)), 'public-text-directory-changed')
+        except BaseException:
+            os.close(child)
+            raise
+        return child
+    finally:
+        os.close(parent)
+
+
+def reserve_output(count, report):
+    require(type(count) is int and count >= 0
+            and OUTPUT_COUNTS['allArtifactBytesReserved'] + count <= TEXT_TOTAL, 'artifact-aggregate-byte-cap')
+    if report:
+        require(OUTPUT_COUNTS['JSONReportBytesReserved'] + count <= REPORT_MAX, 'report-aggregate-byte-cap')
+        OUTPUT_COUNTS['JSONReportBytesReserved'] += count
+    else:
+        OUTPUT_COUNTS['publicTextBytesReserved'] += count
+    OUTPUT_COUNTS['allArtifactBytesReserved'] += count
+
+
+def write_all(descriptor, body, until):
+    view = memoryview(body)
+    offset = 0
+    while offset < len(view):
+        deadline(until)
+        written = os.write(descriptor, view[offset:offset + 65536])
+        require(written > 0, 'output-write-zero')
+        offset += written
+
+
 def resolve(name, allowed, until=WORK, track=True):
     deadline(until)
     require(type(name) is str and name.startswith('/') and '\x00' not in name
@@ -124,13 +237,23 @@ def resolve(name, allowed, until=WORK, track=True):
             info = os.lstat(trial)
         except (FileNotFoundError, NotADirectoryError) as error:
             parent = '/' + '/'.join(done)
-            parent_id = identity(os.lstat(parent or '/'))
-            after_id = identity(os.lstat(parent or '/'))
-            require(parent_id == after_id, 'absence-parent-changed')
+            parent_fd = directory_descriptor(parent or '/', until)
+            try:
+                parent_id = identity(os.fstat(parent_fd))
+                try:
+                    os.stat(part, dir_fd=parent_fd, follow_symlinks=False)
+                except (FileNotFoundError, NotADirectoryError) as confirmed:
+                    error = confirmed
+                else:
+                    raise Fault('absence-no-longer-observed')
+                after_id = identity(os.fstat(parent_fd))
+                require(parent_id == after_id, 'absence-parent-changed')
+            finally:
+                os.close(parent_fd)
             result = {'presence': 'absent-ENOENT' if isinstance(error, FileNotFoundError) else 'absent-ENOTDIR',
                     'resolvedPath': None, 'linkObservations': links,
                     'absence': {'errno': error.errno, 'parentPath': parent or '/', 'parentBefore': parent_id,
-                                'parentAfter': after_id}}
+                                'parentAfter': after_id, 'parentReadableNoFollow': True}}
             if track:
                 require(len(ABSENCE_CHECKS) < 512, 'selected-absence-count-cap')
                 ABSENCE_CHECKS.append({'requestedPath': name, 'resolution': result})
@@ -170,44 +293,61 @@ def resolve(name, allowed, until=WORK, track=True):
             'linkObservations': links, 'absence': None}
 
 
-def read_file(name, allowed, maximum=FILE_MAX, keep=False, control=False, until=WORK, track=True):
+def read_file(name, allowed, maximum=FILE_MAX, keep=False, control=False, until=WORK, track=True,
+              text_role=False, status_stream=False):
     resolution = resolve(name, allowed, until, track=track)
     require(resolution['resolvedPath'] is not None, 'required-file-absent')
     p = resolution['resolvedPath']
-    before = os.lstat(p)
     maximum = min(maximum, (64 * 1024 ** 2 - COUNTS['controlBytes']) if control else (FILE_TOTAL - COUNTS['hashFileBytes']))
-    require(stat.S_ISREG(before.st_mode) and before.st_size <= maximum, 'wrong-file-type-or-size')
-    fd = os.open(p, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    if text_role or status_stream:
+        maximum = min(maximum, TEXT_TOTAL - COUNTS['attemptedInputTextBytes'])
+    if status_stream:
+        maximum = min(maximum, 16 * 1024 ** 2 - COUNTS['attemptedStatusBytes'])
+    parent_fd = directory_descriptor(posixpath.dirname(p), until)
+    fd = None
     blocks = []
     digest = hashlib.sha256()
     length = 0
     try:
+        before = os.stat(posixpath.basename(p), dir_fd=parent_fd, follow_symlinks=False)
+        require(stat.S_ISREG(before.st_mode) and before.st_size <= maximum, 'wrong-file-type-or-size')
+        fd = os.open(posixpath.basename(p), os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC,
+                     dir_fd=parent_fd)
         opened = os.fstat(fd)
         require(identity(before) == identity(opened), 'changed-before-open')
-        while True:
+        if control:
+            require(COUNTS['controlReads'] < 512, 'source-control-read-count-cap')
+            COUNTS['controlReads'] += 1
+        if text_role:
+            require(COUNTS['attemptedInputTextReads'] < 128, 'attempted-text-role-cap')
+            COUNTS['attemptedInputTextReads'] += 1
+        while length < before.st_size:
             deadline(until)
-            block = os.read(fd, min(1048576, maximum + 1 - length))
+            block = os.read(fd, min(1048576, before.st_size - length, maximum - length))
             if not block:
                 break
+            if control:
+                COUNTS['controlBytes'] += len(block)
+            else:
+                COUNTS['hashFileBytes'] += len(block)
+            if text_role or status_stream:
+                COUNTS['attemptedInputTextBytes'] += len(block)
+            if status_stream:
+                COUNTS['attemptedStatusBytes'] += len(block)
             length += len(block)
             require(length <= maximum, 'file-byte-cap')
             digest.update(block)
             if keep:
                 blocks.append(block)
         after = os.fstat(fd)
+        outside = os.stat(posixpath.basename(p), dir_fd=parent_fd, follow_symlinks=False)
+        require(identity(before) == identity(after) == identity(outside) and length == before.st_size,
+                'changed-during-read')
     finally:
-        os.close(fd)
-    outside = os.lstat(p)
-    require(identity(before) == identity(after) == identity(outside) and length == before.st_size,
-            'changed-during-read')
+        if fd is not None:
+            os.close(fd)
+        os.close(parent_fd)
     require(resolve(name, allowed, until, track=False) == resolution, 'selected-alias-changed-during-read')
-    if control:
-        COUNTS['controlReads'] += 1
-        COUNTS['controlBytes'] += length
-        require(COUNTS['controlReads'] <= 512 and COUNTS['controlBytes'] <= 64 * 1024 ** 2, 'source-control-read-cap')
-    else:
-        COUNTS['hashFileBytes'] += length
-        require(COUNTS['hashFileBytes'] <= FILE_TOTAL, 'hash-aggregate-cap')
     pin = {'requestedPath': name, **resolution, 'readBefore': identity(before), 'readAfter': identity(outside),
            'bytes': length, 'sha256': digest.hexdigest(), 'stable': True}
     if track and not control:
@@ -216,36 +356,47 @@ def read_file(name, allowed, maximum=FILE_MAX, keep=False, control=False, until=
     return pin, b''.join(blocks) if keep else None
 
 
-def source_read(relative, maximum=REPORT_MAX, until=WORK):
+def source_read(relative, maximum=REPORT_MAX, until=WORK, text_role=False):
     require(type(relative) is str and not relative.startswith('/') and '\\' not in relative
             and all(p not in {'', '.', '..'} for p in relative.split('/')), 'source-relative-path')
     path = str(Path(relative).absolute())
-    # Source controls are exact declared checkout paths. No symlink ancestors.
-    require(all(not p.is_symlink() for p in [Path(path), *Path(path).parents]), 'source-symlink')
     # The public checkout can be under the runner home, but selected runner data
     # never receives this narrow source-integrity exception.
     maximum = min(maximum, 64 * 1024 ** 2 - COUNTS['controlBytes'])
+    if text_role:
+        maximum = min(maximum, TEXT_MAX, TEXT_TOTAL - COUNTS['attemptedInputTextBytes'])
     require(COUNTS['controlReads'] < 512, 'source-control-read-count-cap')
-    before = os.lstat(path)
-    require(stat.S_ISREG(before.st_mode) and before.st_size <= maximum, 'source-type-or-size')
-    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
+    parent_fd = directory_descriptor(posixpath.dirname(path), until)
+    fd = None
     try:
+        before = os.stat(posixpath.basename(path), dir_fd=parent_fd, follow_symlinks=False)
+        require(stat.S_ISREG(before.st_mode) and before.st_size <= maximum, 'source-type-or-size')
+        fd = os.open(posixpath.basename(path), os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC,
+                     dir_fd=parent_fd)
         require(identity(os.fstat(fd)) == identity(before), 'source-open-race')
+        COUNTS['controlReads'] += 1
+        if text_role:
+            require(COUNTS['attemptedInputTextReads'] < 128, 'attempted-historical-text-role-cap')
+            COUNTS['attemptedInputTextReads'] += 1
         chunks = []
         size = 0
-        while True:
+        while size < before.st_size:
             deadline(until)
-            b = os.read(fd, min(1048576, maximum + 1 - size))
+            b = os.read(fd, min(1048576, before.st_size - size, maximum - size))
             if not b:
                 break
+            COUNTS['controlBytes'] += len(b)
+            if text_role:
+                COUNTS['attemptedInputTextBytes'] += len(b)
             size += len(b)
             require(size <= maximum, 'source-read-cap')
             chunks.append(b)
-        require(identity(os.fstat(fd)) == identity(before) == identity(os.lstat(path)), 'source-read-race')
+        require(size == before.st_size and identity(os.fstat(fd)) == identity(before)
+                == identity(os.stat(posixpath.basename(path), dir_fd=parent_fd, follow_symlinks=False)), 'source-read-race')
     finally:
-        os.close(fd)
-    COUNTS['controlReads'] += 1
-    COUNTS['controlBytes'] += size
+        if fd is not None:
+            os.close(fd)
+        os.close(parent_fd)
     require(COUNTS['controlReads'] <= 512 and COUNTS['controlBytes'] <= 64 * 1024 ** 2, 'source-control-read-cap')
     data = b''.join(chunks)
     return data, {'path': relative, 'bytes': len(data), 'sha256': sha(data)}
@@ -253,7 +404,7 @@ def source_read(relative, maximum=REPORT_MAX, until=WORK):
 
 def source_pins(until=WORK):
     body, pin = source_read(str(SOURCE / 'source-manifest.json'), until=until)
-    manifest = strict_json(body)
+    manifest = strict_json(body, until)
     require(set(manifest) == {'schemaVersion', 'scope', 'files', 'original44Sha256', 'originalScannerSha256', 'productBase'},
             'source-manifest-schema')
     require(manifest['schemaVersion'] == 1 and manifest['original44Sha256'] == OLD_SHA
@@ -273,7 +424,7 @@ def source_pins(until=WORK):
     exact_source_inventory(SOURCE, expected | {'source-manifest.json'}, until)
     old_raw, old_pin = source_read(str(OLD / 'source-manifest.json'), until=until)
     require(old_pin['sha256'] == OLD_SHA, 'original44-manifest-changed')
-    old = strict_json(old_raw)
+    old = strict_json(old_raw, until)
     require(len(old['files']) == 44, 'original44-denominator')
     exact_source_inventory(OLD, {r['path'] for r in old['files']} | {'source-manifest.json'}, until)
     for row in old['files']:
@@ -283,7 +434,7 @@ def source_pins(until=WORK):
     require(scanner['sha256'] == SCANNER_SHA, 'original-scanner-changed')
     original_raw, original_pin = source_read('.github/review/retention-inventory/source-manifest.json', until=until)
     require(original_pin['sha256'] == 'ddde84160401f3cf18a728881e9d01c8975a6b85f873a1721369bded66f96c05', 'original-scanner-source-manifest-changed')
-    original = strict_json(original_raw)
+    original = strict_json(original_raw, until)
     exact_source_inventory(Path('.github/review/retention-inventory'), {r['path'] for r in original['files']} | {'source-manifest.json'}, until)
     for row in original['files']:
         _, current = source_read('.github/review/retention-inventory/' + row['path'], until=until)
@@ -291,7 +442,7 @@ def source_pins(until=WORK):
     base, base_pin = source_read('.github/review/base', until=until)
     require(base == b'v4.11.0 8333daa60e2f2ee456068369f94c141898cde875\n', 'product-base-changed')
     outer_raw, outer_pin = source_read('.github/review/b3-retention-corroboration-manifest.json', until=until)
-    outer = strict_json(outer_raw)
+    outer = strict_json(outer_raw, until)
     require(set(outer) == {'schemaVersion', 'scope', 'sourceManifestSha256', 'compileOnlyRequired',
             'fullGatePermitted', 'newArchivesPermitted', 'SDKToolTargetOrProofExecutionPermitted', 'files'}
             and type(outer['schemaVersion']) is int and outer['schemaVersion'] == 1
@@ -322,12 +473,19 @@ def exact_source_inventory(root, expected, until):
     for name in sorted(directories):
         deadline(until)
         directory = root / name
-        require(directory.is_dir() and not directory.is_symlink(), 'source-eligible-directory-type')
+        descriptor = directory_descriptor(str(directory.absolute()), until)
         children = set()
-        for p in directory.iterdir():
-            deadline(until)
-            require(len(children) < 64 and not p.is_symlink(), 'source-eligible-entry-cap-or-symlink')
-            children.add(p.relative_to(root).as_posix())
+        try:
+            before = identity(os.fstat(descriptor))
+            with os.scandir(descriptor) as entries:
+                for entry in entries:
+                    deadline(until)
+                    require(len(children) < 64 and not stat.S_ISLNK(os.stat(entry.name, dir_fd=descriptor,
+                            follow_symlinks=False).st_mode), 'source-eligible-entry-cap-or-symlink')
+                    children.add(name + '/' + entry.name if name else entry.name)
+            require(identity(os.fstat(descriptor)) == before, 'source-eligible-directory-changed')
+        finally:
+            os.close(descriptor)
         declared = {n for n in expected | directories if n and posixpath.dirname(n) == name}
         # Only POSIX source paths are eligible; no unknown entry is descended into.
         require(children == declared, 'source-eligible-inventory-extra-or-missing')
@@ -370,12 +528,42 @@ def public_content(body, kind):
                b'BEGIN OPENSSH PRIVATE KEY', b'BEGIN DSA PRIVATE KEY', b'BEGIN ENCRYPTED PRIVATE KEY']
     require(not any(x in body for x in markers), 'private-key-content-rejected')
     text = body.decode('utf-8')
-    if kind in {'OpenSSL-config', 'loader-config', 'NSS-config', 'raw-inert-text', 'JSON', 'XML'}:
-        # Conservative: even a prompt or variable named password can be rejected.
-        # An absence of this detector's matches is not credential discovery proof.
-        sensitive = re.compile(r'(?:^|[\s"\'])[^#;\r\n:=<>"\']*(?:password|passwd|credential|secret|token|auth)[^#;\r\n:=<>"\']*["\']?\s*[:=]\s*\S+', re.I | re.M)
-        require(sensitive.search(text) is None, 'sensitive-config-assignment-rejected')
-    require(re.search(r'https?://[^\s/@:]+:[^\s/@]+@', text, re.I) is None, 'credential-bearing-URL-rejected')
+    # Segments are disjoint and inspected once. No regex with ambiguous greedy
+    # repetitions runs on the whole input. False positives remain conservative.
+    lower = text.lower()
+    segment = 0
+    quoted_segment = None
+    pending_sensitive = False
+    url_start = None
+    url_colon = False
+    for i, character in enumerate(lower):
+        if i % 4096 == 0:
+            deadline()
+        if pending_sensitive and not character.isspace():
+            raise Fault('sensitive-config-assignment-rejected')
+        if character in ':=':
+            key = quoted_segment if quoted_segment is not None else lower[segment:i]
+            pending_sensitive = any(word in key for word in ['password', 'passwd', 'credential', 'secret', 'token', 'auth'])
+            segment = i + 1
+            quoted_segment = None
+        elif character in '"\'':
+            quoted_segment = lower[segment:i]
+            segment = i + 1
+        elif character in '#;,\r\n<>':
+            segment = i + 1
+            quoted_segment = None
+        elif not character.isspace():
+            quoted_segment = None
+        if lower.startswith('http://', i) or lower.startswith('https://', i):
+            url_start = i + (7 if lower.startswith('http://', i) else 8)
+            url_colon = False
+        if url_start is not None and i >= url_start:
+            if character.isspace() or character == '/':
+                url_start = None
+            elif character == ':':
+                url_colon = True
+            elif character == '@' and url_colon:
+                raise Fault('credential-bearing-URL-rejected')
     return text
 
 
@@ -386,20 +574,52 @@ def parse_text(text, kind):
         return {'format': kind, 'value': parsed, 'unfollowedReferences': []}
     if kind == 'XML':
         require('<!DOCTYPE' not in text.upper() and '<!ENTITY' not in text.upper(), 'XML-entity-or-DOCTYPE-rejected')
-        tree = ET.fromstring(text)
-        rows = []
-        todo = [(tree, 0)]
-        while todo:
-            node, depth = todo.pop()
+        class BoundedTarget:
+            def __init__(self):
+                self.rows = []
+                self.fragments = []
+                self.stack = []
+                self.fragment_count = 0
+
+            def start(self, tag, attributes):
+                deadline()
+                require(len(self.stack) < 64 and len(self.rows) < 65536
+                        and len(attributes) <= 1024, 'XML-depth-node-or-attribute-cap')
+                if self.stack:
+                    self.stack[-1][1] = True
+                index = len(self.rows)
+                self.rows.append({'tag': tag, 'attributes': dict(attributes), 'text': ''})
+                self.fragments.append([])
+                self.stack.append([index, False])
+                if tag.rsplit('}', 1)[-1] in {'Import', 'UsingTask'}:
+                    references.append({'tag': tag, 'attributes': dict(attributes), 'followed': False})
+
+            def end(self, tag):
+                deadline()
+                require(self.stack and self.rows[self.stack[-1][0]]['tag'] == tag, 'XML-end-stack')
+                self.stack.pop()
+
+            def data(self, value):
+                deadline()
+                if self.stack and not self.stack[-1][1]:
+                    require(self.fragment_count < 65536, 'XML-text-fragment-cap')
+                    self.fragment_count += 1
+                    self.fragments[self.stack[-1][0]].append(value)
+
+            def close(self):
+                require(not self.stack, 'XML-incomplete-stack')
+                for row, fragments in zip(self.rows, self.fragments):
+                    deadline()
+                    row['text'] = ''.join(fragments)
+                return self.rows
+
+        parser = ET.XMLParser(target=BoundedTarget())
+        for offset in range(0, len(text), 4096):
             deadline()
-            require(depth <= 64 and len(rows) < 65536, 'XML-depth-or-node-cap')
-            rows.append({'tag': node.tag, 'attributes': dict(node.attrib), 'text': node.text or ''})
-            todo.extend((c, depth + 1) for c in reversed(list(node)))
-            if node.tag.rsplit('}', 1)[-1] in {'Import', 'UsingTask'}:
-                references.append({'tag': node.tag, 'attributes': dict(node.attrib), 'followed': False})
+            parser.feed(text[offset:offset + 4096])
+        rows = parser.close()
         return {'format': kind, 'value': rows, 'unfollowedReferences': references}
-    lines = text.splitlines()
-    require(len(lines) <= 65536, 'text-line-cap')
+    lines = bounded_lines(text, 'text-line-cap')
     if kind in {'loader-config', 'OpenSSL-config', 'NSS-config'}:
         for line in lines:
             deadline()
@@ -412,6 +632,27 @@ def parse_text(text, kind):
                 references.append({'kind': 'config-reference', 'lineSha256': sha(line.encode()), 'followed': False})
         require(not references, 'unreviewed-config-reference-text-withheld')
     return {'format': kind, 'value': None, 'unfollowedReferences': references}
+
+
+def bounded_lines(text, code):
+    # Admit before retaining each line; splitlines() would allocate the complete
+    # collection before the line cap could reject a tiny-record input.
+    lines = []
+    start = 0
+    for i, c in enumerate(text):
+        if i % 4096 == 0:
+            deadline()
+        if c in '\n\r\v\f\x1c\x1d\x1e\x85\u2028\u2029':
+            if c == '\n' and i > 0 and text[i - 1] == '\r':
+                start = i + 1
+                continue
+            require(len(lines) < 65536, code)
+            lines.append(text[start:i])
+            start = i + 1
+    if start < len(text):
+        require(len(lines) < 65536, code)
+        lines.append(text[start:])
+    return lines
 
 
 def selected_text(row, pin, body):
@@ -432,11 +673,20 @@ def selected_text(row, pin, body):
         failure(row['selectorId'], error)
     artifact = None
     if disposition == 'complete-public-text':
-        destination = OUTPUT / 'public-text' / (row['selectorId'] + '.txt')
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        with destination.open('xb') as stream:
-            stream.write(body)
-        artifact = {'path': destination.relative_to(OUTPUT).as_posix(), 'bytes': len(body), 'sha256': sha(body)}
+        require(re.fullmatch(r'[a-z0-9-]+', row['selectorId']) is not None, 'public-text-fixed-name')
+        reserve_output(len(body), report=False)
+        parent = output_descriptor(public_text=True)
+        descriptor = None
+        name = row['selectorId'] + '.txt'
+        try:
+            descriptor = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC,
+                                 mode=0o600, dir_fd=parent)
+            write_all(descriptor, body, WORK)
+        finally:
+            if descriptor is not None:
+                os.close(descriptor)
+            os.close(parent)
+        artifact = {'path': 'public-text/' + name, 'bytes': len(body), 'sha256': sha(body)}
     return {'contentDisposition': disposition, 'UTF8Complete': disposition == 'complete-public-text',
             'textBytes': len(body), 'textSha256': sha(body), 'parserKind': inert_text_kind(row),
             'parsedRecords': parsed, 'publicTextArtifact': artifact, 'forbiddenContentFault': error_code,
@@ -563,8 +813,8 @@ def pe(body):
         streams[name] = (meta + off, size)
         cursor += ((stop - cursor + 1 + 3) & ~3)
     require('#Strings' in streams and '#Blob' in streams and '#GUID' in streams
-            and ('#~' in streams) != ('#-' in streams), 'CLI-required-streams')
-    table, table_size = streams.get('#~', streams.get('#-'))
+            and '#~' in streams and '#-' not in streams, 'CLI-compressed-streams-only')
+    table, table_size = streams['#~']
     table_end = table + table_size
     reserved, major, minor, heaps, reserved2, valid, sorted_mask = bounded_unpack('<IBBBBQQ', body, table, table_end)
     require(valid >> 45 == 0 and major == 2 and heaps & ~7 == 0, 'CLI-table-version-or-mask')
@@ -576,6 +826,7 @@ def pe(body):
             require(counts[i] <= 1048576, 'CLI-table-row-cap')
             cursor += 4
     require(counts[32] == 1 and counts[35] <= 256 and counts[0] == 1, 'CLI-assembly-denominator')
+    require(all(counts[i] == 0 for i in [3, 5, 7, 19, 22]), 'CLI-pointer-tables-not-supported')
     def index(t):
         return 2 if counts[t] < 65536 else 4
     def coded(tables, bits):
@@ -632,7 +883,7 @@ def pe(body):
         return ((a & 31) << 24) | (data[pos + 1] << 16) | (data[pos + 2] << 8) | data[pos + 3], pos + 4
     def blob_bytes(n):
         start, size = streams['#Blob']
-        heap = body[start:start + size]
+        heap = memoryview(body)[start:start + size]
         length, position = compressed(heap, n)
         require(length <= TEXT_MAX and position + length <= len(heap), 'CLI-blob-cap-or-range')
         return heap[position:position + length]
@@ -651,6 +902,7 @@ def pe(body):
     require(1 <= module[2] and module[2] * 16 <= guid_size, 'CLI-MVID-index')
     mvid = body[guid_start + (module[2] - 1) * 16:guid_start + module[2] * 16].hex()
     facts = []
+    admitted_attributes = set()
     eligible = {'System.Reflection.AssemblyInformationalVersionAttribute',
                 'System.Reflection.AssemblyFileVersionAttribute', 'System.Runtime.Versioning.TargetFrameworkAttribute'}
     for n in range(1, counts[12] + 1):
@@ -665,6 +917,9 @@ def pe(body):
         attribute = text(typeref[2]) + '.' + text(typeref[1])
         if attribute not in eligible:
             continue
+        require(len(admitted_attributes) < 3 and attribute not in admitted_attributes,
+                'CLI-attribute-denominator')
+        admitted_attributes.add(attribute)
         require(blob_bytes(member[2]) == b'\x20\x01\x01\x0e', 'CLI-known-single-string-constructor-signature')
         encoded = blob_bytes(value)
         require(encoded[:2] == b'\x01\x00' and len(encoded) > 2 and encoded[2] != 255, 'CLI-attribute-string-form')
@@ -672,7 +927,7 @@ def pe(body):
         require(length <= 4096 and position + length + 2 <= len(encoded), 'CLI-attribute-string-range')
         named = bounded_unpack('<H', encoded, position + length)[0]
         require(named <= 128, 'CLI-attribute-named-cap')
-        facts.append({'attribute': attribute, 'constructorString': encoded[position:position + length].decode('utf-8'),
+        facts.append({'attribute': attribute, 'constructorString': encoded[position:position + length].tobytes().decode('utf-8'),
                       'namedArgumentCount': named, 'remainingBlobSha256': sha(encoded[position + length:]),
                       'completeNamedArgumentsDecoded': named == 0 and position + length + 2 == len(encoded)})
     require(len(facts) <= 3 and len({x['attribute'] for x in facts}) == len(facts), 'CLI-attribute-denominator')
@@ -700,7 +955,7 @@ def observation(row):
         binary = False
     if text:
         require(COUNTS['inputTextReads'] < 128, 'selected-text-role-cap')
-    pin, data = read_file(row['path'], ALLOWED, min(TEXT_MAX, TEXT_TOTAL - COUNTS['inputTextBytes']) if text else FILE_MAX, keep=text or binary)
+    pin, data = read_file(row['path'], ALLOWED, TEXT_MAX if text else FILE_MAX, keep=text or binary, text_role=text)
     record = {'selectorId': row['selectorId'], 'group': row['group'], 'kind': row['kind'], 'file': pin,
               'archivedComparison': compare(row['path'], pin), 'text': None, 'binary': None, 'captureFault': None}
     if text:
@@ -725,7 +980,7 @@ def observation(row):
 
 def packages():
     status_name = DOC['packageStatus']['path']
-    pin, body = read_file(status_name, ALLOWED, min(16 * 1024 ** 2, TEXT_TOTAL - COUNTS['inputTextBytes']), keep=True)
+    pin, body = read_file(status_name, ALLOWED, 16 * 1024 ** 2, keep=True, status_stream=True)
     # The status stream has its separate 16 MiB cap and consumes no 128-role
     # slot. Its captured bytes still charge the shared 64 MiB budget before
     # decoding or parsing any paragraph.
@@ -737,22 +992,52 @@ def packages():
     selected = []
     fields_allowed = set(DOC['packageStatus']['paragraphFields'])
     identities = set()
-    for paragraph in text.split('\n\n'):
+    paragraph_start = 0
+    while paragraph_start < len(text):
         deadline()
-        if not paragraph.strip():
+        paragraph_end = text.find('\n\n', paragraph_start)
+        if paragraph_end < 0:
+            paragraph_end = len(text)
+        next_paragraph = paragraph_end + 2
+        if paragraph_end == paragraph_start:
+            paragraph_start = next_paragraph
             continue
-        fields = {}
+        fragments = {}
+        field_names = set()
         key = None
-        for line in paragraph.splitlines():
+        line_start = paragraph_start
+        line_count = 0
+        while line_start < paragraph_end:
+            deadline()
+            require(line_count < 65536, 'status-paragraph-line-cap')
+            line_count += 1
+            line_end = text.find('\n', line_start, paragraph_end)
+            if line_end < 0:
+                line_end = paragraph_end
+            require(line_end - line_start <= 65536, 'status-line-size-cap')
+            line = text[line_start:line_end]
+            line_start = line_end + 1
             if line.startswith((' ', '\t')):
                 require(key is not None, 'status-continuation')
-                fields[key] += '\n' + line
+                if key in fields_allowed:
+                    fragments[key].append(line)
             else:
                 require(':' in line, 'status-field-form')
-                key, value = line.split(':', 1)
-                require(key not in fields, 'status-duplicate-field')
-                fields[key] = value.lstrip()
+                colon = line.find(':')
+                require(0 < colon <= 256 and len(field_names) < 256, 'status-field-count-or-name-cap')
+                key = line[:colon]
+                require(re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9-]*', key) is not None, 'status-field-name')
+                require(key not in field_names, 'status-duplicate-field')
+                field_names.add(key)
+                if key in fields_allowed:
+                    fragments[key] = [line[colon + 1:].lstrip()]
+        fields = {}
+        for field, parts in fragments.items():
+            deadline()
+            fields[field] = '\n'.join(parts)
         name = fields.get('Package')
+        start = paragraph_start
+        paragraph_start = next_paragraph
         if name not in DOC['packageStatus']['packageNames']:
             continue
         architecture = fields.get('Architecture')
@@ -764,7 +1049,8 @@ def packages():
         COUNTS['selectedStatusParagraphs'] += 1
         require(COUNTS['selectedStatusParagraphs'] <= 512, 'status-selected-paragraph-cap')
         public_content(json.dumps({k: v for k, v in fields.items() if k in fields_allowed}).encode('utf-8'), 'JSON')
-        selected.append({'exactName': name, 'architecture': architecture, 'paragraphSha256': sha(paragraph.encode()),
+        selected.append({'exactName': name, 'architecture': architecture,
+                         'paragraphSha256': sha(text[start:paragraph_end].encode('utf-8')),
                          'selectedFields': {k: v for k, v in fields.items() if k in fields_allowed},
                          'matchingInfoFiles': [], 'declaredOwnershipOnly': True})
     by_name = {row['exactName']: row for row in selected}
@@ -790,12 +1076,11 @@ def packages():
                 continue
             require(row is not None, 'info-file-without-selected-package')
             require(COUNTS['inputTextReads'] < 128, 'package-text-role-cap')
-            info, contents = read_file(present[0], ALLOWED, min(TEXT_MAX, TEXT_TOTAL - COUNTS['inputTextBytes']), keep=True)
+            info, contents = read_file(present[0], ALLOWED, TEXT_MAX, keep=True, text_role=True)
             COUNTS['inputTextReads'] += 1
             COUNTS['inputTextBytes'] += len(contents)
             require(COUNTS['inputTextReads'] <= 128 and COUNTS['inputTextBytes'] <= TEXT_TOTAL, 'package-text-budget')
-            lines = contents.decode('utf-8').splitlines()
-            require(len(lines) <= 65536, 'package-info-line-cap')
+            lines = bounded_lines(contents.decode('utf-8'), 'package-info-line-cap')
             entries = []
             withheld = []
             for line in lines:
@@ -830,15 +1115,19 @@ def directories(until=WORK, track=True):
             result.append({'selectorPath': str(p), 'resolution': resolution, 'entries': None})
             continue
         path = resolution['resolvedPath']
-        before = os.lstat(path)
-        require(stat.S_ISDIR(before.st_mode), 'shallow-directory-type')
+        descriptor = directory_descriptor(path, until)
         names = []
-        with os.scandir(path) as entries:
-            for entry in entries:
-                deadline(until)
-                require(len(names) < row['maximumImmediateEntries'], 'shallow-directory-entry-cap')
-                names.append(entry.name)
-        after = os.lstat(path)
+        try:
+            before = os.fstat(descriptor)
+            with os.scandir(descriptor) as entries:
+                for entry in entries:
+                    deadline(until)
+                    require(len(names) < row['maximumImmediateEntries'], 'shallow-directory-entry-cap')
+                    names.append(entry.name)
+            after = os.fstat(descriptor)
+        finally:
+            os.close(descriptor)
+        require(resolve(str(p), ALLOWED, until, track=False) == resolution, 'shallow-alias-changed')
         result.append({'selectorPath': str(p), 'resolution': resolution,
                        'lstatBefore': identity(before), 'lstatAfter': identity(after),
                        'eligiblePresence': {name: name in names for name in row['eligibleNames']},
@@ -857,7 +1146,7 @@ def archive_texts():
     for i, (selector, row) in enumerate(zip(DOC['archiveTextSelectors'], origins['files'])):
         require((selector['archive'], selector['member']) == (row['archive'], row['member']), 'historical-text-member-selection')
         require(COUNTS['inputTextReads'] < 128, 'historical-text-role-cap')
-        body, pin = source_read(str(SOURCE / row['path']), maximum=min(TEXT_MAX, TEXT_TOTAL - COUNTS['inputTextBytes']))
+        body, pin = source_read(str(SOURCE / row['path']), maximum=TEXT_MAX, text_role=True)
         require(pin['bytes'] == row['bytes'] and pin['sha256'] == row['sha256'], 'historical-member-bytes')
         parsed = selected_text({'selectorId': 'historical-text-' + str(i + 1), 'path': row['member']}, pin, body)
         results.append({'origin': row, 'file': pin, 'text': parsed, 'reusedHistoricalData': True,
@@ -866,6 +1155,7 @@ def archive_texts():
 
 
 def validate_contract():
+    global WIRE
     raw, pin = source_read(str(SOURCE / 'SELECTORS.json'))
     require(pin['sha256'] == SELECTOR_SHA, 'selector-bytes-changed')
     doc = strict_json(raw)
@@ -890,6 +1180,17 @@ def validate_contract():
             and len(doc['archiveTextSelectors']) == 5 and len(doc['shallowDirectorySelectors']) == 6, 'finite-data-counts')
     require(doc['bounds']['computedMaximumTextReads'] == 128 and doc['bounds']['textReadsMaximum'] == 128,
             'text-role-count')
+    wire_raw, wire_pin = source_read(str(SOURCE / 'OUTPUT-SCHEMA.json'))
+    require(wire_pin['sha256'] == WIRE_SCHEMA_SHA, 'wire-schema-source-pin')
+    WIRE = strict_json(wire_raw)
+    require(WIRE['schemaVersion'] == 2 and WIRE['selectorDocumentSha256'] == SELECTOR_SHA
+            and WIRE['frozenConceptualRequiredNamesEnforcedUnchanged'] is False
+            and WIRE['inputAndScopeWidened'] is False
+            and WIRE['unknownFieldsAllowedOutsideDeclaredOptionalKeys'] is False, 'wire-schema-version-and-boundaries')
+    require(set(WIRE['conceptualProjection']) == set(doc['schemas']), 'wire-projection-family-set')
+    for family, conceptual in doc['schemas'].items():
+        deadline()
+        require(set(WIRE['conceptualProjection'][family]) == set(conceptual['required']), 'wire-projection-field-set')
     return doc
 
 
@@ -927,24 +1228,129 @@ def recheck_rows(until):
             failure('final-selected-absence-recheck', error)
 
 
+def json_tokens(value, until, depth=0, active=None):
+    deadline(until)
+    require(depth <= 64, 'output-JSON-depth-cap')
+    if type(value) is str:
+        yield b'"'
+        for offset in range(0, len(value), 4096):
+            deadline(until)
+            # At most 4096 input characters; escaping cannot produce more
+            # than 49152 ASCII bytes plus the two temporary quote bytes.
+            token = json.dumps(value[offset:offset + 4096], ensure_ascii=True)[1:-1].encode('ascii')
+            require(len(token) <= 49152, 'output-JSON-string-token-cap')
+            yield token
+        yield b'"'
+    elif value is None:
+        yield b'null'
+    elif type(value) is bool:
+        yield b'true' if value else b'false'
+    elif type(value) is int:
+        require(value.bit_length() <= 14300, 'output-JSON-integer-cap')
+        yield str(value).encode('ascii')
+    elif type(value) is float:
+        require(value == value and value not in {float('inf'), float('-inf')}, 'output-JSON-finite-number')
+        yield repr(value).encode('ascii')
+    else:
+        require(type(value) in {dict, list} and len(value) <= 65536, 'output-JSON-container-type-or-count')
+        active = set() if active is None else active
+        require(id(value) not in active, 'output-JSON-cycle')
+        active.add(id(value))
+        try:
+            if type(value) is dict:
+                for key in value:
+                    deadline(until)
+                    require(type(key) is str, 'output-JSON-key-type')
+                yield b'{'
+                for i, key in enumerate(sorted(value)):
+                    deadline(until)
+                    if i:
+                        yield b','
+                    yield from json_tokens(key, until, depth + 1, active)
+                    yield b':'
+                    yield from json_tokens(value[key], until, depth + 1, active)
+                yield b'}'
+            else:
+                yield b'['
+                for i, item in enumerate(value):
+                    deadline(until)
+                    if i:
+                        yield b','
+                    yield from json_tokens(item, until, depth + 1, active)
+                yield b']'
+        finally:
+            active.remove(id(value))
+
+
 def publish(name, value, until):
-    deadline(until)
-    data = (json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + '\n').encode()
-    require(len(data) <= REPORT_MAX, 'receipt-byte-cap')
-    destination = OUTPUT / name
-    pending = destination.with_suffix(destination.suffix + '.pending')
-    with pending.open('xb') as stream:
-        stream.write(data)
-        stream.flush()
-        os.fsync(stream.fileno())
-    deadline(until)
-    os.rename(pending, destination)
-    return {'path': name, 'bytes': len(data), 'sha256': sha(data)}
+    require(name in {'corroboration.json', 'summary.json'}, 'fixed-report-name')
+    available = min(REPORT_MAX - OUTPUT_COUNTS['JSONReportBytesReserved'],
+                    TEXT_TOTAL - OUTPUT_COUNTS['allArtifactBytesReserved'])
+    count = 1  # final newline
+    require(count <= available, 'report-preflight-byte-cap')
+    for token in json_tokens(value, until):
+        deadline(until)
+        count += len(token)
+        require(count <= available, 'report-preflight-byte-cap')
+    parent = output_descriptor(until=until)
+    descriptor = None
+    length = 0
+    digest = hashlib.sha256()
+    try:
+        descriptor = os.open(name + '.pending', os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC,
+                             mode=0o600, dir_fd=parent)
+        for token in json_tokens(value, until):
+            deadline(until)
+            reserve_output(len(token), report=True)
+            write_all(descriptor, token, until)
+            length += len(token)
+            digest.update(token)
+        reserve_output(1, report=True)
+        write_all(descriptor, b'\n', until)
+        length += 1
+        digest.update(b'\n')
+        require(length == count, 'report-preflight-emission-disagrees')
+        os.fsync(descriptor)
+        deadline(until)
+        os.rename(name + '.pending', name, src_dir_fd=parent, dst_dir_fd=parent)
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+        os.close(parent)
+    return {'path': name, 'bytes': length, 'sha256': digest.hexdigest()}
 
 
-def validate_evidence(evidence, summary):
+def wire_record(family, value, variant, until):
+    deadline(until)
+    require(WIRE is not None, 'wire-schema-not-captured')
+    record = WIRE['records'][family]['variants'][variant]
+    if record['type'] == 'null':
+        require(value is None, 'wire-null-variant')
+        return
+    require(record['type'] == 'dict' and type(value) is dict
+            and set(record['required']) <= set(value) <= set(record['allowed']), 'wire-record-exact-key-contract')
+    primitive = {'dict': dict, 'list': list, 'str': str, 'bool': bool, 'int': int, 'null': type(None)}
+    for name, tag in record['fieldTypes'].items():
+        deadline(until)
+        if name not in value:
+            continue
+        nullable = tag.startswith('nullable-')
+        base = tag[9:] if nullable else tag
+        require(base in primitive and (nullable and value[name] is None or type(value[name]) is primitive[base]),
+                'wire-record-primitive-type')
+
+
+def validate_evidence(evidence, summary, until):
+    deadline(until)
+    if WIRE is not None:
+        wire_record('PacketEvidence', evidence, 'record', until)
+        wire_record('PacketSummary', summary, 'record', until)
+    else:
+        require(summary['passed'] is False and not evidence['observations']
+                and evidence['packages'] is None and evidence['directories'] is None
+                and evidence['historicalText'] is None, 'uncaptured-wire-schema-cannot-accept-data')
     require(set(evidence) == {'schemaVersion', 'scope', 'observations', 'packages', 'directories', 'historicalText'}, 'evidence-exact-schema')
-    require(type(evidence['schemaVersion']) is int and evidence['schemaVersion'] == 1, 'evidence-version-type')
+    require(type(evidence['schemaVersion']) is int and evidence['schemaVersion'] == 2, 'evidence-version-type')
     required_summary = {'schemaVersion', 'scope', 'captureCompleted', 'passed', 'selectorDocumentSha256',
         'sourcePinsBefore', 'sourcePinsAfter', 'counts', 'exactSelectorCountExpected', 'exactSelectorCountObserved',
         'primaryFault', 'terminalWorkFault', 'finalizationFaults', 'observationFaults', 'faultLedgerOverflow', 'archiveReference',
@@ -952,32 +1358,41 @@ def validate_evidence(evidence, summary):
         'completeDynamicLoadClosure', 'reviewedRunnerClosure', 'fullDiagnosticEnabled', 'SDKExecuted',
         'collectorExecuted', 'analyzerExecuted', 'targetExecuted', 'nativeProofOrCostParityAccepted',
         'originalScannerInvokedOrImported', 'newArchiveDownloaded', 'interpreter', 'historicalDataReused',
-        'changedRunnerFactsAreNewInputs', 'stabilityScope'}
+        'changedRunnerFactsAreNewInputs', 'stabilityScope', 'wireSchemaSha256',
+        'frozenConceptualRequiredNamesEnforcedUnchanged', 'outputReservationsBeforeSummary', 'wireSchemaCaptured'}
     require(set(summary) == required_summary, 'summary-exact-schema')
+    require(type(summary['schemaVersion']) is int and summary['schemaVersion'] == 2
+            and summary['wireSchemaSha256'] == WIRE_SCHEMA_SHA, 'summary-wire-version-pin')
     false_names = ['completeDynamicLoadClosure', 'reviewedRunnerClosure', 'fullDiagnosticEnabled', 'SDKExecuted',
         'collectorExecuted', 'analyzerExecuted', 'targetExecuted', 'nativeProofOrCostParityAccepted',
-        'originalScannerInvokedOrImported', 'newArchiveDownloaded']
+        'originalScannerInvokedOrImported', 'newArchiveDownloaded', 'frozenConceptualRequiredNamesEnforcedUnchanged']
     require(all(summary[n] is False for n in false_names), 'no-execution-or-closure-claims')
     require(all(type(summary[n]) is bool for n in ['captureCompleted', 'passed', 'faultLedgerOverflow',
         'nineOriginalMissingEdgesRemainUnresolved', 'fourOriginalSourceContractsRemainPending',
         'historicalDataReused', 'changedRunnerFactsAreNewInputs']), 'critical-boolean-types')
     require(summary['captureCompleted'] == summary['passed'], 'capture-status-disagrees')
+    require(type(summary['wireSchemaCaptured']) is bool and summary['wireSchemaCaptured'] == (WIRE is not None),
+            'wire-schema-capture-fact')
     require(summary['nineOriginalMissingEdgesRemainUnresolved'] is True
             and summary['fourOriginalSourceContractsRemainPending'] is True
             and summary['changedRunnerFactsAreNewInputs'] is True, 'pending-contracts-remain-pending')
     require(summary['exactSelectorCountExpected'] == 265
             and summary['exactSelectorCountObserved'] == len(evidence['observations']), 'reported-selector-denominator')
     require(set(summary['counts']) == {'inputTextReads', 'inputTextBytes', 'statusTextBytes', 'selectedStatusParagraphs',
+        'attemptedInputTextReads', 'attemptedInputTextBytes', 'attemptedStatusBytes',
         'hashFileBytes', 'controlReads', 'controlBytes'} and all(type(n) is int and n >= 0 for n in summary['counts'].values()), 'count-exact-types')
     known = {r['selectorId']: r for r in DOC['selectors']} if DOC else {}
     seen = set()
     for row in evidence['observations']:
+        deadline(until)
+        wire_record('Observation', row, 'record', until)
         require(set(row) == {'selectorId', 'group', 'kind', 'file', 'archivedComparison', 'text', 'binary', 'captureFault'}, 'observation-exact-schema')
         ident = row['selectorId']
         require(ident in known and ident not in seen and row['group'] == known[ident]['group']
                 and row['kind'] == known[ident]['kind'], 'observation-selector-binding')
         seen.add(ident)
         pin = row['file']
+        wire_record('FileObservation', pin, 'record' if pin is not None else 'unavailable', until)
         if pin is not None:
             require(set(pin) == {'requestedPath', 'presence', 'resolvedPath', 'linkObservations', 'absence',
                 'readBefore', 'readAfter', 'bytes', 'sha256', 'stable'} and pin['requestedPath'] == known[ident]['path'], 'file-observation-exact-schema')
@@ -987,7 +1402,10 @@ def validate_evidence(evidence, summary):
                         and re.fullmatch(r'[0-9a-f]{64}', pin['sha256']) is not None and pin['resolvedPath'] in ALLOWED, 'file-observation-pin')
             else:
                 require(pin['presence'].startswith('absent-') and pin['bytes'] is None and pin['absence'] is not None, 'absence-observation-facts')
+                wire_record('Absence', pin['absence'], 'record', until)
+                require(pin['absence']['parentReadableNoFollow'] is True, 'absence-readable-parent')
         text = row['text']
+        wire_record('TextObservation', text, 'record' if text is not None else 'unavailable', until)
         if text is not None:
             require(set(text) == {'contentDisposition', 'UTF8Complete', 'textBytes', 'textSha256', 'parserKind',
                 'parsedRecords', 'publicTextArtifact', 'forbiddenContentFault', 'unfollowedReferenceCount'}, 'text-observation-exact-schema')
@@ -1002,6 +1420,7 @@ def validate_evidence(evidence, summary):
         if binary is not None:
             require(pin is not None and pin['sha256'] is not None and text is None, 'binary-owner-byte-pin')
             if row['kind'] == 'bounded-static-PE-identity-and-AssemblyRef':
+                wire_record('PEObservation', binary, 'record', until)
                 require(set(binary) == {'assemblyIdentity', 'AssemblyRefRows', 'MVIDHex', 'customAttributeStringFacts',
                     'metadataBytes', 'metadataTableRows', 'customAttributeConstructorsInvoked', 'assemblyLoaded'}, 'PE-exact-schema')
                 require(binary['assemblyLoaded'] is False and binary['customAttributeConstructorsInvoked'] is False
@@ -1011,16 +1430,19 @@ def validate_evidence(evidence, summary):
                         and len(binary['customAttributeStringFacts']) <= 3, 'PE-bounds-and-no-body-execution')
                 require(re.fullmatch(r'[0-9a-f]{32}', binary['MVIDHex']) is not None, 'PE-MVID-hex')
                 for assembly in [binary['assemblyIdentity'], *binary['AssemblyRefRows']]:
+                    deadline(until)
                     require(set(assembly) == {'name', 'version', 'culture', 'flags', 'publicKeyOrTokenHex', 'publicKeyTokenHex'}
                             and type(assembly['flags']) is int and 0 <= assembly['flags'] <= 4294967295
                             and all(type(assembly[n]) is str for n in ['name', 'version', 'culture', 'publicKeyOrTokenHex', 'publicKeyTokenHex']),
                             'PE-assembly-identity-schema')
                 for fact in binary['customAttributeStringFacts']:
+                    deadline(until)
                     require(set(fact) == {'attribute', 'constructorString', 'namedArgumentCount', 'remainingBlobSha256',
                         'completeNamedArgumentsDecoded'} and type(fact['completeNamedArgumentsDecoded']) is bool
                         and type(fact['constructorString']) is str and type(fact['namedArgumentCount']) is int
                         and 0 <= fact['namedArgumentCount'] <= 128, 'PE-detached-attribute-schema')
             else:
+                wire_record('ELFObservation', binary, 'relocatable' if binary['e_type'] == 1 else 'loadable', until)
                 base_keys = {'e_type', 'e_machine', 'e_version', 'e_ehsize', 'programHeaderOffset', 'programHeaderEntrySize',
                     'programHeaderCount', 'PT_INTERP', 'DT_NEEDED', 'DT_SONAME', 'DT_RPATH', 'DT_RUNPATH',
                     'staticMetadataComplete', 'noExportsEnumerated'}
@@ -1030,11 +1452,46 @@ def validate_evidence(evidence, summary):
                         and binary['noExportsEnumerated'] is True and len(binary['DT_NEEDED']) <= 256
                         and all(type(n) is str and len(n.encode('utf-8')) <= 4096 for n in binary['DT_NEEDED']), 'ELF-detached-facts')
                 require(binary['e_type'] != 1 or binary['outsideLoadGraph'] is True, 'ELF-relocatable-outside-load-graph')
+    # Failed captures may still carry complete earlier groups. Their record
+    # variants get the same executable structural checks before publication;
+    # incompleteness never bypasses the declared wire shape.
+    if evidence['packages'] is not None:
+        deadline(until)
+        package = evidence['packages']
+        require(set(package) == {'statusFile', 'packages', 'allOtherParagraphsDetached'}
+                and package['allOtherParagraphsDetached'] is False
+                and type(package['packages']) is list and len(package['packages']) <= 32,
+                'package-collection-structural-contract')
+        wire_record('FileObservation', package['statusFile'], 'record', until)
+        for row in package['packages']:
+            deadline(until)
+            wire_record('PackageObservation', row, 'record', until)
+            wire_record('PackageStatus', row['statusRecord'],
+                        'record' if row['statusRecord'] is not None else 'unavailable', until)
+            require(len(row['infoFiles']) <= 2, 'package-info-structural-count')
+            for info in row['infoFiles']:
+                deadline(until)
+                wire_record('PackageInfo', info, 'record' if info['file'] is not None else 'absent', until)
+                if info['file'] is not None:
+                    wire_record('FileObservation', info['file'], 'record', until)
+    if evidence['directories'] is not None:
+        require(len(evidence['directories']) <= 6, 'directory-structural-count')
+        for row in evidence['directories']:
+            deadline(until)
+            wire_record('DirectoryObservation', row,
+                        'absent' if row['resolution']['resolvedPath'] is None else 'present', until)
+    if evidence['historicalText'] is not None:
+        require(len(evidence['historicalText']) <= 5, 'historical-text-structural-count')
+        for row in evidence['historicalText']:
+            deadline(until)
+            wire_record('TextObservation', row['text'], 'record', until)
     if summary['passed']:
         require(len(seen) == 265 and not summary['observationFaults'] and summary['primaryFault'] is None
                 and not summary['finalizationFaults'] and not summary['faultLedgerOverflow'], 'passed-capture-denominator')
         require(summary['sourcePinsBefore'] is not None and summary['sourcePinsBefore'] == summary['sourcePinsAfter'], 'passed-source-boundaries')
         require(COUNTS['inputTextReads'] <= 128 and COUNTS['inputTextBytes'] <= TEXT_TOTAL
+                and COUNTS['attemptedInputTextReads'] <= 128 and COUNTS['attemptedInputTextBytes'] <= TEXT_TOTAL
+                and COUNTS['attemptedStatusBytes'] <= 16 * 1024 ** 2
                 and COUNTS['statusTextBytes'] <= 16 * 1024 ** 2
                 and COUNTS['selectedStatusParagraphs'] <= 512, 'passed-input-budget')
         require(evidence['packages'] is not None and len(evidence['packages']['packages']) == 32
@@ -1048,29 +1505,38 @@ def validate_evidence(evidence, summary):
         role_count = sum(r['text'] is not None for r in evidence['observations'])
         role_bytes = sum(r['text']['textBytes'] for r in evidence['observations'] if r['text'] is not None)
         for row, name in zip(package['packages'], DOC['packageStatus']['packageNames']):
+            deadline(until)
+            wire_record('PackageObservation', row, 'record', until)
             require(set(row) == {'packageName', 'statusRecord', 'infoFiles', 'missingPackage'}
                     and row['packageName'] == name and type(row['missingPackage']) is bool
                     and row['missingPackage'] == (row['statusRecord'] is None) and len(row['infoFiles']) == 2, 'package-observation-schema')
             status = row['statusRecord']
+            wire_record('PackageStatus', status, 'record' if status is not None else 'unavailable', until)
             if status is not None:
                 require(set(status) == {'exactName', 'architecture', 'paragraphSha256', 'selectedFields', 'matchingInfoFiles', 'declaredOwnershipOnly'}
                         and status['exactName'] == name and status['architecture'] in {'amd64', 'all'}
                         and status['declaredOwnershipOnly'] is True and status['matchingInfoFiles'] == []
                         and set(status['selectedFields']) <= set(DOC['packageStatus']['paragraphFields']), 'package-status-schema')
             for info, suffix in zip(row['infoFiles'], ['.list', '.md5sums']):
+                deadline(until)
+                wire_record('PackageInfo', info, 'record' if info['file'] is not None else 'absent', until)
                 require(info['suffix'] == suffix, 'package-info-suffix')
                 if info['file'] is not None:
                     require(set(info) == {'suffix', 'absence', 'file', 'selectedEntries', 'withheldEntryCount',
                         'withheldEntriesSha256', 'arbitraryOwnedFilesOpened'} and info['arbitraryOwnedFilesOpened'] is False
                         and len(info['selectedEntries']) <= 65536 and info['file']['bytes'] <= TEXT_MAX, 'package-info-schema')
-                    require(all(set(p) == {'path', 'declaredMD5', 'note'} and p['path'] in ALLOWED
-                                and not forbidden_path(p['path']) for p in info['selectedEntries']), 'package-info-no-authority-expansion')
+                    for p in info['selectedEntries']:
+                        deadline(until)
+                        require(set(p) == {'path', 'declaredMD5', 'note'} and p['path'] in ALLOWED
+                                and not forbidden_path(p['path']), 'package-info-no-authority-expansion')
                     role_count += 1
                     role_bytes += info['file']['bytes']
                 else:
                     require(set(info) == {'suffix', 'absence', 'file', 'selectedEntries'}
                             and info['selectedEntries'] == [] and len(info['absence']) == 2, 'package-info-absence-schema')
         for row, selector in zip(evidence['directories'], DOC['shallowDirectorySelectors']):
+            deadline(until)
+            wire_record('DirectoryObservation', row, 'absent' if row['resolution']['resolvedPath'] is None else 'present', until)
             require(row['selectorPath'] == selector['path'] and (row['resolution']['resolvedPath'] is None
                     or row['resolution']['resolvedPath'] in ALLOWED), 'directory-selector-binding')
             if row.get('entries') is None and row['resolution']['resolvedPath'] is None:
@@ -1082,6 +1548,7 @@ def validate_evidence(evidence, summary):
                     and all(type(v) is bool for v in row['eligiblePresence'].values())
                     and 0 <= row['totalImmediateCount'] <= selector['maximumImmediateEntries'], 'directory-shallow-bounds')
         for row, selector in zip(evidence['historicalText'], DOC['archiveTextSelectors']):
+            deadline(until)
             require(set(row) == {'origin', 'file', 'text', 'reusedHistoricalData', 'freshArchiveDownloaded', 'currentRunnerProvenance'}
                     and row['reusedHistoricalData'] is True and row['freshArchiveDownloaded'] is False
                     and row['currentRunnerProvenance'] is False
@@ -1092,13 +1559,14 @@ def validate_evidence(evidence, summary):
             role_bytes += row['text']['textBytes']
         require(role_count == COUNTS['inputTextReads'] and role_bytes + COUNTS['statusTextBytes'] == COUNTS['inputTextBytes'],
                 'independent-text-budget-accounting')
+        require(COUNTS['attemptedInputTextReads'] == COUNTS['inputTextReads']
+                and COUNTS['attemptedInputTextBytes'] == COUNTS['inputTextBytes']
+                and COUNTS['attemptedStatusBytes'] == COUNTS['statusTextBytes'], 'passed-attempted-input-accounting')
 
 
 def main():
-    global DOC, ALLOWED, CURRENT
-    require(not OUTPUT.exists() and not OUTPUT.is_symlink()
-            and all(not p.is_symlink() for p in OUTPUT.absolute().parents), 'fresh-packet-output')
-    OUTPUT.mkdir(parents=True)
+    global DOC, ALLOWED, CURRENT, _CORROBORATION_PUBLICATION_DEADLINE, OUTPUT_DESCRIPTOR
+    OUTPUT_DESCRIPTOR = fresh_output_directory(str(OUTPUT), WORK)
     initial = final = None
     package_records = dir_records = reference_records = None
     primary = None
@@ -1165,7 +1633,7 @@ def main():
         except Exception as error:
             finalize_faults.append({'code': 'interpreter-observation-fault', 'exceptionType': type(error).__name__})
             completed = False
-        summary = {'schemaVersion': 1, 'scope': 'finite-read-only-retention-corroboration-NOT-source-closure',
+        summary = {'schemaVersion': 2, 'scope': 'finite-read-only-retention-corroboration-NOT-source-closure',
                    'captureCompleted': completed, 'passed': completed, 'selectorDocumentSha256': SELECTOR_SHA,
                    'sourcePinsBefore': initial, 'sourcePinsAfter': final, 'counts': COUNTS,
                    'exactSelectorCountExpected': 265, 'exactSelectorCountObserved': len(ROWS),
@@ -1179,24 +1647,42 @@ def main():
                    'nativeProofOrCostParityAccepted': False, 'originalScannerInvokedOrImported': False,
                    'newArchiveDownloaded': False, 'interpreter': interpreter,
                    'historicalDataReused': reference_records is not None, 'changedRunnerFactsAreNewInputs': True,
+                   'wireSchemaSha256': WIRE_SCHEMA_SHA,
+                   'wireSchemaCaptured': WIRE is not None,
+                   'frozenConceptualRequiredNamesEnforcedUnchanged': False,
+                   'outputReservationsBeforeSummary': dict(OUTPUT_COUNTS),
                    'stabilityScope': 'bounded descriptor reads and rechecks; not namespace confinement or permanent immutability'}
-        evidence = {'schemaVersion': 1, 'scope': summary['scope'], 'observations': ROWS,
+        evidence = {'schemaVersion': 2, 'scope': summary['scope'], 'observations': ROWS,
                     'packages': package_records, 'directories': dir_records, 'historicalText': reference_records}
         publication = time.monotonic() + 5
+        _CORROBORATION_PUBLICATION_DEADLINE = publication
         try:
-            validate_evidence(evidence, summary)
+            validate_evidence(evidence, summary, publication)
             summary['evidence'] = publish('corroboration.json', evidence, publication)
         except Exception as error:
             summary['captureCompleted'] = summary['passed'] = False
             summary['publicationFault'] = {'code': 'evidence-publication-fault', 'exceptionType': type(error).__name__}
         try:
+            summary['outputReservationsBeforeSummary'] = dict(OUTPUT_COUNTS)
+            if WIRE is not None:
+                wire_record('PacketSummary', summary, 'record', publication)
+            else:
+                require(summary['passed'] is False and summary['wireSchemaCaptured'] is False,
+                        'failed-summary-schema-fallback-only')
             publish('summary.json', summary, publication)
         except Exception:
             summary['captureCompleted'] = summary['passed'] = False
             print('NOT GREEN: bounded corroboration publication failed', flush=True)
         print('Finite read-only corroboration: ' + ('CAPTURED ONLY' if summary['passed'] else 'NOT GREEN'), flush=True)
+        os.close(OUTPUT_DESCRIPTOR)
+        OUTPUT_DESCRIPTOR = None
     return 0
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    finally:
+        if OUTPUT_DESCRIPTOR is not None:
+            os.close(OUTPUT_DESCRIPTOR)
+            OUTPUT_DESCRIPTOR = None

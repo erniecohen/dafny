@@ -926,38 +926,127 @@ jobs:
             B3_RESOLVER_PROBE="$B3_RESOLVER_PROBE" \
             B3_ADDITIONAL_AXIOMS_PROBE="$B3_ADDITIONAL_AXIOMS_PROBE" \
             /usr/bin/python3 -I -S -B - <<'PYGUARD'
-          import hashlib, json, os, stat
+          # Fixed source-byte entry; no inspected runner image is executed here.
+          import hashlib, json, os, stat, time
           from pathlib import Path
           path = Path('.github/review/b3-retention-corroboration-route.py')
+          work = time.monotonic() + 600
+          route_invoked = False
+          identity = lambda s: (s.st_dev, s.st_ino, s.st_mode, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
+
+          def directory(path, until):
+              flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
+              parent = os.open('/', flags)
+              try:
+                  for part in Path(path).absolute().parts[1:]:
+                      if time.monotonic() >= until or part in {'.', '..'}:
+                          raise ValueError('Entry descriptor traversal deadline or path.')
+                      before = os.stat(part, dir_fd=parent, follow_symlinks=False)
+                      if not stat.S_ISDIR(before.st_mode):
+                          raise ValueError('Entry ancestor must be a no-follow directory.')
+                      child = os.open(part, flags, dir_fd=parent)
+                      try:
+                          if identity(before) != identity(os.fstat(child)) or identity(before) != identity(os.stat(part, dir_fd=parent, follow_symlinks=False)):
+                              raise ValueError('Entry ancestor changed.')
+                      except BaseException:
+                          os.close(child)
+                          raise
+                      os.close(parent)
+                      parent = child
+                  return parent
+              except BaseException:
+                  os.close(parent)
+                  raise
+
           try:
-              if any(p.is_symlink() for p in [path.absolute(), *path.absolute().parents]):
-                  raise ValueError('Fixed corroboration routing alias rejected.')
-              before = path.lstat()
-              if not stat.S_ISREG(before.st_mode) or before.st_size != 8462:
-                  raise ValueError('Fixed corroboration routing size rejected.')
-              with path.open('rb') as stream:
-                  captured = stream.read(8462 + 1)
-                  opened = os.fstat(stream.fileno())
-              identity = lambda s: (s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
-              if identity(before) != identity(opened) or identity(opened) != identity(path.lstat()) or \
-                    len(captured) != 8462 or hashlib.sha256(captured).hexdigest() != '1479bd6ce692cc59db845ad608e5365d6e0a39faaa72746ca61c00a79f7c7632':
-                  raise ValueError('Fixed corroboration routing byte pin rejected.')
-              # Execute only captured, checked source; no import cache or old scanner.
-              namespace = {'__name__': '__main__', '__file__': str(path)}
+              parent = directory(path.parent, work)
+              descriptor = None
+              try:
+                  before = os.stat(path.name, dir_fd=parent, follow_symlinks=False)
+                  if not stat.S_ISREG(before.st_mode) or before.st_size != 19137:
+                      raise ValueError('Fixed corroboration routing size rejected.')
+                  descriptor = os.open(path.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=parent)
+                  if identity(before) != identity(os.fstat(descriptor)):
+                      raise ValueError('Fixed corroboration routing pre-read identity rejected.')
+                  chunks = []
+                  length = 0
+                  while length < 19137:
+                      if time.monotonic() >= work:
+                          raise ValueError('Entry content deadline.')
+                      block = os.read(descriptor, min(65536, 19137 - length))
+                      if not block:
+                          break
+                      length += len(block)
+                      chunks.append(block)
+                  captured = b''.join(chunks)
+                  if identity(before) != identity(os.fstat(descriptor)) or identity(before) != identity(os.stat(path.name, dir_fd=parent, follow_symlinks=False)) or len(captured) != 19137 or hashlib.sha256(captured).hexdigest() != '5e5d0cb24cb73fedd1a61ffab79a0315172c5e365b6a630cb63d47fd992a8b31':
+                      raise ValueError('Fixed corroboration routing byte pin rejected.')
+              finally:
+                  if descriptor is not None:
+                      os.close(descriptor)
+                  os.close(parent)
+              namespace = {'__name__': '__main__', '__file__': str(path), '_ROUTE_WORK_DEADLINE': work}
+              route_invoked = True
               exec(compile(captured, str(path), 'exec', dont_inherit=True), namespace)
           except BaseException as error:
-              output = Path('out/b3-retention-corroboration-routing')
-              if not any(p.is_symlink() for p in [output.absolute(), *output.absolute().parents]):
-                  output.mkdir(parents=True, exist_ok=True)
-                  failure = {'schemaVersion': 1, 'scope': 'finite-corroboration-workflow-entry',
-                             'passed': False, 'failureCode': 'fixed-entry-or-routing-failure',
-                             'failureType': type(error).__name__, 'SDKExecuted': False,
-                             'collectorExecuted': False, 'analyzerExecuted': False,
-                             'targetExecuted': False, 'reviewedRunnerClosure': False,
-                             'fullDiagnosticEnabled': False}
-                  with (output / 'entry-failure.json').open('x') as stream:
-                      json.dump(failure, stream, indent=2, sort_keys=True)
-                      stream.write('\n')
+              # A failure after route entry cannot append an unaccounted artifact to any
+              # packet output. The route owns its bounded report publication once invoked.
+              if not route_invoked:
+                  parent = None
+                  descriptor = None
+                  try:
+                      until = time.monotonic() + 5
+                      parent = directory(Path('.'), until)
+                      flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
+                      parts = ['out', 'b3-retention-corroboration-routing']
+                      for i, part in enumerate(parts):
+                          if time.monotonic() >= until:
+                              raise ValueError('Entry diagnostic deadline.')
+                          try:
+                              os.mkdir(part, mode=0o700, dir_fd=parent)
+                          except FileExistsError:
+                              if i == len(parts) - 1:
+                                  raise ValueError('Fresh entry diagnostic directory required.')
+                          before = os.stat(part, dir_fd=parent, follow_symlinks=False)
+                          if not stat.S_ISDIR(before.st_mode):
+                              raise ValueError('Entry diagnostic ancestor rejected.')
+                          child = os.open(part, flags, dir_fd=parent)
+                          try:
+                              if identity(before) != identity(os.fstat(child)) or identity(before) != identity(os.stat(part, dir_fd=parent, follow_symlinks=False)):
+                                  raise ValueError('Entry diagnostic ancestor changed.')
+                          except BaseException:
+                              os.close(child)
+                              raise
+                          os.close(parent)
+                          parent = child
+                      failure = {'schemaVersion': 2, 'scope': 'finite-corroboration-workflow-entry',
+                                 'passed': False, 'failureCode': 'fixed-entry-or-routing-failure',
+                                 'failureType': type(error).__name__, 'SDKExecuted': False,
+                                 'collectorExecuted': False, 'analyzerExecuted': False,
+                                 'targetExecuted': False, 'reviewedRunnerClosure': False,
+                                 'fullDiagnosticEnabled': False}
+                      # This pre-invocation record has only fixed small fields and one
+                      # builtin exception-type name; no arbitrary input text is emitted.
+                      body = (json.dumps(failure, sort_keys=True) + '\n').encode('ascii')
+                      if len(body) > 2048:
+                          raise ValueError('Entry fixed diagnostic byte cap.')
+                      descriptor = os.open('entry-failure.json', os.O_WRONLY | os.O_CREAT | os.O_EXCL
+                                           | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, mode=0o600, dir_fd=parent)
+                      offset = 0
+                      while offset < len(body):
+                          if time.monotonic() >= until:
+                              raise ValueError('Entry diagnostic write deadline.')
+                          written = os.write(descriptor, memoryview(body)[offset:])
+                          if written <= 0:
+                              raise ValueError('Entry diagnostic zero write.')
+                          offset += written
+                  except BaseException:
+                      print('Finite corroboration entry diagnostic unavailable: NOT GREEN')
+                  finally:
+                      if descriptor is not None:
+                          os.close(descriptor)
+                      if parent is not None:
+                          os.close(parent)
               print('Finite corroboration workflow entry: NOT GREEN')
           PYGUARD
       - uses: actions/upload-artifact@v4

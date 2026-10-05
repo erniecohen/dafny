@@ -3,14 +3,14 @@
   "compileOnlyRequired": true,
   "files": [
     {
-      "bytes": 2461,
+      "bytes": 2616,
       "path": ".github/review/retention-corroboration/source-manifest.json",
-      "sha256": "3f4530a045f4813f27ef1e03695fcfdd9a8308cdc197d39646908c21f19ef35d"
+      "sha256": "9b2fc99dd3c0aeb771eafde597b4d9f6f7503d5e93298ee1ff19f70d95104c1a"
     },
     {
-      "bytes": 8462,
+      "bytes": 19137,
       "path": ".github/review/b3-retention-corroboration-route.py",
-      "sha256": "1479bd6ce692cc59db845ad608e5365d6e0a39faaa72746ca61c00a79f7c7632"
+      "sha256": "5e5d0cb24cb73fedd1a61ffab79a0315172c5e365b6a630cb63d47fd992a8b31"
     },
     {
       "bytes": 49,
@@ -18,14 +18,14 @@
       "sha256": "c991a035b5681782c5d6ce6ec0a1c5c62fa13f57ca64224b9eb192806e8bb47a"
     },
     {
-      "bytes": 48049,
+      "bytes": 53247,
       "path": ".github/workflows/review.yml",
-      "sha256": "c8f4e5d9a569b77609229697567805ebf4123f53420e3fcb616b5af77f96d60b"
+      "sha256": "019b23294422569efaad2f75726781ffb6874b524d2947fa88cbc9361a3c7670"
     }
   ],
   "fullGatePermitted": false,
   "newArchivesPermitted": false,
   "schemaVersion": 1,
   "scope": "fixed-finite-read-only-retention-corroboration-routing",
-  "sourceManifestSha256": "3f4530a045f4813f27ef1e03695fcfdd9a8308cdc197d39646908c21f19ef35d"
+  "sourceManifestSha256": "9b2fc99dd3c0aeb771eafde597b4d9f6f7503d5e93298ee1ff19f70d95104c1a"
 }
