@@ -475,3 +475,28 @@ failed receipts. No old assertion is skipped/admitted to manufacture a passing
 qualifier. Only actually handled nonfatal returns/faults may continue. The future
 source must preserve the distinction between primary stage failure and secondary
 observation/preservation faults, including partial compiler and first-byte evidence.
+
+## Source clarification: owned Python entry module and remaining closure gap
+
+The fixed preservation script also appears in `sys.modules` as its own
+`__main__` module. It is not one of the unchanged22 allowed runtime/startup
+module names and must not be silently ignored. Its only permitted identity is
+`preserve-observer.py` at the fixed generated source path, `__spec__ is None`,
+with the reviewed source byte length and SHA256. The bootstrap binds those
+bytes to the finite source table and retains the immutable first source copy
+before publishing a ready marker. Exact actual module names must equal the
+frozen runtime-pin names plus this single owned entry module. All other extra
+names, unknown origins or changed source bytes reject observation. The existing
+32-total-module,8MiB first source/ref/bootstrap,64MiB observer and256MiB whole
+artifact limits are unchanged. This supplies no actual runtime module catalog
+and does not authorize any source execution.
+
+The current prospective `originalImportAudit` data shape can bind tracked
+repository files and SDK-relative files/default extension paths. It cannot bind
+default user-extension `ImportBefore`/`ImportAfter` wildcard directories outside
+the SDK. Null import-affecting environment entries do not establish that those
+locations are absent. `fullOriginalImportClosure`, `defaultExtensionAbsentCase`
+and all other execution prerequisites therefore remain false/null. A separately
+reviewed finite source/data revision must represent every required directory and
+its actual content/absence before activation; this checkpoint is not complete
+original-import correspondence and cannot activate that unrepresented case.
