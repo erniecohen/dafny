@@ -1,4 +1,3 @@
-using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,7 +17,7 @@ public class ConsistentObligationChecksTest : ClientBasedLanguageServerTest {
   public async Task ProjectOptionChangesReverifyTheSameDeclaration() {
     await SetUp(options => {
       options.Set(CachingProjectFileOpener.ProjectFileCacheExpiry, 0);
-      if (Environment.GetEnvironmentVariable("Z3") is { } solver) {
+      if (System.Environment.GetEnvironmentVariable("Z3") is { } solver) {
         options.Set(BoogieOptionBag.SolverPath, new FileInfo(solver));
       }
     });
