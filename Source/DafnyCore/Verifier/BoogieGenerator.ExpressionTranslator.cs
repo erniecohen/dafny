@@ -321,7 +321,7 @@ namespace Microsoft.Dafny {
         Contract.Assert(e.LHSs.Count == e.RHSs.Count);  // checked by resolution
         var substMap = new Dictionary<IVariable, Expression>();
         for (int i = 0; i < e.LHSs.Count; i++) {
-          BoogieGenerator.AddCasePatternVarSubstitutions(e.LHSs[i], TrExpr(e.RHSs[i]), substMap);
+          BoogieGenerator.AddCasePatternVarSubstitutions(e.LHSs[i], AsVerificationValue().TrExpr(e.RHSs[i]), substMap);
         }
         return BoogieGenerator.Substitute(e.Body, null, substMap);
       }
@@ -343,6 +343,12 @@ namespace Microsoft.Dafny {
       public Boogie.Expr TrExpr(Expression expr) {
         Contract.Requires(expr != null);
         Contract.Requires(Predef != null);
+
+        // Logical polarity applies only to Boolean propositions. A container,
+        // receiver or computed value cannot pass that polarity to its contents.
+        if (verificationContext is { Use: not VerificationExpressionUse.Value } && !expr.Type.IsBoolType) {
+          return AsVerificationValue().TrExpr(expr);
+        }
 
         switch (expr) {
           case LiteralExpr literalExpr:
@@ -390,10 +396,10 @@ namespace Microsoft.Dafny {
           case UnaryOpExpr opExpr:
             return TranslateUnaryOpExpression(opExpr);
           case ConversionExpr conversionExpr: {
-              return BoogieGenerator.ConvertExpression(GetToken(conversionExpr), TrExpr(conversionExpr.E), conversionExpr.E.Type, conversionExpr.ToType);
+              return BoogieGenerator.ConvertExpression(GetToken(conversionExpr), AsVerificationValue().TrExpr(conversionExpr.E), conversionExpr.E.Type, conversionExpr.ToType);
             }
           case TypeTestExpr testExpr: {
-              return BoogieGenerator.GetSubrangeCheck(testExpr.Origin, TrExpr(testExpr.E), testExpr.E.Type, testExpr.ToType, testExpr.E, null, out var _) ?? Expr.True;
+              return BoogieGenerator.GetSubrangeCheck(testExpr.Origin, AsVerificationValue().TrExpr(testExpr.E), testExpr.E.Type, testExpr.ToType, testExpr.E, null, out var _) ?? Expr.True;
             }
           case BinaryExpr binaryExpr:
             return TranslateBinaryExpr(binaryExpr);
@@ -420,9 +426,9 @@ namespace Microsoft.Dafny {
           case NestedMatchExpr nestedMatchExpr:
             return TrExpr(nestedMatchExpr.Flattened);
           case BoxingCastExpr castExpr:
-            return BoogieGenerator.CondApplyBox(GetToken(castExpr), TrExpr(castExpr.E), castExpr.FromType, castExpr.ToType);
+            return BoogieGenerator.CondApplyBox(GetToken(castExpr), AsVerificationValue().TrExpr(castExpr.E), castExpr.FromType, castExpr.ToType);
           case UnboxingCastExpr castExpr:
-            return BoogieGenerator.CondApplyUnbox(GetToken(castExpr), TrExpr(castExpr.E), castExpr.FromType, castExpr.ToType);
+            return BoogieGenerator.CondApplyUnbox(GetToken(castExpr), AsVerificationValue().TrExpr(castExpr.E), castExpr.FromType, castExpr.ToType);
           case DecreasesToExpr decreasesToExpr:
             return TranslateDecreasesToExpr(decreasesToExpr);
           case FieldLocation fieldLocation:
@@ -690,7 +696,7 @@ namespace Microsoft.Dafny {
       private Expr TranslateUnaryOpExpression(UnaryOpExpr opExpr) {
         var e = opExpr;
         Boogie.Expr arg = (e.ResolvedOp == UnaryOpExpr.ResolvedOpcode.BoolNot
-          ? NegateVerificationPolarity() : this).TrExpr(e.E);
+          ? NegateVerificationPolarity() : AsVerificationValue()).TrExpr(e.E);
         switch (e.ResolvedOp) {
           case UnaryOpExpr.ResolvedOpcode.Lit:
             return MaybeLit(arg);
@@ -1100,11 +1106,11 @@ namespace Microsoft.Dafny {
           }
         }
 
-        Expr TrArg(Expression arg) => BoogieGenerator.BoxIfNotNormallyBoxed(arg.Origin, TrExpr(arg), arg.Type);
+        Expr TrArg(Expression arg) => BoogieGenerator.BoxIfNotNormallyBoxed(arg.Origin, AsVerificationValue().TrExpr(arg), arg.Type);
 
         var applied = FunctionCall(GetToken(applyExpr), BoogieGenerator.Apply(arity), Predef.BoxType,
           Concat(Map(tt.TypeArgs, BoogieGenerator.TypeToTy),
-            Cons(HeapExprForArrow(applyExpr.Function.Type), Cons(TrExpr(applyExpr.Function), applyExpr.Args.ConvertAll(arg => TrArg(arg))))));
+            Cons(HeapExprForArrow(applyExpr.Function.Type), Cons(AsVerificationValue().TrExpr(applyExpr.Function), applyExpr.Args.ConvertAll(arg => TrArg(arg))))));
 
         return BoogieGenerator.UnboxUnlessInherentlyBoxed(applied, tt.Result);
       }
@@ -1273,7 +1279,7 @@ namespace Microsoft.Dafny {
           args.Add(ve);
         }
         foreach (var arg in call.Args) {
-          args.Add(TrExpr(arg));
+          args.Add(AsVerificationValue().TrExpr(arg));
         }
         return new Boogie.NAryExpr(GetToken(call), new Boogie.FunctionCall(id), args);
       }
@@ -1589,14 +1595,14 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
         }
         argsAreLit = true;
         if (!e.Function.IsStatic) {
-          var tr_ee = BoogieGenerator.BoxifyForTraitParent(e.Origin, TrExpr(e.Receiver), e.Function, e.Receiver.Type);
+          var tr_ee = BoogieGenerator.BoxifyForTraitParent(e.Origin, AsVerificationValue().TrExpr(e.Receiver), e.Function, e.Receiver.Type);
           argsAreLit = argsAreLit && BoogieGenerator.IsLit(tr_ee);
           args.Add(tr_ee);
         }
         for (int i = 0; i < e.Args.Count; i++) {
           Expression ee = e.Args[i];
           Type t = e.Function.Ins[i].Type;
-          Expr tr_ee = TrExpr(ee);
+          Expr tr_ee = AsVerificationValue().TrExpr(ee);
           argsAreLit = argsAreLit && BoogieGenerator.IsLit(tr_ee);
           args.Add(BoogieGenerator.AdaptBoxing(GetToken(e), tr_ee, Cce.NonNull(ee.Type), t));
         }
@@ -1795,6 +1801,12 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
         Contract.Requires(this != null);
         Contract.Requires(BoogieGenerator.Predef != null);
         Contract.Ensures(Contract.Result<Boogie.Expr>() != null);
+
+        // Permissions concern evaluated values rather than logical use in a
+        // check or continuation. Keep their arguments at the value interface.
+        if (verificationContext is { Use: not VerificationExpressionUse.Value }) {
+          return AsVerificationValue().CanCallAssumption(expr, cco);
+        }
 
         if (expr is LiteralExpr or ThisExpr or IdentifierExpr or WildcardExpr or DoubleWildcardExpr or BoogieWrapper) {
           return Boogie.Expr.True;

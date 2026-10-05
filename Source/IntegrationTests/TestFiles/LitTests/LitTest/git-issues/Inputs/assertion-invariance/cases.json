@@ -693,5 +693,45 @@
     "name": "recursive-equivalence-nonvacuity",
     "expected": 4,
     "group": "fuel-equivalence"
+  },
+  {
+    "name": "boolean-value-argument",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "boolean-value-higher-order",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "boolean-value-container",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "boolean-value-let",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "negative-boolean-value-argument",
+    "expected": 4,
+    "group": "negative"
+  },
+  {
+    "name": "negative-boolean-value-higher-order",
+    "expected": 4,
+    "group": "negative"
+  },
+  {
+    "name": "negative-boolean-value-container",
+    "expected": 4,
+    "group": "negative"
+  },
+  {
+    "name": "negative-boolean-value-let",
+    "expected": 4,
+    "group": "negative"
   }
 ]
