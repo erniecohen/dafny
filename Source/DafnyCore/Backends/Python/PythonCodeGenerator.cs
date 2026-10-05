@@ -1475,6 +1475,11 @@ namespace Microsoft.Dafny.Compilers {
           return SpecialOrConstantField(obj, objType, member, typeArgs, cf, compiledNameConstantField);
         case SpecialField sf: {
             GetSpecialFieldInfo(sf.SpecialId, sf.IdParam, objType, out var compiledName, out _, out _);
+            if (sf.EnclosingClass is DatatypeDecl && sf.SpecialId == SpecialField.ID.UseIdParam) {
+              // Datatype discriminators are boolean properties. Their value does
+              // not depend on default descriptors for the datatype's parameters.
+              return SuffixLvalue(obj, $".{compiledName}");
+            }
             return SpecialOrConstantField(obj, objType, member, typeArgs, sf, compiledName);
           }
         case Field: {

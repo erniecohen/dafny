@@ -158,3 +158,5 @@ git-issues/git-issue-141.dfy
 # Exact invariant function/caller reproducer and inhabited control (#141).
 git-issues/git-issue-141-original.dfy
 git-issues/git-issue-141-original-control.dfy
+# Generic datatype constructor discriminator runtime regression.
+git-issues/git-issue-148.dfy
