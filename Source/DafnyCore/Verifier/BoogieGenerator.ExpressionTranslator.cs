@@ -478,9 +478,9 @@ namespace Microsoft.Dafny {
             break;
           }
           oldExprsDafny.Add(oldArray[i]);
-          oldExprs.Add(TrExpr(oldArray[i]));
+          oldExprs.Add(AsVerificationValue().TrExpr(oldArray[i]));
           newExprsDafny.Add(newArray[i]);
-          newExprs.Add(TrExpr(newArray[i]));
+          newExprs.Add(AsVerificationValue().TrExpr(newArray[i]));
         }
 
         bool endsWithWinningTopComparison = N == oldArray.Length && N < newArray.Length;
@@ -738,7 +738,7 @@ namespace Microsoft.Dafny {
               Boogie.Variable oVar = new Boogie.BoundVariable(GetToken(opExpr), new Boogie.TypedIdent(GetToken(opExpr), "$o", Predef.RefType));
               Boogie.Expr o = new Boogie.IdentifierExpr(GetToken(opExpr), oVar);
               Boogie.Expr oNotNull = Boogie.Expr.Neq(o, Predef.Null);
-              Boogie.Expr oInSet = TrInSet(GetToken(opExpr), o, e.E, setType.Arg, setType.Finite, true, out var performedInSetRewrite);
+              Boogie.Expr oInSet = AsVerificationValue().TrInSet(GetToken(opExpr), o, e.E, setType.Arg, setType.Finite, true, out var performedInSetRewrite);
               Boogie.Expr oNotFresh = OldAt(freshLabel).IsAlloced(GetToken(opExpr), o);
               Boogie.Expr oIsFresh = Boogie.Expr.Not(oNotFresh);
               Boogie.Expr notNullBody = BplImp(oInSet, oNotNull);
@@ -774,7 +774,7 @@ namespace Microsoft.Dafny {
             // both the $IsAllocBox and $IsAlloc forms, because the axioms that connects these two is triggered
             // by $IsAllocBox.
             return options.Get(CommonOptionBag.ConsistentObligationChecks)
-              ? BoogieGenerator.ExplicitAllocationPredicate(e.E.Origin, TrExpr(e.E), e.E.Type, HeapExpr)
+              ? BoogieGenerator.ExplicitAllocationPredicate(e.E.Origin, AsVerificationValue().TrExpr(e.E), e.E.Type, HeapExpr)
               : BoogieGenerator.MkIsAllocBox(BoxIfNecessary(e.E.Origin, TrExpr(e.E), e.E.Type), e.E.Type, HeapExpr);
           case UnaryOpExpr.ResolvedOpcode.Assigned:
             string name = null;

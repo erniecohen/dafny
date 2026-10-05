@@ -138,10 +138,12 @@ public class ObligationLoweringTests {
   [InlineData("f(exists n:int :: P(n))", false)]
   [InlineData("[exists n:int :: P(n)][0]", false)]
   [InlineData("(var b := exists n:int :: P(n); b)", false)]
+  [InlineData("true in (set b:bool | b == (exists n:int :: P(n)))", false)]
   [InlineData("Identity(exists n:int :: P(n))", true)]
   [InlineData("f(exists n:int :: P(n))", true)]
   [InlineData("[exists n:int :: P(n)][0]", true)]
   [InlineData("(var b := exists n:int :: P(n); b)", true)]
+  [InlineData("true in (set b:bool | b == (exists n:int :: P(n)))", true)]
   public async Task BooleanValueEdgesDoNotInheritPropositionFuel(string expression, bool refresh) {
     var source = "ghost predicate P(n:int) decreases n { n<=0 || P(n-1) } " +
       "ghost predicate Identity(b:bool) { b } lemma L(f:bool->bool) { assert " + expression + "; }";
