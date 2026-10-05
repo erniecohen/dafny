@@ -47,7 +47,7 @@ namespace Microsoft.Dafny {
       Contract.Requires(etran != null);
 
       if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
-        etran = etran.WithVerificationPolarity(position);
+        etran = etran.WithVerificationPolarity(position).StartFuelTracking();
         if (expr is QuantifierExpr) {
           etran = etran.WithSelectedVerificationFuel();
         }
@@ -142,7 +142,8 @@ namespace Microsoft.Dafny {
             } else if (bin.ResolvedOp == BinaryExpr.ResolvedOpcode.Imp) {
               // non-conditionally split these, so we get the source location to point to a subexpression
               if (position) {
-                var lhs = etran.TrExpr(bin.E0);
+                var lhs = (options.Get(CommonOptionBag.ConsistentObligationChecks)
+                  ? etran.WithVerificationPolarity(!position) : etran).TrExpr(bin.E0);
                 var ss = new List<SplitExprInfo>();
                 TrSplitExpr(context, bin.E1, ss, position, heightLimit, applyInduction, etran);
                 foreach (var s in ss) {
@@ -392,7 +393,8 @@ namespace Microsoft.Dafny {
                 if (needsTokenAdjustment) {
                   r.tok = new ForceCheckOrigin(expr.Origin);
                 }
-                if (etranBoost.Statistics_CustomLayerFunctionCount == 0) {
+                if (options.Get(CommonOptionBag.ConsistentObligationChecks)
+                    ? !etranBoost.FuelWasUsed : etranBoost.Statistics_CustomLayerFunctionCount == 0) {
                   // apparently, the LayerOffset(1) we did had no effect
                   splits.Add(ToSplitExprInfo(SplitExprInfo.K.Both, r));
                   return needsTokenAdjustment;
@@ -409,14 +411,13 @@ namespace Microsoft.Dafny {
                 adjustFuelForExists = false;
               } // based on the above comment, we use the etran with correct fuel amount already. No need to adjust anymore.
               var etranBoost = etran.LayerOffset(1);
-              var functionsBefore = etran.Statistics_CustomLayerFunctionCount;
-              var r = etran.TrExpr(expr);
+                            var r = etran.TrExpr(expr);
               var needsTokenAdjustment = TrSplitNeedsTokenAdjustment(expr);
               if (needsTokenAdjustment) {
                 r.tok = new ForceCheckOrigin(expr.Origin);
               }
-              if (etran.Statistics_CustomLayerFunctionCount ==
-                  (options.Get(CommonOptionBag.ConsistentObligationChecks) ? functionsBefore : 0)) {
+              if (options.Get(CommonOptionBag.ConsistentObligationChecks)
+                    ? !etran.FuelWasUsed : etran.Statistics_CustomLayerFunctionCount == 0) {
                 // apparently, doesn't use layer
                 splits.Add(ToSplitExprInfo(SplitExprInfo.K.Both, r));
                 return needsTokenAdjustment;
@@ -439,7 +440,8 @@ namespace Microsoft.Dafny {
       } else {
         etran = etran.LayerOffset(1);
         translatedExpression = etran.TrExpr(expr);
-        splitHappened = etran.Statistics_CustomLayerFunctionCount != 0;  // return true if the LayerOffset(1) came into play
+        splitHappened = options.Get(CommonOptionBag.ConsistentObligationChecks)
+          ? etran.FuelWasUsed : etran.Statistics_CustomLayerFunctionCount != 0;  // return true if the LayerOffset(1) came into play
       }
       if (TrSplitNeedsTokenAdjustment(expr)) {
         translatedExpression.tok = new ForceCheckOrigin(expr.Origin);

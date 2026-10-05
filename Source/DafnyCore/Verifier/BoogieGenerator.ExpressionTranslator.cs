@@ -54,6 +54,16 @@ namespace Microsoft.Dafny {
       internal readonly FuelSetting layerInterCluster;
       internal readonly FuelSetting layerIntraCluster = null;  // a value of null says to do the same as for inter-cluster calls
       public int Statistics_CustomLayerFunctionCount = 0;
+      // A translation result, independent of the diagnostic counters. Clones within
+      // one occurrence share it; every split/root starts a fresh observation.
+      private sealed class FuelUsage { public bool Used; }
+      private FuelUsage fuelUsage;
+      internal bool FuelWasUsed => fuelUsage?.Used == true;
+      internal ExpressionTranslator StartFuelTracking() {
+        var clone = WithVerificationContext(verificationContext);
+        clone.fuelUsage = new FuelUsage();
+        return clone;
+      }
       public int Statistics_HeapAsQuantifierCount = 0;
       public int Statistics_HeapUses = 0;
       public readonly bool stripLits = false;
@@ -250,8 +260,10 @@ namespace Microsoft.Dafny {
         Function applyLimited_CurrentFunction, FuelSetting layerInterCluster, FuelSetting layerIntraCluster, string readsFrame, string modifiesFrame, bool stripLits, VerificationExpressionContext verificationContext = null) {
         verificationContext ??= orig.verificationContext;
         var et = new ExpressionTranslator(boogieGenerator, predef, heap, thisVar, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, orig.scope, readsFrame, modifiesFrame, stripLits, verificationContext);
+        et.fuelUsage = orig.fuelUsage;
         if (orig.oldEtran != null) {
           var etOld = new ExpressionTranslator(boogieGenerator, predef, orig.Old.HeapExpr, thisVar, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, orig.scope, readsFrame, modifiesFrame, stripLits, verificationContext);
+          etOld.fuelUsage = orig.fuelUsage;
           etOld.oldEtran = etOld;
           et.oldEtran = etOld;
         }
@@ -437,7 +449,7 @@ namespace Microsoft.Dafny {
       }
 
       private Expr TranslateIfThenElseExpr(ITEExpr iteExpr) {
-        var g = RemoveLit(TrExpr(iteExpr.Test));
+        var g = RemoveLit(AsVerificationValue().TrExpr(iteExpr.Test));
         var thn = BoogieGenerator.AdaptBoxing(iteExpr.Thn.Origin, BoogieGenerator.RemoveLit(TrExpr(iteExpr.Thn)), iteExpr.Thn.Type, iteExpr.Type);
         var els = BoogieGenerator.AdaptBoxing(iteExpr.Els.Origin, BoogieGenerator.RemoveLit(TrExpr(iteExpr.Els)), iteExpr.Els.Type, iteExpr.Type);
         return new NAryExpr(GetToken(iteExpr), new IfThenElse(GetToken(iteExpr)), new List<Boogie.Expr> { g, thn, els });
@@ -843,6 +855,7 @@ namespace Microsoft.Dafny {
           }
           if (e.Function.IsFuelAware()) {
             Statistics_CustomLayerFunctionCount++;
+            if (fuelUsage != null) { fuelUsage.Used = true; }
             ModuleDefinition module = e.Function.EnclosingClass.EnclosingModuleDefinition;
             if (etran.applyLimited_CurrentFunction != null &&
                 etran.layerIntraCluster != null &&
@@ -1792,7 +1805,8 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
               r = BplAnd(r, correctConstructor);
             }
           } else if (e.Member is ConstantField { Rhs: { } rhs } && BoogieGenerator.RevealedInScope(e.Member)) {
-            r = CanCallAssumption(Substitute(rhs, e.Obj, new Dictionary<IVariable, Expression>(), null));
+            r = CanCallAssumption(Substitute(rhs, e.Obj, new Dictionary<IVariable, Expression>(), null),
+              options.Get(CommonOptionBag.ConsistentObligationChecks) ? cco : null);
           }
           return r;
         } else if (expr is SeqSelectExpr) {
@@ -1879,7 +1893,8 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
             Token.NoToken) {
             Type = e.Initializer.Type.AsArrowType.Result
           };
-          var canCall = CanCallAssumption(dafnyInitApplication);
+          var canCall = CanCallAssumption(dafnyInitApplication,
+            options.Get(CommonOptionBag.ConsistentObligationChecks) ? cco : null);
 
           dafnyInitApplication = new ApplyExpr(e.Origin, new BoogieWrapper(initF, e.Initializer.Type),
             [new BoogieWrapper(index, Type.Int)],

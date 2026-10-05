@@ -418,7 +418,9 @@ namespace Microsoft.Dafny {
               builder.Add(Assert(GetToken(e.Seq), Bpl.Expr.Neq(seq, Predef.Null),
                 new NonNull("array", e.Seq), builder.Context));
               if (etran.UsesOldHeap) {
-                builder.Add(Assert(GetToken(e.Seq), MkIsAlloc(seq, eSeqType, etran.HeapExpr),
+                builder.Add(Assert(GetToken(e.Seq), options.Get(CommonOptionBag.ConsistentObligationChecks)
+                  ? ExplicitAllocationPredicate(GetToken(e.Seq), seq, eSeqType, etran.HeapExpr)
+                  : MkIsAlloc(seq, eSeqType, etran.HeapExpr),
                   new IsAllocated("array", null, e.Seq), builder.Context));
               }
             }
@@ -1654,7 +1656,9 @@ namespace Microsoft.Dafny {
         new NonNull("array", obj), builder.Context));
 
       if (etran.UsesOldHeap) {
-        builder.Add(Assert(GetToken(obj), MkIsAlloc(array, obj.Type, etran.HeapExpr),
+        builder.Add(Assert(GetToken(obj), options.Get(CommonOptionBag.ConsistentObligationChecks)
+          ? ExplicitAllocationPredicate(GetToken(obj), array, obj.Type, etran.HeapExpr)
+          : MkIsAlloc(array, obj.Type, etran.HeapExpr),
           new IsAllocated("array", null, obj), builder.Context));
       }
       return array;

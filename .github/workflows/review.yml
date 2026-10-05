@@ -12,6 +12,12 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
+      - name: Solver
+        run: |
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+          unzip -q z3.zip
+          chmod +x z3-5.1.0-x64-glibc-2.39/bin/z3
       - name: Record build and unit outcomes
         run: |
           mkdir -p out/diagnostic
@@ -28,6 +34,9 @@ jobs:
           if [ -f out/diagnostic/tests.log ]; then
             cat out/diagnostic/tests.exit
             tail -n 35 out/diagnostic/tests.log
+          fi
+          if [ "$result" -eq 0 ]; then
+            python3 .github/review/assertion-invariance.py out/dafny/Dafny z3-5.1.0-x64-glibc-2.39/bin/z3 out/diagnostic/behavior
           fi
           exit 0
       - uses: actions/upload-artifact@v4

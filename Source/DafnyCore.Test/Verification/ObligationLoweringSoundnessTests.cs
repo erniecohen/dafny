@@ -6,7 +6,7 @@ namespace DafnyCore.Test.Verification;
 public class ObligationLoweringSoundnessTests {
   [Fact]
   public async Task GuardedSubsetIntroductionKeepsTheGuard() {
-    const string source = "ghost predicate P(i: int) requires i != 0 { 10 / i > 0 } type S = i: int | P(i) witness 1 ghost function F(): S { 0 }";
+    const string source = "ghost predicate P(i: int) requires i != 0 { 10 / i > 0 } type S = i: int | i != 0 && P(i) witness 1 ghost function F(): S { 0 }";
     var text = ObligationFingerprint.Emit(await ObligationLoweringTests.Translate(source, true));
     Assert.Contains("P#canCall", text);
     Assert.Contains("==>", text);

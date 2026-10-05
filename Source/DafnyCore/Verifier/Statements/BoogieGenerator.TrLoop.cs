@@ -106,7 +106,11 @@ public partial class BoogieGenerator {
           : new BinaryExpr(stmt.Origin, BinaryExpr.Opcode.And, dafnyRangeBounds[0], dafnyRangeBounds[1]);
         var dafnyAssertion = new ForallExpr(stmt.Origin, [indexVar],
           dafnyRange, new TypeTestExpr(indexVar.Origin, dIndex, indexVar.Type), null);
-        builder.Add(Assert(tok, cre, new ForRangeAssignable(desc, dafnyAssertion), builder.Context));
+        var rangeDescription = new ForRangeAssignable(desc, dafnyAssertion);
+        if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+          CheckVisibleTypeObligations(tok, x, Type.Int, indexVar.Type, rangeDescription, builder, etran);
+        }
+        builder.Add(Assert(tok, cre, rangeDescription, builder.Context));
       }
     }
 

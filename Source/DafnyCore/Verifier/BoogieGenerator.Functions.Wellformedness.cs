@@ -113,7 +113,7 @@ public partial class BoogieGenerator {
           generator.CheckSubrange(e.Origin, etran.TrExpr(e), e.Type, formal.Type, e, builder, etran: etran);
 
           if (formal.IsOld) {
-            Expr wh = generator.GetWhereClause(e.Origin, etran.TrExpr(e), e.Type, etran.Old, ISALLOC, true);
+            Expr wh = generator.AllocationObligation(e.Origin, etran.TrExpr(e), e.Type, etran.Old);
             if (wh != null) {
               var desc = new IsAllocated("default value", "in the two-state function's previous state", e);
               builder.Add(generator.Assert(generator.GetToken(e), wh, desc, builder.Context));

@@ -542,6 +542,8 @@ NoGhost - disable printing of functions, ghost methods, and proof
       }
     }
 
+    DafnyOptions.RegisterLegacyUi(ConsistentObligationChecks, DafnyOptions.ParseBoolean,
+      "Verification options", "consistentObligationChecks");
     DafnyOptions.RegisterLegacyUi(AddCompileSuffix, DafnyOptions.ParseBoolean, "Compilation options", "compileSuffix");
 
     QuantifierSyntax = QuantifierSyntax.FromAmong("3", "4");

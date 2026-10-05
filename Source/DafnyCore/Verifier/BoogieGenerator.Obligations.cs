@@ -46,7 +46,7 @@ public partial class BoogieGenerator {
 
   public partial class ExpressionTranslator {
     internal ExpressionTranslator WithVerificationUse(VerificationExpressionUse use) =>
-      WithVerificationContext(new VerificationExpressionContext(use));
+      WithVerificationContext(new VerificationExpressionContext(use)).StartFuelTracking();
 
     private ExpressionTranslator WithVerificationContext(VerificationExpressionContext context) =>
       CloneExpressionTranslator(this, BoogieGenerator, Predef, HeapExpr, This,
@@ -58,6 +58,9 @@ public partial class BoogieGenerator {
 
     internal ExpressionTranslator WithSelectedVerificationFuel() => verificationContext == null
       ? this : WithVerificationContext(verificationContext.FuelSelected());
+
+    private ExpressionTranslator AsVerificationValue() => verificationContext == null
+      ? this : WithVerificationContext(verificationContext with { Use = VerificationExpressionUse.Value });
 
     private ExpressionTranslator NegateVerificationPolarity() => verificationContext == null
       ? this : WithVerificationContext(verificationContext.Negated());
