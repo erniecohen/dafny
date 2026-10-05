@@ -181,35 +181,59 @@
   "files": {
     "Source/DafnyCore/Backends/B3/B3RealContextPreparation.cs": {
       "bytes": 22901,
-      "sha256": "cfff28d5bf68eaae03685716a116d90d1aa7941b6167330355273211c09fd697"
+      "sha256": "cfff28d5bf68eaae03685716a116d90d1aa7941b6167330355273211c09fd697",
+      "checkoutBytes": 22901,
+      "checkoutSha256": "cfff28d5bf68eaae03685716a116d90d1aa7941b6167330355273211c09fd697",
+      "checkoutTransform": "identity"
     },
     "Source/DafnyCore/Backends/B3/B3RealRoundTrip.cs": {
       "bytes": 12511,
-      "sha256": "283b50b7d7d962addf94ff6a1d5b012278283e790fa288a2c7b08a32d400310a"
+      "sha256": "283b50b7d7d962addf94ff6a1d5b012278283e790fa288a2c7b08a32d400310a",
+      "checkoutBytes": 12511,
+      "checkoutSha256": "283b50b7d7d962addf94ff6a1d5b012278283e790fa288a2c7b08a32d400310a",
+      "checkoutTransform": "identity"
     },
     "Source/DafnyCore/Backends/B3/B3RealRoundTripRelation.cs": {
       "bytes": 10204,
-      "sha256": "ad1828f2e6915337ad5865a87b6c0a17e77a63002630ab38475284eddc7edc5f"
+      "sha256": "ad1828f2e6915337ad5865a87b6c0a17e77a63002630ab38475284eddc7edc5f",
+      "checkoutBytes": 10204,
+      "checkoutSha256": "ad1828f2e6915337ad5865a87b6c0a17e77a63002630ab38475284eddc7edc5f",
+      "checkoutTransform": "identity"
     },
     "Source/DafnyCore/Backends/B3/B3VerificationBackend.cs": {
       "bytes": 19362,
-      "sha256": "999940016198c4a63fa4c70da16bf0ca3ad5d36d3d5b956b55230d1910405692"
+      "sha256": "999940016198c4a63fa4c70da16bf0ca3ad5d36d3d5b956b55230d1910405692",
+      "checkoutBytes": 19362,
+      "checkoutSha256": "999940016198c4a63fa4c70da16bf0ca3ad5d36d3d5b956b55230d1910405692",
+      "checkoutTransform": "identity"
     },
     "Source/DafnyB3Normalizer.Test/B3RealRoundTripTests.cs": {
       "bytes": 29813,
-      "sha256": "8821afcfb01d7db0cf58687df35c99c5848b146b1b3120fa787ff60b754b0e81"
+      "sha256": "8821afcfb01d7db0cf58687df35c99c5848b146b1b3120fa787ff60b754b0e81",
+      "checkoutBytes": 29813,
+      "checkoutSha256": "8821afcfb01d7db0cf58687df35c99c5848b146b1b3120fa787ff60b754b0e81",
+      "checkoutTransform": "identity"
     },
     "Source/DafnyB3Normalizer.Test/DafnyB3Normalizer.Test.csproj": {
-      "bytes": 2502,
-      "sha256": "cec5d0e0f0ab2c2111b0de58259e1e8d19b8ffe261d296477dcff5e306ca45e1"
+      "bytes": 2470,
+      "sha256": "891b4b13507a9177b0bed5625c054055d17d933716d58d461e8c6c81ac86f514",
+      "checkoutBytes": 2502,
+      "checkoutSha256": "cec5d0e0f0ab2c2111b0de58259e1e8d19b8ffe261d296477dcff5e306ca45e1",
+      "checkoutTransform": ".gitattributes text eol=crlf"
     },
     "docs/dev/b3/real-roundtrip-plan.md": {
-      "bytes": 10145,
-      "sha256": "9bc858031b6ee4b2ff9c717fb4d9b657617e52ae5b79df11407f2ebbf0dfe4a6"
+      "bytes": 10575,
+      "sha256": "9a195368eae35a7e62e07ea4f08b7dda382b062149c70b0758852f1cb22734e8",
+      "checkoutBytes": 10575,
+      "checkoutSha256": "9a195368eae35a7e62e07ea4f08b7dda382b062149c70b0758852f1cb22734e8",
+      "checkoutTransform": "identity"
     },
     "docs/dev/news/124.fix": {
       "bytes": 308,
-      "sha256": "856f251bc292c2a35ccb2707d1c59b04807b78f083099249715380214e01cc35"
+      "sha256": "856f251bc292c2a35ccb2707d1c59b04807b78f083099249715380214e01cc35",
+      "checkoutBytes": 308,
+      "checkoutSha256": "856f251bc292c2a35ccb2707d1c59b04807b78f083099249715380214e01cc35",
+      "checkoutTransform": "identity"
     }
   },
   "unchanged": [
@@ -224,5 +248,6 @@
     "Phase B opaque projection",
     "worker anti-vacuity fixtures",
     "new corpus routing"
-  ]
+  ],
+  "inventoryEncoding": "Canonical Git blobs and repository-declared checkout bytes are bound separately."
 }

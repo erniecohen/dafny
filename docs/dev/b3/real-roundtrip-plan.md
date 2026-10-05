@@ -151,3 +151,11 @@ controls do not count as worker anti-vacuity or operational Real acceptance.
 | OutputGrowthCountsCopiedOccurrencesBeforeAllocation | below/at/above a node limit, below byte cap (3) |
 | BoundedTraversalRejectsDepthAndMetadataExcess | below/at/above depth limit (3) |
 | ForgedOrMutatedRewriteCertificateIsRejected | original hash, Check ID, Learn, control (4) |
+
+## Source inventory representation
+
+`real-roundtrip-source.json` binds canonical Git blob lengths/hashes and the declared
+checkout lengths/hashes separately. The project file has CRLF checkout bytes under
+`.gitattributes`; its canonical Git blob has LF bytes. Other payload files in this
+checkpoint have identical Git and checkout bytes. This inventory is source evidence,
+not a compilation, test, proof or signed build receipt.
