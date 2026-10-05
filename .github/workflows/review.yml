@@ -77,7 +77,7 @@ jobs:
       - name: Build
         run: |
           dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny \
-            -p:SourceRevisionId=${{ steps.version.outputs.revision }}
+            -p:GeneratePackageOnBuild=false -p:SourceRevisionId=${{ steps.version.outputs.revision }}
       - name: Check the version it reports
         run: |
           v=$(dotnet out/dafny/Dafny.dll --version | head -1)
@@ -545,7 +545,7 @@ jobs:
           RUNTIME_IDENTIFIER: ${{ matrix.rid }}
         run: |
           dotnet publish Source/Dafny/Dafny.csproj -c Release -r ${{ matrix.rid }} --self-contained \
-            -o out/dafny -p:SourceRevisionId=${{ needs.build.outputs.revision }}
+            -o out/dafny -p:GeneratePackageOnBuild=false -p:SourceRevisionId=${{ needs.build.outputs.revision }}
           rm -f out/dafny/*.pdb
           mv out/dafny/Dafny out/dafny/dafny
           for f in LICENSE.txt NOTICES.txt REVIEW.md; do if [ -f "$f" ]; then cp "$f" out/dafny/; fi; done
