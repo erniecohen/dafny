@@ -1,0 +1,140 @@
+{
+  "admissionFields": {
+    "backendAccepted": "alwaysFalse",
+    "cliVerified": "alwaysFalse",
+    "completeLibraryVerified": "alwaysFalse",
+    "corpusVerified": "alwaysFalse",
+    "defaultCompatibilityVerified": "alwaysFalse",
+    "exportAdmitted": "bool",
+    "exportFault": "fixed-category-and-bounded-message-or-null",
+    "firstFault": "fixed-row-or-null",
+    "fullPacketSelectedForUpload": "bool",
+    "head": "40-lowercase-hex-or-null-with-reason",
+    "headEvidence": "workflow-dispatch-metadata-only",
+    "originalArtifactFailure": "bounded-string-token-prefix-or-absent-or-unavailable; source does not produce null",
+    "originalFinalError": "bounded-token-prefix-null-or-unavailable",
+    "originalInventory": "complete-count-bytes-and-LF-seal-or-incomplete-lower-bound",
+    "originalPrimaryFailure": "bounded-fixed-object-null-or-unavailable",
+    "originalSummary": "captured-length-hash-and-extraction-status-or-exact-unavailable-reason",
+    "originalSummaryPassed": "observed-bool-or-null",
+    "readBudgets": "attempted-and-completed-per-fixed-budget",
+    "regressionRuntimeVerified": "alwaysFalse",
+    "schemaVersion": "exact1",
+    "scope": "integrated-current-source-structural-export-only",
+    "sourcePins": "literal-expected-coordinator-input-helper-identities",
+    "structuralAcceptance": "alwaysFalse",
+    "workerRuntimeVerified": "alwaysFalse"
+  },
+  "branchExpectations": [
+    {
+      "fullUpload": true,
+      "name": "CombinedPayloadExactlyAtCap",
+      "receiptIncludesActualSerializedBytes": true
+    },
+    {
+      "fullUpload": false,
+      "name": "CombinedPayloadOneByteAboveCap"
+    },
+    {
+      "fullUpload": false,
+      "name": "CombinedRegularFileCountAboveCap"
+    },
+    {
+      "fullUpload": false,
+      "name": "SymlinkOrSpecialEntry"
+    },
+    {
+      "fullUpload": false,
+      "name": "CanonicalDuplicateOrFileAncestorCollision"
+    },
+    {
+      "fullUpload": false,
+      "name": "OriginalIdentityChangesDuringAdmission"
+    },
+    {
+      "fullUpload": false,
+      "name": "ShortReadOrGrowthProbe"
+    },
+    {
+      "fullUpload": "true-only-if-independent-complete-raw-packet-admission-passes",
+      "name": "MissingOrOversizedSummary",
+      "originalErrorFields": "unavailable",
+      "summaryInterpretationQualifiesRawAdmission": false
+    },
+    {
+      "fullUpload": "true-only-if-independent-complete-raw-packet-admission-passes",
+      "name": "MalformedDuplicateOverdepthOvertokenOrWrongTypeSummary",
+      "originalErrorFields": "unavailable",
+      "summaryInterpretationQualifiesRawAdmission": false,
+      "wrongTypeMeaning": "Selected JSON fields only; filesystem special-entry faults use the separate raw-admission row"
+    },
+    {
+      "fullUpload": false,
+      "name": "StartupOrFinalReceiptPreservationFault"
+    }
+  ],
+  "execution": {
+    "bodiesExecuted": false,
+    "builds": false,
+    "dispatch": false,
+    "proofs": false,
+    "publication": false,
+    "sourceImplementation": false,
+    "tests": false
+  },
+  "fixedPaths": {
+    "helper": ".github/review/b3-integrated-structural-export.py",
+    "metadataDirectory": "out/b3-integrated-structural-export",
+    "metadataFile": "out/b3-integrated-structural-export/export.json",
+    "original": "out/b3-integrated-structural"
+  },
+  "limits": {
+    "deadlineSeconds": 60,
+    "finalOriginalRecheckBytes": 268435456,
+    "maximumCombinedRawBytes": 268435456,
+    "maximumCombinedRegularFiles": 40000,
+    "maximumContentReadRequest": 65536,
+    "maximumDepth": 32,
+    "maximumDirectories": 40000,
+    "maximumExtraProbeBytes": 80001,
+    "maximumJsonDepth": 64,
+    "maximumJsonTokens": 200000,
+    "maximumMetadataPacketBytes": 65536,
+    "maximumRelativePathUtf8Bytes": 4096,
+    "maximumRetainedPathMetadataBytes": 16777216,
+    "maximumSummaryBytes": 16777216,
+    "originalScanBytes": 268435456,
+    "receiptRecheckBytes": 65536,
+    "separateSummaryBytes": 16777216
+  },
+  "preserved": {
+    "coordinatorFunctionBodies": 48,
+    "expectedControls": 583,
+    "initialSnapshots": 3,
+    "materializations": 43,
+    "neutral": 26,
+    "normalizer": 557,
+    "ordinaryJobs": 10,
+    "ownershipHelpers": 6,
+    "sourcePins": 81,
+    "stages": 7,
+    "untouched": 12
+  },
+  "productCommit": "450e374a40eb6125b540d55833a9cfe71484ab02",
+  "schemaVersion": 1,
+  "sourceBindingDirection": [
+    "English/helper bytes -> inputs records",
+    "inputs bytes -> coordinator INPUTS literals and workflow literals",
+    "coordinator/helper bytes -> workflow startup literals",
+    "workflow passes validated finite sourcePins into helper; helper embeds neither own SHA nor inputs SHA"
+  ],
+  "sourceParent": "70fa80cc578b6f54c48f5a0c7ce103a31d7d0a42",
+  "sourceShapeEvidence": {
+    "bytes": 4536,
+    "path": "SUMMARY-SOURCE.json",
+    "sha256": "5804500afd49e30a9cdaf3d9d34d51ca7a0e9806dd6ded51220028570997d32e"
+  },
+  "status": "prospective-English-and-inert-data-only",
+  "summaryInterpretationIsRawExportAdmissionCondition": false,
+  "uploadTimingEvidence": "Selected paths and source-bound decision before uploader; no remote submission/service attestation"
+}

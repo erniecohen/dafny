@@ -1,0 +1,165 @@
+{
+  "head": "70fa80cc578b6f54c48f5a0c7ce103a31d7d0a42",
+  "initializerKeyCount": 31,
+  "initializerKeysInOrder": [
+    "passed",
+    "scope",
+    "head",
+    "focusedControlCountExpected",
+    "normalizerExpected",
+    "neutralExpected",
+    "completeLibraryVerified",
+    "libraryBinaryProduced",
+    "workerRuntimeVerified",
+    "cliVerified",
+    "corpusVerified",
+    "regressionRuntimeVerified",
+    "defaultCompatibilityVerified",
+    "backendAccepted",
+    "source",
+    "stages",
+    "stageBoundaries",
+    "packages",
+    "resolvedCoreDependencies",
+    "javaRuntimeDependency",
+    "focusedControls",
+    "finalError",
+    "compiledStageAcceptance",
+    "compiledSnapshots",
+    "failureObservations",
+    "artifactPreservationFailures",
+    "primaryFailure",
+    "cleanupPoisoned",
+    "maximumArtifactBytes",
+    "provenanceScope",
+    "ownershipScope"
+  ],
+  "observedRuntimeShape": false,
+  "optionalRootAdditions": [
+    {
+      "key": "artifactFailure",
+      "onlyBranch": "final artifact inventory catch",
+      "sourceLine": 1374,
+      "sourceType": "string"
+    }
+  ],
+  "receiptInitializerLine": 1350,
+  "schemaVersion": 1,
+  "scope": "inert-AST-and-pinned-Git-source-inspection-only",
+  "selectedFields": {
+    "artifactFailure": {
+      "presence": "only final artifact inventory except",
+      "qualification": "absent on normal branch; no source-produced null value",
+      "sourceLines": [
+        1374
+      ],
+      "sourceType": "string"
+    },
+    "cleanupPoisoned": {
+      "initializer": {
+        "key": "cleanupPoisoned",
+        "line": 1363,
+        "sourceExpression": "cleanup_poisoned"
+      },
+      "presence": "always",
+      "sourceLines": [
+        548,
+        1363
+      ],
+      "sourceType": "bool"
+    },
+    "finalError": {
+      "initializer": {
+        "key": "finalError",
+        "line": 1357,
+        "sourceExpression": "final_error"
+      },
+      "presence": "always",
+      "qualification": "exception/cleanup text; primaryFailure can independently be null",
+      "sourceLines": [
+        1357
+      ],
+      "sourceType": "null-or-string"
+    },
+    "head": {
+      "initializer": {
+        "key": "head",
+        "line": 1350,
+        "sourceExpression": "head"
+      },
+      "presence": "always",
+      "qualification": "initial null; observed Git head is assigned before all source checks can succeed; failure can preserve an invalid or unqualified string",
+      "sourceLines": [
+        579,
+        835,
+        894,
+        1159,
+        1350
+      ],
+      "sourceType": "null-or-string"
+    },
+    "passed": {
+      "initializer": {
+        "key": "passed",
+        "line": 1350,
+        "sourceExpression": "passed"
+      },
+      "presence": "always",
+      "qualification": "computed execution flag; later inventory catch explicitly sets false",
+      "sourceLines": [
+        1023,
+        1027,
+        1350,
+        1374,
+        1376
+      ],
+      "sourceType": "bool"
+    },
+    "primaryFailure": {
+      "fields": {
+        "actualProcessExitCode": "null-or-signed-int",
+        "boundaryFailure": "null-or-string",
+        "failure": "null-or-string",
+        "stage": "string"
+      },
+      "initializer": {
+        "key": "primaryFailure",
+        "line": 1360,
+        "sourceExpression": "next(({'stage': row['stage'], 'actualProcessExitCode': row.get('actualProcessExitCode'),\n                'failure': row.get('failure'), 'boundaryFailure': row.get('boundaryFailure')}\n                for row in results if row['exitCode'] != 0), None)"
+      },
+      "presence": "always",
+      "qualification": "first result with exitCode nonzero; missing result optional fields become null via get; not all final errors are stage failures",
+      "sourceLines": [
+        1360
+      ],
+      "sourceType": "null-or-fixed-object"
+    },
+    "scope": {
+      "initializer": {
+        "key": "scope",
+        "line": 1350,
+        "sourceExpression": "'integrated-current-source-structural-only'"
+      },
+      "literal": "integrated-current-source-structural-only",
+      "presence": "always",
+      "sourceLines": [
+        1112,
+        1181,
+        1264,
+        1274,
+        1285,
+        1290,
+        1350
+      ],
+      "sourceType": "string"
+    }
+  },
+  "source": {
+    "bytes": 78732,
+    "gitBlob": "6cd6454d1aace56a7bac1b7182b4e23125d8bd6b",
+    "mode": "100644",
+    "path": ".github/review/b3-integrated-structural-focus.py",
+    "sha256": "5013927aba08ecdc71de88e96ebfe16e4f4c786a60057a158587aadf4466b64a"
+  },
+  "sourceExecution": false
+}
