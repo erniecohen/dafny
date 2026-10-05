@@ -33,7 +33,7 @@ for refresh in ("false", "true"):
                                   'method Main() { var p: Pair<int> := Pair(20, 22); '
                                   'print p.left + p.right, "\\n"; }\n')
                 args = launcher + ["run", str(source), "--no-verify", "--target:cs",
-                                   "--type-system-refresh:" + refresh, "--cores:1",
+                                   "--type-system-refresh:" + refresh, "--general-newtypes:false", "--cores:1",
                                    "--show-snippets:false"]
                 stem = target_dir / "chosen" if build else source_dir / "input"
                 if build:
