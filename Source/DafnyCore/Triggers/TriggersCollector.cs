@@ -315,7 +315,14 @@ internal class TriggersCollector {
     Expression ret;
     do {
       ret = expr;
-      if (expr is BinaryExpr bin) {
+      if (expr is TernaryExpr { Op: TernaryExpr.Opcode.PrefixNeqOp } prefixNeq) {
+        // Prefix inequality translates to the negation of prefix equality. A trigger
+        // must use the underlying equality application rather than that negation.
+        expr = new TernaryExpr(prefixNeq.Origin, TernaryExpr.Opcode.PrefixEqOp,
+          prefixNeq.E0, prefixNeq.E1, prefixNeq.E2) {
+          Type = prefixNeq.Type
+        };
+      } else if (expr is BinaryExpr bin) {
         if (bin.Op == BinaryExpr.Opcode.NotIn) {
           expr = new BinaryExpr(bin.Origin, BinaryExpr.Opcode.In, bin.E0, bin.E1) {
             ResolvedOp = RemoveNotInBinaryExprIn(bin.ResolvedOp),

@@ -160,3 +160,6 @@ git-issues/git-issue-141-original.dfy
 git-issues/git-issue-141-original-control.dfy
 # Generic datatype constructor discriminator runtime regression.
 git-issues/git-issue-148.dfy
+# Regression and consistency controls for issue 145.
+git-issues/git-issue-145.dfy
+git-issues/git-issue-145-nonvacuity.dfy
