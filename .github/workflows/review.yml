@@ -753,8 +753,8 @@ jobs:
           import hashlib, json, os, stat, sys
           from pathlib import Path
           source = Path('.github/review/b3-opaque-ground-focus.py')
-          expected_bytes = 73608
-          expected_sha256 = '979ae36f8b22a4141b98429234cd2e434fd3ed132f9805e30fc7cc0eed888af8'
+          expected_bytes = 74793
+          expected_sha256 = 'bdf4789696aac5041d2d89d4658a49d31989ed826cad673feb6ab4b96fc916fa'
           invoked = False
           try:
               assert all(not parent.is_symlink() for parent in source.parents), 'Coordinator ancestor symlink'

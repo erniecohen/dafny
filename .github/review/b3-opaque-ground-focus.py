@@ -24,8 +24,8 @@ import zipfile
 
 ROOT = Path.cwd().resolve()
 INPUTS_PATH = Path('.github/review/b3-opaque-ground-focus-inputs.json')
-INPUTS_SHA256 = "246f689f250a595453bd8aa0f17d1ae342747e689491b493b79631cb7a5fe85b"
-INPUTS_BYTES = 213965
+INPUTS_SHA256 = "cfe7068ebe4e0fbbd0fc6b3a8a9f12ac3176caa3850bf95b3758284972681a76"
+INPUTS_BYTES = 214174
 FOCUSED_CONTROL_COUNT = 123
 FILTER = ('FullyQualifiedName~DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests|'
           'FullyQualifiedName~DafnyB3Normalizer.Test.B3RealRoundTripTests|'
@@ -683,8 +683,9 @@ def validate_trx():
     assert root.tag == TRX_NS + 'TestRun'
     rows = root.findall('.//' + TRX_NS + 'UnitTestResult')
     definitions = root.findall('.//' + TRX_NS + 'UnitTest')
+    entries = root.findall('.//' + TRX_NS + 'TestEntry')
     counters = root.findall('.//' + TRX_NS + 'Counters')
-    assert len(rows) == len(definitions) == FOCUSED_CONTROL_COUNT and len(counters) == 1, 'Incomplete exact 123-control denominator'
+    assert len(rows) == len(definitions) == len(entries) == FOCUSED_CONTROL_COUNT and len(counters) == 1, 'Incomplete exact 123-control result/definition/entry denominator'
     counts = {key: int(value) for key, value in counters[0].attrib.items()}
     assert {key: counts[key] for key in ['total', 'executed', 'passed']} == {'total': FOCUSED_CONTROL_COUNT, 'executed': FOCUSED_CONTROL_COUNT, 'passed': FOCUSED_CONTROL_COUNT}
     expected_counter_keys = {'total', 'executed', 'passed', 'failed', 'error', 'timeout', 'aborted', 'inconclusive',
@@ -694,6 +695,13 @@ def validate_trx():
         if key not in {'total', 'executed', 'passed'}), 'Nonpassing or unknown TRX counter'
     ids = {definition.get('id'): definition for definition in definitions}
     assert len(ids) == FOCUSED_CONTROL_COUNT and all(ids), 'Duplicate/missing test definition identity'
+    entry_ids = {entry.get('testId'): entry for entry in entries}
+    entry_executions = {entry.get('executionId') for entry in entries}
+    assert len(entry_ids) == len(entry_executions) == FOCUSED_CONTROL_COUNT and all(entry_ids) and all(entry_executions), 'Duplicate/missing TestEntry identity'
+    assert set(entry_ids) == set(ids), 'TestEntry/definition identity inventory differs'
+    assert inputs['trxEntryContract'] == {'count': FOCUSED_CONTROL_COUNT, 'uniqueTestIds': True,
+        'uniqueExecutionIds': True, 'resultDefinitionExecutionAssociation': 'exact',
+        'missingDuplicateExtraOrMismatched': 'reject'}, 'Frozen TestEntry contract differs'
     expected = {(row['className'], row['method']): row['count'] for row in inputs['controls']}
     actual = {key: 0 for key in expected}
     names = set()
@@ -706,6 +714,8 @@ def validate_trx():
         assert test_id not in tests and execution not in executions and name not in names, 'Duplicate focused result identity'
         tests.add(test_id); executions.add(execution); names.add(name)
         definition = ids[test_id]
+        entry = entry_ids[test_id]
+        assert entry.get('executionId') == execution, 'TestEntry/result execution identity differs'
         method = definition.find(TRX_NS + 'TestMethod')
         declared_execution = definition.find(TRX_NS + 'Execution')
         assert method is not None and declared_execution is not None and declared_execution.get('id') == execution
@@ -719,7 +729,10 @@ def validate_trx():
                         'className': key[0], 'method': key[1], 'outcome': row.get('outcome')})
     assert actual == expected and tests == set(ids), 'Named source control denominator differs'
     assert names == {row['displayName'] for row in inputs['expectedExecutionControls']}, 'Exact pinned xUnit control display-name inventory differs'
+    entry_rows = [{'testId': entry.get('testId'), 'executionId': entry.get('executionId')} for entry in entries]
     return {'expected': FOCUSED_CONTROL_COUNT, 'actual': len(rows), 'allPassed': True, 'trx': record, 'counters': counts,
+            'entryCountExpected': FOCUSED_CONTROL_COUNT, 'entryCount': len(entries),
+            'entryAssociations': entry_rows, 'entryAssociationsSealSha256': seal(entry_rows),
             'methods': [{'className': key[0], 'method': key[1], 'count': count} for key, count in sorted(actual.items())],
             'tests': receipt}
 

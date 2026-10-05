@@ -3972,8 +3972,8 @@
   ],
   "englishPlan": {
     "path": "docs/dev/b3/opaque-ground-focus-plan.md",
-    "bytes": 4235,
-    "sha256": "475c0127b39d93d3133704e7859520cf5e06f63000e621c8022547ca3b7c06e2"
+    "bytes": 4656,
+    "sha256": "81cd4cbb092d05868f1977f6027e4c197d2bf6c13cfc7cbf69b6ca3afcf62c7c"
   },
   "existingJobsRequiredSkipped": [
     "build",
@@ -5790,5 +5790,12 @@
   ],
   "addedCoordinatorFunctions": [
     "validate_phase_b_manifest"
-  ]
+  ],
+  "trxEntryContract": {
+    "count": 123,
+    "uniqueTestIds": true,
+    "uniqueExecutionIds": true,
+    "resultDefinitionExecutionAssociation": "exact",
+    "missingDuplicateExtraOrMismatched": "reject"
+  }
 }
