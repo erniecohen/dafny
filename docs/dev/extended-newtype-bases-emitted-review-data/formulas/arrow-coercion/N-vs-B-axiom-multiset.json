@@ -1,0 +1,54 @@
+{
+  "removed": [
+    {
+      "formula": "axiom (forall $Heap: Heap, b#0: HandleType :: { $IsAlloc(_module.__default.Encode(b#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap) } _module.__default.Encode#canCall(b#0) && $Is(b#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))) && $IsAlloc(b#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap) && $IsGoodHeap($Heap) ==> $IsAlloc(_module.__default.Encode(b#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall $Heap: Heap, v#0: HandleType :: { $IsAlloc(_module.__default.Decode(v#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap) } _module.__default.Decode#canCall(v#0) && $Is(v#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))) && $IsAlloc(v#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap) && $IsGoodHeap($Heap) ==> $IsAlloc(_module.__default.Decode(v#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall b#0: HandleType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> $Is(_module.__default.Encode(b#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall v#0: HandleType :: { _module.__default.Decode#requires(v#0) } $Is(v#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))) ==> _module.__default.Decode#requires(v#0) == true);",
+      "multiplicity": 1
+    }
+  ],
+  "added": [
+    {
+      "formula": "axiom (forall $Heap: Heap, b#0: HandleType :: { $IsAlloc(_module.__default.Encode(b#0), Tclass._module.Value(), $Heap) } _module.__default.Encode#canCall(b#0) && $Is(b#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))) && $IsAlloc(b#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap) && $IsGoodHeap($Heap) ==> $IsAlloc(_module.__default.Encode(b#0), Tclass._module.Value(), $Heap));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall $Heap: Heap, v#0: HandleType :: { $IsAlloc(_module.__default.Decode(v#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap) } _module.__default.Decode#canCall(v#0) && $Is(v#0, Tclass._module.Value()) && $IsAlloc(v#0, Tclass._module.Value(), $Heap) && $IsGoodHeap($Heap) ==> $IsAlloc(_module.__default.Decode(v#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall b#0: HandleType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> $Is(_module.__default.Encode(b#0), Tclass._module.Value()));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall bx: Box :: { $IsBox(bx, Tclass._module.Value()) } $IsBox(bx, Tclass._module.Value()) ==> $Box($Unbox(bx): HandleType) == bx && $Is($Unbox(bx): HandleType, Tclass._module.Value()));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall c0#0: HandleType :: { $Is(c0#0, Tclass._module.Value()) } $Is(c0#0, Tclass._module.Value()) <==> $Is(c0#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))) && Lit(true));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall c1#0: HandleType, $h: Heap :: { $IsAlloc(c1#0, Tclass._module.Value(), $h) } $IsAlloc(c1#0, Tclass._module.Value(), $h) <==> $IsAlloc(c1#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $h));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall v#0: HandleType :: { _module.__default.Decode#requires(v#0) } $Is(v#0, Tclass._module.Value()) ==> _module.__default.Decode#requires(v#0) == true);",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom Tag(Tclass._module.Value()) == Tagclass._module.Value && TagFamily(Tclass._module.Value()) == tytagFamily$Value;",
+      "multiplicity": 1
+    }
+  ]
+}

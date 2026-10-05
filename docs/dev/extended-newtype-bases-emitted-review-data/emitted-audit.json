@@ -1,0 +1,1601 @@
+{
+  "scope": "preserved emitted BPL, source comparison; not re-execution or complete solver-query equivalence",
+  "public_run_url": "https://github.com/erniecohen/dafny/actions/runs/37241854757",
+  "benchmark_source": "be0c7c4da87db52cfe76cc8422001a1e9228fb60",
+  "current_product": "95f0e4c8e1b80c95cf8aff397d7acd3ffb9c62e6",
+  "core_diff_numstat": "",
+  "families": {
+    "ordinal-finite": {
+      "receipt_sha256": "c949282c40872186a565071444478f621c3aad88784a2f2f01d85564a75b8264",
+      "compiler_version": "4.11.0+be0c7c4da87db52cfe76cc8422001a1e9228fb60",
+      "solver_version": "5.1.0",
+      "additional_axioms": "not explicitly set in recorded commands; current CLI default false (source-derived)",
+      "records": {
+        "B-off": {
+          "public_artifact_path": "performance-extended-ordinal-finite-5.1.0-0/verify/ordinal-finite-B-off/sample-0/program.bpl",
+          "sha256": "f0470cb7a1a01e7bb9e7d18ef04543538fe5866dad77112ee171581d710c9bcc",
+          "bytes": 120657,
+          "source_path": ".github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy",
+          "source_sha256": "535b1f87922d6b35211d07da8ac266c85665ec96c50b515c836a0071807d5646",
+          "command": [
+            "/home/runner/work/dafny/dafny/out/dafny/Dafny",
+            "verify",
+            "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy",
+            "--general-newtypes=true",
+            "--type-system-refresh=true",
+            "--unicode-char=true",
+            "--extended-newtype-bases=false",
+            "--show-snippets=false",
+            "--solver-path",
+            "/home/runner/work/dafny/dafny/z3-5.1.0-x64-glibc-2.39/bin/z3",
+            "--cores=1",
+            "--resource-limit=16000000",
+            "--verification-time-limit=60",
+            "--boogie",
+            "/normalizeDeclarationOrder:0",
+            "--boogie",
+            "/proverOpt:O:smt.random_seed=0",
+            "--bprint",
+            "/home/runner/work/dafny/dafny/measurements/verify/ordinal-finite-B-off/sample-0/program.bpl",
+            "--log-format",
+            "csv;LogFileName=/home/runner/work/dafny/dafny/measurements/verify/ordinal-finite-B-off/sample-0/resources.csv"
+          ],
+          "exit": 0,
+          "warnings": false,
+          "ru": 41598,
+          "bpl_counts": {
+            "bytes": 120657,
+            "sha256": "f0470cb7a1a01e7bb9e7d18ef04543538fe5866dad77112ee171581d710c9bcc",
+            "axioms": 435,
+            "functions": 49,
+            "procedures": 18,
+            "implementations": 4,
+            "quantifier_tokens": 502,
+            "assert_tokens": 9,
+            "interpretation": "syntactic counts, not exact VC or instantiation counts"
+          },
+          "first_user_module_prefix_sha256": "23b9b5b748e2f71c0c4f5345456198001a16c6b20d04688fe495ba656712d8a5"
+        },
+        "B-on": {
+          "public_artifact_path": "performance-extended-ordinal-finite-5.1.0-0/verify/ordinal-finite-B-on/sample-0/program.bpl",
+          "sha256": "f0470cb7a1a01e7bb9e7d18ef04543538fe5866dad77112ee171581d710c9bcc",
+          "bytes": 120657,
+          "source_path": ".github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy",
+          "source_sha256": "535b1f87922d6b35211d07da8ac266c85665ec96c50b515c836a0071807d5646",
+          "command": [
+            "/home/runner/work/dafny/dafny/out/dafny/Dafny",
+            "verify",
+            "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy",
+            "--general-newtypes=true",
+            "--type-system-refresh=true",
+            "--unicode-char=true",
+            "--extended-newtype-bases=true",
+            "--show-snippets=false",
+            "--solver-path",
+            "/home/runner/work/dafny/dafny/z3-5.1.0-x64-glibc-2.39/bin/z3",
+            "--cores=1",
+            "--resource-limit=16000000",
+            "--verification-time-limit=60",
+            "--boogie",
+            "/normalizeDeclarationOrder:0",
+            "--boogie",
+            "/proverOpt:O:smt.random_seed=0",
+            "--bprint",
+            "/home/runner/work/dafny/dafny/measurements/verify/ordinal-finite-B-on/sample-0/program.bpl",
+            "--log-format",
+            "csv;LogFileName=/home/runner/work/dafny/dafny/measurements/verify/ordinal-finite-B-on/sample-0/resources.csv"
+          ],
+          "exit": 0,
+          "warnings": false,
+          "ru": 41598,
+          "bpl_counts": {
+            "bytes": 120657,
+            "sha256": "f0470cb7a1a01e7bb9e7d18ef04543538fe5866dad77112ee171581d710c9bcc",
+            "axioms": 435,
+            "functions": 49,
+            "procedures": 18,
+            "implementations": 4,
+            "quantifier_tokens": 502,
+            "assert_tokens": 9,
+            "interpretation": "syntactic counts, not exact VC or instantiation counts"
+          },
+          "first_user_module_prefix_sha256": "23b9b5b748e2f71c0c4f5345456198001a16c6b20d04688fe495ba656712d8a5"
+        },
+        "N-on": {
+          "public_artifact_path": "performance-extended-ordinal-finite-5.1.0-0/verify/ordinal-finite-N-on/sample-0/program.bpl",
+          "sha256": "1e781213ddb3dca7fc6c3045ae489dfcceca059a9ea810d3f5cdd17195bbae5f",
+          "bytes": 123074,
+          "source_path": ".github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy",
+          "source_sha256": "c25d3825033b098e453fb4d68cfd09d8f24c1abf8b451aa93e19487e0addf492",
+          "command": [
+            "/home/runner/work/dafny/dafny/out/dafny/Dafny",
+            "verify",
+            "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy",
+            "--general-newtypes=true",
+            "--type-system-refresh=true",
+            "--unicode-char=true",
+            "--extended-newtype-bases=true",
+            "--show-snippets=false",
+            "--solver-path",
+            "/home/runner/work/dafny/dafny/z3-5.1.0-x64-glibc-2.39/bin/z3",
+            "--cores=1",
+            "--resource-limit=16000000",
+            "--verification-time-limit=60",
+            "--boogie",
+            "/normalizeDeclarationOrder:0",
+            "--boogie",
+            "/proverOpt:O:smt.random_seed=0",
+            "--bprint",
+            "/home/runner/work/dafny/dafny/measurements/verify/ordinal-finite-N-on/sample-0/program.bpl",
+            "--log-format",
+            "csv;LogFileName=/home/runner/work/dafny/dafny/measurements/verify/ordinal-finite-N-on/sample-0/resources.csv"
+          ],
+          "exit": 0,
+          "warnings": false,
+          "ru": 44458,
+          "bpl_counts": {
+            "bytes": 123074,
+            "sha256": "1e781213ddb3dca7fc6c3045ae489dfcceca059a9ea810d3f5cdd17195bbae5f",
+            "axioms": 440,
+            "functions": 50,
+            "procedures": 19,
+            "implementations": 5,
+            "quantifier_tokens": 506,
+            "assert_tokens": 10,
+            "interpretation": "syntactic counts, not exact VC or instantiation counts"
+          },
+          "first_user_module_prefix_sha256": "23b9b5b748e2f71c0c4f5345456198001a16c6b20d04688fe495ba656712d8a5"
+        },
+        "W-erased-on": {
+          "public_artifact_path": "performance-extended-ordinal-finite-5.1.0-0/verify/ordinal-finite-W-erased-on/sample-0/program.bpl",
+          "sha256": "b16526b9960b0faf880f43b095ccf86c6cecffae3e2b5c014a8b070f7a6af4f0",
+          "bytes": 125590,
+          "source_path": ".github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy",
+          "source_sha256": "11c39555b705ce364697541f376f001190c8dda2123a0bc6856c2cdab0bf210b",
+          "command": [
+            "/home/runner/work/dafny/dafny/out/dafny/Dafny",
+            "verify",
+            "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy",
+            "--general-newtypes=true",
+            "--type-system-refresh=true",
+            "--unicode-char=true",
+            "--extended-newtype-bases=true",
+            "--show-snippets=false",
+            "--solver-path",
+            "/home/runner/work/dafny/dafny/z3-5.1.0-x64-glibc-2.39/bin/z3",
+            "--cores=1",
+            "--resource-limit=16000000",
+            "--verification-time-limit=60",
+            "--boogie",
+            "/normalizeDeclarationOrder:0",
+            "--boogie",
+            "/proverOpt:O:smt.random_seed=0",
+            "--bprint",
+            "/home/runner/work/dafny/dafny/measurements/verify/ordinal-finite-W-erased-on/sample-0/program.bpl",
+            "--log-format",
+            "csv;LogFileName=/home/runner/work/dafny/dafny/measurements/verify/ordinal-finite-W-erased-on/sample-0/resources.csv"
+          ],
+          "exit": 0,
+          "warnings": false,
+          "ru": 45529,
+          "bpl_counts": {
+            "bytes": 125590,
+            "sha256": "b16526b9960b0faf880f43b095ccf86c6cecffae3e2b5c014a8b070f7a6af4f0",
+            "axioms": 450,
+            "functions": 55,
+            "procedures": 18,
+            "implementations": 4,
+            "quantifier_tokens": 517,
+            "assert_tokens": 9,
+            "interpretation": "syntactic counts, not exact VC or instantiation counts"
+          },
+          "first_user_module_prefix_sha256": "23b9b5b748e2f71c0c4f5345456198001a16c6b20d04688fe495ba656712d8a5"
+        },
+        "W-materialized-on": {
+          "public_artifact_path": "performance-extended-ordinal-finite-5.1.0-0/verify/ordinal-finite-W-materialized-on/sample-0/program.bpl",
+          "sha256": "b16526b9960b0faf880f43b095ccf86c6cecffae3e2b5c014a8b070f7a6af4f0",
+          "bytes": 125590,
+          "source_path": ".github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy",
+          "source_sha256": "11c39555b705ce364697541f376f001190c8dda2123a0bc6856c2cdab0bf210b",
+          "command": [
+            "/home/runner/work/dafny/dafny/out/dafny/Dafny",
+            "verify",
+            "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/W.dfy",
+            "--general-newtypes=true",
+            "--type-system-refresh=true",
+            "--unicode-char=true",
+            "--extended-newtype-bases=true",
+            "--show-snippets=false",
+            "--solver-path",
+            "/home/runner/work/dafny/dafny/z3-5.1.0-x64-glibc-2.39/bin/z3",
+            "--cores=1",
+            "--resource-limit=16000000",
+            "--verification-time-limit=60",
+            "--boogie",
+            "/normalizeDeclarationOrder:0",
+            "--boogie",
+            "/proverOpt:O:smt.random_seed=0",
+            "--bprint",
+            "/home/runner/work/dafny/dafny/measurements/verify/ordinal-finite-W-materialized-on/sample-0/program.bpl",
+            "--log-format",
+            "csv;LogFileName=/home/runner/work/dafny/dafny/measurements/verify/ordinal-finite-W-materialized-on/sample-0/resources.csv"
+          ],
+          "exit": 0,
+          "warnings": false,
+          "ru": 45529,
+          "bpl_counts": {
+            "bytes": 125590,
+            "sha256": "b16526b9960b0faf880f43b095ccf86c6cecffae3e2b5c014a8b070f7a6af4f0",
+            "axioms": 450,
+            "functions": 55,
+            "procedures": 18,
+            "implementations": 4,
+            "quantifier_tokens": 517,
+            "assert_tokens": 9,
+            "interpretation": "syntactic counts, not exact VC or instantiation counts"
+          },
+          "first_user_module_prefix_sha256": "23b9b5b748e2f71c0c4f5345456198001a16c6b20d04688fe495ba656712d8a5"
+        }
+      },
+      "comparisons": {
+        "B_off_vs_on_raw_equal": true,
+        "W_erased_vs_materialized_on_raw_equal": true,
+        "B_vs_N_prefix_equal": true,
+        "B_vs_W_prefix_equal": true,
+        "N_minus_B_axiom_instances": {
+          "removed": [
+            {
+              "formula": "axiom (forall v#0: Box :: { _module.__default.Decode#requires(v#0) } _module.__default.Decode#requires(v#0) == true);",
+              "multiplicity": 1
+            }
+          ],
+          "added": [
+            {
+              "formula": "axiom (forall b#0: Box :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> $Is(_module.__default.Encode(b#0), Tclass._module.Value()));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall bx: Box :: { $IsBox(bx, Tclass._module.Value()) } $IsBox(bx, Tclass._module.Value()) ==> $Box($Unbox(bx): Box) == bx && $Is($Unbox(bx): Box, Tclass._module.Value()));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall c0#0: Box :: { $Is(c0#0, Tclass._module.Value()) } $Is(c0#0, Tclass._module.Value()) <==> $Is(c0#0, TORDINAL) && Lit(true));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall c1#0: Box, $h: Heap :: { $IsAlloc(c1#0, Tclass._module.Value(), $h) } $IsAlloc(c1#0, Tclass._module.Value(), $h) <==> $IsAlloc(c1#0, TORDINAL, $h));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: Box :: { _module.__default.Decode#requires(v#0) } $Is(v#0, Tclass._module.Value()) ==> _module.__default.Decode#requires(v#0) == true);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom Tag(Tclass._module.Value()) == Tagclass._module.Value && TagFamily(Tclass._module.Value()) == tytagFamily$Value;",
+              "multiplicity": 1
+            }
+          ]
+        },
+        "W_minus_B_axiom_instances": {
+          "removed": [
+            {
+              "formula": "axiom (forall b#0: Box :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> _module.__default.Encode(b#0) == b#0);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall b#0: Box :: {:weight 3} { _module.__default.Encode(Lit(b#0)) } _module.__default.Encode#canCall(Lit(b#0)) ==> _module.__default.Encode(Lit(b#0)) == Lit(b#0));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: Box :: { _module.__default.Decode#requires(v#0) } _module.__default.Decode#requires(v#0) == true);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: Box :: { _module.__default.Decode#requires(v#0) } _module.__default.Decode#requires(v#0) ==> _module.__default.Decode#canCall(v#0));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: Box :: { _module.__default.Decode(v#0) } _module.__default.Decode#canCall(v#0) ==> _module.__default.Decode(v#0) == v#0);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: Box :: {:weight 3} { _module.__default.Decode(Lit(v#0)) } _module.__default.Decode#canCall(Lit(v#0)) ==> _module.__default.Decode(Lit(v#0)) == Lit(v#0));",
+              "multiplicity": 1
+            }
+          ],
+          "added": [
+            {
+              "formula": "axiom (forall a#0#0#0: Box :: { #_module.Wrapper.Wrap(a#0#0#0) } DatatypeCtorId(#_module.Wrapper.Wrap(a#0#0#0)) == ##_module.Wrapper.Wrap);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a#2#0#0: Box :: { $Is(#_module.Wrapper.Wrap(a#2#0#0), Tclass._module.Wrapper()) } $Is(#_module.Wrapper.Wrap(a#2#0#0), Tclass._module.Wrapper()) <==> $Is(a#2#0#0, TORDINAL));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a#3#0#0: Box :: { #_module.Wrapper.Wrap(Lit(a#3#0#0)) } #_module.Wrapper.Wrap(Lit(a#3#0#0)) == Lit(#_module.Wrapper.Wrap(a#3#0#0)));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a#4#0#0: Box :: { #_module.Wrapper.Wrap(a#4#0#0) } _module.Wrapper.value(#_module.Wrapper.Wrap(a#4#0#0)) == a#4#0#0);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a: DatatypeType, b: DatatypeType :: { _module.Wrapper#Equal(a, b) } (_module.Wrapper#Equal(a, b) ==> _module.Wrapper.value(a) == _module.Wrapper.value(b)) && (_module.Wrapper.Wrap_q(a) && _module.Wrapper.Wrap_q(b) && _module.Wrapper.value(a) == _module.Wrapper.value(b) ==> _module.Wrapper#Equal(a, b)));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a: DatatypeType, b: DatatypeType :: { _module.Wrapper#Equal(a, b) } _module.Wrapper#Equal(a, b) <==> a == b);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall b#0: Box :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> $Is(_module.__default.Encode(b#0), Tclass._module.Wrapper()));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall b#0: Box :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> _module.__default.Encode(b#0) == #_module.Wrapper.Wrap(b#0));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall b#0: Box :: {:weight 3} { _module.__default.Encode(Lit(b#0)) } _module.__default.Encode#canCall(Lit(b#0)) ==> _module.__default.Encode(Lit(b#0)) == Lit(#_module.Wrapper.Wrap(Lit(b#0))));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall bx: Box :: { $IsBox(bx, Tclass._module.Wrapper()) } $IsBox(bx, Tclass._module.Wrapper()) ==> $Box($Unbox(bx): DatatypeType) == bx && $Is($Unbox(bx): DatatypeType, Tclass._module.Wrapper()));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType :: { $IsA#_module.Wrapper(d) } $IsA#_module.Wrapper(d) ==> _module.Wrapper.Wrap_q(d));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType :: { _module.Wrapper.Wrap_q(d) } _module.Wrapper.Wrap_q(d) <==> DatatypeCtorId(d) == ##_module.Wrapper.Wrap);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType :: { _module.Wrapper.Wrap_q(d) } _module.Wrapper.Wrap_q(d) ==> (exists a#1#0#0: Box :: d == #_module.Wrapper.Wrap(a#1#0#0)));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType :: { _module.Wrapper.Wrap_q(d), $Is(d, Tclass._module.Wrapper()) } $Is(d, Tclass._module.Wrapper()) ==> _module.Wrapper.Wrap_q(d));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType, $h: Heap :: { $IsAlloc(_module.Wrapper.value(d), TORDINAL, $h) } $IsGoodHeap($h) && _module.Wrapper.Wrap_q(d) && $IsAlloc(d, Tclass._module.Wrapper(), $h) ==> $IsAlloc(_module.Wrapper.value(d), TORDINAL, $h));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType, $h: Heap :: { $IsAlloc(d, Tclass._module.Wrapper(), $h) } $IsGoodHeap($h) && $Is(d, Tclass._module.Wrapper()) ==> $IsAlloc(d, Tclass._module.Wrapper(), $h));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode#requires(v#0) } $Is(v#0, Tclass._module.Wrapper()) ==> _module.__default.Decode#requires(v#0) == true);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode#requires(v#0) } _module.__default.Decode#requires(v#0) ==> _module.__default.Decode#canCall(v#0));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode(v#0) } _module.__default.Decode#canCall(v#0) ==> _module.Wrapper.Wrap_q(v#0) && _module.__default.Decode(v#0) == _module.Wrapper.value(v#0));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: DatatypeType :: {:weight 3} { _module.__default.Decode(Lit(v#0)) } _module.__default.Decode#canCall(Lit(v#0)) ==> _module.Wrapper.Wrap_q(Lit(v#0)) && _module.__default.Decode(Lit(v#0)) == Lit(_module.Wrapper.value(Lit(v#0))));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom Tag(Tclass._module.Wrapper()) == Tagclass._module.Wrapper && TagFamily(Tclass._module.Wrapper()) == tytagFamily$Wrapper;",
+              "multiplicity": 1
+            }
+          ]
+        },
+        "system_axiom_multisets_B_N_equal": true,
+        "system_axiom_multisets_B_W_equal": true
+      }
+    },
+    "arrow-coercion": {
+      "receipt_sha256": "138521afd8cd18b3daba422bc8129823867b35d258821bf2d2b764d9005616be",
+      "compiler_version": "4.11.0+be0c7c4da87db52cfe76cc8422001a1e9228fb60",
+      "solver_version": "5.1.0",
+      "additional_axioms": "not explicitly set in recorded commands; current CLI default false (source-derived)",
+      "records": {
+        "B-off": {
+          "public_artifact_path": "performance-extended-arrow-coercion-5.1.0-0/verify/arrow-coercion-B-off/sample-0/program.bpl",
+          "sha256": "280175951f4a5f5ee7728d50d7545a06c146174f8a6aae0b1fdb186112939244",
+          "bytes": 145312,
+          "source_path": ".github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy",
+          "source_sha256": "b85c99f579cdf11cde78fdf96ca210269379c15242c4be546cb62e3bd4cdda72",
+          "command": [
+            "/home/runner/work/dafny/dafny/out/dafny/Dafny",
+            "verify",
+            "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy",
+            "--general-newtypes=true",
+            "--type-system-refresh=true",
+            "--unicode-char=true",
+            "--extended-newtype-bases=false",
+            "--show-snippets=false",
+            "--solver-path",
+            "/home/runner/work/dafny/dafny/z3-5.1.0-x64-glibc-2.39/bin/z3",
+            "--cores=1",
+            "--resource-limit=16000000",
+            "--verification-time-limit=60",
+            "--boogie",
+            "/normalizeDeclarationOrder:0",
+            "--boogie",
+            "/proverOpt:O:smt.random_seed=0",
+            "--bprint",
+            "/home/runner/work/dafny/dafny/measurements/verify/arrow-coercion-B-off/sample-0/program.bpl",
+            "--log-format",
+            "csv;LogFileName=/home/runner/work/dafny/dafny/measurements/verify/arrow-coercion-B-off/sample-0/resources.csv"
+          ],
+          "exit": 0,
+          "warnings": false,
+          "ru": 99678,
+          "bpl_counts": {
+            "bytes": 145312,
+            "sha256": "280175951f4a5f5ee7728d50d7545a06c146174f8a6aae0b1fdb186112939244",
+            "axioms": 466,
+            "functions": 57,
+            "procedures": 19,
+            "implementations": 4,
+            "quantifier_tokens": 539,
+            "assert_tokens": 17,
+            "interpretation": "syntactic counts, not exact VC or instantiation counts"
+          },
+          "first_user_module_prefix_sha256": "23b9b5b748e2f71c0c4f5345456198001a16c6b20d04688fe495ba656712d8a5"
+        },
+        "B-on": {
+          "public_artifact_path": "performance-extended-arrow-coercion-5.1.0-0/verify/arrow-coercion-B-on/sample-0/program.bpl",
+          "sha256": "280175951f4a5f5ee7728d50d7545a06c146174f8a6aae0b1fdb186112939244",
+          "bytes": 145312,
+          "source_path": ".github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy",
+          "source_sha256": "b85c99f579cdf11cde78fdf96ca210269379c15242c4be546cb62e3bd4cdda72",
+          "command": [
+            "/home/runner/work/dafny/dafny/out/dafny/Dafny",
+            "verify",
+            "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy",
+            "--general-newtypes=true",
+            "--type-system-refresh=true",
+            "--unicode-char=true",
+            "--extended-newtype-bases=true",
+            "--show-snippets=false",
+            "--solver-path",
+            "/home/runner/work/dafny/dafny/z3-5.1.0-x64-glibc-2.39/bin/z3",
+            "--cores=1",
+            "--resource-limit=16000000",
+            "--verification-time-limit=60",
+            "--boogie",
+            "/normalizeDeclarationOrder:0",
+            "--boogie",
+            "/proverOpt:O:smt.random_seed=0",
+            "--bprint",
+            "/home/runner/work/dafny/dafny/measurements/verify/arrow-coercion-B-on/sample-0/program.bpl",
+            "--log-format",
+            "csv;LogFileName=/home/runner/work/dafny/dafny/measurements/verify/arrow-coercion-B-on/sample-0/resources.csv"
+          ],
+          "exit": 0,
+          "warnings": false,
+          "ru": 99678,
+          "bpl_counts": {
+            "bytes": 145312,
+            "sha256": "280175951f4a5f5ee7728d50d7545a06c146174f8a6aae0b1fdb186112939244",
+            "axioms": 466,
+            "functions": 57,
+            "procedures": 19,
+            "implementations": 4,
+            "quantifier_tokens": 539,
+            "assert_tokens": 17,
+            "interpretation": "syntactic counts, not exact VC or instantiation counts"
+          },
+          "first_user_module_prefix_sha256": "23b9b5b748e2f71c0c4f5345456198001a16c6b20d04688fe495ba656712d8a5"
+        },
+        "N-on": {
+          "public_artifact_path": "performance-extended-arrow-coercion-5.1.0-0/verify/arrow-coercion-N-on/sample-0/program.bpl",
+          "sha256": "6bf5df96f0a49963709d6a26bdb75255e7389753ccd816a9e53013fda11e7f40",
+          "bytes": 146426,
+          "source_path": ".github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy",
+          "source_sha256": "73b84bca9138651875e86467424ffb71db42a65ff376c1a5c01538addd72e875",
+          "command": [
+            "/home/runner/work/dafny/dafny/out/dafny/Dafny",
+            "verify",
+            "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy",
+            "--general-newtypes=true",
+            "--type-system-refresh=true",
+            "--unicode-char=true",
+            "--extended-newtype-bases=true",
+            "--show-snippets=false",
+            "--solver-path",
+            "/home/runner/work/dafny/dafny/z3-5.1.0-x64-glibc-2.39/bin/z3",
+            "--cores=1",
+            "--resource-limit=16000000",
+            "--verification-time-limit=60",
+            "--boogie",
+            "/normalizeDeclarationOrder:0",
+            "--boogie",
+            "/proverOpt:O:smt.random_seed=0",
+            "--bprint",
+            "/home/runner/work/dafny/dafny/measurements/verify/arrow-coercion-N-on/sample-0/program.bpl",
+            "--log-format",
+            "csv;LogFileName=/home/runner/work/dafny/dafny/measurements/verify/arrow-coercion-N-on/sample-0/resources.csv"
+          ],
+          "exit": 0,
+          "warnings": false,
+          "ru": 103156,
+          "bpl_counts": {
+            "bytes": 146426,
+            "sha256": "6bf5df96f0a49963709d6a26bdb75255e7389753ccd816a9e53013fda11e7f40",
+            "axioms": 470,
+            "functions": 58,
+            "procedures": 20,
+            "implementations": 5,
+            "quantifier_tokens": 542,
+            "assert_tokens": 18,
+            "interpretation": "syntactic counts, not exact VC or instantiation counts"
+          },
+          "first_user_module_prefix_sha256": "23b9b5b748e2f71c0c4f5345456198001a16c6b20d04688fe495ba656712d8a5"
+        },
+        "W-erased-on": {
+          "public_artifact_path": "performance-extended-arrow-coercion-5.1.0-0/verify/arrow-coercion-W-erased-on/sample-0/program.bpl",
+          "sha256": "d1b52fce54d677e976f2dfa8a6be24f492fbc068f5f6f720efaca7414b1c2710",
+          "bytes": 148952,
+          "source_path": ".github/review/issue113-benchmarks/extended/arrow-coercion/W.dfy",
+          "source_sha256": "93cfc0e79ee7083ff01c27efc2d903a2190b5a0547b4d58132860a1cbd99e4e2",
+          "command": [
+            "/home/runner/work/dafny/dafny/out/dafny/Dafny",
+            "verify",
+            "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/W.dfy",
+            "--general-newtypes=true",
+            "--type-system-refresh=true",
+            "--unicode-char=true",
+            "--extended-newtype-bases=true",
+            "--show-snippets=false",
+            "--solver-path",
+            "/home/runner/work/dafny/dafny/z3-5.1.0-x64-glibc-2.39/bin/z3",
+            "--cores=1",
+            "--resource-limit=16000000",
+            "--verification-time-limit=60",
+            "--boogie",
+            "/normalizeDeclarationOrder:0",
+            "--boogie",
+            "/proverOpt:O:smt.random_seed=0",
+            "--bprint",
+            "/home/runner/work/dafny/dafny/measurements/verify/arrow-coercion-W-erased-on/sample-0/program.bpl",
+            "--log-format",
+            "csv;LogFileName=/home/runner/work/dafny/dafny/measurements/verify/arrow-coercion-W-erased-on/sample-0/resources.csv"
+          ],
+          "exit": 0,
+          "warnings": false,
+          "ru": 105784,
+          "bpl_counts": {
+            "bytes": 148952,
+            "sha256": "d1b52fce54d677e976f2dfa8a6be24f492fbc068f5f6f720efaca7414b1c2710",
+            "axioms": 480,
+            "functions": 63,
+            "procedures": 19,
+            "implementations": 4,
+            "quantifier_tokens": 553,
+            "assert_tokens": 17,
+            "interpretation": "syntactic counts, not exact VC or instantiation counts"
+          },
+          "first_user_module_prefix_sha256": "23b9b5b748e2f71c0c4f5345456198001a16c6b20d04688fe495ba656712d8a5"
+        },
+        "W-materialized-on": {
+          "public_artifact_path": "performance-extended-arrow-coercion-5.1.0-0/verify/arrow-coercion-W-materialized-on/sample-0/program.bpl",
+          "sha256": "d1b52fce54d677e976f2dfa8a6be24f492fbc068f5f6f720efaca7414b1c2710",
+          "bytes": 148952,
+          "source_path": ".github/review/issue113-benchmarks/extended/arrow-coercion/W.dfy",
+          "source_sha256": "93cfc0e79ee7083ff01c27efc2d903a2190b5a0547b4d58132860a1cbd99e4e2",
+          "command": [
+            "/home/runner/work/dafny/dafny/out/dafny/Dafny",
+            "verify",
+            "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/W.dfy",
+            "--general-newtypes=true",
+            "--type-system-refresh=true",
+            "--unicode-char=true",
+            "--extended-newtype-bases=true",
+            "--show-snippets=false",
+            "--solver-path",
+            "/home/runner/work/dafny/dafny/z3-5.1.0-x64-glibc-2.39/bin/z3",
+            "--cores=1",
+            "--resource-limit=16000000",
+            "--verification-time-limit=60",
+            "--boogie",
+            "/normalizeDeclarationOrder:0",
+            "--boogie",
+            "/proverOpt:O:smt.random_seed=0",
+            "--bprint",
+            "/home/runner/work/dafny/dafny/measurements/verify/arrow-coercion-W-materialized-on/sample-0/program.bpl",
+            "--log-format",
+            "csv;LogFileName=/home/runner/work/dafny/dafny/measurements/verify/arrow-coercion-W-materialized-on/sample-0/resources.csv"
+          ],
+          "exit": 0,
+          "warnings": false,
+          "ru": 105784,
+          "bpl_counts": {
+            "bytes": 148952,
+            "sha256": "d1b52fce54d677e976f2dfa8a6be24f492fbc068f5f6f720efaca7414b1c2710",
+            "axioms": 480,
+            "functions": 63,
+            "procedures": 19,
+            "implementations": 4,
+            "quantifier_tokens": 553,
+            "assert_tokens": 17,
+            "interpretation": "syntactic counts, not exact VC or instantiation counts"
+          },
+          "first_user_module_prefix_sha256": "23b9b5b748e2f71c0c4f5345456198001a16c6b20d04688fe495ba656712d8a5"
+        }
+      },
+      "comparisons": {
+        "B_off_vs_on_raw_equal": true,
+        "W_erased_vs_materialized_on_raw_equal": true,
+        "B_vs_N_prefix_equal": true,
+        "B_vs_W_prefix_equal": true,
+        "N_minus_B_axiom_instances": {
+          "removed": [
+            {
+              "formula": "axiom (forall $Heap: Heap, b#0: HandleType :: { $IsAlloc(_module.__default.Encode(b#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap) } _module.__default.Encode#canCall(b#0) && $Is(b#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))) && $IsAlloc(b#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap) && $IsGoodHeap($Heap) ==> $IsAlloc(_module.__default.Encode(b#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall $Heap: Heap, v#0: HandleType :: { $IsAlloc(_module.__default.Decode(v#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap) } _module.__default.Decode#canCall(v#0) && $Is(v#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))) && $IsAlloc(v#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap) && $IsGoodHeap($Heap) ==> $IsAlloc(_module.__default.Decode(v#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall b#0: HandleType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> $Is(_module.__default.Encode(b#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: HandleType :: { _module.__default.Decode#requires(v#0) } $Is(v#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))) ==> _module.__default.Decode#requires(v#0) == true);",
+              "multiplicity": 1
+            }
+          ],
+          "added": [
+            {
+              "formula": "axiom (forall $Heap: Heap, b#0: HandleType :: { $IsAlloc(_module.__default.Encode(b#0), Tclass._module.Value(), $Heap) } _module.__default.Encode#canCall(b#0) && $Is(b#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))) && $IsAlloc(b#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap) && $IsGoodHeap($Heap) ==> $IsAlloc(_module.__default.Encode(b#0), Tclass._module.Value(), $Heap));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall $Heap: Heap, v#0: HandleType :: { $IsAlloc(_module.__default.Decode(v#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap) } _module.__default.Decode#canCall(v#0) && $Is(v#0, Tclass._module.Value()) && $IsAlloc(v#0, Tclass._module.Value(), $Heap) && $IsGoodHeap($Heap) ==> $IsAlloc(_module.__default.Decode(v#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall b#0: HandleType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> $Is(_module.__default.Encode(b#0), Tclass._module.Value()));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall bx: Box :: { $IsBox(bx, Tclass._module.Value()) } $IsBox(bx, Tclass._module.Value()) ==> $Box($Unbox(bx): HandleType) == bx && $Is($Unbox(bx): HandleType, Tclass._module.Value()));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall c0#0: HandleType :: { $Is(c0#0, Tclass._module.Value()) } $Is(c0#0, Tclass._module.Value()) <==> $Is(c0#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))) && Lit(true));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall c1#0: HandleType, $h: Heap :: { $IsAlloc(c1#0, Tclass._module.Value(), $h) } $IsAlloc(c1#0, Tclass._module.Value(), $h) <==> $IsAlloc(c1#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $h));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: HandleType :: { _module.__default.Decode#requires(v#0) } $Is(v#0, Tclass._module.Value()) ==> _module.__default.Decode#requires(v#0) == true);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom Tag(Tclass._module.Value()) == Tagclass._module.Value && TagFamily(Tclass._module.Value()) == tytagFamily$Value;",
+              "multiplicity": 1
+            }
+          ]
+        },
+        "W_minus_B_axiom_instances": {
+          "removed": [
+            {
+              "formula": "axiom (forall $Heap: Heap, b#0: HandleType :: { $IsAlloc(_module.__default.Encode(b#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap) } _module.__default.Encode#canCall(b#0) && $Is(b#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))) && $IsAlloc(b#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap) && $IsGoodHeap($Heap) ==> $IsAlloc(_module.__default.Encode(b#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall $Heap: Heap, v#0: HandleType :: { $IsAlloc(_module.__default.Decode(v#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap) } _module.__default.Decode#canCall(v#0) && $Is(v#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))) && $IsAlloc(v#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap) && $IsGoodHeap($Heap) ==> $IsAlloc(_module.__default.Decode(v#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall b#0: HandleType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> $Is(_module.__default.Encode(b#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall b#0: HandleType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> _module.__default.Encode(b#0) == b#0);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall b#0: HandleType :: {:weight 3} { _module.__default.Encode(Lit(b#0)) } _module.__default.Encode#canCall(Lit(b#0)) ==> _module.__default.Encode(Lit(b#0)) == Lit(b#0));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: HandleType :: { _module.__default.Decode#requires(v#0) } $Is(v#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))) ==> _module.__default.Decode#requires(v#0) == true);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: HandleType :: { _module.__default.Decode#requires(v#0) } _module.__default.Decode#requires(v#0) ==> _module.__default.Decode#canCall(v#0));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: HandleType :: { _module.__default.Decode(v#0) } _module.__default.Decode#canCall(v#0) ==> $Is(_module.__default.Decode(v#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: HandleType :: { _module.__default.Decode(v#0) } _module.__default.Decode#canCall(v#0) ==> _module.__default.Decode(v#0) == v#0);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: HandleType :: {:weight 3} { _module.__default.Decode(Lit(v#0)) } _module.__default.Decode#canCall(Lit(v#0)) ==> _module.__default.Decode(Lit(v#0)) == Lit(v#0));",
+              "multiplicity": 1
+            }
+          ],
+          "added": [
+            {
+              "formula": "axiom (forall $Heap: Heap, b#0: HandleType :: { $IsAlloc(_module.__default.Encode(b#0), Tclass._module.Wrapper(), $Heap) } _module.__default.Encode#canCall(b#0) && $Is(b#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))) && $IsAlloc(b#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap) && $IsGoodHeap($Heap) ==> $IsAlloc(_module.__default.Encode(b#0), Tclass._module.Wrapper(), $Heap));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall $Heap: Heap, v#0: DatatypeType :: { $IsAlloc(_module.__default.Decode(v#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap) } _module.__default.Decode#canCall(v#0) && $Is(v#0, Tclass._module.Wrapper()) && $IsAlloc(v#0, Tclass._module.Wrapper(), $Heap) && $IsGoodHeap($Heap) ==> $IsAlloc(_module.__default.Decode(v#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $Heap));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a#0#0#0: HandleType :: { #_module.Wrapper.Wrap(a#0#0#0) } DatatypeCtorId(#_module.Wrapper.Wrap(a#0#0#0)) == ##_module.Wrapper.Wrap);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a#2#0#0: HandleType :: { $Is(#_module.Wrapper.Wrap(a#2#0#0), Tclass._module.Wrapper()) } $Is(#_module.Wrapper.Wrap(a#2#0#0), Tclass._module.Wrapper()) <==> $Is(a#2#0#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a#2#0#0: HandleType, $h: Heap :: { $IsAlloc(#_module.Wrapper.Wrap(a#2#0#0), Tclass._module.Wrapper(), $h) } $IsGoodHeap($h) ==> ($IsAlloc(#_module.Wrapper.Wrap(a#2#0#0), Tclass._module.Wrapper(), $h) <==> $IsAlloc(a#2#0#0, Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $h)));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a#3#0#0: HandleType :: { #_module.Wrapper.Wrap(Lit(a#3#0#0)) } #_module.Wrapper.Wrap(Lit(a#3#0#0)) == Lit(#_module.Wrapper.Wrap(a#3#0#0)));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a#4#0#0: HandleType :: { #_module.Wrapper.Wrap(a#4#0#0) } _module.Wrapper.value(#_module.Wrapper.Wrap(a#4#0#0)) == a#4#0#0);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a: DatatypeType, b: DatatypeType :: { _module.Wrapper#Equal(a, b) } (_module.Wrapper#Equal(a, b) ==> _module.Wrapper.value(a) == _module.Wrapper.value(b)) && (_module.Wrapper.Wrap_q(a) && _module.Wrapper.Wrap_q(b) && _module.Wrapper.value(a) == _module.Wrapper.value(b) ==> _module.Wrapper#Equal(a, b)));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a: DatatypeType, b: DatatypeType :: { _module.Wrapper#Equal(a, b) } _module.Wrapper#Equal(a, b) <==> a == b);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall b#0: HandleType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> $Is(_module.__default.Encode(b#0), Tclass._module.Wrapper()));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall b#0: HandleType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> _module.__default.Encode(b#0) == #_module.Wrapper.Wrap(b#0));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall b#0: HandleType :: {:weight 3} { _module.__default.Encode(Lit(b#0)) } _module.__default.Encode#canCall(Lit(b#0)) ==> _module.__default.Encode(Lit(b#0)) == Lit(#_module.Wrapper.Wrap(Lit(b#0))));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall bx: Box :: { $IsBox(bx, Tclass._module.Wrapper()) } $IsBox(bx, Tclass._module.Wrapper()) ==> $Box($Unbox(bx): DatatypeType) == bx && $Is($Unbox(bx): DatatypeType, Tclass._module.Wrapper()));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType :: { $IsA#_module.Wrapper(d) } $IsA#_module.Wrapper(d) ==> _module.Wrapper.Wrap_q(d));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType :: { _module.Wrapper.Wrap_q(d) } _module.Wrapper.Wrap_q(d) <==> DatatypeCtorId(d) == ##_module.Wrapper.Wrap);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType :: { _module.Wrapper.Wrap_q(d) } _module.Wrapper.Wrap_q(d) ==> (exists a#1#0#0: HandleType :: d == #_module.Wrapper.Wrap(a#1#0#0)));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType :: { _module.Wrapper.Wrap_q(d), $Is(d, Tclass._module.Wrapper()) } $Is(d, Tclass._module.Wrapper()) ==> _module.Wrapper.Wrap_q(d));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType, $h: Heap :: { $IsAlloc(_module.Wrapper.value(d), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $h) } $IsGoodHeap($h) && _module.Wrapper.Wrap_q(d) && $IsAlloc(d, Tclass._module.Wrapper(), $h) ==> $IsAlloc(_module.Wrapper.value(d), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), $h));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode#requires(v#0) } $Is(v#0, Tclass._module.Wrapper()) ==> _module.__default.Decode#requires(v#0) == true);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode#requires(v#0) } _module.__default.Decode#requires(v#0) ==> _module.__default.Decode#canCall(v#0));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode(v#0) } _module.__default.Decode#canCall(v#0) ==> $Is(_module.__default.Decode(v#0), Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode(v#0) } _module.__default.Decode#canCall(v#0) ==> _module.Wrapper.Wrap_q(v#0) && _module.__default.Decode(v#0) == _module.Wrapper.value(v#0));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: DatatypeType :: {:weight 3} { _module.__default.Decode(Lit(v#0)) } _module.__default.Decode#canCall(Lit(v#0)) ==> _module.Wrapper.Wrap_q(Lit(v#0)) && _module.__default.Decode(Lit(v#0)) == Lit(_module.Wrapper.value(Lit(v#0))));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom Tag(Tclass._module.Wrapper()) == Tagclass._module.Wrapper && TagFamily(Tclass._module.Wrapper()) == tytagFamily$Wrapper;",
+              "multiplicity": 1
+            }
+          ]
+        },
+        "system_axiom_multisets_B_N_equal": true,
+        "system_axiom_multisets_B_W_equal": true
+      }
+    },
+    "codatatype-lazy": {
+      "receipt_sha256": "cd6bed4bff1e6a5f6490318d2f09c147e6101f5d0e3377139a960346ba6ca62c",
+      "compiler_version": "4.11.0+be0c7c4da87db52cfe76cc8422001a1e9228fb60",
+      "solver_version": "5.1.0",
+      "additional_axioms": "not explicitly set in recorded commands; current CLI default false (source-derived)",
+      "records": {
+        "B-off": {
+          "public_artifact_path": "performance-extended-codatatype-lazy-5.1.0-0/verify/codatatype-lazy-B-off/sample-0/program.bpl",
+          "sha256": "9591721ffec8d51eabae8c5532008d97c18fad0fb76066f98bc17cd9b07972fa",
+          "bytes": 141417,
+          "source_path": ".github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy",
+          "source_sha256": "8eacc8c4f14136f1a0650971baa9ab55ee069454c6d6d0332d6781390c63e3e5",
+          "command": [
+            "/home/runner/work/dafny/dafny/out/dafny/Dafny",
+            "verify",
+            "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy",
+            "--general-newtypes=true",
+            "--type-system-refresh=true",
+            "--unicode-char=true",
+            "--extended-newtype-bases=false",
+            "--show-snippets=false",
+            "--solver-path",
+            "/home/runner/work/dafny/dafny/z3-5.1.0-x64-glibc-2.39/bin/z3",
+            "--cores=1",
+            "--resource-limit=16000000",
+            "--verification-time-limit=60",
+            "--boogie",
+            "/normalizeDeclarationOrder:0",
+            "--boogie",
+            "/proverOpt:O:smt.random_seed=0",
+            "--bprint",
+            "/home/runner/work/dafny/dafny/measurements/verify/codatatype-lazy-B-off/sample-0/program.bpl",
+            "--log-format",
+            "csv;LogFileName=/home/runner/work/dafny/dafny/measurements/verify/codatatype-lazy-B-off/sample-0/resources.csv"
+          ],
+          "exit": 0,
+          "warnings": false,
+          "ru": 94977,
+          "bpl_counts": {
+            "bytes": 141417,
+            "sha256": "9591721ffec8d51eabae8c5532008d97c18fad0fb76066f98bc17cd9b07972fa",
+            "axioms": 465,
+            "functions": 60,
+            "procedures": 22,
+            "implementations": 7,
+            "quantifier_tokens": 534,
+            "assert_tokens": 15,
+            "interpretation": "syntactic counts, not exact VC or instantiation counts"
+          },
+          "first_user_module_prefix_sha256": "23b9b5b748e2f71c0c4f5345456198001a16c6b20d04688fe495ba656712d8a5"
+        },
+        "B-on": {
+          "public_artifact_path": "performance-extended-codatatype-lazy-5.1.0-0/verify/codatatype-lazy-B-on/sample-0/program.bpl",
+          "sha256": "9591721ffec8d51eabae8c5532008d97c18fad0fb76066f98bc17cd9b07972fa",
+          "bytes": 141417,
+          "source_path": ".github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy",
+          "source_sha256": "8eacc8c4f14136f1a0650971baa9ab55ee069454c6d6d0332d6781390c63e3e5",
+          "command": [
+            "/home/runner/work/dafny/dafny/out/dafny/Dafny",
+            "verify",
+            "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy",
+            "--general-newtypes=true",
+            "--type-system-refresh=true",
+            "--unicode-char=true",
+            "--extended-newtype-bases=true",
+            "--show-snippets=false",
+            "--solver-path",
+            "/home/runner/work/dafny/dafny/z3-5.1.0-x64-glibc-2.39/bin/z3",
+            "--cores=1",
+            "--resource-limit=16000000",
+            "--verification-time-limit=60",
+            "--boogie",
+            "/normalizeDeclarationOrder:0",
+            "--boogie",
+            "/proverOpt:O:smt.random_seed=0",
+            "--bprint",
+            "/home/runner/work/dafny/dafny/measurements/verify/codatatype-lazy-B-on/sample-0/program.bpl",
+            "--log-format",
+            "csv;LogFileName=/home/runner/work/dafny/dafny/measurements/verify/codatatype-lazy-B-on/sample-0/resources.csv"
+          ],
+          "exit": 0,
+          "warnings": false,
+          "ru": 94977,
+          "bpl_counts": {
+            "bytes": 141417,
+            "sha256": "9591721ffec8d51eabae8c5532008d97c18fad0fb76066f98bc17cd9b07972fa",
+            "axioms": 465,
+            "functions": 60,
+            "procedures": 22,
+            "implementations": 7,
+            "quantifier_tokens": 534,
+            "assert_tokens": 15,
+            "interpretation": "syntactic counts, not exact VC or instantiation counts"
+          },
+          "first_user_module_prefix_sha256": "23b9b5b748e2f71c0c4f5345456198001a16c6b20d04688fe495ba656712d8a5"
+        },
+        "N-on": {
+          "public_artifact_path": "performance-extended-codatatype-lazy-5.1.0-0/verify/codatatype-lazy-N-on/sample-0/program.bpl",
+          "sha256": "c9963d8e2fad5e606b6c3815d734677df4c7794a8d9585288fc0197fbffea28c",
+          "bytes": 144284,
+          "source_path": ".github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy",
+          "source_sha256": "8650a6085e838c53a8ab466b6e85272d4e242d6964bee19c4a47fb26c7fa2104",
+          "command": [
+            "/home/runner/work/dafny/dafny/out/dafny/Dafny",
+            "verify",
+            "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy",
+            "--general-newtypes=true",
+            "--type-system-refresh=true",
+            "--unicode-char=true",
+            "--extended-newtype-bases=true",
+            "--show-snippets=false",
+            "--solver-path",
+            "/home/runner/work/dafny/dafny/z3-5.1.0-x64-glibc-2.39/bin/z3",
+            "--cores=1",
+            "--resource-limit=16000000",
+            "--verification-time-limit=60",
+            "--boogie",
+            "/normalizeDeclarationOrder:0",
+            "--boogie",
+            "/proverOpt:O:smt.random_seed=0",
+            "--bprint",
+            "/home/runner/work/dafny/dafny/measurements/verify/codatatype-lazy-N-on/sample-0/program.bpl",
+            "--log-format",
+            "csv;LogFileName=/home/runner/work/dafny/dafny/measurements/verify/codatatype-lazy-N-on/sample-0/resources.csv"
+          ],
+          "exit": 0,
+          "warnings": false,
+          "ru": 106116,
+          "bpl_counts": {
+            "bytes": 144284,
+            "sha256": "c9963d8e2fad5e606b6c3815d734677df4c7794a8d9585288fc0197fbffea28c",
+            "axioms": 469,
+            "functions": 61,
+            "procedures": 23,
+            "implementations": 9,
+            "quantifier_tokens": 537,
+            "assert_tokens": 17,
+            "interpretation": "syntactic counts, not exact VC or instantiation counts"
+          },
+          "first_user_module_prefix_sha256": "23b9b5b748e2f71c0c4f5345456198001a16c6b20d04688fe495ba656712d8a5"
+        },
+        "W-erased-on": {
+          "public_artifact_path": "performance-extended-codatatype-lazy-5.1.0-0/verify/codatatype-lazy-W-erased-on/sample-0/program.bpl",
+          "sha256": "3ab71107e3bb9bc921ff0362e1f892e33d0bf8e7d46d5870c253b43e8051ea63",
+          "bytes": 145590,
+          "source_path": ".github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy",
+          "source_sha256": "8b3dc1ed2a56b95d48c2a23ff50505b01a50a99519e5ed486fbd652e6a67a3eb",
+          "command": [
+            "/home/runner/work/dafny/dafny/out/dafny/Dafny",
+            "verify",
+            "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy",
+            "--general-newtypes=true",
+            "--type-system-refresh=true",
+            "--unicode-char=true",
+            "--extended-newtype-bases=true",
+            "--show-snippets=false",
+            "--solver-path",
+            "/home/runner/work/dafny/dafny/z3-5.1.0-x64-glibc-2.39/bin/z3",
+            "--cores=1",
+            "--resource-limit=16000000",
+            "--verification-time-limit=60",
+            "--boogie",
+            "/normalizeDeclarationOrder:0",
+            "--boogie",
+            "/proverOpt:O:smt.random_seed=0",
+            "--bprint",
+            "/home/runner/work/dafny/dafny/measurements/verify/codatatype-lazy-W-erased-on/sample-0/program.bpl",
+            "--log-format",
+            "csv;LogFileName=/home/runner/work/dafny/dafny/measurements/verify/codatatype-lazy-W-erased-on/sample-0/resources.csv"
+          ],
+          "exit": 0,
+          "warnings": false,
+          "ru": 106337,
+          "bpl_counts": {
+            "bytes": 145590,
+            "sha256": "3ab71107e3bb9bc921ff0362e1f892e33d0bf8e7d46d5870c253b43e8051ea63",
+            "axioms": 480,
+            "functions": 66,
+            "procedures": 22,
+            "implementations": 7,
+            "quantifier_tokens": 549,
+            "assert_tokens": 15,
+            "interpretation": "syntactic counts, not exact VC or instantiation counts"
+          },
+          "first_user_module_prefix_sha256": "23b9b5b748e2f71c0c4f5345456198001a16c6b20d04688fe495ba656712d8a5"
+        },
+        "W-materialized-on": {
+          "public_artifact_path": "performance-extended-codatatype-lazy-5.1.0-0/verify/codatatype-lazy-W-materialized-on/sample-0/program.bpl",
+          "sha256": "3ab71107e3bb9bc921ff0362e1f892e33d0bf8e7d46d5870c253b43e8051ea63",
+          "bytes": 145590,
+          "source_path": ".github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy",
+          "source_sha256": "8b3dc1ed2a56b95d48c2a23ff50505b01a50a99519e5ed486fbd652e6a67a3eb",
+          "command": [
+            "/home/runner/work/dafny/dafny/out/dafny/Dafny",
+            "verify",
+            "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy",
+            "--general-newtypes=true",
+            "--type-system-refresh=true",
+            "--unicode-char=true",
+            "--extended-newtype-bases=true",
+            "--show-snippets=false",
+            "--solver-path",
+            "/home/runner/work/dafny/dafny/z3-5.1.0-x64-glibc-2.39/bin/z3",
+            "--cores=1",
+            "--resource-limit=16000000",
+            "--verification-time-limit=60",
+            "--boogie",
+            "/normalizeDeclarationOrder:0",
+            "--boogie",
+            "/proverOpt:O:smt.random_seed=0",
+            "--bprint",
+            "/home/runner/work/dafny/dafny/measurements/verify/codatatype-lazy-W-materialized-on/sample-0/program.bpl",
+            "--log-format",
+            "csv;LogFileName=/home/runner/work/dafny/dafny/measurements/verify/codatatype-lazy-W-materialized-on/sample-0/resources.csv"
+          ],
+          "exit": 0,
+          "warnings": false,
+          "ru": 106337,
+          "bpl_counts": {
+            "bytes": 145590,
+            "sha256": "3ab71107e3bb9bc921ff0362e1f892e33d0bf8e7d46d5870c253b43e8051ea63",
+            "axioms": 480,
+            "functions": 66,
+            "procedures": 22,
+            "implementations": 7,
+            "quantifier_tokens": 549,
+            "assert_tokens": 15,
+            "interpretation": "syntactic counts, not exact VC or instantiation counts"
+          },
+          "first_user_module_prefix_sha256": "23b9b5b748e2f71c0c4f5345456198001a16c6b20d04688fe495ba656712d8a5"
+        }
+      },
+      "comparisons": {
+        "B_off_vs_on_raw_equal": true,
+        "W_erased_vs_materialized_on_raw_equal": true,
+        "B_vs_N_prefix_equal": true,
+        "B_vs_W_prefix_equal": true,
+        "N_minus_B_axiom_instances": {
+          "removed": [
+            {
+              "formula": "axiom (forall b#0: DatatypeType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> $Is(_module.__default.Encode(b#0), Tclass._module.Stream()));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode#requires(v#0) } $Is(v#0, Tclass._module.Stream()) ==> _module.__default.Decode#requires(v#0) == true);",
+              "multiplicity": 1
+            }
+          ],
+          "added": [
+            {
+              "formula": "axiom (forall b#0: DatatypeType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> $Is(_module.__default.Encode(b#0), Tclass._module.Value()));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall bx: Box :: { $IsBox(bx, Tclass._module.Value()) } $IsBox(bx, Tclass._module.Value()) ==> $Box($Unbox(bx): DatatypeType) == bx && $Is($Unbox(bx): DatatypeType, Tclass._module.Value()));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall c0#0: DatatypeType :: { $Is(c0#0, Tclass._module.Value()) } $Is(c0#0, Tclass._module.Value()) <==> $Is(c0#0, Tclass._module.Stream()) && Lit(true));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall c1#0: DatatypeType, $h: Heap :: { $IsAlloc(c1#0, Tclass._module.Value(), $h) } $IsAlloc(c1#0, Tclass._module.Value(), $h) <==> $IsAlloc(c1#0, Tclass._module.Stream(), $h));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode#requires(v#0) } $Is(v#0, Tclass._module.Value()) ==> _module.__default.Decode#requires(v#0) == true);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom Tag(Tclass._module.Value()) == Tagclass._module.Value && TagFamily(Tclass._module.Value()) == tytagFamily$Value;",
+              "multiplicity": 1
+            }
+          ]
+        },
+        "W_minus_B_axiom_instances": {
+          "removed": [
+            {
+              "formula": "axiom (forall b#0: DatatypeType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> $Is(_module.__default.Encode(b#0), Tclass._module.Stream()));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall b#0: DatatypeType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> _module.__default.Encode(b#0) == b#0);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall b#0: DatatypeType :: {:weight 3} { _module.__default.Encode(Lit(b#0)) } _module.__default.Encode#canCall(Lit(b#0)) ==> _module.__default.Encode(Lit(b#0)) == Lit(b#0));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode#requires(v#0) } $Is(v#0, Tclass._module.Stream()) ==> _module.__default.Decode#requires(v#0) == true);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode(v#0) } _module.__default.Decode#canCall(v#0) ==> _module.__default.Decode(v#0) == v#0);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: DatatypeType :: {:weight 3} { _module.__default.Decode(Lit(v#0)) } _module.__default.Decode#canCall(Lit(v#0)) ==> _module.__default.Decode(Lit(v#0)) == Lit(v#0));",
+              "multiplicity": 1
+            }
+          ],
+          "added": [
+            {
+              "formula": "axiom (forall a#10#0#0: DatatypeType :: { DtRank(#_module.Wrapper.Wrap(a#10#0#0)) } DtRank(a#10#0#0) < DtRank(#_module.Wrapper.Wrap(a#10#0#0)));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a#5#0#0: DatatypeType :: { #_module.Wrapper.Wrap(a#5#0#0) } DatatypeCtorId(#_module.Wrapper.Wrap(a#5#0#0)) == ##_module.Wrapper.Wrap);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a#7#0#0: DatatypeType :: { $Is(#_module.Wrapper.Wrap(a#7#0#0), Tclass._module.Wrapper()) } $Is(#_module.Wrapper.Wrap(a#7#0#0), Tclass._module.Wrapper()) <==> $Is(a#7#0#0, Tclass._module.Stream()));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a#8#0#0: DatatypeType :: { #_module.Wrapper.Wrap(Lit(a#8#0#0)) } #_module.Wrapper.Wrap(Lit(a#8#0#0)) == Lit(#_module.Wrapper.Wrap(a#8#0#0)));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a#9#0#0: DatatypeType :: { #_module.Wrapper.Wrap(a#9#0#0) } _module.Wrapper.value(#_module.Wrapper.Wrap(a#9#0#0)) == a#9#0#0);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a: DatatypeType, b: DatatypeType :: { _module.Wrapper#Equal(a, b) } (_module.Wrapper#Equal(a, b) ==> _module.Wrapper.value(a) == _module.Wrapper.value(b)) && (_module.Wrapper.Wrap_q(a) && _module.Wrapper.Wrap_q(b) && _module.Wrapper.value(a) == _module.Wrapper.value(b) ==> _module.Wrapper#Equal(a, b)));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a: DatatypeType, b: DatatypeType :: { _module.Wrapper#Equal(a, b) } _module.Wrapper#Equal(a, b) <==> a == b);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall b#0: DatatypeType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> $Is(_module.__default.Encode(b#0), Tclass._module.Wrapper()));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall b#0: DatatypeType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> _module.__default.Encode(b#0) == #_module.Wrapper.Wrap(b#0));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall b#0: DatatypeType :: {:weight 3} { _module.__default.Encode(Lit(b#0)) } _module.__default.Encode#canCall(Lit(b#0)) ==> _module.__default.Encode(Lit(b#0)) == Lit(#_module.Wrapper.Wrap(Lit(b#0))));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall bx: Box :: { $IsBox(bx, Tclass._module.Wrapper()) } $IsBox(bx, Tclass._module.Wrapper()) ==> $Box($Unbox(bx): DatatypeType) == bx && $Is($Unbox(bx): DatatypeType, Tclass._module.Wrapper()));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType :: { $IsA#_module.Wrapper(d) } $IsA#_module.Wrapper(d) ==> _module.Wrapper.Wrap_q(d));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType :: { _module.Wrapper.Wrap_q(d) } _module.Wrapper.Wrap_q(d) <==> DatatypeCtorId(d) == ##_module.Wrapper.Wrap);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType :: { _module.Wrapper.Wrap_q(d) } _module.Wrapper.Wrap_q(d) ==> (exists a#6#0#0: DatatypeType :: d == #_module.Wrapper.Wrap(a#6#0#0)));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType :: { _module.Wrapper.Wrap_q(d), $Is(d, Tclass._module.Wrapper()) } $Is(d, Tclass._module.Wrapper()) ==> _module.Wrapper.Wrap_q(d));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType, $h: Heap :: { $IsAlloc(_module.Wrapper.value(d), Tclass._module.Stream(), $h) } $IsGoodHeap($h) && _module.Wrapper.Wrap_q(d) && $IsAlloc(d, Tclass._module.Wrapper(), $h) ==> $IsAlloc(_module.Wrapper.value(d), Tclass._module.Stream(), $h));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType, $h: Heap :: { $IsAlloc(d, Tclass._module.Wrapper(), $h) } $IsGoodHeap($h) && $Is(d, Tclass._module.Wrapper()) ==> $IsAlloc(d, Tclass._module.Wrapper(), $h));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode#requires(v#0) } $Is(v#0, Tclass._module.Wrapper()) ==> _module.__default.Decode#requires(v#0) == true);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode(v#0) } _module.__default.Decode#canCall(v#0) ==> _module.Wrapper.Wrap_q(v#0) && _module.__default.Decode(v#0) == _module.Wrapper.value(v#0));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: DatatypeType :: {:weight 3} { _module.__default.Decode(Lit(v#0)) } _module.__default.Decode#canCall(Lit(v#0)) ==> _module.Wrapper.Wrap_q(Lit(v#0)) && _module.__default.Decode(Lit(v#0)) == Lit(_module.Wrapper.value(Lit(v#0))));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom Tag(Tclass._module.Wrapper()) == Tagclass._module.Wrapper && TagFamily(Tclass._module.Wrapper()) == tytagFamily$Wrapper;",
+              "multiplicity": 1
+            }
+          ]
+        },
+        "system_axiom_multisets_B_N_equal": true,
+        "system_axiom_multisets_B_W_equal": true
+      }
+    },
+    "datatype-root-update": {
+      "receipt_sha256": "36eddaac274bbe019745873c19541ba7852272e01f400525ebed1e039534de6c",
+      "compiler_version": "4.11.0+be0c7c4da87db52cfe76cc8422001a1e9228fb60",
+      "solver_version": "5.1.0",
+      "additional_axioms": "not explicitly set in recorded commands; current CLI default false (source-derived)",
+      "records": {
+        "B-off": {
+          "public_artifact_path": "performance-extended-datatype-root-update-5.1.0-0/verify/datatype-root-update-B-off/sample-0/program.bpl",
+          "sha256": "09d1519993ebe5279c50a809e4a741f2c32ae77531ba260774f536b35d63187c",
+          "bytes": 146434,
+          "source_path": ".github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy",
+          "source_sha256": "65b0d468dc537e6770c3276db247d5bba541b8f6ce057bb2fd939c8497280d96",
+          "command": [
+            "/home/runner/work/dafny/dafny/out/dafny/Dafny",
+            "verify",
+            "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy",
+            "--general-newtypes=true",
+            "--type-system-refresh=true",
+            "--unicode-char=true",
+            "--extended-newtype-bases=false",
+            "--show-snippets=false",
+            "--solver-path",
+            "/home/runner/work/dafny/dafny/z3-5.1.0-x64-glibc-2.39/bin/z3",
+            "--cores=1",
+            "--resource-limit=16000000",
+            "--verification-time-limit=60",
+            "--boogie",
+            "/normalizeDeclarationOrder:0",
+            "--boogie",
+            "/proverOpt:O:smt.random_seed=0",
+            "--bprint",
+            "/home/runner/work/dafny/dafny/measurements/verify/datatype-root-update-B-off/sample-0/program.bpl",
+            "--log-format",
+            "csv;LogFileName=/home/runner/work/dafny/dafny/measurements/verify/datatype-root-update-B-off/sample-0/resources.csv"
+          ],
+          "exit": 0,
+          "warnings": false,
+          "ru": 69697,
+          "bpl_counts": {
+            "bytes": 146434,
+            "sha256": "09d1519993ebe5279c50a809e4a741f2c32ae77531ba260774f536b35d63187c",
+            "axioms": 475,
+            "functions": 64,
+            "procedures": 16,
+            "implementations": 6,
+            "quantifier_tokens": 541,
+            "assert_tokens": 19,
+            "interpretation": "syntactic counts, not exact VC or instantiation counts"
+          },
+          "first_user_module_prefix_sha256": "23b9b5b748e2f71c0c4f5345456198001a16c6b20d04688fe495ba656712d8a5"
+        },
+        "B-on": {
+          "public_artifact_path": "performance-extended-datatype-root-update-5.1.0-0/verify/datatype-root-update-B-on/sample-0/program.bpl",
+          "sha256": "09d1519993ebe5279c50a809e4a741f2c32ae77531ba260774f536b35d63187c",
+          "bytes": 146434,
+          "source_path": ".github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy",
+          "source_sha256": "65b0d468dc537e6770c3276db247d5bba541b8f6ce057bb2fd939c8497280d96",
+          "command": [
+            "/home/runner/work/dafny/dafny/out/dafny/Dafny",
+            "verify",
+            "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy",
+            "--general-newtypes=true",
+            "--type-system-refresh=true",
+            "--unicode-char=true",
+            "--extended-newtype-bases=true",
+            "--show-snippets=false",
+            "--solver-path",
+            "/home/runner/work/dafny/dafny/z3-5.1.0-x64-glibc-2.39/bin/z3",
+            "--cores=1",
+            "--resource-limit=16000000",
+            "--verification-time-limit=60",
+            "--boogie",
+            "/normalizeDeclarationOrder:0",
+            "--boogie",
+            "/proverOpt:O:smt.random_seed=0",
+            "--bprint",
+            "/home/runner/work/dafny/dafny/measurements/verify/datatype-root-update-B-on/sample-0/program.bpl",
+            "--log-format",
+            "csv;LogFileName=/home/runner/work/dafny/dafny/measurements/verify/datatype-root-update-B-on/sample-0/resources.csv"
+          ],
+          "exit": 0,
+          "warnings": false,
+          "ru": 69697,
+          "bpl_counts": {
+            "bytes": 146434,
+            "sha256": "09d1519993ebe5279c50a809e4a741f2c32ae77531ba260774f536b35d63187c",
+            "axioms": 475,
+            "functions": 64,
+            "procedures": 16,
+            "implementations": 6,
+            "quantifier_tokens": 541,
+            "assert_tokens": 19,
+            "interpretation": "syntactic counts, not exact VC or instantiation counts"
+          },
+          "first_user_module_prefix_sha256": "23b9b5b748e2f71c0c4f5345456198001a16c6b20d04688fe495ba656712d8a5"
+        },
+        "N-on": {
+          "public_artifact_path": "performance-extended-datatype-root-update-5.1.0-0/verify/datatype-root-update-N-on/sample-0/program.bpl",
+          "sha256": "8a079760d7adfa54c3e6ca7724bb6f97c0f85e7dc38b2d8ce1ad7724d47e9631",
+          "bytes": 148883,
+          "source_path": ".github/review/issue113-benchmarks/extended/datatype-root-update/N.dfy",
+          "source_sha256": "bdda6f9fcb314c8104fda009f22824797b1371f91817300df52cf0563e4c718b",
+          "command": [
+            "/home/runner/work/dafny/dafny/out/dafny/Dafny",
+            "verify",
+            "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/N.dfy",
+            "--general-newtypes=true",
+            "--type-system-refresh=true",
+            "--unicode-char=true",
+            "--extended-newtype-bases=true",
+            "--show-snippets=false",
+            "--solver-path",
+            "/home/runner/work/dafny/dafny/z3-5.1.0-x64-glibc-2.39/bin/z3",
+            "--cores=1",
+            "--resource-limit=16000000",
+            "--verification-time-limit=60",
+            "--boogie",
+            "/normalizeDeclarationOrder:0",
+            "--boogie",
+            "/proverOpt:O:smt.random_seed=0",
+            "--bprint",
+            "/home/runner/work/dafny/dafny/measurements/verify/datatype-root-update-N-on/sample-0/program.bpl",
+            "--log-format",
+            "csv;LogFileName=/home/runner/work/dafny/dafny/measurements/verify/datatype-root-update-N-on/sample-0/resources.csv"
+          ],
+          "exit": 0,
+          "warnings": false,
+          "ru": 76705,
+          "bpl_counts": {
+            "bytes": 148883,
+            "sha256": "8a079760d7adfa54c3e6ca7724bb6f97c0f85e7dc38b2d8ce1ad7724d47e9631",
+            "axioms": 475,
+            "functions": 64,
+            "procedures": 16,
+            "implementations": 7,
+            "quantifier_tokens": 541,
+            "assert_tokens": 21,
+            "interpretation": "syntactic counts, not exact VC or instantiation counts"
+          },
+          "first_user_module_prefix_sha256": "23b9b5b748e2f71c0c4f5345456198001a16c6b20d04688fe495ba656712d8a5"
+        },
+        "W-erased-on": {
+          "public_artifact_path": "performance-extended-datatype-root-update-5.1.0-0/verify/datatype-root-update-W-erased-on/sample-0/program.bpl",
+          "sha256": "e4611071aa9eb8e695a8ba161bbfd8a4663af8074f7ed1eb38d373c99ebfc1fa",
+          "bytes": 153916,
+          "source_path": ".github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy",
+          "source_sha256": "15797eadd20ccedf27cccadf6d2f3f755927a92c40823bec3441a1cecc5767dd",
+          "command": [
+            "/home/runner/work/dafny/dafny/out/dafny/Dafny",
+            "verify",
+            "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy",
+            "--general-newtypes=true",
+            "--type-system-refresh=true",
+            "--unicode-char=true",
+            "--extended-newtype-bases=true",
+            "--show-snippets=false",
+            "--solver-path",
+            "/home/runner/work/dafny/dafny/z3-5.1.0-x64-glibc-2.39/bin/z3",
+            "--cores=1",
+            "--resource-limit=16000000",
+            "--verification-time-limit=60",
+            "--boogie",
+            "/normalizeDeclarationOrder:0",
+            "--boogie",
+            "/proverOpt:O:smt.random_seed=0",
+            "--bprint",
+            "/home/runner/work/dafny/dafny/measurements/verify/datatype-root-update-W-erased-on/sample-0/program.bpl",
+            "--log-format",
+            "csv;LogFileName=/home/runner/work/dafny/dafny/measurements/verify/datatype-root-update-W-erased-on/sample-0/resources.csv"
+          ],
+          "exit": 0,
+          "warnings": false,
+          "ru": 82505,
+          "bpl_counts": {
+            "bytes": 153916,
+            "sha256": "e4611071aa9eb8e695a8ba161bbfd8a4663af8074f7ed1eb38d373c99ebfc1fa",
+            "axioms": 490,
+            "functions": 70,
+            "procedures": 16,
+            "implementations": 6,
+            "quantifier_tokens": 556,
+            "assert_tokens": 19,
+            "interpretation": "syntactic counts, not exact VC or instantiation counts"
+          },
+          "first_user_module_prefix_sha256": "23b9b5b748e2f71c0c4f5345456198001a16c6b20d04688fe495ba656712d8a5"
+        },
+        "W-materialized-on": {
+          "public_artifact_path": "performance-extended-datatype-root-update-5.1.0-0/verify/datatype-root-update-W-materialized-on/sample-0/program.bpl",
+          "sha256": "e4611071aa9eb8e695a8ba161bbfd8a4663af8074f7ed1eb38d373c99ebfc1fa",
+          "bytes": 153916,
+          "source_path": ".github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy",
+          "source_sha256": "15797eadd20ccedf27cccadf6d2f3f755927a92c40823bec3441a1cecc5767dd",
+          "command": [
+            "/home/runner/work/dafny/dafny/out/dafny/Dafny",
+            "verify",
+            "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy",
+            "--general-newtypes=true",
+            "--type-system-refresh=true",
+            "--unicode-char=true",
+            "--extended-newtype-bases=true",
+            "--show-snippets=false",
+            "--solver-path",
+            "/home/runner/work/dafny/dafny/z3-5.1.0-x64-glibc-2.39/bin/z3",
+            "--cores=1",
+            "--resource-limit=16000000",
+            "--verification-time-limit=60",
+            "--boogie",
+            "/normalizeDeclarationOrder:0",
+            "--boogie",
+            "/proverOpt:O:smt.random_seed=0",
+            "--bprint",
+            "/home/runner/work/dafny/dafny/measurements/verify/datatype-root-update-W-materialized-on/sample-0/program.bpl",
+            "--log-format",
+            "csv;LogFileName=/home/runner/work/dafny/dafny/measurements/verify/datatype-root-update-W-materialized-on/sample-0/resources.csv"
+          ],
+          "exit": 0,
+          "warnings": false,
+          "ru": 82505,
+          "bpl_counts": {
+            "bytes": 153916,
+            "sha256": "e4611071aa9eb8e695a8ba161bbfd8a4663af8074f7ed1eb38d373c99ebfc1fa",
+            "axioms": 490,
+            "functions": 70,
+            "procedures": 16,
+            "implementations": 6,
+            "quantifier_tokens": 556,
+            "assert_tokens": 19,
+            "interpretation": "syntactic counts, not exact VC or instantiation counts"
+          },
+          "first_user_module_prefix_sha256": "23b9b5b748e2f71c0c4f5345456198001a16c6b20d04688fe495ba656712d8a5"
+        }
+      },
+      "comparisons": {
+        "B_off_vs_on_raw_equal": true,
+        "W_erased_vs_materialized_on_raw_equal": true,
+        "B_vs_N_prefix_equal": true,
+        "B_vs_W_prefix_equal": true,
+        "N_minus_B_axiom_instances": {
+          "removed": [],
+          "added": []
+        },
+        "W_minus_B_axiom_instances": {
+          "removed": [
+            {
+              "formula": "axiom (forall b#0: DatatypeType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> _module.__default.Encode(b#0) == b#0);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall b#0: DatatypeType :: {:weight 3} { _module.__default.Encode(Lit(b#0)) } _module.__default.Encode#canCall(Lit(b#0)) ==> _module.__default.Encode(Lit(b#0)) == Lit(b#0));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode(v#0) } _module.__default.Decode#canCall(v#0) ==> _module.__default.Decode(v#0) == v#0);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: DatatypeType :: {:weight 3} { _module.__default.Decode(Lit(v#0)) } _module.__default.Decode#canCall(Lit(v#0)) ==> _module.__default.Decode(Lit(v#0)) == Lit(v#0));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall x#0: DatatypeType :: { $Is(x#0, Tclass._module.Value()) } $Is(x#0, Tclass._module.Envelope()) && (_module.Envelope.Envelope_q(x#0) && (_module.Envelope.tag(x#0) >= LitInt(0) ==> _module.Envelope.Envelope_q(x#0) && _module.Leaf.Leaf_q(_module.Envelope.leaf(x#0))) ==> _module.Envelope.tag(x#0) >= LitInt(0) && _module.Leaf.value(_module.Envelope.leaf(x#0)) >= LitInt(0)) ==> $Is(x#0, Tclass._module.Value()));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall x#0: DatatypeType :: { $Is(x#0, Tclass._module.Value()) } $Is(x#0, Tclass._module.Value()) ==> $Is(x#0, Tclass._module.Envelope()) && _module.Envelope.Envelope_q(x#0) && (_module.Envelope.tag(x#0) >= LitInt(0) ==> _module.Envelope.Envelope_q(x#0) && _module.Leaf.Leaf_q(_module.Envelope.leaf(x#0))) && _module.Envelope.tag(x#0) >= LitInt(0) && _module.Leaf.value(_module.Envelope.leaf(x#0)) >= LitInt(0));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall x#0: DatatypeType, $h: Heap :: { $IsAlloc(x#0, Tclass._module.Value(), $h) } $IsAlloc(x#0, Tclass._module.Value(), $h) <==> $IsAlloc(x#0, Tclass._module.Envelope(), $h));",
+              "multiplicity": 1
+            }
+          ],
+          "added": [
+            {
+              "formula": "axiom (forall a#13#0#0: DatatypeType :: { #_module.Wrapped.Wrap(a#13#0#0) } DatatypeCtorId(#_module.Wrapped.Wrap(a#13#0#0)) == ##_module.Wrapped.Wrap);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a#15#0#0: DatatypeType :: { $Is(#_module.Wrapped.Wrap(a#15#0#0), Tclass._module.Wrapped()) } $Is(#_module.Wrapped.Wrap(a#15#0#0), Tclass._module.Wrapped()) <==> $Is(a#15#0#0, Tclass._module.Envelope()));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a#16#0#0: DatatypeType :: { #_module.Wrapped.Wrap(Lit(a#16#0#0)) } #_module.Wrapped.Wrap(Lit(a#16#0#0)) == Lit(#_module.Wrapped.Wrap(a#16#0#0)));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a#17#0#0: DatatypeType :: { #_module.Wrapped.Wrap(a#17#0#0) } _module.Wrapped.payload(#_module.Wrapped.Wrap(a#17#0#0)) == a#17#0#0);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a#18#0#0: DatatypeType :: { DtRank(#_module.Wrapped.Wrap(a#18#0#0)) } DtRank(a#18#0#0) < DtRank(#_module.Wrapped.Wrap(a#18#0#0)));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a: DatatypeType, b: DatatypeType :: { _module.Wrapped#Equal(a, b) } (_module.Wrapped#Equal(a, b) ==> _module.Envelope#Equal(_module.Wrapped.payload(a), _module.Wrapped.payload(b))) && (_module.Wrapped.Wrap_q(a) && _module.Wrapped.Wrap_q(b) && _module.Envelope#Equal(_module.Wrapped.payload(a), _module.Wrapped.payload(b)) ==> _module.Wrapped#Equal(a, b)));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall a: DatatypeType, b: DatatypeType :: { _module.Wrapped#Equal(a, b) } _module.Wrapped#Equal(a, b) <==> a == b);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall b#0: DatatypeType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> _module.__default.Encode(b#0) == #_module.Wrapped.Wrap(b#0));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall b#0: DatatypeType :: {:weight 3} { _module.__default.Encode(Lit(b#0)) } _module.__default.Encode#canCall(Lit(b#0)) ==> _module.__default.Encode(Lit(b#0)) == Lit(#_module.Wrapped.Wrap(Lit(b#0))));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall bx: Box :: { $IsBox(bx, Tclass._module.Wrapped()) } $IsBox(bx, Tclass._module.Wrapped()) ==> $Box($Unbox(bx): DatatypeType) == bx && $Is($Unbox(bx): DatatypeType, Tclass._module.Wrapped()));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType :: { $IsA#_module.Wrapped(d) } $IsA#_module.Wrapped(d) ==> _module.Wrapped.Wrap_q(d));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType :: { _module.Wrapped.Wrap_q(d) } _module.Wrapped.Wrap_q(d) <==> DatatypeCtorId(d) == ##_module.Wrapped.Wrap);",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType :: { _module.Wrapped.Wrap_q(d) } _module.Wrapped.Wrap_q(d) ==> (exists a#14#0#0: DatatypeType :: d == #_module.Wrapped.Wrap(a#14#0#0)));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType :: { _module.Wrapped.Wrap_q(d), $Is(d, Tclass._module.Wrapped()) } $Is(d, Tclass._module.Wrapped()) ==> _module.Wrapped.Wrap_q(d));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType, $h: Heap :: { $IsAlloc(_module.Wrapped.payload(d), Tclass._module.Envelope(), $h) } $IsGoodHeap($h) && _module.Wrapped.Wrap_q(d) && $IsAlloc(d, Tclass._module.Wrapped(), $h) ==> $IsAlloc(_module.Wrapped.payload(d), Tclass._module.Envelope(), $h));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall d: DatatypeType, $h: Heap :: { $IsAlloc(d, Tclass._module.Wrapped(), $h) } $IsGoodHeap($h) && $Is(d, Tclass._module.Wrapped()) ==> $IsAlloc(d, Tclass._module.Wrapped(), $h));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode(v#0) } _module.__default.Decode#canCall(v#0) ==> _module.Wrapped.Wrap_q(v#0) && _module.__default.Decode(v#0) == _module.Wrapped.payload(v#0));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall v#0: DatatypeType :: {:weight 3} { _module.__default.Decode(Lit(v#0)) } _module.__default.Decode#canCall(Lit(v#0)) ==> _module.Wrapped.Wrap_q(Lit(v#0)) && _module.__default.Decode(Lit(v#0)) == Lit(_module.Wrapped.payload(Lit(v#0))));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall w#0: DatatypeType :: { $Is(w#0, Tclass._module.Value()) } $Is(w#0, Tclass._module.Value()) ==> $Is(w#0, Tclass._module.Wrapped()) && _module.Wrapped.Wrap_q(w#0) && _module.Envelope.Envelope_q(_module.Wrapped.payload(w#0)) && (_module.Envelope.tag(_module.Wrapped.payload(w#0)) >= LitInt(0) ==> _module.Wrapped.Wrap_q(w#0) && _module.Envelope.Envelope_q(_module.Wrapped.payload(w#0)) && _module.Leaf.Leaf_q(_module.Envelope.leaf(_module.Wrapped.payload(w#0)))) && _module.Envelope.tag(_module.Wrapped.payload(w#0)) >= LitInt(0) && _module.Leaf.value(_module.Envelope.leaf(_module.Wrapped.payload(w#0))) >= LitInt(0));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall w#0: DatatypeType :: { $Is(w#0, Tclass._module.Value()) } $Is(w#0, Tclass._module.Wrapped()) && (_module.Wrapped.Wrap_q(w#0) && _module.Envelope.Envelope_q(_module.Wrapped.payload(w#0)) && (_module.Envelope.tag(_module.Wrapped.payload(w#0)) >= LitInt(0) ==> _module.Wrapped.Wrap_q(w#0) && _module.Envelope.Envelope_q(_module.Wrapped.payload(w#0)) && _module.Leaf.Leaf_q(_module.Envelope.leaf(_module.Wrapped.payload(w#0)))) ==> _module.Envelope.tag(_module.Wrapped.payload(w#0)) >= LitInt(0) && _module.Leaf.value(_module.Envelope.leaf(_module.Wrapped.payload(w#0))) >= LitInt(0)) ==> $Is(w#0, Tclass._module.Value()));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom (forall w#0: DatatypeType, $h: Heap :: { $IsAlloc(w#0, Tclass._module.Value(), $h) } $IsAlloc(w#0, Tclass._module.Value(), $h) <==> $IsAlloc(w#0, Tclass._module.Wrapped(), $h));",
+              "multiplicity": 1
+            },
+            {
+              "formula": "axiom Tag(Tclass._module.Wrapped()) == Tagclass._module.Wrapped && TagFamily(Tclass._module.Wrapped()) == tytagFamily$Wrapped;",
+              "multiplicity": 1
+            }
+          ]
+        },
+        "system_axiom_multisets_B_N_equal": true,
+        "system_axiom_multisets_B_W_equal": true
+      }
+    }
+  },
+  "source_hashes": {
+    "BoogieGenerator.ExpressionTranslator.cs": "6abd7ce50304da7ee68deeec601f9e9210ee5ddce7e6de8ae6343f1c9c3ca5e0",
+    "BoogieGenerator.Types.cs": "b885ec4b98b7d79ee74be7479fb4041a9a30ae3ca59e20b8e3702077c5b5c07b",
+    "BoogieGenerator.ExpressionWellformed.cs": "9de9cc23da44c7d8f1431bdc561eb981e51b71902df702d787770173525d22b7",
+    "NewtypeDecl.cs": "093b6ee8bd4ddf9ce2104d8b44ede039bb531da37da9cf92add9bb94dc7dd775"
+  }
+}

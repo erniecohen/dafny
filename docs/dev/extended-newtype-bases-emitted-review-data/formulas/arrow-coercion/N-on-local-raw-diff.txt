@@ -1,0 +1,394 @@
+--- B-on
++++ N-on
+@@ -3045,18 +3045,31 @@
+ 
+ function _module.__default.Encode#canCall(b#0: HandleType) : bool;
+ 
++function Tclass._module.Value() : Ty
++uses {
++// Tclass._module.Value Tag
++axiom Tag(Tclass._module.Value()) == Tagclass._module.Value
++   && TagFamily(Tclass._module.Value()) == tytagFamily$Value;
++}
++
++const unique Tagclass._module.Value: TyTag;
++
++// Box/unbox axiom for Tclass._module.Value
++axiom (forall bx: Box :: 
++  { $IsBox(bx, Tclass._module.Value()) } 
++  $IsBox(bx, Tclass._module.Value())
++     ==> $Box($Unbox(bx): HandleType) == bx
++       && $Is($Unbox(bx): HandleType, Tclass._module.Value()));
++
+ // consequence axiom for _module.__default.Encode
+ axiom (forall b#0: HandleType :: 
+   { _module.__default.Encode(b#0) } 
+   _module.__default.Encode#canCall(b#0)
+-     ==> $Is(_module.__default.Encode(b#0), 
+-      Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))));
++     ==> $Is(_module.__default.Encode(b#0), Tclass._module.Value()));
+ 
+ // alloc consequence axiom for _module.__default.Encode
+ axiom (forall $Heap: Heap, b#0: HandleType :: 
+-  { $IsAlloc(_module.__default.Encode(b#0), 
+-      Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), 
+-      $Heap) } 
++  { $IsAlloc(_module.__default.Encode(b#0), Tclass._module.Value(), $Heap) } 
+   _module.__default.Encode#canCall(b#0)
+        && 
+       $Is(b#0, 
+@@ -3065,9 +3078,7 @@
+         Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), 
+         $Heap)
+        && $IsGoodHeap($Heap)
+-     ==> $IsAlloc(_module.__default.Encode(b#0), 
+-      Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), 
+-      $Heap));
++     ==> $IsAlloc(_module.__default.Encode(b#0), Tclass._module.Value(), $Heap));
+ 
+ function _module.__default.Encode#requires(HandleType) : bool;
+ 
+@@ -3120,11 +3131,8 @@
+       $Heap) } 
+   _module.__default.Decode#canCall(v#0)
+        && 
+-      $Is(v#0, 
+-        Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())))
+-       && $IsAlloc(v#0, 
+-        Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), 
+-        $Heap)
++      $Is(v#0, Tclass._module.Value())
++       && $IsAlloc(v#0, Tclass._module.Value(), $Heap)
+        && $IsGoodHeap($Heap)
+      ==> $IsAlloc(_module.__default.Decode(v#0), 
+       Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), 
+@@ -3135,8 +3143,7 @@
+ // #requires axiom for _module.__default.Decode
+ axiom (forall v#0: HandleType :: 
+   { _module.__default.Decode#requires(v#0) } 
+-  $Is(v#0, 
+-      Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())))
++  $Is(v#0, Tclass._module.Value())
+      ==> _module.__default.Decode#requires(v#0) == true);
+ 
+ // #requires ==> #canCall for _module.__default.Decode
+@@ -3155,9 +3162,7 @@
+   _module.__default.Decode#canCall(Lit(v#0))
+      ==> _module.__default.Decode(Lit(v#0)) == Lit(v#0));
+ 
+-procedure {:verboseName "Decode (well-formedness)"} CheckWellformed$$_module.__default.Decode(v#0: HandleType
+-       where $Is(v#0, 
+-        Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag()))));
++procedure {:verboseName "Decode (well-formedness)"} CheckWellformed$$_module.__default.Decode(v#0: HandleType where $Is(v#0, Tclass._module.Value()));
+   modifies $Heap;
+ 
+ 
+@@ -3212,7 +3217,7 @@
+     // AddMethodImpl: RoundTrip, Impl$$_module.__default.RoundTrip
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(10,58): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(10,58): initial state"} true;
+     $_reverifyPost := false;
+ }
+ 
+@@ -3258,11 +3263,7 @@
+   var $_Frame#l0: [ref,Field]bool;
+   var lambdaResult#0: Seq;
+   var v#0: HandleType
+-     where $Is(v#0, 
+-        Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())))
+-       && $IsAlloc(v#0, 
+-        Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), 
+-        $Heap);
++     where $Is(v#0, Tclass._module.Value()) && $IsAlloc(v#0, Tclass._module.Value(), $Heap);
+   var ##b#0: HandleType;
+   var ##source#0: HandleType;
+   var ##v#0: HandleType;
+@@ -3270,9 +3271,9 @@
+     // AddMethodImpl: ConcreteWitness, Impl$$_module.__default.ConcreteWitness
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(11,36): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(11,36): initial state"} true;
+     $_reverifyPost := false;
+-    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(12,22)
++    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(12,22)
+     assume true;
+     // Begin Comprehension WF check
+     if (*)
+@@ -3338,8 +3339,8 @@
+             (lambda $l#0#heap#0: Heap, $l#0#t#0: Box :: 
+               SetRef_to_SetBox((lambda $l#0#o#0: ref :: false))))), 
+         $LS($LZ)));
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(12,43)"} true;
+-    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(13,9)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(12,43)"} true;
++    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(13,9)
+     assume true;
+     ##source#0 := source#0;
+     // assume allocatedness for argument to function
+@@ -3356,13 +3357,11 @@
+     assume _module.__default.Coerce#canCall(source#0)
+        && _module.__default.Encode#canCall(_module.__default.Coerce(source#0));
+     v#0 := _module.__default.Encode(_module.__default.Coerce(source#0));
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(13,33)"} true;
+-    // ----- assert statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(14,3)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(13,33)"} true;
++    // ----- assert statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(14,3)
+     ##v#0 := v#0;
+     // assume allocatedness for argument to function
+-    assume $IsAlloc(##v#0, 
+-      Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), 
+-      $Heap);
++    assume $IsAlloc(##v#0, Tclass._module.Value(), $Heap);
+     assume _module.__default.Decode#canCall(v#0);
+     assume _module.__default.Decode#canCall(v#0)
+        && Requires1(Tclass._module.Token(), 
+@@ -3467,11 +3466,8 @@
+         $Heap);
+   var ##source#0_0: HandleType;
+   var value#0_0: HandleType
+-     where $Is(value#0_0, 
+-        Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())))
+-       && $IsAlloc(value#0_0, 
+-        Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), 
+-        $Heap);
++     where $Is(value#0_0, Tclass._module.Value())
++       && $IsAlloc(value#0_0, Tclass._module.Value(), $Heap);
+   var ##b#0_0: HandleType;
+   var result#0_0: Seq
+      where $Is(result#0_0, TSeq(Tclass._module.Tag()))
+@@ -3481,9 +3477,9 @@
+     // AddMethodImpl: Work, Impl$$_module.__default.Work
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(18,0): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(18,0): initial state"} true;
+     $_reverifyPost := false;
+-    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(19,13)
++    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(19,13)
+     assume true;
+     havoc $nw;
+     assume $nw != null && $Is($nw, Tclass._module.Token?());
+@@ -3493,8 +3489,8 @@
+     assume $IsHeapAnchor($Heap);
+     token#0 := $nw;
+     defass#token#0 := true;
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(19,24)"} true;
+-    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(20,22)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(19,24)"} true;
++    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(20,22)
+     assume true;
+     // Begin Comprehension WF check
+     if (*)
+@@ -3561,19 +3557,19 @@
+             (lambda $l#0#heap#0: Heap, $l#0#t#0: Box :: 
+               SetRef_to_SetBox((lambda $l#0#o#0: ref :: false))))), 
+         $LS($LZ)));
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(20,43)"} true;
+-    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(21,9)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(20,43)"} true;
++    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(21,9)
+     assume true;
+     assume true;
+     i#0 := LitInt(0);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(21,12)"} true;
+-    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(22,12)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(21,12)"} true;
++    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(22,12)
+     assume true;
+     assume true;
+     checksum#0 := LitInt(0);
+     defass#checksum#0 := true;
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(22,15)"} true;
+-    // ----- while statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(23,3)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(22,15)"} true;
++    // ----- while statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(23,3)
+     // Assume Fuel Constant
+     $PreLoopHeap$loop#0 := $Heap;
+     preLoop$loop#0$defass#checksum#0 := defass#checksum#0;
+@@ -3633,7 +3629,7 @@
+       free invariant preLoop$loop#0$defass#checksum#0 ==> defass#checksum#0;
+       free invariant n#0 - i#0 <= $decr_init$loop#00;
+     {
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(23,2): after some loop iterations"} true;
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(23,2): after some loop iterations"} true;
+         if (!$w$loop#0)
+         {
+             if (LitInt(0) <= i#0)
+@@ -3694,7 +3690,7 @@
+ 
+         assume true;
+         $decr$loop#00 := n#0 - i#0;
+-        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(28,25)
++        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(28,25)
+         assume true;
+         ##source#0_0 := source#0;
+         // assume allocatedness for argument to function
+@@ -3704,8 +3700,8 @@
+         assume _module.__default.Coerce#canCall(source#0);
+         assume _module.__default.Coerce#canCall(source#0);
+         coerced#0_0 := _module.__default.Coerce(source#0);
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(28,41)"} true;
+-        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(29,15)
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(28,41)"} true;
++        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(29,15)
+         assume true;
+         ##b#0_0 := coerced#0_0;
+         // assume allocatedness for argument to function
+@@ -3715,14 +3711,12 @@
+         assume _module.__default.Encode#canCall(coerced#0_0);
+         assume _module.__default.Encode#canCall(coerced#0_0);
+         value#0_0 := _module.__default.Encode(coerced#0_0);
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(29,32)"} true;
+-        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(30,16)
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(29,32)"} true;
++        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(30,16)
+         assume true;
+         ##v#0_0 := value#0_0;
+         // assume allocatedness for argument to function
+-        assume $IsAlloc(##v#0_0, 
+-          Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), 
+-          $Heap);
++        assume $IsAlloc(##v#0_0, Tclass._module.Value(), $Heap);
+         assume _module.__default.Decode#canCall(value#0_0);
+         assert {:id "id36"} defass#token#0;
+         assume _module.__default.Decode#canCall(value#0_0)
+@@ -3736,8 +3730,8 @@
+             $OneHeap, 
+             _module.__default.Decode(value#0_0), 
+             $Box(token#0))): Seq;
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(30,38)"} true;
+-        // ----- assert statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(31,5)
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(30,38)"} true;
++        // ----- assert statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(31,5)
+         if (Seq#Length(result#0_0) == LitInt(1))
+         {
+             assert {:id "id38"} {:subsumption 0} 0 <= LitInt(0) && LitInt(0) < Seq#Length(result#0_0);
+@@ -3749,20 +3743,20 @@
+         assert {:id "id41"} {:subsumption 0} $Unbox(Seq#Index(result#0_0, LitInt(0))): ref == token#0;
+         assume {:id "id42"} Seq#Length(result#0_0) == LitInt(1)
+            && $Unbox(Seq#Index(result#0_0, LitInt(0))): ref == token#0;
+-        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(32,14)
++        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(32,14)
+         assume true;
+         assert {:id "id43"} defass#checksum#0;
+         assume true;
+         checksum#0 := checksum#0 + Seq#Length(result#0_0);
+         defass#checksum#0 := true;
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(32,35)"} true;
+-        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(33,7)
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(32,35)"} true;
++        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(33,7)
+         assume true;
+         assume true;
+         i#0 := i#0 + 1;
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(33,14)"} true;
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(33,14)"} true;
+         assume true;
+-        // ----- loop termination check ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(23,3)
++        // ----- loop termination check ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(23,3)
+         assert {:id "id46"} 0 <= $decr$loop#00 || n#0 - i#0 == $decr$loop#00;
+         assert {:id "id47"} n#0 - i#0 < $decr$loop#00;
+         assume LitInt(0) <= i#0 && i#0 <= n#0
+@@ -3825,9 +3819,9 @@
+     // AddMethodImpl: Main, Impl$$_module.__default.Main
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(36,14): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(36,14): initial state"} true;
+     $_reverifyPost := false;
+-    // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(37,19)
++    // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(37,19)
+     assume true;
+     // TrCallStmt: Adding lhs with type int
+     // TrCallStmt: Before ProcessCallStmt
+@@ -3838,12 +3832,12 @@
+     call {:id "id50"} $rhs##0 := Call$$_module.__default.Work(n##0);
+     // TrCallStmt: After ProcessCallStmt
+     warm#0 := $rhs##0;
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(37,24)"} true;
+-    // ----- print statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(38,3)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(37,24)"} true;
++    // ----- print statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(38,3)
+     assume true;
+     assume true;
+     assume true;
+-    // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(39,21)
++    // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(39,21)
+     assume true;
+     // TrCallStmt: Adding lhs with type int
+     // TrCallStmt: Before ProcessCallStmt
+@@ -3854,8 +3848,8 @@
+     call {:id "id53"} $rhs##1 := Call$$_module.__default.Work(n##1);
+     // TrCallStmt: After ProcessCallStmt
+     result#0 := $rhs##1;
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(39,27)"} true;
+-    // ----- print statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/B.dfy(40,3)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(39,27)"} true;
++    // ----- print statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(40,3)
+     assume true;
+     assume true;
+     assume true;
+@@ -3932,6 +3926,54 @@
+   $IsAlloc(c#0, Tclass._module.Token(), $h)
+      <==> $IsAlloc(c#0, Tclass._module.Token?(), $h));
+ 
++procedure {:verboseName "Value (well-formedness)"} CheckWellFormed$$_module.Value();
++  modifies $Heap;
++
++
++
++implementation {:smt_option "smt.arith.solver", "2"} {:verboseName "Value (well-formedness)"} CheckWellFormed$$_module.Value()
++{
++  var $_ReadsFrame: [ref,Field]bool;
++
++
++    // AddWellformednessCheck for newtype Value
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/arrow-coercion/N.dfy(7,8): initial state"} true;
++    $_ReadsFrame := (lambda $o: ref, $f: Field :: 
++      $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
++    if (*)
++    {
++        // well-formedness of newtype constraint is trivial
++        assume false;
++    }
++
++    if (*)
++    {
++        // check well-formedness of newtype witness, and that it satisfies the constraint
++        assert {:id "id55"} true;
++        assume false;
++    }
++}
++
++
++
++// $Is axiom for newtype _module.Value
++axiom (forall c0#0: HandleType :: 
++  { $Is(c0#0, Tclass._module.Value()) } 
++  $Is(c0#0, Tclass._module.Value())
++     <==> $Is(c0#0, 
++        Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())))
++       && Lit(true));
++
++// $IsAlloc axiom for newtype _module.Value
++axiom (forall c1#0: HandleType, $h: Heap :: 
++  { $IsAlloc(c1#0, Tclass._module.Value(), $h) } 
++  $IsAlloc(c1#0, Tclass._module.Value(), $h)
++     <==> $IsAlloc(c1#0, 
++      Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), 
++      $h));
++
++const unique class._module.Value: ClassName;
++
+ // type axiom for trait parent: Token? extends Tag?
+ axiom (forall $o: ref :: 
+   { $Is($o, Tclass._module.Token?()) } 
+@@ -3977,3 +4019,5 @@
+ const unique tytagFamily$Tag: TyTagFamily;
+ 
+ const unique tytagFamily$Token: TyTagFamily;
++
++const unique tytagFamily$Value: TyTagFamily;

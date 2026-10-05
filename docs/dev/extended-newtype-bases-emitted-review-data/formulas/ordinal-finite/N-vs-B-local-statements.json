@@ -1,0 +1,169 @@
+{
+  "assert": {
+    "removed": [],
+    "added": [
+      {
+        "statement": "assert true;",
+        "multiplicity": 1
+      }
+    ]
+  },
+  "assume": {
+    "removed": [
+      {
+        "statement": "assume $IsAlloc(##v#0, TORDINAL, $Heap);",
+        "multiplicity": 2
+      },
+      {
+        "statement": "assume $IsAlloc(##v#0_0, TORDINAL, $Heap);",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume $IsAlloc(##v#0_1, TORDINAL, $Heap);",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume $IsAlloc(##v#1, TORDINAL, $Heap);",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(10,24)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(11,12)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(12,15)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(13,2): after some loop iterations\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(19,38)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(20,47)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(21,14)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(24,14): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(25,24)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(27,27)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(5,59): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(6,24): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(6,44)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(9,0): initial state\"} true;",
+        "multiplicity": 1
+      }
+    ],
+    "added": [
+      {
+        "statement": "assume $IsAlloc(##v#0, Tclass._module.Value(), $Heap);",
+        "multiplicity": 2
+      },
+      {
+        "statement": "assume $IsAlloc(##v#0_0, Tclass._module.Value(), $Heap);",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume $IsAlloc(##v#0_1, Tclass._module.Value(), $Heap);",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume $IsAlloc(##v#1, Tclass._module.Value(), $Heap);",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume false;",
+        "multiplicity": 2
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(10,24)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(11,12)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(12,15)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(13,2): after some loop iterations\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(19,38)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(2,8): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(20,47)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(21,14)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(24,14): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(25,24)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(27,27)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(5,59): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(6,24): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(6,44)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(9,0): initial state\"} true;",
+        "multiplicity": 1
+      }
+    ]
+  }
+}

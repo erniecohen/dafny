@@ -1,0 +1,311 @@
+--- B-on
++++ N-on
+@@ -2952,6 +2952,27 @@
+ 
+ function _module.__default.Encode#canCall(b#0: Box) : bool;
+ 
++function Tclass._module.Value() : Ty
++uses {
++// Tclass._module.Value Tag
++axiom Tag(Tclass._module.Value()) == Tagclass._module.Value
++   && TagFamily(Tclass._module.Value()) == tytagFamily$Value;
++}
++
++const unique Tagclass._module.Value: TyTag;
++
++// Box/unbox axiom for Tclass._module.Value
++axiom (forall bx: Box :: 
++  { $IsBox(bx, Tclass._module.Value()) } 
++  $IsBox(bx, Tclass._module.Value())
++     ==> $Box($Unbox(bx): Box) == bx && $Is($Unbox(bx): Box, Tclass._module.Value()));
++
++// consequence axiom for _module.__default.Encode
++axiom (forall b#0: Box :: 
++  { _module.__default.Encode(b#0) } 
++  _module.__default.Encode#canCall(b#0)
++     ==> $Is(_module.__default.Encode(b#0), Tclass._module.Value()));
++
+ function _module.__default.Encode#requires(Box) : bool;
+ 
+ // #requires axiom for _module.__default.Encode
+@@ -2990,7 +3011,8 @@
+ // #requires axiom for _module.__default.Decode
+ axiom (forall v#0: Box :: 
+   { _module.__default.Decode#requires(v#0) } 
+-  _module.__default.Decode#requires(v#0) == true);
++  $Is(v#0, Tclass._module.Value())
++     ==> _module.__default.Decode#requires(v#0) == true);
+ 
+ // #requires ==> #canCall for _module.__default.Decode
+ axiom (forall v#0: Box :: 
+@@ -3008,7 +3030,7 @@
+   _module.__default.Decode#canCall(Lit(v#0))
+      ==> _module.__default.Decode(Lit(v#0)) == Lit(v#0));
+ 
+-procedure {:verboseName "Decode (well-formedness)"} CheckWellformed$$_module.__default.Decode(v#0: Box);
++procedure {:verboseName "Decode (well-formedness)"} CheckWellformed$$_module.__default.Decode(v#0: Box where $Is(v#0, Tclass._module.Value()));
+   modifies $Heap;
+ 
+ 
+@@ -3047,7 +3069,7 @@
+     // AddMethodImpl: RoundTrip, Impl$$_module.__default.RoundTrip
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(5,59): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(5,59): initial state"} true;
+     $_reverifyPost := false;
+ }
+ 
+@@ -3075,16 +3097,17 @@
+ implementation {:smt_option "smt.arith.solver", "2"} {:verboseName "ConcreteWitness (correctness)"} Impl$$_module.__default.ConcreteWitness() returns ($_reverifyPost: bool)
+ {
+   var $_ModifiesFrame: [ref,Field]bool;
+-  var v#0: Box;
++  var v#0: Box
++     where $Is(v#0, Tclass._module.Value()) && $IsAlloc(v#0, Tclass._module.Value(), $Heap);
+   var ##b#0: Box;
+   var ##v#0: Box;
+ 
+     // AddMethodImpl: ConcreteWitness, Impl$$_module.__default.ConcreteWitness
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(6,24): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(6,24): initial state"} true;
+     $_reverifyPost := false;
+-    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(6,33)
++    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(6,33)
+     assume true;
+     ##b#0 := Lit(ORD#FromNat(0));
+     // assume allocatedness for argument to function
+@@ -3092,11 +3115,11 @@
+     assume _module.__default.Encode#canCall(Lit(ORD#FromNat(0)));
+     assume _module.__default.Encode#canCall(Lit(ORD#FromNat(0)));
+     v#0 := Lit(_module.__default.Encode(Lit(ORD#FromNat(0))));
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(6,44)"} true;
+-    // ----- assert statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(6,47)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(6,44)"} true;
++    // ----- assert statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(6,47)
+     ##v#0 := v#0;
+     // assume allocatedness for argument to function
+-    assume $IsAlloc(##v#0, TORDINAL, $Heap);
++    assume $IsAlloc(##v#0, Tclass._module.Value(), $Heap);
+     assume _module.__default.Decode#canCall(v#0);
+     assume _module.__default.Decode#canCall(v#0);
+     assert {:id "id10"} _module.__default.Decode(v#0) == Lit(ORD#FromNat(0));
+@@ -3144,7 +3167,9 @@
+    returns (defass#checksum#0: bool, checksum#0: int, $_reverifyPost: bool)
+ {
+   var $_ModifiesFrame: [ref,Field]bool;
+-  var value#0: Box;
++  var value#0: Box
++     where $Is(value#0, Tclass._module.Value())
++       && $IsAlloc(value#0, Tclass._module.Value(), $Heap);
+   var ##b#0: Box;
+   var i#0: int;
+   var $PreLoopHeap$loop#0: Heap;
+@@ -3161,9 +3186,9 @@
+     // AddMethodImpl: Work, Impl$$_module.__default.Work
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(9,0): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(9,0): initial state"} true;
+     $_reverifyPost := false;
+-    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(10,13)
++    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(10,13)
+     assume true;
+     ##b#0 := Lit(ORD#FromNat(0));
+     // assume allocatedness for argument to function
+@@ -3171,19 +3196,19 @@
+     assume _module.__default.Encode#canCall(Lit(ORD#FromNat(0)));
+     assume _module.__default.Encode#canCall(Lit(ORD#FromNat(0)));
+     value#0 := Lit(_module.__default.Encode(Lit(ORD#FromNat(0))));
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(10,24)"} true;
+-    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(11,9)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(10,24)"} true;
++    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(11,9)
+     assume true;
+     assume true;
+     i#0 := LitInt(0);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(11,12)"} true;
+-    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(12,12)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(11,12)"} true;
++    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(12,12)
+     assume true;
+     assume true;
+     checksum#0 := LitInt(0);
+     defass#checksum#0 := true;
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(12,15)"} true;
+-    // ----- while statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(13,3)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(12,15)"} true;
++    // ----- while statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(13,3)
+     // Assume Fuel Constant
+     $PreLoopHeap$loop#0 := $Heap;
+     preLoop$loop#0$defass#checksum#0 := defass#checksum#0;
+@@ -3217,7 +3242,7 @@
+       free invariant preLoop$loop#0$defass#checksum#0 ==> defass#checksum#0;
+       free invariant n#0 - i#0 <= $decr_init$loop#00;
+     {
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(13,2): after some loop iterations"} true;
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(13,2): after some loop iterations"} true;
+         if (!$w$loop#0)
+         {
+             if (LitInt(0) <= i#0)
+@@ -3228,14 +3253,14 @@
+             assume {:id "id17"} LitInt(0) <= i#0 && i#0 <= n#0;
+             ##v#0 := value#0;
+             // assume allocatedness for argument to function
+-            assume $IsAlloc(##v#0, TORDINAL, $Heap);
++            assume $IsAlloc(##v#0, Tclass._module.Value(), $Heap);
+             assume _module.__default.Decode#canCall(value#0);
+             assume _module.__default.Decode#canCall(value#0);
+             assume _module.__default.Decode#canCall(value#0);
+             assume {:id "id20"} ORD#IsNat(_module.__default.Decode(value#0));
+             ##v#1 := value#0;
+             // assume allocatedness for argument to function
+-            assume $IsAlloc(##v#1, TORDINAL, $Heap);
++            assume $IsAlloc(##v#1, Tclass._module.Value(), $Heap);
+             assume _module.__default.Decode#canCall(value#0);
+             assume _module.__default.Decode#canCall(value#0);
+             assume _module.__default.Decode#canCall(value#0);
+@@ -3255,11 +3280,11 @@
+ 
+         assume true;
+         $decr$loop#00 := n#0 - i#0;
+-        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(19,11)
++        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(19,11)
+         assume true;
+         ##v#0_0 := value#0;
+         // assume allocatedness for argument to function
+-        assume $IsAlloc(##v#0_0, TORDINAL, $Heap);
++        assume $IsAlloc(##v#0_0, Tclass._module.Value(), $Heap);
+         assume _module.__default.Decode#canCall(value#0);
+         ##b#0_0 := ORD#Plus(_module.__default.Decode(value#0), ORD#FromNat(1));
+         // assume allocatedness for argument to function
+@@ -3268,26 +3293,26 @@
+         assume _module.__default.Decode#canCall(value#0)
+            && _module.__default.Encode#canCall(ORD#Plus(_module.__default.Decode(value#0), ORD#FromNat(1)));
+         value#0 := _module.__default.Encode(ORD#Plus(_module.__default.Decode(value#0), ORD#FromNat(1)));
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(19,38)"} true;
+-        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(20,14)
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(19,38)"} true;
++        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(20,14)
+         assume true;
+         assert {:id "id28"} defass#checksum#0;
+         ##v#0_1 := value#0;
+         // assume allocatedness for argument to function
+-        assume $IsAlloc(##v#0_1, TORDINAL, $Heap);
++        assume $IsAlloc(##v#0_1, Tclass._module.Value(), $Heap);
+         assume _module.__default.Decode#canCall(value#0);
+         assume _module.__default.Decode#canCall(value#0);
+         assume _module.__default.Decode#canCall(value#0);
+         checksum#0 := checksum#0 + ORD#Offset(_module.__default.Decode(value#0));
+         defass#checksum#0 := true;
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(20,47)"} true;
+-        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(21,7)
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(20,47)"} true;
++        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(21,7)
+         assume true;
+         assume true;
+         i#0 := i#0 + 1;
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(21,14)"} true;
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(21,14)"} true;
+         assume true;
+-        // ----- loop termination check ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(13,3)
++        // ----- loop termination check ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(13,3)
+         assert {:id "id31"} 0 <= $decr$loop#00 || n#0 - i#0 == $decr$loop#00;
+         assert {:id "id32"} n#0 - i#0 < $decr$loop#00;
+         assume LitInt(0) <= i#0 && i#0 <= n#0
+@@ -3343,9 +3368,9 @@
+     // AddMethodImpl: Main, Impl$$_module.__default.Main
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(24,14): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(24,14): initial state"} true;
+     $_reverifyPost := false;
+-    // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(25,19)
++    // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(25,19)
+     assume true;
+     // TrCallStmt: Adding lhs with type int
+     // TrCallStmt: Before ProcessCallStmt
+@@ -3356,12 +3381,12 @@
+     call {:id "id35"} $rhs##0 := Call$$_module.__default.Work(n##0);
+     // TrCallStmt: After ProcessCallStmt
+     warm#0 := $rhs##0;
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(25,24)"} true;
+-    // ----- print statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(26,3)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(25,24)"} true;
++    // ----- print statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(26,3)
+     assume true;
+     assume true;
+     assume true;
+-    // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(27,21)
++    // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(27,21)
+     assume true;
+     // TrCallStmt: Adding lhs with type int
+     // TrCallStmt: Before ProcessCallStmt
+@@ -3372,8 +3397,8 @@
+     call {:id "id38"} $rhs##1 := Call$$_module.__default.Work(n##1);
+     // TrCallStmt: After ProcessCallStmt
+     result#0 := $rhs##1;
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(27,27)"} true;
+-    // ----- print statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/B.dfy(28,3)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(27,27)"} true;
++    // ----- print statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(28,3)
+     assume true;
+     assume true;
+     assume true;
+@@ -3381,6 +3406,48 @@
+ 
+ 
+ 
++procedure {:verboseName "Value (well-formedness)"} CheckWellFormed$$_module.Value();
++  modifies $Heap;
++
++
++
++implementation {:smt_option "smt.arith.solver", "2"} {:verboseName "Value (well-formedness)"} CheckWellFormed$$_module.Value()
++{
++  var $_ReadsFrame: [ref,Field]bool;
++
++
++    // AddWellformednessCheck for newtype Value
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/ordinal-finite/N.dfy(2,8): initial state"} true;
++    $_ReadsFrame := (lambda $o: ref, $f: Field :: 
++      $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
++    if (*)
++    {
++        // well-formedness of newtype constraint is trivial
++        assume false;
++    }
++
++    if (*)
++    {
++        // check well-formedness of newtype witness, and that it satisfies the constraint
++        assert {:id "id40"} true;
++        assume false;
++    }
++}
++
++
++
++// $Is axiom for newtype _module.Value
++axiom (forall c0#0: Box :: 
++  { $Is(c0#0, Tclass._module.Value()) } 
++  $Is(c0#0, Tclass._module.Value()) <==> $Is(c0#0, TORDINAL) && Lit(true));
++
++// $IsAlloc axiom for newtype _module.Value
++axiom (forall c1#0: Box, $h: Heap :: 
++  { $IsAlloc(c1#0, Tclass._module.Value(), $h) } 
++  $IsAlloc(c1#0, Tclass._module.Value(), $h) <==> $IsAlloc(c1#0, TORDINAL, $h));
++
++const unique class._module.Value: ClassName;
++
+ const unique tytagFamily$nat: TyTagFamily;
+ 
+ const unique tytagFamily$object: TyTagFamily;
+@@ -3402,3 +3469,5 @@
+ const unique tytagFamily$_tuple#2: TyTagFamily;
+ 
+ const unique tytagFamily$_tuple#0: TyTagFamily;
++
++const unique tytagFamily$Value: TyTagFamily;

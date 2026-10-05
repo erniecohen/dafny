@@ -1,0 +1,122 @@
+{
+  "removed": [
+    {
+      "formula": "axiom (forall b#0: DatatypeType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> _module.__default.Encode(b#0) == b#0);",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall b#0: DatatypeType :: {:weight 3} { _module.__default.Encode(Lit(b#0)) } _module.__default.Encode#canCall(Lit(b#0)) ==> _module.__default.Encode(Lit(b#0)) == Lit(b#0));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode(v#0) } _module.__default.Decode#canCall(v#0) ==> _module.__default.Decode(v#0) == v#0);",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall v#0: DatatypeType :: {:weight 3} { _module.__default.Decode(Lit(v#0)) } _module.__default.Decode#canCall(Lit(v#0)) ==> _module.__default.Decode(Lit(v#0)) == Lit(v#0));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall x#0: DatatypeType :: { $Is(x#0, Tclass._module.Value()) } $Is(x#0, Tclass._module.Envelope()) && (_module.Envelope.Envelope_q(x#0) && (_module.Envelope.tag(x#0) >= LitInt(0) ==> _module.Envelope.Envelope_q(x#0) && _module.Leaf.Leaf_q(_module.Envelope.leaf(x#0))) ==> _module.Envelope.tag(x#0) >= LitInt(0) && _module.Leaf.value(_module.Envelope.leaf(x#0)) >= LitInt(0)) ==> $Is(x#0, Tclass._module.Value()));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall x#0: DatatypeType :: { $Is(x#0, Tclass._module.Value()) } $Is(x#0, Tclass._module.Value()) ==> $Is(x#0, Tclass._module.Envelope()) && _module.Envelope.Envelope_q(x#0) && (_module.Envelope.tag(x#0) >= LitInt(0) ==> _module.Envelope.Envelope_q(x#0) && _module.Leaf.Leaf_q(_module.Envelope.leaf(x#0))) && _module.Envelope.tag(x#0) >= LitInt(0) && _module.Leaf.value(_module.Envelope.leaf(x#0)) >= LitInt(0));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall x#0: DatatypeType, $h: Heap :: { $IsAlloc(x#0, Tclass._module.Value(), $h) } $IsAlloc(x#0, Tclass._module.Value(), $h) <==> $IsAlloc(x#0, Tclass._module.Envelope(), $h));",
+      "multiplicity": 1
+    }
+  ],
+  "added": [
+    {
+      "formula": "axiom (forall a#13#0#0: DatatypeType :: { #_module.Wrapped.Wrap(a#13#0#0) } DatatypeCtorId(#_module.Wrapped.Wrap(a#13#0#0)) == ##_module.Wrapped.Wrap);",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall a#15#0#0: DatatypeType :: { $Is(#_module.Wrapped.Wrap(a#15#0#0), Tclass._module.Wrapped()) } $Is(#_module.Wrapped.Wrap(a#15#0#0), Tclass._module.Wrapped()) <==> $Is(a#15#0#0, Tclass._module.Envelope()));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall a#16#0#0: DatatypeType :: { #_module.Wrapped.Wrap(Lit(a#16#0#0)) } #_module.Wrapped.Wrap(Lit(a#16#0#0)) == Lit(#_module.Wrapped.Wrap(a#16#0#0)));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall a#17#0#0: DatatypeType :: { #_module.Wrapped.Wrap(a#17#0#0) } _module.Wrapped.payload(#_module.Wrapped.Wrap(a#17#0#0)) == a#17#0#0);",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall a#18#0#0: DatatypeType :: { DtRank(#_module.Wrapped.Wrap(a#18#0#0)) } DtRank(a#18#0#0) < DtRank(#_module.Wrapped.Wrap(a#18#0#0)));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall a: DatatypeType, b: DatatypeType :: { _module.Wrapped#Equal(a, b) } (_module.Wrapped#Equal(a, b) ==> _module.Envelope#Equal(_module.Wrapped.payload(a), _module.Wrapped.payload(b))) && (_module.Wrapped.Wrap_q(a) && _module.Wrapped.Wrap_q(b) && _module.Envelope#Equal(_module.Wrapped.payload(a), _module.Wrapped.payload(b)) ==> _module.Wrapped#Equal(a, b)));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall a: DatatypeType, b: DatatypeType :: { _module.Wrapped#Equal(a, b) } _module.Wrapped#Equal(a, b) <==> a == b);",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall b#0: DatatypeType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> _module.__default.Encode(b#0) == #_module.Wrapped.Wrap(b#0));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall b#0: DatatypeType :: {:weight 3} { _module.__default.Encode(Lit(b#0)) } _module.__default.Encode#canCall(Lit(b#0)) ==> _module.__default.Encode(Lit(b#0)) == Lit(#_module.Wrapped.Wrap(Lit(b#0))));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall bx: Box :: { $IsBox(bx, Tclass._module.Wrapped()) } $IsBox(bx, Tclass._module.Wrapped()) ==> $Box($Unbox(bx): DatatypeType) == bx && $Is($Unbox(bx): DatatypeType, Tclass._module.Wrapped()));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall d: DatatypeType :: { $IsA#_module.Wrapped(d) } $IsA#_module.Wrapped(d) ==> _module.Wrapped.Wrap_q(d));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall d: DatatypeType :: { _module.Wrapped.Wrap_q(d) } _module.Wrapped.Wrap_q(d) <==> DatatypeCtorId(d) == ##_module.Wrapped.Wrap);",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall d: DatatypeType :: { _module.Wrapped.Wrap_q(d) } _module.Wrapped.Wrap_q(d) ==> (exists a#14#0#0: DatatypeType :: d == #_module.Wrapped.Wrap(a#14#0#0)));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall d: DatatypeType :: { _module.Wrapped.Wrap_q(d), $Is(d, Tclass._module.Wrapped()) } $Is(d, Tclass._module.Wrapped()) ==> _module.Wrapped.Wrap_q(d));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall d: DatatypeType, $h: Heap :: { $IsAlloc(_module.Wrapped.payload(d), Tclass._module.Envelope(), $h) } $IsGoodHeap($h) && _module.Wrapped.Wrap_q(d) && $IsAlloc(d, Tclass._module.Wrapped(), $h) ==> $IsAlloc(_module.Wrapped.payload(d), Tclass._module.Envelope(), $h));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall d: DatatypeType, $h: Heap :: { $IsAlloc(d, Tclass._module.Wrapped(), $h) } $IsGoodHeap($h) && $Is(d, Tclass._module.Wrapped()) ==> $IsAlloc(d, Tclass._module.Wrapped(), $h));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode(v#0) } _module.__default.Decode#canCall(v#0) ==> _module.Wrapped.Wrap_q(v#0) && _module.__default.Decode(v#0) == _module.Wrapped.payload(v#0));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall v#0: DatatypeType :: {:weight 3} { _module.__default.Decode(Lit(v#0)) } _module.__default.Decode#canCall(Lit(v#0)) ==> _module.Wrapped.Wrap_q(Lit(v#0)) && _module.__default.Decode(Lit(v#0)) == Lit(_module.Wrapped.payload(Lit(v#0))));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall w#0: DatatypeType :: { $Is(w#0, Tclass._module.Value()) } $Is(w#0, Tclass._module.Value()) ==> $Is(w#0, Tclass._module.Wrapped()) && _module.Wrapped.Wrap_q(w#0) && _module.Envelope.Envelope_q(_module.Wrapped.payload(w#0)) && (_module.Envelope.tag(_module.Wrapped.payload(w#0)) >= LitInt(0) ==> _module.Wrapped.Wrap_q(w#0) && _module.Envelope.Envelope_q(_module.Wrapped.payload(w#0)) && _module.Leaf.Leaf_q(_module.Envelope.leaf(_module.Wrapped.payload(w#0)))) && _module.Envelope.tag(_module.Wrapped.payload(w#0)) >= LitInt(0) && _module.Leaf.value(_module.Envelope.leaf(_module.Wrapped.payload(w#0))) >= LitInt(0));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall w#0: DatatypeType :: { $Is(w#0, Tclass._module.Value()) } $Is(w#0, Tclass._module.Wrapped()) && (_module.Wrapped.Wrap_q(w#0) && _module.Envelope.Envelope_q(_module.Wrapped.payload(w#0)) && (_module.Envelope.tag(_module.Wrapped.payload(w#0)) >= LitInt(0) ==> _module.Wrapped.Wrap_q(w#0) && _module.Envelope.Envelope_q(_module.Wrapped.payload(w#0)) && _module.Leaf.Leaf_q(_module.Envelope.leaf(_module.Wrapped.payload(w#0)))) ==> _module.Envelope.tag(_module.Wrapped.payload(w#0)) >= LitInt(0) && _module.Leaf.value(_module.Envelope.leaf(_module.Wrapped.payload(w#0))) >= LitInt(0)) ==> $Is(w#0, Tclass._module.Value()));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall w#0: DatatypeType, $h: Heap :: { $IsAlloc(w#0, Tclass._module.Value(), $h) } $IsAlloc(w#0, Tclass._module.Value(), $h) <==> $IsAlloc(w#0, Tclass._module.Wrapped(), $h));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom Tag(Tclass._module.Wrapped()) == Tagclass._module.Wrapped && TagFamily(Tclass._module.Wrapped()) == tytagFamily$Wrapped;",
+      "multiplicity": 1
+    }
+  ]
+}
