@@ -1,6 +1,9 @@
 name: Obligation compatibility diagnostics
 on:
   workflow_dispatch:
+  push:
+    branches: [scratch/codex/issue100-review]
+    paths: [.github/workflows/obligation-validation.yml]
 permissions:
   contents: read
 jobs:

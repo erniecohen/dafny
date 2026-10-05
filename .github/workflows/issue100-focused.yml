@@ -1,6 +1,9 @@
 name: Obligation focused diagnostics
 on:
   workflow_dispatch:
+  push:
+    branches: [scratch/codex/issue100-review]
+    paths: [.github/workflows/issue100-focused.yml]
 permissions:
   contents: read
 jobs:
