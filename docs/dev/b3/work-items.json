@@ -51,7 +51,8 @@
         "codex/b3-124-portable-rotations",
         "codex/b3-124-unsigned-integration",
         "codex/b3-124-if-guard-certificates",
-        "codex/b3-124-real-roundtrip"
+        "codex/b3-124-real-roundtrip",
+        "codex/b3-124-opaque-ground-projection"
       ],
       "diagnosticBranches": [
         "codex/b3-124-if-guard-focus-identity",

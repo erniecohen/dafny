@@ -14,6 +14,8 @@ The latest unsigned guard focus passed all 35 controls in [run 37251480365](http
 
 The separate bounded Real preparation focus passed all 76 controls in [run 37259844177](https://github.com/erniecohen/dafny/actions/runs/37259844177): 41 new Phase A cases and the retained 35 guard controls. Current Core/test snapshots and every strict test identity/counter matched; all five stages exited naturally with no cleanup signals or residual children. Real worker/corpus, opaque-context projection and integrated acceptance remain pending.
 
+The [opaque ground projection implementation](https://github.com/erniecohen/dafny/tree/codex/b3-124-opaque-ground-projection) has completed independent source review. Its 47 additional structural cases are unexecuted; a separate exact 123-case focused compilation/control gate is being prepared. The model argument applies to the typed normalized numeric prefixes, and this source-only checkpoint does not extend advertised support.
+
 The same-process native proof comparison stopped at private-context collection in [run 37243994794](https://github.com/erniecohen/dafny/actions/runs/37243994794), so default compatibility remains unresolved. The read-only retention prerequisite captured an unreviewed loader catalog in [run 37254827562](https://github.com/erniecohen/dafny/actions/runs/37254827562), with nine native dependencies and four source contracts still unresolved. Their failed or incomplete checkpoints do not extend this branch's advertised support; acceptance requires a fresh integrated gate and default-Boogie comparison.
 
 ## Building and selecting the worker
