@@ -175,15 +175,17 @@
   },
   "candidate": {
     "base_product": "4e50e86cde6ab2ef6cab0762ffc4df59d646dc15",
-    "patch_file": "baseline/candidate-native-requires.patch",
-    "patch_sha256": "03a50c93b0dbb9541387889f7a3c9c546b80635163bb5db208d30ecfef5659d1",
-    "composed_tree": "6b963805738b8ce004ec408e03911874633cff6c",
-    "core_tree": "2a35490c140a053a3716afcba3e207c2c4324e7e",
-    "product_revision": "4e50e86cde6ab2ef6cab0762ffc4df59d646dc15+patch:03a50c93b0dbb9541387889f7a3c9c546b80635163bb5db208d30ecfef5659d1",
-    "source_revision_id": "fcb2042d.review.c9c7622d.candidate.03a50c93",
+    "patch_file": "baseline/candidate-native-law.patch",
+    "patch_sha256": "44a3b372893844e7128e6a6bee567c8cb4fc8ec3160c849eaa2669991610a3ba",
+    "composed_tree": "95314c13df2829b92df42816ef01d03fb142c0c0",
+    "core_tree": "aec7a69ea40a89bb398818b3af551fc98cc6b94e",
+    "product_revision": "4e50e86cde6ab2ef6cab0762ffc4df59d646dc15+patch:44a3b372893844e7128e6a6bee567c8cb4fc8ec3160c849eaa2669991610a3ba",
+    "source_revision_id": "fcb2042d.review.c9c7622d.candidate.44a3b372",
     "changed_paths": [
-      "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs"
+      "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs",
+      "Source/DafnyCore/Verifier/BoogieGenerator.LetExpr.cs",
+      "Source/DafnyCore/Verifier/Expressions/TranslateBinaryExpr.cs"
     ],
-    "status": "Prospective exact-source diagnostic; independent semantic review pending; no authoritative product change"
+    "status": "Unconditionally measured diagnostic proposal; not approved shipping Source, not a default-off axiom-policy waiver; required acceptance decision remains separate"
   }
 }

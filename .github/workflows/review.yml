@@ -1,11 +1,6 @@
-name: Issue 113 current shipping focused proof failures
+name: Issue 113 native function law diagnostic
 on:
   workflow_dispatch:
-    inputs:
-      include_candidate:
-        description: Also measure the exact checked source proposal as a third arm
-        type: boolean
-        default: false
 permissions:
   contents: read
   actions: read
@@ -27,7 +22,7 @@ jobs:
       - name: Explicit requested workload
         id: matrix
         continue-on-error: true
-        run: python3 .github/review/issue113-default-off/focus_matrix.py workflow-request.json --candidate '${{ inputs.include_candidate }}' --github-output
+        run: python3 .github/review/issue113-default-off/focus_matrix.py workflow-request.json --candidate 'true' --github-output
       - uses: actions/upload-artifact@v4
         with:
           name: default-off-workflow-request
@@ -37,40 +32,11 @@ jobs:
     needs: plan
     runs-on: ubuntu-24.04
     timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      max-parallel: 2
-      matrix:
-        line: [shipped]
     steps:
       - uses: actions/checkout@v4
         with:
           path: harness
-      - name: Exact source pins
-        id: pins
-        env:
-          LINE: ${{ matrix.line }}
-        continue-on-error: true
-        run: |
-          python3 - <<'PY'
-          import json,os
-          from pathlib import Path
-          source=json.loads(Path('harness/.github/review/issue113-default-off/spec.json').read_text())['lines'][os.environ['LINE']]
-          with open(os.environ['GITHUB_OUTPUT'],'a') as output:
-            for name,key in [('old','original'),('baseline','repaired_product'),('final','final_product')]:
-              output.write(name+'='+source[key]+'\n')
-          PY
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.pins.outputs.old }}
-          path: baseline-source
-      - uses: actions/checkout@v4
-        with:
-          ref: 31f49205d82e73a8db944ef0b9c2be063736d72c
-          path: final-source
-      - uses: actions/checkout@v4
-        continue-on-error: true
-        if: inputs.include_candidate
         with:
           ref: 4e50e86cde6ab2ef6cab0762ffc4df59d646dc15
           path: candidate-source
@@ -80,87 +46,36 @@ jobs:
       - uses: actions/download-artifact@v4
         continue-on-error: true
         with:
-          name: dafny
-          run-id: 37262669509
+          name: default-off-compilers-shipped
+          run-id: 37325330127
           github-token: ${{ github.token }}
-          path: reused-final
-      - name: Recorded audited baseline build and exact public compiler reuse
-        env:
-          LINE: ${{ matrix.line }}
-          BASELINE: ${{ steps.pins.outputs.baseline }}
-          FINAL: ${{ steps.pins.outputs.final }}
+          path: reused-compilers
+      - name: Exact two actual public compilers, no rebuild
         continue-on-error: true
         run: |
           mkdir -p results/baseline results/final
           git -C harness rev-parse HEAD > results/harness-source.txt
           set +e
-          python3 harness/.github/review/issue113-default-off/prepare.py compose "$LINE" baseline-source results/baseline/source.json > results/baseline/compose.txt 2>&1
-          composition_exit=$?
-          echo "$composition_exit" > results/baseline/compose-exit.txt
-          if [ "$composition_exit" != 0 ]; then exit 0; fi
-          git -C final-source rev-parse HEAD > results/final/source.txt
-          test "$(cat results/final/source.txt)" = 31f49205d82e73a8db944ef0b9c2be063736d72c
-          source_exit=$?
-          echo "$source_exit" > results/final/source-exit.txt
-          if [ "$source_exit" != 0 ]; then exit 0; fi
-          python3 - <<'PYCODE'
-          import json,subprocess,os
+          for side in baseline final; do
+            python3 harness/.github/review/issue113-default-off/reuse_compiler.py "$side" reused-compilers "out/$side/dafny" "results/$side" > "results/$side/identity.txt" 2>&1
+            identity_exit=$?
+            echo "$identity_exit" > "results/$side/identity-exit.txt"
+            if [ "$identity_exit" != 0 ]; then continue; fi
+            "out/$side/dafny/Dafny" --version > "results/$side/compiler-version.txt" 2>&1
+            version_exit=$?
+            echo "$version_exit" > "results/$side/compiler-version-exit.txt"
+            if [ "$version_exit" != 0 ]; then continue; fi
+            python3 - "$side" <<'PYCODE'
+          import json,sys
           from pathlib import Path
-          spec=json.loads(Path('harness/.github/review/issue113-default-off/spec.json').read_text())['lines'][os.environ['LINE']]
-          actual=subprocess.check_output(['git','-C','final-source','rev-parse','HEAD:Source/DafnyCore'],text=True).strip()
-          if actual != spec['final_core_tree']: raise SystemExit('Final Core differs from reviewed exact pin')
+          side=sys.argv[1]
+          record=json.loads(Path('harness/.github/review/issue113-default-off/reused-compilers.json').read_text())['arms'][side]
+          raise SystemExit(0 if Path('results',side,'compiler-version.txt').read_text().strip()==record['actual_version'] else 1)
           PYCODE
-          core_exit=$?
-          echo "$core_exit" > results/final/core-exit.txt
-          if [ "$core_exit" != 0 ]; then exit 0; fi
-          for side in baseline; do
-            case "$side" in baseline) revision="$BASELINE" ;; final) revision="$FINAL" ;; esac
-            if [ -f "$side-source/Scripts/fetch-boogie-packages.sh" ]; then
-              (cd "$side-source" && sh Scripts/fetch-boogie-packages.sh) > "results/$side/dependencies.txt" 2>&1
-              dependency_exit=$?
-            else
-              dependency_exit=0
-            fi
-            echo "$dependency_exit" > "results/$side/dependencies-exit.txt"
-            if [ "$dependency_exit" != 0 ]; then
-              echo 125 > "results/$side/build-exit.txt"
-              continue
-            fi
-            (cd "$side-source" && dotnet publish Source/Dafny/Dafny.csproj -c Release -o "$GITHUB_WORKSPACE/out/$side/dafny" -p:SourceRevisionId="$revision") > "results/$side/build.txt" 2>&1
-            build_exit=$?
-            echo "$build_exit" > "results/$side/build-exit.txt"
-            if [ "$build_exit" = 0 ]; then
-              "out/$side/dafny/Dafny" --version > "results/$side/compiler-version.txt" 2>&1
-              echo "$?" > "results/$side/compiler-version-exit.txt"
-              tar -C "out/$side" -czf "results/$side/dafny.tar.gz" dafny
-              python3 harness/.github/review/issue113-default-off/prepare.py identity "$LINE" "out/$side/dafny/Dafny" "results/$side/compiler-components.json" --side "$side" --archive "results/$side/dafny.tar.gz" > "results/$side/identity.txt" 2>&1
-              echo "$?" > "results/$side/identity-exit.txt"
-            fi
+            echo "$?" > "results/$side/reused-version-guard-exit.txt"
           done
-          mkdir -p out/final
-          cp reused-final/dafny.tar.gz results/final/dafny.tar.gz
-          echo "$?" > results/final/archive-copy-exit.txt
-          tar -C out/final -xzf results/final/dafny.tar.gz
-          echo "$?" > results/final/archive-extract-exit.txt
-          python3 harness/.github/review/issue113-default-off/archive_identity.py results/final/dafny.tar.gz out/final/dafny/Dafny results/final/compiler-components.json > results/final/identity.txt 2>&1
-          identity_exit=$?
-          echo "$identity_exit" > results/final/identity-exit.txt
-          if [ "$identity_exit" = 0 ]; then
-            out/final/dafny/Dafny --version > results/final/compiler-version.txt 2>&1
-            echo "$?" > results/final/compiler-version-exit.txt
-            python3 - <<'PYCODE'
-          import json
-          from pathlib import Path
-          record=json.loads(Path('harness/.github/review/issue113-default-off/current-final-archive.json').read_text())
-          raise SystemExit(0 if Path('results/final/compiler-version.txt').read_text().strip()==record['version'] else 1)
-          PYCODE
-            echo "$?" > results/final/build-exit.txt
-          else
-            echo 125 > results/final/build-exit.txt
-          fi
           exit 0
-      - name: Exact proposed third source arm
-        if: inputs.include_candidate
+      - name: Build only the exact diagnostic native-law source proposal
         continue-on-error: true
         run: |
           mkdir -p results/candidate
@@ -180,6 +95,13 @@ jobs:
           if [ "$build_exit" != 0 ]; then exit 0; fi
           out/candidate/dafny/Dafny --version > results/candidate/compiler-version.txt 2>&1
           echo "$?" > results/candidate/compiler-version-exit.txt
+          python3 - <<'PYCODE'
+          import json
+          from pathlib import Path
+          spec=json.loads(Path('harness/.github/review/issue113-default-off/spec.json').read_text())['candidate']
+          raise SystemExit(0 if Path('results/candidate/compiler-version.txt').read_text().strip()=='4.11.0+'+spec['source_revision_id'] else 1)
+          PYCODE
+          echo "$?" > results/candidate/candidate-version-guard-exit.txt
           tar -C out/candidate -czf results/candidate/dafny.tar.gz dafny
           python3 harness/.github/review/issue113-default-off/prepare.py identity shipped out/candidate/dafny/Dafny results/candidate/compiler-components.json --side candidate --archive results/candidate/dafny.tar.gz > results/candidate/identity.txt 2>&1
           echo "$?" > results/candidate/identity-exit.txt
@@ -187,7 +109,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: default-off-compilers-${{ matrix.line }}
+          name: default-off-compilers-shipped
           path: results
           retention-days: 30
   paired:
@@ -311,7 +233,7 @@ jobs:
           SHARD: ${{ matrix.shard }}
           PART: ${{ matrix.part }}
           JOBS: ${{ matrix.jobs }}
-          INCLUDE_CANDIDATE: ${{ inputs.include_candidate }}
+          INCLUDE_CANDIDATE: 'true'
         continue-on-error: true
         run: |
           mkdir -p run-metadata
@@ -325,6 +247,7 @@ jobs:
           sides=['baseline','final']+(['candidate'] if os.environ['INCLUDE_CANDIDATE']=='true' else [])
           for side in sides:
             required += [Path('compilers')/side/(name+'-exit.txt') for name in ['build','identity','compiler-version']]
+            required += [Path('compilers')/side/('candidate-version-guard-exit.txt' if side=='candidate' else 'reused-version-guard-exit.txt')]
           missing=[str(file) for file in required if not file.exists() or file.read_text().strip()!='0']
           Path('run-metadata/prerequisites.json').write_text(json.dumps(dict(missing_or_failed=missing),indent=2)+'\n')
           raise SystemExit(125 if missing else 0)
