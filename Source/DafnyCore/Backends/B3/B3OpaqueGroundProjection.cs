@@ -133,15 +133,15 @@ internal static class B3OpaqueGroundProjection {
         evidenceRows.Add(new(ProducerVersion, source.Evidence[i].MaskId, original.ProgramHash, target.ProgramHash,
           original.ProgramHash != target.ProgramHash, decline));
       }
-      var submitted = requests.MoveToImmutable(); var evidence = evidenceRows.MoveToImmutable();
+      var submitted = requests.MoveToImmutable(); var submittedEvidence = evidenceRows.MoveToImmutable();
       // At most one bounded original/target pair is captured by each relation call.
       // Optional fallback uses the completely typed owned inputs, never live source.
       var budget = new B3OpaqueGroundProjectionRelation.Budget(aggregateDecline == null ? relationAllowance : 800000);
       for (var i = 0; i < count; i++) {
-        B3OpaqueGroundProjectionRelation.Validate(source.Requests[i], submitted[i], evidence[i], source.Evidence[i].MaskId,
+        B3OpaqueGroundProjectionRelation.Validate(source.Requests[i], submitted[i], submittedEvidence[i], source.Evidence[i].MaskId,
           source.Definitions[i], token, budget);
       }
-      return new(submitted, evidence, work.Slots);
+      return new(submitted, submittedEvidence, work.Slots);
     } catch (B3RealPreparationRejection) { throw; }
       catch (Exception error) when (error is InvalidDataException or JsonException or OverflowException or ArgumentException or
           IndexOutOfRangeException or NullReferenceException) {
