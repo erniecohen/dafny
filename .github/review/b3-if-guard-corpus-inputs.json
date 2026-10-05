@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "baselineHead": "52ee01f1aa5abab762bf39e1cf499fe5ed832634",
+  "baselineHead": "a9cfba1fb93a85b1a3dfbeb0db97c1eacc9c85ad",
   "implementationHead": "2464294e4ac201844f09094b908e070d938c1559",
   "implementationTree": "d89300b053995a24716f25c87a73baf1feb6ed25",
   "productCommit": "572ebc88e6e3078d4dbe65f7a1f2eab3767307d2",
@@ -133,8 +133,7 @@
   "allowedRoutingFiles": [
     ".github/review/b3-if-guard-corpus.py",
     ".github/review/b3-if-guard-corpus-inputs.json",
-    ".github/workflows/review.yml",
-    "docs/dev/b3/unsigned-if-guard-corpus-focus-plan.md"
+    "docs/dev/b3/unsigned-if-guard-corpus-assets-checkpoint.md"
   ],
   "copiedOwnershipFunctions": [
     "direct_children",
