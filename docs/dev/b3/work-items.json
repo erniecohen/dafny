@@ -49,7 +49,12 @@
       "integrationBranches": [
         "codex/b3-native-real-integration",
         "codex/b3-124-portable-rotations",
-        "codex/b3-124-unsigned-integration"
+        "codex/b3-124-unsigned-integration",
+        "codex/b3-124-if-guard-certificates"
+      ],
+      "diagnosticBranches": [
+        "codex/b3-124-if-guard-focus-identity",
+        "codex/b3-124-real-trace-inspection"
       ]
     },
     "P8": {
@@ -64,7 +69,11 @@
       "number": 126,
       "title": "B3 P9: CLI, project, IDE, options and capability completion",
       "url": "https://github.com/erniecohen/dafny/issues/126",
-      "qualificationBranch": "codex/b3-unavailable-metadata-controls"
+      "qualificationBranch": "codex/b3-unavailable-metadata-controls",
+      "diagnosticBranches": [
+        "codex/b3-126-shared-native-routing",
+        "codex/b3-126-retention-inventory"
+      ]
     },
     "P10": {
       "number": 127,

@@ -115,7 +115,12 @@
       "evidence": "https://github.com/erniecohen/dafny/actions/runs/37236538953",
       "receiptSha256": "57ac2e5fab43ca384759941bb3910597cf6b6e179baa68fccefddac91c285454",
       "finding": "Compiler, language-server assembly and 26 Core controls passed; 435 of 436 normalizer controls passed. The actual Dafny range/round-trip/false-check control returned Unsupported: Unsigned wrapper call has no captured direct raw-command root. Protocol and proof stages did not run.",
-      "consequence": "The source guard/root relationship needs an identity-preserving diagnostic before extending the reviewed wrapper certificate. Generated checking units, guards and goals remain required; no target or expectation is removed."
+      "consequence": "The source guard/root relationship needs an identity-preserving diagnostic before extending the reviewed wrapper certificate. Generated checking units, guards and goals remain required; no target or expectation is removed.",
+      "repair": "Separate structured If guard certificates retain exact producer, polarity, owner and replay occurrence identities. The test build uses the original captured Core with project dependencies disabled; all immutable binary and source checks remain required.",
+      "recheckSourceCommit": "52ee01f1aa5abab762bf39e1cf499fe5ed832634",
+      "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37251480365",
+      "recheckReceiptSha256": "006cf80517526c08a8e797c681f35713f353e8a5dec643a10118495531ff0460",
+      "recheckFinding": "All 35 expected compiler/normalizer controls passed, including the original actual Dafny range/round-trip/false-check control. Five owned stages and ten immutable boundaries passed, with zero cleanup signals or residual children. The first Core and test snapshots were retained unchanged. The full 469-control normalizer suite, 79 source-defined corpus cases, library proof, worker runtime and default compatibility were not run."
     },
     {
       "kind": "same-process native comparison qualification incomplete",
@@ -138,6 +143,33 @@
       "finding": "The inspected focused checkpoint passed 26 Core controls, 260 structural controls and 29 visibility fixtures, plus five fresh launches including two concurrent launches.",
       "consequence": "This is a bounded definition-availability result. Combined numeric/visibility and general recursive-fuel coverage remain pending.",
       "receiptSha256": "3132aafa43441064ae3310c572fe3e803aa08673d7d8c4b0bf7e8f22923b72a0"
+    },
+    {
+      "kind": "archived Real trace inspection",
+      "scope": "Separate artifact-only diagnostic; not native Real acceptance",
+      "sourceCommit": "351dbb34fd36e34068a73eb30ab886ddc88641a4",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/37249776602",
+      "receiptSha256": "d6eec0dd9ee87c1ba934d1dc51c5a033e8b55718f3e453f671cdbede387fa0e3",
+      "finding": "All 45 inspection/parser controls passed against the exact archived requests, completions and traces. All eight reviewed ordered attempt schedules matched; three mathematical targets matched, including an exploratory pure irrational countermodel. None of the eight complete traces qualified. Earlier provenance gaps and unresolved selected I/O remain mandatory rejection conditions.",
+      "consequence": "The inspection launched no compiler, library, worker or solver. Original Real conversion and irrational corpus acceptance remain unresolved; no physical query equality or resource-count conclusion follows."
+    },
+    {
+      "kind": "shared native proof context collection failure",
+      "scope": "Separate codex/b3-126-shared-native-routing diagnostic",
+      "sourceCommit": "e85cbadb5aa2d0da93663ca88415149bb318fbc8",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/37243994794",
+      "receiptSha256": "535c512b0c1e44a724ad7d050b804b9a45f553f5c054b80d64c82e2010df070a",
+      "finding": "The first baseline/true case produced one valid native VC with 1955 resource units, but its private context did not collect. Only one of six required cases ran, none was accepted, and seven of twenty-eight audits were recorded. The owned proof solver was terminated after CLI completion; both owned process groups were drained and removed.",
+      "consequence": "The managed retention root is unobserved. Six-case native verdict/cost parity, broader repeats and full default compatibility remain unresolved."
+    },
+    {
+      "kind": "native retention inventory prerequisite stopped",
+      "scope": "Read-only official archive and runner inventory; full diagnostic disabled",
+      "sourceCommit": "4d308a73f930285b8dc35e7b916ead0f8d7786cf",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/37252189863",
+      "receiptSha256": "0b49b89991098f783176b7ca67c587d6a4b7085c5874e49aeabbf578814903aa",
+      "finding": "Fixed routing passed and all twelve other jobs were skipped. Inventory failed the bounded ELF program-header requirement before producing a candidate catalog. The failed receipt does not identify the offending file.",
+      "consequence": "No SDK, collector, analyzer, target or solver was launched. Runner closure, dynamic load closure and the full retention diagnostic remain unqualified."
     }
   ]
 }
