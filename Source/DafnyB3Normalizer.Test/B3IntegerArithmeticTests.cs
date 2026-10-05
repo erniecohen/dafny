@@ -109,9 +109,8 @@ public class B3IntegerArithmeticTests {
   }
 
   [Fact]
-  public void RealDivisionAndPowerStillFailClosed() {
-    Unsupported(Boogie("procedure P(); implementation P() { assert 2.0 / 1.0 == 2.0; }"), "b3_primitive_type");
-    Unsupported(Boogie("procedure P(); implementation P() { assert 2.0 ** 2.0 == 4.0; }"), "b3_primitive_type");
+  public void PowerStillFailsClosed() {
+    Unsupported(Boogie("procedure P(); implementation P() { assert 2.0 ** 2.0 == 4.0; }"), "b3_arithmetic");
   }
 
   [Theory]

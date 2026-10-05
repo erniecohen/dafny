@@ -64,6 +64,8 @@ module DomainInstantiation {
     match typ
     case BoolType => BoolType
     case IntType => IntType
+    case RealType => RealType
+    case BitvectorType(_) => typ
     case TagType => TagType
     case UserType(decl) => if decl in tm then tm[decl] else typ
   }
@@ -221,10 +223,14 @@ module DomainInstantiation {
       instExpr := BLiteral(value);
     case ILiteral(value) =>
       instExpr := ILiteral(value);
+    case RLiteral(numerator, denominator) =>
+      instExpr := RLiteral(numerator, denominator);
+    case BvLiteral(value, width) =>
+      instExpr := BvLiteral(value, width);
     case CustomLiteral(s, typ) =>
       var ctyp := SubstituteType(typ, tm);
       // TODO: the following condition should be checked by disallowing custom literals from ever having a type-parameter type
-      expect ctyp != BoolType && ctyp != IntType, "unchecked condition: domain instantiation should not allow custom-literal types to become bool or int";
+      expect ctyp != BoolType && ctyp != IntType && ctyp != RealType && !ctyp.BitvectorType?, "unchecked condition: domain instantiation should not allow custom-literal types to become bool, int, or real";
       instExpr := CustomLiteral(s, ctyp);
     case IdExpr(v) =>
       expect v in vm;

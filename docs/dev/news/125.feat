@@ -1,0 +1,3 @@
+The experimental opt-in B3 backend can normalize bounded source-owned guarded literal definitions with scoped hide/reveal masks and fresh solver-context replay. Unsupported definitions, changing visibility backedges and ambiguous scope origins fail closed.
+
+Definition-context traversal now includes native word-operation arguments: existing eligible guarded source definitions can be selected inside conversions, and aggregate replay-node admission counts nested word expressions. Exact replay, source check identities and budgets are unchanged.

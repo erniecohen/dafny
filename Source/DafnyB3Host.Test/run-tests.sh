@@ -18,8 +18,8 @@ import hashlib, json, pathlib, sys
 source, package = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
 files = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(package.iterdir())
          if p.is_file() and p.suffix in ('.dll', '.json') and p.name != 'b3-worker-manifest.json'}
-manifest = {'version': 1, 'b3Commit': 'ea6e8a18dfe9e317d313de769291f989957dc5f2',
-            'normalizerVersion': 'experimental-1', 'bootstrapCompiler': '4.11.0+fcb2042d.review.a171069d',
+manifest = {'version': 3, 'b3Commit': 'ea6e8a18dfe9e317d313de769291f989957dc5f2',
+            'normalizerVersion': 'experimental-3', 'bootstrapCompiler': '4.11.0+fcb2042d.review.a171069d',
             'sourceFingerprint': hashlib.sha256(source.read_bytes()).hexdigest(), 'files': files}
 (package / 'b3-worker-manifest.json').write_text(json.dumps(manifest, separators=(',', ':')) + '\n')
 MANIFEST

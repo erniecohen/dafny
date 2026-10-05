@@ -3,6 +3,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Globalization;
+using System.Numerics;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
@@ -15,7 +17,8 @@ namespace Microsoft.Dafny;
 #nullable enable
 public sealed record B3NormalizationDiagnostic(string Code, string Message, Bpl.IToken Token);
 public sealed record B3NormalizationResult(Ir.Program? Program, IReadOnlyList<Ir.SourceIdentity> Obligations,
-  IReadOnlyList<B3NormalizationDiagnostic> Diagnostics, IReadOnlyList<string> Approximations) {
+  IReadOnlyList<B3NormalizationDiagnostic> Diagnostics, IReadOnlyList<string> Approximations,
+  IReadOnlyList<B3VerificationContext>? Contexts = null) {
   public bool Success => Program != null && Diagnostics.Count == 0;
 }
 
@@ -30,6 +33,15 @@ public static class B3Normalizer {
     DafnyOptions options) {
     try {
       return new Normalization(program, implementation, options).Run();
+    } catch (B3StructuredCfgCorrespondence.Rejection rejected) {
+      return new B3NormalizationResult(null, Array.Empty<Ir.SourceIdentity>(),
+        new[] { new B3NormalizationDiagnostic("b3_cfg_correspondence", rejected.Message, rejected.Token) }, Array.Empty<string>());
+    } catch (B3DefinitionVisibility.Rejection rejected) {
+      return new B3NormalizationResult(null, Array.Empty<Ir.SourceIdentity>(),
+        new[] { new B3NormalizationDiagnostic("b3_visibility", rejected.Message, rejected.Token) }, Array.Empty<string>());
+    } catch (B3UnsignedWrappers.Rejection rejected) {
+      return new B3NormalizationResult(null, Array.Empty<Ir.SourceIdentity>(),
+        new[] { new B3NormalizationDiagnostic("b3_unsigned_wrapper", rejected.Message, rejected.Token) }, Array.Empty<string>());
     } catch (Unsupported unsupported) {
       return new B3NormalizationResult(null, Array.Empty<Ir.SourceIdentity>(),
         new[] { new B3NormalizationDiagnostic(unsupported.Code, unsupported.Message, unsupported.Token) },
@@ -85,7 +97,16 @@ public static class B3Normalizer {
     private int variableNumber;
     private int boundNumber;
     private int expressionCount;
+    private long numericCharacters;
+    private long bitvectorExpressionBits;
+    private HashSet<Bpl.Function> ownedBitvectorFunctions;
+    private B3UnsignedWrappers unsignedWrappers;
     private Environment entry;
+    private B3DefinitionVisibility visibility;
+    private readonly List<Bpl.HideRevealCmd> visibilityCommands = new();
+    private readonly HashSet<Bpl.ReturnCmd> explicitReturns = new();
+    private readonly Dictionary<string, Bpl.Function> functionOwners = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, (B3DefinitionVisibility.Frame Frame, Ir.Expression Condition, Bpl.Absy Origin)> checkMasks = new(StringComparer.Ordinal);
 
     public Normalization(Bpl.Program source, Bpl.Implementation unit, DafnyOptions options) {
       this.source = source; this.unit = unit; this.options = options;
@@ -103,7 +124,10 @@ public static class B3Normalizer {
       Require(unit.StructuredStmts != null, "b3_structure", "A structured pre-VC body is required", unit.tok);
       Require(unit.InParams.Count == unit.Proc.InParams.Count && unit.OutParams.Count == unit.Proc.OutParams.Count,
         "b3_formals", "Implementation/procedure formal lists differ", unit.tok);
+      var ifGuards = B3StructuredCfgCorrespondence.DescribeIfGuards(unit);
+      unsignedWrappers = new B3UnsignedWrappers(source, unit, ifGuards);
       InspectControl(unit.StructuredStmts);
+      visibility = new B3DefinitionVisibility(unit);
       var formals = new Dictionary<Bpl.Variable, Ir.Expression>();
       for (var i = 0; i < unit.InParams.Count; i++) { formals.Add(unit.Proc.InParams[i], Name(unit.InParams[i])); }
       for (var i = 0; i < unit.OutParams.Count; i++) { formals.Add(unit.Proc.OutParams[i], Name(unit.OutParams[i])); }
@@ -126,19 +150,206 @@ public static class B3Normalizer {
         prologue.Add(new Ir.Assume(Expr(requires.Condition, entry)));
       }
       var body = Structured(unit.StructuredStmts, entry, new Control());
-      var exit = Exit(entry);
+      var exit = Exit(entry, null);
+      ValidateRawAssertionCoverage();
       // Discovering expressions above discovers every demanded global. Save entry state before any assumptions.
       var snapshots = oldNames.Select(pair => (Ir.Statement)new Ir.Assign(pair.Value.Name, Name(pair.Key))).ToList();
       var statements = snapshots.Concat(prologue).Append(body).Append(exit).ToArray();
       var normalized = new Ir.Program(types.Values.ToArray(), functions.Values.ToArray(), Array.Empty<Ir.Axiom>(),
         new Ir.Unit(Symbol("unit:" + unit.Name), variables.ToArray(), new Ir.Block(statements)));
+      var catalogue = LiteralDefinitions();
+      // Formula conversion can demand additional stable guard symbols. Use the same declarations in every replay.
+      normalized = normalized with { Types = types.Values.ToArray(), Functions = functions.Values.ToArray() };
       CheckOwnedBounds(normalized);
+      unsignedWrappers.BindOriginalGuardOccurrences(normalized);
+      var selected = SelectDefinitions(catalogue);
+      var contexts = B3DefinitionContexts.Create(normalized, obligations.ToArray(), selected, unit.tok);
+      var lowered = unsignedWrappers.Lower(normalized, obligations.ToArray(), selected, contexts);
+      if (!ReferenceEquals(lowered, normalized)) {
+        CheckOwnedBounds(lowered);
+        var finalContexts = B3DefinitionContexts.Create(lowered, obligations.ToArray(), selected, unit.tok);
+        unsignedWrappers.ValidateContexts(contexts, finalContexts);
+        normalized = lowered; contexts = finalContexts;
+      }
       return new B3NormalizationResult(normalized, obligations.ToArray(), Array.Empty<B3NormalizationDiagnostic>(),
-        new[] { "All source axioms, distinct-constant constraints and lambda equations are omitted. Ordinary nonidentity function definitions are omitted; exact typed integer division/modulo bodies and active always-revealed universal definitions substitute their native operations. Other demanded closed function instances and constants are uninterpreted. Direct reads of owned closed monomorphic store expressions use the read-over-write ITE identity; other map operations remain uninterpreted. Exact metadata-free complete-tuple forall read equalities are abstracted by an uninterpreted Bool predicate of their two map values. No global read-over-write or observation axioms are asserted. Map equality remains opaque without extensionality.",
+        new[] { "Outside reviewed guarded literal-definition contexts, source axioms, distinct-constant constraints and lambda equations are omitted. Reviewed typed Int/Real arithmetic and conversion routes preserve native primitives, actual Body expansions and eligible active always-revealed universal definitions. Positive-width word primitives preserve exact owned semantic declarations or accepted actual typed Body expansions; exact literal Int/Bool Bodies of Int-alias functions are preserved. Exact unsigned wrappers are substituted only after direct raw-command or complete producer-owned non-loop If-guard witnesses and every retained G3 occurrence are independently certified against an owned nonhideable source equality. Other demanded closed function instances and constants are uninterpreted. Direct reads of owned closed monomorphic store expressions use the read-over-write ITE identity; other map operations remain uninterpreted. Exact metadata-free complete-tuple forall read equalities are abstracted by an uninterpreted Bool predicate of their two map values. No global read-over-write or observation axioms are asserted. Map equality remains opaque without extensionality.",
           "StateCmd and call-temporary scope-entry where predicates are omitted: pinned scope passification appends raw predicates without current-incarnation substitution. Post-havoc where predicates are preserved." }
           .Concat(mapHelperOrigins.Values).Concat(mapObservationOrigins.Values)
-          .Concat(opaqueMapOrigins.OrderBy(s => s, StringComparer.Ordinal)).ToArray());
+          .Concat(opaqueMapOrigins.OrderBy(s => s, StringComparer.Ordinal))
+          .Concat(contexts.SelectMany(context => context.Definitions).DistinctBy(definition => definition.Id)
+            .Select(definition => "Active source definition instance: owner=" + definition.Owner + "; source-axiom=" + definition.AxiomOrdinal +
+              "; formula-sha256=" + definition.FormulaHash + "; instance=" + definition.Instance))
+          .ToArray(), contexts);
     }
+
+    private Bpl.ReturnCmd[] FallthroughReturns() => unit.Blocks.Select(block => block.TransferCmd).OfType<Bpl.ReturnCmd>()
+      .Where(returned => !explicitReturns.Contains(returned) && (visibility == null || visibility.IsReachable(returned))).ToArray();
+
+    private B3DefinitionVisibility.Frame FallthroughMask() {
+      var returns = FallthroughReturns();
+      if (returns.Length == 0) {
+        // All source fallthroughs are absent. This appended static exit is unreachable;
+        // retain its checks but add no definition premise for that synthetic position.
+        return new B3DefinitionVisibility.Frame(Bpl.HideRevealCmd.Modes.Hide,
+          System.Collections.Immutable.ImmutableHashSet<Bpl.Function>.Empty);
+      }
+      return returns.Select(returned => visibility.After(returned)).Aggregate(B3DefinitionVisibility.MergeFrames);
+    }
+
+    private sealed record OwnedFormula(Bpl.Function Owner, B3DefinitionContexts.Formula Formula);
+    private IReadOnlyList<OwnedFormula> LiteralDefinitions() {
+      var owners = functionOwners.Values.Concat(visibilityCommands.Where(command => command.Function != null)
+        .Select(command => command.Function)).Distinct().ToArray();
+      var catalogue = new List<OwnedFormula>();
+      foreach (var function in owners) {
+        if (!source.TopLevelDeclarations.Contains(function) || function.TypeParameters.Count != 0 ||
+            function.InParams.Count > 1 || function.InParams.Any(parameter => !parameter.TypedIdent.Type.IsBool || parameter.TypedIdent.WhereExpr != null) ||
+            function.OutParams.Count != 1 || !(function.OutParams[0].TypedIdent.Type.IsBool || function.OutParams[0].TypedIdent.Type.IsInt)) { continue; }
+        foreach (var axiom in function.DefinitionAxioms) {
+          if (!axiom.CanHide || !source.TopLevelDeclarations.Contains(axiom)) { continue; }
+          var body = axiom.Expr;
+          var binders = Array.Empty<Bpl.Variable>();
+          if (body is Bpl.ForallExpr quantified) {
+            if (quantified.TypeParameters.Count != 0 || quantified.Dummies.Count is < 1 or > 4 ||
+                quantified.Dummies.Any(dummy => !dummy.TypedIdent.Type.IsBool || dummy.TypedIdent.WhereExpr != null)) { continue; }
+            binders = quantified.Dummies.ToArray(); body = quantified.Body;
+          }
+          if (!GroundDefinition(body, binders.ToHashSet()) || !HasLiteralEquation(body, function, 0)) { continue; }
+          for (var instance = 0; instance < 1 << binders.Length; instance++) {
+            var values = binders.Select((binder, index) => new KeyValuePair<Bpl.Variable, Ir.Expression>(binder,
+              new Ir.BooleanLiteral((instance & (1 << index)) != 0))).ToDictionary(pair => pair.Key, pair => pair.Value);
+            var environment = new Environment(values, new Dictionary<Bpl.Variable, Ir.Expression>());
+            var condition = Expr(body, environment);
+            var ordinal = source.TopLevelDeclarations.ToList().IndexOf(axiom);
+            var hash = B3DefinitionContexts.FormulaHash(condition);
+            var instanceName = binders.Length == 0 ? "ground" : "bool-tuple-" + instance;
+            var origin = new B3DefinitionOrigin(Symbol(function.Name + ":" + ordinal + ":" + instanceName + ":" + hash),
+              function.Name, ordinal, hash, instanceName, Math.Max(0, axiom.tok.line), Math.Max(0, axiom.tok.col));
+            catalogue.Add(new OwnedFormula(function, new B3DefinitionContexts.Formula(origin, condition)));
+            Require(catalogue.Count <= 64, "b3_definition_limit", "Eligible definition instances exceed the bounded catalogue", axiom.tok);
+          }
+        }
+      }
+      foreach (var command in visibilityCommands.Where(command => command.Function != null)) {
+        Require(catalogue.Any(formula => ReferenceEquals(formula.Owner, command.Function)), "b3_visibility",
+          "Named hide/reveal requires an active owned guarded literal definition in the initial slice", command.tok);
+      }
+      if (visibilityCommands.Any(command => command.Function == null)) {
+        Require(catalogue.Count > 0, "b3_visibility", "Wildcard visibility requires a demanded eligible source definition", unit.tok);
+      }
+      return catalogue;
+    }
+
+    private bool GroundDefinition(Bpl.Expr root, HashSet<Bpl.Variable> bound) {
+      var pending = new Stack<(Bpl.Expr Expr, int Depth)>(); pending.Push((root, 0)); var count = 0;
+      while (pending.Count > 0) {
+        var (expression, depth) = pending.Pop();
+        if (depth >= Ir.Protocol.MaximumDepth || ++count > Ir.Protocol.MaximumNodes) { return false; }
+        switch (expression) {
+          case Bpl.LiteralExpr literal when literal.Val is bool or BigNum: break;
+          case Bpl.IdentifierExpr identifier when bound.Contains(identifier.Decl): break;
+          case Bpl.IdentifierExpr { Decl: Bpl.Constant constant } when source.TopLevelDeclarations.Contains(constant) &&
+              (constant.TypedIdent.Type.IsBool || constant.TypedIdent.Type.IsInt): break;
+          case Bpl.NAryExpr application:
+            if (application.Fun is Bpl.FunctionCall call) {
+              if (call.Func == null) { return false; }
+              var projection = IdentityProjection(call.Func);
+              if (projection >= 0 && projection < application.Args.Count &&
+                  (application.Type?.IsBool == true || application.Type?.IsInt == true) &&
+                  (application.Type.IsBool && application.Args[projection].Type?.IsBool == true ||
+                    application.Type.IsInt && application.Args[projection].Type?.IsInt == true)) {
+                // This is the same source-backed identity substitution used by Expr.
+                // In particular, resolved Lit<bool>(true) retains the whole owned formula.
+                foreach (var argument in application.Args) { pending.Push((argument, depth + 1)); }
+                break;
+              }
+              if (call.Func.TypeParameters.Count != 0 ||
+                  !source.TopLevelDeclarations.Contains(call.Func) ||
+                  call.Func.InParams.Any(parameter => !(parameter.TypedIdent.Type.IsBool || parameter.TypedIdent.Type.IsInt)) ||
+                  call.Func.OutParams.Count != 1 || !(call.Func.OutParams[0].TypedIdent.Type.IsBool || call.Func.OutParams[0].TypedIdent.Type.IsInt)) { return false; }
+            } else if (application.Fun is not (Bpl.BinaryOperator or Bpl.UnaryOperator or Bpl.IfThenElse or Bpl.TypeCoercion)) { return false; }
+            foreach (var argument in application.Args) { pending.Push((argument, depth + 1)); }
+            break;
+          default: return false;
+        }
+      }
+      return true;
+    }
+
+    private bool HasLiteralEquation(Bpl.Expr expression, Bpl.Function owner, int depth) {
+      if (depth >= Ir.Protocol.MaximumDepth || expression is not Bpl.NAryExpr { Fun: Bpl.BinaryOperator binary } application) { return false; }
+      if (binary.Op == Bpl.BinaryOperator.Opcode.Imp && application.Args.Count == 2) {
+        return HasLiteralEquation(application.Args[1], owner, depth + 1);
+      }
+      if (binary.Op == Bpl.BinaryOperator.Opcode.And && application.Args.Count == 2) {
+        return application.Args.Any(argument => HasLiteralEquation(argument, owner, depth + 1));
+      }
+      return application.Args.Count == 2 &&
+        (binary.Op == Bpl.BinaryOperator.Opcode.Eq || binary.Op == Bpl.BinaryOperator.Opcode.Iff &&
+          Type(application.Args[0].Type) == "bool" && Type(application.Args[1].Type) == "bool") &&
+        application.Args[0] is Bpl.NAryExpr { Fun: Bpl.FunctionCall call } defining &&
+        ReferenceEquals(call.Func, owner) && IsMonomorphic(defining) && defining.Args.Count == owner.InParams.Count &&
+        (owner.InParams.Count == 0 || defining.Args[0] is Bpl.LiteralExpr { Val: true }) &&
+        IsLiteralDefinitionValue(application.Args[1], 0);
+    }
+    private bool IsLiteralDefinitionValue(Bpl.Expr expression, int depth) {
+      if (depth >= Ir.Protocol.MaximumDepth) { return false; }
+      if (expression is Bpl.LiteralExpr literal) { return literal.Val is bool or BigNum; }
+      if (expression is Bpl.NAryExpr { Fun: Bpl.FunctionCall call } application && call.Func != null) {
+        var projection = IdentityProjection(call.Func);
+        return projection >= 0 && projection < application.Args.Count && IsLiteralDefinitionValue(application.Args[projection], depth + 1);
+      }
+      return false;
+    }
+
+    private IReadOnlyDictionary<string, IReadOnlyList<B3DefinitionContexts.Formula>> SelectDefinitions(IReadOnlyList<OwnedFormula> catalogue) {
+      var result = new Dictionary<string, IReadOnlyList<B3DefinitionContexts.Formula>>(StringComparer.Ordinal);
+      var must = visibility?.AnalyzeMust(catalogue.Select(formula => formula.Owner).Distinct().ToArray());
+      B3DefinitionVisibility.MustFrame Mask(Bpl.Absy origin) {
+        if (origin != null) { return must.Before(origin); }
+        var returns = FallthroughReturns();
+        return returns.Length == 0 ? B3DefinitionVisibility.MustFrame.Unreachable :
+          returns.Select(returned => must.After(returned)).Aggregate(B3DefinitionVisibility.MustFrame.Merge);
+      }
+      var mayRevealOperands = must == null ? Array.Empty<B3DefinitionVisibility.MustFrame>() :
+        must.NativeAssertionOperands().Concat(checkMasks.Values.Select(check => Mask(check.Origin)))
+          .Where(frame => frame.MayReveal).ToArray();
+      foreach (var (id, check) in checkMasks) {
+        if (visibility != null && (check.Origin == null ? FallthroughReturns().Length == 0 : !visibility.IsReachable(check.Origin))) {
+          // A known disconnected source goal remains in the static partition without any definition premise.
+          result.Add(id, Array.Empty<B3DefinitionContexts.Formula>());
+          continue;
+        }
+        var demanded = new HashSet<Bpl.Function>();
+        var pending = new Stack<Ir.Expression>(); pending.Push(check.Condition);
+        while (pending.Count > 0) {
+          var expression = pending.Pop();
+          if (expression is Ir.Application application && functionOwners.TryGetValue(application.Name, out var owner)) { demanded.Add(owner); }
+          foreach (var child in ExpressionChildren(expression)) { pending.Push(child); }
+        }
+        if (visibilityCommands.Count > 0) {
+          foreach (var demandedOwner in demanded.Where(owner => owner.DefinitionAxioms.Any(axiom => axiom.CanHide))) {
+            Require(catalogue.Any(formula => ReferenceEquals(formula.Owner, demandedOwner)), "b3_visibility",
+              "Demanded visibility-sensitive definition is outside the guarded literal slice", demandedOwner.tok);
+          }
+        }
+        var pathMask = must == null ? null : Mask(check.Origin);
+        result.Add(id, catalogue.Where(formula => demanded.Contains(formula.Owner) && check.Frame.IsRevealed(formula.Owner) &&
+          // A native path split can remove predecessors and change the exact raw merge's mode.
+          // Preserve a sufficient owner premise under every retained path subset and mixed aggregate.
+          (formula.Owner.AlwaysRevealed || pathMask == null || pathMask.IsRevealed(formula.Owner) &&
+            (pathMask.AllReveal || mayRevealOperands.All(frame => frame.IsRevealed(formula.Owner)))))
+          .Select(formula => formula.Formula).DistinctBy(formula => formula.Origin.Id).ToArray());
+      }
+      return result;
+    }
+    private static IEnumerable<Ir.Expression> ExpressionChildren(Ir.Expression expression) => expression switch {
+      Ir.Application application => application.Arguments, Ir.Operation operation => operation.Arguments,
+      Ir.BitvectorOperation operation => operation.Arguments,
+      Ir.Quantifier quantifier => new[] { quantifier.Body }.Concat(quantifier.Patterns.SelectMany(pattern => pattern)),
+      Ir.Let let => new[] { let.Value, let.Body }, Ir.Label label => new[] { label.Body },
+      _ => Array.Empty<Ir.Expression>()
+    };
 
     private Ir.Variable Fresh(string type) {
       var binding = new Ir.Binding("sV" + ++variableNumber, type);
@@ -157,6 +368,8 @@ public static class B3Normalizer {
     private Ir.Expression Variable(Bpl.Variable variable, Environment env, bool old) {
       if (env.Values.TryGetValue(variable, out var value)) { return value; }
       if (variable is Bpl.Constant constant) {
+        Require(source.TopLevelDeclarations.Contains(constant), "b3_declaration_identity",
+          "Opaque constant is not an active declaration in the typed source artifact", constant.tok);
         return Apply("constant:" + constant.Name, Type(constant.TypedIdent.Type), Array.Empty<Ir.Expression>());
       }
       if (old && variable is Bpl.GlobalVariable) {
@@ -171,7 +384,7 @@ public static class B3Normalizer {
     }
     private string Type(Bpl.Type type) {
       var key = TypeKey(type, new Dictionary<Bpl.TypeVariable, int>(), 0);
-      if (key is "bool" or "int") { return key; }
+      if (key is "bool" or "int" or "real" || Ir.ProtocolValidation.TryBitvectorWidth(key, out _)) { return key; }
       if (!types.TryGetValue(key, out var name)) { name = Symbol("type:" + key); types.Add(key, name); }
       return name;
     }
@@ -184,9 +397,14 @@ public static class B3Normalizer {
         return TypeKey(target, bound, depth + 1);
       }
       if (type is Bpl.TypeSynonymAnnotation alias) { return TypeKey(alias.ExpandedType, bound, depth + 1); }
+      if (type is Bpl.BvType word) {
+        Require(word.Bits is > 0 and <= Ir.Protocol.MaximumBitvectorWidth,
+          "b3_bitvector_width", "Native bitvector width is outside the positive bounded fragment", type.tok);
+        return Ir.Protocol.BitvectorTypeName(word.Bits);
+      }
       if (type is Bpl.BasicType basic) {
-        Require(basic.IsBool || basic.IsInt, "b3_primitive_type", "Initial B3 slice supports bool and int primitives", type.tok);
-        return basic.IsBool ? "bool" : "int";
+        Require(basic.IsBool || basic.IsInt || basic.IsReal, "b3_primitive_type", "B3 supports bool, int, and real primitives", type.tok);
+        return basic.IsBool ? "bool" : basic.IsInt ? "int" : "real";
       }
       if (type is Bpl.TypeVariable parameter) {
         Require(bound.TryGetValue(parameter, out var index), "b3_open_type", "Residual free type parameter", type.tok);
@@ -330,11 +548,21 @@ public static class B3Normalizer {
       Require(expression != null && depth < Ir.Protocol.MaximumDepth && ++expressionCount <= Ir.Protocol.MaximumNodes,
         "b3_expression_limit", "Missing expression or normalization resource bound exceeded", expression?.tok ?? unit.tok);
       var type = Type(expression.Type);
+      ReserveBitvectorExpression(type, expression.tok);
       switch (expression) {
         case Bpl.LiteralExpr literal when literal.Val is bool boolean: return new Ir.BooleanLiteral(boolean);
-        case Bpl.LiteralExpr literal when literal.Val is BigNum integer: return new Ir.IntegerLiteral(integer.ToString());
+        case Bpl.LiteralExpr literal when literal.Val is BigNum integer:
+          return new Ir.IntegerLiteral(CaptureInteger(integer.ToBigInteger, expression.tok));
+        case Bpl.LiteralExpr literal when literal.Val is BigDec real:
+          return CaptureReal(real, expression.tok);
+        case Bpl.LiteralExpr literal when literal.Val is Bpl.BvConst word:
+          return CaptureBitvector(word, type, expression.tok);
         case Bpl.IdentifierExpr identifier: return Variable(identifier.Decl, env, old);
         case Bpl.OldExpr previous: return Expr(previous.Expr, env, true, depth + 1);
+        case Bpl.BvExtractExpr extract:
+          return BitvectorExtract(extract, type, Expr(extract.Bitvector, env, old, depth + 1));
+        case Bpl.BvConcatExpr concat:
+          return BitvectorConcat(concat, type, Expr(concat.E0, env, old, depth + 1), Expr(concat.E1, env, old, depth + 1));
         case Bpl.NAryExpr application: {
           var args = application.Args.Select(a => Expr(a, env, old, depth + 1)).ToArray();
           switch (application.Fun) {
@@ -342,6 +570,8 @@ public static class B3Normalizer {
               return new Ir.Operation(unary.Op == Bpl.UnaryOperator.Opcode.Not ? Ir.Operator.Not : Ir.Operator.Negate, type, args);
             case Bpl.BinaryOperator binary: return Binary(binary.Op, type, args, expression.tok);
             case Bpl.IfThenElse: return new Ir.Operation(Ir.Operator.IfThenElse, type, args);
+            case Bpl.ArithmeticCoercion coercion:
+              return Coercion(coercion.Coercion, type, args, expression.tok);
             case Bpl.TypeCoercion:
               Require(args.Length == 1 && args[0].Type == type, "b3_coercion", "Nontrivial type coercion is unsupported", expression.tok);
               return args[0];
@@ -349,18 +579,26 @@ public static class B3Normalizer {
             case Bpl.MapStore: return MapOperation(application, type, args, true);
             case Bpl.FunctionCall call:
               Require(call.Func != null, "b3_resolution", "Unresolved function call", expression.tok);
+              if (TryNativeBitvectorFunction(application, type, args, new HashSet<Bpl.Function>(ReferenceEqualityComparer.Instance), depth,
+                  out var bitvector)) { return bitvector; }
               if (TryNativeIntegerBody(call.Func, type, args, out var arithmetic) ||
-                  TryNativeIntegerAxiom(call.Func, type, args, out arithmetic)) { return arithmetic; }
+                  TryNativeIntegerAxiom(call.Func, type, args, out arithmetic) ||
+                  TryNativeRealConversion(call.Func, type, args, out arithmetic)) { return arithmetic; }
               Require(!HasPrimitiveArithmeticDefinition(call.Func), "b3_arithmetic",
-                "Called primitive division/modulo/power definition is unsupported pending correspondence", expression.tok);
+                "Called primitive arithmetic definition is outside the reviewed substitution routes", expression.tok);
               var projection = IdentityProjection(call.Func);
               if (projection >= 0 && projection < args.Length && args[projection].Type == type) { return args[projection]; }
+              Require(source.TopLevelDeclarations.Contains(call.Func), "b3_declaration_identity",
+                "Opaque function is not an active declaration in the typed source artifact", expression.tok);
               var instantiation = call.Func.TypeParameters.Count == 0 ? "" :
                 string.Join(",", call.Func.TypeParameters.Select(p => {
                   Require(application.TypeParameters != null, "b3_instantiation", "Missing resolved function instantiation", expression.tok);
                   return Type(application.TypeParameters[p]);
                 }));
-              return Apply("function:" + call.Func.Name + "<" + instantiation + ">", type, args);
+              var applied = (Ir.Application)Apply("function:" + call.Func.Name + "<" + instantiation + ">", type, args);
+              functionOwners[applied.Name] = call.Func;
+              unsignedWrappers.Capture(application, applied);
+              return applied;
             default: throw new Unsupported("b3_operator", "Unsupported expression operator " + application.Fun.GetType().Name, expression.tok);
           }
         }
@@ -399,6 +637,336 @@ public static class B3Normalizer {
         default: throw new Unsupported("b3_expression", "Unsupported expression " + expression.GetType().Name, expression.tok);
       }
     }
+    private string CaptureInteger(BigInteger value, Bpl.IToken token) {
+      // Check storage before decimal conversion, then check exact decimal length.
+      Require(value.GetBitLength() <= 4L * Ir.Protocol.MaximumIntegerCharacters,
+        "b3_literal_limit", "Exact numeric literal exceeds its size bound", token);
+      var digits = value.ToString(CultureInfo.InvariantCulture);
+      Require(digits.Length <= Ir.Protocol.MaximumIntegerCharacters,
+        "b3_literal_limit", "Exact numeric literal exceeds its size bound", token);
+      ReserveNumeric(digits.Length, token);
+      return digits;
+    }
+
+    private Ir.RationalLiteral CaptureReal(BigDec value, Bpl.IToken token) {
+      var mantissa = value.Mantissa;
+      if (mantissa.IsZero) {
+        ReserveNumeric(2, token);
+        return new Ir.RationalLiteral("0", "1");
+      }
+      Require(mantissa.GetBitLength() <= 4L * Ir.Protocol.MaximumIntegerCharacters,
+        "b3_literal_limit", "Exact real literal exceeds its size bound", token);
+      var digits = mantissa.ToString(CultureInfo.InvariantCulture);
+      var exponent = (long)value.Exponent; // Widen before negation, including int.MinValue.
+      var numeratorLength = digits.Length + Math.Max(0L, exponent);
+      var denominatorLength = 1L + Math.Max(0L, -exponent);
+      Require(numeratorLength <= Ir.Protocol.MaximumIntegerCharacters &&
+        denominatorLength <= Ir.Protocol.MaximumIntegerCharacters,
+        "b3_literal_limit", "Exact real literal expansion exceeds its size bound", token);
+      ReserveNumeric(numeratorLength + denominatorLength, token);
+      // Every allocation below is bounded by the exact decimal-length checks above.
+      var numerator = exponent >= 0 ? mantissa * BigInteger.Pow(10, (int)exponent) : mantissa;
+      var denominator = exponent < 0 ? BigInteger.Pow(10, (int)-exponent) : BigInteger.One;
+      return new Ir.RationalLiteral(numerator.ToString(CultureInfo.InvariantCulture),
+        denominator.ToString(CultureInfo.InvariantCulture));
+    }
+
+    private void ReserveNumeric(long characters, Bpl.IToken token) {
+      numericCharacters += characters + 128; // Include the literal's JSON field overhead.
+      Require(numericCharacters <= Ir.Protocol.MaximumMessageBytes, "b3_literal_limit",
+        "Cumulative exact numeric literals exceed the message size bound", token);
+    }
+
+    private Ir.BitvectorLiteral CaptureBitvector(Bpl.BvConst word, string type, Bpl.IToken token) {
+      Require(word.Bits is > 0 and <= Ir.Protocol.MaximumBitvectorWidth &&
+        type == Ir.Protocol.BitvectorTypeName(word.Bits), "b3_bitvector_literal", "Word literal width and resolved type disagree", token);
+      var value = word.Value.ToBigInteger;
+      Require(value >= 0 && value.GetBitLength() <= 4L * Ir.Protocol.MaximumIntegerCharacters,
+        "b3_literal_limit", "Source word literal exceeds its numeric bound", token);
+      Require(value.ToString(CultureInfo.InvariantCulture).Length <= Ir.Protocol.MaximumIntegerCharacters,
+        "b3_literal_limit", "Source word literal exceeds its decimal bound", token);
+      // The pinned Boogie literal printer emits the low Bits bits, including for noncanonical source values.
+      var digits = (value % (BigInteger.One << word.Bits)).ToString(CultureInfo.InvariantCulture);
+      ReserveNumeric(digits.Length, token);
+      return new Ir.BitvectorLiteral(digits, word.Bits);
+    }
+
+    private static Ir.BitvectorOperation BitvectorExtract(Bpl.BvExtractExpr sourceExpression,
+      string type, Ir.Expression argument) {
+      Require(Ir.ProtocolValidation.TryBitvectorWidth(argument.Type, out var inputWidth) &&
+        sourceExpression.Start >= 0 && sourceExpression.Start < sourceExpression.End &&
+        sourceExpression.End <= inputWidth && type == Ir.Protocol.BitvectorTypeName(sourceExpression.End - sourceExpression.Start),
+        "b3_bitvector_extract", "Word extraction has invalid resolved sorts or indices", sourceExpression.tok);
+      return new Ir.BitvectorOperation(Ir.BitvectorOperator.Extract, sourceExpression.End - sourceExpression.Start,
+        sourceExpression.Start, sourceExpression.End, type, new[] { argument });
+    }
+
+    private static Ir.BitvectorOperation BitvectorConcat(Bpl.BvConcatExpr sourceExpression,
+      string type, Ir.Expression left, Ir.Expression right) {
+      var leftValid = Ir.ProtocolValidation.TryBitvectorWidth(left.Type, out var leftWidth);
+      var rightValid = Ir.ProtocolValidation.TryBitvectorWidth(right.Type, out var rightWidth);
+      Require(leftValid && rightValid &&
+        leftWidth + rightWidth <= Ir.Protocol.MaximumBitvectorWidth &&
+        type == Ir.Protocol.BitvectorTypeName(leftWidth + rightWidth),
+        "b3_bitvector_concat", "Word concatenation has invalid resolved sorts or width", sourceExpression.tok);
+      // Source E0 is the high word; E1 is the low word.
+      return new Ir.BitvectorOperation(Ir.BitvectorOperator.Concat, leftWidth + rightWidth, 0, 0, type, new[] { left, right });
+    }
+
+    private bool TryNativeBitvectorFunction(Bpl.NAryExpr application, string type, IReadOnlyList<Ir.Expression> args,
+      HashSet<Bpl.Function> expanding, int depth, out Ir.Expression expression) {
+      expression = null;
+      var function = ((Bpl.FunctionCall)application.Fun).Func;
+      Require(function != null, "b3_resolution", "Unresolved function in word expansion", application.tok);
+      var wordSignature = Ir.ProtocolValidation.TryBitvectorWidth(type, out _) ||
+        args.Any(argument => Ir.ProtocolValidation.TryBitvectorWidth(argument.Type, out _));
+      var claimed = false;
+      for (var attribute = function.Attributes; attribute != null; attribute = attribute.Next) {
+        claimed |= attribute.Key == "bvbuiltin" || attribute.Key == "builtin" && attribute.Params.Count == 1 &&
+          attribute.Params[0] is string text && (text.StartsWith("bv", StringComparison.Ordinal) ||
+            text.StartsWith("(_ int2bv ", StringComparison.Ordinal));
+      }
+      // BV0 is a resolved Int alias. This route preserves an exact actual Int/Bool literal Body;
+      // it does not infer a width from a name or force an arbitrary Int value to zero.
+      var literalBody = function.TypeParameters.Count == 0 && function.Body is Bpl.LiteralExpr { Val: BigNum or bool } &&
+        function.InParams.All(parameter => Type(parameter.TypedIdent.Type) == "int");
+      if (!wordSignature && !claimed && !literalBody) { return false; }
+      if (function.Body == null && !claimed) {
+        var semanticAttribute = false;
+        for (var attribute = function.Attributes; attribute != null; attribute = attribute.Next) {
+          semanticAttribute |= attribute.Key is "bvbuiltin" or "builtin";
+        }
+        if (!semanticAttribute) { return false; } // Keep closed generic ordinary UFs on the existing route.
+      }
+      ownedBitvectorFunctions ??= new HashSet<Bpl.Function>(source.TopLevelDeclarations.OfType<Bpl.Function>(), ReferenceEqualityComparer.Instance);
+      Require(depth < Ir.Protocol.MaximumDepth && ownedBitvectorFunctions.Contains(function) &&
+        function.TypeParameters.Count == 0 && IsMonomorphic(application) && function.OutParams.Count == 1 &&
+        function.InParams.Count == args.Count &&
+        new HashSet<Bpl.Variable>(function.InParams, ReferenceEqualityComparer.Instance).Count == function.InParams.Count &&
+        function.InParams.Concat(function.OutParams).All(parameter => parameter.TypedIdent.WhereExpr == null) &&
+        Type(function.OutParams[0].TypedIdent.Type) == type &&
+        function.InParams.Select((parameter, index) => Type(parameter.TypedIdent.Type) == args[index].Type &&
+          Type(application.Args[index].Type) == args[index].Type).All(matches => matches),
+        "b3_bitvector_function", "Word function is not an owned resolved monomorphic call with matching formal identities and sorts", application.tok);
+      if (function.Body != null) {
+        Require(expanding.Add(function), "b3_bitvector_body", "Cyclic actual word function Body", application.tok);
+        try {
+          var bindings = function.InParams.Select((formal, index) => new KeyValuePair<Bpl.Variable, Ir.Expression>(formal, args[index]))
+            .ToDictionary(pair => pair.Key, pair => pair.Value);
+          expression = BitvectorBody(function.Body, bindings, expanding, depth + 1);
+          Require(expression.Type == type, "b3_bitvector_body", "Actual word Body result sort differs from the call", application.tok);
+          return true;
+        } finally { expanding.Remove(function); }
+      }
+      var builtin = BitvectorBuiltin(function);
+      if (builtin == null) { return false; } // An ordinary word-valued UF remains an overapproximation.
+      if (builtin is "ext_rotate_left" or "ext_rotate_right") {
+        Require(Ir.ProtocolValidation.TryBitvectorWidth(type, out var rotationWidth) &&
+          args.Count == 2 && args.All(argument => argument.Type == type),
+          "b3_bitvector_signature", "Rotation requires two equal-width positive words and the same result sort", application.tok);
+        expression = PortableRotation(args[0], args[1], rotationWidth, builtin == "ext_rotate_left");
+        return true;
+      }
+      var reverse = builtin is "bvugt" or "bvuge";
+      Ir.BitvectorOperator operation;
+      switch (builtin) {
+        case "bvand": operation = Ir.BitvectorOperator.And; break;
+        case "bvor": operation = Ir.BitvectorOperator.Or; break;
+        case "bvxor": operation = Ir.BitvectorOperator.Xor; break;
+        case "bvnot": operation = Ir.BitvectorOperator.Not; break;
+        case "bvadd": operation = Ir.BitvectorOperator.Add; break;
+        case "bvsub": operation = Ir.BitvectorOperator.Subtract; break;
+        case "bvmul": operation = Ir.BitvectorOperator.Multiply; break;
+        case "bvudiv": operation = Ir.BitvectorOperator.UnsignedDivide; break;
+        case "bvurem": operation = Ir.BitvectorOperator.UnsignedRemainder; break;
+        case "bvult": case "bvugt": operation = Ir.BitvectorOperator.UnsignedLess; break;
+        case "bvule": case "bvuge": operation = Ir.BitvectorOperator.UnsignedLessEqual; break;
+        case "bvshl": operation = Ir.BitvectorOperator.ShiftLeft; break;
+        case "bvlshr": operation = Ir.BitvectorOperator.LogicalShiftRight; break;
+        case "bv2int": operation = Ir.BitvectorOperator.BitvectorToUnsignedInt; break;
+        default:
+          Require(TryIntToBitvectorIndex(builtin, out var index) &&
+            type == Ir.Protocol.BitvectorTypeName(index), "b3_bitvector_builtin",
+            "Claimed native word builtin is outside the reviewed fragment or has a mismatched index", application.tok);
+          operation = Ir.BitvectorOperator.IntToBitvector; break;
+      }
+      var unary = operation is Ir.BitvectorOperator.Not or Ir.BitvectorOperator.IntToBitvector or Ir.BitvectorOperator.BitvectorToUnsignedInt;
+      var comparison = operation is Ir.BitvectorOperator.UnsignedLess or Ir.BitvectorOperator.UnsignedLessEqual;
+      var wordType = operation == Ir.BitvectorOperator.IntToBitvector ? type : args.FirstOrDefault()?.Type;
+      Require(Ir.ProtocolValidation.TryBitvectorWidth(wordType, out var width) && args.Count == (unary ? 1 : 2) &&
+        (operation == Ir.BitvectorOperator.IntToBitvector
+          ? args[0].Type == "int" && type == wordType
+          : operation == Ir.BitvectorOperator.BitvectorToUnsignedInt
+            ? type == "int" && args[0].Type == wordType
+            : type == (comparison ? "bool" : wordType) && args.All(argument => argument.Type == wordType)),
+        "b3_bitvector_signature", "Native word primitive has an invalid arity, sort or same-width count", application.tok);
+      expression = new Ir.BitvectorOperation(operation, width, 0, 0, type, reverse ? args.Reverse().ToArray() : args);
+      return true;
+    }
+
+    // Three nested fresh lets preserve argument sharing and the r -> s dependency.
+    // The complete output traversal charges every generated occurrence and literal.
+    private Ir.Expression PortableRotation(Ir.Expression value, Ir.Expression count, int width, bool left) {
+      var type = Ir.Protocol.BitvectorTypeName(width);
+      var x = new Ir.Binding("sB" + ++boundNumber, type);
+      var r = new Ir.Binding("sB" + ++boundNumber, type);
+      var s = new Ir.Binding("sB" + ++boundNumber, type);
+      Ir.Variable Use(Ir.Binding binding) => new(binding.Name, binding.Type);
+      Ir.BitvectorLiteral Width() => new(width.ToString(CultureInfo.InvariantCulture), width);
+      Ir.BitvectorOperation Word(Ir.BitvectorOperator operation, params Ir.Expression[] arguments) =>
+        new(operation, width, 0, 0, type, arguments);
+      var remainder = Word(Ir.BitvectorOperator.UnsignedRemainder, count, Width());
+      var complement = Word(Ir.BitvectorOperator.Subtract, Width(), Use(r));
+      var first = Word(left ? Ir.BitvectorOperator.ShiftLeft : Ir.BitvectorOperator.LogicalShiftRight, Use(x), Use(r));
+      var second = Word(left ? Ir.BitvectorOperator.LogicalShiftRight : Ir.BitvectorOperator.ShiftLeft, Use(x), Use(s));
+      return new Ir.Let(x, value, new Ir.Let(r, remainder,
+        new Ir.Let(s, complement, Word(Ir.BitvectorOperator.Or, first, second))));
+    }
+
+    private static string BitvectorBuiltin(Bpl.Function function) {
+      string word = null, general = null;
+      for (var attribute = function.Attributes; attribute != null; attribute = attribute.Next) {
+        if (attribute.Key is not ("bvbuiltin" or "builtin")) { continue; }
+        Require(attribute.Params.Count == 1 && attribute.Params[0] is string,
+          "b3_bitvector_builtin", "Malformed semantic word attribute", function.tok);
+        var value = (string)attribute.Params[0];
+        if (attribute.Key == "bvbuiltin") {
+          Require(word == null, "b3_bitvector_builtin", "Duplicate bvbuiltin attribute", function.tok); word = value;
+        } else {
+          Require(general == null, "b3_bitvector_builtin", "Duplicate builtin attribute", function.tok); general = value;
+        }
+      }
+      // Exact pinned priority: a valid bvbuiltin overrides builtin. Strings are never emitted as SMT code.
+      return word ?? general;
+    }
+
+    private static bool TryIntToBitvectorIndex(string builtin, out int width) {
+      width = 0;
+      const string prefix = "(_ int2bv ";
+      if (builtin.Length > prefix.Length + 5 || !builtin.StartsWith(prefix, StringComparison.Ordinal) || !builtin.EndsWith(')')) { return false; }
+      var digits = builtin.Substring(prefix.Length, builtin.Length - prefix.Length - 1);
+      return int.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out width) &&
+        width is > 0 and <= Ir.Protocol.MaximumBitvectorWidth && digits == width.ToString(CultureInfo.InvariantCulture);
+    }
+
+    private Ir.Expression BitvectorBody(Bpl.Expr body, Dictionary<Bpl.Variable, Ir.Expression> formals,
+      HashSet<Bpl.Function> expanding, int depth) {
+      Require(body != null && depth < Ir.Protocol.MaximumDepth && ++expressionCount <= Ir.Protocol.MaximumNodes,
+        "b3_expression_limit", "Actual word Body exceeds normalization bounds", body?.tok ?? unit.tok);
+      var type = Type(body.Type);
+      ReserveBitvectorExpression(type, body.tok);
+      switch (body) {
+        case Bpl.IdentifierExpr identifier:
+          Require(identifier.Decl != null && formals.TryGetValue(identifier.Decl, out var formal) && formal.Type == type,
+            "b3_bitvector_body", "Actual word Body captures a nonformal or mismatched variable", body.tok);
+          return formals[identifier.Decl];
+        case Bpl.LiteralExpr { Val: bool boolean }:
+          Require(type == "bool", "b3_bitvector_body", "Actual Bool Body literal has a mismatched sort", body.tok);
+          return new Ir.BooleanLiteral(boolean);
+        case Bpl.LiteralExpr { Val: BigNum integer }:
+          Require(type == "int", "b3_bitvector_body", "Actual Int Body literal has a mismatched sort", body.tok);
+          return new Ir.IntegerLiteral(CaptureInteger(integer.ToBigInteger, body.tok));
+        case Bpl.LiteralExpr { Val: Bpl.BvConst word }: return CaptureBitvector(word, type, body.tok);
+        case Bpl.BvExtractExpr extract:
+          return BitvectorExtract(extract, type, BitvectorBody(extract.Bitvector, formals, expanding, depth + 1));
+        case Bpl.BvConcatExpr concat:
+          return BitvectorConcat(concat, type, BitvectorBody(concat.E0, formals, expanding, depth + 1),
+            BitvectorBody(concat.E1, formals, expanding, depth + 1));
+        case Bpl.NAryExpr { Fun: Bpl.TypeCoercion } coercion:
+          Require(coercion.Args.Count == 1 && Type(coercion.Args[0].Type) == type,
+            "b3_bitvector_body", "Actual word Body has a nonidentity coercion", body.tok);
+          return BitvectorBody(coercion.Args[0], formals, expanding, depth + 1);
+        case Bpl.NAryExpr { Fun: Bpl.FunctionCall } application:
+          var args = application.Args.Select(argument => BitvectorBody(argument, formals, expanding, depth + 1)).ToArray();
+          Require(TryNativeBitvectorFunction(application, type, args, expanding, depth, out var expression),
+            "b3_bitvector_body", "Actual word Body calls an unrecognized function", body.tok);
+          return expression;
+        default: throw new Unsupported("b3_bitvector_body", "Actual word Body is outside the reviewed literal/primitive/formal composition", body.tok);
+      }
+    }
+
+    private void ReserveBitvectorExpression(string type, Bpl.IToken token) {
+      if (!Ir.ProtocolValidation.TryBitvectorWidth(type, out var width)) { return; }
+      bitvectorExpressionBits += width;
+      Require(bitvectorExpressionBits <= Ir.Protocol.MaximumBitvectorBits,
+        "b3_bitvector_limit", "Word expression traversal exceeds the aggregate width bound", token);
+    }
+
+    private static Ir.Expression Coercion(Bpl.ArithmeticCoercion.CoercionType operation,
+      string resultType, IReadOnlyList<Ir.Expression> args, Bpl.IToken token) {
+      var toReal = operation == Bpl.ArithmeticCoercion.CoercionType.ToReal;
+      Require((operation is Bpl.ArithmeticCoercion.CoercionType.ToReal or Bpl.ArithmeticCoercion.CoercionType.ToInt) &&
+        args.Count == 1 && args[0].Type == (toReal ? "int" : "real") && resultType == (toReal ? "real" : "int"),
+        "b3_arithmetic", "Native arithmetic coercion has an invalid signature", token);
+      return new Ir.Operation(toReal ? Ir.Operator.ToReal : Ir.Operator.ToInt, resultType, args.ToArray());
+    }
+
+    private bool TryNativeRealConversion(Bpl.Function function, string resultType,
+      IReadOnlyList<Ir.Expression> args, out Ir.Expression expression) {
+      expression = null;
+      if (args.Count != 1 || !TryCoercionDefinition(function, new HashSet<Bpl.Function>(), 0, out var operation)) {
+        return false;
+      }
+      var toReal = operation == Bpl.ArithmeticCoercion.CoercionType.ToReal;
+      if (args[0].Type != (toReal ? "int" : "real") || resultType != (toReal ? "real" : "int")) { return false; }
+      expression = Coercion(operation, resultType, args, function.tok);
+      return true;
+    }
+
+    private bool TryCoercionDefinition(Bpl.Function function, HashSet<Bpl.Function> visited, int depth,
+      out Bpl.ArithmeticCoercion.CoercionType operation) {
+      operation = default;
+      if (function == null || depth >= Ir.Protocol.MaximumDepth || !visited.Add(function) ||
+          function.TypeParameters.Count != 0 || function.InParams.Count != 1 || function.OutParams.Count != 1 ||
+          function.InParams[0].TypedIdent.WhereExpr != null) { return false; }
+      var formal = function.InParams[0];
+      var result = function.OutParams[0].TypedIdent.Type;
+      if (formal.TypedIdent.Type.IsInt && result.IsReal) { operation = Bpl.ArithmeticCoercion.CoercionType.ToReal; }
+      else if (formal.TypedIdent.Type.IsReal && result.IsInt) { operation = Bpl.ArithmeticCoercion.CoercionType.ToInt; }
+      else { return false; }
+
+      if (function.Body != null) {
+        if (IsDirectCoercion(function.Body, formal, operation)) { return true; }
+        // The actual Floor Body composes a unary call with a separately justified conversion.
+        if (function.Body is Bpl.NAryExpr { Fun: Bpl.FunctionCall call } body && body.Args.Count == 1 &&
+            SamePrimitiveType(body.Type, result) && IsMonomorphic(body) &&
+            body.Args[0] is Bpl.IdentifierExpr argument && ReferenceEquals(argument.Decl, formal) &&
+            TryCoercionDefinition(call.Func, visited, depth + 1, out var nested) && nested == operation) { return true; }
+        return false;
+      }
+      if (!function.AlwaysRevealed || !HasActiveDefinitionAxiom(function) ||
+          function.DefinitionAxiom.Expr is not Bpl.ForallExpr forall || forall.TypeParameters.Count != 0 ||
+          forall.Dummies.Count != 1 || forall.Dummies[0].TypedIdent.WhereExpr != null ||
+          !SamePrimitiveType(forall.Dummies[0].TypedIdent.Type, formal.TypedIdent.Type) ||
+          forall.Body is not Bpl.NAryExpr { Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.Eq } } equality ||
+          equality.Args.Count != 2) { return false; }
+      var definingCall = equality.Args[0];
+      if (definingCall is Bpl.NAryExpr { Fun: Bpl.TypeCoercion } coercion) {
+        if (coercion.Args.Count != 1 || !SamePrimitiveType(coercion.Type, result) ||
+            !SamePrimitiveType(coercion.Args[0].Type, result)) { return false; }
+        definingCall = coercion.Args[0];
+      }
+      return definingCall is Bpl.NAryExpr { Fun: Bpl.FunctionCall defining } application &&
+        ReferenceEquals(defining.Func, function) && SamePrimitiveType(application.Type, result) &&
+        IsMonomorphic(application) && application.Args.Count == 1 &&
+        application.Args[0] is Bpl.IdentifierExpr actual && ReferenceEquals(actual.Decl, forall.Dummies[0]) &&
+        IsDirectCoercion(equality.Args[1], forall.Dummies[0], operation);
+    }
+
+    private static bool IsMonomorphic(Bpl.NAryExpr expression) => expression.TypeParameters == null ||
+      expression.TypeParameters.FormalTypeParams.Count == 0;
+
+    private static bool SamePrimitiveType(Bpl.Type first, Bpl.Type second) => first != null && second != null &&
+      (first.IsInt && second.IsInt || first.IsReal && second.IsReal);
+
+    private static bool IsDirectCoercion(Bpl.Expr expression, Bpl.Variable formal,
+      Bpl.ArithmeticCoercion.CoercionType operation) =>
+      expression is Bpl.NAryExpr { Fun: Bpl.ArithmeticCoercion coercion } body && coercion.Coercion == operation &&
+      body.Args.Count == 1 && body.Args[0] is Bpl.IdentifierExpr identifier && ReferenceEquals(identifier.Decl, formal) &&
+      (operation == Bpl.ArithmeticCoercion.CoercionType.ToReal
+        ? formal.TypedIdent.Type.IsInt && body.Type?.IsReal == true
+        : formal.TypedIdent.Type.IsReal && body.Type?.IsInt == true);
+
     private static bool TryNativeIntegerBody(Bpl.Function function, string resultType,
       IReadOnlyList<Ir.Expression> args, out Ir.Expression expression) {
       expression = null;
@@ -468,7 +1036,8 @@ public static class B3Normalizer {
     }
 
     private static bool HasPrimitiveArithmeticDefinition(Bpl.Function function) {
-      static bool Primitive(Bpl.Expr body) => body is Bpl.NAryExpr { Fun: Bpl.BinaryOperator binary } &&
+      static bool Primitive(Bpl.Expr body) => body is Bpl.NAryExpr { Fun: Bpl.ArithmeticCoercion } ||
+        body is Bpl.NAryExpr { Fun: Bpl.BinaryOperator binary } &&
         binary.Op is Bpl.BinaryOperator.Opcode.Div or Bpl.BinaryOperator.Opcode.Mod or
           Bpl.BinaryOperator.Opcode.RealDiv or Bpl.BinaryOperator.Opcode.Pow;
       if (Primitive(function.Body)) { return true; }
@@ -567,6 +1136,13 @@ public static class B3Normalizer {
         Require(type == "int" && args.Length == 2 && args.All(arg => arg.Type == "int"),
           "b3_arithmetic", "Native division and modulo require two integer operands and an integer result", token);
       }
+      if (op == Bpl.BinaryOperator.Opcode.RealDiv) {
+        Require(type == "real" && args.Length == 2 && args.All(arg => arg.Type is "int" or "real"),
+          "b3_arithmetic", "Native real division requires numeric operands and a real result", token);
+        // Match the pinned native translation; this is not general mixed-sort promotion.
+        return new Ir.Operation(Ir.Operator.RealDivide, "real", args.Select(arg => arg.Type == "int"
+          ? new Ir.Operation(Ir.Operator.ToReal, "real", new[] { arg }) : arg).ToArray());
+      }
       var kind = op switch {
         Bpl.BinaryOperator.Opcode.Add => Ir.Operator.Add, Bpl.BinaryOperator.Opcode.Sub => Ir.Operator.Subtract,
         Bpl.BinaryOperator.Opcode.Div => Ir.Operator.Divide, Bpl.BinaryOperator.Opcode.Mod => Ir.Operator.Modulo,
@@ -575,7 +1151,7 @@ public static class B3Normalizer {
         Bpl.BinaryOperator.Opcode.Le or Bpl.BinaryOperator.Opcode.Ge => Ir.Operator.LessEqual,
         Bpl.BinaryOperator.Opcode.And => Ir.Operator.And, Bpl.BinaryOperator.Opcode.Or => Ir.Operator.Or,
         Bpl.BinaryOperator.Opcode.Imp => Ir.Operator.Implies, Bpl.BinaryOperator.Opcode.Iff => Ir.Operator.Equiv,
-        _ => throw new Unsupported("b3_arithmetic", "Real/float division and power are unsupported pending correspondence", token)
+        _ => throw new Unsupported("b3_arithmetic", "Float division and power are unsupported pending correspondence", token)
       };
       if (op is Bpl.BinaryOperator.Opcode.Gt or Bpl.BinaryOperator.Opcode.Ge) { args = new[] { args[1], args[0] }; }
       return new Ir.Operation(kind, type, args);
@@ -583,7 +1159,7 @@ public static class B3Normalizer {
     private void Where(Bpl.Expr where, Environment env, List<Ir.Statement> statements) {
       if (where != null) { statements.Add(new Ir.Assume(Expr(where, env))); }
     }
-    private Ir.Check Check(Bpl.Expr condition, Environment env, Bpl.IToken token, string description, Bpl.QKeyValue attributes, string role = "assert") {
+    private Ir.Check Check(Bpl.Expr condition, Environment env, Bpl.IToken token, string description, Bpl.QKeyValue attributes, string role = "assert", Bpl.Absy sourceAnchor = null) {
       var expression = Expr(condition, env);
       var subsumption = Bpl.QKeyValue.FindIntAttribute(attributes, "subsumption", -1);
       var mode = subsumption switch { 0 => Bpl.CoreOptions.SubsumptionOption.Never,
@@ -593,17 +1169,20 @@ public static class B3Normalizer {
         mode == Bpl.CoreOptions.SubsumptionOption.NotForQuantifiers &&
         expression is not Ir.Quantifier && condition is not Bpl.QuantifierExpr;
       var id = "sO" + role + (obligations.Count + 1);
+      var frame = visibility == null ? B3DefinitionVisibility.Frame.AllRevealed :
+        sourceAnchor == null ? FallthroughMask() : visibility.Before(sourceAnchor);
+      checkMasks.Add(id, (frame, expression, sourceAnchor));
       var origin = BoogieGenerator.ToDafnyToken(token);
       obligations.Add(new Ir.SourceIdentity(id, origin.Uri?.AbsoluteUri ?? token.filename ?? "",
         Math.Max(0, token.line), Math.Max(0, token.col), description));
       return new Ir.Check(id, expression, learn);
     }
-    private Ir.Statement Exit(Environment env) {
+    private Ir.Statement Exit(Environment env, Bpl.Absy sourceAnchor = null) {
       var statements = new List<Ir.Statement>();
       foreach (var ensures in unit.Proc.Ensures) {
         ValidateAttributes(ensures.Attributes, "ensures", ensures.tok);
         if (!ensures.Free) { statements.Add(Check(ensures.Condition, env, ensures.tok,
-          ensures.Description?.FailureDescription ?? "postcondition", null)); }
+          ensures.Description?.FailureDescription ?? "postcondition", null, "post", sourceAnchor)); }
         else if (ensures.CanAlwaysAssume()) { statements.Add(new Ir.Assume(Expr(ensures.Condition, env))); }
       }
       statements.Add(new Ir.Return());
@@ -621,8 +1200,29 @@ public static class B3Normalizer {
       }
     }
 
-    // Bounded inspection establishes that pure scope pushes/pops have no visibility command to affect.
-    // It also finds exactly the labels that require lexical exit wrappers.
+    // Resolve/Typecheck consumes Blocks, while this normalizer consumes StructuredStmts.
+    // Assert inventory is an explicit API boundary, not a producer-coherence assumption.
+    private void ValidateRawAssertionCoverage() {
+      var anchors = checkMasks.Values.Select(check => check.Origin).OfType<Bpl.AssertCmd>().ToHashSet();
+      var pending = new Stack<(Bpl.Cmd Command, int Depth)>();
+      Require(unit.Blocks.Count is > 0 and <= 256, "b3_cfg_correspondence", "Raw CFG exceeds correspondence bounds", unit.tok);
+      foreach (var block in unit.Blocks) { foreach (var command in block.Cmds) { pending.Push((command, 0)); } }
+      var visited = 0;
+      while (pending.Count > 0) {
+        var (command, depth) = pending.Pop();
+        Require(command != null && depth < Ir.Protocol.MaximumDepth && ++visited <= Ir.Protocol.MaximumNodes,
+          "b3_cfg_correspondence", "Raw command inventory exceeds correspondence bounds", unit.tok);
+        if (command is Bpl.AssertCmd assertion) {
+          Require(anchors.Contains(assertion), "b3_cfg_correspondence",
+            "Raw assertion has no original normalized assert or invariant anchor", assertion.tok);
+        }
+        if (command is Bpl.StateCmd state) {
+          foreach (var nested in state.Cmds) { pending.Push((nested, depth + 1)); }
+        }
+      }
+    }
+
+    // Bounded inspection also finds the labels requiring lexical exit wrappers.
     private void InspectControl(Bpl.StmtList root) {
       var pending = new Stack<(object Node, int Depth)>();
       pending.Push((root, 0));
@@ -644,14 +1244,14 @@ public static class B3Normalizer {
           case Bpl.WhileCmd loop:
             Push(loop.Body); foreach (var invariant in loop.Invariants) { Push(invariant); } break;
           case Bpl.StateCmd state: foreach (var command in state.Cmds) { Push(command); } break;
-          case Bpl.HideRevealCmd hide:
-            throw new Unsupported("b3_visibility", "Hide/reveal requires pinned pruning correspondence", hide.tok);
+          case Bpl.HideRevealCmd hide: visibilityCommands.Add(hide); break;
+          case Bpl.ChangeScope: break;
           case Bpl.GotoCmd jump:
             ValidateAttributes(jump.Attributes, "goto", jump.tok);
             Require(jump.LabelNames != null && jump.LabelNames.Count == 1, "b3_transfer",
               "Only single-target lexical forward jumps are supported", jump.tok);
             jumpTargets.Add(jump.LabelNames[0]); break;
-          case Bpl.ReturnCmd returned: ValidateAttributes(returned.Attributes, "return", returned.tok); break;
+          case Bpl.ReturnCmd returned: explicitReturns.Add(returned); ValidateAttributes(returned.Attributes, "return", returned.tok); break;
         }
       }
       foreach (var target in jumpTargets.OrderBy(t => t, StringComparer.Ordinal)) { jumpLabels.Add(target, "sC" + ++controlNumber); }
@@ -676,7 +1276,7 @@ public static class B3Normalizer {
         var nested = new Control(new Dictionary<string, string>(forward, StringComparer.Ordinal), control.Break);
         statements.AddRange(block.simpleCmds.Select(c => Command(c, env)));
         if (block.ec != null) { statements.Add(StructuredCommand(block.ec, env, nested, depth + 1, block)); }
-        else if (block.tc is Bpl.ReturnCmd and not Bpl.ReturnExprCmd) { statements.Add(Exit(env)); }
+        else if (block.tc is Bpl.ReturnCmd and not Bpl.ReturnExprCmd) { statements.Add(Exit(env, block.tc)); }
         else if (block.tc is Bpl.GotoCmd jump) {
           Require(jump.LabelNames.Count == 1 && nested.Forward.TryGetValue(jump.LabelNames[0], out _),
             "b3_transfer", "Backward, cross-region or multiple-target jumps are unsupported", jump.tok);
@@ -705,7 +1305,7 @@ public static class B3Normalizer {
         var other = conditional.ElseIf != null ? StructuredCommand(conditional.ElseIf, env, control, depth + 1) :
           conditional.ElseBlock != null ? Structured(conditional.ElseBlock, env, control, depth) : new Ir.Block(Array.Empty<Ir.Statement>());
         Ir.Statement result = conditional.Guard == null ? new Ir.Choice(new[] { then, other }) :
-          new Ir.Conditional(Expr(conditional.Guard, env), then, other);
+          unsignedWrappers.InIfGuard(conditional, () => Expr(conditional.Guard, env), then, other);
         return exit == null ? result : new Ir.Labeled(exit, result);
       }
       if (command is Bpl.WhileCmd loop && enclosing != null) { return While(loop, enclosing, env, control, depth); }
@@ -752,7 +1352,7 @@ public static class B3Normalizer {
         ValidateAttributes(invariant.Attributes, "invariant", invariant.tok);
         if (invariant is Bpl.AssertCmd assertion) {
           checks.Add(Check(assertion.Expr, env, assertion.tok,
-            role == "init" ? "loop invariant initialization" : "loop invariant preservation", assertion.Attributes, role));
+            role == "init" ? "loop invariant initialization" : "loop invariant preservation", assertion.Attributes, role, assertion));
         } else if (invariant is Bpl.AssumeCmd && options.AlwaysAssumeFreeLoopInvariants) {
           checks.Add(new Ir.Assume(Expr(invariant.Expr, env)));
         } else { Require(invariant is Bpl.AssumeCmd, "b3_invariant", "Unknown invariant predicate", invariant.tok); }
@@ -820,7 +1420,7 @@ public static class B3Normalizer {
         Bpl.HavocCmd havoc => havoc.Vars.Select(v => v.Decl),
         Bpl.CallCmd call => call.Outs.Where(v => v != null).Select(v => v.Decl).Concat(call.Proc.Modifies.Select(v => v.Decl)),
         Bpl.StateCmd state => state.Cmds.SelectMany(c => Assigned(c, depth + 1)).Except(state.Locals),
-        Bpl.PredicateCmd or Bpl.CommentCmd or Bpl.ChangeScope => Array.Empty<Bpl.Variable>(),
+        Bpl.PredicateCmd or Bpl.CommentCmd or Bpl.ChangeScope or Bpl.HideRevealCmd => Array.Empty<Bpl.Variable>(),
         _ => throw new Unsupported("b3_assigned_variables", "Unsupported natural-loop assignment command " + command.GetType().Name, command.tok)
       };
     }
@@ -861,15 +1461,31 @@ public static class B3Normalizer {
     private void CheckOwnedBounds(Ir.Program program) {
       var pending = new Stack<(object Node, int Depth)>(); pending.Push((program.Unit.Body, 0));
       foreach (var axiom in program.Axioms) { pending.Push((axiom.Condition, 0)); }
-      var count = program.Types.Count + program.Functions.Count + program.Axioms.Count + program.Unit.Variables.Count + obligations.Count;
+      var count = program.Types.Count + program.Functions.Count + program.Axioms.Count + program.Unit.Variables.Count + obligations.Count +
+        program.Functions.Sum(function => function.Parameters.Count);
+      long bitvectorBits = 0;
+      void Charge(string type) {
+        if (!Ir.ProtocolValidation.TryBitvectorWidth(type, out var width)) { return; }
+        bitvectorBits += width;
+        Require(bitvectorBits <= Ir.Protocol.MaximumBitvectorBits,
+          "b3_bitvector_limit", "Normalized word occurrences exceed the aggregate width bound", unit.tok);
+      }
+      foreach (var function in program.Functions) {
+        Charge(function.ResultType); foreach (var parameter in function.Parameters) { Charge(parameter.Type); }
+      }
+      var variableTypes = program.Unit.Variables.ToDictionary(binding => binding.Name, binding => binding.Type);
+      foreach (var binding in program.Unit.Variables) { Charge(binding.Type); }
       while (pending.Count > 0) {
         var (node, depth) = pending.Pop();
         Require(depth <= Ir.Protocol.MaximumDepth && ++count <= Ir.Protocol.MaximumNodes,
           "b3_owned_ir_limit", "Normalized IR exceeds protocol resource bounds", unit.tok);
         void Push(object child) => pending.Push((child, depth + 1));
+        if (node is Ir.Expression expression) { Charge(expression.Type); }
         switch (node) {
+          case Ir.Binding binding: Charge(binding.Type); break;
           case Ir.Block block: foreach (var child in block.Statements) { Push(child); } break;
-          case Ir.Assign assign: Push(assign.Value); break;
+          case Ir.Assign assign: Charge(variableTypes[assign.Variable]); Push(assign.Value); break;
+          case Ir.Havoc havoc: foreach (var variable in havoc.Variables) { Charge(variableTypes[variable]); } break;
           case Ir.Check check: Push(check.Condition); break;
           case Ir.Assume assume: Push(assume.Condition); break;
           case Ir.Choice choice: foreach (var branch in choice.Branches) { Push(branch); } break;
@@ -878,19 +1494,24 @@ public static class B3Normalizer {
           case Ir.Labeled labeled: Push(labeled.Body); break;
           case Ir.Application application: foreach (var argument in application.Arguments) { Push(argument); } break;
           case Ir.Operation operation: foreach (var argument in operation.Arguments) { Push(argument); } break;
+          case Ir.BitvectorOperation wordOperation: foreach (var argument in wordOperation.Arguments) { Push(argument); } break;
           case Ir.Quantifier quantifier:
+            foreach (var binding in quantifier.Bindings) { Push(binding); }
             Push(quantifier.Body); foreach (var pattern in quantifier.Patterns) { foreach (var term in pattern) { Push(term); } } break;
-          case Ir.Let let: Push(let.Value); Push(let.Body); break;
+          case Ir.Let let: Push(let.Binding); Push(let.Value); Push(let.Body); break;
           case Ir.Label label: Push(label.Body); break;
         }
       }
     }
-    private Ir.Statement Command(Bpl.Cmd command, Environment env) {
+    private Ir.Statement Command(Bpl.Cmd command, Environment env) =>
+      unsignedWrappers.InCommand(command, () => CommandCore(command, env));
+
+    private Ir.Statement CommandCore(Bpl.Cmd command, Environment env) {
       if (command is Bpl.ICarriesAttributes attributed) { ValidateAttributes(attributed.Attributes, "command", command.tok); }
       switch (command) {
         case Bpl.CommentCmd: return new Ir.Block(Array.Empty<Ir.Statement>());
         case Bpl.AssertCmd assertion: return Check(assertion.Expr, env, assertion.tok,
-          assertion.Description?.FailureDescription ?? "assertion", assertion.Attributes);
+          assertion.Description?.FailureDescription ?? "assertion", assertion.Attributes, "assert", assertion);
         case Bpl.AssumeCmd assumption: return new Ir.Assume(Expr(assumption.Expr, env));
         case Bpl.AssignCmd assignment: {
           Require(assignment.Lhss.All(lhs => lhs is Bpl.SimpleAssignLhs), "b3_map_assignment",
@@ -911,8 +1532,7 @@ public static class B3Normalizer {
         }
         case Bpl.CallCmd call: return Call(call, env);
         case Bpl.ChangeScope: return new Ir.Block(Array.Empty<Ir.Statement>());
-        case Bpl.HideRevealCmd:
-          throw new Unsupported("b3_visibility", "Hide/reveal requires pinned pruning correspondence", command.tok);
+        case Bpl.HideRevealCmd: return new Ir.Block(Array.Empty<Ir.Statement>());
         default: throw new Unsupported("b3_command", "Unsupported command " + command.GetType().Name, command.tok);
       }
     }
@@ -954,7 +1574,7 @@ public static class B3Normalizer {
       foreach (var requires in call.Proc.Requires) {
         ValidateAttributes(requires.Attributes, "callee requires", requires.tok);
         if (!requires.Free && !call.IsFree) { statements.Add(Check(requires.Condition, requirementAndWhere, call.tok,
-          requires.Description?.FailureDescription ?? "call precondition", call.Attributes)); }
+          requires.Description?.FailureDescription ?? "call precondition", call.Attributes, "call", call)); }
         else if (requires.CanAlwaysAssume()) { statements.Add(new Ir.Assume(Expr(requires.Condition, requirementAndWhere))); }
       }
       var modifiedGlobals = call.Proc.Modifies.Select(m => m.Decl).Distinct().ToArray();

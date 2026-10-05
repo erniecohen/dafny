@@ -316,7 +316,9 @@ module Parser {
     Or([
       T("bool"),
       T("int"),
+      T("real"),
       T("tag"),
+      Sym("#bv").e_I(parseBitvectorWidthDigits).M(digits => "#bv" + digits),
       parseIdUse
     ])
 
@@ -535,7 +537,8 @@ module Parser {
       Or([
         Sym("*").M(_ => Operator.Times),
         T("div").M(_ => Operator.Div),
-        T("mod").M(_ => Operator.Mod)
+        T("mod").M(_ => Operator.Mod),
+        SymNotPrefix("/", ["//", "/*"]).M(_ => Operator.RealDiv)
       ]).I_I(parseUnaryExpr(c)).Rep()
       .M(opExprs => FoldLeft(e0, opExprs, (a, b: (Operator, Expr)) => OperatorExpr(b.0, [a, b.1])))
     )
@@ -609,8 +612,55 @@ module Parser {
     T("pattern").e_I(parseNonemptyCommaDelimitedSeq(c("expr"))).M(exprs => Pattern(exprs))
   }
 
+  const parseBitvectorWidthDigits: B<string> :=
+    CharTest((c: char) => '0' <= c <= '9', "bitvector width digit").Then((c: char) =>
+      CharTest((c: char) => '0' <= c <= '9', "bitvector width digit").Rep().M((digits: string) => [c] + digits)).I_e(W)
+
+  const parseSignedInteger: B<int> :=
+    Sym("-").Option().I_I(Nat.I_e(W)).M2(MId, (minus: Option<string>, n: int) => if minus.Some? then -n else n)
+
+  function parseBitvectorOperator(c: ExprRecSel, kind: BitvectorOperator): B<Expr> {
+    Sym(kind.ToString()).e_I(parseParenthesized(
+      parseSignedInteger.I_e(Sym(",")).Then((width: int) =>
+        if kind == BitvectorOperator.BvExtract then
+          parseSignedInteger.I_e(Sym(",")).Then((start: int) =>
+            parseSignedInteger.I_e(Sym(",")).Then((end: int) =>
+              c("expr").M(e => OperatorExpr(Operator.Bv(kind, width, start, end), [e]))))
+        else if kind.ArgumentCount() == 1 then
+          c("expr").M(e => OperatorExpr(Operator.Bv(kind, width), [e]))
+        else
+          c("expr").I_e(Sym(",")).I_I(c("expr")).M2(MId,
+            (a: Expr, b: Expr) => OperatorExpr(Operator.Bv(kind, width), [a, b]))
+      )
+    ))
+  }
+
   function parseAtomicExpr(c: ExprRecSel): B<Expr> {
     Or([
+      parseBitvectorOperator(c, BitvectorOperator.BvAnd),
+      parseBitvectorOperator(c, BitvectorOperator.BvOr),
+      parseBitvectorOperator(c, BitvectorOperator.BvXor),
+      parseBitvectorOperator(c, BitvectorOperator.BvNot),
+      parseBitvectorOperator(c, BitvectorOperator.BvAdd),
+      parseBitvectorOperator(c, BitvectorOperator.BvSubtract),
+      parseBitvectorOperator(c, BitvectorOperator.BvMultiply),
+      parseBitvectorOperator(c, BitvectorOperator.BvUnsignedDivide),
+      parseBitvectorOperator(c, BitvectorOperator.BvUnsignedRemainder),
+      parseBitvectorOperator(c, BitvectorOperator.BvUnsignedLess),
+      parseBitvectorOperator(c, BitvectorOperator.BvUnsignedLessEqual),
+      parseBitvectorOperator(c, BitvectorOperator.BvShiftLeft),
+      parseBitvectorOperator(c, BitvectorOperator.BvLogicalShiftRight),
+      parseBitvectorOperator(c, BitvectorOperator.BvExtract),
+      parseBitvectorOperator(c, BitvectorOperator.BvConcat),
+      parseBitvectorOperator(c, BitvectorOperator.IntToBv),
+      parseBitvectorOperator(c, BitvectorOperator.BvToUnsignedInt),
+      Sym("#bv").e_I(parseParenthesized(parseSignedInteger.I_e(Sym(",")).I_I(parseSignedInteger)))
+        .M2(MId, (value: int, width: int) => BvLiteral(value, width)),
+      Sym("#real").e_I(parseParenthesized(
+        parseSignedInteger.I_e(Sym(",")).I_I(parseSignedInteger)
+      )).M2(MId, (n, d) => RLiteral(n, d)),
+      Sym("#to_real").e_I(parseParenthesized(c("expr"))).M(e => OperatorExpr(ToReal, [e])),
+      Sym("#to_int").e_I(parseParenthesized(c("expr"))).M(e => OperatorExpr(ToInt, [e])),
       T("false").M(_ => BLiteral(false)),
       T("true").M(_ => BLiteral(true)),
       Nat.I_e(W).M(n => ILiteral(n)),

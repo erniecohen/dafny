@@ -206,6 +206,32 @@
         "Failed"
       ],
       "expectedObservations": 1
+    },
+    {
+      "file": "real-read-same.bpl",
+      "expectedB3": "Verified",
+      "expectedBoogie": "Verified",
+      "expectedAxioms": 0,
+      "expectedChecks": 1,
+      "expectedHelpers": 1,
+      "containsLiteralFalse": false,
+      "expectedAttempts": [
+        "Verified"
+      ],
+      "expectedObservations": 0
+    },
+    {
+      "file": "real-read-wrong.bpl",
+      "expectedB3": "Failed",
+      "expectedBoogie": "Failed",
+      "expectedAxioms": 0,
+      "expectedChecks": 1,
+      "expectedHelpers": 1,
+      "containsLiteralFalse": false,
+      "expectedAttempts": [
+        "Failed"
+      ],
+      "expectedObservations": 0
     }
   ]
 }

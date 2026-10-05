@@ -46,6 +46,19 @@ public class WorkerPackageTests {
     Assert.Throws<InvalidDataException>(() => WorkerPackage.Load(fixture.Worker));
   }
 
+  [Theory]
+  [InlineData(1, "experimental-3")]
+  [InlineData(2, "experimental-3")]
+  [InlineData(3, "experimental-2")]
+  [InlineData(3, "experimental-1")]
+  public void PreviousWorkerIdentityCannotBeRelabelledForReal(int version, string normalizer) {
+    using var fixture = new PackageFixture();
+    var manifest = JsonSerializer.Deserialize<WorkerManifest>(File.ReadAllText(fixture.Manifest), Protocol.JsonOptions)!;
+    File.WriteAllText(fixture.Manifest, JsonSerializer.Serialize(manifest with {
+      Version = version, NormalizerVersion = normalizer }, Protocol.JsonOptions));
+    Assert.Throws<InvalidDataException>(() => WorkerPackage.Load(fixture.Worker));
+  }
+
   private sealed class PackageFixture : IDisposable {
     private readonly string directory = Path.Combine(Path.GetTempPath(), "b3-package-" + Guid.NewGuid().ToString("N"));
     public string Worker => Path.Combine(directory, "DafnyB3Host.dll");

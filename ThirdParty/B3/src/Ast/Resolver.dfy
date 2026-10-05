@@ -18,7 +18,7 @@ module Resolver {
   import DomainInstantiation
 
   ghost predicate GoodTypeMap(b3: Raw.Program, typeMap: map<string, TypeDecl>, generatedTypes: set<string> := {}) {
-    forall typename :: b3.IsType(typename) || typename in generatedTypes <==> typename in BuiltInTypes || typename in typeMap
+    forall typename :: b3.IsType(typename) || typename in generatedTypes <==> IsBuiltInType(typename) || typename in typeMap
   }
 
   method Resolve(b3: Raw.Program, typeParameters: seq<TypeDecl>) returns (r: Result<Ast.Program, string>, ghost generatedTypes: set<string>)
@@ -204,7 +204,7 @@ module Resolver {
       // raw types were well-formed
       && typeMap.Keys == typeParameterNames + (set typeDecl: Raw.TypeDecl <- b3.types :: typeDecl.name)
       && NameAlignment(typeMap)
-      && (forall typeDecl <- b3.types :: typeDecl.name !in BuiltInTypes && typeDecl.name !in typeParameterNames)
+      && (forall typeDecl <- b3.types :: !ReservedTypeName(typeDecl.name) && typeDecl.name !in typeParameterNames)
       && (forall i, j :: 0 <= i < j < |b3.types| ==> b3.types[i].name != b3.types[j].name)
       // resolved type declarations have legal, distinct names
       && NamedDecl.Distinct(typeParameters + types)
@@ -228,10 +228,10 @@ module Resolver {
       assert name !in typeMap;
       if !Raw.LegalVariableName(name) {
         return Result<map<string, TypeDecl>, string>.Failure("type parameter is not a legal name: " + name), types;
-      } else if name in BuiltInTypes {
+      } else if ReservedTypeName(name) {
         return Result<map<string, TypeDecl>, string>.Failure("type parameter is not allowed to have the name of a built-in type: " + name), types;
       }
-      if name in BuiltInTypes {
+      if ReservedTypeName(name) {
            return Result<map<string, TypeDecl>, string>.Failure("type parameter is not allowed to have the name of a built-in type: " + name), types;
       }
       NewNamePreservesLinearFormAndIsUnique(name, param, typeMap, typeParameters[..n]);
@@ -248,7 +248,7 @@ module Resolver {
       // typeMap organizes type-declaration objects correctly according to their names
       invariant NameAlignment(typeMap)
       // no user-defined type seen so far uses the name of a built-in type
-      invariant forall typeDecl <- b3.types[..n] :: typeDecl.name !in BuiltInTypes && typeDecl.name !in typeParameterNames
+      invariant forall typeDecl <- b3.types[..n] :: !ReservedTypeName(typeDecl.name) && typeDecl.name !in typeParameterNames
       // user-defined types seen so far have distinct names
       invariant forall i, j :: 0 <= i < j < n ==> b3.types[i].name != b3.types[j].name
       // resolved type declarations have distinct names and do not contain a double dot
@@ -260,7 +260,7 @@ module Resolver {
       var name := b3.types[n].name;
       if !Raw.LegalVariableName(name) {
         return Result<map<string, TypeDecl>, string>.Failure("user-defined type is not a legal name: " + name), types;
-      } else if name in BuiltInTypes {
+      } else if ReservedTypeName(name) {
         return Result<map<string, TypeDecl>, string>.Failure("user-defined type is not allowed to have the name of a built-in type: " + name), types;
       } else if name in typeMap {
         return Failure("duplicate type name: " + name), types;

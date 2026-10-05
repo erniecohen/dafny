@@ -17,8 +17,11 @@ ROOT = Path(__file__).resolve().parent.parent
 ARCHIVE_MAX_BYTES = 1024 * 1024 * 1024
 MAX_BYTES = ARCHIVE_MAX_BYTES - 4 * 1024 * 1024
 MAX_FILES = 2048
-LIBRARY_SHA = '2a39d9a11ad2417eb572769c98fa9421009e1d88536547a1e431ef3dd6334720'
-SOURCE_SHA = '22997b3e47b9b05da58d3efe42e8d7cb46d01a46ea741558c886257791153239'
+# Native Real and bitvectors change the proof source; record a fresh inspected public receipt before packaging.
+LIBRARY_SHA = None
+VERIFIED_BATCHES = None
+VERIFICATION_EVIDENCE = None
+SOURCE_SHA = '04acac15b45763c86af4b47b50b4415a9568d22ac304b86a0ba492d11bdb1722'
 SOLVER_SHA = 'b4e0b3483ce37817230b20d6cad48390eb6a3aefde1d93342ad6dc763f24bc23'
 LAUNCHER_BYTES = b'#!/bin/sh\nset -eu\npackage_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nexec dotnet "$package_root/cli/Dafny.dll" "$@"\n'
 
@@ -69,7 +72,13 @@ def capture(directory, limit):
     return captured
 
 
+def require_verification_receipt():
+    if not isinstance(LIBRARY_SHA, str) or not re.fullmatch('[0-9a-f]{64}', LIBRARY_SHA) or not isinstance(VERIFIED_BATCHES, int) or VERIFIED_BATCHES <= 0 or not isinstance(VERIFICATION_EVIDENCE, str) or not VERIFICATION_EVIDENCE.startswith('https://github.com/erniecohen/dafny/actions/runs/'):
+        raise ValueError('Native arithmetic package requires a fresh inspected library verification receipt')
+
+
 def build(options):
+    require_verification_receipt()
     if not re.fullmatch('[0-9a-f]{40}', options.source_commit):
         raise ValueError('Require the exact source commit used to build this CLI')
     cli = options.cli.resolve(strict=True)
@@ -82,8 +91,8 @@ def build(options):
     if len(manifest_data) > 65536:
         raise ValueError('Oversized worker manifest')
     manifest = json.loads(manifest_data)
-    for key, expected in {'version': 1, 'b3Commit': 'ea6e8a18dfe9e317d313de769291f989957dc5f2',
-                          'normalizerVersion': 'experimental-1',
+    for key, expected in {'version': 3, 'b3Commit': 'ea6e8a18dfe9e317d313de769291f989957dc5f2',
+                          'normalizerVersion': 'experimental-3',
                           'bootstrapCompiler': '4.11.0+fcb2042d.review.a171069d',
                           'sourceFingerprint': SOURCE_SHA}.items():
         if manifest.get(key) != expected:
@@ -159,8 +168,8 @@ def build(options):
                 'sourceIdentityBoundary': 'CLI metadata and the source commit are build declarations; review the public build receipt and exact file hashes.', 'productCommit': (ROOT / '.github/review/base').read_text().strip(),
                 'b3Commit': manifest['b3Commit'], 'normalizerVersion': manifest['normalizerVersion'],
                 'sourceFingerprint': SOURCE_SHA, 'workerManifestSha256': digest(manifest_data),
-                'verifiedLibrary': {'sha256': LIBRARY_SHA, 'passedBatches': 557,
-                                    'evidence': 'https://github.com/erniecohen/dafny/actions/runs/37201990430'},
+                'verifiedLibrary': {'sha256': LIBRARY_SHA, 'passedBatches': VERIFIED_BATCHES,
+                                    'evidence': VERIFICATION_EVIDENCE},
                 'solver': {'version': '5.1.0', 'sha256': SOLVER_SHA},
                 'files': {name.removeprefix(prefix): {'sha256': digest(data), 'bytes': len(data), 'mode': mode}
                           for name, (data, mode) in sorted(entries.items())}}

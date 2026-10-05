@@ -15,7 +15,7 @@ module ExprResolver {
   datatype ExprResolverState = ExprResolverState(b3: Raw.Program, typeMap: map<string, TypeDecl>, ghost generatedTypes: set<string>, functionMap: map<string, Function>)
   {
     ghost predicate Valid() {
-      forall typename :: b3.IsType(typename) || typename in generatedTypes <==> typename in BuiltInTypes || typename in typeMap
+      forall typename :: b3.IsType(typename) || typename in generatedTypes <==> IsBuiltInType(typename) || typename in typeMap
     }
   }
 
@@ -43,9 +43,19 @@ module ExprResolver {
         r := BLiteral(value);
       case ILiteral(value) =>
         r := ILiteral(value);
+      case RLiteral(numerator, denominator) =>
+        if denominator <= 0 {
+          return Failure("real literal denominator must be positive");
+        }
+        r := RLiteral(numerator, denominator);
+      case BvLiteral(value, width) =>
+        if !BitvectorLiteralValid(value, width) {
+          return Failure("bitvector literal requires a positive bounded width and a canonical unsigned value");
+        }
+        r := BvLiteral(value, width);
       case CustomLiteral(s, typeName) =>
         var typ :- ResolveType(typeName, ers.typeMap);
-        if typ == BoolType || typ == IntType {
+        if typ == BoolType || typ == IntType || typ == RealType || typ.BitvectorType? {
           return Failure("custom literal is not allowed for a built-in type: " + PrintUtil.CustomLiteralToString(s, typeName));
         }
         r := CustomLiteral(s, typ);
@@ -60,6 +70,7 @@ module ExprResolver {
           return Failure("variable '" + name + "' cannot be used with 'old'; only inout-parameters can be, and only in two-state contexts");
         }
       case OperatorExpr(op, args) =>
+        if !op.ParametersValid() { return Failure("invalid or excessive native bitvector parameters"); }
         if |args| != op.ArgumentCount() {
           return Failure("operator " + op.ToString() + " expects " + Int2String(op.ArgumentCount()) + " arguments, got " + Int2String(|args|));
         }
@@ -178,6 +189,8 @@ module ExprResolver {
     match expr
     case BLiteral(_) => false
     case ILiteral(_) => false
+    case RLiteral(_, _) => false
+    case BvLiteral(_, _) => false
     case CustomLiteral(_, _) => false
     case IdExpr(_) => false
     case OperatorExpr(_, args) =>

@@ -105,3 +105,6 @@ git-issues/git-issue-120.dfy
 # Compilation entrypoints must reject unsupported B3 selection before worker lookup.
 git-issues/git-issue-126.dfy
 git-issues/git-issue-126-capabilities.dfy
+
+# Issue124 retains the two numeric source checks on the default backend.
+git-issues/git-issue-124.dfy

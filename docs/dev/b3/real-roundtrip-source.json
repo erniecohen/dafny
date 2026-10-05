@@ -1,0 +1,253 @@
+{
+  "issue": 124,
+  "phase": "A",
+  "producerVersion": "typed-floor-embedding-1",
+  "sourceBase": "52ee01f1aa5abab762bf39e1cf499fe5ed832634",
+  "boundary": "source-only, awaiting independent source review and compilation/runtime gates",
+  "execution": {
+    "compiled": false,
+    "structuralTestsExecuted": false,
+    "workerExecuted": false,
+    "proofExecuted": false
+  },
+  "limits": {
+    "contexts": 16,
+    "inputNodesPerRequest": 100000,
+    "inputNodesAggregate": 200000,
+    "depth": 128,
+    "inputSlotsPerRequest": 400000,
+    "inputSlotsAggregate": 800000,
+    "inputTextCharactersPerRequest": 33554432,
+    "inputEscapedTextUpperBytesPerRequest": 33554432,
+    "serializedBytesPerRequest": 33554432,
+    "serializedBytesAggregate": 67108864,
+    "optionalRows": 1024,
+    "optionalFreeMemberships": 100000,
+    "sharedOptionalWork": 800000
+  },
+  "controlMethods": 18,
+  "controlCases": 41,
+  "controls": [
+    {
+      "method": "DirectTypedFloorEmbeddingRewrites",
+      "rows": [
+        "\"variable\"",
+        "\"negative\"",
+        "\"zero\""
+      ],
+      "caseCount": 3
+    },
+    {
+      "method": "RealInverseWithoutEmbeddingIsUnchanged",
+      "rows": [
+        "\"variable\"",
+        "\"nonintegral\""
+      ],
+      "caseCount": 2
+    },
+    {
+      "method": "ConversionAssignmentsReachBothOriginalChecks",
+      "rows": [
+        "Fact"
+      ],
+      "caseCount": 1
+    },
+    {
+      "method": "AssignmentInvalidatesKeyAndDependentExpressions",
+      "rows": [
+        "\"source\"",
+        "\"temporary\"",
+        "\"target\""
+      ],
+      "caseCount": 3
+    },
+    {
+      "method": "SelfDependentAssignmentDoesNotCreateRememberedRow",
+      "rows": [
+        "Fact"
+      ],
+      "caseCount": 1
+    },
+    {
+      "method": "HavocInvalidatesAllDependentRows",
+      "rows": [
+        "Fact"
+      ],
+      "caseCount": 1
+    },
+    {
+      "method": "BranchDictionariesStaySeparateAndJoinIsCleared",
+      "rows": [
+        "\"conditional\"",
+        "\"choice\""
+      ],
+      "caseCount": 2
+    },
+    {
+      "method": "LoopHeaderBodyAndExitStartWithoutIncomingRows",
+      "rows": [
+        "Fact"
+      ],
+      "caseCount": 1
+    },
+    {
+      "method": "LabeledAndAbruptControlClearContinuationRows",
+      "rows": [
+        "\"label\"",
+        "\"exit\"",
+        "\"return\""
+      ],
+      "caseCount": 3
+    },
+    {
+      "method": "CheckAndAssumeNeverCreateOptimizerRows",
+      "rows": [
+        "\"assume\"",
+        "\"learn\"",
+        "\"nonlearn\""
+      ],
+      "caseCount": 3
+    },
+    {
+      "method": "BindersApplicationsAndWordsRemainSubstitutionBarriers",
+      "rows": [
+        "\"quantifier\"",
+        "\"let\"",
+        "\"application\"",
+        "\"word\""
+      ],
+      "caseCount": 4
+    },
+    {
+      "method": "RewriteRetainsAllChecksLabelsOriginsAndLearnFlags",
+      "rows": [
+        "Fact"
+      ],
+      "caseCount": 1
+    },
+    {
+      "method": "G3MasksKeepOriginalPartitionAndStableFunctions",
+      "rows": [
+        "Fact"
+      ],
+      "caseCount": 1
+    },
+    {
+      "method": "ConcurrentPreparationsUseFreshState",
+      "rows": [
+        "Fact"
+      ],
+      "caseCount": 1
+    },
+    {
+      "method": "MalformedTypedConversionsAreRejectedBeforeRewrite",
+      "rows": [
+        "\"arity\"",
+        "\"inner\"",
+        "\"result\"",
+        "\"unknown\""
+      ],
+      "caseCount": 4
+    },
+    {
+      "method": "OutputGrowthCountsCopiedOccurrencesBeforeAllocation",
+      "rows": [
+        "15, false",
+        "16, true",
+        "17, true"
+      ],
+      "caseCount": 3
+    },
+    {
+      "method": "BoundedTraversalRejectsDepthAndMetadataExcess",
+      "rows": [
+        "6, true",
+        "5, true",
+        "4, false"
+      ],
+      "caseCount": 3
+    },
+    {
+      "method": "ForgedOrMutatedRewriteCertificateIsRejected",
+      "rows": [
+        "\"hash\"",
+        "\"check\"",
+        "\"learn\"",
+        "\"control\""
+      ],
+      "caseCount": 4
+    }
+  ],
+  "files": {
+    "Source/DafnyCore/Backends/B3/B3RealContextPreparation.cs": {
+      "bytes": 23108,
+      "sha256": "3a648ec7fde03b950205db010481e0706ac19b4ae8647cd53bc1f9d77e93c9f2",
+      "checkoutBytes": 23108,
+      "checkoutSha256": "3a648ec7fde03b950205db010481e0706ac19b4ae8647cd53bc1f9d77e93c9f2",
+      "checkoutTransform": "identity"
+    },
+    "Source/DafnyCore/Backends/B3/B3RealRoundTrip.cs": {
+      "bytes": 12511,
+      "sha256": "283b50b7d7d962addf94ff6a1d5b012278283e790fa288a2c7b08a32d400310a",
+      "checkoutBytes": 12511,
+      "checkoutSha256": "283b50b7d7d962addf94ff6a1d5b012278283e790fa288a2c7b08a32d400310a",
+      "checkoutTransform": "identity"
+    },
+    "Source/DafnyCore/Backends/B3/B3RealRoundTripRelation.cs": {
+      "bytes": 10204,
+      "sha256": "ad1828f2e6915337ad5865a87b6c0a17e77a63002630ab38475284eddc7edc5f",
+      "checkoutBytes": 10204,
+      "checkoutSha256": "ad1828f2e6915337ad5865a87b6c0a17e77a63002630ab38475284eddc7edc5f",
+      "checkoutTransform": "identity"
+    },
+    "Source/DafnyCore/Backends/B3/B3VerificationBackend.cs": {
+      "bytes": 19448,
+      "sha256": "4bdca7f2034e5827a9e2952aa9a38c446a3cda0323d2b3e2db889104a2534883",
+      "checkoutBytes": 19448,
+      "checkoutSha256": "4bdca7f2034e5827a9e2952aa9a38c446a3cda0323d2b3e2db889104a2534883",
+      "checkoutTransform": "identity"
+    },
+    "Source/DafnyB3Normalizer.Test/B3RealRoundTripTests.cs": {
+      "bytes": 30434,
+      "sha256": "cc18d4e198bde82880557a9d7c9f92bd3c8b14a3ccc33179442bf2b3e4974804",
+      "checkoutBytes": 30434,
+      "checkoutSha256": "cc18d4e198bde82880557a9d7c9f92bd3c8b14a3ccc33179442bf2b3e4974804",
+      "checkoutTransform": "identity"
+    },
+    "Source/DafnyB3Normalizer.Test/DafnyB3Normalizer.Test.csproj": {
+      "bytes": 2470,
+      "sha256": "891b4b13507a9177b0bed5625c054055d17d933716d58d461e8c6c81ac86f514",
+      "checkoutBytes": 2502,
+      "checkoutSha256": "cec5d0e0f0ab2c2111b0de58259e1e8d19b8ffe261d296477dcff5e306ca45e1",
+      "checkoutTransform": ".gitattributes text eol=crlf"
+    },
+    "docs/dev/b3/real-roundtrip-plan.md": {
+      "bytes": 11752,
+      "sha256": "051df86a07ceaefba6b5b3154e4e28fe5fdb75434b21e596c85190f3dacf0b8f",
+      "checkoutBytes": 11752,
+      "checkoutSha256": "051df86a07ceaefba6b5b3154e4e28fe5fdb75434b21e596c85190f3dacf0b8f",
+      "checkoutTransform": "identity"
+    },
+    "docs/dev/news/124.fix": {
+      "bytes": 308,
+      "sha256": "856f251bc292c2a35ccb2707d1c59b04807b78f083099249715380214e01cc35",
+      "checkoutBytes": 308,
+      "checkoutSha256": "856f251bc292c2a35ccb2707d1c59b04807b78f083099249715380214e01cc35",
+      "checkoutTransform": "identity"
+    }
+  },
+  "unchanged": [
+    "protocol schema",
+    "native library and vendor",
+    "worker runtime",
+    "solver flags/pins/budgets",
+    "shared unit deadline",
+    "completion classification"
+  ],
+  "deferred": [
+    "Phase B opaque projection",
+    "worker anti-vacuity fixtures",
+    "new corpus routing"
+  ],
+  "inventoryEncoding": "Canonical Git blobs and repository-declared checkout bytes are bound separately."
+}

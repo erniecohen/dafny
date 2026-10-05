@@ -151,7 +151,10 @@ public class NormalizerTests {
     var results = await Dafny("method Read(m: imap<int, int>, key: int) requires key in m { assert m[key] == m[key]; }");
     Assert.All(results, Validate);
     Assert.Contains(results, r => r.Approximations.Any(a => a.StartsWith("Monomorphic map helper origin:")));
-    Assert.All(results, r => Assert.Contains(r.Approximations, a => a.Contains("All source axioms, distinct-constant constraints and lambda equations are omitted")));
+    Assert.All(results, r => {
+      Assert.Contains(r.Approximations, a => a.Contains("Outside reviewed guarded literal-definition contexts, source axioms"));
+      Assert.All(r.Contexts!, context => Assert.Empty(context.Definitions));
+    });
   }
 
   [Fact]
@@ -359,7 +362,6 @@ public class NormalizerTests {
   }
 
   [Theory]
-  [InlineData("procedure P(x: real); implementation P(x: real) { assert x == x; }", "b3_primitive_type")]
   [InlineData("procedure P(); implementation P() { again: assert true; goto again; }", "b3_transfer")]
   [InlineData("procedure P(); implementation P() { goto a, b; a: return; b: return; }", "b3_transfer")]
   [InlineData("procedure P(); implementation P() { goto {:unreviewed} done; done: assert true; }", "b3_attribute")]
@@ -840,7 +842,7 @@ public class NormalizerTests {
     var labels = string.Join(" ", Enumerable.Range(0, 257).Select(i => "next" + i + ": assert true;"));
     var result = Boogie("procedure P(); implementation P() { while (*) invariant true; { } " + labels + " }");
     Assert.False(result.Success); Assert.Null(result.Program); Assert.Empty(result.Obligations);
-    Assert.Contains(result.Diagnostics, d => d.Code == "b3_cfg_limit");
+    Assert.Contains(result.Diagnostics, d => d.Code == "b3_cfg_correspondence");
   }
 
   [Fact]

@@ -2,6 +2,7 @@ module SolverExpr {
   import opened Std.Wrappers
   import Std.Collections.Seq
   import opened Basics
+  import Types
   import opened DeclarationMarkers
 
   export
@@ -14,8 +15,8 @@ module SolverExpr {
     reveals SExprPrintConfig
     reveals SExpr
     provides SExpr.ToString
-    provides SExpr.Boolean, SExpr.Integer, SExpr.EQ, SExpr.Id, SExpr.FuncAppl, SExpr.Eq, SExpr.Negation, SExpr.BigAnd
-    provides Wrappers, DeclarationMarkers
+    provides SExpr.Boolean, SExpr.Integer, SExpr.Rational, SExpr.Bitvector, SExpr.IndexedFuncAppl, SExpr.EQ, SExpr.Id, SExpr.FuncAppl, SExpr.Eq, SExpr.Negation, SExpr.BigAnd
+    provides Types, Wrappers, DeclarationMarkers
 
   trait SDeclaration extends object {
     const name: string
@@ -30,6 +31,8 @@ module SolverExpr {
   datatype SType =
     | SBool
     | SInt
+    | SReal
+    | SBitvector(width: Types.BitvectorWidth)
     | SUserType(decl: STypeDecl)
   {
     static function TypesToSExpr(types: seq<SType>): SExpr {
@@ -40,6 +43,8 @@ module SolverExpr {
       match this
       case SBool => S("Bool")
       case SInt => S("Int")
+      case SReal => S("Real")
+      case SBitvector(width) => PP([S("_"), S("BitVec"), SExpr.Integer(width)])
       case SUserType(name) => S(decl.name)
     }
 
@@ -47,6 +52,8 @@ module SolverExpr {
       match this
       case SBool => "bool"
       case SInt => "int"
+      case SReal => "real"
+      case SBitvector(width) => Types.BitvectorTypeName(width)
       case SUserType(name) => decl.name
     }
   }
@@ -113,7 +120,21 @@ module SolverExpr {
       S(if b then TRUE else FALSE)
     }
     static function Integer(x: int): SExpr {
-      S(Int2String(x))
+      if x < 0 then PP([S("-"), S(Int2String(-x))]) else S(Int2String(x))
+    }
+    static function Rational(numerator: int, denominator: int): SExpr
+      requires denominator > 0
+    {
+      FuncAppl("/", [FuncAppl("to_real", [Integer(numerator)]), FuncAppl("to_real", [Integer(denominator)])])
+    }
+    static function Bitvector(word: Types.CanonicalWord): SExpr {
+      PP([S("_"), S("bv" + Int2String(word.value)), Integer(word.width)])
+    }
+    static function IndexedFuncAppl(op: string, indices: seq<int>, args: seq<SExpr>): SExpr
+      requires forall i <- indices :: i >= 0
+    {
+      var head := PP([S("_"), S(op)] + SeqMap(indices, (i: int) => Integer(i)));
+      PP([head] + args)
     }
     static function Id(x: SConstant): SExpr {
       S(x.name)

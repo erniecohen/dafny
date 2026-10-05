@@ -140,6 +140,8 @@ module TypeChecker {
     match expr
     case BLiteral(_) => true
     case ILiteral(_) => true
+    case RLiteral(_, _) => true
+    case BvLiteral(_, _) => true
     case CustomLiteral(_, _) => true
     case IdExpr(_) => true
     case OperatorExpr(op, args) =>
@@ -151,19 +153,26 @@ module TypeChecker {
             args[0].HasType(BoolType) && args[1].HasType(BoolType)
           case Eq | Neq =>
             args[0].ExprType() == args[1].ExprType()
-          case Less | AtMost | Plus | Minus | Times | Div | Mod =>
+          case Less | AtMost | Plus | Minus | Times =>
+            IsNumericType(args[0].ExprType()) && args[0].ExprType() == args[1].ExprType()
+          case Div | Mod =>
             args[0].HasType(IntType) && args[1].HasType(IntType)
+          case RealDiv =>
+            args[0].HasType(RealType) && args[1].HasType(RealType)
+          case ToReal => args[0].HasType(IntType)
+          case ToInt => args[0].HasType(RealType)
+          case Bv(_, _, _, _) => BitvectorSignature(op, SeqMap(args, (arg: Expr) => arg.ExprType()))
           case LogicalNot =>
             args[0].HasType(BoolType)
           case UnaryMinus =>
-            args[0].HasType(IntType)
+            IsNumericType(args[0].ExprType())
       }
     case FunctionCallExpr(func, args) =>
       forall i :: 0 <= i < |args| ==> TypeCorrectExpr(args[i]) && args[i].HasType(func.Parameters[i].typ)
     case LabeledExpr(lbl, body) =>
       TypeCorrectExpr(body)
     case LetExpr(v, rhs, body) =>
-      rhs.HasType(v.typ) && TypeCorrectExpr(body)
+      TypeCorrectExpr(rhs) && rhs.HasType(v.typ) && TypeCorrectExpr(body)
     case QuantifierExpr(_, _, patterns, body) =>
       (forall tr <- patterns, e <- tr.exprs :: assert tr.WellFormed(); TypeCorrectExpr(e)) &&
       TypeCorrectExpr(body) && body.HasType(BoolType)
@@ -328,6 +337,10 @@ module TypeChecker {
       return Success(BoolType);
     case ILiteral(_) =>
       return Success(IntType);
+    case RLiteral(_, _) =>
+      return Success(RealType);
+    case BvLiteral(_, width) =>
+      return Success(BitvectorType(width));
     case CustomLiteral(_, typ) =>
       return Success(typ);
     case IdExpr(v) =>
@@ -358,11 +371,42 @@ module TypeChecker {
           }
           typ := BoolType;
         case Less | AtMost =>
-          var _ :- ExpectOperandTypes(op, types, IntType);
+          var numericType :- ExpectSameNumericOperands(op, types);
+          assert types[0] == numericType && types[1] == numericType;
+          assert args[0].HasType(types[0]) && args[1].HasType(types[1]);
+          assert args[0].ExprType() == numericType && args[1].ExprType() == numericType;
           typ := BoolType;
-        case Plus | Minus | Times | Div | Mod | UnaryMinus =>
+        case Plus | Minus | Times | UnaryMinus =>
+          typ :- ExpectSameNumericOperands(op, types);
+          assert types[0] == typ;
+          assert args[0].HasType(types[0]);
+          assert args[0].ExprType() == typ;
+          if |args| == 2 {
+            assert types[1] == typ;
+            assert args[1].HasType(types[1]);
+            assert args[1].ExprType() == typ;
+          }
+        case Div | Mod =>
           var _ :- ExpectOperandTypes(op, types, IntType);
           typ := IntType;
+        case RealDiv =>
+          var _ :- ExpectOperandTypes(op, types, RealType);
+          typ := RealType;
+        case ToInt =>
+          var _ :- ExpectOperandTypes(op, types, RealType);
+          typ := IntType;
+        case ToReal =>
+          var _ :- ExpectOperandTypes(op, types, IntType);
+          typ := RealType;
+        case Bv(kind, width, _, _) =>
+          if !BitvectorSignature(op, types) { return Failure("invalid native bitvector signature: " + op.ToString()); }
+          forall i | 0 <= i < |args|
+            ensures args[i].ExprType() == types[i]
+          {
+            assert args[i].HasType(types[i]);
+          }
+          assert SeqMap(args, (arg: Expr) => arg.ExprType()) == types;
+          typ := expr.ExprType();
       }
       return Success(typ);
     case FunctionCallExpr(func, args) =>
@@ -404,6 +448,41 @@ module TypeChecker {
       return Success(typ);
     case ClosureExpr(_, _, _, _) =>
       return Failure("closure must be elaborated before type checking");
+  }
+
+  predicate BitvectorSignature(op: Operator, types: seq<Type>) {
+    op.Bv? && op.ParametersValid() && |types| == op.ArgumentCount() &&
+    match op.kind {
+      case IntToBv => types[0] == IntType
+      case BvToUnsignedInt => types[0] == BitvectorType(op.width)
+      case BvExtract =>
+        types[0].BitvectorType? && op.end <= types[0].width
+      case BvConcat =>
+        types[0].BitvectorType? && types[1].BitvectorType? && types[0].width + types[1].width == op.width
+      case _ => forall typ <- types :: typ == BitvectorType(op.width)
+    }
+  }
+
+  predicate IsNumericType(typ: Type) {
+    typ == IntType || typ == RealType
+  }
+
+  method ExpectSameNumericOperands(op: Operator, types: seq<Type>) returns (r: Result<Type, string>)
+    requires |types| > 0
+    ensures r.Success? ==> IsNumericType(r.value) && forall t <- types :: t == r.value
+    ensures r.Success? ==> types[0] == r.value
+    ensures r.Success? ==> forall i | 0 <= i < |types| :: types[i] == r.value
+  {
+    var typ := types[0];
+    if !IsNumericType(typ) || exists t <- types :: t != typ {
+      return Failure("operator " + op.ToString() + " requires operands of one numeric type");
+    }
+    forall i | 0 <= i < |types|
+      ensures types[i] == typ
+    {
+      assert types[i] in types;
+    }
+    return Success(typ);
   }
 
   method CheckExprList(exprs: seq<Expr>) returns (r: Result<seq<Type>, string>)

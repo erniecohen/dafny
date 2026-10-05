@@ -56,14 +56,14 @@
     {
       "name": "real",
       "file": "real.dfy",
-      "exitCode": 4,
-      "diagnostic": "b3_primitive_type"
+      "exitCode": 0,
+      "diagnostic": null
     },
     {
       "name": "bitvector",
       "file": "bitvector.dfy",
-      "exitCode": 4,
-      "diagnostic": "b3_type: Unsupported type BvType"
+      "exitCode": 0,
+      "diagnostic": null
     },
     {
       "name": "division",
@@ -154,6 +154,289 @@
     {
       "name": "division-false",
       "file": "division-false.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
+    },
+    {
+      "name": "real-exact",
+      "file": "real-exact.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "real-universal",
+      "file": "real-universal.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "real-floor",
+      "file": "real-floor.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "real-conversion",
+      "file": "real-conversion.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "real-state-contract",
+      "file": "real-state-contract.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "real-fractional-conversion",
+      "file": "real-fractional-conversion.dfy",
+      "exitCode": 4,
+      "diagnostic": "must be an integer",
+      "outcome": "failed"
+    },
+    {
+      "name": "real-zero",
+      "file": "real-zero.dfy",
+      "exitCode": 4,
+      "diagnostic": "possible division by zero",
+      "outcome": "failed"
+    },
+    {
+      "name": "real-wrong-floor",
+      "file": "real-wrong-floor.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
+    },
+    {
+      "name": "real-irrational",
+      "file": "real-irrational.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
+    },
+    {
+      "name": "real-false",
+      "file": "real-false.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-native",
+      "file": "bitvector-native.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-wrong-wrap",
+      "file": "bitvector-wrong-wrap.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-wrong-unsigned",
+      "file": "bitvector-wrong-unsigned.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-zero-divisor",
+      "file": "bitvector-zero-divisor.dfy",
+      "exitCode": 4,
+      "diagnostic": "possible division by zero",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-zero-remainder",
+      "file": "bitvector-zero-remainder.dfy",
+      "exitCode": 4,
+      "diagnostic": "possible division by zero",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-negative-shift",
+      "file": "bitvector-negative-shift.dfy",
+      "exitCode": 4,
+      "diagnostic": "shift amount must be non-negative",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-large-shift",
+      "file": "bitvector-large-shift.dfy",
+      "exitCode": 4,
+      "diagnostic": "shift amount must not exceed",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-bad-narrowing",
+      "file": "bitvector-bad-narrowing.dfy",
+      "exitCode": 4,
+      "diagnostic": "might not fit in bv3",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-negative-conversion",
+      "file": "bitvector-negative-conversion.dfy",
+      "exitCode": 4,
+      "diagnostic": "might not fit in bv3",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-bv0",
+      "file": "bitvector-bv0.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-bv0-bad-conversion",
+      "file": "bitvector-bv0-bad-conversion.dfy",
+      "exitCode": 4,
+      "diagnostic": "might not fit in bv0",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-false",
+      "file": "bitvector-false.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-rotation-zero",
+      "file": "bitvector-rotation-zero.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-rotation-mixed-bad",
+      "file": "bitvector-rotation-mixed-bad.dfy",
+      "exitCode": 4,
+      "diagnostic": "postcondition",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-rotation-mixed-good",
+      "file": "bitvector-rotation-mixed-good.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-rotation-same-direction-good",
+      "file": "bitvector-rotation-same-direction-good.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-rotation-primitive-left-good",
+      "file": "bitvector-rotation-primitive-left-good.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-rotation-primitive-right-good",
+      "file": "bitvector-rotation-primitive-right-good.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-rotation-satisfiable-inputs-false",
+      "file": "bitvector-rotation-satisfiable-inputs-false.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-rotation-identities",
+      "file": "bitvector-rotation-identities.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-rotation-negative-count",
+      "file": "bitvector-rotation-negative-count.dfy",
+      "exitCode": 4,
+      "diagnostic": "rotate amount must be non-negative",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-rotation-large-count",
+      "file": "bitvector-rotation-large-count.dfy",
+      "exitCode": 4,
+      "diagnostic": "rotate amount must not exceed",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-rotation-anti-vacuity",
+      "file": "bitvector-rotation-anti-vacuity.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-unsigned-direct",
+      "file": "bitvector-unsigned-direct.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-unsigned-range",
+      "file": "bitvector-unsigned-range.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-unsigned-round-trip",
+      "file": "bitvector-unsigned-round-trip.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-unsigned-wrong-sign",
+      "file": "bitvector-unsigned-wrong-sign.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-unsigned-wrong-bound",
+      "file": "bitvector-unsigned-wrong-bound.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-unsigned-bad-fit",
+      "file": "bitvector-unsigned-bad-fit.dfy",
+      "exitCode": 4,
+      "diagnostic": "might not fit in bv1",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-unsigned-false",
+      "file": "bitvector-unsigned-false.dfy",
+      "exitCode": 4,
+      "diagnostic": "assertion",
+      "outcome": "failed"
+    },
+    {
+      "name": "bitvector-unsigned-spec-unsupported",
+      "file": "bitvector-unsigned-spec-unsupported.dfy",
+      "exitCode": 4,
+      "diagnostic": "b3_unsigned_wrapper"
+    },
+    {
+      "name": "bitvector-unsigned-if-guard",
+      "file": "bitvector-unsigned-if-guard.dfy",
+      "exitCode": 0,
+      "diagnostic": null
+    },
+    {
+      "name": "bitvector-unsigned-if-guard-false",
+      "file": "bitvector-unsigned-if-guard-false.dfy",
       "exitCode": 4,
       "diagnostic": "assertion",
       "outcome": "failed"

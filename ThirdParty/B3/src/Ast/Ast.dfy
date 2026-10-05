@@ -60,6 +60,8 @@ module Ast {
   datatype Type =
     | BoolType
     | IntType
+    | RealType
+    | BitvectorType(width: Types.BitvectorWidth)
     | TagType
     | UserType(decl: TypeDecl)
   {
@@ -67,6 +69,8 @@ module Ast {
       match this
       case BoolType => Types.BoolTypeName
       case IntType => Types.IntTypeName
+      case RealType => Types.RealTypeName
+      case BitvectorType(width) => Types.BitvectorTypeName(width)
       case TagType => Types.TagTypeName
       case UserType(decl) => decl.Name
     }
@@ -429,6 +433,8 @@ module Ast {
   datatype Expr =
     | BLiteral(bvalue: bool)
     | ILiteral(ivalue: int)
+    | RLiteral(numerator: int, denominator: int)
+    | BvLiteral(value: int, width: Types.BitvectorWidth)
     | CustomLiteral(s: string, typ: Type)
     | IdExpr(v: Variable)
     | OperatorExpr(op: Operator, args: seq<Expr>)
@@ -442,6 +448,8 @@ module Ast {
       match this
       case BLiteral(_) => BoolType
       case ILiteral(_) => IntType
+      case RLiteral(_, _) => RealType
+      case BvLiteral(_, width) => BitvectorType(width)
       case CustomLiteral(_, typ) => typ
       case IdExpr(v) => v.typ
       case OperatorExpr(op, args) =>
@@ -452,8 +460,14 @@ module Ast {
             BoolType
           case Eq | Neq | Less | AtMost =>
             BoolType
-          case Plus | Minus | Times | Div | Mod | UnaryMinus =>
-            IntType
+          case Plus | Minus | Times | UnaryMinus =>
+            if op.ArgumentCount() == |args| then args[0].ExprType() else IntType
+          case Div | Mod | ToInt => IntType
+          case RealDiv | ToReal => RealType
+          case Bv(kind, width, _, _) =>
+            if kind in {Raw.BitvectorOperator.BvUnsignedLess, Raw.BitvectorOperator.BvUnsignedLessEqual} then BoolType
+            else if kind == Raw.BitvectorOperator.BvToUnsignedInt then IntType
+            else if op.ParametersValid() then BitvectorType(width) else IntType
         }
       case FunctionCallExpr(func, args) => func.ResultType
       case LabeledExpr(_, body) => body.ExprType()
@@ -470,9 +484,12 @@ module Ast {
       match this
       case BLiteral(_) => true
       case ILiteral(_) => true
-      case CustomLiteral(_, typ) => typ != BoolType && typ != IntType
+      case RLiteral(_, denominator) => denominator > 0
+      case BvLiteral(value, width) => Types.BitvectorLiteralValid(value, width)
+      case CustomLiteral(_, typ) => typ != BoolType && typ != IntType && typ != RealType && !typ.BitvectorType?
       case IdExpr(_) => true
       case OperatorExpr(op, args) =>
+        && op.ParametersValid()
         && |args| == op.ArgumentCount()
         && forall arg <- args :: arg.WellFormed()
       case FunctionCallExpr(func, args) =>
@@ -495,6 +512,8 @@ module Ast {
       match this
       case BLiteral(value) => if value then "true" else "false"
       case ILiteral(value) => Int2String(value)
+      case RLiteral(n, d) => "#real(" + Int2String(n) + ", " + Int2String(d) + ")"
+      case BvLiteral(value, width) => "#bv(" + Int2String(value) + ", " + Int2String(width) + ")"
       case CustomLiteral(s, typ) => PrintUtil.CustomLiteralToString(s, typ.ToString())
       case IdExpr(v) => v.name
       case OperatorExpr(op, args) =>
@@ -504,6 +523,10 @@ module Ast {
             "if " + args[0].ToString() +
             " " + args[1].ToString() +
             " else " + args[2].ToString(opStrength.SubexpressionPower(PrintUtil.Right, context))
+          else if op.Bv? then
+            op.ToString() + "(" + op.ParameterText() + (if args == [] then "" else ", " + ListToString(args)) + ")"
+          else if op in {Operator.ToReal, Operator.ToInt} && |args| == 1 then
+            op.ToString() + "(" + args[0].ToString() + ")"
           else if op.ArgumentCount() == 1 == |args| then
             op.ToString() + args[0].ToString(opStrength.SubexpressionPower(PrintUtil.Right, context))
           else if op.ArgumentCount() == 2 == |args| then
@@ -579,6 +602,8 @@ module Ast {
       match this
       case BLiteral(_) => {}
       case ILiteral(_) => {}
+      case RLiteral(_, _) => {}
+      case BvLiteral(_, _) => {}
       case CustomLiteral(_, _) => {}
       case IdExpr(v) => {v}
       case OperatorExpr(_, args) => FreeVariablesInList(args)

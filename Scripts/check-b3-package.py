@@ -69,6 +69,7 @@ def check(options):
     spec = importlib.util.spec_from_file_location('b3_packager', Path(__file__).with_name('package-b3-experimental.py'))
     packager = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(packager)
+    packager.require_verification_receipt()
     archive_bytes = packager.read_regular(options.archive, packager.ARCHIVE_MAX_BYTES)
     if not re.fullmatch('[0-9a-f]{64}', options.archive_sha256) or digest(archive_bytes) != options.archive_sha256:
         raise ValueError('Archive does not match the independently supplied build-receipt digest')
@@ -107,7 +108,7 @@ def check(options):
                 'solver/z3', 'support-matrix.json', 'discrepancies.json'}
     if manifest.get('schemaVersion') != 1 or not re.fullmatch('[0-9a-f]{40}', manifest.get('sourceCommit', '')) or not required <= manifest['files'].keys():
         raise ValueError('Incomplete or unsupported package identity')
-    if manifest['verifiedLibrary']['sha256'] != packager.LIBRARY_SHA or manifest['verifiedLibrary']['passedBatches'] != 557 or manifest['sourceFingerprint'] != packager.SOURCE_SHA or manifest['solver']['sha256'] != packager.SOLVER_SHA or manifest['solver']['version'] != '5.1.0':
+    if manifest['verifiedLibrary']['sha256'] != packager.LIBRARY_SHA or manifest['verifiedLibrary']['passedBatches'] != packager.VERIFIED_BATCHES or manifest['verifiedLibrary']['evidence'] != packager.VERIFICATION_EVIDENCE or manifest['sourceFingerprint'] != packager.SOURCE_SHA or manifest['solver']['sha256'] != packager.SOLVER_SHA or manifest['solver']['version'] != '5.1.0':
         raise ValueError('Package identity does not match the reviewed input pins')
     expected = set(manifest['files']) | {'package-manifest.json'}
     actual = {p.relative_to(package).as_posix() for p in package.rglob('*') if p.is_file()}
@@ -121,7 +122,7 @@ def check(options):
     if (package / 'dafny').read_bytes() != packager.LAUNCHER_BYTES or digest((package / 'cli/b3/B3Library.dll').read_bytes()) != packager.LIBRARY_SHA or digest((package / 'solver/z3').read_bytes()) != packager.SOLVER_SHA:
         raise ValueError('Unexpected launcher, library or solver bytes')
     worker = json.loads((package / 'cli/b3/b3-worker-manifest.json').read_text())
-    if worker['version'] != 1 or worker['b3Commit'] != manifest['b3Commit'] or worker['sourceFingerprint'] != packager.SOURCE_SHA or worker['normalizerVersion'] != 'experimental-1' or worker['bootstrapCompiler'] != '4.11.0+fcb2042d.review.a171069d':
+    if worker['version'] != 3 or worker['b3Commit'] != manifest['b3Commit'] or worker['sourceFingerprint'] != packager.SOURCE_SHA or worker['normalizerVersion'] != 'experimental-3' or worker['bootstrapCompiler'] != '4.11.0+fcb2042d.review.a171069d':
         raise ValueError('Unsupported installed worker identity')
     for name, sha in worker['files'].items():
         if Path(name).name != name or digest((package / 'cli/b3' / name).read_bytes()) != sha:

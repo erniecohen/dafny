@@ -6,9 +6,14 @@ namespace DafnyB3Protocol;
 
 /// <summary>Serializable normalized IR, independent of Boogie and generated B3 runtime types.</summary>
 public static class Protocol {
-  public const int Version = 1;
-  public const string NormalizerVersion = "experimental-1";
+  public const int Version = 3;
+  public const string NormalizerVersion = "experimental-3";
   public const int MaximumMessageBytes = 32 * 1024 * 1024;
+  public const int MaximumIntegerCharacters = 10000;
+  public const int MaximumBitvectorWidth = 4096;
+  public const long MaximumBitvectorBits = 4194304;
+  public const int MaximumBitvectorLiteralCharacters = 1234;
+  public static string BitvectorTypeName(int width) => "#bv" + width.ToString(System.Globalization.CultureInfo.InvariantCulture);
   public const int MaximumNodes = 100000;
   public const int MaximumDepth = 128;
   public static string GetProgramHash(Program program) =>
@@ -39,12 +44,22 @@ public sealed record Unit(string Name, IReadOnlyList<Binding> Variables, Stateme
 
 public enum Operator {
   IfThenElse, Equiv, Implies, And, Or, Equal, NotEqual, Less, LessEqual,
-  Add, Subtract, Multiply, Divide, Modulo, Not, Negate
+  Add, Subtract, Multiply, Divide, Modulo, RealDivide, ToReal, ToInt, Not, Negate
+}
+
+/// <summary>Closed native word primitives; indexed parameters are separate checked data.</summary>
+public enum BitvectorOperator {
+  And, Or, Xor, Not, Add, Subtract, Multiply, UnsignedDivide, UnsignedRemainder,
+  UnsignedLess, UnsignedLessEqual, ShiftLeft, LogicalShiftRight, Extract, Concat,
+  IntToBitvector, BitvectorToUnsignedInt
 }
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")]
 [JsonDerivedType(typeof(BooleanLiteral), "boolean")]
 [JsonDerivedType(typeof(IntegerLiteral), "integer")]
+[JsonDerivedType(typeof(RationalLiteral), "rational")]
+[JsonDerivedType(typeof(BitvectorLiteral), "bitvector")]
+[JsonDerivedType(typeof(BitvectorOperation), "bitvectorOperation")]
 [JsonDerivedType(typeof(Variable), "variable")]
 [JsonDerivedType(typeof(Application), "application")]
 [JsonDerivedType(typeof(Operation), "operation")]
@@ -54,6 +69,12 @@ public enum Operator {
 public abstract record Expression(string Type);
 public sealed record BooleanLiteral(bool Value) : Expression("bool");
 public sealed record IntegerLiteral(string Value) : Expression("int");
+public sealed record RationalLiteral(string Numerator, string Denominator) : Expression("real");
+public sealed record BitvectorLiteral(string Value, int Width) : Expression(Protocol.BitvectorTypeName(Width));
+/// <summary>Width is the result word width, except unsigned comparisons and word-to-Int conversion where it is the input width.
+/// Extract uses [Start, End); all other operations require zero indices.</summary>
+public sealed record BitvectorOperation(BitvectorOperator Operator, int Width, int Start, int End,
+  string ResultType, IReadOnlyList<Expression> Arguments) : Expression(ResultType);
 public sealed record Variable(string Name, string ResultType) : Expression(ResultType);
 public sealed record Application(string Name, string ResultType, IReadOnlyList<Expression> Arguments)
   : Expression(ResultType);

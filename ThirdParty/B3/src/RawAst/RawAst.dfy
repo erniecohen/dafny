@@ -29,7 +29,7 @@ module RawAst {
     //    - additional semantic rules
     ghost predicate WellFormed(generatedTypes: set<string>) {
       // user-defined types do not use the names of built-in types
-      && (forall typ <- types :: typ.name !in BuiltInTypes)
+      && (forall typ <- types :: !ReservedTypeName(typ.name))
       // user-defined types have distinct names
       && (forall i, j :: 0 <= i < j < |types| ==> types[i] != types[j])
       // procedures have distinct names
@@ -46,7 +46,7 @@ module RawAst {
     }
 
     predicate IsType(typ: TypeName) {
-      typ in BuiltInTypes || typ in signatureTypes || exists t <- types :: typ == t.name
+      IsBuiltInType(typ) || typ in signatureTypes || exists t <- types :: typ == t.name
     }
   }
 
@@ -453,6 +453,38 @@ module RawAst {
 
   // Expressions
 
+  datatype BitvectorOperator =
+    | BvAnd | BvOr | BvXor | BvNot
+    | BvAdd | BvSubtract | BvMultiply | BvUnsignedDivide | BvUnsignedRemainder
+    | BvUnsignedLess | BvUnsignedLessEqual | BvShiftLeft | BvLogicalShiftRight
+    | BvExtract | BvConcat | IntToBv | BvToUnsignedInt
+  {
+    function ArgumentCount(): nat {
+      if this in {BvNot, BvExtract, IntToBv, BvToUnsignedInt} then 1 else 2
+    }
+    function ToString(): string { "#" + SmtName() }
+    function SmtName(): string {
+      match this
+      case BvAnd => "bvand"
+      case BvOr => "bvor"
+      case BvXor => "bvxor"
+      case BvNot => "bvnot"
+      case BvAdd => "bvadd"
+      case BvSubtract => "bvsub"
+      case BvMultiply => "bvmul"
+      case BvUnsignedDivide => "bvudiv"
+      case BvUnsignedRemainder => "bvurem"
+      case BvUnsignedLess => "bvult"
+      case BvUnsignedLessEqual => "bvule"
+      case BvShiftLeft => "bvshl"
+      case BvLogicalShiftRight => "bvlshr"
+      case BvExtract => "extract"
+      case BvConcat => "concat"
+      case IntToBv => "int2bv"
+      case BvToUnsignedInt => "bv2int"
+    }
+  }
+
   datatype Operator =
     // ternary operators
     | IfThenElse
@@ -462,20 +494,38 @@ module RawAst {
     | LogicalAnd | LogicalOr
     | Eq | Neq
     | Less | AtMost
-    | Plus | Minus | Times | Div | Mod
+    | Plus | Minus | Times | Div | Mod | RealDiv
     // unary operators
     | LogicalNot
     | UnaryMinus
+    | ToReal | ToInt
+    | Bv(kind: BitvectorOperator, width: int, start: int := 0, end: int := 0)
   {
     function ArgumentCount(): nat {
       match this
+      case Bv(kind, _, _, _) => kind.ArgumentCount()
       case IfThenElse => 3
-      case LogicalNot | UnaryMinus => 1
+      case LogicalNot | UnaryMinus | ToReal | ToInt => 1
       case _ => 2
     }
 
+    predicate ParametersValid() {
+      match this
+      case Bv(kind, width, start, end) =>
+        0 < width <= MaximumBitvectorWidth &&
+        (if kind == BitvectorOperator.BvExtract then
+          0 <= start < end <= MaximumBitvectorWidth && width == end - start
+         else start == 0 && end == 0)
+      case _ => true
+    }
+    function ParameterText(): string {
+      if this.Bv? then Int2String(width) +
+        (if kind == BitvectorOperator.BvExtract then ", " + Int2String(start) + ", " + Int2String(end) else "")
+      else ""
+    }
     function ToString(): string {
       match this
+      case Bv(kind, _, _, _) => kind.ToString()
       case IfThenElse => "if-then-else" // this case can be used in output (e.g., error messages), but does not lead to parseable syntax
       case Equiv => "<==>"
       case LogicalImp => "==>"
@@ -490,11 +540,15 @@ module RawAst {
       case Times => "*"
       case Div => "div"
       case Mod => "mod"
+      case RealDiv => "/"
+      case ToReal => "#to_real"
+      case ToInt => "#to_int"
       case LogicalNot => "!"
     }
 
     function BindingStrength(): PrintUtil.BindingPower {
       match this
+      case Bv(_, _, _, _) => PrintUtil.BindingPower(80, 80)
       case IfThenElse => PrintUtil.BindingPower.EndlessOperator
       case Equiv => PrintUtil.BindingPower(20, 20)
       case LogicalImp => PrintUtil.BindingPower(31, 30)
@@ -504,14 +558,16 @@ module RawAst {
       case Plus => PrintUtil.BindingPower(60, 60)
       case Minus => PrintUtil.BindingPower(60, 61)
       case Times => PrintUtil.BindingPower(70, 70)
-      case Div | Mod => PrintUtil.BindingPower(70, 71)
-      case LogicalNot | UnaryMinus => PrintUtil.BindingPower(80, 80)
+      case Div | Mod | RealDiv => PrintUtil.BindingPower(70, 71)
+      case LogicalNot | UnaryMinus | ToReal | ToInt => PrintUtil.BindingPower(80, 80)
     }
   }
 
   datatype Expr =
     | BLiteral(bvalue: bool)
     | ILiteral(ivalue: int)
+    | RLiteral(numerator: int, denominator: int)
+    | BvLiteral(value: int, width: int)
     | CustomLiteral(s: string, typ: TypeName)
     | IdExpr(name: string, isOld: bool := false)
     | OperatorExpr(op: Operator, args: seq<Expr>)
@@ -525,11 +581,13 @@ module RawAst {
       match this
       case BLiteral(_) => true
       case ILiteral(_) => true
+      case RLiteral(_, denominator) => denominator > 0
+      case BvLiteral(value, width) => BitvectorLiteralValid(value, width)
       case CustomLiteral(_, _) => true
       case IdExpr(name, isOld) =>
         (if isOld then OldName(name) else name) in scope
-      case OperatorExpr(_, args) =>
-        forall e <- args :: e.WellFormed(b3, scope)
+      case OperatorExpr(op, args) =>
+        op.ParametersValid() && forall e <- args :: e.WellFormed(b3, scope)
       case FunctionCallExpr(name, args) =>
         // TODO: name
         forall e <- args :: e.WellFormed(b3, scope)
