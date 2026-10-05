@@ -1,0 +1,2 @@
+git-issue-113-extended-newtypes-hidden-base-typearguments.dfy(13,19): Error: type cast to type 'Base<seq<bool>>' must be from an expression of a compatible type (got 'Exposed<int>')
+1 resolution/type errors detected in git-issue-113-extended-newtypes-hidden-base-typearguments.dfy

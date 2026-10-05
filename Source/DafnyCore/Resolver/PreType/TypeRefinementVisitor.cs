@@ -148,6 +148,28 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
         () => new UserDefinedType(expr.Origin, datatypeDecl.Name, datatypeDecl, datatypeValue.InferredTypeArgs),
         ctor.Name));
 
+    } else if (expr is ConversionExpr { IsBaseOperation: true } conversionExpr) {
+      Type BaseOperationType() {
+        var expected = ((DPreType)conversionExpr.PreType.Normalize()).Decl;
+        var view = NewtypeOperationView.Get(conversionExpr.E.Type, expected, preserveSubsetTypes: true);
+        if (expected is ArrowTypeDecl &&
+            (view.Status != NewtypeOperationView.ViewStatus.Resolved || view.BaseType?.AsArrowType?.ResolvedClass != expected)) {
+          // A hidden or unresolved carrier cannot replace a resolved arrow signature.
+          // Preserve any total/partial subset on a successful projection below.
+          return TypeRefinementWrapper.NormalizeSansBottom(expr);
+        }
+        // Keep the current lower bound until the source view is determined.
+        // Successful resolution supplies the concrete, instantiated visible base.
+        return view.BaseType ?? TypeRefinementWrapper.NormalizeSansBottom(expr);
+      }
+      if (((DPreType)conversionExpr.PreType.Normalize()).Decl is ArrowTypeDecl) {
+        // An operation view has the source's exact base signature. A subtype join
+        // here can broaden a contravariant domain and create an invalid totality demand.
+        flows.Add(new FlowFromComputedArrowOperationType(conversionExpr, BaseOperationType));
+      } else {
+        flows.Add(new FlowFromComputedType(expr, BaseOperationType, "base operation"));
+      }
+
     } else if (expr is ApplyExpr applyExpr) {
       flows.Add(new FlowFromTypeArgument(expr, applyExpr.Function.UnnormalizedType, applyExpr.Args.Count));
 
@@ -334,7 +356,9 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
 
       Func<Type> GetPatternArgumentType(int argumentIndex) {
         return () => {
-          var sourceType = getPatternRhsType().NormalizeExpand();
+          var nominalSourceType = getPatternRhsType();
+          var sourceType = systemModuleManager.Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+            ? NewtypeOperationView.Get(nominalSourceType).BaseType : nominalSourceType.NormalizeExpand();
           Contract.Assert(sourceType.IsDatatype);
           Contract.Assert(sourceType.TypeArgs.Count == ctor.EnclosingDatatype.TypeArgs.Count);
           var typeMap = TypeParameter.SubstitutionMap(ctor.EnclosingDatatype.TypeArgs, sourceType.TypeArgs);

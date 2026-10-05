@@ -1,0 +1,3 @@
+git-issue-143-codatatype-nat-field-negative.dfy(6,37): Error: value does not satisfy the subset constraints of 'nat'
+
+Dafny program verifier finished with 1 verified, 1 error

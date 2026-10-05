@@ -477,6 +477,40 @@ class FlowFromComputedType : FlowIntoExpr {
   }
 }
 
+// A synthetic arrow operation projects a nominal value to its declared base;
+// it is not a least-supertype inference site. Share the source's refined actuals
+// and preserve the complete arrow family and domain/result signature.
+class FlowFromComputedArrowOperationType : Flow {
+  private readonly ConversionExpr sink;
+  private readonly TypeRefinementWrapper target;
+  private readonly System.Func<Type> getType;
+
+  public FlowFromComputedArrowOperationType(ConversionExpr sink, System.Func<Type> getType)
+    : base(sink.Origin, "arrow base operation") {
+    this.sink = sink;
+    // PreTypeToType installed this owned proxy before any parent flow captured it.
+    // ToType and UnnormalizedType share it, so checking and translating the cast
+    // see the same exact signature. This flow is its only outer-target writer.
+    target = (TypeRefinementWrapper)sink.UnnormalizedType;
+    Contract.Assert(ReferenceEquals(sink.ToType, target));
+    this.getType = getType;
+  }
+
+  public override bool Update(FlowContext context) {
+    var source = getType();
+    if (EqualTypes(target.T, source)) {
+      return false;
+    }
+    target.T = source;
+    return true;
+  }
+
+  public override void DebugPrint(TextWriter output) {
+    output.WriteLine($"    {TypeRefinementWrapper.ToStringShowingWrapper(sink.UnnormalizedType)} := " +
+      $"{TypeRefinementWrapper.ToStringShowingWrapper(getType())}  {TokDescription()}");
+  }
+}
+
 class FlowFromComputedTypeIgnoreHeadTypes : FlowIntoExpr {
   private readonly System.Func<Type> getType;
 

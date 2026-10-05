@@ -1,0 +1,65 @@
+lines 3051-3052
+axiom Tag(Tclass._module.Value()) == Tagclass._module.Value
+   && TagFamily(Tclass._module.Value()) == tytagFamily$Value;
+
+lines 3058-3062
+axiom (forall bx: Box :: 
+  { $IsBox(bx, Tclass._module.Value()) } 
+  $IsBox(bx, Tclass._module.Value())
+     ==> $Box($Unbox(bx): HandleType) == bx
+       && $Is($Unbox(bx): HandleType, Tclass._module.Value()));
+
+lines 3065-3068
+axiom (forall b#0: HandleType :: 
+  { _module.__default.Encode(b#0) } 
+  _module.__default.Encode#canCall(b#0)
+     ==> $Is(_module.__default.Encode(b#0), Tclass._module.Value()));
+
+lines 3071-3081
+axiom (forall $Heap: Heap, b#0: HandleType :: 
+  { $IsAlloc(_module.__default.Encode(b#0), Tclass._module.Value(), $Heap) } 
+  _module.__default.Encode#canCall(b#0)
+       && 
+      $Is(b#0, 
+        Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())))
+       && $IsAlloc(b#0, 
+        Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), 
+        $Heap)
+       && $IsGoodHeap($Heap)
+     ==> $IsAlloc(_module.__default.Encode(b#0), Tclass._module.Value(), $Heap));
+
+lines 3128-3139
+axiom (forall $Heap: Heap, v#0: HandleType :: 
+  { $IsAlloc(_module.__default.Decode(v#0), 
+      Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), 
+      $Heap) } 
+  _module.__default.Decode#canCall(v#0)
+       && 
+      $Is(v#0, Tclass._module.Value())
+       && $IsAlloc(v#0, Tclass._module.Value(), $Heap)
+       && $IsGoodHeap($Heap)
+     ==> $IsAlloc(_module.__default.Decode(v#0), 
+      Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), 
+      $Heap));
+
+lines 3144-3147
+axiom (forall v#0: HandleType :: 
+  { _module.__default.Decode#requires(v#0) } 
+  $Is(v#0, Tclass._module.Value())
+     ==> _module.__default.Decode#requires(v#0) == true);
+
+lines 3960-3965
+axiom (forall c0#0: HandleType :: 
+  { $Is(c0#0, Tclass._module.Value()) } 
+  $Is(c0#0, Tclass._module.Value())
+     <==> $Is(c0#0, 
+        Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())))
+       && Lit(true));
+
+lines 3968-3973
+axiom (forall c1#0: HandleType, $h: Heap :: 
+  { $IsAlloc(c1#0, Tclass._module.Value(), $h) } 
+  $IsAlloc(c1#0, Tclass._module.Value(), $h)
+     <==> $IsAlloc(c1#0, 
+      Tclass._System.___hTotalFunc1(Tclass._module.Token(), TSeq(Tclass._module.Tag())), 
+      $h));

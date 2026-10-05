@@ -1,0 +1,3 @@
+git-issue-113-existing-codata-suspension-match-refinement-negative-raw.dfy(8,35): Error: co-recursive observation: value of expression (of type 'Refined') is not known to be an instance of type 'Refined'
+
+Dafny program verifier finished with 1 verified, 1 error

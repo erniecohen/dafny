@@ -1,0 +1,7 @@
+git-issue-113-extended-newtypes-codatatype-hidden-negative.dfy(14,15): Error: member 'head' has not been imported in this scope and cannot be accessed here
+git-issue-113-extended-newtypes-codatatype-hidden-negative.dfy(15,29): Error: member 'tail' has not been imported in this scope and cannot be accessed here
+git-issue-113-extended-newtypes-codatatype-hidden-negative.dfy(16,15): Error: arguments to prefix equality must be codatatypes (instead of Wrapped)
+git-issue-113-extended-newtypes-codatatype-hidden-negative.dfy(23,13): Error: member 'Cons?' does not exist in newtype 'Wrapped'
+git-issue-113-extended-newtypes-codatatype-hidden-negative.dfy(24,15): Error: member 'head' does not exist in newtype 'Wrapped'
+git-issue-113-extended-newtypes-codatatype-hidden-negative.dfy(25,15): Error: arguments to prefix equality must be codatatypes (instead of Wrapped)
+6 resolution/type errors detected in git-issue-113-extended-newtypes-codatatype-hidden-negative.dfy

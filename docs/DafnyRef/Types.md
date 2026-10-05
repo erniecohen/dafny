@@ -2391,6 +2391,102 @@ For some types (in particular, reference types), there is also a
 corresponding `is` operation ([Section 9.10](#sec-as-is-expression)) that
 tests whether a value is valid for a given type.
 
+### 5.7.2. Extended value bases {#sec-extended-newtype-bases}
+
+The experimental option `--extended-newtype-bases` defaults to `false` and
+requires both `--general-newtypes` and `--type-system-refresh`. Enable all three
+explicitly when using these additional bases:
+
+```text
+dafny verify --type-system-refresh=true --general-newtypes=true --extended-newtype-bases=true program.dfy
+```
+
+The legacy equivalents are `/typeSystemRefresh:1`, `/generalNewtypes:1`, and
+`/extendedNewtypeBases:1`. A `.doo` library built with the extension enabled
+requires its client to enable it too. Older library manifests without this
+option are treated as disabled.
+
+The additional bases are ORDINAL, inductive datatypes, tuples, codatatypes, and
+the three function-type families `~>`, `-->`, and `->`. Reference types and traits
+remain excluded as bases. With the extension disabled, the ordinary general-newtype
+base restrictions still apply.
+
+The newtype remains a distinct nominal type. Shared representation does not
+make it assignment-compatible with its base or with another newtype, and does
+not introduce implicit element conversions between containers. An explicit
+compatible cast into a newtype establishes all applicable instantiated base
+constraints and the destination predicate. Casts to the exact instantiated base
+preserve the underlying value. Base members and function applications keep their
+original parameter and result types; a result is not automatically wrapped in
+the receiver's newtype.
+
+An ORDINAL-based newtype contains arbitrary ordinals, including non-finite ones.
+Wrapping and unwrapping an ordinal does not require finiteness or replace it
+with its offset. `IsNat` returns `bool` and `Offset` returns `nat`. Conversion to
+an integer requires `IsNat`; conversion from an integer requires nonnegativity.
+Ordinal literals and arithmetic results of the nominal newtype must satisfy its
+predicate. Ordinal operations retain their ordinary semantics and definedness
+conditions, including the conditions on subtraction.
+
+Datatype and tuple operations use the revealed base's discriminators,
+destructors, members, matches, patterns, and persistent updates. Actual type
+arguments are substituted into their declared signatures. Constructors retain
+the base datatype's namespace: construct a base value, then use a checked cast.
+For example, the tail of a nonempty-list newtype still has the base list type.
+A predicate does not remove constructors from match exhaustiveness. An update
+whose result has the nominal type must reestablish that type's predicate after
+the update, including updates to ghost fields. Ghost tuple components retain
+their ghost status.
+
+Codatatype-based newtypes use the base's lazy representation, co-equality,
+prefix equality, and productivity rules. An identity wrap does not force a stream, create a constructor guard, or
+supply an inductive rank. Exact casts through unconstrained or literal-`true`
+wrappers may preserve an existing productive constructor guard around a delayed
+recursive tail. A changed carrier, a destination refinement, or an observation
+of that tail retains its ordinary checks. A strengthening cast or constrained
+result cannot establish its own field constraints from a recursive result
+membership assumption. Wrapping a codatatype does not enable executable equality.
+Finite observations may require explicit independently checked calls on typed
+tails: suspended recursive callability is not automatically assumed. Preserving
+a productive definition does not guarantee an empty-body proof of every finite
+observation.
+
+For an arrow-based newtype, application uses the exact instantiated base domain
+and result types. `~>` retains its precondition and read frame; `-->` retains its
+precondition and empty read frame; `->` retains its total, empty-frame contract.
+The newtype preserves the underlying function value's `requires`, `reads`, heap
+captures, and two-state behavior. A predicate `true` supplies no additional
+totality or allocation fact. Wrap/unwrap with the same instantiated base does
+not add an adapter closure. A signature-changing coercion retains the ordinary
+base coercion and its checks. Arrow subtyping is contravariant in inputs and
+covariant in results; newtype parameter variance is checked separately.
+
+Base operations are available only through revealed definitions. Providing a
+newtype without revealing it does not expose its hidden base or predicate.
+Newtype-defined members keep their nominal receiver and ordinary export rules.
+A base's trait implementation does not make the newtype implement that trait;
+ordinary restrictions on trait declarations and inheritance still apply.
+
+A compiled witness supplies a compiled initializer after the ordinary witness
+checks. A ghost witness supplies logical inhabitation, and `witness *` permits
+emptiness; neither supplies a compiled initializer. A bare declaration
+`newtype N = B` may inherit B's known compiled default. A constrained declaration
+must establish a valid default or provide an explicit witness or `witness *`;
+an arbitrary target-language default is not a source witness.
+
+Equality support, reference characteristics, and type-parameter requirements
+follow the instantiated base as permitted by the visible interface. A nominal
+name adds no equality or runtime type-test capability. Executable type tests
+retain the existing comparability and injectivity requirements and require all
+applicable visible constraints to be compilable, including inherited constraints.
+
+An unconstrained generic wrapper may use variance valid for its base.
+Constrained wrappers over the additional or opaque carriers require invariant
+parameters, including phantom parameters: base variance alone does not prove
+stability of an arbitrary predicate. `T` and `!T` are both invariant, with their
+ordinary distinct cardinality requirements. Existing cycle, grounding, and
+cardinality restrictions remain in effect.
+
 <!--PDF NEWPAGE-->
 ## 5.8. Class types ([grammar](#g-class-type)) {#sec-class-types}
 

@@ -1,0 +1,3 @@
+git-issue-143-codatatype-match-observation-positive.dfy(9,55): Error: co-recursive observation: value of expression (of type 'Stream') is not known to be an instance of type 'Stream'
+
+Dafny program verifier finished with 1 verified, 1 error

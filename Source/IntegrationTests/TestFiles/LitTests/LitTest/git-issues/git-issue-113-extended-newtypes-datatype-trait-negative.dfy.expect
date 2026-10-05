@@ -1,0 +1,2 @@
+git-issue-113-extended-newtypes-datatype-trait-negative.dfy(18,24): Error: newtype extending traits is not fully supported (specifically, compilation of such types is not supported); to use them for verification only, use --general-traits=full
+1 parse errors detected in git-issue-113-extended-newtypes-datatype-trait-negative.dfy

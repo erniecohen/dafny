@@ -1,0 +1,3 @@
+git-issue-113-extended-newtypes-codata-suspension-unconditioned-predicate-negative-nominal.dfy(9,43): Error: result of operation could not be proved to satisfy newtype constraint for 'PositiveHead'
+
+Dafny program verifier finished with 0 verified, 1 error

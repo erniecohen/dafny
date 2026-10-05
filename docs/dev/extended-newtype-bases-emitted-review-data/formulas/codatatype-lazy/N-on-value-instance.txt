@@ -1,0 +1,34 @@
+lines 3162-3163
+axiom Tag(Tclass._module.Value()) == Tagclass._module.Value
+   && TagFamily(Tclass._module.Value()) == tytagFamily$Value;
+
+lines 3169-3173
+axiom (forall bx: Box :: 
+  { $IsBox(bx, Tclass._module.Value()) } 
+  $IsBox(bx, Tclass._module.Value())
+     ==> $Box($Unbox(bx): DatatypeType) == bx
+       && $Is($Unbox(bx): DatatypeType, Tclass._module.Value()));
+
+lines 3176-3179
+axiom (forall b#0: DatatypeType :: 
+  { _module.__default.Encode(b#0) } 
+  _module.__default.Encode#canCall(b#0)
+     ==> $Is(_module.__default.Encode(b#0), Tclass._module.Value()));
+
+lines 3224-3227
+axiom (forall v#0: DatatypeType :: 
+  { _module.__default.Decode#requires(v#0) } 
+  $Is(v#0, Tclass._module.Value())
+     ==> _module.__default.Decode#requires(v#0) == true);
+
+lines 3916-3919
+axiom (forall c0#0: DatatypeType :: 
+  { $Is(c0#0, Tclass._module.Value()) } 
+  $Is(c0#0, Tclass._module.Value())
+     <==> $Is(c0#0, Tclass._module.Stream()) && Lit(true));
+
+lines 3922-3925
+axiom (forall c1#0: DatatypeType, $h: Heap :: 
+  { $IsAlloc(c1#0, Tclass._module.Value(), $h) } 
+  $IsAlloc(c1#0, Tclass._module.Value(), $h)
+     <==> $IsAlloc(c1#0, Tclass._module.Stream(), $h));

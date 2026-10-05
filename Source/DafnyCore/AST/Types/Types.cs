@@ -169,6 +169,111 @@ public abstract class Type : NodeWithOrigin {
     return NormalizeExpand(ExpandMode.DontExpandJustAdjustForScopes);
   }
 
+  public enum AncestorTypeKind { Resolved, Undetermined, Cyclic }
+
+  public readonly record struct AncestorTypeResult(
+    AncestorTypeKind Kind, Type AncestorType, IReadOnlyList<RedirectingTypeDecl> Cycle = null);
+
+  // Retain only empty traversal storage, never declarations, visibility scopes, or ancestry results.
+  // Renting removes the set from the slot, giving each concurrent or nested query exclusive ownership.
+  private static HashSet<NewtypeDecl> reusableNewtypeWalkSet;
+  private const int MaximumRetainedNewtypeWalkCapacity = 16384;
+
+  private static HashSet<NewtypeDecl> RentNewtypeWalkSet() {
+    return Interlocked.Exchange(ref reusableNewtypeWalkSet, null) ??
+           new HashSet<NewtypeDecl>(ReferenceEqualityComparer.Instance);
+  }
+
+  private static void ReturnNewtypeWalkSet(HashSet<NewtypeDecl> set) {
+    if (set != null) {
+      set.Clear();
+      if (set.EnsureCapacity(0) <= MaximumRetainedNewtypeWalkCapacity) {
+        Interlocked.CompareExchange(ref reusableNewtypeWalkSet, set, null);
+      }
+    }
+  }
+
+  /// <summary>
+  /// Follow proxies, in-scope synonyms/subsets, and instantiated newtype bases. An unresolved base is
+  /// Undetermined, not a cycle. Raw synonym dependencies are checked before definition expansion.
+  /// The result never substitutes a primitive type for erroneous ancestry.
+  /// With preserveSubsetTypes, stop at a subset instead of erasing its constraints or arrow-family identity.
+  /// </summary>
+  public AncestorTypeResult NormalizeToAncestorTypeChecked(bool preserveSubsetTypes = false) {
+    Type current = this;
+    NewtypeDecl firstNewtype = null;
+    HashSet<NewtypeDecl> visited = null;
+    HashSet<NewtypeDecl> checkedAcyclic = null;
+    try {
+      while (true) {
+        if (current == null) {
+          return new AncestorTypeResult(AncestorTypeKind.Undetermined, null);
+        }
+        current = current.Normalize();
+        if (current is UserDefinedType { ResolvedClass: TypeSynonymDecl synonym }) {
+          var cycle = RedirectingTypeCycleAnalysis.TryFindCycle(synonym, GetScope());
+          if (cycle != null) {
+            return new AncestorTypeResult(AncestorTypeKind.Cyclic, null, cycle);
+          }
+        }
+        current = current.NormalizeExpand(preserveSubsetTypes);
+        if (current is TypeProxy || current is UserDefinedType { ResolvedClass: null }) {
+          return new AncestorTypeResult(AncestorTypeKind.Undetermined, current);
+        }
+        if (current is not UserDefinedType { ResolvedClass: NewtypeDecl newtypeDecl }) {
+          if (preserveSubsetTypes &&
+              current is UserDefinedType { ResolvedClass: SubsetTypeDecl stoppedSubset }) {
+            // Stopping at a subset must not hide a mixed redirecting cycle
+            // that would otherwise be found by following its instantiated RHS.
+            IEnumerable<RedirectingTypeDecl> roots = visited != null
+              ? visited.Cast<RedirectingTypeDecl>()
+              : firstNewtype == null ? [] : [firstNewtype];
+            var cycle = RedirectingTypeCycleAnalysis.Analyze(roots.Append(stoppedSubset), GetScope())
+              .FindCycles().FirstOrDefault()?.Witness;
+            if (cycle != null) {
+              return new AncestorTypeResult(AncestorTypeKind.Cyclic, null, cycle);
+            }
+          }
+          return new AncestorTypeResult(AncestorTypeKind.Resolved, current);
+        }
+
+        bool repeated;
+        if (firstNewtype == null) {
+          // The common scalar and single-newtype paths need no allocated traversal state.
+          firstNewtype = newtypeDecl;
+          repeated = false;
+        } else if (visited == null) {
+          repeated = ReferenceEquals(firstNewtype, newtypeDecl);
+          if (!repeated) {
+            visited = RentNewtypeWalkSet();
+            visited.Add(firstNewtype);
+            visited.Add(newtypeDecl);
+          }
+        } else {
+          repeated = !visited.Add(newtypeDecl);
+        }
+        if (repeated && !(checkedAcyclic?.Contains(newtypeDecl) ?? false)) {
+          // Repeated declarations do not imply repeated instantiated types: G<G<int>> with G<T> = T
+          // is finite. Conversely, C<T> = C<seq<T>> never repeats an instantiated type. Check the finite
+          // raw declaration graph, without constructing successively larger type arguments.
+          var cycle = RedirectingTypeCycleAnalysis.TryFindCycle(newtypeDecl, GetScope());
+          if (cycle != null) {
+            return new AncestorTypeResult(AncestorTypeKind.Cyclic, null, cycle);
+          }
+          checkedAcyclic ??= RentNewtypeWalkSet();
+          checkedAcyclic.Add(newtypeDecl);
+        }
+        // Adjust visibility after substitution, preserving the instantiated base's own arguments.
+        current = newtypeDecl.BaseType == null ? null :
+          newtypeDecl.ConcreteBaseType(current.TypeArgs).NormalizeAndAdjustForScope();
+      }
+    } finally {
+      // Every exit, including unresolved/cyclic results and substitution failures, releases empty buffers.
+      ReturnNewtypeWalkSet(visited);
+      ReturnNewtypeWalkSet(checkedAcyclic);
+    }
+  }
+
   /// <summary>
   /// Call NormalizeExpand() repeatedly, also on the base type of newtype's.
   /// </summary>
@@ -465,6 +570,9 @@ public abstract class Type : NodeWithOrigin {
       var td = (NewtypeDecl)cl;
       switch (td.WitnessKind) {
         case SubsetTypeDecl.WKind.CompiledZero:
+          return td.InheritsBaseDefault
+            ? td.ConcreteBaseType(udt.TypeArgs).GetAutoInit(coDatatypesBeingVisited)
+            : AutoInitInfo.CompilableValue;
         case SubsetTypeDecl.WKind.Compiled:
           return AutoInitInfo.CompilableValue;
         case SubsetTypeDecl.WKind.Ghost:
@@ -896,6 +1004,16 @@ public abstract class Type : NodeWithOrigin {
   public bool MayInvolveReferences => ComputeMayInvolveReferences(null);
 
   /// <summary>
+  /// Whether a value of the type may show a reference, as MayInvolveReferences, except that a value of a general
+  /// arrow type (~>) always may: it can capture references, and its reads frame shows them, whatever its argument
+  /// and result types are.  A partial or total arrow reads nothing, so it shows references only through its
+  /// arguments and result.  This, not MayInvolveReferences, decides (!new) and whether the values of a type are
+  /// allocated in every heap (erniecohen/dafny#132).  Quantifiers over general arrows range over all their values,
+  /// allocated or not, so their bounds still use MayInvolveReferences.
+  /// </summary>
+  public bool MayShowReferences => ComputeMayInvolveReferences(null, true);
+
+  /// <summary>
   /// This is an auxiliary method used to compute the value of MayInvolveReferences (above). It is
   /// needed to handle datatypes, because determining whether or not a datatype contains references
   /// involves recursing over the types in the datatype's constructor parameters. Since those types
@@ -915,7 +1033,7 @@ public abstract class Type : NodeWithOrigin {
   /// uses all the type parameters it declares, then this will have the same effect. During the second
   /// phase, formal type parameters (which necessarily are ones declared in datatypes) are ignored.
   /// </summary>
-  public abstract bool ComputeMayInvolveReferences(ISet<DatatypeDecl> /*?*/ visitedDatatypes);
+  public abstract bool ComputeMayInvolveReferences(ISet<DatatypeDecl> /*?*/ visitedDatatypes, bool generalArrows = false);
 
   /// <summary>
   /// Returns true if it is known how to meaningfully compare the type's inhabitants.
@@ -1804,7 +1922,7 @@ public abstract class Type : NodeWithOrigin {
 /// these types as the type of literal 6, until a more precise (and non-artificial) type is inferred for it.
 /// </summary>
 public abstract class ArtificialType : Type {
-  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl>/*?*/ visitedDatatypes) {
+  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl>/*?*/ visitedDatatypes, bool generalArrows = false) {
     // ArtificialType's are used only with numeric types.
     return false;
   }
@@ -1875,7 +1993,7 @@ public abstract class BasicType : NonProxyType {
   }
 
   public override IEnumerable<INode> Children => Enumerable.Empty<Node>();
-  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl>/*?*/ visitedDatatypes) {
+  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl>/*?*/ visitedDatatypes, bool generalArrows = false) {
     return false;
   }
 
@@ -2122,7 +2240,7 @@ public class SelfType : NonProxyType {
     throw new NotSupportedException();
   }
 
-  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl>/*?*/ visitedDatatypes) {
+  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl>/*?*/ visitedDatatypes, bool generalArrows = false) {
     // SelfType is used only with bitvector types
     return false;
   }
@@ -2288,9 +2406,9 @@ public abstract class TypeProxy : Type {
       }
     }
   }
-  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes) {
+  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes, bool generalArrows = false) {
     if (T != null) {
-      return T.ComputeMayInvolveReferences(visitedDatatypes);
+      return T.ComputeMayInvolveReferences(visitedDatatypes, generalArrows);
     } else {
       return true;
     }

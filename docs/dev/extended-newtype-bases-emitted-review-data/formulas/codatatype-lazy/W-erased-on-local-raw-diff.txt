@@ -1,0 +1,451 @@
+--- B-on
++++ W-erased-on
+@@ -3015,7 +3015,7 @@
+   var ##n#0: int;
+ 
+ 
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(2,9): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(2,9): initial state"} true;
+     $_ReadsFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+     // Check well-formedness of preconditions, and then assume them
+@@ -3064,10 +3064,10 @@
+     // AddMethodImpl: ObserveFrom, CheckWellFormed$$_module.__default.ObserveFrom
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(3,6): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(3,6): initial state"} true;
+     havoc $Heap;
+     assume old($Heap) == $Heap;
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(4,23): post-state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(4,23): post-state"} true;
+     ##n#0 := n#0;
+     // assume allocatedness for argument to function
+     assume $IsAlloc(##n#0, Tclass._System.nat(), $Heap);
+@@ -3145,7 +3145,7 @@
+     // AddMethodImpl: ObserveFrom, Impl$$_module.__default.ObserveFrom
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(6,0): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(6,0): initial state"} true;
+     $_reverifyPost := false;
+ }
+ 
+@@ -3155,12 +3155,28 @@
+ function _module.__default.Encode(b#0: DatatypeType) : DatatypeType;
+ 
+ function _module.__default.Encode#canCall(b#0: DatatypeType) : bool;
++
++function Tclass._module.Wrapper() : Ty
++uses {
++// Tclass._module.Wrapper Tag
++axiom Tag(Tclass._module.Wrapper()) == Tagclass._module.Wrapper
++   && TagFamily(Tclass._module.Wrapper()) == tytagFamily$Wrapper;
++}
++
++const unique Tagclass._module.Wrapper: TyTag;
++
++// Box/unbox axiom for Tclass._module.Wrapper
++axiom (forall bx: Box :: 
++  { $IsBox(bx, Tclass._module.Wrapper()) } 
++  $IsBox(bx, Tclass._module.Wrapper())
++     ==> $Box($Unbox(bx): DatatypeType) == bx
++       && $Is($Unbox(bx): DatatypeType, Tclass._module.Wrapper()));
+ 
+ // consequence axiom for _module.__default.Encode
+ axiom (forall b#0: DatatypeType :: 
+   { _module.__default.Encode(b#0) } 
+   _module.__default.Encode#canCall(b#0)
+-     ==> $Is(_module.__default.Encode(b#0), Tclass._module.Stream()));
++     ==> $Is(_module.__default.Encode(b#0), Tclass._module.Wrapper()));
+ 
+ function _module.__default.Encode#requires(DatatypeType) : bool;
+ 
+@@ -3178,13 +3194,14 @@
+ // definition axiom for _module.__default.Encode (revealed)
+ axiom {:id "id10"} (forall b#0: DatatypeType :: 
+   { _module.__default.Encode(b#0) } 
+-  _module.__default.Encode#canCall(b#0) ==> _module.__default.Encode(b#0) == b#0);
++  _module.__default.Encode#canCall(b#0)
++     ==> _module.__default.Encode(b#0) == #_module.Wrapper.Wrap(b#0));
+ 
+ // definition axiom for _module.__default.Encode for all literals (revealed)
+ axiom {:id "id11"} (forall b#0: DatatypeType :: 
+   {:weight 3} { _module.__default.Encode(Lit(b#0)) } 
+   _module.__default.Encode#canCall(Lit(b#0))
+-     ==> _module.__default.Encode(Lit(b#0)) == Lit(b#0));
++     ==> _module.__default.Encode(Lit(b#0)) == Lit(#_module.Wrapper.Wrap(Lit(b#0))));
+ 
+ procedure {:verboseName "Encode (well-formedness)"} CheckWellformed$$_module.__default.Encode(b#0: DatatypeType where $Is(b#0, Tclass._module.Stream()));
+   modifies $Heap;
+@@ -3207,7 +3224,7 @@
+ // #requires axiom for _module.__default.Decode
+ axiom (forall v#0: DatatypeType :: 
+   { _module.__default.Decode#requires(v#0) } 
+-  $Is(v#0, Tclass._module.Stream())
++  $Is(v#0, Tclass._module.Wrapper())
+      ==> _module.__default.Decode#requires(v#0) == true);
+ 
+ // #requires ==> #canCall for _module.__default.Decode
+@@ -3218,15 +3235,18 @@
+ // definition axiom for _module.__default.Decode (revealed)
+ axiom {:id "id13"} (forall v#0: DatatypeType :: 
+   { _module.__default.Decode(v#0) } 
+-  _module.__default.Decode#canCall(v#0) ==> _module.__default.Decode(v#0) == v#0);
++  _module.__default.Decode#canCall(v#0)
++     ==> _module.Wrapper.Wrap_q(v#0)
++       && _module.__default.Decode(v#0) == _module.Wrapper.value(v#0));
+ 
+ // definition axiom for _module.__default.Decode for all literals (revealed)
+ axiom {:id "id14"} (forall v#0: DatatypeType :: 
+   {:weight 3} { _module.__default.Decode(Lit(v#0)) } 
+   _module.__default.Decode#canCall(Lit(v#0))
+-     ==> _module.__default.Decode(Lit(v#0)) == Lit(v#0));
+-
+-procedure {:verboseName "Decode (well-formedness)"} CheckWellformed$$_module.__default.Decode(v#0: DatatypeType where $Is(v#0, Tclass._module.Stream()));
++     ==> _module.Wrapper.Wrap_q(Lit(v#0))
++       && _module.__default.Decode(Lit(v#0)) == Lit(_module.Wrapper.value(Lit(v#0))));
++
++procedure {:verboseName "Decode (well-formedness)"} CheckWellformed$$_module.__default.Decode(v#0: DatatypeType where $Is(v#0, Tclass._module.Wrapper()));
+   modifies $Heap;
+ 
+ 
+@@ -3281,7 +3301,7 @@
+     // AddMethodImpl: RoundTrip, Impl$$_module.__default.RoundTrip
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(10,58): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(11,58): initial state"} true;
+     $_reverifyPost := false;
+ }
+ 
+@@ -3310,8 +3330,8 @@
+ {
+   var $_ModifiesFrame: [ref,Field]bool;
+   var v#0: DatatypeType
+-     where $Is(v#0, Tclass._module.Stream())
+-       && $IsAlloc(v#0, Tclass._module.Stream(), $Heap);
++     where $Is(v#0, Tclass._module.Wrapper())
++       && $IsAlloc(v#0, Tclass._module.Wrapper(), $Heap);
+   var ##b#0: DatatypeType;
+   var ##n#0: int;
+   var ##v#0: DatatypeType;
+@@ -3319,9 +3339,9 @@
+     // AddMethodImpl: ConcreteWitness, Impl$$_module.__default.ConcreteWitness
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(11,24): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(12,24): initial state"} true;
+     $_reverifyPost := false;
+-    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(11,33)
++    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(12,33)
+     assume true;
+     assert {:id "id19"} $Is(LitInt(0), Tclass._System.nat());
+     ##n#0 := LitInt(0);
+@@ -3333,15 +3353,15 @@
+     // assume allocatedness for argument to function
+     assume $IsAlloc(##b#0, Tclass._module.Stream(), $Heap);
+     assume _module.__default.Encode#canCall(Lit(_module.__default.From($LS($LZ), LitInt(0))));
+-    assume _module.Stream.Cons_q(Lit(_module.__default.Encode(Lit(_module.__default.From($LS($LZ), LitInt(0))))));
++    assume _module.Wrapper.Wrap_q(Lit(_module.__default.Encode(Lit(_module.__default.From($LS($LZ), LitInt(0))))));
+     assume _module.__default.From#canCall(LitInt(0))
+        && _module.__default.Encode#canCall(Lit(_module.__default.From($LS($LZ), LitInt(0))));
+     v#0 := Lit(_module.__default.Encode(Lit(_module.__default.From($LS($LZ), LitInt(0)))));
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(11,50)"} true;
+-    // ----- assert statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(11,53)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(12,50)"} true;
++    // ----- assert statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(12,53)
+     ##v#0 := v#0;
+     // assume allocatedness for argument to function
+-    assume $IsAlloc(##v#0, Tclass._module.Stream(), $Heap);
++    assume $IsAlloc(##v#0, Tclass._module.Wrapper(), $Heap);
+     assume _module.__default.Decode#canCall(v#0);
+     assume _module.Stream.Cons_q(_module.__default.Decode(v#0));
+     assume _module.Stream.Cons_q(_module.__default.Decode(v#0));
+@@ -3395,8 +3415,8 @@
+ {
+   var $_ModifiesFrame: [ref,Field]bool;
+   var value#0: DatatypeType
+-     where $Is(value#0, Tclass._module.Stream())
+-       && $IsAlloc(value#0, Tclass._module.Stream(), $Heap);
++     where $Is(value#0, Tclass._module.Wrapper())
++       && $IsAlloc(value#0, Tclass._module.Wrapper(), $Heap);
+   var ##b#0: DatatypeType;
+   var ##n#0: int;
+   var i#0: int;
+@@ -3417,9 +3437,9 @@
+     // AddMethodImpl: Work, Impl$$_module.__default.Work
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(14,0): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(15,0): initial state"} true;
+     $_reverifyPost := false;
+-    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(15,13)
++    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(16,13)
+     assume true;
+     assert {:id "id25"} $Is(LitInt(0), Tclass._System.nat());
+     ##n#0 := LitInt(0);
+@@ -3431,23 +3451,23 @@
+     // assume allocatedness for argument to function
+     assume $IsAlloc(##b#0, Tclass._module.Stream(), $Heap);
+     assume _module.__default.Encode#canCall(Lit(_module.__default.From($LS($LZ), LitInt(0))));
+-    assume _module.Stream.Cons_q(Lit(_module.__default.Encode(Lit(_module.__default.From($LS($LZ), LitInt(0))))));
++    assume _module.Wrapper.Wrap_q(Lit(_module.__default.Encode(Lit(_module.__default.From($LS($LZ), LitInt(0))))));
+     assume _module.__default.From#canCall(LitInt(0))
+        && _module.__default.Encode#canCall(Lit(_module.__default.From($LS($LZ), LitInt(0))));
+     value#0 := Lit(_module.__default.Encode(Lit(_module.__default.From($LS($LZ), LitInt(0)))));
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(15,30)"} true;
+-    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(16,9)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(16,30)"} true;
++    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(17,9)
+     assume true;
+     assume true;
+     i#0 := LitInt(0);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(16,12)"} true;
+-    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(17,12)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(17,12)"} true;
++    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(18,12)
+     assume true;
+     assume true;
+     checksum#0 := LitInt(0);
+     defass#checksum#0 := true;
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(17,15)"} true;
+-    // ----- while statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(18,3)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(18,15)"} true;
++    // ----- while statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(19,3)
+     // Assume Fuel Constant
+     $PreLoopHeap$loop#0 := $Heap;
+     preLoop$loop#0$defass#checksum#0 := defass#checksum#0;
+@@ -3491,7 +3511,7 @@
+       free invariant preLoop$loop#0$defass#checksum#0 ==> defass#checksum#0;
+       free invariant n#0 - i#0 <= $decr_init$loop#00;
+     {
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(18,2): after some loop iterations"} true;
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(19,2): after some loop iterations"} true;
+         if (!$w$loop#0)
+         {
+             if (LitInt(0) <= i#0)
+@@ -3502,7 +3522,7 @@
+             assume {:id "id29"} LitInt(0) <= i#0 && i#0 <= n#0;
+             ##v#0 := value#0;
+             // assume allocatedness for argument to function
+-            assume $IsAlloc(##v#0, Tclass._module.Stream(), $Heap);
++            assume $IsAlloc(##v#0, Tclass._module.Wrapper(), $Heap);
+             assume _module.__default.Decode#canCall(value#0);
+             assume _module.Stream.Cons_q(_module.__default.Decode(value#0));
+             assert {:id "id32"} $Is(i#0, Tclass._System.nat());
+@@ -3534,7 +3554,7 @@
+ 
+         assume true;
+         $decr$loop#00 := n#0 - i#0;
+-        // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(23,16)
++        // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(24,16)
+         // TrCallStmt: Before ProcessCallStmt
+         assume true;
+         // ProcessCallStmt: CheckSubrange
+@@ -3542,18 +3562,18 @@
+         n##0_0 := i#0;
+         call {:id "id39"} Call$$_module.__default.ObserveFrom(n##0_0);
+         // TrCallStmt: After ProcessCallStmt
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(23,18)"} true;
+-        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(24,14)
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(24,18)"} true;
++        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(25,14)
+         assume true;
+         ##v#0_0 := value#0;
+         // assume allocatedness for argument to function
+-        assume $IsAlloc(##v#0_0, Tclass._module.Stream(), $Heap);
++        assume $IsAlloc(##v#0_0, Tclass._module.Wrapper(), $Heap);
+         assume _module.__default.Decode#canCall(value#0);
+         assume _module.Stream.Cons_q(_module.__default.Decode(value#0));
+         assume _module.__default.Decode#canCall(value#0);
+         view#0_0 := _module.__default.Decode(value#0);
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(24,29)"} true;
+-        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(25,14)
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(25,29)"} true;
++        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(26,14)
+         assume true;
+         assert {:id "id41"} defass#checksum#0;
+         assume _module.Stream.Cons_q(view#0_0);
+@@ -3561,8 +3581,8 @@
+         assume _module.Stream.Cons_q(view#0_0);
+         checksum#0 := checksum#0 + _module.Stream.head(view#0_0);
+         defass#checksum#0 := true;
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(25,36)"} true;
+-        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(26,11)
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(26,36)"} true;
++        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(27,11)
+         assume true;
+         assume _module.Stream.Cons_q(view#0_0);
+         assume _module.Stream.Cons_q(view#0_0);
+@@ -3570,18 +3590,18 @@
+         // assume allocatedness for argument to function
+         assume $IsAlloc(##b#0_0, Tclass._module.Stream(), $Heap);
+         assume _module.__default.Encode#canCall(_module.Stream.tail(view#0_0));
+-        assume _module.Stream.Cons_q(_module.__default.Encode(_module.Stream.tail(view#0_0)));
++        assume _module.Wrapper.Wrap_q(_module.__default.Encode(_module.Stream.tail(view#0_0)));
+         assume _module.Stream.Cons_q(view#0_0)
+            && _module.__default.Encode#canCall(_module.Stream.tail(view#0_0));
+         value#0 := _module.__default.Encode(_module.Stream.tail(view#0_0));
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(26,30)"} true;
+-        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(27,7)
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(27,30)"} true;
++        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(28,7)
+         assume true;
+         assume true;
+         i#0 := i#0 + 1;
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(27,14)"} true;
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(28,14)"} true;
+         assume true;
+-        // ----- loop termination check ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(18,3)
++        // ----- loop termination check ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(19,3)
+         assert {:id "id45"} 0 <= $decr$loop#00 || n#0 - i#0 == $decr$loop#00;
+         assert {:id "id46"} n#0 - i#0 < $decr$loop#00;
+         assume LitInt(0) <= i#0 && i#0 <= n#0
+@@ -3639,9 +3659,9 @@
+     // AddMethodImpl: Main, Impl$$_module.__default.Main
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(30,14): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(31,14): initial state"} true;
+     $_reverifyPost := false;
+-    // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(31,19)
++    // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(32,19)
+     assume true;
+     // TrCallStmt: Adding lhs with type int
+     // TrCallStmt: Before ProcessCallStmt
+@@ -3652,12 +3672,12 @@
+     call {:id "id49"} $rhs##0 := Call$$_module.__default.Work(n##0);
+     // TrCallStmt: After ProcessCallStmt
+     warm#0 := $rhs##0;
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(31,24)"} true;
+-    // ----- print statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(32,3)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(32,24)"} true;
++    // ----- print statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(33,3)
+     assume true;
+     assume true;
+     assume true;
+-    // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(33,21)
++    // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(34,21)
+     assume true;
+     // TrCallStmt: Adding lhs with type int
+     // TrCallStmt: Before ProcessCallStmt
+@@ -3668,8 +3688,8 @@
+     call {:id "id52"} $rhs##1 := Call$$_module.__default.Work(n##1);
+     // TrCallStmt: After ProcessCallStmt
+     result#0 := $rhs##1;
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(33,27)"} true;
+-    // ----- print statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(34,3)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(34,27)"} true;
++    // ----- print statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/W.dfy(35,3)
+     assume true;
+     assume true;
+     assume true;
+@@ -3836,6 +3856,101 @@
+ 
+ const unique class._module.Stream: ClassName;
+ 
++// Constructor function declaration
++function #_module.Wrapper.Wrap(DatatypeType) : DatatypeType;
++
++const unique ##_module.Wrapper.Wrap: DtCtorId
++uses {
++// Constructor identifier
++axiom (forall a#5#0#0: DatatypeType :: 
++  { #_module.Wrapper.Wrap(a#5#0#0) } 
++  DatatypeCtorId(#_module.Wrapper.Wrap(a#5#0#0)) == ##_module.Wrapper.Wrap);
++}
++
++function _module.Wrapper.Wrap_q(DatatypeType) : bool;
++
++// Questionmark and identifier
++axiom (forall d: DatatypeType :: 
++  { _module.Wrapper.Wrap_q(d) } 
++  _module.Wrapper.Wrap_q(d) <==> DatatypeCtorId(d) == ##_module.Wrapper.Wrap);
++
++// Constructor questionmark has arguments
++axiom (forall d: DatatypeType :: 
++  { _module.Wrapper.Wrap_q(d) } 
++  _module.Wrapper.Wrap_q(d)
++     ==> (exists a#6#0#0: DatatypeType :: d == #_module.Wrapper.Wrap(a#6#0#0)));
++
++// Constructor $Is
++axiom (forall a#7#0#0: DatatypeType :: 
++  { $Is(#_module.Wrapper.Wrap(a#7#0#0), Tclass._module.Wrapper()) } 
++  $Is(#_module.Wrapper.Wrap(a#7#0#0), Tclass._module.Wrapper())
++     <==> $Is(a#7#0#0, Tclass._module.Stream()));
++
++// Destructor $IsAlloc
++axiom (forall d: DatatypeType, $h: Heap :: 
++  { $IsAlloc(_module.Wrapper.value(d), Tclass._module.Stream(), $h) } 
++  $IsGoodHeap($h)
++       && 
++      _module.Wrapper.Wrap_q(d)
++       && $IsAlloc(d, Tclass._module.Wrapper(), $h)
++     ==> $IsAlloc(_module.Wrapper.value(d), Tclass._module.Stream(), $h));
++
++// Constructor literal
++axiom (forall a#8#0#0: DatatypeType :: 
++  { #_module.Wrapper.Wrap(Lit(a#8#0#0)) } 
++  #_module.Wrapper.Wrap(Lit(a#8#0#0)) == Lit(#_module.Wrapper.Wrap(a#8#0#0)));
++
++function _module.Wrapper.value(DatatypeType) : DatatypeType;
++
++// Constructor injectivity
++axiom (forall a#9#0#0: DatatypeType :: 
++  { #_module.Wrapper.Wrap(a#9#0#0) } 
++  _module.Wrapper.value(#_module.Wrapper.Wrap(a#9#0#0)) == a#9#0#0);
++
++// Inductive rank
++axiom (forall a#10#0#0: DatatypeType :: 
++  { DtRank(#_module.Wrapper.Wrap(a#10#0#0)) } 
++  DtRank(a#10#0#0) < DtRank(#_module.Wrapper.Wrap(a#10#0#0)));
++
++// Datatype $IsAlloc
++axiom (forall d: DatatypeType, $h: Heap :: 
++  { $IsAlloc(d, Tclass._module.Wrapper(), $h) } 
++  $IsGoodHeap($h) && $Is(d, Tclass._module.Wrapper())
++     ==> $IsAlloc(d, Tclass._module.Wrapper(), $h));
++
++// Depth-one case-split function
++function $IsA#_module.Wrapper(DatatypeType) : bool;
++
++// Depth-one case-split axiom
++axiom (forall d: DatatypeType :: 
++  { $IsA#_module.Wrapper(d) } 
++  $IsA#_module.Wrapper(d) ==> _module.Wrapper.Wrap_q(d));
++
++// Questionmark data type disjunctivity
++axiom (forall d: DatatypeType :: 
++  { _module.Wrapper.Wrap_q(d), $Is(d, Tclass._module.Wrapper()) } 
++  $Is(d, Tclass._module.Wrapper()) ==> _module.Wrapper.Wrap_q(d));
++
++// Datatype extensional equality declaration
++function _module.Wrapper#Equal(DatatypeType, DatatypeType) : bool;
++
++// Datatype extensional equality definition: #_module.Wrapper.Wrap
++axiom (forall a: DatatypeType, b: DatatypeType :: 
++  { _module.Wrapper#Equal(a, b) } 
++  (_module.Wrapper#Equal(a, b)
++       ==> _module.Wrapper.value(a) == _module.Wrapper.value(b))
++     && (_module.Wrapper.Wrap_q(a)
++         && _module.Wrapper.Wrap_q(b)
++         && _module.Wrapper.value(a) == _module.Wrapper.value(b)
++       ==> _module.Wrapper#Equal(a, b)));
++
++// Datatype extensionality axiom: _module.Wrapper
++axiom (forall a: DatatypeType, b: DatatypeType :: 
++  { _module.Wrapper#Equal(a, b) } 
++  _module.Wrapper#Equal(a, b) <==> a == b);
++
++const unique class._module.Wrapper: ClassName;
++
+ const unique tytagFamily$nat: TyTagFamily;
+ 
+ const unique tytagFamily$object: TyTagFamily;
+@@ -3859,3 +3974,5 @@
+ const unique tytagFamily$_tuple#0: TyTagFamily;
+ 
+ const unique tytagFamily$Stream: TyTagFamily;
++
++const unique tytagFamily$Wrapper: TyTagFamily;

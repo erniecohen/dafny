@@ -307,6 +307,14 @@ namespace Microsoft.Dafny.Compilers {
             var e = conversionExpr;
             var fromType = GetRuntimeType(e.E.Type);
             var toType = GetRuntimeType(e.ToType);
+            if (Options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+              // Ordinal newtypes use the ordinal runtime carrier. Preserve native
+              // numeric representations for all other conversion families.
+              var fromView = NewtypeOperationView.Get(fromType).BaseType;
+              var toView = NewtypeOperationView.Get(toType).BaseType;
+              if (fromView?.IsBigOrdinalType == true) { fromType = fromView; }
+              if (toView?.IsBigOrdinalType == true) { toType = toView; }
+            }
             Contract.Assert(Options.Get(CommonOptionBag.GeneralTraits) != CommonOptionBag.GeneralTraitsOptions.Legacy ||
                             toType.IsRefType == fromType.IsRefType ||
                             (fromType.IsTypeParameter && toType.IsTraitType));
@@ -318,6 +326,10 @@ namespace Microsoft.Dafny.Compilers {
               // conversion is a no-op -- almost, because it may need a cast to deal with bounded type parameters
               var w = EmitDowncastIfNecessary(e.E.Type, e.ToType, e.Origin, wr);
               EmitExpr(e.E, inLetExprBody, w, wStmts);
+            } else if (Options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+                       (Type.Equals(fromType, toType) || IsExactDatatypeNewtypeRuntimeIdentity(e))) {
+              // Exact-base identity casts preserve the value and allocate no wrapper.
+              EmitExpr(e.E, inLetExprBody, wr, wStmts);
             } else {
               EmitConversionExpr(e.E, fromType, toType, inLetExprBody, wr, wStmts);
             }

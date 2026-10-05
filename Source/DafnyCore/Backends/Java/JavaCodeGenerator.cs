@@ -1009,9 +1009,15 @@ namespace Microsoft.Dafny.Compilers {
         Contract.Assert(targetTypeName == null);
         var enclosingTypeWithItsOwnTypeArguments = UserDefinedType.FromTopLevelDecl(enclosingTypeDecl.Origin, enclosingTypeDecl);
         var targetType = DatatypeWrapperEraser.SimplifyTypeAndTrimSubsetTypes(Options, enclosingTypeWithItsOwnTypeArguments);
-        var targetTypeIgnoringConstraints = DatatypeWrapperEraser.SimplifyType(Options, enclosingTypeWithItsOwnTypeArguments).GetRuntimeType();
+        var targetTypeIgnoringConstraints = Options.Get(CommonOptionBag.ExtendedNewtypeBases)
+          ? DatatypeWrapperEraser.SimplifyTypeAndTrimNewtypes(Options, enclosingTypeWithItsOwnTypeArguments)
+          : DatatypeWrapperEraser.SimplifyType(Options, enclosingTypeWithItsOwnTypeArguments).GetRuntimeType();
         targetTypeName = BoxedTypeName(targetTypeIgnoringConstraints, wr, enclosingTypeDecl.Origin);
         var w = (enclosingTypeDecl as RedirectingTypeDecl)?.Witness != null ? "Witness" : null;
+        if (w != null && enclosingTypeDecl is NewtypeDecl &&
+            Options.Get(CommonOptionBag.ExtendedNewtypeBases) && typeParams.Count != 0) {
+          w += $"({typeParams.Where(NeedsTypeDescriptor).Comma(tp => FormatTypeDescriptorVariable(tp.GetCompileName(Options)))})";
+        }
         switch (AsJavaNativeType(targetType)) {
           case JavaNativeType.Byte:
             typeDescriptorExpr = $"{DafnyTypeDescriptor}.byteWithDefault({w ?? "(byte)0"})";
@@ -3212,7 +3218,10 @@ namespace Microsoft.Dafny.Compilers {
       } else if (cl is NewtypeDecl) {
         var td = (NewtypeDecl)cl;
         if (td.Witness != null) {
-          return FullTypeName(udt) + ".Witness";
+          var witness = FullTypeName(udt) + ".Witness";
+          return Options.Get(CommonOptionBag.ExtendedNewtypeBases) && td.TypeArgs.Count != 0
+            ? $"{witness}({TypeArgumentInstantiation.ListFromClass(td, udt.TypeArgs).Where(ta => NeedsTypeDescriptor(ta.Formal)).Comma(ta => TypeDescriptor(ta.Actual, wr, tok))})"
+            : witness;
         } else if (td.NativeType != null) {
           return GetNativeDefault(td.NativeType);
         } else {
@@ -3627,7 +3636,16 @@ namespace Microsoft.Dafny.Compilers {
         wEnum.WriteLine($"for (java.math.BigInteger j = lo; j.compareTo(hi) < 0; j = j.add(java.math.BigInteger.ONE)) {{ arr.add({nativeType}.valueOf(j.{numberval})); }}");
         wEnum.WriteLine("return arr;");
       }
-      if (nt.WitnessKind == SubsetTypeDecl.WKind.Compiled) {
+      if (nt.WitnessKind == SubsetTypeDecl.WKind.Compiled &&
+          Options.Get(CommonOptionBag.ExtendedNewtypeBases) && nt.TypeArgs.Count != 0) {
+        var typeName = nt.NativeType == null ? TypeName(nt.BaseType, w, nt.Origin) : GetNativeTypeName(nt.NativeType);
+        var parameters = nt.TypeArgs.Where(NeedsTypeDescriptor).Comma(TypeDescriptorVariableDeclaration);
+        var wWitness = w.NewBlock($"public static {TypeParameters(nt.TypeArgs, " ")}{typeName} Witness({parameters})");
+        var wStmts = wWitness.Fork();
+        var witness = Expr(nt.Witness, false, wStmts).ToString();
+        wWitness.WriteLine(nt.NativeType == null ? $"return {witness};"
+          : $"return ((java.lang.Number)({witness})).{GetNativeTypeName(nt.NativeType)}Value();");
+      } else if (nt.WitnessKind == SubsetTypeDecl.WKind.Compiled) {
         var wStmts = w.Fork();
         var witness = new ConcreteSyntaxTree(w.RelativeIndentLevel);
         witness.Append(Expr(nt.Witness, false, wStmts));

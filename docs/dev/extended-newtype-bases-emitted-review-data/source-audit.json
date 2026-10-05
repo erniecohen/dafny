@@ -1,0 +1,161 @@
+{
+  "baseline_source": "5c3d15513818334945b0cf9504ba5c71ba07932d",
+  "current_product": "95f0e4c8e1b80c95cf8aff397d7acd3ffb9c62e6",
+  "redirecting_generator_exact_bytes_equal": true,
+  "original_redirecting_generator_sha256": "f46b990b3319c42d361e81f5884f1f4b8b54578a66f6a6f217624cd65fe3b905",
+  "current_redirecting_generator_sha256": "f46b990b3319c42d361e81f5884f1f4b8b54578a66f6a6f217624cd65fe3b905",
+  "arrow_generator_baseline_diff": "source/arrow-allocation-baseline-to-final.diff",
+  "families": {
+    "ordinal-finite": {
+      "removed": [],
+      "added": [
+        {
+          "statement": "assert true;",
+          "multiplicity": 1
+        }
+      ]
+    },
+    "arrow-coercion": {
+      "removed": [],
+      "added": [
+        {
+          "statement": "assert true;",
+          "multiplicity": 1
+        }
+      ]
+    },
+    "codatatype-lazy": {
+      "removed": [],
+      "added": [
+        {
+          "statement": "assert $Is(v#0, Tclass._module.Stream());",
+          "multiplicity": 1
+        },
+        {
+          "statement": "assert true;",
+          "multiplicity": 1
+        }
+      ]
+    },
+    "datatype-root-update": {
+      "removed": [
+        {
+          "statement": "assert $Is(b#0, Tclass._module.Value());",
+          "multiplicity": 1
+        },
+        {
+          "statement": "assert $Is(u#0_0, Tclass._module.Value());",
+          "multiplicity": 1
+        }
+      ],
+      "added": [
+        {
+          "statement": "assert $Is(v#0, Tclass._module.Envelope());",
+          "multiplicity": 1
+        },
+        {
+          "statement": "assert $Is(v#0_0, Tclass._module.Envelope());",
+          "multiplicity": 1
+        },
+        {
+          "statement": "assert _module.Envelope.Envelope_q(newtype$check#0_2) && (_module.Envelope.tag(newtype$check#0_2) >= LitInt(0) ==> _module.Envelope.Envelope_q(newtype$check#0_2) && _module.Leaf.Leaf_q(_module.Envelope.leaf(newtype$check#0_2))) ==> _module.Envelope.tag(newtype$check#0_2) >= LitInt(0) && _module.Leaf.value(_module.Envelope.leaf(newtype$check#0_2)) >= LitInt(0);",
+          "multiplicity": 1
+        },
+        {
+          "statement": "assert _module.Envelope.Envelope_q(newtype$check#0_3) && (_module.Envelope.tag(newtype$check#0_3) >= LitInt(0) ==> _module.Envelope.Envelope_q(newtype$check#0_3) && _module.Leaf.Leaf_q(_module.Envelope.leaf(newtype$check#0_3))) ==> _module.Envelope.tag(newtype$check#0_3) >= LitInt(0) && _module.Leaf.value(_module.Envelope.leaf(newtype$check#0_3)) >= LitInt(0);",
+          "multiplicity": 1
+        }
+      ]
+    }
+  },
+  "warning": "assert token and statement counts are syntax inventories, not solver VC/instance counts",
+  "prelude_source_comparison": [
+    {
+      "path": "Source/DafnyCore/DafnyPrelude.bpl",
+      "unchanged": true,
+      "baseline_sha256": "1e9e2c2a15198eea4531910e44df8da0b44a77381d800d6c70d59356b80f6399",
+      "current_sha256": "1e9e2c2a15198eea4531910e44df8da0b44a77381d800d6c70d59356b80f6399"
+    },
+    {
+      "path": "Source/DafnyCore/Prelude/Boxes.dfy",
+      "unchanged": true,
+      "baseline_sha256": "625eac32860dafb4bf7992b52150d726008fafb378d29e4e423d6f5a1cf61d0a",
+      "current_sha256": "625eac32860dafb4bf7992b52150d726008fafb378d29e4e423d6f5a1cf61d0a"
+    },
+    {
+      "path": "Source/DafnyCore/Prelude/Lists.dfy",
+      "unchanged": true,
+      "baseline_sha256": "a42ee42af8f7863aad5362a94136e22f1a9020c814c96999bace8f0b0775c85e",
+      "current_sha256": "a42ee42af8f7863aad5362a94136e22f1a9020c814c96999bace8f0b0775c85e"
+    },
+    {
+      "path": "Source/DafnyCore/Prelude/Makefile",
+      "unchanged": true,
+      "baseline_sha256": "e6d77b60fa9f0be877280694e4f114482f985e2bb951b6fab98761993ed6d21e",
+      "current_sha256": "e6d77b60fa9f0be877280694e4f114482f985e2bb951b6fab98761993ed6d21e"
+    },
+    {
+      "path": "Source/DafnyCore/Prelude/Math.dfy",
+      "unchanged": true,
+      "baseline_sha256": "a1429c026d9dddf5c0a9cd3468257f0c6cf10d96e5d881b8e57fd9a52bb1ba2c",
+      "current_sha256": "a1429c026d9dddf5c0a9cd3468257f0c6cf10d96e5d881b8e57fd9a52bb1ba2c"
+    },
+    {
+      "path": "Source/DafnyCore/Prelude/Multisets.dfy",
+      "unchanged": true,
+      "baseline_sha256": "9c97244283b6341c7e8f6d3306fd2aa5e0699bb9bf8d1a3690327b731ca92d35",
+      "current_sha256": "9c97244283b6341c7e8f6d3306fd2aa5e0699bb9bf8d1a3690327b731ca92d35"
+    },
+    {
+      "path": "Source/DafnyCore/Prelude/PreludeCore.bpl",
+      "unchanged": true,
+      "baseline_sha256": "673f064f26f4ac3ca2713f908e199ef5823020a5a2f3bf294488c3e13ce39edf",
+      "current_sha256": "673f064f26f4ac3ca2713f908e199ef5823020a5a2f3bf294488c3e13ce39edf"
+    },
+    {
+      "path": "Source/DafnyCore/Prelude/README.md",
+      "unchanged": true,
+      "baseline_sha256": "723430ed2ee148b8ce3cc067596c3cb339583419260c82f96a698de912c093aa",
+      "current_sha256": "723430ed2ee148b8ce3cc067596c3cb339583419260c82f96a698de912c093aa"
+    },
+    {
+      "path": "Source/DafnyCore/Prelude/Sequences.dfy",
+      "unchanged": true,
+      "baseline_sha256": "6a80977e7300dd1c3c1d79ee09704cff40af9a14e0fb2aa7a81e356e7544a783",
+      "current_sha256": "6a80977e7300dd1c3c1d79ee09704cff40af9a14e0fb2aa7a81e356e7544a783"
+    },
+    {
+      "path": "Source/DafnyCore/Prelude/Sets.dfy",
+      "unchanged": true,
+      "baseline_sha256": "797f6bd2b9fc6618960e306662145ddeed11c0838bada9ea547296c37c3d33dd",
+      "current_sha256": "797f6bd2b9fc6618960e306662145ddeed11c0838bada9ea547296c37c3d33dd"
+    },
+    {
+      "path": "Source/DafnyCore/Prelude/dfyconfig.toml",
+      "unchanged": true,
+      "baseline_sha256": "ab5c79690c0db1402d59e0a385d1646333804f317b480e6dd43c50c1d0c3e4de",
+      "current_sha256": "ab5c79690c0db1402d59e0a385d1646333804f317b480e6dd43c50c1d0c3e4de"
+    },
+    {
+      "path": "Source/DafnyCore/Prelude/expand.sh",
+      "unchanged": true,
+      "baseline_sha256": "e728ccd0823b44af7ddd2de9cf6ca0326c55be5512ca1bd64590de7284b9d4a2",
+      "current_sha256": "e728ccd0823b44af7ddd2de9cf6ca0326c55be5512ca1bd64590de7284b9d4a2"
+    }
+  ],
+  "all_prelude_source_files_unchanged": true,
+  "system_arrow_allocation_consequence_count": 2,
+  "source_hashes": {
+    "BoogieGenerator.ExpressionTranslator.cs": "6abd7ce50304da7ee68deeec601f9e9210ee5ddce7e6de8ae6343f1c9c3ca5e0",
+    "BoogieGenerator.cs": "09cfd145d51efd70c686bf71f37d0ada5c5d928624b943fe3894840583442bb5",
+    "BoogieGenerator.Types.cs": "b885ec4b98b7d79ee74be7479fb4041a9a30ae3ca59e20b8e3702077c5b5c07b",
+    "original-AddRedirectingTypeDeclAxioms.cs.txt": "f46b990b3319c42d361e81f5884f1f4b8b54578a66f6a6f217624cd65fe3b905",
+    "BoogieGenerator.ExpressionWellformed.cs": "9de9cc23da44c7d8f1431bdc561eb981e51b71902df702d787770173525d22b7",
+    "BoogieGenerator.SplitExpr.cs": "e93a03cc395fad6835dfecc3d55a10d0e52dcc8cdc60d01e09ebcc6d341090c7",
+    "BoogieGenerator.Functions.cs": "7efb3ab4831f6aa5dace8041146f22d7fac13c566c73218bd29d108bea8de2b0",
+    "arrow-allocation-baseline-to-final.diff": "3a34ab542abba6c875cba3cf715dea0977ec9d92b9bb85f32e9984f4c5269c69",
+    "NewtypeDecl.cs": "093b6ee8bd4ddf9ce2104d8b44ede039bb531da37da9cf92add9bb94dc7dd775",
+    "CommonOptionBag.cs": "72926d308fdfb62b7c9260fe51a219964fa38ba5cb7178cc89989112c3260d16",
+    "NewtypeOperationView.cs": "4f4409450804da1a6c82d5d75342ef8852e01f30012a4a1284c529eb0aa080c6"
+  }
+}

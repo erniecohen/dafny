@@ -735,6 +735,13 @@ namespace Microsoft.Dafny.Compilers {
         EmitConstructorCheck(sourceName, ctor, guardWriter);
       }
 
+      // Constructor patterns use the base's instantiated signature. Whole-value
+      // bindings in EmitNestedMatchCaseConditions retain the nominal source type.
+      if (Options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+          NewtypeOperationView.Get(sourceType).BaseType is { } baseType &&
+          baseType.AsDatatype == ctor.EnclosingDatatype) {
+        sourceType = baseType;
+      }
       var userDefinedType = (UserDefinedType)sourceType.NormalizeExpand();
 
       var typeSubstMap =

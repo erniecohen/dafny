@@ -1,0 +1,2 @@
+git-issue-113-extended-newtypes-hidden-base-member.dfy(13,20): Error: member 'Offset' does not exist in newtype 'Base'
+1 resolution/type errors detected in git-issue-113-extended-newtypes-hidden-base-member.dfy

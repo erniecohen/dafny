@@ -2999,6 +2999,20 @@ namespace Microsoft.Dafny.Compilers {
 
     public record OptimizedExpressionContinuation(Action<Expression, Type, bool, ConcreteSyntaxTree> Continuation, bool PreventCaseFallThrough);
 
+    private bool IsExactDatatypeNewtypeRuntimeIdentity(ConversionExpr conversion) {
+      if (!Options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+        return false;
+      }
+      var source = NewtypeOperationView.Get(conversion.E.Type);
+      var destination = NewtypeOperationView.Get(conversion.ToType);
+      return source.Status == NewtypeOperationView.ViewStatus.Resolved &&
+             destination.Status == NewtypeOperationView.ViewStatus.Resolved &&
+             source.BaseType.IsDatatype && source.BaseType.Equals(destination.BaseType, true) &&
+             (source.Path.Any(d => d is NewtypeDecl) || destination.Path.Any(d => d is NewtypeDecl)) &&
+             source.Path.Concat(destination.Path).OfType<NewtypeDecl>().All(n => n.Traits.Count == 0) &&
+             GetRuntimeType(conversion.E.Type).Equals(GetRuntimeType(conversion.ToType), true);
+    }
+
     /// <summary>
     /// This method compiles "expr" into a statement context of the target. This typically means that, for example, Dafny let-bound variables can
     /// be compiled into local variables in the target code, and that Dafny if-then-else expressions can be compiled into if statements in the
@@ -3017,6 +3031,23 @@ namespace Microsoft.Dafny.Compilers {
       Contract.Requires(continuation != null);
 
       expr = expr.Resolved;
+      if (expr is ConversionExpr conversion && IsExactDatatypeNewtypeRuntimeIdentity(conversion)) {
+        // Keep the checked nominal conversion on each terminal expression.
+        // Assignment and return continuations use that nominal type to select
+        // backend coercions; equal runtime carriers alone do not suffice.
+        var nominalContinuation = new OptimizedExpressionContinuation(
+          (inner, _, innerInLetExprBody, innerWriter) => {
+            var converted = new ConversionExpr(conversion.Origin, inner, conversion.ToType, conversion.messagePrefix) {
+              Type = conversion.Type,
+              IsBaseOperation = conversion.IsBaseOperation
+            };
+            continuation.Continuation(converted, resultType, innerInLetExprBody, innerWriter);
+          }, continuation.PreventCaseFallThrough);
+        // Lower bindings once in the same statement context and original order,
+        // then use the original result type even for a nested-match branch.
+        TrExprOpt(conversion.E, resultType, wr, wStmts, inLetExprBody, accumulatorVar, nominalContinuation);
+        return;
+      }
       if (expr is LetExpr) {
         var e = (LetExpr)expr;
         if (e.Exact) {
@@ -5276,6 +5307,11 @@ namespace Microsoft.Dafny.Compilers {
         var ctor = pat.Ctor;
         Contract.Assert(ctor != null);  // follows from successful resolution
         Contract.Assert(pat.Arguments.Count == ctor.Formals.Count);  // follows from successful resolution
+        if (Options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+            NewtypeOperationView.Get(rhsType).BaseType is { } baseType &&
+            baseType.AsDatatype == ctor.EnclosingDatatype) {
+          rhsType = baseType;
+        }
         Contract.Assert(ctor.EnclosingDatatype.TypeArgs.Count == rhsType.NormalizeExpand().TypeArgs.Count);
         var typeSubst = TypeParameter.SubstitutionMap(ctor.EnclosingDatatype.TypeArgs, rhsType.NormalizeExpand().TypeArgs);
         var k = 0;  // number of non-ghost formals processed

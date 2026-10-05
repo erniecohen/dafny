@@ -1,0 +1,229 @@
+{
+  "assert": {
+    "removed": [],
+    "added": [
+      {
+        "statement": "assert $Is(v#0, Tclass._module.Stream());",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assert true;",
+        "multiplicity": 1
+      }
+    ]
+  },
+  "assume": {
+    "removed": [
+      {
+        "statement": "assume $IsAlloc(##v#0, Tclass._module.Stream(), $Heap);",
+        "multiplicity": 2
+      },
+      {
+        "statement": "assume $IsAlloc(##v#0_0, Tclass._module.Stream(), $Heap);",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume _module.Stream.Cons_q(Lit(_module.__default.Encode(Lit(_module.__default.From($LS($LZ), LitInt(0))))));",
+        "multiplicity": 2
+      },
+      {
+        "statement": "assume _module.Stream.Cons_q(_module.__default.Encode(_module.Stream.tail(view#0_0)));",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(10,58): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(11,24): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(11,50)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(14,0): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(15,30)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(16,12)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(17,15)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(18,2): after some loop iterations\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(2,9): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(23,18)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(24,29)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(25,36)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(26,30)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(27,14)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(3,6): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(30,14): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(31,24)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(33,27)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(4,23): post-state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/B.dfy(6,0): initial state\"} true;",
+        "multiplicity": 1
+      }
+    ],
+    "added": [
+      {
+        "statement": "assume $Is(_module.__default.Decode(v#0), Tclass._module.Stream());",
+        "multiplicity": 2
+      },
+      {
+        "statement": "assume $IsAlloc(##v#0, Tclass._module.Value(), $Heap);",
+        "multiplicity": 2
+      },
+      {
+        "statement": "assume $IsAlloc(##v#0_0, Tclass._module.Value(), $Heap);",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume _module.__default.Decode(v#0) == v#0;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume false;",
+        "multiplicity": 4
+      },
+      {
+        "statement": "assume true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(10,58): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(11,24): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(11,50)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(14,0): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(15,30)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(16,12)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(17,15)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(18,2): after some loop iterations\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(2,9): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(23,18)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(24,29)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(25,36)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(26,30)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(27,14)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(3,6): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(30,14): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(31,24)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(33,27)\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(4,23): post-state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(6,0): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(7,8): initial state\"} true;",
+        "multiplicity": 1
+      },
+      {
+        "statement": "assume {:captureState \"/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/codatatype-lazy/N.dfy(9,9): initial state\"} true;",
+        "multiplicity": 1
+      }
+    ]
+  }
+}

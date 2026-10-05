@@ -30,6 +30,10 @@ public class NewtypeDecl : TopLevelDeclWithMembers, RevealableTypeDecl, Redirect
     }
   }
 
+  // Marks extended operations and equality behavior; reference freedom is checked for every newtype.
+  [FilledInDuringResolution] public bool UseBaseReferenceCharacteristics;
+  [FilledInDuringResolution] public bool InheritsBaseDefault;
+
   [FilledInDuringResolution] public bool TargetTypeCoversAllBitPatterns; // "target complete" -- indicates that any bit pattern that can fill the target type is a value of the newtype
 
   public NewtypeDecl(IOrigin origin, Name nameNode, List<TypeParameter> typeParameters, ModuleDefinition enclosingModule,

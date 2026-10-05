@@ -1,0 +1,60 @@
+lines 2974-2975
+axiom Tag(Tclass._module.Value()) == Tagclass._module.Value
+   && TagFamily(Tclass._module.Value()) == tytagFamily$Value;
+
+lines 2981-2985
+axiom (forall bx: Box :: 
+  { $IsBox(bx, Tclass._module.Value()) } 
+  $IsBox(bx, Tclass._module.Value())
+     ==> $Box($Unbox(bx): DatatypeType) == bx
+       && $Is($Unbox(bx): DatatypeType, Tclass._module.Value()));
+
+lines 2988-2991
+axiom (forall b#0: DatatypeType :: 
+  { _module.__default.Encode(b#0) } 
+  _module.__default.Encode#canCall(b#0)
+     ==> $Is(_module.__default.Encode(b#0), Tclass._module.Value()));
+
+lines 3104-3107
+axiom (forall v#0: DatatypeType :: 
+  { _module.__default.Decode#requires(v#0) } 
+  $Is(v#0, Tclass._module.Value())
+     ==> _module.__default.Decode#requires(v#0) == true);
+
+lines 4040-4054
+axiom (forall w#0: DatatypeType :: 
+  { $Is(w#0, Tclass._module.Value()) } 
+  $Is(w#0, Tclass._module.Value())
+     ==> $Is(w#0, Tclass._module.Wrapped())
+       && 
+      _module.Wrapped.Wrap_q(w#0)
+       && _module.Envelope.Envelope_q(_module.Wrapped.payload(w#0))
+       && (_module.Envelope.tag(_module.Wrapped.payload(w#0)) >= LitInt(0)
+         ==> _module.Wrapped.Wrap_q(w#0)
+           && _module.Envelope.Envelope_q(_module.Wrapped.payload(w#0))
+           && _module.Leaf.Leaf_q(_module.Envelope.leaf(_module.Wrapped.payload(w#0))))
+       && 
+      _module.Envelope.tag(_module.Wrapped.payload(w#0)) >= LitInt(0)
+       && _module.Leaf.value(_module.Envelope.leaf(_module.Wrapped.payload(w#0)))
+         >= LitInt(0));
+
+lines 4056-4068
+axiom (forall w#0: DatatypeType :: 
+  { $Is(w#0, Tclass._module.Value()) } 
+  $Is(w#0, Tclass._module.Wrapped())
+       && (_module.Wrapped.Wrap_q(w#0)
+           && _module.Envelope.Envelope_q(_module.Wrapped.payload(w#0))
+           && (_module.Envelope.tag(_module.Wrapped.payload(w#0)) >= LitInt(0)
+             ==> _module.Wrapped.Wrap_q(w#0)
+               && _module.Envelope.Envelope_q(_module.Wrapped.payload(w#0))
+               && _module.Leaf.Leaf_q(_module.Envelope.leaf(_module.Wrapped.payload(w#0))))
+         ==> _module.Envelope.tag(_module.Wrapped.payload(w#0)) >= LitInt(0)
+           && _module.Leaf.value(_module.Envelope.leaf(_module.Wrapped.payload(w#0)))
+             >= LitInt(0))
+     ==> $Is(w#0, Tclass._module.Value()));
+
+lines 4071-4074
+axiom (forall w#0: DatatypeType, $h: Heap :: 
+  { $IsAlloc(w#0, Tclass._module.Value(), $h) } 
+  $IsAlloc(w#0, Tclass._module.Value(), $h)
+     <==> $IsAlloc(w#0, Tclass._module.Wrapped(), $h));

@@ -16,7 +16,7 @@ namespace Microsoft.Dafny {
       Contract.Requires(dt != null);
       Contract.Requires(sink != null && Predef != null);
 
-      var mayInvolveReferences = UserDefinedType.FromTopLevelDecl(dt.Origin, dt).MayInvolveReferences;
+      var mayInvolveReferences = UserDefinedType.FromTopLevelDecl(dt.Origin, dt).MayShowReferences;
       var constructorFunctions = dt.Ctors.ToDictionary(ctor => ctor, ctor => AddDataTypeConstructor(dt, ctor, mayInvolveReferences));
       if (!mayInvolveReferences) {
         AddCommonIsAllocConstructorAxiom(dt);

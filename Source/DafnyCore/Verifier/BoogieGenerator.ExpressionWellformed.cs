@@ -403,6 +403,9 @@ namespace Microsoft.Dafny {
             }
 
             builder.Add(TrAssumeCmd(e.Origin, etran.CanCallAssumption(e)));
+            if (e.Member is DatatypeDestructor && ContainsCoRecursiveFunctionCall(e.Obj)) {
+              CheckSuspendedValueMembership(e, e.Type, builder, etran);
+            }
             break;
           }
         case SeqSelectExpr selectExpr: {
@@ -660,7 +663,10 @@ namespace Microsoft.Dafny {
             for (int i = 0; i < dtv.Ctor.Formals.Count; i++) {
               var formal = dtv.Ctor.Formals[i];
               var arg = dtv.Arguments[i];
-              if (arg is not DefaultValueExpression) {
+              // A default was proved only under typed formal inputs. Substitution
+              // with a suspended call does not establish that premise.
+              var suspendedDefault = arg is DefaultValueExpression && ContainsCoRecursiveFunctionCall(arg);
+              if (arg is not DefaultValueExpression || suspendedDefault) {
                 CheckWellformed(arg, wfOptions, locals, builder, etran);
               }
               // Cannot use the datatype's formals, so we substitute the inferred type args:
@@ -669,6 +675,9 @@ namespace Microsoft.Dafny {
                 su[p.Item1] = p.Item2;
               }
               Type ty = formal.Type.Subst(su);
+              if (suspendedDefault) {
+                CheckSuspendedValueMembership(arg, ty, builder, etran);
+              }
               CheckSubrange(arg.Origin, etran.TrExpr(arg), arg.Type, ty, arg, builder);
             }
 
@@ -711,9 +720,12 @@ namespace Microsoft.Dafny {
                 Expression ee = e.Args[i];
                 directSubstMap.Add(p, ee);
 
-                if (!(ee is DefaultValueExpression)) {
+                if (ee is not DefaultValueExpression || ContainsCoRecursiveFunctionCall(ee)) {
                   CheckWellformedWithResult(ee, wfOptions, locals, builder, etran, (returnBuilder, result) => {
                     CheckSubrange(result.Origin, etran.TrExpr(result), ee.Type, et, ee, returnBuilder);
+                    if (!IsCoRecursiveFunctionCall(e) && ContainsCoRecursiveFunctionCall(ee)) {
+                      CheckSuspendedValueMembership(result, et, returnBuilder, etran);
+                    }
                   });
                 }
                 Bpl.Cmd cmd = Bpl.Cmd.SimpleAssign(p.Origin, lhs, AdaptBoxing(p.Origin, etran.TrExpr(ee), Cce.NonNull(ee.Type), et));
@@ -886,6 +898,9 @@ namespace Microsoft.Dafny {
                       case FunctionCallExpr.CoCallResolution.NoBecauseFunctionHasPostcondition:
                         hint = "note that only functions without any ensures clause can be called co-recursively";
                         break;
+                      case FunctionCallExpr.CoCallResolution.NoBecauseFunctionHasConstrainedReturnType:
+                        hint = "note that functions with a constrained codatatype newtype result cannot be called co-recursively";
+                        break;
                       case FunctionCallExpr.CoCallResolution.NoBecauseIsNotGuarded:
                         hint = "note that the call is not sufficiently guarded to be used co-recursively";
                         break;
@@ -920,10 +935,12 @@ namespace Microsoft.Dafny {
               Bpl.IdentifierExpr canCallFuncID = new Bpl.IdentifierExpr(callExpr.Origin, e.Function.FullSanitizedName + "#canCall", Bpl.Type.Bool);
               List<Bpl.Expr> args = etran.FunctionInvocationArguments(e, null, null);
               Bpl.Expr canCallFuncAppl = new Bpl.NAryExpr(GetToken(expr), new Bpl.FunctionCall(canCallFuncID), args);
-              builder.Add(TrAssumeCmd(callExpr.Origin, allowance == null ? canCallFuncAppl : BplOr(etran.TrExpr(allowance), canCallFuncAppl)));
+              if (!IsCoRecursiveFunctionCall(e)) {
+                builder.Add(TrAssumeCmd(callExpr.Origin, allowance == null ? canCallFuncAppl : BplOr(etran.TrExpr(allowance), canCallFuncAppl)));
+              }
 
               var returnType = e.Type.AsDatatype;
-              if (returnType != null && returnType.Ctors.Count == 1) {
+              if (!IsCoRecursiveFunctionCall(e) && returnType != null && returnType.Ctors.Count == 1) {
                 var correctConstructor = FunctionCall(e.Origin, returnType.Ctors[0].QueryField.FullSanitizedName, Bpl.Type.Bool, etran.TrExpr(e));
                 // There is only one constructor, so the value must be been constructed by it; might as well assume that here.
                 builder.Add(TrAssumeCmd(callExpr.Origin, correctConstructor));
@@ -1006,7 +1023,65 @@ namespace Microsoft.Dafny {
             }
 
             if (e is ConversionExpr ee) {
-              CheckResultToBeInType(unaryExpr.Origin, ee.E, ee.ToType, locals, builder, etran, ee.messagePrefix);
+              // A representation-preserving cast still has to establish the target's
+              // instantiated membership before any target-typed result is assumed.
+              // Keep provided types opaque and use their nominal target Ty.
+              var membershipTarget = ee.ToType.NormalizeExpandKeepConstraints();
+              if ((membershipTarget.IsDatatype || membershipTarget.IsInternalTypeSynonym) &&
+                  !membershipTarget.IsRefType && !ee.E.Type.IsTraitType && !membershipTarget.IsArrowType &&
+                  !IsSuspendedCoDatatypeIdentityConversion(ee)) {
+                CheckSubrange(unaryExpr.Origin, etran.TrExpr(ee.E), ee.E.Type, ee.ToType,
+                  ee.E, builder, ee.messagePrefix);
+              }
+              if (options.Get(CommonOptionBag.ExtendedNewtypeBases) && ee.IsBaseOperation &&
+                  ee.Type.Equals(ee.ToType, true)) {
+                var operationSource = NewtypeOperationView.Get(ee.E.Type, preserveSubsetTypes: true);
+                var operationTarget = NewtypeOperationView.Get(ee.ToType, preserveSubsetTypes: true);
+                if (operationSource.Status == NewtypeOperationView.ViewStatus.Resolved &&
+                    operationTarget.Status == NewtypeOperationView.ViewStatus.Resolved &&
+                    operationSource.Path.Any(d => d is NewtypeDecl) &&
+                    !operationTarget.Path.Any(d => d is NewtypeDecl) &&
+                    operationSource.BaseType.AsArrowType != null &&
+                    operationSource.BaseType.Equals(operationTarget.BaseType, true)) {
+                  // The operand was checked above. This resolver-owned projection
+                  // exposes its declared instantiated carrier, including its exact
+                  // arrow family; it does not strengthen a user-written signature
+                  // or introduce a destination predicate. Rechecking that carrier
+                  // as a new arbitrary function is not an introduction obligation.
+                  break;
+                }
+              }
+              Type establishedArrowBase = null;
+              if (options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+                // The operand was checked above. Its exact visible carrier is an
+                // established premise, not a new destination introduction fact.
+                var checkedSource = NewtypeOperationView.Get(ee.E.Type, preserveSubsetTypes: true);
+                var checkedTarget = NewtypeOperationView.Get(ee.ToType, preserveSubsetTypes: true);
+                if (checkedSource.Status == NewtypeOperationView.ViewStatus.Resolved &&
+                    checkedTarget.Status == NewtypeOperationView.ViewStatus.Resolved &&
+                    checkedTarget.Path.Any(d => d is NewtypeDecl) &&
+                    checkedSource.BaseType.AsArrowType != null &&
+                    checkedSource.BaseType.Equals(checkedTarget.BaseType, true)) {
+                  establishedArrowBase = checkedSource.BaseType;
+                }
+              }
+              CheckResultToBeInType(unaryExpr.Origin, ee.E, ee.ToType, locals, builder, etran,
+                ee.messagePrefix, establishedArrowBase);
+              if (options.Get(CommonOptionBag.ExtendedNewtypeBases) && ee.Type.Equals(ee.ToType, true)) {
+                var sourceView = NewtypeOperationView.Get(ee.E.Type, preserveSubsetTypes: true);
+                var destinationView = NewtypeOperationView.Get(ee.ToType, preserveSubsetTypes: true);
+                if (sourceView.Status == NewtypeOperationView.ViewStatus.Resolved &&
+                    destinationView.Status == NewtypeOperationView.ViewStatus.Resolved &&
+                    sourceView.BaseType.AsArrowType != null && destinationView.BaseType.AsArrowType != null &&
+                    sourceView.BaseType.Equals(destinationView.BaseType, true) &&
+                    (ee.IsBaseOperation || sourceView.Path.Any(d => d is NewtypeDecl) ||
+                     destinationView.Path.Any(d => d is NewtypeDecl))) {
+                  // An identity conversion retains this exact instantiated arrow
+                  // family and HandleType value. The complete destination check
+                  // above already checks that value at this same result type.
+                  break;
+                }
+              }
             }
 
             CheckResultToBeInType(expr.Origin, expr, expr.Type, locals, builder, etran);
@@ -1070,7 +1145,9 @@ namespace Microsoft.Dafny {
                       new FloatInvalidOperationPrecondition("multiplication", e.E0, e.E1, e.E0.Type), builder.Context, wfOptions.AssertKv));
                   }
                 }
-                if (e.ResolvedOp == BinaryExpr.ResolvedOpcode.Sub && e.E0.Type.IsBigOrdinalType) {
+                if (e.ResolvedOp == BinaryExpr.ResolvedOpcode.Sub &&
+                    (e.E0.Type.IsBigOrdinalType || options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+                     NewtypeOperationView.IsOrdinal(e.E0.Type))) {
                   var rhsIsNat = FunctionCall(binaryExpr.Origin, "ORD#IsNat", Bpl.Type.Bool, etran.TrExpr(e.E1));
                   builder.Add(Assert(GetToken(expr), rhsIsNat,
                     new OrdinalSubtractionIsNatural(e.E1), builder.Context));
@@ -1180,6 +1257,9 @@ namespace Microsoft.Dafny {
                 if (e.InCompiledContext) {
                   // Helper to check if a type contains fp32 (directly or indirectly)
                   bool ContainsFp32(Type type, ISet<DatatypeDecl> visitedDatatypes) {
+                    if (options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+                      return FloatingPointOperationView.Contains(type, true);
+                    }
                     type = type.NormalizeExpand();
 
                     if (type is Fp32Type) {
@@ -1201,6 +1281,9 @@ namespace Microsoft.Dafny {
 
                   // Helper to check if a type contains fp64 (directly or indirectly)
                   bool ContainsFp64(Type type, ISet<DatatypeDecl> visitedDatatypes) {
+                    if (options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+                      return FloatingPointOperationView.Contains(type, false);
+                    }
                     type = type.NormalizeExpand();
 
                     if (type is Fp64Type) {
@@ -1220,8 +1303,14 @@ namespace Microsoft.Dafny {
                     return false;
                   }
 
+                  // Direct floating newtypes use the same NaN/signed-zero checks as
+                  // their carrier; structural floating fields use the check below.
+                  var equalityType0 = options.Get(CommonOptionBag.ExtendedNewtypeBases)
+                    ? NewtypeOperationView.Get(e.E0.Type).BaseType ?? e.E0.Type : e.E0.Type;
+                  var equalityType1 = options.Get(CommonOptionBag.ExtendedNewtypeBases)
+                    ? NewtypeOperationView.Get(e.E1.Type).BaseType ?? e.E1.Type : e.E1.Type;
                   // Check for fp32/fp64 equality first, as they require special preconditions
-                  if (e.E0.Type.IsFloatingPointType || e.E1.Type.IsFloatingPointType) {
+                  if (equalityType0.IsFloatingPointType || equalityType1.IsFloatingPointType) {
                     // fp32/fp64 support equality with preconditions per spec section 5.3
                     // Well-formedness: !x.IsNaN && !y.IsNaN && !(x.IsZero && y.IsZero && x.IsNegative != y.IsNegative)
 
@@ -1237,30 +1326,30 @@ namespace Microsoft.Dafny {
                     }
 
                     // Check NaN preconditions
-                    if (e.E0.Type.IsFp32Type) {
+                    if (equalityType0.IsFp32Type) {
                       var isNaN = GenerateFp32Check(e.E0, "fp32_is_nan");
                       builder.Add(Assert(GetToken(e.E0), Bpl.Expr.Not(isNaN),
                         new FloatEqualityPrecondition(e.E0, new Fp32Type()), builder.Context, wfOptions.AssertKv));
                     }
-                    if (e.E0.Type.IsFp64Type) {
+                    if (equalityType0.IsFp64Type) {
                       var isNaN = GenerateFp64Check(e.E0, "fp64_is_nan");
                       builder.Add(Assert(GetToken(e.E0), Bpl.Expr.Not(isNaN),
                         new FloatEqualityPrecondition(e.E0, new Fp64Type()), builder.Context, wfOptions.AssertKv));
                     }
 
-                    if (e.E1.Type.IsFp32Type) {
+                    if (equalityType1.IsFp32Type) {
                       var isNaN = GenerateFp32Check(e.E1, "fp32_is_nan");
                       builder.Add(Assert(GetToken(e.E1), Bpl.Expr.Not(isNaN),
                         new FloatEqualityPrecondition(e.E1, new Fp32Type()), builder.Context, wfOptions.AssertKv));
                     }
-                    if (e.E1.Type.IsFp64Type) {
+                    if (equalityType1.IsFp64Type) {
                       var isNaN = GenerateFp64Check(e.E1, "fp64_is_nan");
                       builder.Add(Assert(GetToken(e.E1), Bpl.Expr.Not(isNaN),
                         new FloatEqualityPrecondition(e.E1, new Fp64Type()), builder.Context, wfOptions.AssertKv));
                     }
 
                     // Check signed zero precondition: !(x.IsZero && y.IsZero && x.IsNegative != y.IsNegative)
-                    if (e.E0.Type.IsFp32Type && e.E1.Type.IsFp32Type) {
+                    if (equalityType0.IsFp32Type && equalityType1.IsFp32Type) {
                       var e0IsZero = GenerateFp32Check(e.E0, "fp32_is_zero");
                       var e1IsZero = GenerateFp32Check(e.E1, "fp32_is_zero");
                       var e0IsNegative = GenerateFp32Check(e.E0, "fp32_is_negative");
@@ -1274,7 +1363,7 @@ namespace Microsoft.Dafny {
                       builder.Add(Assert(GetToken(expr), Bpl.Expr.Not(bothZerosDifferentSign),
                         new FloatSignedZeroEqualityPrecondition(e.E0, e.E1, new Fp32Type()), builder.Context, wfOptions.AssertKv));
                     }
-                    if (e.E0.Type.IsFp64Type && e.E1.Type.IsFp64Type) {
+                    if (equalityType0.IsFp64Type && equalityType1.IsFp64Type) {
                       var e0IsZero = GenerateFp64Check(e.E0, "fp64_is_zero");
                       var e1IsZero = GenerateFp64Check(e.E1, "fp64_is_zero");
                       var e0IsNegative = GenerateFp64Check(e.E0, "fp64_is_negative");
@@ -1305,7 +1394,8 @@ namespace Microsoft.Dafny {
                     Contract.Assert(!e.E1.Type.SupportsEquality); // otherwise, CanCompareWith would have returned "true" above
                     Contract.Assert(e.E0.Type.PartiallySupportsEquality); // otherwise, the code wouldn't have got past the resolver
                     Contract.Assert(e.E1.Type.PartiallySupportsEquality); // otherwise, the code wouldn't have got past the resolver
-                    var dt = e.E0.Type.AsIndDatatype;
+                    var dt = options.Get(CommonOptionBag.ExtendedNewtypeBases)
+                      ? NewtypeOperationView.Get(e.E0.Type).BaseType.AsIndDatatype : e.E0.Type.AsIndDatatype;
                     Contract.Assert(dt != null); // only inductive datatypes support equality partially
 
                     // to compare the datatype values for equality, there must not be any possibility that either of the datatype
@@ -1544,7 +1634,9 @@ namespace Microsoft.Dafny {
             // check that source expression is created from one of the legal source constructors, then proceed according to the .ResolvedExpression
             var correctConstructor = BplOr(e.LegalSourceConstructors.ConvertAll(
               ctor => FunctionCall(e.Origin, ctor.QueryField.FullSanitizedName, Bpl.Type.Bool, etran.TrExpr(e.Root))));
-            if (e.LegalSourceConstructors.Count == e.Type.AsDatatype.Ctors.Count) {
+            var updateDatatype = options.Get(CommonOptionBag.ExtendedNewtypeBases)
+              ? NewtypeOperationView.Get(e.Type).BaseType.AsDatatype : e.Type.AsDatatype;
+            if (e.LegalSourceConstructors.Count == updateDatatype.Ctors.Count) {
               // Every constructor has this destructor; no need to check anything
             } else {
               builder.Add(Assert(GetToken(expr), correctConstructor,
@@ -1635,6 +1727,58 @@ namespace Microsoft.Dafny {
           new IsAllocated("array", null, obj), builder.Context));
       }
       return array;
+    }
+
+    private static bool IsCoRecursiveFunctionCall(FunctionCallExpr call) {
+      // A guarded co-recursive call is a suspended value. Its full result type
+      // cannot be assumed while checking the cluster's constructor fields.
+      // Extreme predicates use this marker for their separate prefix proof rule.
+      return call.CoCall == FunctionCallExpr.CoCallResolution.Yes && call.Function is not ExtremePredicate and not PrefixPredicate;
+    }
+
+
+    private bool IsSuspendedCoDatatypeIdentityConversion(ConversionExpr conversion) {
+      var enabled = options.Get(CommonOptionBag.ExtendedNewtypeBases);
+      if (!conversion.Type.Equals(conversion.ToType, true) ||
+          !NewtypeOperationView.IsCoDatatypeIdentityConversion(conversion, enabled)) {
+        return false;
+      }
+      // Preserve the existing constructor guard through representation-identity
+      // casts of this suspended call. Do not establish full value membership here.
+      // Observation and binding boundaries retain their independent checks.
+      var operand = conversion.E.Resolved;
+      while (operand is ConversionExpr inner && inner.Type.Equals(inner.ToType, true) &&
+             NewtypeOperationView.IsCoDatatypeIdentityConversion(inner, enabled)) {
+        operand = inner.E.Resolved;
+      }
+      return operand is FunctionCallExpr call && IsCoRecursiveFunctionCall(call);
+    }
+
+    private static bool ContainsCoRecursiveFunctionCall(Expression expression) {
+      expression = expression.Resolved;
+      return expression is FunctionCallExpr call && IsCoRecursiveFunctionCall(call) ||
+             expression.SubExpressions.Any(ContainsCoRecursiveFunctionCall);
+    }
+
+    internal void CheckCoRecursiveValueMembership(Expression expression, Type targetType,
+      BoogieStmtListBuilder builder, ExpressionTranslator etran) {
+      if (ContainsCoRecursiveFunctionCall(expression)) {
+        CheckSuspendedValueMembership(expression, targetType, builder, etran);
+      }
+    }
+
+    private void CheckSuspendedValueMembership(Expression expression, Type targetType,
+      BoogieStmtListBuilder builder, ExpressionTranslator etran) {
+      // A destructor of a suspended co-call must establish its result's type
+      // before static typing can supply refinement facts to another constructor.
+      var value = AdaptBoxing(expression.Origin, etran.TrExpr(expression), expression.Type, targetType);
+      var membership = GetWhereClause(expression.Origin, value, targetType, etran, NOALLOC);
+      if (membership != null) {
+        var description = new SubrangeCheck("co-recursive observation: ", expression.Type.ToString(),
+          targetType.ToString(), targetType.NormalizeExpandKeepConstraints().AsRedirectingType != null,
+          false, null, null);
+        builder.Add(Assert(expression.Origin, membership, description, builder.Context));
+      }
     }
 
     public void CheckSubsetType(ExpressionTranslator etran, Expression expr, Bpl.Expr selfCall, Type resultType,
@@ -1808,6 +1952,11 @@ namespace Microsoft.Dafny {
           var rIe = new Bpl.IdentifierExpr(rhs.Origin, r);
 
           void CheckPostconditionForRhs(BoogieStmtListBuilder innerBuilder, Expression body) {
+            // Check the original RHS before a generated binding supplies type facts.
+            // The callback result may no longer contain the suspended source call.
+            if (ContainsCoRecursiveFunctionCall(rhs)) {
+              CheckSuspendedValueMembership(body, pat.Expr.Type, innerBuilder, etran);
+            }
             CheckSubsetType(etran, body, rIe, pat.Expr.Type, innerBuilder, "let expression binding RHS well-formed");
           }
 

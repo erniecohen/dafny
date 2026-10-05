@@ -159,8 +159,8 @@ namespace Microsoft.Dafny {
         case TernaryExpr ternaryExpr: {
             var e = ternaryExpr;
             if ((e.Op == TernaryExpr.Opcode.PrefixEqOp && position) || (e.Op == TernaryExpr.Opcode.PrefixNeqOp && !position)) {
-              var e1type = e.E1.Type.NormalizeExpand();
-              var e2type = e.E2.Type.NormalizeExpand();
+              var e1type = NewtypeOperationView.CoDatatypeType(e.E1.Type, options.Get(CommonOptionBag.ExtendedNewtypeBases));
+              var e2type = NewtypeOperationView.CoDatatypeType(e.E2.Type, options.Get(CommonOptionBag.ExtendedNewtypeBases));
               var codecl = e1type.AsCoDatatype;
               Contract.Assert(codecl != null);
               var k = etran.TrExpr(e.E0);
@@ -174,10 +174,12 @@ namespace Microsoft.Dafny {
               // Note:  First off, (*) is used only when ORDINAL is involved. Moreover, if there's an error among the first checked
               // conditions, it seems confusing to get yet another error message.  Therefore, we add a middle disjunct to (*), namely
               // the conjunction of all the previous RHSs.
-              var kAsORD = !e.E0.Type.IsBigOrdinalType ? FunctionCall(k.tok, "ORD#FromNat", Bpl.Type.Int, k) : k;
+              var isOrdinalLimit = e.E0.Type.IsBigOrdinalType || options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+                NewtypeOperationView.IsOrdinal(e.E0.Type);
+              var kAsORD = !isOrdinalLimit ? FunctionCall(k.tok, "ORD#FromNat", Bpl.Type.Int, k) : k;
               var prefixEqK = CoEqualCall(codecl, e1type.TypeArgs, e2type.TypeArgs, kAsORD, etran.layerInterCluster.LayerN((int)FuelSetting.FuelAmount.HIGH), A, B); // FunctionCall(expr.Tok, CoPrefixName(codecl, 1), Bpl.Type.Bool, k, A, B);
               Bpl.Expr kHasSuccessor, kMinusOne;
-              if (e.E0.Type.IsBigOrdinalType) {
+              if (isOrdinalLimit) {
                 kHasSuccessor = Bpl.Expr.Lt(Bpl.Expr.Literal(0), FunctionCall(k.tok, "ORD#Offset", Bpl.Type.Int, k));
                 kMinusOne = FunctionCall(k.tok, "ORD#Minus", Predef.BigOrdinalType, k, FunctionCall(k.tok, "ORD#FromNat", Bpl.Type.Int, Bpl.Expr.Literal(1)));
               } else {
@@ -198,7 +200,7 @@ namespace Microsoft.Dafny {
                 var p = Bpl.Expr.Binary(c.tok, BinaryOperator.Opcode.Or, prefixEqK, BplImp(kHasSuccessor, c));
                 splits.Add(ToSplitExprInfo(SplitExprInfo.K.Checked, p));
               }
-              if (e.E0.Type.IsBigOrdinalType) {
+              if (isOrdinalLimit) {
                 var kIsNonZeroLimit = BplAnd(
                   Bpl.Expr.Neq(k, FunctionCall(k.tok, "ORD#FromNat", Predef.BigOrdinalType, Bpl.Expr.Literal(0))),
                   FunctionCall(k.tok, "ORD#IsLimit", Bpl.Type.Bool, k));

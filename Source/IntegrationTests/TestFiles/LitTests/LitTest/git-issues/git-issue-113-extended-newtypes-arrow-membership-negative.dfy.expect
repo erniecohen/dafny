@@ -1,0 +1,7 @@
+git-issue-113-extended-newtypes-arrow-membership-negative.dfy(10,18): Error: value does not satisfy the subset constraints of 'nat'
+git-issue-113-extended-newtypes-arrow-membership-negative.dfy(13,20): Error: value does not satisfy the subset constraints of 'int -> int' (possible cause: it may be partial or have read effects)
+git-issue-113-extended-newtypes-arrow-membership-negative.dfy(16,20): Error: value does not satisfy the subset constraints of 'int -> int' (possible cause: it may be partial or have read effects)
+git-issue-113-extended-newtypes-arrow-membership-negative.dfy(19,20): Error: value does not satisfy the subset constraints of 'int --> int' (possible cause: it may have read effects)
+git-issue-113-extended-newtypes-arrow-membership-negative.dfy(22,25): Error: result of operation could not be proved to satisfy newtype constraint for 'Zero'
+
+Dafny program verifier finished with 1 verified, 5 errors

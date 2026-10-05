@@ -1,0 +1,8 @@
+git-issue-113-extended-newtypes-datatype-floating-negative.dfy(13,38): Error: equality comparison of datatype 'F32' containing fp32 is not supported in compiled code (use ghost context or compare elements individually)
+git-issue-113-extended-newtypes-datatype-floating-negative.dfy(14,38): Error: equality comparison of datatype 'F64' containing fp64 is not supported in compiled code (use ghost context or compare elements individually)
+git-issue-113-extended-newtypes-datatype-floating-negative.dfy(15,45): Error: equality comparison of datatype 'Nested' containing fp32 is not supported in compiled code (use ghost context or compare elements individually)
+git-issue-113-extended-newtypes-datatype-floating-negative.dfy(16,49): Error: equality comparison of datatype 'Repeated' containing fp32 is not supported in compiled code (use ghost context or compare elements individually)
+git-issue-113-extended-newtypes-datatype-floating-negative.dfy(17,59): Error: equality comparison of datatype 'Permuted' containing fp32 is not supported in compiled code (use ghost context or compare elements individually)
+git-issue-113-extended-newtypes-datatype-floating-negative.dfy(18,47): Error: equality comparison of datatype 'Container' containing fp64 is not supported in compiled code (use ghost context or compare elements individually)
+
+Dafny program verifier finished with 0 verified, 6 errors

@@ -1,0 +1,5 @@
+git-issue-113-extended-newtypes-ordinal-unicode-errors.dfy(9,13): Error: ORDINAL value to be converted could not be proved to fit in char
+git-issue-113-extended-newtypes-ordinal-unicode-errors.dfy(14,13): Error: ORDINAL value to be converted could not be proved to fit in CharView
+git-issue-113-extended-newtypes-ordinal-unicode-errors.dfy(21,2): Error: assertion could not be proved
+
+Dafny program verifier finished with 2 verified, 3 errors

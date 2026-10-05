@@ -1152,6 +1152,13 @@ namespace Microsoft.Dafny {
 
       int prevErrorCount = reporter.Count(ErrorLevel.Error);
 
+      if (Options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+          (!Options.Get(CommonOptionBag.GeneralNewtypes) || !Options.Get(CommonOptionBag.TypeSystemRefresh))) {
+        reporter.Error(MessageSource.Resolver, Token.NoToken,
+          "use of --extended-newtype-bases requires --general-newtypes and --type-system-refresh");
+        return;
+      }
+
       if (Options.Get(CommonOptionBag.GeneralNewtypes) && !Options.Get(CommonOptionBag.TypeSystemRefresh)) {
         reporter.Error(MessageSource.Resolver, Token.NoToken, "use of --general-newtypes requires --type-system-refresh");
         return;
@@ -1329,6 +1336,19 @@ namespace Microsoft.Dafny {
         }
       }
 
+      // Newtype bases are fully resolved here. Include visible nominal field
+      // paths in the existing codatatype dependency graph before choosing SCCs.
+      if (Options.Get(CommonOptionBag.ExtendedNewtypeBases) && reporter.Count(ErrorLevel.Error) == prevErrorCount) {
+        foreach (var datatype in declarations.OfType<CoDatatypeDecl>()) {
+          foreach (var formal in datatype.Ctors.SelectMany(ctor => ctor.Formals)) {
+            var dependency = NewtypeOperationView.CoDatatypeType(formal.Type, true).AsCoDatatype;
+            if (dependency != null && dependency.EnclosingModuleDefinition == datatype.EnclosingModuleDefinition) {
+              codatatypeDependencies.AddEdge(datatype, dependency);
+            }
+          }
+        }
+      }
+
       // Set the SccRepr field of codatatypes
       if (reporter.Count(ErrorLevel.Error) == prevErrorCount) {
         foreach (var repr in codatatypeDependencies.TopologicallySortedComponents()) {
@@ -1345,7 +1365,7 @@ namespace Microsoft.Dafny {
           bool dealsWithCodatatypes = false;
           foreach (var m in module.CallGraph.GetSCC(repr)) {
             var f = m as Function;
-            if (f != null && f.ResultType.InvolvesCoDatatype) {
+            if (f != null && NewtypeOperationView.InvolvesCoDatatype(f.ResultType, Options.Get(CommonOptionBag.ExtendedNewtypeBases))) {
               dealsWithCodatatypes = true;
               break;
             }
@@ -1355,7 +1375,7 @@ namespace Microsoft.Dafny {
           foreach (var m in module.CallGraph.GetSCC(repr)) {
             var f = m as Function;
             if (f != null && f.Body != null) {
-              var checker = new CoCallResolution(f, dealsWithCodatatypes);
+              var checker = new CoCallResolution(f, dealsWithCodatatypes, Options.Get(CommonOptionBag.ExtendedNewtypeBases));
               checker.CheckCoCalls(f.Body);
               coCandidates.AddRange(checker.FinalCandidates);
               hasIntraClusterCallsInDestructiveContexts |= checker.HasIntraClusterCallsInDestructiveContexts;
@@ -1491,6 +1511,20 @@ namespace Microsoft.Dafny {
             CheckVariance(dd.Rhs, dd, TypeParameter.TPVariance.Co, false);
           } else if (d is NewtypeDecl) {
             var dd = (NewtypeDecl)d;
+            if (Options.Get(CommonOptionBag.ExtendedNewtypeBases) && dd.Constraint != null) {
+              var ancestor = dd.BaseType.NormalizeToAncestorType();
+              // A hidden carrier or type parameter cannot justify predicate
+              // stability. Keep constrained parameters invariant until the base
+              // is known to belong to the existing general-newtype families.
+              // This admission check must not reveal hidden operations.
+              if (ancestor.IsDatatype || ancestor.IsArrowType || ancestor.IsBigOrdinalType ||
+                  ancestor.IsInternalTypeSynonym || ancestor.IsAbstractType || ancestor.IsTypeParameter) {
+                foreach (var tp in dd.TypeArgs.Where(tp => tp.Variance != TypeParameter.TPVariance.Non)) {
+                  reporter.Error(MessageSource.Resolver, tp.Origin,
+                    "a constrained newtype with an extended base only supports invariant type parameters");
+                }
+              }
+            }
             CheckVariance(dd.BaseType, dd, TypeParameter.TPVariance.Co, false);
           } else if (d is DatatypeDecl) {
             var dd = (DatatypeDecl)d;
@@ -1756,7 +1790,9 @@ namespace Microsoft.Dafny {
                 }
               } else {
                 var binExpr = (BinaryExpr)e; // each "coConclusion" is either a FunctionCallExpr or a BinaryExpr
-                focalCodatatypeEquality.Add(binExpr.E0.Type.AsCoDatatype ?? binExpr.E1.Type.AsCoDatatype);
+                focalCodatatypeEquality.Add(
+                  NewtypeOperationView.CoDatatypeType(binExpr.E0.Type, Options.Get(CommonOptionBag.ExtendedNewtypeBases)).AsCoDatatype ??
+                  NewtypeOperationView.CoDatatypeType(binExpr.E1.Type, Options.Get(CommonOptionBag.ExtendedNewtypeBases)).AsCoDatatype);
               }
             }
           }
@@ -2843,8 +2879,13 @@ namespace Microsoft.Dafny {
       } else if (cl is InternalTypeSynonymDecl) {
         // a type exported as opaque from another module is like a ground type
         return true;
-      } else if (cl is NewtypeDecl) {
-        // values of a newtype can be constructed
+      } else if (cl is NewtypeDecl newtype) {
+        // Extended carriers and their compiled witnesses can require generic
+        // defaults even though the nominal newtype has no datatype head.
+        // Retain the legacy default-parameter selection with the option off.
+        if (newtype.UseBaseReferenceCharacteristics) {
+          type.AddFreeTypeParameters(typeParametersUsed);
+        }
         return true;
       } else if (cl is SubsetTypeDecl) {
         var td = (SubsetTypeDecl)cl;

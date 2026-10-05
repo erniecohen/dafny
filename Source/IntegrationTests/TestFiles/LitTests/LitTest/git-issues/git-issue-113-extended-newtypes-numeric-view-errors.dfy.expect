@@ -1,0 +1,4 @@
+git-issue-113-extended-newtypes-numeric-view-errors.dfy(9,13): Error: bit-vector value to be converted could not be proved to fit in CharView
+git-issue-113-extended-newtypes-numeric-view-errors.dfy(14,13): Error: bit-vector value to be converted could not be proved to fit in CharView
+
+Dafny program verifier finished with 2 verified, 2 errors

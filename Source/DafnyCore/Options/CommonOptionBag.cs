@@ -256,9 +256,13 @@ Value implementations must retain their type parameters in compatible parent pos
   public static readonly Option<bool> GeneralNewtypes = new("--general-newtypes", () => true,
     @"
 false - A newtype can only be based on numeric types or another newtype.
-true (default) - (requires --type-system-refresh) A newtype case be based on any non-reference, non-trait, non-arrow, non-ORDINAL type.".TrimStart()) {
+true (default) - (requires --type-system-refresh) A newtype can use non-reference, non-trait value bases other than ORDINAL, arrows, and datatypes (including tuples and codatatypes), unless --extended-newtype-bases is enabled.".TrimStart()) {
     IsHidden = true
   };
+
+  public static readonly Option<bool> ExtendedNewtypeBases = new("--extended-newtype-bases", () => false,
+    "Permit ORDINAL, datatype (including tuple and codatatype), and ~>, -->, -> newtype bases. Disabled by default. " +
+    "Requires --general-newtypes=true and --type-system-refresh=true.");
 
   public static readonly Option<bool> TypeInferenceDebug = new("--type-inference-trace", () => false,
     @"
@@ -480,7 +484,9 @@ Value implementations must retain their type parameters in compatible parent pos
       defaultValue: GeneralTraitsOptions.Datatype);
     DafnyOptions.RegisterLegacyUi(GeneralNewtypes, DafnyOptions.ParseBoolean, "Language feature selection", "generalNewtypes", @"
 0 - A newtype can only be based on numeric types or another newtype.
-1 (default) - (requires /typeSystemRefresh:1) A newtype case be based on any non-reference, non-trait, non-arrow, non-ORDINAL type.".TrimStart(), true);
+1 (default) - (requires /typeSystemRefresh:1) A newtype can use non-reference, non-trait value bases other than ORDINAL, arrows, and datatypes (including tuples and codatatypes), unless /extendedNewtypeBases:1 is enabled.".TrimStart(), true);
+    DafnyOptions.RegisterLegacyUi(ExtendedNewtypeBases, DafnyOptions.ParseBoolean, "Language feature selection", "extendedNewtypeBases",
+      "0 (default) - Retain existing general-newtype base restrictions.\n1 - Permit ORDINAL, datatype (including tuple and codatatype), and arrow newtype bases; requires /generalNewtypes:1 and /typeSystemRefresh:1.", false);
     DafnyOptions.RegisterLegacyUi(TypeInferenceDebug, DafnyOptions.ParseBoolean, "Language feature selection", "titrace", @"
 0 (default) - Don't print type-inference debug information.
 1 - Print type-inference debug information.".TrimStart(), defaultValue: false);
@@ -676,6 +682,9 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(TypeInferenceDebug, OptionScope.Cli);
     OptionRegistry.RegisterOption(GeneralTraits, OptionScope.Cli);
     OptionRegistry.RegisterOption(GeneralNewtypes, OptionScope.Cli);
+    OptionRegistry.RegisterGlobalOption(ExtendedNewtypeBases,
+      (reporter, origin, prefix, option, localValue, libraryValue) =>
+        OptionCompatibility.OptionLibraryImpliesLocalError(reporter, origin, prefix, option, localValue, libraryValue ?? false));
     OptionRegistry.RegisterOption(TypeSystemRefresh, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationLogFormat, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerifyIncludedFiles, OptionScope.Cli);

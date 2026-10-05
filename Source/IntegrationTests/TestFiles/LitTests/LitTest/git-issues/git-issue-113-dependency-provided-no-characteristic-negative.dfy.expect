@@ -1,0 +1,7 @@
+git-issue-113-dependency-provided-no-characteristic-negative.dfy(16,7): Error: type 'RejectDirect' declared as containing no reference types, but the RHS type (P.Opaque) may contain reference types
+git-issue-113-dependency-provided-no-characteristic-negative.dfy(17,7): Error: type 'RejectAbstractDirect' declared as containing no reference types, but the RHS type (P.AbstractOpaque) may contain reference types
+git-issue-113-dependency-provided-no-characteristic-negative.dfy(18,7): Error: type 'RejectWrapped' declared as containing no reference types, but the RHS type (Wrap) may contain reference types
+git-issue-113-dependency-provided-no-characteristic-negative.dfy(19,7): Error: type 'RejectAbstractWrapped' declared as containing no reference types, but the RHS type (WrapAbstract) may contain reference types
+git-issue-113-dependency-provided-no-characteristic-negative.dfy(20,7): Error: type 'RejectRepeated' declared as containing no reference types, but the RHS type (Id<Id<P.Opaque>>) may contain reference types
+git-issue-113-dependency-provided-no-characteristic-negative.dfy(21,7): Error: type 'RejectCollection' declared as containing no reference types, but the RHS type (seq<Wrap>) may contain reference types
+6 resolution/type errors detected in git-issue-113-dependency-provided-no-characteristic-negative.dfy

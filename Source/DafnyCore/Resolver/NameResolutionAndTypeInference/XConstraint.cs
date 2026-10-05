@@ -190,7 +190,9 @@ public class XConstraint {
         }
         break;
       case "IsCoDatatype":
-        satisfied = t.IsCoDatatype;
+        // Prefix lemmas synthesize expressions through the legacy constraint
+        // machinery even when their source used the refreshed type system.
+        satisfied = NewtypeOperationView.IsCoDatatype(t, resolver.Options.Get(CommonOptionBag.ExtendedNewtypeBases));
         break;
       case "Indexable":
         if (!(t is TypeProxy)) {

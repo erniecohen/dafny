@@ -1,0 +1,590 @@
+--- B-on
++++ W-erased-on
+@@ -3008,13 +3008,14 @@
+ // definition axiom for _module.__default.Encode (revealed)
+ axiom {:id "id0"} (forall b#0: DatatypeType :: 
+   { _module.__default.Encode(b#0) } 
+-  _module.__default.Encode#canCall(b#0) ==> _module.__default.Encode(b#0) == b#0);
++  _module.__default.Encode#canCall(b#0)
++     ==> _module.__default.Encode(b#0) == #_module.Wrapped.Wrap(b#0));
+ 
+ // definition axiom for _module.__default.Encode for all literals (revealed)
+ axiom {:id "id1"} (forall b#0: DatatypeType :: 
+   {:weight 3} { _module.__default.Encode(Lit(b#0)) } 
+   _module.__default.Encode#canCall(Lit(b#0))
+-     ==> _module.__default.Encode(Lit(b#0)) == Lit(b#0));
++     ==> _module.__default.Encode(Lit(b#0)) == Lit(#_module.Wrapped.Wrap(Lit(b#0))));
+ 
+ procedure {:verboseName "Encode (well-formedness)"} CheckWellformed$$_module.__default.Encode(b#0: DatatypeType where $Is(b#0, Tclass._module.Envelope()));
+   modifies $Heap;
+@@ -3028,7 +3029,7 @@
+   var newtype$check#1: DatatypeType;
+ 
+ 
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(4,9): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(5,9): initial state"} true;
+     $_ReadsFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+     // Check well-formedness of preconditions, and then assume them
+@@ -3053,23 +3054,29 @@
+     else
+     {
+         // Check well-formedness of body and result subset type constraint
+-        assert {:id "id4"} $Is(b#0, Tclass._module.Value());
+-        newtype$check#0 := b#0;
+-        assert {:id "id5"} _module.Envelope.Envelope_q(newtype$check#0)
+-             && (_module.Envelope.tag(newtype$check#0) >= LitInt(0)
+-               ==> _module.Envelope.Envelope_q(newtype$check#0)
+-                 && _module.Leaf.Leaf_q(_module.Envelope.leaf(newtype$check#0)))
+-           ==> _module.Envelope.tag(newtype$check#0) >= LitInt(0)
+-             && _module.Leaf.value(_module.Envelope.leaf(newtype$check#0)) >= LitInt(0);
+-        newtype$check#1 := b#0;
+-        assert {:id "id6"} _module.Envelope.Envelope_q(newtype$check#1)
+-             && (_module.Envelope.tag(newtype$check#1) >= LitInt(0)
+-               ==> _module.Envelope.Envelope_q(newtype$check#1)
+-                 && _module.Leaf.Leaf_q(_module.Envelope.leaf(newtype$check#1)))
+-           ==> _module.Envelope.tag(newtype$check#1) >= LitInt(0)
+-             && _module.Leaf.value(_module.Envelope.leaf(newtype$check#1)) >= LitInt(0);
++        assert {:id "id4"} $Is(#_module.Wrapped.Wrap(b#0), Tclass._module.Value());
++        newtype$check#0 := #_module.Wrapped.Wrap(b#0);
++        assert {:id "id5"} _module.Wrapped.Wrap_q(newtype$check#0)
++             && _module.Envelope.Envelope_q(_module.Wrapped.payload(newtype$check#0))
++             && (_module.Envelope.tag(_module.Wrapped.payload(newtype$check#0)) >= LitInt(0)
++               ==> _module.Wrapped.Wrap_q(newtype$check#0)
++                 && _module.Envelope.Envelope_q(_module.Wrapped.payload(newtype$check#0))
++                 && _module.Leaf.Leaf_q(_module.Envelope.leaf(_module.Wrapped.payload(newtype$check#0))))
++           ==> _module.Envelope.tag(_module.Wrapped.payload(newtype$check#0)) >= LitInt(0)
++             && _module.Leaf.value(_module.Envelope.leaf(_module.Wrapped.payload(newtype$check#0)))
++               >= LitInt(0);
++        newtype$check#1 := #_module.Wrapped.Wrap(b#0);
++        assert {:id "id6"} _module.Wrapped.Wrap_q(newtype$check#1)
++             && _module.Envelope.Envelope_q(_module.Wrapped.payload(newtype$check#1))
++             && (_module.Envelope.tag(_module.Wrapped.payload(newtype$check#1)) >= LitInt(0)
++               ==> _module.Wrapped.Wrap_q(newtype$check#1)
++                 && _module.Envelope.Envelope_q(_module.Wrapped.payload(newtype$check#1))
++                 && _module.Leaf.Leaf_q(_module.Envelope.leaf(_module.Wrapped.payload(newtype$check#1))))
++           ==> _module.Envelope.tag(_module.Wrapped.payload(newtype$check#1)) >= LitInt(0)
++             && _module.Leaf.value(_module.Envelope.leaf(_module.Wrapped.payload(newtype$check#1)))
++               >= LitInt(0);
+         assume true;
+-        assume {:id "id7"} _module.__default.Encode(b#0) == b#0;
++        assume {:id "id7"} _module.__default.Encode(b#0) == #_module.Wrapped.Wrap(b#0);
+         // CheckWellformedWithResult: any expression
+         assume $Is(_module.__default.Encode(b#0), Tclass._module.Value());
+         return;
+@@ -3107,13 +3114,16 @@
+ // definition axiom for _module.__default.Decode (revealed)
+ axiom {:id "id8"} (forall v#0: DatatypeType :: 
+   { _module.__default.Decode(v#0) } 
+-  _module.__default.Decode#canCall(v#0) ==> _module.__default.Decode(v#0) == v#0);
++  _module.__default.Decode#canCall(v#0)
++     ==> _module.Wrapped.Wrap_q(v#0)
++       && _module.__default.Decode(v#0) == _module.Wrapped.payload(v#0));
+ 
+ // definition axiom for _module.__default.Decode for all literals (revealed)
+ axiom {:id "id9"} (forall v#0: DatatypeType :: 
+   {:weight 3} { _module.__default.Decode(Lit(v#0)) } 
+   _module.__default.Decode#canCall(Lit(v#0))
+-     ==> _module.__default.Decode(Lit(v#0)) == Lit(v#0));
++     ==> _module.Wrapped.Wrap_q(Lit(v#0))
++       && _module.__default.Decode(Lit(v#0)) == Lit(_module.Wrapped.payload(Lit(v#0))));
+ 
+ procedure {:verboseName "Decode (well-formedness)"} CheckWellformed$$_module.__default.Decode(v#0: DatatypeType where $Is(v#0, Tclass._module.Value()));
+   modifies $Heap;
+@@ -3138,7 +3148,7 @@
+     // AddMethodImpl: RoundTrip, CheckWellFormed$$_module.__default.RoundTrip
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(8,6): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(9,6): initial state"} true;
+     assume _module.Envelope.Envelope_q(b#0);
+     assume _module.Envelope.Envelope_q(b#0);
+     assume {:id "id11"} _module.Envelope.tag(b#0) >= LitInt(0);
+@@ -3150,7 +3160,7 @@
+     assume {:id "id12"} _module.Leaf.value(_module.Envelope.leaf(b#0)) >= LitInt(0);
+     havoc $Heap;
+     assume old($Heap) == $Heap;
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(10,28): post-state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(11,28): post-state"} true;
+     ##b#0 := b#0;
+     // assume allocatedness for argument to function
+     assume $IsAlloc(##b#0, Tclass._module.Envelope(), $Heap);
+@@ -3162,7 +3172,7 @@
+     assert {:id "id14"} {:subsumption 0} _module.Leaf.value(_module.Envelope.leaf(##b#0)) >= LitInt(0);
+     assume _module.Leaf.value(_module.Envelope.leaf(##b#0)) >= LitInt(0);
+     assume _module.__default.Encode#canCall(b#0);
+-    assume _module.Envelope.Envelope_q(_module.__default.Encode(b#0));
++    assume _module.Wrapped.Wrap_q(_module.__default.Encode(b#0));
+     ##v#0 := _module.__default.Encode(b#0);
+     // assume allocatedness for argument to function
+     assume $IsAlloc(##v#0, Tclass._module.Value(), $Heap);
+@@ -3227,7 +3237,7 @@
+     // AddMethodImpl: RoundTrip, Impl$$_module.__default.RoundTrip
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(11,0): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(12,0): initial state"} true;
+     $_reverifyPost := false;
+ }
+ 
+@@ -3302,9 +3312,9 @@
+     // AddMethodImpl: Work, Impl$$_module.__default.Work
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(14,0): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(15,0): initial state"} true;
+     $_reverifyPost := false;
+-    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(15,13)
++    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(16,13)
+     assume true;
+     ##b#0 := Lit(#_module.Envelope.Envelope(Lit(#_module.Leaf.Leaf(LitInt(0), LitInt(0))), LitInt(0)));
+     // assume allocatedness for argument to function
+@@ -3317,22 +3327,22 @@
+     assert {:id "id26"} {:subsumption 0} _module.Leaf.value(_module.Envelope.leaf(##b#0)) >= LitInt(0);
+     assume _module.Leaf.value(_module.Envelope.leaf(##b#0)) >= LitInt(0);
+     assume _module.__default.Encode#canCall(Lit(#_module.Envelope.Envelope(Lit(#_module.Leaf.Leaf(LitInt(0), LitInt(0))), LitInt(0))));
+-    assume _module.Envelope.Envelope_q(Lit(_module.__default.Encode(Lit(#_module.Envelope.Envelope(Lit(#_module.Leaf.Leaf(LitInt(0), LitInt(0))), LitInt(0))))));
++    assume _module.Wrapped.Wrap_q(Lit(_module.__default.Encode(Lit(#_module.Envelope.Envelope(Lit(#_module.Leaf.Leaf(LitInt(0), LitInt(0))), LitInt(0))))));
+     assume _module.__default.Encode#canCall(Lit(#_module.Envelope.Envelope(Lit(#_module.Leaf.Leaf(LitInt(0), LitInt(0))), LitInt(0))));
+     value#0 := Lit(_module.__default.Encode(Lit(#_module.Envelope.Envelope(Lit(#_module.Leaf.Leaf(LitInt(0), LitInt(0))), LitInt(0)))));
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(15,46)"} true;
+-    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(16,9)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(16,46)"} true;
++    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(17,9)
+     assume true;
+     assume true;
+     i#0 := LitInt(0);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(16,12)"} true;
+-    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(17,12)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(17,12)"} true;
++    // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(18,12)
+     assume true;
+     assume true;
+     checksum#0 := LitInt(0);
+     defass#checksum#0 := true;
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(17,15)"} true;
+-    // ----- while statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(18,3)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(18,15)"} true;
++    // ----- while statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(19,3)
+     // Assume Fuel Constant
+     $PreLoopHeap$loop#0 := $Heap;
+     preLoop$loop#0$defass#checksum#0 := defass#checksum#0;
+@@ -3378,7 +3388,7 @@
+       free invariant preLoop$loop#0$defass#checksum#0 ==> defass#checksum#0;
+       free invariant n#0 - i#0 <= $decr_init$loop#00;
+     {
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(18,2): after some loop iterations"} true;
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(19,2): after some loop iterations"} true;
+         if (!$w$loop#0)
+         {
+             if (LitInt(0) <= i#0)
+@@ -3435,18 +3445,20 @@
+ 
+         assume true;
+         $decr$loop#00 := n#0 - i#0;
+-        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(23,11)
++        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(24,11)
+         assume true;
+         assume true;
+         v#0_0 := value#0;
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(23,18)"} true;
+-        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(24,11)
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(24,18)"} true;
++        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(25,11)
+         assume true;
+         havoc dt_update_tmp#0#Z#0_0;
+-        assume true;
+-        assume {:id "id40"} let#0_0#0#0 == v#0_0;
++        assume _module.Wrapped.Wrap_q(v#0_0);
++        assume _module.Wrapped.Wrap_q(v#0_0);
++        assume _module.Wrapped.Wrap_q(v#0_0);
++        assume {:id "id40"} let#0_0#0#0 == _module.Wrapped.payload(v#0_0);
+         // CheckWellformedWithResult: any expression
+-        assume $Is(let#0_0#0#0, Tclass._module.Value());
++        assume $Is(let#0_0#0#0, Tclass._module.Envelope());
+         assume {:id "id41"} dt_update_tmp#0#Z#0_0 == let#0_0#0#0;
+         havoc dt_update#tag#0#Z#0_0;
+         assume true;
+@@ -3456,33 +3468,40 @@
+         assume {:id "id43"} dt_update#tag#0#Z#0_0 == let#0_1#0#0;
+         assume _module.Envelope.Envelope_q(dt_update_tmp#0#Z#0_0);
+         assume _module.Envelope.Envelope_q(dt_update_tmp#0#Z#0_0);
+-        assume (var dt_update_tmp#0#0_0 := v#0_0; 
+-          _module.Envelope.Envelope_q(dt_update_tmp#0#0_0));
+-        u#0_0 := (var dt_update_tmp#0#0_0 := v#0_0; 
++        assume _module.Wrapped.Wrap_q(v#0_0)
++           && (var dt_update_tmp#0#0_0 := _module.Wrapped.payload(v#0_0); 
++            _module.Envelope.Envelope_q(dt_update_tmp#0#0_0));
++        u#0_0 := (var dt_update_tmp#0#0_0 := _module.Wrapped.payload(v#0_0); 
+           (var dt_update#tag#0#0_0 := i#0 + 1; 
+             #_module.Envelope.Envelope(_module.Envelope.leaf(dt_update_tmp#0#0_0), dt_update#tag#0#0_0)));
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(24,29)"} true;
+-        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(25,11)
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(25,37)"} true;
++        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(26,11)
+         assume true;
+-        assert {:id "id45"} $Is(u#0_0, Tclass._module.Value());
+-        newtype$check#0_0 := u#0_0;
+-        assert {:id "id46"} _module.Envelope.Envelope_q(newtype$check#0_0)
+-             && (_module.Envelope.tag(newtype$check#0_0) >= LitInt(0)
+-               ==> _module.Envelope.Envelope_q(newtype$check#0_0)
+-                 && _module.Leaf.Leaf_q(_module.Envelope.leaf(newtype$check#0_0)))
+-           ==> _module.Envelope.tag(newtype$check#0_0) >= LitInt(0)
+-             && _module.Leaf.value(_module.Envelope.leaf(newtype$check#0_0)) >= LitInt(0);
+-        newtype$check#0_1 := u#0_0;
+-        assert {:id "id47"} _module.Envelope.Envelope_q(newtype$check#0_1)
+-             && (_module.Envelope.tag(newtype$check#0_1) >= LitInt(0)
+-               ==> _module.Envelope.Envelope_q(newtype$check#0_1)
+-                 && _module.Leaf.Leaf_q(_module.Envelope.leaf(newtype$check#0_1)))
+-           ==> _module.Envelope.tag(newtype$check#0_1) >= LitInt(0)
+-             && _module.Leaf.value(_module.Envelope.leaf(newtype$check#0_1)) >= LitInt(0);
++        assert {:id "id45"} $Is(#_module.Wrapped.Wrap(u#0_0), Tclass._module.Value());
++        newtype$check#0_0 := #_module.Wrapped.Wrap(u#0_0);
++        assert {:id "id46"} _module.Wrapped.Wrap_q(newtype$check#0_0)
++             && _module.Envelope.Envelope_q(_module.Wrapped.payload(newtype$check#0_0))
++             && (_module.Envelope.tag(_module.Wrapped.payload(newtype$check#0_0)) >= LitInt(0)
++               ==> _module.Wrapped.Wrap_q(newtype$check#0_0)
++                 && _module.Envelope.Envelope_q(_module.Wrapped.payload(newtype$check#0_0))
++                 && _module.Leaf.Leaf_q(_module.Envelope.leaf(_module.Wrapped.payload(newtype$check#0_0))))
++           ==> _module.Envelope.tag(_module.Wrapped.payload(newtype$check#0_0)) >= LitInt(0)
++             && _module.Leaf.value(_module.Envelope.leaf(_module.Wrapped.payload(newtype$check#0_0)))
++               >= LitInt(0);
++        newtype$check#0_1 := #_module.Wrapped.Wrap(u#0_0);
++        assert {:id "id47"} _module.Wrapped.Wrap_q(newtype$check#0_1)
++             && _module.Envelope.Envelope_q(_module.Wrapped.payload(newtype$check#0_1))
++             && (_module.Envelope.tag(_module.Wrapped.payload(newtype$check#0_1)) >= LitInt(0)
++               ==> _module.Wrapped.Wrap_q(newtype$check#0_1)
++                 && _module.Envelope.Envelope_q(_module.Wrapped.payload(newtype$check#0_1))
++                 && _module.Leaf.Leaf_q(_module.Envelope.leaf(_module.Wrapped.payload(newtype$check#0_1))))
++           ==> _module.Envelope.tag(_module.Wrapped.payload(newtype$check#0_1)) >= LitInt(0)
++             && _module.Leaf.value(_module.Envelope.leaf(_module.Wrapped.payload(newtype$check#0_1)))
++               >= LitInt(0);
+         assume true;
+-        value#0 := u#0_0;
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(25,23)"} true;
+-        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(26,14)
++        value#0 := #_module.Wrapped.Wrap(u#0_0);
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(26,29)"} true;
++        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(27,14)
+         assume true;
+         assert {:id "id49"} defass#checksum#0;
+         ##v#0_0 := value#0;
+@@ -3497,14 +3516,14 @@
+            && _module.Envelope.Envelope_q(_module.__default.Decode(value#0));
+         checksum#0 := checksum#0 + _module.Envelope.tag(_module.__default.Decode(value#0));
+         defass#checksum#0 := true;
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(26,44)"} true;
+-        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(27,7)
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(27,44)"} true;
++        // ----- assignment statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(28,7)
+         assume true;
+         assume true;
+         i#0 := i#0 + 1;
+-        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(27,14)"} true;
++        assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(28,14)"} true;
+         assume true;
+-        // ----- loop termination check ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(18,3)
++        // ----- loop termination check ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(19,3)
+         assert {:id "id52"} 0 <= $decr$loop#00 || n#0 - i#0 == $decr$loop#00;
+         assert {:id "id53"} n#0 - i#0 < $decr$loop#00;
+         assume LitInt(0) <= i#0 && i#0 <= n#0
+@@ -3565,9 +3584,9 @@
+     // AddMethodImpl: Main, Impl$$_module.__default.Main
+     $_ModifiesFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(30,14): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(31,14): initial state"} true;
+     $_reverifyPost := false;
+-    // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(31,19)
++    // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(32,19)
+     assume true;
+     // TrCallStmt: Adding lhs with type int
+     // TrCallStmt: Before ProcessCallStmt
+@@ -3578,12 +3597,12 @@
+     call {:id "id56"} $rhs##0 := Call$$_module.__default.Work(n##0);
+     // TrCallStmt: After ProcessCallStmt
+     warm#0 := $rhs##0;
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(31,24)"} true;
+-    // ----- print statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(32,3)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(32,24)"} true;
++    // ----- print statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(33,3)
+     assume true;
+     assume true;
+     assume true;
+-    // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(33,21)
++    // ----- call statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(34,21)
+     assume true;
+     // TrCallStmt: Adding lhs with type int
+     // TrCallStmt: Before ProcessCallStmt
+@@ -3594,8 +3613,8 @@
+     call {:id "id59"} $rhs##1 := Call$$_module.__default.Work(n##1);
+     // TrCallStmt: After ProcessCallStmt
+     result#0 := $rhs##1;
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(33,27)"} true;
+-    // ----- print statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(34,3)
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(34,27)"} true;
++    // ----- print statement ----- /home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(35,3)
+     assume true;
+     assume true;
+     assume true;
+@@ -3848,47 +3867,168 @@
+ 
+ const unique class._module.Envelope: ClassName;
+ 
+-procedure {:verboseName "Value (well-formedness)"} CheckWellFormed$$_module.Value(x#0: DatatypeType);
++// Constructor function declaration
++function #_module.Wrapped.Wrap(DatatypeType) : DatatypeType;
++
++const unique ##_module.Wrapped.Wrap: DtCtorId
++uses {
++// Constructor identifier
++axiom (forall a#13#0#0: DatatypeType :: 
++  { #_module.Wrapped.Wrap(a#13#0#0) } 
++  DatatypeCtorId(#_module.Wrapped.Wrap(a#13#0#0)) == ##_module.Wrapped.Wrap);
++}
++
++function _module.Wrapped.Wrap_q(DatatypeType) : bool;
++
++// Questionmark and identifier
++axiom (forall d: DatatypeType :: 
++  { _module.Wrapped.Wrap_q(d) } 
++  _module.Wrapped.Wrap_q(d) <==> DatatypeCtorId(d) == ##_module.Wrapped.Wrap);
++
++// Constructor questionmark has arguments
++axiom (forall d: DatatypeType :: 
++  { _module.Wrapped.Wrap_q(d) } 
++  _module.Wrapped.Wrap_q(d)
++     ==> (exists a#14#0#0: DatatypeType :: d == #_module.Wrapped.Wrap(a#14#0#0)));
++
++function Tclass._module.Wrapped() : Ty
++uses {
++// Tclass._module.Wrapped Tag
++axiom Tag(Tclass._module.Wrapped()) == Tagclass._module.Wrapped
++   && TagFamily(Tclass._module.Wrapped()) == tytagFamily$Wrapped;
++}
++
++const unique Tagclass._module.Wrapped: TyTag;
++
++// Box/unbox axiom for Tclass._module.Wrapped
++axiom (forall bx: Box :: 
++  { $IsBox(bx, Tclass._module.Wrapped()) } 
++  $IsBox(bx, Tclass._module.Wrapped())
++     ==> $Box($Unbox(bx): DatatypeType) == bx
++       && $Is($Unbox(bx): DatatypeType, Tclass._module.Wrapped()));
++
++// Constructor $Is
++axiom (forall a#15#0#0: DatatypeType :: 
++  { $Is(#_module.Wrapped.Wrap(a#15#0#0), Tclass._module.Wrapped()) } 
++  $Is(#_module.Wrapped.Wrap(a#15#0#0), Tclass._module.Wrapped())
++     <==> $Is(a#15#0#0, Tclass._module.Envelope()));
++
++// Destructor $IsAlloc
++axiom (forall d: DatatypeType, $h: Heap :: 
++  { $IsAlloc(_module.Wrapped.payload(d), Tclass._module.Envelope(), $h) } 
++  $IsGoodHeap($h)
++       && 
++      _module.Wrapped.Wrap_q(d)
++       && $IsAlloc(d, Tclass._module.Wrapped(), $h)
++     ==> $IsAlloc(_module.Wrapped.payload(d), Tclass._module.Envelope(), $h));
++
++// Constructor literal
++axiom (forall a#16#0#0: DatatypeType :: 
++  { #_module.Wrapped.Wrap(Lit(a#16#0#0)) } 
++  #_module.Wrapped.Wrap(Lit(a#16#0#0)) == Lit(#_module.Wrapped.Wrap(a#16#0#0)));
++
++function _module.Wrapped.payload(DatatypeType) : DatatypeType;
++
++// Constructor injectivity
++axiom (forall a#17#0#0: DatatypeType :: 
++  { #_module.Wrapped.Wrap(a#17#0#0) } 
++  _module.Wrapped.payload(#_module.Wrapped.Wrap(a#17#0#0)) == a#17#0#0);
++
++// Inductive rank
++axiom (forall a#18#0#0: DatatypeType :: 
++  { DtRank(#_module.Wrapped.Wrap(a#18#0#0)) } 
++  DtRank(a#18#0#0) < DtRank(#_module.Wrapped.Wrap(a#18#0#0)));
++
++// Datatype $IsAlloc
++axiom (forall d: DatatypeType, $h: Heap :: 
++  { $IsAlloc(d, Tclass._module.Wrapped(), $h) } 
++  $IsGoodHeap($h) && $Is(d, Tclass._module.Wrapped())
++     ==> $IsAlloc(d, Tclass._module.Wrapped(), $h));
++
++// Depth-one case-split function
++function $IsA#_module.Wrapped(DatatypeType) : bool;
++
++// Depth-one case-split axiom
++axiom (forall d: DatatypeType :: 
++  { $IsA#_module.Wrapped(d) } 
++  $IsA#_module.Wrapped(d) ==> _module.Wrapped.Wrap_q(d));
++
++// Questionmark data type disjunctivity
++axiom (forall d: DatatypeType :: 
++  { _module.Wrapped.Wrap_q(d), $Is(d, Tclass._module.Wrapped()) } 
++  $Is(d, Tclass._module.Wrapped()) ==> _module.Wrapped.Wrap_q(d));
++
++// Datatype extensional equality declaration
++function _module.Wrapped#Equal(DatatypeType, DatatypeType) : bool;
++
++// Datatype extensional equality definition: #_module.Wrapped.Wrap
++axiom (forall a: DatatypeType, b: DatatypeType :: 
++  { _module.Wrapped#Equal(a, b) } 
++  (_module.Wrapped#Equal(a, b)
++       ==> _module.Envelope#Equal(_module.Wrapped.payload(a), _module.Wrapped.payload(b)))
++     && (_module.Wrapped.Wrap_q(a)
++         && _module.Wrapped.Wrap_q(b)
++         && _module.Envelope#Equal(_module.Wrapped.payload(a), _module.Wrapped.payload(b))
++       ==> _module.Wrapped#Equal(a, b)));
++
++// Datatype extensionality axiom: _module.Wrapped
++axiom (forall a: DatatypeType, b: DatatypeType :: 
++  { _module.Wrapped#Equal(a, b) } 
++  _module.Wrapped#Equal(a, b) <==> a == b);
++
++const unique class._module.Wrapped: ClassName;
++
++procedure {:verboseName "Value (well-formedness)"} CheckWellFormed$$_module.Value(w#0: DatatypeType);
+   modifies $Heap;
+ 
+ 
+ 
+-implementation {:smt_option "smt.arith.solver", "2"} {:verboseName "Value (well-formedness)"} CheckWellFormed$$_module.Value(x#0: DatatypeType)
++implementation {:smt_option "smt.arith.solver", "2"} {:verboseName "Value (well-formedness)"} CheckWellFormed$$_module.Value(w#0: DatatypeType)
+ {
+   var $_ReadsFrame: [ref,Field]bool;
+ 
+ 
+     // AddWellformednessCheck for subset type Value
+-    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/B.dfy(3,5): initial state"} true;
++    assume {:captureState "/home/runner/work/dafny/dafny/.github/review/issue113-benchmarks/extended/datatype-root-update/W.dfy(4,5): initial state"} true;
+     $_ReadsFrame := (lambda $o: ref, $f: Field :: 
+       $o != null && $Unbox(read($Heap, $o, alloc)): bool ==> false);
+     if (*)
+     {
+         // check well-formedness of subset type constraint
+-        assume $Is(x#0, Tclass._module.Envelope());
+-        assume _module.Envelope.Envelope_q(x#0);
+-        assume _module.Envelope.Envelope_q(x#0);
+-        assume {:id "id61"} _module.Envelope.tag(x#0) >= LitInt(0);
+-        assume _module.Envelope.Envelope_q(x#0);
+-        assume _module.Envelope.Envelope_q(x#0);
+-        assume _module.Leaf.Leaf_q(_module.Envelope.leaf(x#0));
+-        assume _module.Envelope.Envelope_q(x#0)
+-           && _module.Leaf.Leaf_q(_module.Envelope.leaf(x#0));
+-        assume {:id "id62"} _module.Leaf.value(_module.Envelope.leaf(x#0)) >= LitInt(0);
++        assume $Is(w#0, Tclass._module.Wrapped());
++        assume _module.Wrapped.Wrap_q(w#0);
++        assume _module.Wrapped.Wrap_q(w#0);
++        assume _module.Envelope.Envelope_q(_module.Wrapped.payload(w#0));
++        assume _module.Wrapped.Wrap_q(w#0)
++           && _module.Envelope.Envelope_q(_module.Wrapped.payload(w#0));
++        assume {:id "id61"} _module.Envelope.tag(_module.Wrapped.payload(w#0)) >= LitInt(0);
++        assume _module.Wrapped.Wrap_q(w#0);
++        assume _module.Wrapped.Wrap_q(w#0);
++        assume _module.Envelope.Envelope_q(_module.Wrapped.payload(w#0));
++        assume _module.Wrapped.Wrap_q(w#0)
++           && _module.Envelope.Envelope_q(_module.Wrapped.payload(w#0));
++        assume _module.Leaf.Leaf_q(_module.Envelope.leaf(_module.Wrapped.payload(w#0)));
++        assume _module.Wrapped.Wrap_q(w#0)
++           && _module.Envelope.Envelope_q(_module.Wrapped.payload(w#0))
++           && _module.Leaf.Leaf_q(_module.Envelope.leaf(_module.Wrapped.payload(w#0)));
++        assume {:id "id62"} _module.Leaf.value(_module.Envelope.leaf(_module.Wrapped.payload(w#0)))
++           >= LitInt(0);
+         assume false;
+     }
+ 
+     if (*)
+     {
+         // check well-formedness of subset type witness, and that it satisfies the constraint
+-        assume _module.Envelope.Envelope_q(Lit(#_module.Envelope.Envelope(Lit(#_module.Leaf.Leaf(LitInt(0), LitInt(0))), LitInt(0))))
+-           && (LitInt(_module.Envelope.tag(Lit(#_module.Envelope.Envelope(Lit(#_module.Leaf.Leaf(LitInt(0), LitInt(0))), LitInt(0)))))
++        assume _module.Wrapped.Wrap_q(Lit(#_module.Wrapped.Wrap(Lit(#_module.Envelope.Envelope(Lit(#_module.Leaf.Leaf(LitInt(0), LitInt(0))), LitInt(0))))))
++           && _module.Envelope.Envelope_q(Lit(_module.Wrapped.payload(Lit(#_module.Wrapped.Wrap(Lit(#_module.Envelope.Envelope(Lit(#_module.Leaf.Leaf(LitInt(0), LitInt(0))), LitInt(0))))))))
++           && (LitInt(_module.Envelope.tag(Lit(_module.Wrapped.payload(Lit(#_module.Wrapped.Wrap(Lit(#_module.Envelope.Envelope(Lit(#_module.Leaf.Leaf(LitInt(0), LitInt(0))), LitInt(0)))))))))
+                >= LitInt(0)
+-             ==> _module.Envelope.Envelope_q(Lit(#_module.Envelope.Envelope(Lit(#_module.Leaf.Leaf(LitInt(0), LitInt(0))), LitInt(0))))
+-               && _module.Leaf.Leaf_q(Lit(_module.Envelope.leaf(Lit(#_module.Envelope.Envelope(Lit(#_module.Leaf.Leaf(LitInt(0), LitInt(0))), LitInt(0)))))));
+-        assert {:id "id63"} {:subsumption 0} LitInt(_module.Envelope.tag(Lit(#_module.Envelope.Envelope(Lit(#_module.Leaf.Leaf(LitInt(0), LitInt(0))), LitInt(0)))))
++             ==> _module.Wrapped.Wrap_q(Lit(#_module.Wrapped.Wrap(Lit(#_module.Envelope.Envelope(Lit(#_module.Leaf.Leaf(LitInt(0), LitInt(0))), LitInt(0))))))
++               && _module.Envelope.Envelope_q(Lit(_module.Wrapped.payload(Lit(#_module.Wrapped.Wrap(Lit(#_module.Envelope.Envelope(Lit(#_module.Leaf.Leaf(LitInt(0), LitInt(0))), LitInt(0))))))))
++               && _module.Leaf.Leaf_q(Lit(_module.Envelope.leaf(Lit(_module.Wrapped.payload(Lit(#_module.Wrapped.Wrap(Lit(#_module.Envelope.Envelope(Lit(#_module.Leaf.Leaf(LitInt(0), LitInt(0))), LitInt(0)))))))))));
++        assert {:id "id63"} {:subsumption 0} LitInt(_module.Envelope.tag(Lit(_module.Wrapped.payload(Lit(#_module.Wrapped.Wrap(Lit(#_module.Envelope.Envelope(Lit(#_module.Leaf.Leaf(LitInt(0), LitInt(0))), LitInt(0)))))))))
+            >= LitInt(0);
+-        assert {:id "id64"} {:subsumption 0} LitInt(_module.Leaf.value(Lit(_module.Envelope.leaf(Lit(#_module.Envelope.Envelope(Lit(#_module.Leaf.Leaf(LitInt(0), LitInt(0))), LitInt(0)))))))
++        assert {:id "id64"} {:subsumption 0} LitInt(_module.Leaf.value(Lit(_module.Envelope.leaf(Lit(_module.Wrapped.payload(Lit(#_module.Wrapped.Wrap(Lit(#_module.Envelope.Envelope(Lit(#_module.Leaf.Leaf(LitInt(0), LitInt(0))), LitInt(0)))))))))))
+            >= LitInt(0);
+         assume false;
+     }
+@@ -3897,35 +4037,41 @@
+ 
+ 
+ // $Is axioms for subset type _module.Value
+-axiom (forall x#0: DatatypeType :: 
+-  { $Is(x#0, Tclass._module.Value()) } 
+-  $Is(x#0, Tclass._module.Value())
+-     ==> $Is(x#0, Tclass._module.Envelope())
++axiom (forall w#0: DatatypeType :: 
++  { $Is(w#0, Tclass._module.Value()) } 
++  $Is(w#0, Tclass._module.Value())
++     ==> $Is(w#0, Tclass._module.Wrapped())
+        && 
+-      _module.Envelope.Envelope_q(x#0)
+-       && (_module.Envelope.tag(x#0) >= LitInt(0)
+-         ==> _module.Envelope.Envelope_q(x#0)
+-           && _module.Leaf.Leaf_q(_module.Envelope.leaf(x#0)))
++      _module.Wrapped.Wrap_q(w#0)
++       && _module.Envelope.Envelope_q(_module.Wrapped.payload(w#0))
++       && (_module.Envelope.tag(_module.Wrapped.payload(w#0)) >= LitInt(0)
++         ==> _module.Wrapped.Wrap_q(w#0)
++           && _module.Envelope.Envelope_q(_module.Wrapped.payload(w#0))
++           && _module.Leaf.Leaf_q(_module.Envelope.leaf(_module.Wrapped.payload(w#0))))
+        && 
+-      _module.Envelope.tag(x#0) >= LitInt(0)
+-       && _module.Leaf.value(_module.Envelope.leaf(x#0)) >= LitInt(0));
+-
+-axiom (forall x#0: DatatypeType :: 
+-  { $Is(x#0, Tclass._module.Value()) } 
+-  $Is(x#0, Tclass._module.Envelope())
+-       && (_module.Envelope.Envelope_q(x#0)
+-           && (_module.Envelope.tag(x#0) >= LitInt(0)
+-             ==> _module.Envelope.Envelope_q(x#0)
+-               && _module.Leaf.Leaf_q(_module.Envelope.leaf(x#0)))
+-         ==> _module.Envelope.tag(x#0) >= LitInt(0)
+-           && _module.Leaf.value(_module.Envelope.leaf(x#0)) >= LitInt(0))
+-     ==> $Is(x#0, Tclass._module.Value()));
++      _module.Envelope.tag(_module.Wrapped.payload(w#0)) >= LitInt(0)
++       && _module.Leaf.value(_module.Envelope.leaf(_module.Wrapped.payload(w#0)))
++         >= LitInt(0));
++
++axiom (forall w#0: DatatypeType :: 
++  { $Is(w#0, Tclass._module.Value()) } 
++  $Is(w#0, Tclass._module.Wrapped())
++       && (_module.Wrapped.Wrap_q(w#0)
++           && _module.Envelope.Envelope_q(_module.Wrapped.payload(w#0))
++           && (_module.Envelope.tag(_module.Wrapped.payload(w#0)) >= LitInt(0)
++             ==> _module.Wrapped.Wrap_q(w#0)
++               && _module.Envelope.Envelope_q(_module.Wrapped.payload(w#0))
++               && _module.Leaf.Leaf_q(_module.Envelope.leaf(_module.Wrapped.payload(w#0))))
++         ==> _module.Envelope.tag(_module.Wrapped.payload(w#0)) >= LitInt(0)
++           && _module.Leaf.value(_module.Envelope.leaf(_module.Wrapped.payload(w#0)))
++             >= LitInt(0))
++     ==> $Is(w#0, Tclass._module.Value()));
+ 
+ // $IsAlloc axiom for subset type _module.Value
+-axiom (forall x#0: DatatypeType, $h: Heap :: 
+-  { $IsAlloc(x#0, Tclass._module.Value(), $h) } 
+-  $IsAlloc(x#0, Tclass._module.Value(), $h)
+-     <==> $IsAlloc(x#0, Tclass._module.Envelope(), $h));
++axiom (forall w#0: DatatypeType, $h: Heap :: 
++  { $IsAlloc(w#0, Tclass._module.Value(), $h) } 
++  $IsAlloc(w#0, Tclass._module.Value(), $h)
++     <==> $IsAlloc(w#0, Tclass._module.Wrapped(), $h));
+ 
+ const unique tytagFamily$nat: TyTagFamily;
+ 
+@@ -3954,3 +4100,5 @@
+ const unique tytagFamily$Value: TyTagFamily;
+ 
+ const unique tytagFamily$Leaf: TyTagFamily;
++
++const unique tytagFamily$Wrapped: TyTagFamily;

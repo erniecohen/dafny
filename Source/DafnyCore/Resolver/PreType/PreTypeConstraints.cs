@@ -682,7 +682,12 @@ namespace Microsoft.Dafny {
       }
 
       var pt = (DPreType)preType;
-      var ancestorPt = PreTypeResolver.NewTypeAncestor(pt);
+      var useScopedView = options.Get(CommonOptionBag.ExtendedNewtypeBases) && pt.Decl is NewtypeDecl &&
+        check is not CommonConfirmationBag.IsNewtypeBaseTypeLegacy and not CommonConfirmationBag.IsNewtypeBaseTypeGeneral;
+      var ancestorPt = useScopedView ? PreTypeResolver.OperationPreType(pt) : PreTypeResolver.NewTypeAncestor(pt);
+      if (ancestorPt == null) {
+        return false;
+      }
       var ancestorDecl = ancestorPt.Decl;
       var familyDeclName = ancestorDecl.Name;
       switch (check) {
@@ -870,8 +875,16 @@ namespace Microsoft.Dafny {
       }
 
       if (allowBaseTypeCast && sub.Decl is NewtypeDecl newtypeDecl) {
+        var extendedNewtypeBases = options.Get(CommonOptionBag.ExtendedNewtypeBases);
+        if (extendedNewtypeBases &&
+            (!newtypeDecl.IsRevealedInScope(Type.GetScope()) || newtypeDecl.BasePreType == null ||
+             Microsoft.Dafny.PreTypeResolver.HasOperationViewCycle(newtypeDecl))) {
+          return null;
+        }
         var subst = PreType.PreTypeSubstMap(newtypeDecl.TypeArgs, sub.Arguments);
-        if (newtypeDecl.BasePreType.Substitute(subst) is DPreType basePreType) {
+        var substitutedBase = newtypeDecl.BasePreType.Substitute(subst);
+        var visibleBase = extendedNewtypeBases ? substitutedBase.NormalizeWrtScope() : substitutedBase;
+        if (visibleBase is DPreType basePreType) {
           var arguments = GetTypeArgumentsForSuperType(super, basePreType, true);
           if (arguments != null) {
             return arguments;

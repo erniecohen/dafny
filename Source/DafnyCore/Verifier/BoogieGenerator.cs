@@ -1576,10 +1576,11 @@ namespace Microsoft.Dafny {
           var b = new Bpl.NAryExpr(tok, new Bpl.FunctionCall(GetReadonlyField(dtor)), new List<Bpl.Expr> { B });
           var ty = dtor.Type;
           Bpl.Expr q;
-          var codecl = ty.AsCoDatatype;
+          var coType = NewtypeOperationView.CoDatatypeType(ty, options.Get(CommonOptionBag.ExtendedNewtypeBases));
+          var codecl = coType.AsCoDatatype;
           if (codecl != null && codecl.SscRepr == dt.SscRepr) {
-            var lexprs = Map(ty.TypeArgs, tt => tt.Subst(lsu));
-            var rexprs = Map(ty.TypeArgs, tt => tt.Subst(rsu));
+            var lexprs = Map(coType.TypeArgs, tt => tt.Subst(lsu));
+            var rexprs = Map(coType.TypeArgs, tt => tt.Subst(rsu));
             q = CoEqualCall(codecl, lexprs, rexprs, k, l, a, b);
           } else {
             // ordinary equality; let the usual translation machinery figure out the translation
@@ -2801,6 +2802,11 @@ namespace Microsoft.Dafny {
       } else if (pat.Arguments != null) {
         Contract.Assert(pat.Ctor != null);  // follows from successful resolution
         Contract.Assert(pat.Arguments.Count == pat.Ctor.Destructors.Count);  // follows from successful resolution
+        if (options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+            NewtypeOperationView.Get(rhsType).BaseType is { } baseType &&
+            baseType.AsDatatype == pat.Ctor.EnclosingDatatype) {
+          rhsType = baseType;
+        }
         rhsType = rhsType.Normalize();
         Contract.Assert(rhsType is UserDefinedType && ((UserDefinedType)rhsType).ResolvedClass != null);
         var rhsTypeUdt = (UserDefinedType)rhsType;
@@ -4370,6 +4376,18 @@ namespace Microsoft.Dafny {
         return null;
       }
       targetType = targetType.NormalizeExpandKeepConstraints();
+      if (options.Get(CommonOptionBag.ExtendedNewtypeBases)) {
+        var sourceView = NewtypeOperationView.Get(sourceType, preserveSubsetTypes: true);
+        if (sourceView.Status == NewtypeOperationView.ViewStatus.Resolved &&
+            sourceView.Path.OfType<NewtypeDecl>().Any() && sourceView.BaseType.IsArrowType &&
+            sourceView.BaseType.Equals(targetType, true)) {
+          // Membership in a nominal newtype entails membership in its exact,
+          // instantiated visible base. This is an operation projection, not
+          // an arrow-signature coercion or a stronger partiality/reads contract.
+          desc = null;
+          return null;
+        }
+      }
       var udt = targetType as UserDefinedType;
       Bpl.Expr cre;
       var constraintCarrier = udt?.ResolvedClass switch {
