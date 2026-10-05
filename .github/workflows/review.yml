@@ -23,6 +23,12 @@ jobs:
             dotnet test Source/DafnyCore.Test/DafnyCore.Test.csproj -c Release --filter 'FullyQualifiedName~Obligation' > out/diagnostic/tests.log 2>&1
             echo "$?" > out/diagnostic/tests.exit
           fi
+          cat out/diagnostic/build.exit
+          tail -n 20 out/diagnostic/build.log
+          if [ -f out/diagnostic/tests.log ]; then
+            cat out/diagnostic/tests.exit
+            tail -n 35 out/diagnostic/tests.log
+          fi
           exit 0
       - uses: actions/upload-artifact@v4
         if: always()

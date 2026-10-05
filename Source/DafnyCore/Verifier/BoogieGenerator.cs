@@ -2789,7 +2789,7 @@ namespace Microsoft.Dafny {
       }
     }
 
-    void CheckCasePatternShape<VT>(CasePattern<VT> pat, Expression dRhs, Bpl.Expr rhs, IOrigin rhsTok, Type rhsType, BoogieStmtListBuilder builder)
+    void CheckCasePatternShape<VT>(CasePattern<VT> pat, Expression dRhs, Bpl.Expr rhs, IOrigin rhsTok, Type rhsType, BoogieStmtListBuilder builder, ExpressionTranslator etran)
       where VT : class, IVariable {
       Contract.Requires(pat != null);
       Contract.Requires(rhs != null);
@@ -2821,7 +2821,7 @@ namespace Microsoft.Dafny {
           var r = new Bpl.NAryExpr(arg.Origin, new Bpl.FunctionCall(GetReadonlyField(dtor)), new List<Bpl.Expr> { rhs });
           Type argType = dtor.Type.Subst(typeSubstMap);
           var de = CondApplyUnbox(arg.Origin, r, dtor.Type, argType);
-          CheckCasePatternShape(arg, arg.Expr, de, arg.Origin, argType, builder);
+          CheckCasePatternShape(arg, arg.Expr, de, arg.Origin, argType, builder, etran);
         }
       }
     }

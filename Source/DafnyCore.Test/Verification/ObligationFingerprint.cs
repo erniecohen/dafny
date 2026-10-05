@@ -8,7 +8,7 @@ internal static class ObligationFingerprint {
   public static string Emit(IEnumerable<Program> programs) {
     var result = new StringWriter();
     foreach (var program in programs) {
-      using var writer = new TokenTextWriter(result, true);
+      using var writer = new TokenTextWriter(result, Microsoft.Dafny.DafnyOptions.Default);
       program.Emit(writer);
     }
     return result.ToString();

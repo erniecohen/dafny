@@ -428,6 +428,9 @@ public partial class BoogieGenerator {
       TrStmt_CheckWellformed(e.Expr, builder, locals, etran, true, addResultCommands:
         (returnBuilder, result) => {
           if (cre != null) {
+            if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+              CheckVisibleTypeObligations(result.Origin, bRhs, e.Expr.Type, rhsTypeConstraint, desc, returnBuilder, etran);
+            }
             returnBuilder.Add(Assert(result.Origin, cre, desc, builder.Context));
           }
         });

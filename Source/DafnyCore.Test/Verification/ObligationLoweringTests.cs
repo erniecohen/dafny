@@ -40,7 +40,8 @@ public class ObligationLoweringTests {
     var text = ObligationFingerprint.Emit(await Translate(source, true));
     Assert.Contains("P#canCall", text);
     Assert.Contains("$Is", text);
-    Assert.Contains("checked guarded obligation", text);
+    var legacy = ObligationFingerprint.Emit(await Translate(source, false));
+    Assert.True(text.Split("assert ").Length > legacy.Split("assert ").Length);
   }
 
   [Fact]

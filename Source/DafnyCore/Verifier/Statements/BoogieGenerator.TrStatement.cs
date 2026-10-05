@@ -441,7 +441,7 @@ public partial class BoogieGenerator {
           builder.Add(new CommentCmd("CheckWellformedWithResult: any expression"));
           builder.Add(TrAssumeCmd(rhs.Origin, MkIs(boogieTupleReference, pat.Expr.Type)));
 
-          CheckCasePatternShape(pat, rhs, boogieTupleReference, rhs.Origin, pat.Expr.Type, builder);
+          CheckCasePatternShape(pat, rhs, boogieTupleReference, rhs.Origin, pat.Expr.Type, builder, etran);
           builder.Add(TrAssumeCmdWithDependenciesAndExtend(etran, varDeclPattern.Origin, pat.Expr,
             e => Expr.Eq(e, boogieTupleReference), "variable declaration"));
           break;
