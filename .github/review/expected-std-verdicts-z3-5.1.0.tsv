@@ -309,11 +309,11 @@ Std Std.Arithmetic.DivMod.LemmaMulModNoopRight (correctness)	Correct
 Std Std.Arithmetic.DivMod.LemmaMulModNoopRight (well-formedness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaMulModNoopRightAuto (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaMulModNoopRightAuto (well-formedness)	Correct		
-Std Std.Arithmetic.DivMod.LemmaMultiplyDivideLe (correctness)	Errors		
+Std Std.Arithmetic.DivMod.LemmaMultiplyDivideLe (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaMultiplyDivideLe (well-formedness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaMultiplyDivideLeAuto (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaMultiplyDivideLeAuto (well-formedness)	Correct		
-Std Std.Arithmetic.DivMod.LemmaMultiplyDivideLt (correctness)	Errors		
+Std Std.Arithmetic.DivMod.LemmaMultiplyDivideLt (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaMultiplyDivideLt (well-formedness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaMultiplyDivideLtAuto (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaMultiplyDivideLtAuto (well-formedness)	Correct		
@@ -658,7 +658,7 @@ Std Std.Base64.DecodeValidEncode (correctness)	Correct
 Std Std.Base64.DecodeValidEncode (well-formedness)	Correct		
 Std Std.Base64.DecodeValidEncode1Padding (correctness)	Correct		
 Std Std.Base64.DecodeValidEncode1Padding (well-formedness)	Correct		
-Std Std.Base64.DecodeValidEncode2Padding (correctness)	Correct		
+Std Std.Base64.DecodeValidEncode2Padding (correctness)	OutOfResource		
 Std Std.Base64.DecodeValidEncode2Padding (well-formedness)	Correct		
 Std Std.Base64.DecodeValidEncodeEmpty (correctness)	Correct		
 Std Std.Base64.DecodeValidEncodeEmpty (well-formedness)	Correct		
@@ -686,7 +686,7 @@ Std Std.Base64.EncodeBVIsUnpadded (correctness)	Correct
 Std Std.Base64.EncodeBVIsUnpadded (well-formedness)	Correct		
 Std Std.Base64.EncodeBVLengthBound (correctness)	Correct		
 Std Std.Base64.EncodeBVLengthBound (well-formedness)	Correct		
-Std Std.Base64.EncodeBVLengthCongruentToZeroMod4 (correctness)	OutOfResource		
+Std Std.Base64.EncodeBVLengthCongruentToZeroMod4 (correctness)	Correct		
 Std Std.Base64.EncodeBVLengthCongruentToZeroMod4 (well-formedness)	Correct		
 Std Std.Base64.EncodeBVLengthExact (correctness)	Correct		
 Std Std.Base64.EncodeBVLengthExact (well-formedness)	Correct		
@@ -1790,7 +1790,7 @@ Std Std.Producers.LimitedProducer.Fill (well-formedness)	Correct
 Std Std.Producers.LimitedProducer.ForEach (correctness)	Correct		
 Std Std.Producers.LimitedProducer.ForEach (override check)	Correct		
 Std Std.Producers.LimitedProducer.ForEach (well-formedness)	Correct		
-Std Std.Producers.LimitedProducer.Invoke (correctness)	OutOfResource		
+Std Std.Producers.LimitedProducer.Invoke (correctness)	Correct		
 Std Std.Producers.LimitedProducer.Invoke (override check)	Correct		
 Std Std.Producers.LimitedProducer.Invoke (well-formedness)	Correct		
 Std Std.Producers.LimitedProducer.ProducedCount (override check)	Correct		
@@ -2430,7 +2430,7 @@ TargetSpecific-py Std.FileIO.WriteUTF8ToFile (correctness)	Correct
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (correctness)	Correct		
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (well-formedness)	Correct		
 TargetSpecific-py Std.PythonConcurrent.MutableMap.Get (well-formedness)	Correct		
-run Std	4	7615 verified, 3 errors, 5 out of resource	src/Std/Actions/Producers.dfy(1293,11) src/Std/Actions/Producers.dfy(1678,37) src/Std/Arithmetic/DivMod.dfy(886,4) src/Std/Arithmetic/DivMod.dfy(916,4) src/Std/Arithmetic/Mul.dfy(21,8) src/Std/Arithmetic/Power2.dfy(107,2) src/Std/Base64.dfy(898,30) src/Std/Base64.dfy(909,8)
+run Std	4	7617 verified, 1 error, 5 out of resource	src/Std/Actions/Producers.dfy(1678,37) src/Std/Arithmetic/Mul.dfy(21,8) src/Std/Arithmetic/Power2.dfy(107,2) src/Std/Base64.dfy(1181,8) src/Std/Base64.dfy(909,8)
 run TargetSpecific-cs	0	132 verified, 0 errors	
 run TargetSpecific-go	0	16 verified, 0 errors	
 run TargetSpecific-java	0	15 verified, 0 errors	
