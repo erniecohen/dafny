@@ -1,0 +1,84 @@
+original (type-system-refresh:false, additional-axioms:false)
+github-issue-166-original.dfy(3,2): Error: a postcondition could not be proved on this return path
+github-issue-166-original.dfy(2,32): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 1 error
+original (type-system-refresh:false, additional-axioms:true)
+github-issue-166-original.dfy(3,2): Error: a postcondition could not be proved on this return path
+github-issue-166-original.dfy(2,32): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 1 error
+original (type-system-refresh:true, additional-axioms:false)
+github-issue-166-original.dfy(3,2): Error: a postcondition could not be proved on this return path
+github-issue-166-original.dfy(2,32): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 1 error
+original (type-system-refresh:true, additional-axioms:true)
+github-issue-166-original.dfy(3,2): Error: a postcondition could not be proved on this return path
+github-issue-166-original.dfy(2,32): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 1 error
+negative (type-system-refresh:false, additional-axioms:false)
+github-issue-166-negative.dfy(4,2): Error: a postcondition could not be proved on this return path
+github-issue-166-negative.dfy(3,22): Related location: this is the postcondition that could not be proved
+github-issue-166-negative.dfy(9,2): Error: a postcondition could not be proved on this return path
+github-issue-166-negative.dfy(8,30): Related location: this is the postcondition that could not be proved
+github-issue-166-negative.dfy(14,2): Error: a postcondition could not be proved on this return path
+github-issue-166-negative.dfy(13,48): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 0 verified, 3 errors
+negative (type-system-refresh:false, additional-axioms:true)
+github-issue-166-negative.dfy(4,2): Error: a postcondition could not be proved on this return path
+github-issue-166-negative.dfy(3,22): Related location: this is the postcondition that could not be proved
+github-issue-166-negative.dfy(9,2): Error: a postcondition could not be proved on this return path
+github-issue-166-negative.dfy(8,30): Related location: this is the postcondition that could not be proved
+github-issue-166-negative.dfy(14,2): Error: a postcondition could not be proved on this return path
+github-issue-166-negative.dfy(13,48): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 0 verified, 3 errors
+negative (type-system-refresh:true, additional-axioms:false)
+github-issue-166-negative.dfy(4,2): Error: a postcondition could not be proved on this return path
+github-issue-166-negative.dfy(3,22): Related location: this is the postcondition that could not be proved
+github-issue-166-negative.dfy(9,2): Error: a postcondition could not be proved on this return path
+github-issue-166-negative.dfy(8,30): Related location: this is the postcondition that could not be proved
+github-issue-166-negative.dfy(14,2): Error: a postcondition could not be proved on this return path
+github-issue-166-negative.dfy(13,48): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 0 verified, 3 errors
+negative (type-system-refresh:true, additional-axioms:true)
+github-issue-166-negative.dfy(4,2): Error: a postcondition could not be proved on this return path
+github-issue-166-negative.dfy(3,22): Related location: this is the postcondition that could not be proved
+github-issue-166-negative.dfy(9,2): Error: a postcondition could not be proved on this return path
+github-issue-166-negative.dfy(8,30): Related location: this is the postcondition that could not be proved
+github-issue-166-negative.dfy(14,2): Error: a postcondition could not be proved on this return path
+github-issue-166-negative.dfy(13,48): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 0 verified, 3 errors
+positive (type-system-refresh:false, additional-axioms:false)
+
+Dafny program verifier finished with 4 verified, 0 errors
+positive (type-system-refresh:false, additional-axioms:true)
+
+Dafny program verifier finished with 4 verified, 0 errors
+positive (type-system-refresh:true, additional-axioms:false)
+
+Dafny program verifier finished with 4 verified, 0 errors
+positive (type-system-refresh:true, additional-axioms:true)
+
+Dafny program verifier finished with 4 verified, 0 errors
+false-control (type-system-refresh:false, additional-axioms:false)
+github-issue-166-false-control.dfy(7,2): Error: assertion might not hold
+
+Dafny program verifier finished with 1 verified, 1 error
+false-control (type-system-refresh:false, additional-axioms:true)
+github-issue-166-false-control.dfy(7,2): Error: assertion might not hold
+
+Dafny program verifier finished with 1 verified, 1 error
+false-control (type-system-refresh:true, additional-axioms:false)
+github-issue-166-false-control.dfy(7,2): Error: assertion might not hold
+
+Dafny program verifier finished with 1 verified, 1 error
+false-control (type-system-refresh:true, additional-axioms:true)
+github-issue-166-false-control.dfy(7,2): Error: assertion might not hold
+
+Dafny program verifier finished with 1 verified, 1 error

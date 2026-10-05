@@ -1,0 +1,1 @@
+Exact-let expressions in a function's own postcondition preserve the self-call allowance, preventing the function from assuming its own unproved contract while checking that postcondition.
