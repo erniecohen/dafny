@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using DafnyCore.Verifier;
 using Bpl = Microsoft.Boogie;
 
@@ -70,6 +71,9 @@ public partial class BoogieGenerator {
       builder.Add(summary);
     }
   }
+
+  private Bpl.Expr HigherOrderRequirement(IOrigin origin, int arity, IEnumerable<Bpl.Expr> arguments) =>
+    FunctionCall(origin, Requires(arity), Bpl.Type.Bool, arguments.ToList());
 
   private Bpl.Expr AllocationObligation(IOrigin origin, Bpl.Expr value, Type type,
     ExpressionTranslator etran) {

@@ -878,7 +878,10 @@ namespace Microsoft.Dafny {
           var id = new Boogie.IdentifierExpr(GetToken(e), e.Function.FullSanitizedName, ty);
 
           var args = FunctionInvocationArguments(e, layerArgument, revealArgument, false, out var argsAreLit);
-          Expr result = new Boogie.NAryExpr(GetToken(e), new Boogie.FunctionCall(id), args);
+          Expr result = options.Get(CommonOptionBag.ConsistentObligationChecks) &&
+            e.Function.Name == "requires" && e.Function.EnclosingClass is ArrowTypeDecl arrow
+              ? BoogieGenerator.HigherOrderRequirement(GetToken(e), arrow.Arity, args)
+              : new Boogie.NAryExpr(GetToken(e), new Boogie.FunctionCall(id), args);
           result = BoogieGenerator.CondApplyUnbox(GetToken(e), result, e.Function.ResultType, e.Type);
 
           bool callIsLit = argsAreLit
@@ -1847,7 +1850,9 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
               Cons(TrExpr(e.Function),
                 e.Args.ConvertAll(arg => TrArg(arg)))));
 
-          var requiresk = FunctionCall(e.Origin, Requires(e.Args.Count), Boogie.Type.Bool, args);
+          var requiresk = options.Get(CommonOptionBag.ConsistentObligationChecks)
+            ? BoogieGenerator.HigherOrderRequirement(e.Origin, e.Args.Count, args)
+            : FunctionCall(e.Origin, Requires(e.Args.Count), Boogie.Type.Bool, args);
           return BplAnd(
             BplAnd(
               Cons(CanCallAssumption(e.Function, cco),

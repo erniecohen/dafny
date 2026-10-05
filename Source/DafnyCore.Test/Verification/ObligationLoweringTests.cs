@@ -51,9 +51,9 @@ public class ObligationLoweringTests {
     const string source = "datatype D = D(i: int) ghost predicate P(d: D) { d.i >= 0 } type S = d: D | P(d) witness D(0) lemma L(x: D) requires x.i >= 0 { assert P(x); var y: S := x; }";
     var packages = new List<BoogieGenerator.PropositionLowering>();
     await Translate(source, true, observer: packages.Add);
-    var explicitCheck = packages.Single(p => p.Source is FunctionCallExpr { Function.Name: "P" } &&
+    var explicitCheck = packages.Single(p => p.Source.Resolved is FunctionCallExpr { Function.Name: "P" } &&
       p.Inputs.Preparation == BoogieGenerator.ObligationPreparation.CheckedExpression);
-    var implicitChecks = packages.Where(p => p.Source is FunctionCallExpr { Function.Name: "P" } &&
+    var implicitChecks = packages.Where(p => p.Source.Resolved is FunctionCallExpr { Function.Name: "P" } &&
       p.Inputs.Preparation == BoogieGenerator.ObligationPreparation.GuardedIntroduction).ToList();
     Assert.Contains(implicitChecks, p => ObligationFingerprint.Content(p) == ObligationFingerprint.Content(explicitCheck));
     Assert.All(implicitChecks, p => Assert.NotNull(p.Inputs.Guard));

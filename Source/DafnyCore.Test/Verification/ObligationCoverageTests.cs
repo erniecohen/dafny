@@ -47,12 +47,13 @@ public class ObligationCoverageTests {
     ["BoogieGenerator.TrCall.cs"]="method-calls",
     ["BoogieGenerator.TrPredicateStatement.cs"]="explicit-predicates",
     ["MatchVerifier.cs"]="match-completeness",
+    ["IfStatementVerifier.cs"]="if-guards",
     ["BoogieGenerator.TrStatement.cs"]="statement-wf-calculations",
     ["BoogieGenerator.TrForallStmt.cs"]="forall-proof-export",
     ["BoogieGenerator.TrAssignment.cs"]="assignment-initialization"
   };
 
-  private record Site(string File, string Member, string Producer, string Family, int Count, string Hash);
+  private record Site(string File, string Member, string Producer, string Family, int Count, string Hash, string FileHash);
 
   [Fact]
   public void EveryProducerMatchesTheReviewedInventory() {
@@ -95,7 +96,8 @@ public class ObligationCoverageTests {
     }
     var inventory=sites.GroupBy(s=>(s.File,s.Member,s.Producer,s.Family))
       .Select(g=>new Site(g.Key.File,g.Key.Member,g.Key.Producer,g.Key.Family,g.Count(),
-        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join("\n",g.Select(s=>s.Tokens).Order()))))))
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join("\n",g.Select(s=>s.Tokens).Order())))),
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(File.ReadAllText(Path.Combine(root,g.Key.File)).Replace("\r\n","\n"))))))
       .OrderBy(s=>s.File).ThenBy(s=>s.Member).ThenBy(s=>s.Producer).ToList();
     var json=JsonSerializer.Serialize(inventory,new JsonSerializerOptions{WriteIndented=true});
     var capture=Environment.GetEnvironmentVariable("OBLIGATION_INVENTORY_CAPTURE");

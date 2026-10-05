@@ -631,7 +631,9 @@ namespace Microsoft.Dafny {
                 Token.NoToken);
 
               // check precond
-              var bPrecond = FunctionCall(e.Origin, Requires(arity), Bpl.Type.Bool, args);
+              var bPrecond = options.Get(CommonOptionBag.ConsistentObligationChecks)
+                ? HigherOrderRequirement(e.Origin, arity, args)
+                : FunctionCall(e.Origin, Requires(arity), Bpl.Type.Bool, args);
               builder.Add(Assert(GetToken(expr), bPrecond,
                 new PreconditionSatisfied(dPrecond, null, null), builder.Context));
             }
@@ -792,7 +794,9 @@ namespace Microsoft.Dafny {
               // an explicit precondition, which is added as an axiom in Translator.cs
               if (e.Function.Name == "reads" && !e.Receiver.Type.IsArrowTypeWithoutReadEffects) {
                 var arguments = etran.FunctionInvocationArguments(e, null, null);
-                var precondition = FunctionCall(e.Origin, Requires(e.Args.Count), Bpl.Type.Bool, arguments);
+                var precondition = options.Get(CommonOptionBag.ConsistentObligationChecks)
+                  ? HigherOrderRequirement(e.Origin, e.Args.Count, arguments)
+                  : FunctionCall(e.Origin, Requires(e.Args.Count), Bpl.Type.Bool, arguments);
                 builder.Add(Assert(GetToken(expr), precondition, new PreconditionSatisfied(null, null, null), builder.Context));
 
                 if (wfOptions.DoReadsChecks) {

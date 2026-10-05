@@ -1,0 +1,1 @@
+Add the experimental, default-off `--consistent-obligation-checks` option to share local proposition lowering across assertions, visible type constraints and contracts while retaining the original membership and procedure checks.

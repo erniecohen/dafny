@@ -2348,6 +2348,7 @@ and what information it produces about the verification process.
 * `--manual-lemma-induction` - disables automatic induction for lemmas
 
 * `--isolate-assertions` - verify assertions individually
+* `--consistent-obligation-checks` - use occurrence-local lowering for assertions and matching implicit obligations (experimental, disabled by default; also a project-file option).
 
 * `--extract-counterexample` - if verification fails, report a potential
   counterexample as a set of assumptions that can be inserted into the code.

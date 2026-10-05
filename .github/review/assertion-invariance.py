@@ -35,8 +35,9 @@ for case in cases:
        f"--consistent-obligation-checks:{str(enabled).lower()}",
        "--boogie","/normalizeDeclarationOrder:0","--boogie",f"/randomSeed:{seed}",
        "--bprint",str(directory/"program.bpl"),
-       "--solver-log",str(directory/"solver.smt2"),
        "--log-format",f"csv;LogFileName={directory/'resources.csv'}"]
+     if source.stem in ["issue100-original","issue100-explicit","issue100-final-true","subset-short","subset-short-explicit","negative-self-postcondition-let"]:
+      command.extend(["--solver-log",str(directory/"solver.smt2"),"--pprint",str(directory/"passive.bpl")])
      if args.shipped: command.append(f"--additional-axioms:{str(axioms).lower()}")
      result=capture(command)
      (directory/"output.txt").write_text(result.stdout)

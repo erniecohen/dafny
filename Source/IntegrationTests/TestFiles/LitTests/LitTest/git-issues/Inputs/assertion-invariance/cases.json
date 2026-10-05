@@ -293,5 +293,385 @@
     "name": "issue4217-explicit",
     "expected": 0,
     "group": "historical"
+  },
+  {
+    "name": "bounds",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "bounds-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "domain",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "domain-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "non-null",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "non-null-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "destructor",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "destructor-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "division",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "division-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "bv-range",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "bv-range-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "integer-integrality",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "integer-integrality-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "ordinal-range",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "ordinal-range-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "char-range",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "char-range-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "higher-precondition",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "higher-precondition-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "method-precondition",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "method-precondition-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "generic-precondition",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "generic-precondition-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "receiver-precondition",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "receiver-precondition-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "ordered-preconditions",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "ordered-preconditions-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "subset-conjunction",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "subset-conjunction-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "subset-existential",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "subset-existential-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "subset-implication",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "subset-implication-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "lambda-result",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "lambda-result-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "constructor-argument",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "constructor-argument-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "old-receiver",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "old-receiver-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "old-generic",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "old-generic-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "old-datatype",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "old-datatype-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "old-function-value",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "old-function-value-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "old-heap-function",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "old-heap-function-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "labeled-old",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "labeled-old-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "negative-lambda-result",
+    "expected": 4,
+    "group": "negative"
+  },
+  {
+    "name": "negative-constructor-argument",
+    "expected": 4,
+    "group": "negative"
+  },
+  {
+    "name": "negative-subset-existential",
+    "expected": 4,
+    "group": "negative"
+  },
+  {
+    "name": "negative-subset-conjunction",
+    "expected": 4,
+    "group": "negative"
+  },
+  {
+    "name": "negative-subset-implication",
+    "expected": 4,
+    "group": "negative"
+  },
+  {
+    "name": "negative-generic-precondition",
+    "expected": 4,
+    "group": "negative"
+  },
+  {
+    "name": "negative-receiver-precondition",
+    "expected": 4,
+    "group": "negative"
+  },
+  {
+    "name": "negative-old-receiver",
+    "expected": 4,
+    "group": "negative"
+  },
+  {
+    "name": "negative-label-allocation",
+    "expected": 4,
+    "group": "negative"
+  },
+  {
+    "name": "negative-early-return",
+    "expected": 4,
+    "group": "negative"
+  },
+  {
+    "name": "negative-iterator-yield",
+    "expected": 4,
+    "group": "negative"
+  },
+  {
+    "name": "negative-loop-invariant",
+    "expected": 4,
+    "group": "negative"
+  },
+  {
+    "name": "negative-empty-domain",
+    "expected": 4,
+    "group": "negative"
+  },
+  {
+    "name": "negative-hidden-after-reveal",
+    "expected": 4,
+    "group": "negative"
+  },
+  {
+    "name": "return-ite",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "return-ite-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "return-match",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "return-match-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "return-multiple-return",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "return-multiple-return-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "sibling-exists",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "sibling-exists-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "negated-nested",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "negated-nested-explicit",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "quantified-ite",
+    "expected": 0,
+    "group": "generated"
+  },
+  {
+    "name": "quantified-ite-explicit",
+    "expected": 0,
+    "group": "generated"
   }
 ]
