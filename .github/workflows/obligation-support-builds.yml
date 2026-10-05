@@ -1,6 +1,9 @@
 name: Obligation support binaries
 on:
   workflow_dispatch:
+  push:
+    branches: [scratch/codex/issue100-review]
+    paths: [.github/workflows/obligation-support-builds.yml]
 permissions:
   contents: read
 jobs:
