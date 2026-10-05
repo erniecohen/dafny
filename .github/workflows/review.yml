@@ -364,7 +364,7 @@ jobs:
           echo "dafny --version: $v"
           test "$v" = "${{ needs.build.outputs.version }}"
           out/dafny/dafny verify --solver-path "$z/bin/z3" \
-            Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-6537.dfy
+            Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-145.dfy
       - name: Zip
         run: |
           name=dafny-${{ needs.build.outputs.version }}-${{ matrix.rid }}.zip
