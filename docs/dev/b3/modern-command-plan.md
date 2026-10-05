@@ -108,3 +108,11 @@ The English/data design has been reviewed. Source-only implementation starts fro
 ## Evidence boundary
 
 This checkpoint is source-only. No modern B3 command has been compiled, executed or proved for this change. Planned controls and source inventory are not acceptance results. Implementation must be frozen with actual method, parameter, display and source identities before any separately reviewed compiler or command gate. Existing worker, corpus, package and default-verifier parity gaps remain open.
+
+## Structured admission diagnostic addendum
+
+Source review found that the legacy file helper's separate standard-library reporter can emit a validation error and omit a requested file while returning its existing success exit value. It can also emit admission warnings before the neutral CLI has subscribed. The modern prepared-root continuation must retain those diagnostics; neither helper success nor an empty root list is proof of complete admission.
+
+The B3-only caller supplies one structured batch reporter through an optional file-helper argument. When the argument is absent, every existing default/legacy reporter and helper behavior is retained. The new caller freezes source, source-library and standard-library admission diagnostics with its prepared input collection. Errors and warning-as-error are rejected before constructing the parent compilation. Allowed diagnostics are replayed once through the owned CLI diagnostic subscription before Start, so they participate in existing warning policy and console reporting. This adds no library trust rule, source reread, output-text parsing or successful empty-input heuristic.
+
+Prospective controls include omitted standard-library admission, source-library errors, allowed admission warnings and rejected warnings. These are implementation controls, not a claim that the 67 planning rows form an executed test census.
