@@ -31,7 +31,7 @@ for case in cases:
      directory=output/name; directory.mkdir(exist_ok=True)
      command=[str(exe),"verify",str(source),"--solver-path",str(solver),"--cores","1",
        "--resource-limit","16000000","--verification-time-limit","30",
-       f"--type-system-refresh:{str(refresh).lower()}",
+       f"--type-system-refresh:{str(refresh).lower()}", f"--general-newtypes:{str(refresh).lower()}",
        f"--consistent-obligation-checks:{str(enabled).lower()}",
        "--boogie","/normalizeDeclarationOrder:0","--boogie",f"/randomSeed:{seed}",
        "--bprint",str(directory/"program.bpl"),
