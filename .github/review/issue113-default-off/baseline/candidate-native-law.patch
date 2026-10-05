@@ -44,14 +44,14 @@
            BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, environment.Heap));
          if (HeapExpr != null && HeapExpr is not Boogie.IdentifierExpr { Name: "$OneHeap" }) {
            guard = BplAnd(guard, BoogieGenerator.HeapSameOrSucc(HeapExpr, environment.Heap));
-@@ -1739,6 +1749,23 @@
+@@ -1739,6 +1749,29 @@
          return reads.Count == 0 ? BplAnd(footprintFact, guardedFacts) : guardedFacts;
        }
  
 +      // An instance of the existing unconditional native precondition law.
 +      // #requires has a fuel parameter when fuel-aware; #canCall does not.
 +      // No precondition or allocation fact is asserted by this implication.
-+      private Expr NativeFunctionRequiresLaw(FunctionCallExpr e, Expr canCall) {
++      private Expr NativeFunctionRequiresLaw(FunctionCallExpr e, Expr canCall, List<Expr> canCallArguments) {
 +        Expr layer = null;
 +        if (e.Function.IsFuelAware()) {
 +          layer = applyLimited_CurrentFunction != null && layerIntraCluster != null &&
@@ -59,7 +59,13 @@
 +            ? layerIntraCluster.GetFunctionFuel(e.Function)
 +            : layerInterCluster.GetFunctionFuel(e.Function);
 +        }
-+        var args = FunctionInvocationArguments(e, layer, null);
++        // Reuse the exact terms already translated for #canCall. Translating
++        // actuals again can consume an ASSUME fuel adjustment or fresh lambda
++        // names. The native #requires signature adds only fuel, after type args.
++        var args = new List<Expr>(canCallArguments);
++        if (layer != null) {
++          args.Insert(GetTypeParams(e.Function).Count, layer);
++        }
 +        var requires = FunctionCall(e.Origin, BoogieGenerator.RequiresName(e.Function),
 +          Boogie.Type.Bool, args);
 +        return BplImp(requires, canCall);
@@ -68,7 +74,7 @@
        private Expr ArrowApplicationAllocationFact(ApplyExpr e) {
          var arrow = e.Function.Type.AsArrowType;
          var heap = HeapExprForArrow(e.Function.Type);
-@@ -2228,7 +2255,7 @@
+@@ -2228,7 +2261,7 @@
          } else if (expr is MemberSelectExpr) {
            MemberSelectExpr e = (MemberSelectExpr)expr;
            var r = CanCallAssumption(e.Obj, cco);
@@ -77,7 +83,7 @@
              var dtor = (DatatypeDestructor)e.Member;
              if (dtor.EnclosingCtors.Count == dtor.EnclosingCtors[0].EnclosingDatatype.Ctors.Count) {
                // Every constructor has this destructor; might as well assume that here.
-@@ -2240,7 +2267,8 @@
+@@ -2240,7 +2273,8 @@
              // The type arguments are substituted too: the right-hand side is stated in terms of the enclosing
              // type's type parameters, which are not in scope here (and BplForallTrim may keep a bound
              // variable's type antecedent, which mentions them).
@@ -87,7 +93,7 @@
            }
            return r;
          } else if (expr is SeqSelectExpr) {
-@@ -2265,6 +2293,9 @@
+@@ -2265,6 +2299,9 @@
  
          } else if (expr is ApplyExpr) {
            ApplyExpr e = (ApplyExpr)expr;
@@ -97,7 +103,7 @@
  
            Func<Expression, Boogie.Expr> TrArg = arg => {
              Boogie.Expr inner = TrExpr(arg);
-@@ -2302,8 +2333,18 @@
+@@ -2302,8 +2339,18 @@
              Boogie.IdentifierExpr canCallFuncID = new Boogie.IdentifierExpr(expr.Origin, e.Function.FullSanitizedName + "#canCall", Boogie.Type.Bool);
              List<Boogie.Expr> args = FunctionInvocationArguments(e, null, null);
              Boogie.Expr canCallFuncAppl = new Boogie.NAryExpr(BoogieGenerator.GetToken(expr), new Boogie.FunctionCall(canCallFuncID), args);
@@ -109,7 +115,7 @@
 +              // Arrow .reads/.requires selectors have only their specialized
 +              // inline #canCall declaration, not a native #requires predicate.
 +              if (!cco.MakeAllowance(e.Function) && e.Function.EnclosingClass is not ArrowTypeDecl) {
-+                r = BplAnd(r, NativeFunctionRequiresLaw(e, canCallFuncAppl));
++                r = BplAnd(r, NativeFunctionRequiresLaw(e, canCallFuncAppl, args));
 +              }
 +            } else {
 +              var add = cco != null && cco.MakeAllowance(e.Function) ? Boogie.Expr.Or(TrExpr(MakeAllowance(e, cco)), canCallFuncAppl) : canCallFuncAppl;
@@ -118,7 +124,7 @@
            }
            return r;
          } else if (expr is DatatypeValue) {
-@@ -2311,6 +2352,11 @@
+@@ -2311,6 +2358,11 @@
            return CanCallAssumption(dtv.Arguments, cco);
          } else if (expr is SeqConstructionExpr) {
            var e = (SeqConstructionExpr)expr;
@@ -130,7 +136,7 @@
            // CanCallAssumption[[ seq(n, init) ]] =
            //     CanCallAssumption[[ n ]] &&
            //     CanCallAssumption[[ init ]] &&
-@@ -2375,7 +2421,13 @@
+@@ -2375,7 +2427,16 @@
            return LetCanCallAssumption(letExpr, cco);
  
          } else if (expr is LambdaExpr lambda) {
@@ -139,13 +145,16 @@
 +            return LambdaCanCallAssumption(lambda, cco);
 +          }
 +          var facts = BplAnd(LambdaCanCallAssumption(lambda, cco), LambdaAllocation(lambda));
++          if (!options.Get(CommonOptionBag.AdditionalAxioms)) {
++            return facts;
++          }
 +          var laws = LambdaCanCallAssumption(lambda,
 +            (cco ?? new CanCallOptions(false, null)).WithNativeFunctionLaws());
 +          return BplAnd(facts, laws);
  
          } else if (expr is ComprehensionExpr) {
            var e = (ComprehensionExpr)expr;
-@@ -2398,6 +2450,9 @@
+@@ -2398,6 +2459,9 @@
            // Produce the quantified CanCall expression, with a suitably reduced set of bound variables
            var tr = BoogieGenerator.TrTrigger(this, e.Attributes, expr.Origin);
            var childFacts = BplForallTrim(bvarsAndAntecedents, tr, canCall, possiblyEmpty);
@@ -155,7 +164,7 @@
            childFacts = AddFiniteComprehensionCanCallTrigger(e, bvarsAndAntecedents, childFacts);
            if (e is MapComprehension { IsGeneralMapComprehension: true } generalMap) {
              childFacts = BplAnd(childFacts, DefineMapSelectedWitnesses(generalMap));
-@@ -2464,6 +2519,7 @@
+@@ -2464,6 +2528,7 @@
      public class CanCallOptions {
        public bool SkipIsA;
        public readonly bool ArrowAllocationFacts;
@@ -163,7 +172,7 @@
  
        public readonly Function EnclosingFunction; // self-call allowance is applied to the enclosing function
        public readonly bool SelfCallAllowanceAlsoForOverride;
-@@ -2474,16 +2530,23 @@
+@@ -2474,16 +2539,28 @@
  
        public CanCallOptions WithArrowAllocationFacts() {
          return ArrowAllocationFacts ? this :
@@ -179,7 +188,12 @@
  
        public CanCallOptions(bool skipIsA, Function enclosingFunction, bool selfCallAllowanceAlsoForOverride = false,
 -        bool arrowAllocationFacts = false) {
-+        bool arrowAllocationFacts = false, bool nativeFunctionLawsOnly = false) {
++        bool arrowAllocationFacts = false)
++        : this(skipIsA, enclosingFunction, selfCallAllowanceAlsoForOverride, arrowAllocationFacts, false) {
++      }
++
++      private CanCallOptions(bool skipIsA, Function enclosingFunction, bool selfCallAllowanceAlsoForOverride,
++        bool arrowAllocationFacts, bool nativeFunctionLawsOnly) {
          Contract.Assert(!selfCallAllowanceAlsoForOverride ||
                          (enclosingFunction.OverriddenFunction != null &&
                           enclosingFunction.Ins.Count == enclosingFunction.OverriddenFunction.Ins.Count));

@@ -176,16 +176,18 @@
   "candidate": {
     "base_product": "4e50e86cde6ab2ef6cab0762ffc4df59d646dc15",
     "patch_file": "baseline/candidate-native-law.patch",
-    "patch_sha256": "44a3b372893844e7128e6a6bee567c8cb4fc8ec3160c849eaa2669991610a3ba",
-    "composed_tree": "95314c13df2829b92df42816ef01d03fb142c0c0",
-    "core_tree": "aec7a69ea40a89bb398818b3af551fc98cc6b94e",
-    "product_revision": "4e50e86cde6ab2ef6cab0762ffc4df59d646dc15+patch:44a3b372893844e7128e6a6bee567c8cb4fc8ec3160c849eaa2669991610a3ba",
-    "source_revision_id": "fcb2042d.review.c9c7622d.candidate.44a3b372",
+    "patch_sha256": "e050312cf42cef71a9f0e404c4b98df1f75d96b26306da67276846fa0bb919e9",
+    "composed_tree": "5b924f4012464b2f8aac845c1a193236c22ccf78",
+    "core_tree": "95fb3e9316e02259e4a004734d621a5c03951212",
+    "product_revision": "4e50e86cde6ab2ef6cab0762ffc4df59d646dc15+patch:e050312cf42cef71a9f0e404c4b98df1f75d96b26306da67276846fa0bb919e9",
+    "source_revision_id": "fcb2042d.review.c9c7622d.candidate.e050312c",
     "changed_paths": [
       "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs",
       "Source/DafnyCore/Verifier/BoogieGenerator.LetExpr.cs",
       "Source/DafnyCore/Verifier/Expressions/TranslateBinaryExpr.cs"
     ],
-    "status": "Unconditionally measured diagnostic proposal; not approved shipping Source, not a default-off axiom-policy waiver; required acceptance decision remains separate"
+    "status": "Source-reviewed opt-in diagnostic proposal with exact reused Boogie actuals; build and proof acceptance pending. No source adoption or default-policy exception.",
+    "source_tree": "f8715951b1d481236cab3f6bab3e1aed04ca3a49",
+    "issue": 165
   }
 }
