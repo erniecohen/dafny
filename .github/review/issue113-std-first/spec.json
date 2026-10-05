@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "repository": "erniecohen/dafny",
+  "lines": {
+    "dev": {
+      "original": "97601b75712f458de37a13bf9953a0b7825122eb",
+      "repaired_product": "b615831aaa26fea72364627d0fe6040f10e49eee",
+      "final_product": "a5304cd9aeb5e4fd12700aa2e61125a904d58996",
+      "repaired_tree": "d8c5b69f56594c6a5426b823cf86adcad889a39c",
+      "repaired_core_tree": "e2e8bb392aa2d2b02650370f0bbc66ac82107ff5",
+      "original_tree": "b02fbb7e3adf388eac419c4786c00033a30aa45a",
+      "patch_sha256": "4042f1b7f067233549e2bf5ae100c4ec86f9dc3f5b65004edc359365c6548899",
+      "inputs_sha256": "ff5985528bb5a0e23f6ef6a5b2321791ac4ebbdd6de4281e611ad846743b1b03",
+      "reference_solver": "4.16.0",
+      "components": [
+        {
+          "component": "146",
+          "source_base": "97601b75712f458de37a13bf9953a0b7825122eb",
+          "source_tip": "bbb976925398e187d861a2a39735e351be056e38",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "141-first",
+          "source_base": "52cca1a44588f1bbc5a3a8559e7d0e533783dc93",
+          "source_tip": "0a7022f95adbf1ce61b925f0bdbbd5463d596b04",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "141-scoped",
+          "source_base": "2f35aa2709fb850bb376c2d3e0c5b44f3a04b3a2",
+          "source_tip": "1099792ee1888fd07e41db26bedea385a4561fba",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "145",
+          "source_base": "97601b75712f458de37a13bf9953a0b7825122eb",
+          "source_tip": "7e2bfce7ff0fd17b0d420ec22dbfbef83ff24b87",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "142",
+          "source_base": "97601b75712f458de37a13bf9953a0b7825122eb",
+          "source_tip": "9626e60db5f419ca80b1273d65358934d3ccc706",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "143",
+          "source_base": "97601b75712f458de37a13bf9953a0b7825122eb",
+          "source_tip": "391d4f436acf61ed356e214ca83834af64ba2515",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "148",
+          "source_base": "2e94e9a19d609b8efa18a542ebfedd3bc1aae928",
+          "source_tip": "ce275984077f4e395d7928bd8ee80c0e02494937",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "132-owner",
+          "source_base": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d",
+          "source_tip": "8848d92ffd079e0be6a9780e03ea824ee85c0d1d",
+          "adaptation": "Preserve the existing dev BplForallTrim signature: omit shipped-only possiblyEmpty argument in the lambda can-call site; allocation rule unchanged."
+        },
+        {
+          "component": "132-all-nt-port",
+          "source_base": "ce1b0ff1d38a03962c06547f438651b768aeb654",
+          "source_tip": "1ae9032de8777be2ca7ea8150b19c2661ca94462",
+          "adaptation": "Exact Types helper + CycleAnalysis; insert final NT reference branch separately, exclude feature-only NewtypeDecl marker comment."
+        },
+        {
+          "component": "132-dev-branch-adaptation",
+          "source_tip": "1ae9032de8777be2ca7ea8150b19c2661ca94462",
+          "adaptation": "copy exact final NT reference branch only; no 113 equality/operation markers"
+        },
+        {
+          "component": "132-dev-owner-constant-rhs-map",
+          "source_base": "2fbe255bbaca7ec5e1ee470ca7295a316894ff52",
+          "source_tip": "b615831aaa26fea72364627d0fe6040f10e49eee",
+          "adaptation": "Preserve the existing shipped owner constant-field RHS actual type-argument substitution in the development allocation port; one hunk only."
+        }
+      ],
+      "resolver_default": true
+    }
+  },
+  "solver_5_1_0": {
+    "url": "https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip",
+    "sha256": "f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a"
+  },
+  "reference_solvers": {
+    "4.16.0": {
+      "url": "https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.16.0-x64-ubuntu-24.04-bin.zip",
+      "sha256": "87de9c9e86c877abfccb00cf24b946c4a1bda7b9cba6f363ea58311d2573c320"
+    }
+  },
+  "focused_scope": {
+    "cohort": "std",
+    "line": "dev",
+    "arms": [
+      "original",
+      "baseline",
+      "final"
+    ],
+    "primary_comparison": "baseline/final",
+    "original_context": "original/baseline and original/final; no acceptance of changes inferred"
+  }
+}
