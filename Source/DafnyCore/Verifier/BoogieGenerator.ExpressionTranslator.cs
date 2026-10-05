@@ -1701,6 +1701,64 @@ namespace Microsoft.Dafny {
         return BplImp(BplAnd(BplAnd(goodHeap, allocated), requires), resultAllocated);
       }
 
+      /// <summary>
+      /// A lambda value is allocated in any good heap in which what it captures is allocated: its free variables, and
+      /// "this" if it uses it.  A lambda that uses the previous heap ("old", "fresh", "unchanged", a two-state function
+      /// or lemma) or the heap at a label also captures that heap, which the heap must be or succeed.  The arrow
+      /// allocation axiom is an implication, from an allocated function value to its reads set and results
+      /// (erniecohen/dafny#132), so this is how a lambda is known to be allocated.
+      /// </summary>
+      private Expr LambdaAllocation(LambdaExpr e) {
+        bool usesHeap = false, usesOldHeap = false;
+        var heapAt = new HashSet<Label>();
+        Type usesThis = null;
+        var fvs = new HashSet<IVariable>();
+        FreeVariablesUtil.ComputeFreeVariables(BoogieGenerator.options, e, fvs, ref usesHeap, ref usesOldHeap, heapAt, ref usesThis, true);
+        usesOldHeap |= UsesPreviousHeap(e);
+        var varNameGen = BoogieGenerator.CurrentIdGenerator.NestedFreshIdGenerator("$la#");
+        var hVar = BplBoundVar(varNameGen.FreshId("#heap#"), Predef.HeapType, out var h);
+        Bpl.Expr captured = BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, h);
+        var capturedHeaps = new List<Bpl.Expr>();
+        if (usesOldHeap) {
+          capturedHeaps.Add(Old.HeapExpr);
+        }
+        foreach (var label in heapAt.OrderBy(l => l.Name)) {
+          capturedHeaps.Add(OldAt(label).HeapExpr);
+        }
+        foreach (var heap in capturedHeaps) {
+          if (heap == null) {
+            return Expr.True;
+          }
+          captured = BplAnd(captured, BplOr(Bpl.Expr.Eq(heap, h), BoogieGenerator.HeapSucc(heap, h)));
+        }
+        foreach (var v in fvs.OrderBy(v => v.UniqueName)) {
+          if (v.Type.MayShowReferences) {
+            captured = BplAnd(captured, BoogieGenerator.MkIsAlloc(BoogieGenerator.TrVar(e.Origin, v), v.Type, h));
+          }
+        }
+        if (usesThis != null) {
+          captured = BplAnd(captured, BoogieGenerator.MkIsAlloc(new Bpl.IdentifierExpr(e.Origin, This, BoogieGenerator.TrType(usesThis)), usesThis, h));
+        }
+        // A trigger cannot hold the lambda, which binds variables, so a let names its value.
+        var fVar = BplBoundVar(varNameGen.FreshId("#f#"), Predef.HandleType, out var f);
+        var allocated = BoogieGenerator.MkIsAlloc(f, e.Type.AsArrowType, h);
+        var rule = new Bpl.ForallExpr(e.Origin, [hVar], BplTrigger(allocated), BplImp(captured, allocated));
+        return new Bpl.LetExpr(e.Origin, [fVar], [TrExpr(e)], null, rule);
+      }
+
+      /// <summary>
+      /// Whether the expression uses the previous heap in a way that ComputeFreeVariables does not report:
+      /// a two-state function without a label, called or as a value, or a call of a two-state lemma without
+      /// a label in a statement of the expression.  None of these occurs in a one-state context, whose
+      /// translation has no previous heap.
+      /// </summary>
+      private static bool UsesPreviousHeap(Expression e) {
+        return e is FunctionCallExpr { Function: TwoStateFunction, AtLabel: null }
+          || e is MemberSelectExpr { Member: TwoStateFunction or TwoStateLemma, AtLabel: null }
+          || (e is StmtExpr s && s.S.SubExpressionsIncludingTransitiveSubStatements.Any(UsesPreviousHeap))
+          || e.SubExpressions.Any(UsesPreviousHeap);
+      }
+
       public Expression DesugarMatchExpr(MatchExpr e) {
         Contract.Requires(e != null);
         // Translate:
@@ -2315,7 +2373,7 @@ namespace Microsoft.Dafny {
           return LetCanCallAssumption(letExpr, cco);
 
         } else if (expr is LambdaExpr lambda) {
-          return LambdaCanCallAssumption(lambda, cco);
+          return BplAnd(LambdaCanCallAssumption(lambda, cco), LambdaAllocation(lambda));
 
         } else if (expr is ComprehensionExpr) {
           var e = (ComprehensionExpr)expr;

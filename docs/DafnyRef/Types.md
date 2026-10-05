@@ -810,6 +810,12 @@ datatype Result<T> = Failure(error: string) | Success(value: T)
 the instantiation `Result<int>` satisfies `(!new)`, whereas
 `Result<array<int>>` does not.
 
+A function value may capture references, and a value of a general arrow type
+`A ~> B` shows them through its reads frame (`f.reads`). So `A ~> B` does not
+satisfy `(!new)`, whatever `A` and `B` are. A partial arrow `A --> B` or a total
+arrow `A -> B` reads nothing, so it satisfies `(!new)` when `A` and `B` do:
+`int -> int` does, while `int ~> int` and `int -> array<int>` do not.
+
 Note that this characteristic of a type parameter is operative for both
 verification and compilation.
 Also, abstract types at the topmost scope are always implicitly `(!new)`.

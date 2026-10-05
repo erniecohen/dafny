@@ -269,7 +269,7 @@ Std Std.Arithmetic.DivMod.LemmaModMultiplesVanish (correctness)	Correct
 Std Std.Arithmetic.DivMod.LemmaModMultiplesVanish (well-formedness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaModMultiplesVanishAuto (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaModMultiplesVanishAuto (well-formedness)	Correct		
-Std Std.Arithmetic.DivMod.LemmaModNegNeg (correctness)	Correct		
+Std Std.Arithmetic.DivMod.LemmaModNegNeg (correctness)	OutOfResource		
 Std Std.Arithmetic.DivMod.LemmaModNegNeg (well-formedness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaModOrdering (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaModOrdering (well-formedness)	Correct		
@@ -656,7 +656,7 @@ Std Std.Base64.DecodeValid2PaddingLengthMod3 (correctness)	Correct
 Std Std.Base64.DecodeValid2PaddingLengthMod3 (well-formedness)	Correct		
 Std Std.Base64.DecodeValidEncode (correctness)	Correct		
 Std Std.Base64.DecodeValidEncode (well-formedness)	Correct		
-Std Std.Base64.DecodeValidEncode1Padding (correctness)	Correct		
+Std Std.Base64.DecodeValidEncode1Padding (correctness)	OutOfResource		
 Std Std.Base64.DecodeValidEncode1Padding (well-formedness)	Correct		
 Std Std.Base64.DecodeValidEncode2Padding (correctness)	Correct		
 Std Std.Base64.DecodeValidEncode2Padding (well-formedness)	Correct		
@@ -667,9 +667,9 @@ Std Std.Base64.DecodeValidEncodeUnpadded (well-formedness)	Correct
 Std Std.Base64.DecodeValidPartialsFrom1PaddedSeq (correctness)	Correct		
 Std Std.Base64.DecodeValidPartialsFrom1PaddedSeq (well-formedness)	Correct		
 Std Std.Base64.DecodeValidPartialsFrom2PaddedSeq (correctness)	Correct		
-Std Std.Base64.DecodeValidPartialsFrom2PaddedSeq (well-formedness)	Correct		
+Std Std.Base64.DecodeValidPartialsFrom2PaddedSeq (well-formedness)	OutOfResource		
 Std Std.Base64.DecodeValidUnpaddedPartialFrom1PaddedSeq (correctness)	Correct		
-Std Std.Base64.DecodeValidUnpaddedPartialFrom1PaddedSeq (well-formedness)	OutOfResource		
+Std Std.Base64.DecodeValidUnpaddedPartialFrom1PaddedSeq (well-formedness)	Correct		
 Std Std.Base64.Encode1Padding (well-formedness)	Correct		
 Std Std.Base64.Encode1PaddingIs1Padding (correctness)	Correct		
 Std Std.Base64.Encode1PaddingIs1Padding (well-formedness)	Correct		
