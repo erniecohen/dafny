@@ -56,7 +56,9 @@
       "diagnosticBranches": [
         "codex/b3-124-if-guard-focus-identity",
         "codex/b3-124-real-trace-inspection",
-        "codex/b3-124-if-guard-corpus"
+        "codex/b3-124-if-guard-corpus",
+        "codex/b3-124-real-roundtrip-focus",
+        "codex/b3-124-if-guard-corpus-assets"
       ]
     },
     "P8": {

@@ -124,7 +124,11 @@
       "corpusFocusSourceCommit": "a9cfba1fb93a85b1a3dfbeb0db97c1eacc9c85ad",
       "corpusFocusEvidence": "https://github.com/erniecohen/dafny/actions/runs/37255527639",
       "corpusFocusReceiptSha256": "9e3e7830ccb306ecc84abc4f89ab5dd04be79cee1e9bcf81f59cb46ad59a0aab",
-      "corpusFocusFinding": "The current CLI built successfully, but its dependency qualifier rejected a missing current-platform runtime asset before CLI version or either corpus case executed. Four owned stages and eight boundaries completed with no cleanup signals or residual children; the first 335-file CLI snapshot remained unchanged. The exact offending asset is absent from the receipt. The archived 590 proof and 37 runtime controls qualified for reuse only; no new library proof/runtime or corpus result is claimed."
+      "corpusFocusFinding": "The current CLI built successfully, but its dependency qualifier rejected a missing current-platform runtime asset before CLI version or either corpus case executed. Four owned stages and eight boundaries completed with no cleanup signals or residual children; the first 335-file CLI snapshot remained unchanged. The exact offending asset is absent from the receipt. The archived 590 proof and 37 runtime controls qualified for reuse only; no new library proof/runtime or corpus result is claimed.",
+      "corpusAssetsSourceCommit": "5502f2fdd2c396aeaa7bc26acd5dfcc3b2176371",
+      "corpusAssetsEvidence": "https://github.com/erniecohen/dafny/actions/runs/37260061599",
+      "corpusAssetsReceiptSha256": "e5122d1929d92deb35349e985189c99842e4081476cb0e4e686a30adce5b3679",
+      "corpusAssetsFinding": "The current CLI build exited zero, but the unchanged dependency qualifier again failed before CLI version or either corpus case ran. The new raw assets snapshot and actually parsed bytes matched at 261,118 bytes, SHA-256 16a109fae3f9b890f229bc9dbb849fbecd19c00f4e19c40ed647dde35535b8f8. Its pending context identified Microsoft.Win32.Registry/4.6.0 runtime lib/netstandard2.0/Microsoft.Win32.Registry.dll, with both exact and flat copied candidates absent and no exact dependency-file entry. All 364 declared artifact file pins and the immutable first CLI snapshot matched; four stages recorded no cleanup signals or residual children, and asset preservation had no faults. This identifies the new run's entry only; the earlier assets remain unavailable. SDK/CLR selection correspondence is pending, and no missing-file waiver or corpus acceptance follows."
     },
     {
       "kind": "same-process native comparison qualification incomplete",
@@ -180,14 +184,18 @@
       "recheckFinding": "The read-only follow-up captured a candidate catalog of 13,567 files. Both exact official archives and all 284 embedded and uploaded members, including hidden files, matched. Source and final rechecks passed without primary or finalization faults. One relocatable object was classified outside the load graph. Nine liblttng-ust.so.0 dependencies and four source contracts remain unresolved; complete loader closure and the full diagnostic remain disabled. Runner files absent from the artifact cannot be independently rehashed."
     },
     {
-      "kind": "bounded Real round-trip preparation source checkpoint",
+      "kind": "bounded Real round-trip preparation focused checkpoint",
       "scope": "Separate codex/b3-124-real-roundtrip; not imported into this documented subset",
       "sourceCommit": "d115e6001fabdb61ae96c76e8798d90637386df3",
       "productCommit": "b82e8c27efa6fb4acdadfc4e3dadd786b5196bec",
       "sourceManifestSha256": "2b6901ceaca7a325abc7488cb121a705aea71e05964cb0c0ab9ab3c3cca52f9a",
       "source": "https://github.com/erniecohen/dafny/tree/codex/b3-124-real-roundtrip",
-      "finding": "Source review covers bounded owned capture before hashing, the typed integer/Real floor identity, conservative assignment-derived substitution and independent relation checking. Original G3 evidence, checks, learning, metadata and solver settings are preserved. Work identity binds each owned submitted configuration. The fixed 18-method/41-case census is unexecuted.",
-      "consequence": "Compilation, structural tests and actual Real worker/corpus acceptance remain pending. Opaque-context projection is deferred. This source checkpoint does not extend advertised support."
+      "finding": "Source review covers bounded owned capture before hashing, the typed integer/Real floor identity, conservative assignment-derived substitution and independent relation checking. Original G3 evidence, checks, learning, metadata and solver settings are preserved. Work identity binds each owned submitted configuration. The fixed 18-method/41-case census passed within the current-source 76-case focused run, together with the exact retained 35 guard controls.",
+      "consequence": "Compilation and these focused structural controls passed. Actual Real worker/corpus acceptance and opaque-context projection remain pending. The separate checkpoint does not extend this branch's advertised support.",
+      "focusedSourceCommit": "b12ec4fdaf2d533b82294cbcf9702de421bccbb7",
+      "focusedEvidence": "https://github.com/erniecohen/dafny/actions/runs/37259844177",
+      "focusedReceiptSha256": "22b478c79efd21cd6b33d464de0c9c4e3b370ec8378b7ef2d4b452e841c6983e",
+      "focusedFinding": "All 76 strict results, definitions and execution entries passed with exact names, current assembly identity and counters. All 260 declared artifact file pins and immutable Core/test snapshots matched. All five stages exited zero naturally, ten boundaries retained their source/toolchain pins, and no cleanup signals or residual children were recorded. Library, worker, corpus, default compatibility and backend acceptance remain false."
     }
   ]
 }
