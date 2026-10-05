@@ -1,232 +1,223 @@
-name: Issue 113 focused original repaired final Std comparison
+name: Issue 113 narrow Std solver-session cost diagnostic
 on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 concurrency:
-  group: issue113-std-first-${{ github.ref }}
+  group: issue113-std-cost-diagnostic-${{ github.ref }}
   cancel-in-progress: false
 env:
   DOTNET_NOLOGO: 'true'
   DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
 jobs:
-  plan:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Explicit requested workload
-        id: matrix
-        run: python3 .github/review/issue113-std-first/matrix.py workflow-request.json --github-output
-      - uses: actions/upload-artifact@v4
-        with:
-          name: std-first-workflow-request
-          path: workflow-request.json
-          retention-days: 30
-  compilers:
-    needs: plan
-    runs-on: ubuntu-24.04
-    timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix:
-        line: [dev]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          path: harness
-      - name: Exact source pins
-        id: pins
-        env:
-          LINE: ${{ matrix.line }}
-        run: |
-          python3 - <<'PY'
-          import json,os
-          from pathlib import Path
-          source=json.loads(Path('harness/.github/review/issue113-std-first/spec.json').read_text())['lines'][os.environ['LINE']]
-          with open(os.environ['GITHUB_OUTPUT'],'a') as output:
-            for name,key in [('old','original'),('baseline','repaired_product'),('final','final_product')]:
-              output.write(name+'='+source[key]+'\n')
-          PY
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.pins.outputs.old }}
-          path: original-source
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.pins.outputs.old }}
-          path: baseline-source
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.pins.outputs.final }}
-          path: final-source
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
-      - name: Recorded audited composition and three builds
-        env:
-          LINE: ${{ matrix.line }}
-          ORIGINAL: ${{ steps.pins.outputs.old }}
-          BASELINE: ${{ steps.pins.outputs.baseline }}
-          FINAL: ${{ steps.pins.outputs.final }}
-        run: |
-          mkdir -p results/original results/baseline results/final
-          git -C harness rev-parse HEAD > results/harness-source.txt
-          python3 harness/.github/review/issue113-std-first/prepare.py compose "$LINE" baseline-source results/baseline/source.json
-          git -C original-source rev-parse HEAD > results/original/source.txt
-          test "$(cat results/original/source.txt)" = "$ORIGINAL"
-          git -C final-source rev-parse HEAD > results/final/source.txt
-          test "$(cat results/final/source.txt)" = "$FINAL"
-          set +e
-          for side in original baseline final; do
-            case "$side" in original) revision="$ORIGINAL" ;; baseline) revision="$BASELINE" ;; final) revision="$FINAL" ;; esac
-            if [ -f "$side-source/Scripts/fetch-boogie-packages.sh" ]; then
-              (cd "$side-source" && sh Scripts/fetch-boogie-packages.sh) > "results/$side/dependencies.txt" 2>&1
-              dependency_exit=$?
-            else
-              dependency_exit=0
-            fi
-            echo "$dependency_exit" > "results/$side/dependencies-exit.txt"
-            if [ "$dependency_exit" != 0 ]; then
-              echo 125 > "results/$side/build-exit.txt"
-              continue
-            fi
-            (cd "$side-source" && dotnet publish Source/Dafny/Dafny.csproj -c Release -o "$GITHUB_WORKSPACE/out/$side/dafny" -p:SourceRevisionId="$revision") > "results/$side/build.txt" 2>&1
-            build_exit=$?
-            echo "$build_exit" > "results/$side/build-exit.txt"
-            if [ "$build_exit" = 0 ]; then
-              "out/$side/dafny/Dafny" --version > "results/$side/compiler-version.txt" 2>&1
-              echo "$?" > "results/$side/compiler-version-exit.txt"
-              tar -C "out/$side" -czf "results/$side/dafny.tar.gz" dafny
-              python3 harness/.github/review/issue113-std-first/prepare.py identity "$LINE" "out/$side/dafny/Dafny" "results/$side/compiler-components.json" --side "$side" --archive "results/$side/dafny.tar.gz" > "results/$side/identity.txt" 2>&1
-              echo "$?" > "results/$side/identity-exit.txt"
-            fi
-          done
-          exit 0
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: std-first-compilers-${{ matrix.line }}
-          path: results
-          retention-days: 30
-  paired:
-    needs: [compilers, plan]
-    if: always()
+  diagnostic:
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     strategy:
       fail-fast: false
-      max-parallel: 12
-      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+      max-parallel: 3
+      matrix:
+        include:
+          - solver: '5.1.0'
+            part: TargetSpecific-cs
+            tag: z3-5-1-cs
+          - solver: '5.1.0'
+            part: TargetSpecific-notarget
+            tag: z3-5-1-notarget
+          - solver: '4.16.0'
+            part: TargetSpecific-notarget
+            tag: z3-4-16-notarget
     steps:
       - uses: actions/checkout@v4
+        id: harness
+        continue-on-error: true
         with:
           path: harness
-      - name: Original input pin
-        id: pin
-        env:
-          LINE: ${{ matrix.line }}
-        run: |
-          python3 - <<'PY'
-          import json,os
-          from pathlib import Path
-          source=json.loads(Path('harness/.github/review/issue113-std-first/spec.json').read_text())['lines'][os.environ['LINE']]
-          with open(os.environ['GITHUB_OUTPUT'],'a') as output:
-            output.write('old='+source['original']+'\n')
-          PY
       - uses: actions/checkout@v4
+        id: inputs
+        continue-on-error: true
         with:
-          ref: ${{ steps.pin.outputs.old }}
+          ref: 97601b75712f458de37a13bf9953a0b7825122eb
           path: inputs
       - uses: actions/setup-dotnet@v4
+        id: runtime
+        continue-on-error: true
         with:
           dotnet-version: 8.0.x
       - uses: actions/download-artifact@v4
+        id: compilers
+        continue-on-error: true
         with:
-          name: std-first-compilers-${{ matrix.line }}
+          repository: erniecohen/dafny
+          run-id: 37248167583
+          name: std-first-compilers-dev
+          github-token: ${{ github.token }}
           path: compilers
-      - name: Pinned solver and source-input receipt
+      - name: Frozen source inputs and solver parameters
+        if: always()
         env:
-          LINE: ${{ matrix.line }}
           SOLVER_AXIS: ${{ matrix.solver }}
         run: |
-          mkdir -p setup
-          python3 harness/.github/review/issue113-std-first/prepare.py inputs "$LINE" inputs setup/inputs.json
-          python3 - <<'PY'
+          mkdir -p setup run-metadata
+          set +e
+          git -C harness rev-parse HEAD > run-metadata/harness-source.txt 2>&1
+          echo "$?" > run-metadata/harness-source-exit.txt
+          python3 harness/.github/review/issue113-std-first/prepare.py inputs dev inputs setup/inputs.json > setup/inputs-check.txt 2>&1
+          echo "$?" > setup/inputs-check-exit.txt
+          python3 - <<'PY' > setup/parameters.txt 2>&1
           import json,os
           from pathlib import Path
           spec=json.loads(Path('harness/.github/review/issue113-std-first/spec.json').read_text())
-          version='5.1.0' if os.environ['SOLVER_AXIS']=='5.1.0' else spec['lines'][os.environ['LINE']]['reference_solver']
+          expected={'original':'97601b75712f458de37a13bf9953a0b7825122eb','repaired_product':'b615831aaa26fea72364627d0fe6040f10e49eee','final_product':'a5304cd9aeb5e4fd12700aa2e61125a904d58996'}
+          if any(spec['lines']['dev'][key]!=value for key,value in expected.items()):
+            raise ValueError('Source pins differ from the frozen Std-first diagnostic')
+          version=os.environ['SOLVER_AXIS']
+          if version not in ('5.1.0','4.16.0') or spec['lines']['dev']['reference_solver']!='4.16.0':
+            raise ValueError('Diagnostic solver axis changed')
           solver=spec['solver_5_1_0'] if version=='5.1.0' else spec['reference_solvers'][version]
           Path('setup/solver.json').write_text(json.dumps(dict(version=version,**solver),indent=2)+'\n')
+          Path('run-metadata/archived-compiler-request.json').write_text(json.dumps({'repository':'erniecohen/dafny','run_id':37248167583,'artifact':'std-first-compilers-dev','expected_sources':expected,'rebuild':False},indent=2)+'\n')
           with open(os.environ['GITHUB_ENV'],'a') as output:
             output.write('SOLVER_URL='+solver['url']+'\nSOLVER_SHA='+solver['sha256']+'\nSOLVER_VERSION='+version+'\n')
           PY
+          echo "$?" > setup/parameters-exit.txt
+          exit 0
       - name: Download and check the pinned solver
+        if: always()
         run: |
           set +e
-          curl --retry 3 --retry-all-errors -fsSLo setup/solver.zip "$SOLVER_URL"
+          if [ -z "$SOLVER_URL" ] || [ -z "$SOLVER_SHA" ] || [ -z "$SOLVER_VERSION" ]; then
+            echo 'Solver parameter receipt missing; no download or solver invocation attempted' > setup/solver-download.txt
+            echo 125 > setup/solver-download-exit.txt
+            exit 0
+          fi
+          curl --retry 3 --retry-all-errors -fsSLo setup/solver.zip "$SOLVER_URL" > setup/solver-download.txt 2>&1
           echo "$?" > setup/solver-download-exit.txt
           echo "$SOLVER_SHA  setup/solver.zip" | sha256sum -c - > setup/solver-checksum.txt 2>&1
           checksum_exit=$?
           echo "$checksum_exit" > setup/solver-checksum-exit.txt
           if [ "$checksum_exit" = 0 ]; then
-            unzip -q setup/solver.zip -d solver
-            echo "$?" > setup/solver-unzip-exit.txt
-            if [ "$SOLVER_VERSION" = 5.1.0 ]; then
-              solver_executable="$PWD/solver/z3-5.1.0-x64-glibc-2.39/bin/z3"
-            else
-              solver_executable="$PWD/solver/z3-$SOLVER_VERSION"
+            unzip -q setup/solver.zip -d solver > setup/solver-unzip.txt 2>&1
+            unzip_exit=$?
+            echo "$unzip_exit" > setup/solver-unzip-exit.txt
+            if [ "$unzip_exit" = 0 ]; then
+              if [ "$SOLVER_VERSION" = 5.1.0 ]; then
+                solver_executable="$PWD/solver/z3-5.1.0-x64-glibc-2.39/bin/z3"
+              else
+                solver_executable="$PWD/solver/z3-$SOLVER_VERSION"
+              fi
+              chmod +x "$solver_executable" > setup/solver-chmod.txt 2>&1
+              chmod_exit=$?
+              echo "$chmod_exit" > setup/solver-chmod-exit.txt
+              if [ "$chmod_exit" = 0 ]; then
+                "$solver_executable" --version > setup/solver-version.txt 2>&1
+                echo "$?" > setup/solver-version-exit.txt
+                echo "SOLVER=$solver_executable" >> "$GITHUB_ENV"
+              fi
             fi
-            chmod +x "$solver_executable"
-            "$solver_executable" --version > setup/solver-version.txt 2>&1
-            echo "$?" > setup/solver-version-exit.txt
-            echo "SOLVER=$solver_executable" >> "$GITHUB_ENV"
           fi
           exit 0
-      - name: Matched old-source compiler triads
+      - name: Mandatory setup and archived compiler receipts
+        if: always()
         env:
-          LINE: ${{ matrix.line }}
-          COHORT: ${{ matrix.cohort }}
-          MODE: ${{ matrix.mode }}
-          AXIOMS: ${{ matrix.axioms }}
-          SHARD: ${{ matrix.shard }}
-          PART: ${{ matrix.part }}
-          JOBS: ${{ matrix.jobs }}
+          HARNESS_OUTCOME: ${{ steps.harness.outcome }}
+          INPUTS_OUTCOME: ${{ steps.inputs.outcome }}
+          RUNTIME_OUTCOME: ${{ steps.runtime.outcome }}
+          COMPILERS_OUTCOME: ${{ steps.compilers.outcome }}
         run: |
-          mkdir -p run-metadata
           set +e
-          python3 - <<'PY'
+          python3 - <<'PY' > run-metadata/prerequisites.txt 2>&1
+          import hashlib,json,os
+          from pathlib import Path
+          required=[Path('setup')/(name+'-exit.txt') for name in ['inputs-check','parameters','solver-download','solver-checksum','solver-unzip','solver-chmod','solver-version']]
+          for side in ['baseline','final']:
+            required += [Path('compilers')/side/(name+'-exit.txt') for name in ['dependencies','build','identity','compiler-version']]
+          failed=[str(file) for file in required if not file.exists() or file.read_text().strip()!='0']
+          outcomes={name:os.environ[name+'_OUTCOME'] for name in ['HARNESS','INPUTS','RUNTIME','COMPILERS']}
+          failed += [name+' action='+outcome for name,outcome in outcomes.items() if outcome!='success']
+          expected={'baseline':'b615831aaa26fea72364627d0fe6040f10e49eee','final':'a5304cd9aeb5e4fd12700aa2e61125a904d58996'}
+          validated={}
+          for side,pin in expected.items():
+            try:
+              directory=Path('compilers')/side
+              receipt=json.loads((directory/'compiler-components.json').read_text())
+              if (receipt['line'],receipt['side'],receipt['product_revision'])!=('dev',side,pin):
+                raise ValueError('Archived compiler receipt has a different product pin')
+              version=(directory/'compiler-version.txt').read_text().strip()
+              if version.split('+',1)[-1]!=pin:
+                raise ValueError('Archived compiler version does not contain its full source pin')
+              digest=hashlib.sha256()
+              with (directory/'dafny.tar.gz').open('rb') as stream:
+                for block in iter(lambda:stream.read(1048576),b''):digest.update(block)
+              if digest.hexdigest()!=receipt['archive_sha256']:
+                raise ValueError('Archived compiler bundle checksum differs')
+              for name in ['DafnyCore.dll','DafnyDriver.dll','Dafny.dll','Dafny.deps.json','Dafny.runtimeconfig.json']:
+                if name not in receipt['components_sha256']:
+                  raise ValueError('Mandatory compiler component receipt missing: '+name)
+              validated[side]={'product_revision':pin,'archive_sha256':digest.hexdigest(),'version':version,'components':len(receipt['components_sha256'])}
+            except (OSError,ValueError,KeyError) as error:
+              failed.append(side+': '+str(error))
+          state={'missing_or_failed':failed,'action_outcomes':outcomes,'archived_compilers':validated,'source_run_id':37248167583,'source_artifact':'std-first-compilers-dev','proof_attempted':False}
+          Path('run-metadata/prerequisites.json').write_text(json.dumps(state,indent=2)+'\n')
+          raise SystemExit(125 if failed else 0)
+          PY
+          echo "$?" > run-metadata/prerequisites-exit.txt
+          exit 0
+      - name: Repeated matched canonical samples and labeled controls
+        if: always()
+        env:
+          SOLVER_AXIS: ${{ matrix.solver }}
+          PART: ${{ matrix.part }}
+        run: |
+          set +e
+          if [ "$(cat run-metadata/prerequisites-exit.txt 2>/dev/null)" != 0 ]; then
+            echo 125 > run-metadata/runner-exit.txt
+            python3 - <<'PY'
+          import json
+          from pathlib import Path
+          Path('run-metadata/runner-state.json').write_text(json.dumps({'runner_invoked':False,'actual_runner_exit':None,'blocked_exit':125,'complete':False,'reason':'Mandatory prerequisites failed or were not emitted'},indent=2)+'\n')
+          PY
+            exit 0
+          fi
+          mkdir -p out/baseline out/final
+          tar -C out/baseline -xzf compilers/baseline/dafny.tar.gz > run-metadata/baseline-extract.txt 2>&1
+          echo "$?" > run-metadata/baseline-extract-exit.txt
+          tar -C out/final -xzf compilers/final/dafny.tar.gz > run-metadata/final-extract.txt 2>&1
+          echo "$?" > run-metadata/final-extract-exit.txt
+          if [ "$(cat run-metadata/baseline-extract-exit.txt)" != 0 ] || [ "$(cat run-metadata/final-extract-exit.txt)" != 0 ]; then
+            echo 125 > run-metadata/runner-exit.txt
+            python3 - <<'PY'
+          import json
+          from pathlib import Path
+          Path('run-metadata/runner-state.json').write_text(json.dumps({'runner_invoked':False,'actual_runner_exit':None,'blocked_exit':125,'complete':False,'reason':'Archived compiler extraction failed'},indent=2)+'\n')
+          PY
+            exit 0
+          fi
+          python3 harness/.github/review/issue113-std-first/diagnose_cost.py run --solver-axis "$SOLVER_AXIS" --part "$PART" --inputs "$PWD/inputs" --baseline "$PWD/out/baseline/dafny/Dafny" --final "$PWD/out/final/dafny/Dafny" --baseline-identity compilers/baseline/compiler-components.json --final-identity compilers/final/compiler-components.json --baseline-version compilers/baseline/compiler-version.txt --final-version compilers/final/compiler-version.txt --solver "$SOLVER" --solver-version setup/solver-version.txt --output measurements > run-metadata/runner.txt 2>&1
+          runner_exit=$?
+          echo "$runner_exit" > run-metadata/runner-exit.txt
+          RUNNER_EXIT="$runner_exit" python3 - <<'PY'
           import json,os
           from pathlib import Path
-          required=[Path('setup/solver-checksum-exit.txt'),Path('setup/solver-unzip-exit.txt'),Path('setup/solver-version-exit.txt')]
-          for side in ['original','baseline','final']:
-            required += [Path('compilers')/side/(name+'-exit.txt') for name in ['build','identity','compiler-version']]
-          missing=[str(file) for file in required if not file.exists() or file.read_text().strip()!='0']
-          Path('run-metadata/prerequisites.json').write_text(json.dumps(dict(missing_or_failed=missing),indent=2)+'\n')
-          raise SystemExit(125 if missing else 0)
+          summary=Path('measurements/summary.json')
+          state={'runner_invoked':True,'actual_runner_exit':int(os.environ['RUNNER_EXIT']),'summary_present':summary.exists(),'complete':False}
+          try:
+            result=json.loads(summary.read_text())
+            state['complete']=(state['actual_runner_exit']==0 and result['completed_pairs']==result['requested_pairs']==5 and all(not row['incomplete'] for row in result['records']))
+          except (OSError,ValueError,KeyError,TypeError) as error:
+            state['summary_error']=str(error)
+          Path('run-metadata/runner-state.json').write_text(json.dumps(state,indent=2)+'\n')
           PY
-          prerequisite_exit=$?
-          echo "$prerequisite_exit" > run-metadata/prerequisites-exit.txt
-          if [ "$prerequisite_exit" != 0 ]; then exit 0; fi
-          mkdir -p out/original out/baseline out/final
-          tar -C out/original -xzf compilers/original/dafny.tar.gz
-          tar -C out/baseline -xzf compilers/baseline/dafny.tar.gz
-          tar -C out/final -xzf compilers/final/dafny.tar.gz
-          extra=()
-          if [ -n "$PART" ]; then extra+=(--part "$PART"); fi
-          python3 harness/.github/review/issue113-std-first/run.py run             --line "$LINE" --cohort "$COHORT" --mode "$MODE" --axioms "$AXIOMS" --inputs "$PWD/inputs"             --original "$PWD/out/original/dafny/Dafny" --baseline "$PWD/out/baseline/dafny/Dafny" --final "$PWD/out/final/dafny/Dafny"             --original-identity compilers/original/compiler-components.json --baseline-identity compilers/baseline/compiler-components.json --final-identity compilers/final/compiler-components.json             --original-version compilers/original/compiler-version.txt --baseline-version compilers/baseline/compiler-version.txt --final-version compilers/final/compiler-version.txt             --solver "$SOLVER" --solver-version setup/solver-version.txt --output measurements             --shard "$SHARD" --jobs "$JOBS" "${extra[@]}" > run-metadata/runner.txt 2>&1
-          echo "$?" > run-metadata/runner-exit.txt
+          echo "$?" > run-metadata/state-observer-exit.txt
           tail -20 run-metadata/runner.txt
           exit 0
       - uses: actions/upload-artifact@v4
         if: always()
+        continue-on-error: true
         with:
-          name: std-first-${{ matrix.tag }}
+          name: std-cost-${{ matrix.tag }}
           path: |
             setup/*.json
             setup/*.txt
@@ -235,21 +226,41 @@ jobs:
           compression-level: 9
           retention-days: 30
   report:
-    needs: [plan, compilers, paired]
+    needs: diagnostic
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        id: harness
+        continue-on-error: true
       - uses: actions/download-artifact@v4
+        id: measurements
+        continue-on-error: true
         with:
-          pattern: std-first-*
+          pattern: std-cost-*
           path: observations
-      - name: Exact denominators, differences and incomplete outcomes
-        run: python3 .github/review/issue113-std-first/run.py aggregate observations std-first-report.json --workflow-request observations/std-first-workflow-request/workflow-request.json
+      - name: Actual diagnostic denominators and incomplete observations
+        if: always()
+        run: |
+          mkdir -p report
+          set +e
+          python3 .github/review/issue113-std-first/diagnose_cost.py aggregate --inputs observations --output report/diagnostic-report.json > report/aggregate.txt 2>&1
+          aggregate_exit=$?
+          echo "$aggregate_exit" > report/aggregate-exit.txt
+          if [ ! -f report/diagnostic-report.json ]; then
+            python3 - <<'PY'
+          import json
+          from pathlib import Path
+          Path('report/diagnostic-report.json').write_text(json.dumps({'report':False,'complete':False,'expected_jobs':3,'expected_pairs':15,'expected_invocations':30,'reason':'Aggregate helper failed or was unavailable; no diagnostic acceptance claimed'},indent=2)+'\n')
+          PY
+          fi
+          cat report/diagnostic-report.json
+          exit 0
       - uses: actions/upload-artifact@v4
         if: always()
+        continue-on-error: true
         with:
-          name: std-first-report
-          path: std-first-report.json
+          name: std-cost-report
+          path: report
           retention-days: 30
