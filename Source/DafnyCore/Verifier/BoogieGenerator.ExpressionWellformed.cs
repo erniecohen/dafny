@@ -1281,6 +1281,10 @@ namespace Microsoft.Dafny {
               }
             });
 
+            // The source domain, child definedness, and map collision checks above
+            // justify the own-site finite image before its result type is checked.
+            builder.Add(TrAssumeCmd(e.Origin, etran.FiniteCollectionDefinition(e)));
+
             bool needTypeConstraintCheck;
             if (lam == null) {
               needTypeConstraintCheck = true;

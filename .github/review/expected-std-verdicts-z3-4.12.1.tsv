@@ -269,7 +269,7 @@ Std Std.Arithmetic.DivMod.LemmaModMultiplesVanish (correctness)	Correct
 Std Std.Arithmetic.DivMod.LemmaModMultiplesVanish (well-formedness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaModMultiplesVanishAuto (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaModMultiplesVanishAuto (well-formedness)	Correct		
-Std Std.Arithmetic.DivMod.LemmaModNegNeg (correctness)	Correct		
+Std Std.Arithmetic.DivMod.LemmaModNegNeg (correctness)	OutOfResource		
 Std Std.Arithmetic.DivMod.LemmaModNegNeg (well-formedness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaModOrdering (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaModOrdering (well-formedness)	Correct		
@@ -313,7 +313,7 @@ Std Std.Arithmetic.DivMod.LemmaMultiplyDivideLe (correctness)	Correct
 Std Std.Arithmetic.DivMod.LemmaMultiplyDivideLe (well-formedness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaMultiplyDivideLeAuto (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaMultiplyDivideLeAuto (well-formedness)	Correct		
-Std Std.Arithmetic.DivMod.LemmaMultiplyDivideLt (correctness)	Errors		
+Std Std.Arithmetic.DivMod.LemmaMultiplyDivideLt (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaMultiplyDivideLt (well-formedness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaMultiplyDivideLtAuto (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaMultiplyDivideLtAuto (well-formedness)	Correct		
@@ -715,7 +715,7 @@ Std Std.Base64.EncodeDecodeValidEmpty (correctness)	Correct
 Std Std.Base64.EncodeDecodeValidEmpty (well-formedness)	Correct		
 Std Std.Base64.EncodeDecodeValidUnpadded (correctness)	Correct		
 Std Std.Base64.EncodeDecodeValidUnpadded (well-formedness)	Correct		
-Std Std.Base64.EncodeRecursively (correctness)	Correct		
+Std Std.Base64.EncodeRecursively (correctness)	OutOfResource		
 Std Std.Base64.EncodeRecursively (well-formedness)	Correct		
 Std Std.Base64.EncodeRecursivelyBlock (correctness)	Correct		
 Std Std.Base64.EncodeRecursivelyBlock (well-formedness)	Correct		
@@ -2188,7 +2188,7 @@ TargetSpecific-py Std.FileIO.WriteUTF8ToFile (correctness)	Correct
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (correctness)	Correct		
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (well-formedness)	Correct		
 TargetSpecific-py Std.PythonConcurrent.MutableMap.Get (well-formedness)	Correct		
-run Std	4	7611 verified, 1 error	src/Std/Arithmetic/DivMod.dfy(903,2)
+run Std	4	7610 verified, 0 errors, 2 out of resource	src/Std/Arithmetic/DivMod.dfy(1330,32) src/Std/Base64.dfy(322,22)
 run TargetSpecific-cs	0	15 verified, 0 errors	
 run TargetSpecific-go	0	16 verified, 0 errors	
 run TargetSpecific-java	0	15 verified, 0 errors	

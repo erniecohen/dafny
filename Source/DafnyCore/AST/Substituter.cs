@@ -1073,17 +1073,25 @@ namespace Microsoft.Dafny {
       var newBoundVars = CreateBoundVarSubstitutions(e.BoundVars, forceSubstituteOfBoundVars && expr is ForallExpr or ExistsExpr or SetComprehension);
       var newRange = e.Range == null ? null : Substitute(e.Range);
       var newTerm = Substitute(e.Term);
+      var originalTermLeft = (e as MapComprehension)?.TermLeft;
+      var newTermLeft = originalTermLeft == null ? null : Substitute(originalTermLeft);
       var newAttrs = SubstAttributes(e.Attributes);
       var newBounds = SubstituteBoundedPoolList(e.Bounds);
-      if (newBoundVars != e.BoundVars || newRange != e.Range || newTerm != e.Term || newAttrs != e.Attributes ||
+      if (newBoundVars != e.BoundVars || newRange != e.Range || newTerm != e.Term || newTermLeft != originalTermLeft || newAttrs != e.Attributes ||
           newBounds != e.Bounds || !forceSubstituteOfBoundVars) {
         if (e is SetComprehension) {
           newExpr = new SetComprehension(e.Origin, ((SetComprehension)e).Finite, newBoundVars,
             newRange, newTerm, newAttrs);
         } else if (e is MapComprehension) {
           var mc = (MapComprehension)e;
-          var newTermLeft = mc.IsGeneralMapComprehension ? Substitute(mc.TermLeft) : null;
-          newExpr = new MapComprehension(e.Origin, mc.Finite, newBoundVars, newRange, newTermLeft, newTerm, newAttrs);
+          var newMap = new MapComprehension(e.Origin, mc.Finite, newBoundVars, newRange, newTermLeft, newTerm, newAttrs);
+          if (ReferenceEquals(newBoundVars, mc.BoundVars)) {
+            // The witness representation is unchanged. Keep its stable source
+            // identity; each generator owns the declarations for its own backend
+            // types, and relation arguments carry the substituted environment.
+            newMap.ProjectionFunctionsSource = mc.ProjectionFunctionsSource ?? mc;
+          }
+          newExpr = newMap;
         } else if (expr is ForallExpr forallExpr) {
           newExpr = new ForallExpr(e.Origin, newBoundVars, newRange, newTerm, newAttrs);
         } else if (expr is ExistsExpr existsExpr) {

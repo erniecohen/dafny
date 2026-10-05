@@ -1367,7 +1367,16 @@ default to `true`. See also [Section 2.7.4](#sec-quantifier-domains) for more de
 
 If a finite set was specified ("set" keyword used), Dafny must be able to prove that the
 result is finite otherwise the set comprehension expression will not be
-accepted.
+accepted. A datatype-rank comparison, such as `d < upper`, does not
+establish a finite bound: there can be infinitely many datatype values below
+one rank. Use another finite bound, such as `d in aFiniteSet`, when the
+result type is not itself a finite carrier. The same restriction applies
+to finite map comprehensions. Infinite `iset` and `imap` comprehensions do
+not need this bound. The result carrier itself must be finite for this
+exception to apply: although each `map<bool, int>` has at most two keys,
+there are infinitely many such map values. A set comprehension producing
+those maps, or a map comprehension using them as keys, still needs finite
+witness bounds.
 
 Set comprehensions involving reference types such as
 

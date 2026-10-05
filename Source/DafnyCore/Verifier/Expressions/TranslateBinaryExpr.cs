@@ -551,8 +551,13 @@ public partial class BoogieGenerator {
         //     CorrectType(elmt) && R[xs := elmt]
         if (compr.TermIsSimple && extractObjectFromMemoryLocation == null) {
           // CorrectType(elmt) && R[xs := elmt]
-          // Note, we can always use NOALLOC here.
-          Expr typeAntecedent = BoogieGenerator.GetWhereClause(GetToken(compr), elmt, compr.BoundVars[0].Type, this, NOALLOC) ?? Expr.True;
+          // Use the characteristic map's allocation policy so direct membership
+          // agrees with membership in a materialized value of this comprehension.
+          var freeOfAlloc = BoundedPool.HasBounds(compr.Bounds,
+            BoundedPool.PoolVirtues.IndependentOfAlloc_or_ExplicitAlloc);
+          var useAlloc = freeOfAlloc == null || freeOfAlloc[0] ? NOALLOC : ISALLOC;
+          Expr typeAntecedent = BoogieGenerator.GetWhereClause(GetToken(compr), elmt,
+            compr.BoundVars[0].Type, this, useAlloc) ?? Expr.True;
           var range = Substitute(compr.Range, compr.BoundVars[0], new BoogieWrapper(elmt, compr.BoundVars[0].Type));
           return BplAnd(typeAntecedent, TrExpr(range));
         } else {

@@ -111,6 +111,12 @@ git-issues/git-issue-1416.dfy
 # Reflexivity of heap succession at two-state function values (#94 here).
 git-issues/git-issue-1461.dfy
 
+# Finite support boundary and its source admission prerequisites (#82).
+git-issues/git-issue-82.dfy
+git-issues/git-issue-82-maps.dfy
+git-issues/git-issue-82-reads.dfy
+git-issues/git-issue-82-bounds.dfy
+git-issues/git-issue-82-newtypes.dfy
 # Contextual lambda subset domains (#87 here).
 git-issues/git-issue-4949.dfy
 

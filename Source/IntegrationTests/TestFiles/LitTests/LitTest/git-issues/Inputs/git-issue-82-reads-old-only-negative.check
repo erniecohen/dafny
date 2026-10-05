@@ -1,0 +1,5 @@
+// CHECK-NOT: ^(?!git\-issue\-82\-reads\-old\-only\-negative\.dfy\(18,[0-9]+\): Error: assertion might not hold$).*Error:|(?i:out of resource|timed out|timeout|inconclusive)
+// CHECK: ^git\-issue\-82\-reads\-old\-only\-negative\.dfy\(18,[0-9]+\): Error: assertion might not hold$
+// CHECK-NOT: Error:|(?i:out of resource|timed out|timeout|inconclusive)
+// CHECK: ^Dafny program verifier finished with [0-9]+ verified, 1 error$
+// CHECK-NOT: Error:|(?i:out of resource|timed out|timeout|inconclusive)
