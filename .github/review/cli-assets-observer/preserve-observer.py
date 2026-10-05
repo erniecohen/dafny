@@ -190,7 +190,7 @@ def write_file(path, parts):
         route.close()
 
 
-def copy_file(source, destination, maximum, prefix=False):
+def copy_file(source, destination, maximum, prefix=False, exact_bytes=None):
     global attempted_output
     route = Route(destination, True)
     fd = None
@@ -209,7 +209,7 @@ def copy_file(source, destination, maximum, prefix=False):
                 if n <= 0:
                     raise ValueError('write failed')
                 start += n
-        return read_file(source, maximum, consume, prefix)
+        return read_file(source, maximum, consume, prefix, exact_bytes=exact_bytes)
     finally:
         if fd is not None:
             posix.close(fd)
@@ -258,7 +258,7 @@ def python_identity(work, own_path, own_size, own_hash):
     if len(executable) != 3 or sys.executable != executable[0] or sys.version_info[:2] != (3, 12) or sys.platform != 'linux':
         raise ValueError('Python executable/version')
     size = decimal(executable[1], 512 * 1024 * 1024)
-    if read_file(executable[0], size)[:2] != (size, executable[2]):
+    if read_file(executable[0], size, exact_bytes=size)[:2] != (size, executable[2]):
         raise ValueError('Python executable bytes')
     allowed = {'sys','builtins','_frozen_importlib','_imp','_thread','_warnings','_weakref','_io','marshal','posix',
         '_frozen_importlib_external','time','zipimport','_codecs','codecs','encodings','encodings.aliases','encodings.utf_8',
@@ -269,7 +269,7 @@ def python_identity(work, own_path, own_size, own_hash):
     own = sys.modules.get('__main__')
     if own is None or getattr(own, '__file__', None) != own_path or getattr(own, '__spec__', 'missing') is not None or sys.argv[0] != own_path:
         raise ValueError('owned entry module association')
-    if own_path != work + '/source/preserve-observer.py' or read_file(own_path, own_size)[:2] != (own_size, own_hash):
+    if own_path != work + '/source/preserve-observer.py' or read_file(own_path, own_size, exact_bytes=own_size)[:2] != (own_size, own_hash):
         raise ValueError('owned entry source bytes')
     pins = {}
     consumed = 0
@@ -308,7 +308,7 @@ def main():
         control_path, supplied_hash = sys.argv[2:]
         if not hash_text(supplied_hash.lower()):
             raise ValueError('control hash grammar')
-        rows, _, actual_hash = ascii_lines(control_path)
+        rows, control_size, actual_hash = ascii_lines(control_path)
         if len(rows) != 14 or rows[0] != 'B3AssetsObserverPreload/1' or actual_hash != supplied_hash.lower():
             raise ValueError('control count/hash')
         source, source_hash, image, ref0, hash0, ref1, hash1, arguments, options, output, seal, last, exit_code = rows[1:]
@@ -325,7 +325,7 @@ def main():
         work = source[:-len('/source/B3AssetsObserver.cs')]
         if image != work + '/build/B3AssetsObserver.dll' or arguments != work + '/control/compiler-arguments.txt' or control_path != work + '/control/compiler-inputs.txt':
             raise ValueError('fixed own paths')
-        bootstrap, _, _ = ascii_lines(work + '/source/bootstrap-pins.txt')
+        bootstrap, bootstrap_size, _ = ascii_lines(work + '/source/bootstrap-pins.txt')
         if len(bootstrap) != 13 or bootstrap[0] != 'B3AssetsObserverBootstrap/1' or bootstrap[1] != seal or bootstrap[3] != options:
             raise ValueError('bootstrap source/options association')
         own_fields = bootstrap[6].split('|')
@@ -352,9 +352,9 @@ def main():
             maximum = 262144 if name in prepared_names[:3] else 65536
             size = decimal(fields[2], maximum)
             attempted_output += size
-            if attempted_output > MAX_OUTPUT or read_file(fields[0], size)[:2] != (size, fields[3]) or read_file(fields[1], size)[:2] != (size, fields[3]):
+            if attempted_output > MAX_OUTPUT or read_file(fields[0], size, exact_bytes=size)[:2] != (size, fields[3]) or read_file(fields[1], size, exact_bytes=size)[:2] != (size, fields[3]):
                 raise ValueError('prepared bytes changed or exceed first aggregate')
-        control_info = copy_file(control_path, output + '/first/compiler-inputs.txt', 65536)
+        control_info = copy_file(control_path, output + '/first/compiler-inputs.txt', 65536, exact_bytes=control_size)
         if control_info[1] != actual_hash:
             raise ValueError('control changed before preservation')
         # Csc output is diagnostic even if present: ExitCode and immediate
@@ -381,13 +381,13 @@ def main():
                 raise ValueError('bootstrap fixed role')
             maximum = 262144 if relative in ('source.cs','targets.xml','preserve.py') else 65536 if relative.endswith(('.txt','.props')) else 8 * 1024 * 1024
             size = decimal(length, maximum)
-            info = copy_file(live, output + '/first/' + relative, size)
+            info = copy_file(live, output + '/first/' + relative, size, exact_bytes=size)
             if info[:2] != (size, expected):
                 raise ValueError('bootstrap input changed')
             records.append((live, output + '/first/' + relative, size, expected))
         # The bootstrap-pins file cannot contain a self-hash. It is itself
         # retained/bound separately after its finite role table has been read.
-        info = copy_file(work + '/source/bootstrap-pins.txt', output + '/first/bootstrap-pins.txt', 65536)
+        info = copy_file(work + '/source/bootstrap-pins.txt', output + '/first/bootstrap-pins.txt', 65536, exact_bytes=bootstrap_size)
         records.append((work + '/source/bootstrap-pins.txt', output + '/first/bootstrap-pins.txt', info[0], info[1]))
         args_data, args_size, args_hash = bytes_file(arguments, 65536)
         if not args_data.endswith(b'\n') or args_data.count(b'\n') > 256 or any(c < 32 and c != 10 or c > 126 or c in (34,59,64) for c in args_data):
@@ -395,14 +395,14 @@ def main():
         args_lines = args_data.decode('ascii').splitlines()
         if not args_lines or sum(len(line) for line in args_lines) > 65536:
             raise ValueError('compiler argument bound')
-        copy_file(arguments, output + '/first/compiler-arguments.txt', 65536)
+        copy_file(arguments, output + '/first/compiler-arguments.txt', 65536, exact_bytes=args_size)
         records.append((arguments, output + '/first/compiler-arguments.txt', args_size, args_hash))
         required = {source:source_hash, ref0:hash0, ref1:hash1}
         for path, digest in required.items():
             if not any(row[0] == path and row[3] == digest for row in records):
                 raise ValueError('control-to-preserved-input association')
         for live, copied, size, digest in records:
-            if read_file(live, size)[:2] != (size, digest) or read_file(copied, size)[:2] != (size, digest):
+            if read_file(live, size, exact_bytes=size)[:2] != (size, digest) or read_file(copied, size, exact_bytes=size)[:2] != (size, digest):
                 raise ValueError('first input changed after preservation')
         if tuple(sorted(sys.modules)) != names:
             raise ValueError('Python import closure changed')

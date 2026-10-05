@@ -174,7 +174,7 @@ def observer_json(path, maximum):
             value[key] = item
         return value
     value = json.loads(raw, object_pairs_hook=unique)
-    assert observer_read(path, maximum) == record, 'Actually parsed observer bytes changed'
+    assert observer_read(path, maximum, exact_bytes=record['bytes']) == record, 'Actually parsed observer bytes changed'
     return value, record
 
 
@@ -202,7 +202,7 @@ def observer_write(path, data, maximum):
     finally:
         if fd is not None: os.close(fd)
         for descriptor in reversed(descriptors): os.close(descriptor)
-    assert observer_read(path,maximum) == {'bytes':len(data),'sha256':digest_bytes(data)}
+    assert observer_read(path,maximum,exact_bytes=len(data)) == {'bytes':len(data),'sha256':digest_bytes(data)}
 
 def observer_source_contract():
     global observer_contract, observer_selector, observer_execution
@@ -288,7 +288,7 @@ def observer_check_runtime_pins():
     assert type(python) is dict and set(python) == {'version', 'platform', 'executable', 'modules'}
     assert python['version'] == '3.12' and python['platform'] == 'linux' and sys.version_info[:2] == (3, 12) and sys.platform == 'linux'
     exe = python['executable']; assert set(exe) == {'path', 'bytes', 'sha256'} and exe['path'] == str(Path(sys.executable).resolve(strict=True))
-    assert observer_read(Path(exe['path']), MAXIMUM_FILE_BYTES) == {key: exe[key] for key in ['bytes','sha256']}
+    assert observer_read(Path(exe['path']), MAXIMUM_FILE_BYTES, exact_bytes=exe['bytes']) == {key: exe[key] for key in ['bytes','sha256']}
     modules = python['modules']; allowed = observer_selector['compiler']['preservationChild']['startupAllowedModuleNames']
     assert 1 <= len(modules) <= 32 and len({row['name'] for row in modules}) == len(modules)
     assert {row['name'] for row in modules} <= set(allowed) and {'sys','posix','time','_sha2'} <= {row['name'] for row in modules}
@@ -401,7 +401,8 @@ def observer_prepare():
     for index,name in enumerate(prepared_names):
         maximum = 262144 if index < 3 else 65536
         live = ROOT / OBSERVER_WORK / 'source' / name
-        record,data = observer_read(live,maximum,True)
+        expected_bytes = next(row['bytes'] for row in observer_generated_rows if row['path'] == name)
+        record,data = observer_read(live,maximum,True,exact_bytes=expected_bytes)
         copied = ROOT / OBSERVER_OUTPUT / 'prepared' / name
         total += len(data); assert total <= 8388608
         observer_write(copied,data,maximum)
@@ -488,7 +489,7 @@ def observer_collect():
             assert re.fullmatch(r'0|[1-9][0-9]{0,9}',length) and re.fullmatch('[0-9a-f]{64}',sha256)
             assert copied == str(first / roles[ordinal])
             pin = {'bytes':int(length),'sha256':sha256}; maximum = 524288 if ordinal == 0 else 262144 if roles[ordinal] in {'source.cs','targets.xml','preserve.py'} else 8388608 if ordinal in {9,10} else 65536
-            assert pin['bytes'] <= maximum and observer_read(Path(live),maximum) == pin == observer_read(Path(copied),maximum)
+            assert pin['bytes'] <= maximum and observer_read(Path(live),maximum,exact_bytes=pin['bytes']) == pin == observer_read(Path(copied),maximum,exact_bytes=pin['bytes'])
             preserved.append({'role':roles[ordinal],'livePath':live,'artifactPath':str(Path(copied).relative_to(output)) ,**pin})
         work = ROOT / OBSERVER_WORK; sdk = Path(observer_receipt['runtimePrerequisitePins']['sdkRoot'])
         lives = [work/'build/B3AssetsObserver.dll',work/'control/compiler-inputs.txt',work/'source/B3AssetsObserver.cs',work/'source/B3AssetsObserver.targets',
@@ -553,7 +554,7 @@ def observer_collect():
         assert set(raw) == {'schemaVersion','slot','path','bytes','sha256','targetBodyExecution','parsed'} and raw['schemaVersion'] == 1 and raw['slot'] == 'ResolvePackageAssets.before' and raw['targetBodyExecution'] == 'not-observed' and raw['parsed'] is False
         assert raw['path'] == str(ROOT/'Source/Dafny/obj/project.assets.json')
         raw_pin = {key:raw[key] for key in ['bytes','sha256']}
-        assert observer_read(Path(raw['path']),16777216) == raw_pin == observer_read(ROOT / OBSERVER_OUTPUT / 'raw-assets/project.assets.json',16777216)
+        assert observer_read(Path(raw['path']),16777216,exact_bytes=raw_pin['bytes']) == raw_pin == observer_read(ROOT / OBSERVER_OUTPUT / 'raw-assets/project.assets.json',16777216,exact_bytes=raw_pin['bytes'])
         assert raw_assets_snapshot is not None and {key:raw_assets_snapshot[key] for key in ['bytes','sha256']} == raw_pin, 'Observer raw assets differ from unchanged qualifier first buffer'
         observer_receipt['rawAssetsAssociation'] = {'identity':raw,'record':pin,'unchangedQualifierFirstPinMatched':True}
         selected,pin = observer_json(ROOT / OBSERVER_OUTPUT / 'tables/selection.json',32768)
@@ -572,7 +573,7 @@ def observer_collect():
             else:
                 assert row['status'] == 'source-derived-candidate-bytes' and type(row['bytes']) is int and row['bytes'] <= 1048576
                 actual = {key:row[key] for key in ['bytes','sha256']}; total += row['bytes']; assert total <= 8388608
-                assert observer_read(Path(row['path']),1048576) == actual == observer_read(ROOT / OBSERVER_OUTPUT / ('tables/'+row['sha256']+'.bin'),1048576)
+                assert observer_read(Path(row['path']),1048576,exact_bytes=actual['bytes']) == actual == observer_read(ROOT / OBSERVER_OUTPUT / ('tables/'+row['sha256']+'.bin'),1048576,exact_bytes=actual['bytes'])
         observer_receipt['tableCandidates'] = {'selection':selected,'record':pin,'actualSdkOpenObserved':False}
         expected_paths = {'first/'+name for name in roles+['inventory.txt','association.txt','ready']}
         expected_paths |= {'prepared/'+name for name in ['B3AssetsObserver.cs','B3AssetsObserver.targets','preserve-observer.py','declared-options.txt','anchors.txt','python-pins.txt','B3AssetsObserver.inputs.props','bootstrap-pins.txt','inventory.txt']}

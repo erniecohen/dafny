@@ -455,10 +455,11 @@ B3AssetsObserverI00, B3AssetsObserverI01, B3AssetsObserverI02, B3AssetsObserverI
       for (int i = 0; i < bytes.Length; i++) { result[2 * i] = digits[bytes[i] >> 4]; result[2 * i + 1] = digits[bytes[i] & 15]; }
       return new string(result);
     }
-    internal static FileIdentity Read(string path, long maximum, Action tick, Action<byte[], int>? consume = null, ReadBudget? attempted = null) {
+    internal static FileIdentity Read(string path, long maximum, Action tick, Action<byte[], int>? consume = null, ReadBudget? attempted = null, long? expectedBytes = null) {
       using (var route = new Route(path)) using (var handle = route.ReadHandle()) {
         Native.Stat before = Native.Info(handle);
         if ((before.Mode & 61440) != 32768 || before.Size < 0 || before.Size > maximum) throw new CaptureFault("regular-file-length");
+        if (expectedBytes.HasValue && before.Size != expectedBytes.Value) throw new CaptureFault("exact-pinned-file-length");
         using (var stream = new FileStream(handle, FileAccess.Read, 1, false)) using (var hash = SHA256.Create()) {
           byte[] buffer = new byte[65536]; long length = 0;
           while (length < before.Size) {
@@ -500,6 +501,7 @@ B3AssetsObserverI00, B3AssetsObserverI01, B3AssetsObserverI02, B3AssetsObserverI
     internal readonly bool[] Seen = new bool[10], Completed = new bool[10];
     internal int Sequence, Rows, Faults;
     internal long Bytes, FrameBytes;
+    internal readonly long ImageBytes;
     internal ReadBudget AnchorReadBudget = new ReadBudget(67108864);
     private readonly ReadBudget tableReadBudget = new ReadBudget(8388608);
     private readonly string[] first, prepared;
@@ -542,6 +544,9 @@ B3AssetsObserverI00, B3AssetsObserverI01, B3AssetsObserverI02, B3AssetsObserverI
         if (fields[0] != lives[i] || fields[1] != Root + "/first/" + roles[i] || Decimal(fields[2]) > maximum || !HashGrammar(fields[3]))
           throw new CaptureFault("first-fixed-role-identity");
       }
+      var imagePin = Parse(first[0], 4);
+      ImageBytes = Decimal(imagePin[2]);
+      if (imagePin[3] != ImageHash) throw new CaptureFault("helper-first-association");
       prepared = Files.Lines(root + "/prepared/inventory.txt", tick);
       string[] preparedNames = { "B3AssetsObserver.cs", "B3AssetsObserver.targets", "preserve-observer.py", "declared-options.txt",
         "anchors.txt", "python-pins.txt", "B3AssetsObserver.inputs.props", "bootstrap-pins.txt" };
@@ -591,10 +596,10 @@ B3AssetsObserverI00, B3AssetsObserverI01, B3AssetsObserverI02, B3AssetsObserverI
         tick(); var fields = Parse(line, 4);
         Route.PathGrammar(fields[0]); Route.PathGrammar(fields[1]);
         long size = Decimal(fields[2]); if (size > 8388608 || !HashGrammar(fields[3])) throw new CaptureFault("first-pin-grammar");
-        var live = Files.Read(fields[0], size, tick); var copy = Files.Read(fields[1], size, tick);
+        var live = Files.Read(fields[0], size, tick, expectedBytes: size); var copy = Files.Read(fields[1], size, tick, expectedBytes: size);
         if (live.Bytes != size || live.Hash != fields[3] || !live.Same(copy)) throw new CaptureFault("first-input-or-copy-changed");
       }
-      var image = Files.Read(ImagePath, 524288, tick);
+      var image = Files.Read(ImagePath, 524288, tick, expectedBytes: ImageBytes);
       if (image.Hash != ImageHash) throw new CaptureFault("helper-image-changed");
     }
     internal void Anchors(Action tick) {
@@ -606,12 +611,12 @@ B3AssetsObserverI00, B3AssetsObserverI01, B3AssetsObserverI02, B3AssetsObserverI
       var records = new List<Tuple<string, string, string, FileIdentity>>(5);
       for (int i = 0; i < 5; i++) {
         tick(); string location = assemblies[i].Location;
-        string path = ImagePath, hash = ImageHash; long size = 524288;
+        string path = ImagePath, hash = ImageHash; long size = ImageBytes;
         if (i != 0) { var fields = Parse(anchors[i], 4); if (fields[0] != names[i]) throw new CaptureFault("anchor-role");
           path = fields[1]; size = Decimal(fields[2]); hash = fields[3]; }
         if (location != path || size > 33554432 || !HashGrammar(hash)) throw new CaptureFault("anchor-location-or-pin");
-        var info = Files.Read(location, size, tick, null, AnchorReadBudget);
-        if ((i != 0 && info.Bytes != size) || info.Hash != hash) throw new CaptureFault("anchor-bytes-changed");
+        var info = Files.Read(location, size, tick, null, AnchorReadBudget, size);
+        if ((info.Bytes != size) || info.Hash != hash) throw new CaptureFault("anchor-bytes-changed");
         string fullName = assemblies[i].FullName ?? throw new CaptureFault("missing-anchor-name");
         if (fullName.Length > 4096) throw new CaptureFault("anchor-name-limit");
         records.Add(Tuple.Create(names[i], fullName, location, info));
@@ -640,8 +645,8 @@ B3AssetsObserverI00, B3AssetsObserverI01, B3AssetsObserverI02, B3AssetsObserverI
     }
     internal void RecheckRaw(Action tick) {
       if (raw == null || rawPath == null) return;
-      if (!Files.Read(rawPath, 16777216, tick).Same(raw) ||
-          !Files.Read(Root + "/raw-assets/project.assets.json", 16777216, tick).Same(raw)) throw new CaptureFault("raw-assets-changed");
+      if (!Files.Read(rawPath, 16777216, tick, expectedBytes: raw.Bytes).Same(raw) ||
+          !Files.Read(Root + "/raw-assets/project.assets.json", 16777216, tick, expectedBytes: raw.Bytes).Same(raw)) throw new CaptureFault("raw-assets-changed");
     }
     internal void SelectTables(CaptureTask.Row[]? rows, string packsRoot, Action tick) {
       if (tablesSelected) throw new CaptureFault("table-selection-repeated");
@@ -666,7 +671,7 @@ B3AssetsObserverI00, B3AssetsObserverI01, B3AssetsObserverI02, B3AssetsObserverI
                   if (copyRoute.Absent(tick)) {
                     Publish(temporary, destination);
                   } else {
-                    if (!Files.Read(Root + "/" + destination, 1048576, tick, null, tableReadBudget).Same(info)) throw new CaptureFault("table-copy-changed");
+                    if (!Files.Read(Root + "/" + destination, 1048576, tick, null, tableReadBudget, info.Bytes).Same(info)) throw new CaptureFault("table-copy-changed");
                     using (var duplicate = new Route(Root + "/" + temporary))
                       if (Native.UnlinkAt(Native.Fd(duplicate.Parent), duplicate.Leaf, 0) != 0) throw new CaptureFault("duplicate-prefix-unlink");
                   }
@@ -693,7 +698,7 @@ B3AssetsObserverI00, B3AssetsObserverI01, B3AssetsObserverI02, B3AssetsObserverI
       foreach (var row in tables) {
         tick(); using (var route = new Route(row.Item1)) {
           if (row.Item2 == null) { if (!route.Absent(tick)) throw new CaptureFault("table-absence-changed-or-unqualified"); }
-          else if (!Files.Read(row.Item1, 1048576, tick, null, budget).Same(row.Item2)) throw new CaptureFault("table-bytes-changed");
+          else if (!Files.Read(row.Item1, 1048576, tick, null, budget, row.Item2.Bytes).Same(row.Item2)) throw new CaptureFault("table-bytes-changed");
         }
       }
     }

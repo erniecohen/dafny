@@ -133,6 +133,8 @@
   "allowedRoutingFiles": [
     ".github/review/b3-if-guard-corpus-inputs.json",
     ".github/review/b3-if-guard-corpus.py",
+    ".github/review/cli-assets-observer/ATTEMPTED-READ-PLAN.md",
+    ".github/review/cli-assets-observer/ATTEMPTED-READ-PRIMARY.json",
     ".github/review/cli-assets-observer/B3AssetsObserver.cs",
     ".github/review/cli-assets-observer/B3AssetsObserver.targets",
     ".github/review/cli-assets-observer/EXECUTION-PINS.json",
