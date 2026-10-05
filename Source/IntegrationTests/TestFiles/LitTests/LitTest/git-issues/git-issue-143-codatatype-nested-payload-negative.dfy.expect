@@ -1,0 +1,3 @@
+git-issue-143-codatatype-nested-payload-negative.dfy(8,41): Error: result of operation might violate subset type constraint for 'Impossible'
+
+Dafny program verifier finished with 1 verified, 1 error
