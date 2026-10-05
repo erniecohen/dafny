@@ -129,7 +129,17 @@ namespace Microsoft.Dafny {
           }
         case BinaryExpr binaryExpr: {
             var bin = binaryExpr;
-            if (position && bin.ResolvedOp == BinaryExpr.ResolvedOpcode.And) {
+            if (options.Get(CommonOptionBag.ConsistentObligationChecks) && position &&
+                bin.ResolvedOp == BinaryExpr.ResolvedOpcode.Iff) {
+              // Both directions have monotone proposition positions. Treating
+              // the entire equivalence as a value would lose the recursive
+              // existential's check/summary fuel interface.
+              TrSplitExpr(context, Expression.CreateImplies(bin.E0, bin.E1, false), splits,
+                position, heightLimit, applyInduction, etran);
+              TrSplitExpr(context, Expression.CreateImplies(bin.E1, bin.E0, false), splits,
+                position, heightLimit, applyInduction, etran);
+              return true;
+            } else if (position && bin.ResolvedOp == BinaryExpr.ResolvedOpcode.And) {
               TrSplitExpr(context, bin.E0, splits, position, heightLimit, applyInduction, etran);
               TrSplitExpr(context, bin.E1, splits, position, heightLimit, applyInduction, etran);
               return true;
@@ -579,7 +589,9 @@ namespace Microsoft.Dafny {
             }
 
             // body
-            var trBody = etran.TrExpr(typeSpecializedBody);
+            // The free definition consequence is a value at the existing
+            // layer. Its checked subpropositions selected fuel separately.
+            var trBody = etran.AsVerificationValue().TrExpr(typeSpecializedBody);
             trBody = CondApplyUnbox(trBody.tok, trBody, typeSpecializedResultType, expr.Type);
             // F#canCall(args) && F(args) && (b0 && b1 && b2)
             var fr = BplAnd(canCall, BplAnd(fargs, trBody));

@@ -175,7 +175,7 @@ namespace Microsoft.Dafny {
               CheckWellformedAndAssume(e.E0, wfOptions, locals, b0, etran, comment);
               var b1 = new BoogieStmtListBuilder(this, options, builder.Context);
               b1.Add(TrAssumeCmd(expr.Origin, etran.CanCallAssumption(e.E0)));
-              b1.Add(TrAssumeCmdWithDependenciesAndExtend(etran, expr.Origin, e.E0, Expr.Not, comment));
+              b1.Add(TrAssumeCmdWithDependenciesAndExtend(etran, expr.Origin, e.E0, Expr.Not, comment, verificationUse: VerificationExpressionUse.Summary, positive: false));
               CheckWellformedAndAssume(e.E1, wfOptions, locals, b1, etran, comment);
               builder.Add(new Bpl.IfCmd(expr.Origin, null, b0.Collect(expr.Origin), null, b1.Collect(expr.Origin)));
             }
@@ -197,7 +197,7 @@ namespace Microsoft.Dafny {
         CheckWellformedAndAssume(e.Thn, wfOptions, locals, bThen, etran, comment);
         var bElse = new BoogieStmtListBuilder(this, options, builder.Context);
         bElse.Add(TrAssumeCmd(expr.Origin, etran.CanCallAssumption(e.Test)));
-        bElse.Add(TrAssumeCmdWithDependenciesAndExtend(etran, expr.Origin, e.Test, Expr.Not, comment));
+        bElse.Add(TrAssumeCmdWithDependenciesAndExtend(etran, expr.Origin, e.Test, Expr.Not, comment, verificationUse: VerificationExpressionUse.Summary, positive: false));
         CheckWellformedAndAssume(e.Els, wfOptions, locals, bElse, etran, comment);
         builder.Add(new Bpl.IfCmd(expr.Origin, null, bThen.Collect(expr.Origin), null, bElse.Collect(expr.Origin)));
         return;
