@@ -1,0 +1,1534 @@
+{
+  "run": 37361031421,
+  "oracles_unchanged": true,
+  "rows": [
+    {
+      "artifact_id": 11367197608,
+      "case": "git-issues/git-issue-82.dfy",
+      "side": "baseline",
+      "raw_comparison_sha256": "972d249380bff11a97fbbe7d2b7cf620c8e54957f86264591a5396ba781afb12",
+      "comparison_complete": true,
+      "original_output_checks": [
+        {
+          "source_run_id": "e8386e3450d5681e57b3",
+          "literal_run": "%diff \"%s.expect\" \"%t\"",
+          "kind": "diff",
+          "expected_sha256": "e8ff80079b380ed1ae0b0b6f31f4f6aace56ba29bbaf2b86a27ac1cc2ddafa7f",
+          "actual_text_sha256": "e8ff80079b380ed1ae0b0b6f31f4f6aace56ba29bbaf2b86a27ac1cc2ddafa7f",
+          "passed": true
+        }
+      ],
+      "output_check_count": 1,
+      "failed_output_check_count": 0,
+      "failed_output_checks": [],
+      "exit_mismatch_count": 0,
+      "exit_mismatch_runs": []
+    },
+    {
+      "artifact_id": 11367197608,
+      "case": "git-issues/git-issue-82.dfy",
+      "side": "final",
+      "raw_comparison_sha256": "972d249380bff11a97fbbe7d2b7cf620c8e54957f86264591a5396ba781afb12",
+      "comparison_complete": true,
+      "original_output_checks": [
+        {
+          "source_run_id": "e8386e3450d5681e57b3",
+          "literal_run": "%diff \"%s.expect\" \"%t\"",
+          "kind": "diff",
+          "expected_sha256": "e8ff80079b380ed1ae0b0b6f31f4f6aace56ba29bbaf2b86a27ac1cc2ddafa7f",
+          "actual_text_sha256": "e8ff80079b380ed1ae0b0b6f31f4f6aace56ba29bbaf2b86a27ac1cc2ddafa7f",
+          "passed": true
+        }
+      ],
+      "output_check_count": 1,
+      "failed_output_check_count": 0,
+      "failed_output_checks": [],
+      "exit_mismatch_count": 0,
+      "exit_mismatch_runs": []
+    },
+    {
+      "artifact_id": 11367197608,
+      "case": "git-issues/git-issue-82-maps.dfy",
+      "side": "baseline",
+      "raw_comparison_sha256": "a86202f303f241dedf2d06512585f271e245bcdfeaa426484bb852a4c97274ea",
+      "comparison_complete": true,
+      "original_output_checks": [
+        {
+          "source_run_id": "d0878a265d0425b41e22",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-false-false\" \"%S/Inputs/git-issue-82-maps-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "44573386ab935ae6c484951ec7bfb248399234cdaefabf6d8d5010c31e168a53",
+          "passed": true,
+          "directives": 3
+        },
+        {
+          "source_run_id": "cce26f26e202611b8031",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-false-true\" \"%S/Inputs/git-issue-82-maps-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "44573386ab935ae6c484951ec7bfb248399234cdaefabf6d8d5010c31e168a53",
+          "passed": true,
+          "directives": 3
+        },
+        {
+          "source_run_id": "f456b53e1d33b9f02734",
+          "literal_run": "%OutputCheck --file-to-check \"%t-capture-false\" \"%S/Inputs/git-issue-82-maps-capture.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "fb3f3ad2375e2d4e6cfddc0830c243d6db45cb4fb3a5e0f2c44dbce45e221d9c",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "d2e8647ce56a63d6c757",
+          "literal_run": "%OutputCheck --file-to-check \"%t-conditional-capture-false\" \"%S/Inputs/git-issue-82-maps-conditional-capture.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "1b1b2f46641ed71d685116cc567d21dfab6e3795868dfe7710af70a77295dc91",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "1df387b9f95acb684711",
+          "literal_run": "%OutputCheck --file-to-check \"%t-imap-capture-false\" \"%S/Inputs/git-issue-82-maps-imap-capture.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "23ca2e0abd41ecd58fe1a4ac4c568583e119352b6255e1f0c21bb4809c804215",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "04f5a4754824e779b900",
+          "literal_run": "%OutputCheck --file-to-check \"%t-conflict-false\" \"%S/Inputs/git-issue-82-maps-conflict.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "aec3f06f6ebb314b7cc5837fdb39dc5ee1b6031ae0d469467f12322aeb60a41d",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "0deeaaf903130311b7e6",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-true-false\" \"%S/Inputs/git-issue-82-maps-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "44573386ab935ae6c484951ec7bfb248399234cdaefabf6d8d5010c31e168a53",
+          "passed": true,
+          "directives": 3
+        },
+        {
+          "source_run_id": "85d0730dcf69ab508b5d",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-true-true\" \"%S/Inputs/git-issue-82-maps-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "44573386ab935ae6c484951ec7bfb248399234cdaefabf6d8d5010c31e168a53",
+          "passed": true,
+          "directives": 3
+        },
+        {
+          "source_run_id": "ef800b12471801f11729",
+          "literal_run": "%OutputCheck --file-to-check \"%t-capture-true\" \"%S/Inputs/git-issue-82-maps-capture.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "fb3f3ad2375e2d4e6cfddc0830c243d6db45cb4fb3a5e0f2c44dbce45e221d9c",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "89fffa45cdc1469c120a",
+          "literal_run": "%OutputCheck --file-to-check \"%t-conditional-capture-true\" \"%S/Inputs/git-issue-82-maps-conditional-capture.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "1b1b2f46641ed71d685116cc567d21dfab6e3795868dfe7710af70a77295dc91",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "85de23ab2fce9caec9f9",
+          "literal_run": "%OutputCheck --file-to-check \"%t-imap-capture-true\" \"%S/Inputs/git-issue-82-maps-imap-capture.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "23ca2e0abd41ecd58fe1a4ac4c568583e119352b6255e1f0c21bb4809c804215",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "176e856c233119f3ede2",
+          "literal_run": "%OutputCheck --file-to-check \"%t-conflict-true\" \"%S/Inputs/git-issue-82-maps-conflict.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "aec3f06f6ebb314b7cc5837fdb39dc5ee1b6031ae0d469467f12322aeb60a41d",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "a5c0d2201cf2aa89db52",
+          "literal_run": "%OutputCheck --file-to-check \"%t-local-capture-false\" \"%S/Inputs/git-issue-82-maps-local-capture.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "b3ff9f9d2d6e04f032b64a9688716c193a14d01523d2f45920b07f3d04cccc82",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "268ece0be1e227a8ebbe",
+          "literal_run": "%OutputCheck --file-to-check \"%t-local-capture-true\" \"%S/Inputs/git-issue-82-maps-local-capture.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "b3ff9f9d2d6e04f032b64a9688716c193a14d01523d2f45920b07f3d04cccc82",
+          "passed": true,
+          "directives": 5
+        }
+      ],
+      "output_check_count": 14,
+      "failed_output_check_count": 0,
+      "failed_output_checks": [],
+      "exit_mismatch_count": 0,
+      "exit_mismatch_runs": []
+    },
+    {
+      "artifact_id": 11367197608,
+      "case": "git-issues/git-issue-82-maps.dfy",
+      "side": "final",
+      "raw_comparison_sha256": "a86202f303f241dedf2d06512585f271e245bcdfeaa426484bb852a4c97274ea",
+      "comparison_complete": true,
+      "original_output_checks": [
+        {
+          "source_run_id": "d0878a265d0425b41e22",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-false-false\" \"%S/Inputs/git-issue-82-maps-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "44573386ab935ae6c484951ec7bfb248399234cdaefabf6d8d5010c31e168a53",
+          "passed": true,
+          "directives": 3
+        },
+        {
+          "source_run_id": "cce26f26e202611b8031",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-false-true\" \"%S/Inputs/git-issue-82-maps-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "44573386ab935ae6c484951ec7bfb248399234cdaefabf6d8d5010c31e168a53",
+          "passed": true,
+          "directives": 3
+        },
+        {
+          "source_run_id": "f456b53e1d33b9f02734",
+          "literal_run": "%OutputCheck --file-to-check \"%t-capture-false\" \"%S/Inputs/git-issue-82-maps-capture.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "fb3f3ad2375e2d4e6cfddc0830c243d6db45cb4fb3a5e0f2c44dbce45e221d9c",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "d2e8647ce56a63d6c757",
+          "literal_run": "%OutputCheck --file-to-check \"%t-conditional-capture-false\" \"%S/Inputs/git-issue-82-maps-conditional-capture.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "1b1b2f46641ed71d685116cc567d21dfab6e3795868dfe7710af70a77295dc91",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "1df387b9f95acb684711",
+          "literal_run": "%OutputCheck --file-to-check \"%t-imap-capture-false\" \"%S/Inputs/git-issue-82-maps-imap-capture.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "23ca2e0abd41ecd58fe1a4ac4c568583e119352b6255e1f0c21bb4809c804215",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "04f5a4754824e779b900",
+          "literal_run": "%OutputCheck --file-to-check \"%t-conflict-false\" \"%S/Inputs/git-issue-82-maps-conflict.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "aec3f06f6ebb314b7cc5837fdb39dc5ee1b6031ae0d469467f12322aeb60a41d",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "0deeaaf903130311b7e6",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-true-false\" \"%S/Inputs/git-issue-82-maps-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "44573386ab935ae6c484951ec7bfb248399234cdaefabf6d8d5010c31e168a53",
+          "passed": true,
+          "directives": 3
+        },
+        {
+          "source_run_id": "85d0730dcf69ab508b5d",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-true-true\" \"%S/Inputs/git-issue-82-maps-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "44573386ab935ae6c484951ec7bfb248399234cdaefabf6d8d5010c31e168a53",
+          "passed": true,
+          "directives": 3
+        },
+        {
+          "source_run_id": "ef800b12471801f11729",
+          "literal_run": "%OutputCheck --file-to-check \"%t-capture-true\" \"%S/Inputs/git-issue-82-maps-capture.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "fb3f3ad2375e2d4e6cfddc0830c243d6db45cb4fb3a5e0f2c44dbce45e221d9c",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "89fffa45cdc1469c120a",
+          "literal_run": "%OutputCheck --file-to-check \"%t-conditional-capture-true\" \"%S/Inputs/git-issue-82-maps-conditional-capture.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "1b1b2f46641ed71d685116cc567d21dfab6e3795868dfe7710af70a77295dc91",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "85de23ab2fce9caec9f9",
+          "literal_run": "%OutputCheck --file-to-check \"%t-imap-capture-true\" \"%S/Inputs/git-issue-82-maps-imap-capture.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "23ca2e0abd41ecd58fe1a4ac4c568583e119352b6255e1f0c21bb4809c804215",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "176e856c233119f3ede2",
+          "literal_run": "%OutputCheck --file-to-check \"%t-conflict-true\" \"%S/Inputs/git-issue-82-maps-conflict.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "aec3f06f6ebb314b7cc5837fdb39dc5ee1b6031ae0d469467f12322aeb60a41d",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "a5c0d2201cf2aa89db52",
+          "literal_run": "%OutputCheck --file-to-check \"%t-local-capture-false\" \"%S/Inputs/git-issue-82-maps-local-capture.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "b3ff9f9d2d6e04f032b64a9688716c193a14d01523d2f45920b07f3d04cccc82",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "268ece0be1e227a8ebbe",
+          "literal_run": "%OutputCheck --file-to-check \"%t-local-capture-true\" \"%S/Inputs/git-issue-82-maps-local-capture.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "b3ff9f9d2d6e04f032b64a9688716c193a14d01523d2f45920b07f3d04cccc82",
+          "passed": true,
+          "directives": 5
+        }
+      ],
+      "output_check_count": 14,
+      "failed_output_check_count": 0,
+      "failed_output_checks": [],
+      "exit_mismatch_count": 0,
+      "exit_mismatch_runs": []
+    },
+    {
+      "artifact_id": 11367197608,
+      "case": "git-issues/git-issue-82-reads.dfy",
+      "side": "baseline",
+      "raw_comparison_sha256": "a384bb9f682c724a7cf4c5d00d0e4ee4a914f8d0cd3fdfe4345950c307ac68a7",
+      "comparison_complete": false,
+      "original_output_checks": [
+        {
+          "source_run_id": "2f3fea5c065c7af45bf3",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-false-false\" \"%S/Inputs/git-issue-82-reads-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6277a0cb565a9de0b18c4525930b2a999e31122946b7a3aa87a0e46952581532",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 3,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "d6c704cd3569efcc992a",
+          "literal_run": "%OutputCheck --file-to-check \"%t-negative-false-false\" \"%S/Inputs/git-issue-82-reads-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "36ce6e6d70a50b5221353a84498d8c6419d85fefc75aee1f7d763937559451f4",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "47939bd8c8b496c7d25a",
+          "literal_run": "%OutputCheck --file-to-check \"%t-precondition-false-false\" \"%S/Inputs/git-issue-82-reads-precondition.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "f0700a5d4c0a28a385565649dee90771819048ad0b23e7420213305a35d0ed0c",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "0183b916821cca5d37fb",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-false-true\" \"%S/Inputs/git-issue-82-reads-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6277a0cb565a9de0b18c4525930b2a999e31122946b7a3aa87a0e46952581532",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 3,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "7352852e28df75134b79",
+          "literal_run": "%OutputCheck --file-to-check \"%t-negative-false-true\" \"%S/Inputs/git-issue-82-reads-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "36ce6e6d70a50b5221353a84498d8c6419d85fefc75aee1f7d763937559451f4",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "090165b255c62df4cda8",
+          "literal_run": "%OutputCheck --file-to-check \"%t-precondition-false-true\" \"%S/Inputs/git-issue-82-reads-precondition.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "f0700a5d4c0a28a385565649dee90771819048ad0b23e7420213305a35d0ed0c",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "7214ed8db73ce45a7c99",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-true-false\" \"%S/Inputs/git-issue-82-reads-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6277a0cb565a9de0b18c4525930b2a999e31122946b7a3aa87a0e46952581532",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 3,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "89661af33286867c2b54",
+          "literal_run": "%OutputCheck --file-to-check \"%t-negative-true-false\" \"%S/Inputs/git-issue-82-reads-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "36ce6e6d70a50b5221353a84498d8c6419d85fefc75aee1f7d763937559451f4",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "3b2fd6a0aafc2d55ded5",
+          "literal_run": "%OutputCheck --file-to-check \"%t-precondition-true-false\" \"%S/Inputs/git-issue-82-reads-precondition.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "f0700a5d4c0a28a385565649dee90771819048ad0b23e7420213305a35d0ed0c",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "95a800519ade1fced626",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-true-true\" \"%S/Inputs/git-issue-82-reads-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6277a0cb565a9de0b18c4525930b2a999e31122946b7a3aa87a0e46952581532",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 3,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "6dbd0fbdda9efc2aaf49",
+          "literal_run": "%OutputCheck --file-to-check \"%t-negative-true-true\" \"%S/Inputs/git-issue-82-reads-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "36ce6e6d70a50b5221353a84498d8c6419d85fefc75aee1f7d763937559451f4",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "0702b2fc20fbbca9f6cf",
+          "literal_run": "%OutputCheck --file-to-check \"%t-precondition-true-true\" \"%S/Inputs/git-issue-82-reads-precondition.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "f0700a5d4c0a28a385565649dee90771819048ad0b23e7420213305a35d0ed0c",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "82ac165815a279df652a",
+          "literal_run": "%OutputCheck --file-to-check \"%t-generated-negative-false-false\" \"%S/Inputs/git-issue-82-reads-generated-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6878e55e2c605ed0edac5afdbb448486dc9eee9a2a2a4f722f1a87729d4c2d04",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "4408ca821364506f9527",
+          "literal_run": "%OutputCheck --file-to-check \"%t-generated-negative-false-true\" \"%S/Inputs/git-issue-82-reads-generated-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6878e55e2c605ed0edac5afdbb448486dc9eee9a2a2a4f722f1a87729d4c2d04",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "bf046925b2646f1ae092",
+          "literal_run": "%OutputCheck --file-to-check \"%t-generated-negative-true-false\" \"%S/Inputs/git-issue-82-reads-generated-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6878e55e2c605ed0edac5afdbb448486dc9eee9a2a2a4f722f1a87729d4c2d04",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "878e89458c7dbab071f5",
+          "literal_run": "%OutputCheck --file-to-check \"%t-generated-negative-true-true\" \"%S/Inputs/git-issue-82-reads-generated-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6878e55e2c605ed0edac5afdbb448486dc9eee9a2a2a4f722f1a87729d4c2d04",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "926c9bf7bd98c2fea3c2",
+          "literal_run": "%OutputCheck --file-to-check \"%t-lambda-requires-negative-false-false\" \"%S/Inputs/git-issue-82-reads-lambda-requires-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8b6bad983439d84e407b4ea1778e95aeb54ea3d2555d66a3ae0516a94e998d7a",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "c326edbc1a561ad8f274",
+          "literal_run": "%OutputCheck --file-to-check \"%t-lambda-requires-negative-false-true\" \"%S/Inputs/git-issue-82-reads-lambda-requires-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8b6bad983439d84e407b4ea1778e95aeb54ea3d2555d66a3ae0516a94e998d7a",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "c34657ed686cea1e24f4",
+          "literal_run": "%OutputCheck --file-to-check \"%t-lambda-requires-negative-true-false\" \"%S/Inputs/git-issue-82-reads-lambda-requires-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8b6bad983439d84e407b4ea1778e95aeb54ea3d2555d66a3ae0516a94e998d7a",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "0c8ca08d21792ccd4d34",
+          "literal_run": "%OutputCheck --file-to-check \"%t-lambda-requires-negative-true-true\" \"%S/Inputs/git-issue-82-reads-lambda-requires-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8b6bad983439d84e407b4ea1778e95aeb54ea3d2555d66a3ae0516a94e998d7a",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "acfb08b3da210b48d829",
+          "literal_run": "%OutputCheck --file-to-check \"%t-unavailable-negative-false-false\" \"%S/Inputs/git-issue-82-reads-unavailable-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "901dcef5ca37f072e249e06da6a8afca56b41eabc82122caee87cba80953f054",
+          "passed": true,
+          "directives": 7
+        },
+        {
+          "source_run_id": "2756df30e809dc867b3c",
+          "literal_run": "%OutputCheck --file-to-check \"%t-unavailable-negative-false-true\" \"%S/Inputs/git-issue-82-reads-unavailable-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "901dcef5ca37f072e249e06da6a8afca56b41eabc82122caee87cba80953f054",
+          "passed": true,
+          "directives": 7
+        },
+        {
+          "source_run_id": "b695419c92acea618559",
+          "literal_run": "%OutputCheck --file-to-check \"%t-unavailable-negative-true-false\" \"%S/Inputs/git-issue-82-reads-unavailable-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "901dcef5ca37f072e249e06da6a8afca56b41eabc82122caee87cba80953f054",
+          "passed": true,
+          "directives": 7
+        },
+        {
+          "source_run_id": "eba61be0c0f8af9857e1",
+          "literal_run": "%OutputCheck --file-to-check \"%t-unavailable-negative-true-true\" \"%S/Inputs/git-issue-82-reads-unavailable-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "901dcef5ca37f072e249e06da6a8afca56b41eabc82122caee87cba80953f054",
+          "passed": true,
+          "directives": 7
+        },
+        {
+          "source_run_id": "a043c2daa372471ca0fd",
+          "literal_run": "%OutputCheck --file-to-check \"%t-old-only-negative-false-false\" \"%S/Inputs/git-issue-82-reads-old-only-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "f6714bb93d816f6c55d94eeb1a73caa61a4d71583488e44cdd95ba95853e23a2",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "51c0c3be43baf98d86f1",
+          "literal_run": "%OutputCheck --file-to-check \"%t-old-only-negative-false-true\" \"%S/Inputs/git-issue-82-reads-old-only-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "f6714bb93d816f6c55d94eeb1a73caa61a4d71583488e44cdd95ba95853e23a2",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "1fed568beefefae66f52",
+          "literal_run": "%OutputCheck --file-to-check \"%t-old-only-negative-true-false\" \"%S/Inputs/git-issue-82-reads-old-only-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "f6714bb93d816f6c55d94eeb1a73caa61a4d71583488e44cdd95ba95853e23a2",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "32e65e7d9cd139ede1d9",
+          "literal_run": "%OutputCheck --file-to-check \"%t-old-only-negative-true-true\" \"%S/Inputs/git-issue-82-reads-old-only-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "f6714bb93d816f6c55d94eeb1a73caa61a4d71583488e44cdd95ba95853e23a2",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "480fbe10a865fb7fa3ba",
+          "literal_run": "%OutputCheck --file-to-check \"%t-returned-callback-negative-false-false\" \"%S/Inputs/git-issue-82-reads-returned-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "2496c3d7820cdf6b2369723f10b064b9068ff95ddc537a496d058f8a0c15162f",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "f58b9d1c642a10faed1d",
+          "literal_run": "%OutputCheck --file-to-check \"%t-returned-callback-negative-false-true\" \"%S/Inputs/git-issue-82-reads-returned-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "2496c3d7820cdf6b2369723f10b064b9068ff95ddc537a496d058f8a0c15162f",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "a2639b637c96edb44e9d",
+          "literal_run": "%OutputCheck --file-to-check \"%t-returned-callback-negative-true-false\" \"%S/Inputs/git-issue-82-reads-returned-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "2496c3d7820cdf6b2369723f10b064b9068ff95ddc537a496d058f8a0c15162f",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "486ccbff6c9f5d19c7c0",
+          "literal_run": "%OutputCheck --file-to-check \"%t-returned-callback-negative-true-true\" \"%S/Inputs/git-issue-82-reads-returned-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "2496c3d7820cdf6b2369723f10b064b9068ff95ddc537a496d058f8a0c15162f",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "16923a10e541b21bc6b5",
+          "literal_run": "%OutputCheck --file-to-check \"%t-intermediate-callback-negative-false-false\" \"%S/Inputs/git-issue-82-reads-intermediate-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "d1e42c396f5dd069af4e539e2dae9742bd8fae95fb53439a6bd40af070634e5a",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "a108a04ee9dcb794e77f",
+          "literal_run": "%OutputCheck --file-to-check \"%t-intermediate-callback-negative-false-true\" \"%S/Inputs/git-issue-82-reads-intermediate-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "d1e42c396f5dd069af4e539e2dae9742bd8fae95fb53439a6bd40af070634e5a",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "cb22f0eed9878034ec5e",
+          "literal_run": "%OutputCheck --file-to-check \"%t-intermediate-callback-negative-true-false\" \"%S/Inputs/git-issue-82-reads-intermediate-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "d1e42c396f5dd069af4e539e2dae9742bd8fae95fb53439a6bd40af070634e5a",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "6e731a867b6b39f0b827",
+          "literal_run": "%OutputCheck --file-to-check \"%t-intermediate-callback-negative-true-true\" \"%S/Inputs/git-issue-82-reads-intermediate-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "d1e42c396f5dd069af4e539e2dae9742bd8fae95fb53439a6bd40af070634e5a",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "69df0fd0dfbd1d8d70b5",
+          "literal_run": "%OutputCheck --file-to-check \"%t-fresh-reference-false-false\" \"%S/Inputs/git-issue-82-reads-fresh-reference-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8e7eeb6f8815f1a79eaccecbabc478c6f37193c53bf189ccd7be337df3dfb770",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "a7135f19bc90365be2e7",
+          "literal_run": "%OutputCheck --file-to-check \"%t-fresh-reference-false-true\" \"%S/Inputs/git-issue-82-reads-fresh-reference-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8e7eeb6f8815f1a79eaccecbabc478c6f37193c53bf189ccd7be337df3dfb770",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "917218257fa76396b2d7",
+          "literal_run": "%OutputCheck --file-to-check \"%t-fresh-reference-true-false\" \"%S/Inputs/git-issue-82-reads-fresh-reference-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8e7eeb6f8815f1a79eaccecbabc478c6f37193c53bf189ccd7be337df3dfb770",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "eb9398fc4ce8452ca56e",
+          "literal_run": "%OutputCheck --file-to-check \"%t-fresh-reference-true-true\" \"%S/Inputs/git-issue-82-reads-fresh-reference-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8e7eeb6f8815f1a79eaccecbabc478c6f37193c53bf189ccd7be337df3dfb770",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        }
+      ],
+      "output_check_count": 40,
+      "failed_output_check_count": 12,
+      "failed_output_checks": [
+        {
+          "source_run_id": "2f3fea5c065c7af45bf3",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-false-false\" \"%S/Inputs/git-issue-82-reads-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6277a0cb565a9de0b18c4525930b2a999e31122946b7a3aa87a0e46952581532",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 3,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "0183b916821cca5d37fb",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-false-true\" \"%S/Inputs/git-issue-82-reads-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6277a0cb565a9de0b18c4525930b2a999e31122946b7a3aa87a0e46952581532",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 3,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "7214ed8db73ce45a7c99",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-true-false\" \"%S/Inputs/git-issue-82-reads-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6277a0cb565a9de0b18c4525930b2a999e31122946b7a3aa87a0e46952581532",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 3,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "95a800519ade1fced626",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-true-true\" \"%S/Inputs/git-issue-82-reads-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6277a0cb565a9de0b18c4525930b2a999e31122946b7a3aa87a0e46952581532",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 3,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "16923a10e541b21bc6b5",
+          "literal_run": "%OutputCheck --file-to-check \"%t-intermediate-callback-negative-false-false\" \"%S/Inputs/git-issue-82-reads-intermediate-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "d1e42c396f5dd069af4e539e2dae9742bd8fae95fb53439a6bd40af070634e5a",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "a108a04ee9dcb794e77f",
+          "literal_run": "%OutputCheck --file-to-check \"%t-intermediate-callback-negative-false-true\" \"%S/Inputs/git-issue-82-reads-intermediate-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "d1e42c396f5dd069af4e539e2dae9742bd8fae95fb53439a6bd40af070634e5a",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "cb22f0eed9878034ec5e",
+          "literal_run": "%OutputCheck --file-to-check \"%t-intermediate-callback-negative-true-false\" \"%S/Inputs/git-issue-82-reads-intermediate-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "d1e42c396f5dd069af4e539e2dae9742bd8fae95fb53439a6bd40af070634e5a",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "6e731a867b6b39f0b827",
+          "literal_run": "%OutputCheck --file-to-check \"%t-intermediate-callback-negative-true-true\" \"%S/Inputs/git-issue-82-reads-intermediate-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "d1e42c396f5dd069af4e539e2dae9742bd8fae95fb53439a6bd40af070634e5a",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "69df0fd0dfbd1d8d70b5",
+          "literal_run": "%OutputCheck --file-to-check \"%t-fresh-reference-false-false\" \"%S/Inputs/git-issue-82-reads-fresh-reference-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8e7eeb6f8815f1a79eaccecbabc478c6f37193c53bf189ccd7be337df3dfb770",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "a7135f19bc90365be2e7",
+          "literal_run": "%OutputCheck --file-to-check \"%t-fresh-reference-false-true\" \"%S/Inputs/git-issue-82-reads-fresh-reference-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8e7eeb6f8815f1a79eaccecbabc478c6f37193c53bf189ccd7be337df3dfb770",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "917218257fa76396b2d7",
+          "literal_run": "%OutputCheck --file-to-check \"%t-fresh-reference-true-false\" \"%S/Inputs/git-issue-82-reads-fresh-reference-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8e7eeb6f8815f1a79eaccecbabc478c6f37193c53bf189ccd7be337df3dfb770",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "eb9398fc4ce8452ca56e",
+          "literal_run": "%OutputCheck --file-to-check \"%t-fresh-reference-true-true\" \"%S/Inputs/git-issue-82-reads-fresh-reference-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8e7eeb6f8815f1a79eaccecbabc478c6f37193c53bf189ccd7be337df3dfb770",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        }
+      ],
+      "exit_mismatch_count": 4,
+      "exit_mismatch_runs": [
+        {
+          "exit": 4,
+          "timed_out": false,
+          "seconds": 3.3651346649999994,
+          "source_run_id": "7fbb2b7b84efc28348e3",
+          "literal_run": "%exits-with 0 %baredafny verify \"%S/Inputs/git-issue-82-reads-positive.dfy\" --solver-path \"%review-z3\" --additional-axioms=false --cores:1 --resource-limit:2000000 --verification-time-limit:60 --show-snippets:false --use-basename-for-filename --error-limit:0 --allow-warnings --type-system-refresh:false > \"%t-positive-false-false\"",
+          "expected_exit": 0,
+          "verdict": [
+            "4",
+            "13 verified, 2 errors",
+            "209,233"
+          ],
+          "stdout_sha256": "1a5273a62d542821299034144dc06e271d8100ded77ee8734638011b51fd65d8",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "warning_lines": [
+            "git-issue-82-reads-positive.dfy(34,8): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.",
+            "git-issue-82-reads-positive.dfy(72,31): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual."
+          ],
+          "resources_csv_sha256": "d6132282db22d0a351026498f6f25235f0c74d7cfc817f62e7e4f51b28401e04",
+          "resources_json_sha256": "6401130e68742e7f3420c1534e203fda25ab9bbb606413d3a439a1a4559472a5",
+          "expected_exit_matched": false,
+          "incomplete": false
+        },
+        {
+          "exit": 4,
+          "timed_out": false,
+          "seconds": 3.441433078000017,
+          "source_run_id": "371474e1c10c06b07fd9",
+          "literal_run": "%exits-with 0 %baredafny verify \"%S/Inputs/git-issue-82-reads-positive.dfy\" --solver-path \"%review-z3\" --additional-axioms=true --cores:1 --resource-limit:2000000 --verification-time-limit:60 --show-snippets:false --use-basename-for-filename --error-limit:0 --allow-warnings --type-system-refresh:false > \"%t-positive-false-true\"",
+          "expected_exit": 0,
+          "verdict": [
+            "4",
+            "13 verified, 2 errors",
+            "209,233"
+          ],
+          "stdout_sha256": "dcafca69129db54d5a208e9a029720933adf6eeca0bad1a5293091000a16e2dc",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "warning_lines": [
+            "git-issue-82-reads-positive.dfy(34,8): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.",
+            "git-issue-82-reads-positive.dfy(72,31): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual."
+          ],
+          "resources_csv_sha256": "c46a108cf522643dcd30805b0f7299e72a4cd73760ed850d0b73d981b26993b5",
+          "resources_json_sha256": "da17f53050a2dc57d23e2105126bd27548f3aa4d2ee1fd115b7038df72832448",
+          "expected_exit_matched": false,
+          "incomplete": false
+        },
+        {
+          "exit": 4,
+          "timed_out": false,
+          "seconds": 3.3247481300000175,
+          "source_run_id": "9bb22c55f0aa366a777b",
+          "literal_run": "%exits-with 0 %baredafny verify \"%S/Inputs/git-issue-82-reads-positive.dfy\" --solver-path \"%review-z3\" --additional-axioms=false --cores:1 --resource-limit:2000000 --verification-time-limit:60 --show-snippets:false --use-basename-for-filename --error-limit:0 --allow-warnings --type-system-refresh:true > \"%t-positive-true-false\"",
+          "expected_exit": 0,
+          "verdict": [
+            "4",
+            "13 verified, 2 errors",
+            "209,233"
+          ],
+          "stdout_sha256": "632119ed7a7e86d067bee85144c8521e546e6254b2e28f721056be1491ec176b",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "warning_lines": [
+            "git-issue-82-reads-positive.dfy(34,8): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.",
+            "git-issue-82-reads-positive.dfy(72,31): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual."
+          ],
+          "resources_csv_sha256": "c9f4d77263d16d97961454d2d5e73117d02767651df8b7819c6eb9e7b6b8b603",
+          "resources_json_sha256": "0477a12b4f51f045119147c1b157f417c08ecebe579562d1bd36b8ce00b25742",
+          "expected_exit_matched": false,
+          "incomplete": false
+        },
+        {
+          "exit": 4,
+          "timed_out": false,
+          "seconds": 2.9339461819999997,
+          "source_run_id": "841b0d49bfcafb89277e",
+          "literal_run": "%exits-with 0 %baredafny verify \"%S/Inputs/git-issue-82-reads-positive.dfy\" --solver-path \"%review-z3\" --additional-axioms=true --cores:1 --resource-limit:2000000 --verification-time-limit:60 --show-snippets:false --use-basename-for-filename --error-limit:0 --allow-warnings --type-system-refresh:true > \"%t-positive-true-true\"",
+          "expected_exit": 0,
+          "verdict": [
+            "4",
+            "13 verified, 2 errors",
+            "209,233"
+          ],
+          "stdout_sha256": "fb76d989ae59387c3acc08cf24bdfcaadca9a8a5a8edc69e6bf1d67e3c40d493",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "warning_lines": [
+            "git-issue-82-reads-positive.dfy(34,8): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.",
+            "git-issue-82-reads-positive.dfy(72,31): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual."
+          ],
+          "resources_csv_sha256": "88468855a4d5a4268f59b3b500489cc58a7d1c416363656e1e9b8010e7ea63bf",
+          "resources_json_sha256": "3ab0d052e133c1fbd5a567e8e060e57cee59886da1c8baac15b429ccad9a9c9b",
+          "expected_exit_matched": false,
+          "incomplete": false
+        }
+      ]
+    },
+    {
+      "artifact_id": 11367197608,
+      "case": "git-issues/git-issue-82-reads.dfy",
+      "side": "final",
+      "raw_comparison_sha256": "a384bb9f682c724a7cf4c5d00d0e4ee4a914f8d0cd3fdfe4345950c307ac68a7",
+      "comparison_complete": false,
+      "original_output_checks": [
+        {
+          "source_run_id": "2f3fea5c065c7af45bf3",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-false-false\" \"%S/Inputs/git-issue-82-reads-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6277a0cb565a9de0b18c4525930b2a999e31122946b7a3aa87a0e46952581532",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 3,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "d6c704cd3569efcc992a",
+          "literal_run": "%OutputCheck --file-to-check \"%t-negative-false-false\" \"%S/Inputs/git-issue-82-reads-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "36ce6e6d70a50b5221353a84498d8c6419d85fefc75aee1f7d763937559451f4",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "47939bd8c8b496c7d25a",
+          "literal_run": "%OutputCheck --file-to-check \"%t-precondition-false-false\" \"%S/Inputs/git-issue-82-reads-precondition.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "f0700a5d4c0a28a385565649dee90771819048ad0b23e7420213305a35d0ed0c",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "0183b916821cca5d37fb",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-false-true\" \"%S/Inputs/git-issue-82-reads-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6277a0cb565a9de0b18c4525930b2a999e31122946b7a3aa87a0e46952581532",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 3,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "7352852e28df75134b79",
+          "literal_run": "%OutputCheck --file-to-check \"%t-negative-false-true\" \"%S/Inputs/git-issue-82-reads-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "36ce6e6d70a50b5221353a84498d8c6419d85fefc75aee1f7d763937559451f4",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "090165b255c62df4cda8",
+          "literal_run": "%OutputCheck --file-to-check \"%t-precondition-false-true\" \"%S/Inputs/git-issue-82-reads-precondition.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "f0700a5d4c0a28a385565649dee90771819048ad0b23e7420213305a35d0ed0c",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "7214ed8db73ce45a7c99",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-true-false\" \"%S/Inputs/git-issue-82-reads-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6277a0cb565a9de0b18c4525930b2a999e31122946b7a3aa87a0e46952581532",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 3,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "89661af33286867c2b54",
+          "literal_run": "%OutputCheck --file-to-check \"%t-negative-true-false\" \"%S/Inputs/git-issue-82-reads-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "36ce6e6d70a50b5221353a84498d8c6419d85fefc75aee1f7d763937559451f4",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "3b2fd6a0aafc2d55ded5",
+          "literal_run": "%OutputCheck --file-to-check \"%t-precondition-true-false\" \"%S/Inputs/git-issue-82-reads-precondition.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "f0700a5d4c0a28a385565649dee90771819048ad0b23e7420213305a35d0ed0c",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "95a800519ade1fced626",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-true-true\" \"%S/Inputs/git-issue-82-reads-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6277a0cb565a9de0b18c4525930b2a999e31122946b7a3aa87a0e46952581532",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 3,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "6dbd0fbdda9efc2aaf49",
+          "literal_run": "%OutputCheck --file-to-check \"%t-negative-true-true\" \"%S/Inputs/git-issue-82-reads-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "36ce6e6d70a50b5221353a84498d8c6419d85fefc75aee1f7d763937559451f4",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "0702b2fc20fbbca9f6cf",
+          "literal_run": "%OutputCheck --file-to-check \"%t-precondition-true-true\" \"%S/Inputs/git-issue-82-reads-precondition.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "f0700a5d4c0a28a385565649dee90771819048ad0b23e7420213305a35d0ed0c",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "82ac165815a279df652a",
+          "literal_run": "%OutputCheck --file-to-check \"%t-generated-negative-false-false\" \"%S/Inputs/git-issue-82-reads-generated-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6878e55e2c605ed0edac5afdbb448486dc9eee9a2a2a4f722f1a87729d4c2d04",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "4408ca821364506f9527",
+          "literal_run": "%OutputCheck --file-to-check \"%t-generated-negative-false-true\" \"%S/Inputs/git-issue-82-reads-generated-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6878e55e2c605ed0edac5afdbb448486dc9eee9a2a2a4f722f1a87729d4c2d04",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "bf046925b2646f1ae092",
+          "literal_run": "%OutputCheck --file-to-check \"%t-generated-negative-true-false\" \"%S/Inputs/git-issue-82-reads-generated-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6878e55e2c605ed0edac5afdbb448486dc9eee9a2a2a4f722f1a87729d4c2d04",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "878e89458c7dbab071f5",
+          "literal_run": "%OutputCheck --file-to-check \"%t-generated-negative-true-true\" \"%S/Inputs/git-issue-82-reads-generated-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6878e55e2c605ed0edac5afdbb448486dc9eee9a2a2a4f722f1a87729d4c2d04",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "926c9bf7bd98c2fea3c2",
+          "literal_run": "%OutputCheck --file-to-check \"%t-lambda-requires-negative-false-false\" \"%S/Inputs/git-issue-82-reads-lambda-requires-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8b6bad983439d84e407b4ea1778e95aeb54ea3d2555d66a3ae0516a94e998d7a",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "c326edbc1a561ad8f274",
+          "literal_run": "%OutputCheck --file-to-check \"%t-lambda-requires-negative-false-true\" \"%S/Inputs/git-issue-82-reads-lambda-requires-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8b6bad983439d84e407b4ea1778e95aeb54ea3d2555d66a3ae0516a94e998d7a",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "c34657ed686cea1e24f4",
+          "literal_run": "%OutputCheck --file-to-check \"%t-lambda-requires-negative-true-false\" \"%S/Inputs/git-issue-82-reads-lambda-requires-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8b6bad983439d84e407b4ea1778e95aeb54ea3d2555d66a3ae0516a94e998d7a",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "0c8ca08d21792ccd4d34",
+          "literal_run": "%OutputCheck --file-to-check \"%t-lambda-requires-negative-true-true\" \"%S/Inputs/git-issue-82-reads-lambda-requires-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8b6bad983439d84e407b4ea1778e95aeb54ea3d2555d66a3ae0516a94e998d7a",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "acfb08b3da210b48d829",
+          "literal_run": "%OutputCheck --file-to-check \"%t-unavailable-negative-false-false\" \"%S/Inputs/git-issue-82-reads-unavailable-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "901dcef5ca37f072e249e06da6a8afca56b41eabc82122caee87cba80953f054",
+          "passed": true,
+          "directives": 7
+        },
+        {
+          "source_run_id": "2756df30e809dc867b3c",
+          "literal_run": "%OutputCheck --file-to-check \"%t-unavailable-negative-false-true\" \"%S/Inputs/git-issue-82-reads-unavailable-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "901dcef5ca37f072e249e06da6a8afca56b41eabc82122caee87cba80953f054",
+          "passed": true,
+          "directives": 7
+        },
+        {
+          "source_run_id": "b695419c92acea618559",
+          "literal_run": "%OutputCheck --file-to-check \"%t-unavailable-negative-true-false\" \"%S/Inputs/git-issue-82-reads-unavailable-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "901dcef5ca37f072e249e06da6a8afca56b41eabc82122caee87cba80953f054",
+          "passed": true,
+          "directives": 7
+        },
+        {
+          "source_run_id": "eba61be0c0f8af9857e1",
+          "literal_run": "%OutputCheck --file-to-check \"%t-unavailable-negative-true-true\" \"%S/Inputs/git-issue-82-reads-unavailable-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "901dcef5ca37f072e249e06da6a8afca56b41eabc82122caee87cba80953f054",
+          "passed": true,
+          "directives": 7
+        },
+        {
+          "source_run_id": "a043c2daa372471ca0fd",
+          "literal_run": "%OutputCheck --file-to-check \"%t-old-only-negative-false-false\" \"%S/Inputs/git-issue-82-reads-old-only-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "f6714bb93d816f6c55d94eeb1a73caa61a4d71583488e44cdd95ba95853e23a2",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "51c0c3be43baf98d86f1",
+          "literal_run": "%OutputCheck --file-to-check \"%t-old-only-negative-false-true\" \"%S/Inputs/git-issue-82-reads-old-only-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "f6714bb93d816f6c55d94eeb1a73caa61a4d71583488e44cdd95ba95853e23a2",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "1fed568beefefae66f52",
+          "literal_run": "%OutputCheck --file-to-check \"%t-old-only-negative-true-false\" \"%S/Inputs/git-issue-82-reads-old-only-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "f6714bb93d816f6c55d94eeb1a73caa61a4d71583488e44cdd95ba95853e23a2",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "32e65e7d9cd139ede1d9",
+          "literal_run": "%OutputCheck --file-to-check \"%t-old-only-negative-true-true\" \"%S/Inputs/git-issue-82-reads-old-only-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "f6714bb93d816f6c55d94eeb1a73caa61a4d71583488e44cdd95ba95853e23a2",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "480fbe10a865fb7fa3ba",
+          "literal_run": "%OutputCheck --file-to-check \"%t-returned-callback-negative-false-false\" \"%S/Inputs/git-issue-82-reads-returned-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "2496c3d7820cdf6b2369723f10b064b9068ff95ddc537a496d058f8a0c15162f",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "f58b9d1c642a10faed1d",
+          "literal_run": "%OutputCheck --file-to-check \"%t-returned-callback-negative-false-true\" \"%S/Inputs/git-issue-82-reads-returned-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "2496c3d7820cdf6b2369723f10b064b9068ff95ddc537a496d058f8a0c15162f",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "a2639b637c96edb44e9d",
+          "literal_run": "%OutputCheck --file-to-check \"%t-returned-callback-negative-true-false\" \"%S/Inputs/git-issue-82-reads-returned-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "2496c3d7820cdf6b2369723f10b064b9068ff95ddc537a496d058f8a0c15162f",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "486ccbff6c9f5d19c7c0",
+          "literal_run": "%OutputCheck --file-to-check \"%t-returned-callback-negative-true-true\" \"%S/Inputs/git-issue-82-reads-returned-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "2496c3d7820cdf6b2369723f10b064b9068ff95ddc537a496d058f8a0c15162f",
+          "passed": true,
+          "directives": 5
+        },
+        {
+          "source_run_id": "16923a10e541b21bc6b5",
+          "literal_run": "%OutputCheck --file-to-check \"%t-intermediate-callback-negative-false-false\" \"%S/Inputs/git-issue-82-reads-intermediate-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "d1e42c396f5dd069af4e539e2dae9742bd8fae95fb53439a6bd40af070634e5a",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "a108a04ee9dcb794e77f",
+          "literal_run": "%OutputCheck --file-to-check \"%t-intermediate-callback-negative-false-true\" \"%S/Inputs/git-issue-82-reads-intermediate-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "d1e42c396f5dd069af4e539e2dae9742bd8fae95fb53439a6bd40af070634e5a",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "cb22f0eed9878034ec5e",
+          "literal_run": "%OutputCheck --file-to-check \"%t-intermediate-callback-negative-true-false\" \"%S/Inputs/git-issue-82-reads-intermediate-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "d1e42c396f5dd069af4e539e2dae9742bd8fae95fb53439a6bd40af070634e5a",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "6e731a867b6b39f0b827",
+          "literal_run": "%OutputCheck --file-to-check \"%t-intermediate-callback-negative-true-true\" \"%S/Inputs/git-issue-82-reads-intermediate-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "d1e42c396f5dd069af4e539e2dae9742bd8fae95fb53439a6bd40af070634e5a",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "69df0fd0dfbd1d8d70b5",
+          "literal_run": "%OutputCheck --file-to-check \"%t-fresh-reference-false-false\" \"%S/Inputs/git-issue-82-reads-fresh-reference-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8e7eeb6f8815f1a79eaccecbabc478c6f37193c53bf189ccd7be337df3dfb770",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "a7135f19bc90365be2e7",
+          "literal_run": "%OutputCheck --file-to-check \"%t-fresh-reference-false-true\" \"%S/Inputs/git-issue-82-reads-fresh-reference-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8e7eeb6f8815f1a79eaccecbabc478c6f37193c53bf189ccd7be337df3dfb770",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "917218257fa76396b2d7",
+          "literal_run": "%OutputCheck --file-to-check \"%t-fresh-reference-true-false\" \"%S/Inputs/git-issue-82-reads-fresh-reference-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8e7eeb6f8815f1a79eaccecbabc478c6f37193c53bf189ccd7be337df3dfb770",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "eb9398fc4ce8452ca56e",
+          "literal_run": "%OutputCheck --file-to-check \"%t-fresh-reference-true-true\" \"%S/Inputs/git-issue-82-reads-fresh-reference-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8e7eeb6f8815f1a79eaccecbabc478c6f37193c53bf189ccd7be337df3dfb770",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        }
+      ],
+      "output_check_count": 40,
+      "failed_output_check_count": 12,
+      "failed_output_checks": [
+        {
+          "source_run_id": "2f3fea5c065c7af45bf3",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-false-false\" \"%S/Inputs/git-issue-82-reads-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6277a0cb565a9de0b18c4525930b2a999e31122946b7a3aa87a0e46952581532",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 3,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "0183b916821cca5d37fb",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-false-true\" \"%S/Inputs/git-issue-82-reads-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6277a0cb565a9de0b18c4525930b2a999e31122946b7a3aa87a0e46952581532",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 3,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "7214ed8db73ce45a7c99",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-true-false\" \"%S/Inputs/git-issue-82-reads-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6277a0cb565a9de0b18c4525930b2a999e31122946b7a3aa87a0e46952581532",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 3,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "95a800519ade1fced626",
+          "literal_run": "%OutputCheck --file-to-check \"%t-positive-true-true\" \"%S/Inputs/git-issue-82-reads-positive.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "6277a0cb565a9de0b18c4525930b2a999e31122946b7a3aa87a0e46952581532",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 3,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "16923a10e541b21bc6b5",
+          "literal_run": "%OutputCheck --file-to-check \"%t-intermediate-callback-negative-false-false\" \"%S/Inputs/git-issue-82-reads-intermediate-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "d1e42c396f5dd069af4e539e2dae9742bd8fae95fb53439a6bd40af070634e5a",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "a108a04ee9dcb794e77f",
+          "literal_run": "%OutputCheck --file-to-check \"%t-intermediate-callback-negative-false-true\" \"%S/Inputs/git-issue-82-reads-intermediate-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "d1e42c396f5dd069af4e539e2dae9742bd8fae95fb53439a6bd40af070634e5a",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "cb22f0eed9878034ec5e",
+          "literal_run": "%OutputCheck --file-to-check \"%t-intermediate-callback-negative-true-false\" \"%S/Inputs/git-issue-82-reads-intermediate-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "d1e42c396f5dd069af4e539e2dae9742bd8fae95fb53439a6bd40af070634e5a",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "6e731a867b6b39f0b827",
+          "literal_run": "%OutputCheck --file-to-check \"%t-intermediate-callback-negative-true-true\" \"%S/Inputs/git-issue-82-reads-intermediate-callback-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "d1e42c396f5dd069af4e539e2dae9742bd8fae95fb53439a6bd40af070634e5a",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "69df0fd0dfbd1d8d70b5",
+          "literal_run": "%OutputCheck --file-to-check \"%t-fresh-reference-false-false\" \"%S/Inputs/git-issue-82-reads-fresh-reference-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8e7eeb6f8815f1a79eaccecbabc478c6f37193c53bf189ccd7be337df3dfb770",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "a7135f19bc90365be2e7",
+          "literal_run": "%OutputCheck --file-to-check \"%t-fresh-reference-false-true\" \"%S/Inputs/git-issue-82-reads-fresh-reference-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8e7eeb6f8815f1a79eaccecbabc478c6f37193c53bf189ccd7be337df3dfb770",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "917218257fa76396b2d7",
+          "literal_run": "%OutputCheck --file-to-check \"%t-fresh-reference-true-false\" \"%S/Inputs/git-issue-82-reads-fresh-reference-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8e7eeb6f8815f1a79eaccecbabc478c6f37193c53bf189ccd7be337df3dfb770",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        },
+        {
+          "source_run_id": "eb9398fc4ce8452ca56e",
+          "literal_run": "%OutputCheck --file-to-check \"%t-fresh-reference-true-true\" \"%S/Inputs/git-issue-82-reads-fresh-reference-negative.check\"",
+          "kind": "OutputCheck",
+          "check_sha256": "8e7eeb6f8815f1a79eaccecbabc478c6f37193c53bf189ccd7be337df3dfb770",
+          "passed": false,
+          "directive_line": 1,
+          "actual_line": 1,
+          "reason": "Forbidden pattern matched"
+        }
+      ],
+      "exit_mismatch_count": 4,
+      "exit_mismatch_runs": [
+        {
+          "exit": 4,
+          "timed_out": false,
+          "seconds": 2.9732377789999873,
+          "source_run_id": "7fbb2b7b84efc28348e3",
+          "literal_run": "%exits-with 0 %baredafny verify \"%S/Inputs/git-issue-82-reads-positive.dfy\" --solver-path \"%review-z3\" --additional-axioms=false --cores:1 --resource-limit:2000000 --verification-time-limit:60 --show-snippets:false --use-basename-for-filename --error-limit:0 --allow-warnings --type-system-refresh:false > \"%t-positive-false-false\"",
+          "expected_exit": 0,
+          "verdict": [
+            "4",
+            "13 verified, 2 errors",
+            "209,233"
+          ],
+          "stdout_sha256": "92d4f1ceba234ec2bac8f3e826aedc216c0efbd89cffe1705ae61a1fbea22bfe",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "warning_lines": [
+            "git-issue-82-reads-positive.dfy(34,8): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.",
+            "git-issue-82-reads-positive.dfy(72,31): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual."
+          ],
+          "resources_csv_sha256": "fad62bf0995cc9dbd95940b04d11fd80cef89e72ba6a380d7b2ec216ed26816e",
+          "resources_json_sha256": "75733909e02ee3a50d29d6fab38aa4721e1758f63582d8ef0ddc35409e91cf45",
+          "expected_exit_matched": false,
+          "incomplete": false
+        },
+        {
+          "exit": 4,
+          "timed_out": false,
+          "seconds": 2.9587994270000024,
+          "source_run_id": "371474e1c10c06b07fd9",
+          "literal_run": "%exits-with 0 %baredafny verify \"%S/Inputs/git-issue-82-reads-positive.dfy\" --solver-path \"%review-z3\" --additional-axioms=true --cores:1 --resource-limit:2000000 --verification-time-limit:60 --show-snippets:false --use-basename-for-filename --error-limit:0 --allow-warnings --type-system-refresh:false > \"%t-positive-false-true\"",
+          "expected_exit": 0,
+          "verdict": [
+            "4",
+            "13 verified, 2 errors",
+            "209,233"
+          ],
+          "stdout_sha256": "e1164d6ec889f70a8af639bc7d1dbb1e786221ff15ae4569ec96e506eacbbd38",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "warning_lines": [
+            "git-issue-82-reads-positive.dfy(34,8): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.",
+            "git-issue-82-reads-positive.dfy(72,31): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual."
+          ],
+          "resources_csv_sha256": "3f40bed5f2c2d95a83017e65aeda013b9f5663ccdf31749527ba3881958543bb",
+          "resources_json_sha256": "8fd788ff32303131087a252cb9f4a7743ed94855c813d9fd64fff62a475fad51",
+          "expected_exit_matched": false,
+          "incomplete": false
+        },
+        {
+          "exit": 4,
+          "timed_out": false,
+          "seconds": 2.9913557030000106,
+          "source_run_id": "9bb22c55f0aa366a777b",
+          "literal_run": "%exits-with 0 %baredafny verify \"%S/Inputs/git-issue-82-reads-positive.dfy\" --solver-path \"%review-z3\" --additional-axioms=false --cores:1 --resource-limit:2000000 --verification-time-limit:60 --show-snippets:false --use-basename-for-filename --error-limit:0 --allow-warnings --type-system-refresh:true > \"%t-positive-true-false\"",
+          "expected_exit": 0,
+          "verdict": [
+            "4",
+            "13 verified, 2 errors",
+            "209,233"
+          ],
+          "stdout_sha256": "5ba4947106f06a48db1ae2a08c480fedf43179b4de947123e850c84897b39e43",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "warning_lines": [
+            "git-issue-82-reads-positive.dfy(34,8): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.",
+            "git-issue-82-reads-positive.dfy(72,31): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual."
+          ],
+          "resources_csv_sha256": "5e70d553f67ea16c72ff91e1527ee0173a7e47c7743358e37635295a1853db38",
+          "resources_json_sha256": "77fce6c5bd0584bffa150f710cc9addf8066aaa90715a090d1585c991e924d14",
+          "expected_exit_matched": false,
+          "incomplete": false
+        },
+        {
+          "exit": 4,
+          "timed_out": false,
+          "seconds": 2.958510394000001,
+          "source_run_id": "841b0d49bfcafb89277e",
+          "literal_run": "%exits-with 0 %baredafny verify \"%S/Inputs/git-issue-82-reads-positive.dfy\" --solver-path \"%review-z3\" --additional-axioms=true --cores:1 --resource-limit:2000000 --verification-time-limit:60 --show-snippets:false --use-basename-for-filename --error-limit:0 --allow-warnings --type-system-refresh:true > \"%t-positive-true-true\"",
+          "expected_exit": 0,
+          "verdict": [
+            "4",
+            "13 verified, 2 errors",
+            "209,233"
+          ],
+          "stdout_sha256": "3ac97df134da76b17c0d110df9c4b58beb1778ae0250f2e9c6dc65b080f25785",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "warning_lines": [
+            "git-issue-82-reads-positive.dfy(34,8): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.",
+            "git-issue-82-reads-positive.dfy(72,31): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual."
+          ],
+          "resources_csv_sha256": "d2241f7f6fb6d3a08f5e413ea4f577088abbb902be78d29a84eefed3fa9ec427",
+          "resources_json_sha256": "b5ac85157a4a9c21559c1e6d2dc935f208b43473dbba4cd8eb7cd2bca6afc615",
+          "expected_exit_matched": false,
+          "incomplete": false
+        }
+      ]
+    },
+    {
+      "artifact_id": 11367875876,
+      "case": "git-issues/git-issue-82-bounds.dfy",
+      "side": "final",
+      "raw_comparison_sha256": "71ec7e8cfc2c7465ebfd64fbd453a8be89ae2e1834c95ce8a282b74a5f4c2c02",
+      "comparison_complete": true,
+      "original_output_checks": [
+        {
+          "source_run_id": "8127c33f503a37b7bb5d",
+          "literal_run": "%diff \"%s.expect\" \"%t\"",
+          "kind": "diff",
+          "expected_sha256": "e00042315e82201d437ac94b275b948a0d0dc41fc0441e2ee132e07cfe17d5a1",
+          "actual_text_sha256": "e00042315e82201d437ac94b275b948a0d0dc41fc0441e2ee132e07cfe17d5a1",
+          "passed": true
+        }
+      ],
+      "output_check_count": 1,
+      "failed_output_check_count": 0,
+      "failed_output_checks": [],
+      "exit_mismatch_count": 0,
+      "exit_mismatch_runs": []
+    },
+    {
+      "artifact_id": 11367875876,
+      "case": "git-issues/git-issue-82-bounds.dfy",
+      "side": "baseline",
+      "raw_comparison_sha256": "71ec7e8cfc2c7465ebfd64fbd453a8be89ae2e1834c95ce8a282b74a5f4c2c02",
+      "comparison_complete": true,
+      "original_output_checks": [
+        {
+          "source_run_id": "8127c33f503a37b7bb5d",
+          "literal_run": "%diff \"%s.expect\" \"%t\"",
+          "kind": "diff",
+          "expected_sha256": "e00042315e82201d437ac94b275b948a0d0dc41fc0441e2ee132e07cfe17d5a1",
+          "actual_text_sha256": "e00042315e82201d437ac94b275b948a0d0dc41fc0441e2ee132e07cfe17d5a1",
+          "passed": true
+        }
+      ],
+      "output_check_count": 1,
+      "failed_output_check_count": 0,
+      "failed_output_checks": [],
+      "exit_mismatch_count": 0,
+      "exit_mismatch_runs": []
+    },
+    {
+      "artifact_id": 11367875876,
+      "case": "git-issues/git-issue-82-newtypes.dfy",
+      "side": "final",
+      "raw_comparison_sha256": "0f3c7450f1143764bc92a8119947c2ec2c3a12a2d54867eb4e0eec8b139ed0cc",
+      "comparison_complete": true,
+      "original_output_checks": [
+        {
+          "source_run_id": "aa671dacdf5638e254ba",
+          "literal_run": "%diff \"%s.expect\" \"%t\"",
+          "kind": "diff",
+          "expected_sha256": "b1022c388ff85e6b3be3cee228d59c66642c9a1a52be33e49d5929d0cddeddb5",
+          "actual_text_sha256": "b1022c388ff85e6b3be3cee228d59c66642c9a1a52be33e49d5929d0cddeddb5",
+          "passed": true
+        }
+      ],
+      "output_check_count": 1,
+      "failed_output_check_count": 0,
+      "failed_output_checks": [],
+      "exit_mismatch_count": 0,
+      "exit_mismatch_runs": []
+    },
+    {
+      "artifact_id": 11367875876,
+      "case": "git-issues/git-issue-82-newtypes.dfy",
+      "side": "baseline",
+      "raw_comparison_sha256": "0f3c7450f1143764bc92a8119947c2ec2c3a12a2d54867eb4e0eec8b139ed0cc",
+      "comparison_complete": true,
+      "original_output_checks": [
+        {
+          "source_run_id": "aa671dacdf5638e254ba",
+          "literal_run": "%diff \"%s.expect\" \"%t\"",
+          "kind": "diff",
+          "expected_sha256": "b1022c388ff85e6b3be3cee228d59c66642c9a1a52be33e49d5929d0cddeddb5",
+          "actual_text_sha256": "b1022c388ff85e6b3be3cee228d59c66642c9a1a52be33e49d5929d0cddeddb5",
+          "passed": true
+        }
+      ],
+      "output_check_count": 1,
+      "failed_output_check_count": 0,
+      "failed_output_checks": [],
+      "exit_mismatch_count": 0,
+      "exit_mismatch_runs": []
+    }
+  ]
+}

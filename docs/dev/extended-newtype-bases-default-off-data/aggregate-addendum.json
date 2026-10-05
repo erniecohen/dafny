@@ -1,0 +1,209 @@
+{
+  "artifact_id": 11368665245,
+  "name": "full-default-off-report",
+  "API_inventory_sha256": "5a0505f81231ea21eea55c145d071f572d274e5441258f96cd9b50a34da0ac20",
+  "API_digest": "sha256:0049126637665b5c39fffa57731f3d58a096d26e0b4e0f3f3f47ada584e6b470",
+  "API_size": 746199,
+  "API_head": "56e2d6141bcb8c1d73622df13145294b178f17a3",
+  "ZIP_sha256": "0049126637665b5c39fffa57731f3d58a096d26e0b4e0f3f3f47ada584e6b470",
+  "receipt_sha256": "7c17b5f91483522552b8ecbebd9c4afc3005c85ad892170a5f71a64cfe2f38c3",
+  "member_sha256": {
+    "aggregate-exit.txt": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "closure-exit.txt": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "aggregate.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "closure-report.json": "44cded66fd4206c3f2722fbbd1966647daba270bee7c044ecc2116730a92f071",
+    "closure.txt": "e8e665af5ba2e6bdf7bfd90e00374317ddbea78a8f540027dcd42ed0f8081674",
+    "steps-before-upload.json": "44f75f85ed2c767da9d025e669bfab57fa918929cac6d7062d20688f174502ea",
+    "frozen-comparison-report.json": "16c89166abe319046cba125cdf21efa1449d03beb308a82624af9564c97d81a0",
+    "steps-collector-exit.txt": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+  },
+  "logical_to_physical_paths": {
+    "aggregate-exit.txt": "aggregate-exit.txt",
+    "closure-exit.txt": "closure-exit.txt",
+    "aggregate.txt": "aggregate.txt",
+    "closure-report.json": "closure-report.json",
+    "closure.txt": "closure.txt",
+    "steps-before-upload.json": "steps-before-upload.json",
+    "frozen-comparison-report.json": "frozen-comparison-report.json",
+    "steps-collector-exit.txt": "steps-collector-exit.txt"
+  },
+  "all_eight_logical_and_physical_bytes_verified": true,
+  "primary39_frozen_receipt_sha256": "c4aa419f3dbc51648777153355b623a69f2ea4bdc7c485d29335d1ab7e2970cf",
+  "primary39_unchanged": true,
+  "aggregate_groups_case_by_case_reconciled": 2190,
+  "literal_shard_summaries": [
+    {
+      "sides": [
+        "baseline",
+        "final"
+      ],
+      "observations_complete": true,
+      "candidate_verdict_movements": 0,
+      "source_spec_sha256": "cea8d68da7d8727f30efa6f5b88e18d009b24eb58fac839bc5426bfb9774ef94",
+      "shard": "0/2",
+      "literal_sources": 3,
+      "literal_mappings": 123,
+      "paired_verification_runs": 68,
+      "requested_invocations": 136,
+      "complete": false,
+      "verdict_movements": 0,
+      "resource_or_batch_movements": 0,
+      "translated_bpl_movements": 0,
+      "boundary": "Separate82 literal checks/flags; original4b denominator untouched; matched failures or warnings are not proof-green; translated BPL equality is not solver-query identity.",
+      "source_ids": [
+        "git-issues/git-issue-82.dfy",
+        "git-issues/git-issue-82-maps.dfy",
+        "git-issues/git-issue-82-reads.dfy"
+      ]
+    },
+    {
+      "sides": [
+        "baseline",
+        "final"
+      ],
+      "observations_complete": true,
+      "candidate_verdict_movements": 0,
+      "source_spec_sha256": "cea8d68da7d8727f30efa6f5b88e18d009b24eb58fac839bc5426bfb9774ef94",
+      "shard": "1/2",
+      "literal_sources": 2,
+      "literal_mappings": 27,
+      "paired_verification_runs": 25,
+      "requested_invocations": 50,
+      "complete": true,
+      "verdict_movements": 0,
+      "resource_or_batch_movements": 0,
+      "translated_bpl_movements": 0,
+      "boundary": "Separate82 literal checks/flags; original4b denominator untouched; matched failures or warnings are not proof-green; translated BPL equality is not solver-query identity.",
+      "source_ids": [
+        "git-issues/git-issue-82-bounds.dfy",
+        "git-issues/git-issue-82-newtypes.dfy"
+      ]
+    }
+  ],
+  "aggregate_groups": [
+    {
+      "group": "shipped/canonical/default/off/Z3 version 5.1.0 - 64 bit",
+      "expected": 1081,
+      "completed_denominator": 1081,
+      "differences": 0,
+      "verdict_movements": 0,
+      "resource_or_batch_movements": 0,
+      "translated_bpl_movements": 0,
+      "resources_comparable": 1041,
+      "translated_bpl_comparable": 796,
+      "incomplete": 16
+    },
+    {
+      "group": "shipped/canonical/default/on/Z3 version 5.1.0 - 64 bit",
+      "expected": 1081,
+      "completed_denominator": 1081,
+      "differences": 0,
+      "verdict_movements": 0,
+      "resource_or_batch_movements": 0,
+      "translated_bpl_movements": 0,
+      "resources_comparable": 1041,
+      "translated_bpl_comparable": 796,
+      "incomplete": 16
+    },
+    {
+      "group": "shipped/std/project/off/Z3 version 5.1.0 - 64 bit",
+      "expected": 7,
+      "completed_denominator": 7,
+      "differences": 1,
+      "verdict_movements": 0,
+      "resource_or_batch_movements": 1,
+      "translated_bpl_movements": 0,
+      "resources_comparable": 7,
+      "translated_bpl_comparable": 7,
+      "incomplete": 0
+    },
+    {
+      "group": "shipped/std/project/on/Z3 version 5.1.0 - 64 bit",
+      "expected": 7,
+      "completed_denominator": 7,
+      "differences": 1,
+      "verdict_movements": 0,
+      "resource_or_batch_movements": 1,
+      "translated_bpl_movements": 0,
+      "resources_comparable": 7,
+      "translated_bpl_comparable": 7,
+      "incomplete": 0
+    },
+    {
+      "group": "shipped/std/project/off/Z3 version 4.12.1 - 64 bit",
+      "expected": 7,
+      "completed_denominator": 7,
+      "differences": 1,
+      "verdict_movements": 0,
+      "resource_or_batch_movements": 1,
+      "translated_bpl_movements": 0,
+      "resources_comparable": 7,
+      "translated_bpl_comparable": 7,
+      "incomplete": 0
+    },
+    {
+      "group": "shipped/std/project/on/Z3 version 4.12.1 - 64 bit",
+      "expected": 7,
+      "completed_denominator": 7,
+      "differences": 1,
+      "verdict_movements": 0,
+      "resource_or_batch_movements": 1,
+      "translated_bpl_movements": 0,
+      "resources_comparable": 7,
+      "translated_bpl_comparable": 7,
+      "incomplete": 0
+    }
+  ],
+  "aggregate_complete_observations": false,
+  "closure_raw_observation_closure_complete": false,
+  "aggregate_missing_or_incomplete": [
+    "shipped/canonical/default/off/Z3 version 5.1.0 - 64 bit",
+    "shipped/canonical/default/on/Z3 version 5.1.0 - 64 bit",
+    "Separate repair82 literal cohort missing/incomplete"
+  ],
+  "closure_missing_or_incomplete": [
+    "shipped-canonical-default-ax-off-0",
+    "shipped-canonical-default-ax-off-1",
+    "shipped-canonical-default-ax-off-2",
+    "shipped-canonical-default-ax-off-3",
+    "shipped-canonical-default-ax-on-0",
+    "shipped-canonical-default-ax-on-1",
+    "shipped-canonical-default-ax-on-2",
+    "shipped-canonical-default-ax-on-3"
+  ],
+  "closure_completed_pairs": 2283,
+  "closure_observed_calls": 4566,
+  "raw_exit_text": {
+    "aggregate-exit.txt": "0\n",
+    "closure-exit.txt": "0\n",
+    "steps-collector-exit.txt": "0\n"
+  },
+  "raw_step_outcomes": {
+    "checkout_harness": {
+      "outputs": {
+        "commit": "56e2d6141bcb8c1d73622df13145294b178f17a3",
+        "ref": "refs/heads/scratch/113-current-default-off-full-1005"
+      },
+      "outcome": "success",
+      "conclusion": "success"
+    },
+    "download_observations": {
+      "outputs": {
+        "download-path": "/home/runner/work/dafny/dafny/observations"
+      },
+      "outcome": "success",
+      "conclusion": "success"
+    },
+    "compare": {
+      "outputs": {},
+      "outcome": "success",
+      "conclusion": "success"
+    },
+    "summary": {
+      "outputs": {},
+      "outcome": "success",
+      "conclusion": "success"
+    }
+  },
+  "interpretation": "All requested physical calls were retained. Raw collector false flags remain false because 32 empty-root/intentional-CLI incomplete pairs and unchanged literal reads-oracle failures remain; no missing paired job is inferred, no acceptance waiver is granted. Four unexplained Std resource movements remain blockers."
+}

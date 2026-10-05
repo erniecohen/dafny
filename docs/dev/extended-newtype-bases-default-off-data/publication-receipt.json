@@ -1,0 +1,41 @@
+{
+  "accepted_default_off_gate": false,
+  "baseline_product": "bbf90260694e2e3004030c35b57f012a98b7c65d",
+  "current_Source": "9c2bb48a778ee2abd6ef10f8a0d72f7843a16af5",
+  "current_product": "4e50e86cde6ab2ef6cab0762ffc4df59d646dc15",
+  "later_source_adoption": null,
+  "measurement_head": "56e2d6141bcb8c1d73622df13145294b178f17a3",
+  "physical_calls": 4566,
+  "physical_pairs": 2283,
+  "public_files": {
+    "aggregate-addendum.json": {
+      "bytes": 7881,
+      "sha256": "ea59a707ba91c2f59026e2b9c47043b93f9368c85c96eac884514f3316558c3e"
+    },
+    "four-Std-batch-vectors.tsv": {
+      "bytes": 852103,
+      "sha256": "f2dc7fd29c2360d80185e4cced8f97460b51cf55f5796c95fdcad0f58ad73ed4"
+    },
+    "four-Std-movements.json": {
+      "bytes": 5590858,
+      "sha256": "a3dd40c418bae775b6f556c3097dbc013635572960da0add5ab36dffb9ff184a"
+    },
+    "frozen-primary-39-receipt.json": {
+      "bytes": 15302,
+      "sha256": "c4aa419f3dbc51648777153355b623a69f2ea4bdc7c485d29335d1ab7e2970cf"
+    },
+    "incomplete-source-scope-supplement.json": {
+      "bytes": 3538929,
+      "sha256": "9922ae6cd8b57629a3c9ec0e718e8e153eaa78f2f234440a0c8119a955e0e861"
+    },
+    "literal-original-oracle-boundaries.json": {
+      "bytes": 78751,
+      "sha256": "a0e44efe900b81131ea7113a664007b6fc9b004d340124c53e00bd8b2d49e922"
+    }
+  },
+  "report_sha256": "86436213164fcb2577c22cd2e528272053457b4623767cd24416c57fc2ade332",
+  "run_id": 37361031421,
+  "run_url": "https://github.com/erniecohen/dafny/actions/runs/37361031421",
+  "serialization": "Original independently frozen LF bytes copied without data or raw-flag changes. Git blob hashes verified after commit.",
+  "unexplained_Std_resource_profile_movements": 4
+}
