@@ -1,0 +1,114 @@
+{
+  "removed": [
+    {
+      "formula": "axiom (forall b#0: DatatypeType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> $Is(_module.__default.Encode(b#0), Tclass._module.Stream()));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall b#0: DatatypeType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> _module.__default.Encode(b#0) == b#0);",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall b#0: DatatypeType :: {:weight 3} { _module.__default.Encode(Lit(b#0)) } _module.__default.Encode#canCall(Lit(b#0)) ==> _module.__default.Encode(Lit(b#0)) == Lit(b#0));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode#requires(v#0) } $Is(v#0, Tclass._module.Stream()) ==> _module.__default.Decode#requires(v#0) == true);",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode(v#0) } _module.__default.Decode#canCall(v#0) ==> _module.__default.Decode(v#0) == v#0);",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall v#0: DatatypeType :: {:weight 3} { _module.__default.Decode(Lit(v#0)) } _module.__default.Decode#canCall(Lit(v#0)) ==> _module.__default.Decode(Lit(v#0)) == Lit(v#0));",
+      "multiplicity": 1
+    }
+  ],
+  "added": [
+    {
+      "formula": "axiom (forall a#10#0#0: DatatypeType :: { DtRank(#_module.Wrapper.Wrap(a#10#0#0)) } DtRank(a#10#0#0) < DtRank(#_module.Wrapper.Wrap(a#10#0#0)));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall a#5#0#0: DatatypeType :: { #_module.Wrapper.Wrap(a#5#0#0) } DatatypeCtorId(#_module.Wrapper.Wrap(a#5#0#0)) == ##_module.Wrapper.Wrap);",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall a#7#0#0: DatatypeType :: { $Is(#_module.Wrapper.Wrap(a#7#0#0), Tclass._module.Wrapper()) } $Is(#_module.Wrapper.Wrap(a#7#0#0), Tclass._module.Wrapper()) <==> $Is(a#7#0#0, Tclass._module.Stream()));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall a#8#0#0: DatatypeType :: { #_module.Wrapper.Wrap(Lit(a#8#0#0)) } #_module.Wrapper.Wrap(Lit(a#8#0#0)) == Lit(#_module.Wrapper.Wrap(a#8#0#0)));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall a#9#0#0: DatatypeType :: { #_module.Wrapper.Wrap(a#9#0#0) } _module.Wrapper.value(#_module.Wrapper.Wrap(a#9#0#0)) == a#9#0#0);",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall a: DatatypeType, b: DatatypeType :: { _module.Wrapper#Equal(a, b) } (_module.Wrapper#Equal(a, b) ==> _module.Wrapper.value(a) == _module.Wrapper.value(b)) && (_module.Wrapper.Wrap_q(a) && _module.Wrapper.Wrap_q(b) && _module.Wrapper.value(a) == _module.Wrapper.value(b) ==> _module.Wrapper#Equal(a, b)));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall a: DatatypeType, b: DatatypeType :: { _module.Wrapper#Equal(a, b) } _module.Wrapper#Equal(a, b) <==> a == b);",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall b#0: DatatypeType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> $Is(_module.__default.Encode(b#0), Tclass._module.Wrapper()));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall b#0: DatatypeType :: { _module.__default.Encode(b#0) } _module.__default.Encode#canCall(b#0) ==> _module.__default.Encode(b#0) == #_module.Wrapper.Wrap(b#0));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall b#0: DatatypeType :: {:weight 3} { _module.__default.Encode(Lit(b#0)) } _module.__default.Encode#canCall(Lit(b#0)) ==> _module.__default.Encode(Lit(b#0)) == Lit(#_module.Wrapper.Wrap(Lit(b#0))));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall bx: Box :: { $IsBox(bx, Tclass._module.Wrapper()) } $IsBox(bx, Tclass._module.Wrapper()) ==> $Box($Unbox(bx): DatatypeType) == bx && $Is($Unbox(bx): DatatypeType, Tclass._module.Wrapper()));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall d: DatatypeType :: { $IsA#_module.Wrapper(d) } $IsA#_module.Wrapper(d) ==> _module.Wrapper.Wrap_q(d));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall d: DatatypeType :: { _module.Wrapper.Wrap_q(d) } _module.Wrapper.Wrap_q(d) <==> DatatypeCtorId(d) == ##_module.Wrapper.Wrap);",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall d: DatatypeType :: { _module.Wrapper.Wrap_q(d) } _module.Wrapper.Wrap_q(d) ==> (exists a#6#0#0: DatatypeType :: d == #_module.Wrapper.Wrap(a#6#0#0)));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall d: DatatypeType :: { _module.Wrapper.Wrap_q(d), $Is(d, Tclass._module.Wrapper()) } $Is(d, Tclass._module.Wrapper()) ==> _module.Wrapper.Wrap_q(d));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall d: DatatypeType, $h: Heap :: { $IsAlloc(_module.Wrapper.value(d), Tclass._module.Stream(), $h) } $IsGoodHeap($h) && _module.Wrapper.Wrap_q(d) && $IsAlloc(d, Tclass._module.Wrapper(), $h) ==> $IsAlloc(_module.Wrapper.value(d), Tclass._module.Stream(), $h));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall d: DatatypeType, $h: Heap :: { $IsAlloc(d, Tclass._module.Wrapper(), $h) } $IsGoodHeap($h) && $Is(d, Tclass._module.Wrapper()) ==> $IsAlloc(d, Tclass._module.Wrapper(), $h));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode#requires(v#0) } $Is(v#0, Tclass._module.Wrapper()) ==> _module.__default.Decode#requires(v#0) == true);",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall v#0: DatatypeType :: { _module.__default.Decode(v#0) } _module.__default.Decode#canCall(v#0) ==> _module.Wrapper.Wrap_q(v#0) && _module.__default.Decode(v#0) == _module.Wrapper.value(v#0));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom (forall v#0: DatatypeType :: {:weight 3} { _module.__default.Decode(Lit(v#0)) } _module.__default.Decode#canCall(Lit(v#0)) ==> _module.Wrapper.Wrap_q(Lit(v#0)) && _module.__default.Decode(Lit(v#0)) == Lit(_module.Wrapper.value(Lit(v#0))));",
+      "multiplicity": 1
+    },
+    {
+      "formula": "axiom Tag(Tclass._module.Wrapper()) == Tagclass._module.Wrapper && TagFamily(Tclass._module.Wrapper()) == tytagFamily$Wrapper;",
+      "multiplicity": 1
+    }
+  ]
+}
