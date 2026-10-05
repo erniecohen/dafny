@@ -213,3 +213,5 @@ loss and missing allocation profile remain separate limitations.
 The [default-off solver query-context investigation](extended-newtype-bases-query-session-cost.md) records all nine unequal canonical RU comparisons, repeated-arm variation, and the exact ordered-context boundary. It explains the observed correspondence without treating it as exact cost compatibility or applying a tolerance.
 
 The [retained emitted-program audit](extended-newtype-bases-emitted-review.md) compares four public benchmark families at the unchanged final Core translator. It preserves guards and triggers, distinguishes existing nominal declaration instances from shared allocation repairs, and explicitly leaves fresh generic/co-call emissions pending.
+
+The [public validation observations](extended-newtype-bases-validation.md) record the completed strict development and shipping reviews, the separately reviewed five-backend and projected-proof receipts, and the fresh lifecycle inventory. Registered verdict agreement retains expected proof failures and resource limits; it does not establish full proof-green, completion or exact proof-cost compatibility.
