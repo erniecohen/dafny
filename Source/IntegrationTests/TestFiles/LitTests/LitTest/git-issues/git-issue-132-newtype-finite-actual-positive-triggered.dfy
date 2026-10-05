@@ -1,7 +1,7 @@
 // RUN: %verify --type-system-refresh=true --general-newtypes=true --general-traits=datatype --additional-axioms=false --cores=1 --resource-limit=16000000 --show-snippets=false --boogie /normalizeDeclarationOrder:0 "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
-// OMITTED-RUN: %verify --type-system-refresh=true --general-newtypes=true --general-traits=datatype --additional-axioms=false --cores=1 --resource-limit=16000000 --show-snippets=false --boogie /normalizeDeclarationOrder:0 "%s" > "%t"
-// OMITTED-RUN: %diff "%s.expect" "%t"
+// RUN: %verify --type-system-refresh=true --general-newtypes=true --general-traits=datatype --additional-axioms=true --cores=1 --resource-limit=16000000 --show-snippets=false --boogie /normalizeDeclarationOrder:0 "%s" > "%t"
+// RUN: %diff "%s.axioms-on.expect" "%t"
 
 newtype Id<T> = T witness *
 newtype SeqId<T> = seq<T>
