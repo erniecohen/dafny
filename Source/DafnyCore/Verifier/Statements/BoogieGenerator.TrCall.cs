@@ -378,7 +378,7 @@ public partial class BoogieGenerator {
       foreach (var requirement in ConjunctsOf(callee.Req)) {
         var instantiated = Substitute(requirement.E, receiver, substMap, tySubst);
         builder.Add(TrAssumeCmd(tok, callEtran.CanCallAssumptionForVerification(instantiated)));
-        var lowering = LowerProposition(builder.Context, instantiated, callEtran, applyInduction: false);
+        var lowering = LowerProposition(builder.Context, instantiated, callEtran);
         var (error, success) = CustomErrorMessage(requirement.Attributes);
         var direct = Substitute(requirement.E, receiver, directSubstMap, tySubst);
         var description = new PreconditionSatisfied(direct, error, success);

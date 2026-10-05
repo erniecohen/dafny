@@ -133,4 +133,16 @@ public class ObligationLoweringTests {
     Assert.NotEqual(ObligationFingerprint.Content(assertions[0]),ObligationFingerprint.Content(assertions[1]));
   }
 
+  [Fact]
+  public async Task LocalCallCheckRetainsTheExplicitAssertionsInductionPolicy() {
+    const string source="ghost predicate P(n:nat) { true } lemma Use() requires forall n:nat {:induction n} :: P(n) {} lemma L() { assert forall n:nat {:induction n} :: P(n); Use(); }";
+    var programs=await Translate(source,true);
+    var implementation=programs.SelectMany(p=>p.Implementations).Single(p=>p.Name.EndsWith(".L"));
+    var checks=implementation.Blocks.SelectMany(b=>b.Cmds).OfType<Bpl.AssertCmd>().ToList();
+    var explicitChecks=checks.Where(c=>c.Description is AssertStatementDescription).Select(c=>ObligationFingerprint.Expression(c.Expr)).ToList();
+    var implicitChecks=checks.Where(c=>c.Description is PreconditionSatisfied).ToList();
+    Assert.NotEmpty(implicitChecks);
+    Assert.All(implicitChecks,c=>Assert.Contains(ObligationFingerprint.Expression(c.Expr),explicitChecks));
+  }
+
 }
