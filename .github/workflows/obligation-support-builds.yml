@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ matrix.line == 'baseline' && 'ad1360af0f776c0be6cf57e4f0d38bbdf1ecc365' || 'scratch/codex/issue100-core' }}
+          ref: ${{ matrix.line == 'baseline' && 'ab210b78b50adb5a192542897f0a00cdb40f3c35' || 'scratch/codex/issue100-core' }}
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
