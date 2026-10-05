@@ -11,9 +11,9 @@
       "sha256": "36526c27611aeeb2768bf946045f2c4d812fd153b0a9766fa74401f6756609c6"
     },
     {
-      "bytes": 7665,
+      "bytes": 7839,
       "path": "README.md",
-      "sha256": "3a6894beb75041efe14ea0010eff86bf617c8a0c87f9a041cbd173c37b9b49d3"
+      "sha256": "68867742404190a057c4698549f458fa3ecf47b6b6e2a93b83221bef1fc265ec"
     },
     {
       "bytes": 225177,
@@ -24,6 +24,11 @@
       "bytes": 3720,
       "path": "historical-text-origins.json",
       "sha256": "d66c6fbbf94358e9efec2d382f7232c815084f38fa34c16efabbe3cf1b61e6ea"
+    },
+    {
+      "bytes": 59,
+      "path": "historical/.gitattributes",
+      "sha256": "e8bf9e95a6a0d63fb0a5aab7c470b1b94a523324562f899563bc028cbf32686d"
     },
     {
       "bytes": 16727,

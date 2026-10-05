@@ -9,7 +9,7 @@ from pathlib import Path
 
 SOURCE = Path('.github/review/retention-corroboration')
 OUTPUT = Path('out/b3-retention-corroboration-routing')
-SOURCE_SHA = 'db9c7c744e9b76ad8d81ec7409c6f761ed0a47d31efb6b87037b71dd812cc81b'
+SOURCE_SHA = '15a5a15fb2fc33780c95b6ca2662bd249f22a33dd730b6c2436d12d0207c80b1'
 PACKET_SHA = '2d77f222343600167372011cf6591567328817e4e74a155b8b38b3b18d4045ac'
 PACKET_BYTES = 68604
 EXPECTED = {'B3_FOCUS_GATE': 'retention-corroboration', 'B3_COMPILE_ONLY': 'true',

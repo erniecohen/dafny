@@ -20,7 +20,7 @@ Hash input has a 512 MiB/file and 8 GiB aggregate bound, including final selecte
 
 ## Five inert historical texts
 
-`historical-text-origins.json` binds the five committed data members to the inspected run `37254827562`, artifact `11322239172`, ZIP SHA-256 `3e9ca590a613a7c1f2e4f70d50b42526f65a96773b9eae7cbb749fa697fc7957`, each exact ZIP member, and its original official runtime/analyzer archive version, hash and member bytes. The member list is exactly SELECTORS.json's five archive roles. These are reused historical inputs, not newly downloaded official archives and not current-runner files. They consume the five roles already counted above. They may be compared to new selected runner data; they cannot qualify the current hostfxr, runtime, tracing provider or analyzer selection.
+`historical-text-origins.json` binds the five committed data members to the inspected run `37254827562`, artifact `11322239172`, ZIP SHA-256 `3e9ca590a613a7c1f2e4f70d50b42526f65a96773b9eae7cbb749fa697fc7957`, each exact ZIP member, and its original official runtime/analyzer archive version, hash and member bytes. The member list is exactly SELECTORS.json's five archive roles. A scoped historical/.gitattributes disables Git text normalization for these exact data assets; working files and committed blobs must both match their official member pins. These are reused historical inputs, not newly downloaded official archives and not current-runner files. They consume the five roles already counted above. They may be compared to new selected runner data; they cannot qualify the current hostfxr, runtime, tracing provider or analyzer selection.
 
 ## Publication and retained source
 

@@ -940,7 +940,7 @@ jobs:
                   opened = os.fstat(stream.fileno())
               identity = lambda s: (s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
               if identity(before) != identity(opened) or identity(opened) != identity(path.lstat()) or \
-                    len(captured) != 7739 or hashlib.sha256(captured).hexdigest() != '5b0136d2cedb4686fd5625832c666e9ac0027f46de4f00cee7679d19bc86ffd5':
+                    len(captured) != 7739 or hashlib.sha256(captured).hexdigest() != 'c46d48011b37e54febaca57957553e9159fa645b4b607c8e51124c26f4049125':
                   raise ValueError('Fixed corroboration routing byte pin rejected.')
               # Execute only captured, checked source; no import cache or old scanner.
               namespace = {'__name__': '__main__', '__file__': str(path)}
