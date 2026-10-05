@@ -1,0 +1,1 @@
+Fix a translation crash for type tests against generic datatypes whose definitions are hidden by an export. Membership tests retain the opaque type and its actual type arguments without exposing its definition.
