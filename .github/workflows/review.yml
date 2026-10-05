@@ -31,6 +31,11 @@ on:
         type: boolean
         default: false
 
+      b3_integrated_structural_focus:
+        description: Current integrated Core and583 structural controls only (scratch branches)
+        type: boolean
+        default: false
+
 permissions:
   contents: read
 
@@ -56,6 +61,7 @@ env:
 
 jobs:
   build:
+    if: ${{ !inputs.b3_integrated_structural_focus }}
     name: Build (Release)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -120,6 +126,7 @@ jobs:
           retention-days: 14
 
   suite:
+    if: ${{ !inputs.b3_integrated_structural_focus }}
     name: Verifier suite (axioms ${{ matrix.axioms }}, shard ${{ matrix.shard }} of 4)
     needs: build
     runs-on: ubuntu-24.04
@@ -173,6 +180,7 @@ jobs:
           retention-days: 90
 
   verdicts:
+    if: ${{ !inputs.b3_integrated_structural_focus }}
     name: Verdicts (axioms ${{ matrix.axioms }})
     needs: [build, suite]
     runs-on: ubuntu-24.04
@@ -228,6 +236,7 @@ jobs:
           retention-days: 90
 
   resolver:
+    if: ${{ !inputs.b3_integrated_structural_focus }}
     name: Resolver matrix (both modes)
     needs: build
     runs-on: ubuntu-24.04
@@ -282,6 +291,7 @@ jobs:
           retention-days: 90
 
   stdlib:
+    if: ${{ !inputs.b3_integrated_structural_focus }}
     name: Standard library (Z3 ${{ matrix.z3 }}, axioms ${{ matrix.axioms }})
     needs: build
     runs-on: ubuntu-24.04
@@ -367,7 +377,7 @@ jobs:
   axiom-resources:
     name: Additional-axiom resource comparisons
     needs: [suite, stdlib]
-    if: always() && needs.suite.result == 'success'
+    if: ${{ !inputs.b3_integrated_structural_focus && (always() && needs.suite.result == 'success') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -390,6 +400,7 @@ jobs:
           retention-days: 90
 
   regressions:
+    if: ${{ !inputs.b3_integrated_structural_focus }}
     name: Regression tests (upstream harness)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -453,6 +464,7 @@ jobs:
 
 
   resolver-tests:
+    if: ${{ !inputs.b3_integrated_structural_focus }}
     name: Resolver unit tests and language-server recovery
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -483,7 +495,7 @@ jobs:
   binaries:
     name: Binaries (${{ matrix.rid }})
     needs: build
-    if: github.ref_type == 'tag' || inputs.binaries
+    if: ${{ !inputs.b3_integrated_structural_focus && (github.ref_type == 'tag' || inputs.binaries) }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
@@ -546,7 +558,7 @@ jobs:
   release:
     name: GitHub release
     needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, axiom-resources]
-    if: github.ref_type == 'tag'
+    if: ${{ !inputs.b3_integrated_structural_focus && (github.ref_type == 'tag') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -582,3 +594,72 @@ jobs:
           } > notes.md
           gh release create "$TAG" dafny-*.zip SHA256SUMS --repo "$GITHUB_REPOSITORY" \
             --verify-tag --title "$VERSION" --notes-file notes.md
+
+  b3-integrated-structural:
+    name: Integrated B3 structural focus (diagnostic receipt)
+    if: ${{ github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/heads/scratch/') && inputs.b3_integrated_structural_focus && !inputs.binaries && !inputs.resolver_probe && !inputs.additional_axioms_probe }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Exact current-source structural coordinator
+        env:
+          B3_INPUT_B3_INTEGRATED_STRUCTURAL_FOCUS: ${{ inputs.b3_integrated_structural_focus }}
+          B3_INPUT_BINARIES: ${{ inputs.binaries }}
+          B3_INPUT_RESOLVER_PROBE: ${{ inputs.resolver_probe }}
+          B3_INPUT_ADDITIONAL_AXIOMS_PROBE: ${{ inputs.additional_axioms_probe }}
+        run: |
+          python3 - <<'PYCODE'
+          import hashlib, json, os, stat, sys, traceback, types
+          from pathlib import Path
+          path = Path('.github/review/b3-integrated-structural-focus.py')
+          expected_bytes = 78218
+          expected_sha256 = '61806171e73a1e76d0e0a5e453ea8f7db568a8c3b9981b1c4f49098bcf1d11f4'
+          try:
+              assert all(not ancestor.is_symlink() for ancestor in path.parents)
+              descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+              try:
+                  before = os.fstat(descriptor)
+                  assert stat.S_ISREG(before.st_mode) and before.st_size == expected_bytes
+                  chunks, remaining = [], expected_bytes
+                  while remaining:
+                      chunk = os.read(descriptor, min(65536, remaining))
+                      assert chunk
+                      chunks.append(chunk)
+                      remaining -= len(chunk)
+                  assert not os.read(descriptor, 1)
+                  after = os.fstat(descriptor)
+                  assert (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns) == (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns)
+              finally:
+                  os.close(descriptor)
+              captured = b''.join(chunks)
+              assert len(captured) == expected_bytes and hashlib.sha256(captured).hexdigest() == expected_sha256
+              module = types.ModuleType('b3_integrated_structural_captured')
+              module.__file__ = str(path.resolve(strict=True))
+              exec(compile(captured, str(path), 'exec'), module.__dict__)
+              assert module.main() == 0
+          except Exception as error:
+              output = Path('out/b3-integrated-structural')
+              output.mkdir(parents=True, exist_ok=True)
+              (output / 'startup-failure.json').write_text(json.dumps({'passed': False,
+                  'scope': 'integrated-current-source-structural-only',
+                  'error': (type(error).__name__ + ': ' + str(error))[:4096],
+                  'coordinatorExpectedBytes': expected_bytes, 'coordinatorExpectedSha256': expected_sha256,
+                  'executionAcceptance': False}, indent=2) + '\n')
+              print('NOT GREEN: structural coordinator startup or preservation failed', flush=True)
+          PYCODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b3-integrated-structural
+          path: out/b3-integrated-structural
+          retention-days: 30
