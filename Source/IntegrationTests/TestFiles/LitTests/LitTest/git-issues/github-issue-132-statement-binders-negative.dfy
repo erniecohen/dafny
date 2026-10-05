@@ -22,3 +22,12 @@ lemma InhabitedProofControl(c: C) ensures false {
   assert allocated(f);
   assert f() == 0;
 }
+
+method LaterOuterHeap(c: C) {
+  label Before:
+  var fresh := new C();
+  label After:
+  var f := () => (assert old@After(allocated(c)); 0);
+  assert !old@Before(allocated(fresh));
+  assert old@Before(allocated(f));
+}

@@ -10,6 +10,7 @@
 
 class C {}
 datatype Wrapped = Wrap(value: C)
+function Identity(c: C): C { c }
 
 method AssertionLocal(c: C) {
   var f := () => (assert true by { var x := c; assert x == c; } 0);
@@ -36,7 +37,20 @@ method MatchLocal(c: C) {
 }
 
 method BindingGuard(c: C) {
-  var f := () => (assert true by { if x: C :| x == c { assert x == c; } } 0);
+  var f := () => (assert true by { if x: C :| Identity(x) == c { assert x == c; } } 0);
+  assert allocated(f);
+  assert f() == 0;
+}
+
+method LocalLabel(c: C) {
+  var f := () => (assert true by { label L: assert old@L(allocated(c)); } 0);
+  assert allocated(f);
+  assert f() == 0;
+}
+
+method OuterLabel(c: C) {
+  label L:
+  var f := () => (assert old@L(allocated(c)); 0);
   assert allocated(f);
   assert f() == 0;
 }

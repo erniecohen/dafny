@@ -118,15 +118,20 @@ namespace Microsoft.Dafny {
       Type uThis = null;
       if (expr is StmtExpr stmtExpr && includeStatements) {
         var statementFvs = new HashSet<IVariable>();
+        var statementHeapAt = new HashSet<Label>();
         foreach (var subExpression in stmtExpr.S.SubExpressionsIncludingTransitiveSubStatements) {
-          ComputeFreeVariables(options, subExpression, statementFvs, ref uHeap, ref uOldHeap, freeHeapAtVariables, ref uThis, includeStatements);
+          ComputeFreeVariables(options, subExpression, statementFvs, ref uHeap, ref uOldHeap, statementHeapAt, ref uThis, includeStatements);
         }
-        // Resolved variable identities distinguish proof locals from genuine outer captures.
+        // Resolved identities distinguish proof locals and local labels from outer captures.
         // A statement binder has no scope in the expression following the statement.
         foreach (var statement in stmtExpr.S.DescendantsAndSelf) {
           statementFvs.ExceptWith(StatementBoundVariables(statement));
+          if (statement is LabeledStatement labeled) {
+            statementHeapAt.ExceptWith(labeled.Labels);
+          }
         }
         fvs.UnionWith(statementFvs);
+        freeHeapAtVariables.UnionWith(statementHeapAt);
       }
       foreach (var subExpression in expr.SubExpressions) {
         ComputeFreeVariables(options, subExpression, fvs, ref uHeap, ref uOldHeap, freeHeapAtVariables, ref uThis, includeStatements);
