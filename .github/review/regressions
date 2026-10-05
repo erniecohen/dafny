@@ -117,3 +117,6 @@ git-issues/git-issue-143-codatatype-two-constructors-negative.dfy
 git-issues/git-issue-143-codatatype-typed-self-observation-negative.dfy
 git-issues/git-issue-143-codatatype-update-negative.dfy
 git-issues/git-issue-143.dfy
+
+# Local obligation consistency and non-vacuity controls.
+git-issues/git-issue-100.dfy

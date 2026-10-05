@@ -1,0 +1,5 @@
+PASS CLI option help
+PASS original issue 100 at unchanged resource limit
+PASS implicit subset constraints
+PASS false controls
+PASS project option and CLI precedence
