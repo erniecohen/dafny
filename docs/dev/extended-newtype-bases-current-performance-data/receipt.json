@@ -235,9 +235,10 @@
     }
   ],
   "derived_data_sha256": {
-    "workload-comparison.csv": "b4550328e471f17e1a695cfa5e2bf6a802ad5fa24df0a77b0deab0d6b8eb83ff",
+    "workload-comparison.csv": "e2fa93d1035c8b2dbf914f826424f7c969f0f6ce221eb8f22926fb73f4afbb3e",
     "csharp-work-body-comparison.json": "217aef829427fb45481cc0c3a27c443d9034ffb72143d34afb24cd0082d73c7d"
   },
   "complete_feature_or_performance_acceptance": false,
-  "boundary": "Public diagnostic observations only. Missing/capped/warning scopes remain explicit. Proof data repeated by backend is one shared verifier sample set, not additional runs. Work equality covers that method only; no whole-code, solver-query or absent-artifact closure claim."
+  "boundary": "Public diagnostic observations only. Missing/capped/warning scopes remain explicit. Proof data repeated by backend is one shared verifier sample set, not additional runs. Work equality covers that method only; no whole-code, solver-query or absent-artifact closure claim.",
+  "CSV_serialization": "LF line endings; all reviewed table values unchanged"
 }
