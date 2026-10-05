@@ -298,11 +298,88 @@
       "checkoutSha256": "f67ecb3adc97d4bbd06b2be7d7038036e2c63ed52bdac04bc9dccf609e4bea0c"
     },
     {
+      "path": "Source/DafnyB3Normalizer.Test/B3BitvectorNormalizationTests.cs",
+      "bytes": 33938,
+      "sha256": "963a42088df20434579f2ae073a9540339562933c2201844514527b8ee68c4e4",
+      "checkoutBytes": 33938,
+      "checkoutSha256": "963a42088df20434579f2ae073a9540339562933c2201844514527b8ee68c4e4"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3CfgCorrespondenceTests.cs",
+      "bytes": 9013,
+      "sha256": "6bb348d3a86d0fb85cad9d80bc3f99fbad23ff19b61a5fa8ed28df8cc3a3c68a",
+      "checkoutBytes": 9013,
+      "checkoutSha256": "6bb348d3a86d0fb85cad9d80bc3f99fbad23ff19b61a5fa8ed28df8cc3a3c68a"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3ContextCoordinatorTests.cs",
+      "bytes": 5021,
+      "sha256": "01569407f75f163a02f3930436c005190cdd4f2b390bb8deeb2d8688a698cd60",
+      "checkoutBytes": 5021,
+      "checkoutSha256": "01569407f75f163a02f3930436c005190cdd4f2b390bb8deeb2d8688a698cd60"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3DefinitionContextTests.cs",
+      "bytes": 25243,
+      "sha256": "069c34ba1267ffdb0e150fba3b6eaa7535db3cfd2722b4a77a362e0a8911a764",
+      "checkoutBytes": 25243,
+      "checkoutSha256": "069c34ba1267ffdb0e150fba3b6eaa7535db3cfd2722b4a77a362e0a8911a764"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3IfGuardCertificateTests.cs",
+      "bytes": 23632,
+      "sha256": "4e59ea39ea8fd3ea79b132b348439f3dfb560979260d786a53307c27f0f835de",
+      "checkoutBytes": 23632,
+      "checkoutSha256": "4e59ea39ea8fd3ea79b132b348439f3dfb560979260d786a53307c27f0f835de"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3IntegerArithmeticTests.cs",
+      "bytes": 18839,
+      "sha256": "a6a52a7ec5f791a9b986140b86f21e5710d5cc23211618d1d57de3bb52f88cbb",
+      "checkoutBytes": 18839,
+      "checkoutSha256": "a6a52a7ec5f791a9b986140b86f21e5710d5cc23211618d1d57de3bb52f88cbb"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3RealArithmeticTests.cs",
+      "bytes": 18609,
+      "sha256": "353e698a5b7c7e9b0ad31c3428d944269568007144c9d5e3dbfbd79c34b350bc",
+      "checkoutBytes": 18609,
+      "checkoutSha256": "353e698a5b7c7e9b0ad31c3428d944269568007144c9d5e3dbfbd79c34b350bc"
+    },
+    {
       "path": "Source/DafnyB3Normalizer.Test/B3RealRoundTripTests.cs",
       "bytes": 30434,
       "sha256": "cc18d4e198bde82880557a9d7c9f92bd3c8b14a3ccc33179442bf2b3e4974804",
       "checkoutBytes": 30434,
       "checkoutSha256": "cc18d4e198bde82880557a9d7c9f92bd3c8b14a3ccc33179442bf2b3e4974804"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3UnsignedWrapperTests.cs",
+      "bytes": 27959,
+      "sha256": "a93a615458a8ae12a0f283fa33547eb5a7c9aba1ecc38d8420d9443d95e686c5",
+      "checkoutBytes": 27959,
+      "checkoutSha256": "a93a615458a8ae12a0f283fa33547eb5a7c9aba1ecc38d8420d9443d95e686c5"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3VisibilityTests.cs",
+      "bytes": 6862,
+      "sha256": "f5e8ee02baebac4b9c25dd64640ea0b4938c66522dca89b2c92814c5f558eeed",
+      "checkoutBytes": 6862,
+      "checkoutSha256": "f5e8ee02baebac4b9c25dd64640ea0b4938c66522dca89b2c92814c5f558eeed"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3WordContextTraversalTests.cs",
+      "bytes": 9491,
+      "sha256": "45d85851a7f6fa75eb6fa7c873810342b599d7a1cc7f10c5d5afb635c8e0e830",
+      "checkoutBytes": 9491,
+      "checkoutSha256": "45d85851a7f6fa75eb6fa7c873810342b599d7a1cc7f10c5d5afb635c8e0e830"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/NormalizerTests.cs",
+      "bytes": 49101,
+      "sha256": "812afd76ca99255a0239a74a7cae687573914be80bce231a770031aea918a9c7",
+      "checkoutBytes": 49101,
+      "checkoutSha256": "812afd76ca99255a0239a74a7cae687573914be80bce231a770031aea918a9c7"
     },
     {
       "path": "Source/DafnyB3Protocol/B3Protocol.cs",
@@ -454,5 +531,512 @@
     "Real corpus acceptance",
     "default regression observed-verdict artifact"
   ],
-  "inventoryEncoding": "Canonical Git blobs and declared checkout bytes are recorded separately; the manifest excludes itself."
+  "inventoryEncoding": "Canonical Git blobs and declared checkout bytes are recorded separately; the manifest excludes itself.",
+  "expectedExecutionControls": [
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "WholeOriginalIrrationalContextHasSingletonExtension",
+      "parameterNames": [],
+      "arguments": [],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.WholeOriginalIrrationalContextHasSingletonExtension"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "PositiveOpaqueEqualityAndPredicateConjunctionsAreEligible",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "equality"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.PositiveOpaqueEqualityAndPredicateConjunctionsAreEligible(shape: \"equality\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "PositiveOpaqueEqualityAndPredicateConjunctionsAreEligible",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "predicate"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.PositiveOpaqueEqualityAndPredicateConjunctionsAreEligible(shape: \"predicate\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "PositiveOpaqueEqualityAndPredicateConjunctionsAreEligible",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "conjunction"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.PositiveOpaqueEqualityAndPredicateConjunctionsAreEligible(shape: \"conjunction\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "RemovedBooleanCopiesAreDefinitelyAssignedAndUnused",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "truechain"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.RemovedBooleanCopiesAreDefinitelyAssignedAndUnused(shape: \"truechain\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "RemovedBooleanCopiesAreDefinitelyAssignedAndUnused",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "falsechain"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.RemovedBooleanCopiesAreDefinitelyAssignedAndUnused(shape: \"falsechain\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "RetainedChecksLearningOriginsAndPrefixOrderRemainExact",
+      "parameterNames": [],
+      "arguments": [],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.RetainedChecksLearningOriginsAndPrefixOrderRemainExact"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "FullRealCarrierAndIrrationalConstraintRemainUnchanged",
+      "parameterNames": [],
+      "arguments": [],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.FullRealCarrierAndIrrationalConstraintRemainUnchanged"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "UnsafeRemovedAssumptionGrammarDeclinesProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "numericfalse"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.UnsafeRemovedAssumptionGrammarDeclinesProjection(shape: \"numericfalse\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "UnsafeRemovedAssumptionGrammarDeclinesProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "not"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.UnsafeRemovedAssumptionGrammarDeclinesProjection(shape: \"not\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "UnsafeRemovedAssumptionGrammarDeclinesProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "neq"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.UnsafeRemovedAssumptionGrammarDeclinesProjection(shape: \"neq\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "UnsafeRemovedAssumptionGrammarDeclinesProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "or"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.UnsafeRemovedAssumptionGrammarDeclinesProjection(shape: \"or\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "UnsafeRemovedAssumptionGrammarDeclinesProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "booleanread"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.UnsafeRemovedAssumptionGrammarDeclinesProjection(shape: \"booleanread\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "UnsafeRemovedAssumptionGrammarDeclinesProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "implication"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.UnsafeRemovedAssumptionGrammarDeclinesProjection(shape: \"implication\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "NumericCoupledFunctionSignaturesDeclineProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "intarg"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.NumericCoupledFunctionSignaturesDeclineProjection(shape: \"intarg\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "NumericCoupledFunctionSignaturesDeclineProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "realarg"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.NumericCoupledFunctionSignaturesDeclineProjection(shape: \"realarg\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "NumericCoupledFunctionSignaturesDeclineProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "boolarg"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.NumericCoupledFunctionSignaturesDeclineProjection(shape: \"boolarg\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "NumericCoupledFunctionSignaturesDeclineProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "intresult"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.NumericCoupledFunctionSignaturesDeclineProjection(shape: \"intresult\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "NumericCoupledFunctionSignaturesDeclineProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "realresult"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.NumericCoupledFunctionSignaturesDeclineProjection(shape: \"realresult\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "AxiomsAndUnknownTypeDependenciesDeclineProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "activeaxiom"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.AxiomsAndUnknownTypeDependenciesDeclineProjection(shape: \"activeaxiom\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "AxiomsAndUnknownTypeDependenciesDeclineProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "unusedaxiom"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.AxiomsAndUnknownTypeDependenciesDeclineProjection(shape: \"unusedaxiom\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "AxiomsAndUnknownTypeDependenciesDeclineProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "nativewordtype"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.AxiomsAndUnknownTypeDependenciesDeclineProjection(shape: \"nativewordtype\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "RetainedDependencyOnRemovedVariableDeclinesProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "opaqueCheckEq"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.RetainedDependencyOnRemovedVariableDeclinesProjection(shape: \"opaqueCheckEq\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "RetainedDependencyOnRemovedVariableDeclinesProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "boolcopyCheckread"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.RetainedDependencyOnRemovedVariableDeclinesProjection(shape: \"boolcopyCheckread\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "RetainedDependencyOnRemovedVariableDeclinesProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "numericITEremovedbool"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.RetainedDependencyOnRemovedVariableDeclinesProjection(shape: \"numericITEremovedbool\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "OpaqueAssignmentTypeOrSymbolMutationIsRejected",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "changedsignature"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.OpaqueAssignmentTypeOrSymbolMutationIsRejected(shape: \"changedsignature\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "OpaqueAssignmentTypeOrSymbolMutationIsRejected",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "undeclaredfunction"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.OpaqueAssignmentTypeOrSymbolMutationIsRejected(shape: \"undeclaredfunction\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "OpaqueAssignmentTypeOrSymbolMutationIsRejected",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "assignmenttypemismatch"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.OpaqueAssignmentTypeOrSymbolMutationIsRejected(shape: \"assignmenttypemismatch\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "NonStraightLineControlDeclinesProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "havoc"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.NonStraightLineControlDeclinesProjection(shape: \"havoc\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "NonStraightLineControlDeclinesProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "choice"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.NonStraightLineControlDeclinesProjection(shape: \"choice\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "NonStraightLineControlDeclinesProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "conditional"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.NonStraightLineControlDeclinesProjection(shape: \"conditional\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "NonStraightLineControlDeclinesProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "loop"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.NonStraightLineControlDeclinesProjection(shape: \"loop\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "NonStraightLineControlDeclinesProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "labeled"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.NonStraightLineControlDeclinesProjection(shape: \"labeled\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "NonStraightLineControlDeclinesProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "earlyReturn"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.NonStraightLineControlDeclinesProjection(shape: \"earlyReturn\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "BindersWordsAndRetainedApplicationsDeclineProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "quantifier"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.BindersWordsAndRetainedApplicationsDeclineProjection(shape: \"quantifier\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "BindersWordsAndRetainedApplicationsDeclineProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "let"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.BindersWordsAndRetainedApplicationsDeclineProjection(shape: \"let\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "BindersWordsAndRetainedApplicationsDeclineProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "wordoperation"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.BindersWordsAndRetainedApplicationsDeclineProjection(shape: \"wordoperation\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "BindersWordsAndRetainedApplicationsDeclineProjection",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "numericUFapp"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.BindersWordsAndRetainedApplicationsDeclineProjection(shape: \"numericUFapp\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "GroundCertificateIsBoundToInputAndFinalBytes",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "originalhash"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.GroundCertificateIsBoundToInputAndFinalBytes(shape: \"originalhash\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "GroundCertificateIsBoundToInputAndFinalBytes",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "outputhash"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.GroundCertificateIsBoundToInputAndFinalBytes(shape: \"outputhash\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "GroundCertificateIsBoundToInputAndFinalBytes",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "insertedAssume"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.GroundCertificateIsBoundToInputAndFinalBytes(shape: \"insertedAssume\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "GroundCertificateIsBoundToInputAndFinalBytes",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "changedCheck"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.GroundCertificateIsBoundToInputAndFinalBytes(shape: \"changedCheck\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "ProjectionBoundsDeclineWithoutAllocatingOversizedWitness",
+      "parameterNames": [
+        "position"
+      ],
+      "arguments": [
+        "below"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.ProjectionBoundsDeclineWithoutAllocatingOversizedWitness(position: \"below\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "ProjectionBoundsDeclineWithoutAllocatingOversizedWitness",
+      "parameterNames": [
+        "position"
+      ],
+      "arguments": [
+        "at"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.ProjectionBoundsDeclineWithoutAllocatingOversizedWitness(position: \"at\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "ProjectionBoundsDeclineWithoutAllocatingOversizedWitness",
+      "parameterNames": [
+        "position"
+      ],
+      "arguments": [
+        "above"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.ProjectionBoundsDeclineWithoutAllocatingOversizedWitness(position: \"above\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "G3DefinitionContextsCannotBorrowSingletonCertificate",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "nonemptydefinitionmask"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.G3DefinitionContextsCannotBorrowSingletonCertificate(shape: \"nonemptydefinitionmask\")"
+    },
+    {
+      "className": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests",
+      "method": "G3DefinitionContextsCannotBorrowSingletonCertificate",
+      "parameterNames": [
+        "shape"
+      ],
+      "arguments": [
+        "differentcontextcertificatereuse"
+      ],
+      "displayName": "DafnyB3Normalizer.Test.B3OpaqueGroundProjectionTests.G3DefinitionContextsCannotBorrowSingletonCertificate(shape: \"differentcontextcertificatereuse\")"
+    }
+  ]
 }
