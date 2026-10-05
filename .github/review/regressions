@@ -255,3 +255,6 @@ git-issues/git-issue-356-errors.dfy
 
 # Allocation of function values from what they capture (#132 here).
 git-issues/github-issue-132.dfy
+
+# Generic constant-field lambda actual type substitution (#132 development port).
+dafny0/BoundedPolymorphismCompilation.dfy
