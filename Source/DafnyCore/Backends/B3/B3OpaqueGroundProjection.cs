@@ -122,7 +122,7 @@ internal static class B3OpaqueGroundProjection {
           var program = original.Program with {
             Types = ImmutableArray<string>.Empty, Functions = ImmutableArray<Ir.Function>.Empty,
             Unit = original.Program.Unit with {
-              Variables = original.Program.Unit.Variables.Where(binding => binding.Type is "int" or "real").ToImmutableArray(),
+              Variables = RetainedBindings(original.Program.Unit.Variables),
               Body = plans[i]!.Materialize()
             }
           };
@@ -149,6 +149,14 @@ internal static class B3OpaqueGroundProjection {
       }
   }
 
+  private static ImmutableArray<Ir.Binding> RetainedBindings(IReadOnlyList<Ir.Binding> bindings) {
+    var count = 0;
+    foreach (var binding in bindings) { if (binding.Type is "int" or "real") { count++; } }
+    var retained = ImmutableArray.CreateBuilder<Ir.Binding>(count);
+    foreach (var binding in bindings) { if (binding.Type is "int" or "real") { retained.Add(binding); } }
+    return retained.MoveToImmutable();
+  }
+
   private sealed record ExpressionPlan(Ir.Expression Source, ExpressionPlan? Left = null, ExpressionPlan? Right = null, bool Erase = false) {
     internal Ir.Expression Materialize() {
       if (Erase) { return new Ir.BooleanLiteral(true); }
@@ -161,10 +169,15 @@ internal static class B3OpaqueGroundProjection {
   private sealed record Plan(Ir.Statement Source, ImmutableArray<Plan> Children = default,
     ExpressionPlan? Assumption = null, bool Erase = false) {
     internal Ir.Statement Materialize() => Erase ? new Ir.Block(ImmutableArray<Ir.Statement>.Empty) : Source switch {
-      Ir.Block => new Ir.Block(Children.Select(child => child.Materialize()).ToImmutableArray()),
+      Ir.Block => MaterializeBlock(),
       Ir.Assume assume => MaterializeAssumption(assume),
       _ => Source
     };
+    private Ir.Statement MaterializeBlock() {
+      var children = ImmutableArray.CreateBuilder<Ir.Statement>(Children.Length);
+      foreach (var child in Children) { children.Add(child.Materialize()); }
+      return new Ir.Block(children.MoveToImmutable());
+    }
     private Ir.Statement MaterializeAssumption(Ir.Assume assume) {
       var value = Assumption!.Materialize();
       return ReferenceEquals(value, assume.Condition) ? assume : new Ir.Assume(value);
@@ -192,6 +205,7 @@ internal static class B3OpaqueGroundProjection {
       foreach (var binding in program.Unit.Variables) {
         work.Slot(); Eligible(binding.Type is "bool" or "int" or "real" || sorts.Contains(binding.Type), "Binding has native word dependencies");
         variables.Add(binding.Name, binding.Type);
+        if (binding.Type is "int" or "real") { work.Slot(); } // Future target binding-array occurrence.
       }
       var result = Statement(program.Unit.Body);
       Eligible(returned, "Ground projection needs one terminal Return"); return result;
