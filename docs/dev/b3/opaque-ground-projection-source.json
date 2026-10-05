@@ -1,0 +1,458 @@
+{
+  "schemaVersion": 1,
+  "issue": 124,
+  "phase": "B",
+  "sourceParent": "d115e6001fabdb61ae96c76e8798d90637386df3",
+  "englishFirstCommit": "e40193a4c14b8dce777e9e89882cbfeb19bf798b",
+  "productCommit": "6f1c23c4006a94c93cae8ec5a5479760c2a842b8",
+  "producerVersion": "opaque-ground-singletons-1",
+  "priorProducerVersion": "typed-floor-embedding-1",
+  "boundary": "Uncompiled source-only checkpoint; independent source review and runtime gates pending. No Real acceptance claim.",
+  "execution": {
+    "compiled": false,
+    "structuralTestsExecuted": false,
+    "workerExecuted": false,
+    "proofExecuted": false,
+    "regressionExecuted": false
+  },
+  "limits": {
+    "contexts": 16,
+    "inputNodesPerRequest": 100000,
+    "inputNodesAggregate": 200000,
+    "depth": 128,
+    "inputSlotsPerRequest": 400000,
+    "inputSlotsAggregate": 800000,
+    "escapedTextUpperBytesPerRequest": 33554432,
+    "serializedBytesPerRequest": 33554432,
+    "serializedBytesAggregate": 67108864,
+    "optionalWitnessSlots": 200000,
+    "sharedOptionalWork": 800000,
+    "outputNodeReserveBytes": 512,
+    "outputSlotReserveBytes": 64,
+    "outputHeaderReserveBytes": 4096,
+    "relationReserveNodeVisits": 12,
+    "relationReserveSlotVisits": 4,
+    "relationReservePerMask": 128
+  },
+  "controlMethods": 15,
+  "controlCases": 47,
+  "controls": [
+    {
+      "method": "WholeOriginalIrrationalContextHasSingletonExtension",
+      "rows": [
+        "Fact"
+      ],
+      "caseCount": 1
+    },
+    {
+      "method": "PositiveOpaqueEqualityAndPredicateConjunctionsAreEligible",
+      "rows": [
+        "equality",
+        "predicate",
+        "conjunction"
+      ],
+      "caseCount": 3
+    },
+    {
+      "method": "RemovedBooleanCopiesAreDefinitelyAssignedAndUnused",
+      "rows": [
+        "truechain",
+        "falsechain"
+      ],
+      "caseCount": 2
+    },
+    {
+      "method": "RetainedChecksLearningOriginsAndPrefixOrderRemainExact",
+      "rows": [
+        "Fact"
+      ],
+      "caseCount": 1
+    },
+    {
+      "method": "FullRealCarrierAndIrrationalConstraintRemainUnchanged",
+      "rows": [
+        "Fact"
+      ],
+      "caseCount": 1
+    },
+    {
+      "method": "UnsafeRemovedAssumptionGrammarDeclinesProjection",
+      "rows": [
+        "numericfalse",
+        "not",
+        "neq",
+        "or",
+        "booleanread",
+        "implication"
+      ],
+      "caseCount": 6
+    },
+    {
+      "method": "NumericCoupledFunctionSignaturesDeclineProjection",
+      "rows": [
+        "intarg",
+        "realarg",
+        "boolarg",
+        "intresult",
+        "realresult"
+      ],
+      "caseCount": 5
+    },
+    {
+      "method": "AxiomsAndUnknownTypeDependenciesDeclineProjection",
+      "rows": [
+        "activeaxiom",
+        "unusedaxiom",
+        "nativewordtype"
+      ],
+      "caseCount": 3
+    },
+    {
+      "method": "RetainedDependencyOnRemovedVariableDeclinesProjection",
+      "rows": [
+        "opaqueCheckEq",
+        "boolcopyCheckread",
+        "numericITEremovedbool"
+      ],
+      "caseCount": 3
+    },
+    {
+      "method": "OpaqueAssignmentTypeOrSymbolMutationIsRejected",
+      "rows": [
+        "changedsignature",
+        "undeclaredfunction",
+        "assignmenttypemismatch"
+      ],
+      "caseCount": 3
+    },
+    {
+      "method": "NonStraightLineControlDeclinesProjection",
+      "rows": [
+        "havoc",
+        "choice",
+        "conditional",
+        "loop",
+        "labeled",
+        "earlyReturn"
+      ],
+      "caseCount": 6
+    },
+    {
+      "method": "BindersWordsAndRetainedApplicationsDeclineProjection",
+      "rows": [
+        "quantifier",
+        "let",
+        "wordoperation",
+        "numericUFapp"
+      ],
+      "caseCount": 4
+    },
+    {
+      "method": "GroundCertificateIsBoundToInputAndFinalBytes",
+      "rows": [
+        "originalhash",
+        "outputhash",
+        "insertedAssume",
+        "changedCheck"
+      ],
+      "caseCount": 4
+    },
+    {
+      "method": "ProjectionBoundsDeclineWithoutAllocatingOversizedWitness",
+      "rows": [
+        "below",
+        "at",
+        "above"
+      ],
+      "caseCount": 3
+    },
+    {
+      "method": "G3DefinitionContextsCannotBorrowSingletonCertificate",
+      "rows": [
+        "nonemptydefinitionmask",
+        "differentcontextcertificatereuse"
+      ],
+      "caseCount": 2
+    }
+  ],
+  "files": [
+    {
+      "path": ".github/review/base",
+      "bytes": 49,
+      "sha256": "9235a4282d94ba5681078ace4b8c1b2b43e56ef05222b0227df0ea7d25baee84",
+      "checkoutBytes": 49,
+      "checkoutSha256": "9235a4282d94ba5681078ace4b8c1b2b43e56ef05222b0227df0ea7d25baee84"
+    },
+    {
+      "path": ".github/review/regressions",
+      "bytes": 4013,
+      "sha256": "dd6d4e4ab7cb8235004aefe8b6ccb75e9df01fe0ecec044a5434f45b96744b9b",
+      "checkoutBytes": 4013,
+      "checkoutSha256": "dd6d4e4ab7cb8235004aefe8b6ccb75e9df01fe0ecec044a5434f45b96744b9b"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3OpaqueGroundProjectionTests.cs",
+      "bytes": 21121,
+      "sha256": "93d0eefb14eb7dd465d9768793a7a8a7e7531274d872a22e241eb490560101ce",
+      "checkoutBytes": 21121,
+      "checkoutSha256": "93d0eefb14eb7dd465d9768793a7a8a7e7531274d872a22e241eb490560101ce"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/DafnyB3Normalizer.Test.csproj",
+      "bytes": 2714,
+      "sha256": "26d6352fa38f0f6e202360dea4b4813bc9fad4f28425ea04c59de78a7eea5736",
+      "checkoutBytes": 2748,
+      "checkoutSha256": "d7a698d76d7596020e0f44a84e69a76cf2279971297ad0e1a52d932470055f95"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3OpaqueGroundProjection.cs",
+      "bytes": 23450,
+      "sha256": "0ceb0af01502f4c26ad549b8484733dd4ae02db11ee60c1edb96ad6e3daae2c0",
+      "checkoutBytes": 23450,
+      "checkoutSha256": "0ceb0af01502f4c26ad549b8484733dd4ae02db11ee60c1edb96ad6e3daae2c0"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3OpaqueGroundProjectionRelation.cs",
+      "bytes": 11352,
+      "sha256": "a1bc917437819b352165f8c29b596702f776732ddabd2ea8d3c35e8cd5547cf6",
+      "checkoutBytes": 11352,
+      "checkoutSha256": "a1bc917437819b352165f8c29b596702f776732ddabd2ea8d3c35e8cd5547cf6"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3RealContextPreparation.cs",
+      "bytes": 23251,
+      "sha256": "4a7407611f418a3e619a57c5ef008419c8e3e40d17d13fdfe18a73366a1add42",
+      "checkoutBytes": 23251,
+      "checkoutSha256": "4a7407611f418a3e619a57c5ef008419c8e3e40d17d13fdfe18a73366a1add42"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3VerificationBackend.cs",
+      "bytes": 19744,
+      "sha256": "6dbbb18ace8eae1ace5e087b31115054cf834b4cfae446a56b6ccac7bdfec67c",
+      "checkoutBytes": 19744,
+      "checkoutSha256": "6dbbb18ace8eae1ace5e087b31115054cf834b4cfae446a56b6ccac7bdfec67c"
+    },
+    {
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-124.dfy",
+      "bytes": 767,
+      "sha256": "defa91c3cc60dbec7ae956dd894bcc983058c01293cab9283001d484c2b05c3d",
+      "checkoutBytes": 767,
+      "checkoutSha256": "defa91c3cc60dbec7ae956dd894bcc983058c01293cab9283001d484c2b05c3d"
+    },
+    {
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-124.dfy.expect",
+      "bytes": 208,
+      "sha256": "84eddf1d98689397248da3f8df39630b15da2174ba343844b8db20209a56b2a7",
+      "checkoutBytes": 208,
+      "checkoutSha256": "84eddf1d98689397248da3f8df39630b15da2174ba343844b8db20209a56b2a7"
+    },
+    {
+      "path": "docs/dev/b3/opaque-ground-projection-plan.md",
+      "bytes": 21363,
+      "sha256": "044e1eae29d6b6144efb896cff8451b9d2f1a536ecd0c2da9b284007a638f61a",
+      "checkoutBytes": 21363,
+      "checkoutSha256": "044e1eae29d6b6144efb896cff8451b9d2f1a536ecd0c2da9b284007a638f61a"
+    },
+    {
+      "path": "docs/dev/news/124.fix",
+      "bytes": 649,
+      "sha256": "75092ccdc0d211fca40f7aff4c332de71033aa1f44568bab198a23e70dae2f51",
+      "checkoutBytes": 649,
+      "checkoutSha256": "75092ccdc0d211fca40f7aff4c332de71033aa1f44568bab198a23e70dae2f51"
+    }
+  ],
+  "unchangedCorrespondenceDependencies": [
+    {
+      "path": ".github/workflows/review.yml",
+      "bytes": 30696,
+      "sha256": "0e599981dada23028b038c84255161333cfa8639697189bae0b66241e26d68cf",
+      "checkoutBytes": 30696,
+      "checkoutSha256": "0e599981dada23028b038c84255161333cfa8639697189bae0b66241e26d68cf"
+    },
+    {
+      "path": "Source/DafnyB3Host/DafnyB3Host.csproj",
+      "bytes": 769,
+      "sha256": "bcfad0a24bf94e5ade875803fc7a5bc52536e22d16dea60ed22d5b5b2827e680",
+      "checkoutBytes": 783,
+      "checkoutSha256": "593d12e6e825c3e62eceddd7fa99fe8037291f3754b9c49fc281851e1c8dc028"
+    },
+    {
+      "path": "Source/DafnyB3Host/Program.cs",
+      "bytes": 3652,
+      "sha256": "61b2bcada3b7fef83bfed0d5adc1f5f824ae32e3ad86a068e3f0058fd4ec4203",
+      "checkoutBytes": 3652,
+      "checkoutSha256": "61b2bcada3b7fef83bfed0d5adc1f5f824ae32e3ad86a068e3f0058fd4ec4203"
+    },
+    {
+      "path": "Source/DafnyB3Host/RawAstBuilder.cs",
+      "bytes": 8758,
+      "sha256": "802a4a7f0c41820111054361eea6fe4057deeea0f27cfff019160281fe6cc916",
+      "checkoutBytes": 8758,
+      "checkoutSha256": "802a4a7f0c41820111054361eea6fe4057deeea0f27cfff019160281fe6cc916"
+    },
+    {
+      "path": "Source/DafnyB3Host/SolverIdentity.cs",
+      "bytes": 3939,
+      "sha256": "f67ecb3adc97d4bbd06b2be7d7038036e2c63ed52bdac04bc9dccf609e4bea0c",
+      "checkoutBytes": 3939,
+      "checkoutSha256": "f67ecb3adc97d4bbd06b2be7d7038036e2c63ed52bdac04bc9dccf609e4bea0c"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3RealRoundTripTests.cs",
+      "bytes": 30434,
+      "sha256": "cc18d4e198bde82880557a9d7c9f92bd3c8b14a3ccc33179442bf2b3e4974804",
+      "checkoutBytes": 30434,
+      "checkoutSha256": "cc18d4e198bde82880557a9d7c9f92bd3c8b14a3ccc33179442bf2b3e4974804"
+    },
+    {
+      "path": "Source/DafnyB3Protocol/B3Protocol.cs",
+      "bytes": 7410,
+      "sha256": "4bb352232714082899010c265cf4d0eec55cfd92e63514d88f9dcf87884b7f74",
+      "checkoutBytes": 7410,
+      "checkoutSha256": "4bb352232714082899010c265cf4d0eec55cfd92e63514d88f9dcf87884b7f74"
+    },
+    {
+      "path": "Source/DafnyB3Protocol/DafnyB3Protocol.csproj",
+      "bytes": 193,
+      "sha256": "08e663954b17f93d66e672f8a56bc8e0a96bfd1d059f8482bbd363ee452c6c18",
+      "checkoutBytes": 200,
+      "checkoutSha256": "c3a8c5252573a1d57be42ef255fe110d8e11e45ed6553a35edd9782436e55c97"
+    },
+    {
+      "path": "Source/DafnyB3Protocol/ProtocolValidation.cs",
+      "bytes": 18758,
+      "sha256": "e96439de1c3a8d64ac842924997fd860ad83cdf5e3cff852e1993a78f56aa25d",
+      "checkoutBytes": 18758,
+      "checkoutSha256": "e96439de1c3a8d64ac842924997fd860ad83cdf5e3cff852e1993a78f56aa25d"
+    },
+    {
+      "path": "Source/DafnyB3Protocol/SolverFileIdentity.cs",
+      "bytes": 2506,
+      "sha256": "75d8bf9c71d20a281b67ed139e5b2d296f72d7032c123bf7abe6e76459ebdcc8",
+      "checkoutBytes": 2506,
+      "checkoutSha256": "75d8bf9c71d20a281b67ed139e5b2d296f72d7032c123bf7abe6e76459ebdcc8"
+    },
+    {
+      "path": "Source/DafnyB3Protocol/WorkerPackage.cs",
+      "bytes": 5217,
+      "sha256": "3f9706d7828e11ce20e328b9665586ce7cf02584b4a2037daf863736728ef838",
+      "checkoutBytes": 5217,
+      "checkoutSha256": "3f9706d7828e11ce20e328b9665586ce7cf02584b4a2037daf863736728ef838"
+    },
+    {
+      "path": "Source/DafnyB3Protocol/WorkerProcessClient.cs",
+      "bytes": 7165,
+      "sha256": "ba4fbe3eb0ae1408233ebdc7228f37af43b8d3184b0e2d775a4676dd2020cdf8",
+      "checkoutBytes": 7165,
+      "checkoutSha256": "ba4fbe3eb0ae1408233ebdc7228f37af43b8d3184b0e2d775a4676dd2020cdf8"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3ContextCoordinator.cs",
+      "bytes": 5805,
+      "sha256": "562d31720e61a73b980ee3e076dba125deddd5e6ca299c9de21a4e4f8c58c1f7",
+      "checkoutBytes": 5805,
+      "checkoutSha256": "562d31720e61a73b980ee3e076dba125deddd5e6ca299c9de21a4e4f8c58c1f7"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3DefinitionContexts.cs",
+      "bytes": 12277,
+      "sha256": "ba632e3888d7486be7b5b38e96ea9807a157d19680a011f5d647479d8c172f70",
+      "checkoutBytes": 12277,
+      "checkoutSha256": "ba632e3888d7486be7b5b38e96ea9807a157d19680a011f5d647479d8c172f70"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3DefinitionMustVisibility.cs",
+      "bytes": 6882,
+      "sha256": "808e1bfae28dabbfba92354e5281bf33f44b0e2057d3951bc5452c461370324a",
+      "checkoutBytes": 6882,
+      "checkoutSha256": "808e1bfae28dabbfba92354e5281bf33f44b0e2057d3951bc5452c461370324a"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3DefinitionVisibility.cs",
+      "bytes": 12822,
+      "sha256": "a701b9922219c123f880195ed44b9f1546dc25d6b53ab38c4da373fd85f264a5",
+      "checkoutBytes": 12822,
+      "checkoutSha256": "a701b9922219c123f880195ed44b9f1546dc25d6b53ab38c4da373fd85f264a5"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3IfGuardSnapshot.cs",
+      "bytes": 11210,
+      "sha256": "e958292548238344f56d3b17aa2219729828032f174fc198370f2692afd095ec",
+      "checkoutBytes": 11210,
+      "checkoutSha256": "e958292548238344f56d3b17aa2219729828032f174fc198370f2692afd095ec"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3Normalizer.cs",
+      "bytes": 110699,
+      "sha256": "7bc1e2582d3a89c83c3f8f0ce4ffb5ab6dc98578ddc2516c1866d68433da5b59",
+      "checkoutBytes": 110699,
+      "checkoutSha256": "7bc1e2582d3a89c83c3f8f0ce4ffb5ab6dc98578ddc2516c1866d68433da5b59"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3RealRoundTrip.cs",
+      "bytes": 12511,
+      "sha256": "283b50b7d7d962addf94ff6a1d5b012278283e790fa288a2c7b08a32d400310a",
+      "checkoutBytes": 12511,
+      "checkoutSha256": "283b50b7d7d962addf94ff6a1d5b012278283e790fa288a2c7b08a32d400310a"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3RealRoundTripRelation.cs",
+      "bytes": 10204,
+      "sha256": "ad1828f2e6915337ad5865a87b6c0a17e77a63002630ab38475284eddc7edc5f",
+      "checkoutBytes": 10204,
+      "checkoutSha256": "ad1828f2e6915337ad5865a87b6c0a17e77a63002630ab38475284eddc7edc5f"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3StructuredCfgCorrespondence.cs",
+      "bytes": 27421,
+      "sha256": "ab38e7cad8ecbafa70164c02d9f566eee9c6f9c94b56a8e25f0a84e0b5129e30",
+      "checkoutBytes": 27421,
+      "checkoutSha256": "ab38e7cad8ecbafa70164c02d9f566eee9c6f9c94b56a8e25f0a84e0b5129e30"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3UnsignedWrappers.cs",
+      "bytes": 39052,
+      "sha256": "192316d203bcb9246734a13e041428e24f05c234103af6063b64a9796073bea2",
+      "checkoutBytes": 39052,
+      "checkoutSha256": "192316d203bcb9246734a13e041428e24f05c234103af6063b64a9796073bea2"
+    },
+    {
+      "path": "ThirdParty/B3/integration.patch",
+      "bytes": 139257,
+      "sha256": "29ce3e116f81d2d8d6fb777c1eb50a28a0f85a8b5c3e9efe61236ba91b3e6b42",
+      "checkoutBytes": 139257,
+      "checkoutSha256": "29ce3e116f81d2d8d6fb777c1eb50a28a0f85a8b5c3e9efe61236ba91b3e6b42"
+    },
+    {
+      "path": "ThirdParty/B3/source-manifest.json",
+      "bytes": 6741,
+      "sha256": "04acac15b45763c86af4b47b50b4415a9568d22ac304b86a0ba492d11bdb1722",
+      "checkoutBytes": 6741,
+      "checkoutSha256": "04acac15b45763c86af4b47b50b4415a9568d22ac304b86a0ba492d11bdb1722"
+    },
+    {
+      "path": "docs/dev/b3/real-roundtrip-source.json",
+      "bytes": 7067,
+      "sha256": "2b6901ceaca7a325abc7488cb121a705aea71e05964cb0c0ab9ab3c3cca52f9a",
+      "checkoutBytes": 7067,
+      "checkoutSha256": "2b6901ceaca7a325abc7488cb121a705aea71e05964cb0c0ab9ab3c3cca52f9a"
+    }
+  ],
+  "vendorInventoryCount": 60,
+  "vendorCanonicalInventoryRehashed": true,
+  "vendorTreeObject": "2934f553749c6968244a54bf83e5082ae5d9c7bd",
+  "staticChecks": [
+    "15 methods/47 fixed rows enumerated from source",
+    "test project XML parsed",
+    "unchanged dependencies compared with source-parent Git blobs",
+    "complete pinned vendor inventory rehashed",
+    "git diff whitespace checked"
+  ],
+  "deferred": [
+    "focused compilation/structural execution routing",
+    "strict actual worker and source controls",
+    "Real corpus acceptance",
+    "default regression observed-verdict artifact"
+  ],
+  "inventoryEncoding": "Canonical Git blobs and declared checkout bytes are recorded separately; the manifest excludes itself."
+}
