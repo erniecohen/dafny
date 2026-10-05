@@ -124,3 +124,5 @@ W applies value.value. C# B/N/W-erased each allocate 1,920,000 measured bytes; W
 The generic-boundary cohort carries Pair=(int,int) through seq<Value>, map<int,Value>, and Identity<Value>. It retains the universal postcondition 2*checksum=n*(n+1)+14*n. This is actual tuple/generic-boundary performance coverage. Separate ghost-tuple functional tests are outside the performance denominator.
 
 The full report preserves the depth-1000 wrapper translation/proof caps, unavailable codatatype profiles, native compiler warnings, and absent hidden artifact metadata. These excerpts do not broaden that outcome boundary.
+
+The [performance-trigger investigation](extended-newtype-bases-performance-investigation.md) attributes the additional nominal proof batches and reports all six runtime median comparisons above the provisional ten-percent trigger, including raw sample ranges and generated-code equality.
