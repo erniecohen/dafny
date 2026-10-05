@@ -1,12 +1,22 @@
 # Experimental B3 package
 
-This package contains the Dafny CLI, the B3 worker, the library whose 557 proof
-batches passed in public run 37201990430, and the reviewed Z3 5.1.0 Linux x64
-executable. `package-manifest.json` records their exact hashes and source/build
+The historical initial bool/int archive contains the Dafny CLI, the B3 worker,
+the library whose 557 proof batches passed in public run 37201990430, and the
+reviewed Z3 5.1.0 Linux x64 executable. `package-manifest.json` records their exact hashes and source/build
 identities. CLI metadata/source identities are build declarations; immutable file
 hashes and the public build receipt provide review evidence, not signed source
 attestation. The generated B3 library remains a trusted compiler artifact; its
 proof receipt is not an end-to-end soundness theorem.
+
+The projected source includes native Real, native words and protocol schema 3.
+The historical archive and its 557-proof library do not qualify a package for
+that changed source. Packaging and checking remain fail closed until the exact
+schema-3 library, source/patch, bootstrap, proof CSV, DLL and 37-runtime evidence
+are independently qualified, and the current CLI runtime-asset and clean-install
+controls pass. A source manifest or a structural focus receipt alone cannot
+supply that evidence. The existing support matrix and discrepancy ledger retain
+the historical documented-subset boundary; this source projection does not
+expand advertised package support.
 
 Use Linux x64 with glibc 2.39 or newer and a .NET 8 runtime already installed.
 The bundle requires no dependency download to run. The CLI launcher preserves
@@ -26,8 +36,9 @@ Do not interpret a successful archive build as complete backend acceptance.
 
 Rebuild from the source checkout with `Scripts/package-b3-experimental.py`,
 passing the built CLI directory, published worker directory, reviewed solver
-and its license, exact CLI source commit, and output archive. The script binds
-the unchanged verified library and source manifest to the public proof receipt.
+and its license, exact CLI source commit, and output archive. The script must bind
+the exact verified library and source manifest to an inspected public proof
+receipt. Source inventory hashes alone cannot authorize a new library package.
 The checker requires the archive SHA256 from the independent builder/public
 build receipt. A self-declared package manifest is not its origin check.
 Archive metadata and gzip timestamps are deterministic; input binary hashes
