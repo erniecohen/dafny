@@ -63,14 +63,20 @@ public static class ModernCliCompilation {
       }
       // Worker/result ownership is released before target hooks. Keep diagnostics subscribed for
       // compiler errors until the same resolved AST has finished target compilation/execution.
+      var provenance = B3CompilationProvenance.Capture(receipt, program, inputs);
       compilation.ReleaseOwnedBackend();
       cancellationToken.ThrowIfCancellationRequested();
       var filename = options.DafnyPrintCompiledFile ?? DafnyFile.FileNames(inputs.RootFiles)[0];
       var (authorized, compiled) = await ContinueAsync(receipt, program, cancellationToken,
         () => services.Compile(program, filename, inputs.ForeignFiles, true));
+      cancellationToken.ThrowIfCancellationRequested();
       if (!authorized) { return (int)ExitValue.VERIFICATION_ERROR; }
       if (!compiled) { return (int)ExitValue.COMPILE_ERROR; }
-      return (int)await compilation.GetAndReportExitValue();
+      var finalExit = await compilation.GetAndReportExitValue();
+      if (finalExit == ExitValue.SUCCESS && options.Backend is LibraryBackend { DooPath: { } libraryPath }) {
+        await provenance.WriteLibraryAsync(libraryPath, cancellationToken);
+      }
+      return (int)finalExit;
     } catch (OperationCanceledException) {
       await options.OutputWriter.Status("B3 compilation cancelled.");
       return (int)ExitValue.VERIFICATION_ERROR;

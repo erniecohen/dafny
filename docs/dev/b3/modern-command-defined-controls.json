@@ -1,0 +1,1528 @@
+{
+  "format": "b3-modern-command-source-controls-1",
+  "planningControlCount": 67,
+  "definedControlCount": 95,
+  "definedMethodCount": 33,
+  "compiledTrxDenominator": null,
+  "actualOutcomes": {
+    "compiled": false,
+    "executed": false,
+    "passed": false,
+    "realB3WorkerSolverCommandAccepted": false,
+    "defaultBoogieParityMeasured": false
+  },
+  "identityInterpretation": "Source-derived xUnit identities, not observed TRX. Arguments here require no 50-character display truncation. Driver xUnit 2.4.2; Core xUnit 2.4.1.",
+  "countsByClass": {
+    "DafnyDriver.Test.ModernB3AdmissionTest": 11,
+    "DafnyDriver.Test.ModernB3CommandBoundaryTest": 6,
+    "DafnyDriver.Test.ModernB3CompilationTest": 23,
+    "DafnyDriver.Test.ModernB3ProvenanceTest": 2,
+    "DafnyDriver.Test.ModernB3ReceiptTest": 36,
+    "DafnyDriver.Test.ModernB3StreamTest": 7,
+    "DafnyCore.Test.ModernB3InputAndChildTest": 10
+  },
+  "controls": [
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3AdmissionTest.cs",
+      "className": "DafnyDriver.Test.ModernB3AdmissionTest",
+      "methodName": "SourceLibraryAdmissionWarningIsFrozenOrRejectedByWarningPolicy",
+      "parameters": [
+        "allowed"
+      ],
+      "inlineDataCSharp": [
+        "false"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3AdmissionTest.SourceLibraryAdmissionWarningIsFrozenOrRejectedByWarningPolicy(allowed: false)",
+      "scope": "structured input admission; no worker/solver",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3AdmissionTest.cs",
+      "className": "DafnyDriver.Test.ModernB3AdmissionTest",
+      "methodName": "SourceLibraryAdmissionWarningIsFrozenOrRejectedByWarningPolicy",
+      "parameters": [
+        "allowed"
+      ],
+      "inlineDataCSharp": [
+        "true"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3AdmissionTest.SourceLibraryAdmissionWarningIsFrozenOrRejectedByWarningPolicy(allowed: true)",
+      "scope": "structured input admission; no worker/solver",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3AdmissionTest.cs",
+      "className": "DafnyDriver.Test.ModernB3AdmissionTest",
+      "methodName": "FailedStandardLibraryAdmissionIsRejectedBeforeParentConstruction",
+      "parameters": [
+        "format"
+      ],
+      "inlineDataCSharp": [
+        "DafnyOptions.DiagnosticsFormats.PlainText"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3AdmissionTest.FailedStandardLibraryAdmissionIsRejectedBeforeParentConstruction(format: PlainText)",
+      "scope": "structured input admission; no worker/solver",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3AdmissionTest.cs",
+      "className": "DafnyDriver.Test.ModernB3AdmissionTest",
+      "methodName": "FailedStandardLibraryAdmissionIsRejectedBeforeParentConstruction",
+      "parameters": [
+        "format"
+      ],
+      "inlineDataCSharp": [
+        "DafnyOptions.DiagnosticsFormats.JSON"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3AdmissionTest.FailedStandardLibraryAdmissionIsRejectedBeforeParentConstruction(format: JSON)",
+      "scope": "structured input admission; no worker/solver",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3AdmissionTest.cs",
+      "className": "DafnyDriver.Test.ModernB3AdmissionTest",
+      "methodName": "SourceLibraryErrorAndCancelledAdmissionNeverConstructParent",
+      "parameters": [],
+      "inlineDataCSharp": [],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3AdmissionTest.SourceLibraryErrorAndCancelledAdmissionNeverConstructParent",
+      "scope": "structured input admission; no worker/solver",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3AdmissionTest.cs",
+      "className": "DafnyDriver.Test.ModernB3AdmissionTest",
+      "methodName": "PreparedInputListsAreOwnedAndAuxiliaryTargetFilesSurvive",
+      "parameters": [],
+      "inlineDataCSharp": [],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3AdmissionTest.PreparedInputListsAreOwnedAndAuxiliaryTargetFilesSurvive",
+      "scope": "structured input admission; no worker/solver",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3AdmissionTest.cs",
+      "className": "DafnyDriver.Test.ModernB3AdmissionTest",
+      "methodName": "StandardInputIsPreparedOnceWithoutReopeningItAsAFile",
+      "parameters": [],
+      "inlineDataCSharp": [],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3AdmissionTest.StandardInputIsPreparedOnceWithoutReopeningItAsAFile",
+      "scope": "structured input admission; no worker/solver",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3AdmissionTest.cs",
+      "className": "DafnyDriver.Test.ModernB3AdmissionTest",
+      "methodName": "UnsupportedInvocationIsRejectedBeforeInputOrBackendWork",
+      "parameters": [
+        "mode"
+      ],
+      "inlineDataCSharp": [
+        "\"hidden\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3AdmissionTest.UnsupportedInvocationIsRejectedBeforeInputOrBackendWork(mode: \"hidden\")",
+      "scope": "structured input admission; no worker/solver",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3AdmissionTest.cs",
+      "className": "DafnyDriver.Test.ModernB3AdmissionTest",
+      "methodName": "UnsupportedInvocationIsRejectedBeforeInputOrBackendWork",
+      "parameters": [
+        "mode"
+      ],
+      "inlineDataCSharp": [
+        "\"unrecorded\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3AdmissionTest.UnsupportedInvocationIsRejectedBeforeInputOrBackendWork(mode: \"unrecorded\")",
+      "scope": "structured input admission; no worker/solver",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3AdmissionTest.cs",
+      "className": "DafnyDriver.Test.ModernB3AdmissionTest",
+      "methodName": "UnsupportedInvocationIsRejectedBeforeInputOrBackendWork",
+      "parameters": [
+        "mode"
+      ],
+      "inlineDataCSharp": [
+        "\"dump\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3AdmissionTest.UnsupportedInvocationIsRejectedBeforeInputOrBackendWork(mode: \"dump\")",
+      "scope": "structured input admission; no worker/solver",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3AdmissionTest.cs",
+      "className": "DafnyDriver.Test.ModernB3AdmissionTest",
+      "methodName": "UnsupportedInvocationIsRejectedBeforeInputOrBackendWork",
+      "parameters": [
+        "mode"
+      ],
+      "inlineDataCSharp": [
+        "\"filter\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3AdmissionTest.UnsupportedInvocationIsRejectedBeforeInputOrBackendWork(mode: \"filter\")",
+      "scope": "structured input admission; no worker/solver",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CommandBoundaryTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CommandBoundaryTest",
+      "methodName": "ActualBuildSkipProducesOrdinaryLibraryAndInformationalDisabledSidecar",
+      "parameters": [],
+      "inlineDataCSharp": [],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CommandBoundaryTest.ActualBuildSkipProducesOrdinaryLibraryAndInformationalDisabledSidecar",
+      "scope": "actual skipped CLI or configuration/dependency boundary; no B3 proof",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CommandBoundaryTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CommandBoundaryTest",
+      "methodName": "SourceProjectDependencyKeepsSelectedB3OrItsExplicitSkipPolicy",
+      "parameters": [
+        "skip"
+      ],
+      "inlineDataCSharp": [
+        "false"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CommandBoundaryTest.SourceProjectDependencyKeepsSelectedB3OrItsExplicitSkipPolicy(skip: false)",
+      "scope": "actual skipped CLI or configuration/dependency boundary; no B3 proof",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CommandBoundaryTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CommandBoundaryTest",
+      "methodName": "SourceProjectDependencyKeepsSelectedB3OrItsExplicitSkipPolicy",
+      "parameters": [
+        "skip"
+      ],
+      "inlineDataCSharp": [
+        "true"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CommandBoundaryTest.SourceProjectDependencyKeepsSelectedB3OrItsExplicitSkipPolicy(skip: true)",
+      "scope": "actual skipped CLI or configuration/dependency boundary; no B3 proof",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CommandBoundaryTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CommandBoundaryTest",
+      "methodName": "ActualProjectAndCliPrecedenceChooseOneBackend",
+      "parameters": [
+        "projectBackend",
+        "cliBackend",
+        "expectB3Rejection"
+      ],
+      "inlineDataCSharp": [
+        "\"b3\"",
+        "null",
+        "true"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CommandBoundaryTest.ActualProjectAndCliPrecedenceChooseOneBackend(projectBackend: \"b3\", cliBackend: null, expectB3Rejection: true)",
+      "scope": "actual skipped CLI or configuration/dependency boundary; no B3 proof",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CommandBoundaryTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CommandBoundaryTest",
+      "methodName": "ActualProjectAndCliPrecedenceChooseOneBackend",
+      "parameters": [
+        "projectBackend",
+        "cliBackend",
+        "expectB3Rejection"
+      ],
+      "inlineDataCSharp": [
+        "\"boogie\"",
+        "\"b3\"",
+        "true"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CommandBoundaryTest.ActualProjectAndCliPrecedenceChooseOneBackend(projectBackend: \"boogie\", cliBackend: \"b3\", expectB3Rejection: true)",
+      "scope": "actual skipped CLI or configuration/dependency boundary; no B3 proof",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CommandBoundaryTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CommandBoundaryTest",
+      "methodName": "ActualProjectAndCliPrecedenceChooseOneBackend",
+      "parameters": [
+        "projectBackend",
+        "cliBackend",
+        "expectB3Rejection"
+      ],
+      "inlineDataCSharp": [
+        "\"b3\"",
+        "\"boogie\"",
+        "false"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CommandBoundaryTest.ActualProjectAndCliPrecedenceChooseOneBackend(projectBackend: \"b3\", cliBackend: \"boogie\", expectB3Rejection: false)",
+      "scope": "actual skipped CLI or configuration/dependency boundary; no B3 proof",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "ModernCommandsGateTargetHooksOnTheSelectedBackend",
+      "parameters": [
+        "command",
+        "result"
+      ],
+      "inlineDataCSharp": [
+        "\"build\"",
+        "\"verified\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.ModernCommandsGateTargetHooksOnTheSelectedBackend(command: \"build\", result: \"verified\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "ModernCommandsGateTargetHooksOnTheSelectedBackend",
+      "parameters": [
+        "command",
+        "result"
+      ],
+      "inlineDataCSharp": [
+        "\"run\"",
+        "\"verified\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.ModernCommandsGateTargetHooksOnTheSelectedBackend(command: \"run\", result: \"verified\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "ModernCommandsGateTargetHooksOnTheSelectedBackend",
+      "parameters": [
+        "command",
+        "result"
+      ],
+      "inlineDataCSharp": [
+        "\"test\"",
+        "\"verified\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.ModernCommandsGateTargetHooksOnTheSelectedBackend(command: \"test\", result: \"verified\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "ModernCommandsGateTargetHooksOnTheSelectedBackend",
+      "parameters": [
+        "command",
+        "result"
+      ],
+      "inlineDataCSharp": [
+        "\"build\"",
+        "\"failed\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.ModernCommandsGateTargetHooksOnTheSelectedBackend(command: \"build\", result: \"failed\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "ModernCommandsGateTargetHooksOnTheSelectedBackend",
+      "parameters": [
+        "command",
+        "result"
+      ],
+      "inlineDataCSharp": [
+        "\"run\"",
+        "\"failed\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.ModernCommandsGateTargetHooksOnTheSelectedBackend(command: \"run\", result: \"failed\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "ModernCommandsGateTargetHooksOnTheSelectedBackend",
+      "parameters": [
+        "command",
+        "result"
+      ],
+      "inlineDataCSharp": [
+        "\"test\"",
+        "\"failed\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.ModernCommandsGateTargetHooksOnTheSelectedBackend(command: \"test\", result: \"failed\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "ModernCommandsGateTargetHooksOnTheSelectedBackend",
+      "parameters": [
+        "command",
+        "result"
+      ],
+      "inlineDataCSharp": [
+        "\"build\"",
+        "\"unsupported\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.ModernCommandsGateTargetHooksOnTheSelectedBackend(command: \"build\", result: \"unsupported\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "ModernCommandsGateTargetHooksOnTheSelectedBackend",
+      "parameters": [
+        "command",
+        "result"
+      ],
+      "inlineDataCSharp": [
+        "\"run\"",
+        "\"unsupported\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.ModernCommandsGateTargetHooksOnTheSelectedBackend(command: \"run\", result: \"unsupported\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "ModernCommandsGateTargetHooksOnTheSelectedBackend",
+      "parameters": [
+        "command",
+        "result"
+      ],
+      "inlineDataCSharp": [
+        "\"test\"",
+        "\"unsupported\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.ModernCommandsGateTargetHooksOnTheSelectedBackend(command: \"test\", result: \"unsupported\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "ModernCommandsGateTargetHooksOnTheSelectedBackend",
+      "parameters": [
+        "command",
+        "result"
+      ],
+      "inlineDataCSharp": [
+        "\"build\"",
+        "\"skip\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.ModernCommandsGateTargetHooksOnTheSelectedBackend(command: \"build\", result: \"skip\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "ModernCommandsGateTargetHooksOnTheSelectedBackend",
+      "parameters": [
+        "command",
+        "result"
+      ],
+      "inlineDataCSharp": [
+        "\"run\"",
+        "\"skip\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.ModernCommandsGateTargetHooksOnTheSelectedBackend(command: \"run\", result: \"skip\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "ModernCommandsGateTargetHooksOnTheSelectedBackend",
+      "parameters": [
+        "command",
+        "result"
+      ],
+      "inlineDataCSharp": [
+        "\"test\"",
+        "\"skip\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.ModernCommandsGateTargetHooksOnTheSelectedBackend(command: \"test\", result: \"skip\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "VerificationAndCompilerShareTheResolvedAstAfterSourceFileDisappears",
+      "parameters": [],
+      "inlineDataCSharp": [],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.VerificationAndCompilerShareTheResolvedAstAfterSourceFileDisappears",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "TerminalThenFaultRejectsCompilerAndFinishesOwnedCleanup",
+      "parameters": [],
+      "inlineDataCSharp": [],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.TerminalThenFaultRejectsCompilerAndFinishesOwnedCleanup",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "EveryPreparedConsumerReceivesTheOriginalErrorAfterAResult",
+      "parameters": [],
+      "inlineDataCSharp": [],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.EveryPreparedConsumerReceivesTheOriginalErrorAfterAResult",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "FailedPreparationNeverReachesTargetHooks",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"translation\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.FailedPreparationNeverReachesTargetHooks(defect: \"translation\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "FailedPreparationNeverReachesTargetHooks",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"parse\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.FailedPreparationNeverReachesTargetHooks(defect: \"parse\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "FailedPreparationNeverReachesTargetHooks",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"resolution\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.FailedPreparationNeverReachesTargetHooks(defect: \"resolution\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "FailedPreparationNeverReachesTargetHooks",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"cancelled\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.FailedPreparationNeverReachesTargetHooks(defect: \"cancelled\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "EmptyPreparedScopeReportsNoAssertionProved",
+      "parameters": [],
+      "inlineDataCSharp": [],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.EmptyPreparedScopeReportsNoAssertionProved",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "CompilerFailureRemainsNonzeroAfterSuccessfulSelectedVerification",
+      "parameters": [],
+      "inlineDataCSharp": [],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.CompilerFailureRemainsNonzeroAfterSuccessfulSelectedVerification",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "CancellationDuringTargetContinuationCannotReturnAcceptedSuccess",
+      "parameters": [],
+      "inlineDataCSharp": [],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.CancellationDuringTargetContinuationCannotReturnAcceptedSuccess",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3CompilationTest.cs",
+      "className": "DafnyDriver.Test.ModernB3CompilationTest",
+      "methodName": "ExplicitB3SelectionNeverInvokesTheBoogieFactory",
+      "parameters": [],
+      "inlineDataCSharp": [],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CompilationTest.ExplicitB3SelectionNeverInvokesTheBoogieFactory",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ProvenanceTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ProvenanceTest",
+      "methodName": "InformationalSidecarBindsActualArtifactWithoutChangingItOrGrantingTrust",
+      "parameters": [
+        "skip"
+      ],
+      "inlineDataCSharp": [
+        "false"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ProvenanceTest.InformationalSidecarBindsActualArtifactWithoutChangingItOrGrantingTrust(skip: false)",
+      "scope": "informational metadata only; no valid library/proof inference",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ProvenanceTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ProvenanceTest",
+      "methodName": "InformationalSidecarBindsActualArtifactWithoutChangingItOrGrantingTrust",
+      "parameters": [
+        "skip"
+      ],
+      "inlineDataCSharp": [
+        "true"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ProvenanceTest.InformationalSidecarBindsActualArtifactWithoutChangingItOrGrantingTrust(skip: true)",
+      "scope": "informational metadata only; no valid library/proof inference",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "CompletedInventoryAuthorizesOnlyItsOriginalProgram",
+      "parameters": [],
+      "inlineDataCSharp": [],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.CompletedInventoryAuthorizesOnlyItsOriginalProgram",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "EmptyScopeRequiresSuccessfulExplicitModulePreparationAndRelease",
+      "parameters": [],
+      "inlineDataCSharp": [],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.EmptyScopeRequiresSuccessfulExplicitModulePreparationAndRelease",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "IncompleteOrChangedInventoryNeverCallsCompiler",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"not-started\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.IncompleteOrChangedInventoryNeverCallsCompiler(defect: \"not-started\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "IncompleteOrChangedInventoryNeverCallsCompiler",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"preparing\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.IncompleteOrChangedInventoryNeverCallsCompiler(defect: \"preparing\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "IncompleteOrChangedInventoryNeverCallsCompiler",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"failed\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.IncompleteOrChangedInventoryNeverCallsCompiler(defect: \"failed\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "IncompleteOrChangedInventoryNeverCallsCompiler",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"missing-result\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.IncompleteOrChangedInventoryNeverCallsCompiler(defect: \"missing-result\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "IncompleteOrChangedInventoryNeverCallsCompiler",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"not-released\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.IncompleteOrChangedInventoryNeverCallsCompiler(defect: \"not-released\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "IncompleteOrChangedInventoryNeverCallsCompiler",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"duplicate-module\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.IncompleteOrChangedInventoryNeverCallsCompiler(defect: \"duplicate-module\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "IncompleteOrChangedInventoryNeverCallsCompiler",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"duplicate-unit\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.IncompleteOrChangedInventoryNeverCallsCompiler(defect: \"duplicate-unit\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "IncompleteOrChangedInventoryNeverCallsCompiler",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"unknown-owner\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.IncompleteOrChangedInventoryNeverCallsCompiler(defect: \"unknown-owner\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "IncompleteOrChangedInventoryNeverCallsCompiler",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"missing-owner-module\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.IncompleteOrChangedInventoryNeverCallsCompiler(defect: \"missing-owner-module\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "IncompleteOrChangedInventoryNeverCallsCompiler",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"mutated-identity\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.IncompleteOrChangedInventoryNeverCallsCompiler(defect: \"mutated-identity\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "IncompleteOrChangedInventoryNeverCallsCompiler",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"different-task\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.IncompleteOrChangedInventoryNeverCallsCompiler(defect: \"different-task\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "IncompleteOrChangedInventoryNeverCallsCompiler",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"repeated-result\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.IncompleteOrChangedInventoryNeverCallsCompiler(defect: \"repeated-result\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "IncompleteOrChangedInventoryNeverCallsCompiler",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"fatal-diagnostics\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.IncompleteOrChangedInventoryNeverCallsCompiler(defect: \"fatal-diagnostics\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "IncompleteOrChangedInventoryNeverCallsCompiler",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"cancelled\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.IncompleteOrChangedInventoryNeverCallsCompiler(defect: \"cancelled\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "IncompleteOrChangedInventoryNeverCallsCompiler",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"changed-selection\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.IncompleteOrChangedInventoryNeverCallsCompiler(defect: \"changed-selection\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "IncompleteOrChangedInventoryNeverCallsCompiler",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"empty-key\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.IncompleteOrChangedInventoryNeverCallsCompiler(defect: \"empty-key\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "IncompleteOrChangedInventoryNeverCallsCompiler",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"empty-scope-id\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.IncompleteOrChangedInventoryNeverCallsCompiler(defect: \"empty-scope-id\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "IncompleteOrChangedInventoryNeverCallsCompiler",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"changed-owner-after-result\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.IncompleteOrChangedInventoryNeverCallsCompiler(defect: \"changed-owner-after-result\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "EveryNonVerifiedOutcomeRejectsContinuation",
+      "parameters": [
+        "outcome"
+      ],
+      "inlineDataCSharp": [
+        "VerificationOutcome.Failed"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.EveryNonVerifiedOutcomeRejectsContinuation(outcome: Failed)",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "EveryNonVerifiedOutcomeRejectsContinuation",
+      "parameters": [
+        "outcome"
+      ],
+      "inlineDataCSharp": [
+        "VerificationOutcome.Unknown"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.EveryNonVerifiedOutcomeRejectsContinuation(outcome: Unknown)",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "EveryNonVerifiedOutcomeRejectsContinuation",
+      "parameters": [
+        "outcome"
+      ],
+      "inlineDataCSharp": [
+        "VerificationOutcome.TimedOut"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.EveryNonVerifiedOutcomeRejectsContinuation(outcome: TimedOut)",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "EveryNonVerifiedOutcomeRejectsContinuation",
+      "parameters": [
+        "outcome"
+      ],
+      "inlineDataCSharp": [
+        "VerificationOutcome.OutOfResource"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.EveryNonVerifiedOutcomeRejectsContinuation(outcome: OutOfResource)",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "EveryNonVerifiedOutcomeRejectsContinuation",
+      "parameters": [
+        "outcome"
+      ],
+      "inlineDataCSharp": [
+        "VerificationOutcome.OutOfMemory"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.EveryNonVerifiedOutcomeRejectsContinuation(outcome: OutOfMemory)",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "EveryNonVerifiedOutcomeRejectsContinuation",
+      "parameters": [
+        "outcome"
+      ],
+      "inlineDataCSharp": [
+        "VerificationOutcome.Cancelled"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.EveryNonVerifiedOutcomeRejectsContinuation(outcome: Cancelled)",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "EveryNonVerifiedOutcomeRejectsContinuation",
+      "parameters": [
+        "outcome"
+      ],
+      "inlineDataCSharp": [
+        "VerificationOutcome.Unsupported"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.EveryNonVerifiedOutcomeRejectsContinuation(outcome: Unsupported)",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "EveryNonVerifiedOutcomeRejectsContinuation",
+      "parameters": [
+        "outcome"
+      ],
+      "inlineDataCSharp": [
+        "VerificationOutcome.ToolError"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.EveryNonVerifiedOutcomeRejectsContinuation(outcome: ToolError)",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "EveryNonVerifiedOutcomeRejectsContinuation",
+      "parameters": [
+        "outcome"
+      ],
+      "inlineDataCSharp": [
+        "VerificationOutcome.Bounded"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.EveryNonVerifiedOutcomeRejectsContinuation(outcome: Bounded)",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "ConfigurationChangedAfterSealingCannotAuthorizeOutput",
+      "parameters": [
+        "field"
+      ],
+      "inlineDataCSharp": [
+        "\"backend\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.ConfigurationChangedAfterSealingCannotAuthorizeOutput(field: \"backend\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "ConfigurationChangedAfterSealingCannotAuthorizeOutput",
+      "parameters": [
+        "field"
+      ],
+      "inlineDataCSharp": [
+        "\"worker\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.ConfigurationChangedAfterSealingCannotAuthorizeOutput(field: \"worker\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "ConfigurationChangedAfterSealingCannotAuthorizeOutput",
+      "parameters": [
+        "field"
+      ],
+      "inlineDataCSharp": [
+        "\"solver\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.ConfigurationChangedAfterSealingCannotAuthorizeOutput(field: \"solver\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "ConfigurationChangedAfterSealingCannotAuthorizeOutput",
+      "parameters": [
+        "field"
+      ],
+      "inlineDataCSharp": [
+        "\"limit\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.ConfigurationChangedAfterSealingCannotAuthorizeOutput(field: \"limit\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "ConfigurationChangedAfterSealingCannotAuthorizeOutput",
+      "parameters": [
+        "field"
+      ],
+      "inlineDataCSharp": [
+        "\"prover-options\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.ConfigurationChangedAfterSealingCannotAuthorizeOutput(field: \"prover-options\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "OrdinarySkipIsDistinctFromHiddenOrUnrecordedSkip",
+      "parameters": [
+        "ordinary"
+      ],
+      "inlineDataCSharp": [
+        "false"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.OrdinarySkipIsDistinctFromHiddenOrUnrecordedSkip(ordinary: false)",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3ReceiptTest.cs",
+      "className": "DafnyDriver.Test.ModernB3ReceiptTest",
+      "methodName": "OrdinarySkipIsDistinctFromHiddenOrUnrecordedSkip",
+      "parameters": [
+        "ordinary"
+      ],
+      "inlineDataCSharp": [
+        "true"
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.OrdinarySkipIsDistinctFromHiddenOrUnrecordedSkip(ordinary: true)",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3StreamTest.cs",
+      "className": "DafnyDriver.Test.ModernB3StreamTest",
+      "methodName": "ATerminalValueWithoutNormalStreamCompletionCannotVerify",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"missing\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3StreamTest.ATerminalValueWithoutNormalStreamCompletionCannotVerify(defect: \"missing\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3StreamTest.cs",
+      "className": "DafnyDriver.Test.ModernB3StreamTest",
+      "methodName": "ATerminalValueWithoutNormalStreamCompletionCannotVerify",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"duplicate\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3StreamTest.ATerminalValueWithoutNormalStreamCompletionCannotVerify(defect: \"duplicate\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3StreamTest.cs",
+      "className": "DafnyDriver.Test.ModernB3StreamTest",
+      "methodName": "ATerminalValueWithoutNormalStreamCompletionCannotVerify",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"after-terminal\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3StreamTest.ATerminalValueWithoutNormalStreamCompletionCannotVerify(defect: \"after-terminal\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3StreamTest.cs",
+      "className": "DafnyDriver.Test.ModernB3StreamTest",
+      "methodName": "ATerminalValueWithoutNormalStreamCompletionCannotVerify",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"terminal-fault\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3StreamTest.ATerminalValueWithoutNormalStreamCompletionCannotVerify(defect: \"terminal-fault\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3StreamTest.cs",
+      "className": "DafnyDriver.Test.ModernB3StreamTest",
+      "methodName": "ATerminalValueWithoutNormalStreamCompletionCannotVerify",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"no-stream\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3StreamTest.ATerminalValueWithoutNormalStreamCompletionCannotVerify(defect: \"no-stream\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3StreamTest.cs",
+      "className": "DafnyDriver.Test.ModernB3StreamTest",
+      "methodName": "ATerminalValueWithoutNormalStreamCompletionCannotVerify",
+      "parameters": [
+        "defect"
+      ],
+      "inlineDataCSharp": [
+        "\"cancelled-after-terminal\""
+      ],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3StreamTest.ATerminalValueWithoutNormalStreamCompletionCannotVerify(defect: \"cancelled-after-terminal\")",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyDriver.Test/ModernB3StreamTest.cs",
+      "className": "DafnyDriver.Test.ModernB3StreamTest",
+      "methodName": "NormalStreamCompletionRetainsTheExactVerifiedResult",
+      "parameters": [],
+      "inlineDataCSharp": [],
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3StreamTest.NormalStreamCompletionRetainsTheExactVerifiedResult",
+      "scope": "in-process orchestration/receipt",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyCore.Test/ModernB3InputAndChildTest.cs",
+      "className": "DafnyCore.Test.ModernB3InputAndChildTest",
+      "methodName": "PublicPreparedRootSeamSnapshotsCallerListBeforeStart",
+      "parameters": [],
+      "inlineDataCSharp": [],
+      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.PublicPreparedRootSeamSnapshotsCallerListBeforeStart",
+      "scope": "Core input/child relation",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyCore.Test/ModernB3InputAndChildTest.cs",
+      "className": "DafnyCore.Test.ModernB3InputAndChildTest",
+      "methodName": "MissingResolutionOrScopeInventoryCannotBecomeEmptyPreparation",
+      "parameters": [
+        "missingResolution"
+      ],
+      "inlineDataCSharp": [
+        "false"
+      ],
+      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.MissingResolutionOrScopeInventoryCannotBecomeEmptyPreparation(missingResolution: false)",
+      "scope": "Core input/child relation",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyCore.Test/ModernB3InputAndChildTest.cs",
+      "className": "DafnyCore.Test.ModernB3InputAndChildTest",
+      "methodName": "MissingResolutionOrScopeInventoryCannotBecomeEmptyPreparation",
+      "parameters": [
+        "missingResolution"
+      ],
+      "inlineDataCSharp": [
+        "true"
+      ],
+      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.MissingResolutionOrScopeInventoryCannotBecomeEmptyPreparation(missingResolution: true)",
+      "scope": "Core input/child relation",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyCore.Test/ModernB3InputAndChildTest.cs",
+      "className": "DafnyCore.Test.ModernB3InputAndChildTest",
+      "methodName": "LibraryChildForwardsFiniteB3ConfigurationAndSeparatesProgramArguments",
+      "parameters": [],
+      "inlineDataCSharp": [],
+      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.LibraryChildForwardsFiniteB3ConfigurationAndSeparatesProgramArguments",
+      "scope": "Core input/child relation",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyCore.Test/ModernB3InputAndChildTest.cs",
+      "className": "DafnyCore.Test.ModernB3InputAndChildTest",
+      "methodName": "ChildSkipPreservesBothParentAndCallerProvenance",
+      "parameters": [
+        "parentSkip",
+        "verifyChild"
+      ],
+      "inlineDataCSharp": [
+        "false",
+        "false"
+      ],
+      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.ChildSkipPreservesBothParentAndCallerProvenance(parentSkip: false, verifyChild: false)",
+      "scope": "Core input/child relation",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyCore.Test/ModernB3InputAndChildTest.cs",
+      "className": "DafnyCore.Test.ModernB3InputAndChildTest",
+      "methodName": "ChildSkipPreservesBothParentAndCallerProvenance",
+      "parameters": [
+        "parentSkip",
+        "verifyChild"
+      ],
+      "inlineDataCSharp": [
+        "false",
+        "true"
+      ],
+      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.ChildSkipPreservesBothParentAndCallerProvenance(parentSkip: false, verifyChild: true)",
+      "scope": "Core input/child relation",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyCore.Test/ModernB3InputAndChildTest.cs",
+      "className": "DafnyCore.Test.ModernB3InputAndChildTest",
+      "methodName": "ChildSkipPreservesBothParentAndCallerProvenance",
+      "parameters": [
+        "parentSkip",
+        "verifyChild"
+      ],
+      "inlineDataCSharp": [
+        "true",
+        "false"
+      ],
+      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.ChildSkipPreservesBothParentAndCallerProvenance(parentSkip: true, verifyChild: false)",
+      "scope": "Core input/child relation",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyCore.Test/ModernB3InputAndChildTest.cs",
+      "className": "DafnyCore.Test.ModernB3InputAndChildTest",
+      "methodName": "ChildSkipPreservesBothParentAndCallerProvenance",
+      "parameters": [
+        "parentSkip",
+        "verifyChild"
+      ],
+      "inlineDataCSharp": [
+        "true",
+        "true"
+      ],
+      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.ChildSkipPreservesBothParentAndCallerProvenance(parentSkip: true, verifyChild: true)",
+      "scope": "Core input/child relation",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyCore.Test/ModernB3InputAndChildTest.cs",
+      "className": "DafnyCore.Test.ModernB3InputAndChildTest",
+      "methodName": "EffectiveLegacySolverPathUsesTheLastRecordedValueWithoutForwardingOtherStrings",
+      "parameters": [],
+      "inlineDataCSharp": [],
+      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.EffectiveLegacySolverPathUsesTheLastRecordedValueWithoutForwardingOtherStrings",
+      "scope": "Core input/child relation",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    },
+    {
+      "sourcePath": "Source/DafnyCore.Test/ModernB3InputAndChildTest.cs",
+      "className": "DafnyCore.Test.ModernB3InputAndChildTest",
+      "methodName": "B3ChildHelperCannotMintASelectionForBoogieOptions",
+      "parameters": [],
+      "inlineDataCSharp": [],
+      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.B3ChildHelperCannotMintASelectionForBoogieOptions",
+      "scope": "Core input/child relation",
+      "compiled": false,
+      "executed": false,
+      "passed": false
+    }
+  ],
+  "integrationRegression": {
+    "sourcePath": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-126.dfy",
+    "definedCliRows": 8,
+    "enabledUnsupportedConfigurationRows": 3,
+    "ordinarySkippedCompilerRuntimeRows": 3,
+    "unchangedTranslateRejectionRows": 2,
+    "executed": false,
+    "passed": false,
+    "genuineB3VerificationRows": 0
+  }
+}

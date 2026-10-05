@@ -88,15 +88,7 @@ public static class VerifyCommand {
   internal static async Task VerifyAndReportPreparedAsync(CliCompilation compilation,
     ResolutionResult resolution, IAsyncEnumerable<CanVerifyResult> results, CancellationToken cancellationToken) {
     using Subject<CanVerifyResult> reported = new();
-    // This consumer only formats published diagnostics. Its legacy on-error default throws
-    // synchronously and would prevent later owned consumers from observing the source failure.
-    // Preserve that failure on their raw stream, while completing this diagnostics-only view.
-    var diagnosticResults = System.Reactive.Linq.Observable.Catch<CanVerifyResult, Exception>(reported,
-      _ => System.Reactive.Linq.Observable.Empty<CanVerifyResult>());
-    ReportVerificationDiagnostics(compilation, diagnosticResults);
-    var summary = ReportVerificationSummary(compilation, reported);
-    var dependencies = ReportProofDependencies(compilation, resolution, reported);
-    var logged = LogVerificationResults(compilation, resolution, reported);
+    var consumers = RegisterPreparedConsumers(compilation, resolution, reported);
     try {
       await foreach (var result in results.WithCancellation(cancellationToken)) {
         reported.OnNext(result);
@@ -105,10 +97,25 @@ public static class VerifyCommand {
     } catch (Exception exception) {
       reported.OnError(exception);
       // All consumers own subscriptions to this subject; observe their failures before returning.
-      try { await Task.WhenAll(summary, dependencies, logged); } catch { }
+      try { await Task.WhenAll(consumers); } catch { }
       throw;
     }
-    await Task.WhenAll(summary, dependencies, logged);
+    await Task.WhenAll(consumers);
+  }
+
+  internal static IReadOnlyList<Task> RegisterPreparedConsumers(CliCompilation compilation,
+    ResolutionResult resolution, IObservable<CanVerifyResult> reported) {
+    // This consumer only formats published diagnostics. Its legacy on-error default throws
+    // synchronously and would prevent later owned consumers from observing the source failure.
+    // Preserve that failure on their raw stream, while completing this diagnostics-only view.
+    var diagnosticResults = System.Reactive.Linq.Observable.Catch<CanVerifyResult, Exception>(reported,
+      _ => System.Reactive.Linq.Observable.Empty<CanVerifyResult>());
+    ReportVerificationDiagnostics(compilation, diagnosticResults);
+    return new[] {
+      ReportVerificationSummary(compilation, reported),
+      ReportProofDependencies(compilation, resolution, reported),
+      LogVerificationResults(compilation, resolution, reported)
+    };
   }
 
   public static async Task ReportVerificationSummary(

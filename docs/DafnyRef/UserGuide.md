@@ -2375,8 +2375,19 @@ and what information it produces about the verification process.
   actual function Body outside that route produces `b3_unsigned_wrapper` or the
   existing Body diagnostic. No conversion-fit check is removed and this route
   does not require `--additional-axioms`.
-  The experimental B3 backend currently rejects `build`, `run`, `test`, and `translate`,
-  including their `--no-verify` mode. Use `verify` for B3 verification.
+  Modern `build`, `run` and `test` verify their current checking scope with the selected
+  backend before invoking the target compiler or executing code. B3 requires successful
+  module preparation, one verified result per checking unit and normal completion of
+  every result stream. Unsupported constructs/options, failures, incomplete results and
+  cancellation produce a nonzero result without invoking the target compiler.
+  Ordinary `--no-verify` proceeds after parsing/resolution and reports that no proof was
+  attempted; it performs no B3 worker or solver lookup. An empty admitted checking scope
+  reports that no assertion was proved. B3 rejects hidden skip, compilation verification
+  filters and skip combined with verification dumps. B3 `translate` and legacy compilation
+  remain unsupported.
+  Existing `.doo` dependency trust rules and `.doo`/`.dtr` formats are unchanged. B3 library
+  builds write adjacent `.b3-verification.json` informational metadata; readers do not use
+  it to grant trust or replace option compatibility checks.
   B3 also rejects `measure-complexity`, `generate-tests`, and `find-dead-code`,
   which require Boogie metrics or counterexample generation. This rejection also
   applies when a project file selects B3.

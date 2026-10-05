@@ -33,7 +33,7 @@ internal sealed class PreparedCliInputs {
     var admission = new BatchErrorReporter(options);
     var (exitValue, files, foreignFiles) = await SynchronousCliCompilation.GetDafnyFiles(options, admission);
     cancellationToken.ThrowIfCancellationRequested();
-    if (exitValue != ExitValue.SUCCESS || admission.ErrorCount != 0 ||
+    if (exitValue != ExitValue.SUCCESS || admission.FailCompilation ||
         admission.AllMessages.Any(diagnostic => diagnostic.Level == ErrorLevel.Warning) &&
         !options.Get(CommonOptionBag.AllowWarnings)) {
       ErrorReporter console = options.DiagnosticsFormat switch {

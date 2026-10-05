@@ -1,0 +1,5 @@
+Modern build, run and test can verify with the explicitly selected experimental B3 backend before target compilation. Failed, unsupported, cancelled or incomplete verification does not reach compiler hooks; the same resolved program is retained across both stages. Source dependency builds and library child commands retain the explicit backend selection and supported configuration.
+
+Ordinary --no-verify skips B3 worker/solver preparation and reports that no proof was attempted. Empty prepared checking scopes report that no assertion was proved. Hidden skip, verification filters and skip combined with verification dumps remain unsupported. B3 translate and legacy compilation retain their explicit rejection.
+
+B3 library builds produce an adjacent informational .b3-verification.json sidecar. Existing .doo/.dtr formats, dependency trust rules and default Boogie behavior are unchanged; no observed solver version or proof certificate is inferred from the sidecar.
