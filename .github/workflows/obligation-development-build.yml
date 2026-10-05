@@ -1,6 +1,9 @@
 name: Obligation development build probe
 on:
   workflow_dispatch:
+  push:
+    branches: [scratch/codex/issue100-core]
+    paths: [.github/workflows/obligation-development-build.yml]
 permissions:
   contents: read
 jobs:
