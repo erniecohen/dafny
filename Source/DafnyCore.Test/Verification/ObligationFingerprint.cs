@@ -49,6 +49,17 @@ internal static class ObligationFingerprint {
           $"[{string.Join(",",variables)}]:attributes[{Attributes(quantifier.Attributes,scoped)}]" +
           $"patterns[{string.Join(";",patterns)}]({Term(quantifier.Body,scoped)})";
       }
+      case Bpl.LambdaExpr lambda: {
+        var scoped = new Dictionary<string,string>(bound);
+        var variables = lambda.Dummies.Select((v,i) => {
+          var name = $"bound{bound.Count+i}";
+          scoped[v.Name] = name;
+          return $"{name}:{v.TypedIdent.Type}";
+        }).ToArray();
+        return $"lambda:{type}:types[{string.Join(",",lambda.TypeParameters)}]" +
+          $"[{string.Join(",",variables)}]:attributes[{Attributes(lambda.Attributes,scoped)}]" +
+          $"({Term(lambda.Body,scoped)})";
+      }
       case Bpl.LetExpr let: {
         var scoped = new Dictionary<string,string>(bound);
         var variables = let.Dummies.Select((v,i) => {
