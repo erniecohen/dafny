@@ -1,233 +1,81 @@
-name: Issue 113 paired default-off compatibility
-on:
+name: Issue 113 focused literal SchorrWaite BPL observation
+'on':
   workflow_dispatch:
-    inputs:
-      global_refresh:
-        description: Additional full-suite refresh coverage (original explicit RUN settings still win)
-        type: boolean
-        default: false
-      semantic_unicode:
-        description: Additional six-program original Unicode-setting controls on each line
-        type: boolean
-        default: false
 permissions:
   contents: read
+  actions: read
 concurrency:
-  group: issue113-default-off-${{ github.ref }}
+  group: issue113-schorr-observation-${{ github.ref }}
   cancel-in-progress: false
 env:
   DOTNET_NOLOGO: 'true'
   DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
 jobs:
-  plan:
+  capture:
+    if: github.repository == 'erniecohen/dafny' && startsWith(github.ref, 'refs/heads/scratch/')
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Explicit requested workload
-        id: matrix
-        run: python3 .github/review/issue113-default-off/matrix.py workflow-request.json --refresh '${{ inputs.global_refresh }}' --semantic-unicode '${{ inputs.semantic_unicode }}' --github-output
-      - uses: actions/upload-artifact@v4
-        with:
-          name: default-off-workflow-request
-          path: workflow-request.json
-          retention-days: 30
-  compilers:
-    needs: plan
-    runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       max-parallel: 2
       matrix:
-        line: [dev, shipped]
+        include:
+          - line: dev
+            mode: default
+            axioms: 'absent'
+            tag: dev-default-absent
+            original: 97601b75712f458de37a13bf9953a0b7825122eb
+          - line: dev
+            mode: refresh
+            axioms: 'absent'
+            tag: dev-refresh-absent
+            original: 97601b75712f458de37a13bf9953a0b7825122eb
+          - line: shipped
+            mode: default
+            axioms: 'off'
+            tag: shipped-default-off
+            original: 4b2742fb9924eed47c7bd40779e4283a1e65ce6d
+          - line: shipped
+            mode: default
+            axioms: 'on'
+            tag: shipped-default-on
+            original: 4b2742fb9924eed47c7bd40779e4283a1e65ce6d
+          - line: shipped
+            mode: refresh
+            axioms: 'off'
+            tag: shipped-refresh-off
+            original: 4b2742fb9924eed47c7bd40779e4283a1e65ce6d
+          - line: shipped
+            mode: refresh
+            axioms: 'on'
+            tag: shipped-refresh-on
+            original: 4b2742fb9924eed47c7bd40779e4283a1e65ce6d
     steps:
       - uses: actions/checkout@v4
-        with:
-          path: harness
-      - name: Exact source pins
-        id: pins
-        env:
-          LINE: ${{ matrix.line }}
-        run: |
-          python3 - <<'PY'
-          import json,os
-          from pathlib import Path
-          source=json.loads(Path('harness/.github/review/issue113-default-off/spec.json').read_text())['lines'][os.environ['LINE']]
-          with open(os.environ['GITHUB_OUTPUT'],'a') as output:
-            for name,key in [('old','original'),('baseline','repaired_product'),('final','final_product')]:
-              output.write(name+'='+source[key]+'\n')
-          PY
+        continue-on-error: true
       - uses: actions/checkout@v4
+        continue-on-error: true
         with:
-          ref: ${{ steps.pins.outputs.old }}
-          path: baseline-source
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.pins.outputs.final }}
-          path: final-source
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
-      - name: Recorded audited composition and two builds
-        env:
-          LINE: ${{ matrix.line }}
-          BASELINE: ${{ steps.pins.outputs.baseline }}
-          FINAL: ${{ steps.pins.outputs.final }}
-        run: |
-          mkdir -p results/baseline results/final
-          git -C harness rev-parse HEAD > results/harness-source.txt
-          python3 harness/.github/review/issue113-default-off/prepare.py compose "$LINE" baseline-source results/baseline/source.json
-          git -C final-source rev-parse HEAD > results/final/source.txt
-          test "$(cat results/final/source.txt)" = "$FINAL"
-          set +e
-          for side in baseline final; do
-            case "$side" in baseline) revision="$BASELINE" ;; final) revision="$FINAL" ;; esac
-            if [ -f "$side-source/Scripts/fetch-boogie-packages.sh" ]; then
-              (cd "$side-source" && sh Scripts/fetch-boogie-packages.sh) > "results/$side/dependencies.txt" 2>&1
-              dependency_exit=$?
-            else
-              dependency_exit=0
-            fi
-            echo "$dependency_exit" > "results/$side/dependencies-exit.txt"
-            if [ "$dependency_exit" != 0 ]; then
-              echo 125 > "results/$side/build-exit.txt"
-              continue
-            fi
-            (cd "$side-source" && dotnet publish Source/Dafny/Dafny.csproj -c Release -o "$GITHUB_WORKSPACE/out/$side/dafny" -p:SourceRevisionId="$revision") > "results/$side/build.txt" 2>&1
-            build_exit=$?
-            echo "$build_exit" > "results/$side/build-exit.txt"
-            if [ "$build_exit" = 0 ]; then
-              "out/$side/dafny/Dafny" --version > "results/$side/compiler-version.txt" 2>&1
-              echo "$?" > "results/$side/compiler-version-exit.txt"
-              tar -C "out/$side" -czf "results/$side/dafny.tar.gz" dafny
-              python3 harness/.github/review/issue113-default-off/prepare.py identity "$LINE" "out/$side/dafny/Dafny" "results/$side/compiler-components.json" --side "$side" --archive "results/$side/dafny.tar.gz" > "results/$side/identity.txt" 2>&1
-              echo "$?" > "results/$side/identity-exit.txt"
-            fi
-          done
-          exit 0
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: default-off-compilers-${{ matrix.line }}
-          path: results
-          retention-days: 30
-  paired:
-    needs: [compilers, plan]
-    if: always()
-    runs-on: ubuntu-24.04
-    timeout-minutes: 240
-    strategy:
-      fail-fast: false
-      max-parallel: 12
-      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          path: harness
-      - name: Original input pin
-        id: pin
-        env:
-          LINE: ${{ matrix.line }}
-        run: |
-          python3 - <<'PY'
-          import json,os
-          from pathlib import Path
-          source=json.loads(Path('harness/.github/review/issue113-default-off/spec.json').read_text())['lines'][os.environ['LINE']]
-          with open(os.environ['GITHUB_OUTPUT'],'a') as output:
-            output.write('old='+source['original']+'\n')
-          PY
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.pin.outputs.old }}
+          ref: ${{ matrix.original }}
           path: inputs
       - uses: actions/setup-dotnet@v4
+        continue-on-error: true
         with:
           dotnet-version: 8.0.x
-      - uses: actions/download-artifact@v4
-        with:
-          name: default-off-compilers-${{ matrix.line }}
-          path: compilers
-      - name: Pinned solver and source-input receipt
+      - name: Reuse exact existing compiler bundles and named Z3
+        continue-on-error: true
         env:
-          LINE: ${{ matrix.line }}
-          SOLVER_AXIS: ${{ matrix.solver }}
-        run: |
-          mkdir -p setup
-          python3 harness/.github/review/issue113-default-off/prepare.py inputs "$LINE" inputs setup/inputs.json
-          python3 - <<'PY'
-          import json,os
-          from pathlib import Path
-          spec=json.loads(Path('harness/.github/review/issue113-default-off/spec.json').read_text())
-          version='5.1.0' if os.environ['SOLVER_AXIS']=='5.1.0' else spec['lines'][os.environ['LINE']]['reference_solver']
-          solver=spec['solver_5_1_0'] if version=='5.1.0' else spec['reference_solvers'][version]
-          Path('setup/solver.json').write_text(json.dumps(dict(version=version,**solver),indent=2)+'\n')
-          with open(os.environ['GITHUB_ENV'],'a') as output:
-            output.write('SOLVER_URL='+solver['url']+'\nSOLVER_SHA='+solver['sha256']+'\nSOLVER_VERSION='+version+'\n')
-          PY
-      - name: Download and check the pinned solver
-        run: |
-          set +e
-          curl --retry 3 --retry-all-errors -fsSLo setup/solver.zip "$SOLVER_URL"
-          echo "$?" > setup/solver-download-exit.txt
-          echo "$SOLVER_SHA  setup/solver.zip" | sha256sum -c - > setup/solver-checksum.txt 2>&1
-          checksum_exit=$?
-          echo "$checksum_exit" > setup/solver-checksum-exit.txt
-          if [ "$checksum_exit" = 0 ]; then
-            unzip -q setup/solver.zip -d solver
-            echo "$?" > setup/solver-unzip-exit.txt
-            if [ "$SOLVER_VERSION" = 5.1.0 ]; then
-              solver_executable="$PWD/solver/z3-5.1.0-x64-glibc-2.39/bin/z3"
-            else
-              solver_executable="$PWD/solver/z3-$SOLVER_VERSION"
-            fi
-            chmod +x "$solver_executable"
-            "$solver_executable" --version > setup/solver-version.txt 2>&1
-            echo "$?" > setup/solver-version-exit.txt
-            echo "SOLVER=$solver_executable" >> "$GITHUB_ENV"
-          fi
-          exit 0
-      - name: Matched old-source compiler pairs
-        env:
-          LINE: ${{ matrix.line }}
-          COHORT: ${{ matrix.cohort }}
-          MODE: ${{ matrix.mode }}
-          AXIOMS: ${{ matrix.axioms }}
-          SHARD: ${{ matrix.shard }}
-          PART: ${{ matrix.part }}
-          JOBS: ${{ matrix.jobs }}
-        run: |
-          mkdir -p run-metadata
-          set +e
-          python3 - <<'PY'
-          import json,os
-          from pathlib import Path
-          required=[Path('setup/solver-checksum-exit.txt'),Path('setup/solver-unzip-exit.txt'),Path('setup/solver-version-exit.txt')]
-          for side in ['baseline','final']:
-            required += [Path('compilers')/side/(name+'-exit.txt') for name in ['build','identity','compiler-version']]
-          missing=[str(file) for file in required if not file.exists() or file.read_text().strip()!='0']
-          Path('run-metadata/prerequisites.json').write_text(json.dumps(dict(missing_or_failed=missing),indent=2)+'\n')
-          raise SystemExit(125 if missing else 0)
-          PY
-          prerequisite_exit=$?
-          echo "$prerequisite_exit" > run-metadata/prerequisites-exit.txt
-          if [ "$prerequisite_exit" != 0 ]; then exit 0; fi
-          mkdir -p out/baseline out/final
-          tar -C out/baseline -xzf compilers/baseline/dafny.tar.gz
-          tar -C out/final -xzf compilers/final/dafny.tar.gz
-          extra=()
-          if [ -n "$PART" ]; then extra+=(--part "$PART"); fi
-          python3 harness/.github/review/issue113-default-off/run.py run             --line "$LINE" --cohort "$COHORT" --mode "$MODE" --axioms "$AXIOMS" --inputs "$PWD/inputs"             --baseline "$PWD/out/baseline/dafny/Dafny" --final "$PWD/out/final/dafny/Dafny"             --baseline-identity compilers/baseline/compiler-components.json --final-identity compilers/final/compiler-components.json             --baseline-version compilers/baseline/compiler-version.txt --final-version compilers/final/compiler-version.txt             --solver "$SOLVER" --solver-version setup/solver-version.txt --output measurements             --shard "$SHARD" --jobs "$JOBS" "${extra[@]}" > run-metadata/runner.txt 2>&1
-          echo "$?" > run-metadata/runner-exit.txt
-          tail -20 run-metadata/runner.txt
-          exit 0
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/review/issue113-schorr-focus/focused.py setup --line ${{ matrix.line }}
+      - name: One unchanged matched SchorrWaite pair and literal-file capture
+        continue-on-error: true
+        run: python3 .github/review/issue113-schorr-focus/focused.py measure --line ${{ matrix.line }} --mode ${{ matrix.mode }} --axioms ${{ matrix.axioms }}
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         if: always()
         with:
-          name: default-off-${{ matrix.tag }}
+          name: schorr-default-off-${{ matrix.tag }}
           path: |
             setup/*.json
             setup/*.txt
@@ -236,21 +84,27 @@ jobs:
           compression-level: 9
           retention-days: 30
   report:
-    needs: [plan, compilers, paired]
-    if: always()
+    needs: capture
+    if: always() && github.repository == 'erniecohen/dafny' && startsWith(github.ref, 'refs/heads/scratch/')
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        continue-on-error: true
       - uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
-          pattern: default-off-*
+          pattern: schorr-default-off-*
           path: observations
-      - name: Exact denominators, differences and incomplete outcomes
-        run: python3 .github/review/issue113-default-off/run.py aggregate observations default-off-report.json --workflow-request observations/default-off-workflow-request/workflow-request.json
+      - name: Exact six-pair observation completeness, retain every proof outcome
+        continue-on-error: true
+        run: python3 .github/review/issue113-schorr-focus/focused.py report --directory observations --output schorr-focused-report.json
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         if: always()
         with:
-          name: default-off-report
-          path: default-off-report.json
+          name: schorr-focused-report
+          path: |
+            schorr-focused-report.json
+            run-metadata/diagnostic-failure.json
           retention-days: 30

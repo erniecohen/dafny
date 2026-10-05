@@ -186,6 +186,36 @@ def compare(baseline, final):
             "equal_observations": not differences and not incomplete}
 
 
+def schorr_bprint_snapshot(cwd):
+    """Read the original literal destination; never expand the lit %t token."""
+    destination = cwd / "%t.bpl"
+    files = [destination] + sorted(cwd.glob("%t_*.bpl"))
+    result = {}
+    for file in files:
+        if file.is_file():
+            stat = file.stat()
+            result[str(file)] = {"sha256": digest(file), "bytes": stat.st_size,
+                                 "mtime_ns": stat.st_mtime_ns,
+                                 "ctime_ns": stat.st_ctime_ns, "inode": stat.st_ino}
+    return result
+
+
+def capture_schorr_bprint(cwd, arm, before):
+    """Copy only BPL files written in this arm; pre-existing stale files stay out."""
+    after = schorr_bprint_snapshot(cwd)
+    captured, unchanged = [], []
+    for name, observation in after.items():
+        if before.get(name) == observation:
+            unchanged.append(name)
+            continue
+        file = Path(name)
+        shutil.copyfile(file, arm / file.name)
+        captured.append({"source": name, "retained": file.name, **observation})
+    return {"literal_destination": str(cwd / "%t.bpl"), "before": before,
+            "after": after, "captured": captured,
+            "unchanged_preexisting_not_used": unchanged}
+
+
 def original_expected(args, row, results):
     if args.cohort == "semantic-unicode" or (args.cohort == "canonical" and args.mode != "default"):
         return {"available": False, "reason": "Additional labelled cohort; original canonical table is not its expected verdict"}
@@ -233,6 +263,12 @@ def pair(args, row, receipts, versions):
         cmd = command(args.line, args.cohort, args.mode, row, executable, args.solver.resolve(), scratch.resolve(), args.axioms)
         arm = destination / side
         arm.mkdir()
+        # Focused observation repair only; the actual Dafny command is unchanged.
+        observe_own_bprint = args.part == "dafny1/SchorrWaite.dfy"
+        if observe_own_bprint:
+            if row["own_options"] != ["--performance-stats=1", "--bprint=%t.bpl"]:
+                raise ValueError("Unexpected original SchorrWaite print options")
+            own_bprint_before = schorr_bprint_snapshot(args.inputs / row["cwd"])
         dump(arm / "command.json", {"argv": cmd, "cwd": str(args.inputs / row["cwd"]),
                                   "side": side, "order": list(order), "timeout_seconds": args.timeout,
                                   "compiler_identity": receipts[side]})
@@ -246,6 +282,9 @@ def pair(args, row, receipts, versions):
         for file in scratch.iterdir():
             if file.is_file():
                 shutil.copyfile(file, arm / file.name)
+        if observe_own_bprint:
+            capture = capture_schorr_bprint(args.inputs / row["cwd"], arm, own_bprint_before)
+            dump(arm / "own-bprint-capture.json", capture)
         result = {k: v for k, v in execution.items() if k not in ("stdout", "stderr")}
         result.update({"verdict": verdict(row, execution, args.cohort),
                        "stdout_sha256": digest(arm / "stdout.txt"), "stderr_sha256": digest(arm / "stderr.txt"),

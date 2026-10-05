@@ -1,0 +1,124 @@
+{
+  "repository": "erniecohen/dafny",
+  "producer_run": 37252680850,
+  "producer_head": "69edc7f48b4cd7c5d02a02ec738004a54ef2b316",
+  "part": "dafny1/SchorrWaite.dfy",
+  "frozen_collector_files": {
+    ".github/review/issue113-default-off/README.md": "e067678e44590de817736bc3a6c9988d851f4f1a562395ac06c2abf49ea722b5",
+    ".github/review/issue113-default-off/baseline/dev-core.patch": "4042f1b7f067233549e2bf5ae100c4ec86f9dc3f5b65004edc359365c6548899",
+    ".github/review/issue113-default-off/baseline/dev-driver-104.patch": "748fe01fcbb650d59edc4b1b4417387fa7a1c80657d75c7e2c5a7e80ab4f63f7",
+    ".github/review/issue113-default-off/baseline/shipped-core.patch": "14c4ccf455ccec85662891f26173de672f6e38a1ba8414bedf7f30b1887e2f65",
+    ".github/review/issue113-default-off/canonical/dev/expected-std-verdicts-z3-4.16.0.tsv": "8e7fff7a835a6d271b049692af326b6e18f9417738b6555ba1e659e71586bc71",
+    ".github/review/issue113-default-off/canonical/dev/expected-std-verdicts-z3-5.1.0.tsv": "245ec4eedce112e6d45bd0eb3f5a1b068aa0bfaf3f5929784fe6f31954dea330",
+    ".github/review/issue113-default-off/canonical/dev/expected-verdicts.tsv": "c375f2cc72942c4208fb5feaa972662666626176eb3cd684284517db5083da33",
+    ".github/review/issue113-default-off/canonical/dev/inputs.json": "ff5985528bb5a0e23f6ef6a5b2321791ac4ebbdd6de4281e611ad846743b1b03",
+    ".github/review/issue113-default-off/canonical/dev/lit-verdicts.py": "95feab49dfd3182de940f86b637249cf394e924bdbd45b198d2ade981cf2d903",
+    ".github/review/issue113-default-off/canonical/dev/plan.json": "014aab007195ecea645fcc3a157afdf9be77bad893c1988e4c87f3c088c2e0ed",
+    ".github/review/issue113-default-off/canonical/dev/review.yml": "3671e4293b62619c7ec19f8b82109f96c27774e410a5a688a73f501bae129bfd",
+    ".github/review/issue113-default-off/canonical/dev/std-verdicts.py": "40af99236ab102baf8345a807bbb73a441892968df8ae35d649658558f981725",
+    ".github/review/issue113-default-off/canonical/shipped/expected-std-verdicts-z3-4.12.1-additional-axioms.tsv": "2f6171a7a4a567d0d517c99a28dbf981d380360a72092417613906f4923c0201",
+    ".github/review/issue113-default-off/canonical/shipped/expected-std-verdicts-z3-4.12.1.tsv": "49ef68003b11a2355843d38913f175e0427df8bf157feeec8c823515d38ca88a",
+    ".github/review/issue113-default-off/canonical/shipped/expected-std-verdicts-z3-5.1.0-additional-axioms.tsv": "d624aa410f20227ed00f86c279f29fa86cbe43e5c34e74d47147663402a4bccf",
+    ".github/review/issue113-default-off/canonical/shipped/expected-std-verdicts-z3-5.1.0.tsv": "e55e1340e92f3e4b8f49456e00c89305e3a021982d98dcdfebe5761266f2de29",
+    ".github/review/issue113-default-off/canonical/shipped/expected-verdicts-additional-axioms.tsv": "3c8894dea7a5609975de6d45f7019c809f3cd4292f412bbf81df3cfa4a9f6e53",
+    ".github/review/issue113-default-off/canonical/shipped/expected-verdicts.tsv": "3c8894dea7a5609975de6d45f7019c809f3cd4292f412bbf81df3cfa4a9f6e53",
+    ".github/review/issue113-default-off/canonical/shipped/inputs.json": "173919b494886488ef3c1e90865b3a23e6f9b2334d3c9b72f7fec08731c8c4b5",
+    ".github/review/issue113-default-off/canonical/shipped/lit-verdicts.py": "10ff026a78afd85b8793c3dd1adcaf90aa0bb4dc38b173021ae81bd87cf72362",
+    ".github/review/issue113-default-off/canonical/shipped/plan.json": "b1446880eda6cf858e39dd11137ca22024937b524b57ccdbec81c64d4ad1f514",
+    ".github/review/issue113-default-off/canonical/shipped/review.yml": "62ea9724cbcb46caad3e012a7250791fabc7e946d1b3254a41984ebbab89f6fc",
+    ".github/review/issue113-default-off/canonical/shipped/std-verdicts.py": "bf83a586bd9a468aba663bea354558bb07dc98515a275b1882edaae4f0d25be6",
+    ".github/review/issue113-default-off/matrix.py": "3dc93d63c47aa4374778724c664912bba66f7ae133c650ddc2cdf631ecb94dcd",
+    ".github/review/issue113-default-off/plan.py": "3a25e0c48a720ab44b5abed3e3158abbe1dc0f2c7936d96d026c6f43a032cbd0",
+    ".github/review/issue113-default-off/prepare.py": "e35bedeb13746629403dadeeff946714f0ce63b1c03daff30e987a5ca9449d83",
+    ".github/review/issue113-default-off/run.py": "18dc3fc2fcce47fc289c2b2183eb1487304b0a2a9459e5202562d167dcde7c10",
+    ".github/review/issue113-default-off/spec.json": "ba7e6ca6c5217664712936d6c7c047de216b2f7fc328b0cda93f5fc3c25413b3"
+  },
+  "compiler_artifacts": {
+    "dev": {
+      "id": 11322250113,
+      "name": "default-off-compilers-dev",
+      "bytes": 18822913,
+      "sha256": "2e187e7b960396d9046a2ab15383e69f61214d2c5106d27dfc84b63ff6042dda"
+    },
+    "shipped": {
+      "id": 11321601883,
+      "name": "default-off-compilers-shipped",
+      "bytes": 18703855,
+      "sha256": "580d123721dff623755e1609727f5ac1b5863f236f8581bad8368606fe9ecc92"
+    }
+  },
+  "solver": {
+    "version": "5.1.0",
+    "executable_sha256": "b4e0b3483ce37817230b20d6cad48390eb6a3aefde1d93342ad6dc763f24bc23",
+    "url": "https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip",
+    "sha256": "f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a"
+  },
+  "sources": {
+    "dev": {
+      "original": "97601b75712f458de37a13bf9953a0b7825122eb",
+      "repaired_product": "db571b83400fef7f32c175c5eb372f4545e932ed",
+      "final_product": "7b063ecd6414a845631cd587196c683fd243c86a"
+    },
+    "shipped": {
+      "original": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d",
+      "repaired_product": "b266bd4adf8bf28acba3e27e7e089f737a0819bf",
+      "final_product": "95f0e4c8e1b80c95cf8aff397d7acd3ffb9c62e6"
+    }
+  },
+  "matrix": [
+    {
+      "line": "dev",
+      "mode": "default",
+      "axioms": "absent",
+      "tag": "dev-default-absent",
+      "original": "97601b75712f458de37a13bf9953a0b7825122eb"
+    },
+    {
+      "line": "dev",
+      "mode": "refresh",
+      "axioms": "absent",
+      "tag": "dev-refresh-absent",
+      "original": "97601b75712f458de37a13bf9953a0b7825122eb"
+    },
+    {
+      "line": "shipped",
+      "mode": "default",
+      "axioms": "off",
+      "tag": "shipped-default-off",
+      "original": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d"
+    },
+    {
+      "line": "shipped",
+      "mode": "default",
+      "axioms": "on",
+      "tag": "shipped-default-on",
+      "original": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d"
+    },
+    {
+      "line": "shipped",
+      "mode": "refresh",
+      "axioms": "off",
+      "tag": "shipped-refresh-off",
+      "original": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d"
+    },
+    {
+      "line": "shipped",
+      "mode": "refresh",
+      "axioms": "on",
+      "tag": "shipped-refresh-on",
+      "original": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d"
+    }
+  ],
+  "scope_names": [
+    "RecursiveMark (well-formedness)",
+    "RecursiveMark (correctness)",
+    "RecursiveMarkWorker (well-formedness)",
+    "RecursiveMarkWorker (correctness)",
+    "IterativeMark (well-formedness)",
+    "IterativeMark (correctness)",
+    "Reachable (well-formedness)",
+    "ReachableVia (well-formedness)",
+    "SchorrWaite (well-formedness)",
+    "SchorrWaite (correctness)"
+  ]
+}
