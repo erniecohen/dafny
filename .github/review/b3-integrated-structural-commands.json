@@ -1,0 +1,1033 @@
+{
+  "borrowedOwnershipCoordinator": {
+    "adaptationScope": "Separate per-suite finite583 census/results-directory/runtimeDLL expectations; keep all123strict identity/entry/counter/noextra-result rules, ownprocess bounds, firstsnapshots/failureevidence.",
+    "bytes": 74793,
+    "functionRecords": [
+      {
+        "bytes": 68,
+        "name": "digest_bytes",
+        "sha256": "465f44fd51c31eafd1064d5c571818eb4540d8ba8b7455952ad5929ae4f03205"
+      },
+      {
+        "bytes": 108,
+        "name": "seal",
+        "sha256": "c8b862cfef2a0a3735159e13bc7f7a744fe99ee60b2fb2f2433b7e0b0262b25e"
+      },
+      {
+        "bytes": 646,
+        "name": "file_record",
+        "sha256": "b17f0e655565df45bbd8f097e3603e9cb12e60691ff14aa5a049624538baae6d"
+      },
+      {
+        "bytes": 845,
+        "name": "directory_records",
+        "sha256": "c7d4a1556f60352343df74779d342765a6ceae531ed47bf3fead3219b7826735"
+      },
+      {
+        "bytes": 505,
+        "name": "git_bytes",
+        "sha256": "2fc866439709285d9d6a8fe61ccde2b59ff8b84dd7757fcd2962b60aa20570bd"
+      },
+      {
+        "bytes": 620,
+        "name": "tree_records",
+        "sha256": "7e9a344935007fa9955a4538b37eab381b408cc1bc1f0e3ced36501836e11403"
+      },
+      {
+        "bytes": 2423,
+        "name": "worktree_records",
+        "sha256": "052caf6a4fd5d8061cbaa7a19d0f045d27a88b1cd7957525c59cbe7194411bcf"
+      },
+      {
+        "bytes": 3083,
+        "name": "prepare_checkout_bytes",
+        "sha256": "a0db89a8ddb9510786d31cca8bfac47ba2ed2ba92e9fa39c70e1c33b6b45864f"
+      },
+      {
+        "bytes": 414,
+        "name": "test_source_for_class",
+        "sha256": "39df3a45aa3cd5a9b93f08639c7587c050e4c8a9db2d569e3cf708df8aa0b55c"
+      },
+      {
+        "bytes": 650,
+        "name": "source_method_signature",
+        "sha256": "cced67ae3323fe9652c67eaed40a2252b299614b5eb0624d3882ba07e177f92a"
+      },
+      {
+        "bytes": 2028,
+        "name": "execution_controls_from_source",
+        "sha256": "52db82e4cd2a975c97c8bcd24e6d0920f36f57e53ba28f2847e740f7e7f5b555"
+      },
+      {
+        "bytes": 773,
+        "name": "extract_controls",
+        "sha256": "2f72a7c256d9924b9f2e73ee609133eca9efef146b83f1430533471913fa9412"
+      },
+      {
+        "bytes": 1077,
+        "name": "fixture_record",
+        "sha256": "efa909555b62a73977a6ac556d3b60d9fdbee7d0b05565fa5b75c1bd58721d9e"
+      },
+      {
+        "bytes": 848,
+        "name": "captured_pinned_bytes",
+        "sha256": "674b135179ac57249c13a37f3453ca5a2fd37fcc5ecad9273a3670ec14ca52a3"
+      },
+      {
+        "bytes": 1092,
+        "name": "phase_a_fixture_record",
+        "sha256": "bda4258717fb2fae4e6185bb9076e1617fc3f40bac4438f7f16b6014fb220514"
+      },
+      {
+        "bytes": 2072,
+        "name": "validate_phase_b_manifest",
+        "sha256": "65d35ece81e94eba36c87d787516e5f44db04b4b60af726e67927a7af2f358ef"
+      },
+      {
+        "bytes": 3558,
+        "name": "validate_declared_source_before_preparation",
+        "sha256": "039b83a3660665ebfe5638ae47174cfdb6033c501242f4f55c9f4525a8c4ead8"
+      },
+      {
+        "bytes": 971,
+        "name": "validate_selection",
+        "sha256": "0131662492c3f566de68466d7faba8dc75c41df2b5b32f867b37d65ed8cac978"
+      },
+      {
+        "bytes": 1699,
+        "name": "capture_toolchain",
+        "sha256": "36d51333d0ad2027de2500248467ce3ab94e7c3e02ddf0487e9104f8a8c150d2"
+      },
+      {
+        "bytes": 6034,
+        "name": "validate_source_initial",
+        "sha256": "b8d79f3f8f221083616141677fc4ea6787af58f98ea7c31927c2ec24aae7ee08"
+      },
+      {
+        "bytes": 825,
+        "name": "validate_copied_helper",
+        "sha256": "d480ecfd3879296861faed94346f8a4bfde26035476cf157f3fd5afd17d68477"
+      },
+      {
+        "bytes": 1750,
+        "name": "boundary",
+        "sha256": "ccf309dd1c51339ea4af9d7ff3e1ccfa2931852cdc46bc580ee536362f7070a6"
+      },
+      {
+        "bytes": 514,
+        "name": "package_records",
+        "sha256": "bfc0bfd14cd69f0869fa5f079e75fc0a3fad11ec4cecc7cc952af8f0e407c412"
+      },
+      {
+        "bytes": 1167,
+        "name": "pinned_boogie_assembly_entries",
+        "sha256": "dc9a8f7a202573fb6681716c98c35190a77bc195c3a23cb7c4025a32f4911290"
+      },
+      {
+        "bytes": 748,
+        "name": "verify_boogie_assemblies",
+        "sha256": "52dcc79ed2e319ba7908a58a0e51777b7f986c19650a1481c2f20b4e1c039aeb"
+      },
+      {
+        "bytes": 4215,
+        "name": "capture_core_dependency_inputs",
+        "sha256": "84e34be8d4ddd970035a93488a5fdecb4c2f4a3f7f1a903b692e70670fa40859"
+      },
+      {
+        "bytes": 238,
+        "name": "generated_records",
+        "sha256": "873f3a61931e2ee22443fdf4e380d4124c3885031a4db5fd4f71d7882445b095"
+      },
+      {
+        "bytes": 4757,
+        "name": "validate_trx",
+        "sha256": "e34cdd48fb71f3c8fd3d80ea4e4bfdbb107d623cb1e743e38bd3230ccfc58587"
+      },
+      {
+        "bytes": 3481,
+        "name": "validate",
+        "sha256": "7d9723f5c4fc4dce1b0be998628143850fd62c675ba8d5bfb839f35b648c10f9"
+      },
+      {
+        "bytes": 200,
+        "name": "direct_children",
+        "sha256": "297c87908128aa9d3e52c88b225c8682cccd605bf1c430217acca544597c67bb"
+      },
+      {
+        "bytes": 1336,
+        "name": "cleanup_children",
+        "sha256": "65efc55ed0e2c7d54ce235b3af7deef6d9fd516183bc7ca2e6753e37b64c3076"
+      },
+      {
+        "bytes": 136,
+        "name": "reap_exited_children",
+        "sha256": "726f2e4e800ea9b761033a8455a2d9bdbcce702b186d0f580d86e0aee1d4157c"
+      },
+      {
+        "bytes": 779,
+        "name": "reap_completed_adopted_children",
+        "sha256": "c18e700bc74e12685a96273ef6e94b3257ac9d7e392c3d5c4d6519bfd5fe077c"
+      },
+      {
+        "bytes": 1102,
+        "name": "child_diagnostics",
+        "sha256": "b4ccf393abb8fbf1a90c4f4d7be6a6abfb8ccebd84f8087036b18c8d35587cbf"
+      },
+      {
+        "bytes": 4271,
+        "name": "run_stage",
+        "sha256": "c4f6355f8f86181502a05f86164e35435602d9625eb47e42a1ea1cf828e290b9"
+      },
+      {
+        "bytes": 1291,
+        "name": "run_with_boundaries",
+        "sha256": "05092b68198c1c31baf5aab23fb918b17bb2202cc051a1c0ad715d4f9e834e71"
+      },
+      {
+        "bytes": 1141,
+        "name": "bounded_tool_stdout",
+        "sha256": "e2545f7ec2d1bbd9b70831527ec272a0dd2740f9e765423e468bd075f33b73e0"
+      },
+      {
+        "bytes": 406,
+        "name": "source_head_child",
+        "sha256": "b17459b0bb3e8a22d2e3bb9f20b4a5e764b16bf231ba39a13e234cf711503d2e"
+      },
+      {
+        "bytes": 2064,
+        "name": "copy_inventory_snapshot",
+        "sha256": "42e9d7da946d9a7c46619178edbe02514bdc478fa8bcd9e4893b778a1e5231b7"
+      },
+      {
+        "bytes": 769,
+        "name": "preserve_compiled_snapshot",
+        "sha256": "8b31a08507508351c870f65a672a4bd3ec65d256e6a8fad428fb5c09d226ff29"
+      },
+      {
+        "bytes": 511,
+        "name": "inventory_delta",
+        "sha256": "bd5cec1e1efa8e84920009d07958c53d0bbc33236fe2f6ccbc978a9c263d4f2b"
+      },
+      {
+        "bytes": 2201,
+        "name": "capture_failure_observations",
+        "sha256": "7da41bb55b1356bdfb885b2fb858ca0272a44e77345471b2961dcd837384a60e"
+      },
+      {
+        "bytes": 2158,
+        "name": "validate_compiled_artifact_snapshots",
+        "sha256": "a4a147a341e8cf96f78642173324ab89f51da05986102947e7452277aaa85177"
+      },
+      {
+        "bytes": 7205,
+        "name": "main",
+        "sha256": "d2005fc4e73a47a7a8f1961d3194bed300dcf01612ad19d338898df4ef04e37f"
+      }
+    ],
+    "head": "affc2a870fedd0c1668dc221e47735952bd2c7d1",
+    "path": ".github/review/b3-opaque-ground-focus.py",
+    "requiredByteIdenticalSixFunctions": [
+      "direct_children",
+      "cleanup_children",
+      "reap_exited_children",
+      "reap_completed_adopted_children",
+      "child_diagnostics",
+      "run_stage"
+    ],
+    "sha256": "d941b6dffc507c345bbd07ae270a008f171737b17fece4f39838a8a8a0453ca2",
+    "strictTrxPatternFunction": "validate_trx"
+  },
+  "checkoutByteBoundary": "Before any build, finite43 typed csproj/config paths may be materialized from exact declared Git LF or derived CRLF bytes to exact Git bytes;12 nonselected paths remain untouched exact derived CRLF, with actual eol=crlf assertions and all before/after hashes. This is the reviewed affc preparation shape using current51 pins, not a changed gitattributes rule.",
+  "checkoutMaterializations": [
+    {
+      "checkoutBytes": 2052,
+      "checkoutSha256": "af3a8541e05f1a96ece85746224ebe581b667680e7ec07401e8a8e03fb755bef",
+      "eolAttribute": "crlf",
+      "gitBlob": "08593d7dba6ca69332afc883daccf21faca2b817",
+      "gitBytes": 1995,
+      "gitSha256": "e0bce5b246cb7b10c12dccdde475ae8c3a542c24903d9543f647a9b969d64cea",
+      "mode": "100644",
+      "path": "Source/AutoExtern.Test/AutoExtern.Test.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 215,
+      "checkoutSha256": "2421a2a2a3d4d91eafc15543480f5826a3a4166190b9b5e944df91a60254f1f8",
+      "eolAttribute": "crlf",
+      "gitBlob": "30402ac0e7ae3a405870959f590998658261852c",
+      "gitBytes": 206,
+      "gitSha256": "753b6bae7cc0e384041d9c9d0284d8e75f9caa0568f74d170b3be9e743cf406a",
+      "mode": "100644",
+      "path": "Source/AutoExtern.Test/Minimal/Library.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 720,
+      "checkoutSha256": "b5ca009bb1bbf86ec3f3b1aa8b7801c2140b018543149db604a272f92a5dc8b0",
+      "eolAttribute": "crlf",
+      "gitBlob": "7ba274e8ce98fc1f29610d6b95460e3a43dd0e00",
+      "gitBytes": 698,
+      "gitSha256": "ffdf1cf075520325097f15f86b72b5027f618b2b077fa502daed4055b9453c0e",
+      "mode": "100644",
+      "path": "Source/AutoExtern.Test/Tutorial/ClientApp/ClientApp.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 215,
+      "checkoutSha256": "2421a2a2a3d4d91eafc15543480f5826a3a4166190b9b5e944df91a60254f1f8",
+      "eolAttribute": "crlf",
+      "gitBlob": "30402ac0e7ae3a405870959f590998658261852c",
+      "gitBytes": 206,
+      "gitSha256": "753b6bae7cc0e384041d9c9d0284d8e75f9caa0568f74d170b3be9e743cf406a",
+      "mode": "100644",
+      "path": "Source/AutoExtern.Test/Tutorial/Library/Library.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 1520,
+      "checkoutSha256": "3b64d56396c5f591f0244d16a45715ba52eec2b0c86c5532520480684fa272f2",
+      "eolAttribute": "crlf",
+      "gitBlob": "b4875dc121e7a23b7c2573ae8e7ba05e230ce965",
+      "gitBytes": 1489,
+      "gitSha256": "a4c5b5a01876e96763645d4cd6e7b2a3861b6a5558aabc2169b996d39a6e6c17",
+      "mode": "100644",
+      "path": "Source/AutoExtern/AutoExtern.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 1511,
+      "checkoutSha256": "2e9cbf5206127d7ebffcd2eb392972752c28544e32518136b15df77af713c29a",
+      "eolAttribute": "crlf",
+      "gitBlob": "7c639eb2b7ecf04e145abdcbe68ffd09fefbef9a",
+      "gitBytes": 1475,
+      "gitSha256": "3a3d326cb36c67c8e75c67d286262a437493fd2c05faab7797db8b1f61e7264a",
+      "mode": "100644",
+      "path": "Source/Dafny/Dafny.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 774,
+      "checkoutSha256": "67e9df4921ce85c95f7d51603c4eb7154ed54e82d77e1c4cd50b937950ec9213",
+      "eolAttribute": "crlf",
+      "gitBlob": "c829ada46e2f0bc55d04974f1dc7ad27d6ddcb0f",
+      "gitBytes": 758,
+      "gitSha256": "086c62c3378d4216d6a51271f5fc98af60a0d26da17f1014cae3457de3d44bcb",
+      "mode": "100644",
+      "path": "Source/DafnyB3.Census/DafnyB3.Census.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 849,
+      "checkoutSha256": "a24c69f4753ae69d5147060e0a767772d4d57d85797fb1c8a982323b58a63901",
+      "eolAttribute": "crlf",
+      "gitBlob": "1952838319be8154bf7252e335ee08a30079029c",
+      "gitBytes": 835,
+      "gitSha256": "4f22b8e80c3f162de98af3f00013d5f664facba9fd35d4194c928b69c8f8c98f",
+      "mode": "100644",
+      "path": "Source/DafnyB3Host.Test/DafnyB3Host.Test.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 783,
+      "checkoutSha256": "593d12e6e825c3e62eceddd7fa99fe8037291f3754b9c49fc281851e1c8dc028",
+      "eolAttribute": "crlf",
+      "gitBlob": "8665a7ff632bf885109bdf0a58dc0a6569132cec",
+      "gitBytes": 769,
+      "gitSha256": "bcfad0a24bf94e5ade875803fc7a5bc52536e22d16dea60ed22d5b5b2827e680",
+      "mode": "100644",
+      "path": "Source/DafnyB3Host/DafnyB3Host.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 1558,
+      "checkoutSha256": "d59182f9b0269abf12731e82324b5893b73e92e1a49cae727b60118a3345b2ce",
+      "eolAttribute": "crlf",
+      "gitBlob": "0efb666b4652af1b600591cbf6c48d5e49675115",
+      "gitBytes": 1538,
+      "gitSha256": "49661911f2f300ddf70b3ecb39498e17d228ec6a1d30366b791a9041102da2c6",
+      "mode": "100644",
+      "path": "Source/DafnyB3MapTheory.TestRunner/DafnyB3MapTheory.TestRunner.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 2748,
+      "checkoutSha256": "d7a698d76d7596020e0f44a84e69a76cf2279971297ad0e1a52d932470055f95",
+      "eolAttribute": "crlf",
+      "gitBlob": "4fccdb174b35d8856fa8f5f14aff593e329eb581",
+      "gitBytes": 2714,
+      "gitSha256": "26d6352fa38f0f6e202360dea4b4813bc9fad4f28425ea04c59de78a7eea5736",
+      "mode": "100644",
+      "path": "Source/DafnyB3Normalizer.Test/DafnyB3Normalizer.Test.csproj",
+      "selectedByThisFocus": true
+    },
+    {
+      "checkoutBytes": 1123,
+      "checkoutSha256": "b1c1bbe1933352ecdbf6990bcabdcc45e8747b8a4b4aa2d79b844953c4e27641",
+      "eolAttribute": "crlf",
+      "gitBlob": "b85c3f6dde88e21d5a06ad591464c88ad7a3fcc5",
+      "gitBytes": 1108,
+      "gitSha256": "112a0866762fcd6409f9631ebe8400d6e04e08d51f8c2333f55da7f32ab11870",
+      "mode": "100644",
+      "path": "Source/DafnyB3Protocol.Test/DafnyB3Protocol.Test.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 308,
+      "checkoutSha256": "ee9f1f414dc17c62434a5c87dba1cb416f9933881d1ae47011ff772a7d7409c2",
+      "eolAttribute": "crlf",
+      "gitBlob": "2be5f1e280e328a2b4606058f345bd68ce670c83",
+      "gitBytes": 304,
+      "gitSha256": "9a449b8ec74ad3b34969fd33bfc3413f8e8be8aad09f0ac869071623d4ea2309",
+      "mode": "100644",
+      "path": "Source/DafnyB3Protocol.Test/WorkerFixture/WorkerFixture.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 200,
+      "checkoutSha256": "c3a8c5252573a1d57be42ef255fe110d8e11e45ed6553a35edd9782436e55c97",
+      "eolAttribute": "crlf",
+      "gitBlob": "110d2b5725b046be5e4636883e592f7d9389e60e",
+      "gitBytes": 193,
+      "gitSha256": "08e663954b17f93d66e672f8a56bc8e0a96bfd1d059f8482bbd363ee452c6c18",
+      "mode": "100644",
+      "path": "Source/DafnyB3Protocol/DafnyB3Protocol.csproj",
+      "selectedByThisFocus": true
+    },
+    {
+      "checkoutBytes": 1751,
+      "checkoutSha256": "c190e872ea2bbba0acf7b7fadd690d2fd3b7158989f3421b357c95913c822dff",
+      "eolAttribute": "crlf",
+      "gitBlob": "b52f729ffa45e2b3ea45c9982e362142d2e96247",
+      "gitBytes": 1730,
+      "gitSha256": "55640b777d6f32eaead980322c24906cda0745372b831a3cf5bf3a4489efc8e0",
+      "mode": "100644",
+      "path": "Source/DafnyB3Visibility.TestRunner/DafnyB3Visibility.TestRunner.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 604,
+      "checkoutSha256": "f978dadad4a66e5014b6e4c2f73cba9fee080a7e52c4623747990880286f948d",
+      "eolAttribute": "crlf",
+      "gitBlob": "85823c27a940383481fe877ae156d2144c7cfa60",
+      "gitBytes": 584,
+      "gitSha256": "6357d9a37a8d4f69347da5b16cb64e782cbb6031f938599a6016029726fac699",
+      "mode": "100644",
+      "path": "Source/DafnyBenchmarkingPlugin/DafnyBenchmarkingPlugin.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 1375,
+      "checkoutSha256": "ab484a7e6f2f5463af49f04b788b9d9fe2238f28b0be52173f852027b18ce3dc",
+      "eolAttribute": "crlf",
+      "gitBlob": "e585e29faf878ff7fa8cdccf0cf98c0026ef3dc3",
+      "gitBytes": 1338,
+      "gitSha256": "9c8774234330966472a65de7471b6c4e375510e3061418f6ff76857d8dd1c3a8",
+      "mode": "100644",
+      "path": "Source/DafnyCore.Test/DafnyCore.Test.csproj",
+      "selectedByThisFocus": true
+    },
+    {
+      "checkoutBytes": 3319,
+      "checkoutSha256": "1a00e0c67f52eb5a59b744671d4ddfc4ef15c4cb4ae57d840747a5b6bfafcae2",
+      "eolAttribute": "crlf",
+      "gitBlob": "8ab7d3e541e5c333d9474a3f03c7cef78c12d582",
+      "gitBytes": 3252,
+      "gitSha256": "486b7496345bda367a1c2a2c11437b568471ef927e3e6a85ec86913561027895",
+      "mode": "100644",
+      "path": "Source/DafnyCore/DafnyCore.csproj",
+      "selectedByThisFocus": true
+    },
+    {
+      "checkoutBytes": 1662,
+      "checkoutSha256": "466de8aa1c69eddad2cd18bf4a863aeb1ff37a22dff5ac752b5f6bb051ddefc0",
+      "eolAttribute": "crlf",
+      "gitBlob": "670c6f2ec65d1197872b0a7648efc48d8a6458f0",
+      "gitBytes": 1624,
+      "gitSha256": "ffed681e04ccf7b0484ac8f16c0b286e6087b1035e88ea3e1af2f1bdbdaf7c9e",
+      "mode": "100644",
+      "path": "Source/DafnyDriver.Test/DafnyDriver.Test.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 2307,
+      "checkoutSha256": "8ba2e512ea280ac83c74a2047423ae9200efabedbd91e75ff9c2b2a96eef4cb5",
+      "eolAttribute": "crlf",
+      "gitBlob": "5258ecd6ad63c844fca08c44ad7ac74dcb83f0ac",
+      "gitBytes": 2257,
+      "gitSha256": "f6cf57e50b4258eddfbd8d0e422b993e014a15b5527bb7c97b44ba5d4fce3706",
+      "mode": "100644",
+      "path": "Source/DafnyDriver/DafnyDriver.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 144,
+      "checkoutSha256": "aa8718a397d9723624faa609ad35918d3be0ead1d0dcacae4f6b782796d927f1",
+      "eolAttribute": "crlf",
+      "gitBlob": "786a845b30bd4d3bc6c4e07b6ae82a5e718012c4",
+      "gitBytes": 141,
+      "gitSha256": "1cf9e22bdc4de46c1c828fd19f9374e3266d31e6cf54df14897ecfab49ef85c8",
+      "mode": "100644",
+      "path": "Source/DafnyDriver/app.config",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 6218,
+      "checkoutSha256": "59d486a30e21ffb79be1abd86a5fe9286d592c1a5c80ffece6c122eff8163963",
+      "eolAttribute": "crlf",
+      "gitBlob": "16d4a63d5fbe1032179a80c27843a8e7478fc62d",
+      "gitBytes": 6083,
+      "gitSha256": "36a99a6b023b7bc5c5c49b8def88a052ba3f7be7816d73f0a48c59c78ac7de99",
+      "mode": "100644",
+      "path": "Source/DafnyLanguageServer.Test/DafnyLanguageServer.Test.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 2742,
+      "checkoutSha256": "41e0ab43b313550929e621e6d4c8f23fce64b9d4a310dba7b82599313c5b3896",
+      "eolAttribute": "crlf",
+      "gitBlob": "a66dae68a0beb30816213ee59c686cb57f312dc4",
+      "gitBytes": 2686,
+      "gitSha256": "a0097e5322974f53ff7249a2d4b547fccbb112bb8fb14d23ccd03ca91e834f0e",
+      "mode": "100644",
+      "path": "Source/DafnyLanguageServer/DafnyLanguageServer.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 1848,
+      "checkoutSha256": "bffb4d0b226231570203b0901bc2db0f032cf4d35ac99b8c5c54d21dcf2360bd",
+      "eolAttribute": "crlf",
+      "gitBlob": "34ec4c877a08c4f1b5b5d27d54fabbe2fa3f54e9",
+      "gitBytes": 1798,
+      "gitSha256": "baead26ac37a70a5c3ff3cedba377c70587232044aaea49dcebf371b476d4b65",
+      "mode": "100644",
+      "path": "Source/DafnyPipeline.Test/DafnyPipeline.Test.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 6977,
+      "checkoutSha256": "06ef8268049496dde8a9aa6b60d4fa36700a6d6ad157b991e7f552ede537454a",
+      "eolAttribute": "crlf",
+      "gitBlob": "f45b0a2e057ee0dd7b1b91683cfbde9b2da64aac",
+      "gitBytes": 6846,
+      "gitSha256": "77caa239c6a547b5f29257bcabb76f3d251ef54fd2c7b82d1fc19df1ad84fa90",
+      "mode": "100644",
+      "path": "Source/DafnyPipeline/DafnyPipeline.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 919,
+      "checkoutSha256": "ecade7ff9d4d2436d916864ab397049758039465eeaf91b8d9280476616f090b",
+      "eolAttribute": "crlf",
+      "gitBlob": "bc05a98a47df823252eff9f17737747e751ca4a8",
+      "gitBytes": 893,
+      "gitSha256": "3826b911f2132c68d3f30d14e0b3b8a489015a9c11f728accf5f8a9062660b29",
+      "mode": "100644",
+      "path": "Source/DafnyRuntime.Tests/DafnyRuntime.Tests.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 3049,
+      "checkoutSha256": "8f01cd87b7e0a1091f74df8c66255d0ae10878952fd101a6209d9dccbfa86cd7",
+      "eolAttribute": "crlf",
+      "gitBlob": "af08c921cf0c2b4179f79a4c04c446586e923fd1",
+      "gitBytes": 2984,
+      "gitSha256": "2c08977737e7730c680663dd64dbcbb2a306bb0ad657b119aa4516cb515557b2",
+      "mode": "100644",
+      "path": "Source/DafnyRuntime/DafnyRuntime.csproj",
+      "selectedByThisFocus": true
+    },
+    {
+      "checkoutBytes": 230,
+      "checkoutSha256": "6bafd141375dfa084f5368e21175b2f05bd3bf17a5b615deba56ed2debdc5f91",
+      "eolAttribute": "crlf",
+      "gitBlob": "484136fb6a37993b106bf763ad971662b72a6156",
+      "gitBytes": 226,
+      "gitSha256": "f9f3e429dcdc824833b164258ed1a826a1a0bdc8b1ecc77260a31c464be3ea84",
+      "mode": "100644",
+      "path": "Source/DafnyRuntime/packages.config",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 183,
+      "checkoutSha256": "9d6a3fc60556f36067331f4b6d471ea6d9334bb48d8e6eb785a7b7c3a3362661",
+      "eolAttribute": "crlf",
+      "gitBlob": "cef255151f9f8a837a7cfc63aadc1691125fb393",
+      "gitBytes": 178,
+      "gitSha256": "bf7055da1c5e254fed77a647f8c7d9df81fa4238c0c20348455f903942597cab",
+      "mode": "100644",
+      "path": "Source/DafnyServer/App.config",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 623,
+      "checkoutSha256": "10a1d013124f43ccc143cfa1d1c5ff3b9df9c7f95855f39a9366e037af3b4f04",
+      "eolAttribute": "crlf",
+      "gitBlob": "f9cd46eb5328965d56e3ecceec603314299db4ff",
+      "gitBytes": 606,
+      "gitSha256": "253f82c89f8a36d5a202d4615fd7b2adf0fd0c0db1135743c5bf070b1ad57586",
+      "mode": "100644",
+      "path": "Source/DafnyServer/DafnyServer.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 1218,
+      "checkoutSha256": "36d7b9b24128459f25f2639814a3389b7ff10dc5e78158dbe6ae826b4f632c91",
+      "eolAttribute": "crlf",
+      "gitBlob": "1ec68cb84bd31eeb417b4b116ca173ef5e997500",
+      "gitBytes": 1188,
+      "gitSha256": "381005a2517eb839c69fd486097463195bb3e7e03ce2f6a612daf62ea15d6824",
+      "mode": "100644",
+      "path": "Source/DafnyTestGeneration.Test/DafnyTestGeneration.Test.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 753,
+      "checkoutSha256": "c4ecf3843b69fbc607b3173b492e7565736aa6c4e15c083bffe503c54a9c805b",
+      "eolAttribute": "crlf",
+      "gitBlob": "f4f2f78ffd124adcc3172844a6ccf38114e310dd",
+      "gitBytes": 732,
+      "gitSha256": "7d2a647c4ddfc253ee0df420e35d0f857549c0dbffe5b3b34396252de4198549",
+      "mode": "100644",
+      "path": "Source/DafnyTestGeneration/DafnyTestGeneration.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 2767,
+      "checkoutSha256": "45cdc38a1a4e461c2dc71cb084e89e788453b58eea5d8bd24844e356e0ae5708",
+      "eolAttribute": "crlf",
+      "gitBlob": "f27b11f57cbcd1625a858ddf4b47562fad1279b3",
+      "gitBytes": 2713,
+      "gitSha256": "60acdcc30d00f0c5ad37141aefa9e6eac1d1473969bcbdc505b0f70ec665963b",
+      "mode": "100644",
+      "path": "Source/IntegrationTests/IntegrationTests.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 345,
+      "checkoutSha256": "fda008a782146c86a1195f8cc5a95fed74cfe2542db75e282b7c0925eace828a",
+      "eolAttribute": "crlf",
+      "gitBlob": "eefc01ebbeb3458809889d1b40d0db16b7e1c380",
+      "gitBytes": 334,
+      "gitSha256": "9547cebdc77a8c92530c5cfb84faf20856aa271a73e66ef6a343487ce1b85ab6",
+      "mode": "100644",
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/DafnyTests/RunAllTests/RunAllTests.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 477,
+      "checkoutSha256": "7c7dc92d6ad48734cc0c36cc293c868c863becc0af0f19b88cdaa8a51db3b530",
+      "eolAttribute": "crlf",
+      "gitBlob": "58a723cd4524cf69ff8157cb72fa52cc265dd96e",
+      "gitBytes": 465,
+      "gitSha256": "c63880ca8002f68b8a0a7b383f420e3149e21bdb6da76e425f2e0d542496d6f5",
+      "mode": "100644",
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/DafnyTests/TestAttribute/TestAttribute.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 171,
+      "checkoutSha256": "8267c726733d9ac2ad5aace280427ad90cdb7a45a48d2195e95d07f2166979d0",
+      "eolAttribute": "crlf",
+      "gitBlob": "a269962b552f002e0954b0689bb4fba5755562c2",
+      "gitBytes": 163,
+      "gitSha256": "4fc56578a97a727756cea9a1ec9227782c1c404e9c70222732aca971924e00dc",
+      "mode": "100644",
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/comp/manualcompile/ManualCompile.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 366,
+      "checkoutSha256": "d293cb8ede54c32fa4b7477177d6d1a4a35654969a95081473ec7ec937d9efd3",
+      "eolAttribute": "crlf",
+      "gitBlob": "bc454878ce12b3a7ace207030eefb55092633d3f",
+      "gitBytes": 353,
+      "gitSha256": "7a1069d3068bed1b72e2e41417ce0c4372a93cefa8f7bae4a2ec764c9d8847c4",
+      "mode": "100644",
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/comp/separate-compilation/Inputs/producer/TimesTwo.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 468,
+      "checkoutSha256": "cd063380e7f2a168fb3bead15d521152a864cb2ab4d513d4a3cc88b4a7613a39",
+      "eolAttribute": "crlf",
+      "gitBlob": "b32966d460e758b8284ee49b481b4566482f4956",
+      "gitBytes": 453,
+      "gitSha256": "2191243f4035dc8b699111db76254092b2f2ca601b7d66552badf06ee5e46583",
+      "mode": "100644",
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/comp/separate-compilation/consumer/Consumer.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 916,
+      "checkoutSha256": "ef1b78722a536946e604b4c2698e3539163b9c07564b36128f0c186f7abc7bb3",
+      "eolAttribute": "crlf",
+      "gitBlob": "bb542208d5a17156c40e509a9a2f5a90cada49f0",
+      "gitBytes": 889,
+      "gitSha256": "e00f020bb56bb737a05b0c3e32402b101e81a9264196a2f72af45107892836ba",
+      "mode": "100644",
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/examples/Simple_compiler/csharp/SimpleCompiler.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 932,
+      "checkoutSha256": "d45a64acb24897bb0b92c13affa6586bf1475bdf207e486965c94ffb4e41b53b",
+      "eolAttribute": "crlf",
+      "gitBlob": "dbd67701dea1eab90c404a415a71d57ac4848da2",
+      "gitBytes": 904,
+      "gitSha256": "d80047d7d1f70030e880f98f65954cce51150dd291ae36237f665c1e21de5200",
+      "mode": "100644",
+      "path": "Source/Scripts/Scripts.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 937,
+      "checkoutSha256": "02e806ab4d2f1f9b70dcfd80fb9fecc9b10f33f3b168f26c7562bba42818984c",
+      "eolAttribute": "crlf",
+      "gitBlob": "4865653669c3da3989ed29c47832f15bbe0844b5",
+      "gitBytes": 909,
+      "gitSha256": "2fa691ba4a8315aa398c246a5e89c1d48d92c099278bec82945f7bb67fce7ea1",
+      "mode": "100644",
+      "path": "Source/TestDafny/TestDafny.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 1237,
+      "checkoutSha256": "d093910ef5d0c4394e7b41834ba86db0b16eab82f45f923e04f0dd1c14d26686",
+      "eolAttribute": "crlf",
+      "gitBlob": "3ee91d23d079f9a283b0db4393823207c7ddd808",
+      "gitBytes": 1211,
+      "gitSha256": "0971f64480131192346391215cd13b5ac5d32bc1a6e88624e1532d3df279add2",
+      "mode": "100644",
+      "path": "Source/XUnitExtensions/XUnitExtensions.csproj",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 1213,
+      "checkoutSha256": "fd6424a9e096901feef722cb080f40f8b92be62c051d2ba11ba5555748201213",
+      "eolAttribute": "crlf",
+      "gitBlob": "bc97810b7ae7a47d39fc72e3bf24ee21ca84ed59",
+      "gitBytes": 1189,
+      "gitSha256": "25eef6bc4ff2b76f317bf82665f00a03f7f21c4f4ba45d5b3404a27d0234629a",
+      "mode": "100644",
+      "path": "nuget.config",
+      "selectedByThisFocus": true
+    }
+  ],
+  "checkoutMaterializationsSealSha256": "eaed26d8a25f7978fe556ccb854b47a5f48be4e9b461f10caadd06bfed3c183b",
+  "commands": [
+    {
+      "argv": [
+        "{PINNED_RESOLVED_PYTHON}",
+        "{CURRENT_CHECKOUT}/.github/review/b3-integrated-structural-focus.py",
+        "--source-head"
+      ],
+      "stage": "source-head"
+    },
+    {
+      "argv": [
+        "sh",
+        "Scripts/fetch-boogie-packages.sh"
+      ],
+      "stage": "packages"
+    },
+    {
+      "argv": [
+        "dotnet",
+        "build",
+        "Source/DafnyCore/DafnyCore.csproj",
+        "-c",
+        "Release",
+        "-m:1",
+        "-p:UseSharedCompilation=false",
+        "-p:SourceRevisionId={CURRENT_CI_HEAD}",
+        "-p:DafnyNormalizerReferenceDirectory=",
+        "--nologo"
+      ],
+      "stage": "core-build"
+    },
+    {
+      "argv": [
+        "dotnet",
+        "build",
+        "Source/DafnyB3Normalizer.Test/DafnyB3Normalizer.Test.csproj",
+        "-c",
+        "Release",
+        "-m:1",
+        "-p:UseSharedCompilation=false",
+        "-p:SourceRevisionId={CURRENT_CI_HEAD}",
+        "-p:DafnyNormalizerReferenceDirectory=",
+        "--nologo",
+        "--no-dependencies"
+      ],
+      "stage": "normalizer-build"
+    },
+    {
+      "argv": [
+        "dotnet",
+        "build",
+        "Source/DafnyCore.Test/DafnyCore.Test.csproj",
+        "-c",
+        "Release",
+        "-m:1",
+        "-p:UseSharedCompilation=false",
+        "-p:SourceRevisionId={CURRENT_CI_HEAD}",
+        "-p:DafnyNormalizerReferenceDirectory=",
+        "--nologo",
+        "--no-dependencies"
+      ],
+      "stage": "neutral-build"
+    },
+    {
+      "argv": [
+        "dotnet",
+        "test",
+        "Source/DafnyB3Normalizer.Test/DafnyB3Normalizer.Test.csproj",
+        "-c",
+        "Release",
+        "--no-build",
+        "--no-restore",
+        "-p:DafnyNormalizerReferenceDirectory=",
+        "--results-directory",
+        "out/b3-integrated-structural/normalizer",
+        "--logger",
+        "trx;LogFileName=result.trx",
+        "--nologo"
+      ],
+      "stage": "normalizer-structural"
+    },
+    {
+      "argv": [
+        "dotnet",
+        "test",
+        "Source/DafnyCore.Test/DafnyCore.Test.csproj",
+        "-c",
+        "Release",
+        "--no-build",
+        "--no-restore",
+        "-p:DafnyNormalizerReferenceDirectory=",
+        "--filter",
+        "FullyQualifiedName~VerificationContractsTest|FullyQualifiedName~B3BackendSelectionTest|FullyQualifiedName~B3WorkItemTest",
+        "--results-directory",
+        "out/b3-integrated-structural/neutral",
+        "--logger",
+        "trx;LogFileName=result.trx",
+        "--nologo"
+      ],
+      "stage": "neutral-structural"
+    }
+  ],
+  "commandsSealSha256": "9ff1432cd0cc065b080e4dd176b2d3dc7186428efd52bc5ca84d5c31c4560fa1",
+  "currentWorkflow": {
+    "bytes": 24499,
+    "existingDispatchInputs": [
+      "binaries",
+      "resolver_probe",
+      "additional_axioms_probe"
+    ],
+    "inheritedDiagnosticB3RoutingPresent": false,
+    "ordinaryJobIds": [
+      "build",
+      "suite",
+      "verdicts",
+      "resolver",
+      "stdlib",
+      "axiom-resources",
+      "regressions",
+      "resolver-tests",
+      "binaries",
+      "release"
+    ],
+    "path": ".github/workflows/review.yml",
+    "sha256": "036ff37fb6cc6edd0c8c0c9448e2b531f35ee00f0d21cbad7d9138ab8fc131db"
+  },
+  "executionPerformed": false,
+  "hypotheticalRoute": {
+    "additional_axioms_probe": "false",
+    "b3_integrated_structural_focus": "true",
+    "binaries": "false",
+    "resolver_probe": "false"
+  },
+  "productCommit": "450e374a40eb6125b540d55833a9cfe71484ab02",
+  "productHead": "51d527e0aa4fd428f4d42c881496f9d32dcb6001",
+  "proposedRouteBoundary": "New defaultfalse boolean only; scratch-only workflow_dispatch exacttrue with otherthree false, only new structuraljob runs. Preserve ordinarytriggers/defaultconditions byteintent whenfieldfalse/absent, and require allten ordinarydefinitions/expandedjobs skipped whenfocus true. No generic inherited B3 full/worker route.",
+  "schemaVersion": 1,
+  "scope": "inert hypothetical sevenstage vectors; no execution authorization",
+  "snapshots": [
+    "current-core",
+    "current-normalizer-tests",
+    "current-neutral-tests"
+  ],
+  "sourceHeadChildBoundary": {
+    "maximumToolOutputBytes": 1048576,
+    "maximumToolSeconds": 60,
+    "ownedBy": "enclosing-source-head-stage",
+    "sdkEvaluationPerformed": false
+  },
+  "sourceHeadChildCommands": [
+    [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    [
+      "dotnet",
+      "--version"
+    ],
+    [
+      "dotnet",
+      "--info"
+    ],
+    [
+      "dotnet",
+      "--list-runtimes"
+    ]
+  ],
+  "stageEnvironment": {
+    "DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER": "1",
+    "DOTNET_GCHeapHardLimit": "40000000",
+    "DOTNET_PROCESSOR_COUNT": "1",
+    "DafnyNormalizerReferenceDirectory": "",
+    "GRADLE_OPTS": "-Dorg.gradle.daemon=false",
+    "MSBUILDDISABLENODEREUSE": "1",
+    "UseSharedCompilation": "false"
+  },
+  "suiteCounts": {
+    "neutral": 26,
+    "normalizer": 557
+  },
+  "untouchedCheckoutFiles": [
+    {
+      "checkoutBytes": 12719,
+      "checkoutSha256": "21966434c2f3d465b05b8b042a4e509cd513ee8a97710a41c3463bc6fa3a7466",
+      "eolAttribute": "crlf",
+      "gitBlob": "0931d893e2b870133825217672b65e25605679ed",
+      "gitBytes": 12553,
+      "gitSha256": "d544297673c97b76dfbdd0b123583134b4c7de18805e1c3d765a21c1df74e2f3",
+      "mode": "100644",
+      "path": "Source/Dafny.sln",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 3064,
+      "checkoutSha256": "b06e09d8755d1e94358f9a497a898cd9f57141d670d9e13e19a98ca206009206",
+      "eolAttribute": "crlf",
+      "gitBlob": "1be8553240a9a502657f11a833683fbdd36df3a8",
+      "gitBytes": 2962,
+      "gitSha256": "4b6cab3234c8f59278420f858a89a83098d1a57026dcb375327d78133fbd1003",
+      "mode": "100644",
+      "path": "Source/DafnyRuntime/DafnyRuntimeJava/gradlew.bat",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 2991,
+      "checkoutSha256": "a9ddfba91ab6f307a989ae13c67d3abb4b735d2c975ab75426c3eae8f5637310",
+      "eolAttribute": "crlf",
+      "gitBlob": "230c6176a5dab8ead7234664b7cca3d42f4db989",
+      "gitBytes": 2893,
+      "gitSha256": "40b852cd4dc9a91b5a2d54e9a943b48640059da61fd9d5bff92190d5717bc6ed",
+      "mode": "100644",
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/benchmarks/sequence-race/java/gradlew.bat",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 773,
+      "checkoutSha256": "3332b7ae9f215b47fe28e8413d829187dd612d993cb4b701c25220e3abdfea0e",
+      "eolAttribute": "crlf",
+      "gitBlob": "9f300c9f56172b9f925f360c69dc6384da0a7adb",
+      "gitBytes": 765,
+      "gitSha256": "041f096a8d1febe10410034ae730b2f8cab00a461798c26458bb5b36776f50e6",
+      "mode": "100644",
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/dafny4/git-issue143.transcript",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 163,
+      "checkoutSha256": "68385479f362d7bfd5507572a71f97ea8ee20054c525f575c4598604e81c68de",
+      "eolAttribute": "crlf",
+      "gitBlob": "93dccd6d3622f709a253317de72983c03a974145",
+      "gitBytes": 161,
+      "gitSha256": "fc9dc9f7e2148d1551089fd10ce043ac877fbdfeed9ddcb7f5ca5fe14d7bc144",
+      "mode": "100644",
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/runTests.bat",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 410,
+      "checkoutSha256": "c59543864de56a6263587868c8c89f6534203936893f17f980fbbadc4cca7aa9",
+      "eolAttribute": "crlf",
+      "gitBlob": "5f5072aebfb1b763fca4eeadbe4120675e2ba5cf",
+      "gitBytes": 402,
+      "gitSha256": "9c34f5d12be515a74e5e16d8cedd0a5e52e45d033c8f5373b91bed8da62c3daf",
+      "mode": "100644",
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/server/counterexample_none.transcript",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 192,
+      "checkoutSha256": "75362073d378aee555511d4f3e7196c12bd6446ef281d014f81612852b663443",
+      "eolAttribute": "crlf",
+      "gitBlob": "3bf944489cd92fefc99caf8a0bc8711ad7c32cc5",
+      "gitBytes": 183,
+      "gitSha256": "e92086c67dd2edaeabdba2ba3bd3bd2f6c3d3e4d2e8ca3de583727bd80ca2283",
+      "mode": "100644",
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/server/marshal.transcript",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 338,
+      "checkoutSha256": "7ab8446f3815b2839f95858cfb6715af732f12ee0abd27f4d28264ae8adf7666",
+      "eolAttribute": "crlf",
+      "gitBlob": "38a3a0e0f35481765500377083f27968daf0bf19",
+      "gitBytes": 330,
+      "gitSha256": "0822759b3852a9023fadc614e72dc09eb763237a039f56f07fdbbb4bdbf71f55",
+      "mode": "100644",
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/server/minimal.transcript",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 588,
+      "checkoutSha256": "d9496e7ee902a73ac8ec5249a562a197d70c347b9e4fa4ae363cb5b6aceb39cd",
+      "eolAttribute": "crlf",
+      "gitBlob": "f164ae36e46e6350377ce4e5f4a652b83255d851",
+      "gitBytes": 583,
+      "gitSha256": "bc6ef0f8ea964498609245a2b7ebedf92d974fe284a321d0c5a3554c492c49a5",
+      "mode": "100644",
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/server/symbols.transcript",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 341,
+      "checkoutSha256": "afae904751a82ed2beecdb2ebedcf72328656ad197ddb9e876f2a3bd540b5552",
+      "eolAttribute": "crlf",
+      "gitBlob": "395ed3788380669241ef627c974a6570a429b652",
+      "gitBytes": 333,
+      "gitSha256": "d6b9bc81a3e96fb8ac775acdef6d862130ad7eae2a81e28baa5ef393ce2f9eb5",
+      "mode": "100644",
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/server/unmarshal.transcript",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 3685,
+      "checkoutSha256": "b62d44f06432e6fe8de5f736b892f5b9e6e9e784b4119b4f0d1a474ac372fce4",
+      "eolAttribute": "crlf",
+      "gitBlob": "384706e33cbb74c73b3cf1dab5fe6518bc41c5ed",
+      "gitBytes": 3627,
+      "gitSha256": "4e6f7db4e6c7083ca4d4345561191ee7c49be5a6f4863f05b747059d9b044ffb",
+      "mode": "100644",
+      "path": "Source/Jennisys.sln",
+      "selectedByThisFocus": false
+    },
+    {
+      "checkoutBytes": 107,
+      "checkoutSha256": "0007fbd875fd02cc9abefdcfe17cc53bcc6fc7a9c39e120db89b809bb7a8a2a0",
+      "eolAttribute": "crlf",
+      "gitBlob": "0ac2658ce0a087a833236583dc8d4a435eb42ffe",
+      "gitBytes": 105,
+      "gitSha256": "d1aa51dfcb175dca16d408d573ee984f913544c3b86f3841f92c7268e79c90c1",
+      "mode": "100644",
+      "path": "Source/Jennisys/scripts/StartDafny-jen.bat",
+      "selectedByThisFocus": false
+    }
+  ],
+  "untouchedCheckoutFilesSealSha256": "9a56ae042ea3939bea52d2a0a4d96f508ac233b12a664c7c0b0c2f810b3a6005"
+}
