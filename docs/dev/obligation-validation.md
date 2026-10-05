@@ -49,8 +49,11 @@ establish development-line verifier acceptance.
 The current full suite contains 1,161 verifier programs. Both additional-axiom
 settings are complete: default-off matches all program verdicts and recorded
 batch resource counts. The enabled outcome and diagnostic changes are listed
-in [obligation-suite-comparison.md](obligation-suite-comparison.md). The complete
-standard-library comparison is still in progress.
+in [obligation-suite-comparison.md](obligation-suite-comparison.md).
+The standard-library comparison is incomplete. The completed default-off
+comparison with additional axioms disabled has no verdict change and identical
+operational Boogie for all emitted programs. Resource counts vary in that run;
+the remaining default-off setting and both enabled settings still need completion.
 No expected-verdict table has been changed for this work. The new registered
 program still needs its expected row captured through the ordinary CI artifact
 procedure; the exact-baseline comparison does not replace that integration step.
