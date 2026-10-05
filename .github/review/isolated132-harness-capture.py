@@ -135,8 +135,15 @@ try:
     assert sha(solver_copy) == sha(source_solver), 'Harness solver copy differs from checked source solver'
     report['solver'] = {'harness_version': harness_solver, 'copied_sha256': sha(solver_copy),
                         'source_selected': True, 'pinned_regression_solver': '5.1.0'}
+    compiler = ROOT / 'Binaries/net8.0/Dafny.dll'
+    assert compiler.is_file(), 'Built compiler entry point is missing'
     report['compiler_version'] = subprocess.check_output(
-        ['dotnet', 'Source/Dafny/bin/Release/net8.0/Dafny.dll', '--version'], text=True).strip()
+        ['dotnet', str(compiler), '--version'], text=True).strip()
+    report['compiler_components'] = [
+        {'path': str(path.relative_to(ROOT)), 'sha256': sha(path)}
+        for directory in (compiler.parent, COPIED.parents[2])
+        for path in sorted(directory.glob('*.dll'))
+    ]
     unit = 'source-unit'
     run_phase(unit, test_command('Source/DafnyCore.Test', unit,
                                 'FullyQualifiedName~NewtypeReferenceCharacteristicTests', no_build=False),
