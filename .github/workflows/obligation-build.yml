@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - name: Capture self-contained build
+      - name: Capture binaries and test assemblies without verifier execution
         run: |
           mkdir -p out
           set +e
@@ -21,9 +21,23 @@ jobs:
           sh Scripts/fetch-boogie-packages.sh > out/packages.log 2>&1
           echo "$?" > out/packages.exit
           sh .github/review/version.sh > out/version.txt 2>&1
-          revision=$(sed -n 's/^revision=//p' out/version.txt)
-          RUNTIME_IDENTIFIER=osx-arm64 dotnet publish Source/Dafny/Dafny.csproj -c Release -r osx-arm64 --self-contained -o out/dafny -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$revision" > out/build.log 2>&1
-          echo "$?" > out/build.exit
+          version_result=$?
+          echo "$version_result" > out/version.exit
+          if [ "$version_result" -eq 0 ]; then
+            revision=$(sed -n 's/^revision=//p' out/version.txt)
+            RUNTIME_IDENTIFIER=osx-arm64 dotnet publish Source/Dafny/Dafny.csproj -c Release -r osx-arm64 --self-contained -o out/dafny -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$revision" > out/build.log 2>&1
+            echo "$?" > out/build.exit
+            OBLIGATION_INVENTORY_CAPTURE=out/obligation-producers.json dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation > out/core.log 2>&1
+            echo "$?" > out/core.exit
+            dotnet build Source/DafnyLanguageServer.Test -c Release > out/editor-build.log 2>&1
+            echo "$?" > out/editor-build.exit
+            mkdir -p out/tests
+            cp -R Source/DafnyCore.Test/bin/Release/net10.0 out/tests/core
+            cp -R Source/DafnyLanguageServer.Test/bin/Release/net10.0 out/tests/editor
+            curl -fsSLo dotnet-install.sh https://dot.net/v1/dotnet-install.sh
+            bash dotnet-install.sh --version 10.0.100 --architecture arm64 --os osx --install-dir out/sdk > out/sdk.log 2>&1
+            echo "$?" > out/sdk.exit
+          fi
           rm -f out/dafny/*.pdb
           tar -czf obligation-osx-arm64.tar.gz out
           exit 0
