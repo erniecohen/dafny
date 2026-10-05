@@ -1,0 +1,719 @@
+{
+  "schemaVersion": 1,
+  "scope": "Inert candidate integration inventory only; no source implementation or acceptance",
+  "aggregateParent": "001312cec1a37611c3c66befa9f4c1ee34c3a3ce",
+  "sourceParent": "f71aa19c0f82ce98033b95b2bd25896915dc0ee2",
+  "commonAncestor": "a0103f02c231907d34250283810c40a1f7d68519",
+  "productFiles": [
+    {
+      "path": "Makefile",
+      "mode": "100644",
+      "gitBlob": "45d3034be5b85b3bfa2f2e07233903707f78c630",
+      "bytes": 7909,
+      "sha256": "e86406c7e50133fdd34e0b28558f57e72570450e9023b76725fe54bd893d045f"
+    },
+    {
+      "path": "Scripts/build-b3-worker.sh",
+      "mode": "100755",
+      "gitBlob": "e6a734df3fa57132696031a3896ee6a14886e804",
+      "bytes": 3261,
+      "sha256": "2751484fcfbefc141f1c2a5272ed981518a3f703444bc25434728c3f762d96ac"
+    },
+    {
+      "path": "Scripts/check-b3-package.py",
+      "mode": "100644",
+      "gitBlob": "b8faecd3614f182aeff600584dcb8df38c943e5d",
+      "bytes": 11854,
+      "sha256": "f7dd78c34d8d4f4f4110927db3eb454a4bd17d315f258d219fef5cdaf5e6d315"
+    },
+    {
+      "path": "Scripts/package-b3-experimental.py",
+      "mode": "100644",
+      "gitBlob": "73bda617b4e6c82e267ab31a59c917c5cfd34eff",
+      "bytes": 11220,
+      "sha256": "02e1503687e55e40d870f4b66ba65c6855c84d13e02ec67f0183b44f8272af96"
+    },
+    {
+      "path": "Source/DafnyB3Host.Test/BitvectorHostTests.cs",
+      "mode": "100644",
+      "gitBlob": "f63b0de2cba91a997e09cbc6dfa95b277175a8e4",
+      "bytes": 11582,
+      "sha256": "85620af9ecc3764317cfd0692f01b0d4e22b1a19690bcca839151ce1a0667704"
+    },
+    {
+      "path": "Source/DafnyB3Host.Test/HostIntegrationTests.cs",
+      "mode": "100644",
+      "gitBlob": "566335e597f383a86a822713fa1d55180af7e623",
+      "bytes": 22513,
+      "sha256": "78e0fe7e4dce6b43d45923e57f80bfffb208b93b186a85992348936da16ae40a"
+    },
+    {
+      "path": "Source/DafnyB3Host.Test/run-tests.sh",
+      "mode": "100755",
+      "gitBlob": "3945b81a5c85543a7ac8a862d54d49919ca286a9",
+      "bytes": 1904,
+      "sha256": "2f9255bd8b3af3826575a5cb1f5f61cc909d100a41eb26f779372cb6d0ba61aa"
+    },
+    {
+      "path": "Source/DafnyB3Host/RawAstBuilder.cs",
+      "mode": "100644",
+      "gitBlob": "24500f824327919b50f279d292753fcd833b6ea7",
+      "bytes": 8758,
+      "sha256": "802a4a7f0c41820111054361eea6fe4057deeea0f27cfff019160281fe6cc916"
+    },
+    {
+      "path": "Source/DafnyB3MapTheory.TestRunner/DafnyB3MapTheory.TestRunner.csproj",
+      "mode": "100644",
+      "gitBlob": "0efb666b4652af1b600591cbf6c48d5e49675115",
+      "bytes": 1538,
+      "sha256": "49661911f2f300ddf70b3ecb39498e17d228ec6a1d30366b791a9041102da2c6"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3BitvectorNormalizationTests.cs",
+      "mode": "100644",
+      "gitBlob": "750132f995433fee69a2dc54d89d815d020f1944",
+      "bytes": 33938,
+      "sha256": "963a42088df20434579f2ae073a9540339562933c2201844514527b8ee68c4e4"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3CfgCorrespondenceTests.cs",
+      "mode": "100644",
+      "gitBlob": "25373654ef7ef80c19062e49056331a4a7aad639",
+      "bytes": 9013,
+      "sha256": "6bb348d3a86d0fb85cad9d80bc3f99fbad23ff19b61a5fa8ed28df8cc3a3c68a"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3ContextCoordinatorTests.cs",
+      "mode": "100644",
+      "gitBlob": "ba65afe3db2f0d12ee4b903a9b84c80fddb47815",
+      "bytes": 5021,
+      "sha256": "01569407f75f163a02f3930436c005190cdd4f2b390bb8deeb2d8688a698cd60"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3DefinitionContextTests.cs",
+      "mode": "100644",
+      "gitBlob": "b2387264ec48f18eafe70d9843140b26d62a50fe",
+      "bytes": 25243,
+      "sha256": "069c34ba1267ffdb0e150fba3b6eaa7535db3cfd2722b4a77a362e0a8911a764"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3IfGuardCertificateTests.cs",
+      "mode": "100644",
+      "gitBlob": "c8f6831d596a0ffaecd02230735350c068726976",
+      "bytes": 23632,
+      "sha256": "4e59ea39ea8fd3ea79b132b348439f3dfb560979260d786a53307c27f0f835de"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3IntegerArithmeticTests.cs",
+      "mode": "100644",
+      "gitBlob": "9088cd8676c5ca48fc5ee592b3df4ae20cd474cd",
+      "bytes": 18839,
+      "sha256": "a6a52a7ec5f791a9b986140b86f21e5710d5cc23211618d1d57de3bb52f88cbb"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3OpaqueGroundProjectionTests.cs",
+      "mode": "100644",
+      "gitBlob": "01e86698f5672db5177ff0e3314c21ae08cd5c77",
+      "bytes": 21121,
+      "sha256": "93d0eefb14eb7dd465d9768793a7a8a7e7531274d872a22e241eb490560101ce"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3RealArithmeticTests.cs",
+      "mode": "100644",
+      "gitBlob": "cbb2333f81521e5120fbfba7af0a21cb606fe50e",
+      "bytes": 18609,
+      "sha256": "353e698a5b7c7e9b0ad31c3428d944269568007144c9d5e3dbfbd79c34b350bc"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3RealRoundTripTests.cs",
+      "mode": "100644",
+      "gitBlob": "dce5d1f03971ceb7064e388053ae8c79574fb001",
+      "bytes": 30434,
+      "sha256": "cc18d4e198bde82880557a9d7c9f92bd3c8b14a3ccc33179442bf2b3e4974804"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3UnsignedWrapperTests.cs",
+      "mode": "100644",
+      "gitBlob": "72e98353cf31475cd4db3b6ca4451585ca039f28",
+      "bytes": 27959,
+      "sha256": "a93a615458a8ae12a0f283fa33547eb5a7c9aba1ecc38d8420d9443d95e686c5"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3VisibilityTests.cs",
+      "mode": "100644",
+      "gitBlob": "0bb73ecd5b25bade7fc4cdc830b747468abf5bc7",
+      "bytes": 6862,
+      "sha256": "f5e8ee02baebac4b9c25dd64640ea0b4938c66522dca89b2c92814c5f558eeed"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/B3WordContextTraversalTests.cs",
+      "mode": "100644",
+      "gitBlob": "1b7951d7a8e5a5182d5943d890a9d74170f2b68b",
+      "bytes": 9491,
+      "sha256": "45d85851a7f6fa75eb6fa7c873810342b599d7a1cc7f10c5d5afb635c8e0e830"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/DafnyB3Normalizer.Test.csproj",
+      "mode": "100644",
+      "gitBlob": "4fccdb174b35d8856fa8f5f14aff593e329eb581",
+      "bytes": 2714,
+      "sha256": "26d6352fa38f0f6e202360dea4b4813bc9fad4f28425ea04c59de78a7eea5736"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/MapTheoryInputs/cases.json",
+      "mode": "100644",
+      "gitBlob": "ca624a957df35e3012857c0f8d32b6039ca54ba8",
+      "bytes": 5843,
+      "sha256": "ba437c963c2a886fa2fb88938765cf8a8d44958b99912d0bffee7d78043892f6"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/MapTheoryInputs/real-read-same.bpl",
+      "mode": "100644",
+      "gitBlob": "5d7adca036a66a338d2e8649ecce1240a0c28b61",
+      "bytes": 208,
+      "sha256": "7b958287736d2b25a5cd46a87d9e70eea2aff6e25563d4574c9d4ef98720eadc"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/MapTheoryInputs/real-read-wrong.bpl",
+      "mode": "100644",
+      "gitBlob": "b99b818905bc03a1a2e6e13f5f5899f42a341682",
+      "bytes": 179,
+      "sha256": "2dc249966e6ebab786bbd4c9eb0fdb1bad461ac8b95e82747e8334fe1e43bb2c"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/NormalizerTests.cs",
+      "mode": "100644",
+      "gitBlob": "05dafed71bbce9542170a7a912f9b61aaa20ed68",
+      "bytes": 49101,
+      "sha256": "812afd76ca99255a0239a74a7cae687573914be80bce231a770031aea918a9c7"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/bool-equality-branch-false.bpl",
+      "mode": "100644",
+      "gitBlob": "7793a9aa080eb57fa64f56602475d7eb1b399fe7",
+      "bytes": 283,
+      "sha256": "194eea7efb45523394c0fe107a3005a1b486b191fef2e7dfc7ca958fc66a43c6"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/bool-equality-branch.bpl",
+      "mode": "100644",
+      "gitBlob": "36f0335f868f5c7719a18e8ddc83d6bd14c6ea9d",
+      "bytes": 284,
+      "sha256": "a6a8ead8f515e4dab3b6ad7fcfb316c069601587ef2c0af8faab3138ec828c9d"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/bool-inequality-branch-false.bpl",
+      "mode": "100644",
+      "gitBlob": "f08c417269a19d67b8da44a0b6c614694bbc4d68",
+      "bytes": 283,
+      "sha256": "818fc682e2cc196abbd751777ccdb554e9e83621bfdefb84df1fe3b6637cfcc8"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/bool-inequality-branch.bpl",
+      "mode": "100644",
+      "gitBlob": "d585f5865172c58f1d23cc9ee6590df96364a414",
+      "bytes": 284,
+      "sha256": "3009b20db4389dc6b6a6536528ca9ba8cd557de708c3f10c681fa2fddefe8644"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/branch-hidden.bpl",
+      "mode": "100644",
+      "gitBlob": "8d1c089be6f21d42f603e514412ae17f8560f2ba",
+      "bytes": 268,
+      "sha256": "366daefbb27de3a0bf829ccc0a169b6c8a1ce3e827e8ce17713663c6296b09d9"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/branch-visible.bpl",
+      "mode": "100644",
+      "gitBlob": "4a79cf63c304660477c7b64b807e2e96400b4582",
+      "bytes": 278,
+      "sha256": "7ede0557b4bb2949a6592e3b01fca894fd38be49806eb95c2fc7fd9848088c75"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/cases.json",
+      "mode": "100644",
+      "gitBlob": "5fbb7cb8d2a96f0774e8edc8eb0ad0c82c4e03c0",
+      "bytes": 6695,
+      "sha256": "a2abc2e14b6d08ba056ae58eb72b6a5b9d739036ebc903ecdfc833b0e2cf85cc"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/dafny-bool-reveal-false.dfy",
+      "mode": "100644",
+      "gitBlob": "4c757ea15b7090d0a97037c87d030f6e07fc0e02",
+      "bytes": 201,
+      "sha256": "cc583ec091d64707f42194f779d1873610bbb0f7822c50c958bbbcd6ffa67dbf"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/dafny-bool-reveal.dfy",
+      "mode": "100644",
+      "gitBlob": "2611bdfdaca4d6d86d2f7ce0ff9372b03ba90915",
+      "bytes": 181,
+      "sha256": "dce5f40213660c001ace59bbca112e57d93c8fafddbc8fb39e8fbfa66629d0c1"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/dafny-hidden.dfy",
+      "mode": "100644",
+      "gitBlob": "199303b9943a87a392862dd08dbb68b6ef66362b",
+      "bytes": 154,
+      "sha256": "86dd7127aeac10ed765fa23e4bce6c042e98b2e7241a7488d4f79adf28ff25ad"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/dafny-imported-opaque-false.dfy",
+      "mode": "100644",
+      "gitBlob": "6edb10ca968ea52c3ce2fc3917ea498e0e0923e6",
+      "bytes": 316,
+      "sha256": "f6e0c734e4c0a7f08994301be42ad600758538ce9ed33d473bb1c98739000a04"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/dafny-imported-opaque.dfy",
+      "mode": "100644",
+      "gitBlob": "c9fc2b11f5e1922cc45e78947241e9a0db172497",
+      "bytes": 298,
+      "sha256": "49f26521c788c75530589015ec50e2f99f0cafa76ac8c01997913e4924dd2fbb"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/dafny-learn-hide-false.dfy",
+      "mode": "100644",
+      "gitBlob": "afb6419f94d4b025eb21a303842414cb31472aff",
+      "bytes": 195,
+      "sha256": "f32861c08205ff7c864e1742b6e7a0ab7c5b3736af38e6f3f0d05f79bca48b79"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/dafny-learn-hide.dfy",
+      "mode": "100644",
+      "gitBlob": "944eefb319078445ec0101b966e9a9ebb460095f",
+      "bytes": 178,
+      "sha256": "b03732cac705ddb9c9b69869952464c215d2a31a60bad602ac83544d279c1322"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/dafny-opaque-reveal.dfy",
+      "mode": "100644",
+      "gitBlob": "a6c7f588cb8be3cd307caf039fcb12e46a4a9968",
+      "bytes": 193,
+      "sha256": "adc88f5eb8c8ce5537308d4ac6857bb78e32418d1f100fe26c03d7517b906b75"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/dafny-stable-loop.dfy",
+      "mode": "100644",
+      "gitBlob": "5cca7e1c802998b85fabf33315d7835dc09ebbef",
+      "bytes": 262,
+      "sha256": "972fc0ec2a0bc4105d9e8dabaa0b04ca1374ca391eb7a7da00c8d38f44d81374"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/finite-bool-guard-missing.bpl",
+      "mode": "100644",
+      "gitBlob": "fa392e08c5fe3a46df804ecb95a3d02aecda0a87",
+      "bytes": 242,
+      "sha256": "343f340b2732d028b48451b64dc3c89e66efe53f5ef1de30d10db11e85ad8cb7"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/finite-bool.bpl",
+      "mode": "100644",
+      "gitBlob": "5dd2139a2629d6f8aa1f78ac84f19ad3a163b8a8",
+      "bytes": 283,
+      "sha256": "c8e6a91bb91e06f3e2c5e5eed6c4fe893ee2cff8a06ea5d459092a9feda16d40"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/guard-missing.bpl",
+      "mode": "100644",
+      "gitBlob": "67ac776a7024a2ced2d5386ac1b9e4d2b3d2c7a5",
+      "bytes": 214,
+      "sha256": "4f02afe03da91d4667cf8cd7131023403398ad1a1e24be2c4325a24302de3115"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/hidden.bpl",
+      "mode": "100644",
+      "gitBlob": "b39292a35cb6e2785c78e44ffb329d892146c3c0",
+      "bytes": 238,
+      "sha256": "a952b5b39aa5c1173c45cdcaaf0230cd1fc4993d44977264b4e371b23d3ef1e8"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/learn-hide-false.bpl",
+      "mode": "100644",
+      "gitBlob": "2edbfaf6c962cd940fbfaa78873c7280bae303f8",
+      "bytes": 274,
+      "sha256": "10727af91a22a877289a9543939b14c753eb10ac19e2309170a1d45766e37e25"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/learn-hide.bpl",
+      "mode": "100644",
+      "gitBlob": "1c2fb6ae94ab4144171661831a9497cc434be53d",
+      "bytes": 255,
+      "sha256": "7f32956500b07e1cdd4c5f6cecb94213be88c1f3bcc1704ea6beefce780074f0"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/loaded-false.bpl",
+      "mode": "100644",
+      "gitBlob": "1ce84b085a36c85d98661fb8d4bcb0c635892f5b",
+      "bytes": 239,
+      "sha256": "94a403970a0742231216ba66264d97ab6f84e17bf3ac6f19f6c7ff5062135339"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/mixed-mode.bpl",
+      "mode": "100644",
+      "gitBlob": "5721d7ffa47f54c4aac32bc0a899438d225e9def",
+      "bytes": 283,
+      "sha256": "f12b306a23d25bf526ad2d944d2e0c981d053b8708a123a76b8ffcdb251dcdd6"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/nested-scope-learn.bpl",
+      "mode": "100644",
+      "gitBlob": "c2a247c51ec05cc41baebed0da8b0d7860289a35",
+      "bytes": 276,
+      "sha256": "13d06aa36ed678ba5497f95c7a6d48251987355f7028eb9051d56f9210573cf4"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/nonlearning-hide.bpl",
+      "mode": "100644",
+      "gitBlob": "c94ea214b90bdb52b941c4a319635c582b8de7c7",
+      "bytes": 272,
+      "sha256": "a4eb5c1a36eef674e23466d91a139279c9e3ff423a355239c2f4f705dcf5d6d6"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/path-subset-mode.bpl",
+      "mode": "100644",
+      "gitBlob": "ac722711cd049332874e11494ea18f4dae2de15b",
+      "bytes": 313,
+      "sha256": "1f18d2dcdde87ce75d89705ac8f4e6ced657fb657bc13828cde1c3ed23f33c9c"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/true-aggregate-operand.bpl",
+      "mode": "100644",
+      "gitBlob": "a67b6dc995a3dd6f0813cffa0b7cd83fb4a798cf",
+      "bytes": 309,
+      "sha256": "75352e6a9f3aa9e6523bd3664530be37f6c97d012093ed564a283355208a9522"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/visible.bpl",
+      "mode": "100644",
+      "gitBlob": "b673d86fd32f80ac861b51bc27401e6046816d6c",
+      "bytes": 230,
+      "sha256": "2baa89f7f55357367242cd6ada058b91729e771a5ad5af4cce8e2112a7a5dc39"
+    },
+    {
+      "path": "Source/DafnyB3Normalizer.Test/VisibilityInputs/wildcard-reveal.bpl",
+      "mode": "100644",
+      "gitBlob": "63481a9b909a9a93c04c4ff4c5093879cd5dfc85",
+      "bytes": 248,
+      "sha256": "59df6bf4125b65b6746890217e30204285fa23a771abb42f447b54e6449b5698"
+    },
+    {
+      "path": "Source/DafnyB3Protocol.Test/BitvectorProtocolTests.cs",
+      "mode": "100644",
+      "gitBlob": "5dd421e5dbe9e307b7cca36252ccc37e06e73edd",
+      "bytes": 11560,
+      "sha256": "a6e5b22bbfb663bd43cf204603fb7f56cdd264b6b8b2daca2c9e57f19044ae04"
+    },
+    {
+      "path": "Source/DafnyB3Protocol.Test/RealProtocolTests.cs",
+      "mode": "100644",
+      "gitBlob": "88e841b7bd09210b81a981034771234009963c83",
+      "bytes": 5322,
+      "sha256": "47aa056a2a7dc8c9e67d05906ac34a72f40c0253405bc18d63dda9e63b926118"
+    },
+    {
+      "path": "Source/DafnyB3Protocol.Test/WorkerFixture/Program.cs",
+      "mode": "100644",
+      "gitBlob": "c66ed49f500b9fa7e2dfa27de627f1eb41cb81ee",
+      "bytes": 2154,
+      "sha256": "b79231ae0db26338637f9e8b39ef7de28d98ac2116194ad189d898dde187d582"
+    },
+    {
+      "path": "Source/DafnyB3Protocol.Test/WorkerPackageTests.cs",
+      "mode": "100644",
+      "gitBlob": "3a074afea062782c3f5f931aa004321fb2848cd2",
+      "bytes": 3832,
+      "sha256": "86f1e86ab7d2300e642a5b8cf7e6a1a4be1e9fd31802a130b4ea69198cc177c6"
+    },
+    {
+      "path": "Source/DafnyB3Protocol/B3Protocol.cs",
+      "mode": "100644",
+      "gitBlob": "03fea95f5af77442657e9fd8962525963f16c5f8",
+      "bytes": 7410,
+      "sha256": "4bb352232714082899010c265cf4d0eec55cfd92e63514d88f9dcf87884b7f74"
+    },
+    {
+      "path": "Source/DafnyB3Protocol/ProtocolValidation.cs",
+      "mode": "100644",
+      "gitBlob": "78fa47bb575db343138587de9afc5e7b6aa62871",
+      "bytes": 18758,
+      "sha256": "e96439de1c3a8d64ac842924997fd860ad83cdf5e3cff852e1993a78f56aa25d"
+    },
+    {
+      "path": "Source/DafnyB3Protocol/WorkerPackage.cs",
+      "mode": "100644",
+      "gitBlob": "27a19dcd0ac50006313d8c9310389948c58fbf35",
+      "bytes": 5217,
+      "sha256": "3f9706d7828e11ce20e328b9665586ce7cf02584b4a2037daf863736728ef838"
+    },
+    {
+      "path": "Source/DafnyB3Visibility.TestRunner/DafnyB3Visibility.TestRunner.csproj",
+      "mode": "100644",
+      "gitBlob": "b52f729ffa45e2b3ea45c9982e362142d2e96247",
+      "bytes": 1730,
+      "sha256": "55640b777d6f32eaead980322c24906cda0745372b831a3cf5bf3a4489efc8e0"
+    },
+    {
+      "path": "Source/DafnyB3Visibility.TestRunner/Program.cs",
+      "mode": "100644",
+      "gitBlob": "f428d326e67fdeb56dcefeb089e09225c3ad11e0",
+      "bytes": 15978,
+      "sha256": "460d3bea9e8855efe8f137798b84deab845f38598f51ebe0a71fbf34545b7f6f"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3ContextCoordinator.cs",
+      "mode": "100644",
+      "gitBlob": "a848ace9dc71d7d48594a99e05a44e938f975fa7",
+      "bytes": 5805,
+      "sha256": "562d31720e61a73b980ee3e076dba125deddd5e6ca299c9de21a4e4f8c58c1f7"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3DefinitionContexts.cs",
+      "mode": "100644",
+      "gitBlob": "e7376b63d4a52cdae371d734d6b720fab915cb14",
+      "bytes": 12277,
+      "sha256": "ba632e3888d7486be7b5b38e96ea9807a157d19680a011f5d647479d8c172f70"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3DefinitionMustVisibility.cs",
+      "mode": "100644",
+      "gitBlob": "f6bc6b472db8ab14063fc384e17cb6f6dadefbdf",
+      "bytes": 6882,
+      "sha256": "808e1bfae28dabbfba92354e5281bf33f44b0e2057d3951bc5452c461370324a"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3DefinitionVisibility.cs",
+      "mode": "100644",
+      "gitBlob": "04777c299a0a533a503dbde4900fa2cd65e016f2",
+      "bytes": 12822,
+      "sha256": "a701b9922219c123f880195ed44b9f1546dc25d6b53ab38c4da373fd85f264a5"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3IfGuardSnapshot.cs",
+      "mode": "100644",
+      "gitBlob": "7990e9983b533256b95c64676961d96b343ace9d",
+      "bytes": 11210,
+      "sha256": "e958292548238344f56d3b17aa2219729828032f174fc198370f2692afd095ec"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3Normalizer.cs",
+      "mode": "100644",
+      "gitBlob": "a27229ae0d96c4981f7f3bbafb33f1bf9d233c04",
+      "bytes": 110699,
+      "sha256": "7bc1e2582d3a89c83c3f8f0ce4ffb5ab6dc98578ddc2516c1866d68433da5b59"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3OpaqueGroundProjection.cs",
+      "mode": "100644",
+      "gitBlob": "df08db3d6d1a9f80922d8fb85022e8363298850b",
+      "bytes": 23477,
+      "sha256": "f8d23c633d19166780ffd8ecf6f7796b81f8c5f8aa28ebaf92f814e50a7174d9"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3OpaqueGroundProjectionRelation.cs",
+      "mode": "100644",
+      "gitBlob": "ea632407d66533a42d17da5bb5f1c798e4be179d",
+      "bytes": 11352,
+      "sha256": "a1bc917437819b352165f8c29b596702f776732ddabd2ea8d3c35e8cd5547cf6"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3RealContextPreparation.cs",
+      "mode": "100644",
+      "gitBlob": "984de4f717422c6987190891b20ee853b574b2c1",
+      "bytes": 23251,
+      "sha256": "4a7407611f418a3e619a57c5ef008419c8e3e40d17d13fdfe18a73366a1add42"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3RealRoundTrip.cs",
+      "mode": "100644",
+      "gitBlob": "d589cd54ffa83ff3ddc9fc160cef55848a12d4d0",
+      "bytes": 12511,
+      "sha256": "283b50b7d7d962addf94ff6a1d5b012278283e790fa288a2c7b08a32d400310a"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3RealRoundTripRelation.cs",
+      "mode": "100644",
+      "gitBlob": "59836e14cad94e2afe24e038e1d04d44cfc00c90",
+      "bytes": 10204,
+      "sha256": "ad1828f2e6915337ad5865a87b6c0a17e77a63002630ab38475284eddc7edc5f"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3StructuredCfgCorrespondence.cs",
+      "mode": "100644",
+      "gitBlob": "b12db476a92929ce566e62e66aec66a6b990781b",
+      "bytes": 27421,
+      "sha256": "ab38e7cad8ecbafa70164c02d9f566eee9c6f9c94b56a8e25f0a84e0b5129e30"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3UnsignedWrappers.cs",
+      "mode": "100644",
+      "gitBlob": "0da04a1a1edca372c275d890c754aef6a775dc71",
+      "bytes": 39052,
+      "sha256": "192316d203bcb9246734a13e041428e24f05c234103af6063b64a9796073bea2"
+    },
+    {
+      "path": "Source/DafnyCore/Backends/B3/B3VerificationBackend.cs",
+      "mode": "100644",
+      "gitBlob": "4de85d5120d666f87d0c83a56ce06fbbfda7f6fc",
+      "bytes": 19744,
+      "sha256": "6dbbb18ace8eae1ace5e087b31115054cf834b4cfae446a56b6ccac7bdfec67c"
+    },
+    {
+      "path": "Source/DafnyCore/DafnyCore.csproj",
+      "mode": "100644",
+      "gitBlob": "8ab7d3e541e5c333d9474a3f03c7cef78c12d582",
+      "bytes": 3252,
+      "sha256": "486b7496345bda367a1c2a2c11437b568471ef927e3e6a85ec86913561027895"
+    },
+    {
+      "path": "ThirdParty/B3/doc/worker-library.md",
+      "mode": "100644",
+      "gitBlob": "22a0d8c684d24eddef14ecfc28bcb163a229dba7",
+      "bytes": 4737,
+      "sha256": "eb236634b48e8abf23f1a452904915e8c5e8b3b5c0b9b62d2548514e7a07a248"
+    },
+    {
+      "path": "ThirdParty/B3/integration.patch",
+      "mode": "100644",
+      "gitBlob": "e1abc0a99e7475394ad0eee4a0ea6016ce14cca1",
+      "bytes": 139257,
+      "sha256": "29ce3e116f81d2d8d6fb777c1eb50a28a0f85a8b5c3e9efe61236ba91b3e6b42"
+    },
+    {
+      "path": "ThirdParty/B3/source-manifest.json",
+      "mode": "100644",
+      "gitBlob": "0620380b13032cff8fa259b6cd61afcbf1c73f5a",
+      "bytes": 6741,
+      "sha256": "04acac15b45763c86af4b47b50b4415a9568d22ac304b86a0ba492d11bdb1722"
+    },
+    {
+      "path": "ThirdParty/B3/src/Ast/Ast.dfy",
+      "mode": "100644",
+      "gitBlob": "65bb6d8341ee317471af335e5a33a2c64e692594",
+      "bytes": 25747,
+      "sha256": "f69bb0f6ec6dadc0e0be071e89ea9b4ee0a7815bc331873d704b0e82c5c2ea52"
+    },
+    {
+      "path": "ThirdParty/B3/src/Ast/DomainInstantiation.dfy",
+      "mode": "100644",
+      "gitBlob": "1b258f37d11f79dc92f3380177b70299cc6ca5ff",
+      "bytes": 14398,
+      "sha256": "89e87dc6fc28d5611181d08d4b89014cfeb1b36bbe1887ca922afdbf6e28bf99"
+    },
+    {
+      "path": "ThirdParty/B3/src/Ast/ExprResolver.dfy",
+      "mode": "100644",
+      "gitBlob": "5bf39deead8d33519accddeeebed5884549eda89",
+      "bytes": 9625,
+      "sha256": "af8494108d38adc2d05491a64f029dffef536e2a044467df1aba5207c40963dd"
+    },
+    {
+      "path": "ThirdParty/B3/src/Ast/ResolvedPrinter.dfy",
+      "mode": "100644",
+      "gitBlob": "f7fab443e8a1d4b2fae14d66eca4c18fac734fcb",
+      "bytes": 13142,
+      "sha256": "48117cb7849fcbaf6a583554b76aa8b1d45a835407869d7ed8c7dc359e9601fc"
+    },
+    {
+      "path": "ThirdParty/B3/src/Ast/Resolver.dfy",
+      "mode": "100644",
+      "gitBlob": "3999ba49482d717726b20bf97c593306f10dfbfa",
+      "bytes": 37800,
+      "sha256": "d351021633c5c4af16b7f8fbb37c00d89170d075213c83b557c45aa5f25b09fe"
+    },
+    {
+      "path": "ThirdParty/B3/src/Ast/TypeChecker.dfy",
+      "mode": "100644",
+      "gitBlob": "b5a51fcc66a07302f2488f9115c5413d212be52f",
+      "bytes": 18361,
+      "sha256": "4824b739f5168927fe57a2b5114678971a60030a621d8f60aba863ceeb4a1514"
+    },
+    {
+      "path": "ThirdParty/B3/src/Ast/TypeResolver.dfy",
+      "mode": "100644",
+      "gitBlob": "c6f21e7ce086ee6e60df2b049cdbfcaf75869cdc",
+      "bytes": 988,
+      "sha256": "af74ed291c705438861239780888c1db86e51cddc7770755779ad864709d4c05"
+    },
+    {
+      "path": "ThirdParty/B3/src/Driver/BitvectorResources.dfy",
+      "mode": "100644",
+      "gitBlob": "3f6a2f85f99344a9babb4204ed42bf104e5a91b3",
+      "bytes": 4226,
+      "sha256": "2bb335864bf8710dc214d77bb1254909641589b76bbab614e23c04ddff35808f"
+    },
+    {
+      "path": "ThirdParty/B3/src/Driver/Library.dfy",
+      "mode": "100644",
+      "gitBlob": "7acebd196dccbd394cc3ac142cfd812a4e9cb452",
+      "bytes": 6399,
+      "sha256": "89f8804746feaa958152e78b37623acb71d6a62478e6390e5925f2eeb8328e65"
+    },
+    {
+      "path": "ThirdParty/B3/src/Parser/Parser.dfy",
+      "mode": "100644",
+      "gitBlob": "0024e723f4dee8773188e043240c7ab2d944a3fd",
+      "bytes": 28109,
+      "sha256": "2fbeca6bee61dcbb0ffbffd0fd0414d7ed8764cc3dad2624075c5be22b87b653"
+    },
+    {
+      "path": "ThirdParty/B3/src/RawAst/Printer.dfy",
+      "mode": "100644",
+      "gitBlob": "fc573a397978489a6635529408217c06c61b7203",
+      "bytes": 15011,
+      "sha256": "51c7664a0645a941aa5701ca0041899c9a0cf96dbcc252cc7c0d8c0fe3e9743f"
+    },
+    {
+      "path": "ThirdParty/B3/src/RawAst/RawAst.dfy",
+      "mode": "100644",
+      "gitBlob": "2ba199b2549b2f948786a4c59b05fd8bb3ef1b87",
+      "bytes": 22350,
+      "sha256": "26807c090cb5df0b8f0004477cbecc7363ac3a90f6409a22fd7eab19545ddaaa"
+    },
+    {
+      "path": "ThirdParty/B3/src/RawAst/Types.dfy",
+      "mode": "100644",
+      "gitBlob": "a85c586de95ce15ff6020bd6f97af325c9bbf84a",
+      "bytes": 2027,
+      "sha256": "a614711abc8ff088e0192295b750dfb010cad9bb55c0bf91cc10b30923b089f7"
+    },
+    {
+      "path": "ThirdParty/B3/src/Solver/RSolver.dfy",
+      "mode": "100644",
+      "gitBlob": "9be58380bec391d93cb418fa67c48d5a6ee60617",
+      "bytes": 22095,
+      "sha256": "aa08c0a96f113ca51697ff5b185aad0e6f54921365a376593c7d83a28fc68c86"
+    },
+    {
+      "path": "ThirdParty/B3/src/Solver/SolverExpr.dfy",
+      "mode": "100644",
+      "gitBlob": "4539c0b9f35856621024898605657df1615aa099",
+      "bytes": 4746,
+      "sha256": "cf8ffbd61acc558c665b85d9f9794c457ad7719e3a85da4c4ceb2e52267f58d7"
+    },
+    {
+      "path": "ThirdParty/B3/src/Verifier/Incarnations.dfy",
+      "mode": "100644",
+      "gitBlob": "9272932c69672d5a75ea354d63712d9b1f291020",
+      "bytes": 8734,
+      "sha256": "a5064d157d50bf56515ec93b593b89c9b7b95f50c44acc36b5e41e4769e0b883"
+    },
+    {
+      "path": "ThirdParty/B3/test/worker/BitvectorTests.dfy",
+      "mode": "100644",
+      "gitBlob": "ac941fd4272b02854fbecdf7cf552301f650c352",
+      "bytes": 8217,
+      "sha256": "fd0fb8775d2be23366b162338a032304dacb577c8202b9493e5346cd2b0e3c2b"
+    },
+    {
+      "path": "ThirdParty/B3/test/worker/RealTests.dfy",
+      "mode": "100644",
+      "gitBlob": "10e7d8b910b811786f5707c1c704d3e8bc7ddcd8",
+      "bytes": 3610,
+      "sha256": "a14ca307f13a087daad662ca3c87d358f2632419883355871495babcbb00cc74"
+    }
+  ],
+  "count": 101,
+  "totalBytes": 1181015,
+  "filesSealSha256": "e2675974074d1727e2ff40a1e7ddfb464bbd50209627823edffac2a3d8e5869f"
+}
