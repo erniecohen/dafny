@@ -40,8 +40,11 @@ development-line verifier acceptance.
 
 ## Outstanding acceptance
 
-The current full suite contains 1,161 verifier programs. Its exact-baseline
-comparison and the complete standard-library comparison are still in progress.
+The current full suite contains 1,161 verifier programs. Its first additional-axiom
+setting is complete: default-off matches all program verdicts and recorded batch
+resource counts. The enabled outcome and diagnostic changes are listed in
+[obligation-suite-comparison.md](obligation-suite-comparison.md). The second
+setting and complete standard-library comparison are still in progress.
 No expected-verdict table has been changed for this work.
 
 Focused enabled checks have identified completeness regressions in
