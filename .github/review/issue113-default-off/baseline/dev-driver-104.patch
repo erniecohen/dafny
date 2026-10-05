@@ -1,0 +1,14 @@
+diff --git a/Source/DafnyDriver/Commands/RunCommand.cs b/Source/DafnyDriver/Commands/RunCommand.cs
+index 29c9cc384..f98b29ba3 100644
+--- a/Source/DafnyDriver/Commands/RunCommand.cs
++++ b/Source/DafnyDriver/Commands/RunCommand.cs
+@@ -59,6 +59,9 @@ public static class RunCommand {
+     }
+     DafnyNewCli.SetHandlerUsingDafnyOptionsContinuation(result, async (options, context) => {
+       await CheckForMistypedDafnyOption(context, options);
++      if (options.Get(CommonOptionBag.BuildFile) is { } buildFile) {
++        options.DafnyPrintCompiledFile = buildFile.FullName;
++      }
+       options.MainArgs = context.ParseResult.GetValueForArgument(UserProgramArguments).ToList();
+       options.Compile = true;
+       options.RunAfterCompile = true;

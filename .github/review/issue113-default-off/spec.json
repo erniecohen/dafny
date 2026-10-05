@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "repository": "erniecohen/dafny",
+  "lines": {
+    "dev": {
+      "original": "97601b75712f458de37a13bf9953a0b7825122eb",
+      "repaired_product": "db571b83400fef7f32c175c5eb372f4545e932ed",
+      "final_product": "7b063ecd6414a845631cd587196c683fd243c86a",
+      "repaired_tree": "cc3a0308365b83ac34932674dede0270fd6fdb44",
+      "repaired_core_tree": "e2e8bb392aa2d2b02650370f0bbc66ac82107ff5",
+      "original_tree": "b02fbb7e3adf388eac419c4786c00033a30aa45a",
+      "patch_sha256": "4042f1b7f067233549e2bf5ae100c4ec86f9dc3f5b65004edc359365c6548899",
+      "inputs_sha256": "ff5985528bb5a0e23f6ef6a5b2321791ac4ebbdd6de4281e611ad846743b1b03",
+      "reference_solver": "4.16.0",
+      "components": [
+        {
+          "component": "146",
+          "source_base": "97601b75712f458de37a13bf9953a0b7825122eb",
+          "source_tip": "bbb976925398e187d861a2a39735e351be056e38",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "141-first",
+          "source_base": "52cca1a44588f1bbc5a3a8559e7d0e533783dc93",
+          "source_tip": "0a7022f95adbf1ce61b925f0bdbbd5463d596b04",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "141-scoped",
+          "source_base": "2f35aa2709fb850bb376c2d3e0c5b44f3a04b3a2",
+          "source_tip": "1099792ee1888fd07e41db26bedea385a4561fba",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "145",
+          "source_base": "97601b75712f458de37a13bf9953a0b7825122eb",
+          "source_tip": "7e2bfce7ff0fd17b0d420ec22dbfbef83ff24b87",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "142",
+          "source_base": "97601b75712f458de37a13bf9953a0b7825122eb",
+          "source_tip": "9626e60db5f419ca80b1273d65358934d3ccc706",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "143",
+          "source_base": "97601b75712f458de37a13bf9953a0b7825122eb",
+          "source_tip": "391d4f436acf61ed356e214ca83834af64ba2515",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "148",
+          "source_base": "2e94e9a19d609b8efa18a542ebfedd3bc1aae928",
+          "source_tip": "ce275984077f4e395d7928bd8ee80c0e02494937",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "132-owner",
+          "source_base": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d",
+          "source_tip": "8848d92ffd079e0be6a9780e03ea824ee85c0d1d",
+          "adaptation": "Preserve the existing dev BplForallTrim signature: omit shipped-only possiblyEmpty argument in the lambda can-call site; allocation rule unchanged."
+        },
+        {
+          "component": "132-all-nt-port",
+          "source_base": "ce1b0ff1d38a03962c06547f438651b768aeb654",
+          "source_tip": "1ae9032de8777be2ca7ea8150b19c2661ca94462",
+          "adaptation": "Exact Types helper + CycleAnalysis; insert final NT reference branch separately, exclude feature-only NewtypeDecl marker comment."
+        },
+        {
+          "component": "132-dev-branch-adaptation",
+          "source_tip": "1ae9032de8777be2ca7ea8150b19c2661ca94462",
+          "adaptation": "copy exact final NT reference branch only; no 113 equality/operation markers"
+        },
+        {
+          "component": "132-dev-owner-constant-rhs-map",
+          "source_base": "2fbe255bbaca7ec5e1ee470ca7295a316894ff52",
+          "source_tip": "b615831aaa26fea72364627d0fe6040f10e49eee",
+          "adaptation": "Preserve the existing shipped owner constant-field RHS actual type-argument substitution in the development allocation port; one hunk only."
+        },
+        {
+          "component": "104-driver-run-build",
+          "source_base": "97601b75712f458de37a13bf9953a0b7825122eb",
+          "source_tip": "4d73597bb05709660878c06d2e6d5c3e0da269f1",
+          "adaptation": "Exact three-line RunCommand build-output alias port only; no Core delta, no new regression/news input in the old denominator."
+        }
+      ],
+      "resolver_default": true,
+      "repaired_driver_tree": "923d23afbe9c3965c87014c7aefbc8c64abb7ccf",
+      "composition_patches": [
+        {
+          "file": "baseline/dev-core.patch",
+          "sha256": "4042f1b7f067233549e2bf5ae100c4ec86f9dc3f5b65004edc359365c6548899",
+          "scope": "Core"
+        },
+        {
+          "file": "baseline/dev-driver-104.patch",
+          "sha256": "748fe01fcbb650d59edc4b1b4417387fa7a1c80657d75c7e2c5a7e80ab4f63f7",
+          "scope": "driver-run-build-104"
+        }
+      ]
+    },
+    "shipped": {
+      "original": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d",
+      "repaired_product": "b266bd4adf8bf28acba3e27e7e089f737a0819bf",
+      "final_product": "95f0e4c8e1b80c95cf8aff397d7acd3ffb9c62e6",
+      "repaired_tree": "c0ae9cf75b88707d5385a32bf23ab681ba01b0b1",
+      "repaired_core_tree": "0f8e8b63e032beaa37a8b4db0ad55364a01255ea",
+      "original_tree": "cb4dd1e19114005c06cab46fc376192177c8ea1e",
+      "patch_sha256": "14c4ccf455ccec85662891f26173de672f6e38a1ba8414bedf7f30b1887e2f65",
+      "inputs_sha256": "173919b494886488ef3c1e90865b3a23e6f9b2334d3c9b72f7fec08731c8c4b5",
+      "reference_solver": "4.12.1",
+      "components": [
+        {
+          "component": "146",
+          "source_base": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d",
+          "source_tip": "c25a950c5a39be84ae21c01f773e5c54bbd56ebf",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "141",
+          "source_base": "c9ffff45b0f6db2beddd348d0defb56c452456d4",
+          "source_tip": "3ee4e4258704b2cc0944d4bfd1745a4b68bf398c",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "145",
+          "source_base": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d",
+          "source_tip": "6ea31ff1b6beebe8c6414a92d6cb557a065bca33",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "142",
+          "source_base": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d",
+          "source_tip": "5907b1edc0787d7ee74be1a20727e402cd741aa9",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "143",
+          "source_base": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d",
+          "source_tip": "9976ffd3af879332279349431a6950c50eb60d63",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "148",
+          "source_base": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d",
+          "source_tip": "e28ac31a3195a43ed62c0644ed9ba372dbc304b6",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "132-owner",
+          "source_base": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d",
+          "source_tip": "8848d92ffd079e0be6a9780e03ea824ee85c0d1d",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "132-all-nt",
+          "source_base": "8848d92ffd079e0be6a9780e03ea824ee85c0d1d",
+          "source_tip": "47ecde37abdff3e133627ccb09029cddcac3d21f",
+          "adaptation": "none; exact source patch applied"
+        }
+      ],
+      "resolver_default": false
+    }
+  },
+  "solver_5_1_0": {
+    "url": "https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip",
+    "sha256": "f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a"
+  },
+  "reference_solvers": {
+    "4.12.1": {
+      "url": "https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.12.1-x64-ubuntu-24.04-bin.zip",
+      "sha256": "e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b"
+    },
+    "4.16.0": {
+      "url": "https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.16.0-x64-ubuntu-24.04-bin.zip",
+      "sha256": "87de9c9e86c877abfccb00cf24b946c4a1bda7b9cba6f363ea58311d2573c320"
+    }
+  }
+}
