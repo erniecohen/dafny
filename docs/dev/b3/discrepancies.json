@@ -120,7 +120,11 @@
       "recheckSourceCommit": "52ee01f1aa5abab762bf39e1cf499fe5ed832634",
       "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37251480365",
       "recheckReceiptSha256": "006cf80517526c08a8e797c681f35713f353e8a5dec643a10118495531ff0460",
-      "recheckFinding": "All 35 expected compiler/normalizer controls passed, including the original actual Dafny range/round-trip/false-check control. Five owned stages and ten immutable boundaries passed, with zero cleanup signals or residual children. The first Core and test snapshots were retained unchanged. The full 469-control normalizer suite, 79 source-defined corpus cases, library proof, worker runtime and default compatibility were not run."
+      "recheckFinding": "All 35 expected compiler/normalizer controls passed, including the original actual Dafny range/round-trip/false-check control. Five owned stages and ten immutable boundaries passed, with zero cleanup signals or residual children. The first Core and test snapshots were retained unchanged. The full 469-control normalizer suite, 79 source-defined corpus cases, library proof, worker runtime and default compatibility were not run.",
+      "corpusFocusSourceCommit": "a9cfba1fb93a85b1a3dfbeb0db97c1eacc9c85ad",
+      "corpusFocusEvidence": "https://github.com/erniecohen/dafny/actions/runs/37255527639",
+      "corpusFocusReceiptSha256": "9e3e7830ccb306ecc84abc4f89ab5dd04be79cee1e9bcf81f59cb46ad59a0aab",
+      "corpusFocusFinding": "The current CLI built successfully, but its dependency qualifier rejected a missing current-platform runtime asset before CLI version or either corpus case executed. Four owned stages and eight boundaries completed with no cleanup signals or residual children; the first 335-file CLI snapshot remained unchanged. The exact offending asset is absent from the receipt. The archived 590 proof and 37 runtime controls qualified for reuse only; no new library proof/runtime or corpus result is claimed."
     },
     {
       "kind": "same-process native comparison qualification incomplete",
@@ -169,7 +173,21 @@
       "evidence": "https://github.com/erniecohen/dafny/actions/runs/37252189863",
       "receiptSha256": "0b49b89991098f783176b7ca67c587d6a4b7085c5874e49aeabbf578814903aa",
       "finding": "Fixed routing passed and all twelve other jobs were skipped. Inventory failed the bounded ELF program-header requirement before producing a candidate catalog. The failed receipt does not identify the offending file.",
-      "consequence": "No SDK, collector, analyzer, target or solver was launched. Runner closure, dynamic load closure and the full retention diagnostic remain unqualified."
+      "consequence": "No SDK, collector, analyzer, target or solver was launched. Runner closure, dynamic load closure and the full retention diagnostic remain unqualified.",
+      "recheckSourceCommit": "bd478d28d0fbf307d4a1fbc817160dec0d0fab37",
+      "recheckEvidence": "https://github.com/erniecohen/dafny/actions/runs/37254827562",
+      "recheckReceiptSha256": "b90f533178c49569690c5c31c1270c259e8b29ddbf36c29837c1b7844a6e3ea5",
+      "recheckFinding": "The read-only follow-up captured a candidate catalog of 13,567 files. Both exact official archives and all 284 embedded and uploaded members, including hidden files, matched. Source and final rechecks passed without primary or finalization faults. One relocatable object was classified outside the load graph. Nine liblttng-ust.so.0 dependencies and four source contracts remain unresolved; complete loader closure and the full diagnostic remain disabled. Runner files absent from the artifact cannot be independently rehashed."
+    },
+    {
+      "kind": "bounded Real round-trip preparation source checkpoint",
+      "scope": "Separate codex/b3-124-real-roundtrip; not imported into this documented subset",
+      "sourceCommit": "d115e6001fabdb61ae96c76e8798d90637386df3",
+      "productCommit": "b82e8c27efa6fb4acdadfc4e3dadd786b5196bec",
+      "sourceManifestSha256": "2b6901ceaca7a325abc7488cb121a705aea71e05964cb0c0ab9ab3c3cca52f9a",
+      "source": "https://github.com/erniecohen/dafny/tree/codex/b3-124-real-roundtrip",
+      "finding": "Source review covers bounded owned capture before hashing, the typed integer/Real floor identity, conservative assignment-derived substitution and independent relation checking. Original G3 evidence, checks, learning, metadata and solver settings are preserved. Work identity binds each owned submitted configuration. The fixed 18-method/41-case census is unexecuted.",
+      "consequence": "Compilation, structural tests and actual Real worker/corpus acceptance remain pending. Opaque-context projection is deferred. This source checkpoint does not extend advertised support."
     }
   ]
 }
