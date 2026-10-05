@@ -137,3 +137,10 @@ git-issues/git-issue-146.dfy
 git-issues/git-issue-146-negative.dfy
 git-issues/git-issue-146-actual-arguments.dfy
 git-issues/git-issue-146-actual-arguments-negative.dfy
+# Character validity through numeric ancestors (#142).
+git-issues/git-issue-142.dfy
+git-issues/git-issue-142-negative.dfy
+git-issues/git-issue-142-legacy.dfy
+git-issues/git-issue-142-runtime.dfy
+# Preserve the original legacy character conversion range contract.
+git-issues/git-issue-356-errors.dfy

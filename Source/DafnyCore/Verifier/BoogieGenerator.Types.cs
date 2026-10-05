@@ -1455,11 +1455,11 @@ public partial class BoogieGenerator {
     Bpl.IdentifierExpr o = null;
     void PutSourceIntoLocal() {
       if (o == null) {
-        var oType = fromType.IsCharType ? Type.Int : fromType;
+        var oType = fromTypeFamily.IsCharType ? Type.Int : fromType;
         var oVar = locals.GetOrAdd(new Bpl.LocalVariable(tok, new Bpl.TypedIdent(tok, CurrentIdGenerator.FreshId("newtype$check#"), TrType(oType))));
         o = new Bpl.IdentifierExpr(tok, oVar);
         var rhs = etran.TrExpr(expr);
-        if (fromType.IsCharType) {
+        if (fromTypeFamily.IsCharType) {
           rhs = FunctionCall(expr.Origin, "char#ToInt", Bpl.Type.Int, rhs);
         }
         builder.Add(Bpl.Cmd.SimpleAssign(tok, o, rhs));
@@ -1543,7 +1543,7 @@ public partial class BoogieGenerator {
         builder.Add(Assert(tok, boundsCheck, new ConversionFit("value", toType, dafnyBoundsCheck, errorMsgPrefix), builder.Context));
       }
 
-    } else if (toType.IsCharType) {
+    } else if (toTypeFamily.IsCharType) {
       if (fromType.IsNumericBased(Type.NumericPersuasion.Int)) {
         PutSourceIntoLocal();
         var boundsCheck = FunctionCall(Token.NoToken, BuiltinFunction.IsChar, null, o);
@@ -1556,30 +1556,24 @@ public partial class BoogieGenerator {
         Expression intExpr = new ExprDotName(expr.Origin, expr, new Name("Floor"), null);
         var dafnyBoundsCheck = Utils.MakeCharBoundsCheck(options, intExpr);
         builder.Add(Assert(tok, boundsCheck, new ConversionFit("real value", toType, dafnyBoundsCheck, errorMsgPrefix), builder.Context));
-      } else if (fromType.IsBitVectorType) {
-        PutSourceIntoLocal();
-        var fromWidth = fromType.AsBitVectorType.Width;
-        var toWidth = 16;
-        if (toWidth < fromWidth) {
-          // Check "expr < (1 << toWidth)" in type "fromType" (note that "1 << toWidth" is indeed a value in "fromType")
+      } else if (fromTypeFamily.IsBitVectorType) {
+        var fromWidth = fromTypeFamily.AsBitVectorType.Width;
+        // Every value in a smaller carrier is already a character. Unicode
+        // mode also excludes surrogates, first reachable at width 16.
+        if (fromWidth > (options.Get(CommonOptionBag.UnicodeCharacters) ? 15 : 16)) {
           PutSourceIntoLocal();
-          var toBound = BaseTypes.BigNum.FromBigInt(BigInteger.One << toWidth); // 1 << toWidth
-          var bound = BplBvLiteralExpr(tok, toBound, fromType.AsBitVectorType);
-          var boundsCheck = FunctionCall(expr.Origin, "lt_bv" + fromWidth, Bpl.Type.Bool, o, bound);
-          var dafnyBound = new BinaryExpr(expr.Origin, BinaryExpr.Opcode.LeftShift, Expression.CreateIntLiteral(expr.Origin, 1), Expression.CreateIntLiteral(expr.Origin, toWidth));
-          var dafnyBoundsCheck = new BinaryExpr(expr.Origin, BinaryExpr.Opcode.Lt, expr, dafnyBound);
+          var intValue = FunctionCall(tok, "nat_from_bv" + fromWidth, Bpl.Type.Int, o);
+          var boundsCheck = FunctionCall(tok, BuiltinFunction.IsChar, null, intValue);
+          Expression intExpr = new ConversionExpr(expr.Origin, expr, Type.Int);
+          var dafnyBoundsCheck = Utils.MakeCharBoundsCheck(options, intExpr);
           builder.Add(Assert(tok, boundsCheck, new ConversionFit("bit-vector value", toType, dafnyBoundsCheck, errorMsgPrefix), builder.Context));
         }
       } else if (fromType.IsBigOrdinalType) {
         PutSourceIntoLocal();
         var oi = FunctionCall(tok, "ORD#Offset", Bpl.Type.Int, o);
-        int toWidth = 16;
-        var toBound = BaseTypes.BigNum.FromBigInt(BigInteger.One << toWidth); // 1 << toWidth
-        var bound = Bpl.Expr.Literal(toBound);
-        var boundsCheck = Bpl.Expr.Lt(oi, bound);
-        var dafnyBound = new BinaryExpr(expr.Origin, BinaryExpr.Opcode.LeftShift, Expression.CreateIntLiteral(expr.Origin, 1), Expression.CreateIntLiteral(expr.Origin, toWidth));
+        var boundsCheck = FunctionCall(tok, BuiltinFunction.IsChar, null, oi);
         var offset = new ExprDotName(expr.Origin, expr, new Name("Offset"), null);
-        var dafnyBoundsCheck = new BinaryExpr(expr.Origin, BinaryExpr.Opcode.Lt, offset, dafnyBound);
+        var dafnyBoundsCheck = Utils.MakeCharBoundsCheck(options, offset);
         builder.Add(Assert(tok, boundsCheck, new ConversionFit("ORDINAL value", toType, dafnyBoundsCheck, errorMsgPrefix), builder.Context));
       }
 
@@ -1610,7 +1604,7 @@ public partial class BoogieGenerator {
       Bpl.Expr be;
       if (fromType.IsNumericBased() || fromTypeFamily.IsBitVectorType) {
         be = ConvertExpression(expr.Origin, o, fromType, toType);
-      } else if (fromType.IsCharType) {
+      } else if (fromTypeFamily.IsCharType) {
         be = ConvertExpression(expr.Origin, o, Dafny.Type.Int, toType);
       } else if (fromType.IsBigOrdinalType) {
         be = FunctionCall(expr.Origin, "ORD#Offset", Bpl.Type.Int, o);
