@@ -1,0 +1,29 @@
+datatype List = Nil | Cons(head: int, tail: List)
+type Value = List
+function Encode(b: List): Value { b }
+function Decode(v: Value): List { v }
+function Identity<T>(x: T): T { x }
+lemma RoundTrip(b: List) ensures Decode(Encode(b)) == b {}
+lemma ConcreteWitness() { var b := Nil; var v := Encode(b); assert Decode(v) == b; }
+method Work(n: nat) returns (checksum: int)
+  ensures 2 * checksum == n * (n - 1)
+{
+  var value := Encode(Nil);
+  var i := 0;
+  checksum := 0;
+  while i < n
+    invariant 0 <= i <= n
+    invariant 2 * checksum == i * (i - 1)
+  {
+    value := Encode(Cons(i, Decode(value)));
+    assert value.Cons?;
+    checksum := checksum + value.head;
+    i := i + 1;
+  }
+}
+method Main() {
+  var warm := Work(2000);
+  print "warmup:", warm, "\n";
+  var result := Work(20000);
+  print "result:", result, "\n";
+}

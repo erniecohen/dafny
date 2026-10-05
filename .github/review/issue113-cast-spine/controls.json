@@ -1,0 +1,27 @@
+{
+  "source_only": true,
+  "cases": [
+    {
+      "file": "adjacent-constrained-positive.dfy",
+      "sha256": "d8a32eb554d220717bf0f3832706cb9b3b7e510b7ca9b944270634d49b3be4a5",
+      "unmeasured_intended_exit": 0,
+      "intended_failure_line": null,
+      "acceptance": null
+    },
+    {
+      "file": "adjacent-constrained-false.dfy",
+      "sha256": "db2808509c709df8d87d680c57eb0b0520c7c9c55beb98060c5be3f894e16df2",
+      "unmeasured_intended_exit": 4,
+      "intended_failure_line": 13,
+      "acceptance": null
+    },
+    {
+      "file": "adjacent-intermediate-negative.dfy",
+      "sha256": "0c9ecf3d9bd904fb2280c9e56c86bfde9c2aac10fc545948757f0ae6dc7d88b6",
+      "unmeasured_intended_exit": 4,
+      "intended_failure_line": 9,
+      "acceptance": null
+    }
+  ],
+  "scope": "One universal constrained-chain positive, one inhabited final-false control and one bad intermediate predicate. Intended exits are not actual oracles; source and emitted WF obligations must be reviewed."
+}

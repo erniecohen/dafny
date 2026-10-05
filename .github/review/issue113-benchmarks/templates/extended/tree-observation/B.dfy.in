@@ -1,0 +1,33 @@
+datatype Tree = Tip | Fork(left: Tree, right: Tree)
+function Pow2(k: nat): nat { if k == 0 then 1 else 2 * Pow2(k - 1) }
+function Count(t: Tree): nat { match t case Tip => 1 case Fork(a, b) => Count(a) + Count(b) }
+function Build(k: nat): Tree
+  ensures Count(Build(k)) == Pow2(k)
+{ if k == 0 then Tip else Fork(Build(k - 1), Build(k - 1)) }
+type Value = Tree
+function Encode(b: Tree): Value { b }
+function Decode(v: Value): Tree { v }
+lemma RoundTrip(b: Tree) ensures Decode(Encode(b)) == b {}
+function Observe(v: Value): nat
+  ensures Observe(v) == Count(Decode(v))
+{ match v case Tip => 1 case Fork(a, b) => Count(a) + Count(b) }
+method Work(n: nat) returns (checksum: int)
+  ensures checksum == @TREE_LEAVES@ * n
+{
+  var i := 0;
+  checksum := 0;
+  while i < n
+    invariant 0 <= i <= n
+    invariant checksum == @TREE_LEAVES@ * i
+  {
+    var value := Encode(Build(@TREE_HEIGHT@));
+    checksum := checksum + Observe(value);
+    i := i + 1;
+  }
+}
+method Main() {
+  var warm := Work(@WARMUP@);
+  print "warmup:", warm, "\n";
+  var result := Work(@ITERATIONS@);
+  print "result:", result, "\n";
+}
