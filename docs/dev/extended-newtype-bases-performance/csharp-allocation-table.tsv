@@ -1,0 +1,16 @@
+family	B_bytes	N_bytes	W_erased_bytes	W_materialized_bytes	samples_per_arm	all_B_N_W_erased_samples_equal	measurement_available
+arrow-adapter	3520112	3520112	3520112	4000112	5	True	True
+arrow-coercion	1760112	1760112	1760112	2240112	5	True	True
+codatatype-lazy					0		False
+datatype-ghost-update	960048	960048	960048	1280096	5	True	True
+datatype-nested-update	960048	960048	960048	5280096	5	True	True
+datatype-root-update	960048	960048	960048	1280096	5	True	True
+function-creation	1920000	1920000	1920000	2400024	5	True	True
+function-identity	0	0	0	480024	5	True	True
+generic-boundary	8960048	8960048	8960048	9440072	5	True	True
+ordinal-finite	0	0	0	640032	5	True	True
+ordinal-finite-refinement	0	0	0	640032	5	True	True
+refinement-local	0	0	0	640032	5	True	True
+refinement-quantified	800368	800368	800368	1280392	5	True	True
+refinement-trivial	0	0	0	640032	5	True	True
+tree-observation	35200000	35200000	35200000	35680000	5	True	True
