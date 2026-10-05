@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "scope": "read-only-retention-inventory-source-not-executed",
+  "original44Sha256": "b2e0e676f8c279e25358330ac3a91e740a12ddce319fd9aaedc5f1bd508dbc90",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 6453,
+      "sha256": "95a93839f2eb15a05b5df694b87b2f4dc361c90bd49a62909153d23d42e9ad06"
+    },
+    {
+      "path": "inventory.py",
+      "bytes": 34331,
+      "sha256": "8cfe4091081d95270d42157b836f95e34cec90b6bee0e58c822226a36ea5d935"
+    },
+    {
+      "path": "official-archives.json",
+      "bytes": 61989,
+      "sha256": "5e8098acfdaae04e551425471f42024019c4e988e309cf1ca71eb37e51edccbc"
+    }
+  ],
+  "repositoryInputs": [
+    {
+      "path": "global.json",
+      "bytes": 79,
+      "sha256": "ff03791e2804f6fa8b0c79700c95a77983dac4c5d894d5eb9d9b5bde2bf6cf3d"
+    }
+  ],
+  "productBase": "8333daa60e2f2ee456068369f94c141898cde875",
+  "inspectedImagesExecuted": false,
+  "diagnosticEnabled": false
+}

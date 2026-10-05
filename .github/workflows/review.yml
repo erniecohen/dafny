@@ -19,7 +19,7 @@ on:
       b3_focus_gate:
         description: Focused B3 checks; library-dependent modes require exact verified-source receipts
         type: choice
-        options: [none, ide-regressions, maps, isolation, lifecycle, unavailable-metadata, native-proof-smoke, shared-native-smoke, complete]
+        options: [none, ide-regressions, maps, isolation, lifecycle, unavailable-metadata, native-proof-smoke, shared-native-smoke, retention-inventory, complete]
         default: none
       b3_full_gate:
         description: Also run the verifying B3 worker bootstrap and real Dafny corpus with b3_compile_only
@@ -70,7 +70,7 @@ env:
 
 jobs:
   build:
-    if: ${{ inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
+    if: ${{ inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
     name: Build (Release)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -135,7 +135,7 @@ jobs:
           retention-days: 14
 
   suite:
-    if: ${{ inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
+    if: ${{ inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
     name: Verifier suite (axioms ${{ matrix.axioms }}, shard ${{ matrix.shard }} of 4)
     needs: build
     runs-on: ubuntu-24.04
@@ -189,7 +189,7 @@ jobs:
           retention-days: 90
 
   verdicts:
-    if: ${{ inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
+    if: ${{ inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
     name: Verdicts (axioms ${{ matrix.axioms }})
     needs: [build, suite]
     runs-on: ubuntu-24.04
@@ -245,7 +245,7 @@ jobs:
           retention-days: 90
 
   resolver:
-    if: ${{ inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
+    if: ${{ inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
     name: Resolver matrix (both modes)
     needs: build
     runs-on: ubuntu-24.04
@@ -300,7 +300,7 @@ jobs:
           retention-days: 90
 
   stdlib:
-    if: ${{ inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
+    if: ${{ inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
     name: Standard library (Z3 ${{ matrix.z3 }}, axioms ${{ matrix.axioms }})
     needs: build
     runs-on: ubuntu-24.04
@@ -386,7 +386,7 @@ jobs:
   axiom-resources:
     name: Additional-axiom resource comparisons
     needs: [suite, stdlib]
-    if: ${{ inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true && (always() && needs.suite.result == 'success') }}
+    if: ${{ inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true && (always() && needs.suite.result == 'success') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -409,7 +409,7 @@ jobs:
           retention-days: 90
 
   regressions:
-    if: ${{ inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
+    if: ${{ inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
     name: Regression tests (upstream harness)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -473,7 +473,7 @@ jobs:
 
 
   resolver-tests:
-    if: ${{ inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
+    if: ${{ inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
     name: Resolver unit tests and language-server recovery
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -504,7 +504,7 @@ jobs:
   binaries:
     name: Binaries (${{ matrix.rid }})
     needs: build
-    if: ${{ inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true && (github.ref_type == 'tag' || inputs.binaries) }}
+    if: ${{ inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true && (github.ref_type == 'tag' || inputs.binaries) }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
@@ -567,7 +567,7 @@ jobs:
   release:
     name: GitHub release
     needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, axiom-resources]
-    if: ${{ inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true && (github.ref_type == 'tag') }}
+    if: ${{ inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true && (github.ref_type == 'tag') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -605,7 +605,7 @@ jobs:
             --verify-tag --title "$VERSION" --notes-file notes.md
 
   b3-native-compile:
-    if: ${{ inputs.b3_compile_only == true && inputs.b3_focus_gate != 'shared-native-smoke' }}
+    if: ${{ inputs.b3_compile_only == true && inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' }}
     name: B3 compilation and optional integration probe
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -780,4 +780,121 @@ jobs:
         with:
           name: b3-native-compile
           path: out/b3-native-compile
+          retention-days: 14
+
+  b3-retention-inventory:
+    if: ${{ inputs.b3_focus_gate == 'retention-inventory' }}
+    name: Read-only native retention inventory prerequisite
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check fixed read-only prerequisite routing
+        id: retention-routing
+        env:
+          B3_FOCUS_GATE: ${{ inputs.b3_focus_gate }}
+          B3_COMPILE_ONLY: ${{ inputs.b3_compile_only }}
+          B3_FULL_GATE: ${{ inputs.b3_full_gate }}
+          B3_BINARIES: ${{ inputs.binaries }}
+          B3_RESOLVER_PROBE: ${{ inputs.resolver_probe }}
+          B3_ADDITIONAL_AXIOMS_PROBE: ${{ inputs.additional_axioms_probe }}
+        run: |
+          env -i PATH=/usr/bin:/bin LANG=C.UTF-8 LC_ALL=C.UTF-8 \
+            B3_FOCUS_GATE="$B3_FOCUS_GATE" B3_COMPILE_ONLY="$B3_COMPILE_ONLY" \
+            B3_FULL_GATE="$B3_FULL_GATE" B3_BINARIES="$B3_BINARIES" \
+            B3_RESOLVER_PROBE="$B3_RESOLVER_PROBE" \
+            B3_ADDITIONAL_AXIOMS_PROBE="$B3_ADDITIONAL_AXIOMS_PROBE" \
+            GITHUB_OUTPUT="$GITHUB_OUTPUT" /usr/bin/python3 -I -S -B - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          output = Path('out/b3-retention-inventory-routing')
+          output.mkdir(parents=True, exist_ok=True)
+          route = {'schemaVersion': 1, 'scope': 'fixed-read-only-retention-inventory-routing',
+                   'passed': False, 'inventoryInvokedAtRoutingCheck': False, 'SDKExecuted': False,
+                   'collectorExecuted': False, 'analyzerExecuted': False, 'targetExecuted': False,
+                   'reviewedRunnerClosure': False, 'fullDiagnosticEnabled': False}
+          allowed = False
+          try:
+              flags = {name: os.environ[name] for name in
+                       ['B3_FOCUS_GATE', 'B3_COMPILE_ONLY', 'B3_FULL_GATE', 'B3_BINARIES',
+                        'B3_RESOLVER_PROBE', 'B3_ADDITIONAL_AXIOMS_PROBE']}
+              route['flags'] = flags
+              if flags != {'B3_FOCUS_GATE': 'retention-inventory', 'B3_COMPILE_ONLY': 'true',
+                           'B3_FULL_GATE': 'false', 'B3_BINARIES': 'false',
+                           'B3_RESOLVER_PROBE': 'false', 'B3_ADDITIONAL_AXIOMS_PROBE': 'false'}:
+                  raise ValueError('Read-only inventory requires compile_only=true, full=false and all other flags=false.')
+              source = Path('.github/review/retention-inventory')
+              raw = (source / 'source-manifest.json').read_bytes()
+              if hashlib.sha256(raw).hexdigest() != '5220ab26277c1b028c97066405bb8fc421e97b3f0e859ff55716023c5bc4d314':
+                  raise ValueError('Read-only prerequisite source pin changed.')
+              manifest = json.loads(raw)
+              if [p['path'] for p in manifest['files']] != ['README.md', 'inventory.py', 'official-archives.json']:
+                  raise ValueError('Read-only prerequisite exact source inventory changed.')
+              if {p.relative_to(source).as_posix() for p in source.rglob('*') if p.is_file() or p.is_symlink()} != \
+                    {'README.md', 'inventory.py', 'official-archives.json', 'source-manifest.json'}:
+                  raise ValueError('Supplemental read-only prerequisite source file.')
+              for pin in manifest['files']:
+                  path = source / pin['path']
+                  captured = path.read_bytes()
+                  if path.is_symlink() or len(captured) != pin['bytes'] or hashlib.sha256(captured).hexdigest() != pin['sha256']:
+                      raise ValueError('Read-only prerequisite declared source changed.')
+              outer_path = Path('.github/review/b3-retention-inventory-manifest.json')
+              outer_raw = outer_path.read_bytes()
+              outer = json.loads(outer_raw)
+              if outer['sourceManifestSha256'] != '5220ab26277c1b028c97066405bb8fc421e97b3f0e859ff55716023c5bc4d314' or [p['path'] for p in outer['files']] != \
+                    ['.github/review/retention-inventory/source-manifest.json', '.github/review/base', '.github/workflows/review.yml']:
+                  raise ValueError('Read-only prerequisite exact routing inventory changed.')
+              for pin in outer['files']:
+                  path = Path(pin['path'])
+                  captured = path.read_bytes()
+                  if path.is_symlink() or len(captured) != pin['bytes'] or hashlib.sha256(captured).hexdigest() != pin['sha256']:
+                      raise ValueError('Read-only prerequisite routing bytes changed.')
+              allowed = True
+              route.update({'passed': True, 'sourceManifestSha256': '5220ab26277c1b028c97066405bb8fc421e97b3f0e859ff55716023c5bc4d314',
+                            'outerManifestSha256': hashlib.sha256(outer_raw).hexdigest()})
+          except BaseException as error:
+              route['failure'] = type(error).__name__ + ': ' + str(error)[:4096]
+          finally:
+              (output / 'routing.json').write_text(json.dumps(route, indent=2) + '\n')
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as result:
+                  result.write('allowed=' + ('true' if allowed else 'false') + '\n')
+              print('Read-only retention routing: ' + ('PASS' if allowed else 'NOT GREEN'))
+          PY
+      - name: Capture only fixed official archives and runner byte inventory
+        if: steps.retention-routing.outputs.allowed == 'true'
+        run: |
+          env -i PATH=/usr/bin:/bin LANG=C.UTF-8 LC_ALL=C.UTF-8 /usr/bin/python3 -I -S -B - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          path = Path('.github/review/retention-inventory/inventory.py')
+          try:
+              captured = path.read_bytes()
+              if path.is_symlink() or len(captured) != 34331 or \
+                    hashlib.sha256(captured).hexdigest() != '8cfe4091081d95270d42157b836f95e34cec90b6bee0e58c822226a36ea5d935':
+                  raise ValueError('Read-only inventory body changed before invocation.')
+              namespace = {'__name__': '__main__', '__file__': str(path)}
+              exec(compile(captured, str(path), 'exec', dont_inherit=True), namespace)
+          except BaseException as error:
+              output = Path('out/b3-retention-inventory')
+              output.mkdir(parents=True, exist_ok=True)
+              failure = {'schemaVersion': 1, 'scope': 'fixed-read-only-retention-inventory-entry',
+                         'inventoryCaptured': False, 'reviewedRunnerClosure': False, 'fullDiagnosticEnabled': False,
+                         'SDKExecuted': False, 'collectorExecuted': False, 'analyzerExecuted': False,
+                         'targetExecuted': False, 'failure': type(error).__name__ + ': ' + str(error)[:4096]}
+              if (output / 'summary.json').exists():
+                  (output / 'summary-before-entry-failure.json').write_bytes((output / 'summary.json').read_bytes())
+              (output / 'summary.json').write_text(json.dumps(failure, indent=2) + '\n')
+              print('Read-only retention inventory entry: NOT GREEN')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b3-retention-inventory
+          path: |
+            out/b3-retention-inventory
+            out/b3-retention-inventory-routing
           retention-days: 14

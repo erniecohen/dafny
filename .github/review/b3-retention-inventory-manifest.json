@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "scope": "fixed-read-only-retention-inventory-source-and-routing-unexecuted",
+  "sourceManifestSha256": "5220ab26277c1b028c97066405bb8fc421e97b3f0e859ff55716023c5bc4d314",
+  "files": [
+    {
+      "path": ".github/review/retention-inventory/source-manifest.json",
+      "bytes": 945,
+      "sha256": "5220ab26277c1b028c97066405bb8fc421e97b3f0e859ff55716023c5bc4d314"
+    },
+    {
+      "path": ".github/review/base",
+      "bytes": 49,
+      "sha256": "c991a035b5681782c5d6ce6ec0a1c5c62fa13f57ca64224b9eb192806e8bb47a"
+    },
+    {
+      "path": ".github/workflows/review.yml",
+      "bytes": 43529,
+      "sha256": "61c30e38104dfd6e2d0a6b9993f183c1535af95f75e4c39246ba0bb360daf17c"
+    }
+  ],
+  "workflowFocus": "retention-inventory",
+  "requiredWorkflowFlags": {
+    "b3_compile_only": true,
+    "b3_full_gate": false,
+    "binaries": false,
+    "resolver_probe": false,
+    "additional_axioms_probe": false
+  },
+  "ordinaryJobsExcludedForFocus": true,
+  "executeCapturedHashPinnedInventory": true,
+  "SDKExecuted": false,
+  "collectorExecuted": false,
+  "analyzerExecuted": false,
+  "targetExecuted": false,
+  "diagnosticEnabled": false,
+  "proofAcceptanceChanged": false
+}
