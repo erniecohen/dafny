@@ -46,6 +46,13 @@ namespace Microsoft.Dafny {
       Contract.Requires(splits != null);
       Contract.Requires(etran != null);
 
+      if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+        etran = etran.WithVerificationPolarity(position);
+        if (expr is QuantifierExpr) {
+          etran = etran.WithSelectedVerificationFuel();
+        }
+      }
+
       switch (expr) {
         case BoxingCastExpr castExpr: {
             var bce = castExpr;
@@ -398,14 +405,18 @@ namespace Microsoft.Dafny {
             } else if (((position && expr is ExistsExpr) || (!position && expr is ForallExpr))) {
               // produce two translated versions of the quantifier, one that uses #1 functions (that is, layerOffset 0)
               // for checking and one that uses #2 functions (that is, layerOffset 1) for assuming.
-              adjustFuelForExists = false; // based on the above comment, we use the etran with correct fuel amount already. No need to adjust anymore.
+              if (!options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+                adjustFuelForExists = false;
+              } // based on the above comment, we use the etran with correct fuel amount already. No need to adjust anymore.
               var etranBoost = etran.LayerOffset(1);
+              var functionsBefore = etran.Statistics_CustomLayerFunctionCount;
               var r = etran.TrExpr(expr);
               var needsTokenAdjustment = TrSplitNeedsTokenAdjustment(expr);
               if (needsTokenAdjustment) {
                 r.tok = new ForceCheckOrigin(expr.Origin);
               }
-              if (etran.Statistics_CustomLayerFunctionCount == 0) {
+              if (etran.Statistics_CustomLayerFunctionCount ==
+                  (options.Get(CommonOptionBag.ConsistentObligationChecks) ? functionsBefore : 0)) {
                 // apparently, doesn't use layer
                 splits.Add(ToSplitExprInfo(SplitExprInfo.K.Both, r));
                 return needsTokenAdjustment;

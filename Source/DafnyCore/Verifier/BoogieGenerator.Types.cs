@@ -1445,7 +1445,7 @@ public partial class BoogieGenerator {
                     (fromType.IsTypeParameter && toType.IsTraitType));
     if (toType.IsRefType || fromType.IsTraitType || toType.IsArrowType) {
       PutSourceIntoLocal();
-      CheckSubrange(tok, o, fromType, toType, expr, builder, errorMsgPrefix);
+      CheckSubrange(tok, o, fromType, toType, expr, builder, errorMsgPrefix, etran: etran);
       return;
     }
 
@@ -1735,7 +1735,9 @@ public partial class BoogieGenerator {
       baseType = ((SubsetTypeDecl)rdt).RhsWithArgument(udt.TypeArgs);
       kind = "subset type";
     } else if (rdt is NewtypeDecl) {
-      baseType = ((NewtypeDecl)rdt).BaseType;
+      baseType = options.Get(CommonOptionBag.ConsistentObligationChecks)
+        ? ((NewtypeDecl)rdt).BaseType.Subst(TypeParameter.SubstitutionMap(rdt.TypeArgs, udt.TypeArgs))
+        : ((NewtypeDecl)rdt).BaseType;
       kind = "newtype";
     } else {
       baseType = ((TypeSynonymDecl)rdt).RhsWithArgument(udt.TypeArgs);
@@ -1753,8 +1755,13 @@ public partial class BoogieGenerator {
       var boogieConstraint = Substitute(rdt.Constraint, null, new() { { rdt.Var, boogieExpr } }, typeMap);
 
       var canCall = etran.CanCallAssumption(boogieConstraint);
-      var constraint = etran.TrExpr(boogieConstraint);
-      builder.Add(Assert(tok, BplImp(canCall, constraint), new ConversionSatisfiesConstraints(errorMsgPrefix, kind, rdt.Name, dafnyConstraint), builder.Context));
+      var description = new ConversionSatisfiesConstraints(errorMsgPrefix, kind, rdt.Name, dafnyConstraint);
+      if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+        CheckPropositionUnderGuard(boogieConstraint, canCall, description, builder, etran);
+      } else {
+        var constraint = etran.TrExpr(boogieConstraint);
+        builder.Add(Assert(tok, BplImp(canCall, constraint), description, builder.Context));
+      }
     }
   }
 

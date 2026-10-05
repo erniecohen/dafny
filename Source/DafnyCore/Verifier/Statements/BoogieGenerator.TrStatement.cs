@@ -431,7 +431,7 @@ public partial class BoogieGenerator {
           void AddResultCommands(BoogieStmtListBuilder returnBuilder, Expression result) {
             Contract.Assert(pat.Expr.Type != null);
             var bResult = etran.TrExpr(result);
-            CheckSubrange(result.Origin, bResult, rhs.Type, pat.Expr.Type, rhs, returnBuilder);
+            CheckSubrange(result.Origin, bResult, rhs.Type, pat.Expr.Type, rhs, returnBuilder, etran: etran);
             returnBuilder.Add(TrAssumeCmdWithDependenciesAndExtend(etran, rhs.Origin, rhs,
               e => Bpl.Expr.Eq(boogieTupleReference, AdaptBoxing(rhs.Origin, e, rhs.Type, pat.Expr.Type))));
           }

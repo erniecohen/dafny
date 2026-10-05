@@ -344,7 +344,7 @@ public partial class BoogieGenerator {
         lhsType = ((MultiSelectExpr)lhs).Type;
       }
       var translatedRhs = etran.TrExpr(rhs);
-      CheckSubrange(r.Origin, translatedRhs, rhs.Type, lhsType, rhs, definedness);
+      CheckSubrange(r.Origin, translatedRhs, rhs.Type, lhsType, rhs, definedness, etran: etran);
       if (lhs is MemberSelectExpr) {
         var fse = (MemberSelectExpr)lhs;
         Contract.Assert(lhsField != null);
@@ -544,7 +544,13 @@ public partial class BoogieGenerator {
     PathAsideBlock(forallStmt.Origin, ensuresDefinedness, definedness);
 
     if (forallStmt.Body != null) {
-      TrStmt(forallStmt.Body, definedness, locals, etran);
+      // The proof body has an obligation continuation even when its containing
+      // statement is last in the method. Keep its scope independent of a later
+      // explicit assertion; no assertion batches or exporter premises change.
+      var bodyBuilder = options.Get(CommonOptionBag.ConsistentObligationChecks)
+        ? definedness.WithContext(definedness.Context with { ReturnPosition = false })
+        : definedness;
+      TrStmt(forallStmt.Body, bodyBuilder, locals, etran);
 
       // check that postconditions hold
       foreach (var ens in ConjunctsOf(forallStmt.Ens)) {
