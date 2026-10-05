@@ -798,7 +798,7 @@ namespace Microsoft.Dafny {
             } else if (op == BinaryExpr.ResolvedOpcode.Gt || op == BinaryExpr.ResolvedOpcode.Ge) {
               u = whereIsBv == 0 ? jBounds.LowerBound : jBounds.UpperBound;
             }
-            if (u != null && !FreeVariables(u).Contains(bv) && IsMonotonic(u, boundVars[j], true)) {
+            if (u != null && !FreeVariables(u).Contains(bv) && IsMonotonic(thatSide, boundVars[j], true)) {
               thatSide = BoogieGenerator.Substitute(thatSide, boundVars[j], u);
               fvThatSide = FreeVariables(thatSide);
               continue;

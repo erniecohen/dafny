@@ -277,6 +277,12 @@ backwards through the binder list, and can reverse that list to obtain a better
 dependency order. A selected dependent bound cannot use a still-unbounded later
 variable. Inductively, each finite outer choice has a finite fiber, so the
 complete witness domain is a finite union of finite fibers.
+Integer-bound substitution checks monotonicity of the expression that contains
+the later binder before replacing that binder by its upper or lower bound.
+An upper bound on `y` cannot bound an antitone expression such as `-y` from
+above. The range `0 <= x && -x-x < y && y < 0 && x < -y` therefore supplies
+no finite bound for `x`: every `x >= 2` has the witness `y = -x-1`.
+Adding an independent finite bound for `x` still admits the dependent fibers.
 
 | Resolver route | Justification or restriction |
 |---|---|
