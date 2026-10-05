@@ -4,7 +4,7 @@
   "phase": "B",
   "sourceParent": "d115e6001fabdb61ae96c76e8798d90637386df3",
   "englishFirstCommit": "e40193a4c14b8dce777e9e89882cbfeb19bf798b",
-  "productCommit": "6f1c23c4006a94c93cae8ec5a5479760c2a842b8",
+  "productCommit": "7e0f321d22bb6ac5c119788e8bb0fbdcf2f8469a",
   "producerVersion": "opaque-ground-singletons-1",
   "priorProducerVersion": "typed-floor-embedding-1",
   "boundary": "Uncompiled source-only checkpoint; independent source review and runtime gates pending. No Real acceptance claim.",
@@ -179,9 +179,9 @@
     {
       "path": ".github/review/base",
       "bytes": 49,
-      "sha256": "9235a4282d94ba5681078ace4b8c1b2b43e56ef05222b0227df0ea7d25baee84",
+      "sha256": "9c6ac0bd98245d0c36691308b35340612dec3da7898a48853c61403c596b91a4",
       "checkoutBytes": 49,
-      "checkoutSha256": "9235a4282d94ba5681078ace4b8c1b2b43e56ef05222b0227df0ea7d25baee84"
+      "checkoutSha256": "9c6ac0bd98245d0c36691308b35340612dec3da7898a48853c61403c596b91a4"
     },
     {
       "path": ".github/review/regressions",
@@ -206,10 +206,10 @@
     },
     {
       "path": "Source/DafnyCore/Backends/B3/B3OpaqueGroundProjection.cs",
-      "bytes": 23450,
-      "sha256": "0ceb0af01502f4c26ad549b8484733dd4ae02db11ee60c1edb96ad6e3daae2c0",
-      "checkoutBytes": 23450,
-      "checkoutSha256": "0ceb0af01502f4c26ad549b8484733dd4ae02db11ee60c1edb96ad6e3daae2c0"
+      "bytes": 23477,
+      "sha256": "f8d23c633d19166780ffd8ecf6f7796b81f8c5f8aa28ebaf92f814e50a7174d9",
+      "checkoutBytes": 23477,
+      "checkoutSha256": "f8d23c633d19166780ffd8ecf6f7796b81f8c5f8aa28ebaf92f814e50a7174d9"
     },
     {
       "path": "Source/DafnyCore/Backends/B3/B3OpaqueGroundProjectionRelation.cs",
