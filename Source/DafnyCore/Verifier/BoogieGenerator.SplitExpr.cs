@@ -129,17 +129,7 @@ namespace Microsoft.Dafny {
           }
         case BinaryExpr binaryExpr: {
             var bin = binaryExpr;
-            if (options.Get(CommonOptionBag.ConsistentObligationChecks) && position &&
-                bin.ResolvedOp == BinaryExpr.ResolvedOpcode.Iff) {
-              // Both directions have monotone proposition positions. Treating
-              // the entire equivalence as a value would lose the recursive
-              // existential's check/summary fuel interface.
-              TrSplitExpr(context, Expression.CreateImplies(bin.E0, bin.E1, false), splits,
-                position, heightLimit, applyInduction, etran);
-              TrSplitExpr(context, Expression.CreateImplies(bin.E1, bin.E0, false), splits,
-                position, heightLimit, applyInduction, etran);
-              return true;
-            } else if (position && bin.ResolvedOp == BinaryExpr.ResolvedOpcode.And) {
+            if (position && bin.ResolvedOp == BinaryExpr.ResolvedOpcode.And) {
               TrSplitExpr(context, bin.E0, splits, position, heightLimit, applyInduction, etran);
               TrSplitExpr(context, bin.E1, splits, position, heightLimit, applyInduction, etran);
               return true;

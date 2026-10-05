@@ -15,6 +15,15 @@ public partial class BoogieGenerator {
       int bvWidth = e0Type.IsBitVectorType ? e0Type.AsBitVectorType.Width : -1;  // -1 indicates "not a bitvector type"
       var operandEtran = binaryExpr.ResolvedOp is BinaryExpr.ResolvedOpcode.And or
         BinaryExpr.ResolvedOpcode.Or or BinaryExpr.ResolvedOpcode.Imp ? this : AsVerificationValue();
+      if (binaryExpr.ResolvedOp == BinaryExpr.ResolvedOpcode.Iff &&
+          verificationContext is { Use: VerificationExpressionUse.Check }) {
+        // Equivalence compares two propositions rather than two computed
+        // Boolean values. Use the positive check recipe for each operand at
+        // the splitter's existing layer. This preserves a definition at L+1
+        // compared with its existential body at L. Fuel irrelevance justifies
+        // this local bridge in either polarity; continuation operands use Value.
+        operandEtran = WithVerificationPolarity(true);
+      }
       Expr e0 = (binaryExpr.ResolvedOp == BinaryExpr.ResolvedOpcode.Imp
         ? operandEtran.NegateVerificationPolarity() : operandEtran).TrExpr(binaryExpr.E0);
       if (binaryExpr.ResolvedOp == BinaryExpr.ResolvedOpcode.InSet) {

@@ -75,7 +75,8 @@ The immutable policy is `(use, polarity, mayAdjustFuel)`:
 | forall range/term | reverse/same polarity |
 | exists range/term | same/same polarity |
 | ITE test | value use; both branches retain parent polarity |
-| equality, equivalence and other non-monotone operands | value use |
+| equivalence operands in a check | positive check recipe for each operand |
+| equality, continuation equivalence and other non-monotone operands | value use |
 | old or labeled-old | same policy with the selected heap |
 | descendants after fuel selection | mayAdjustFuel becomes false |
 
@@ -86,6 +87,14 @@ selection below that root. Positive summary calls to quantifier-bearing predicat
 select the existing one-layer summary offset. Siblings inherit the unchanged
 parent policy. Custom fuel, visibility, `no_inline`, safe substitution, SCC height
 and current-function limits remain enforced by the original machinery.
+
+An equivalence check keeps the splitter's existing layer and translates each
+operand with the positive check recipe. In particular, a recursive predicate at
+L+1 can be compared with its defining existential body at L. The existing fuel
+irrelevance axioms equate permitted layers, so the equivalence in either polarity
+still denotes the same proposition. This is a local definition bridge, with no
+new reveal, SCC permission, or global fuel increase. Its continuation uses value
+operands; negative and non-vacuity controls exercise both equivalence polarities.
 
 Fuel usage is a result of a particular translation, separate from diagnostic
 counters. Fresh roots/splits observe their own usage; their descendants share
