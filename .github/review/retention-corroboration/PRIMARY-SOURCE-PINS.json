@@ -1,0 +1,798 @@
+{
+  "schemaVersion": 1,
+  "scope": "primary-source-research-for-English-closure-proposal-no-runtime-qualification",
+  "files": [
+    {
+      "repo": "dotnet/diagnostics",
+      "commit": "240cb1ce5bc30594c515206764241d7982e384af",
+      "path": "eng/Version.Details.xml",
+      "bytes": 5839,
+      "sha256": "03d094c0522a50d522a63ac254f4fe1183262980a5d3e5e7191263de2689228f",
+      "gitBlobSha1": "694524f5738cc438d775b386f6a6dc92d7d47ca8",
+      "url": "https://raw.githubusercontent.com/dotnet/diagnostics/240cb1ce5bc30594c515206764241d7982e384af/eng/Version.Details.xml"
+    },
+    {
+      "repo": "diagnostics",
+      "commit": "240cb1ce5bc30594c515206764241d7982e384af",
+      "path": "eng/Versions.props",
+      "bytes": 8853,
+      "sha256": "e5d13c1ea31526855eed1c5bccfedd7df09cd5fe3ff3c6ee90507776eaf12156",
+      "gitBlobSha1": "d5208d6b85ff2f1b68f504da698fb1d2a7327905",
+      "url": "https://raw.githubusercontent.com/dotnet/diagnostics/240cb1ce5bc30594c515206764241d7982e384af/eng/Versions.props"
+    },
+    {
+      "repo": "dotnet/diagnostics",
+      "commit": "240cb1ce5bc30594c515206764241d7982e384af",
+      "path": "src/Microsoft.Diagnostics.DebugServices.Implementation/DumpTargetFactory.cs",
+      "bytes": 1758,
+      "sha256": "95f5f11a11d53fc4f9009f1bfe8a5c885d697ec7710f2f2759c3858a2bb352bb",
+      "gitBlobSha1": "7391f4a1768b0b1e9ac0fcc598ae3a242382067b",
+      "url": "https://raw.githubusercontent.com/dotnet/diagnostics/240cb1ce5bc30594c515206764241d7982e384af/src/Microsoft.Diagnostics.DebugServices.Implementation/DumpTargetFactory.cs"
+    },
+    {
+      "repo": "diagnostics",
+      "commit": "240cb1ce5bc30594c515206764241d7982e384af",
+      "path": "src/Microsoft.Diagnostics.DebugServices.Implementation/Host.cs",
+      "bytes": 4726,
+      "sha256": "5456b103883f941064073b36efc943dd346d6e1fa072c86cd6cfc99de932f323",
+      "gitBlobSha1": "212714d6b5b249a7a9438a6c561dbc1ab799e180",
+      "url": "https://raw.githubusercontent.com/dotnet/diagnostics/240cb1ce5bc30594c515206764241d7982e384af/src/Microsoft.Diagnostics.DebugServices.Implementation/Host.cs"
+    },
+    {
+      "repo": "diagnostics",
+      "commit": "240cb1ce5bc30594c515206764241d7982e384af",
+      "path": "src/Microsoft.Diagnostics.DebugServices.Implementation/Runtime.cs",
+      "bytes": 14112,
+      "sha256": "b76a5dff7739ce6ade4103c962ee066c7e8192e6ffd6189e5ba443bf93b968f4",
+      "gitBlobSha1": "f3eeb4aa957db37a7027b1de4b9517ffafa85d43",
+      "url": "https://raw.githubusercontent.com/dotnet/diagnostics/240cb1ce5bc30594c515206764241d7982e384af/src/Microsoft.Diagnostics.DebugServices.Implementation/Runtime.cs"
+    },
+    {
+      "repo": "diagnostics",
+      "commit": "240cb1ce5bc30594c515206764241d7982e384af",
+      "path": "src/Microsoft.Diagnostics.DebugServices.Implementation/RuntimeService.cs",
+      "bytes": 2182,
+      "sha256": "7d34129a2a154bcec9d446a04e0e9549fd78ad8e314eba82ea8ad6476425b146",
+      "gitBlobSha1": "b37c5d6f335c48d58e79b2472625492589208dd4",
+      "url": "https://raw.githubusercontent.com/dotnet/diagnostics/240cb1ce5bc30594c515206764241d7982e384af/src/Microsoft.Diagnostics.DebugServices.Implementation/RuntimeService.cs"
+    },
+    {
+      "repo": "diagnostics",
+      "commit": "240cb1ce5bc30594c515206764241d7982e384af",
+      "path": "src/Microsoft.Diagnostics.DebugServices.Implementation/ServiceManager.cs",
+      "bytes": 17677,
+      "sha256": "9bfa9227d4ee83694c6b2a5cfbb63bd8b32d345fed4629bdc4d1c901e39ebc37",
+      "gitBlobSha1": "ae69ea69efd364aa0bca6f37925c91202d1ebb7a",
+      "url": "https://raw.githubusercontent.com/dotnet/diagnostics/240cb1ce5bc30594c515206764241d7982e384af/src/Microsoft.Diagnostics.DebugServices.Implementation/ServiceManager.cs"
+    },
+    {
+      "repo": "diagnostics",
+      "commit": "240cb1ce5bc30594c515206764241d7982e384af",
+      "path": "src/Microsoft.Diagnostics.DebugServices.Implementation/SymbolService.cs",
+      "bytes": 45506,
+      "sha256": "a9ca95973bc7a138754a35ac45de40412470b5fa8180cb76b82114ee5f6217d0",
+      "gitBlobSha1": "a6024147a68284534b9979a4adfc18312eb79662",
+      "url": "https://raw.githubusercontent.com/dotnet/diagnostics/240cb1ce5bc30594c515206764241d7982e384af/src/Microsoft.Diagnostics.DebugServices.Implementation/SymbolService.cs"
+    },
+    {
+      "repo": "dotnet/diagnostics",
+      "commit": "240cb1ce5bc30594c515206764241d7982e384af",
+      "path": "src/Microsoft.Diagnostics.DebugServices.Implementation/Utilities.cs",
+      "bytes": 19056,
+      "sha256": "31d244d8b94d9a4e651b19244eff98e51f9cf3c3484feb19fd4e5a77c25e2895",
+      "gitBlobSha1": "36634a60f05570af062aa4f285113b9c083aff77",
+      "url": "https://raw.githubusercontent.com/dotnet/diagnostics/240cb1ce5bc30594c515206764241d7982e384af/src/Microsoft.Diagnostics.DebugServices.Implementation/Utilities.cs"
+    },
+    {
+      "repo": "diagnostics",
+      "commit": "240cb1ce5bc30594c515206764241d7982e384af",
+      "path": "src/Microsoft.Diagnostics.ExtensionCommands/DumpHeapCommand.cs",
+      "bytes": 14323,
+      "sha256": "d77106a766fc000f97c6967cff08b18b7d8da42fb126a3b2c6df31821fd98af6",
+      "gitBlobSha1": "88f8b99481b53e9b291109e5419e6a1a9c7c28b7",
+      "url": "https://raw.githubusercontent.com/dotnet/diagnostics/240cb1ce5bc30594c515206764241d7982e384af/src/Microsoft.Diagnostics.ExtensionCommands/DumpHeapCommand.cs"
+    },
+    {
+      "repo": "diagnostics",
+      "commit": "240cb1ce5bc30594c515206764241d7982e384af",
+      "path": "src/Microsoft.Diagnostics.ExtensionCommands/GCRootCommand.cs",
+      "bytes": 19261,
+      "sha256": "f92cfc1cd93608139efa05a45144263f9c01951976e59a2669d2bd88074a1fe1",
+      "gitBlobSha1": "115a4d1132c990a531c00cfa45aadd77ebd0fd79",
+      "url": "https://raw.githubusercontent.com/dotnet/diagnostics/240cb1ce5bc30594c515206764241d7982e384af/src/Microsoft.Diagnostics.ExtensionCommands/GCRootCommand.cs"
+    },
+    {
+      "repo": "dotnet/diagnostics",
+      "commit": "240cb1ce5bc30594c515206764241d7982e384af",
+      "path": "src/Microsoft.Diagnostics.ExtensionCommands/Host/SetClrPathCommand.cs",
+      "bytes": 1435,
+      "sha256": "3b230b5e9a2bb8b1b62445b2abeea262d7ade34e4e92efd834a85859b9883b86",
+      "gitBlobSha1": "ee6a1a144acab9e107ffe2a958f629ebd3aee338",
+      "url": "https://raw.githubusercontent.com/dotnet/diagnostics/240cb1ce5bc30594c515206764241d7982e384af/src/Microsoft.Diagnostics.ExtensionCommands/Host/SetClrPathCommand.cs"
+    },
+    {
+      "repo": "dotnet/diagnostics",
+      "commit": "240cb1ce5bc30594c515206764241d7982e384af",
+      "path": "src/Microsoft.Diagnostics.ExtensionCommands/Host/SetSymbolServerCommand.cs",
+      "bytes": 8646,
+      "sha256": "98fcf5f4f6cef8a35cb8dc780055b8b664f0d5d274808f2a7b08dfc5c7bbc379",
+      "gitBlobSha1": "33a36157a7f0ab0ebd3c27613d0497b612e381b1",
+      "url": "https://raw.githubusercontent.com/dotnet/diagnostics/240cb1ce5bc30594c515206764241d7982e384af/src/Microsoft.Diagnostics.ExtensionCommands/Host/SetSymbolServerCommand.cs"
+    },
+    {
+      "repo": "diagnostics",
+      "commit": "240cb1ce5bc30594c515206764241d7982e384af",
+      "path": "src/SOS/SOS.Hosting/SOSHost.cs",
+      "bytes": 29120,
+      "sha256": "2e90e1986cd3b63c358bf022d37584ee45226498157ea91b1b05dfac6adad803",
+      "gitBlobSha1": "68e737c8d48ed278aca6e0548fabd0a3789f6008",
+      "url": "https://raw.githubusercontent.com/dotnet/diagnostics/240cb1ce5bc30594c515206764241d7982e384af/src/SOS/SOS.Hosting/SOSHost.cs"
+    },
+    {
+      "repo": "diagnostics",
+      "commit": "240cb1ce5bc30594c515206764241d7982e384af",
+      "path": "src/SOS/SOS.Hosting/SOSLibrary.cs",
+      "bytes": 10592,
+      "sha256": "a0d78609039ce58dc6c298912972a7915204e84ecaf79ab9e32779623e2bbaac",
+      "gitBlobSha1": "d7bed24b2ef955bffe4734c8ca24550e38509a21",
+      "url": "https://raw.githubusercontent.com/dotnet/diagnostics/240cb1ce5bc30594c515206764241d7982e384af/src/SOS/SOS.Hosting/SOSLibrary.cs"
+    },
+    {
+      "repo": "diagnostics",
+      "commit": "240cb1ce5bc30594c515206764241d7982e384af",
+      "path": "src/SOS/SOS.Hosting/SymbolServiceExtensions.cs",
+      "bytes": 9123,
+      "sha256": "9e0ef08bdff6c3edfd3fa9c6537ed36bb42e5756c47a247c0fe14c5d9f2c4193",
+      "gitBlobSha1": "40db61b555db5ba96d46681794fb860884026902",
+      "url": "https://raw.githubusercontent.com/dotnet/diagnostics/240cb1ce5bc30594c515206764241d7982e384af/src/SOS/SOS.Hosting/SymbolServiceExtensions.cs"
+    },
+    {
+      "repo": "diagnostics",
+      "commit": "240cb1ce5bc30594c515206764241d7982e384af",
+      "path": "src/SOS/Strike/gcroot.cpp",
+      "bytes": 3969,
+      "sha256": "5ee19bce78e09751500f12ded5bfe7168f7127dc93b231cb227abd53790ad314",
+      "gitBlobSha1": "70988f2bcaa39891ee96eca70c4816a65526c346",
+      "url": "https://raw.githubusercontent.com/dotnet/diagnostics/240cb1ce5bc30594c515206764241d7982e384af/src/SOS/Strike/gcroot.cpp"
+    },
+    {
+      "repo": "diagnostics",
+      "commit": "240cb1ce5bc30594c515206764241d7982e384af",
+      "path": "src/Tools/dotnet-dump/Analyzer.cs",
+      "bytes": 7997,
+      "sha256": "2315e198a86b6e41469c4a44b86e951b786be65a21d251fc5295417d6b7fc4cc",
+      "gitBlobSha1": "730d5fa5e262e92597c31d3e788a0128ee0530fc",
+      "url": "https://raw.githubusercontent.com/dotnet/diagnostics/240cb1ce5bc30594c515206764241d7982e384af/src/Tools/dotnet-dump/Analyzer.cs"
+    },
+    {
+      "repo": "diagnostics",
+      "commit": "240cb1ce5bc30594c515206764241d7982e384af",
+      "path": "src/Tools/dotnet-dump/Dumper.cs",
+      "bytes": 5926,
+      "sha256": "8ab4c6b3da0114f4f803776e0721e33ef0327508ba42e56a8a168f6eae25714d",
+      "gitBlobSha1": "65c30d32f34395ff2275956818fbe25154da9c8f",
+      "url": "https://raw.githubusercontent.com/dotnet/diagnostics/240cb1ce5bc30594c515206764241d7982e384af/src/Tools/dotnet-dump/Dumper.cs"
+    },
+    {
+      "repo": "diagnostics",
+      "commit": "240cb1ce5bc30594c515206764241d7982e384af",
+      "path": "src/Tools/dotnet-dump/Program.cs",
+      "bytes": 5372,
+      "sha256": "c0df5b45486870b3e11990c022a82449ca47bedfa74f459b08a772c7db9d0b11",
+      "gitBlobSha1": "6e5d18cca7db301b676e0abc699c98772d60b8e1",
+      "url": "https://raw.githubusercontent.com/dotnet/diagnostics/240cb1ce5bc30594c515206764241d7982e384af/src/Tools/dotnet-dump/Program.cs"
+    },
+    {
+      "repo": "diagnostics",
+      "commit": "240cb1ce5bc30594c515206764241d7982e384af",
+      "path": "src/Tools/dotnet-dump/dotnet-dump.csproj",
+      "bytes": 2653,
+      "sha256": "2e62751f824822396fbb974f2db49b57b392c564b84e3995cbf3d662e0b605cb",
+      "gitBlobSha1": "991a0fadcf1df2db5be0fb122fce1fbe248b2a59",
+      "url": "https://raw.githubusercontent.com/dotnet/diagnostics/240cb1ce5bc30594c515206764241d7982e384af/src/Tools/dotnet-dump/dotnet-dump.csproj"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/debug/createdump/crashinfo.cpp",
+      "bytes": 33990,
+      "sha256": "a0eaedfe98a61c966a5bf808843f555f8d281bb6241f09e55390621853f57d65",
+      "gitBlobSha1": "d1d1b0ea0218b877e9246b22acafa57543a96ea8",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/debug/createdump/crashinfo.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/debug/createdump/crashinfounix.cpp",
+      "bytes": 19546,
+      "sha256": "96d89d94526d230592f9b6ad0453495efe02c39bbfb59e85b07e0844acdc0f52",
+      "gitBlobSha1": "2f4ea079de3b58ddf944cb881e5197b4e884d5b8",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/debug/createdump/crashinfounix.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/debug/createdump/createdumpmain.cpp",
+      "bytes": 12296,
+      "sha256": "9d7b38e5bce021099b8e37dc99c85ba3c61cbbc92fe599fde5369be675427498",
+      "gitBlobSha1": "f2663169727fde1abc82f7b1939b9ef7b1c8ca3f",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/debug/createdump/createdumpmain.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/debug/createdump/dumpwriter.cpp",
+      "bytes": 1936,
+      "sha256": "b6248a8f81d7133e7044c5860affc758275057f0ba4687b078993d79ac523e81",
+      "gitBlobSha1": "0e39b52b3a7d4c58144860d642875f67502b6699",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/debug/createdump/dumpwriter.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/debug/createdump/dumpwriterelf.cpp",
+      "bytes": 13499,
+      "sha256": "185ffdd07cf4c0a7974c4b990a9a2cf7a208b9cb45dcf2a7d51b748fd5bd4dab",
+      "gitBlobSha1": "675113b59bd998c5629bee7b1adc58e6926d6489",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/debug/createdump/dumpwriterelf.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/inc/clrconfigvalues.h",
+      "bytes": 79558,
+      "sha256": "1897aa7b04bcb2403d60c0d6b0b15571a7657be6f7918991cbf2c235a6ab5ddd",
+      "gitBlobSha1": "8f981278dcdc833c13790505bc6b11f88298cf53",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/inc/clrconfigvalues.h"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/inc/eventtrace.h",
+      "bytes": 12326,
+      "sha256": "2e0a99f96112cd60c309a3431af2c949b70f98c97883132075f393f1e183c83d",
+      "gitBlobSha1": "dfe8638bb38a865fec0ad87dad336a9557c009b7",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/inc/eventtrace.h"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/inc/eventtracebase.h",
+      "bytes": 59613,
+      "sha256": "5e73b3c8231317391f52ac6a576eb4d6a9a9bfa0ed3a5b5ca63907e27736e7f6",
+      "gitBlobSha1": "3648b1f3a721363b36ade6bb270e93af29349c8d",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/inc/eventtracebase.h"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/minipal/Unix/doublemapping.cpp",
+      "bytes": 6619,
+      "sha256": "e50892f83b75dc3d7626df798e115e40a89347dab6aba30fc939e75a4c3ed79b",
+      "gitBlobSha1": "67d516fb322a56a4a09ad4f6e9e662a9f07eeee1",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/minipal/Unix/doublemapping.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/pal/src/eventprovider/CMakeLists.txt",
+      "bytes": 153,
+      "sha256": "e5ff67deacc742ca3a568c54dc72b7dad5b44202dd5466e94f64281f9ec980bb",
+      "gitBlobSha1": "143206b5c34f54324facd44727a66f19c4001bdd",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/pal/src/eventprovider/CMakeLists.txt"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/pal/src/eventprovider/lttngprovider/CMakeLists.txt",
+      "bytes": 3076,
+      "sha256": "cbdc0eb1fdf17ca6f945f36d3da79acf0298bef053ba09587df9210502242359",
+      "gitBlobSha1": "715718bad4bcadecd2a4ae21a104c4c4cb28504d",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/pal/src/eventprovider/lttngprovider/CMakeLists.txt"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/pal/src/eventprovider/lttngprovider/eventproviderhelpers.cpp",
+      "bytes": 2075,
+      "sha256": "a522d482c40ffb68e4d6d96055a8df0391390484bc4946ae83b783aafa87f4ac",
+      "gitBlobSha1": "41f7f8627cb5182ebaaa7848ec2be3c0e08ae468",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/pal/src/eventprovider/lttngprovider/eventproviderhelpers.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/pal/src/init/pal.cpp",
+      "bytes": 35165,
+      "sha256": "6ce5dff510934aa6264129c86b885809809c6432354421819f75cb37d18aab17",
+      "gitBlobSha1": "c88febfc2616227927a4d3d4c70192ebd1679e4b",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/pal/src/init/pal.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/pal/src/loader/module.cpp",
+      "bytes": 50242,
+      "sha256": "9b43a6d14e0b83b29927862e54a2509c7e6ca7740b9f7b895c9123474c31b579",
+      "gitBlobSha1": "6de530e80a5ccf8905925c6e10a48bb663b25ce3",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/pal/src/loader/module.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/pal/src/map/map.cpp",
+      "bytes": 82710,
+      "sha256": "dd27dcaf48c67808b0b46e35614961e0b88687ba04706e420727bf723caa8c53",
+      "gitBlobSha1": "707284b58fad95b78c9790c1339aacda28616c42",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/pal/src/map/map.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/pal/src/map/virtual.cpp",
+      "bytes": 58332,
+      "sha256": "08c79fa0bea8dc8b054227538fa1ed639a0e959c5bfbe4b68140d5185d0862ae",
+      "gitBlobSha1": "5ece3cd9542117a0a2ab23fc426a7ebc342dd558",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/pal/src/map/virtual.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/pal/src/misc/tracepointprovider.cpp",
+      "bytes": 3248,
+      "sha256": "7fa9d1a4b5c10bad7ae1b5150dac7faf62efc90c921765e61a4e602bea428e02",
+      "gitBlobSha1": "3cfc5e0690e20ebbbab85543b881ef6026992f21",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/pal/src/misc/tracepointprovider.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/scripts/genEventing.py",
+      "bytes": 32749,
+      "sha256": "01afc11eed6e13a8b81d65433eb523725d9f2ac9f5d64959bc0dc513a0d4f25e",
+      "gitBlobSha1": "cef36174956b8046da0774e34969d689b5d1ea3f",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/scripts/genEventing.py"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/scripts/genLttngProvider.py",
+      "bytes": 24272,
+      "sha256": "f68789b81020a2f5ebea0c7090daf35789ac92a21c2ae85b5d61758bba97e72e",
+      "gitBlobSha1": "70affdbbfe01acf0a104bb2d0e8ad82146cb52be",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/scripts/genLttngProvider.py"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/utilcode/executableallocator.cpp",
+      "bytes": 29034,
+      "sha256": "f2c5adde1a0d8d21fc64891c09522c05f7f774e7bc2d51607bfe0483e9eea36b",
+      "gitBlobSha1": "65802615fc6aa833a32623b142a8aad656ba0c93",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/utilcode/executableallocator.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/vm/CMakeLists.txt",
+      "bytes": 24324,
+      "sha256": "f7067ff45578c5e63be2fd9229ce5451853bf207d3ed11f3e1abe559ae98b156",
+      "gitBlobSha1": "16ae71c162a472098487c0a918d3acc269706d56",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/vm/CMakeLists.txt"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/vm/assemblynative.cpp",
+      "bytes": 41866,
+      "sha256": "00d89e33ff541194311807760d5318ae0ed8d76a08c2abc8467068ee936c91c6",
+      "gitBlobSha1": "eac1381922c532fce1d029b4378fd72a32d5346a",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/vm/assemblynative.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/vm/ceemain.cpp",
+      "bytes": 76248,
+      "sha256": "c5f4ff040deb791bcb8280fc6d429c0b256c4d24edeb9d12fab1ba00b6a25d91",
+      "gitBlobSha1": "dc50b4e6c252838d94160748ff635ca0240d5c37",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/vm/ceemain.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/vm/eventing/CMakeLists.txt",
+      "bytes": 1439,
+      "sha256": "a1a8ba168ee067202aa0adc2abd53cf9db5b9146e89a4d4f92a8f8ab0181f3f8",
+      "gitBlobSha1": "9252e944bfd1fe05cbfd9e281a14cb33ab9bd751",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/vm/eventing/CMakeLists.txt"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/vm/eventtrace.cpp",
+      "bytes": 230892,
+      "sha256": "527b6f7d136ce55b8fd60e96697088b4b53a230497d2299cca53428db97d0254",
+      "gitBlobSha1": "9498f00edf4329ac7a46d20abcedf9bae7347553",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/vm/eventtrace.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/coreclr/vm/gcheaputilities.cpp",
+      "bytes": 12782,
+      "sha256": "e43ef87f064ea9b2c10060782907c717a2f87ef9adeac96f6afee794f4973497",
+      "gitBlobSha1": "a705a428c707bfa163ab35bebb31bea112304856",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/coreclr/vm/gcheaputilities.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/libraries/System.Private.CoreLib/src/System/Diagnostics/Tracing/TraceLogging/XplatEventLogger.cs",
+      "bytes": 7409,
+      "sha256": "0669fdb8063a216cd51d752ebd33918f3b46e654a7718767f0670b92f0bd9ff7",
+      "gitBlobSha1": "bad01b46499fa40c0a1006de34d05e87f10bbcae",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/libraries/System.Private.CoreLib/src/System/Diagnostics/Tracing/TraceLogging/XplatEventLogger.cs"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/libraries/System.Private.CoreLib/src/System/Globalization/GlobalizationMode.LoadICU.Unix.cs",
+      "bytes": 310,
+      "sha256": "5c12ba99a7d6e1d93c5456ce5879a72b4631ed297ebcd89d2995f5e53a540da7",
+      "gitBlobSha1": "c91596d3dee993c4b9694f717bff3e8f9672fe09",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/libraries/System.Private.CoreLib/src/System/Globalization/GlobalizationMode.LoadICU.Unix.cs"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/libraries/System.Private.CoreLib/src/System/Globalization/GlobalizationMode.cs",
+      "bytes": 4065,
+      "sha256": "4062a9e7e8a546424c9de993b60c80737a239c570f57451b836e0d0bbe3ea19f",
+      "gitBlobSha1": "a81023eedccc25510ff9cd8f2b58194faebca027",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/libraries/System.Private.CoreLib/src/System/Globalization/GlobalizationMode.cs"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/libraries/System.Private.CoreLib/src/System/Runtime/Loader/AssemblyLoadContext.cs",
+      "bytes": 34422,
+      "sha256": "72e9d62df27eeeaa09cbede0d801437a358299d5e5b8ee4e77f05ce3a0bbb5da",
+      "gitBlobSha1": "59123e42fb52a27ea919e308c7804c918d9ef8ec",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/libraries/System.Private.CoreLib/src/System/Runtime/Loader/AssemblyLoadContext.cs"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/native/corehost/apphost/standalone/hostfxr_resolver.cpp",
+      "bytes": 2230,
+      "sha256": "baea51212be4cc3ad6187727b1afd0c34fef4a955fdcde0ca6b17fd2ac35cddc",
+      "gitBlobSha1": "5befe7ee7d37a19c4ff47ab9a3ea20b2c1b8299a",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/native/corehost/apphost/standalone/hostfxr_resolver.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/native/corehost/corehost.cpp",
+      "bytes": 13114,
+      "sha256": "84e7a3148d5d4e4469c0f6096fd37da47ac5b216d20ff8b52c6439cdec54bc57",
+      "gitBlobSha1": "2abc1bf0fa46b3b278a05e1a9bd3bc8961e21b0b",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/native/corehost/corehost.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/native/corehost/fxr/fx_muxer.cpp",
+      "bytes": 42164,
+      "sha256": "eb531b0b060270f9da375f79a38982979872074280632dcf9c8d398dcfee7788",
+      "gitBlobSha1": "cbaf90aa69cba2d2c51db9f4f9a8732ba9d1e633",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/native/corehost/fxr/fx_muxer.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/native/corehost/fxr/fx_resolver.cpp",
+      "bytes": 27617,
+      "sha256": "3f4efa484f3fed8e328d6b335fb26f78e275b436f05204764cae796f1ad88368",
+      "gitBlobSha1": "7bb65d3a374b242eb06c4abd951df820c06d6d66",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/native/corehost/fxr/fx_resolver.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/native/corehost/fxr/hostfxr.cpp",
+      "bytes": 29105,
+      "sha256": "4dfa2d18c698adb1ca6a8904f1b2b55efb7f13b3bbd88f51d25ad3b4c0d941b8",
+      "gitBlobSha1": "85b913c9d3892ab48af9a47213c1d20379cd1cad",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/native/corehost/fxr/hostfxr.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/native/corehost/fxr/sdk_resolver.cpp",
+      "bytes": 17465,
+      "sha256": "ae384e8057ce0530a75949a2b60f1eda9873b34cc23a53c5dce9322b417e17ea",
+      "gitBlobSha1": "5f512982e5266aa0e35ceefd8c498e836ff26db1",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/native/corehost/fxr/sdk_resolver.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/native/corehost/fxr_resolver.cpp",
+      "bytes": 5912,
+      "sha256": "762efd8b982ac936faede3849e5291e50f988d7d7cec06304288b97d86b60d4a",
+      "gitBlobSha1": "f143dd13b59a7ae3656b1c3282e98681676a5de7",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/native/corehost/fxr_resolver.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/native/corehost/hostfxr_resolver.h",
+      "bytes": 1218,
+      "sha256": "f19db5fd0a9327eef4758e2d7f9bd1bb9c404785d01ee7837f0b3bd8e521e317",
+      "gitBlobSha1": "ef0ec6c8d792b58b5b89c207a6121259d9b33bad",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/native/corehost/hostfxr_resolver.h"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/native/corehost/hostmisc/pal.unix.cpp",
+      "bytes": 31196,
+      "sha256": "3158f044c205d7d93264cea3ac7b27e810449fbc8193ff98d91ba1c5bac1b7ef",
+      "gitBlobSha1": "7fe2e83327b1b1b11657e8eee8d14c9aebbd43bb",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/native/corehost/hostmisc/pal.unix.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/native/corehost/hostpolicy/coreclr.cpp",
+      "bytes": 7701,
+      "sha256": "0a465954753c908389f1a11c4efb4333feab556485c52a148e4fbbe6e655404c",
+      "gitBlobSha1": "2d5a353156840e6cf6b7141aab4fb15b8fcb9840",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/native/corehost/hostpolicy/coreclr.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/native/corehost/hostpolicy/deps_resolver.cpp",
+      "bytes": 36167,
+      "sha256": "ef52e6fb40f5fb9d6959dd1a218dcaa7dd74994bd0af6cadf891853ef246a2e5",
+      "gitBlobSha1": "440e7cd98c59ffcb1383729695f7b44cb34c6399",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/native/corehost/hostpolicy/deps_resolver.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/native/corehost/hostpolicy/hostpolicy.cpp",
+      "bytes": 38544,
+      "sha256": "a525a68de984a03f5a0f8ba609ceaeedcc9e5d63cdfb92e0c8feec9ac01d6e99",
+      "gitBlobSha1": "a50069fbb3782efb6528e4b4c5aa2444e64f2add",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/native/corehost/hostpolicy/hostpolicy.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/native/corehost/runtime_config.cpp",
+      "bytes": 16910,
+      "sha256": "a69395b03d77919875706d7d382c9486dd50a52e15e9b3865bc5521b0059e735",
+      "gitBlobSha1": "08e75fd61e016da40d3d0a56cb95ae1c9243f0ea",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/native/corehost/runtime_config.cpp"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/native/libs/System.Globalization.Native/pal_icushim.c",
+      "bytes": 18676,
+      "sha256": "8e3099e07bd4a927e0635b2cd6441e96ccbc54ffc2302938a140575b9a3c7d0c",
+      "gitBlobSha1": "e8e6382f086036f028e9a1de028b741a973a3860",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/native/libs/System.Globalization.Native/pal_icushim.c"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/native/libs/System.Native/pal_io.c",
+      "bytes": 61104,
+      "sha256": "f36306da7c4f0f699922ae457f43aa21ab0188e885208d2fa0ea3de2d1d471d8",
+      "gitBlobSha1": "35858794dff1af4eb4b9eb6cb6025923a1578985",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/native/libs/System.Native/pal_io.c"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/native/libs/System.Native/pal_networking.c",
+      "bytes": 98699,
+      "sha256": "4495b981e514a069aba542cfde51bcda7e39bab7b2e04d1796e66f8bb98002bb",
+      "gitBlobSha1": "8dfc133f2ed7881ea763a1aa9eba288bdb93443a",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/native/libs/System.Native/pal_networking.c"
+    },
+    {
+      "repo": "runtime",
+      "commit": "1219a42122cf5190c7f512850557e38c422430dc",
+      "path": "src/native/libs/System.Security.Cryptography.Native/opensslshim.c",
+      "bytes": 6080,
+      "sha256": "4fe8c3d8135cec49d3188ef03ceaa343071205bc5e60b94bde0c208294675a31",
+      "gitBlobSha1": "d21d627341011974c18b31c69db5f9646882ab32",
+      "url": "https://raw.githubusercontent.com/dotnet/runtime/1219a42122cf5190c7f512850557e38c422430dc/src/native/libs/System.Security.Cryptography.Native/opensslshim.c"
+    },
+    {
+      "repo": "dotnet/sdk",
+      "commit": "3de3fdf172d1856dd54425902527024c11b40b9d",
+      "path": "eng/Versions.props",
+      "bytes": 19618,
+      "sha256": "5acd519796efe68c1c5fcf293cd413fddf1ac198d963f29a147f96a2dcebb344",
+      "gitBlobSha1": "8ae54c5e9365cb06456a66580c008aa76cc31e59",
+      "url": "https://raw.githubusercontent.com/dotnet/sdk/3de3fdf172d1856dd54425902527024c11b40b9d/eng/Versions.props"
+    },
+    {
+      "repo": "dotnet/sdk",
+      "commit": "3de3fdf172d1856dd54425902527024c11b40b9d",
+      "path": "src/Tasks/Microsoft.NET.Build.Tasks/ProcessFrameworkReferences.cs",
+      "bytes": 54640,
+      "sha256": "5c908b34ee99aad5ade2b398cd9e80347f9eea0b66b917a55eec37b4842777e6",
+      "gitBlobSha1": "58b6122d6e2049bdc44701837c9ea902c06926ec",
+      "url": "https://raw.githubusercontent.com/dotnet/sdk/3de3fdf172d1856dd54425902527024c11b40b9d/src/Tasks/Microsoft.NET.Build.Tasks/ProcessFrameworkReferences.cs"
+    },
+    {
+      "repo": "dotnet/sdk",
+      "commit": "3de3fdf172d1856dd54425902527024c11b40b9d",
+      "path": "src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.DefaultItems.Shared.targets",
+      "bytes": 13914,
+      "sha256": "6f743d1cf32799d46e6e1c001f4066e934c51d72e78e95a421870a6f9d97a7ba",
+      "gitBlobSha1": "92c0e0a2efa57db8642613f45ad5e6b4bbf888ac",
+      "url": "https://raw.githubusercontent.com/dotnet/sdk/3de3fdf172d1856dd54425902527024c11b40b9d/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.DefaultItems.Shared.targets"
+    },
+    {
+      "repo": "dotnet/sdk",
+      "commit": "3de3fdf172d1856dd54425902527024c11b40b9d",
+      "path": "src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.FrameworkReferenceResolution.targets",
+      "bytes": 29057,
+      "sha256": "d74afbfa5d3d19bda0aa51a6ad8072c22cad71b3a0cad25d910a5df8369732b1",
+      "gitBlobSha1": "0cf0b6cc48c4665fdcb95be1a8967dbc11c2d5ce",
+      "url": "https://raw.githubusercontent.com/dotnet/sdk/3de3fdf172d1856dd54425902527024c11b40b9d/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.FrameworkReferenceResolution.targets"
+    },
+    {
+      "repo": "dotnet/sdk",
+      "commit": "3de3fdf172d1856dd54425902527024c11b40b9d",
+      "path": "src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.PackageDependencyResolution.targets",
+      "bytes": 27829,
+      "sha256": "1e30b337e9a84691cc63d6015d4fb170a8c72d10a4a1567e3268fb32332131c1",
+      "gitBlobSha1": "dc048fde8e6866e0032254468b30f5c326bab648",
+      "url": "https://raw.githubusercontent.com/dotnet/sdk/3de3fdf172d1856dd54425902527024c11b40b9d/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.PackageDependencyResolution.targets"
+    },
+    {
+      "repo": "microsoft/clrmd",
+      "commit": "f11663fc2e71ddd0869deb528047f0f476a0e346",
+      "path": "src/Microsoft.Diagnostics.Runtime/ClrInfo.cs",
+      "bytes": 6520,
+      "sha256": "851775052e41d38edf2daf553bad87ff1b26216a33f7df1c6ca970353a706d0c",
+      "gitBlobSha1": "bfdead6afeb5b67ffb3eef9496a1f806862be74e",
+      "url": "https://raw.githubusercontent.com/microsoft/clrmd/f11663fc2e71ddd0869deb528047f0f476a0e346/src/Microsoft.Diagnostics.Runtime/ClrInfo.cs"
+    },
+    {
+      "repo": "microsoft/clrmd",
+      "commit": "f11663fc2e71ddd0869deb528047f0f476a0e346",
+      "path": "src/Microsoft.Diagnostics.Runtime/CustomDataTarget.cs",
+      "bytes": 4010,
+      "sha256": "39fc966eb008a977736c8f72d49a1402294b340fbcb46b74e6dc56cdc3e5f7e4",
+      "gitBlobSha1": "db58ab725aa4be017b64ab60111ce07cfaa59c2a",
+      "url": "https://raw.githubusercontent.com/microsoft/clrmd/f11663fc2e71ddd0869deb528047f0f476a0e346/src/Microsoft.Diagnostics.Runtime/CustomDataTarget.cs"
+    },
+    {
+      "repo": "microsoft/clrmd",
+      "commit": "f11663fc2e71ddd0869deb528047f0f476a0e346",
+      "path": "src/Microsoft.Diagnostics.Runtime/DacLibrary.cs",
+      "bytes": 4739,
+      "sha256": "c9f691d862128d112f27bbbe8b5051ec0f3b47795b520832ff3c017a3e64f557",
+      "gitBlobSha1": "9f1bb2a96d23f815b81fd51e1747b730fddbdd6a",
+      "url": "https://raw.githubusercontent.com/microsoft/clrmd/f11663fc2e71ddd0869deb528047f0f476a0e346/src/Microsoft.Diagnostics.Runtime/DacLibrary.cs"
+    },
+    {
+      "repo": "microsoft/clrmd",
+      "commit": "f11663fc2e71ddd0869deb528047f0f476a0e346",
+      "path": "src/Microsoft.Diagnostics.Runtime/DataTarget.cs",
+      "bytes": 21691,
+      "sha256": "ac2ce6250bcb46a325c2c9ae9467e40e8fdb7cfcab653301baf3ab0ad37ee408",
+      "gitBlobSha1": "fff3aa3ea398cd3c6bc630200713f72b205a9894",
+      "url": "https://raw.githubusercontent.com/microsoft/clrmd/f11663fc2e71ddd0869deb528047f0f476a0e346/src/Microsoft.Diagnostics.Runtime/DataTarget.cs"
+    },
+    {
+      "repo": "microsoft/clrmd",
+      "commit": "f11663fc2e71ddd0869deb528047f0f476a0e346",
+      "path": "src/Microsoft.Diagnostics.Runtime/Implementation/DotNetClrInfoProvider.cs",
+      "bytes": 24679,
+      "sha256": "1bad4008cea9d012b031c391be7964f28c3fd7b23cc8698f67c69c2101f0b530",
+      "gitBlobSha1": "509cad13e95dc64bd7294a2d8db7b10e3dfaeed2",
+      "url": "https://raw.githubusercontent.com/microsoft/clrmd/f11663fc2e71ddd0869deb528047f0f476a0e346/src/Microsoft.Diagnostics.Runtime/Implementation/DotNetClrInfoProvider.cs"
+    },
+    {
+      "repo": "microsoft/clrmd",
+      "commit": "f11663fc2e71ddd0869deb528047f0f476a0e346",
+      "path": "src/Microsoft.Diagnostics.Runtime/Linux/ElfCoreFile.cs",
+      "bytes": 9114,
+      "sha256": "f9a5eb08398d35d4fea704b29ab01dae0feb96405b60bd9553a878f055127d7e",
+      "gitBlobSha1": "61fb15ab01d45978a8ead4c5f6cad460d660f8fb",
+      "url": "https://raw.githubusercontent.com/microsoft/clrmd/f11663fc2e71ddd0869deb528047f0f476a0e346/src/Microsoft.Diagnostics.Runtime/Linux/ElfCoreFile.cs"
+    },
+    {
+      "repo": "microsoft/clrmd",
+      "commit": "f11663fc2e71ddd0869deb528047f0f476a0e346",
+      "path": "src/Microsoft.Diagnostics.Runtime/Utilities/Platform/LinuxFunctions.cs",
+      "bytes": 8035,
+      "sha256": "daf3c08cdc87d46d0a5bb48572d6bfd1973a3825f93ae87ba4f27640cf8fdcd4",
+      "gitBlobSha1": "98188ec9e19b984e3d6d4976c778b3de8e6d4609",
+      "url": "https://raw.githubusercontent.com/microsoft/clrmd/f11663fc2e71ddd0869deb528047f0f476a0e346/src/Microsoft.Diagnostics.Runtime/Utilities/Platform/LinuxFunctions.cs"
+    },
+    {
+      "repo": "microsoft/clrmd",
+      "commit": "f11663fc2e71ddd0869deb528047f0f476a0e346",
+      "path": "src/Microsoft.Diagnostics.Runtime/Utilities/Platform/PlatformFunctions.cs",
+      "bytes": 1795,
+      "sha256": "3559d780556f4caa40d78c2a8a8f531c9fbb14776c8a351716d19013cca23d5a",
+      "gitBlobSha1": "814731c22246a1b8b71203ba9d134006a1ede3cf",
+      "url": "https://raw.githubusercontent.com/microsoft/clrmd/f11663fc2e71ddd0869deb528047f0f476a0e346/src/Microsoft.Diagnostics.Runtime/Utilities/Platform/PlatformFunctions.cs"
+    },
+    {
+      "repo": "python/cpython",
+      "commit": "f6650f9ad73359051f3e558c2431a109bc016664",
+      "path": "Lib/importlib/_bootstrap_external.py",
+      "bytes": 69175,
+      "sha256": "949e115a77dd6b25280195c30b6f5146a303212816b3221430ad82467d4f3133",
+      "gitBlobSha1": "61dafc0f4cb953396958d92791440006771ea02c",
+      "url": "https://raw.githubusercontent.com/python/cpython/f6650f9ad73359051f3e558c2431a109bc016664/Lib/importlib/_bootstrap_external.py"
+    },
+    {
+      "repo": "python/cpython",
+      "commit": "f6650f9ad73359051f3e558c2431a109bc016664",
+      "path": "Modules/_ctypes/callproc.c",
+      "bytes": 59680,
+      "sha256": "5f1dfebb3a85e15d167a694e54572dbac963c43ad9ddf5cae8fd8bf810412910",
+      "gitBlobSha1": "d2fe525dd4d3969a9da9141c33198f743541ba20",
+      "url": "https://raw.githubusercontent.com/python/cpython/f6650f9ad73359051f3e558c2431a109bc016664/Modules/_ctypes/callproc.c"
+    },
+    {
+      "repo": "python/cpython",
+      "commit": "f6650f9ad73359051f3e558c2431a109bc016664",
+      "path": "Python/dynload_shlib.c",
+      "bytes": 2923,
+      "sha256": "6b78ca8ca5ebe73deba0576ea17b4df48434741d16b8ef34952498638c4cc220",
+      "gitBlobSha1": "6761bba457983bd215e3d5055f4966572d1a951e",
+      "url": "https://raw.githubusercontent.com/python/cpython/f6650f9ad73359051f3e558c2431a109bc016664/Python/dynload_shlib.c"
+    },
+    {
+      "repo": "python/cpython",
+      "commit": "f6650f9ad73359051f3e558c2431a109bc016664",
+      "path": "Python/importdl.c",
+      "bytes": 7684,
+      "sha256": "4c7022151e500d93a4383e70cd8d5170fb307863e67143819a66ae6c960c9234",
+      "gitBlobSha1": "3a3a30ddbdcdb5c88ba560d916579872d36c9a29",
+      "url": "https://raw.githubusercontent.com/python/cpython/f6650f9ad73359051f3e558c2431a109bc016664/Python/importdl.c"
+    },
+    {
+      "repo": "python/cpython",
+      "commit": "f6650f9ad73359051f3e558c2431a109bc016664",
+      "path": "Python/initconfig.c",
+      "bytes": 92087,
+      "sha256": "03ae4c6dabff37d78e63131e414bc0148a6d54ca9f72d317f63e0894a1ecba81",
+      "gitBlobSha1": "192089b5cc3e53ae34788c3dd5969574dae253e1",
+      "url": "https://raw.githubusercontent.com/python/cpython/f6650f9ad73359051f3e558c2431a109bc016664/Python/initconfig.c"
+    }
+  ],
+  "unavailableRequestedSourcePaths": [
+    {
+      "repo": "runtime",
+      "path": "src/coreclr/vm/nativeimagelayout.cpp",
+      "failure": "HTTP Error 404: Not Found"
+    },
+    {
+      "repo": "runtime",
+      "path": "src/native/corehost/fxr/runtime_config.cpp",
+      "failure": "HTTP Error 404: Not Found"
+    }
+  ],
+  "sourceResearchOnly": true,
+  "runtimeBodiesExecuted": false,
+  "productionSourceModified": false,
+  "runtimeTreeWasTruncated": true,
+  "truncatedTreeNotUsedAsCompleteInventory": true,
+  "qualifiesRunnerSourceCorrespondence": false
+}
