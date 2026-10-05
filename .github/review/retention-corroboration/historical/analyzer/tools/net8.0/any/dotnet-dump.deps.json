@@ -1,0 +1,463 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "dotnet-dump/9.0.652701": {
+        "dependencies": {
+          "Microsoft.Diagnostics.DebugServices": "9.0.652701",
+          "Microsoft.Diagnostics.DebugServices.Implementation": "9.0.652701",
+          "Microsoft.Diagnostics.ExtensionCommands": "9.0.652701",
+          "Microsoft.Diagnostics.NETCore.Client": "0.2.652701",
+          "Microsoft.Diagnostics.Repl": "9.0.652701",
+          "Microsoft.Diagnostics.Runtime": "4.0.0-beta.25381.2",
+          "Microsoft.SymbolStore": "1.0.652701",
+          "SOS.Hosting": "9.0.652701"
+        },
+        "runtime": {
+          "dotnet-dump.dll": {}
+        }
+      },
+      "Azure.Core/1.44.1": {
+        "dependencies": {
+          "Microsoft.Bcl.AsyncInterfaces": "6.0.0",
+          "System.ClientModel": "1.1.0",
+          "System.Memory.Data": "6.0.0"
+        },
+        "runtime": {
+          "lib/net6.0/Azure.Core.dll": {
+            "assemblyVersion": "1.44.1.0",
+            "fileVersion": "1.4400.124.50905"
+          }
+        }
+      },
+      "Azure.Identity/1.13.2": {
+        "dependencies": {
+          "Azure.Core": "1.44.1",
+          "Microsoft.Identity.Client": "4.67.2",
+          "Microsoft.Identity.Client.Extensions.Msal": "4.67.2"
+        },
+        "runtime": {
+          "lib/net8.0/Azure.Identity.dll": {
+            "assemblyVersion": "1.13.2.0",
+            "fileVersion": "1.1300.225.6404"
+          }
+        }
+      },
+      "Microsoft.Bcl.AsyncInterfaces/6.0.0": {
+        "runtime": {
+          "lib/netstandard2.1/Microsoft.Bcl.AsyncInterfaces.dll": {
+            "assemblyVersion": "6.0.0.0",
+            "fileVersion": "6.0.21.52210"
+          }
+        }
+      },
+      "Microsoft.Diagnostics.Runtime/4.0.0-beta.25381.2": {
+        "dependencies": {
+          "Azure.Identity": "1.13.2",
+          "Microsoft.Diagnostics.NETCore.Client": "0.2.652701"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.Diagnostics.Runtime.dll": {
+            "assemblyVersion": "4.0.12.38102",
+            "fileVersion": "4.0.12.38102"
+          }
+        }
+      },
+      "Microsoft.Extensions.DependencyInjection.Abstractions/9.0.8": {
+        "runtime": {
+          "lib/net8.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll": {
+            "assemblyVersion": "9.0.0.0",
+            "fileVersion": "9.0.825.36511"
+          }
+        }
+      },
+      "Microsoft.Extensions.Logging.Abstractions/9.0.8": {
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "9.0.8",
+          "System.Diagnostics.DiagnosticSource": "9.0.8"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.Extensions.Logging.Abstractions.dll": {
+            "assemblyVersion": "9.0.0.0",
+            "fileVersion": "9.0.825.36511"
+          }
+        }
+      },
+      "Microsoft.Identity.Client/4.67.2": {
+        "dependencies": {
+          "Microsoft.IdentityModel.Abstractions": "6.35.0"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.Identity.Client.dll": {
+            "assemblyVersion": "4.67.2.0",
+            "fileVersion": "4.67.2.0"
+          }
+        }
+      },
+      "Microsoft.Identity.Client.Extensions.Msal/4.67.2": {
+        "dependencies": {
+          "Microsoft.Identity.Client": "4.67.2",
+          "System.Security.Cryptography.ProtectedData": "4.5.0"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.Identity.Client.Extensions.Msal.dll": {
+            "assemblyVersion": "4.67.2.0",
+            "fileVersion": "4.67.2.0"
+          }
+        }
+      },
+      "Microsoft.IdentityModel.Abstractions/6.35.0": {
+        "runtime": {
+          "lib/net6.0/Microsoft.IdentityModel.Abstractions.dll": {
+            "assemblyVersion": "6.35.0.0",
+            "fileVersion": "6.35.0.41201"
+          }
+        }
+      },
+      "System.ClientModel/1.1.0": {
+        "dependencies": {
+          "System.Memory.Data": "6.0.0"
+        },
+        "runtime": {
+          "lib/net6.0/System.ClientModel.dll": {
+            "assemblyVersion": "1.1.0.0",
+            "fileVersion": "1.100.24.46703"
+          }
+        }
+      },
+      "System.CommandLine/2.0.0-beta5.25210.1": {
+        "runtime": {
+          "lib/net8.0/System.CommandLine.dll": {
+            "assemblyVersion": "2.0.0.0",
+            "fileVersion": "2.0.25.21001"
+          }
+        },
+        "resources": {
+          "lib/net8.0/cs/System.CommandLine.resources.dll": {
+            "locale": "cs"
+          },
+          "lib/net8.0/de/System.CommandLine.resources.dll": {
+            "locale": "de"
+          },
+          "lib/net8.0/es/System.CommandLine.resources.dll": {
+            "locale": "es"
+          },
+          "lib/net8.0/fr/System.CommandLine.resources.dll": {
+            "locale": "fr"
+          },
+          "lib/net8.0/it/System.CommandLine.resources.dll": {
+            "locale": "it"
+          },
+          "lib/net8.0/ja/System.CommandLine.resources.dll": {
+            "locale": "ja"
+          },
+          "lib/net8.0/ko/System.CommandLine.resources.dll": {
+            "locale": "ko"
+          },
+          "lib/net8.0/pl/System.CommandLine.resources.dll": {
+            "locale": "pl"
+          },
+          "lib/net8.0/pt-BR/System.CommandLine.resources.dll": {
+            "locale": "pt-BR"
+          },
+          "lib/net8.0/ru/System.CommandLine.resources.dll": {
+            "locale": "ru"
+          },
+          "lib/net8.0/tr/System.CommandLine.resources.dll": {
+            "locale": "tr"
+          },
+          "lib/net8.0/zh-Hans/System.CommandLine.resources.dll": {
+            "locale": "zh-Hans"
+          },
+          "lib/net8.0/zh-Hant/System.CommandLine.resources.dll": {
+            "locale": "zh-Hant"
+          }
+        }
+      },
+      "System.Diagnostics.DiagnosticSource/9.0.8": {
+        "runtime": {
+          "lib/net8.0/System.Diagnostics.DiagnosticSource.dll": {
+            "assemblyVersion": "9.0.0.0",
+            "fileVersion": "9.0.825.36511"
+          }
+        }
+      },
+      "System.Memory.Data/6.0.0": {
+        "runtime": {
+          "lib/net6.0/System.Memory.Data.dll": {
+            "assemblyVersion": "6.0.0.0",
+            "fileVersion": "6.0.21.52210"
+          }
+        }
+      },
+      "System.Security.Cryptography.ProtectedData/4.5.0": {
+        "runtime": {
+          "lib/netstandard2.0/System.Security.Cryptography.ProtectedData.dll": {
+            "assemblyVersion": "4.0.3.0",
+            "fileVersion": "4.6.26515.6"
+          }
+        },
+        "runtimeTargets": {
+          "runtimes/win/lib/netstandard2.0/System.Security.Cryptography.ProtectedData.dll": {
+            "rid": "win",
+            "assetType": "runtime",
+            "assemblyVersion": "4.0.3.0",
+            "fileVersion": "4.6.26515.6"
+          }
+        }
+      },
+      "Microsoft.Diagnostics.DebugServices/9.0.652701": {
+        "runtime": {
+          "Microsoft.Diagnostics.DebugServices.dll": {
+            "assemblyVersion": "9.0.13.2701",
+            "fileVersion": "9.0.13.2701"
+          }
+        }
+      },
+      "Microsoft.Diagnostics.DebugServices.Implementation/9.0.652701": {
+        "dependencies": {
+          "Microsoft.Diagnostics.DebugServices": "9.0.652701",
+          "Microsoft.Diagnostics.Runtime": "4.0.0-beta.25381.2",
+          "Microsoft.SymbolStore": "1.0.652701",
+          "System.CommandLine": "2.0.0-beta5.25210.1"
+        },
+        "runtime": {
+          "Microsoft.Diagnostics.DebugServices.Implementation.dll": {
+            "assemblyVersion": "9.0.13.2701",
+            "fileVersion": "9.0.13.2701"
+          }
+        }
+      },
+      "Microsoft.Diagnostics.ExtensionCommands/9.0.652701": {
+        "dependencies": {
+          "Microsoft.Diagnostics.DebugServices": "9.0.652701",
+          "Microsoft.Diagnostics.Runtime": "4.0.0-beta.25381.2",
+          "Microsoft.SymbolStore": "1.0.652701"
+        },
+        "runtime": {
+          "Microsoft.Diagnostics.ExtensionCommands.dll": {
+            "assemblyVersion": "9.0.13.2701",
+            "fileVersion": "9.0.13.2701"
+          }
+        }
+      },
+      "Microsoft.Diagnostics.NETCore.Client/0.2.652701": {
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "9.0.8"
+        },
+        "runtime": {
+          "Microsoft.Diagnostics.NETCore.Client.dll": {
+            "assemblyVersion": "0.2.13.2701",
+            "fileVersion": "0.2.13.2701"
+          }
+        }
+      },
+      "Microsoft.Diagnostics.Repl/9.0.652701": {
+        "dependencies": {
+          "Microsoft.Diagnostics.DebugServices": "9.0.652701"
+        },
+        "runtime": {
+          "Microsoft.Diagnostics.Repl.dll": {
+            "assemblyVersion": "9.0.13.2701",
+            "fileVersion": "9.0.13.2701"
+          }
+        }
+      },
+      "Microsoft.FileFormats/1.0.652701": {
+        "runtime": {
+          "Microsoft.FileFormats.dll": {
+            "assemblyVersion": "1.0.13.2701",
+            "fileVersion": "1.0.13.2701"
+          }
+        }
+      },
+      "Microsoft.SymbolStore/1.0.652701": {
+        "dependencies": {
+          "Microsoft.FileFormats": "1.0.652701"
+        },
+        "runtime": {
+          "Microsoft.SymbolStore.dll": {
+            "assemblyVersion": "1.0.13.2701",
+            "fileVersion": "1.0.13.2701"
+          }
+        }
+      },
+      "SOS.Hosting/9.0.652701": {
+        "dependencies": {
+          "Microsoft.Diagnostics.DebugServices": "9.0.652701",
+          "Microsoft.Diagnostics.Runtime": "4.0.0-beta.25381.2",
+          "Microsoft.SymbolStore": "1.0.652701",
+          "SOS.InstallHelper": "9.0.652701"
+        },
+        "runtime": {
+          "SOS.Hosting.dll": {
+            "assemblyVersion": "9.0.13.2701",
+            "fileVersion": "9.0.13.2701"
+          }
+        }
+      },
+      "SOS.InstallHelper/9.0.652701": {
+        "runtime": {
+          "SOS.InstallHelper.dll": {
+            "assemblyVersion": "9.0.13.2701",
+            "fileVersion": "9.0.13.2701"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "dotnet-dump/9.0.652701": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Azure.Core/1.44.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-YyznXLQZCregzHvioip07/BkzjuWNXogJEVz9T5W6TwjNr17ax41YGzYMptlo2G10oLCuVPoyva62y0SIRDixg==",
+      "path": "azure.core/1.44.1",
+      "hashPath": "azure.core.1.44.1.nupkg.sha512"
+    },
+    "Azure.Identity/1.13.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-CngQVQELdzFmsGSWyGIPIUOCrII7nApMVWxVmJCKQQrWxRXcNquCsZ+njRJRnhFUfD+KMAhpjyRCaceE4EOL6A==",
+      "path": "azure.identity/1.13.2",
+      "hashPath": "azure.identity.1.13.2.nupkg.sha512"
+    },
+    "Microsoft.Bcl.AsyncInterfaces/6.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-UcSjPsst+DfAdJGVDsu346FX0ci0ah+lw3WRtn18NUwEqRt70HaOQ7lI72vy3+1LxtqI3T5GWwV39rQSrCzAeg==",
+      "path": "microsoft.bcl.asyncinterfaces/6.0.0",
+      "hashPath": "microsoft.bcl.asyncinterfaces.6.0.0.nupkg.sha512"
+    },
+    "Microsoft.Diagnostics.Runtime/4.0.0-beta.25381.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-iliYgcLjUfjniKZfV1PIdTtBYw4AFWgGfHH7nmzL9Itpu4K8suu9GuMuI9mcPw7oaeeyjleCoR8s9XHoH2AJKA==",
+      "path": "microsoft.diagnostics.runtime/4.0.0-beta.25381.2",
+      "hashPath": "microsoft.diagnostics.runtime.4.0.0-beta.25381.2.nupkg.sha512"
+    },
+    "Microsoft.Extensions.DependencyInjection.Abstractions/9.0.8": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-xY3lTjj4+ZYmiKIkyWitddrp1uL5uYiweQjqo4BKBw01ZC4HhcfgLghDpPZcUlppgWAFqFy9SgkiYWOMx365pw==",
+      "path": "microsoft.extensions.dependencyinjection.abstractions/9.0.8",
+      "hashPath": "microsoft.extensions.dependencyinjection.abstractions.9.0.8.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Logging.Abstractions/9.0.8": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-pYnAffJL7ARD/HCnnPvnFKSIHnTSmWz84WIlT9tPeQ4lHNiu0Az7N/8itihWvcF8sT+VVD5lq8V+ckMzu4SbOw==",
+      "path": "microsoft.extensions.logging.abstractions/9.0.8",
+      "hashPath": "microsoft.extensions.logging.abstractions.9.0.8.nupkg.sha512"
+    },
+    "Microsoft.Identity.Client/4.67.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-37t0TfekfG6XM8kue/xNaA66Qjtti5Qe1xA41CK+bEd8VD76/oXJc+meFJHGzygIC485dCpKoamG/pDfb9Qd7Q==",
+      "path": "microsoft.identity.client/4.67.2",
+      "hashPath": "microsoft.identity.client.4.67.2.nupkg.sha512"
+    },
+    "Microsoft.Identity.Client.Extensions.Msal/4.67.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-DKs+Lva6csEUZabw+JkkjtFgVmcXh4pJeQy5KH5XzPOaKNoZhAMYj1qpKd97qYTZKXIFH12bHPk0DA+6krw+Cw==",
+      "path": "microsoft.identity.client.extensions.msal/4.67.2",
+      "hashPath": "microsoft.identity.client.extensions.msal.4.67.2.nupkg.sha512"
+    },
+    "Microsoft.IdentityModel.Abstractions/6.35.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-xuR8E4Rd96M41CnUSCiOJ2DBh+z+zQSmyrYHdYhD6K4fXBcQGVnRCFQ0efROUYpP+p0zC1BLKr0JRpVuujTZSg==",
+      "path": "microsoft.identitymodel.abstractions/6.35.0",
+      "hashPath": "microsoft.identitymodel.abstractions.6.35.0.nupkg.sha512"
+    },
+    "System.ClientModel/1.1.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-UocOlCkxLZrG2CKMAAImPcldJTxeesHnHGHwhJ0pNlZEvEXcWKuQvVOER2/NiOkJGRJk978SNdw3j6/7O9H1lg==",
+      "path": "system.clientmodel/1.1.0",
+      "hashPath": "system.clientmodel.1.1.0.nupkg.sha512"
+    },
+    "System.CommandLine/2.0.0-beta5.25210.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-32JUZ+/6D5++a2JFzF7t5eaPtNZgF8H6u08xf9XUhDUtKacfJcPQHn1dza3pBbsNWXG9BpsPHGOpaWah+4xMrw==",
+      "path": "system.commandline/2.0.0-beta5.25210.1",
+      "hashPath": "system.commandline.2.0.0-beta5.25210.1.nupkg.sha512"
+    },
+    "System.Diagnostics.DiagnosticSource/9.0.8": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-Lj8/a1Hzli1z6jo8H9urc16GxkpVJtJM+W9fmivXMNu7nwzHziGkxn4vO0DFscMbudkEVKSezdDuHk5kgM0X/g==",
+      "path": "system.diagnostics.diagnosticsource/9.0.8",
+      "hashPath": "system.diagnostics.diagnosticsource.9.0.8.nupkg.sha512"
+    },
+    "System.Memory.Data/6.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-ntFHArH3I4Lpjf5m4DCXQHJuGwWPNVJPaAvM95Jy/u+2Yzt2ryiyIN04LAogkjP9DeRcEOiviAjQotfmPq/FrQ==",
+      "path": "system.memory.data/6.0.0",
+      "hashPath": "system.memory.data.6.0.0.nupkg.sha512"
+    },
+    "System.Security.Cryptography.ProtectedData/4.5.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-wLBKzFnDCxP12VL9ANydSYhk59fC4cvOr9ypYQLPnAj48NQIhqnjdD2yhP8yEKyBJEjERWS9DisKL7rX5eU25Q==",
+      "path": "system.security.cryptography.protecteddata/4.5.0",
+      "hashPath": "system.security.cryptography.protecteddata.4.5.0.nupkg.sha512"
+    },
+    "Microsoft.Diagnostics.DebugServices/9.0.652701": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.Diagnostics.DebugServices.Implementation/9.0.652701": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.Diagnostics.ExtensionCommands/9.0.652701": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.Diagnostics.NETCore.Client/0.2.652701": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.Diagnostics.Repl/9.0.652701": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.FileFormats/1.0.652701": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.SymbolStore/1.0.652701": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "SOS.Hosting/9.0.652701": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "SOS.InstallHelper/9.0.652701": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

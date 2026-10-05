@@ -28,8 +28,8 @@
     },
     {
       "path": ".github/workflows/review.yml",
-      "sha256": "2e82419e45d447ec2d6498efb959eee420193614ec432f59410889faa6e2f936",
-      "bytes": 27542
+      "sha256": "597277a2aaf6ebbba51d000a700bced385582da8e41f73bf0fd9def72738a2bc",
+      "bytes": 48049
     }
   ]
 }

@@ -19,7 +19,7 @@ on:
       b3_focus_gate:
         description: Focused B3 checks; library-dependent modes require exact verified-source receipts
         type: choice
-        options: [none, ide-regressions, maps, isolation, lifecycle, unavailable-metadata, native-proof-smoke, shared-native-smoke, retention-inventory, complete]
+        options: [none, ide-regressions, maps, isolation, lifecycle, unavailable-metadata, native-proof-smoke, shared-native-smoke, retention-inventory, retention-corroboration, complete]
         default: none
       b3_full_gate:
         description: Also run the verifying B3 worker bootstrap and real Dafny corpus with b3_compile_only
@@ -70,7 +70,7 @@ env:
 
 jobs:
   build:
-    if: ${{ inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
+    if: ${{ inputs.b3_focus_gate != 'retention-corroboration' && inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
     name: Build (Release)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -135,7 +135,7 @@ jobs:
           retention-days: 14
 
   suite:
-    if: ${{ inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
+    if: ${{ inputs.b3_focus_gate != 'retention-corroboration' && inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
     name: Verifier suite (axioms ${{ matrix.axioms }}, shard ${{ matrix.shard }} of 4)
     needs: build
     runs-on: ubuntu-24.04
@@ -189,7 +189,7 @@ jobs:
           retention-days: 90
 
   verdicts:
-    if: ${{ inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
+    if: ${{ inputs.b3_focus_gate != 'retention-corroboration' && inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
     name: Verdicts (axioms ${{ matrix.axioms }})
     needs: [build, suite]
     runs-on: ubuntu-24.04
@@ -245,7 +245,7 @@ jobs:
           retention-days: 90
 
   resolver:
-    if: ${{ inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
+    if: ${{ inputs.b3_focus_gate != 'retention-corroboration' && inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
     name: Resolver matrix (both modes)
     needs: build
     runs-on: ubuntu-24.04
@@ -300,7 +300,7 @@ jobs:
           retention-days: 90
 
   stdlib:
-    if: ${{ inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
+    if: ${{ inputs.b3_focus_gate != 'retention-corroboration' && inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
     name: Standard library (Z3 ${{ matrix.z3 }}, axioms ${{ matrix.axioms }})
     needs: build
     runs-on: ubuntu-24.04
@@ -386,7 +386,7 @@ jobs:
   axiom-resources:
     name: Additional-axiom resource comparisons
     needs: [suite, stdlib]
-    if: ${{ inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true && (always() && needs.suite.result == 'success') }}
+    if: ${{ inputs.b3_focus_gate != 'retention-corroboration' && inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true && (always() && needs.suite.result == 'success') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -409,7 +409,7 @@ jobs:
           retention-days: 90
 
   regressions:
-    if: ${{ inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
+    if: ${{ inputs.b3_focus_gate != 'retention-corroboration' && inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
     name: Regression tests (upstream harness)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -473,7 +473,7 @@ jobs:
 
 
   resolver-tests:
-    if: ${{ inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
+    if: ${{ inputs.b3_focus_gate != 'retention-corroboration' && inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true }}
     name: Resolver unit tests and language-server recovery
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -504,7 +504,7 @@ jobs:
   binaries:
     name: Binaries (${{ matrix.rid }})
     needs: build
-    if: ${{ inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true && (github.ref_type == 'tag' || inputs.binaries) }}
+    if: ${{ inputs.b3_focus_gate != 'retention-corroboration' && inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true && (github.ref_type == 'tag' || inputs.binaries) }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
@@ -567,7 +567,7 @@ jobs:
   release:
     name: GitHub release
     needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, axiom-resources]
-    if: ${{ inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true && (github.ref_type == 'tag') }}
+    if: ${{ inputs.b3_focus_gate != 'retention-corroboration' && inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' && inputs.b3_compile_only != true && (github.ref_type == 'tag') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -605,7 +605,7 @@ jobs:
             --verify-tag --title "$VERSION" --notes-file notes.md
 
   b3-native-compile:
-    if: ${{ inputs.b3_compile_only == true && inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' }}
+    if: ${{ inputs.b3_compile_only == true && inputs.b3_focus_gate != 'retention-corroboration' && inputs.b3_focus_gate != 'retention-inventory' && inputs.b3_focus_gate != 'shared-native-smoke' }}
     name: B3 compilation and optional integration probe
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -898,4 +898,74 @@ jobs:
           path: |
             out/b3-retention-inventory
             out/b3-retention-inventory-routing
+          retention-days: 14
+
+  b3-retention-corroboration:
+    if: ${{ inputs.b3_focus_gate == 'retention-corroboration' }}
+    name: Read-only finite retention corroboration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Capture only the fixed finite corroboration packet
+        env:
+          B3_FOCUS_GATE: ${{ inputs.b3_focus_gate }}
+          B3_COMPILE_ONLY: ${{ inputs.b3_compile_only }}
+          B3_FULL_GATE: ${{ inputs.b3_full_gate }}
+          B3_BINARIES: ${{ inputs.binaries }}
+          B3_RESOLVER_PROBE: ${{ inputs.resolver_probe }}
+          B3_ADDITIONAL_AXIOMS_PROBE: ${{ inputs.additional_axioms_probe }}
+        run: |
+          env -i PATH=/usr/bin:/bin LANG=C.UTF-8 LC_ALL=C.UTF-8 \
+            B3_FOCUS_GATE="$B3_FOCUS_GATE" B3_COMPILE_ONLY="$B3_COMPILE_ONLY" \
+            B3_FULL_GATE="$B3_FULL_GATE" B3_BINARIES="$B3_BINARIES" \
+            B3_RESOLVER_PROBE="$B3_RESOLVER_PROBE" \
+            B3_ADDITIONAL_AXIOMS_PROBE="$B3_ADDITIONAL_AXIOMS_PROBE" \
+            /usr/bin/python3 -I -S -B - <<'PYGUARD'
+          import hashlib, json, os, stat
+          from pathlib import Path
+          path = Path('.github/review/b3-retention-corroboration-route.py')
+          try:
+              if any(p.is_symlink() for p in [path.absolute(), *path.absolute().parents]):
+                  raise ValueError('Fixed corroboration routing alias rejected.')
+              before = path.lstat()
+              if not stat.S_ISREG(before.st_mode) or before.st_size != 7739:
+                  raise ValueError('Fixed corroboration routing size rejected.')
+              with path.open('rb') as stream:
+                  captured = stream.read(7739 + 1)
+                  opened = os.fstat(stream.fileno())
+              identity = lambda s: (s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
+              if identity(before) != identity(opened) or identity(opened) != identity(path.lstat()) or \
+                    len(captured) != 7739 or hashlib.sha256(captured).hexdigest() != '5b0136d2cedb4686fd5625832c666e9ac0027f46de4f00cee7679d19bc86ffd5':
+                  raise ValueError('Fixed corroboration routing byte pin rejected.')
+              # Execute only captured, checked source; no import cache or old scanner.
+              namespace = {'__name__': '__main__', '__file__': str(path)}
+              exec(compile(captured, str(path), 'exec', dont_inherit=True), namespace)
+          except BaseException as error:
+              output = Path('out/b3-retention-corroboration-routing')
+              if not any(p.is_symlink() for p in [output.absolute(), *output.absolute().parents]):
+                  output.mkdir(parents=True, exist_ok=True)
+                  failure = {'schemaVersion': 1, 'scope': 'finite-corroboration-workflow-entry',
+                             'passed': False, 'failureCode': 'fixed-entry-or-routing-failure',
+                             'failureType': type(error).__name__, 'SDKExecuted': False,
+                             'collectorExecuted': False, 'analyzerExecuted': False,
+                             'targetExecuted': False, 'reviewedRunnerClosure': False,
+                             'fullDiagnosticEnabled': False}
+                  with (output / 'entry-failure.json').open('x') as stream:
+                      json.dump(failure, stream, indent=2, sort_keys=True)
+                      stream.write('\n')
+              print('Finite corroboration workflow entry: NOT GREEN')
+          PYGUARD
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b3-retention-corroboration
+          path: |
+            out/b3-retention-corroboration
+            out/b3-retention-corroboration-routing
+          include-hidden-files: true
           retention-days: 14

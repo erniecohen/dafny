@@ -1,0 +1,64 @@
+{
+  "files": [
+    {
+      "bytes": 19246,
+      "path": "PLAN.md",
+      "sha256": "05f84f0b3f8fe5ba9902fdc2a698bf23b795f36b74836712211d1d4bc742e6c0"
+    },
+    {
+      "bytes": 43010,
+      "path": "PRIMARY-SOURCE-PINS.json",
+      "sha256": "36526c27611aeeb2768bf946045f2c4d812fd153b0a9766fa74401f6756609c6"
+    },
+    {
+      "bytes": 7665,
+      "path": "README.md",
+      "sha256": "3a6894beb75041efe14ea0010eff86bf617c8a0c87f9a041cbd173c37b9b49d3"
+    },
+    {
+      "bytes": 225177,
+      "path": "SELECTORS.json",
+      "sha256": "3f68c8c766dc6742b3144a83909c2f6a97c36b8382e49b97ccbd184fa6c5383a"
+    },
+    {
+      "bytes": 3720,
+      "path": "historical-text-origins.json",
+      "sha256": "d66c6fbbf94358e9efec2d382f7232c815084f38fa34c16efabbe3cf1b61e6ea"
+    },
+    {
+      "bytes": 16727,
+      "path": "historical/analyzer/tools/net8.0/any/dotnet-dump.deps.json",
+      "sha256": "fb6046a70229e4eb670c51d0c2ba1644e21b6aeb1426c7d03d8ffb6b80f2ff91"
+    },
+    {
+      "bytes": 476,
+      "path": "historical/analyzer/tools/net8.0/any/dotnet-dump.runtimeconfig.json",
+      "sha256": "f76f8bc6c55ab52e1999c09d4d7ef32654a051c8517d53d90b6deb2fa0b334cf"
+    },
+    {
+      "bytes": 48,
+      "path": "historical/runtime/shared/Microsoft.NETCore.App/8.0.31/.version",
+      "sha256": "cbd9670965f660b80eeb5f31776f43de9ba391b19c032571bf9afa1c4695a602"
+    },
+    {
+      "bytes": 65590,
+      "path": "historical/runtime/shared/Microsoft.NETCore.App/8.0.31/Microsoft.NETCore.App.deps.json",
+      "sha256": "de46a8a5201ab39e2adb826df1b1e14195c7c9f0f6cdedefc7d497c7b58f7c61"
+    },
+    {
+      "bytes": 49,
+      "path": "historical/runtime/shared/Microsoft.NETCore.App/8.0.31/Microsoft.NETCore.App.runtimeconfig.json",
+      "sha256": "4a798da45bc138ae224341feebf984c9e330a4bee2ebb7a821505d95d17124fb"
+    },
+    {
+      "bytes": 68604,
+      "path": "packet.py",
+      "sha256": "2d77f222343600167372011cf6591567328817e4e74a155b8b38b3b18d4045ac"
+    }
+  ],
+  "original44Sha256": "b2e0e676f8c279e25358330ac3a91e740a12ddce319fd9aaedc5f1bd508dbc90",
+  "originalScannerSha256": "01b1522c9405f95f82c6da1f56ff7185d5b83c2b80c7732b8a52accd83664d1b",
+  "productBase": "8333daa60e2f2ee456068369f94c141898cde875",
+  "schemaVersion": 1,
+  "scope": "fixed-finite-read-only-retention-corroboration-source"
+}

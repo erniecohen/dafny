@@ -15,8 +15,8 @@
     },
     {
       "path": ".github/workflows/review.yml",
-      "bytes": 43566,
-      "sha256": "28953e3dc679fc3fb4f56e87994960015091745f1ff021599772c59c6202d03a"
+      "bytes": 48049,
+      "sha256": "597277a2aaf6ebbba51d000a700bced385582da8e41f73bf0fd9def72738a2bc"
     }
   ],
   "workflowFocus": "retention-inventory",

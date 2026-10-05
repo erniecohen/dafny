@@ -1,0 +1,31 @@
+{
+  "SDKToolTargetOrProofExecutionPermitted": false,
+  "compileOnlyRequired": true,
+  "files": [
+    {
+      "bytes": 2303,
+      "path": ".github/review/retention-corroboration/source-manifest.json",
+      "sha256": "db9c7c744e9b76ad8d81ec7409c6f761ed0a47d31efb6b87037b71dd812cc81b"
+    },
+    {
+      "bytes": 7739,
+      "path": ".github/review/b3-retention-corroboration-route.py",
+      "sha256": "5b0136d2cedb4686fd5625832c666e9ac0027f46de4f00cee7679d19bc86ffd5"
+    },
+    {
+      "bytes": 49,
+      "path": ".github/review/base",
+      "sha256": "c991a035b5681782c5d6ce6ec0a1c5c62fa13f57ca64224b9eb192806e8bb47a"
+    },
+    {
+      "bytes": 48049,
+      "path": ".github/workflows/review.yml",
+      "sha256": "597277a2aaf6ebbba51d000a700bced385582da8e41f73bf0fd9def72738a2bc"
+    }
+  ],
+  "fullGatePermitted": false,
+  "newArchivesPermitted": false,
+  "schemaVersion": 1,
+  "scope": "fixed-finite-read-only-retention-corroboration-routing",
+  "sourceManifestSha256": "db9c7c744e9b76ad8d81ec7409c6f761ed0a47d31efb6b87037b71dd812cc81b"
+}
