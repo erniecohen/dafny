@@ -1,0 +1,47 @@
+name: Obligation support binaries
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        line: [baseline, development]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.line == 'baseline' && 'ad1360af0f776c0be6cf57e4f0d38bbdf1ecc365' || 'scratch/codex/issue100-core' }}
+      - uses: ./.github/actions/setup-dotnet
+      - name: Record builds and structural tests without solver execution
+        run: |
+          set +e
+          mkdir -p out
+          git rev-parse HEAD > out/source.txt
+          sh Scripts/fetch-boogie-packages.sh > out/packages.log 2>&1
+          echo "$?" > out/packages.exit
+          sh .github/review/version.sh > out/version.txt 2>&1
+          result=$?
+          echo "$result" > out/version.exit
+          if [ "$result" -eq 0 ]; then
+            revision=$(sed -n 's/^revision=//p' out/version.txt)
+            RUNTIME_IDENTIFIER=osx-arm64 dotnet publish Source/Dafny/Dafny.csproj -c Release -r osx-arm64 --self-contained -o out/dafny -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$revision" > out/build.log 2>&1
+            echo "$?" > out/build.exit
+          fi
+          if [ '${{ matrix.line }}' = development ]; then
+            OBLIGATION_INVENTORY_CAPTURE=out/obligation-producers.json dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation > out/core.log 2>&1
+            echo "$?" > out/core.exit
+            mkdir -p out/tests
+            cp -R Source/DafnyCore.Test/bin/Release/net10.0 out/tests/core
+          fi
+          rm -f out/dafny/*.pdb
+          tar -czf obligation-support.tar.gz out
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: obligation-support-${{ matrix.line }}
+          path: obligation-support.tar.gz
