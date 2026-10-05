@@ -79,7 +79,7 @@ are True/False, and new strings stay below the inherited 50-character truncation
 boundary. Keep every old display name and its existing escaping/truncation unchanged.
 The frozen display convention follows [xUnit ArgumentFormatter](https://github.com/xunit/assert.xunit/blob/db11c08977f1ecf9b868317073d4255560547c45/Sdk/ArgumentFormatter.cs),
 [xUnit TypeUtility](https://github.com/xunit/xunit/blob/v2-2.4.1/src/xunit.execution/Sdk/TypeUtility.cs),
-and [.NET Boolean formatting](https://github.com/dotnet/runtime/blob/v8.0.31/src/libraries/System.Frozen.CoreLib/src/System/Boolean.cs).
+and [.NET Boolean formatting](https://github.com/dotnet/runtime/blob/v8.0.31/src/libraries/System.Private.CoreLib/src/System/Boolean.cs).
 
 The conversion Fact uses the current typed Dafny translator/prelude/default helper
 options for the exact source represented as:
