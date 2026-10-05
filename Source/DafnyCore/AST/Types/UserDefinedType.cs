@@ -449,13 +449,32 @@ public class UserDefinedType : NonProxyType, IHasReferences {
     }
   }
 
-  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes) {
+  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes, bool generalArrows = false) {
     if (ResolvedClass is ArrowTypeDecl) {
-      return TypeArgs.Any(ta => ta.ComputeMayInvolveReferences(visitedDatatypes));
+      return generalArrows || TypeArgs.Any(ta => ta.ComputeMayInvolveReferences(visitedDatatypes, generalArrows));
+    } else if (ResolvedClass != null && (ArrowType.IsPartialArrowTypeName(ResolvedClass.Name) || ArrowType.IsTotalArrowTypeName(ResolvedClass.Name))) {
+      // A partial or total arrow reads nothing, so it shows references only through its arguments and result,
+      // though its definition is a general arrow (see MayShowReferences).
+      return TypeArgs.Any(ta => ta.ComputeMayInvolveReferences(visitedDatatypes, generalArrows));
     } else if (ResolvedClass is ClassLikeDecl) {
       return true;
-    } else if (ResolvedClass is NewtypeDecl) {
-      return false;
+    } else if (ResolvedClass is NewtypeDecl newtypeDecl) {
+      // A nominal name does not remove references carried by its instantiated
+      // base. In particular, a general-arrow value can capture fresh objects.
+      if (!newtypeDecl.IsRevealedInScope(Type.GetScope()) || newtypeDecl.BaseType == null) {
+        return true;
+      }
+      var ancestry = NormalizeToAncestorTypeChecked(preserveSubsetTypes: true);
+      if (ancestry.Kind != AncestorTypeKind.Resolved || ancestry.AncestorType == null) {
+        // Erroneous ancestry cannot establish reference freedom.
+        return true;
+      }
+      if (ancestry.AncestorType is UserDefinedType { ResolvedClass: InternalTypeSynonymDecl provided }) {
+        // A provided head exposes only its declared characteristics. Preserve an explicit
+        // (!new) promise without inspecting or instantiating its hidden representation.
+        return !provided.Characteristics.ContainsNoReferenceTypes;
+      }
+      return ancestry.AncestorType.ComputeMayInvolveReferences(visitedDatatypes, generalArrows);
     } else if (ResolvedClass is DatatypeDecl) {
       // Datatype declarations do not support explicit (!new) annotations. Instead, whether or not
       // a datatype involves references depends on the definition and parametrization of the type.
@@ -469,7 +488,7 @@ public class UserDefinedType : NonProxyType, IHasReferences {
         // The type's definition is hidden from the current scope, so we
         // have to assume the type may involve references.
         return true;
-      } else if (TypeArgs.Any(ta => ta.ComputeMayInvolveReferences(visitedDatatypes))) {
+      } else if (TypeArgs.Any(ta => ta.ComputeMayInvolveReferences(visitedDatatypes, generalArrows))) {
         return true;
       } else if (visitedDatatypes != null && visitedDatatypes.Contains(dt)) {
         // we're in the middle of looking through the types involved in dt's definition
@@ -477,7 +496,7 @@ public class UserDefinedType : NonProxyType, IHasReferences {
       } else {
         visitedDatatypes ??= new HashSet<DatatypeDecl>();
         visitedDatatypes.Add(dt);
-        return dt.Ctors.Any(ctor => ctor.Formals.Any(f => f.Type.ComputeMayInvolveReferences(visitedDatatypes)));
+        return dt.Ctors.Any(ctor => ctor.Formals.Any(f => f.Type.ComputeMayInvolveReferences(visitedDatatypes, generalArrows)));
       }
     } else if (ResolvedClass is TypeSynonymDeclBase) {
       var t = (TypeSynonymDeclBase)ResolvedClass;
@@ -486,7 +505,7 @@ public class UserDefinedType : NonProxyType, IHasReferences {
         return false;
       } else if (t.IsRevealedInScope(Type.GetScope())) {
         // The type's definition is available in the scope, so consult the RHS type
-        return t.RhsWithArgument(TypeArgs).ComputeMayInvolveReferences(visitedDatatypes);
+        return t.RhsWithArgument(TypeArgs).ComputeMayInvolveReferences(visitedDatatypes, generalArrows);
       } else {
         // The type's definition is hidden from the current scope and there's no explicit "(!new)", so we
         // have to assume the type may involve references.

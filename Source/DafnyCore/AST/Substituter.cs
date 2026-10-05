@@ -828,20 +828,21 @@ namespace Microsoft.Dafny {
         var s = (ForallStmt)stmt;
         var newBoundVars = CreateBoundVarSubstitutions(s.BoundVars, false);
         var body = SubstStmt(s.Body);
-        // undo any changes to substMap (could be optimized to do this only if newBoundVars != e.Vars)
-        foreach (var bv in s.BoundVars) {
-          substMap.Remove(bv);
-        }
-
-        // Put things together
+        // The range, postconditions, attributes and bounds share the statement's binders.
         var rr = new ForallStmt(s.Origin, newBoundVars, SubstAttributes(s.Attributes), Substitute(s.Range), s.Ens.ConvertAll(SubstMayBeFreeExpr), body);
         rr.Kind = s.Kind;
         rr.CanConvert = s.CanConvert;
         rr.Bounds = SubstituteBoundedPoolList(s.Bounds);
+        foreach (var bv in s.BoundVars) {
+          substMap.Remove(bv);
+        }
+        // These quantified expressions introduce their own binders.
         if (s.EffectiveEnsuresClauses != null) {
           rr.EffectiveEnsuresClauses = s.EffectiveEnsuresClauses.ConvertAll(Substitute);
         }
-        r = rr;
+        rr.IsGhost = s.IsGhost;
+        // Keep the attributes substituted while the statement's binders were in scope.
+        return rr;
       } else if (stmt is CalcStmt) {
         var s = (CalcStmt)stmt;
         var rr = new CalcStmt(s.Origin, SubstCalcOp(s.UserSuppliedOp), s.Lines.ConvertAll(Substitute), s.Hints.ConvertAll(SubstBlockStmt), s.StepOps.ConvertAll(SubstCalcOp), SubstAttributes(s.Attributes));

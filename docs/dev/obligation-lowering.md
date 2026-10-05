@@ -10,7 +10,9 @@ global fuel or resource limit.
 
 The development baseline is `858e4bfbcf00fbf0146255c0a4b0efdfc4deb66f`
 (the actual full commit is recorded in the accompanying validation report).
-The shipped-line baseline is `ad1360af0f776c0be6cf57e4f0d38bbdf1ecc365`.
+The current shipped-line baseline is `ab210b78b50adb5a192542897f0a00cdb40f3c35`
+(the exact merge boundary is recorded in the validation report). Earlier diagnostics
+used `ad1360af0f776c0be6cf57e4f0d38bbdf1ecc365`.
 The design was prepared against `4b2742fb9924eed47c7bd40779e4283a1e65ce6d`.
 The option preserves the intervening soundness repairs; their guarded assumptions,
 allocation/result restrictions, co-recursive boundaries and additional-axiom

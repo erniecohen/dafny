@@ -949,6 +949,13 @@ method, then [`old(allocated(d))`](#sec-old-expression) is `false`.
 If the expression `e` is of a reference type, then `!old(allocated(e))`
 is the same as [`fresh(e)`](#sec-fresh-expression).
 
+A function value can capture object references and previous or labeled heap states.
+Its allocation depends on those captures: captured references must be allocated
+in the heap being considered, and captured heap states must be that heap or precede
+it. An empty reads frame alone does not establish allocation of a function value.
+A pure application whose function and arguments are allocated in the invocation
+heap, and whose precondition holds, produces a result allocated in that heap.
+
 
 ## 9.25. Unchanged Expressions ([grammar](#g-unchanged-expression)) {#sec-unchanged-expression}
 

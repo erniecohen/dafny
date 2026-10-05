@@ -9,6 +9,7 @@ git-issue-2064.dfy(51,9): Error: to be a refinement of abstract type 'UnitTestPa
 git-issue-2064.dfy(52,9): Error: to be a refinement of abstract type 'UnitTestParent.U' declared with (==), type synonym 'Arrow.U' must support equality
 git-issue-2064.dfy(53,9): Error: to be a refinement of abstract type 'UnitTestParent.V' declared with (0), type synonym 'Arrow.V' must support auto-initialization
 git-issue-2064.dfy(54,9): Error: to be a refinement of abstract type 'UnitTestParent.W' declared with (00), type synonym 'Arrow.W' must be nonempty
+git-issue-2064.dfy(59,9): Error: to be a refinement of abstract type 'UnitTestParent.T' declared with (!new), type synonym 'ArrowGood.T' must contain no references
 git-issue-2064.dfy(60,9): Error: to be a refinement of abstract type 'UnitTestParent.U' declared with (==), type synonym 'ArrowGood.U' must support equality
 git-issue-2064.dfy(66,9): Error: to be a refinement of abstract type 'UnitTestParent.T' declared with (!new), type synonym 'ArrowDirect.T' must contain no references
 git-issue-2064.dfy(67,9): Error: to be a refinement of abstract type 'UnitTestParent.U' declared with (==), type synonym 'ArrowDirect.U' must support equality
@@ -32,4 +33,4 @@ git-issue-2064.dfy(183,10): Error: to be a refinement of abstract type 'Parent.U
 git-issue-2064.dfy(179,9): Error: not resolving module 'BugReport2' because there were errors in resolving its nested module 'Child'
 git-issue-2064.dfy(207,10): Error: to be a refinement of abstract type 'Parent.U' declared with (0), class 'Child.U' must support auto-initialization
 git-issue-2064.dfy(204,9): Error: not resolving module 'BugReport2'' because there were errors in resolving its nested module 'Child'
-34 resolution/type errors detected in git-issue-2064.dfy
+35 resolution/type errors detected in git-issue-2064.dfy
