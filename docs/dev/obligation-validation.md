@@ -23,6 +23,12 @@ passed all 32 obligation structural checks. The
 [Linux baseline and candidate builds](https://github.com/erniecohen/dafny/actions/runs/37362360235)
 also completed, with all 32 candidate structural checks passing.
 These runs built the editor regression assembly; they did not run a solver.
+A separate current translation-only capture of the eight regression/cost
+sources gives identical default-off operational Boogie in all eight cases,
+retaining identifiers, attributes, guards, heaps, layers and representations;
+only complete comment lines are excluded. The intentionally abstract programs
+that cannot compile to a target language are recorded with that compilation
+status. Capturing their Boogie does not count as solver acceptance.
 Their successful diagnostic wrappers do not establish verifier or library acceptance.
 
 The deterministic inventory gate runs without capture mode in normal CI.
@@ -32,20 +38,22 @@ project/CLI precedence, visible subset introductions, false controls and
 normal/isolated negative checks. The larger diagnostic collection contains
 154 cases; fixed-seed and isolation observations are recorded separately.
 
-The [development source build probe](https://github.com/erniecohen/dafny/actions/runs/37367255719)
-is awaiting a hosted runner. An earlier development build passed all 30
-branch-specific structural checks; the editor regression added afterward still
-requires its build result. Supported-port solver results do not establish
-development-line verifier acceptance.
+The [development ARM build probe](https://github.com/erniecohen/dafny/actions/runs/37371355240)
+completed its build, all 30 branch-specific structural checks and the editor
+regression assembly build. The preceding x64 attempts did not acquire a hosted
+runner and executed no build step. Supported-port solver results do not
+establish development-line verifier acceptance.
 
 ## Outstanding acceptance
 
-The current full suite contains 1,161 verifier programs. Its first additional-axiom
-setting is complete: default-off matches all program verdicts and recorded batch
-resource counts. The enabled outcome and diagnostic changes are listed in
-[obligation-suite-comparison.md](obligation-suite-comparison.md). The second
-setting and complete standard-library comparison are still in progress.
-No expected-verdict table has been changed for this work.
+The current full suite contains 1,161 verifier programs. Both additional-axiom
+settings are complete: default-off matches all program verdicts and recorded
+batch resource counts. The enabled outcome and diagnostic changes are listed
+in [obligation-suite-comparison.md](obligation-suite-comparison.md). The complete
+standard-library comparison is still in progress.
+No expected-verdict table has been changed for this work. The new registered
+program still needs its expected row captured through the ordinary CI artifact
+procedure; the exact-baseline comparison does not replace that integration step.
 
 Focused enabled checks have identified completeness regressions in
 `AllLiteralsAxiom.calc_trick` and `GHC-MergeSort.sorted_sequences`, and resource
