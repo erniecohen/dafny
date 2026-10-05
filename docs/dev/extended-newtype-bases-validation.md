@@ -103,3 +103,9 @@ records the separate paired verdict and emitted-program observations. The
 retains unresolved proof-cost differences; exact default-off cost parity is not
 claimed. The [source and VC review](extended-newtype-bases-review.md) retains the
 known conservative proof losses and proof boundaries.
+
+## Shipping composition after the finite-support repair
+
+The current shipping base incorporates [the finite-support soundness repair](https://github.com/erniecohen/dafny/pull/160) at `854f5a65a50658c8c415629d67d0b1bd34860fed`. The composed product is `4e50e86cde6ab2ef6cab0762ffc4df59d646dc15`. Its source review preserves the guarded finite images and reads, the existing capture-allocation introduction, one previous-heap binder, and the suspended co-call boundary. The existing finite-support audit and map-substitution tests remain mandatory in its workflow.
+
+Parent registrations were composed row by row, preserving each one-sided change. Three overlapping aggregate Std run rows are provisional pending an actual composed-source capture. The new integration's proof outcomes, resource counts, compiler packages, runtime/lifecycle and performance receipts remain unmeasured. The earlier pinned observations in this document certify their recorded source only; they do not certify this composition or satisfy its remaining default-off cost requirement.
