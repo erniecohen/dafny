@@ -1,0 +1,26 @@
+--- a/Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs
++++ b/Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs
+@@ -2303,6 +2303,23 @@
+             List<Boogie.Expr> args = FunctionInvocationArguments(e, null, null);
+             Boogie.Expr canCallFuncAppl = new Boogie.NAryExpr(BoogieGenerator.GetToken(expr), new Boogie.FunctionCall(canCallFuncID), args);
+             var add = cco != null && cco.MakeAllowance(e.Function) ? Boogie.Expr.Or(TrExpr(MakeAllowance(e, cco)), canCallFuncAppl) : canCallFuncAppl;
++            if (cco is { ArrowAllocationFacts: true } && !cco.MakeAllowance(e.Function)) {
++              // Keep the checked native precondition term under the unchanged
++              // lambda guard. Its NOALLOC formal-type axiom and the existing
++              // #requires ==> #canCall axiom can supply ordinary callability
++              // without inferring allocation from an effect-free application.
++              Boogie.Expr requiresLayer = null;
++              if (e.Function.IsFuelAware()) {
++                requiresLayer = applyLimited_CurrentFunction != null && layerIntraCluster != null &&
++                    ModuleDefinition.InSameSCC(e.Function, applyLimited_CurrentFunction)
++                  ? layerIntraCluster.GetFunctionFuel(e.Function)
++                  : layerInterCluster.GetFunctionFuel(e.Function);
++              }
++              var requiresArgs = FunctionInvocationArguments(e, requiresLayer, null);
++              var requires = FunctionCall(e.Origin, BoogieGenerator.RequiresName(e.Function),
++                Boogie.Type.Bool, requiresArgs);
++              add = BplAnd(requires, add);
++            }
+             r = BplAnd(r, add);
+           }
+           return r;

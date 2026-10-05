@@ -1,0 +1,189 @@
+{
+  "schema_version": 1,
+  "repository": "erniecohen/dafny",
+  "lines": {
+    "shipped": {
+      "original": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d",
+      "repaired_product": "bbf90260694e2e3004030c35b57f012a98b7c65d",
+      "final_product": "4e50e86cde6ab2ef6cab0762ffc4df59d646dc15",
+      "repaired_tree": "0b8aa84095a7754ab6443cb2a03e6326074e4bed",
+      "repaired_core_tree": "fac1a44e6c74e2cba489692ab3477396d25b6317",
+      "original_tree": "cb4dd1e19114005c06cab46fc376192177c8ea1e",
+      "patch_sha256": "7d880457b1e12d8c9e66918ce1adef3c54ac2aab30a8809b26ad975e2132f2f2",
+      "inputs_sha256": "173919b494886488ef3c1e90865b3a23e6f9b2334d3c9b72f7fec08731c8c4b5",
+      "reference_solver": "4.12.1",
+      "components": [
+        {
+          "component": "146",
+          "source_base": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d",
+          "source_tip": "c25a950c5a39be84ae21c01f773e5c54bbd56ebf",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "141",
+          "source_base": "c9ffff45b0f6db2beddd348d0defb56c452456d4",
+          "source_tip": "3ee4e4258704b2cc0944d4bfd1745a4b68bf398c",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "145",
+          "source_base": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d",
+          "source_tip": "6ea31ff1b6beebe8c6414a92d6cb557a065bca33",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "142",
+          "source_base": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d",
+          "source_tip": "5907b1edc0787d7ee74be1a20727e402cd741aa9",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "143",
+          "source_base": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d",
+          "source_tip": "9976ffd3af879332279349431a6950c50eb60d63",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "148",
+          "source_base": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d",
+          "source_tip": "e28ac31a3195a43ed62c0644ed9ba372dbc304b6",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "132-owner",
+          "source_base": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d",
+          "source_tip": "8848d92ffd079e0be6a9780e03ea824ee85c0d1d",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "132-all-nt",
+          "source_base": "8848d92ffd079e0be6a9780e03ea824ee85c0d1d",
+          "source_tip": "47ecde37abdff3e133627ccb09029cddcac3d21f",
+          "adaptation": "none; exact source patch applied"
+        },
+        {
+          "component": "82-PR160-finite-support",
+          "source_base": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d",
+          "source_tip": "dc018472c9df892fae05b27532a5d38970633df9",
+          "adaptation": "Exact12-Core repair consumed on both sides. The added/deleted line sequence agrees in each file; pre-existing issue113 code remains only in final."
+        }
+      ],
+      "resolver_default": false,
+      "repaired_driver_tree": "208a4277a53e6dc068f5ed2f36e5824a6097bece",
+      "final_core_tree": "1be0fe66bc603a9fc279e522e925be22417a7c41",
+      "composition_patches": [
+        {
+          "file": "baseline/shipped-core.patch",
+          "sha256": "7d880457b1e12d8c9e66918ce1adef3c54ac2aab30a8809b26ad975e2132f2f2",
+          "scope": "Core"
+        }
+      ]
+    }
+  },
+  "solver_5_1_0": {
+    "url": "https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip",
+    "sha256": "f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a"
+  },
+  "reference_solvers": {
+    "4.12.1": {
+      "url": "https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.12.1-x64-ubuntu-24.04-bin.zip",
+      "sha256": "e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b"
+    },
+    "4.16.0": {
+      "url": "https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.16.0-x64-ubuntu-24.04-bin.zip",
+      "sha256": "87de9c9e86c877abfccb00cf24b946c4a1bda7b9cba6f363ea58311d2573c320"
+    }
+  },
+  "development_reuse": {
+    "original": "97601b75712f458de37a13bf9953a0b7825122eb",
+    "repaired_product": "db571b83400fef7f32c175c5eb372f4545e932ed",
+    "final_product": "7b063ecd6414a845631cd587196c683fd243c86a",
+    "boundary": "Unchanged previously completed development evidence. This shipping-only dispatch requests no development builds/proofs; historical development observations are not newly measured."
+  },
+  "repair82": {
+    "source_commit": "854f5a65a50658c8c415629d67d0b1bd34860fed",
+    "files_sha256": {
+      "git-issues/Inputs/git-issue-82-antitone-map.dfy": "eeae4182371d9401bd1ccd660e09cf89ecb6650c0f6867d72327d8d4b98ca768",
+      "git-issues/Inputs/git-issue-82-antitone-set.dfy": "fc6f30562639a606ccecbb299bf4d309382d4d92dc7aa69f9a9055c026a2b8d1",
+      "git-issues/Inputs/git-issue-82-dependent-negative.dfy": "36cb86d3f3b7c406f3eb4a183e60bf0e33e6c750b2459e2aba4ab7ae69e70130",
+      "git-issues/Inputs/git-issue-82-dependent-positive.dfy": "b5739d9629a4d721f4e25edfa83cfaf6aa2168afa420a35d20e2654488771bf8",
+      "git-issues/Inputs/git-issue-82-empty-outer-negative.dfy": "43f360d7fe61dddfad47df59618ccd13e41c71c6e5471fce3aaf54baa26baae2",
+      "git-issues/Inputs/git-issue-82-encoding.dfy": "9622e7448be41e987f75f17c045e57dc9ffdb30b3da41c16e7a5cc2f28c2be78",
+      "git-issues/Inputs/git-issue-82-lambda-alloc-negative.dfy": "4f3494886bb2e89037fd0a55653aa3a7fbc147d9038b96bbe4e2cf80eb9cd7f7",
+      "git-issues/Inputs/git-issue-82-map-carrier-map.dfy": "6d56ba4d80e07f8cbf49112dbb8fcc6b4022de2dd0dc54f8a3e7ae3c64060c9e",
+      "git-issues/Inputs/git-issue-82-map-carrier-set.dfy": "41864d490b3332f0e2b483ebf92036ccc05accc4d266c47054d731c36d518aa2",
+      "git-issues/Inputs/git-issue-82-maps-capture.check": "fb3f3ad2375e2d4e6cfddc0830c243d6db45cb4fb3a5e0f2c44dbce45e221d9c",
+      "git-issues/Inputs/git-issue-82-maps-capture.dfy": "a91f777c6c86d64f9a648fe8cb4fba8098efe91dbd61c1727d16eddf8acba940",
+      "git-issues/Inputs/git-issue-82-maps-conditional-capture.check": "1b1b2f46641ed71d685116cc567d21dfab6e3795868dfe7710af70a77295dc91",
+      "git-issues/Inputs/git-issue-82-maps-conditional-capture.dfy": "8b9205e801e101f4d9a14a29e07458a75f43313caba15976fd16621e94e4ab66",
+      "git-issues/Inputs/git-issue-82-maps-conflict.check": "aec3f06f6ebb314b7cc5837fdb39dc5ee1b6031ae0d469467f12322aeb60a41d",
+      "git-issues/Inputs/git-issue-82-maps-conflict.dfy": "e49d8d60665d3e370bfd507ce06a0cc5256d1882a4b8148b7eef0c63668a44e5",
+      "git-issues/Inputs/git-issue-82-maps-imap-capture.check": "23ca2e0abd41ecd58fe1a4ac4c568583e119352b6255e1f0c21bb4809c804215",
+      "git-issues/Inputs/git-issue-82-maps-imap-capture.dfy": "447fba7cdbd43a153258cfdb07152b1cb28c93d8594bf159dfdaa4d41333a23f",
+      "git-issues/Inputs/git-issue-82-maps-local-capture.check": "b3ff9f9d2d6e04f032b64a9688716c193a14d01523d2f45920b07f3d04cccc82",
+      "git-issues/Inputs/git-issue-82-maps-local-capture.dfy": "6b71d552c38a0b7b1042412ba6a2e83f208dd07005955b9bcbac41b2faf40dd1",
+      "git-issues/Inputs/git-issue-82-maps-positive.check": "44573386ab935ae6c484951ec7bfb248399234cdaefabf6d8d5010c31e168a53",
+      "git-issues/Inputs/git-issue-82-maps-positive.dfy": "cba66dc2843bdecea34516eb0929b11f868e1c03116ca35c69578ded066d3154",
+      "git-issues/Inputs/git-issue-82-mixed-negative.dfy": "f7f8999c6561a82e5a48282b06bffe14ac050d0f4664b2f97ecab51b6675afff",
+      "git-issues/Inputs/git-issue-82-newtypes-live-negative.dfy": "1dceca9fa5407e474dccaba0f841aab57a484e7c1217ad72a0cf6532236370a4",
+      "git-issues/Inputs/git-issue-82-newtypes-map-negative.dfy": "d40f83734ab27644159a798852d92d7cef1020a1472e123b43a04f53ecdc534f",
+      "git-issues/Inputs/git-issue-82-newtypes-rank-negative.dfy": "07dfa01edd5d5cdcebbd80ac5263abb3815d01bb58eae508dea70c4acf2535df",
+      "git-issues/Inputs/git-issue-82-newtypes-set-negative.dfy": "4dc29799319f9741fba239091380e999d6b6cc85b867b204df857604ebb29909",
+      "git-issues/Inputs/git-issue-82-rank-map.dfy": "0c81fc70dcee773b82467c4161d5541665b166e489bad885d1d87d6bb2442a16",
+      "git-issues/Inputs/git-issue-82-rank-positive.dfy": "8c63775ec7eac7ddfa8d825630014bfc744162498d0ac99b4525b3a2ac2013b7",
+      "git-issues/Inputs/git-issue-82-rank-set.dfy": "007f2941168304508fa2214091c7aada3d0fd785dd8b128a52ff0d9f37144c8b",
+      "git-issues/Inputs/git-issue-82-reads-fresh-reference-negative.check": "8e7eeb6f8815f1a79eaccecbabc478c6f37193c53bf189ccd7be337df3dfb770",
+      "git-issues/Inputs/git-issue-82-reads-fresh-reference-negative.dfy": "7bc2e348a3fcdef9e63aa5982e3c08bcda122a41952133b337c1da25a29e7565",
+      "git-issues/Inputs/git-issue-82-reads-generated-negative.check": "6878e55e2c605ed0edac5afdbb448486dc9eee9a2a2a4f722f1a87729d4c2d04",
+      "git-issues/Inputs/git-issue-82-reads-generated-negative.dfy": "e29f9fce17eba74893a171efc78cfa364c386ff60468b969df13dc4835422c7f",
+      "git-issues/Inputs/git-issue-82-reads-intermediate-callback-negative.check": "d1e42c396f5dd069af4e539e2dae9742bd8fae95fb53439a6bd40af070634e5a",
+      "git-issues/Inputs/git-issue-82-reads-intermediate-callback-negative.dfy": "1e0a83c82ab6e3ad332ad0c5e291ffc296c766e935f34bb6f5db67afa8a8c73b",
+      "git-issues/Inputs/git-issue-82-reads-lambda-requires-negative.check": "8b6bad983439d84e407b4ea1778e95aeb54ea3d2555d66a3ae0516a94e998d7a",
+      "git-issues/Inputs/git-issue-82-reads-lambda-requires-negative.dfy": "33c6eea8e576a70f8edc471e63c3d1ee614d32edb3f21266a95ecb15cfc9015e",
+      "git-issues/Inputs/git-issue-82-reads-negative.check": "36ce6e6d70a50b5221353a84498d8c6419d85fefc75aee1f7d763937559451f4",
+      "git-issues/Inputs/git-issue-82-reads-negative.dfy": "01049094949befa4c54b8247febe9278a5d0813f0b8e9e7a169379b5b32a9ea2",
+      "git-issues/Inputs/git-issue-82-reads-old-only-negative.check": "f6714bb93d816f6c55d94eeb1a73caa61a4d71583488e44cdd95ba95853e23a2",
+      "git-issues/Inputs/git-issue-82-reads-old-only-negative.dfy": "81a33ae89e7403542c9d06629629178a00eec07ab6ae6f11669c3743f33c1205",
+      "git-issues/Inputs/git-issue-82-reads-positive.check": "6277a0cb565a9de0b18c4525930b2a999e31122946b7a3aa87a0e46952581532",
+      "git-issues/Inputs/git-issue-82-reads-positive.dfy": "fbf0dd7c478492b50d742c001b7df1b76ed72faeb66b00b4972134623d75388d",
+      "git-issues/Inputs/git-issue-82-reads-precondition.check": "f0700a5d4c0a28a385565649dee90771819048ad0b23e7420213305a35d0ed0c",
+      "git-issues/Inputs/git-issue-82-reads-precondition.dfy": "17cd97bf07a77ed4b82799b6762a23aa4ab3b7b3ac6e01bfc45aba70752f30e1",
+      "git-issues/Inputs/git-issue-82-reads-returned-callback-negative.check": "2496c3d7820cdf6b2369723f10b064b9068ff95ddc537a496d058f8a0c15162f",
+      "git-issues/Inputs/git-issue-82-reads-returned-callback-negative.dfy": "ecc4ca145a4413196d61383073705c9b98dff829b71130bb3bb606b37f0f7bad",
+      "git-issues/Inputs/git-issue-82-reads-unavailable-negative.check": "901dcef5ca37f072e249e06da6a8afca56b41eabc82122caee87cba80953f054",
+      "git-issues/Inputs/git-issue-82-reads-unavailable-negative.dfy": "05f68aa0935a9e52bb4b12fe665f3d555a5e28592d2d16e54867f27e121e902d",
+      "git-issues/Inputs/git-issue-82-spec-negative.dfy": "8c2f39be00c647828d9b9a58fab45a4c5fb08b2820e2723a8353028f81c2ad4e",
+      "git-issues/git-issue-82-bounds.dfy": "596495daa2575c63b555570845dc9c514136d0cabb755bc9cd784233c4ae9cc7",
+      "git-issues/git-issue-82-bounds.dfy.expect": "e00042315e82201d437ac94b275b948a0d0dc41fc0441e2ee132e07cfe17d5a1",
+      "git-issues/git-issue-82-maps.dfy": "57d1cba879c234f844da39902215cde4e223ebba2905166eecb30f459f182c0d",
+      "git-issues/git-issue-82-newtypes.dfy": "43d8b063da8cda9a6f5800f5b69ea1c2bd2addea9e90bfad3ae52b477f8a45f6",
+      "git-issues/git-issue-82-newtypes.dfy.expect": "b1022c388ff85e6b3be3cee228d59c66642c9a1a52be33e49d5929d0cddeddb5",
+      "git-issues/git-issue-82-reads.dfy": "f5288bc7592dcd993c50129b7aee656d88e60cae390d32d1e3b36f129b0ffb78",
+      "git-issues/git-issue-82-reads.dfy.expect": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "git-issues/git-issue-82.dfy": "f0fbce4f11712cb3e6d34fd532010d1b376a0f783d34a069898d704592c4fb54",
+      "git-issues/git-issue-82.dfy.expect": "e8ff80079b380ed1ae0b0b6f31f4f6aace56ba29bbaf2b86a27ac1cc2ddafa7f"
+    },
+    "input_root": "repair82/inputs",
+    "literal_sources": [
+      "git-issues/git-issue-82.dfy",
+      "git-issues/git-issue-82-bounds.dfy",
+      "git-issues/git-issue-82-maps.dfy",
+      "git-issues/git-issue-82-newtypes.dfy",
+      "git-issues/git-issue-82-reads.dfy"
+    ],
+    "boundary": "Separate new existing-language cohort. Literal AX/refresh/caps and default-versus-pinned solver macro selection are preserved; no literal82 row enters old4b denominator."
+  },
+  "candidate": {
+    "base_product": "4e50e86cde6ab2ef6cab0762ffc4df59d646dc15",
+    "patch_file": "baseline/candidate-native-requires.patch",
+    "patch_sha256": "03a50c93b0dbb9541387889f7a3c9c546b80635163bb5db208d30ecfef5659d1",
+    "composed_tree": "6b963805738b8ce004ec408e03911874633cff6c",
+    "core_tree": "2a35490c140a053a3716afcba3e207c2c4324e7e",
+    "product_revision": "4e50e86cde6ab2ef6cab0762ffc4df59d646dc15+patch:03a50c93b0dbb9541387889f7a3c9c546b80635163bb5db208d30ecfef5659d1",
+    "source_revision_id": "fcb2042d.review.c9c7622d.candidate.03a50c93",
+    "changed_paths": [
+      "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs"
+    ],
+    "status": "Prospective exact-source diagnostic; independent semantic review pending; no authoritative product change"
+  }
+}
