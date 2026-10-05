@@ -247,3 +247,4 @@ git-issues/github-issue-132-statement-binders-negative.dfy
 
 # Pure callback allocation retains current-heap positives and old-heap/false negatives.
 git-issues/github-issue-132-pure-callback.dfy
+git-issues/git-issue-2064.dfy
