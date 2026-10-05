@@ -1,0 +1,71 @@
+# English-only proposal: two current unsigned If guard corpus cases
+
+This is a prospective CI-only child of clean `52ee01f1aa5abab762bf39e1cf499fe5ed832634`, with product `572ebc88e6e3078d4dbe65f7a1f2eab3767307d2` and the fifteen implementation files unchanged. It proposes no source, fixture, expectation, schema, vendor, worker or packaging change. No source implementation, build, prover execution or dispatch is authorized by this document. The complete 469-normalizer/79-corpus gate remains paused while the existing Real cases are unresolved.
+
+## Completed prerequisite and scope
+
+Independent artifact inspection of public [run 37251480365](https://github.com/erniecohen/dafny/actions/runs/37251480365), exact `52ee01f1`, confirms both current Core/test builds, five owned stages with ten source/tool/fixture boundaries, zero cleanup signals/residual children, complete immutable Core/test snapshots and the exact 35 unique Passed TRX identities. Artifact `11321335589` has 13,176,236 bytes and SHA-256 `32c2a81f586b50c1e282953c4edfabafa8af5953c91f36389d4ccd765e5c79ea`. The summary is SHA-256 `006cf80517526c08a8e797c681f35713f353e8a5dec643a10118495531ff0460`; TRX is `8a63aaf6816f578d7685ea614b7121733ca95511ecf75e03bba107e1b6656ad5`. Core DLL is `761eb1b5302b85d87c4376c565d74ba8758422bd283487d63dad7520de946b61`, and the test DLL is `1dbd1a97e1b3fdb1a65e707327aed9b99ed6ae0408c0c56e66c92d752f8c6c97`. No source failure appeared. All library, worker, corpus, default-compatibility and backend-acceptance flags remain false in that focused receipt.
+
+The next question is operational and narrowly separate: do the two already-committed actual Dafny corpus fixtures produce their unchanged expected B3 outcomes through a current CLI, the exact worker package, and pinned Z3 5.1.0? The 35-control archive contains Core/test inputs, not the complete current CLI; it is not executable-corpus evidence.
+
+## Existing fresh proof/runtime closure eligible for bounded reuse
+
+Use a separately qualified, immutable prerequisite from [public run 37234654995](https://github.com/erniecohen/dafny/actions/runs/37234654995), exact source `6da2229bad0ab4965fe3277def468e28745b73b7`. That run remains **NOT GREEN**, because the host test assembly failed to compile. It nevertheless completed its fresh library proof/build, worker runtime and Java compilation before that failure, each with actual exit zero, zero cleanup signals and zero residual children. Reuse is limited to those exact completed prerequisites, never the failed host stage or later unexecuted stages.
+
+The selected archive is artifact `11314819553`, name `b3-native-compile`, 145,888,198 bytes, GitHub API digest `ea1ab5457f1111c04fe23da77351c4e949ca9a08a78eaa17092d7d97ea59c2a4`. Its full archive digest was read from the current GitHub API for this proposal; it must be independently verified on downloaded bytes before any future execution. This proposal independently rehashed and parsed the already captured selected library, proof CSV/log, runtime log and package entries, not that full ZIP.
+
+Qualification requires all of the following exact evidence:
+
+- Summary SHA-256 `f57cf4018f683bb67ef230a829f57e3ec54ed4f2d18e7c7096d48232a78f2554`, expected source/head, failed overall result retained, and successful clean worker-bootstrap/runtime/Java stage records.
+- Current 60-file source manifest `04acac15b45763c86af4b47b50b4415a9568d22ac304b86a0ba492d11bdb1722`, upstream PR13 source `ea6e8a18dfe9e317d313de769291f989957dc5f2`, patch `29ce3e116f81d2d8d6fb777c1eb50a28a0f85a8b5c3e9efe61236ba91b3e6b42`, schema 3 and normalizer `experimental-3`.
+- Fresh library DLL: 1,666,560 bytes, SHA-256 `8498af70e14d242b06813bedba80d6a3ea296bb9b5d3bbdaa62b509af517a812`. Require equality between the selected library-directory DLL and the package DLL, the proof receipt and package manifest.
+- CSV: 46,211 bytes / `f9c5051737bee644a99aee942a3774c1fd875f62352d08cd4c7b0e07bb85c137`; exactly 590 distinct Passed batches, seed zero, each RU in [0,100000000], total 178281304 and maximum 21196571.
+- Bootstrap log: 737 bytes / `438ca452dc2162daf7430421a270464af74db5c742b515a5d387406a3f75a84e`; exactly one verifier completion, 590 verified and zero errors. The source receipt must say its exact 60-file inventory and all three source-consumer pins matched.
+- Runtime log: 2,354 bytes / `79d3aab90b7602931624e49d1f00f0f558a1c9f3b8b59b847b7115088e9246e9`; exactly the 37 existing source-defined `@Test` identities, all PASSED, no FAILED/HALT, with its clean successful stage receipt. Preserve all runtime names; count alone cannot substitute for this finite inventory.
+- Java compilation is historical only: nonempty jar 1,054,736 bytes / `608918da6317f9e8195e6841217019c49d9758fbaa98ea26cf3c86c635a0b19c`, with its successful stage record. No Java execution or new Java result is claimed.
+- Bootstrap remains the fork-pinned Dafny 4.11.0 archive `ba06f4d5048ecf0cc40f79281230eb44b429fd73a8bbed5c4377a3d0ff010331`, version `4.11.0+fcb2042d.review.a171069d`; it is provenance of the archived proof/build, not a compiler substituted for the current CLI.
+
+The complete worker package consists of nine bounded known files. Its manifest is 704 bytes / `d28d0b1e22024c4f0567173ea69eb0979246eb6557538dfc27c49fccbd47225c`, with exactly its five managed/config entries. The host DLL is 26,624 bytes / `385d5f9bcf2a01ccb689360f185edd21e12d7eaa1cca645176e50076014ae43b`; Protocol DLL is 102,912 bytes / `fc80ff3b182661b52dc4f9775411c26de8cdbad2f960c89897cd7e4bb42685a0`; deps/config and all three PDB byte identities must be frozen in a finite input inventory before source implementation. No unlisted managed assembly/config may enter that package.
+
+There is no Git difference from the archived source to `52ee01f1` in `ThirdParty/B3`, `Source/DafnyB3Host`, `Source/DafnyB3Protocol`, `Scripts/build-b3-worker.sh` or `Source/Directory.Build.props`. Source implementation must bind the complete relevant build/source closure by exact per-file Git identities, not merely these directory names. This makes prior fresh-library and worker-package reuse defensible for this focused diagnostic: the changed guard normalization runs in the newly built CLI, while the worker/library code and wire language are unchanged. The two processes may carry different informational-version metadata, but do not exchange loaded Protocol objects; they use the unchanged validated schema 3 wire protocol. No ABI/source difference may be waved through from a version string alone.
+
+If any archive, prerequisite stage, complete source closure, selected byte, runtime name or solver pin fails qualification, stop and record an unqualified diagnostic. Do not rebuild the library as a fallback, relabel an old 557/560 receipt, use another public package or run a new 590 proof gate in this focus.
+
+## Exact two-case corpus schedule
+
+Keep `Source/IntegrationTests/TestFiles/B3/cases.json` byte-exact and select exactly its two existing rows by a finite name set. Do not modify or execute `Scripts/check-b3-integration.py` against all rows. A dedicated CI-only runner must preserve its current command and expectation logic for these two cases, adding strict receipt checks rather than changing their expectations.
+
+| Case | Frozen source | Expected |
+| --- | --- | --- |
+| `bitvector-unsigned-if-guard` | `bitvector-unsigned-if-guard.dfy`, 199 bytes, SHA-256 `300e7b19220521c09608c8c406f0d16e20e3718ecf3e0e2be22ac9d0229a4946` | CLI exit 0, real completed verification, no error |
+| `bitvector-unsigned-if-guard-false` | `bitvector-unsigned-if-guard-false.dfy`, 191 bytes, SHA-256 `27f405353f9b06bc48a92baa7fa7cc8a5a04d7e692465d3b1f209b8583592590` | CLI exit 4, actual assertion diagnostic containing `B3 failed:` |
+
+The first fixture universally checks the unsigned range and checked round trip for bv67. The second has satisfiable bv3 input x=1, checks the range and retains an actual `assert false`; it must fail. Preserve all source guards/conditions/checks, widths, requires clauses and default translator settings. Use no filter-symbol, arithmetic override, additional axioms, declaration/goal removal, expectation repair or alternate typed runner.
+
+Each command uses the current `dotnet <new-CLI>/Dafny.dll verify <original-source>` and the existing corpus options: `--verification-backend b3 --b3-worker <exact-package>/DafnyB3Host.dll --solver-path <exact-5.1> --cores 1 --resource-limit 200000 --verification-time-limit 20 --show-snippets:false --use-basename-for-filename --progress Batch`. No other solver may be selected. Preserve both output streams and full bounded process/worker diagnostics. Error-body matching must exclude filenames and stack frames. Positive success requires actual nonempty completed-unit progress and the unavailable-resource marker, not mere translation/preparation. Negative success requires an actual B3 Failed assertion outcome; reject Unknown/Unsupported/ToolError/cancellation/internal exceptions even if they share exit 4. Do not assume a unit/check denominator for these separate corpus files from the different 201-byte structural fixture; record the actual unchanged CLI progress/final summary, and rely on the existing backend's required complete traversal rather than dropping WF units.
+
+## Minimal CI implementation and ownership
+
+Propose only a new `.github/review/b3-if-guard-corpus.py`, a finite `.github/review/b3-if-guard-corpus-inputs.json`, and selected-mode routing in `.github/workflows/review.yml`. The current 35 coordinator and input file stay frozen. Add a focus literal such as `unsigned-if-guard-corpus`, eligible only on explicit scratch workflow_dispatch with compile_only=true/full=false/all other flags false. Suppress every other job for this literal while preserving every inherited default/other-focus behavior.
+
+Use .NET 8 and the existing Java 17 build dependency on Ubuntu 24.04. Keep serial Release/shared-compiler/server/Gradle-daemon settings. Use the six exact reviewed owned-stage helper functions, empty child scope at each boundary, adopted-child reaping, bounded natural grace and pidfd cleanup. Signals, residual children or failed drains fail the stage; failed drain poisons later stages. No cgroup/atomic-image claim. Expected failures exit zero with a strict failed summary and always-upload bounded artifact.
+
+Seven explicit owned stages are sufficient:
+
+1. Source/head/tool selection: bind new CI head, unchanged product/source/control/complete corpus manifests, finite approved EOL dispositions, actual SDK/runtime/gh bytes and exact selected input flags.
+2. Archived prerequisites: bounded hash-pinned artifact retrieval and only finite known-file extraction/validation; verify the exact 590/37 historical receipt, worker package/source closure and archived 5.1 executable/version. No proof workload in this stage.
+3. Fixed Boogie packages: unchanged fetch script/checksum manifest, followed by exact package-byte pins.
+4. Current CLI build: one fresh complete `dotnet build Source/Dafny/Dafny.csproj -c Release -m:1 -p:UseSharedCompilation=false -p:SourceRevisionId=<actual-new-head> --nologo`. Capture its complete actual managed/deps/runtimeconfig/prelude/copied-runtime closure and immutable snapshot after the build. The initial CLI graph may build its references; no later SDK project build may overwrite these outputs.
+5. Current CLI version: use only that captured CLI; require the expected 4.11.0 source identity and unchanged actual assembly/dependency/tool bytes.
+6. Positive original corpus case, with exact clean complete process/verification receipt.
+7. Negative original corpus case, with exact expected Failed assertion and clean complete process/verification receipt.
+
+Pin source/tool/package/current CLI/archived package/solver bytes before and after every consuming stage and both corpus cases. Reuse the reviewed immediate immutable snapshot/failure-delta design for current CLI outputs; observed changes never replace acceptance pins. The solver executable is 36,403,784 bytes / `b4e0b3483ce37817230b20d6cad48390eb6a3aefde1d93342ad6dc763f24bc23`, expected exact 5.1.0 version. Bind any extracted package DLL/deps/runtimeconfig together and retain the same bytes throughout both worker launches.
+
+Keep the 32 MiB per-stage log bound, 1,800-second build-stage safety ceiling and 120-second safety ceiling for each complete corpus process, including descendant drain. No metric renormalization: B3 proof-resource totals remain unavailable; only the historical library proof reports RU. Bound the archive download to its exact declared length and a 256 MiB archive ceiling, selected extraction by a finite path/size inventory, and emitted artifacts to 256 MiB. The downloaded 145 MiB full prerequisite archive must live outside the uploaded-output tree; preserve its verified identity and only selected proof/runtime/package/solver bytes. Never extract arbitrary archive paths, load unknown entries, or retain duplicate unbounded prerequisite archives.
+
+## Receipt and later acceptance boundary
+
+A successful result means exactly two current unsigned-guard corpus expectations matched using the immutable current CLI and separately qualified archived fresh-library/runtime closure. Explicit fields must include `archivedPrerequisitesQualified=true`, `libraryProofReused=true`, `libraryVerifiedInThisRun=false`, `runtimeExecutedInThisRun=false`, exact public prerequisite identities, `focusedCorpusMatched=2` and the two actual terminal outcomes. Complete469/79, complete backend and default compatibility remain false. Keep the original prerequisite gate's failed overall status visible; host tests were not qualified there and are not part of this new focus.
+
+All 67 existing corpus source rows and 12 driver controls remain untouched, including the original Real conversion/irrational expectations; all 469 normalizer controls and existing 590-proof/37-runtime requirements remain in the later full gate. A two-case success does not repair or waive those known Real failures. After ROOT source-design acceptance, implement and freeze a minimal CI-only child for a separate source review before any publication/dispatch. Do not dispatch the expensive full fresh590 gate until the pending Real product work is ready and ROOT separately approves that complete gate.
