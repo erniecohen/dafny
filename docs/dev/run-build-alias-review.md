@@ -8,4 +8,4 @@ The [corrected focused comparison](https://github.com/erniecohen/dafny/actions/r
 
 The earlier [first comparison](https://github.com/erniecohen/dafny/actions/runs/37248673422) reproduces the two refreshed output failures and passes all eight refreshed repaired cases. Its eight legacy-resolver cases stop before compilation because development defaults general newtypes to enabled. The corrected controls explicitly disable general newtypes for their ordinary datatype source; the 16 intended output-location checks then execute. No product change was made to address that test setup error.
 
-The complete strict review gate remains a separate obligation from these focused controls.
+The [complete strict review gate](https://github.com/erniecohen/dafny/actions/runs/37249633832) passes all required jobs: 1,092 suite verdicts and both 2,439-row Standard Library matrices exactly match their existing expected tables; 206 selected Core tests, four language-server tests, two integration tests and 34 registered harness cases pass. Binaries are not requested in this development gate. No expected table was updated.
