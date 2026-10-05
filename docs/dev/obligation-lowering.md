@@ -241,6 +241,10 @@ pair tests check those explicitly, and complete command emission retains them. I
 temporary or independent witness. Complete Boogie emission and selected passive
 Boogie/SMT inputs accompany the structural package tests; proof dependencies and
 scope availability are reviewed in command emission as well as expression content.
+The observer runs before Boogie resolution, so some internal expression type
+fields are recorded as `unresolved`. The content fingerprint alone therefore
+does not certify complete typed package equivalence; the emitted declarations,
+preparation/guard checks and command-level comparisons remain separate evidence.
 
 The paired runner preserves original examples, records hashes, commands, solver
 checksum, exit/outcomes and total/maximum-batch resource counts. The unchanged
