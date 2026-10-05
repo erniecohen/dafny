@@ -26,7 +26,7 @@ jobs:
           result=$?
           echo "$result" > out/diagnostic/build.exit
           if [ "$result" -eq 0 ]; then
-            dotnet test Source/DafnyCore.Test/DafnyCore.Test.csproj -c Release --filter 'FullyQualifiedName~Obligation' > out/diagnostic/tests.log 2>&1
+            OBLIGATION_INVENTORY_CAPTURE=out/diagnostic/obligation-producers.json dotnet test Source/DafnyCore.Test/DafnyCore.Test.csproj -c Release --filter 'FullyQualifiedName~Obligation' > out/diagnostic/tests.log 2>&1
             echo "$?" > out/diagnostic/tests.exit
           fi
           cat out/diagnostic/build.exit

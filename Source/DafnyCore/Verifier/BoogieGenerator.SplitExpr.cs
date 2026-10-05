@@ -230,7 +230,7 @@ namespace Microsoft.Dafny {
             TrSplitExpr(context, ite.Els, ssElse, position, heightLimit, applyInduction, etran);
 
             var op = position ? BinaryOperator.Opcode.Imp : BinaryOperator.Opcode.And;
-            var test = etran.TrExpr(ite.Test);
+            var test = etran.AsVerificationValue().TrExpr(ite.Test);
             foreach (var s in ssThen) {
               // as the source location in the following implication, use that of the translated "s"
               splits.Add(ToSplitExprInfo(s.Kind, Bpl.Expr.Binary(s.E.tok, op, test, s.E)));

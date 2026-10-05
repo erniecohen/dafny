@@ -6,30 +6,41 @@ namespace Microsoft.Dafny;
 public partial class BoogieGenerator {
   // This package constructs expressions only. Preparation permissions remain the
   // responsibility of the existing WF/declared-contract/guarded introduction path.
-  private record PropositionLowering(Expression Source, IReadOnlyList<SplitExprInfo> Pieces,
-    Bpl.Expr Summary, bool SplitHappened);
+  internal enum ObligationPreparation { CheckedExpression, DeclaredContract, GuardedIntroduction }
+
+  internal record PropositionInputs(BodyTranslationContext Body, ExpressionTranslator Translator,
+    bool ApplyInduction, int InliningHeight, ObligationPreparation Preparation, Bpl.Expr Guard);
+
+  internal record PropositionLowering(Expression Source, PropositionInputs Inputs,
+    IReadOnlyList<SplitExprInfo> Pieces, Bpl.Expr Summary, bool SplitHappened);
 
   private PropositionLowering LowerProposition(BodyTranslationContext context, Expression condition,
-    ExpressionTranslator etran, bool applyInduction = true, int heightLimit = int.MaxValue) {
+    ExpressionTranslator etran, bool applyInduction = true, int heightLimit = int.MaxValue,
+    ObligationPreparation preparation = ObligationPreparation.DeclaredContract, Bpl.Expr guard = null) {
     var checking = etran.WithVerificationUse(VerificationExpressionUse.Check);
     var pieces = new List<SplitExprInfo>();
     var split = TrSplitExpr(context, condition, pieces, true, heightLimit, applyInduction, checking);
     var summary = etran.WithVerificationUse(VerificationExpressionUse.Summary).TrExpr(condition);
-    return new PropositionLowering(condition, pieces, summary, split);
+    var lowering = new PropositionLowering(condition,
+      new PropositionInputs(context, etran, applyInduction, heightLimit, preparation, guard), pieces, summary, split);
+    flags.ObligationLowered?.Invoke(lowering);
+    return lowering;
   }
 
-  private void CheckPropositionUnderGuard(Expression condition, Bpl.Expr guard,
+  private void CheckPropositionUnderGuard(IOrigin origin, Expression condition, Bpl.Expr guard,
     ProofObligationDescription description, BoogieStmtListBuilder builder, ExpressionTranslator etran) {
     // A guarded introduction does not grant its can-call premise unconditionally.
-    var lowering = LowerProposition(builder.Context, condition, etran);
+    var lowering = LowerProposition(builder.Context, condition, etran,
+      preparation: ObligationPreparation.GuardedIntroduction, guard: guard);
     foreach (var piece in lowering.Pieces) {
       if (piece.IsChecked) {
-        builder.Add(AssertAndForget(builder.Context, piece.Tok, BplImp(guard, piece.E), description));
+        builder.Add(AssertAndForget(builder.Context, new NestedOrigin(origin, piece.Tok), BplImp(guard, piece.E), description));
       }
     }
-    builder.Add(TrAssumeCmdWithDependenciesAndExtend(
-      etran.WithVerificationUse(VerificationExpressionUse.Summary), condition.Origin, condition,
-      _ => BplImp(guard, lowering.Summary), "checked guarded obligation"));
+    var summary = TrAssumeCmd(origin, BplImp(guard, lowering.Summary));
+    proofDependencies?.AddProofDependencyId(summary, origin,
+      new AssumptionDependency(false, "checked guarded obligation", condition));
+    builder.Add(summary);
   }
 
   private Bpl.Expr AllocationObligation(IOrigin origin, Bpl.Expr value, Type type,
@@ -59,7 +70,7 @@ public partial class BoogieGenerator {
     internal ExpressionTranslator WithSelectedVerificationFuel() => verificationContext == null
       ? this : WithVerificationContext(verificationContext.FuelSelected());
 
-    private ExpressionTranslator AsVerificationValue() => verificationContext == null
+    internal ExpressionTranslator AsVerificationValue() => verificationContext == null
       ? this : WithVerificationContext(verificationContext with { Use = VerificationExpressionUse.Value });
 
     private ExpressionTranslator NegateVerificationPolarity() => verificationContext == null

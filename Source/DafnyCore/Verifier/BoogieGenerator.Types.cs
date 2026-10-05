@@ -1749,7 +1749,7 @@ public partial class BoogieGenerator {
     }
     // Check any constraint defined in 'dd'
     if (rdt.Var != null) {
-      // TODO: use TrSplitExpr
+      // The opt-in path shares assertion-level splitting under the original guard.
       var typeMap = TypeParameter.SubstitutionMap(rdt.TypeArgs, udt.TypeArgs);
       var dafnyConstraint = Substitute(rdt.Constraint, null, new() { { rdt.Var, origExpr } }, typeMap);
       var boogieConstraint = Substitute(rdt.Constraint, null, new() { { rdt.Var, boogieExpr } }, typeMap);
@@ -1757,7 +1757,7 @@ public partial class BoogieGenerator {
       var canCall = etran.CanCallAssumption(boogieConstraint);
       var description = new ConversionSatisfiesConstraints(errorMsgPrefix, kind, rdt.Name, dafnyConstraint);
       if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
-        CheckPropositionUnderGuard(boogieConstraint, canCall, description, builder, etran);
+        CheckPropositionUnderGuard(tok, boogieConstraint, canCall, description, builder, etran);
       } else {
         var constraint = etran.TrExpr(boogieConstraint);
         builder.Add(Assert(tok, BplImp(canCall, constraint), description, builder.Context));

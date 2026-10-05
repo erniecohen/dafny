@@ -150,7 +150,8 @@ namespace Microsoft.Dafny {
       bool splitHappened;
       List<SplitExprInfo> splits;
       if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
-        var lowering = LowerProposition(proofBuilder.Context, stmt.Expr, etran);
+        var lowering = LowerProposition(proofBuilder.Context, stmt.Expr, etran,
+          preparation: ObligationPreparation.CheckedExpression);
         splits = lowering.Pieces.ToList();
         splitHappened = lowering.SplitHappened;
       } else {

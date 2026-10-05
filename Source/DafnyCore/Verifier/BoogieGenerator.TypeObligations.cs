@@ -33,6 +33,6 @@ public partial class BoogieGenerator {
     // The introduction axiom's CC => C is checked without assuming CC. Base
     // membership and the original target $Is/$IsBox check remain as bridges.
     var guard = etran.CanCallAssumption(constraint);
-    CheckPropositionUnderGuard(constraint, guard, description, builder, etran);
+    CheckPropositionUnderGuard(origin, constraint, guard, description, builder, etran);
   }
 }

@@ -855,7 +855,9 @@ namespace Microsoft.Dafny {
                   }
                   if (wfOptions.AssertKv == null) {
                     // assume only if no given assert attribute is given
-                    builder.Add(TrAssumeCmd(callExpr.Origin, etran.TrExpr(precond)));
+                    builder.Add(options.Get(CommonOptionBag.ConsistentObligationChecks)
+                      ? TrAssumeCmdWithDependencies(etran, callExpr.Origin, precond, "checked function precondition")
+                      : TrAssumeCmd(callExpr.Origin, etran.TrExpr(precond)));
                   }
                 }
                 if (wfOptions.DoReadsChecks) {

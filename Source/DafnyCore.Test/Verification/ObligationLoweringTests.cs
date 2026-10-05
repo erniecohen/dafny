@@ -8,7 +8,7 @@ public class ObligationTranslationCollection { }
 
 [Collection("Obligation translation")]
 public class ObligationLoweringTests {
-  internal static async Task<List<Bpl.Program>> Translate(string source, bool enabled, bool refresh = false) {
+  internal static async Task<List<Bpl.Program>> Translate(string source, bool enabled, bool refresh = false, Action<BoogieGenerator.PropositionLowering>? observer = null) {
     Microsoft.Dafny.Type.ResetScopes();
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
@@ -19,7 +19,9 @@ public class ObligationLoweringTests {
     var result = await ProgramParser.Parse(source, new Uri("untitled:obligation.dfy"), reporter);
     await new ProgramResolver(result.Program).Resolve(CancellationToken.None);
     Assert.Equal(0, reporter.ErrorCount);
-    return BoogieGenerator.Translate(result.Program, reporter).Select(pair => pair.Item2).ToList();
+    return BoogieGenerator.Translate(result.Program, reporter, new BoogieGenerator.TranslatorFlags(options) {
+      ObligationLowered = observer
+    }).Select(pair => pair.Item2).ToList();
   }
 
   [Theory]
@@ -42,6 +44,45 @@ public class ObligationLoweringTests {
     Assert.Contains("$Is", text);
     var legacy = ObligationFingerprint.Emit(await Translate(source, false));
     Assert.True(text.Split("assert ").Length > legacy.Split("assert ").Length);
+  }
+
+  [Fact]
+  public async Task ExplicitAndImplicitVisiblePredicateUseTheSameContent() {
+    const string source = "datatype D = D(i: int) ghost predicate P(d: D) { d.i >= 0 } type S = d: D | P(d) witness D(0) lemma L(x: D) requires x.i >= 0 { assert P(x); var y: S := x; }";
+    var packages = new List<BoogieGenerator.PropositionLowering>();
+    await Translate(source, true, observer: packages.Add);
+    var explicitCheck = packages.Single(p => p.Source is FunctionCallExpr { Function.Name: "P" } &&
+      p.Inputs.Preparation == BoogieGenerator.ObligationPreparation.CheckedExpression);
+    var implicitChecks = packages.Where(p => p.Source is FunctionCallExpr { Function.Name: "P" } &&
+      p.Inputs.Preparation == BoogieGenerator.ObligationPreparation.GuardedIntroduction).ToList();
+    Assert.Contains(implicitChecks, p => ObligationFingerprint.Content(p) == ObligationFingerprint.Content(explicitCheck));
+    Assert.All(implicitChecks, p => Assert.NotNull(p.Inputs.Guard));
+  }
+
+  [Fact]
+  public async Task QuantifiedPackageDoesNotDependOnEarlierOccurrences() {
+    const string declarations = "ghost predicate P(i: int) { i >= 0 } ";
+    const string one = "lemma One() ensures exists x: int :: P(x) { assert exists x: int :: P(x); } ";
+    const string two = "lemma Two() ensures !(forall y: int :: !P(y)) { assert !(forall y: int :: !P(y)); } ";
+    async Task<string[]> Contents(string source) {
+      var packages = new List<BoogieGenerator.PropositionLowering>();
+      await Translate(declarations+source,true,observer:packages.Add);
+      return packages.Where(p => p.Inputs.Preparation == BoogieGenerator.ObligationPreparation.CheckedExpression)
+        .Select(ObligationFingerprint.Content).Order().ToArray();
+    }
+    Assert.Equal(await Contents(one+two),await Contents(two+one));
+    Assert.Equal(await Contents(one+two),await Contents(one+two));
+  }
+
+  [Fact]
+  public void FingerprintPreservesGroundTermsAndAllocationHeaps() {
+    var token=Token.NoToken;
+    var current=new Bpl.IdentifierExpr(token,"$Heap",Bpl.Type.Int);
+    var old=new Bpl.OldExpr(token,current);
+    Assert.NotEqual(ObligationFingerprint.Expression(current),ObligationFingerprint.Expression(old));
+    var lit = new Bpl.NAryExpr(token,new Bpl.FunctionCall(new Bpl.IdentifierExpr(token,"LitInt",Bpl.Type.Int)),
+      new List<Bpl.Expr>{Bpl.Expr.Literal(1)});
+    Assert.NotEqual(ObligationFingerprint.Expression(lit),ObligationFingerprint.Expression(Bpl.Expr.Literal(1)));
   }
 
   [Fact]

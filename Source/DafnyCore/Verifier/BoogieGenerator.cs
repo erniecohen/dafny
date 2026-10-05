@@ -89,6 +89,7 @@ namespace Microsoft.Dafny {
       public bool InsertChecksums { get; init; }
       public string UniqueIdPrefix = null;
       public bool ReportRanges = false;
+      internal Action<PropositionLowering> ObligationLowered { get; init; }
     }
 
     [NotDelayed]
