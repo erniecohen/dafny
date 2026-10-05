@@ -39,7 +39,7 @@ public abstract class NumericAncestryTestFixture {
       throw new InvalidOperationException("Substitution failed");
     public override Type ReplaceTypeArguments(List<Type> arguments) => throw new NotSupportedException();
     public override bool Equals(Type that, bool keepConstraints = false) => ReferenceEquals(this, that);
-    public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes) => false;
+    public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes, bool generalArrows = false) => false;
   }
 
   protected static void AssertClassification(Type type, Type.NumericAncestryKind expected) {

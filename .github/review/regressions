@@ -16,7 +16,8 @@ git-issues/boogie-issue-1168.dfy
 dafny4/GHC-MergeSort.dfy
 dafny4/Lucas-down.dfy
 # Upstream tests that record the verifier's resource counts, which the fixes for
-# #6534 and #6536 move (their expected outputs are updated on this line):
+# #6534 and #6536, and for #132 here, move (their expected outputs are updated on
+# this line):
 dafny0/CoinductiveProofs.dfy
 dafny0/SubsetTypes.dfy
 dafny1/SchorrWaite.dfy
@@ -216,3 +217,34 @@ git-issues/git-issue-48.dfy
 git-issues/git-issue-48-cast.dfy
 git-issues/git-issue-48-incompatible.dfy
 git-issues/git-issue-48-contravariant.dfy
+# Allocation of function values from what they capture (#132 here).
+git-issues/github-issue-132.dfy
+
+# Newtype reference characteristics: instantiated visible bases and opaque promises
+git-issues/git-issue-132-newtype-finite-actual-positive-triggered.dfy
+git-issues/git-issue-132-newtype-general-arrow-characteristic-negative.dfy
+git-issues/git-issue-132-newtype-hidden-characteristic-negative.dfy
+git-issues/git-issue-132-newtype-mixed-subset-cycle-negative.dfy
+git-issues/git-issue-132-newtype-partial-total-positive.dfy
+git-issues/git-issue-132-newtype-partial-total-universal-proof-nonvacuity.dfy
+git-issues/git-issue-132-newtype-partial-total-universal-proof.dfy
+git-issues/git-issue-132-newtype-provided-characteristic-positive.dfy
+git-issues/git-issue-132-newtype-provided-inhabited-false-negative.dfy
+git-issues/git-issue-132-newtype-provided-newtype-no-characteristic-negative.dfy
+git-issues/git-issue-132-newtype-provided-no-characteristic-negative.dfy
+git-issues/git-issue-132-newtype-reference-characteristic-negative.dfy
+git-issues/git-issue-132-newtype-revealed-control-positive.dfy
+git-issues/git-issue-132-newtype-sequence-allocation-negative.dfy
+git-issues/git-issue-132-newtype-sequence-allocation-preallocated.dfy
+git-issues/git-issue-132-newtype-sequence-allocation-pure.dfy
+
+# Generic constant-field lambda actual type substitution (#132 development port).
+dafny0/BoundedPolymorphismCompilation.dfy
+
+# Proof locals and statement binders are not lambda captures (#132).
+git-issues/github-issue-132-statement-binders-positive.dfy
+git-issues/github-issue-132-statement-binders-negative.dfy
+
+# Pure callback allocation retains current-heap positives and old-heap/false negatives.
+git-issues/github-issue-132-pure-callback.dfy
+git-issues/git-issue-2064.dfy

@@ -426,7 +426,7 @@ jobs:
         run: dotnet build Source/IntegrationTests -c Release
       - name: Cardinality resolver and translation admission tests
         run: |
-          dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Cardinality
+          dotnet test Source/DafnyCore.Test -c Release --filter 'FullyQualifiedName~Cardinality|FullyQualifiedName~NewtypeReferenceCharacteristicTests'
           dotnet test Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~Cardinality
           dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~CardinalityEmissionTests
       - name: Run the tests named in .github/review/regressions

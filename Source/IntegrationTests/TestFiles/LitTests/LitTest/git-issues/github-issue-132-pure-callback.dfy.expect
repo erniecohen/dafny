@@ -1,0 +1,52 @@
+all (type-system-refresh:false, additional-axioms:false)
+git-issue-137-pure-callback-controls.dfy(38,2): Error: assertion might not hold
+git-issue-137-pure-callback-controls.dfy(47,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 2 errors
+inhabited-false (type-system-refresh:false, additional-axioms:false)
+git-issue-137-pure-callback-controls.dfy(47,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+old-capture (type-system-refresh:false, additional-axioms:false)
+git-issue-137-pure-callback-controls.dfy(38,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+all (type-system-refresh:false, additional-axioms:true)
+git-issue-137-pure-callback-controls.dfy(38,2): Error: assertion might not hold
+git-issue-137-pure-callback-controls.dfy(47,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 2 errors
+inhabited-false (type-system-refresh:false, additional-axioms:true)
+git-issue-137-pure-callback-controls.dfy(47,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+old-capture (type-system-refresh:false, additional-axioms:true)
+git-issue-137-pure-callback-controls.dfy(38,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+all (type-system-refresh:true, additional-axioms:false)
+git-issue-137-pure-callback-controls.dfy(38,2): Error: assertion might not hold
+git-issue-137-pure-callback-controls.dfy(47,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 2 errors
+inhabited-false (type-system-refresh:true, additional-axioms:false)
+git-issue-137-pure-callback-controls.dfy(47,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+old-capture (type-system-refresh:true, additional-axioms:false)
+git-issue-137-pure-callback-controls.dfy(38,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+all (type-system-refresh:true, additional-axioms:true)
+git-issue-137-pure-callback-controls.dfy(38,2): Error: assertion might not hold
+git-issue-137-pure-callback-controls.dfy(47,2): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 2 errors
+inhabited-false (type-system-refresh:true, additional-axioms:true)
+git-issue-137-pure-callback-controls.dfy(47,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
+old-capture (type-system-refresh:true, additional-axioms:true)
+git-issue-137-pure-callback-controls.dfy(38,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 1 error
