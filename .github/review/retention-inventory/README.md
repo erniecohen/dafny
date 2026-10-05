@@ -94,3 +94,47 @@ process environment. The prerequisite necessarily executes the trusted runner's
 Python host and standard/OS libraries; its actual imported and mapped files are
 recorded. The prohibition concerns launching SDK, downloaded tools, managed
 products or proof/solver workloads.
+
+## Source-only ELF classification and failure-evidence repair
+
+The first [read-only inventory run](https://github.com/erniecohen/dafny/actions/runs/37252189863)
+used source `4d308a73f930285b8dc35e7b916ead0f8d7786cf`. It remains failed:
+the summary reported `Bounded ELF program headers required`, with no candidate
+catalog or offending path. Both exact archives and all 284 embedded member hashes
+matched. Every one of the nineteen uploaded x64 shared objects met that bound.
+The actual offending runner file is therefore unobserved. Relocatable or debug
+assets are possible explanations, not an observed cause.
+
+The reviewed repair preserves every byte-catalog entry. ELF classification records
+class, byte order, type, machine, header version/size, program-header fields and
+section-header fields from bytes verified against the captured file digest.
+ET_REL assets remain explicitly catalogued outside the runtime load graph.
+ET_EXEC and ET_DYN remain loadable candidates with the existing strict header,
+interpreter, dynamic-table and string bounds. A `.dbg` filename or missing table
+does not waive any of those bounds. Unknown, reserved, ET_NONE and ET_CORE types
+remain explicit blockers. This follows the distinctions in the
+[ELF ABI header](https://gabi.xinuos.com/elf/02-eheader.html); it does not qualify a
+compiler/tool invocation's use of an object file as data.
+
+Before graph traversal, rechecked source/file/path/tree facts are detached into
+a pinned pre-graph snapshot. It states that the graph is incomplete and the
+inventory/closure/diagnostic is unqualified. If graph inspection fails, a bounded
+fault record binds the exact catalog path, size and digest, captured ELF header,
+graph phase and original failing bound. A partial snapshot never becomes a
+completed catalog. The primary failure and later finalization faults are separate.
+
+Finalization has its own fixed 30-second budget, followed by a separate 5-second
+terminal receipt-publication budget. It does not reuse an expired 600-second
+inspection deadline or retry graph work. If rechecking sources or files runs out
+of budget, that is additional failed evidence; it cannot replace the original
+parser fault. Summary serialization/publication is independently bounded and
+records the detached primary fault even when a final recheck fails. An outer
+publication failure still fails delivery evidence and does not qualify the run.
+
+The fixed artifact upload includes hidden evidence files so runtime `.version`,
+analyzer `.signature.p7s`, and `_rels/.rels` are preserved outside their archives
+too. Upload paths remain only the new evidence and routing directories. No home,
+credential, checkout or cache tree is uploaded. Official archive pins, original44,
+product base, ordinary/default proof routes and the full namespace diagnostic
+remain unchanged. The source and new manifests need independent review before
+any fresh read-only invocation; no inspected image is executed by this repair.

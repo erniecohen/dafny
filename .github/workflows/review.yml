@@ -829,7 +829,7 @@ jobs:
                   raise ValueError('Read-only inventory requires compile_only=true, full=false and all other flags=false.')
               source = Path('.github/review/retention-inventory')
               raw = (source / 'source-manifest.json').read_bytes()
-              if hashlib.sha256(raw).hexdigest() != '5220ab26277c1b028c97066405bb8fc421e97b3f0e859ff55716023c5bc4d314':
+              if hashlib.sha256(raw).hexdigest() != 'ddde84160401f3cf18a728881e9d01c8975a6b85f873a1721369bded66f96c05':
                   raise ValueError('Read-only prerequisite source pin changed.')
               manifest = json.loads(raw)
               if [p['path'] for p in manifest['files']] != ['README.md', 'inventory.py', 'official-archives.json']:
@@ -845,7 +845,7 @@ jobs:
               outer_path = Path('.github/review/b3-retention-inventory-manifest.json')
               outer_raw = outer_path.read_bytes()
               outer = json.loads(outer_raw)
-              if outer['sourceManifestSha256'] != '5220ab26277c1b028c97066405bb8fc421e97b3f0e859ff55716023c5bc4d314' or [p['path'] for p in outer['files']] != \
+              if outer['sourceManifestSha256'] != 'ddde84160401f3cf18a728881e9d01c8975a6b85f873a1721369bded66f96c05' or [p['path'] for p in outer['files']] != \
                     ['.github/review/retention-inventory/source-manifest.json', '.github/review/base', '.github/workflows/review.yml']:
                   raise ValueError('Read-only prerequisite exact routing inventory changed.')
               for pin in outer['files']:
@@ -854,7 +854,7 @@ jobs:
                   if path.is_symlink() or len(captured) != pin['bytes'] or hashlib.sha256(captured).hexdigest() != pin['sha256']:
                       raise ValueError('Read-only prerequisite routing bytes changed.')
               allowed = True
-              route.update({'passed': True, 'sourceManifestSha256': '5220ab26277c1b028c97066405bb8fc421e97b3f0e859ff55716023c5bc4d314',
+              route.update({'passed': True, 'sourceManifestSha256': 'ddde84160401f3cf18a728881e9d01c8975a6b85f873a1721369bded66f96c05',
                             'outerManifestSha256': hashlib.sha256(outer_raw).hexdigest()})
           except BaseException as error:
               route['failure'] = type(error).__name__ + ': ' + str(error)[:4096]
@@ -873,8 +873,8 @@ jobs:
           path = Path('.github/review/retention-inventory/inventory.py')
           try:
               captured = path.read_bytes()
-              if path.is_symlink() or len(captured) != 34331 or \
-                    hashlib.sha256(captured).hexdigest() != '8cfe4091081d95270d42157b836f95e34cec90b6bee0e58c822226a36ea5d935':
+              if path.is_symlink() or len(captured) != 45440 or \
+                    hashlib.sha256(captured).hexdigest() != '01b1522c9405f95f82c6da1f56ff7185d5b83c2b80c7732b8a52accd83664d1b':
                   raise ValueError('Read-only inventory body changed before invocation.')
               namespace = {'__name__': '__main__', '__file__': str(path)}
               exec(compile(captured, str(path), 'exec', dont_inherit=True), namespace)
@@ -894,6 +894,7 @@ jobs:
         if: always()
         with:
           name: b3-retention-inventory
+          include-hidden-files: true
           path: |
             out/b3-retention-inventory
             out/b3-retention-inventory-routing

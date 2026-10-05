@@ -28,6 +28,8 @@ MAX_BYTES = 8 * 1024 ** 3
 MAX_FILE = 512 * 1024 ** 2
 MAX_JSON = 32 * 1024 ** 2
 START = time.monotonic()
+FINALIZATION_SECONDS = 30
+PUBLICATION_SECONDS = 5
 
 
 def require(value, reason):
@@ -35,8 +37,9 @@ def require(value, reason):
         raise RuntimeError(reason)
 
 
-def deadline():
-    require(time.monotonic() - START < 600, 'Read-only inventory deadline exceeded.')
+def deadline(until=None):
+    require(time.monotonic() < (START + 600 if until is None else until),
+            'Read-only inventory deadline exceeded.' if until is None else 'Bounded finalization/publication deadline exceeded.')
 
 
 def safe_relative(value):
@@ -46,21 +49,24 @@ def safe_relative(value):
     return value
 
 
-def capture(path, maximum=MAX_FILE):
-    deadline()
+def capture_image(path, maximum=MAX_FILE, until=None):
+    deadline(until)
     path = Path(path)
     before = path.stat()
     require(stat.S_ISREG(before.st_mode) and not path.is_symlink() and before.st_size <= maximum,
             'Bounded regular file required: ' + str(path))
     h = hashlib.sha256()
     size = 0
+    prefix = b''
     with path.open('rb') as stream:
         opened = os.fstat(stream.fileno())
         require((opened.st_dev, opened.st_ino, opened.st_size, opened.st_mtime_ns, opened.st_ctime_ns) ==
                 (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns),
                 'File changed before capture: ' + str(path))
         for block in iter(lambda: stream.read(1048576), b''):
-            deadline()
+            deadline(until)
+            if size == 0:
+                prefix = block[:64]
             size += len(block)
             require(size <= maximum, 'File byte bound exceeded.')
             h.update(block)
@@ -69,20 +75,25 @@ def capture(path, maximum=MAX_FILE):
     identity = lambda p: (p.st_dev, p.st_ino, p.st_size, p.st_mtime_ns, p.st_ctime_ns)
     require(identity(before) == identity(after) == identity(outside) and size == before.st_size,
             'File changed during capture: ' + str(path))
-    return {'path': str(path.resolve(strict=True)), 'bytes': size, 'sha256': h.hexdigest()}
+    return {'path': str(path.resolve(strict=True)), 'bytes': size, 'sha256': h.hexdigest()}, prefix
 
 
-def data(path, maximum=MAX_JSON):
+def capture(path, maximum=MAX_FILE, until=None):
+    return capture_image(path, maximum, until)[0]
+
+
+def data(path, maximum=MAX_JSON, until=None):
     path = Path(path)
-    pin = capture(path, maximum)
+    pin = capture(path, maximum, until)
     body = path.read_bytes()
+    deadline(until)
     require(len(body) == pin['bytes'] and hashlib.sha256(body).hexdigest() == pin['sha256'],
             'Captured metadata changed.')
     return body, pin
 
 
-def document(path):
-    body, _ = data(path)
+def document(path, until=None):
+    body, _ = data(path, until=until)
     def pairs(items):
         result = {}
         for key, value in items:
@@ -92,9 +103,11 @@ def document(path):
     return json.loads(body, object_pairs_hook=pairs)
 
 
-def publish(path, value):
+def publish(path, value, until=None):
+    deadline(until)
     path = Path(path)
     body = (json.dumps(value, indent=2, sort_keys=True) + '\n').encode()
+    deadline(until)
     require(len(body) <= MAX_JSON and not path.exists() and not path.is_symlink(), 'Fresh bounded receipt required.')
     pending = path.with_name(path.name + '.pending')
     with pending.open('xb') as stream:
@@ -107,11 +120,11 @@ def publish(path, value):
         os.fsync(fd)
     finally:
         os.close(fd)
-    return capture(path, MAX_JSON)
+    return capture(path, MAX_JSON, until)
 
 
-def source_pins():
-    manifest = document(SOURCE / 'source-manifest.json')
+def source_pins(until=None):
+    manifest = document(SOURCE / 'source-manifest.json', until)
     require(manifest['schemaVersion'] == 1 and manifest['original44Sha256'] == OLD_SHA and
             [p['path'] for p in manifest['repositoryInputs']] == ['global.json'],
             'Fixed original44 source boundary changed.')
@@ -121,29 +134,29 @@ def source_pins():
     actual = {p.relative_to(SOURCE).as_posix() for p in SOURCE.rglob('*') if p.is_file() or p.is_symlink()}
     require(actual == declared, 'No supplemental prerequisite source file.')
     for pin in manifest['files']:
-        current = capture(SOURCE / pin['path'])
+        current = capture(SOURCE / pin['path'], until=until)
         require(current['bytes'] == pin['bytes'] and current['sha256'] == pin['sha256'], 'Declared source changed.')
-    old_body, old_pin = data(OLD / 'source-manifest.json')
+    old_body, old_pin = data(OLD / 'source-manifest.json', until=until)
     require(old_pin['sha256'] == OLD_SHA, 'Original44 manifest changed.')
     old = json.loads(old_body)
     require(len(old['files']) == 44 and len({p['path'] for p in old['files']}) == 44, 'Original44 denominator changed.')
     require({p.relative_to(OLD).as_posix() for p in OLD.rglob('*') if p.is_file() or p.is_symlink()} ==
             {safe_relative(p['path']) for p in old['files']} | {'source-manifest.json'}, 'Original44 inventory changed.')
     for pin in old['files']:
-        current = capture(OLD / safe_relative(pin['path']))
+        current = capture(OLD / safe_relative(pin['path']), until=until)
         require(current['bytes'] == pin['bytes'] and current['sha256'] == pin['sha256'], 'Original44 file changed.')
     for pin in manifest['repositoryInputs']:
-        current = capture(safe_relative(pin['path']))
+        current = capture(safe_relative(pin['path']), until=until)
         require(current['bytes'] == pin['bytes'] and current['sha256'] == pin['sha256'], 'Repository input changed.')
     outer_path = Path('.github/review/b3-retention-inventory-manifest.json')
-    outer = document(outer_path)
-    require(outer['sourceManifestSha256'] == capture(SOURCE / 'source-manifest.json')['sha256'] and
+    outer = document(outer_path, until)
+    require(outer['sourceManifestSha256'] == capture(SOURCE / 'source-manifest.json', until=until)['sha256'] and
             [p['path'] for p in outer['files']] == ['.github/review/retention-inventory/source-manifest.json',
              '.github/review/base', '.github/workflows/review.yml'], 'Exact outer routing inventory required.')
     for pin in outer['files']:
-        current = capture(safe_relative(pin['path']))
+        current = capture(safe_relative(pin['path']), until=until)
         require(current['bytes'] == pin['bytes'] and current['sha256'] == pin['sha256'], 'Outer source changed.')
-    return {'sourceManifest': capture(SOURCE / 'source-manifest.json'), 'outerManifest': capture(outer_path)}
+    return {'sourceManifest': capture(SOURCE / 'source-manifest.json', until=until), 'outerManifest': capture(outer_path, until=until)}
 
 
 class Redirects(urllib.request.HTTPRedirectHandler):
@@ -237,20 +250,49 @@ def official_archives():
     return manifest, extracted
 
 
-def elf_kind(path):
-    with Path(path).open('rb') as stream:
-        prefix = stream.read(20)
+def elf_kind(prefix):
+    """Detach only header bytes from the same stream used to hash this image."""
     if prefix[:4] != b'\x7fELF':
         return None
-    require(len(prefix) == 20, 'Truncated ELF header.')
-    return {'class': prefix[4], 'byteOrder': prefix[5],
-            'machine': int.from_bytes(prefix[18:20], 'little' if prefix[5] == 1 else 'big')}
+    result = {'class': prefix[4] if len(prefix) > 4 else None,
+              'byteOrder': prefix[5] if len(prefix) > 5 else None,
+              'identVersion': prefix[6] if len(prefix) > 6 else None,
+              'prefixBytes': len(prefix), 'prefixSha256': hashlib.sha256(prefix).hexdigest(),
+              'completeHeader': False}
+    if len(prefix) >= 20 and result['byteOrder'] in [1, 2]:
+        endian = '<' if result['byteOrder'] == 1 else '>'
+        result.update(elfType=struct.unpack_from(endian + 'H', prefix, 16)[0],
+                      machine=struct.unpack_from(endian + 'H', prefix, 18)[0])
+        size = 64 if result['class'] == 2 else 52 if result['class'] == 1 else None
+        if size and len(prefix) >= size:
+            wide = result['class'] == 2
+            base = 52 if wide else 40
+            result.update(completeHeader=True, headerVersion=struct.unpack_from(endian + 'I', prefix, 20)[0],
+                          headerBytes=struct.unpack_from(endian + 'H', prefix, base)[0],
+                          programHeaderOffset=struct.unpack_from(endian + ('Q' if wide else 'I'), prefix, 32 if wide else 28)[0],
+                          sectionHeaderOffset=struct.unpack_from(endian + ('Q' if wide else 'I'), prefix, 40 if wide else 32)[0],
+                          programHeaderEntryBytes=struct.unpack_from(endian + 'H', prefix, base + 2)[0],
+                          programHeaderCount=struct.unpack_from(endian + 'H', prefix, base + 4)[0],
+                          sectionHeaderEntryBytes=struct.unpack_from(endian + 'H', prefix, base + 6)[0],
+                          sectionHeaderCount=struct.unpack_from(endian + 'H', prefix, base + 8)[0],
+                          sectionNameIndex=struct.unpack_from(endian + 'H', prefix, base + 10)[0])
+    result['typeName'] = {0: 'ET_NONE', 1: 'ET_REL', 2: 'ET_EXEC', 3: 'ET_DYN', 4: 'ET_CORE'}.get(result.get('elfType'), 'unknown-or-reserved')
+    return result
+
+
+class ElfInspectionFailure(RuntimeError):
+    def __init__(self, phase, image, header, cause):
+        super().__init__(str(cause))
+        self.detached = {'phase': phase, 'catalogImage': dict(image), 'capturedHeader': dict(header),
+                         'exceptionType': type(cause).__name__, 'failingBound': str(cause)[:4096],
+                         'binding': 'exact-catalog-digest-and-header-from-that-hashed-stream'}
 
 
 def elf(path, pin):
     body, current = data(path, MAX_FILE)
     require(current == pin and len(body) >= 64 and body[:7] == b'\x7fELF\x02\x01\x01', 'Pinned ELF64 x64 input required.')
     require(struct.unpack_from('<H', body, 18)[0] == 62, 'x64 ELF machine required.')
+    require(struct.unpack_from('<H', body, 16)[0] in [2, 3], 'ET_EXEC or ET_DYN loadable candidate required.')
     offset = struct.unpack_from('<Q', body, 32)[0]
     entry, count = struct.unpack_from('<HH', body, 54)
     require(entry == 56 and 0 < count <= 1024 and offset + entry * count <= len(body), 'Bounded ELF program headers required.')
@@ -328,6 +370,9 @@ class Catalog:
         self.paths = {}
         self.elf_roots = set()
         self.foreign = {}
+        self.elf_assets = {}
+        self.nonloadable = {}
+        self.blockers = []
         self.bytes = 0
         self.unresolved = []
         self.ambiguities = []
@@ -349,13 +394,22 @@ class Catalog:
         # recorded and re-resolved at the final boundary. No symlink can add code.
         name = str(resolved)
         if name not in self.files:
-            pin = capture(resolved)
+            pin, prefix = capture_image(resolved)
             self.bytes += pin['bytes']
             require(len(self.files) < MAX_FILES and self.bytes <= MAX_BYTES, 'Catalog bound exceeded.')
             self.files[name] = pin
-            classification = elf_kind(resolved)
+            classification = elf_kind(prefix)
             if classification:
-                if classification == {'class': 2, 'byteOrder': 1, 'machine': 62} and '/linux-musl-' not in name:
+                self.elf_assets[name] = classification
+                if not (classification['completeHeader'] is True and classification['identVersion'] == 1 and
+                        classification['headerVersion'] == 1 and classification['headerBytes'] ==
+                        (64 if classification['class'] == 2 else 52)):
+                    self.blockers.append({'path': name, 'reason': 'incomplete-or-unsupported-ELF-header'})
+                elif classification['elfType'] not in [1, 2, 3]:
+                    self.blockers.append({'path': name, 'reason': 'ELF-type-' + classification['typeName'] + '-is-an-explicit-blocker'})
+                elif classification['elfType'] == 1:
+                    self.nonloadable[name] = {**classification, 'reason': 'ELF-ET_REL-relocatable-asset-outside-runtime-load-graph'}
+                elif classification['class'] == 2 and classification['byteOrder'] == 1 and classification['machine'] == 62 and '/linux-musl-' not in name:
                     self.elf_roots.add(name)
                 else:
                     self.foreign[name] = {**classification, 'reason': 'foreign-architecture-or-musl-platform-asset'}
@@ -392,27 +446,34 @@ class Catalog:
         self.patterns.append(selection)
         return selection
 
-    def recheck(self):
+    def recheck(self, until=None):
         for pin in self.files.values():
-            require(capture(pin['path']) == pin, 'Catalog image changed after inspection.')
+            require(capture(pin['path'], until=until) == pin, 'Catalog image changed after inspection.')
         for alias in self.paths.values():
+            deadline(until)
             path = Path(alias['requestedPath'])
             require(str(path.resolve(strict=True)) == alias['resolvedPath'] and
                     (os.readlink(path) if path.is_symlink() else None) == alias['finalLinkTarget'], 'Selected path changed.')
         for folder, expected in self.trees.items():
             actual = []
             for base, directories, files in os.walk(folder, followlinks=False):
-                deadline()
+                deadline(until)
                 require(len(actual) + len(files) + len(directories) <= MAX_FILES, 'Rechecked tree bound.')
                 actual.extend((Path(base) / n).relative_to(folder).as_posix() for n in files)
                 actual.extend((Path(base) / n).relative_to(folder).as_posix() + '/' for n in directories if (Path(base) / n).is_symlink())
             require(sorted(actual) == expected, 'Selected tree inventory changed.')
         for selection in self.patterns:
+            deadline(until)
             require([str(p) for p in sorted(Path(selection['directory']).glob(selection['pattern']))] == selection['paths'],
                     'Native lookup candidate set changed.')
 
 
 def native_graph(catalog):
+    if catalog.blockers:
+        blocker = sorted(catalog.blockers, key=lambda p: p['path'])[0]
+        path = blocker['path']
+        cause = RuntimeError(blocker['reason'])
+        raise ElfInspectionFailure('native-graph-admission', catalog.files[path], catalog.elf_assets[path], cause) from cause
     cache_pin, cache = loader_cache()
     catalog.add('/etc/ld.so.cache', 'glibc-cache')
     require(catalog.files[cache_pin['path']] == cache_pin, 'Loader cache changed.')
@@ -428,7 +489,10 @@ def native_graph(catalog):
             continue
         visited.add(context)
         require(len(visited) <= 8192, 'ELF graph context bound exceeded.')
-        info = elf(path, catalog.files[path])
+        try:
+            info = elf(path, catalog.files[path])
+        except Exception as error:
+            raise ElfInspectionFailure('native-graph-ELF-parser', catalog.files[path], catalog.elf_assets.get(path, {}), error) from error
         metadata[path] = info
         if info['interpreter']:
             selected = catalog.add(info['interpreter'], 'ELF-interpreter')
@@ -477,7 +541,11 @@ def native_graph(catalog):
                      'candidates': sorted(selected_paths)})
                 continue
             selected = catalog.add(choices[0], 'DT_NEEDED')
-            require(selected in catalog.elf_roots, 'Selected dependency must be native ELF64 x64.')
+            if selected and selected not in catalog.elf_roots:
+                error = RuntimeError('Selected dependency must be a supported ET_EXEC/ET_DYN ELF64 x64 image.')
+                raise ElfInspectionFailure('native-graph-dependency-admission', catalog.files[selected],
+                                           catalog.elf_assets.get(selected, {}), error) from error
+            require(selected is not None, 'Selected dependency disappeared before capture.')
             ancestry = tuple(str(d) for d in directories) if not info['runpath'] else inherited
             queue.append((selected, ancestry))
             edges.append({'owner': path, 'needed': name, 'selected': selected,
@@ -489,7 +557,23 @@ def native_graph(catalog):
             'resolverAcceptance': False, 'method': 'bounded-ELF64-interpreter-needed-origin-inherited-rpath-glibc-cache-candidate'}
 
 
-def inspect():
+def catalog_snapshot(catalog):
+    return {'schemaVersion': 1, 'scope': 'nonqualifying-captured-files-before-native-graph',
+            'inventoryCaptured': False, 'nativeGraphCompleted': False, 'reviewedRunnerClosure': False,
+            'completeDynamicLoadClosure': False, 'fullDiagnosticEnabled': False,
+            'fileCount': len(catalog.files), 'fileBytes': catalog.bytes,
+            'files': sorted(catalog.files.values(), key=lambda p: p['path']),
+            'pathSelections': sorted(catalog.paths.values(), key=lambda p: p['requestedPath']),
+            'selectedTreeMembership': [{'directory': p, 'members': catalog.trees[p]} for p in sorted(catalog.trees)],
+            'capturedELFHeaders': [{'path': p, 'image': catalog.files[p], 'header': catalog.elf_assets[p]} for p in sorted(catalog.elf_assets)],
+            'relocatableAssetsOutsideLoadGraph': [{'path': p, **catalog.nonloadable[p]} for p in sorted(catalog.nonloadable)],
+            'foreignELFAssets': [{'path': p, **catalog.foreign[p]} for p in sorted(catalog.foreign)],
+            'nativeRootsBeforeGraph': sorted(catalog.elf_roots), 'unsupportedELFBlockers': list(catalog.blockers),
+            'unresolved': list(catalog.unresolved), 'ambiguities': list(catalog.ambiguities)}
+
+
+def inspect(state):
+    state['phase'] = 'fixed-host-prerequisites'
     require(os.name == 'posix' and sys.platform == 'linux' and os.uname().machine == 'x86_64', 'Linux x64 prerequisite only.')
     require(sys.flags.isolated == 1 and sys.flags.no_site == 1 and sys.dont_write_bytecode and
             'site' not in sys.modules and sys.argv == ['-'] and set(os.environ) <= {'PATH', 'LANG', 'LC_ALL'} and
@@ -497,8 +581,12 @@ def inspect():
             'Isolated no-site no-bytecode credential-free fixed Python host required.')
     require(sys.version_info[:2] == (3, 12), 'Fixed Ubuntu Python3.12 inventory scope.')
     before = source_pins()
+    state['sourceBoundaryBefore'] = before
+    state['phase'] = 'official-archive-inspection'
     archive_manifest, extracted = official_archives()
     catalog = Catalog()
+    state['catalog'] = catalog
+    state['phase'] = 'runner-file-capture'
     for package in archive_manifest['packages']:
         catalog.add(OUTPUT / package['archive'], 'exact-official-archive')
     for pin in extracted:
@@ -513,6 +601,7 @@ def inspect():
     catalog.tree('/usr/share/dotnet/packs', 'installed-reference-pack-choices')
     sdk_root = Path('/usr/share/dotnet/sdk')
     sdk_entries = sorted(p.name for p in sdk_root.iterdir()) if sdk_root.is_dir() else []
+    state['SDKSelectionBefore'] = sdk_entries
     sdk_dirs = sorted([p for p in sdk_root.iterdir() if p.is_dir() and re.fullmatch(r'8\.0\.\d+', p.name)],
                       key=lambda p: int(p.name.split('.')[-1])) if sdk_root.is_dir() else []
     other_sdk8 = sorted(p.name for p in sdk_root.iterdir() if p.is_dir() and p.name.startswith('8.0.') and
@@ -550,7 +639,19 @@ def inspect():
             require(not fields[5].endswith(' (deleted)'), 'No deleted mapped image allowed.')
             selected = catalog.add(fields[5], 'actual-prerequisite-Python-mapping')
             mappings.append({'selectedFile': selected, 'permissions': fields[1]})
+    state['phase'] = 'pre-graph-recheck'
+    catalog.recheck()
+    pre_graph_sources = source_pins()
+    require(before == pre_graph_sources, 'Frozen sources changed before native graph.')
+    require((sorted(p.name for p in sdk_root.iterdir()) if sdk_root.is_dir() else []) == sdk_entries, 'Installed SDK selection changed before graph.')
+    snapshot = catalog_snapshot(catalog)
+    snapshot.update(sourceBoundaryBefore=before, sourceBoundaryPreGraph=pre_graph_sources,
+                    officialArchives=[{k: p[k] for k in ['url', 'version', 'archive', 'bytes', 'sha256']} for p in archive_manifest['packages']])
+    state['phase'] = 'pre-graph-detached-publication'
+    state['preGraphCatalog'] = publish(OUTPUT / 'pre-graph-catalog.json', snapshot)
+    state['phase'] = 'native-graph'
     graph = native_graph(catalog)
+    state['phase'] = 'post-graph-recheck'
     catalog.recheck()
     require((sorted(p.name for p in sdk_root.iterdir()) if sdk_root.is_dir() else []) == sdk_entries, 'Installed SDK selection set changed.')
     after = source_pins()
@@ -566,6 +667,9 @@ def inspect():
             'files': sorted(catalog.files.values(), key=lambda p: p['path']),
             'pathSelections': sorted(catalog.paths.values(), key=lambda p: p['requestedPath']),
             'selectedTreeMembership': [{'directory': p, 'members': catalog.trees[p]} for p in sorted(catalog.trees)],
+            'capturedELFHeaders': [{'path': p, 'image': catalog.files[p], 'header': catalog.elf_assets[p]} for p in sorted(catalog.elf_assets)],
+            'relocatableAssetsOutsideLoadGraph': [{'path': p, **catalog.nonloadable[p]} for p in sorted(catalog.nonloadable)],
+            'unsupportedELFBlockers': list(catalog.blockers), 'preGraphCatalog': state['preGraphCatalog'],
             'foreignELFAssets': [{'path': p, **catalog.foreign[p]} for p in sorted(catalog.foreign)],
             'nativeGraph': graph, 'unresolved': catalog.unresolved, 'ambiguities': catalog.ambiguities,
             'elfAvailabilityCandidateComplete': not catalog.unresolved and not catalog.ambiguities,
@@ -580,7 +684,14 @@ def inspect():
                        'modules': modules, 'initialMappedFiles': mappings, 'isolated': True, 'siteImported': False},
             'runner': {'machine': os.uname().machine, 'kernelRelease': os.uname().release, 'effectiveUid': os.geteuid()},
             'bounds': {'files': MAX_FILES, 'fileBytes': MAX_FILE, 'totalBytes': MAX_BYTES, 'receiptBytes': MAX_JSON,
-                       'seconds': 600, 'ELFGraphContexts': 8192}}
+                       'seconds': 600, 'ELFGraphContexts': 8192, 'finalizationSeconds': FINALIZATION_SECONDS,
+                       'terminalPublicationSeconds': PUBLICATION_SECONDS}}
+
+
+def detached_error(error, phase):
+    if isinstance(error, ElfInspectionFailure):
+        return dict(error.detached)
+    return {'phase': phase, 'exceptionType': type(error).__name__, 'failingBound': str(error)[:4096]}
 
 
 def main():
@@ -589,9 +700,13 @@ def main():
     receipt = {'schemaVersion': 1, 'scope': 'read-only-retention-runner-inventory-prerequisite',
                'inventoryCaptured': False, 'reviewedRunnerClosure': False, 'fullDiagnosticEnabled': False,
                'completeDynamicLoadClosure': False, 'nativeProofOrCostParityAccepted': False,
-               'SDKExecuted': False, 'collectorExecuted': False, 'analyzerExecuted': False, 'targetExecuted': False}
+               'SDKExecuted': False, 'collectorExecuted': False, 'analyzerExecuted': False, 'targetExecuted': False,
+               'primaryFault': None, 'finalizationFaults': [], 'finalSourceRecheckPassed': False,
+               'finalCatalogRecheckPassed': None, 'preGraphCatalog': None}
+    state = {'phase': 'begin', 'catalog': None, 'preGraphCatalog': None}
     try:
-        result = inspect()
+        result = inspect(state)
+        state['phase'] = 'completed-candidate-publication'
         pin = publish(OUTPUT / 'candidate-runner-inventory.json', result)
         receipt.update({'inventoryCaptured': True, 'candidateInventory': pin,
                         'fileCount': result['fileCount'], 'fileBytes': result['fileBytes'],
@@ -599,10 +714,52 @@ def main():
                         'elfAvailabilityCandidateComplete': result['elfAvailabilityCandidateComplete'],
                         'sourceBoundaryBefore': result['sourceBoundaryBefore'], 'sourceBoundaryAfter': result['sourceBoundaryAfter']})
     except BaseException as error:
-        receipt['failure'] = type(error).__name__ + ': ' + str(error)[:4096]
+        receipt['inventoryCaptured'] = False
+        receipt['primaryFault'] = detached_error(error, state['phase'])
+        receipt['failure'] = receipt['primaryFault']['exceptionType'] + ': ' + receipt['primaryFault']['failingBound']
     finally:
-        publish(OUTPUT / 'summary.json', receipt)
-        print('Read-only retention inventory: ' + ('CAPTURED (unreviewed)' if receipt['inventoryCaptured'] else 'NOT GREEN'))
+        # An expired inspection clock never governs failure preservation or final
+        # receipts. These checks have one new fixed budget, with no graph retry.
+        until = time.monotonic() + FINALIZATION_SECONDS
+        receipt['preGraphCatalog'] = state['preGraphCatalog']
+        if receipt['primaryFault'] is not None:
+            try:
+                receipt['primaryFaultReceipt'] = publish(OUTPUT / 'primary-fault.json', receipt['primaryFault'], until)
+            except BaseException as error:
+                receipt['finalizationFaults'].append(detached_error(error, 'primary-fault-publication'))
+        try:
+            receipt['finalSourceBoundary'] = source_pins(until)
+            require(state.get('sourceBoundaryBefore') in [None, receipt['finalSourceBoundary']], 'Final source boundary differs from initial capture.')
+            receipt['finalSourceRecheckPassed'] = True
+        except BaseException as error:
+            receipt['finalizationFaults'].append(detached_error(error, 'final-declared-source-recheck'))
+        if state['catalog'] is not None:
+            try:
+                state['catalog'].recheck(until)
+                if 'SDKSelectionBefore' in state:
+                    deadline(until)
+                    root = Path('/usr/share/dotnet/sdk')
+                    current = sorted(p.name for p in root.iterdir()) if root.is_dir() else []
+                    require(current == state['SDKSelectionBefore'], 'Final installed SDK selection differs from capture.')
+                receipt['finalCatalogRecheckPassed'] = True
+            except BaseException as error:
+                receipt['finalCatalogRecheckPassed'] = False
+                receipt['finalizationFaults'].append(detached_error(error, 'final-catalog-file-path-tree-recheck'))
+        if receipt['finalizationFaults']:
+            receipt['inventoryCaptured'] = False
+        receipt['finalizationBoundSeconds'] = FINALIZATION_SECONDS
+        receipt['terminalPublicationBoundSeconds'] = PUBLICATION_SECONDS
+        try:
+            publish(OUTPUT / 'summary.json', receipt, time.monotonic() + PUBLICATION_SECONDS)
+        except BaseException as error:
+            # Preserve primary/finalization facts in the durable fault file when
+            # available and in bounded logs; never replace them or retry forever.
+            terminal = {'phase': 'terminal-summary-publication', 'fault': detached_error(error, 'terminal-summary-publication'),
+                        'primaryFault': receipt['primaryFault'], 'finalizationFaults': receipt['finalizationFaults']}
+            print('Inventory receipt publication failed: ' + json.dumps(terminal, sort_keys=True)[:32768])
+            print('Read-only retention inventory: NOT GREEN')
+        else:
+            print('Read-only retention inventory: ' + ('CAPTURED (unreviewed)' if receipt['inventoryCaptured'] else 'NOT GREEN'))
     # A diagnostic prerequisite records its failed/partial status; workflow delivery remains zero.
 
 

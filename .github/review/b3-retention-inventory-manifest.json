@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
   "scope": "fixed-read-only-retention-inventory-source-and-routing-unexecuted",
-  "sourceManifestSha256": "5220ab26277c1b028c97066405bb8fc421e97b3f0e859ff55716023c5bc4d314",
+  "sourceManifestSha256": "ddde84160401f3cf18a728881e9d01c8975a6b85f873a1721369bded66f96c05",
   "files": [
     {
       "path": ".github/review/retention-inventory/source-manifest.json",
       "bytes": 945,
-      "sha256": "5220ab26277c1b028c97066405bb8fc421e97b3f0e859ff55716023c5bc4d314"
+      "sha256": "ddde84160401f3cf18a728881e9d01c8975a6b85f873a1721369bded66f96c05"
     },
     {
       "path": ".github/review/base",
@@ -15,8 +15,8 @@
     },
     {
       "path": ".github/workflows/review.yml",
-      "bytes": 43529,
-      "sha256": "61c30e38104dfd6e2d0a6b9993f183c1535af95f75e4c39246ba0bb360daf17c"
+      "bytes": 43566,
+      "sha256": "28953e3dc679fc3fb4f56e87994960015091745f1ff021599772c59c6202d03a"
     }
   ],
   "workflowFocus": "retention-inventory",

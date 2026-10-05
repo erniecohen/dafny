@@ -5,13 +5,13 @@
   "files": [
     {
       "path": "README.md",
-      "bytes": 6453,
-      "sha256": "95a93839f2eb15a05b5df694b87b2f4dc361c90bd49a62909153d23d42e9ad06"
+      "bytes": 9421,
+      "sha256": "d5ee7de37e80865d4ebed8e31cc632683179a3eb07df4ec1eaffafb9d83b725a"
     },
     {
       "path": "inventory.py",
-      "bytes": 34331,
-      "sha256": "8cfe4091081d95270d42157b836f95e34cec90b6bee0e58c822226a36ea5d935"
+      "bytes": 45440,
+      "sha256": "01b1522c9405f95f82c6da1f56ff7185d5b83c2b80c7732b8a52accd83664d1b"
     },
     {
       "path": "official-archives.json",
