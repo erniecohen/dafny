@@ -62,6 +62,7 @@ namespace Microsoft.Dafny {
       internal ExpressionTranslator StartFuelTracking() {
         var clone = WithVerificationContext(verificationContext);
         clone.fuelUsage = new FuelUsage();
+        if (clone.oldEtran != null) { clone.oldEtran.fuelUsage = clone.fuelUsage; }
         return clone;
       }
       public int Statistics_HeapAsQuantifierCount = 0;
@@ -154,17 +155,18 @@ namespace Microsoft.Dafny {
       public ExpressionTranslator(ExpressionTranslator etran, Boogie.Expr heap)
         : this(etran.BoogieGenerator, etran.Predef, heap, etran.This, etran.applyLimited_CurrentFunction, etran.layerInterCluster, etran.layerIntraCluster, etran.scope, etran.readsFrame, etran.modifiesFrame, etran.stripLits, etran.verificationContext) {
         Contract.Requires(etran != null);
+        fuelUsage = etran.fuelUsage;
       }
 
       public ExpressionTranslator WithReadsFrame(string newReadsFrame, IFrameScope frameScope) {
-        return new ExpressionTranslator(BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, frameScope, newReadsFrame, modifiesFrame, stripLits, verificationContext);
+        return new ExpressionTranslator(BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, frameScope, newReadsFrame, modifiesFrame, stripLits, verificationContext) { fuelUsage = fuelUsage };
       }
       public ExpressionTranslator WithReadsFrame(string newReadsFrame) {
-        return new ExpressionTranslator(BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, scope, newReadsFrame, modifiesFrame, stripLits, verificationContext);
+        return new ExpressionTranslator(BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, scope, newReadsFrame, modifiesFrame, stripLits, verificationContext) { fuelUsage = fuelUsage };
       }
 
       public ExpressionTranslator WithModifiesFrame(string newModifiesFrame) {
-        return new ExpressionTranslator(BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, scope, readsFrame, newModifiesFrame, stripLits, verificationContext);
+        return new ExpressionTranslator(BoogieGenerator, Predef, HeapExpr, This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, scope, readsFrame, newModifiesFrame, stripLits, verificationContext) { fuelUsage = fuelUsage };
       }
 
       internal IOrigin GetToken(Expression expression) {
@@ -178,6 +180,7 @@ namespace Microsoft.Dafny {
 
           if (oldEtran == null) {
             oldEtran = new ExpressionTranslator(BoogieGenerator, Predef, new Boogie.OldExpr(HeapExpr.tok, HeapExpr), This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, scope, readsFrame, modifiesFrame, stripLits, verificationContext);
+            oldEtran.fuelUsage = fuelUsage;
             oldEtran.oldEtran = oldEtran;
           }
           return oldEtran;
@@ -195,7 +198,7 @@ namespace Microsoft.Dafny {
 
       public ExpressionTranslator WithHeapVariable(string heapVariableName) {
         var heapAt = new Boogie.IdentifierExpr(Token.NoToken, heapVariableName, Predef.HeapType);
-        return new ExpressionTranslator(BoogieGenerator, Predef, heapAt, This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, scope, readsFrame, modifiesFrame, stripLits, verificationContext);
+        return new ExpressionTranslator(BoogieGenerator, Predef, heapAt, This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, scope, readsFrame, modifiesFrame, stripLits, verificationContext) { fuelUsage = fuelUsage };
       }
 
       public bool UsesOldHeap {
@@ -1393,6 +1396,7 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
         var et = this.HeapExpr != null
           ? new ExpressionTranslator(this.BoogieGenerator, this.Predef, heap, this.Old.HeapExpr, this.scope)
           : new ExpressionTranslator(this, heap);
+        et = NestedValueTranslator(et);
         var lvars = new List<Boogie.Variable>();
         var ly = BplBoundVar(varNameGen.FreshId("#ly#"), Predef.LayerType, lvars);
         et = et.WithLayer(ly);
@@ -1424,6 +1428,14 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
                 new Boogie.LambdaExpr(GetToken(e), [], bvars, null, rdbody))),
             layerIntraCluster != null ? layerIntraCluster.ToExpr() : layerInterCluster.ToExpr()),
           Predef.HandleType);
+      }
+
+      private ExpressionTranslator NestedValueTranslator(ExpressionTranslator nested) {
+        if (verificationContext == null) { return nested; }
+        nested = nested.WithVerificationContext(verificationContext with { Use = VerificationExpressionUse.Value });
+        nested.fuelUsage = fuelUsage;
+        if (nested.oldEtran != null) { nested.oldEtran.fuelUsage = fuelUsage; }
+        return nested;
       }
 
       public Expression DesugarMatchExpr(MatchExpr e) {
@@ -1950,6 +1962,7 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
           var et = this.HeapExpr != null
             ? new ExpressionTranslator(this.BoogieGenerator, this.Predef, heap, this.Old.HeapExpr, this.scope)
             : new ExpressionTranslator(this, heap);
+          et = NestedValueTranslator(et);
 
           Dictionary<IVariable, Expression> subst = new Dictionary<IVariable, Expression>();
           foreach (var bv in e.BoundVars) {

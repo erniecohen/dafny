@@ -96,4 +96,41 @@ public class ObligationLoweringTests {
     Assert.False(second.Positive);
     Assert.Equal(root, second.Negated());
   }
+  [Fact]
+  public async Task MethodExitChecksTheSamePropositionAsAnImmediateAssertion() {
+    const string source = "ghost predicate P(x:int) { x>=0 } lemma L(x:int) requires x>=0 ensures P(x) { assert P(x); }";
+    var packages = new List<BoogieGenerator.PropositionLowering>();
+    await Translate(source,true,observer:packages.Add);
+    var explicitPackage=packages.Single(p => p.Source.Resolved is FunctionCallExpr { Function.Name: "P" } &&
+      p.Inputs.Preparation==BoogieGenerator.ObligationPreparation.CheckedExpression);
+    var implicitPackages=packages.Where(p => p.Source.Resolved is FunctionCallExpr { Function.Name: "P" } &&
+      p.Inputs.Preparation==BoogieGenerator.ObligationPreparation.DeclaredContract).ToList();
+    Assert.NotEmpty(implicitPackages);
+    Assert.All(implicitPackages,p=>Assert.Equal(ObligationFingerprint.Content(explicitPackage),ObligationFingerprint.Content(p)));
+  }
+
+  [Fact]
+  public async Task QuantifiedOldHeapPolicyIsIndependentOfMethodOrder() {
+    const string declarations="class C { var i:int } ghost predicate P(c:C,x:int) reads c { c.i==x } ";
+    const string one="lemma One(c:C) requires exists x:int {:trigger P(c,x)} :: P(c,x) ensures old(exists x:int {:trigger P(c,x)} :: P(c,x)) { assert old(exists x:int {:trigger P(c,x)} :: P(c,x)); } ";
+    const string two="lemma Two(c:C) requires !(forall x:int {:trigger P(c,x)} :: !P(c,x)) ensures old(!(forall x:int {:trigger P(c,x)} :: !P(c,x))) { assert old(!(forall x:int {:trigger P(c,x)} :: !P(c,x))); } ";
+    async Task<string[]> Contents(string source) {
+      var packages=new List<BoogieGenerator.PropositionLowering>();
+      await Translate(declarations+source,true,observer:packages.Add);
+      return packages.Where(p=>p.Inputs.Preparation==BoogieGenerator.ObligationPreparation.CheckedExpression)
+        .Select(ObligationFingerprint.Content).Order().ToArray();
+    }
+    Assert.Equal(await Contents(one+two),await Contents(two+one));
+  }
+
+  [Fact]
+  public async Task CustomFuelAndHiddenBodiesRemainPartOfThePackage() {
+    const string source="ghost predicate {:fuel 0,1} P(i:int) { i>=0 } lemma L(i:int) requires P(i) { hide P; assert P(i); reveal P(); assert {:fuel P,2,3} P(i); }";
+    var packages=new List<BoogieGenerator.PropositionLowering>();
+    await Translate(source,true,observer:packages.Add);
+    var assertions=packages.Where(p=>p.Inputs.Preparation==BoogieGenerator.ObligationPreparation.CheckedExpression).ToList();
+    Assert.Equal(2,assertions.Count);
+    Assert.NotEqual(ObligationFingerprint.Content(assertions[0]),ObligationFingerprint.Content(assertions[1]));
+  }
+
 }

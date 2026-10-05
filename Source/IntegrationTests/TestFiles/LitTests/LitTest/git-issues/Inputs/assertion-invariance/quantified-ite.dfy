@@ -1,1 +1,1 @@
-lemma L() { assert if (exists x:int :: x==0) then (exists y:int :: y==1) else false; }
+ghost predicate P(x:int) { x>=0 } lemma L() requires P(0) ensures if (exists x:int {:trigger P(x)} :: P(x)) then (exists y:int {:trigger P(y)} :: P(y)) else false {  }

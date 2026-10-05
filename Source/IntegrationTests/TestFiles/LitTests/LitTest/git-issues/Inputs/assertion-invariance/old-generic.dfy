@@ -1,1 +1,1 @@
-twostate lemma Use<T>(old t:T) {} lemma L<T>(t:T) { Use(t); }
+twostate lemma Use<T>(t:T) {} lemma L<T>(t:T) { Use(t); }

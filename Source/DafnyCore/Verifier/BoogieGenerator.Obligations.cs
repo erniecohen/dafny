@@ -50,6 +50,7 @@ public partial class BoogieGenerator {
     // The declared contract WF procedure establishes permissions in clause order.
     // Check each clause locally at this exit, then publish its guarded summary.
     // The procedure's checked ensures remain as the final semantic bridge.
+    if (assertionOnlyFilter != null) { return; }
     foreach (var ensures in ConjunctsOf(method.Ens)) {
       builder.Add(TrAssumeCmd(ensures.E.Origin, etran.CanCallAssumption(ensures.E)));
       var lowering = LowerProposition(builder.Context, ensures.E, etran);
@@ -63,7 +64,8 @@ public partial class BoogieGenerator {
         }
         builder.Add(AssertAndForget(builder.Context, new NestedOrigin(returnOrigin, piece.Tok), check, description));
       }
-      Bpl.Expr guard = ensures.E.Origin.IsInherited(currentModule)
+      Bpl.Expr guard = ensures.E.Origin.IsInherited(currentModule) ||
+        lowering.Pieces.Any(piece => piece.IsChecked && piece.Tok.IsInherited(currentModule))
         ? new Bpl.IdentifierExpr(returnOrigin, "$_reverifyPost", Bpl.Type.Bool) : Bpl.Expr.True;
       var summary = TrAssumeCmd(returnOrigin, BplImp(guard, lowering.Summary));
       proofDependencies?.AddProofDependencyId(summary, returnOrigin,
