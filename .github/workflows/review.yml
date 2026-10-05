@@ -490,9 +490,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+      - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: dafny
