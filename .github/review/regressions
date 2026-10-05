@@ -210,3 +210,8 @@ git-issues/git-issue-143-codatatype-update-negative.dfy
 git-issues/git-issue-143.dfy
 # Build migration must preserve generated C# framework defaults.
 git-issues/github-issue-75.dfy
+
+# Scoped subtype-variance diagnostic repair (#48).
+git-issues/git-issue-48.dfy
+git-issues/git-issue-48-cast.dfy
+git-issues/git-issue-48-incompatible.dfy
