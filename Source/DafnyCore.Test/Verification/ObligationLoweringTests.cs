@@ -86,6 +86,20 @@ public class ObligationLoweringTests {
   }
 
   [Fact]
+  public void FingerprintNormalizesLambdaBindersWithoutChangingTheirBodies() {
+    var token = Token.NoToken;
+    Bpl.LambdaExpr Lambda(string name, bool body) {
+      var variable = new Bpl.BoundVariable(token, new Bpl.TypedIdent(token, name, Bpl.Type.Bool));
+      return new Bpl.LambdaExpr(token, new List<Bpl.TypeVariable>(), new List<Bpl.Variable> { variable },
+        null, body ? new Bpl.IdentifierExpr(token, variable) : Bpl.Expr.False);
+    }
+    Assert.Equal(ObligationFingerprint.Expression(Lambda("x", true)),
+      ObligationFingerprint.Expression(Lambda("y", true)));
+    Assert.NotEqual(ObligationFingerprint.Expression(Lambda("x", true)),
+      ObligationFingerprint.Expression(Lambda("y", false)));
+  }
+
+  [Fact]
   public void ContextTransitionsDoNotConsumeSiblingPolicy() {
     var root = new VerificationExpressionContext(VerificationExpressionUse.Check);
     var first = root.FuelSelected();
