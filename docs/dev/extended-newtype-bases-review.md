@@ -209,3 +209,5 @@ consuming-boundary checks remain. The coinductive source argument is supported b
 productive and unsafe controls above. It still needs the required fresh gates
 on the final integrated source; the conservative empty-body finite-observation
 loss and missing allocation profile remain separate limitations.
+
+The [default-off solver query-context investigation](extended-newtype-bases-query-session-cost.md) records all nine unequal canonical RU comparisons, repeated-arm variation, and the exact ordered-context boundary. It explains the observed correspondence without treating it as exact cost compatibility or applying a tolerance.
