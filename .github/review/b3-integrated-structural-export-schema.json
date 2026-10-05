@@ -1,5 +1,6 @@
 {
   "admissionFields": {
+    "attemptedMetadataBytesBeforeReceipt": "attempted retention accounting observed before current receipt encoding",
     "backendAccepted": "alwaysFalse",
     "cliVerified": "alwaysFalse",
     "completeLibraryVerified": "alwaysFalse",
@@ -7,18 +8,19 @@
     "defaultCompatibilityVerified": "alwaysFalse",
     "exportAdmitted": "bool",
     "exportFault": "fixed-category-and-bounded-message-or-null",
-    "firstFault": "fixed-row-or-null",
     "fullPacketSelectedForUpload": "bool",
     "head": "40-lowercase-hex-or-null-with-reason",
     "headEvidence": "workflow-dispatch-metadata-only",
+    "libraryBinaryProduced": "alwaysFalse",
+    "observedReadBudgetsBeforeReceipt": "attempted/completed fixed ledgers observed before current receipt encoding; no future-completed-read claim",
     "originalArtifactFailure": "bounded-string-token-prefix-or-absent-or-unavailable; source does not produce null",
     "originalFinalError": "bounded-token-prefix-null-or-unavailable",
     "originalInventory": "complete-count-bytes-and-LF-seal-or-incomplete-lower-bound",
     "originalPrimaryFailure": "bounded-fixed-object-null-or-unavailable",
     "originalSummary": "captured-length-hash-and-extraction-status-or-exact-unavailable-reason",
-    "originalSummaryPassed": "observed-bool-or-null",
-    "readBudgets": "attempted-and-completed-per-fixed-budget",
+    "originalSummaryPassed": "observed-bool-or-explicit-unavailable-object",
     "regressionRuntimeVerified": "alwaysFalse",
+    "requiredAfterReceiptChecks": "fixed future-required checks; no assertion they already ran in this receipt",
     "schemaVersion": "exact1",
     "scope": "integrated-current-source-structural-export-only",
     "sourcePins": "literal-expected-coordinator-input-helper-identities",
@@ -121,6 +123,32 @@
     "untouched": 12
   },
   "productCommit": "450e374a40eb6125b540d55833a9cfe71484ab02",
+  "prospectiveV2AdmissionFields": {
+    "backendAccepted": "alwaysFalse",
+    "cliVerified": "alwaysFalse",
+    "completeLibraryVerified": "alwaysFalse",
+    "corpusVerified": "alwaysFalse",
+    "defaultCompatibilityVerified": "alwaysFalse",
+    "exportAdmitted": "bool",
+    "exportFault": "fixed-category-and-bounded-message-or-null",
+    "firstFault": "fixed-row-or-null",
+    "fullPacketSelectedForUpload": "bool",
+    "head": "40-lowercase-hex-or-null-with-reason",
+    "headEvidence": "workflow-dispatch-metadata-only",
+    "originalArtifactFailure": "bounded-string-token-prefix-or-absent-or-unavailable; source does not produce null",
+    "originalFinalError": "bounded-token-prefix-null-or-unavailable",
+    "originalInventory": "complete-count-bytes-and-LF-seal-or-incomplete-lower-bound",
+    "originalPrimaryFailure": "bounded-fixed-object-null-or-unavailable",
+    "originalSummary": "captured-length-hash-and-extraction-status-or-exact-unavailable-reason",
+    "originalSummaryPassed": "observed-bool-or-null",
+    "readBudgets": "attempted-and-completed-per-fixed-budget",
+    "regressionRuntimeVerified": "alwaysFalse",
+    "schemaVersion": "exact1",
+    "scope": "integrated-current-source-structural-export-only",
+    "sourcePins": "literal-expected-coordinator-input-helper-identities",
+    "structuralAcceptance": "alwaysFalse",
+    "workerRuntimeVerified": "alwaysFalse"
+  },
   "schemaVersion": 1,
   "sourceBindingDirection": [
     "English/helper bytes -> inputs records",
@@ -129,6 +157,25 @@
     "workflow passes validated finite sourcePins into helper; helper embeds neither own SHA nor inputs SHA"
   ],
   "sourceParent": "70fa80cc578b6f54c48f5a0c7ce103a31d7d0a42",
+  "sourceSchemaClarification": {
+    "bootstrapRejectionPreservation": "bounded descriptor write/size/named-entry identity only; unqualified, no readback/selfhash claim",
+    "fullUploadRequires": {
+      "full_packet": "exacttrue",
+      "metadata_ready": "exacttrue"
+    },
+    "historicalTable": "prospectiveV2AdmissionFields",
+    "historicalV2SchemaBytes": 5103,
+    "historicalV2SchemaSha256": "d917b4a37ceee085cf9f67f9d785f1f5c1019f1480d862922a6050ee202129d1",
+    "maximumJsonTokensMeaning": "lexical scalar/key and punctuation tokens including opening/closing braces/brackets, colons and commas; whitespace excluded; selected reparse charged again",
+    "metadataOnlyRequires": {
+      "full_packet": "non-true",
+      "metadata_ready": "exacttrue"
+    },
+    "selectedMetadataPath": "out/b3-integrated-structural-export/export.json",
+    "status": "source-only-unexecuted",
+    "unknownReadiness": "neither upload path selected; bounded workflow diagnostic",
+    "wireTable": "admissionFields"
+  },
   "sourceShapeEvidence": {
     "bytes": 4536,
     "path": "SUMMARY-SOURCE.json",
