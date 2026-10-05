@@ -623,7 +623,7 @@ jobs:
           from pathlib import Path
           path = Path('.github/review/b3-integrated-structural-focus.py')
           expected_bytes = 78732
-          expected_sha256 = '4b7277c77e26d9df7eb916679090eb281afb6f7fb99f0d6c052dbc095da1cb06'
+          expected_sha256 = '64bf521940cc9cc55aca070b760bab0366721e83c59a4b1f317fc9a8fbb45781'
           try:
               assert all(not ancestor.is_symlink() for ancestor in path.parents)
               descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
@@ -663,9 +663,9 @@ jobs:
         run: |
           python3 - <<'PYEXPORT'
           import hashlib, json, os, re, stat, sys, time, types
-          expected_inputs = {'bytes': 29696, 'sha256': 'ea41b4449255525a5238b3631900f5d1f047a3e00f8355fdafc6587c3a9251e3'}
-          expected_helper = {'bytes': 36506, 'sha256': '66e6f047ddb5faf11c09101b8dfbdac5a5e6e65166b987b57cc671c770db8ce5'}
-          expected_coordinator = {'bytes': 78732, 'sha256': '4b7277c77e26d9df7eb916679090eb281afb6f7fb99f0d6c052dbc095da1cb06'}
+          expected_inputs = {'bytes': 29696, 'sha256': '20d8b322dafcff9e21bc0b7d151c686fb5605adf561287237ab6e8fc0c8501a0'}
+          expected_helper = {'bytes': 36515, 'sha256': '0d98f42cd24892155d40ad9d740081a2702838d9929a5d06e0a0214fc74ecbcf'}
+          expected_coordinator = {'bytes': 78732, 'sha256': '64bf521940cc9cc55aca070b760bab0366721e83c59a4b1f317fc9a8fbb45781'}
           source_pins = {'parent': '70fa80cc578b6f54c48f5a0c7ce103a31d7d0a42',
               'product': '450e374a40eb6125b540d55833a9cfe71484ab02',
               'coordinator': expected_coordinator, 'inputs': expected_inputs, 'helper': expected_helper}

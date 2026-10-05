@@ -325,7 +325,7 @@ class Summary:
         return {'prefix': ''.join(prefix), 'truncated': count > limit,
                 'rawTokenSha256': hashlib.sha256(memoryview(self.raw)[start:end]).hexdigest()}
 
-    def value(self, depth=0, selected=None, strict=False):
+    def value(self, depth=1, selected=None, strict=False):
         self.tick()
         if depth > MAXIMUM_JSON_DEPTH:
             raise Fault('summary-depth', 'Summary JSON depth exceeds 64')
@@ -431,7 +431,7 @@ class Summary:
                 raise Fault('summary-type', 'Primary failure must be object or null')
             self.index = start
             selected = {key: None for key in ['stage', 'actualProcessExitCode', 'failure', 'boundaryFailure']}
-            self.value(selected=selected, strict=True)
+            self.value(depth=2, selected=selected, strict=True)
             if self.index != end or any(span is None for span in selected.values()):
                 raise Fault('summary-shape', 'Incomplete primary failure object')
             primary = {key: self.primitive(span, 'int' if key == 'actualProcessExitCode' else 'string',

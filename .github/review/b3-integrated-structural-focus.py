@@ -24,7 +24,7 @@ import zipfile
 
 ROOT = Path.cwd().resolve()
 INPUTS_PATH = Path('.github/review/b3-integrated-structural-inputs.json')
-INPUTS_SHA256 = "ea41b4449255525a5238b3631900f5d1f047a3e00f8355fdafc6587c3a9251e3"
+INPUTS_SHA256 = "20d8b322dafcff9e21bc0b7d151c686fb5605adf561287237ab6e8fc0c8501a0"
 INPUTS_BYTES = 29696
 FOCUSED_CONTROL_COUNT = 583
 MAXIMUM_FILE_BYTES = 512 * 1024 * 1024

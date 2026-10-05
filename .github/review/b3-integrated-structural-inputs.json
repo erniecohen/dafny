@@ -544,19 +544,19 @@
   },
   "exportAdmission": {
     "helper": {
-      "bytes": 36506,
+      "bytes": 36515,
       "path": ".github/review/b3-integrated-structural-export.py",
-      "sha256": "66e6f047ddb5faf11c09101b8dfbdac5a5e6e65166b987b57cc671c770db8ce5"
+      "sha256": "0d98f42cd24892155d40ad9d740081a2702838d9929a5d06e0a0214fc74ecbcf"
     },
     "plan": {
-      "bytes": 22743,
+      "bytes": 23372,
       "path": "docs/dev/b3/integrated-structural-export-plan.md",
-      "sha256": "5a3e87957cb6d5b892c008f87f8da9eefd05252bb48206d2294798b4c94373d8"
+      "sha256": "9c9332702772b8596afa142ddfc600a23ad98fd74cf97d1f2ffa3972aeb65a77"
     },
     "schema": {
-      "bytes": 7855,
+      "bytes": 8029,
       "path": ".github/review/b3-integrated-structural-export-schema.json",
-      "sha256": "154e9c8f9b9e881b100c5f6819a6e7ffc6d73d4926a78d4fb0c1930aca494b7d"
+      "sha256": "1cfc02ad7cccab9f8a3e2037e974735c090afd56164e604ee69a85e9c89345ac"
     },
     "sourceParent": "70fa80cc578b6f54c48f5a0c7ce103a31d7d0a42",
     "status": "source-only-unexecuted",
