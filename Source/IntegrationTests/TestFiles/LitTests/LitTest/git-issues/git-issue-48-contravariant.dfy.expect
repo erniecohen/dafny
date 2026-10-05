@@ -1,0 +1,6 @@
+git-issue-48-contravariant.dfy(6,2): Error: the two branches of an if-then-else expression must have the same type (got bool -> bool and int -> bool) (contravariant type parameter 0 would require bool <: int)
+git-issue-48-contravariant.dfy(5,9): Error: Function body type mismatch (expected int -> bool, got bool ~> bool) (contravariant type parameter 0 would require int <: bool)
+2 resolution/type errors detected in git-issue-48-contravariant.dfy
+git-issue-48-contravariant.dfy(6,2): Error: the two branches of an if-then-else expression must have the same type (got ?6 ~> ?7 and int -> ?2) (contravariant type parameter 'T0' would require int :> bool)
+git-issue-48-contravariant.dfy(5,9): Error: Function body type mismatch (expected int -> bool, got ?6 ~> ?7) (contravariant type parameter 'T0' would require bool :> int)
+2 resolution/type errors detected in git-issue-48-contravariant.dfy
