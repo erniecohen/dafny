@@ -215,3 +215,4 @@ git-issues/github-issue-75.dfy
 git-issues/git-issue-48.dfy
 git-issues/git-issue-48-cast.dfy
 git-issues/git-issue-48-incompatible.dfy
+git-issues/git-issue-48-contravariant.dfy
