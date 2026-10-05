@@ -144,3 +144,17 @@ git-issues/git-issue-142-legacy.dfy
 git-issues/git-issue-142-runtime.dfy
 # Preserve the original legacy character conversion range contract.
 git-issues/git-issue-356-errors.dfy
+
+# Regression and consistency controls for issue 141.
+git-issues/git-issue-141-datatype-cast-false-control.dfy
+git-issues/git-issue-141-datatype-cast-hidden-negative.dfy
+git-issues/git-issue-141-datatype-cast-hidden-nonvacuity.dfy
+git-issues/git-issue-141-datatype-cast-hidden-positive.dfy
+git-issues/git-issue-141-datatype-cast-invariant-negative.dfy
+git-issues/git-issue-141-datatype-cast-negative.dfy
+git-issues/git-issue-141-datatype-cast-resolver-negative.dfy
+git-issues/git-issue-141.dfy
+
+# Exact invariant function/caller reproducer and inhabited control (#141).
+git-issues/git-issue-141-original.dfy
+git-issues/git-issue-141-original-control.dfy

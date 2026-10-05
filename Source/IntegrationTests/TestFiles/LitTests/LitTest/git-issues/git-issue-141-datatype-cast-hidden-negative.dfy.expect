@@ -1,0 +1,4 @@
+git-issue-141-datatype-cast-hidden-negative.dfy(18,6): Error: value of expression (of type 'Box<int>') is not known to be an instance of type 'Box<nat>'
+git-issue-141-datatype-cast-hidden-negative.dfy(22,28): Error: value of expression (of type 'Box<int>') is not known to be an instance of type 'Box<nat>'
+
+Dafny program verifier finished with 2 verified, 2 errors

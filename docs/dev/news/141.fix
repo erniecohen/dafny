@@ -1,0 +1,1 @@
+Datatype and tuple casts now verify membership in the destination type before using its type constraints, including constraints in nested generic arguments and provided datatype types. Previously an unchecked narrowing cast such as `Box<int>` to `Box<nat>` could make an invalid value appear nonnegative.
