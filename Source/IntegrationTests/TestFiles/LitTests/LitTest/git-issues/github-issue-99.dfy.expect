@@ -1,0 +1,26 @@
+original (type-system-refresh:false)
+github-issue-99-original.dfy(7,44): Error: possible violation of postcondition of forall statement
+
+Dafny program verifier finished with 1 verified, 1 error
+original (type-system-refresh:true)
+github-issue-99-original.dfy(7,33): Error: value does not satisfy the subset constraints of 'nat -> (S, T)' (possible cause: it may be partial or have read effects)
+github-issue-99-original.dfy(7,44): Error: possible violation of postcondition of forall statement
+github-issue-99-original.dfy(8,4): Error: value does not satisfy the subset constraints of 'WfO<(S, T)>'
+
+Dafny program verifier finished with 1 verified, 3 errors
+positive (type-system-refresh:false)
+
+Dafny program verifier finished with 3 verified, 0 errors
+positive (type-system-refresh:true)
+
+Dafny program verifier finished with 3 verified, 0 errors
+negative (type-system-refresh:false)
+github-issue-99-negative.dfy(4,17): Error: possible violation of postcondition of forall statement
+github-issue-99-negative.dfy(15,19): Error: possible violation of postcondition of forall statement
+
+Dafny program verifier finished with 0 verified, 2 errors
+negative (type-system-refresh:true)
+github-issue-99-negative.dfy(4,17): Error: possible violation of postcondition of forall statement
+github-issue-99-negative.dfy(15,19): Error: possible violation of postcondition of forall statement
+
+Dafny program verifier finished with 0 verified, 2 errors
