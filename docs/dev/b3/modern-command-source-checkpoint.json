@@ -8,7 +8,7 @@
     "published": false
   },
   "changedPathCount": 36,
-  "changedPathInventorySha256": "8fb449f0c98a645020d04ad7e3004619448854276ff28ae29bd51bae6ad5679c",
+  "changedPathInventorySha256": "4874d93f10ac0bd5a724abd80a7d6d086695719ea3e452c51331e5405859b457",
   "changedPaths": [
     {
       "bytes": 7599,
@@ -231,9 +231,9 @@
       "sha256": "81f5c690643020f197eaf287c99463d39475dc4d121960b7695920527c540bb2"
     },
     {
-      "bytes": 37259,
+      "bytes": 37284,
       "change": "M",
-      "gitBlob": "0f6a61556cccd04be33d2f50c32dd437471f5b04",
+      "gitBlob": "a52b7ee6d2fc3722c1915a1d8c4e9338fa170310",
       "mode": "100644",
       "parent": {
         "bytes": 37176,
@@ -241,7 +241,7 @@
         "sha256": "492daa02bee6a5565221e6328477e019127b44ae021a65a21f70098f109a6adf"
       },
       "path": "Source/DafnyDriver/Legacy/SynchronousCliCompilation.cs",
-      "sha256": "348994ea36da95b3175a7d9f9ea7dacfb25d537f07af818d8051a54bcacd2531"
+      "sha256": "4b1651dd48889c4fc0917aebeb15f6c9176ac6b50bd8a4022a0baff6118757d0"
     },
     {
       "bytes": 91,
@@ -302,9 +302,9 @@
       "sha256": "4833b7300cc4e050b2279b897189bcc7397f67e1b0b36af39cc18dde073fcd97"
     },
     {
-      "bytes": 765,
+      "bytes": 815,
       "change": "M",
-      "gitBlob": "1513869b21ffc31e802ff9cd81c0f8d41c4a531b",
+      "gitBlob": "c01ee1bb5df8ad261b32054d621cb28b8f35edd7",
       "mode": "100644",
       "parent": {
         "bytes": 1224,
@@ -312,7 +312,7 @@
         "sha256": "22e753a1f33a2fa3877a932048057d0eccd9ea857b8e0acb10302b9edef39a4b"
       },
       "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-126.dfy.expect",
-      "sha256": "4a5d92e50d2ba7103a71210a271093e12fd78046a551a2b5e05e07347db8b845"
+      "sha256": "64769a86f99807fee7abd04a165c4fce84c46ec131a10aabab6e0b7a2c3c0486"
     },
     {
       "bytes": 149920,
@@ -341,13 +341,13 @@
       "sha256": "663abfc5748447a5ab26afa83a10ead836c026c499d36bfe8aff76f05ef974ab"
     },
     {
-      "bytes": 8721,
+      "bytes": 9833,
       "change": "A",
-      "gitBlob": "d6a6ec028ac1a88c72d084cc19bb44573329d371",
+      "gitBlob": "5ae1ac58f31475e4b55a921a14b17240c7140fa8",
       "mode": "100644",
       "parent": null,
       "path": "docs/dev/b3/modern-command-checkpoint.md",
-      "sha256": "e3841d8c1d8d0a14c3634502b03539cedf385632b20801f951bf1b42e13e3adb"
+      "sha256": "63e5b6e7bd567d053ec80d80b93dd61e0e80ebf5d87242da85e9e0e1c3743a21"
     },
     {
       "bytes": 22749,
@@ -405,6 +405,15 @@
     "rows": 95,
     "sha256": "06826f20afe76fa1e8612fc57ee2fb7b8d279fb02a331d2c63972b8dc73c8628"
   },
+  "diagnosticWordingSuccessor": {
+    "englishCheckpoint": "459af47c9e838ec1d57d52c4653e5adeb946fac4",
+    "expectedTextChanges": 2,
+    "originalProduct": "9e5e5cb46daa537ff74d45a30d54c88599dd80a1",
+    "productionLiteralChanges": 1,
+    "rejectionAndExitCodesUnchanged": true,
+    "sourceControlInventoryUnchanged": true,
+    "sourceParent": "0cda7aac76472136cc4022e5201043b327cdd692"
+  },
   "existingRegression": {
     "cliRows": 8,
     "enabledUnsupportedConfigurationRows": 3,
@@ -412,15 +421,15 @@
     "unchangedTranslateRejectionRows": 2
   },
   "format": "b3-modern-command-source-checkpoint-1",
-  "interpretation": "Complete cumulative changed-path inventory through the product checkpoint. This source-only manifest and the later review/base ledger are metadata descendants; neither is a compiled or executed receipt.",
+  "interpretation": "Complete cumulative changed-path inventory through the product checkpoint, excluding the two explicitly listed source-pin/review-base metadata paths. This source-only manifest and the later review/base ledger are metadata descendants; neither is a compiled or executed receipt.",
   "inventorySealEncoding": "UTF-8 JSON of changedPaths, keys sorted, separators comma/colon, no final newline",
   "issue": 126,
   "metadataExclusions": [
     "docs/dev/b3/modern-command-source-checkpoint.json",
     ".github/review/base"
   ],
-  "productCommit": "9e5e5cb46daa537ff74d45a30d54c88599dd80a1",
-  "productTree": "ae6e38453feff8e692adf1bac868fc9a2fa030d5",
+  "productCommit": "067864bfa4bfa357ae5a10ef4199f6d366f030e3",
+  "productTree": "52f12952e62e2eaa97945440717f0c94a4e7a7dd",
   "sourceParent": "51d527e0aa4fd428f4d42c881496f9d32dcb6001",
   "unchangedBoundaries": [
     "native options-based verification handler and event lifecycle",
