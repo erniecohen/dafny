@@ -8,7 +8,7 @@
     "published": false
   },
   "changedPathCount": 36,
-  "changedPathInventorySha256": "4874d93f10ac0bd5a724abd80a7d6d086695719ea3e452c51331e5405859b457",
+  "changedPathInventorySha256": "b020617c08d06be2adb99949d8a835e2b6d92dc2afca011f7ce7e00aa26c9482",
   "changedPaths": [
     {
       "bytes": 7599,
@@ -341,13 +341,13 @@
       "sha256": "663abfc5748447a5ab26afa83a10ead836c026c499d36bfe8aff76f05ef974ab"
     },
     {
-      "bytes": 9833,
+      "bytes": 11845,
       "change": "A",
-      "gitBlob": "5ae1ac58f31475e4b55a921a14b17240c7140fa8",
+      "gitBlob": "1844edfc3e96d6a1e087bc15455c2bfb5c9c5ce2",
       "mode": "100644",
       "parent": null,
       "path": "docs/dev/b3/modern-command-checkpoint.md",
-      "sha256": "63e5b6e7bd567d053ec80d80b93dd61e0e80ebf5d87242da85e9e0e1c3743a21"
+      "sha256": "5afaf0912e5cde6b09f6adc05156f610226e43c1807bae40664851316669ab58"
     },
     {
       "bytes": 22749,
@@ -359,13 +359,13 @@
       "sha256": "0e386504170072f611536eb75a52f1b1c8498a0f3d3c7a48b44027372427e5e3"
     },
     {
-      "bytes": 59162,
+      "bytes": 59337,
       "change": "A",
-      "gitBlob": "399bba19f97efadff5c83d06d80bcf2b398f91b6",
+      "gitBlob": "bec33bc629eaa4fe0b3430b2e46312175a390af5",
       "mode": "100644",
       "parent": null,
       "path": "docs/dev/b3/modern-command-defined-controls.json",
-      "sha256": "06826f20afe76fa1e8612fc57ee2fb7b8d279fb02a331d2c63972b8dc73c8628"
+      "sha256": "3b2894bfa894f58e1b2802963cda5a8968ee194e67eae45ec2f71ede562731d1"
     },
     {
       "bytes": 27367,
@@ -396,14 +396,14 @@
     }
   ],
   "definedControls": {
-    "bytes": 59162,
+    "bytes": 59337,
     "compiledTrxDenominator": null,
     "coreRows": 10,
     "driverRows": 85,
     "methods": 33,
     "path": "docs/dev/b3/modern-command-defined-controls.json",
     "rows": 95,
-    "sha256": "06826f20afe76fa1e8612fc57ee2fb7b8d279fb02a331d2c63972b8dc73c8628"
+    "sha256": "3b2894bfa894f58e1b2802963cda5a8968ee194e67eae45ec2f71ede562731d1"
   },
   "diagnosticWordingSuccessor": {
     "englishCheckpoint": "459af47c9e838ec1d57d52c4653e5adeb946fac4",
@@ -421,7 +421,7 @@
     "unchangedTranslateRejectionRows": 2
   },
   "format": "b3-modern-command-source-checkpoint-1",
-  "interpretation": "Complete cumulative changed-path inventory through the product checkpoint, excluding the two explicitly listed source-pin/review-base metadata paths. This source-only manifest and the later review/base ledger are metadata descendants; neither is a compiled or executed receipt.",
+  "interpretation": "Complete cumulative changed-path inventory at sourceCheckpointRevision/sourceCheckpointTree, excluding the two explicitly listed source-pin/review-base metadata paths. productCommit/productTree retain the actual last product identity; documentation/data corrections do not mint a new product. This source-only manifest is not a compiled or executed receipt.",
   "inventorySealEncoding": "UTF-8 JSON of changedPaths, keys sorted, separators comma/colon, no final newline",
   "issue": 126,
   "metadataExclusions": [
@@ -430,6 +430,8 @@
   ],
   "productCommit": "067864bfa4bfa357ae5a10ef4199f6d366f030e3",
   "productTree": "52f12952e62e2eaa97945440717f0c94a4e7a7dd",
+  "sourceCheckpointRevision": "ff2afbc3ee83aa4d91187165b1cde1bda82c076f",
+  "sourceCheckpointTree": "9d45c932873240e58de3989c4292c90c1b6aaff5",
   "sourceParent": "51d527e0aa4fd428f4d42c881496f9d32dcb6001",
   "unchangedBoundaries": [
     "native options-based verification handler and event lifecycle",
