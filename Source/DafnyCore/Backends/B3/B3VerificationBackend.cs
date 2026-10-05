@@ -94,12 +94,25 @@ public sealed class B3VerificationBackend : IVerificationBackend {
       var contexts = normalized.Contexts ?? new[] { new B3VerificationContext("legacy", normalized.Program,
         normalized.Obligations, Array.Empty<B3DefinitionOrigin>()) };
       B3DefinitionContexts.ValidatePartition(normalized.Program, normalized.Obligations, contexts, implementation.tok);
-      var requests = contexts.Select(context => new Request(Protocol.Version, Guid.NewGuid().ToString("N"), Protocol.NormalizerVersion,
-        package!.Manifest.B3Commit, Protocol.GetProgramHash(context.Program), context.Program.Unit.Name,
-        context.Program, config, context.Obligations, package.Fingerprint)).ToArray();
-      // Work keys bind every mask's normalized bytes, worker/library bytes and forwarded limits/options.
+      B3RealPreparedRequests prepared;
+      try {
+        // Internal headers only: capture bounds must precede hashing/ProtocolValidation on live trees.
+        var originals = contexts.Select(context => new Request(Protocol.Version, Guid.NewGuid().ToString("N"), Protocol.NormalizerVersion,
+          package!.Manifest.B3Commit, string.Empty, context.Program.Unit.Name,
+          context.Program, config, context.Obligations, package.Fingerprint)).ToArray();
+        prepared = B3RealContextPreparation.Prepare(contexts, originals, implementation.tok);
+      } catch (B3RealPreparationRejection rejection) {
+        tasks.Add(Blocked(source, implementation.Name, VerificationOutcome.Unsupported,
+          "b3_real_preparation: " + rejection.Message));
+        continue;
+      }
+      var requests = prepared.Requests;
+      // Bind original source snapshots, the checked relation version and final submitted bytes separately.
+      var preparationKey = B3RealContextPreparation.ProducerVersion + ":" + string.Join(":", prepared.Evidence.Select(evidence =>
+        evidence.MaskId + ":" + evidence.OriginalProgramHash + ":" + evidence.FinalProgramHash));
+      // Work keys also bind worker/library bytes and forwarded limits/options.
       var configKey = System.Text.Json.JsonSerializer.Serialize(config, Protocol.JsonOptions);
-      var key = "b3:" + string.Join(":", requests.Select(request => request.ProgramHash)) + ":" + package!.Fingerprint + ":" + configKey;
+      var key = "b3:" + preparationKey + ":" + string.Join(":", requests.Select(request => request.ProgramHash)) + ":" + package!.Fingerprint + ":" + configKey;
       var origins = normalized.Obligations.ToDictionary(obligation => obligation.Id, obligation => SourceOriginFor(obligation, source.Origin));
       tasks.Add(new B3WorkItem(new VerificationIdentity(implementation.Name, key, 0, 0), source,
         token => RunAsync(requests, package, normalized.Obligations, origins, source, token)));

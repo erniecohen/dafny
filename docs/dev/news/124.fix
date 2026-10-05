@@ -1,0 +1,2 @@
+
+The opt-in experimental B3 backend prepares bounded typed integer/Real round trips using assignment-derived substitutions and an independent relation check. It preserves checks, source identities, declarations, learning and solver settings. This source checkpoint awaits compilation and runtime acceptance.

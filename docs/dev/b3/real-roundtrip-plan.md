@@ -12,10 +12,15 @@ programs and checks available. `B3DefinitionContexts.ValidatePartition` requires
 exact replay; a prepared program is a separately checked submission, never a
 replacement witness for original source availability.
 
-The backend constructs original Requests, captures bounded owned snapshots, and
-applies all current protocol/type/hash validation before transformation. Require
+The backend constructs internal provisional request headers with empty hashes,
+captures bounded owned snapshots, then computes bounded hashes and applies all
+current protocol/type/hash validation before transformation. Neither the Request
+adapter nor ProtocolValidation hashes live input before capture. Require
 original request/context association and unchanged live source hashes. An association
-failure rejects preparation. Optional work/output-limit fallback is only to the
+failure rejects preparation. Require the same context/request objects, mask IDs,
+definition origins and source-obligation associations; re-capture before and after
+planning to reject observed mutation. This controlled producer boundary is not an
+atomic snapshot guarantee against arbitrary concurrent ABA mutation. Optional work/output-limit fallback is only to the
 fully typed, hash-bound owned original snapshot. It never uses changed live input.
 
 After independent relation validation, hash the final submitted bytes and use them
@@ -79,16 +84,45 @@ stale variable substitutions, changed declarations/axioms, and arbitrary express
 replacement. A hash alone is not the semantic relation check. This is a bounded
 executable check plus English correspondence argument, not a formal compiler theorem.
 
-## Bounds and atomic preparation
+## Bounds and all-mask preparation
 
 Keep the existing per-request node/depth/32MiB and all-mask aggregate bounds. Charge
 every copied occurrence and exact numeric/string bytes. Capture input before hashing
-and before unbounded allocation. Preparation has conservative optional limits of
+and before unbounded allocation. Strengthened input admission permits at most
+400000 copied collection slots per request and 800000 across all masks, charged
+before builder allocation. Charge total text characters and a conservative JSON
+escaped-string bound (six bytes per UTF-16 code unit plus quotes) against 32MiB
+before encoding. Reserve the filled canonical hash before measuring provisional
+headers. Include source identities, headers, configuration and both base
+and derived type fields; reject inconsistent type aliases rather than canonicalize
+them. Input admission failure rejects the whole preparation; it is not optional
+rewrite exhaustion. Preparation has conservative optional limits of
 1024 rows, 100000 free-variable memberships and 800000 work events per original unit.
 
 First produce bounded recipes and account complete output growth/bytes for every
-mask; materialize only after admission. On optional limit exhaustion discard the
-entire candidate and reuse only its owned validated original. No partial output,
+mask; materialize only after admission. Recipes count repeated expression occurrences
+even if their materialized immutable nodes are shared. Unchanged barriers receive
+full child/binder/pattern counts. Charge a conservative 512-byte structural reserve
+per recipe node and escaped string bounds. The larger of unchanged full request
+bytes and its captured escaped-text reserve covers all headers/declarations/axioms
+(including the filled hash). Reserve relation work before creating target arrays.
+The producer charges source visits, expanded remembered-chain visits, dictionary
+invalidation and branch copies. The checker reserve is twice that work plus four
+visits per target occurrence, covering its independent embedding tests and exact
+expression comparisons. Exceeding that checker reserve rejects preparation rather
+than return a partially checked candidate.
+
+The independent relation entry separately captures its source and target before
+hashing/type validation. Each capture uses the same 100000-node, 400000-slot,
+128-depth and 32MiB text/escaped-text/serialized bounds. These per-entry captures
+are transient and do not create an availability certificate. Preparation admits
+all at-most-16 target masks together under 200000 nodes and 64MiB, with shared
+recipe/relation work and free-membership budgets. Original input capture also
+shares the 800000-slot aggregate bound. Failure in an extra relation capture,
+hash/type check or semantic relation rejects the entire preparation as Unsupported;
+it never returns partial output or silently falls back. Only optional recipe,
+growth or work exhaustion discards the entire candidate and returns the already
+validated owned originals. No partial output,
 missing Check, unbounded lookup/clone or stale source association is accepted.
 
 ## Frozen structural control census
