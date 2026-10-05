@@ -145,4 +145,32 @@ public class ObligationLoweringTests {
     Assert.All(implicitChecks,c=>Assert.Contains(ObligationFingerprint.Expression(c.Expr),explicitChecks));
   }
 
+  [Fact]
+  public async Task ExplicitAndImplicitOldAllocationUseTheSameTypedPredicate() {
+    const string source = "class C {} twostate lemma Use(c:C) {} lemma L(c:C) { assert old(allocated(c)); Use(c); }";
+    var programs = await Translate(source, true);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var checks = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>().ToList();
+    var explicitChecks = checks.Where(c => c.Description is AssertStatementDescription)
+      .Select(c => ObligationFingerprint.Expression(c.Expr)).ToList();
+    Assert.Single(explicitChecks);
+    var implicitChecks = checks.Where(c => c.Description is IsAllocated).ToList();
+    Assert.NotEmpty(implicitChecks);
+    Assert.All(implicitChecks, c => Assert.Equal(explicitChecks[0], ObligationFingerprint.Expression(c.Expr)));
+  }
+
+  [Fact]
+  public async Task ExplicitAndImplicitHigherOrderRequiresUseTheSameHeapAndActuals() {
+    const string source = "lemma L(f:int-->int,i:int) requires f.requires(i) { assert f.requires(i); var v := f(i); }";
+    var programs = await Translate(source, true);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var checks = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>().ToList();
+    var explicitChecks = checks.Where(c => c.Description is AssertStatementDescription)
+      .Select(c => ObligationFingerprint.Expression(c.Expr)).ToList();
+    Assert.Single(explicitChecks);
+    var implicitChecks = checks.Where(c => c.Description is PreconditionSatisfied).ToList();
+    Assert.NotEmpty(implicitChecks);
+    Assert.All(implicitChecks, c => Assert.Equal(explicitChecks[0], ObligationFingerprint.Expression(c.Expr)));
+  }
+
 }
