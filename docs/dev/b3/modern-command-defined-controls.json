@@ -11,7 +11,7 @@
     "realB3WorkerSolverCommandAccepted": false,
     "defaultBoogieParityMeasured": false
   },
-  "identityInterpretation": "Source-derived xUnit identities, not observed TRX. Arguments here require no 50-character display truncation. Driver xUnit 2.4.2; Core xUnit 2.4.1.",
+  "identityInterpretation": "Source-derived xUnit identities, not observed TRX. C# InlineData Boolean literals remain lowercase; pinned xUnit 2.4.1/2.4.2 display formatting renders Boolean arguments True/False and enum arguments as declared member names. Arguments here require no 50-character display truncation. Driver xUnit 2.4.2; Core xUnit 2.4.1.",
   "countsByClass": {
     "DafnyDriver.Test.ModernB3AdmissionTest": 11,
     "DafnyDriver.Test.ModernB3CommandBoundaryTest": 6,
@@ -32,7 +32,7 @@
       "inlineDataCSharp": [
         "false"
       ],
-      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3AdmissionTest.SourceLibraryAdmissionWarningIsFrozenOrRejectedByWarningPolicy(allowed: false)",
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3AdmissionTest.SourceLibraryAdmissionWarningIsFrozenOrRejectedByWarningPolicy(allowed: False)",
       "scope": "structured input admission; no worker/solver",
       "compiled": false,
       "executed": false,
@@ -48,7 +48,7 @@
       "inlineDataCSharp": [
         "true"
       ],
-      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3AdmissionTest.SourceLibraryAdmissionWarningIsFrozenOrRejectedByWarningPolicy(allowed: true)",
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3AdmissionTest.SourceLibraryAdmissionWarningIsFrozenOrRejectedByWarningPolicy(allowed: True)",
       "scope": "structured input admission; no worker/solver",
       "compiled": false,
       "executed": false,
@@ -208,7 +208,7 @@
       "inlineDataCSharp": [
         "false"
       ],
-      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CommandBoundaryTest.SourceProjectDependencyKeepsSelectedB3OrItsExplicitSkipPolicy(skip: false)",
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CommandBoundaryTest.SourceProjectDependencyKeepsSelectedB3OrItsExplicitSkipPolicy(skip: False)",
       "scope": "actual skipped CLI or configuration/dependency boundary; no B3 proof",
       "compiled": false,
       "executed": false,
@@ -224,7 +224,7 @@
       "inlineDataCSharp": [
         "true"
       ],
-      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CommandBoundaryTest.SourceProjectDependencyKeepsSelectedB3OrItsExplicitSkipPolicy(skip: true)",
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CommandBoundaryTest.SourceProjectDependencyKeepsSelectedB3OrItsExplicitSkipPolicy(skip: True)",
       "scope": "actual skipped CLI or configuration/dependency boundary; no B3 proof",
       "compiled": false,
       "executed": false,
@@ -244,7 +244,7 @@
         "null",
         "true"
       ],
-      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CommandBoundaryTest.ActualProjectAndCliPrecedenceChooseOneBackend(projectBackend: \"b3\", cliBackend: null, expectB3Rejection: true)",
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CommandBoundaryTest.ActualProjectAndCliPrecedenceChooseOneBackend(projectBackend: \"b3\", cliBackend: null, expectB3Rejection: True)",
       "scope": "actual skipped CLI or configuration/dependency boundary; no B3 proof",
       "compiled": false,
       "executed": false,
@@ -264,7 +264,7 @@
         "\"b3\"",
         "true"
       ],
-      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CommandBoundaryTest.ActualProjectAndCliPrecedenceChooseOneBackend(projectBackend: \"boogie\", cliBackend: \"b3\", expectB3Rejection: true)",
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CommandBoundaryTest.ActualProjectAndCliPrecedenceChooseOneBackend(projectBackend: \"boogie\", cliBackend: \"b3\", expectB3Rejection: True)",
       "scope": "actual skipped CLI or configuration/dependency boundary; no B3 proof",
       "compiled": false,
       "executed": false,
@@ -284,7 +284,7 @@
         "\"boogie\"",
         "false"
       ],
-      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CommandBoundaryTest.ActualProjectAndCliPrecedenceChooseOneBackend(projectBackend: \"b3\", cliBackend: \"boogie\", expectB3Rejection: false)",
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3CommandBoundaryTest.ActualProjectAndCliPrecedenceChooseOneBackend(projectBackend: \"b3\", cliBackend: \"boogie\", expectB3Rejection: False)",
       "scope": "actual skipped CLI or configuration/dependency boundary; no B3 proof",
       "compiled": false,
       "executed": false,
@@ -664,7 +664,7 @@
       "inlineDataCSharp": [
         "false"
       ],
-      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ProvenanceTest.InformationalSidecarBindsActualArtifactWithoutChangingItOrGrantingTrust(skip: false)",
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ProvenanceTest.InformationalSidecarBindsActualArtifactWithoutChangingItOrGrantingTrust(skip: False)",
       "scope": "informational metadata only; no valid library/proof inference",
       "compiled": false,
       "executed": false,
@@ -680,7 +680,7 @@
       "inlineDataCSharp": [
         "true"
       ],
-      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ProvenanceTest.InformationalSidecarBindsActualArtifactWithoutChangingItOrGrantingTrust(skip: true)",
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ProvenanceTest.InformationalSidecarBindsActualArtifactWithoutChangingItOrGrantingTrust(skip: True)",
       "scope": "informational metadata only; no valid library/proof inference",
       "compiled": false,
       "executed": false,
@@ -1232,7 +1232,7 @@
       "inlineDataCSharp": [
         "false"
       ],
-      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.OrdinarySkipIsDistinctFromHiddenOrUnrecordedSkip(ordinary: false)",
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.OrdinarySkipIsDistinctFromHiddenOrUnrecordedSkip(ordinary: False)",
       "scope": "in-process orchestration/receipt",
       "compiled": false,
       "executed": false,
@@ -1248,7 +1248,7 @@
       "inlineDataCSharp": [
         "true"
       ],
-      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.OrdinarySkipIsDistinctFromHiddenOrUnrecordedSkip(ordinary: true)",
+      "sourceDerivedDisplayName": "DafnyDriver.Test.ModernB3ReceiptTest.OrdinarySkipIsDistinctFromHiddenOrUnrecordedSkip(ordinary: True)",
       "scope": "in-process orchestration/receipt",
       "compiled": false,
       "executed": false,
@@ -1384,7 +1384,7 @@
       "inlineDataCSharp": [
         "false"
       ],
-      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.MissingResolutionOrScopeInventoryCannotBecomeEmptyPreparation(missingResolution: false)",
+      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.MissingResolutionOrScopeInventoryCannotBecomeEmptyPreparation(missingResolution: False)",
       "scope": "Core input/child relation",
       "compiled": false,
       "executed": false,
@@ -1400,7 +1400,7 @@
       "inlineDataCSharp": [
         "true"
       ],
-      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.MissingResolutionOrScopeInventoryCannotBecomeEmptyPreparation(missingResolution: true)",
+      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.MissingResolutionOrScopeInventoryCannotBecomeEmptyPreparation(missingResolution: True)",
       "scope": "Core input/child relation",
       "compiled": false,
       "executed": false,
@@ -1430,7 +1430,7 @@
         "false",
         "false"
       ],
-      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.ChildSkipPreservesBothParentAndCallerProvenance(parentSkip: false, verifyChild: false)",
+      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.ChildSkipPreservesBothParentAndCallerProvenance(parentSkip: False, verifyChild: False)",
       "scope": "Core input/child relation",
       "compiled": false,
       "executed": false,
@@ -1448,7 +1448,7 @@
         "false",
         "true"
       ],
-      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.ChildSkipPreservesBothParentAndCallerProvenance(parentSkip: false, verifyChild: true)",
+      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.ChildSkipPreservesBothParentAndCallerProvenance(parentSkip: False, verifyChild: True)",
       "scope": "Core input/child relation",
       "compiled": false,
       "executed": false,
@@ -1466,7 +1466,7 @@
         "true",
         "false"
       ],
-      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.ChildSkipPreservesBothParentAndCallerProvenance(parentSkip: true, verifyChild: false)",
+      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.ChildSkipPreservesBothParentAndCallerProvenance(parentSkip: True, verifyChild: False)",
       "scope": "Core input/child relation",
       "compiled": false,
       "executed": false,
@@ -1484,7 +1484,7 @@
         "true",
         "true"
       ],
-      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.ChildSkipPreservesBothParentAndCallerProvenance(parentSkip: true, verifyChild: true)",
+      "sourceDerivedDisplayName": "DafnyCore.Test.ModernB3InputAndChildTest.ChildSkipPreservesBothParentAndCallerProvenance(parentSkip: True, verifyChild: True)",
       "scope": "Core input/child relation",
       "compiled": false,
       "executed": false,
