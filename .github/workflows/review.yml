@@ -1,599 +1,1360 @@
-# This fork's CI, in place of upstream's workflows, which exercise every compiler
-# backend and run for hours.  It builds Dafny, runs the verifier over Dafny's own test
-# programs at a fixed resource limit and reports each program's verdict, verifies
-# Dafny's standard library and reports each declaration's verdict, runs the
-# regression tests of this line's fixes in upstream's test harness, and on a tag
-# publishes self-contained binaries.  Every job that builds first fetches the Boogie
-# packages this line builds against (Scripts/fetch-boogie-packages.sh, checked by sha256).
-# Standard GitHub-hosted runners only.
+# Scratch diagnostic only. Actions success is not proof or runtime acceptance.
+# One final shipped product build supplies every measured compiler component.
+# No source, contract, literal RUN, proof budget, seed, or expectation is edited.
+# Focused lifecycle discovery only; no derived proof or runtime matrix reruns.
+# Unfiltered independent adapter inventory; original execution filters remain exact.
 name: review
-
 on:
-  push:
-    branches: ['review/**', 'dev']
-    tags: ['v*']
-  pull_request:
-    branches: ['review/**', 'dev']
   workflow_dispatch:
-    inputs:
-      binaries:
-        description: Also build the self-contained binaries (a release is made only for a tag)
-        type: boolean
-        default: false
-
-      resolver_probe:
-        description: Record resolver outcomes without enforcing their baseline (scratch branches only)
-        type: boolean
-        default: false
-
-      additional_axioms_probe:
-        description: Record initial enabled verdict baselines without enforcing them (scratch branches only)
-        type: boolean
-        default: false
-
 permissions:
   contents: read
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref_type != 'tag' }}
-
+  cancel-in-progress: false
 env:
   DOTNET_NOLOGO: 'true'
   DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
-  # Z3 5.1.0, from Z3's public GitHub release, checked by sha256.
-  Z3_RELEASE: https://github.com/Z3Prover/z3/releases/download/z3-5.1.0
-  Z3_LINUX_X64: z3-5.1.0-x64-glibc-2.39
-  Z3_LINUX_X64_SHA256: f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a
-  Z3_OSX_ARM64: z3-5.1.0-arm64-osx-13.3
-  Z3_OSX_ARM64_SHA256: 81d29e934fd863079a74af35eecaeaef8047e0e12414d33ca322b358d68383db
-  # Upstream's harness runs with the Z3 that the tree's own tests expect, its
-  # DefaultZ3Version, from dafny-lang/solver-builds, checked by sha256.
-  HARNESS_Z3_RELEASE: https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03
-  HARNESS_Z3_4_12_1_SHA256: e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b
-  HARNESS_Z3_4_16_0_SHA256: 87de9c9e86c877abfccb00cf24b946c4a1bda7b9cba6f363ea58311d2573c320
-
 jobs:
-  build:
-    name: Build (Release)
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    outputs:
-      revision: ${{ steps.version.outputs.revision }}
-      version: ${{ steps.version.outputs.version }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Version
-        id: version
-        run: sh .github/review/version.sh | tee -a "$GITHUB_OUTPUT"
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - name: Boogie packages
-        run: sh Scripts/fetch-boogie-packages.sh
-      - name: Build
-        run: |
-          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny \
-            -p:SourceRevisionId=${{ steps.version.outputs.revision }}
-      - name: Check the version it reports
-        run: |
-          v=$(dotnet out/dafny/Dafny.dll --version | head -1)
-          echo "dafny --version: $v"
-          test "$v" = "${{ steps.version.outputs.version }}"
-      - name: Check the packaged standard libraries
-        run: |
-          v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
-          case "$v" in
-            4.12.1) sha=$HARNESS_Z3_4_12_1_SHA256 ;;
-            4.16.0) sha=$HARNESS_Z3_4_16_0_SHA256 ;;
-            *) echo "no checksum here for Z3 $v"; exit 1 ;;
-          esac
-          curl -fsSLo z3h.zip "$HARNESS_Z3_RELEASE/z3-$v-x64-ubuntu-24.04-bin.zip"
-          echo "$sha  z3h.zip" | sha256sum -c -
-          mkdir -p z3h && unzip -q z3h.zip -d z3h && chmod +x "z3h/z3-$v"
-          "z3h/z3-$v" --version
-          python3 .github/review/packaged-libraries.py "$PWD/out/dafny/Dafny" "$PWD/z3h/z3-$v" \
-            out/packaged-libraries
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: packaged-libraries
-          path: |
-            out/packaged-libraries/summary.json
-            out/packaged-libraries/*/result.json
-            out/packaged-libraries/*/stdout.txt
-            out/packaged-libraries/*/stderr.txt
-            out/packaged-libraries/*/resources.csv
-            out/packaged-libraries/*/package-smoke.bin
-          retention-days: 14
-      - name: Pack
-        run: tar -C out -czf dafny.tar.gz dafny
-      - uses: actions/upload-artifact@v4
-        with:
-          name: dafny
-          path: dafny.tar.gz
-          retention-days: 14
-
-  suite:
-    name: Verifier suite (axioms ${{ matrix.axioms }}, shard ${{ matrix.shard }} of 4)
-    needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 240
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [0, 1, 2, 3]
-        axioms: ['off', 'on']
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
-      - uses: actions/download-artifact@v4
-        with:
-          name: dafny
-      - name: Unpack Dafny
-        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
-      - name: Z3
-        run: |
-          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
-          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
-          unzip -q z3.zip && chmod +x "$Z3_LINUX_X64/bin/z3"
-          echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
-          "$Z3_LINUX_X64/bin/z3" --version
-      - name: Verify
-        run: |
-          L=Source/IntegrationTests/TestFiles/LitTests/LitTest
-          python3 .github/review/lit-verdicts.py plan "$L" plan.tsv
-          python3 .github/review/lit-verdicts.py run plan.tsv "$L" "$PWD/out/dafny/Dafny" "$Z3" \
-            verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv --shard ${{ matrix.shard }}/4 --jobs 4 \
-            --additional-axioms ${{ matrix.axioms == 'on' }} --measurements measurements/${{ matrix.axioms }}
-          python3 .github/review/additional-axioms.py inventory measurements/${{ matrix.axioms }} \
-            resources-${{ matrix.axioms }}-${{ matrix.shard }}.json
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: verdicts-${{ matrix.axioms }}-${{ matrix.shard }}
-          path: |
-            verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv
-            resources-${{ matrix.axioms }}-${{ matrix.shard }}.json
-            plan.tsv
-          retention-days: 90
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: suite-measurements-${{ matrix.axioms }}-${{ matrix.shard }}
-          path: measurements
-          compression-level: 9
-          retention-days: 90
-
-  verdicts:
-    name: Verdicts (axioms ${{ matrix.axioms }})
-    needs: [build, suite]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        axioms: ['off', 'on']
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: verdicts-${{ matrix.axioms }}-*
-          merge-multiple: true
-      - name: Merge and summarise
-        run: |
-          sort verdicts-${{ matrix.axioms }}-*.tsv > verdicts.tsv
-          test "$(wc -l < verdicts.tsv)" -eq "$(wc -l < plan.tsv)"
-          python3 .github/review/lit-verdicts.py expected verdicts.tsv > expected-verdicts.tsv
-          {
-            echo "## Verifier suite, axioms ${{ matrix.axioms }}: ${{ needs.build.outputs.version }}"
-            echo
-            echo "Each program under LitTest/dafny0..4 and git-issues whose first RUN line"
-            echo "verifies it, at a resource limit of 16,000,000, with Z3 5.1.0."
-            echo
-            python3 .github/review/lit-verdicts.py summary verdicts.tsv
-          } >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: verdicts-${{ matrix.axioms }}
-          path: |
-            verdicts.tsv
-            expected-verdicts.tsv
-            plan.tsv
-          retention-days: 90
-      # A verdict is a program's exit code, summary line and error lines: not its
-      # time, and not the resources its finished proofs used.  To change the
-      # expected verdicts on purpose, see .github/review/lit-verdicts.py.
-      - name: Compare with the expected verdicts
-        env:
-          PROBE: ${{ inputs.additional_axioms_probe }}
-        run: |
-          suffix=""
-          if [ '${{ matrix.axioms }}' = on ]; then suffix="-additional-axioms"; fi
-          python3 .github/review/additional-axioms.py gate suite \
-            ".github/review/expected-verdicts$suffix.tsv" verdicts.tsv \
-            --mode '${{ matrix.axioms }}' --output comparison
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: verdict-comparison-${{ matrix.axioms }}
-          path: comparison
-          retention-days: 90
-
-  resolver:
-    name: Resolver matrix (both modes)
-    needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
-      - uses: actions/download-artifact@v4
-        with:
-          name: dafny
-      - name: Unpack Dafny
-        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
-      - name: Test axiom gate and resource reporting
-        run: python3 -m unittest discover -s .github/review -p test_additional_axioms.py
-      - name: Test matrix runner
-        run: python3 -m unittest discover -s .github/review -p test_resolver_matrix.py
-      - name: Resolve manifest in both modes
-        env:
-          PROBE: ${{ inputs.resolver_probe }}
-        run: |
-          extra=()
-          if [ "$PROBE" = true ]; then
-            case "$GITHUB_REF" in
-              refs/heads/scratch/*) extra+=(--probe) ;;
-              *) echo "Resolver probes must use a scratch branch"; exit 1 ;;
-            esac
-          fi
-          python3 .github/review/resolver-matrix.py \
-            --manifest .github/review/resolver-cases.json \
-            --lit-dir Source/IntegrationTests/TestFiles/LitTests/LitTest \
-            --dafny out/dafny/Dafny \
-            --expected .github/review/expected-resolver-results.json \
-            --output resolver-results "${extra[@]}"
-      - name: Record known unresolved cases separately
-        if: inputs.resolver_probe && startsWith(github.ref, 'refs/heads/scratch/')
-        run: |
-          python3 .github/review/resolver-matrix.py \
-            --manifest .github/review/resolver-probes.json \
-            --lit-dir Source/IntegrationTests/TestFiles/LitTests/LitTest \
-            --dafny out/dafny/Dafny \
-            --expected .github/review/expected-resolver-probes.json \
-            --output resolver-probes --probe
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: resolver-results
-          path: |
-            resolver-results/
-            resolver-probes/
-          retention-days: 90
-
-  stdlib:
-    name: Standard library (Z3 ${{ matrix.z3 }}, axioms ${{ matrix.axioms }})
-    needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 180
-    strategy:
-      fail-fast: false
-      matrix:
-        # This line's Z3, and the Z3 that the tree's own tests expect (its
-        # DefaultZ3Version), with which upstream builds the library.
-        z3: ['5.1.0', 'of the tests']
-        axioms: ['off', 'on']
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
-      - uses: actions/download-artifact@v4
-        with:
-          name: dafny
-      - name: Unpack Dafny
-        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
-      - name: Z3
-        run: |
-          if [ "${{ matrix.z3 }}" = 5.1.0 ]; then
-            curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
-            echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
-            unzip -q z3.zip && chmod +x "$Z3_LINUX_X64/bin/z3"
-            echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
-            echo "Z3V=5.1.0" >> "$GITHUB_ENV"
-          else
-            v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
-            case "$v" in
-              4.12.1) sha=$HARNESS_Z3_4_12_1_SHA256 ;;
-              4.16.0) sha=$HARNESS_Z3_4_16_0_SHA256 ;;
-              *) echo "no checksum here for Z3 $v"; exit 1 ;;
-            esac
-            curl -fsSLo z3h.zip "$HARNESS_Z3_RELEASE/z3-$v-x64-ubuntu-24.04-bin.zip"
-            echo "$sha  z3h.zip" | sha256sum -c -
-            mkdir -p z3h && unzip -q z3h.zip -d z3h && chmod +x "z3h/z3-$v"
-            echo "Z3=$PWD/z3h/z3-$v" >> "$GITHUB_ENV"
-            echo "Z3V=$v" >> "$GITHUB_ENV"
-          fi
-      - name: Verify
-        run: |
-          "$Z3" --version
-          python3 .github/review/std-verdicts.py run Source/DafnyStandardLibraries "$PWD/out/dafny/Dafny" "$Z3" \
-            std-verdicts.tsv --cores 4 --additional-axioms ${{ matrix.axioms == 'on' }}
-          python3 .github/review/std-verdicts.py expected std-verdicts.tsv > "expected-std-verdicts-z3-$Z3V.tsv"
-          {
-            echo "## Standard library, axioms ${{ matrix.axioms }}, Z3 $Z3V: ${{ needs.build.outputs.version }}"
-            echo
-            echo "Source/DafnyStandardLibraries, verified as its Makefile's verify target does, with"
-            echo "the library's own resource limits and no time limit."
-            echo
-            python3 .github/review/std-verdicts.py summary std-verdicts.tsv
-          } >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: std-verdicts-${{ matrix.axioms }}-z3-${{ env.Z3V }}
-          path: |
-            std-verdicts.tsv
-            expected-std-verdicts-z3-${{ env.Z3V }}.tsv
-          retention-days: 90
-      # A declaration's verdict is its outcome; a part's is its exit code, summary line
-      # and error lines.  Not times, and not the resources finished proofs used.  To
-      # change the expected verdicts on purpose, see .github/review/std-verdicts.py.
-      - name: Compare with the expected verdicts
-        env:
-          PROBE: ${{ inputs.additional_axioms_probe }}
-        run: |
-          suffix=""
-          if [ '${{ matrix.axioms }}' = on ]; then suffix="-additional-axioms"; fi
-          python3 .github/review/additional-axioms.py gate std \
-            ".github/review/expected-std-verdicts-z3-$Z3V$suffix.tsv" std-verdicts.tsv \
-            --mode '${{ matrix.axioms }}' --output comparison
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: std-comparison-${{ matrix.axioms }}-z3-${{ env.Z3V }}
-          path: comparison
-          retention-days: 90
-
-  axiom-resources:
-    name: Additional-axiom resource comparisons
-    needs: [suite, stdlib]
-    # Also after a failed standard-library job, but not after a cancellation, which can leave its
-    # artifacts missing (#133).
-    if: ${{ !cancelled() && needs.suite.result == 'success' }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: verdicts-*-*
-          path: measurements
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: std-verdicts-*
-          path: measurements
-      - name: Report enabled versus disabled resource counts
-        run: python3 .github/review/additional-axioms.py resources measurements resource-comparison
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: additional-axiom-resources
-          path: resource-comparison
-          retention-days: 90
-
-  regressions:
-    name: Regression tests (upstream harness)
+  same-source-lifecycle-discovery:
+    if: github.repository == 'erniecohen/dafny' && startsWith(github.ref, 'refs/heads/scratch/')
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
+        continue-on-error: true
       - uses: actions/setup-dotnet@v4
+        continue-on-error: true
         with:
           dotnet-version: 8.0.x
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - name: The Z3 the tests expect
+      - name: Materialize the pinned observer inputs
+        if: always()
+        continue-on-error: true
         run: |
-          v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
-          case "$v" in
-            4.12.1) sha=$HARNESS_Z3_4_12_1_SHA256 ;;
-            4.16.0) sha=$HARNESS_Z3_4_16_0_SHA256 ;;
-            *) echo "no checksum here for Z3 $v"; exit 1 ;;
-          esac
-          curl -fsSLo z3h.zip "$HARNESS_Z3_RELEASE/z3-$v-x64-ubuntu-24.04-bin.zip"
-          echo "$sha  z3h.zip" | sha256sum -c -
-          mkdir -p Binaries/z3/bin
-          unzip -q z3h.zip -d Binaries/z3/bin
-          chmod +x "Binaries/z3/bin/z3-$v"
-          "Binaries/z3/bin/z3-$v" --version
-      - name: The pinned solver for additional-axiom regressions
+          mkdir -p .same-source-tools same-source-observations/setup
+          : > .same-source-tools/spec.json
+          : > .same-source-tools/observer.py
+          : > .same-source-tools/setup.py
+          printf '%s\n' "$HOME/go/bin" >> "$GITHUB_PATH"
+      - name: Pinned spec.json fragment 1 of 4
+        if: always()
+        continue-on-error: true
         run: |
-          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
-          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
-          unzip -q z3.zip
-          cp "$Z3_LINUX_X64/bin/z3" Binaries/z3/bin/z3-5.1.0
-          if [ ! -f Binaries/z3/bin/z3-4.12.1 ]; then
-            curl -fsSLo z3-4.12.1.zip "$HARNESS_Z3_RELEASE/z3-4.12.1-x64-ubuntu-24.04-bin.zip"
-            echo "$HARNESS_Z3_4_12_1_SHA256  z3-4.12.1.zip" | sha256sum -c -
-            unzip -q z3-4.12.1.zip -d Binaries/z3/bin
-            chmod +x Binaries/z3/bin/z3-4.12.1
-          fi
-      - name: Boogie packages
-        run: sh Scripts/fetch-boogie-packages.sh
-      - name: Build the test harness
-        run: dotnet build Source/IntegrationTests -c Release
-      - name: Cardinality and extended-newtype lifecycle tests
-        run: |
-          dotnet test Source/DafnyCore.Test -c Release --filter 'FullyQualifiedName~Cardinality|FullyQualifiedName~ExtendedNewtype|FullyQualifiedName~NewtypeReferenceCharacteristicTests'
-          dotnet test Source/DafnyLanguageServer.Test -c Release --filter 'FullyQualifiedName~Cardinality|FullyQualifiedName~ExtendedNewtypeCachingTest'
-          dotnet test Source/IntegrationTests -c Release --no-build --filter 'FullyQualifiedName~CardinalityEmissionTests|FullyQualifiedName~ExtendedNewtypeOptionTests'
-      - name: Run the tests named in .github/review/regressions
-        env:
-          DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS: cs
-        run: |
-          filter=$(grep -v '^#' .github/review/regressions | grep . | sed 's|^|DisplayName~|' | paste -sd'|' -)
-          if [ -z "$filter" ]; then echo "no tests named"; exit 0; fi
-          echo "$filter"
-          dotnet test Source/IntegrationTests -c Release --no-build \
-            --logger "console;verbosity=normal" --filter "$filter"
-      - name: Literal identities are option guarded and local to each module
-        run: dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~AdditionalAxiomsTranslationTests --logger "console;verbosity=normal"
-      - name: Editor option changes invalidate verification results
-        run: dotnet test Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~AdditionalAxiomsTest --logger "console;verbosity=normal"
-
-
-  resolver-tests:
-    name: Resolver unit tests and language-server recovery
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
-      - name: Boogie packages
-        run: sh Scripts/fetch-boogie-packages.sh
-      - name: Build resolver and language-server tests
-        run: dotnet build Source/DafnyLanguageServer.Test -c Release
-      # These tests exercise type resolution only. The language-server tests
-      # explicitly disable automatic verification, so this job starts no solver.
-      - name: Test redirecting dependencies, numeric ancestry and recovery scopes
-        run: |
-          dotnet test Source/DafnyCore.Test -c Release --no-build \
-            --logger "console;verbosity=normal" \
-            --filter "FullyQualifiedName~DafnyCore.Test.RedirectingTypeDependencyTrackerTests|FullyQualifiedName~DafnyCore.Test.NumericAncestryTests|FullyQualifiedName~DafnyCore.Test.ScopeCheckpointTest" \
-            --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none
-      - name: Test newtype-cycle edits in both resolver modes
-        run: |
-          dotnet test Source/DafnyLanguageServer.Test -c Release --no-build \
-            --logger "console;verbosity=normal" \
-            --filter "FullyQualifiedName~InferredNewtypeCycleTest" \
-            --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none
-
-      - name: Z3 for incremental bitvector verification
-        run: |
-          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
-          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
-          unzip -q z3.zip
-          echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
-      - name: Test cached inherited members and rotations after edits
-        run: |
-          dotnet test Source/DafnyLanguageServer.Test -c Release --no-build \
-            --logger "console;verbosity=normal" \
-            --filter "FullyQualifiedName~IncrementalBitvectorMembersTest" \
-            --blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none
-
-  binaries:
-    name: Binaries (${{ matrix.rid }})
-    needs: build
-    if: github.ref_type == 'tag' || inputs.binaries
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
-    strategy:
-      matrix:
-        include:
-          - rid: osx-arm64
-            os: macos-14
-          - rid: linux-x64
-            os: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - name: The tag must name this tree's version
-        if: github.ref_type == 'tag'
-        run: |
-          echo "tag ${{ github.ref_name }}, version ${{ needs.build.outputs.version }}"
-          test "${{ github.ref_name }}" = "v${{ needs.build.outputs.version }}"
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - name: Boogie packages
-        run: sh Scripts/fetch-boogie-packages.sh
-      - name: Publish, self-contained
-        env:
-          RUNTIME_IDENTIFIER: ${{ matrix.rid }}
-        run: |
-          dotnet publish Source/Dafny/Dafny.csproj -c Release -r ${{ matrix.rid }} --self-contained \
-            -o out/dafny -p:SourceRevisionId=${{ needs.build.outputs.revision }}
-          rm -f out/dafny/*.pdb
-          mv out/dafny/Dafny out/dafny/dafny
-          for f in LICENSE.txt NOTICES.txt REVIEW.md; do if [ -f "$f" ]; then cp "$f" out/dafny/; fi; done
-      - name: Check it runs and verifies
-        run: |
-          case "${{ matrix.rid }}" in
-            osx-arm64) z=$Z3_OSX_ARM64; s=$Z3_OSX_ARM64_SHA256 ;;
-            linux-x64) z=$Z3_LINUX_X64; s=$Z3_LINUX_X64_SHA256 ;;
-          esac
-          curl -fsSLo z3.zip "$Z3_RELEASE/$z.zip"
-          echo "$s  z3.zip" | shasum -a 256 -c -  # shasum is on both macOS and Ubuntu runners
-          unzip -q z3.zip && chmod +x "$z/bin/z3"
-          v=$(out/dafny/dafny --version | head -1)
-          echo "dafny --version: $v"
-          test "$v" = "${{ needs.build.outputs.version }}"
-          out/dafny/dafny verify --solver-path "$z/bin/z3" \
-            Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-6537.dfy
-      - name: Zip
-        run: |
-          name=dafny-${{ needs.build.outputs.version }}-${{ matrix.rid }}.zip
-          (cd out && zip -qr "../$name" dafny)
-          shasum -a 256 "$name"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: binaries-${{ matrix.rid }}
-          path: dafny-*.zip
-          retention-days: 14
-
-  release:
-    name: GitHub release
-    needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, axiom-resources]
-    if: github.ref_type == 'tag'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: binaries-*
-          merge-multiple: true
-      - name: Sums
-        run: sha256sum dafny-*.zip | tee SHA256SUMS
-      - name: Create the release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
-          VERSION: ${{ needs.build.outputs.version }}
-        run: |
+          cat >> .same-source-tools/spec.json <<'ISSUE113_SPEC_JSON_0'
           {
-            echo "Dafny \`$VERSION\`, built from this tag by the workflow \`review\`."
-            echo "What it contains is described in the tag's \`REVIEW.md\`, where there is one."
-            echo
-            echo "Self-contained binaries for macOS on Apple silicon and Linux on x64: they need no .NET."
-            echo "\`dafny --version\` prints \`$VERSION\`."
-            echo
-            echo "Z3 is not included.  CI here verifies with Z3 5.1.0, from Z3's public GitHub release;"
-            echo "give Dafny a Z3 with \`--solver-path\`, or put \`z3\` on the PATH."
-            echo
-            echo "sha256:"
-            echo
-            echo '```'
-            cat SHA256SUMS
-            echo '```'
-          } > notes.md
-          gh release create "$TAG" dafny-*.zip SHA256SUMS --repo "$GITHUB_REPOSITORY" \
-            --verify-tag --title "$VERSION" --notes-file notes.md
+            "repository": "erniecohen/dafny",
+            "product_commit": "95f0e4c8e1b80c95cf8aff397d7acd3ffb9c62e6",
+            "input_snapshot_context": "8e99b5db8bfaa1b6a12490b1f8772e257ac246bf",
+            "compiled_trees": {
+              "Source/AutoExtern.Test": "037f4ebcb076389d26d3476be0e28305fd52b68a",
+              "Source/AutoExtern": "026d7ab3d2a416b8d62d24a475bf30c8976dff56",
+              "Source/Dafny.sln": "91dbe9dc74730fc247468a5fe0350c997f95ac1e",
+              "Source/Dafny": "9625c620465a89b8cef1b27bcbf685ff55b983f4",
+              "Source/DafnyBenchmarkingPlugin": "d7d17adf17a248625a7563782b02c7d4aa674ab7",
+              "Source/DafnyCore.Test": "f2fcefd9d633f9f416a8af944ce687f50823a0d3",
+              "Source/DafnyCore": "4ebf82ee066d689038aefa1447a429cc0810cbc0",
+              "Source/DafnyDriver.Test": "611a3fc23413ae6250ea848a26896d06a1f65923",
+              "Source/DafnyDriver": "208a4277a53e6dc068f5ed2f36e5824a6097bece",
+              "Source/DafnyLanguageServer.Test": "fd1ad91ced963f8a740dad64ca699476528b6476",
+              "Source/DafnyLanguageServer": "2ac22e90d35c21b7f471c1f60091683b36b88dd6",
+              "Source/DafnyPipeline.Test": "8462230b845485f570895fdfc6918c33a9120150",
+              "Source/DafnyPipeline": "f3a93a6d3c197130c27b86ca00e8c995089d4b7b",
+              "Source/DafnyRuntime.Tests": "63464ed60ad98c76ff0140d9e97abda0158a5c3d",
+              "Source/DafnyRuntime": "2db3e62c83e4e15093ac24d6e9cd0e2da54f32c9",
+              "Source/DafnyServer": "d159d45c79f4c10b0f1d91f109b975ea03eedf54",
+              "Source/DafnyStandardLibraries": "ca8c893bcb72c47d987275cbc3403a42e5195e45",
+              "Source/DafnyTestGeneration.Test": "831c4276f9d9e97330850d88d9a9b5ef7a772c2c",
+              "Source/DafnyTestGeneration": "8e5598b231abc0598108075d3a1386eda2e0b3ef",
+              "Source/Directory.Build.props": "b879a00efcaa75bec31491bc549f8ecdb896c629",
+              "Source/Jennisys.sln": "384706e33cbb74c73b3cf1dab5fe6518bc41c5ed",
+              "Source/Jennisys": "c84e0bebc33c5a1b1178ccaa78eedf7e345d087c",
+              "Source/Scripts": "3d42a4b617466f7d26c485439b7999df9a1843d7",
+              "Source/TestDafny": "420c0323e6b9c1b10f66e935f8de20caccaf6ca3",
+              "Source/XUnitExtensions": "f5c77124d9d93a287c9e7246ed6726c0cdf30eb9"
+            },
+            "harness_sha256": {
+              "Source/IntegrationTests/LitTests.cs": "72911d040daa17c39ce45f15dc8ef10b0aacdf07c61d8fb0899b484e126e8cf0",
+              "Source/TestDafny/MultiBackendTest.cs": "7e839ce2fc98ad97a5d91fca00610d182a8e70ec07372c4a8d6e837d251397a1",
+              "Source/DafnyDriver/DafnyCliTests.cs": "00cdb7dec0f9cd2e16b1b23281fe2a7350839148d50455b0ead3fa26340df70d",
+              "Source/DafnyDriver/CSVTestLogger.cs": "12e9a84e2f4620786076a2f5ee0699510ba9b0036ffeef908f68471d58662c43",
+              "Source/DafnyDriver/JsonVerificationLogger.cs": "06232057d406e66e5c37682cc1448bd78ca2599935109019b9f9b22fd88b1a35",
+              "Source/DafnyDriver/Commands/ResolveCommand.cs": "db7189adb29724930a388039fda97abd31b5cb3885ac1fc0aecf2fb3746973ff",
+              "Source/DafnyDriver/Commands/VerifyCommand.cs": "8dfd926778d27bc5c85ed81718e2937192e33be313929fa592000cd56d1a648f",
+              "Source/DafnyCore/Options/DafnyCommands.cs": "a6298d6af35f5a1853f0840d87b97dcaa71c7ecfee89f6685e0c278b22a46d75",
+              "Scripts/fetch-boogie-packages.sh": "efa52c8c611e65bebdca2d6ba0473d01327b62f269f2641dcb94d406c372ccbf"
+            },
+            "proof_slot_count": 78,
+            "runtime_literal_compiler_run_count": 28,
+            "runtime_five_backend_child_count": 168,
+            "lifecycle_filters": {
+              "core": "FullyQualifiedName~Cardinality|FullyQualifiedName~ExtendedNewtype|FullyQualifiedName~NewtypeReferenceCharacteristicTests",
+              "lsp": "FullyQualifiedName~Cardinality|FullyQualifiedName~ExtendedNewtypeCachingTest",
+              "integration": "FullyQualifiedName~CardinalityEmissionTests|FullyQualifiedName~ExtendedNewtypeOptionTests"
+            },
+            "counts_boundary": "Projection counts are not inferred from wrapper expectations; actual records must be reviewed before insertion into the final semantic policy.",
+            "integration_compiled_source_sha256": {
+              "Source/IntegrationTests/AdditionalAxiomsTranslationTests.cs": "167138716ca2aa785d0344d6375ef07a970050cd329514bda1c997ebb76d4c37",
+              "Source/IntegrationTests/BoundedResolveCommand.cs": "3edcf3d9be30913fa621d8618c0c2d330245d9aef704b282dfb825ab0057cf92",
+              "Source/IntegrationTests/CardinalityEmissionTests.cs": "e0aa6232af74adb2d90ac5eae274bf445de527bacb6717369ff43e3ea7e9275e",
+              "Source/IntegrationTests/DafnyDriverLitCommand.cs": "fa4f07fb21bd1557377143c1453276c4048a0ed038e928e54a603883ece6870e",
+              "Source/IntegrationTests/ExtendedNewtypeOptionTests.cs": "d54f4b46072d4ff1688ba53feaa7ba3e169eecfef11090ce3ef20bd8e4064ea3",
+              "Source/IntegrationTests/IntegrationTests.csproj": "45cdc38a1a4e461c2dc71cb084e89e788453b58eea5d8bd24844e356e0ae5708",
+              "Source/IntegrationTests/LitTests.cs": "72911d040daa17c39ce45f15dc8ef10b0aacdf07c61d8fb0899b484e126e8cf0",
+              "Source/IntegrationTests/README.md": "38f0f5dc4429eb4a81472333257fc8243d6d41eb1d62bc48fd1a3919b52bdda7",
+              "Source/IntegrationTests/coverlet.runsettings": "c0eba457667b7bfca28ea0a3d4f5fa1721ef42173c721c9027f7f926c1818801"
+            },
+            "expected_version": "4.11.0+fcb2042d.review.27c95800",
+            "build_input_recipe": {
+              "version": "product-files-v1",
+              "exclusions": [
+                "Source/IntegrationTests/",
+                "docs/",
+                ".github/",
+                "REVIEW.md",
+                "ROADMAP.md",
+                "AGENTS.md",
+                "CLAUDE.md"
+              ],
+              "portable_serialization": "sorted path order; UTF-8 sha256 + two spaces + repository-relative path + LF",
+              "platform_components": "Actual compiler/library bundle hashes are recorded per platform; no crossplatform assembly equality is required."
+            },
+            "feature_runtime_files": [
+              "git-issues/git-issue-113-existing-arrow-runtime-control.dfy",
+              "git-issues/git-issue-113-extended-newtypes-arrow-runtime.dfy",
+              "git-issues/git-issue-113-extended-newtypes-codatatype-runtime.dfy",
+              "git-issues/git-issue-113-extended-newtypes-datatype-descriptor-runtime.dfy",
+              "git-issues/git-issue-113-extended-newtypes-datatype-generic-witness-runtime.dfy",
+              "git-issues/git-issue-113-extended-newtypes-datatype-runtime.dfy",
+              "git-issues/git-issue-113-extended-newtypes-datatype-type-test-runtime.dfy",
+              "git-issues/git-issue-113-extended-newtypes-generic-companion-runtime.dfy",
+              "git-issues/git-issue-113-extended-newtypes-generic-conversion-runtime.dfy",
+              "git-issues/git-issue-113-extended-newtypes-native-runtime.dfy",
+              "git-issues/git-issue-113-extended-newtypes-ordinal-runtime.dfy",
+              "git-issues/git-issue-113-extended-newtypes-type-test-downcast-runtime.dfy"
+            ],
+            "runtime_denominators": {
+              "feature_files": 12,
+              "prerequisite_files": 4,
+              "all_files": 16,
+              "compiler_RUNs": 36,
+              "five_backend_children_including_CS_DLL_mode": 216,
+              "internal_verifier_profiles_in_observed_route": 39
+            },
+            "lifecycle_source_method_catalog": {
+              "core": {
+                "DafnyCore.Test.CardinalityLifecycleTests.CancelledResolutionClearsPreviousAdmission": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/CardinalityLifecycleTests.cs",
+                  "source_sha256": "52cc7424ce77fa3fc8cc939ca2ea38216db6c1d9c6100a9f667b62900d94f79f",
+                  "line": 13
+                },
+                "DafnyCore.Test.CardinalityLifecycleTests.CancelledValidationClearsPreviousAdmission": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/CardinalityLifecycleTests.cs",
+                  "source_sha256": "52cc7424ce77fa3fc8cc939ca2ea38216db6c1d9c6100a9f667b62900d94f79f",
+                  "line": 28
+                },
+                "DafnyCore.Test.CardinalityLifecycleTests.CancellationDuringFailedValidationLeavesNoAdmission": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/CardinalityLifecycleTests.cs",
+                  "source_sha256": "52cc7424ce77fa3fc8cc939ca2ea38216db6c1d9c6100a9f667b62900d94f79f",
+                  "line": 41
+                },
+                "DafnyCore.Test.CardinalityLifecycleTests.FailedRevalidationCannotReuseSuccessfulAdmission": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/CardinalityLifecycleTests.cs",
+                  "source_sha256": "52cc7424ce77fa3fc8cc939ca2ea38216db6c1d9c6100a9f667b62900d94f79f",
+                  "line": 68
+                },
+                "DafnyCore.Test.CardinalityLifecycleTests.TranslationRejectsUnvalidatedResolvedFixture": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/CardinalityLifecycleTests.cs",
+                  "source_sha256": "52cc7424ce77fa3fc8cc939ca2ea38216db6c1d9c6100a9f667b62900d94f79f",
+                  "line": 92
+                },
+                "DafnyCore.Test.CardinalityLifecycleTests.TranslatorDiagnosticsDoNotInvalidateAdmissionBetweenModules": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/CardinalityLifecycleTests.cs",
+                  "source_sha256": "52cc7424ce77fa3fc8cc939ca2ea38216db6c1d9c6100a9f667b62900d94f79f",
+                  "line": 108
+                },
+                "DafnyCore.Test.CardinalityLifecycleTests.ProgramCloneDoesNotCopyAdmission": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/CardinalityLifecycleTests.cs",
+                  "source_sha256": "52cc7424ce77fa3fc8cc939ca2ea38216db6c1d9c6100a9f667b62900d94f79f",
+                  "line": 159
+                },
+                "DafnyCore.Test.CardinalityLifecycleTests.VisibilityViewsKeepIdentityAndSemanticClonesDoNot": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/CardinalityLifecycleTests.cs",
+                  "source_sha256": "52cc7424ce77fa3fc8cc939ca2ea38216db6c1d9c6100a9f667b62900d94f79f",
+                  "line": 170
+                },
+                "DafnyCore.Test.CardinalityLifecycleTests.SynonymRefinementRetainsParentInTheRefiningParameterScope": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/CardinalityLifecycleTests.cs",
+                  "source_sha256": "52cc7424ce77fa3fc8cc939ca2ea38216db6c1d9c6100a9f667b62900d94f79f",
+                  "line": 208
+                },
+                "DafnyCore.Test.CardinalityLifecycleTests.KindChangingRefinementCannotDropAParentCycle": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/CardinalityLifecycleTests.cs",
+                  "source_sha256": "52cc7424ce77fa3fc8cc939ca2ea38216db6c1d9c6100a9f667b62900d94f79f",
+                  "line": 231
+                },
+                "DafnyCore.Test.CardinalityLifecycleTests.SeparateRefinementsHaveSeparateCarrierIdentities": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/CardinalityLifecycleTests.cs",
+                  "source_sha256": "52cc7424ce77fa3fc8cc939ca2ea38216db6c1d9c6100a9f667b62900d94f79f",
+                  "line": 249
+                },
+                "DafnyCore.Test.CardinalityLifecycleTests.SelectedReplacementRecordsImmediateDeclarationIdentityWithoutMutatingModes": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/CardinalityLifecycleTests.cs",
+                  "source_sha256": "52cc7424ce77fa3fc8cc939ca2ea38216db6c1d9c6100a9f667b62900d94f79f",
+                  "line": 278
+                },
+                "DafnyCore.Test.CardinalityLifecycleTests.SelectedFacadesKeepIndependentImportIdentities": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/CardinalityLifecycleTests.cs",
+                  "source_sha256": "52cc7424ce77fa3fc8cc939ca2ea38216db6c1d9c6100a9f667b62900d94f79f",
+                  "line": 309
+                },
+                "DafnyCore.Test.CardinalityLifecycleTests.SelectedNestedFacadeRetainsExactModuleViewCorrespondence": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/CardinalityLifecycleTests.cs",
+                  "source_sha256": "52cc7424ce77fa3fc8cc939ca2ea38216db6c1d9c6100a9f667b62900d94f79f",
+                  "line": 373
+                },
+                "DafnyCore.Test.CardinalityLifecycleTests.IteratorRefinementRetainsParentObligationsInItsParameterScope": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/CardinalityLifecycleTests.cs",
+                  "source_sha256": "52cc7424ce77fa3fc8cc939ca2ea38216db6c1d9c6100a9f667b62900d94f79f",
+                  "line": 415
+                },
+                "DafnyCore.Test.CardinalityLifecycleTests.HiddenReferenceViewKeepsCanonicalIdentity": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/CardinalityLifecycleTests.cs",
+                  "source_sha256": "52cc7424ce77fa3fc8cc939ca2ea38216db6c1d9c6100a9f667b62900d94f79f",
+                  "line": 451
+                },
+                "DafnyCore.Test.ExtendedNewtypeLifecycleTests.MissingPrerequisitesAreResolverErrors": {
+                  "kind": "Theory",
+                  "expected_case_count": 3,
+                  "source_path": "Source/DafnyCore.Test/ExtendedNewtypeLifecycleTests.cs",
+                  "source_sha256": "d9749aa8276a60f2eb8f7d8e6211cb591f8ceffd4ad8719364a030461e3ebd38",
+                  "line": 11
+                },
+                "DafnyCore.Test.ExtendedNewtypeLifecycleTests.SemanticAndResolvedClonesHaveDistinctMetadataPolicies": {
+                  "kind": "Theory",
+                  "expected_case_count": 4,
+                  "source_path": "Source/DafnyCore.Test/ExtendedNewtypeLifecycleTests.cs",
+                  "source_sha256": "d9749aa8276a60f2eb8f7d8e6211cb591f8ceffd4ad8719364a030461e3ebd38",
+                  "line": 21
+                },
+                "DafnyCore.Test.ExtendedNewtypeLifecycleTests.FreshResolutionDoesNotReuseEnabledMetadataOrWitnessDecisions": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/ExtendedNewtypeLifecycleTests.cs",
+                  "source_sha256": "d9749aa8276a60f2eb8f7d8e6211cb591f8ceffd4ad8719364a030461e3ebd38",
+                  "line": 57
+                },
+                "DafnyCore.Test.ExtendedNewtypeLifecycleTests.ManifestRoundTripEnforcesLibraryImpliesClient": {
+                  "kind": "Theory",
+                  "expected_case_count": 4,
+                  "source_path": "Source/DafnyCore.Test/ExtendedNewtypeLifecycleTests.cs",
+                  "source_sha256": "d9749aa8276a60f2eb8f7d8e6211cb591f8ceffd4ad8719364a030461e3ebd38",
+                  "line": 78
+                },
+                "DafnyCore.Test.ExtendedNewtypeLifecycleTests.AbsentOldManifestOptionMeansDisabled": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/ExtendedNewtypeLifecycleTests.cs",
+                  "source_sha256": "d9749aa8276a60f2eb8f7d8e6211cb591f8ceffd4ad8719364a030461e3ebd38",
+                  "line": 108
+                },
+                "DafnyCore.Test.ExtendedNewtypeVarianceTests.AllowsUnconstrainedVarianceAndConstrainedInvariance": {
+                  "kind": "Theory",
+                  "expected_case_count": 13,
+                  "source_path": "Source/DafnyCore.Test/ExtendedNewtypeVarianceTests.cs",
+                  "source_sha256": "6b146a564f27b17341c751057d807f3681afbd87f70ed11b993775ae69527fc5",
+                  "line": 16
+                },
+                "DafnyCore.Test.ExtendedNewtypeVarianceTests.RejectsUnsupportedPredicateVariance": {
+                  "kind": "Theory",
+                  "expected_case_count": 11,
+                  "source_path": "Source/DafnyCore.Test/ExtendedNewtypeVarianceTests.cs",
+                  "source_sha256": "6b146a564f27b17341c751057d807f3681afbd87f70ed11b993775ae69527fc5",
+                  "line": 35
+                },
+                "DafnyCore.Test.ExtendedNewtypeVarianceTests.UnconstrainedWrappersStillCheckTheBasePositions": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/ExtendedNewtypeVarianceTests.cs",
+                  "source_sha256": "6b146a564f27b17341c751057d807f3681afbd87f70ed11b993775ae69527fc5",
+                  "line": 53
+                },
+                "DafnyCore.Test.ExtendedNewtypeVarianceTests.ProvidedBasesDoNotBypassPredicateInvariance": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/ExtendedNewtypeVarianceTests.cs",
+                  "source_sha256": "6b146a564f27b17341c751057d807f3681afbd87f70ed11b993775ae69527fc5",
+                  "line": 62
+                },
+                "DafnyCore.Test.ExtendedNewtypeVarianceTests.RetainsExistingGeneralNewtypeCarrierVariance": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/ExtendedNewtypeVarianceTests.cs",
+          ISSUE113_SPEC_JSON_0
+      - name: Pinned spec.json fragment 2 of 4
+        if: always()
+        continue-on-error: true
+        run: |
+          cat >> .same-source-tools/spec.json <<'ISSUE113_SPEC_JSON_1'
+                  "source_sha256": "6b146a564f27b17341c751057d807f3681afbd87f70ed11b993775ae69527fc5",
+                  "line": 88
+                },
+                "DafnyCore.Test.NewtypeReferenceCharacteristicTests.ForwardingPreservesSelectorAndTraversalContext": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/NewtypeReferenceCharacteristicTests.cs",
+                  "source_sha256": "bac37e2263bd79892d35dc8a4ed1884c906e710d7a653fd55043e08ebd6b8bf7",
+                  "line": 59
+                },
+                "DafnyCore.Test.NewtypeReferenceCharacteristicTests.FiniteIdentityActualsRetainTheirOwnRepresentation": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/NewtypeReferenceCharacteristicTests.cs",
+                  "source_sha256": "bac37e2263bd79892d35dc8a4ed1884c906e710d7a653fd55043e08ebd6b8bf7",
+                  "line": 71
+                },
+                "DafnyCore.Test.NewtypeReferenceCharacteristicTests.RepresentationUsesPermutedActualsAndIgnoresUnusedParameters": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/NewtypeReferenceCharacteristicTests.cs",
+                  "source_sha256": "bac37e2263bd79892d35dc8a4ed1884c906e710d7a653fd55043e08ebd6b8bf7",
+                  "line": 84
+                },
+                "DafnyCore.Test.NewtypeReferenceCharacteristicTests.RevisitedDatatypeStillChecksItsActualArguments": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/NewtypeReferenceCharacteristicTests.cs",
+                  "source_sha256": "bac37e2263bd79892d35dc8a4ed1884c906e710d7a653fd55043e08ebd6b8bf7",
+                  "line": 96
+                },
+                "DafnyCore.Test.NewtypeReferenceCharacteristicTests.GeneralAndEmptyReadsArrowFamiliesRemainDistinct": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/NewtypeReferenceCharacteristicTests.cs",
+                  "source_sha256": "bac37e2263bd79892d35dc8a4ed1884c906e710d7a653fd55043e08ebd6b8bf7",
+                  "line": 114
+                },
+                "DafnyCore.Test.NewtypeReferenceCharacteristicTests.UnresolvedAncestryIsConservativeAndQueryLocal": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/NewtypeReferenceCharacteristicTests.cs",
+                  "source_sha256": "bac37e2263bd79892d35dc8a4ed1884c906e710d7a653fd55043e08ebd6b8bf7",
+                  "line": 135
+                },
+                "DafnyCore.Test.NewtypeReferenceCharacteristicTests.NewtypeCyclesAreConservativeWithoutPrimitiveFallback": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/NewtypeReferenceCharacteristicTests.cs",
+                  "source_sha256": "bac37e2263bd79892d35dc8a4ed1884c906e710d7a653fd55043e08ebd6b8bf7",
+                  "line": 153
+                },
+                "DafnyCore.Test.NewtypeReferenceCharacteristicTests.AnUnmarkedMixedSubsetCycleIsDetectedBeforeSubsetReentry": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/NewtypeReferenceCharacteristicTests.cs",
+                  "source_sha256": "bac37e2263bd79892d35dc8a4ed1884c906e710d7a653fd55043e08ebd6b8bf7",
+                  "line": 165
+                },
+                "DafnyCore.Test.NewtypeReferenceCharacteristicTests.GenericProjectionIntoAnExpandingSubsetCycleIsConservative": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/NewtypeReferenceCharacteristicTests.cs",
+                  "source_sha256": "bac37e2263bd79892d35dc8a4ed1884c906e710d7a653fd55043e08ebd6b8bf7",
+                  "line": 190
+                },
+                "DafnyCore.Test.NewtypeReferenceCharacteristicTests.ProvidedBaseUsesOnlyItsAdvertisedReferencePromise": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/NewtypeReferenceCharacteristicTests.cs",
+                  "source_sha256": "bac37e2263bd79892d35dc8a4ed1884c906e710d7a653fd55043e08ebd6b8bf7",
+                  "line": 214
+                },
+                "DafnyCore.Test.NewtypeReferenceCharacteristicTests.HiddenRepresentationsAreConservativeWithoutSubstitution": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/NewtypeReferenceCharacteristicTests.cs",
+                  "source_sha256": "bac37e2263bd79892d35dc8a4ed1884c906e710d7a653fd55043e08ebd6b8bf7",
+                  "line": 238
+                },
+                "DafnyCore.Test.NewtypeReferenceCharacteristicTests.ScopeChangesDoNotReuseAReferenceClassification": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/NewtypeReferenceCharacteristicTests.cs",
+                  "source_sha256": "bac37e2263bd79892d35dc8a4ed1884c906e710d7a653fd55043e08ebd6b8bf7",
+                  "line": 256
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityGraphTests.ExpansionIsAbsorbing": {
+                  "kind": "Theory",
+                  "expected_case_count": 4,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityGraphTests.cs",
+                  "source_sha256": "f5d23a5a6f8b8c1ca6efba2924489d500daf87963fd9b16783723ffcd2fcc6f4",
+                  "line": 13
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityGraphTests.ProfileAbsenceIsDifferentFromPreserving": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityGraphTests.cs",
+                  "source_sha256": "f5d23a5a6f8b8c1ca6efba2924489d500daf87963fd9b16783723ffcd2fcc6f4",
+                  "line": 22
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityGraphTests.JoiningCannotLoseAnExpansiveOccurrence": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityGraphTests.cs",
+                  "source_sha256": "f5d23a5a6f8b8c1ca6efba2924489d500daf87963fd9b16783723ffcd2fcc6f4",
+                  "line": 33
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityGraphTests.AtomIdentityUsesOwnerAndPosition": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityGraphTests.cs",
+                  "source_sha256": "f5d23a5a6f8b8c1ca6efba2924489d500daf87963fd9b16783723ffcd2fcc6f4",
+                  "line": 46
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityGraphTests.DuplicateEdgesKeepExpansionInEitherInsertionOrder": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityGraphTests.cs",
+                  "source_sha256": "f5d23a5a6f8b8c1ca6efba2924489d500daf87963fd9b16783723ffcd2fcc6f4",
+                  "line": 56
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityGraphTests.PreservingCyclesAndExpandingAcyclicEdgesRemainLegal": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityGraphTests.cs",
+                  "source_sha256": "f5d23a5a6f8b8c1ca6efba2924489d500daf87963fd9b16783723ffcd2fcc6f4",
+                  "line": 71
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityGraphTests.ExpansiveSelfLoopIsAOneEdgeWitness": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityGraphTests.cs",
+                  "source_sha256": "f5d23a5a6f8b8c1ca6efba2924489d500daf87963fd9b16783723ffcd2fcc6f4",
+                  "line": 86
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityGraphTests.WitnessesAreDeterministicUnderInputPermutations": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityGraphTests.cs",
+                  "source_sha256": "f5d23a5a6f8b8c1ca6efba2924489d500daf87963fd9b16783723ffcd2fcc6f4",
+                  "line": 97
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityGraphTests.AllThreeNodeGraphsAgreeWithIndependentReachabilityOracle": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityGraphTests.cs",
+                  "source_sha256": "f5d23a5a6f8b8c1ca6efba2924489d500daf87963fd9b16783723ffcd2fcc6f4",
+                  "line": 122
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityGraphTests.LongChainAndLongCycleDoNotUseRecursiveGraphTraversal": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityGraphTests.cs",
+                  "source_sha256": "f5d23a5a6f8b8c1ca6efba2924489d500daf87963fd9b16783723ffcd2fcc6f4",
+                  "line": 164
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityGraphTests.GraphCancellationDoesNotReturnSuccessfulAnalysis": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityGraphTests.cs",
+                  "source_sha256": "f5d23a5a6f8b8c1ca6efba2924489d500daf87963fd9b16783723ffcd2fcc6f4",
+                  "line": 183
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityParentTests.RetentionIsDirectPositionalAndExpandsOnlyIdentityAliases": {
+                  "kind": "Theory",
+                  "expected_case_count": 6,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityParentTests.cs",
+                  "source_sha256": "d30002ef2fec93c464cbf5bf2bd3d2194bc38946f48446d6ba82027a39d8730e",
+                  "line": 11
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityParentTests.DuplicateRetainingSlotsChooseASufficientContract": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityParentTests.cs",
+                  "source_sha256": "d30002ef2fec93c464cbf5bf2bd3d2194bc38946f48446d6ba82027a39d8730e",
+                  "line": 42
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityParentTests.ReferenceParentAllowsAbsentFormalsButChecksExposedModes": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityParentTests.cs",
+                  "source_sha256": "d30002ef2fec93c464cbf5bf2bd3d2194bc38946f48446d6ba82027a39d8730e",
+                  "line": 60
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityParentTests.InvalidParentArityFailsClosed": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityParentTests.cs",
+                  "source_sha256": "d30002ef2fec93c464cbf5bf2bd3d2194bc38946f48446d6ba82027a39d8730e",
+                  "line": 75
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityProfileTests.BuiltinPositionsMatchCardinalityDiscipline": {
+                  "kind": "Theory",
+                  "expected_case_count": 17,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityProfileTests.cs",
+                  "source_sha256": "b5b2ab94c15c3b8837f786b3dc1b6016fb3f6ce1c627051992944d12ecd4e161",
+                  "line": 11
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityProfileTests.CardinalityModeDoesNotConfuseOrdinaryVariance": {
+                  "kind": "Theory",
+                  "expected_case_count": 5,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityProfileTests.cs",
+                  "source_sha256": "b5b2ab94c15c3b8837f786b3dc1b6016fb3f6ce1c627051992944d12ecd4e161",
+                  "line": 42
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityProfileTests.NominalProfileUsesAdvertisedModeEvenForPhantomFormal": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityProfileTests.cs",
+                  "source_sha256": "b5b2ab94c15c3b8837f786b3dc1b6016fb3f6ce1c627051992944d12ecd4e161",
+                  "line": 54
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityProfileTests.AliasesKeepTheirHeadAndDoNotEagerlyUnfoldTheirPayload": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityProfileTests.cs",
+                  "source_sha256": "b5b2ab94c15c3b8837f786b3dc1b6016fb3f6ce1c627051992944d12ecd4e161",
+                  "line": 71
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityProfileTests.ViewAlphaRenamingPreservesOwnerAndFormalPosition": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityProfileTests.cs",
+                  "source_sha256": "b5b2ab94c15c3b8837f786b3dc1b6016fb3f6ce1c627051992944d12ecd4e161",
+                  "line": 86
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityProfileTests.InternalSynonymSubstitutesActualsBeforeProfiling": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityProfileTests.cs",
+                  "source_sha256": "b5b2ab94c15c3b8837f786b3dc1b6016fb3f6ce1c627051992944d12ecd4e161",
+                  "line": 99
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityProfileTests.InternalViewRequiresUnnestedPositionalFormalActuals": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityProfileTests.cs",
+                  "source_sha256": "b5b2ab94c15c3b8837f786b3dc1b6016fb3f6ce1c627051992944d12ecd4e161",
+                  "line": 114
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityProfileTests.InternalViewsRejectCyclicActualsAndAcceptFiniteSharedActuals": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityProfileTests.cs",
+                  "source_sha256": "b5b2ab94c15c3b8837f786b3dc1b6016fb3f6ce1c627051992944d12ecd4e161",
+                  "line": 138
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityProfileTests.SelectedReplacementJoinsExposedModesWithoutChangingSourceParameters": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityProfileTests.cs",
+                  "source_sha256": "b5b2ab94c15c3b8837f786b3dc1b6016fb3f6ce1c627051992944d12ecd4e161",
+                  "line": 166
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityProfileTests.MalformedReplacementCorrespondenceFailsClosed": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityProfileTests.cs",
+                  "source_sha256": "b5b2ab94c15c3b8837f786b3dc1b6016fb3f6ce1c627051992944d12ecd4e161",
+                  "line": 194
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityProfileTests.NullableAndNonNullReferenceViewsKeepTheSameMode": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityProfileTests.cs",
+                  "source_sha256": "b5b2ab94c15c3b8837f786b3dc1b6016fb3f6ce1c627051992944d12ecd4e161",
+                  "line": 216
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityProfileTests.UnknownFormsAndInvalidDescriptorsFailClosed": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityProfileTests.cs",
+                  "source_sha256": "b5b2ab94c15c3b8837f786b3dc1b6016fb3f6ce1c627051992944d12ecd4e161",
+                  "line": 231
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityProfileTests.AtomicTypesRejectUnexpectedArgumentsBeforeSubstitution": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityProfileTests.cs",
+                  "source_sha256": "b5b2ab94c15c3b8837f786b3dc1b6016fb3f6ce1c627051992944d12ecd4e161",
+                  "line": 252
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityProfileTests.ViewCannotWeakenTheCanonicalFormalContract": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityProfileTests.cs",
+          ISSUE113_SPEC_JSON_1
+      - name: Pinned spec.json fragment 3 of 4
+        if: always()
+        continue-on-error: true
+        run: |
+          cat >> .same-source-tools/spec.json <<'ISSUE113_SPEC_JSON_2'
+                  "source_sha256": "b5b2ab94c15c3b8837f786b3dc1b6016fb3f6ce1c627051992944d12ecd4e161",
+                  "line": 274
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityProfileTests.UserDeclarationsCannotForgeBuiltinProfilesByName": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityProfileTests.cs",
+                  "source_sha256": "b5b2ab94c15c3b8837f786b3dc1b6016fb3f6ce1c627051992944d12ecd4e161",
+                  "line": 285
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityProfileTests.CyclicTypeCursorsFailWhileSharedSubexpressionsRemainLegal": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityProfileTests.cs",
+                  "source_sha256": "b5b2ab94c15c3b8837f786b3dc1b6016fb3f6ce1c627051992944d12ecd4e161",
+                  "line": 304
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalityProfileTests.DeepProfilesAndCancellationUseExplicitTraversal": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityProfileTests.cs",
+                  "source_sha256": "b5b2ab94c15c3b8837f786b3dc1b6016fb3f6ce1c627051992944d12ecd4e161",
+                  "line": 322
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.RejectsExpansiveTraitCycles": {
+                  "kind": "Theory",
+                  "expected_case_count": 22,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 36
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.WrappersDoNotEraseExpansiveDependencies": {
+                  "kind": "Theory",
+                  "expected_case_count": 9,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 54
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.RejectsErasedFamiliesWithoutUseSites": {
+                  "kind": "Theory",
+                  "expected_case_count": 8,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 60
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.NestedIndexIsConservativelyNotDirectRetention": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 73
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.DistinctInstancesShareTheConservativeNominalHead": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 78
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.PermissiveChildRequiresPermissiveRetainingSlot": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 83
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.ReferenceStorageMustHonorFormalParameterContract": {
+                  "kind": "Theory",
+                  "expected_case_count": 4,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 88
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.ReferenceParentMustRespectExposedStrictContract": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 97
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.CrossModuleCycleUsesAllResolvedModules": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 103
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.ProvidedViewCannotHideRepresentation": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 108
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.OpenedProvidedAndRevealedViewsUseOneCarrier": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 128
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.SelectedReplacementParticipatesInTheClientCarrierGraph": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 155
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.SelectedAbstractFacadeParticipatesInTheClientGraph": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 175
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.IndependentSelectedFacadesKeepTheirOwnCarrierGraphs": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 195
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.SelectedStrengtheningCannotEraseTheImportedInterfaceContract": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 225
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.ExistingSelectedInheritanceVarianceRejectionIsNotNewCoverage": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 248
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.AbstractTypeRefinementKeepsDatatypeRepresentationAndParents": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 263
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.AbstractTypeRefinementKeepsNewtypeRepresentationAndParents": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 275
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.AcceptsPreservingOrAcyclicDefinitions": {
+                  "kind": "Theory",
+                  "expected_case_count": 50,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 325
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.NewtypeSequenceBaseKeepsNestedRepresentationDependencies": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 333
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.ExistingRecursiveCardinalityChecksRemainActive": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 345
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.ExistingInheritedVarianceRejectionIsNotNewCheckerCoverage": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 357
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.GenericReferenceContractsRunWithBothTypeInferencePaths": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 369
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.RefinementCannotRelaxExportedCardinalityContract": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 376
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.RefinementCanStrengthenCardinalityContract": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 385
+                },
+                "DafnyCore.Test.Resolver.Cardinality.CardinalitySourceTests.SeededHidingTransformsPreserveForbiddenAndLegalCases": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs",
+                  "source_sha256": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+                  "line": 395
+                }
+              },
+              "lsp": {
+                "Microsoft.Dafny.LanguageServer.IntegrationTest.Synchronization.CardinalityCachingTest.DownstreamEditsRevalidateCachedDependencies": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyLanguageServer.Test/Synchronization/CardinalityCachingTest.cs",
+                  "source_sha256": "95791d12e65f47f33823081a77a723a588aa907e262cda307c9d242105683d1b",
+                  "line": 67
+                },
+                "Microsoft.Dafny.LanguageServer.IntegrationTest.Synchronization.CardinalityCachingTest.ImportedHelperAndExportEditsCannotLeaveAStaleAdmission": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyLanguageServer.Test/Synchronization/CardinalityCachingTest.cs",
+                  "source_sha256": "95791d12e65f47f33823081a77a723a588aa907e262cda307c9d242105683d1b",
+                  "line": 104
+                },
+                "Microsoft.Dafny.LanguageServer.IntegrationTest.Synchronization.CardinalityCachingTest.CancelledCacheEntryInvalidatesPreviouslyAdmittedProgram": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/DafnyLanguageServer.Test/Synchronization/CardinalityCachingTest.cs",
+                  "source_sha256": "95791d12e65f47f33823081a77a723a588aa907e262cda307c9d242105683d1b",
+                  "line": 146
+                },
+                "Microsoft.Dafny.LanguageServer.IntegrationTest.Synchronization.ExtendedNewtypeCachingTest.ProjectOptionEditsCannotKeepAnEnabledAdmission": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyLanguageServer.Test/Synchronization/ExtendedNewtypeCachingTest.cs",
+                  "source_sha256": "b6d575cc8dd0e449b63998cfd03eb2b3eea5c2e609d4be442b29b27ad9692c2e",
+                  "line": 51
+                },
+                "Microsoft.Dafny.LanguageServer.IntegrationTest.Synchronization.ExtendedNewtypeCachingTest.WitnessEditsRecomputeAutoInitialization": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyLanguageServer.Test/Synchronization/ExtendedNewtypeCachingTest.cs",
+                  "source_sha256": "b6d575cc8dd0e449b63998cfd03eb2b3eea5c2e609d4be442b29b27ad9692c2e",
+                  "line": 68
+                },
+                "Microsoft.Dafny.LanguageServer.IntegrationTest.Synchronization.ExtendedNewtypeCachingTest.ImportedBaseEditsCannotKeepOrdinalMembers": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyLanguageServer.Test/Synchronization/ExtendedNewtypeCachingTest.cs",
+                  "source_sha256": "b6d575cc8dd0e449b63998cfd03eb2b3eea5c2e609d4be442b29b27ad9692c2e",
+                  "line": 93
+                },
+                "Microsoft.Dafny.LanguageServer.IntegrationTest.Synchronization.ExtendedNewtypeCachingTest.ExportEditsCannotKeepAnExposedRepresentation": {
+                  "kind": "Fact",
+                  "expected_case_count": 1,
+                  "source_path": "Source/DafnyLanguageServer.Test/Synchronization/ExtendedNewtypeCachingTest.cs",
+                  "source_sha256": "b6d575cc8dd0e449b63998cfd03eb2b3eea5c2e609d4be442b29b27ad9692c2e",
+                  "line": 115
+                }
+              },
+              "integration": {
+                "IntegrationTests.CardinalityEmissionTests.RejectedNoVerifyBuildProducesNoArtifact": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/IntegrationTests/CardinalityEmissionTests.cs",
+                  "source_sha256": "e0aa6232af74adb2d90ac5eae274bf445de527bacb6717369ff43e3ea7e9275e",
+                  "line": 14
+                },
+                "IntegrationTests.ExtendedNewtypeOptionTests.EnabledLibraryRejectsDefaultOrExplicitDisabledClient": {
+                  "kind": "Theory",
+                  "expected_case_count": 2,
+                  "source_path": "Source/IntegrationTests/ExtendedNewtypeOptionTests.cs",
+                  "source_sha256": "d54f4b46072d4ff1688ba53feaa7ba3e169eecfef11090ce3ef20bd8e4064ea3",
+                  "line": 15
+                }
+              }
+            },
+            "lifecycle_definition_files_sha256": {
+              "Source/DafnyCore.Test/CardinalityLifecycleTests.cs": "52cc7424ce77fa3fc8cc939ca2ea38216db6c1d9c6100a9f667b62900d94f79f",
+              "Source/DafnyCore.Test/ExtendedNewtypeLifecycleTests.cs": "d9749aa8276a60f2eb8f7d8e6211cb591f8ceffd4ad8719364a030461e3ebd38",
+              "Source/DafnyCore.Test/ExtendedNewtypeVarianceTests.cs": "6b146a564f27b17341c751057d807f3681afbd87f70ed11b993775ae69527fc5",
+              "Source/DafnyCore.Test/NewtypeReferenceCharacteristicTests.cs": "bac37e2263bd79892d35dc8a4ed1884c906e710d7a653fd55043e08ebd6b8bf7",
+          ISSUE113_SPEC_JSON_2
+      - name: Pinned spec.json fragment 4 of 4
+        if: always()
+        continue-on-error: true
+        run: |
+          cat >> .same-source-tools/spec.json <<'ISSUE113_SPEC_JSON_3'
+              "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityGraphTests.cs": "f5d23a5a6f8b8c1ca6efba2924489d500daf87963fd9b16783723ffcd2fcc6f4",
+              "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityParentTests.cs": "d30002ef2fec93c464cbf5bf2bd3d2194bc38946f48446d6ba82027a39d8730e",
+              "Source/DafnyCore.Test/Resolver/Cardinality/CardinalityProfileTests.cs": "b5b2ab94c15c3b8837f786b3dc1b6016fb3f6ce1c627051992944d12ecd4e161",
+              "Source/DafnyCore.Test/Resolver/Cardinality/CardinalitySourceTests.cs": "e319c8a96a87ac9a354b7c139045bcbcad03c92ce321b29cd206a22d969bf87b",
+              "Source/DafnyLanguageServer.Test/Synchronization/CardinalityCachingTest.cs": "95791d12e65f47f33823081a77a723a588aa907e262cda307c9d242105683d1b",
+              "Source/DafnyLanguageServer.Test/Synchronization/ExtendedNewtypeCachingTest.cs": "b6d575cc8dd0e449b63998cfd03eb2b3eea5c2e609d4be442b29b27ad9692c2e",
+              "Source/IntegrationTests/CardinalityEmissionTests.cs": "e0aa6232af74adb2d90ac5eae274bf445de527bacb6717369ff43e3ea7e9275e",
+              "Source/IntegrationTests/ExtendedNewtypeOptionTests.cs": "d54f4b46072d4ff1688ba53feaa7ba3e169eecfef11090ce3ef20bd8e4064ea3"
+            },
+            "required_build_inputs_sha256": "9b14543faa7a11e7a076210007d8ffe60556ea020b6f003ebe843a0b94c3104f",
+            "prior_public_run": "https://github.com/erniecohen/dafny/actions/runs/37255927050",
+            "scope": "Focused lifecycle only; zero derived proof projections and zero runtime matrix invocations"
+          }
+          ISSUE113_SPEC_JSON_3
+      - name: Pinned observer.py fragment 1 of 2
+        if: always()
+        continue-on-error: true
+        run: |
+          cat >> .same-source-tools/observer.py <<'ISSUE113_OBSERVER_PY_0'
+          #!/usr/bin/env python3
+          """Read-only receipts and explicit derived observations; never update expectations."""
+          import collections
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import shutil
+          import shlex
+          import signal
+          import subprocess
+          import sys
+          import time
+          import uuid
+          import xml.etree.ElementTree as ET
+
+          HERE = Path(__file__).resolve().parent
+          ROOT = HERE.parent
+          SPEC = json.loads((HERE / 'spec.json').read_text())
+          OUT = ROOT / 'same-source-observations'
+          BIN = ROOT / 'Source/IntegrationTests/bin/Release/net8.0'
+          LIT = ROOT / 'Source/IntegrationTests/TestFiles/LitTests/LitTest'
+          COPIED = BIN / 'TestFiles/LitTests/LitTest'
+          PROJECTS = {'core': 'Source/DafnyCore.Test', 'lsp': 'Source/DafnyLanguageServer.Test', 'integration': 'Source/IntegrationTests'}
+
+          def digest(file):
+              h = hashlib.sha256()
+              with Path(file).open('rb') as stream:
+                  while chunk := stream.read(1024 * 1024): h.update(chunk)
+              return h.hexdigest()
+
+          def save(file, value):
+              file.parent.mkdir(parents=True, exist_ok=True)
+              file.write_text(json.dumps(value, indent=2) + '\n')
+
+          def git(*args):
+              return subprocess.check_output(['git', '-C', str(ROOT), *args], text=True).strip()
+
+          def source_receipt():
+              trees = {p: git('rev-parse', 'HEAD:' + p) for p in SPEC['compiled_trees']}
+              if trees != SPEC['compiled_trees']: raise ValueError('Compiled source trees differ from the final product')
+              for p, h in SPEC['harness_sha256'].items():
+                  if digest(ROOT / p) != h: raise ValueError('Pinned harness definition changed: ' + p)
+              for p, h in SPEC['integration_compiled_source_sha256'].items():
+                  if digest(ROOT / p) != h: raise ValueError('Integration compiled source changed: ' + p)
+              registered = {line.strip() for line in (ROOT / '.github/review/regressions').read_text().splitlines() if line.strip() and not line.startswith('#')}
+              if not set(SPEC['feature_runtime_files']) <= registered: raise ValueError('Required feature runtime fixture is not registered')
+              for p, h in SPEC['lifecycle_definition_files_sha256'].items():
+                  if digest(ROOT / p) != h: raise ValueError('Pinned lifecycle definition changed: ' + p)
+              names = git('ls-files', '-z', '--', 'Source').split('\0')
+              files = {p: digest(ROOT / p) for p in names if p and (ROOT / p).is_file()}
+              return {'head': git('rev-parse', 'HEAD'), 'product_commit': SPEC['product_commit'],
+                      'compiled_trees': trees, 'tracked_Source_sha256': files,
+                      'committed_library_sha256': {p: h for p, h in files.items() if p.endswith('.doo')}}
+
+          def portable_manifest(files):
+              text = ''.join(h + '  ' + p + '\n' for p, h in sorted(files.items()))
+              return {'files': files, 'portable_sha256': hashlib.sha256(text.encode()).hexdigest(), 'serialization': SPEC['build_input_recipe']['portable_serialization']}
+
+          def build_inputs():
+              # Same product-file boundary as version.sh; path names and file bytes only.
+              paths = git('ls-files', '-z').split('\0')
+              exclusions = SPEC['build_input_recipe']['exclusions']
+              files = {p: digest(ROOT / p) for p in paths if p and not any(p.startswith(x) if x.endswith('/') else p == x for x in exclusions)}
+              changed = git('diff', '--name-only', SPEC['product_commit'], 'HEAD', '--', '.',
+                            *[':(exclude)' + p.rstrip('/') for p in exclusions])
+              if changed: raise ValueError('Product build inputs differ from the pinned product: ' + changed)
+              if portable_manifest(files)['portable_sha256'] != SPEC['required_build_inputs_sha256']: raise ValueError('Canonical build-input digest differs from candidate')
+              revision = dict(line.split('=', 1) for line in (OUT / 'setup/version.env').read_text().splitlines() if '=' in line)
+              if revision.get('version') != SPEC['expected_version']: raise ValueError('Computed shipped version changed')
+              packages = {}
+              for line in (ROOT / 'Scripts/boogie-packages.sha256').read_text().splitlines():
+                  if not line.strip(): continue
+                  expected, name = line.split()
+                  file = ROOT / 'Binaries/boogie-packages' / name
+                  if digest(file) != expected: raise ValueError('Boogie package bytes changed: ' + name)
+                  packages[name] = expected
+              return {'recipe': SPEC['build_input_recipe'], 'canonical_product_inputs': portable_manifest(files),
+                      'IntegrationTests_compiled_inputs': portable_manifest(SPEC['integration_compiled_source_sha256']),
+                      'version_inputs': {p: digest(ROOT / p) for p in ('.github/review/base', '.github/review/version.sh')},
+                      'SourceRevisionId': revision['revision'], 'expected_version': revision['version'], 'Boogie_packages': packages}
+
+          def bundles():
+              result = {}
+              for name, project in PROJECTS.items():
+                  root = ROOT / project / 'bin/Release/net8.0'
+                  if not root.is_dir(): raise ValueError('Missing compiled test bundle: ' + name)
+                  files = {p.relative_to(root).as_posix(): digest(p) for p in sorted(root.rglob('*'))
+                           if p.is_file() and (p.suffix in ('.dll', '.json', '.doo') or p.name in ('Dafny', 'TestDafny')) and not p.relative_to(root).as_posix().startswith('TestFiles/')}
+                  if 'DafnyCore.dll' not in files: raise ValueError('Missing actual Core assembly: ' + name)
+                  result[name] = files
+              critical = ('DafnyCore.dll', 'DafnyDriver.dll', 'Dafny.dll', 'DafnyRuntime.dll', 'Dafny.deps.json', 'Dafny.runtimeconfig.json', 'TestDafny.dll')
+              if any(p not in result['integration'] for p in critical): raise ValueError('Integration compiler bundle is incomplete')
+              for name, files in result.items():
+                  for p, h in files.items():
+                      if p in result['integration'] and (p.startswith('Dafny') or p.startswith('Boogie')) and h != result['integration'][p]:
+                          raise ValueError('Shared actual compiler/Boogie component differs across test bundles: ' + name + '/' + p)
+              return result
+
+          def solver_receipt():
+              expected = json.loads((OUT / 'setup/solver-executables.json').read_text())
+              result = {}
+              for name, project in PROJECTS.items():
+                  result[name] = {}
+                  for version, h in expected.items():
+                      file = ROOT / project / ('bin/Release/net8.0/z3/bin/z3-' + version)
+                      if not file.is_file() or digest(file) != h: raise ValueError('Named solver was not copied before harness build: ' + str(file))
+                      result[name][version] = h
+              return result
+
+          def guard():
+              before = json.loads((OUT / 'build-receipt.json').read_text())
+              source = source_receipt()
+              if source['tracked_Source_sha256'] != before['source']['tracked_Source_sha256']:
+                  raise ValueError('Tracked source/library/expectation bytes changed during measurement')
+              actual = {'components': bundles(), 'solvers': solver_receipt()}
+              if build_inputs() != before['build_inputs']: raise ValueError('Build input/package/revision receipt changed')
+              if actual != {'components': before['components'], 'solvers': before['solvers']}:
+                  raise ValueError('Actual compiled components or copied solver bytes changed')
+              if environment_receipt() != before['environment']: raise ValueError('Backend tool/dependency/setup identity changed')
+              return actual
+
+          def logged(argv, cwd, directory, timeout=1200):
+              directory.mkdir(parents=True, exist_ok=True)
+              state = json.loads((OUT / 'state.json').read_text()) if (OUT / 'state.json').exists() else {}
+              elapsed = time.time() - state.get('started_at', time.time())
+              available = 4200 - elapsed
+              if available <= 30:
+                  result = {'argv': list(map(str, argv)), 'cwd': str(cwd), 'exit': None, 'capacity_cap': True, 'timed_out': False}
+                  save(directory / 'process.json', result)
+                  return result
+              start = time.monotonic()
+              process = subprocess.Popen(list(map(str, argv)), cwd=cwd, stdin=subprocess.DEVNULL,
+                                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
+              timed = False
+              try: stdout, stderr = process.communicate(timeout=min(timeout, available - 20))
+              except subprocess.TimeoutExpired:
+                  timed = True; os.killpg(process.pid, signal.SIGKILL); stdout, stderr = process.communicate()
+              (directory / 'stdout.txt').write_bytes(stdout); (directory / 'stderr.txt').write_bytes(stderr)
+              result = {'argv': list(map(str, argv)), 'cwd': str(cwd), 'exit': process.returncode, 'timed_out': timed,
+                        'capacity_cap': available - 20 < timeout and timed, 'seconds': time.monotonic() - start,
+                        'stdout_sha256': digest(directory / 'stdout.txt'), 'stderr_sha256': digest(directory / 'stderr.txt')}
+              save(directory / 'process.json', result)
+              return result
+
+          def prebuild():
+              OUT.mkdir(parents=True, exist_ok=True)
+              ready = json.loads((OUT / 'setup/ready.json').read_text())
+              if ready.get('all_prerequisites_completed') is not True: raise ValueError('Setup prerequisite did not complete')
+              save(OUT / 'state.json', {'started_at': time.time(), 'real_dotnet': shutil.which('dotnet')})
+              save(OUT / 'prebuild-receipt.json', {'source': source_receipt(), 'build_inputs': build_inputs()})
+
+          def build():
+              # All solvers are installed by the preceding workflow step, before any project build.
+              state = json.loads((OUT / 'state.json').read_text())
+              before = json.loads((OUT / 'prebuild-receipt.json').read_text())
+              inputs = build_inputs()
+              if source_receipt() != before['source'] or inputs != before['build_inputs']: raise ValueError('Prebuild source/input guard failed')
+              for phase, project in PROJECTS.items():
+                  result = logged([state['real_dotnet'], 'build', project, '-c', 'Release',
+                                   '-p:SourceRevisionId=' + inputs['SourceRevisionId']], ROOT, OUT / ('build-' + phase), 900)
+                  if result['exit'] != 0: raise ValueError('Build did not complete: ' + phase + ': ' + str(result['exit']))
+              if source_receipt() != json.loads((OUT / 'prebuild-receipt.json').read_text())['source']:
+                  raise ValueError('Tracked source changed during builds')
+
+          def environment_receipt():
+              path = shutil.which('dotnet')
+              if path is None: raise ValueError('Missing dotnet prerequisite')
+              file = Path(path).resolve()
+              setup = {p.relative_to(OUT).as_posix(): digest(p) for p in sorted((OUT / 'setup').rglob('*')) if p.is_file()}
+              return {'dotnet': {'path': str(file), 'sha256': digest(file)}, 'setup_receipts_sha256': setup}
+
+          def initialize():
+              OUT.mkdir(parents=True, exist_ok=True)
+              for key in ('DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS', 'DAFNY_INTEGRATION_TESTS_UPDATE_EXPECT_FILE', 'DAFNY_INTEGRATION_TESTS_IN_PROCESS', 'DAFNY_INTEGRATION_TESTS_MODE', 'DAFNY_RELEASE', 'DAFNY_EXTRA_TEST_ARGUMENTS'):
+                  if os.environ.get(key): raise ValueError('Unexpected test environment override: ' + key)
+              actual = {'source': source_receipt(), 'build_inputs': build_inputs(), 'components': bundles(), 'solvers': solver_receipt(), 'environment': environment_receipt(),
+                        'build_source_commit': git('rev-parse', 'HEAD'), 'product_commit': SPEC['product_commit'],
+                        'public_run': 'https://github.com/erniecohen/dafny/actions/runs/' + os.environ['GITHUB_RUN_ID'],
+                        'spec_sha256': digest(HERE / 'spec.json')}
+              version = logged([shutil.which('dotnet'), BIN / 'Dafny.dll', '--version'], BIN, OUT / 'actual-version', 60)
+              reported = (OUT / 'actual-version/stdout.txt').read_text().strip() if (OUT / 'actual-version/stdout.txt').exists() else ''
+              if version['exit'] != 0 or reported != SPEC['expected_version']: raise ValueError('Actual compiler version differs: ' + reported)
+              actual['actual_reported_version'] = reported
+              save(OUT / 'build-receipt.json', actual)
+
+          def parse_discovery(text, methods):
+              marker = 'The following Tests are available:'
+              if text.count(marker) != 1: raise ValueError('Missing or ambiguous discovery header')
+              names = [s.strip() for s in text.split(marker, 1)[1].splitlines() if s.strip()]
+              if not names or any(s.startswith(('No test matches', 'No tests', 'Error:', 'Warning:')) for s in names):
+                  raise ValueError('Discovery did not yield an independent test inventory')
+              # No filter is sent to VSTest discovery. Select exact source FQN boundaries,
+              # retaining complete theory display text and duplicates without normalization.
+              selected = [n for n in names if any(n == m or n.startswith(m + '(') for m in methods)]
+              terms = [x.removeprefix('FullyQualifiedName~') for x in SPEC['lifecycle_filters'][next(p for p, catalog in SPEC['lifecycle_source_method_catalog'].items() if catalog == methods)].split('|')]
+              literal_selected = [n for n in names if any(t in n.split('(', 1)[0] for t in terms)]
+              if collections.Counter(selected) != collections.Counter(literal_selected): raise ValueError('Adapter discovery includes an unknown selected source method')
+              counts = collections.Counter()
+              for name in selected:
+                  matching = [m for m in methods if name == m or name.startswith(m + '(')]
+                  if len(matching) != 1: raise ValueError('Ambiguous selected display name: ' + name)
+                  counts[matching[0]] += 1
+              expected = {m: v['expected_case_count'] for m, v in methods.items()}
+              complete = dict(counts) == expected
+              return {'all_discovered_names': names, 'selected_names': selected,
+                      'all_discovered_count': len(names), 'selected_source_method_counts': dict(counts),
+                      'source_expected_method_counts': expected, 'source_method_and_case_inventory_complete': complete}
+
+          def trx_receipt(file, inventory, methods):
+              if not file.exists(): return {'available': False, 'reason': 'TRX not emitted', 'all_requested_cases_passed': False}
+              tree = ET.parse(file); ns = {'t': 'http://microsoft.com/schemas/VisualStudio/TeamTest/2010'}
+              definitions = {n.attrib['id']: n.find('t:TestMethod', ns).attrib for n in tree.findall('.//t:UnitTest', ns)}
+              rows = []
+              for n in tree.findall('.//t:UnitTestResult', ns):
+                  method = definitions[n.attrib['testId']]
+                  rows.append({'name': n.attrib['testName'], 'outcome': n.attrib['outcome'], 'test_id': n.attrib['testId'],
+                               'source_method': method['className'] + '.' + method['name'], 'definition': method})
+              node = tree.find('.//t:ResultSummary/t:Counters', ns)
+              counters = {k: int(v) for k, v in node.attrib.items()} if node is not None else {}
+              names = [r['name'] for r in rows]
+              multiplicities = collections.Counter(r['source_method'] for r in rows)
+              source_match = dict(multiplicities) == {m: v['expected_case_count'] for m, v in methods.items()}
+              discovery_match = collections.Counter(names) == collections.Counter(inventory.get('selected_names', []))
+              passed = (bool(rows) and all(r['outcome'] == 'Passed' for r in rows)
+                        and counters.get('total') == counters.get('passed') == counters.get('executed') == len(rows)
+                        and source_match and discovery_match and inventory.get('source_method_and_case_inventory_complete') is True)
+              return {'available': True, 'sha256': digest(file), 'counters': counters, 'results': rows,
+                      'method_multiplicities': dict(multiplicities), 'source_method_case_count_equal': source_match,
+                      'discovered_case_multiset_equal': discovery_match, 'all_requested_cases_passed': bool(passed)}
+
+          def lifecycle():
+              state = json.loads((OUT / 'state.json').read_text())
+              for phase, project in PROJECTS.items():
+                  target = OUT / ('lifecycle-' + phase); target.mkdir(parents=True, exist_ok=True)
+                  try:
+                      before = guard(); common = ['-c', 'Release', '--no-build', '--no-restore']
+                      # Adapter 2.4.3 filtered ListTests yields a no-match placeholder while
+                      # actual filtered execution works. Preserve execution flags; independently
+                      # discover unfiltered and select the pinned source-defined FQN set here.
+                      discovery = logged([state['real_dotnet'], 'test', project, *common, '--list-tests'], ROOT, target / 'discovery')
+          ISSUE113_OBSERVER_PY_0
+      - name: Pinned observer.py fragment 2 of 2
+        if: always()
+        continue-on-error: true
+        run: |
+          cat >> .same-source-tools/observer.py <<'ISSUE113_OBSERVER_PY_1'
+                      raw = (target / 'discovery/stdout.txt').read_text() if (target / 'discovery/stdout.txt').exists() else ''
+                      methods = SPEC['lifecycle_source_method_catalog'][phase]
+                      try: inventory = parse_discovery(raw, methods)
+                      except Exception as error: inventory = {'source_method_and_case_inventory_complete': False, 'error': repr(error)}
+                      save(target / 'independent-discovery-inventory.json', inventory)
+                      result = logged([state['real_dotnet'], 'test', project, *common, '--filter', SPEC['lifecycle_filters'][phase],
+                                       '--logger', 'console;verbosity=normal', '--logger', 'trx;LogFileName=' + phase + '.trx',
+                                       '--results-directory', str(target)], ROOT, target / 'run')
+                      trx = trx_receipt(target / (phase + '.trx'), inventory, methods)
+                      save(target / 'receipt.json', {'phase': phase, 'filter': SPEC['lifecycle_filters'][phase], 'discovery_protocol': 'unfiltered adapter listing plus exact pinned source-method selection; multiset case comparison',
+                           'independent_discovery': inventory, 'discovery': discovery, 'process': result, 'trx': trx,
+                           'components_before': before, 'components_after': guard(),
+                           'passed': discovery['exit'] == 0 and result['exit'] == 0 and trx.get('all_requested_cases_passed') is True})
+                  except Exception as error: save(target / 'receipt.json', {'phase': phase, 'passed': False, 'incomplete': True, 'error': repr(error)})
+
+          def report():
+              rows = [json.loads(p.read_text()) for p in sorted(OUT.glob('lifecycle-*/receipt.json'))]
+              result = {'report': False, 'status': 'Focused lifecycle discovery correction; independent review pending',
+                        'product_commit': SPEC['product_commit'], 'prior_raw_report_preserved': SPEC['prior_public_run'],
+                        'scope': SPEC['scope'], 'expected_phases': 3, 'actual': rows,
+                        'mandatory_complete_and_positive': len(rows) == 3 and all(r.get('passed') is True for r in rows),
+                        'final_identity': guard(), 'reviewed_scope_complete': False}
+              save(OUT / 'report.json', result)
+              print(json.dumps({k:v for k,v in result.items() if k not in ('actual','final_identity')}, indent=2))
+
+          if __name__ == '__main__':
+              try: {'prebuild': prebuild, 'build': build, 'initialize': initialize, 'lifecycle': lifecycle, 'report': report}[sys.argv[1]]()
+              except Exception as error:
+                  save(OUT / ('blocked-' + sys.argv[1] + '.json'), {'report': False, 'incomplete': True, 'error': repr(error)})
+                  print(repr(error))
+              # Diagnostic raw commands and completeness decide acceptance, never Actions green.
+              sys.exit(0)
+          ISSUE113_OBSERVER_PY_1
+      - name: Pinned setup.py fragment 1 of 1
+        if: always()
+        continue-on-error: true
+        run: |
+          cat >> .same-source-tools/setup.py <<'ISSUE113_SETUP_PY_0'
+          import hashlib,json,os,pathlib,shutil,subprocess,time
+          root=pathlib.Path.cwd(); out=root/'same-source-observations/setup'; out.mkdir(parents=True,exist_ok=True)
+          start=time.monotonic(); records={}
+          def save(path,obj):
+              path.parent.mkdir(parents=True,exist_ok=True);path.write_text(json.dumps(obj,indent=2)+'\n')
+          def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
+          def run(name,args,timeout=300):
+              target=out/name;target.mkdir(exist_ok=True);available=900-(time.monotonic()-start)
+              if available<=10:
+                  record={'argv':args,'exit':None,'capacity_cap':True};save(target/'process.json',record);records[name]=record;raise RuntimeError('Setup capacity cap')
+              try:
+                  p=subprocess.run(args,stdin=subprocess.DEVNULL,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=min(timeout,available-5))
+                  (target/'stdout.txt').write_bytes(p.stdout);(target/'stderr.txt').write_bytes(p.stderr)
+                  record={'argv':args,'exit':p.returncode,'stdout_sha256':sha(target/'stdout.txt'),'stderr_sha256':sha(target/'stderr.txt')}
+              except subprocess.TimeoutExpired as e:
+                  (target/'stdout.txt').write_bytes(e.stdout or b'');(target/'stderr.txt').write_bytes(e.stderr or b'');record={'argv':args,'exit':None,'timed_out':True}
+              save(target/'process.json',record);records[name]=record
+              if record['exit']!=0:raise RuntimeError('Prerequisite failed: '+name+': '+str(record['exit']))
+              return (target/'stdout.txt').read_text()
+          errors=[]
+          for name,action in [
+           ('version',lambda:run('version',['sh','.github/review/version.sh'])),
+           ('Boogie',lambda:run('boogie',['sh','Scripts/fetch-boogie-packages.sh']))]:
+              try:
+                  text=action()
+                  if name=='version': (out/'version.env').write_text('\n'.join(line for line in text.splitlines() if line.startswith(('revision=','version=')))+'\n')
+              except Exception as e:errors.append({'prerequisite':name,'error':repr(e)})
+          solvers=[('5.1.0','https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip','f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a'),('4.12.1','https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.12.1-x64-ubuntu-24.04-bin.zip','e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b')]
+          # Archive SHA256 is checked independently from the extracted executable identity.
+          actual={}
+          for version,url,expected in solvers:
+              try:
+                  archive=out/('z3-'+version+'.zip');destination=root/'Binaries/z3/bin';destination.mkdir(parents=True,exist_ok=True)
+                  run('download-z3-'+version,['curl','-fsSL','--retry','2','--max-time','200','-o',str(archive),url])
+                  if sha(archive)!=expected:raise RuntimeError('Solver archive checksum mismatch: '+version)
+                  unpack=out/('z3-'+version+'-unpacked');unpack.mkdir(exist_ok=True)
+                  run('unpack-z3-'+version,['unzip','-q',str(archive),'-d',str(unpack)])
+                  executable=unpack/'z3-5.1.0-x64-glibc-2.39/bin/z3' if version=='5.1.0' else unpack/'z3-4.12.1'
+                  target=destination/('z3-'+version);shutil.copyfile(executable,target);target.chmod(0o755)
+                  text=run('version-z3-'+version,[str(target),'--version'])
+                  if 'Z3 version '+version not in text:raise RuntimeError('Wrong actual solver version')
+                  actual[version]=sha(target)
+                  save(out/('solver-'+version+'.json'),{'url':url,'archive_sha256':sha(archive),'executable_sha256':actual[version],'actual_version_output':text})
+              except Exception as e:errors.append({'prerequisite':'Z3 '+version,'error':repr(e)})
+          save(out/'solver-executables.json',actual)
+          for name,args in [('dotnet',['dotnet','--info'])]:
+              try:run('tool-'+name,args,60)
+              except Exception as e:errors.append({'prerequisite':'Tool '+name,'error':repr(e)})
+          source=(root/'Source/DafnyCore/DafnyOptions.cs').read_text()
+          if 'DefaultZ3Version = "4.12.1"' not in source: errors.append({'prerequisite':'default solver','error':'Final shipped default solver changed'})
+          if set(actual)!={'5.1.0','4.12.1'}:errors.append({'prerequisite':'solvers','error':'Both named solvers were not installed'})
+          save(out/'ready.json',{'all_prerequisites_completed':not errors,'errors':errors,'records':records,'solvers_installed_before_any_harness_build':True,'capacity_cap_seconds':900})
+          print(json.dumps({'all_prerequisites_completed':not errors,'errors':errors},indent=2))
+          ISSUE113_SETUP_PY_0
+      - name: Check materialized definitions
+        if: always()
+        continue-on-error: true
+        run: |
+          set +e
+          cat > same-source-observations/materialization.sha256 <<'ISSUE113_CHECKSUMS'
+          c23f93774f13e66ff04fa4e16eb9231b1209a42f4b94f73d8b75956649682b24  .same-source-tools/spec.json
+          e20542e5da218ff2519f3e501da7e004beaf6ef3f6c6d9cb1e35f3820937fbdf  .same-source-tools/observer.py
+          37e43843d5fe77b0bafa8abf6317572edbf87e1082c59bc205cd696467a32601  .same-source-tools/setup.py
+          ISSUE113_CHECKSUMS
+          sha256sum -c same-source-observations/materialization.sha256 > same-source-observations/materialization-check.txt 2>&1
+          echo "$?" > same-source-observations/materialization-exit.txt
+          exit 0
+      - name: Install and record both solvers before all lifecycle builds
+        if: always()
+        continue-on-error: true
+        run: |
+          set +e
+          python3 .same-source-tools/setup.py > same-source-observations/setup-transcript.txt 2>&1
+          echo "$?" > same-source-observations/setup-process-exit.txt
+          exit 0
+      - name: Guard canonical compiler and library build inputs
+        if: always()
+        continue-on-error: true
+        run: |
+          set +e
+          unset DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS DAFNY_INTEGRATION_TESTS_UPDATE_EXPECT_FILE DAFNY_INTEGRATION_TESTS_IN_PROCESS DAFNY_INTEGRATION_TESTS_MODE DAFNY_RELEASE DAFNY_EXTRA_TEST_ARGUMENTS
+          python3 .same-source-tools/observer.py prebuild > same-source-observations/prebuild-transcript.txt 2>&1
+          echo "$?" > same-source-observations/prebuild-process-exit.txt
+          exit 0
+      - name: Build all three lifecycle bundles with the product-diff SourceRevisionId
+        if: always()
+        continue-on-error: true
+        run: |
+          set +e
+          unset DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS DAFNY_INTEGRATION_TESTS_UPDATE_EXPECT_FILE DAFNY_INTEGRATION_TESTS_IN_PROCESS DAFNY_INTEGRATION_TESTS_MODE DAFNY_RELEASE DAFNY_EXTRA_TEST_ARGUMENTS
+          python3 .same-source-tools/observer.py build > same-source-observations/build-transcript.txt 2>&1
+          echo "$?" > same-source-observations/build-process-exit.txt
+          exit 0
+      - name: Freeze actual compiled components and source definitions
+        if: always()
+        continue-on-error: true
+        run: |
+          set +e
+          unset DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS DAFNY_INTEGRATION_TESTS_UPDATE_EXPECT_FILE DAFNY_INTEGRATION_TESTS_IN_PROCESS DAFNY_INTEGRATION_TESTS_MODE DAFNY_RELEASE DAFNY_EXTRA_TEST_ARGUMENTS
+          python3 .same-source-tools/observer.py initialize > same-source-observations/initialize-transcript.txt 2>&1
+          echo "$?" > same-source-observations/initialize-process-exit.txt
+          exit 0
+      - name: Record independent unfiltered inventory and exact filtered lifecycle cases
+        if: always()
+        continue-on-error: true
+        run: |
+          set +e
+          unset DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS DAFNY_INTEGRATION_TESTS_UPDATE_EXPECT_FILE DAFNY_INTEGRATION_TESTS_IN_PROCESS DAFNY_INTEGRATION_TESTS_MODE DAFNY_RELEASE DAFNY_EXTRA_TEST_ARGUMENTS
+          python3 .same-source-tools/observer.py lifecycle > same-source-observations/lifecycle-transcript.txt 2>&1
+          echo "$?" > same-source-observations/lifecycle-process-exit.txt
+          exit 0
+      - name: Retain actual results and pending review without blessing them
+        if: always()
+        continue-on-error: true
+        run: |
+          set +e
+          unset DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS DAFNY_INTEGRATION_TESTS_UPDATE_EXPECT_FILE DAFNY_INTEGRATION_TESTS_IN_PROCESS DAFNY_INTEGRATION_TESTS_MODE DAFNY_RELEASE DAFNY_EXTRA_TEST_ARGUMENTS
+          python3 .same-source-tools/observer.py report > same-source-observations/report-transcript.txt 2>&1
+          echo "$?" > same-source-observations/report-process-exit.txt
+          exit 0
+      - name: Summarize diagnostic boundaries
+        if: always()
+        continue-on-error: true
+        run: |
+          python3 - <<'ISSUE113_SUMMARY'
+          import json,os,pathlib
+          p=pathlib.Path('same-source-observations/report.json')
+          if p.exists(): r=json.loads(p.read_text())
+          else:
+              r={'report':False,'mandatory_complete_and_positive':False,'status':'blocked: final report unavailable'}
+              p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(r,indent=2)+'\n')
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as s:
+              s.write('## Focused shipped lifecycle discovery\n\nActions success is not acceptance. The report remains false until the actual count policy and all lifecycle source/component/discovery receipts are reviewed.\n\n')
+              s.write('```json\n'+json.dumps({k:v for k,v in r.items() if k not in ('actual','final_identity')},indent=2)+'\n```\n')
+          ISSUE113_SUMMARY
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        continue-on-error: true
+        with:
+          name: issue113-lifecycle-discovery-correction
+          path: |
+            same-source-observations
+            .same-source-tools
+          include-hidden-files: true
+          compression-level: 9
+          retention-days: 90
