@@ -28,7 +28,7 @@ The translator exports the consequence only within an existing source lambda
 permission and only for a statically partial or total arrow application. Its
 premises retain:
 
-- the actual good invocation heap, distinct from the canonical selector heap;
+- the actual good invocation heap, rather than the canonical selector heap;
 - native function membership and allocation in the invocation heap;
 - membership and allocation of every argument in that heap;
 - the pure selector's precondition and empty reads frame;
