@@ -9,6 +9,7 @@ import ast
 import csv
 import ctypes
 import hashlib
+import io
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -33,6 +34,9 @@ STAGE_TIMEOUT_SECONDS = 1800
 NATURAL_CHILD_GRACE_SECONDS = 5
 MAXIMUM_CHILD_DIAGNOSTICS = 64
 MAXIMUM_CORPUS_CAPTURE_BYTES = 8 * 1024 * 1024
+MAXIMUM_RAW_ASSETS_BYTES = 16 * 1024 * 1024
+MAXIMUM_ASSET_CONTEXT_BYTES = 4 * 1024 * 1024
+MAXIMUM_PENDING_ASSET_BYTES = 64 * 1024
 ARCHIVE_PATH = Path('out/b3-if-guard-prerequisite/artifact.zip')
 OUTPUT_PATH = Path('out/b3-if-guard-corpus')
 SELECTED_PATH = OUTPUT_PATH / 'prerequisite'
@@ -532,6 +536,8 @@ def run_with_boundaries(name, command):
                 snapshot['accepted'] = accepted and snapshot['copyComplete']
     if result['exitCode'] != 0:
         capture_failure_observations(name)
+        if raw_assets_snapshot is not None:
+            observe_raw_assets_failure(name)
     return result
 
 
@@ -726,6 +732,8 @@ def boundary(stage, when):
         assert capture_cli_dependency_inputs() == cli_dependencies, 'SDK-resolved CLI dependency inputs changed'
     if java_runtime_jar is not None:
         assert file_record(Path('Source/DafnyRuntime/DafnyRuntimeJava/build/libs/DafnyRuntime-4.11.0.jar')) == java_runtime_jar
+    if raw_assets_snapshot is not None:
+        validate_asset_preservation()
     result = {'stage': stage, 'boundary': when, 'trackedFilesSealSha256': seal(source_rows),
               'toolchainSealSha256': seal(toolchain_rows), 'ghSha256': gh_rows['sha256'],
               'prerequisiteSealSha256': seal(prerequisite_rows) if prerequisite_rows is not None else None,
@@ -907,13 +915,271 @@ def qualify_archived_prerequisites():
         'libraryVerifiedInThisRun': False, 'runtimeExecutedInThisRun': False, 'javaExecutedInThisRun': False}
 
 
-def capture_cli_dependency_inputs():
+
+def asset_preservation_fault(scope, error):
+    # Diagnostic faults cannot interrupt the original qualification assertions.
+    if len(asset_preservation_faults) < 64:
+        record = {'scope': scope, 'failure': (type(error).__name__ + ': ' + str(error))[:1024]}
+        while len(json.dumps(record, sort_keys=True, separators=(',', ':')).encode()) > 2048:
+            record['failure'] = record['failure'][:len(record['failure']) // 2]
+        asset_preservation_faults.append(record)
+
+
+def raw_assets_record(path):
+    absolute = path.absolute()
+    assert all(not item.is_symlink() for item in [absolute, *absolute.parents]), 'Raw assets do not follow symlinks'
+    info = path.lstat()
+    assert stat.S_ISREG(info.st_mode) and info.st_size <= MAXIMUM_RAW_ASSETS_BYTES, 'Require bounded regular raw assets'
+    digest = hashlib.sha256()
+    length = 0
+    with path.open('rb') as stream:
+        while chunk := stream.read(1024 * 1024):
+            length += len(chunk)
+            assert length <= MAXIMUM_RAW_ASSETS_BYTES, 'Raw assets grew past their byte bound'
+            digest.update(chunk)
+    assert length == info.st_size, 'Raw assets length changed during hashing'
+    return {'bytes': length, 'sha256': digest.hexdigest(), 'mode': stat.S_IMODE(info.st_mode)}
+
+
+def copy_raw_assets(source, destination, pin):
+    assert raw_assets_record(source) == pin, 'Raw assets changed before snapshot'
+    assert not destination.exists() and not destination.is_symlink(), 'Raw assets snapshot already exists'
+    assert all(not item.is_symlink() for item in destination.absolute().parents)
+    required = sum(row['bytes'] for row in directory_records(output)) + pin['bytes']
+    assert required < MAXIMUM_ARTIFACT_BYTES - MAXIMUM_ASSET_CONTEXT_BYTES - 4 * 1024 * 1024, 'Raw assets evidence exceeds aggregate bound'
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    length = 0
+    digest = hashlib.sha256()
+    with source.open('rb') as original, destination.open('xb') as copied:
+        while chunk := original.read(1024 * 1024):
+            length += len(chunk)
+            assert length <= pin['bytes'] and length <= MAXIMUM_RAW_ASSETS_BYTES, 'Raw assets grew during snapshot'
+            digest.update(chunk)
+            copied.write(chunk)
+    os.chmod(destination, pin['mode'])
+    assert length == pin['bytes'] and digest.hexdigest() == pin['sha256'], 'Raw assets changed during snapshot'
+    assert raw_assets_record(source) == pin and raw_assets_record(destination) == pin, 'Raw assets snapshot differs'
+
+
+def preserve_raw_assets():
+    global raw_assets_snapshot
+    # The first record is established before any qualifier; it is never replaced.
+    assert raw_assets_snapshot is None, 'First raw assets pins cannot be replaced'
+    source = Path('Source/Dafny/obj/project.assets.json')
+    destination = output / 'compiled/cli-build-resolved-assets/project.assets.json'
+    raw_assets_snapshot = {'role': 'resolved-assets', 'accepted': False, 'sourcePath': str(source),
+        'initial': None, 'artifactPath': destination.relative_to(output).as_posix(),
+        'copyComplete': False, 'copyFailure': None, 'finalSnapshotValidated': False}
+    try:
+        pin = raw_assets_record(source)
+        raw_assets_snapshot['initial'] = pin
+        copy_raw_assets(source, destination, pin)
+        raw_assets_snapshot['copyComplete'] = True
+    except Exception as error:
+        raw_assets_snapshot['copyFailure'] = type(error).__name__ + ': ' + str(error)
+        asset_preservation_fault('first-raw-assets', error)
+
+
+def observe_raw_assets_identity(scope):
+    try:
+        assert raw_assets_snapshot is not None and raw_assets_snapshot['initial'] is not None, 'First raw assets identity unavailable'
+        assert raw_assets_record(Path(raw_assets_snapshot['sourcePath'])) == raw_assets_snapshot['initial'], 'Raw assets differ from first identity'
+    except Exception as error:
+        asset_preservation_fault(scope, error)
+
+
+def read_observed_assets_text(path):
+    # Bind the actual bytes parsed. TextIOWrapper uses the same default encoding
+    # and universal-newline semantics as the original Path.read_text call.
+    chunks = []
+    length = 0
+    with path.open('rb') as stream:
+        while chunk := stream.read(1024 * 1024):
+            length += len(chunk)
+            assert length <= MAXIMUM_RAW_ASSETS_BYTES, 'Raw assets read exceeded its byte bound'
+            chunks.append(chunk)
+    data = b''.join(chunks)
+    try:
+        parsed = {'bytes': len(data), 'sha256': digest_bytes(data), 'sourcePath': str(path)}
+        first = raw_assets_snapshot['initial'] if raw_assets_snapshot is not None else None
+        parsed['matchesFirstRawPin'] = first is not None and all(parsed[key] == first[key] for key in ['bytes', 'sha256'])
+        asset_observation['parsedRawBytes'] = parsed
+        assert parsed['matchesFirstRawPin'], 'Actually parsed raw bytes differ from first identity'
+    except Exception as error:
+        asset_preservation_fault('actually-parsed-raw-bytes', error)
+    with io.TextIOWrapper(io.BytesIO(data)) as original_text:
+        return original_text.read()
+
+
+def observe_raw_assets_failure(stage):
+    source = Path('Source/Dafny/obj/project.assets.json')
+    record = {'stage': stage, 'role': 'resolved-assets', 'accepted': False,
+        'initial': raw_assets_snapshot['initial'] if raw_assets_snapshot is not None else None,
+        'observed': None, 'delta': None, 'artifactPath': None, 'copyComplete': False,
+        'usesInitialSnapshot': False, 'observationFailure': None, 'copyFailure': None}
+    raw_assets_failures.append(record)
+    try:
+        observed = raw_assets_record(source)
+        record['observed'] = observed
+        record['delta'] = [] if record['initial'] == observed else [{'initial': record['initial'], 'observed': observed}]
+        if raw_assets_snapshot is not None and raw_assets_snapshot['copyComplete'] and record['initial'] == observed:
+            preserved = output / raw_assets_snapshot['artifactPath']
+            assert raw_assets_record(preserved) == observed
+            record.update({'artifactPath': raw_assets_snapshot['artifactPath'], 'copyComplete': True, 'usesInitialSnapshot': True})
+            return
+        destination = output / 'failure-observed' / (stage + '-resolved-assets/project.assets.json')
+        record['artifactPath'] = destination.relative_to(output).as_posix()
+        try:
+            copy_raw_assets(source, destination, observed)
+            record['copyComplete'] = True
+        except Exception as error:
+            record['copyFailure'] = type(error).__name__ + ': ' + str(error)
+    except Exception as error:
+        record['observationFailure'] = type(error).__name__ + ': ' + str(error)
+
+
+def observe_asset_context(phase, **fields):
+    # Only evidence is mutated here. Qualification continues even if observation
+    # is incomplete; the stage cannot be accepted with a preservation fault.
+    try:
+        pending = {} if phase in {'library', 'asset'} else dict(asset_observation['pending'] or {})
+        pending.update(fields)
+        pending['phase'] = phase
+        encoded = json.dumps(pending, sort_keys=True, separators=(',', ':')).encode()
+        assert len(encoded) <= MAXIMUM_PENDING_ASSET_BYTES, 'Pending asset context exceeds byte bound'
+        asset_observation['pending'] = pending
+    except Exception as error:
+        # A stale preceding context must never be mislabeled as this offender.
+        asset_observation['pending'] = None
+        asset_preservation_fault('pending-asset-context', error)
+
+
+def observe_asset_deps(library, asset_name):
+    matches = []
+    if observed_cli_deps is not None:
+        target = observed_cli_deps['targets'][observed_cli_deps['runtimeTarget']['name']]
+        declaration = target.get(library, {})
+        for kind in ['runtime', 'native', 'runtimeTargets']:
+            for name, metadata in sorted(declaration.get(kind, {}).items()):
+                match = 'exact' if name == asset_name else 'basename' if PurePosixPath(name).name == PurePosixPath(asset_name).name else None
+                if match is not None:
+                    matches.append({'library': library, 'assetKind': kind, 'assetPath': name,
+                                    'nameMatch': match, 'metadata': metadata})
+    observe_asset_context('deps-observed', dependencyFileMatchesDiagnosticOnly=matches,
+                          dependencyFilePin=next(row for row in cli_rows if row['path'] == 'Dafny.deps.json'))
+
+
+def observe_asset_candidates(candidates, copied, checked_paths):
+    try:
+        rows = []
+        for examined in checked_paths:
+            name = examined['path']
+            first = copied.get(name)
+            path = CLI_PATH / name
+            observe_asset_context('candidate-path', attemptedCandidatePath=name)
+            rows.append({'path': name, 'examinationPhase': examined['phase'],
+                         'firstCliPin': first, 'present': path.exists() or path.is_symlink(),
+                         'selectedByOriginalAlgorithm': name in candidates,
+                         'current': file_record(path) if path.exists() or path.is_symlink() else None})
+        observe_asset_context('runtime-candidates', examinedCandidates=rows, selectedCandidatePaths=candidates)
+    except Exception as error:
+        asset_preservation_fault('runtime-candidates', error)
+
+
+def complete_asset_context():
+    try:
+        pending = asset_observation['pending']
+        assert pending is not None, 'Completed asset lacks a diagnostic context'
+        encoded = json.dumps(pending, sort_keys=True, separators=(',', ':')).encode()
+        asset_observation['completedAssetCount'] += 1
+        # Reserve room for the final pending offender and bounded faults/header.
+        assert asset_observation['completedPrefixBytes'] + len(encoded) + 1 <= MAXIMUM_ASSET_CONTEXT_BYTES - 256 * 1024, 'Asset context prefix exceeds byte bound'
+        asset_observation['completedAssets'].append(pending)
+        asset_observation['completedPrefixBytes'] += len(encoded) + 1
+        asset_observation['pending'] = None
+    except Exception as error:
+        asset_observation['pending'] = None
+        asset_preservation_fault('completed-asset-context', error)
+
+
+def preserve_asset_context():
+    # This finally-path never raises over a primary qualification failure.
+    try:
+        record = {'accepted': False, 'qualifierCompleted': asset_observation['qualifierCompleted'],
+            'pending': asset_observation['pending'], 'completedAssetCount': asset_observation['completedAssetCount'],
+            'completedAssets': asset_observation['completedAssets'], 'rawAssetsSnapshot': raw_assets_snapshot,
+            'parsedRawBytes': asset_observation['parsedRawBytes'],
+            'observationFailures': asset_preservation_faults, 'copyIdentityScope': 'First output/package byte pins; no CLR loading claim'}
+        encoded = (json.dumps(record, sort_keys=True, separators=(',', ':')) + '\n').encode()
+        assert len(encoded) <= MAXIMUM_ASSET_CONTEXT_BYTES, 'Resolved asset context exceeds byte bound'
+        assert sum(row['bytes'] for row in directory_records(output)) + len(encoded) < MAXIMUM_ARTIFACT_BYTES - 4 * 1024 * 1024
+        destination = output / 'resolved-asset-observation.json'
+        with destination.open('xb') as stream:
+            stream.write(encoded)
+        pin = file_record(destination)
+        assert pin == {'bytes': len(encoded), 'sha256': digest_bytes(encoded)}
+        asset_observation['artifact'] = {'path': destination.relative_to(output).as_posix(), **pin}
+        asset_observation['copyComplete'] = True
+    except Exception as error:
+        asset_preservation_fault('resolved-asset-context-copy', error)
+
+
+def validate_asset_preservation():
+    assert raw_assets_snapshot is not None and raw_assets_snapshot['copyComplete'], 'First raw assets snapshot is incomplete'
+    pin = raw_assets_snapshot['initial']
+    assert raw_assets_record(Path(raw_assets_snapshot['sourcePath'])) == pin, 'Live raw assets changed from first pins'
+    assert raw_assets_record(output / raw_assets_snapshot['artifactPath']) == pin, 'Preserved first raw assets changed'
+    assert asset_observation['copyComplete'], 'Resolved asset context is incomplete'
+    context = asset_observation['artifact']
+    assert file_record(output / context['path']) == {key: context[key] for key in ['bytes', 'sha256']}, 'Preserved asset context changed'
+    assert not asset_preservation_faults, 'Resolved asset evidence preservation failed'
+
+
+def validate_asset_preservation_final():
+    failures = []
+    if raw_assets_snapshot is not None:
+        try:
+            assert raw_assets_snapshot['copyComplete']
+            assert raw_assets_record(output / raw_assets_snapshot['artifactPath']) == raw_assets_snapshot['initial']
+            raw_assets_snapshot['finalSnapshotValidated'] = True
+        except Exception as error:
+            failures.append({'role': 'resolved-assets', 'scope': 'first-snapshot', 'failure': type(error).__name__ + ': ' + str(error)})
+        try:
+            assert raw_assets_record(Path(raw_assets_snapshot['sourcePath'])) == raw_assets_snapshot['initial'], 'Live raw assets changed before export'
+        except Exception as error:
+            failures.append({'role': 'resolved-assets', 'scope': 'live-output', 'failure': type(error).__name__ + ': ' + str(error)})
+            observe_raw_assets_failure('final-export')
+    for record in raw_assets_failures:
+        if record['copyComplete']:
+            try:
+                assert raw_assets_record(output / record['artifactPath']) == record['observed']
+            except Exception as error:
+                record['copyComplete'] = False
+                record['copyFailure'] = type(error).__name__ + ': ' + str(error)
+        for key in ['observationFailure', 'copyFailure']:
+            if record[key] is not None:
+                failures.append({'role': 'resolved-assets', 'scope': 'failure-observation', 'failure': record[key]})
+    if asset_observation['artifact'] is not None:
+        try:
+            pin = asset_observation['artifact']
+            assert asset_observation['copyComplete'] and file_record(output / pin['path']) == {key: pin[key] for key in ['bytes', 'sha256']}
+        except Exception as error:
+            failures.append({'role': 'resolved-assets', 'scope': 'context-copy', 'failure': type(error).__name__ + ': ' + str(error)})
+    failures.extend({'role': 'resolved-assets', **row} for row in asset_preservation_faults)
+    return failures
+
+
+def capture_cli_dependency_inputs(observe=False):
     # Bind the actual SDK-selected net8 package/project closure and its package
     # bytes. Runtime copy checks use exact asset paths or a unique flat basename.
     path = Path('Source/Dafny/obj/project.assets.json')
+    if observe:
+        observe_raw_assets_identity('before-dependency-parse')
     record = file_record(path)
     assert record['bytes'] <= 16 * 1024 * 1024
-    assets = json.loads(path.read_text())
+    assets = json.loads(read_observed_assets_text(path) if observe else path.read_text())
+    if observe:
+        observe_raw_assets_identity('after-dependency-parse')
     assert assets['version'] == 3 and len(assets['targets']) == 1
     project = assets['project']
     restore = project['restore']
@@ -933,6 +1199,16 @@ def capture_cli_dependency_inputs():
     total = 0
     for library, declaration in sorted(target.items()):
         metadata = assets['libraries'][library]
+        if observe:
+            try:
+                observe_asset_context('library', library=library, target=target_name,
+                    libraryVersion=library.rsplit('/', 1)[1] if '/' in library else None,
+                    declarationType=declaration.get('type'), metadataType=metadata.get('type'),
+                    packageMetadataPath=metadata.get('path'), packageRoot=str(package_root),
+                    targetFramework=declaration.get('framework'))
+            except Exception as error:
+                asset_observation['pending'] = None
+                asset_preservation_fault('library-context', error)
         assert metadata['type'] == declaration['type']
         if metadata['type'] == 'project':
             actual = (expected.parent / metadata['msbuildProject']).resolve()
@@ -948,13 +1224,30 @@ def capture_cli_dependency_inputs():
         assert not folder.is_absolute() and all(part not in {'.', '..'} for part in folder.parts)
         for kind in ['compile', 'runtime', 'native', 'runtimeTargets']:
             for asset_name in sorted(declaration.get(kind, {})):
+                if observe:
+                    try:
+                        observe_asset_context('asset', library=library, target=target_name,
+                            libraryVersion=library.rsplit('/', 1)[1] if '/' in library else None,
+                            declarationType=declaration.get('type'), metadataType=metadata.get('type'),
+                            packageMetadataPath=metadata.get('path'), packageRoot=str(package_root),
+                            assetKind=kind, assetPath=asset_name, assetMetadata=declaration[kind][asset_name])
+                    except Exception as error:
+                        asset_observation['pending'] = None
+                        asset_preservation_fault('asset-context', error)
                 asset = PurePosixPath(asset_name)
                 assert not asset.is_absolute() and all(part not in {'.', '..'} for part in asset.parts)
                 if asset.name == '_._':
+                    if observe:
+                        observe_asset_context('placeholder', placeholderExcluded=True)
+                        complete_asset_context()
                     continue
                 actual = package_root / folder / asset
                 assert all(not ancestor.is_symlink() for ancestor in actual.parents)
+                if observe:
+                    observe_asset_context('package-path', actualPath=str(actual))
                 pin = file_record(actual)
+                if observe:
+                    observe_asset_context('package-bytes', packageAssetPin=pin)
                 total += pin['bytes']
                 assert total <= MAXIMUM_INVENTORY_BYTES and len(files) < MAXIMUM_INVENTORY_FILES
                 row = {'library': library, 'assetKind': kind, 'assetPath': asset_name, 'actualPath': str(actual), **pin}
@@ -965,9 +1258,23 @@ def capture_cli_dependency_inputs():
                     row['matchingPinnedPackageEntries'] = matches
                 if kind in {'runtime', 'native', 'runtimeTargets'}:
                     rid = declaration[kind][asset_name].get('rid') if kind == 'runtimeTargets' else None
+                    if observe:
+                        observe_asset_context('runtime-selection', rid=rid,
+                            exactPathPresent=asset_name in copied, potentialFlatBasenamePath=asset.name,
+                            potentialFlatBasenamePresent=asset.name in copied,
+                            flatBasenameAllowed=kind != 'runtimeTargets' or rid in {'linux-x64', 'linux', 'unix-x64', 'unix', 'any'})
+                        try:
+                            observe_asset_deps(library, asset_name)
+                        except Exception as error:
+                            asset_preservation_fault('dependency-file-matches', error)
                     candidates = [asset_name] if asset_name in copied else []
                     if not candidates and (kind != 'runtimeTargets' or rid in {'linux-x64', 'linux', 'unix-x64', 'unix', 'any'}):
                         candidates = [asset.name] if asset.name in copied else []
+                    if observe:
+                        checked_paths = [{'phase': 'exact', 'path': asset_name}]
+                        if asset_name not in copied and (kind != 'runtimeTargets' or rid in {'linux-x64', 'linux', 'unix-x64', 'unix', 'any'}):
+                            checked_paths.append({'phase': 'flat', 'path': asset.name})
+                        observe_asset_candidates(candidates, copied, checked_paths)
                     if candidates:
                         assert len(set(candidates)) == 1, 'Ambiguous copied runtime asset path'
                         selected = copied[candidates[0]]
@@ -977,6 +1284,8 @@ def capture_cli_dependency_inputs():
                         assert kind == 'runtimeTargets' and rid not in {'linux-x64', 'linux', 'unix-x64', 'unix', 'any'}, 'Missing current-platform runtime asset'
                         row['notSelectedForCurrentPlatform'] = True
                 files.append(row)
+                if observe:
+                    complete_asset_context()
     assert {'DafnyCore', 'DafnyB3Protocol', 'DafnyRuntime', 'DafnyDriver', 'DafnyPipeline'} <= {row['library'].rsplit('/', 1)[0] for row in projects}
     assert {'Boogie.Core', 'Boogie.ExecutionEngine', 'Boogie.VCGeneration'} <= {row['library'].split('/')[0] for row in files}
     return {'assetsFile': {'path': str(path), **record}, 'target': target_name,
@@ -984,27 +1293,35 @@ def capture_cli_dependency_inputs():
 
 
 def capture_cli():
-    global cli_rows, cli_dependencies, java_runtime_jar
+    global cli_rows, cli_dependencies, java_runtime_jar, observed_cli_deps
     cli_rows = generated_records(CLI_PATH, ['Dafny.dll', 'Dafny.deps.json', 'Dafny.runtimeconfig.json',
         'DafnyCore.dll', 'DafnyB3Protocol.dll', 'DafnyRuntime.dll', 'DafnyDriver.dll', 'DafnyPipeline.dll', 'DafnyPrelude.bpl'])
     # Preserve first bytes even if a later dependency/configuration check fails.
     preserve_compiled_snapshot('cli-build', 'current-cli', CLI_PATH, cli_rows)
-    assert next(row for row in cli_rows if row['path'] == 'DafnyPrelude.bpl')['sha256'] == file_record(Path('Source/DafnyCore/DafnyPrelude.bpl'))['sha256']
-    runtime = read_bounded_json(CLI_PATH / 'Dafny.runtimeconfig.json')
-    assert runtime['runtimeOptions']['tfm'] == 'net8.0'
-    framework = runtime['runtimeOptions']['framework']
-    assert framework['name'] == 'Microsoft.NETCore.App' and framework['version'].startswith('8.')
-    deps = read_bounded_json(CLI_PATH / 'Dafny.deps.json')
-    assert deps['runtimeTarget']['name'] in {'.NETCoreApp,Version=v8.0', 'net8.0'}
-    assert set(deps['targets']) == {deps['runtimeTarget']['name']}
-    for name in ['DafnyCore', 'DafnyB3Protocol', 'DafnyRuntime', 'DafnyDriver', 'DafnyPipeline']:
-        matches = [item for library, item in deps['libraries'].items() if library.startswith(name + '/')]
-        assert len(matches) == 1 and matches[0]['type'] == 'project'
-    cli_dependencies = capture_cli_dependency_inputs()
-    source_receipt['cliBoogieAssemblies'] = verify_boogie_assemblies(CLI_PATH)
-    java_runtime_jar = file_record(Path('Source/DafnyRuntime/DafnyRuntimeJava/build/libs/DafnyRuntime-4.11.0.jar'))
-    (output / 'cli-files.json').write_text(json.dumps({'files': cli_rows,
-        'resolvedDependencyInputs': cli_dependencies, 'javaRuntimeBuildDependency': java_runtime_jar}, indent=2) + '\n')
+    preserve_raw_assets()
+    try:
+        assert next(row for row in cli_rows if row['path'] == 'DafnyPrelude.bpl')['sha256'] == file_record(Path('Source/DafnyCore/DafnyPrelude.bpl'))['sha256']
+        runtime = read_bounded_json(CLI_PATH / 'Dafny.runtimeconfig.json')
+        assert runtime['runtimeOptions']['tfm'] == 'net8.0'
+        framework = runtime['runtimeOptions']['framework']
+        assert framework['name'] == 'Microsoft.NETCore.App' and framework['version'].startswith('8.')
+        deps = read_bounded_json(CLI_PATH / 'Dafny.deps.json')
+        observed_cli_deps = deps
+        assert deps['runtimeTarget']['name'] in {'.NETCoreApp,Version=v8.0', 'net8.0'}
+        assert set(deps['targets']) == {deps['runtimeTarget']['name']}
+        for name in ['DafnyCore', 'DafnyB3Protocol', 'DafnyRuntime', 'DafnyDriver', 'DafnyPipeline']:
+            matches = [item for library, item in deps['libraries'].items() if library.startswith(name + '/')]
+            assert len(matches) == 1 and matches[0]['type'] == 'project'
+        cli_dependencies = capture_cli_dependency_inputs(observe=True)
+        asset_observation['qualifierCompleted'] = True
+        asset_observation['pending'] = None
+        source_receipt['cliBoogieAssemblies'] = verify_boogie_assemblies(CLI_PATH)
+        java_runtime_jar = file_record(Path('Source/DafnyRuntime/DafnyRuntimeJava/build/libs/DafnyRuntime-4.11.0.jar'))
+        (output / 'cli-files.json').write_text(json.dumps({'files': cli_rows,
+            'resolvedDependencyInputs': cli_dependencies, 'javaRuntimeBuildDependency': java_runtime_jar}, indent=2) + '\n')
+    finally:
+        preserve_asset_context()
+    validate_asset_preservation()
 
 
 def corpus_command(case):
@@ -1191,6 +1508,7 @@ def main():
     global prerequisite_rows, prerequisite_receipt, package_receipt, cli_rows, cli_dependencies, java_runtime_jar, cli_version
     global boundary_receipts, corpus_receipts, stage_environment, cleanup_poisoned
     global compiled_snapshots, compiled_stage_acceptance, failure_observations, STAGE_TIMEOUT_SECONDS, MAXIMUM_STAGE_LOG_BYTES
+    global raw_assets_snapshot, raw_assets_failures, asset_observation, asset_preservation_faults, observed_cli_deps
     output = OUTPUT_PATH
     output.mkdir(parents=True, exist_ok=False)
     head = source_tree = source_rows = toolchain_rows = gh_rows = None
@@ -1202,6 +1520,12 @@ def main():
     compiled_snapshots = []
     compiled_stage_acceptance = {'cli-build': False}
     failure_observations = []
+    raw_assets_snapshot = observed_cli_deps = None
+    raw_assets_failures = []
+    asset_preservation_faults = []
+    asset_observation = {'accepted': False, 'qualifierCompleted': False, 'pending': None,
+        'completedAssetCount': 0, 'completedAssets': [], 'completedPrefixBytes': 0, 'parsedRawBytes': None,
+        'artifact': None, 'copyComplete': False}
     stage_environment = {**os.environ, 'GRADLE_OPTS': '-Dorg.gradle.daemon=false', 'UseSharedCompilation': 'false',
         'DOTNET_PROCESSOR_COUNT': '1', 'DOTNET_GCHeapHardLimit': '40000000',
         'DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER': '1', 'MSBUILDDISABLENODEREUSE': '1',
@@ -1257,6 +1581,7 @@ def main():
     finally:
         try:
             preservation_failures = validate_compiled_artifact_snapshots()
+            preservation_failures.extend(validate_asset_preservation_final())
         except Exception as error:
             preservation_failures.append({'scope': 'export', 'failure': type(error).__name__ + ': ' + str(error)})
         try:
@@ -1286,6 +1611,9 @@ def main():
             'javaRuntimeBuildDependency': java_runtime_jar, 'corpus': corpus_receipts, 'finalError': final_error,
             'compiledStageAcceptance': compiled_stage_acceptance, 'compiledSnapshots': compiled_snapshots,
             'failureObservations': failure_observations, 'artifactPreservationFailures': preservation_failures,
+            'rawAssetsSnapshot': raw_assets_snapshot, 'rawAssetsFailureObservations': raw_assets_failures,
+            'resolvedAssetObservation': {key: value for key, value in asset_observation.items() if key != 'completedAssets'},
+            'assetPreservationFaults': asset_preservation_faults,
             'primaryFailure': next(({'stage': row['stage'], 'actualProcessExitCode': row.get('actualProcessExitCode'),
                 'failure': row.get('failure'), 'boundaryFailure': row.get('boundaryFailure')}
                 for row in results if row['exitCode'] != 0), None),
