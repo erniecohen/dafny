@@ -19,7 +19,7 @@ on:
       b3_focus_gate:
         description: Focused scratch checks; each mode pins its own public B3 prerequisite
         type: choice
-        options: [none, ide-regressions, maps, isolation, numeric-proof, real-triage, real-smt-capture, complete]
+        options: [none, ide-regressions, maps, isolation, numeric-proof, real-triage, real-smt-capture, real-smt-inspection, complete]
         default: none
       b3_full_gate:
         description: Also run the verifying B3 worker bootstrap and real Dafny corpus with b3_compile_only
@@ -617,9 +617,11 @@ jobs:
         with:
           fetch-depth: 0
       - uses: actions/setup-dotnet@v4
+        if: inputs.b3_focus_gate != 'real-smt-inspection'
         with:
           dotnet-version: 8.0.x
       - uses: actions/setup-java@v4
+        if: inputs.b3_focus_gate != 'real-smt-inspection'
         with:
           distribution: temurin
           java-version: '17'
@@ -677,8 +679,8 @@ jobs:
           DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER: '1'
           MSBUILDDISABLENODEREUSE: '1'
         run: |
-          if [ "$B3_FOCUS_GATE" = real-smt-capture ]; then
-            echo '8b0283442bff96c6ae80ba2aae956ab1b625cdfe5191c9e1f0c0704415ad8f4b  .github/review/b3-real-smt-capture-gate.py' | sha256sum -c -
+          if [ "$B3_FOCUS_GATE" = real-smt-capture ] || [ "$B3_FOCUS_GATE" = real-smt-inspection ]; then
+            echo 'e8438f94f6b382e70233c7f16bea6d05caf43ffb06717a0a92382ccea5487a30  .github/review/b3-real-smt-capture-gate.py' | sha256sum -c -
             B3_COMPILE_ONLY='${{ inputs.b3_compile_only }}' python3 -B .github/review/b3-real-smt-capture-gate.py
           elif [ "$B3_FOCUS_GATE" = real-triage ]; then
             python3 .github/review/b3-real-triage-gate.py

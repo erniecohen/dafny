@@ -444,3 +444,152 @@ class HexFdAnnotationControls(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'inherited pipe topology'):analyze(wrong,ownership)
         other=json.loads(json.dumps(ownership));other['ownedProcesses'][-1]['identity']['parent']=10
         with self.assertRaisesRegex(ValueError,'pinned process parent'):analyze(trace,other)
+
+
+inspection_module=types.ModuleType('artifact_inspection_tested')
+inspection_module.__file__=str(Path(__file__).with_name('inspection.py'))
+exec(compile(Path(inspection_module.__file__).read_bytes(),inspection_module.__file__,'exec'),inspection_module.__dict__)
+
+
+def interrupted_fixture(pid=30,fd=0,name='read',terminal=False,inode=3):
+    first=f'{pid} 2.0 {name}({hex_pipe(fd,inode)},  <unfinished ...>\n'
+    last=f'{pid} 2.1 <... {name} resumed>'+(' <unfinished ...>) = ?' if terminal else '0x123, 4096) = ? ERESTARTSYS (To be restarted if SA_RESTART is set)')+'\n'
+    return (first+last).encode()
+
+
+class InterruptedTraceControls(unittest.TestCase):
+    def test_restart_observation_has_identity_reason_and_no_result_or_bytes(self):
+        for name in ['read','readv','write','writev']:
+            events,pending=capture.calls_from_trace(interrupted_fixture(name=name))
+            self.assertEqual(pending,{});self.assertEqual(len(events),1);event=events[0]
+            self.assertEqual((event['tid'],event['fd'],event['name'],event['begin'],event['end']),(30,0,name,0,1))
+            self.assertEqual(event['observationType'],'interrupted')
+            self.assertEqual(event['reason'],'ERESTARTSYS (To be restarted if SA_RESTART is set)')
+            self.assertNotIn('result',event);self.assertNotIn('bytes',event)
+            self.assertIn(hex_pipe(0,3),event['initialText'])
+            with self.assertRaises(TypeError):event['tid']=99
+
+    def test_terminal_resume_preserves_initial_identity_and_no_result_or_bytes(self):
+        for name in ['read','readv','write','writev']:
+            raw=interrupted_fixture(fd=64,name=name,terminal=True);events,pending=capture.calls_from_trace(raw)
+            self.assertEqual(pending,{});event=events[0]
+            self.assertEqual((event['tid'],event['fd'],event['begin'],event['end']),(30,64,0,1))
+            self.assertEqual(event['observationType'],'terminal')
+            self.assertEqual(event['reason'],'<unfinished ...>) = ?')
+            self.assertNotIn('result',event);self.assertNotIn('bytes',event)
+            self.assertEqual(event['resumedText'],raw.decode().splitlines()[1].split('2.1 ',1)[1])
+
+    def test_malformed_unknown_identity_or_attached_dump_fail_closed(self):
+        raw=interrupted_fixture()
+        cases=[raw.replace(b'ERESTARTSYS',b'ERESTARTOTHER'),raw.replace(b'30 2.1',b'31 2.1'),
+          raw.split(b'\n',1)[1],raw.replace(hex_pipe(0,3).encode(),b'unknown_fd'),
+          raw.replace(hex_pipe(0,3).encode(),br'0<pipe:\x5b3]>'),raw+dump(b'a').encode(),
+          raw.replace(b'30 2.',b'0 2.'),b'30 2.0 read(0, 0x123, 4096) = ? ERESTARTSYS (To be restarted if SA_RESTART is set)\n']
+        for data in cases:
+            with self.subTest(trace=data[:80]),self.assertRaises(ValueError):capture.calls_from_trace(data)
+
+    def test_unresolved_selected_streams_still_reject_full_qualification(self):
+        base,ownership,images,request,completion=complete_hex_pipe_fixture()
+        for fd in [0,1]:
+            data=base+interrupted_fixture(fd=fd,inode=3 if fd==0 else 4)
+            with self.assertRaisesRegex(ValueError,'unresolved non-result I/O'):
+                capture.analyze(data,ownership,images,'/solver','f'*64,['sCheck'],'/worker.dll','/dotnet',request,completion,['/dotnet','/replay.dll'])
+            weak=capture.weak_observations(data,'/solver')[0]
+            self.assertFalse(weak['captureComplete']);self.assertFalse(weak['kernelImageQualified'])
+            self.assertFalse(weak['ownershipQualified']);self.assertFalse(weak['fdTopologyQualified'])
+            self.assertNotIn('result',weak['stopAtNonResultObservation'])
+            self.assertNotIn('bytes',weak['stopAtNonResultObservation'])
+        with self.assertRaisesRegex(ValueError,'FD provenance'):
+            capture.analyze(base+interrupted_fixture(fd=64),ownership,images,'/solver','f'*64,['sCheck'],'/worker.dll','/dotnet',request,completion,['/dotnet','/replay.dll'])
+
+
+def schedule_fixture(expected,outcome=None):
+    return {'exactCheckCoverage':False,'mathematicalMatched':False,'completion':{
+      'traversalCompleted':True,'error':None,'outcome':outcome or expected['expected'],
+      'attempts':[{**row,'outcome':outcome or expected['expected']} for row in expected['attemptSchedule']]}}
+
+
+class AttemptScheduleControls(unittest.TestCase):
+    def test_frozen_eight_schedules_are_exact_and_choice_multiplicity_is_preserved(self):
+        frozen,_,_=inspection_module.inputs();self.assertEqual(len(frozen['cases']),8)
+        for expected in frozen['cases']:
+            before=schedule_fixture(expected);snapshot=json.dumps(before,sort_keys=True)
+            row=inspection_module.postprocess_attempts(before,expected)
+            self.assertTrue(row['reviewedAttemptScheduleMatched']);self.assertTrue(row['mathematicalOutcomeAndScheduleMatched'])
+            self.assertEqual(row['historicalHostFields'],{'exactCheckCoverage':False,'mathematicalMatched':False})
+            self.assertEqual(json.dumps(before,sort_keys=True),snapshot)
+        choice=next(x for x in frozen['cases'] if x['name']=='real-universal-unit-1')
+        self.assertEqual(choice['checkIds'],['sOassert1'])
+        self.assertEqual(choice['attemptSchedule'],[{'sequence':i,'obligationId':'sOassert1','breadcrumbs':['choose alternative '+str(i)]} for i in [0,1]])
+
+    def test_missing_extra_reordered_wrong_sequence_or_breadcrumb_attempts_fail_closed(self):
+        frozen,_,_=inspection_module.inputs();expected=next(x for x in frozen['cases'] if x['name']=='real-universal-unit-1')
+        good=schedule_fixture(expected);attempts=good['completion']['attempts']
+        variants=[attempts[:1],attempts+[attempts[0]],list(reversed(attempts)),
+          [{**attempts[0],'sequence':1},attempts[1]],[{**attempts[0],'breadcrumbs':['choose alternative 1']},attempts[1]],
+          [{**attempts[0],'obligationId':'different'},attempts[1]]]
+        for changed in variants:
+            row=json.loads(json.dumps(good));row['completion']['attempts']=changed
+            result=inspection_module.postprocess_attempts(row,expected)
+            self.assertFalse(result['reviewedAttemptScheduleMatched']);self.assertFalse(result['mathematicalOutcomeAndScheduleMatched'])
+        malformed=json.loads(json.dumps(good));malformed['completion']['attempts'][1]['sequence']=True
+        with self.assertRaises(ValueError):inspection_module.postprocess_attempts(malformed,expected)
+        negative=next(x for x in frozen['cases'] if x['name']=='real-irrational-unit-0')
+        result=inspection_module.postprocess_attempts(schedule_fixture(negative,'Inconclusive'),negative)
+        self.assertTrue(result['reviewedAttemptScheduleMatched']);self.assertFalse(result['mathematicalOutcomeAndScheduleMatched'])
+
+
+class ArtifactInspectionControls(unittest.TestCase):
+    def test_exact_archive_preflight_rejects_noncanonical_collisions_roots_modes_and_bounds_before_output(self):
+        def fixture():
+            expected={'archiveMembers':{'out/b3-native-compile':2}}
+            entries=[];inventory={}
+            for path in ['out/b3-native-compile/a','out/b3-native-compile/b']:
+                info=archive_gate.zipfile.ZipInfo(path);info.external_attr=(stat.S_IFREG|0o644)<<16
+                entries.append(info);inventory[path]={'bytes':0,'sha256':'f'*64,'archiveModeOctal':oct(stat.S_IFREG|0o644)}
+            return entries,expected,inventory
+        entries,expected,inventory=fixture();self.assertEqual(len(inspection_module.preflight(entries,expected,inventory)),2)
+        variants=['../escape','out/b3-native-compile/../a','out/b3-native-compile//b','out/b3-native-compile/a',
+          'out/b3-native-compile/a/','out/b3-native-compile/a/child','other/root/b']
+        for path in variants:
+            entries,expected,inventory=fixture();entries[1].filename=path
+            with self.subTest(path=path),self.assertRaises(ValueError):inspection_module.preflight(entries,expected,inventory)
+        for mode in [stat.S_IFLNK|0o644,stat.S_IFIFO|0o600,stat.S_IFREG|0o777]:
+            entries,expected,inventory=fixture();entries[1].external_attr=mode<<16
+            with self.assertRaises(ValueError):inspection_module.preflight(entries,expected,inventory)
+        entries,expected,inventory=fixture();entries[1].file_size=inspection_module.MAX_FILE+1
+        with self.assertRaises(ValueError):inspection_module.preflight(entries,expected,inventory)
+        entries,expected,inventory=fixture();entries[1].flag_bits=1
+        with self.assertRaises(ValueError):inspection_module.preflight(entries,expected,inventory)
+        # The earlier safe member must not create output before the late bad header.
+        with tempfile.TemporaryDirectory() as directory:
+            archive=Path(directory).resolve()/'input.zip';destination=archive.parent/'not-created'
+            with archive_gate.zipfile.ZipFile(archive,'w') as zipped:
+                for name in ['out/b3-native-compile/a','unknown/root/late']:
+                    entry=archive_gate.zipfile.ZipInfo(name);entry.external_attr=(stat.S_IFREG|0o644)<<16
+                    zipped.writestr(entry,b'')
+            raw=archive.read_bytes();pin={'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest(),'archiveMembers':{'out/b3-native-compile':2}}
+            with self.assertRaisesRegex(ValueError,'Unknown artifact root'):
+                inspection_module.extract(archive,destination,pin,inventory)
+            self.assertFalse(destination.exists())
+        entries,expected,inventory=fixture();entries[1].filename='out/b3-native-compile/a/child'
+        inventory.pop('out/b3-native-compile/b');inventory[entries[1].filename]={'bytes':0,'sha256':'f'*64,'archiveModeOctal':oct(stat.S_IFREG|0o644)}
+        with self.assertRaisesRegex(ValueError,'file is an ancestor'):
+            inspection_module.preflight(entries,expected,inventory)
+
+    def test_inspection_is_hash_bound_and_cannot_promote_unresolved_streams_or_old_coverage_flags(self):
+        frozen,inventory,historical=inspection_module.inputs()
+        self.assertEqual(frozen['artifact']['run'],37244861245);self.assertEqual(frozen['artifact']['artifact'],11319066007)
+        self.assertEqual(frozen['artifact']['bytes'],710066155);self.assertEqual(len(inventory),2618)
+        self.assertEqual(frozen['historicalSourceSealSha256'],hashlib.sha256(Path(__file__).with_name('historical-source-manifest.json').read_bytes()).hexdigest())
+        expected=next(x for x in frozen['cases'] if x['name']=='real-universal-unit-1')
+        raw=Path(__file__).with_name('baseline').joinpath('real-universal-unit-1.request.json').read_bytes()
+        inspection_module.validate_request(raw,expected)
+        for changed in [raw+b' ',raw[:-1],raw.replace(b'sOassert1',b'sOassert2')]:
+            with self.assertRaises(ValueError):inspection_module.validate_request(changed,expected)
+        replay=schedule_fixture(expected);new=inspection_module.postprocess_attempts(replay,expected)
+        self.assertFalse(replay['exactCheckCoverage']);self.assertFalse(replay['mathematicalMatched'])
+        self.assertTrue(new['reviewedAttemptScheduleMatched']);self.assertTrue(new['mathematicalOutcomeAndScheduleMatched'])
+        data,ownership,images,request,completion=complete_hex_pipe_fixture()
+        with self.assertRaisesRegex(ValueError,'unresolved non-result I/O'):
+            capture.analyze(data+interrupted_fixture(),ownership,images,'/solver','f'*64,['sCheck'],'/worker.dll','/dotnet',request,completion,['/dotnet','/replay.dll'])

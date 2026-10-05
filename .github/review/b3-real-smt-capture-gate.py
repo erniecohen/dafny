@@ -13,7 +13,7 @@ import types
 
 ROOT = Path(__file__).resolve().parents[2]
 SEALED = ROOT / '.github/review/real-smt-capture'
-SOURCE_SEAL = '9705bf021fd3e07f66aaa1a227321a447f09af368e11f5dd75b9dc23268e8640'
+SOURCE_SEAL = '434d9b00e1dde3fb26041dab05cd58d6d342691ed66120f3cc882e62fe8d535a'
 MAX_SOURCE = 1024 * 1024
 
 
@@ -43,7 +43,7 @@ def source_snapshot():
     raw = captured_regular(SEALED/'source-manifest.json',65536)
     require(hashlib.sha256(raw).hexdigest() == SOURCE_SEAL, 'Approved diagnostic source seal differs')
     manifest = json.loads(raw)
-    require(manifest['schemaVersion'] == 1 and manifest['diagnosticOnly'] is True and len(manifest['files']) == 20,
+    require(manifest['schemaVersion'] == 1 and manifest['diagnosticOnly'] is True and len(manifest['files']) == 24,
       'Approved diagnostic source inventory differs')
     captured = {}; total = 0
     for name,entry in manifest['files'].items():
@@ -64,49 +64,52 @@ def main():
     receipt = {'diagnosticOnly':True,'acceptanceClaimed':False,'instrumentedAcceptanceClaimed':False,
       'sourceSealSha256':SOURCE_SEAL,'libraryRebuilt':False,'compilerProductRebuilt':False,
       'declaredCIHead':os.environ.get('GITHUB_SHA'),'receiptProduced':False,
-      'prerequisiteSetupOk':os.environ.get('REAL_SMT_SETUP_OK') == 'true','sourceSealValidated':False}
+      'prerequisiteSetupOk':os.environ.get('REAL_SMT_SETUP_OK') == 'true','sourceSealValidated':False,
+      'focus':os.environ.get('B3_FOCUS_GATE')}
     try:
         require(len(sys.argv) == 1 and os.environ.get('GITHUB_EVENT_NAME') == 'workflow_dispatch' and
           os.environ.get('GITHUB_REPOSITORY') == 'erniecohen/dafny' and
           os.environ.get('GITHUB_REF','').startswith('refs/heads/scratch/') and
-          os.environ.get('B3_FOCUS_GATE') == 'real-smt-capture' and
+          receipt['focus'] in ('real-smt-capture','real-smt-inspection') and
           os.environ.get('B3_COMPILE_ONLY') == 'true' and os.environ.get('B3_FULL_GATE') == 'false',
-          'Require scratch workflow_dispatch, real-smt-capture focus, compile-only=true and full=false')
+          'Require scratch workflow_dispatch, reviewed Real diagnostic focus, compile-only=true and full=false')
         require(sys.platform == 'linux' and platform.machine() == 'x86_64' and os.geteuid() != 0,
           'Require non-root Linux x64 diagnostic execution')
         receipt['effectiveUid'] = os.geteuid()
         receipt['routingSourceSha256'] = hashlib.sha256(captured_regular(Path(__file__),MAX_SOURCE)).hexdigest()
         receipt['workflowSourceSha256'] = hashlib.sha256(captured_regular(ROOT/'.github/workflows/review.yml',MAX_SOURCE)).hexdigest()
         receipt['productLedger'] = captured_regular(ROOT/'.github/review/base',4096).decode().strip()
-        setup = ROOT/'out/b3-real-smt-setup'
-        receipt['prerequisiteSetupFiles'] = {}
-        for name in ['status.txt','apt-update.log','apt-install.log','package-version.log','version.log','executable-sha256.log','executable-pin.log']:
-            path = setup/name
-            if path.exists():
-                data = captured_regular(path,4 * MAX_SOURCE,allow_empty=True)
-                receipt['prerequisiteSetupFiles'][name] = {'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()}
-                if name == 'status.txt':
-                    require(len(data) <= 8192, 'Setup status byte bound')
-                    receipt['prerequisiteSetupStatus'] = data.decode('ascii')
-        require(receipt['prerequisiteSetupOk'], 'Reviewed tracer prerequisite setup failed; no SDK/parser/trace stages started')
-        require(receipt.get('prerequisiteSetupStatus','').endswith('setupPassed=true\n'), 'Setup success receipt missing')
-        require(captured_regular(setup/'package-version.log',4096) == b'6.8-0ubuntu2\n' and
-          captured_regular(setup/'version.log',65536).splitlines()[0] == b'strace -- version 6.8', 'Exact setup tracer pins differ')
-        raw_hash = captured_regular(setup/'executable-sha256.log',4096).decode('ascii')
-        matched = re.fullmatch(r'([0-9a-f]{64})  /usr/bin/strace\n',raw_hash)
-        require(matched is not None, 'Setup tracer digest record differs')
-        tracer = Path(shutil.which('strace') or '').resolve(strict=True)
-        require(tracer == Path('/usr/bin/strace').resolve(strict=True), 'Installed tracer shadowed on invocation PATH')
-        receipt['setupTracerSha256'] = matched[1]
-        require(hashlib.sha256(captured_regular(tracer,16 * MAX_SOURCE)).hexdigest() == matched[1], 'Tracer bytes changed after setup')
+        if receipt['focus'] == 'real-smt-capture':
+            setup = ROOT/'out/b3-real-smt-setup'
+            receipt['prerequisiteSetupFiles'] = {}
+            for name in ['status.txt','apt-update.log','apt-install.log','package-version.log','version.log','executable-sha256.log','executable-pin.log']:
+                path = setup/name
+                if path.exists():
+                    data = captured_regular(path,4 * MAX_SOURCE,allow_empty=True)
+                    receipt['prerequisiteSetupFiles'][name] = {'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()}
+                    if name == 'status.txt':
+                        require(len(data) <= 8192, 'Setup status byte bound')
+                        receipt['prerequisiteSetupStatus'] = data.decode('ascii')
+            require(receipt['prerequisiteSetupOk'], 'Reviewed tracer prerequisite setup failed; no SDK/parser/trace stages started')
+            require(receipt.get('prerequisiteSetupStatus','').endswith('setupPassed=true\n'), 'Setup success receipt missing')
+            require(captured_regular(setup/'package-version.log',4096) == b'6.8-0ubuntu2\n' and
+              captured_regular(setup/'version.log',65536).splitlines()[0] == b'strace -- version 6.8', 'Exact setup tracer pins differ')
+            raw_hash = captured_regular(setup/'executable-sha256.log',4096).decode('ascii')
+            matched = re.fullmatch(r'([0-9a-f]{64})  /usr/bin/strace\n',raw_hash)
+            require(matched is not None, 'Setup tracer digest record differs')
+            tracer = Path(shutil.which('strace') or '').resolve(strict=True)
+            require(tracer == Path('/usr/bin/strace').resolve(strict=True), 'Installed tracer shadowed on invocation PATH')
+            receipt['setupTracerSha256'] = matched[1]
+            require(hashlib.sha256(captured_regular(tracer,16 * MAX_SOURCE)).hexdigest() == matched[1], 'Tracer bytes changed after setup')
         manifest,captured = source_snapshot()
         receipt['sourceSealValidated'] = True
         receipt['approvedSourceManifest'] = manifest
-        path = SEALED/'gate.py'
+        entry = 'gate.py' if receipt['focus'] == 'real-smt-capture' else 'inspection.py'
+        path = SEALED/entry
         gate = types.ModuleType('b3_real_smt_capture_gate'); gate.__file__ = str(path)
         # Execute only the bytes captured under the literal seal, never an import or cached pyc.
-        exec(compile(captured['gate.py'],str(path),'exec'),gate.__dict__)
-        diagnostic = output/'real-smt-capture'
+        exec(compile(captured[entry],str(path),'exec'),gate.__dict__)
+        diagnostic = output/receipt['focus']
         original_argv = sys.argv
         try:
             sys.argv = [str(path),str(diagnostic)]
@@ -117,8 +120,23 @@ def main():
         inner = json.loads(raw)
         require(inner['diagnosticOnly'] is True and inner['acceptanceClaimed'] is False,
           'Diagnostic receipt boundary differs')
-        observed_tracer = inner.get('diagnostic',{}).get('straceExecutableSha256')
-        require(observed_tracer in (None,receipt['setupTracerSha256']), 'Diagnostic tracer digest differs from successful setup')
+        if receipt['focus'] == 'real-smt-capture':
+            observed_tracer = inner.get('diagnostic',{}).get('straceExecutableSha256')
+            require(observed_tracer in (None,receipt['setupTracerSha256']), 'Diagnostic tracer digest differs from successful setup')
+        else:
+            require(all(inner[key] is False for key in ['workerExecuted','solverExecuted','SDKInvoked','ReplayInvoked','libraryRebuilt','compilerProductRebuilt']) and
+              inner['requestsSubmitted'] == 0, 'Artifact inspection executed a forbidden stage')
+            receipt['artifactInspectionOnly'] = True
+            if inner.get('inspectionReceiptSha256'):
+                inspection_raw = captured_regular(diagnostic/'inspection.json',4 * MAX_SOURCE)
+                require(hashlib.sha256(inspection_raw).hexdigest() == inner['inspectionReceiptSha256'], 'Inspection receipt chain differs')
+                inspected = json.loads(inspection_raw)
+                require(inspected['diagnosticOnly'] is True and inspected['acceptanceClaimed'] is False and
+                  inspected['workerExecuted'] is False and inspected['solverExecuted'] is False and inspected['requestsSubmitted'] == 0,
+                  'Postprocessing boundary differs')
+                receipt['inspectionReceiptSha256'] = inner['inspectionReceiptSha256']
+                receipt['inspectionSummary'] = {key:inspected[key] for key in ['inspectionDenominatorComplete','allCapturesComplete',
+                  'allReviewedAttemptSchedulesMatched','allMathematicalOutcomesAndSchedulesMatched','strongerPrefixQualificationClaimed']}
         receipt['receiptProduced'] = True
         receipt['diagnosticReceiptSha256'] = hashlib.sha256(raw).hexdigest()
         receipt['cleanupPoisoned'] = inner.get('cleanupPoisoned',False)
@@ -129,10 +147,10 @@ def main():
         receipt['failure'] = type(error).__name__ + ': ' + str(error)
     finally:
         (output/'summary.json').write_text(json.dumps(receipt,indent=2)+'\n')
-        print('Real SMT capture diagnostic receipt:',receipt['receiptProduced'],'acceptance False',flush=True)
+        print('Real SMT diagnostic routing receipt:',receipt['receiptProduced'],'acceptance False',flush=True)
         if os.environ.get('GITHUB_STEP_SUMMARY'):
             with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as stream:
-                stream.write('Real SMT capture routing: diagnostic only; zero exit does not establish acceptance.\n\n')
+                stream.write('Real SMT routing ('+str(receipt['focus'])+'): diagnostic only; zero exit does not establish acceptance.\n\n')
                 if 'failure' in receipt: stream.write(receipt['failure']+'\n')
     return 0
 

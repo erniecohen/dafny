@@ -9,16 +9,16 @@
       "sha256": "e4e08097d38549ad31ec247c6a6786e6e80d404012db232baacb63140f85a704"
     },
     "DESIGN.md": {
-      "bytes": 27952,
-      "sha256": "74ebde03483721d66a4294fe5bc2ea85cfbf8b61ae97340615f8377c288722b9"
+      "bytes": 24694,
+      "sha256": "188050f489fe01af9622e3c9a227a8c36a15308c01b8b26fdecac058905194c5"
     },
     "Program.cs": {
       "bytes": 9160,
       "sha256": "95c5b77198dfacb5a2cb51d868effcf01895d20147cc4fee03103dce22342231"
     },
     "README.md": {
-      "bytes": 12349,
-      "sha256": "3ba7b6d772e2ec939f2ad5a035aaa48fb367c60c62bb8669238bf218b026bdbd"
+      "bytes": 9166,
+      "sha256": "bd45ee84e7e5ba6c0285ff8ba899ff861fe89d45e746e64bfaabff1b467b0dcb"
     },
     "Replay.csproj": {
       "bytes": 648,
@@ -57,44 +57,28 @@
       "sha256": "9c16bebe1362584839bbe15763fc287da364eea4c7d9300adb142458ae3fed4d"
     },
     "capture.py": {
-      "bytes": 29218,
-      "sha256": "7730315695e618eee50c855babfd3c0bc7d5c6f26a8df4099533fa2a2a9cf513"
+      "bytes": 26191,
+      "sha256": "2657d3db70ced7f4cbbb0f79a18b9a9bf6c0f2dfb776048ec0a54dd3b241a22b"
     },
     "coordinator.py": {
-      "bytes": 27130,
-      "sha256": "759c9dfee1fbe3f258c48eb9ffb6e21f19608f167b58281cbe3021418f393772"
+      "bytes": 27000,
+      "sha256": "09764f6d15561e6171d02f0ef8f5d6095853e659d0f23cb2756f6d84b9554225"
     },
     "gate.py": {
       "bytes": 14023,
-      "sha256": "0e4cd6bc2c29399ae65c15e71049bfe5e55d97a246389c6f0a62ee3893c0d4b6"
-    },
-    "historical-source-manifest.json": {
-      "bytes": 3039,
-      "sha256": "9705bf021fd3e07f66aaa1a227321a447f09af368e11f5dd75b9dc23268e8640"
+      "sha256": "ca9154a994e7a0854c6dd3ec231345a42bc01d704eeb27778cdf345ce4b24d36"
     },
     "inputs.json": {
       "bytes": 3727,
       "sha256": "7b08e4b29bf8f5b6d5756a8311bfb3bd4ecc2a5b3a1275c22a056af2a6a41511"
-    },
-    "inspection-artifact-inventory.json": {
-      "bytes": 724693,
-      "sha256": "b2b34937185f8be98dc871e58dd958e0c2b0bb412b15c1342e8b3780ac5f3237"
-    },
-    "inspection-inputs.json": {
-      "bytes": 10684,
-      "sha256": "cdf93dd00803a9964f988e92c25a8fabfd1779efd229737f749c60fa1c62f19d"
-    },
-    "inspection.py": {
-      "bytes": 25873,
-      "sha256": "440387ac30ad943f953ead3d67461cb08d1e643c1a2e589525a6ec33ae7445b6"
     },
     "owned-process.py": {
       "bytes": 20502,
       "sha256": "a323322aec4d2df68d52ef73c3bea35009311ae2cf1d03312c1ad07a7f334a6c"
     },
     "test_capture.py": {
-      "bytes": 36665,
-      "sha256": "7f3b7f3e2c063c9c98586ad322fe87dfdec7f74f148c0eb3fef86bb837e74965"
+      "bytes": 25147,
+      "sha256": "8008decc765fe1dcbdb57155b9bacd2592223ad8df78afaa7816e3302c521f0e"
     },
     "trace-sink.py": {
       "bytes": 9590,

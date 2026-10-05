@@ -1,0 +1,255 @@
+{
+  "schemaVersion": 1,
+  "diagnosticOnly": true,
+  "artifact": {
+    "run": 37244861245,
+    "head": "6839c1c0d0964674b095dae0dd612654e47ef672",
+    "branch": "scratch/codex-b3-real/trace-sink",
+    "artifact": 11319066007,
+    "bytes": 710066155,
+    "sha256": "858af57479406a051568c82f5b322a99b21d6860923d34521005d518f4e98714",
+    "archiveMembers": {
+      "out/b3-native-compile": 2611,
+      "out/b3-real-smt-setup": 7
+    }
+  },
+  "inventorySha256": "b2b34937185f8be98dc871e58dd958e0c2b0bb412b15c1342e8b3780ac5f3237",
+  "historicalSourceSealSha256": "9705bf021fd3e07f66aaa1a227321a447f09af368e11f5dd75b9dc23268e8640",
+  "historicalOuterSha256": "8b0283442bff96c6ae80ba2aae956ab1b625cdfe5191c9e1f0c0704415ad8f4b",
+  "historicalWorkflowSha256": "cdc789bfe552453400f486b62e256ff4a384ffb9e487e4a02fbb47a5f65cd305",
+  "receiptHashes": {
+    "outer": "17fd7ddd420bc01ee7bc70e27d7313dc0975ccf6e78c8c11c8e92c5c260c1244",
+    "inner": "cb4a7a38c0348cb5cbcb70ca195959cda7737176389bea948789156d1ad27f2f",
+    "capture": "97d10b675ac8b68aefa6d425774efd1056e682c7b509359732ea036ad07a83e0"
+  },
+  "workerFingerprint": "785fdda10ac925f7b14cc5556831843eb6d8a46f0f7b51054bbe84fc3f07d822",
+  "solverSha256": "b4e0b3483ce37817230b20d6cad48390eb6a3aefde1d93342ad6dc763f24bc23",
+  "b3Commit": "ea6e8a18dfe9e317d313de769291f989957dc5f2",
+  "cases": [
+    {
+      "name": "real-universal-unit-0",
+      "exploratory": false,
+      "expected": "Verified",
+      "requestPath": "out/b3-native-compile/real-smt-capture/original/out/b3-native-compile/real-triage/original-requests/real-universal/unit-0.rlimit-200000.request.json",
+      "requestSha256": "1c324588207bac35cea52a2887ed7c9ebfd4886f4050aca2cb4ca88913b9c7fe",
+      "requestBytes": 6844,
+      "requestId": "real-universal-unit-0-200000",
+      "unitId": "s2f59ee34a82ba44a80f89854a5771e7981beadc124250f58c4c882958daab875",
+      "programHash": "e9a727d9ec452901838ba6e9d7dd0e5c654ca34c2a93ff3f27c317fa07a33261",
+      "checkIds": [
+        "sOassert1",
+        "sOassert2"
+      ],
+      "attemptSchedule": [
+        {
+          "sequence": 0,
+          "obligationId": "sOassert1",
+          "breadcrumbs": []
+        },
+        {
+          "sequence": 1,
+          "obligationId": "sOassert2",
+          "breadcrumbs": []
+        }
+      ],
+      "replayPath": "out/b3-native-compile/real-smt-capture/capture/real-universal-unit-0.result.json",
+      "tracePath": "out/b3-native-compile/real-smt-capture/capture/real-universal-unit-0.trace",
+      "originalCompletionPath": "out/b3-native-compile/real-smt-capture/original/out/b3-native-compile/real-triage/original-requests/real-universal/unit-0.rlimit-200000.completion.json"
+    },
+    {
+      "name": "real-universal-unit-1",
+      "exploratory": false,
+      "expected": "Verified",
+      "requestPath": "out/b3-native-compile/real-smt-capture/original/out/b3-native-compile/real-triage/original-requests/real-universal/unit-1.rlimit-200000.request.json",
+      "requestSha256": "9c16bebe1362584839bbe15763fc287da364eea4c7d9300adb142458ae3fed4d",
+      "requestBytes": 6564,
+      "requestId": "real-universal-unit-1-200000",
+      "unitId": "sa653318894033cef714049a64e2561954b954913338fece23ac25daaac4a3999",
+      "programHash": "a46959a80d86cb82702bcde093a957a4c8ffe5fbed27bf49bb4c3c6f709da282",
+      "checkIds": [
+        "sOassert1"
+      ],
+      "attemptSchedule": [
+        {
+          "sequence": 0,
+          "obligationId": "sOassert1",
+          "breadcrumbs": [
+            "choose alternative 0"
+          ]
+        },
+        {
+          "sequence": 1,
+          "obligationId": "sOassert1",
+          "breadcrumbs": [
+            "choose alternative 1"
+          ]
+        }
+      ],
+      "replayPath": "out/b3-native-compile/real-smt-capture/capture/real-universal-unit-1.result.json",
+      "tracePath": "out/b3-native-compile/real-smt-capture/capture/real-universal-unit-1.trace",
+      "originalCompletionPath": "out/b3-native-compile/real-smt-capture/original/out/b3-native-compile/real-triage/original-requests/real-universal/unit-1.rlimit-200000.completion.json"
+    },
+    {
+      "name": "real-conversion-unit-0",
+      "exploratory": false,
+      "expected": "Verified",
+      "requestPath": "out/b3-native-compile/real-smt-capture/original/out/b3-native-compile/real-triage/original-requests/real-conversion/unit-0.rlimit-200000.request.json",
+      "requestSha256": "31a80456fa7365f6812cfe7909b5f24b41c78ae9883a2fb24b90e12144bdf579",
+      "requestBytes": 7062,
+      "requestId": "real-conversion-unit-0-200000",
+      "unitId": "s6d5e6cab203ebf02b410210d943a43e8c67868c6ffcd89facc07418b8fdbbc00",
+      "programHash": "f4c160cb52184be2bb985e72c7979c22e4b97fb843d666d2a66e510b10d29abd",
+      "checkIds": [
+        "sOassert1",
+        "sOassert2"
+      ],
+      "attemptSchedule": [
+        {
+          "sequence": 0,
+          "obligationId": "sOassert1",
+          "breadcrumbs": []
+        },
+        {
+          "sequence": 1,
+          "obligationId": "sOassert2",
+          "breadcrumbs": []
+        }
+      ],
+      "replayPath": "out/b3-native-compile/real-smt-capture/capture/real-conversion-unit-0.result.json",
+      "tracePath": "out/b3-native-compile/real-smt-capture/capture/real-conversion-unit-0.trace",
+      "originalCompletionPath": "out/b3-native-compile/real-smt-capture/original/out/b3-native-compile/real-triage/original-requests/real-conversion/unit-0.rlimit-200000.completion.json"
+    },
+    {
+      "name": "real-irrational-unit-0",
+      "exploratory": false,
+      "expected": "Failed",
+      "requestPath": "out/b3-native-compile/real-smt-capture/original/out/b3-native-compile/real-triage/original-requests/real-irrational/unit-0.rlimit-200000.request.json",
+      "requestSha256": "2470a4d21d01c1dc224f3cb5802985f6aaf02d1e4ee423a3d8430f9cc8aa10b4",
+      "requestBytes": 6122,
+      "requestId": "real-irrational-unit-0-200000",
+      "unitId": "s4070aa1924137f59660b0bdfb445e3b1a980e6623640ede75ca920dc327f84bd",
+      "programHash": "a26457459fd322b3a72cd641cc22f48b389c3e660425ec9b35445edfe2f3a637",
+      "checkIds": [
+        "sOassert1"
+      ],
+      "attemptSchedule": [
+        {
+          "sequence": 0,
+          "obligationId": "sOassert1",
+          "breadcrumbs": []
+        }
+      ],
+      "replayPath": "out/b3-native-compile/real-smt-capture/capture/real-irrational-unit-0.result.json",
+      "tracePath": "out/b3-native-compile/real-smt-capture/capture/real-irrational-unit-0.trace",
+      "originalCompletionPath": "out/b3-native-compile/real-smt-capture/original/out/b3-native-compile/real-triage/original-requests/real-irrational/unit-0.rlimit-200000.completion.json"
+    },
+    {
+      "name": "conversion-pure",
+      "exploratory": true,
+      "expected": "Verified",
+      "requestPath": "out/b3-native-compile/real-smt-capture/capture/controls/conversion-pure.request.json",
+      "requestSha256": "05d842862b95b41ac19f330a318a295f2cf21a7626d0d33e161b128d841c6f8d",
+      "requestBytes": 3090,
+      "requestId": "exploratory-conversion-pure",
+      "unitId": "sExploreconversionpure",
+      "programHash": "63b532426c523f4f4bac7d26c6e54e1cc5f9e4b680b3c90ecfd9a01ced158586",
+      "checkIds": [
+        "sOassert1",
+        "sOassert2"
+      ],
+      "attemptSchedule": [
+        {
+          "sequence": 0,
+          "obligationId": "sOassert1",
+          "breadcrumbs": []
+        },
+        {
+          "sequence": 1,
+          "obligationId": "sOassert2",
+          "breadcrumbs": []
+        }
+      ],
+      "replayPath": "out/b3-native-compile/real-smt-capture/capture/conversion-pure.result.json",
+      "tracePath": "out/b3-native-compile/real-smt-capture/capture/conversion-pure.trace",
+      "originalCompletionPath": null
+    },
+    {
+      "name": "conversion-mixed",
+      "exploratory": true,
+      "expected": "Verified",
+      "requestPath": "out/b3-native-compile/real-smt-capture/capture/controls/conversion-mixed.request.json",
+      "requestSha256": "d2ba1997152d2f1cb492ec0afe64e980d193c112551f2d9cd05275e522ce05ae",
+      "requestBytes": 6977,
+      "requestId": "exploratory-conversion-mixed",
+      "unitId": "sExploreconversionmixed",
+      "programHash": "da36e6dbcdc1d7e312df885379ec9868893e1356719bc99fab69ef78a5560b46",
+      "checkIds": [
+        "sOassert1",
+        "sOassert2"
+      ],
+      "attemptSchedule": [
+        {
+          "sequence": 0,
+          "obligationId": "sOassert1",
+          "breadcrumbs": []
+        },
+        {
+          "sequence": 1,
+          "obligationId": "sOassert2",
+          "breadcrumbs": []
+        }
+      ],
+      "replayPath": "out/b3-native-compile/real-smt-capture/capture/conversion-mixed.result.json",
+      "tracePath": "out/b3-native-compile/real-smt-capture/capture/conversion-mixed.trace",
+      "originalCompletionPath": null
+    },
+    {
+      "name": "irrational-pure",
+      "exploratory": true,
+      "expected": "Failed",
+      "requestPath": "out/b3-native-compile/real-smt-capture/capture/controls/irrational-pure.request.json",
+      "requestSha256": "1d88e310f9d548afa29cf143167dfd62ec2bd337c00779d62b35b7b53dd01519",
+      "requestBytes": 2150,
+      "requestId": "exploratory-irrational-pure",
+      "unitId": "sExploreirrationalpure",
+      "programHash": "7caf00ac0d0868b5dab86bb55481bec14302f1237a9917eb4991809bc88b33ae",
+      "checkIds": [
+        "sOassert1"
+      ],
+      "attemptSchedule": [
+        {
+          "sequence": 0,
+          "obligationId": "sOassert1",
+          "breadcrumbs": []
+        }
+      ],
+      "replayPath": "out/b3-native-compile/real-smt-capture/capture/irrational-pure.result.json",
+      "tracePath": "out/b3-native-compile/real-smt-capture/capture/irrational-pure.trace",
+      "originalCompletionPath": null
+    },
+    {
+      "name": "irrational-mixed",
+      "exploratory": true,
+      "expected": "Failed",
+      "requestPath": "out/b3-native-compile/real-smt-capture/capture/controls/irrational-mixed.request.json",
+      "requestSha256": "f9ddc3c1707d9c6201e6d43809c79b15b2bafe97c05e29e722c341c6fdbaf5aa",
+      "requestBytes": 6037,
+      "requestId": "exploratory-irrational-mixed",
+      "unitId": "sExploreirrationalmixed",
+      "programHash": "0b6d16caf9c4143b2104746cb17b3fb23ba320dbebcb833220d37abd5c7bc165",
+      "checkIds": [
+        "sOassert1"
+      ],
+      "attemptSchedule": [
+        {
+          "sequence": 0,
+          "obligationId": "sOassert1",
+          "breadcrumbs": []
+        }
+      ],
+      "replayPath": "out/b3-native-compile/real-smt-capture/capture/irrational-mixed.result.json",
+      "tracePath": "out/b3-native-compile/real-smt-capture/capture/irrational-mixed.trace",
+      "originalCompletionPath": null
+    }
+  ]
+}

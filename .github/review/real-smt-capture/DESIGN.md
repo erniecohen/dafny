@@ -372,3 +372,50 @@ other threads are not included. They assert no live-image, ownership, FD topolog
 or complete-process stream claim. Raw traces remain authoritative observations.
 The request bytes, worker manifest, all invoked package files and utility seal are
 rechecked after each replay; the seal is also checked around the SDK build.
+
+
+## Artifact-only interrupted-trace inspection
+
+The source-only child checkpoint reads exactly the pinned37244861245 artifact;
+it does not repeat the eight replays. The full exported inventory and byte/mode
+bounds are preflighted before creating extraction output. Archive SHA256 is checked
+through one pinned regular descriptor before and after extraction. Every extracted
+file is hashed and the whole inventory rechecked after inspection. Source receipts,
+old20-file manifest, worker manifest/five payload files, solver bytes, eight request
+hashes/program identities/static goals, completion identities, original372321
+completion equality, stage cleanup and trace-sink hashes remain explicit premises.
+The current24-file utility seal is distinct from the historical20-file seal.
+
+For exact resumed ERESTARTSYS or terminal no-result I/O spellings, a matching
+unfinished record must establish the original syscall/TID/FD. The bounded parser
+keeps its original begin/end/text and reason in an immutable observation. It does
+not create a result, byte slice, EOF, successful syscall, fork/exec or descriptor
+mutation. The full qualifier still requires original identity/FD provenance and
+rejects every selected worker/solver fd0/fd1 interrupted, terminal or pending
+operation. Noncritical runtime observations establish no stream fact. Unknown
+identity or unknown spelling remains an error. An unqualified observation prefix
+stops before the first selected non-result/pending record, remains within a single
+exec epoch, and retains the serialized immutable tracee-buffer premise. It is
+neither an atomic kernel payload attestation nor a qualified prefix.
+
+The fixture-specific ordered schedule is sealed beside exact request/program
+hashes. Universal1 retains both sOassert1 executions, sequence0/1 and alternative0/1
+breadcrumbs, as independently justified by RawAstBuilder Conditional lowering and
+StmtResolver/Verifier Choose continuation traversal. New postprocessing fields are
+separate from historical false host fields. Missing, extra, reordered, wrong-ID,
+wrong-sequence or wrong-breadcrumb attempts fail; each original static goal is
+still present. Known Unknown/ToolError outcomes stay mismatches. Any physical
+query association first requires that exact schedule, then the unchanged full
+stream qualifier, and includes sequence/ID/breadcrumbs. Fatal-session unqueried
+attempts retain explicit ToolError provenance. No result or query is synthesized.
+
+Scratch `real-smt-inspection` skips SDK/Java/tracer setup. It records the actual
+non-root Linux x64 CPython3.12 and gh executable hashes, runs only fixed parser
+controls and bounded metadata/download commands through the existing pidfd
+supervisor, and emits separate fresh inspection receipts. A cleanup fault poisons
+the diagnostic and triggers the same bounded mandatory drain. One historical
+control intentionally times out a non-verifier child; its failed/poisoned/empty
+receipt stays explicitly distinct from successful external stages. All ordinary
+workflow defaults and job guards remain unchanged. The projected denominator is
+45=37 unchanged historical method bodies+8 new methods. Source-only checks and
+zero diagnostic exit establish neither runtime control success nor Real acceptance.

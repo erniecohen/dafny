@@ -165,7 +165,7 @@ def main():
         parser_log=output/'parser-controls.log'
         stage('parser-controls',[sys.executable,'-B','-m','unittest','discover','-s',HERE,'-p','test_capture.py'],parser_log,4*1024*1024,30)
         text=inner.read(parser_log,4*1024*1024).decode()
-        inner.require('Ran 37 tests' in text and text.rstrip().endswith('OK'),'Parser control denominator differs')
+        inner.require('Ran 45 tests' in text and text.rstrip().endswith('OK'),'Parser control denominator differs')
         diagnostic=output/'capture'
         stage('real-smt-capture',[sys.executable,'-B',HERE/'coordinator.py','--captured-real-artifacts',roots[0]/'real-triage',
           '--prerequisite',roots[1],'--dotnet',dotnet,'--strace',tracer,'--output',diagnostic],output/'capture.log',4*1024*1024,900)

@@ -9,6 +9,7 @@ positive return lengths contribute to the delivered/produced observations.
 import hashlib
 import json
 import re
+from types import MappingProxyType
 
 MAX_TRACE = 64 * 1024 * 1024
 MAX_LINE = 65536
@@ -100,6 +101,26 @@ def pipe_ends(value):
     require(ends[0][0]!=ends[1][0] and ends[0][1]==ends[1][1] and ends[0][2]==ends[1][2], 'Pipe ends differ in FD/inode/encoding')
     return [x[:2] for x in ends]
 
+
+def non_result_observation(text, initial, resumed, tid, begin, end):
+    # These exact observed strace spellings describe no successful syscall result.
+    # Retain original identity/text; never attach an integer result or byte dump.
+    require(initial is not None and resumed is not None, 'Non-result syscall has no original resumed identity')
+    require(0 < tid <= 2147483647, 'Non-result process identity bound')
+    opened = re.match(r'^(read|readv|write|writev)\((0|[1-9][0-9]{0,9})(<[^<>]+>)?,\s*',initial)
+    require(opened is not None, 'Non-result syscall FD identity is unknown')
+    token = opened[2] + (opened[3] or '')
+    fd_annotation(token)  # Exact bounded spelling only; no FD-table fact follows.
+    restarted = re.fullmatch(r'(read|readv|write|writev)\((.*)\)\s+=\s+\? ERESTARTSYS \(To be restarted if SA_RESTART is set\)',text)
+    terminal = re.fullmatch(r'<\.\.\. (read|readv|write|writev) resumed>\s*<unfinished \.\.\.>\)\s+=\s+\?',resumed)
+    require((restarted is not None) != (terminal is not None), 'Unknown non-result syscall form')
+    require((restarted[1] if restarted else terminal[1]) == opened[1], 'Non-result resumed identity differs')
+    if restarted: split_arguments(restarted[2])  # Delimiter/argument bounds still apply.
+    reason = 'ERESTARTSYS (To be restarted if SA_RESTART is set)' if restarted else '<unfinished ...>) = ?'
+    return MappingProxyType({'nonResult':True,'observationType':'interrupted' if restarted else 'terminal',
+      'tid':tid,'name':opened[1],'fd':int(opened[2]),'fdAnnotation':token,
+      'begin':begin,'end':end,'initialText':initial,'resumedText':resumed,'joinedText':text,'reason':reason})
+
 def calls_from_trace(data):
     require(len(data) <= MAX_TRACE and data.endswith(b'\n'), 'Trace bound or truncated final line')
     calls = []; unfinished = {}; dump = None; seen = set(); counter = 0
@@ -147,7 +168,9 @@ def calls_from_trace(data):
         if text.endswith(' <unfinished ...>'):
             require(tid not in unfinished, 'Overlapping unfinished syscalls')
             unfinished[tid] = (text[:-len(' <unfinished ...>')], line_index); continue
+        initial = resumed_text = None
         if text.startswith('<... '):
+            resumed_text = text
             resumed = re.fullmatch(r'<\.\.\. ([a-zA-Z0-9_]+) resumed>(.*)', text)
             require(resumed is not None and tid in unfinished, 'Unmatched resumed syscall')
             initial, begin = unfinished.pop(tid)
@@ -157,8 +180,10 @@ def calls_from_trace(data):
         match = re.fullmatch(r'([a-zA-Z0-9_]+)\((.*)\)\s+=\s+(-?\d+)(.*)', text)
         # exit/exit_group legitimately have no return. They do not carry I/O bytes.
         if not match:
-            require(re.fullmatch(r'(exit|exit_group)\(\d+\)\s+=\s+\?', text) is not None,
-                    'Unknown syscall result form')
+            if re.fullmatch(r'(exit|exit_group)\(\d+\)\s+=\s+\?', text): continue
+            event = non_result_observation(text,initial,resumed_text,tid,begin,line_index)
+            counter += 1; require(counter <= MAX_CALLS, 'Syscall count bound')
+            calls.append(event)
             continue
         counter += 1; require(counter <= MAX_CALLS, 'Syscall count bound')
         call = {'tid': tid, 'name': match[1], 'args': split_arguments(match[2]),
@@ -303,7 +328,12 @@ def analyze(data, ownership, images, solver_path, solver_sha, check_ids, worker_
                 tables[child_group] = tables[group] if 'CLONE_FILES' in '|'.join(call['args']) else dict(tables[group])
             continue
         require(group in tables, 'Missing descriptor inheritance')
-        table = tables[group]; name = call['name']; args = call['args']; returned = call['result']
+        table = tables[group]
+        if call.get('nonResult'):
+            observed_fd = descriptor(call['fdAnnotation'])
+            require(observed_fd is not None and table.get(observed_fd[0]) == observed_fd[1], 'Non-result FD provenance is unknown')
+            continue  # Observation only: no FD mutation/byte/success facts.
+        name = call['name']; args = call['args']; returned = call['result']
         if name in ('pipe', 'pipe2') and returned == 0:
             ends = pipe_ends(args[0])
             for fd, inode in ends: table[fd] = inode
@@ -349,6 +379,8 @@ def analyze(data, ownership, images, solver_path, solver_sha, check_ids, worker_
             require(len(transitions) < 20000,'I/O transition evidence bound')
             transitions.append({'line': call['end'], 'processId':group, 'fd': fd, 'pipeInode': inode, 'call': name, 'returned': returned, 'deliveredBytes': len(call['bytes'])})
             eof |= group == pid and fd == 0 and returned == 0
+    require(not any(call.get('nonResult') and groups[call['tid']] in (pid,worker_pid) and call['fd'] in (0,1) for call in calls),
+            'Worker/solver stream has unresolved non-result I/O')
     require(not any(groups.get(tid) in (pid,worker_pid) and re.match(r'(read|readv|write|writev)\([01](?:<|,)', text[0]) for tid,text in unfinished.items()),
             'Worker/solver stream ended with unfinished I/O')
     require(bytes(worker_input) == request_bytes + b'\n', 'Worker did not consume the exact frozen request and newline')
@@ -399,12 +431,17 @@ def weak_observations(data, solver_path):
         if candidate['name'] != 'execve' or candidate['result'] != 0: continue
         if cstring(candidate['args'][0]) != solver_path: continue
         if [cstring(x) for x in split_arguments(candidate['args'][1][1:-1])] != [solver_path,'-in','-smt2']: continue
-        reads = bytearray(); writes = bytearray(); stop = None; count = 0
+        reads = bytearray(); writes = bytearray(); stop = None; gap = None; count = 0
+        pending = unfinished.get(candidate['tid'])
+        selected_pending = pending is not None and re.match(r'(read|readv|write|writev)\([01](?:<|,)',pending[0]) is not None
         for call in calls:
             if call['end'] <= candidate['end']: continue
+            if selected_pending and call['end'] >= pending[1]: break
             if ((call['name'] in ('execve','execveat') and call['result'] == 0 and call['tid'] == candidate['tid']) or
               (call['name'] in ('fork','vfork','clone','clone3') and call['result'] == candidate['tid'])):
                 stop = call['end']; break
+            if call.get('nonResult') and call['tid'] == candidate['tid'] and call['fd'] in (0,1):
+                gap = dict(call); break  # Stop before an unresolved stream observation.
             if call['tid'] != candidate['tid'] or 'bytes' not in call: continue
             fd = int(re.match(r'\d+',call['args'][0])[0])
             target = reads if call['name'].startswith('read') and fd == 0 else \
@@ -415,7 +452,8 @@ def weak_observations(data, solver_path):
         row = {'observationOnly':True,'kernelImageQualified':False,'ownershipQualified':False,'fdTopologyQualified':False,
           'traceReportedTid':candidate['tid'],'successfulExecLine':candidate['end'],'execPath':solver_path,
           'stopAtExecOrPidReuseLine':stop,'otherThreadsIncluded':False,'completedIoCalls':count,
-          'unfinishedSameTidIoObserved':candidate['tid'] in unfinished,
+          'unfinishedSameTidIoObserved':candidate['tid'] in unfinished or gap is not None,
+          'stopAtNonResultObservation':gap,'stopAtUnfinishedSelectedIoLine':pending[1] if selected_pending else None,'captureComplete':False,
           'commandBytes':bytes(reads),'responseBytes':bytes(writes)}
         for key,value in [('observedCommandForms',reads),('observedResponseForms',writes)]:
             try: row[key] = forms(bytes(value))

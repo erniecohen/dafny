@@ -65,6 +65,7 @@ def seal():
     manifest = json.loads(read(HERE / 'source-manifest.json', 65536))
     require(manifest['schemaVersion'] == 1 and manifest['diagnosticOnly'] is True, 'Source seal schema')
     expected = {'Program.cs','Replay.csproj','coordinator.py','capture.py','owned-process.py','inputs.json','DESIGN.md','README.md','test_capture.py','trace-sink.py','gate.py','.gitattributes'}
+    expected |= {'inspection.py','inspection-inputs.json','inspection-artifact-inventory.json','historical-source-manifest.json'}
     expected |= {'baseline/' + x + '-' + y for x in ['real-conversion','real-irrational'] for y in ['unit-0.request.json','unit-0.program.json']}
     expected |= {'baseline/real-universal-unit-' + str(i) + '.' + suffix for i in [0,1] for suffix in ['request.json','program.json']}
     require(set(manifest['files']) == expected, 'Source-sealed inventory differs')

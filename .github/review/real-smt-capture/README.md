@@ -135,3 +135,53 @@ cover observed syntax, malformed/bounded forms, exact ends, and a full synthetic
 FD route with wrong-inode/wrong-parent negatives. The27 historical methods and
 six sink methods keep their bodies unchanged, for37 projected controls. None of
 the new ten controls has run; no Real mathematical expectation is waived.
+
+
+The artifact-only inspection checkpoint adds `real-smt-inspection`, a scratch-only
+workflow focus with `b3_compile_only=true` and `b3_full_gate=false`. It skips SDK,
+Java and tracer setup. Its only external commands download the exact historical
+public artifact and run the fixed parser/ownership controls; it never executes
+Replay, a worker, a solver, normalization, or a new query. The local entry is:
+
+```sh
+python3 -B .github/review/real-smt-capture/inspection.py NEW_OUTPUT_DIRECTORY
+```
+
+The input is exactly run37244861245/head6839c1c0, artifact11319066007,
+710066155 bytes, SHA256
+`858af57479406a051568c82f5b322a99b21d6860923d34521005d518f4e98714`.
+All2618 canonical exported regular files, modes, lengths and SHA256 values are
+checked before/while extraction and rechecked after inspection. The declared
+layout is fixed to2611 files below `out/b3-native-compile` and7 below
+`out/b3-real-smt-setup`. Metadata/download processes alone receive the token
+variables; bounded owned controls receive the filtered environment. Python and
+`gh` executable hashes, stage ownership/drain receipts and fresh source seals are
+recorded. This is observed provenance, with no signed attestation claim.
+
+Actual historical run37244861245 passed37 controls and completed8 trace sinks,
+with unchanged FSIZE and zero supervisor signals/residual children. Parsed tracee
+signal calls remain separate observation-only rows, with no ownership claim. Its parser
+rejected all8 streams before qualification. This checkpoint preserves those old
+receipts. Exact interrupted/terminal read/readv/write/writev records now become
+immutable non-result observations, with original TID/FD/text/begin/end/reason and
+no integer result or bytes. Any unresolved selected worker/solver fd0/fd1 stream
+still rejects full qualification. Completed tracee-memory observations can remain
+an explicitly unqualified prefix, stopped before the first selected unresolved
+observation. Neither such a prefix nor FIFO EOF is a complete stream claim.
+
+The new schedule fields compare sequence, obligation ID and breadcrumbs in order,
+including both universal1 Choice attempts. They do not overwrite the historical
+host's false `exactCheckCoverage`/`mathematicalMatched` fields, deduplicate goals,
+or change Program.cs or packets. The mathematical match still requires the
+original exact outcome, traversal and attempt rules; Unknown/ToolError do not pass.
+A fully qualified physical query, if any, is labeled by its exact attempt row;
+unqueried remaining attempts must stay explicit ToolError. Resource counts remain
+unavailable. No stronger prefix or Real acceptance is claimed.
+
+The new seal declares24 utility/input files. There are45 projected control methods:
+all37 historical bodies are unchanged, plus the eight names fixed in
+[the inspection plan](../../../docs/dev/b3/real-smt-inspection-plan.md).
+The intentional non-verifier timeout control retains its expected failure and
+validated poisoned cleanup; it is not proof execution. These eight new methods
+and the inspection route are source-only and have not run. Diagnostic zero exit
+only preserves the receipt, including setup, parser, ownership or capture failures.
