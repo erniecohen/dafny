@@ -27,13 +27,43 @@ public class ObligationLoweringTests {
   [Theory]
   [InlineData(false)]
   [InlineData(true)]
-  public async Task ForallProofBodyHasAnObligationContinuation(bool refresh) {
-    const string body = "lemma L() ensures true { forall x: int ensures true { if x == 0 {} } }";
+  public async Task TerminalForallProofPreservesLegacyRevealScopes(bool refresh) {
+    const string body = "ghost function F(i:int):int { i } lemma L() { hide *; " +
+      "forall x: int ensures F(x)==x { calc { F(x); == { { reveal F; } } x; } } }";
     var legacy = ObligationFingerprint.Emit(await Translate(body, false, refresh));
     var enabled = ObligationFingerprint.Emit(await Translate(body, true, refresh));
+    Assert.Contains("reveal ", legacy);
     Assert.DoesNotContain("push;", legacy);
-    Assert.Contains("push;", enabled);
-    Assert.Contains("pop;", enabled);
+    Assert.DoesNotContain("pop;", legacy);
+    Assert.DoesNotContain("push;", enabled);
+    Assert.DoesNotContain("pop;", enabled);
+  }
+
+  [Theory]
+  [InlineData(false, false)]
+  [InlineData(false, true)]
+  [InlineData(true, false)]
+  [InlineData(true, true)]
+  public async Task MethodBodyPreservesLegacyRevealScopes(bool refresh, bool terminal) {
+    var source = "ghost function F(i:int):int { i } lemma L(i:int,b:bool) { hide *; " +
+      "if b { calc { F(i); == { { reveal F; } } i; } } " +
+      "else { calc { F(i); == { { reveal F; } } i; } } " +
+      (terminal ? "}" : "assert true; }");
+    async Task<string[]> ScopeCommands(bool enabled) {
+      var text = ObligationFingerprint.Emit(await Translate(source, enabled, refresh));
+      return text.Split('\n').Select(line => line.Trim())
+        .Where(line => line is "push;" or "pop;" ||
+          line.StartsWith("hide ") || line.StartsWith("reveal ")).ToArray();
+    }
+    var legacy = await ScopeCommands(false);
+    Assert.Contains(legacy, command => command.StartsWith("reveal "));
+    if (terminal) {
+      Assert.DoesNotContain("pop;", legacy);
+    } else {
+      Assert.Contains("push;", legacy);
+      Assert.Contains("pop;", legacy);
+    }
+    Assert.Equal(legacy, await ScopeCommands(true));
   }
 
   [Fact]

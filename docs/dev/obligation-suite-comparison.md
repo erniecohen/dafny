@@ -1,212 +1,182 @@
-# Full-suite obligation comparison
+# Full-suite and standard-library obligation comparison
 
-Status: both additional-axiom settings complete; standard-library and ordinary required CI acceptance remain pending.
+Status: complete native comparisons for the current exit-publication correction with Z3 5.1.0; acceptance failed. The option remains experimental and default off.
 
-The exact supported baseline and candidate identified in [obligation-validation.md](obligation-validation.md) were compared with Z3 5.1.0 and the unchanged suite runner. All 1,161 planned programs completed in each of the baseline, default-off and enabled runs for both additional-axiom settings. Default-off has no program verdict difference and no recorded batch-resource difference in either setting. Parser/resolver-negative programs without solver logs remain in the program denominator; they do not contribute solver resource records.
+Product and build identities are recorded in [obligation-validation.md](obligation-validation.md). The complete existing runners compare baseline, candidate with the option off, and candidate with it on, under both additional-axiom settings. Proof inputs, source options, warning policy, resource ceilings and expected-verdict tables are unchanged. The following results supersede the preceding candidate comparison.
 
-Enabled mode changes diagnostic locations, checked-obligation counts and some outcomes. The tables below record those changes without updating expected verdicts. Batch indices can shift when checks are added, so declaration identity is used for outcome and aggregate-cost review.
+## Default-off compatibility
 
-## Declaration outcome changes
+Every one of the 1,161 suite programs matches the baseline and committed expected verdicts in both settings. Complete named declaration/batch outcomes and resource entries match. Expected parser, resolver and command-line negatives remain in the program denominator.
+
+The standard-library comparisons cover the main Std project and all six target-specific parts. Every one of the 2,190 declaration verdicts and seven run rows matches the baseline and committed expectations. All emitted operational Boogie matches after excluding complete comment lines. Library resource entries vary under the existing declaration-order behavior documented in `std-verdicts.py`; exact controlled library cost compatibility is not accepted. A post-verification capture check incorrectly assumed one Boogie file per part. The already completed native evidence was audited with module coverage instead; the original capture failure is preserved separately and no proofs were rerun for that correction.
+
+## Enabled suite declaration changes
+
+All newly failing suite declarations exhaust their unchanged resource ceilings. AllLiteralsAxiom and GHC-MergeSort now pass in both complete enabled comparisons. No baseline Errors declaration becomes Correct. This bounded result does not establish soundness or uniform superiority.
 
 | Additional axioms | Source | Declaration | Baseline | Enabled |
-|---|---|---|---|---|
-| off | `dafny0/AllLiteralsAxiom.dfy` | `NeedsAllLiteralsAxiom.calc_trick (correctness)` | Valid | Invalid |
-| off | `dafny0/MultiSets.dfy` | `test7 (correctness)` | OutOfResource | Valid |
-| off | `dafny1/SchorrWaite.dfy` | `SchorrWaite (correctness)` | Valid | OutOfResource |
-| off | `dafny2/MinWindowMax.dfy` | `MinimumWindowMax (correctness)` | Valid | OutOfResource |
-| off | `dafny2/SmallestMissingNumber-functional.dfy` | `SMN_Correct (correctness)` | OutOfResource | Valid |
-| off | `dafny2/pq-intrinsic-extrinsic.dfy` | `PriorityQueue_extrinsic.AboutInsert (correctness)` | OutOfResource | Valid |
-| off | `dafny4/FlyingRobots.dfy` | `FormArmy (correctness)` | Valid | OutOfResource |
-| off | `dafny4/GHC-MergeSort.dfy` | `sorted_sequences (correctness)` | Valid | Invalid |
-| off | `dafny4/Primes.dfy` | `RemoveFactor (correctness)` | Valid | OutOfResource |
-| off | `dafny4/Regression16.dfy` | `InsertBalanced_A (correctness)` | Valid | OutOfResource |
-| off | `dafny4/Regression16.dfy` | `InsertBalanced_B (correctness)` | Valid | OutOfResource |
-| on | `dafny0/AllLiteralsAxiom.dfy` | `NeedsAllLiteralsAxiom.calc_trick (correctness)` | Valid | Invalid |
-| on | `dafny0/MultiSets.dfy` | `test7 (correctness)` | OutOfResource | Valid |
-| on | `dafny1/SchorrWaite.dfy` | `SchorrWaite (correctness)` | Valid | OutOfResource |
-| on | `dafny2/SmallestMissingNumber-functional.dfy` | `SMN_Correct (correctness)` | OutOfResource | Valid |
-| on | `dafny2/pq-intrinsic-extrinsic.dfy` | `PriorityQueue_extrinsic.AboutInsert (correctness)` | OutOfResource | Valid |
-| on | `dafny4/FlyingRobots.dfy` | `FormArmy (correctness)` | Valid | OutOfResource |
-| on | `dafny4/GHC-MergeSort.dfy` | `sorted_sequences (correctness)` | Valid | Invalid |
-| on | `dafny4/Primes.dfy` | `RemoveFactor (correctness)` | Valid | OutOfResource |
-| on | `dafny4/Regression16.dfy` | `InsertBalanced_A (correctness)` | Valid | OutOfResource |
-| on | `dafny4/Regression16.dfy` | `InsertBalanced_B (correctness)` | Valid | OutOfResource |
+| --- | --- | --- | --- | --- |
+| off | `dafny0/NoTypeArgs.dfy` | `Lemma (correctness)` | Correct | OutOfResource |
+| off | `dafny1/ExtensibleArray.dfy` | `ExtensibleArray.Append (correctness)` | Correct | OutOfResource |
+| off | `dafny1/ExtensibleArrayAuto.dfy` | `ExtensibleArray.Set (correctness)` | Correct | OutOfResource |
+| off | `dafny1/SchorrWaite-stages.dfy` | `M2.SchorrWaite (correctness)` | Correct | OutOfResource |
+| off | `dafny2/MinWindowMax.dfy` | `MinimumWindowMax (correctness)` | Correct | OutOfResource |
+| off | `dafny2/pq-intrinsic-extrinsic.dfy` | `PriorityQueue_extrinsic.AboutInsert (correctness)` | OutOfResource | Correct |
+| off | `dafny4/FlyingRobots.dfy` | `FormArmy (correctness)` | Correct | OutOfResource |
+| off | `dafny4/NumberRepresentations.dfy` | `dec (correctness)` | Correct | OutOfResource |
+| off | `dafny4/Primes.dfy` | `Composite (correctness)` | Correct | OutOfResource |
+| on | `dafny0/NoTypeArgs.dfy` | `Lemma (correctness)` | Correct | OutOfResource |
+| on | `dafny1/ExtensibleArray.dfy` | `ExtensibleArray.Append (correctness)` | Correct | OutOfResource |
+| on | `dafny1/ExtensibleArrayAuto.dfy` | `ExtensibleArray.Set (correctness)` | Correct | OutOfResource |
+| on | `dafny1/SchorrWaite-stages.dfy` | `M2.SchorrWaite (correctness)` | Correct | OutOfResource |
+| on | `dafny2/pq-intrinsic-extrinsic.dfy` | `PriorityQueue_extrinsic.AboutInsert (correctness)` | OutOfResource | Correct |
+| on | `dafny4/FlyingRobots.dfy` | `FormArmy (correctness)` | Correct | OutOfResource |
+| on | `dafny4/NumberRepresentations.dfy` | `dec (correctness)` | Correct | OutOfResource |
+| on | `dafny4/Primes.dfy` | `Composite (correctness)` | Correct | OutOfResource |
 
-There are eight new failing declarations with additional axioms off and seven with them on. Three declarations succeed in each setting after previously exhausting resources. No declaration classified Invalid in the baseline becomes Valid. This bounded observation is not a soundness proof.
+## Enabled library declaration changes
 
-AllLiteralsAxiom has the same final procedure goal in the captured enabled and legacy programs; enabled mode additionally checks the local postcondition and publishes its permitted summary. GHC-MergeSort reports failure of the inlined `AllSorted` postcondition. In a separate source comparison, inserting the equivalent unannotated assertion before the postcondition already makes each baseline program fail. The enabled original programs reproduce those failures. Captured solver-input replay returns `unknown` with `(incomplete quantifiers)` in these cases, rather than `sat`; Boogie classifies that incomplete result as Invalid. These observations identify a completeness regression, not a source counterexample or a proof that a logical premise was removed. The extra local cut changes the verification condition and still needs repair. An isolated Boogie diagnostic with the same solver settings removes only the newly emitted method-exit cut, retaining the original checked procedure postconditions. That recovers both failing declarations, but restores the resource failure of the unchanged issue 100 reproducer. This rules out deleting the cut as the repair; the construction must enrich the original check without relying on this tradeoff. Reparsed Boogie diagnostics remain separate from product acceptance. Resource-limited declarations retain their original ceilings.
+The four formerly Correct declarations that now report Errors are listed below. Native diagnostics identify a failed postcondition, calculation steps and a function precondition. The [documented failure examples](obligation-failure-examples.md) include controlled native diagnosis: three hide/reveal cases lose definition visibility after added scope pops, and retaining the relevant outer reveals restores success. The power failure is separately isolated to its added second-clause exit package, with its exact solver mechanism still unresolved. No baseline Errors declaration becomes Correct. Some formerly resource-limited declarations succeed, while another remains unproved with an Errors outcome.
 
-## Existing successful declarations flagged for cost review
+| Additional axioms | Declaration | Baseline | Enabled |
+| --- | --- | --- | --- |
+| off | `Std Std.Arithmetic.DivMod.LemmaDivByMultipleIsStronglyOrdered (correctness)` | Correct | OutOfResource |
+| off | `Std Std.Arithmetic.DivMod.LemmaModEquivalenceAuto (correctness)` | Correct | OutOfResource |
+| off | `Std Std.Arithmetic.DivMod.LemmaModNegNeg (correctness)` | OutOfResource | Correct |
+| off | `Std Std.Arithmetic.Power.LemmaPowSubtractsAuto (correctness)` | Correct | Errors |
+| off | `Std Std.Base64.AboutDecodeValid (correctness)` | OutOfResource | Correct |
+| off | `Std Std.Base64.DecodeEncodeRecursively (correctness)` | OutOfResource | Errors |
+| off | `Std Std.Base64.EncodeDecodeRecursively (correctness)` | Correct | Errors |
+| off | `Std Std.BulkActions.BatchReader.Read (correctness)` | OutOfResource | Correct |
+| off | `Std Std.Collections.Seq.LemmaFilterDistributesOverConcat (correctness)` | Correct | Errors |
+| off | `Std Std.Collections.Seq.SortedUnique (correctness)` | OutOfResource | Correct |
+| off | `Std Std.Collections.Seq.WillSplitOnDelim (correctness)` | Correct | Errors |
+| off | `Std Std.Producers.MappedProducerOfNewProducers.Invoke (correctness)` | Correct | OutOfResource |
+| on | `Std Std.Arithmetic.DivMod.LemmaDivByMultipleIsStronglyOrdered (correctness)` | Correct | OutOfResource |
+| on | `Std Std.Arithmetic.DivMod.LemmaModEquivalenceAuto (correctness)` | Correct | OutOfResource |
+| on | `Std Std.Arithmetic.Power.LemmaPowIncreases (correctness)` | Correct | OutOfResource |
+| on | `Std Std.Arithmetic.Power.LemmaPowMultiplies (correctness)` | Correct | OutOfResource |
+| on | `Std Std.Arithmetic.Power.LemmaPowSubtractsAuto (correctness)` | Correct | Errors |
+| on | `Std Std.Base64.AboutDecodeValid (correctness)` | OutOfResource | Correct |
+| on | `Std Std.Base64.DecodeEncodeRecursively (correctness)` | OutOfResource | Errors |
+| on | `Std Std.Base64.DecodeValidEncode1Padding (correctness)` | OutOfResource | Correct |
+| on | `Std Std.Base64.DecodeValidEncode2Padding (correctness)` | OutOfResource | Correct |
+| on | `Std Std.Base64.EncodeBVIsBase64 (correctness)` | Correct | OutOfResource |
+| on | `Std Std.Base64.EncodeDecodeRecursively (correctness)` | Correct | Errors |
+| on | `Std Std.BulkActions.BatchReader.Read (correctness)` | OutOfResource | Correct |
+| on | `Std Std.Collections.Seq.LemmaFilterDistributesOverConcat (correctness)` | Correct | Errors |
+| on | `Std Std.Collections.Seq.SortedUnique (correctness)` | OutOfResource | Correct |
+| on | `Std Std.Collections.Seq.WillSplitOnDelim (correctness)` | Correct | Errors |
+| on | `Std Std.JSON.ZeroCopy.Deserializer.Objects.BracketedToObject (correctness)` | OutOfResource | Correct |
+| on | `Std Std.Producers.MappedProducerOfNewProducers.Invoke (correctness)` | Correct | OutOfResource |
 
-These declarations cross the review threshold: more than twice the baseline resource use and at least 100,000 additional resource units. Complete performance acceptance remains pending.
+Native per-check declaration capture confirms that the defining Filter axiom is present at both original calculation checks in the baseline, absent at both failed enabled checks, and present again in successful outer-reveal diagnostic witnesses. The enabled method-body ReturnPosition override introduces the scope pops responsible for that visibility change. Preserving checked formulas and fuel indices had not preserved the available definition axioms. No product correction or expected-verdict change is included in this diagnosis; the power interaction and resource regressions remain open.
 
-| Additional axioms | Source | Declaration |
-|---|---|---|
-| off | `dafny4/Primes.dfy` | `Composite (correctness)` |
-| off | `dafny4/NumberRepresentations.dfy` | `dec (correctness)` |
-| off | `dafny2/COST-verif-comp-2011-4-FloydCycleDetect.dfy` | `Node.AnalyzeList (correctness)` |
-| off | `dafny4/NumberRepresentations.dfy` | `inc (correctness)` |
-| off | `dafny4/GHC-MergeSort.dfy` | `perm_sequences (correctness)` |
-| off | `dafny0/Array.dfy` | `Fill_True (correctness)` |
-| off | `dafny0/Array.dfy` | `Fill_All (correctness)` |
-| off | `dafny0/Termination.dfy` | `ExtEvensSumToEven (correctness)` |
-| off | `dafny4/GHC-MergeSort.dfy` | `perm_reverse (correctness)` |
-| off | `dafny0/InductivePredicates.dfy` | `Alt.MyLemma_Nicer# (correctness)` |
-| off | `dafny0/InductivePredicates.dfy` | `Alt.MyLemma_NotSoNice# (correctness)` |
-| off | `dafny4/ACL2-extractor.dfy` | `NthAppendB (correctness)` |
-| on | `dafny4/Primes.dfy` | `Composite (correctness)` |
-| on | `dafny4/NumberRepresentations.dfy` | `dec (correctness)` |
-| on | `dafny2/COST-verif-comp-2011-4-FloydCycleDetect.dfy` | `Node.AnalyzeList (correctness)` |
-| on | `dafny4/NumberRepresentations.dfy` | `inc (correctness)` |
-| on | `dafny4/GHC-MergeSort.dfy` | `perm_sequences (correctness)` |
-| on | `dafny0/Array.dfy` | `Fill_All (correctness)` |
-| on | `dafny0/Array.dfy` | `Fill_True (correctness)` |
-| on | `dafny0/Termination.dfy` | `ExtEvensSumToEven (correctness)` |
-| on | `dafny4/GHC-MergeSort.dfy` | `perm_reverse (correctness)` |
-| on | `dafny4/ACL2-extractor.dfy` | `NthAppendB (correctness)` |
-| on | `dafny2/MajorityVote.dfy` | `FindWinner (correctness)` |
+## Successful cases requiring cost review
 
-## Program-level changes
+The defined review threshold is more than twice the baseline resource use with at least 100,000 additional resource units. These still-successful cases trigger review; no larger resource ceiling was substituted. Complete performance acceptance remains pending.
 
-| Additional axioms | Source | Baseline summary | Enabled summary | Classification |
-|---|---|---|---|---|
-| off | `dafny0/AllLiteralsAxiom.dfy` | 4 verified, 0 errors | 3 verified, 1 error | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| off | `dafny0/AutoContracts.dfy` | 36 verified, 9 errors | 36 verified, 9 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny0/BindingGuards.dfy` | 10 verified, 6 errors | 10 verified, 6 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny0/CanCall.dfy` | 34 verified, 3 errors | 34 verified, 3 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny0/ChainingDisjointTests.dfy` | 4 verified, 4 errors | 4 verified, 4 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny0/CoPrefix.dfy` | 13 verified, 11 errors | 13 verified, 11 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny0/ComputationsNeg.dfy` | 5 verified, 5 errors | 5 verified, 5 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny0/CustomErrorMesage.dfy` | 1 verified, 9 errors | 1 verified, 9 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny0/DTypes.dfy` | 20 verified, 7 errors | 20 verified, 7 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny0/Datatypes.dfy` | 29 verified, 15 errors | 29 verified, 15 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny0/DefaultParameters.dfy` | 72 verified, 74 errors | 72 verified, 74 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny0/Definedness.dfy` | 9 verified, 37 errors | 9 verified, 37 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny0/ForLoops.dfy` | 23 verified, 25 errors | 23 verified, 28 errors | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| off | `dafny0/Fuel.dfy` | 31 verified, 39 errors | 31 verified, 23 errors | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| off | `dafny0/GhostAutoInit.dfy` | 7 verified, 52 errors | 7 verified, 52 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny0/Includee.dfy` | 1 verified, 3 errors | 1 verified, 3 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny0/Inverses.dfy` | 31 verified, 3 errors | 31 verified, 3 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny0/Matrix-OOB.dfy` | 0 verified, 3 errors | 0 verified, 3 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny0/MultiSets.dfy` | 33 verified, 5 errors, 1 out of resource; 2 out of resource | 34 verified, 5 errors | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| off | `dafny0/Predicates.dfy` | 16 verified, 3 errors | 16 verified, 3 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny0/PrefixTypeSubst.dfy` | 12 verified, 5 errors | 12 verified, 5 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny0/Refinement.dfy` | 28 verified, 13 errors | 28 verified, 13 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny0/ResultInTypeNewtype.dfy` | 3 verified, 87 errors | 3 verified, 92 errors | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| off | `dafny0/ResultInTypeSubsetType.dfy` | 3 verified, 87 errors | 3 verified, 92 errors | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| off | `dafny0/Skeletons.dfy` | 4 verified, 1 error | 4 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny0/SubsetTypes.dfy` | 13 verified, 91 errors | 13 verified, 91 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny0/Termination.dfy` | 106 verified, 27 errors | 112 verified, 27 errors | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| off | `dafny0/Twostate-Verification.dfy` | 65 verified, 42 errors | 65 verified, 42 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny0/TypeAntecedents.dfy` | 5 verified, 3 errors | 5 verified, 3 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny1/MoreInduction.dfy` | 26 verified, 4 errors | 36 verified, 4 errors | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| off | `dafny1/SchorrWaite.dfy` | 272 verified, 0 errors | 282 verified, 0 errors, 1 out of resource; 2 out of resource | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| off | `dafny2/MinWindowMax.dfy` | 228 verified, 0 errors | 249 verified, 0 errors, 1 out of resource; 2 out of resource | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| off | `dafny2/SmallestMissingNumber-functional.dfy` | 53 verified, 0 errors, 7 out of resource; 8 out of resource | 85 verified, 0 errors, 6 out of resource; 7 out of resource | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| off | `dafny2/SnapshotableTrees.dfy` | 103 verified, 1 error, 4 out of resource; 5 out of resource | 126 verified, 1 error, 4 out of resource; 5 out of resource | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| off | `dafny2/pq-intrinsic-extrinsic.dfy` | 31 verified, 0 errors, 1 out of resource; 2 out of resource | 32 verified, 0 errors | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| off | `dafny3/Inc.dfy` | 8 verified, 12 errors | 8 verified, 12 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny3/WideTrees.dfy` | 5 verified, 1 error | 5 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny3/Zip.dfy` | 3 verified, 5 errors | 3 verified, 5 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny4/ACL2-extractor.dfy` | 32 verified, 0 errors | 40 verified, 0 errors | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| off | `dafny4/Bug88.dfy` | 0 verified, 2 errors | 0 verified, 2 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny4/Circ.dfy` | 2 verified, 1 error | 2 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny4/FlyingRobots.dfy` | 31 verified, 0 errors | 30 verified, 0 errors, 1 out of resource; 2 out of resource | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| off | `dafny4/GHC-MergeSort.dfy` | 55 verified, 0 errors | 54 verified, 1 error | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| off | `dafny4/Primes.dfy` | 15 verified, 0 errors | 14 verified, 0 errors, 1 out of resource; 2 out of resource | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| off | `dafny4/Regression16.dfy` | 5 verified, 0 errors | 3 verified, 0 errors, 2 out of resource; 3 out of resource | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| off | `dafny4/SoftwareFoundations-Basics.dfy` | 53 verified, 1 error | 54 verified, 1 error | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| off | `dafny4/gcd.dfy` | 95 verified, 0 errors, 2 out of resource; 3 out of resource | 105 verified, 0 errors, 2 out of resource; 3 out of resource | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| off | `dafny4/git-issue147.dfy` | 2 verified, 1 error | 2 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| off | `dafny4/regression-calc.dfy` | 0 verified, 2 errors | 0 verified, 2 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `git-issues/git-issue-1248.dfy` | 0 verified, 2 errors | 0 verified, 2 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `git-issues/git-issue-132-newtype-partial-total-universal-proof-nonvacuity.dfy` | 1 verified, 3 errors | 1 verified, 3 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `git-issues/git-issue-143-codatatype-abstemious-constructor-helper-positive.dfy` | 1 verified, 2 errors | 1 verified, 2 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `git-issues/git-issue-143-codatatype-destructive-guarded-observation-positive.dfy` | 1 verified, 2 errors | 1 verified, 2 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `git-issues/git-issue-145-nonvacuity.dfy` | 2 verified, 2 errors | 2 verified, 2 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `git-issues/git-issue-1989.dfy` | 17 verified, 7 errors | 17 verified, 7 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `git-issues/git-issue-19b.dfy` | 19 verified, 9 errors | 19 verified, 9 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `git-issues/git-issue-2211.dfy` | 2 verified, 1 error | 2 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| off | `git-issues/git-issue-2211a.dfy` | 2 verified, 1 error | 2 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| off | `git-issues/git-issue-2703.dfy` | 0 verified, 4 errors | 0 verified, 4 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `git-issues/git-issue-356-errors2.dfy` | 2 verified, 7 errors | 2 verified, 9 errors | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| off | `git-issues/git-issue-370.dfy` | 1 verified, 1 error | 1 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| off | `git-issues/git-issue-4035.dfy` | 2 verified, 4 errors | 2 verified, 4 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `git-issues/git-issue-4224.dfy` | 1 verified, 1 error | 1 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| off | `git-issues/git-issue-4787.dfy` | 1 verified, 1 error | 1 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| off | `git-issues/git-issue-600.dfy` | 2 verified, 1 error | 2 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| off | `git-issues/git-issue-6366.dfy` | 4 verified, 2 errors | 4 verified, 2 errors | Diagnostic locations only; exit and verification summary unchanged |
-| off | `git-issues/git-issue-6531.dfy` | 4 verified, 1 error | 4 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| off | `git-issues/git-issue-6533.dfy` | 1 verified, 1 error | 1 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| off | `git-issues/git-issue-6535.dfy` | 1 verified, 1 error | 1 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/AllLiteralsAxiom.dfy` | 4 verified, 0 errors | 3 verified, 1 error | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| on | `dafny0/AutoContracts.dfy` | 36 verified, 9 errors | 36 verified, 9 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/BindingGuards.dfy` | 10 verified, 6 errors | 10 verified, 6 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/CanCall.dfy` | 34 verified, 3 errors | 34 verified, 3 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/ChainingDisjointTests.dfy` | 4 verified, 4 errors | 4 verified, 4 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/CoPrefix.dfy` | 13 verified, 11 errors | 13 verified, 11 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/ComputationsNeg.dfy` | 5 verified, 5 errors | 5 verified, 5 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/CustomErrorMesage.dfy` | 1 verified, 9 errors | 1 verified, 9 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/DTypes.dfy` | 20 verified, 7 errors | 20 verified, 7 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/Datatypes.dfy` | 29 verified, 15 errors | 29 verified, 15 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/DefaultParameters.dfy` | 72 verified, 74 errors | 72 verified, 74 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/Definedness.dfy` | 9 verified, 37 errors | 9 verified, 37 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/ForLoops.dfy` | 23 verified, 25 errors | 23 verified, 28 errors | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| on | `dafny0/Fuel.dfy` | 31 verified, 39 errors | 31 verified, 23 errors | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| on | `dafny0/GhostAutoInit.dfy` | 7 verified, 52 errors | 7 verified, 52 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/Includee.dfy` | 1 verified, 3 errors | 1 verified, 3 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/Inverses.dfy` | 31 verified, 3 errors | 31 verified, 3 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/Matrix-OOB.dfy` | 0 verified, 3 errors | 0 verified, 3 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/MultiSets.dfy` | 33 verified, 5 errors, 1 out of resource; 2 out of resource | 34 verified, 5 errors | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| on | `dafny0/Predicates.dfy` | 16 verified, 3 errors | 16 verified, 3 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/PrefixTypeSubst.dfy` | 12 verified, 5 errors | 12 verified, 5 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/Refinement.dfy` | 28 verified, 13 errors | 28 verified, 13 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/ResultInTypeNewtype.dfy` | 3 verified, 87 errors | 3 verified, 92 errors | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| on | `dafny0/ResultInTypeSubsetType.dfy` | 3 verified, 87 errors | 3 verified, 92 errors | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| on | `dafny0/Skeletons.dfy` | 4 verified, 1 error | 4 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/SubsetTypes.dfy` | 13 verified, 91 errors | 13 verified, 91 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/Termination.dfy` | 106 verified, 27 errors | 112 verified, 27 errors | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| on | `dafny0/Twostate-Verification.dfy` | 65 verified, 42 errors | 65 verified, 42 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny0/TypeAntecedents.dfy` | 5 verified, 3 errors | 5 verified, 3 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny1/MoreInduction.dfy` | 26 verified, 4 errors | 36 verified, 4 errors | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| on | `dafny1/SchorrWaite.dfy` | 272 verified, 0 errors | 282 verified, 0 errors, 1 out of resource; 2 out of resource | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| on | `dafny2/MinWindowMax.dfy` | 228 verified, 0 errors | 250 verified, 0 errors | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| on | `dafny2/SmallestMissingNumber-functional.dfy` | 53 verified, 0 errors, 7 out of resource; 8 out of resource | 85 verified, 0 errors, 6 out of resource; 7 out of resource | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| on | `dafny2/SnapshotableTrees.dfy` | 103 verified, 1 error, 4 out of resource; 5 out of resource | 126 verified, 1 error, 4 out of resource; 5 out of resource | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| on | `dafny2/pq-intrinsic-extrinsic.dfy` | 31 verified, 0 errors, 1 out of resource; 2 out of resource | 32 verified, 0 errors | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| on | `dafny3/Inc.dfy` | 8 verified, 12 errors | 8 verified, 12 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny3/WideTrees.dfy` | 5 verified, 1 error | 5 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny3/Zip.dfy` | 3 verified, 5 errors | 3 verified, 5 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny4/ACL2-extractor.dfy` | 32 verified, 0 errors | 40 verified, 0 errors | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| on | `dafny4/Bug88.dfy` | 0 verified, 2 errors | 0 verified, 2 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny4/Circ.dfy` | 2 verified, 1 error | 2 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny4/FlyingRobots.dfy` | 31 verified, 0 errors | 30 verified, 0 errors, 1 out of resource; 2 out of resource | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| on | `dafny4/GHC-MergeSort.dfy` | 55 verified, 0 errors | 54 verified, 1 error | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| on | `dafny4/Primes.dfy` | 15 verified, 0 errors | 14 verified, 0 errors, 1 out of resource; 2 out of resource | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| on | `dafny4/Regression16.dfy` | 5 verified, 0 errors | 3 verified, 0 errors, 2 out of resource; 3 out of resource | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| on | `dafny4/SoftwareFoundations-Basics.dfy` | 53 verified, 1 error | 54 verified, 1 error | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| on | `dafny4/gcd.dfy` | 95 verified, 0 errors, 2 out of resource; 3 out of resource | 105 verified, 0 errors, 2 out of resource; 3 out of resource | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| on | `dafny4/git-issue147.dfy` | 2 verified, 1 error | 2 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| on | `dafny4/regression-calc.dfy` | 0 verified, 2 errors | 0 verified, 2 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `git-issues/git-issue-1248.dfy` | 0 verified, 2 errors | 0 verified, 2 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `git-issues/git-issue-132-newtype-partial-total-universal-proof-nonvacuity.dfy` | 1 verified, 3 errors | 1 verified, 3 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `git-issues/git-issue-143-codatatype-abstemious-constructor-helper-positive.dfy` | 1 verified, 2 errors | 1 verified, 2 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `git-issues/git-issue-143-codatatype-destructive-guarded-observation-positive.dfy` | 1 verified, 2 errors | 1 verified, 2 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `git-issues/git-issue-145-nonvacuity.dfy` | 2 verified, 2 errors | 2 verified, 2 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `git-issues/git-issue-1989.dfy` | 17 verified, 7 errors | 17 verified, 7 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `git-issues/git-issue-19b.dfy` | 19 verified, 9 errors | 19 verified, 9 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `git-issues/git-issue-2211.dfy` | 2 verified, 1 error | 2 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| on | `git-issues/git-issue-2211a.dfy` | 2 verified, 1 error | 2 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| on | `git-issues/git-issue-2703.dfy` | 0 verified, 4 errors | 0 verified, 4 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `git-issues/git-issue-356-errors2.dfy` | 2 verified, 7 errors | 2 verified, 9 errors | Checked-obligation count or verdict changed; declaration outcomes audited above |
-| on | `git-issues/git-issue-370.dfy` | 1 verified, 1 error | 1 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| on | `git-issues/git-issue-4035.dfy` | 2 verified, 4 errors | 2 verified, 4 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `git-issues/git-issue-4224.dfy` | 1 verified, 1 error | 1 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| on | `git-issues/git-issue-4787.dfy` | 1 verified, 1 error | 1 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| on | `git-issues/git-issue-600.dfy` | 2 verified, 1 error | 2 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| on | `git-issues/git-issue-6366.dfy` | 4 verified, 2 errors | 4 verified, 2 errors | Diagnostic locations only; exit and verification summary unchanged |
-| on | `git-issues/git-issue-6531.dfy` | 4 verified, 1 error | 4 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| on | `git-issues/git-issue-6533.dfy` | 1 verified, 1 error | 1 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
-| on | `git-issues/git-issue-6535.dfy` | 1 verified, 1 error | 1 verified, 1 error | Diagnostic locations only; exit and verification summary unchanged |
+| Scope | Additional axioms | Source or declaration |
+| --- | --- | --- |
+| Suite | off | `dafny1/PriorityQueue.dfy / PriorityQueue_Alternative.SiftDown (correctness)` |
+| Suite | off | `dafny3/GenericSort.dfy / Sort.InsertionSort (correctness)` |
+| Suite | off | `dafny2/COST-verif-comp-2011-4-FloydCycleDetect.dfy / Node.AnalyzeList (correctness)` |
+| Suite | off | `dafny1/ExtensibleArray.dfy / ExtensibleArray.Set (correctness)` |
+| Suite | off | `dafny4/Primes.dfy / AltPrimeDefinition (correctness)` |
+| Suite | off | `dafny0/Termination.dfy / ExtEvensSumToEven (correctness)` |
+| Suite | off | `dafny0/Array.dfy / Fill_All (correctness)` |
+| Suite | off | `dafny0/Array.dfy / Fill_True (correctness)` |
+| Suite | off | `dafny3/SimpleInduction.dfy / FibLemma_Alternative (correctness)` |
+| Library | off | `Std / Std.Base64.DecodeValidEncode1Padding (correctness)` |
+| Library | off | `Std / Std.JSON.Spec.EscapeUnicode (well-formedness)` |
+| Library | off | `Std / Std.Arithmetic.Mul.LemmaMulProperties (correctness)` |
+| Suite | on | `dafny1/PriorityQueue.dfy / PriorityQueue_Alternative.SiftDown (correctness)` |
+| Suite | on | `dafny2/COST-verif-comp-2011-4-FloydCycleDetect.dfy / Node.AnalyzeList (correctness)` |
+| Suite | on | `dafny1/ExtensibleArray.dfy / ExtensibleArray.Set (correctness)` |
+| Suite | on | `dafny4/Primes.dfy / AltPrimeDefinition (correctness)` |
+| Suite | on | `dafny0/Termination.dfy / ExtEvensSumToEven (correctness)` |
+| Suite | on | `dafny0/Array.dfy / Fill_All (correctness)` |
+| Suite | on | `dafny0/Array.dfy / Fill_True (correctness)` |
+| Suite | on | `dafny3/SimpleInduction.dfy / FibLemma_Alternative (correctness)` |
+| Suite | on | `dafny4/Lucas-up.dfy / Lucas_Theorem (correctness)` |
+| Suite | on | `dafny0/InductivePredicates.dfy / Alt.MyLemma_Nicer# (correctness)` |
+| Suite | on | `dafny0/InductivePredicates.dfy / Alt.MyLemma_NotSoNice# (correctness)` |
+| Suite | on | `dafny2/MajorityVote.dfy / FindWinner (correctness)` |
+| Library | on | `Std / Std.Arithmetic.Mul.LemmaMulProperties (correctness)` |
 
-The ordinary runner reports batches as verified/error counts. Added local checks can increase those counts; moving a diagnostic to the implicit check can change its reported line. Counts alone do not identify accepted source obligations. Existing negative declarations remain classified Invalid in these comparisons. Standard-library acceptance, ordinary required CI and independent human soundness review are still pending.
+## Complete changed-program review
+
+Every changed suite program row was reviewed against its native declaration outcomes. Diagnostic changes retain declaration verdicts; additional checked obligations can change verified/error counts without accepting a formerly erroneous declaration. Rows with outcome changes are covered above.
+
+| Source | Additional axioms off | Additional axioms on |
+| --- | --- | --- |
+| `dafny0/AutoContracts.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/BindingGuards.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/CanCall.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/ChainingDisjointTests.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/CoPrefix.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/ComputationsNeg.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/CustomErrorMesage.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/DTypes.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/Datatypes.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/DefaultParameters.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/Definedness.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/ForLoops.dfy` | proof/error counts changed; declaration outcomes unchanged | proof/error counts changed; declaration outcomes unchanged |
+| `dafny0/GhostAutoInit.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/Includee.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/Inverses.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/Matrix-OOB.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/MultiSets.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/NoTypeArgs.dfy` | resource regression | resource regression |
+| `dafny0/Predicates.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/PrefixTypeSubst.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/Refinement.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/ResultInTypeSubsetType.dfy` | proof/error counts changed; declaration outcomes unchanged | proof/error counts changed; declaration outcomes unchanged |
+| `dafny0/Skeletons.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/SubsetTypes.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/Termination.dfy` | proof/error counts changed; declaration outcomes unchanged | proof/error counts changed; declaration outcomes unchanged |
+| `dafny0/Twostate-Verification.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny0/TypeAntecedents.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny1/ExtensibleArray.dfy` | resource regression | resource regression |
+| `dafny1/ExtensibleArrayAuto.dfy` | resource regression | resource regression |
+| `dafny1/MoreInduction.dfy` | proof/error counts changed; declaration outcomes unchanged | proof/error counts changed; declaration outcomes unchanged |
+| `dafny1/SchorrWaite-stages.dfy` | resource regression | resource regression |
+| `dafny1/SchorrWaite.dfy` | proof/error counts changed; declaration outcomes unchanged | proof/error counts changed; declaration outcomes unchanged |
+| `dafny2/MinWindowMax.dfy` | resource regression | proof/error counts changed; declaration outcomes unchanged |
+| `dafny2/SmallestMissingNumber-functional.dfy` | proof/error counts changed; declaration outcomes unchanged | proof/error counts changed; declaration outcomes unchanged |
+| `dafny2/SnapshotableTrees.dfy` | proof/error counts changed; declaration outcomes unchanged | proof/error counts changed; declaration outcomes unchanged |
+| `dafny2/pq-intrinsic-extrinsic.dfy` | proved former resource exhaustion | proved former resource exhaustion |
+| `dafny3/Inc.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny3/WideTrees.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny3/Zip.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny4/ACL2-extractor.dfy` | proof/error counts changed; declaration outcomes unchanged | proof/error counts changed; declaration outcomes unchanged |
+| `dafny4/Bug88.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny4/Circ.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny4/FlyingRobots.dfy` | resource regression | resource regression |
+| `dafny4/NumberRepresentations.dfy` | resource regression | resource regression |
+| `dafny4/Primes.dfy` | resource regression | resource regression |
+| `dafny4/SoftwareFoundations-Basics.dfy` | proof/error counts changed; declaration outcomes unchanged | proof/error counts changed; declaration outcomes unchanged |
+| `dafny4/gcd.dfy` | proof/error counts changed; declaration outcomes unchanged | proof/error counts changed; declaration outcomes unchanged |
+| `dafny4/git-issue147.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `dafny4/regression-calc.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `git-issues/git-issue-1248.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `git-issues/git-issue-132-newtype-partial-total-universal-proof-nonvacuity.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `git-issues/git-issue-143-codatatype-abstemious-constructor-helper-positive.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `git-issues/git-issue-143-codatatype-destructive-guarded-observation-positive.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `git-issues/git-issue-145-nonvacuity.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `git-issues/git-issue-1989.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `git-issues/git-issue-19b.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `git-issues/git-issue-2211.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `git-issues/git-issue-2211a.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `git-issues/git-issue-2703.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `git-issues/git-issue-370.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `git-issues/git-issue-4035.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `git-issues/git-issue-4224.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `git-issues/git-issue-4787.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `git-issues/git-issue-600.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `git-issues/git-issue-6366.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `git-issues/git-issue-6531.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `git-issues/git-issue-6533.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+| `git-issues/git-issue-6535.dfy` | diagnostic locations moved; declaration outcomes unchanged | diagnostic locations moved; declaration outcomes unchanged |
+
+Expected verdicts have not been changed. Ordinary required CI, complete regression integration, development porting, end-to-end invariance and independent human soundness review remain pending. This report records complete native comparisons with regressions, not merge or release acceptance. AI assisted the implementation and validation.
