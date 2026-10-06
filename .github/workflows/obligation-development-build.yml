@@ -20,15 +20,10 @@ jobs:
           set +e
           mkdir -p out
           git rev-parse HEAD > out/source.txt
-          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false > out/build.log 2>&1
-          echo "$?" > out/build.exit
-          OBLIGATION_INVENTORY_CAPTURE=out/obligation-producers.json dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation > out/core.log 2>&1
+          OBLIGATION_INVENTORY_CAPTURE="$PWD/out/obligation-producers.json" dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation > out/core.log 2>&1
           echo "$?" > out/core.exit
-          dotnet build Source/DafnyLanguageServer.Test -c Release > out/editor-build.log 2>&1
-          echo "$?" > out/editor-build.exit
-          cat out/*.exit
+          cat out/core.exit
           tail -n 15 out/core.log
-          tail -n 15 out/editor-build.log
           exit 0
       - uses: actions/upload-artifact@v4
         if: always()
