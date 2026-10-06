@@ -825,9 +825,9 @@ namespace Microsoft.Dafny {
       var beforeOutTrackers = DefiniteAssignmentTrackers;
       m.Outs.ForEach(p => AddExistingDefiniteAssignmentTracker(p, m.IsGhost));
       // translate the body
-      var bodyBuilder = options.Get(CommonOptionBag.ConsistentObligationChecks)
-        ? builder.WithContext(builder.Context with { ReturnPosition = false }) : builder;
-      TrStmt(m.Body, bodyBuilder, localVariables, etran);
+      // Keep the legacy return context: terminal reveal hints must remain visible
+      // to existing checks and to the local postcondition checks appended below.
+      TrStmt(m.Body, builder, localVariables, etran);
       m.Outs.ForEach(p => CheckDefiniteAssignmentReturn(m.Body.EndToken, p, builder));
       if (m is { FunctionFromWhichThisIsByMethodDecl: { ByMethodTok: { } } fun }) {
         AssumeCanCallForByMethodDecl(m, builder);

@@ -104,7 +104,10 @@ public partial class BoogieGenerator {
         if (piece.Tok.IsInherited(currentModule)) {
           check = BplImp(new Bpl.IdentifierExpr(returnOrigin, "$_reverifyPost", Bpl.Type.Bool), check);
         }
-        builder.Add(AssertAndForget(builder.Context, new NestedOrigin(returnOrigin, piece.Tok), check, description));
+        // Checked procedure ensures publish each proved piece to the continuation.
+        // Keep that policy for their local copies; explicit split assertions retain
+        // their separate check-and-forget policy.
+        builder.Add(Assert(new NestedOrigin(returnOrigin, piece.Tok), check, description, builder.Context));
       }
       Bpl.Expr guard = ensures.E.Origin.IsInherited(currentModule) ||
         lowering.Pieces.Any(piece => piece.IsChecked && piece.Tok.IsInherited(currentModule))
