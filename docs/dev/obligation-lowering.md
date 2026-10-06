@@ -141,14 +141,16 @@ This local argument does not yet establish the required end-to-end invariance or
 matching closure. Those claims require acceptance evidence after the preservation
 revision, not evidence from the superseded fuel-policy implementation.
 
-The current opt-in method-body translation overrides `ReturnPosition` to false.
-That adds scope pushes/pops at terminal statements and proof hints, including
-pops between reveals and existing checks in the library. Boogie's
+Method and forall proof-body translation preserve the legacy `ReturnPosition`
+context. Added checks do not force terminal bodies or calculation hints into a
+new scope. Reveals retained by the legacy translation remain available to the
+existing checks and appended local checks; nonterminal scopes retain their
+existing pushes and pops. Boogie's
 [scope commands](https://github.com/erniecohen/boogie/blob/v3.5.5%2Breview.37e4435d/Source/Core/AST/Commands/ChangeScope.cs)
-affect hide/reveal availability. Preserving checked formulas and literal fuel
-indices does not prove preservation of that environment. The causal effect of
-this override on the current library failures remains to be isolated; the local
-recipe arguments above do not establish end-to-end visibility preservation.
+affect hide/reveal availability, so preservation includes command scope as well
+as checked formulas and literal fuel indices. The preceding candidate's opt-in
+context overrides caused the three documented definition-visibility failures.
+Native validation of the correction is required before claiming their repair.
 
 Guards and frozen-variable equalities must be included when comparing different
 front ends; they cannot be silently removed by the comparison tool.
@@ -199,7 +201,7 @@ hash. This is a source coverage gate, not a proof of every helper's semantics.
 | statement-wf-calculations | source calc/assign-such-that checks share splitter; update/existence/heap transition checks retain specialized rules |
 | opaque-block-contracts | declared block ensures via split core; block frame/WF and visibility scopes retained |
 | let-permissions | exact bindings and separately justified Skolem permissions; self-call context preserved; no witness conflation |
-| visibility | reveal/hide availability facts; return-position override adds scopes whose preservation remains under review |
+| visibility | reveal/hide availability facts and legacy return-position scope context retained |
 | value-translation | original arithmetic/logical operand and fuel representation; no assertion recipe guessed from a value |
 | value-permission-translation | heaps/arrow requires/quantifier guards and can-call traversal; values retain original semantics and complete context |
 | extreme-prefix-contracts | prefix lemma/predicate proof rule and rank; existing specialized proof construction retained |
@@ -249,9 +251,9 @@ cases. Historical reports are baselined before interpreting a success as a fix.
 In #100, the final explicit assertion supplies a local postcondition check and
 its permitted quantified summary before the procedure's ensures check. The
 enabled method-exit adapter supplies that same local recipe without changing
-the source. The forall proof body also retains an obligation continuation when
-it is the method's final statement; its local scopes no longer depend on a later
-assertion. The original checked procedure ensures and quantified export remain.
+the source. The forall proof body retains its legacy scope context, including
+when it is the method's final statement. The original checked procedure ensures
+and quantified export remain.
 The recorded successful reproducer uses one ordinary batch for the lemma; a
 new assertion-isolation setting or fresh per-assertion budget is not its repair.
 

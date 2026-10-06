@@ -41,6 +41,12 @@ for refresh in [False,True]:
 print("PASS implicit subset constraints")
 for refresh in [False,True]:
  for axioms in [False,True]:
+  for enabled in [False,True]:
+   code,output=verify("terminal-reveal-scope",refresh,axioms,enabled=enabled)
+   assert code==0,output
+print("PASS legacy terminal reveal scopes")
+for refresh in [False,True]:
+ for axioms in [False,True]:
   for name in ["negative-subset","negative-guarded-constraint","negative-subset-vacuity",
     "negative-self-postcondition","negative-self-postcondition-let","negative-allocation-vacuity",
     "negative-old-argument","negative-forall","negative-higher-precondition","negative-ordered-contract",

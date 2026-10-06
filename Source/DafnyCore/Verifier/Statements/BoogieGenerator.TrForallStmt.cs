@@ -548,13 +548,9 @@ public partial class BoogieGenerator {
     PathAsideBlock(forallStmt.Origin, ensuresDefinedness, definedness);
 
     if (forallStmt.Body != null) {
-      // The proof body has an obligation continuation even when its containing
-      // statement is last in the method. Keep its scope independent of a later
-      // explicit assertion; no assertion batches or exporter premises change.
-      var bodyBuilder = options.Get(CommonOptionBag.ConsistentObligationChecks)
-        ? definedness.WithContext(definedness.Context with { ReturnPosition = false })
-        : definedness;
-      TrStmt(forallStmt.Body, bodyBuilder, locals, etran);
+      // Preserve the legacy proof-body scope, including definitions revealed
+      // for the existing forall postcondition checks that follow the body.
+      TrStmt(forallStmt.Body, definedness, locals, etran);
 
       // check that postconditions hold
       foreach (var ens in ConjunctsOf(forallStmt.Ens)) {
