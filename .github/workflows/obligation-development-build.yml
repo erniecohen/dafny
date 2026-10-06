@@ -20,7 +20,7 @@ jobs:
           set +e
           mkdir -p out
           git rev-parse HEAD > out/source.txt
-          OBLIGATION_INVENTORY_CAPTURE="$PWD/out/obligation-producers.json" dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation > out/core.log 2>&1
+          dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation > out/core.log 2>&1
           echo "$?" > out/core.exit
           cat out/core.exit
           tail -n 15 out/core.log
