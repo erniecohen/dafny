@@ -5,40 +5,60 @@ is experimental and default off. It has not been merged or released.
 The local arguments and producer classifications are in
 [obligation-lowering.md](obligation-lowering.md).
 
-## Preservation revision: focused evidence only
+## Exit-publication preservation: focused evidence only
 
 The fuel/polarity rewrite in the previously tested candidate was withdrawn. The
-revised source restores the original expression and splitter fuel rules, retains
-original checked cast and allocation formulas, and adds assertion-style checking
-without replacing those formulas. Preservation regressions compare actual
-checked formulas, including fuel-indexed applications and negative universal
-antecedents.
+preservation source restores the original expression and splitter fuel rules,
+retains original checked cast and allocation formulas, and adds assertion-style
+checking without replacing those formulas.
 
-The [development build](https://github.com/erniecohen/dafny/actions/runs/37394258403)
-passed all 33 focused structural checks; its
-[normal producer inventory gate](https://github.com/erniecohen/dafny/actions/runs/37395195252)
-also passed all 33. The
-[supported build](https://github.com/erniecohen/dafny/actions/runs/37394913998)
-built both supported native platforms and passed all 35 focused structural
-checks. After the reviewed registry update, the
-[supported normal inventory gate](https://github.com/erniecohen/dafny/actions/runs/37395725242)
-passed all 35. These build probes did not execute a solver.
+The added method-exit checks now retain the ordinary publication policy of
+checked procedure ensures. Copying the split explicit-assert emitter had
+suppressed earlier proved pieces in the continuation. The correction retains
+every checked formula, fuel term, summary and inherited guard; explicit split
+assertions keep their original check-and-forget behavior. Structural regressions
+compare both the checked expressions and their command publication policies.
 
-Focused verification of the preservation revision confirms that the original
-issue #100 completes at its unchanged resource ceiling in the default resolver,
-with additional axioms off and seed zero. All 36 positive, negative and
-non-vacuity controls have their expected outcomes across both resolvers, with
-additional axioms off and seed zero. The three focused default-off programs
-retain their operational Boogie, per-batch verdicts and resources. This is not
-suite or library acceptance. AllLiteralsAxiom and GHC-MergeSort still have the
-postcondition regressions; solver replays return unknown with incomplete
-quantifiers. The fuel correction alone does not repair those failures.
+The [supported build and normal inventory gate](https://github.com/erniecohen/dafny/actions/runs/37427679277)
+built both native platforms and the editor assembly, and passed all 39 focused
+structural checks. The captured producer inventory matches the reviewed registry.
+This build probe did not execute a solver.
 
-The evidence below describes the superseded candidate and does not validate this
-revision. Final suite/library comparisons and end-to-end invariance remain
-pending. The current preservation product is
-`5a3abf21cdec4bec525b7c3bc4287133980fa3dd`, reporting
-`4.11.0+fcb2042d.review.32a7e4ae` on the supported line.
+Fresh focused native verification confirms the unchanged original issue #100,
+AllLiteralsAxiom and GHC-MergeSort with the option enabled, at the unchanged
+resource ceiling, default resolver, additional axioms off and seed zero. Both
+former postcondition regressions are repaired in this scope. The generic solver
+reason `incomplete quantifiers` did not identify their cause; the controlled
+Boogie comparison isolated the command publication difference.
+
+All 36 positive, negative and non-vacuity controls have their expected outcomes
+across both resolvers, with additional axioms off and seed zero. The three focused
+default-off programs retain their operational Boogie and complete named batch
+outcome/resource multisets. This is focused evidence, not suite or library
+acceptance, and does not establish uniform superiority of the enabled path.
+
+The complete registered issue #100 gate also passed all 198 expected native
+observations. This covers both resolver modes and both additional-axiom settings,
+ordinary and isolated negative controls, and project/CLI option precedence. The
+private launcher adapter records native resource logs and permits only the
+registered negative-forall fixture's expected missing-trigger warning; its
+proof inputs and expected results are unchanged. This is registered-regression
+evidence, not full repository acceptance.
+
+The current supported product is `0dff159b59c5980f6a32a2a60a256226dd04cb88`;
+the build source is `b428bb7d34fdd7c57c5b2f1f1818a73ca90ffd51`. It reports
+`4.11.0+fcb2042d.review.32a7e4ae`. The existing version calculation hashes
+modified upstream files, so this change to files added by the feature retains
+the prior suffix. Product/build commits and binary hashes identify the revision;
+the version string alone is insufficient.
+
+The development draft remains at the preceding preservation revision; its
+[build](https://github.com/erniecohen/dafny/actions/runs/37394258403) and
+[normal inventory gate](https://github.com/erniecohen/dafny/actions/runs/37395195252)
+passed all 33 focused checks. The method-exit follow-up still needs development
+porting and CI. The evidence below describes the superseded candidate and does
+not validate the current source. Complete suite/library comparisons,
+end-to-end invariance and independent soundness review remain pending.
 
 ## Source boundaries
 
@@ -81,7 +101,7 @@ establish development-line verifier acceptance.
 
 ## Outstanding acceptance
 
-The current full suite contains 1,161 verifier programs. Both additional-axiom
+The superseded full suite contains 1,161 verifier programs. Both additional-axiom
 settings are complete: default-off matches all program verdicts and recorded
 batch resource counts. The enabled outcome and diagnostic changes are listed
 in [obligation-suite-comparison.md](obligation-suite-comparison.md).
@@ -93,9 +113,11 @@ No expected-verdict table has been changed for this work. The new registered
 program still needs its expected row captured through the ordinary CI artifact
 procedure; the exact-baseline comparison does not replace that integration step.
 
-Focused enabled checks have identified completeness regressions in
-`AllLiteralsAxiom.calc_trick` and `GHC-MergeSort.sorted_sequences`, and resource
-regressions in SchorrWaite, MinWindowMax, Regression16, Primes and FlyingRobots.
+The superseded enabled candidate had completeness regressions in
+`AllLiteralsAxiom.calc_trick` and `GHC-MergeSort.sorted_sequences`; the current
+method-exit follow-up repairs those two in focused verification. Its earlier
+resource regressions in SchorrWaite, MinWindowMax, Regression16, Primes and
+FlyingRobots still require fresh measurement.
 Additional successful proofs cross the declared cost-review threshold.
 These are opt-in regressions to investigate and report, not intentional
 specification changes or reasons to replace expected verdicts.
