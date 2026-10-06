@@ -1,0 +1,46 @@
+name: Obligation preservation build probe
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - name: Record build and preservation checks without solver execution
+        run: |
+          set +e
+          mkdir -p out
+          git rev-parse HEAD > out/source.txt
+          sh Scripts/fetch-boogie-packages.sh > out/packages.log 2>&1
+          echo "$?" > out/packages.exit
+          sh .github/review/version.sh > out/version.txt 2>&1
+          version_result=$?
+          echo "$version_result" > out/version.exit
+          if [ "$version_result" -eq 0 ]; then
+            revision=$(sed -n 's/^revision=//p' out/version.txt)
+            for rid in linux-x64 osx-arm64; do
+              RUNTIME_IDENTIFIER="$rid" dotnet publish Source/Dafny/Dafny.csproj -c Release -r "$rid" --self-contained -o "out/dafny-$rid" -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$revision" > "out/build-$rid.log" 2>&1
+              echo "$?" > "out/build-$rid.exit"
+            done
+            OBLIGATION_INVENTORY_CAPTURE="$PWD/out/obligation-producers.json" dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation > out/core.log 2>&1
+            echo "$?" > out/core.exit
+            dotnet test Source/DafnyCore.Test -c Release --no-build --filter FullyQualifiedName~Obligation > out/core-inventory-gate.log 2>&1
+            echo "$?" > out/core-inventory-gate.exit
+            dotnet build Source/DafnyLanguageServer.Test -c Release > out/editor-build.log 2>&1
+            echo "$?" > out/editor-build.exit
+          fi
+          find out -name '*.pdb' -delete
+          cat out/*.exit
+          tail -n 15 out/core.log
+          tar -czf obligation-preservation-build.tar.gz out
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: obligation-preservation-build
+          path: obligation-preservation-build.tar.gz
+          retention-days: 30
