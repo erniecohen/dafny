@@ -27,13 +27,43 @@ public class ObligationLoweringTests {
   [Theory]
   [InlineData(false)]
   [InlineData(true)]
-  public async Task ForallProofBodyHasAnObligationContinuation(bool refresh) {
-    const string body = "lemma L() ensures true { forall x: int ensures true { if x == 0 {} } }";
+  public async Task TerminalForallProofPreservesLegacyRevealScopes(bool refresh) {
+    const string body = "ghost function F(i:int):int { i } lemma L() { hide *; " +
+      "forall x: int ensures F(x)==x { calc { F(x); == { { reveal F; } } x; } } }";
     var legacy = ObligationFingerprint.Emit(await Translate(body, false, refresh));
     var enabled = ObligationFingerprint.Emit(await Translate(body, true, refresh));
+    Assert.Contains("reveal ", legacy);
     Assert.DoesNotContain("push;", legacy);
-    Assert.Contains("push;", enabled);
-    Assert.Contains("pop;", enabled);
+    Assert.DoesNotContain("pop;", legacy);
+    Assert.DoesNotContain("push;", enabled);
+    Assert.DoesNotContain("pop;", enabled);
+  }
+
+  [Theory]
+  [InlineData(false, false)]
+  [InlineData(false, true)]
+  [InlineData(true, false)]
+  [InlineData(true, true)]
+  public async Task MethodBodyPreservesLegacyRevealScopes(bool refresh, bool terminal) {
+    var source = "ghost function F(i:int):int { i } lemma L(i:int,b:bool) { hide *; " +
+      "if b { calc { F(i); == { { reveal F; } } i; } } " +
+      "else { calc { F(i); == { { reveal F; } } i; } } " +
+      (terminal ? "}" : "assert true; }");
+    async Task<string[]> ScopeCommands(bool enabled) {
+      var text = ObligationFingerprint.Emit(await Translate(source, enabled, refresh));
+      return text.Split('\n').Select(line => line.Trim())
+        .Where(line => line is "push;" or "pop;" ||
+          line.StartsWith("hide ") || line.StartsWith("reveal ")).ToArray();
+    }
+    var legacy = await ScopeCommands(false);
+    Assert.Contains(legacy, command => command.StartsWith("reveal "));
+    if (terminal) {
+      Assert.DoesNotContain("pop;", legacy);
+    } else {
+      Assert.Contains("push;", legacy);
+      Assert.Contains("pop;", legacy);
+    }
+    Assert.Equal(legacy, await ScopeCommands(true));
   }
 
   [Fact]
@@ -97,6 +127,47 @@ public class ObligationLoweringTests {
       ObligationFingerprint.Expression(Lambda("y", true)));
     Assert.NotEqual(ObligationFingerprint.Expression(Lambda("x", true)),
       ObligationFingerprint.Expression(Lambda("y", false)));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task MethodExitPreservesTheCheckedEnsuresPublicationPolicy(bool refresh) {
+    const string source = "ghost predicate P(x:int) { x>=0 && x<=100 } " +
+      "lemma L(x:int) requires 0<=x<=100 ensures P(x) {}";
+    var enabled = await Translate(source, true, refresh);
+    var implementation = enabled.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var localChecks = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+      .Where(c => c.Description is EnsuresDescription).ToList();
+    Assert.True(localChecks.Count >= 2);
+    Assert.All(localChecks, check =>
+      Assert.Equal(-1, Bpl.QKeyValue.FindIntAttribute(check.Attributes, "subsumption", -1)));
+
+    var legacy = await Translate(source, false, refresh);
+    var procedure = legacy.SelectMany(p => p.TopLevelDeclarations).OfType<Bpl.Procedure>()
+      .Single(p => p.Name == implementation.Name);
+    var originalChecks = procedure.Ensures.Where(ensures => !ensures.Free).ToList();
+    Assert.All(originalChecks, check =>
+      Assert.Equal(-1, Bpl.QKeyValue.FindIntAttribute(check.Attributes, "subsumption", -1)));
+    Assert.Equal(originalChecks.Select(check => ObligationFingerprint.Expression(check.Condition)).ToArray(),
+      localChecks.Select(check => ObligationFingerprint.Expression(check.Expr)).ToArray());
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task ExplicitSplitAssertionsRetainTheirCheckAndForgetPolicy(bool refresh) {
+    const string source = "ghost predicate P(x:int) { x>=0 && x<=100 } " +
+      "lemma L(x:int) requires 0<=x<=100 { assert P(x); }";
+    foreach (var enabled in new[] { false, true }) {
+      var programs = await Translate(source, enabled, refresh);
+      var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+      var checks = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+        .Where(c => c.Description is AssertStatementDescription).ToList();
+      Assert.True(checks.Count >= 2);
+      Assert.All(checks, check =>
+        Assert.Equal(0, Bpl.QKeyValue.FindIntAttribute(check.Attributes, "subsumption", -1)));
+    }
   }
 
   [Fact]

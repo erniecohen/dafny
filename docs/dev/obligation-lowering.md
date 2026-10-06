@@ -123,6 +123,20 @@ returns before publishing their summary; procedure ensures remain checked.
 Inherited conditions retain the `$_reverifyPost` guard. Filtering, dependency
 information and source/error provenance remain on the assertion sinks.
 
+The local method-exit copies retain ordinary checked-ensures subsumption: each
+checked piece becomes a premise for later checks. Reusing the split explicit
+assertion emitter here would suppress that premise and weaken the continuation
+prefix. All pieces still have to be proved, so publishing them afterward is the
+existing sound proof-cut rule. Explicit split assertions retain their original
+check-and-forget behavior. Formula equality alone does not establish command
+publication equivalence; the structural gate checks both for method exits.
+
+Method and forall proof-body translation preserve the legacy `ReturnPosition`
+context. Added checks do not force terminal bodies or calculation hints into a
+new scope. Reveals retained by the legacy translation remain available to the
+outer proof, and ordinary nonterminal scopes still close. This preserves existing
+visibility; it does not expose an otherwise hidden definition.
+
 For an immediate duplicate, comparisons include the complete checking context,
 including the original statement/fuel state, guards and already checked WF prefix.
 The additional checker uses the existing assertion recipe. The first check establishes
@@ -229,9 +243,8 @@ cases. Historical reports are baselined before interpreting a success as a fix.
 In #100, the final explicit assertion supplies a local postcondition check and
 its permitted quantified summary before the procedure's ensures check. The
 enabled method-exit adapter supplies that same local recipe without changing
-the source. The forall proof body also retains an obligation continuation when
-it is the method's final statement; its local scopes no longer depend on a later
-assertion. The original checked procedure ensures and quantified export remain.
+the source. Method and forall proof bodies retain their previous reveal scope.
+The original checked procedure ensures and quantified export remain.
 The recorded successful reproducer uses one ordinary batch for the lemma; a
 new assertion-isolation setting or fresh per-assertion budget is not its repair.
 
