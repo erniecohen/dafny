@@ -226,8 +226,7 @@ namespace Microsoft.Dafny {
 
     private Bpl.AssumeCmd TrAssumeCmdWithDependencies(ExpressionTranslator etran, Bpl.IToken tok, Expression dafnyExpr, string comment = null,
       bool warnWhenUnused = false, Bpl.QKeyValue attributes = null) {
-      return TrAssumeCmdWithDependenciesAndExtend(etran, tok, dafnyExpr, e => e, comment, warnWhenUnused, attributes,
-        VerificationExpressionUse.Summary);
+      return TrAssumeCmdWithDependenciesAndExtend(etran, tok, dafnyExpr, e => e, comment, warnWhenUnused, attributes);
     }
 
     // This method translates a Dafny expression to a Boogie expression,
@@ -237,14 +236,8 @@ namespace Microsoft.Dafny {
     // and then adds information to track that assumption as a potential
     // proof dependency.
     public Bpl.AssumeCmd TrAssumeCmdWithDependenciesAndExtend(ExpressionTranslator etran, Bpl.IToken tok, Expression dafnyExpr, Func<Bpl.Expr, Bpl.Expr> extendExpr,
-      string comment = null, bool warnWhenUnused = false, Bpl.QKeyValue attributes = null,
-      VerificationExpressionUse verificationUse = VerificationExpressionUse.Value, bool positive = true) {
-      // The extension may be an equality binding a computed Boolean value.
-      // Only a proposition publisher opts into Summary; a negated publisher
-      // also supplies its polarity. Never infer the use from the value's type.
-      var expr = options.Get(CommonOptionBag.ConsistentObligationChecks)
-        ? etran.WithVerificationUse(verificationUse).WithVerificationPolarity(positive).TrExpr(dafnyExpr)
-        : etran.TrExpr(dafnyExpr);
+      string comment = null, bool warnWhenUnused = false, Bpl.QKeyValue attributes = null) {
+      var expr = etran.TrExpr(dafnyExpr);
       var cmd = TrAssumeCmd(tok, extendExpr(expr), attributes);
       proofDependencies?.AddProofDependencyId(cmd, dafnyExpr.Origin, new AssumptionDependency(warnWhenUnused, comment, dafnyExpr));
       return cmd;

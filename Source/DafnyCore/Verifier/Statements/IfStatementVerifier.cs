@@ -38,8 +38,7 @@ public class IfStatementVerifier {
     IfCmd elseIf = null;
     var elseBuilder = new BoogieStmtListBuilder(generator, generator.Options, builder.Context);
     if (stmt.IsBindingGuard) {
-      elseBuilder.Add(generator.TrAssumeCmdWithDependenciesAndExtend(etran, guard.Origin, guard, Expr.Not, "if statement binding guard",
-        verificationUse: VerificationExpressionUse.Summary, positive: false));
+      elseBuilder.Add(generator.TrAssumeCmdWithDependenciesAndExtend(etran, guard.Origin, guard, Expr.Not, "if statement binding guard"));
     }
     if (stmt.Els == null) {
       elseList = elseBuilder.Collect(stmt.Origin);

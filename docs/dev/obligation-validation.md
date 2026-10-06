@@ -5,6 +5,17 @@ is experimental and default off. It has not been merged or released.
 The local arguments and producer classifications are in
 [obligation-lowering.md](obligation-lowering.md).
 
+## Preservation revision pending validation
+
+The fuel/polarity rewrite in the previously tested candidate was withdrawn. The
+revised source restores the original expression and splitter fuel rules, retains
+original checked cast and allocation formulas, and adds assertion-style checking
+without replacing those formulas. Preservation regressions compare the actual
+checked formulas, including fuel-indexed applications and negative universal
+antecedents. The evidence below describes the superseded candidate and does not
+validate this revision. Build, structural, focused solver and final comparison
+gates must be recorded for the new source before acceptance.
+
 ## Source boundaries
 
 * Development starts at `858e4bfbcf00fbf0146255c0a4b0efdfc4deb66f`.

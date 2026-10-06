@@ -19,14 +19,56 @@ public partial class BoogieGenerator {
   private PropositionLowering LowerProposition(BodyTranslationContext context, Expression condition,
     ExpressionTranslator etran, bool applyInduction = true, int heightLimit = int.MaxValue,
     ObligationPreparation preparation = ObligationPreparation.DeclaredContract, Bpl.Expr guard = null) {
-    var checking = etran.WithVerificationUse(VerificationExpressionUse.Check);
-    var pieces = new List<SplitExprInfo>();
-    var split = TrSplitExpr(context, condition, pieces, true, heightLimit, applyInduction, checking);
-    var summary = etran.WithVerificationUse(VerificationExpressionUse.Summary).TrExpr(condition);
-    var lowering = new PropositionLowering(condition,
-      new PropositionInputs(context, etran, applyInduction, heightLimit, preparation, guard), pieces, summary, split);
-    flags.ObligationLowered?.Invoke(lowering);
-    return lowering;
+    var explicitAssertion = preparation == ObligationPreparation.CheckedExpression;
+    var savedStatement = stmtContext;
+    var savedAdjustment = adjustFuelForExists;
+    // Extra implicit checks start with the existing assertion policy. The
+    // original checks and explicit assertions keep their original translator,
+    // statement context, fuel choices and splitting decisions.
+    var checking = explicitAssertion ? etran : etran.CloneForObligation();
+    try {
+      if (!explicitAssertion) {
+        stmtContext = StmtType.ASSERT;
+        adjustFuelForExists = true;
+      }
+      var pieces = new List<SplitExprInfo>();
+      var split = TrSplitExpr(context, condition, pieces, true, heightLimit, applyInduction, checking);
+      if (!split) {
+        // TrAssertCondition has always translated the unsplit condition again.
+        // Keep that exact formula, rather than replacing it by the splitter's
+        // tentative result (which may have consumed a fuel adjustment).
+        pieces.Clear();
+        pieces.Add(ToSplitExprInfo(SplitExprInfo.K.Both, checking.TrExpr(condition)));
+      }
+      // Explicit assertions retain their existing statement publication path.
+      // Construct a comparison summary there only for the structural observer.
+      var summary = !explicitAssertion || flags.ObligationLowered != null
+        ? AssertionSummary(condition, pieces, split, checking) : null;
+      var lowering = new PropositionLowering(condition,
+        new PropositionInputs(context, etran, applyInduction, heightLimit, preparation, guard), pieces, summary, split);
+      flags.ObligationLowered?.Invoke(lowering);
+      return lowering;
+    } finally {
+      if (!explicitAssertion) {
+        stmtContext = savedStatement;
+        adjustFuelForExists = savedAdjustment;
+      }
+    }
+  }
+
+  private Bpl.Expr AssertionSummary(Expression condition, IReadOnlyList<SplitExprInfo> pieces,
+    bool split, ExpressionTranslator etran) {
+    if (!split) { return pieces[0].E; }
+    var savedStatement = stmtContext;
+    var savedAdjustment = adjustFuelForExists;
+    try {
+      stmtContext = StmtType.ASSUME;
+      adjustFuelForExists = true;
+      return etran.CloneForObligation().TrExpr(condition);
+    } finally {
+      stmtContext = savedStatement;
+      adjustFuelForExists = savedAdjustment;
+    }
   }
 
   private void CheckPropositionUnderGuard(IOrigin origin, Expression condition, Bpl.Expr guard,
@@ -83,41 +125,26 @@ public partial class BoogieGenerator {
     if (legacy == null || !options.Get(CommonOptionBag.ConsistentObligationChecks)) {
       return legacy;
     }
-    return ExplicitAllocationPredicate(origin, value, type, etran.HeapExpr);
+    return BplAnd(legacy, ExplicitAllocationPredicate(origin, value, type, etran.HeapExpr));
   }
 
   private Bpl.Expr ExplicitAllocationPredicate(IOrigin origin, Bpl.Expr value, Type type, Bpl.Expr heap) =>
     MkIsAllocBox(BoxIfNecessary(origin, value, type), type, heap);
 
   public partial class ExpressionTranslator {
-    internal ExpressionTranslator WithVerificationUse(VerificationExpressionUse use) =>
-      WithVerificationContext(new VerificationExpressionContext(use)).StartFuelTracking();
-
-    private ExpressionTranslator WithVerificationContext(VerificationExpressionContext context) =>
+    internal ExpressionTranslator CloneForObligation() =>
       CloneExpressionTranslator(this, BoogieGenerator, Predef, HeapExpr, This,
-        applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, readsFrame,
-        modifiesFrame, stripLits, context);
+        applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster,
+        readsFrame, modifiesFrame, stripLits);
 
     internal ExpressionTranslator WithVerificationOldHeap(Bpl.Expr oldHeap) {
-      var clone = WithVerificationContext(verificationContext);
+      var clone = CloneForObligation();
       var old = new ExpressionTranslator(BoogieGenerator, Predef, oldHeap, This,
         applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, scope,
-        readsFrame, modifiesFrame, stripLits, verificationContext) { fuelUsage = fuelUsage };
+        readsFrame, modifiesFrame, stripLits);
       old.oldEtran = old;
       clone.oldEtran = old;
       return clone;
     }
-
-    internal ExpressionTranslator WithVerificationPolarity(bool positive) => verificationContext == null
-      ? this : WithVerificationContext(verificationContext with { Positive = positive });
-
-    internal ExpressionTranslator WithSelectedVerificationFuel() => verificationContext == null
-      ? this : WithVerificationContext(verificationContext.FuelSelected());
-
-    internal ExpressionTranslator AsVerificationValue() => verificationContext == null
-      ? this : WithVerificationContext(verificationContext with { Use = VerificationExpressionUse.Value });
-
-    private ExpressionTranslator NegateVerificationPolarity() => verificationContext == null
-      ? this : WithVerificationContext(verificationContext.Negated());
   }
 }

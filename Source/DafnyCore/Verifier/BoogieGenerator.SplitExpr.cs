@@ -46,13 +46,6 @@ namespace Microsoft.Dafny {
       Contract.Requires(splits != null);
       Contract.Requires(etran != null);
 
-      if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
-        etran = etran.WithVerificationPolarity(position).StartFuelTracking();
-        if (expr is QuantifierExpr) {
-          etran = etran.WithSelectedVerificationFuel();
-        }
-      }
-
       switch (expr) {
         case BoxingCastExpr castExpr: {
             var bce = castExpr;
@@ -142,8 +135,7 @@ namespace Microsoft.Dafny {
             } else if (bin.ResolvedOp == BinaryExpr.ResolvedOpcode.Imp) {
               // non-conditionally split these, so we get the source location to point to a subexpression
               if (position) {
-                var lhs = (options.Get(CommonOptionBag.ConsistentObligationChecks)
-                  ? etran.WithVerificationPolarity(!position) : etran).TrExpr(bin.E0);
+                var lhs = etran.TrExpr(bin.E0);
                 var ss = new List<SplitExprInfo>();
                 TrSplitExpr(context, bin.E1, ss, position, heightLimit, applyInduction, etran);
                 foreach (var s in ss) {
@@ -230,7 +222,7 @@ namespace Microsoft.Dafny {
             TrSplitExpr(context, ite.Els, ssElse, position, heightLimit, applyInduction, etran);
 
             var op = position ? BinaryOperator.Opcode.Imp : BinaryOperator.Opcode.And;
-            var test = etran.AsVerificationValue().TrExpr(ite.Test);
+            var test = etran.TrExpr(ite.Test);
             foreach (var s in ssThen) {
               // as the source location in the following implication, use that of the translated "s"
               splits.Add(ToSplitExprInfo(s.Kind, Bpl.Expr.Binary(s.E.tok, op, test, s.E)));
@@ -393,8 +385,7 @@ namespace Microsoft.Dafny {
                 if (needsTokenAdjustment) {
                   r.tok = new ForceCheckOrigin(expr.Origin);
                 }
-                if (options.Get(CommonOptionBag.ConsistentObligationChecks)
-                    ? !etranBoost.FuelWasUsed : etranBoost.Statistics_CustomLayerFunctionCount == 0) {
+                if (etranBoost.Statistics_CustomLayerFunctionCount == 0) {
                   // apparently, the LayerOffset(1) we did had no effect
                   splits.Add(ToSplitExprInfo(SplitExprInfo.K.Both, r));
                   return needsTokenAdjustment;
@@ -407,17 +398,14 @@ namespace Microsoft.Dafny {
             } else if (((position && expr is ExistsExpr) || (!position && expr is ForallExpr))) {
               // produce two translated versions of the quantifier, one that uses #1 functions (that is, layerOffset 0)
               // for checking and one that uses #2 functions (that is, layerOffset 1) for assuming.
-              if (!options.Get(CommonOptionBag.ConsistentObligationChecks)) {
-                adjustFuelForExists = false;
-              } // based on the above comment, we use the etran with correct fuel amount already. No need to adjust anymore.
+              adjustFuelForExists = false; // based on the above comment, we use the etran with correct fuel amount already. No need to adjust anymore.
               var etranBoost = etran.LayerOffset(1);
               var r = etran.TrExpr(expr);
               var needsTokenAdjustment = TrSplitNeedsTokenAdjustment(expr);
               if (needsTokenAdjustment) {
                 r.tok = new ForceCheckOrigin(expr.Origin);
               }
-              if (options.Get(CommonOptionBag.ConsistentObligationChecks)
-                    ? !etran.FuelWasUsed : etran.Statistics_CustomLayerFunctionCount == 0) {
+              if (etran.Statistics_CustomLayerFunctionCount == 0) {
                 // apparently, doesn't use layer
                 splits.Add(ToSplitExprInfo(SplitExprInfo.K.Both, r));
                 return needsTokenAdjustment;
@@ -440,8 +428,7 @@ namespace Microsoft.Dafny {
       } else {
         etran = etran.LayerOffset(1);
         translatedExpression = etran.TrExpr(expr);
-        splitHappened = options.Get(CommonOptionBag.ConsistentObligationChecks)
-          ? etran.FuelWasUsed : etran.Statistics_CustomLayerFunctionCount != 0;  // return true if the LayerOffset(1) came into play
+        splitHappened = etran.Statistics_CustomLayerFunctionCount != 0;  // return true if the LayerOffset(1) came into play
       }
       if (TrSplitNeedsTokenAdjustment(expr)) {
         translatedExpression.tok = new ForceCheckOrigin(expr.Origin);
@@ -579,9 +566,7 @@ namespace Microsoft.Dafny {
             }
 
             // body
-            // The free definition consequence is a value at the existing
-            // layer. Its checked subpropositions selected fuel separately.
-            var trBody = etran.AsVerificationValue().TrExpr(typeSpecializedBody);
+            var trBody = etran.TrExpr(typeSpecializedBody);
             trBody = CondApplyUnbox(trBody.tok, trBody, typeSpecializedResultType, expr.Type);
             // F#canCall(args) && F(args) && (b0 && b1 && b2)
             var fr = BplAnd(canCall, BplAnd(fargs, trBody));

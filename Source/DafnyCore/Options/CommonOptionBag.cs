@@ -71,7 +71,7 @@ public class CommonOptionBag {
     };
 
   public static readonly Option<bool> ConsistentObligationChecks = new("--consistent-obligation-checks", () => false,
-    "Use occurrence-local proposition lowering for assertions and matching implicit obligations.");
+    "Add assertion-style checking to matching implicit obligations while retaining the original checks and fuel rules.");
 
   public static readonly Option<bool> ManualLemmaInduction =
     new("--manual-lemma-induction", "Turn off automatic induction for lemmas.");
