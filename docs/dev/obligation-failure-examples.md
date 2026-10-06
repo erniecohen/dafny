@@ -1,11 +1,12 @@
-# Enabled obligation failure examples
+# Obligation failures and reveal-scope repair
 
 These examples were diagnosed in the preceding exit-publication product,
 identified in [obligation-suite-comparison.md](obligation-suite-comparison.md).
 The current correction removes both opt-in `ReturnPosition=false` overrides,
 preserving the legacy method and forall proof-body reveal scope. The unchanged
 Filter, Split and Base64 declarations now verify natively with the option on,
-with both additional-axiom settings and their original resource ceilings. The
+with both additional-axiom settings and their original resource ceilings.
+Complete unchanged standard-library runs confirm all three repairs. The
 baseline and default-off candidate retain identical outcomes and named batch
 resource counts in the focused comparison. No extra reveal was added to the
 library source.
@@ -83,9 +84,10 @@ Adding only `reveal DecodeRecursively, EncodeRecursively;` immediately after
 the method's `hide *` restores native success, including all three original
 failed checks. No contract, assertion or resource ceiling is changed.
 
-The inverse `DecodeEncodeRecursively` reports the corresponding failures at
-lines 416 and 420. Its baseline was already OutOfResource, so its move to Errors
-is not counted as a formerly successful declaration becoming unproved.
+The preceding enabled product also reported corresponding failures in the
+inverse `DecodeEncodeRecursively` at lines 416 and 420. Its baseline was already
+OutOfResource. The current reveal-scope correction verifies that unchanged
+declaration in both complete additional-axiom settings.
 
 ## Quantified power subtraction
 
@@ -122,8 +124,9 @@ original formula.
 
 The full table in [obligation-suite-comparison.md](obligation-suite-comparison.md)
 names all new resource failures. Every such run exhausts the original ceiling;
-none is accepted by increasing that ceiling. The following smaller examples
-are useful for further diagnosis:
+none is accepted by increasing that ceiling. The following smaller examples were resource failures in the preceding
+complete product and remain useful starting points for diagnosis. Their current
+verdicts are recorded separately in the complete comparison:
 
 * `dafny0/NoTypeArgs.dfy`, `Lemma<A>`, proves
   `reverse(concat(xs, ys)) == concat(reverse(ys), reverse(xs))`. Its match
@@ -182,16 +185,43 @@ Native per-check declaration capture confirms the defining `Filter` axiom is
 present at both original calculation checks in the baseline, absent at both
 failed enabled checks, and present again when the outer reveal is retained:
 
-| Original calculation line | Baseline | Enabled | Outer-reveal witness |
-| --- | --- | --- | --- |
-| 861 | defining axiom present; Valid | defining axiom absent; Invalid | defining axiom present; Valid |
-| 867 | defining axiom present; Valid | defining axiom absent; Invalid | defining axiom present; Valid |
+| Original calculation line | Baseline | Preceding enabled | Outer-reveal witness | Current enabled |
+| --- | --- | --- | --- | --- |
+| 861 | axiom present; Valid | axiom absent; Invalid | axiom present; Valid | axiom present; Valid |
+| 867 | axiom present; Valid | axiom absent; Invalid | axiom present; Valid | axiom present; Valid |
 
 The witness adds one source line, so its corresponding check locations are
 862 and 868. The actual pruned declarations, not just unpruned printed Boogie,
 are used for this comparison.
 All diagnostic copies retain the original checked
 procedure ensures; variants removing added checks are for diagnosis only.
-Reparsed Boogie observations do not establish native product acceptance. No
-product correction or expected-verdict update is included in this report.
-Resource regressions remain open. AI assisted the investigation.
+Reparsed Boogie observations do not establish native product acceptance. The
+current product removes both method and forall proof-body context overrides;
+native pruned captures confirm the defining axiom remains available at both
+original Filter checks under both additional-axiom settings. The regression
+suite also covers terminal forall/nested calculation reveals and ordinary
+nonterminal scope boundaries under both resolvers. Expected verdicts are unchanged.
+
+## Library resource variation after the correction
+
+The complete comparison also records `Arrays.BracketedToArray` exhausting its
+ceiling with additional axioms off, while verifying with them on. A filtered
+native comparison of the preceding and current enabled products verifies the
+unchanged declaration in all four observations. The captured solver streams
+contain the same formulas; the only textual difference moves the same existing
+`TWO_TO_THE_32` constant axiom among the other axioms. This control does not
+reproduce the complete-run failure or establish its exact cause.
+
+With additional axioms on, the fresh baseline proves
+`Objects.BracketedToObject`, while the default-off candidate exhausts its
+ceiling and matches the committed expectation. All emitted operational Boogie
+matches between baseline and default-off. The runner already documents resource
+variation from its default declaration order and calls for a repeat before
+assigning a near-limit verdict change to the product. The unchanged complete repeat returns that baseline declaration to the
+committed OutOfResource result, matching default-off. Complete operational
+Boogie is identical across both baseline/off runs. This confirms baseline
+variation without a source or binary change; controlled default-off library
+cost remains unaccepted.
+
+The separate quantified power regression and resource regressions remain open.
+AI assisted the investigation.

@@ -4,8 +4,8 @@ The change for [issue 100](https://github.com/erniecohen/dafny/issues/100)
 is experimental and default off. It has not been merged or released. Complete
 native full-suite and standard-library comparisons of the preceding
 exit-publication correction failed enabled completeness/performance and controlled
-library cost acceptance. Fresh complete comparisons of the reveal-scope
-correction are in progress. The local arguments and producer classifications are in
+library cost acceptance. Complete library comparisons of the reveal-scope
+correction are finished; fresh complete suite comparisons are in progress. The local arguments and producer classifications are in
 [obligation-lowering.md](obligation-lowering.md); the complete qualitative verdict
 review is in [obligation-suite-comparison.md](obligation-suite-comparison.md).
 
@@ -77,6 +77,53 @@ baseline/default-off batch/resource comparisons match. Actual native pruned
 declarations and solver inputs are retained with these results. These are
 complete focused checks, not full-suite acceptance.
 
+## Current complete standard-library comparisons
+
+Both additional-axiom settings complete all three native modes: baseline,
+candidate with the option off, and candidate with it on. Each mode retains all
+2,190 declaration rows and seven project/target-specific run rows. The existing
+project files, warning policy, resource ceilings and declaration order are unchanged.
+The gate completes normally and rejects product acceptance.
+
+The unchanged `EncodeDecodeRecursively`, `LemmaFilterDistributesOverConcat` and
+`WillSplitOnDelim` verify enabled in both settings. The inverse
+`DecodeEncodeRecursively` also verifies, from a baseline resource failure.
+`LemmaPowSubtractsAuto` still reports Errors. Four other declarations exhaust
+their ceilings with additional axioms off, and six with them on relative to the
+fresh baseline; the latter includes the baseline variation described below.
+Other still-successful declarations require cost review. No baseline Errors
+declaration becomes Correct, and expected verdicts are unchanged.
+
+With additional axioms off, every default-off library verdict matches the fresh
+baseline and committed expectations. With additional axioms on, the fresh
+baseline proves `Objects.BracketedToObject`, while candidate default-off exhausts
+its ceiling and matches the committed expectation. Its summary row also differs.
+All emitted operational Boogie matches between baseline and default-off, after
+excluding complete comment lines. Resource entries vary under the existing
+runner's declaration-order behavior. The required unchanged complete repeat finishes with all baseline and
+default-off verdicts matching the committed expectations, including resource
+exhaustion in this JSON declaration. Complete operational Boogie also matches
+across the original and repeated baseline/off runs. The earlier baseline success
+therefore varies under unchanged inputs; this is recorded rather than accepted
+as controlled default-off compatibility.
+Controlled default-off library cost remains unaccepted.
+
+[Failure examples and native diagnosis](obligation-failure-examples.md) record
+the scope repair, surviving power interaction and JSON resource variation.
+The complete changed-row table will be updated when current suite comparisons
+finish. Earlier suite/library tables below are historical evidence.
+
+## Current complete suite setting
+
+The complete additional-axioms-on suite comparison finishes in all three modes,
+covering 1,161 programs and 6,909 named declarations per mode. Baseline and
+candidate default-off match every committed expected verdict, named declaration
+and batch outcome/resource entry. Enabled mode has five formerly Correct
+resource failures and one formerly resource-limited declaration now Correct;
+no baseline Errors declaration becomes Correct. The complete changed-row review
+is in [obligation-suite-comparison.md](obligation-suite-comparison.md).
+Current additional-axioms-off suite verification is still running.
+
 ## Previous complete native comparisons
 
 The following results describe the preceding exit-publication product. Fresh
@@ -147,12 +194,12 @@ procedure, remain merge requirements. The exact-baseline comparisons do not
 replace that integration step. The pre-existing false self-postcondition is
 tracked separately in issue 166.
 
-The development draft remains at the preceding preservation revision; its
-[build](https://github.com/erniecohen/dafny/actions/runs/37394258403) and
-[normal inventory gate](https://github.com/erniecohen/dafny/actions/runs/37395195252)
-passed all 33 focused checks. The current method-exit and reveal-scope corrections still need
-development porting and CI. Supported-port native results do not validate the
-development line.
+The development draft now ports both method-exit publication and reveal-scope
+corrections. Its [build and normal inventory gate](https://github.com/erniecohen/dafny/actions/runs/37503850171)
+passed all 41 structural checks. The development product is
+`48a6f13236a32bb4f7c4b1543c7f69b161d0b104`; its build source is
+`6270d888a60cd7a6714f8cc99885487cc6047f84`. This probe executed no solver.
+Supported-port native results do not validate development-line verification.
 
 This remains a draft. No issue closure, repository-green claim, full
 matching-closure claim, merge or release follows from these results. AI assisted
