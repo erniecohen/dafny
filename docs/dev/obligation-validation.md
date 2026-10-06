@@ -2,9 +2,10 @@
 
 The change for [issue 100](https://github.com/erniecohen/dafny/issues/100)
 is experimental and default off. It has not been merged or released. Complete
-native full-suite and standard-library comparisons with Z3 5.1.0 now cover the
-current correction. Enabled completeness/performance and controlled library
-cost acceptance failed. The local arguments and producer classifications are in
+native full-suite and standard-library comparisons of the preceding
+exit-publication correction failed enabled completeness/performance and controlled
+library cost acceptance. Fresh complete comparisons of the reveal-scope
+correction are in progress. The local arguments and producer classifications are in
 [obligation-lowering.md](obligation-lowering.md); the complete qualitative verdict
 review is in [obligation-suite-comparison.md](obligation-suite-comparison.md).
 
@@ -22,21 +23,29 @@ formula, fuel term, summary and inherited guard; explicit split assertions keep
 their original check-and-forget behavior. Structural regressions compare both
 the checked expressions and their command publication policies.
 
-The current supported product is `0dff159b59c5980f6a32a2a60a256226dd04cb88`;
-the build source is `b428bb7d34fdd7c57c5b2f1f1818a73ca90ffd51`. The supported
-baseline is `ab210b78b50adb5a192542897f0a00cdb40f3c35`, including the intervening
-allocation and forall-substitution repairs. The candidate reports
-`4.11.0+fcb2042d.review.32a7e4ae`. The existing version calculation hashes modified
-upstream files, so a change to files added by the feature retains the prior suffix.
-Product/build commits and binary hashes identify the revision; the version
-string alone is insufficient. Later report edits change no product source.
+Method and forall proof bodies now retain the legacy `ReturnPosition` context.
+The opt-in path no longer inserts scope pops after terminal reveal hints.
+Previously retained reveals stay available to existing and appended checks;
+ordinary nonterminal scope boundaries are retained. No original check, summary,
+fuel term, library proof or resource ceiling was removed or weakened.
+
+The current supported product is `c515251c9a5f06490591defa3df3ef86e1b8d175`;
+the build source is `1cb6a03bb14d2d96d57a1e6ac9f1c5f8f27935d2`, reporting
+`4.11.0+fcb2042d.review.c38abced`. The supported baseline remains
+`ab210b78b50adb5a192542897f0a00cdb40f3c35`. Later registered-test/report edits
+change no product source. The preceding complete comparison measured product
+`0dff159b59c5980f6a32a2a60a256226dd04cb88`, build
+`b428bb7d34fdd7c57c5b2f1f1818a73ca90ffd51`, version
+`4.11.0+fcb2042d.review.32a7e4ae`; it does not validate the current product.
 
 ## Build and registered evidence
 
-The [supported build and normal inventory gate](https://github.com/erniecohen/dafny/actions/runs/37427679277)
-built both native platforms and the editor assembly, and passed all 39 focused
-structural checks. The independently captured producer inventory matches the
-reviewed registry. This build probe did not execute a solver.
+The [supported build and normal inventory gate](https://github.com/erniecohen/dafny/actions/runs/37494376061)
+built both native platforms and the editor assembly, and passed all 43 focused
+structural checks. These compare terminal/nested calculation reveal scope,
+forall proof scope and ordinary nonterminal boundaries under both resolvers.
+The independently captured producer inventory matches the reviewed registry.
+This build probe did not execute a solver.
 
 Focused native verification confirms the unchanged original issue 100,
 AllLiteralsAxiom and GHC-MergeSort with the option enabled, at the unchanged
@@ -50,14 +59,29 @@ across both resolvers, with additional axioms off and seed zero. The three focus
 default-off programs retain operational Boogie and complete named batch
 outcome/resource multisets.
 
-The complete registered issue 100 gate passed all 198 expected native
+The complete registered issue 100 gate passed all 222 expected native
 observations. This covers both resolver modes and both additional-axiom settings,
 ordinary and isolated negative controls, and project/CLI option precedence. The
 native capture adapter permits only the registered negative-forall fixture's
-expected missing-trigger warning. Proof inputs and expected results are unchanged.
+expected missing-trigger warning. The added terminal-reveal fixture verifies
+under both resolvers, both additional-axiom settings and both option settings.
+Existing reveal-isolation and hide-after-reveal negatives also run with ordinary
+and isolated assertions. Their expected failures are retained.
 These controls and structural checks do not replace independent soundness review.
 
-## Complete native comparisons
+The focused native library gate completes all 24 observations: the unchanged
+Filter, Split and Base64 declarations verify in baseline, default-off and enabled
+modes under both additional-axiom settings; the separate power control verifies
+in baseline/default-off and retains its enabled failure. All eight focused
+baseline/default-off batch/resource comparisons match. Actual native pruned
+declarations and solver inputs are retained with these results. These are
+complete focused checks, not full-suite acceptance.
+
+## Previous complete native comparisons
+
+The following results describe the preceding exit-publication product. Fresh
+complete suite and library gates for the current reveal-scope correction are
+in progress, retaining the complete existing scope and both axiom settings.
 
 Both additional-axiom settings are complete for each of baseline, candidate with
 the option off, and candidate with it on. The complete existing runners retain
@@ -96,11 +120,11 @@ four formerly Correct declarations now reporting Errors are
 postcondition, calculation steps and a function precondition.
 [Failure examples and controlled diagnosis](obligation-failure-examples.md)
 identify a definition-visibility regression in the three hide/reveal cases.
-The opt-in method-body `ReturnPosition` override adds pops after reveal hints
+The preceding opt-in method-body `ReturnPosition` override added pops after reveal hints
 and before existing checks. Native pruned declarations confirm the defining
 Filter axiom disappears from both failed calculation checks; retaining the
 relevant reveals in the outer proof scope restores all three native declarations.
-These are diagnostic witnesses, not library repairs or product acceptance.
+Those witnesses were diagnostic library edits. The current product instead preserves legacy scope, and all three unmodified declarations verify in focused native validation. Complete acceptance remains pending.
 The quantified power failure is separately isolated to the added second-clause
 exit package; its exact solver instantiation mechanism remains unresolved.
 Complete checking-environment preservation remains unaccepted. Other
@@ -126,7 +150,7 @@ tracked separately in issue 166.
 The development draft remains at the preceding preservation revision; its
 [build](https://github.com/erniecohen/dafny/actions/runs/37394258403) and
 [normal inventory gate](https://github.com/erniecohen/dafny/actions/runs/37395195252)
-passed all 33 focused checks. The current method-exit correction still needs
+passed all 33 focused checks. The current method-exit and reveal-scope corrections still need
 development porting and CI. Supported-port native results do not validate the
 development line.
 

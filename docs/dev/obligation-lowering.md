@@ -150,7 +150,7 @@ existing pushes and pops. Boogie's
 affect hide/reveal availability, so preservation includes command scope as well
 as checked formulas and literal fuel indices. The preceding candidate's opt-in
 context overrides caused the three documented definition-visibility failures.
-Native validation of the correction is required before claiming their repair.
+Native validation verifies all three unchanged declarations under both additional-axiom settings; the independent power exit-package failure remains reproduced.
 
 Guards and frozen-variable equalities must be included when comparing different
 front ends; they cannot be silently removed by the comparison tool.

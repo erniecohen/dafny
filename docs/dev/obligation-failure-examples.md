@@ -1,13 +1,19 @@
 # Enabled obligation failure examples
 
-These examples are from the complete comparison recorded in
-[obligation-suite-comparison.md](obligation-suite-comparison.md). The measured
-product and build are identified in [obligation-validation.md](obligation-validation.md).
-The baseline and candidate with `--consistent-obligation-checks=false` succeed
-on all four declarations below. The candidate with
-`--consistent-obligation-checks=true` reports proof errors with both
-`--additional-axioms=false` and `--additional-axioms=true`. Turning additional
-axioms off does not turn consistent obligation checks off.
+These examples were diagnosed in the preceding exit-publication product,
+identified in [obligation-suite-comparison.md](obligation-suite-comparison.md).
+The current correction removes both opt-in `ReturnPosition=false` overrides,
+preserving the legacy method and forall proof-body reveal scope. The unchanged
+Filter, Split and Base64 declarations now verify natively with the option on,
+with both additional-axiom settings and their original resource ceilings. The
+baseline and default-off candidate retain identical outcomes and named batch
+resource counts in the focused comparison. No extra reveal was added to the
+library source.
+
+The examples below retain the original failures and causal diagnostics for
+review. The quantified power exit-package failure remains reproduced. Complete
+comparisons of the current correction are recorded separately in
+[obligation-validation.md](obligation-validation.md).
 
 The source contracts, library inputs, resource ceilings and expected verdicts
 were retained. These are failures to establish valid library obligations, not

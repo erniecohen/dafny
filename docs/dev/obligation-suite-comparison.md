@@ -1,8 +1,8 @@
 # Full-suite and standard-library obligation comparison
 
-Status: complete native comparisons for the current exit-publication correction with Z3 5.1.0; acceptance failed. The option remains experimental and default off.
+Status: historical complete native comparisons for the preceding exit-publication correction with Z3 5.1.0; acceptance failed. The option remains experimental and default off.
 
-Product and build identities are recorded in [obligation-validation.md](obligation-validation.md). The complete existing runners compare baseline, candidate with the option off, and candidate with it on, under both additional-axiom settings. Proof inputs, source options, warning policy, resource ceilings and expected-verdict tables are unchanged. The following results supersede the preceding candidate comparison.
+Product and build identities are recorded in [obligation-validation.md](obligation-validation.md). The complete existing runners compare baseline, candidate with the option off, and candidate with it on, under both additional-axiom settings. Proof inputs, source options, warning policy, resource ceilings and expected-verdict tables are unchanged. These results describe the preceding product, not the later reveal-scope correction. The current correction preserves legacy reveal scopes and repairs the three definition-visibility examples in focused native validation. Fresh complete comparisons are in progress; see [current validation](obligation-validation.md).
 
 ## Default-off compatibility
 
