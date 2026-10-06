@@ -107,7 +107,7 @@ namespace Microsoft.Dafny {
         Contract.Requires(let != null);
         var substMap = new Dictionary<IVariable, Expression>();
         for (int i = 0; i < let.LHSs.Count; i++) {
-          var rhs = AsVerificationValue().TrExpr(let.RHSs[i]);
+          var rhs = TrExpr(let.RHSs[i]);
           var toType = let.LHSs[i].Var?.Type ?? let.LHSs[i].Expr.Type;
           rhs = BoogieGenerator.CondApplyBox(rhs.tok, rhs, let.RHSs[i].Type, toType);
           BoogieGenerator.AddCasePatternVarSubstitutions(let.LHSs[i], rhs, substMap);

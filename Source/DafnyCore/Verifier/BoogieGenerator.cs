@@ -4649,11 +4649,6 @@ namespace Microsoft.Dafny {
       Contract.Requires(etran != null);
       Contract.Ensures(Contract.Result<List<SplitExprInfo>>() != null);
 
-      if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
-        var lowering = LowerProposition(context, expr, etran, applyInduction);
-        splitHappened = lowering.SplitHappened;
-        return lowering.Pieces.ToList();
-      }
       var splits = new List<SplitExprInfo>();
       splitHappened = TrSplitExpr(context, expr, splits, true, int.MaxValue, applyInduction, etran);
       return splits;
@@ -4665,9 +4660,6 @@ namespace Microsoft.Dafny {
       Contract.Ensures(Contract.Result<List<SplitExprInfo>>() != null);
 
       var applyInduction = kind == MethodTranslationKind.Implementation;
-      if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
-        return LowerProposition(context, expr, etran, applyInduction).Pieces.ToList();
-      }
       var splits = new List<SplitExprInfo>();
       TrSplitExpr(context, expr, splits, true, int.MaxValue, applyInduction, etran);
       return splits;

@@ -387,7 +387,10 @@ public partial class BoogieGenerator {
             builder.Add(AssertAndForget(builder.Context, ObligationOrigin(tok, piece.Tok), piece.E, description));
           }
         }
-        builder.Add(TrAssumeCmdWithDependencies(callEtran, tok, instantiated, "checked method precondition"));
+        var summary = TrAssumeCmd(tok, lowering.Summary);
+        proofDependencies?.AddProofDependencyId(summary, tok,
+          new AssumptionDependency(false, "checked method precondition", instantiated));
+        builder.Add(summary);
       }
     }
     builder.Add(call);

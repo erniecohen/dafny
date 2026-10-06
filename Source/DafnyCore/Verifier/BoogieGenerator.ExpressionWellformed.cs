@@ -175,7 +175,7 @@ namespace Microsoft.Dafny {
               CheckWellformedAndAssume(e.E0, wfOptions, locals, b0, etran, comment);
               var b1 = new BoogieStmtListBuilder(this, options, builder.Context);
               b1.Add(TrAssumeCmd(expr.Origin, etran.CanCallAssumptionForVerification(e.E0)));
-              b1.Add(TrAssumeCmdWithDependenciesAndExtend(etran, expr.Origin, e.E0, Expr.Not, comment, verificationUse: VerificationExpressionUse.Summary, positive: false));
+              b1.Add(TrAssumeCmdWithDependenciesAndExtend(etran, expr.Origin, e.E0, Expr.Not, comment));
               CheckWellformedAndAssume(e.E1, wfOptions, locals, b1, etran, comment);
               builder.Add(new Bpl.IfCmd(expr.Origin, null, b0.Collect(expr.Origin), null, b1.Collect(expr.Origin)));
             }
@@ -197,7 +197,7 @@ namespace Microsoft.Dafny {
         CheckWellformedAndAssume(e.Thn, wfOptions, locals, bThen, etran, comment);
         var bElse = new BoogieStmtListBuilder(this, options, builder.Context);
         bElse.Add(TrAssumeCmd(expr.Origin, etran.CanCallAssumptionForVerification(e.Test)));
-        bElse.Add(TrAssumeCmdWithDependenciesAndExtend(etran, expr.Origin, e.Test, Expr.Not, comment, verificationUse: VerificationExpressionUse.Summary, positive: false));
+        bElse.Add(TrAssumeCmdWithDependenciesAndExtend(etran, expr.Origin, e.Test, Expr.Not, comment));
         CheckWellformedAndAssume(e.Els, wfOptions, locals, bElse, etran, comment);
         builder.Add(new Bpl.IfCmd(expr.Origin, null, bThen.Collect(expr.Origin), null, bElse.Collect(expr.Origin)));
         return;
@@ -405,7 +405,8 @@ namespace Microsoft.Dafny {
                 new NonNull("array", e.Seq), builder.Context));
               if (etran.UsesOldHeap) {
                 builder.Add(Assert(GetToken(e.Seq), options.Get(CommonOptionBag.ConsistentObligationChecks)
-                  ? ExplicitAllocationPredicate(GetToken(e.Seq), seq, eSeqType, etran.HeapExpr)
+                  ? BplAnd(MkIsAlloc(seq, eSeqType, etran.HeapExpr),
+                    ExplicitAllocationPredicate(GetToken(e.Seq), seq, eSeqType, etran.HeapExpr))
                   : MkIsAlloc(seq, eSeqType, etran.HeapExpr),
                   new IsAllocated("array", null, e.Seq), builder.Context));
               }

@@ -59,65 +59,37 @@ Statement adapters check only checked/both pieces and publish the canonical
 summary according to the original statement policy. Procedure adapters preserve
 the original checked/free role conventions.
 
-## Occurrence-local policy
+## Preservation of existing checks
 
-The enabled translator does not read or consume `stmtContext` or
-`adjustFuelForExists`. Legacy writes remain for default-off translation. Their
-complete inventory is: statement-entry reset, assume/expect/assert entry and
-continuation in `TrPredicateStatement`, function/quantifier translation in
-`ExpressionTranslator`, and the quantifier case in `SplitExpr`.
+The enabled path uses the existing splitter and expression translator with their
+original fuel rules. It does not replace them with a new polarity-sensitive fuel
+policy. In particular, a universal quantifier in an implication antecedent retains
+the exact checked fuel applications emitted by the original assertion path.
+Boolean arguments, exact lets, containers, equivalence operands and continuation
+translation also retain the original rules.
 
-The immutable policy is `(use, polarity, mayAdjustFuel)`:
+`LowerProposition` extracts the expression-level checking sequence of
+`TrAssertCondition`. If splitting does not happen, it retains the original second
+translation of the complete condition. Explicit assertions keep their existing
+translator, statement context, counters, fuel decisions and publication path.
+A structural comparison summary for them is constructed only when the diagnostic
+observer is present; normal translation does not construct it.
 
-| Parent edge | Child policy |
-|---|---|
-| conjunction/disjunction | same use and polarity for each sibling |
-| negation | reverse polarity |
-| implication antecedent/consequent | reverse/same polarity |
-| forall range/term | reverse/same polarity |
-| exists range/term | same/same polarity |
-| ITE test | value use; both branches retain parent polarity |
-| function/application arguments, receivers, exact-let RHSs and container contents | value use |
-| can-call arguments and conditional permission guards | value use |
-| equivalence operands in a check | positive check recipe for each operand |
-| equality, continuation equivalence and other non-monotone operands | value use |
-| old or labeled-old | same policy with the selected heap |
-| descendants after fuel selection | mayAdjustFuel becomes false |
+An added implicit check uses a fresh translator with the same heaps, layers,
+receiver, frame, SCC and visibility inputs. It starts with the existing assertion
+statement policy and restores the surrounding statement/fuel state afterward.
+Its summary uses the already trusted assume-after-assert policy and is published
+only after its checked pieces. No extra check can consume the surrounding check's
+fuel adjustment. This extraction preserves the existing policy, including its
+one-shot adjustment decisions; it does not claim to replace that policy with a
+new structural fuel theory.
 
-A positive existential or negative universal selects decreased check fuel or
-increased summary fuel when direct translation must select it. The splitter's
-quantifier rules select their own checked/free layers and prevent a second
-selection below that root. Positive summary calls to quantifier-bearing predicates
-select the existing one-layer summary offset. Siblings inherit the unchanged
-parent policy. Custom fuel, visibility, `no_inline`, safe substitution, SCC height
-and current-function limits remain enforced by the original machinery.
-
-An equivalence check keeps the splitter's existing layer and translates each
-operand with the positive check recipe. In particular, a recursive predicate at
-L+1 can be compared with its defining existential body at L. The existing fuel
-irrelevance axioms equate permitted layers, so the equivalence in either polarity
-still denotes the same proposition. This is a local definition bridge, with no
-new reveal, SCC permission, or global fuel increase. Its continuation uses value
-operands; negative and non-vacuity controls exercise both equivalence polarities.
-
-A Boolean argument has no monotone relationship to its enclosing function call:
-its callee can negate it. Argument, receiver, exact-let RHS and container-value
-edges therefore use the value recipe, including the terms in can-call permissions.
-Non-Boolean expressions switch to value use at their translation root. Only
-logical connective, quantifier and branch-result edges retain proposition polarity.
-This preserves the argument's original heap, representation and fuel interface;
-it does not equate a fuel-zero argument with a fuel-one argument.
-
-The Boolean value fixtures start with the quantified Boolean proposition as an
-explicit input premise. They check congruence of that value through calls,
-containers, exact lets and membership, plus false alternatives and non-vacuity
-continuations. They do not claim new existential witness inference: omitting the
-premise in these examples is rejected by both the baseline and the enabled build.
-
-Fuel usage is a result of a particular translation, separate from diagnostic
-counters. Fresh roots/splits observe their own usage; their descendants share
-that observation. An earlier unrelated translator counter cannot change whether
-the current proposition reports a split.
+Original procedure and type-membership checks remain. Cast constraints retain the
+original guarded direct formula as well as the added assertion-style pieces.
+Allocation checks retain the original typed predicate as a conjunct and add the
+boxed predicate used by explicit allocation assertions. These preservation rules
+are separate from solver acceptance: retaining formulas does not establish an
+unbounded E-matching closure theorem or a successful whole-program verifier run.
 
 ## Local correctness and cuts
 
@@ -153,18 +125,21 @@ returns before publishing their summary; procedure ensures remain checked.
 Inherited conditions retain the `$_reverifyPost` guard. Filtering, dependency
 information and source/error provenance remain on the assertion sinks.
 
-For an immediate duplicate, the same instantiated proposition and complete
-logical context give the same core pieces/summary. The first check establishes
+For an immediate duplicate, comparisons include the complete checking context,
+including the original statement/fuel state, guards and already checked WF prefix.
+The additional checker uses the existing assertion recipe. The first check establishes
 only its permitted summary; the second is an administrative cut using that fact.
-This is a local sufficient condition for the core's matching interface, not a
-promise of identical resources or solver preprocessing for the entire program.
+This local argument does not yet establish the required end-to-end invariance or
+matching closure. Those claims require acceptance evidence after the preservation
+revision, not evidence from the superseded fuel-policy implementation.
 Guards and frozen-variable equalities must be included when comparing different
 front ends; they cannot be silently removed by the comparison tool.
 
 ## Allocation bridge
 
-Explicit `allocated(e)` and matching checked availability obligations use
-`$IsAllocBox(Box(value), type, heap)`. The prelude already equates unboxed and boxed
+Explicit `allocated(e)` uses `$IsAllocBox(Box(value), type, heap)`. Matching
+checked availability obligations retain their original typed predicate and add
+this boxed form as a conjunct. The prelude already equates unboxed and boxed
 allocation at values of the corresponding representation, and its box/unbox/type
 bridges supply the representation fact. Inherently boxed values remain boxed.
 The factory keeps the exact current/old/labeled heap and preserves the legacy
@@ -207,7 +182,7 @@ hash. This is a source coverage gate, not a proof of every helper's semantics.
 | opaque-block-contracts | declared block ensures via split core; block frame/WF and visibility scopes retained |
 | let-permissions | exact bindings and separately justified Skolem permissions; self-call context preserved; no witness conflation |
 | visibility | reveal/hide availability facts; deliberately retain existing scoped proof rule |
-| value-translation | arithmetic/logical operand representation; occurrence policy, no assertion recipe guessed from a value |
+| value-translation | original arithmetic/logical operand and fuel representation; no assertion recipe guessed from a value |
 | value-permission-translation | heaps/arrow requires/quantifier guards and can-call traversal; values retain original semantics and complete context |
 | extreme-prefix-contracts | prefix lemma/predicate proof rule and rank; existing specialized proof construction retained |
 | definition-consequence-axioms | definition/result consequences and availability guards; outside local-check migration; no axioms changed |
