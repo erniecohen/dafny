@@ -252,3 +252,6 @@ git-issues/github-issue-99.dfy
 
 # Consistent obligation checks and project option precedence.
 git-issues/git-issue-100.dfy
+
+# Terminal method and forall hints retain legacy reveal scopes (#100).
+# Covered by the registered issue 100 gate above.
