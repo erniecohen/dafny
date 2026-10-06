@@ -5,16 +5,40 @@ is experimental and default off. It has not been merged or released.
 The local arguments and producer classifications are in
 [obligation-lowering.md](obligation-lowering.md).
 
-## Preservation revision pending validation
+## Preservation revision: focused evidence only
 
 The fuel/polarity rewrite in the previously tested candidate was withdrawn. The
 revised source restores the original expression and splitter fuel rules, retains
 original checked cast and allocation formulas, and adds assertion-style checking
-without replacing those formulas. Preservation regressions compare the actual
+without replacing those formulas. Preservation regressions compare actual
 checked formulas, including fuel-indexed applications and negative universal
-antecedents. The evidence below describes the superseded candidate and does not
-validate this revision. Build, structural, focused solver and final comparison
-gates must be recorded for the new source before acceptance.
+antecedents.
+
+The [development build](https://github.com/erniecohen/dafny/actions/runs/37394258403)
+passed all 33 focused structural checks; its
+[normal producer inventory gate](https://github.com/erniecohen/dafny/actions/runs/37395195252)
+also passed all 33. The
+[supported build](https://github.com/erniecohen/dafny/actions/runs/37394913998)
+built both supported native platforms and passed all 35 focused structural
+checks. After the reviewed registry update, the
+[supported normal inventory gate](https://github.com/erniecohen/dafny/actions/runs/37395725242)
+passed all 35. These build probes did not execute a solver.
+
+Focused verification of the preservation revision confirms that the original
+issue #100 completes at its unchanged resource ceiling in the default resolver,
+with additional axioms off and seed zero. All 36 positive, negative and
+non-vacuity controls have their expected outcomes across both resolvers, with
+additional axioms off and seed zero. The three focused default-off programs
+retain their operational Boogie, per-batch verdicts and resources. This is not
+suite or library acceptance. AllLiteralsAxiom and GHC-MergeSort still have the
+postcondition regressions; solver replays return unknown with incomplete
+quantifiers. The fuel correction alone does not repair those failures.
+
+The evidence below describes the superseded candidate and does not validate this
+revision. Final suite/library comparisons and end-to-end invariance remain
+pending. The current preservation product is
+`5a3abf21cdec4bec525b7c3bc4287133980fa3dd`, reporting
+`4.11.0+fcb2042d.review.32a7e4ae` on the supported line.
 
 ## Source boundaries
 
