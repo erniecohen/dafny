@@ -19,7 +19,10 @@ resolvers, including terminal nested calculation hints and ordinary nonterminal
 scopes. The registered terminal-reveal fixture and reveal-isolation negative
 controls are ported from the supported line. The producer registry reflects the
 development source, including its branch-specific origin construction.
-Current development build and normal inventory checks are pending. The preceding
+The [development correction build](https://github.com/erniecohen/dafny/actions/runs/37503850171)
+passes all 41 structural checks, including the normal producer inventory gate.
+The build source is `6270d888a60cd7a6714f8cc99885487cc6047f84` and development
+product is `48a6f13236a32bb4f7c4b1543c7f69b161d0b104`. The preceding
 [build](https://github.com/erniecohen/dafny/actions/runs/37394258403) and
 [normal inventory gate](https://github.com/erniecohen/dafny/actions/runs/37395195252)
 passed 33 structural checks for the earlier preservation revision; they do not
