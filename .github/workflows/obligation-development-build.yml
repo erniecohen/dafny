@@ -22,7 +22,7 @@ jobs:
           git rev-parse HEAD > out/source.txt
           dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false > out/build.log 2>&1
           echo "$?" > out/build.exit
-          dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation > out/core.log 2>&1
+          OBLIGATION_INVENTORY_CAPTURE=out/obligation-producers.json dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation > out/core.log 2>&1
           echo "$?" > out/core.exit
           dotnet build Source/DafnyLanguageServer.Test -c Release > out/editor-build.log 2>&1
           echo "$?" > out/editor-build.exit
@@ -38,4 +38,5 @@ jobs:
             out/*.log
             out/*.exit
             out/source.txt
+            out/obligation-producers.json
           retention-days: 30
