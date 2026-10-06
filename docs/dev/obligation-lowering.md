@@ -140,6 +140,16 @@ only its permitted summary; the second is an administrative cut using that fact.
 This local argument does not yet establish the required end-to-end invariance or
 matching closure. Those claims require acceptance evidence after the preservation
 revision, not evidence from the superseded fuel-policy implementation.
+
+The current opt-in method-body translation overrides `ReturnPosition` to false.
+That adds scope pushes/pops at terminal statements and proof hints, including
+pops between reveals and existing checks in the library. Boogie's
+[scope commands](https://github.com/erniecohen/boogie/blob/v3.5.5%2Breview.37e4435d/Source/Core/AST/Commands/ChangeScope.cs)
+affect hide/reveal availability. Preserving checked formulas and literal fuel
+indices does not prove preservation of that environment. The causal effect of
+this override on the current library failures remains to be isolated; the local
+recipe arguments above do not establish end-to-end visibility preservation.
+
 Guards and frozen-variable equalities must be included when comparing different
 front ends; they cannot be silently removed by the comparison tool.
 
@@ -189,7 +199,7 @@ hash. This is a source coverage gate, not a proof of every helper's semantics.
 | statement-wf-calculations | source calc/assign-such-that checks share splitter; update/existence/heap transition checks retain specialized rules |
 | opaque-block-contracts | declared block ensures via split core; block frame/WF and visibility scopes retained |
 | let-permissions | exact bindings and separately justified Skolem permissions; self-call context preserved; no witness conflation |
-| visibility | reveal/hide availability facts; deliberately retain existing scoped proof rule |
+| visibility | reveal/hide availability facts; return-position override adds scopes whose preservation remains under review |
 | value-translation | original arithmetic/logical operand and fuel representation; no assertion recipe guessed from a value |
 | value-permission-translation | heaps/arrow requires/quantifier guards and can-call traversal; values retain original semantics and complete context |
 | extreme-prefix-contracts | prefix lemma/predicate proof rule and rank; existing specialized proof construction retained |
