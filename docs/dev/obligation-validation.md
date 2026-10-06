@@ -93,12 +93,18 @@ four formerly Correct declarations now reporting Errors are
 `Std.Arithmetic.Power.LemmaPowSubtractsAuto`, `Std.Base64.EncodeDecodeRecursively`,
 `Std.Collections.Seq.LemmaFilterDistributesOverConcat` and
 `Std.Collections.Seq.WillSplitOnDelim`. Native diagnostics identify a failed
-postcondition, calculation steps and a function precondition; their causes remain
-to be diagnosed. Generated-input inspection also finds extra scope commands
-from the opt-in method-body `ReturnPosition` override, including scope pops
-between reveal hints and existing checks. Complete checking-environment
-preservation remains open; the causal effect of those commands has not yet been
-isolated. Other resource-limited library declarations become successful.
+postcondition, calculation steps and a function precondition.
+[Failure examples and controlled diagnosis](obligation-failure-examples.md)
+identify a definition-visibility regression in the three hide/reveal cases.
+The opt-in method-body `ReturnPosition` override adds pops after reveal hints
+and before existing checks. Native pruned declarations confirm the defining
+Filter axiom disappears from both failed calculation checks; retaining the
+relevant reveals in the outer proof scope restores all three native declarations.
+These are diagnostic witnesses, not library repairs or product acceptance.
+The quantified power failure is separately isolated to the added second-clause
+exit package; its exact solver instantiation mechanism remains unresolved.
+Complete checking-environment preservation remains unaccepted. Other
+resource-limited library declarations become successful.
 No baseline Errors declaration becomes Correct in these comparisons.
 
 Every changed suite program and library declaration verdict has been reviewed

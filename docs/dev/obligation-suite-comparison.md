@@ -36,7 +36,7 @@ All newly failing suite declarations exhaust their unchanged resource ceilings. 
 
 ## Enabled library declaration changes
 
-The four formerly Correct declarations that now report Errors are listed below. Native diagnostics identify a failed postcondition, calculation steps and a function precondition. Their causes require controlled diagnosis; these observations do not establish removed premises or reduced fuel. No baseline Errors declaration becomes Correct. Some formerly resource-limited declarations succeed, while another remains unproved with an Errors outcome.
+The four formerly Correct declarations that now report Errors are listed below. Native diagnostics identify a failed postcondition, calculation steps and a function precondition. The [documented failure examples](obligation-failure-examples.md) include controlled native diagnosis: three hide/reveal cases lose definition visibility after added scope pops, and retaining the relevant outer reveals restores success. The power failure is separately isolated to its added second-clause exit package, with its exact solver mechanism still unresolved. No baseline Errors declaration becomes Correct. Some formerly resource-limited declarations succeed, while another remains unproved with an Errors outcome.
 
 | Additional axioms | Declaration | Baseline | Enabled |
 | --- | --- | --- | --- |
@@ -70,7 +70,7 @@ The four formerly Correct declarations that now report Errors are listed below. 
 | on | `Std Std.JSON.ZeroCopy.Deserializer.Objects.BracketedToObject (correctness)` | OutOfResource | Correct |
 | on | `Std Std.Producers.MappedProducerOfNewProducers.Invoke (correctness)` | Correct | OutOfResource |
 
-Generated-input inspection finds extra scope commands from the opt-in method-body ReturnPosition override, including pops between reveal hints and existing checks. Preserving formula syntax and fuel indices does not establish complete checking-environment preservation. The causal effect on these failures has not yet been isolated.
+Native per-check declaration capture confirms that the defining Filter axiom is present at both original calculation checks in the baseline, absent at both failed enabled checks, and present again in successful outer-reveal diagnostic witnesses. The enabled method-body ReturnPosition override introduces the scope pops responsible for that visibility change. Preserving checked formulas and fuel indices had not preserved the available definition axioms. No product correction or expected-verdict change is included in this diagnosis; the power interaction and resource regressions remain open.
 
 ## Successful cases requiring cost review
 
