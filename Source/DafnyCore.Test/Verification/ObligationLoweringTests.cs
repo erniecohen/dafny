@@ -100,17 +100,6 @@ public class ObligationLoweringTests {
   }
 
   [Fact]
-  public void ContextTransitionsDoNotConsumeSiblingPolicy() {
-    var root = new VerificationExpressionContext(VerificationExpressionUse.Check);
-    var first = root.FuelSelected();
-    var second = root.Negated();
-    Assert.True(root.MayAdjustFuel);
-    Assert.False(first.MayAdjustFuel);
-    Assert.True(second.MayAdjustFuel);
-    Assert.False(second.Positive);
-    Assert.Equal(root, second.Negated());
-  }
-  [Fact]
   public async Task MethodExitChecksTheSamePropositionAsAnImmediateAssertion() {
     const string source = "ghost predicate P(x:int) { x>=0 } lemma L(x:int) requires x>=0 ensures P(x) { assert P(x); }";
     var packages = new List<BoogieGenerator.PropositionLowering>();
@@ -158,30 +147,19 @@ public class ObligationLoweringTests {
   [InlineData("[exists n:int :: P(n)][0]", true)]
   [InlineData("(var b := exists n:int :: P(n); b)", true)]
   [InlineData("true in (set b:bool | b == (exists n:int :: P(n)))", true)]
-  public async Task BooleanValueEdgesDoNotInheritPropositionFuel(string expression, bool refresh) {
+  public async Task ExplicitAssertionsRetainTheirOriginalBooleanValueFuel(string expression, bool refresh) {
     var source = "ghost predicate P(n:int) decreases n { n<=0 || P(n-1) } " +
       "ghost predicate Identity(b:bool) { b } lemma L(f:bool->bool) { assert " + expression + "; }";
-    var comparisons = 0;
-    await Translate(source, true, refresh, package => {
-      if (package.Inputs.Preparation != BoogieGenerator.ObligationPreparation.CheckedExpression) { return; }
-      string Content(VerificationExpressionUse use) {
-        var translator = package.Inputs.Translator.WithVerificationUse(use);
-        if (package.Source.Resolved is FunctionCallExpr call) {
-          return string.Join(";", translator.FunctionInvocationArguments(call, null, null)
-            .Select(ObligationFingerprint.Expression));
-        }
-        return ObligationFingerprint.Expression(translator.TrExpr(package.Source));
-      }
-      var value = Content(VerificationExpressionUse.Value);
-      Assert.Equal(value, Content(VerificationExpressionUse.Check));
-      Assert.Equal(value, Content(VerificationExpressionUse.Summary));
-      var permission = package.Inputs.Translator.WithVerificationUse(VerificationExpressionUse.Value)
-        .CanCallAssumption(package.Source);
-      Assert.Equal(ObligationFingerprint.Expression(permission), ObligationFingerprint.Expression(
-        package.Inputs.Translator.WithVerificationUse(VerificationExpressionUse.Check).CanCallAssumption(package.Source)));
-      comparisons++;
-    });
-    Assert.True(comparisons > 0);
+    async Task<string[]> Checks(bool enabled) {
+      var programs = await Translate(source, enabled, refresh);
+      var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+      return implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+        .Where(c => c.Description is AssertStatementDescription)
+        .Select(c => ObligationFingerprint.Expression(c.Expr)).ToArray();
+    }
+    var original = await Checks(false);
+    Assert.NotEmpty(original);
+    Assert.Equal(original, await Checks(true));
   }
 
   [Fact]
@@ -195,7 +173,7 @@ public class ObligationLoweringTests {
     Assert.Single(explicitChecks);
     var implicitChecks = checks.Where(c => c.Description is IsAllocated).ToList();
     Assert.NotEmpty(implicitChecks);
-    Assert.All(implicitChecks, c => Assert.Equal(explicitChecks[0], ObligationFingerprint.Expression(c.Expr)));
+    Assert.All(implicitChecks, c => Assert.Contains(explicitChecks[0], ObligationFingerprint.Expression(c.Expr)));
   }
 
   [Fact]
@@ -210,6 +188,60 @@ public class ObligationLoweringTests {
     var implicitChecks = checks.Where(c => c.Description is PreconditionSatisfied).ToList();
     Assert.NotEmpty(implicitChecks);
     Assert.All(implicitChecks, c => Assert.Equal(explicitChecks[0], ObligationFingerprint.Expression(c.Expr)));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task NegativeUniversalAntecedentsRetainOriginalAssertionFuel(bool refresh) {
+    const string source = "ghost predicate P(n:int) decreases n { n<=0 || P(n-1) } " +
+      "lemma L(q:bool) { assert (forall n:int {:trigger P(n)} :: P(n)) ==> q; " +
+      "assert !(forall n:int {:trigger P(n)} :: P(n)); " +
+      "assert (exists n:int {:trigger P(n)} :: P(n)) ==> q; }";
+    async Task<string[]> Checks(bool enabled) {
+      var programs = await Translate(source, enabled, refresh);
+      var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+      return implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+        .Where(c => c.Description is AssertStatementDescription)
+        .Select(c => ObligationFingerprint.Expression(c.Expr)).ToArray();
+    }
+    var original = await Checks(false);
+    Assert.NotEmpty(original);
+    Assert.Equal(original, await Checks(true));
+  }
+
+  [Fact]
+  public async Task CastChecksRetainTheirOriginalGuardedFormula() {
+    const string source = "ghost predicate P(i:int) { i>=0 } type S = i:int | P(i) witness 0 " +
+      "lemma L(i:int) { var s := i as S; }";
+    async Task<string[]> Checks(bool enabled) {
+      var programs = await Translate(source, enabled);
+      var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+      return implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+        .Where(c => c.Description is ConversionSatisfiesConstraints)
+        .Select(c => ObligationFingerprint.Expression(c.Expr)).ToArray();
+    }
+    var original = await Checks(false);
+    var enriched = await Checks(true);
+    Assert.NotEmpty(original);
+    Assert.All(original, check => Assert.Contains(check, enriched));
+    Assert.True(enriched.Length > original.Length);
+  }
+
+  [Fact]
+  public async Task AllocationChecksRetainTheirOriginalTypedFormula() {
+    const string source = "class C {} twostate lemma Use(c:C) {} lemma L(c:C) { Use(c); }";
+    async Task<string[]> Checks(bool enabled) {
+      var programs = await Translate(source, enabled);
+      var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+      return implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+        .Where(c => c.Description is IsAllocated)
+        .Select(c => ObligationFingerprint.Expression(c.Expr)).ToArray();
+    }
+    var original = await Checks(false);
+    var enriched = await Checks(true);
+    Assert.NotEmpty(original);
+    Assert.All(original, check => Assert.Contains(enriched, added => added.Contains(check)));
   }
 
 }

@@ -13,31 +13,19 @@ public partial class BoogieGenerator {
       var e0Type = binaryExpr.E0.Type.NormalizeToAncestorType(); // used when making decisions about what Boogie operator/functions to use
       bool isReal = e0Type.IsNumericBased(Type.NumericPersuasion.Real) || e0Type.IsNumericBased(Type.NumericPersuasion.Float);
       int bvWidth = e0Type.IsBitVectorType ? e0Type.AsBitVectorType.Width : -1;  // -1 indicates "not a bitvector type"
-      var operandEtran = binaryExpr.ResolvedOp is BinaryExpr.ResolvedOpcode.And or
-        BinaryExpr.ResolvedOpcode.Or or BinaryExpr.ResolvedOpcode.Imp ? this : AsVerificationValue();
-      if (binaryExpr.ResolvedOp == BinaryExpr.ResolvedOpcode.Iff &&
-          verificationContext is { Use: VerificationExpressionUse.Check }) {
-        // Equivalence compares two propositions rather than two computed
-        // Boolean values. Use the positive check recipe for each operand at
-        // the splitter's existing layer. This preserves a definition at L+1
-        // compared with its existential body at L. Fuel irrelevance justifies
-        // this local bridge in either polarity; continuation operands use Value.
-        operandEtran = WithVerificationPolarity(true);
-      }
-      Expr e0 = (binaryExpr.ResolvedOp == BinaryExpr.ResolvedOpcode.Imp
-        ? operandEtran.NegateVerificationPolarity() : operandEtran).TrExpr(binaryExpr.E0);
+      Expr e0 = TrExpr(binaryExpr.E0);
       if (binaryExpr.ResolvedOp == BinaryExpr.ResolvedOpcode.InSet) {
-        return operandEtran.TrInSet(GetToken(binaryExpr), e0, binaryExpr.E1, binaryExpr.E0.Type, binaryExpr.E1.Type.NormalizeToAncestorType().AsSetType.Finite, false, out var pr);  // let TrInSet translate e.E1
+        return TrInSet(GetToken(binaryExpr), e0, binaryExpr.E1, binaryExpr.E0.Type, binaryExpr.E1.Type.NormalizeToAncestorType().AsSetType.Finite, false, out var pr);  // let TrInSet translate e.E1
       } else if (binaryExpr.ResolvedOp == BinaryExpr.ResolvedOpcode.NotInSet) {
-        Expr arg = operandEtran.TrInSet(GetToken(binaryExpr), e0, binaryExpr.E1, binaryExpr.E0.Type, binaryExpr.E1.Type.NormalizeToAncestorType().AsSetType.Finite, false, out var pr);  // let TrInSet translate e.E1
+        Expr arg = TrInSet(GetToken(binaryExpr), e0, binaryExpr.E1, binaryExpr.E0.Type, binaryExpr.E1.Type.NormalizeToAncestorType().AsSetType.Finite, false, out var pr);  // let TrInSet translate e.E1
         return Expr.Unary(GetToken(binaryExpr), UnaryOperator.Opcode.Not, arg);
       } else if (binaryExpr.ResolvedOp == BinaryExpr.ResolvedOpcode.InMultiSet) {
-        return operandEtran.TrInMultiSet(GetToken(binaryExpr), e0, binaryExpr.E1, binaryExpr.E0.Type, false); // let TrInMultiSet translate e.E1
+        return TrInMultiSet(GetToken(binaryExpr), e0, binaryExpr.E1, binaryExpr.E0.Type, false); // let TrInMultiSet translate e.E1
       } else if (binaryExpr.ResolvedOp == BinaryExpr.ResolvedOpcode.NotInMultiSet) {
-        Expr arg = operandEtran.TrInMultiSet(GetToken(binaryExpr), e0, binaryExpr.E1, binaryExpr.E0.Type, false);  // let TrInMultiSet translate e.E1
+        Expr arg = TrInMultiSet(GetToken(binaryExpr), e0, binaryExpr.E1, binaryExpr.E0.Type, false);  // let TrInMultiSet translate e.E1
         return Expr.Unary(GetToken(binaryExpr), UnaryOperator.Opcode.Not, arg);
       }
-      Expr e1 = operandEtran.TrExpr(binaryExpr.E1);
+      Expr e1 = TrExpr(binaryExpr.E1);
       BinaryOperator.Opcode bOpcode;
       Boogie.Type typ;
       var oe0 = e0;
