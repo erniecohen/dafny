@@ -1,6 +1,9 @@
 name: Obligation preservation build probe
 on:
   workflow_dispatch:
+  push:
+    branches: [scratch/codex/issue100-preservation-build]
+    paths: [.github/workflows/obligation-preservation-build.yml]
 permissions:
   contents: read
 jobs:
