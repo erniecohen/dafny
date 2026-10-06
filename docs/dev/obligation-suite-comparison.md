@@ -1,12 +1,12 @@
 # Full-suite and standard-library obligation comparison
 
-Status: complete library comparisons and one completed suite setting; the other suite setting is still running for the legacy reveal-scope correction with Z3 5.1.0; enabled acceptance failed. The option remains experimental and default off.
+Status: complete native comparisons for the legacy reveal-scope correction with Z3 5.1.0; enabled acceptance failed. The option remains experimental and default off.
 
 Product and build identities are recorded in [obligation-validation.md](obligation-validation.md). The complete existing runners compare baseline, candidate with the option off, and candidate with it on, under both additional-axiom settings. Proof inputs, source options, warning policy, resource ceilings and expected-verdict tables are unchanged. These results supersede the preceding exit-publication comparison.
 
 ## Default-off compatibility
 
-Every one of the 1,161 suite programs matches the baseline and committed expected verdicts in the completed additional-axioms-on setting. Complete named declaration/batch outcomes and resource entries match. Expected parser, resolver and command-line negatives remain in the denominator.
+Every one of the 1,161 suite programs matches the baseline and committed expected verdicts in both settings. Complete named declaration/batch outcomes and resource entries match. Expected parser, resolver and command-line negatives remain in the denominator.
 
 The standard-library comparisons cover the main Std project and all six target-specific parts, with 2,190 declarations and seven run rows per mode. With additional axioms off, every default-off verdict matches the fresh baseline and committed expectations. With additional axioms on, the fresh baseline proves `Std.JSON.ZeroCopy.Deserializer.Objects.BracketedToObject`, while the default-off candidate exhausts its resource ceiling and matches the committed expectation. The corresponding summary row also differs. This movement is recorded rather than accepted as default-off compatibility. All emitted operational Boogie matches after excluding complete comment lines. Library resource entries also vary under the existing declaration-order behavior documented in `std-verdicts.py`; exact controlled library cost compatibility is not accepted. The capture gate counts all emitted modules and completes normally.
 
@@ -20,6 +20,13 @@ The remaining changes are listed below. No resource ceiling was increased, no ex
 
 | Scope | Additional axioms | Declaration | Baseline | Enabled |
 | --- | --- | --- | --- | --- |
+| suite | off | dafny0/NoTypeArgs.dfy / Lemma (correctness) | Correct | OutOfResource |
+| suite | off | dafny1/ExtensibleArrayAuto.dfy / ExtensibleArray.Set (correctness) | Correct | OutOfResource |
+| suite | off | dafny1/SchorrWaite-stages.dfy / M2.SchorrWaite (correctness) | Correct | OutOfResource |
+| suite | off | dafny2/MinWindowMax.dfy / MinimumWindowMax (correctness) | Correct | OutOfResource |
+| suite | off | dafny2/pq-intrinsic-extrinsic.dfy / PriorityQueue_extrinsic.AboutInsert (correctness) | OutOfResource | Correct |
+| suite | off | dafny4/FlyingRobots.dfy / FormArmy (correctness) | Correct | OutOfResource |
+| suite | off | dafny4/Primes.dfy / Composite (correctness) | Correct | OutOfResource |
 | suite | on | dafny0/NoTypeArgs.dfy / Lemma (correctness) | Correct | OutOfResource |
 | suite | on | dafny1/ExtensibleArrayAuto.dfy / ExtensibleArray.Set (correctness) | Correct | OutOfResource |
 | suite | on | dafny1/SchorrWaite-stages.dfy / M2.SchorrWaite (correctness) | Correct | OutOfResource |
@@ -54,6 +61,77 @@ The remaining changes are listed below. No resource ceiling was increased, no ex
 | library | on | Std Std.Producers.MappedProducerOfNewProducers.Invoke (correctness) | Correct | OutOfResource |
 
 ## Complete changed-row review
+
+### suite-off
+
+| Program or declaration | Review |
+| --- | --- |
+| dafny0/AutoContracts.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/BindingGuards.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/CanCall.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/ChainingDisjointTests.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/CoPrefix.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/ComputationsNeg.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/CustomErrorMesage.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/DTypes.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/Datatypes.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/DefaultParameters.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/Definedness.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/ForLoops.dfy | proof/error counts changed; declaration outcomes unchanged |
+| dafny0/GhostAutoInit.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/Includee.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/Inverses.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/Matrix-OOB.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/MultiSets.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/NoTypeArgs.dfy | new failure |
+| dafny0/Predicates.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/PrefixTypeSubst.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/Refinement.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/ResultInTypeSubsetType.dfy | proof/error counts changed; declaration outcomes unchanged |
+| dafny0/Skeletons.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/SubsetTypes.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/Termination.dfy | proof/error counts changed; declaration outcomes unchanged |
+| dafny0/Twostate-Verification.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny0/TypeAntecedents.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny1/ExtensibleArrayAuto.dfy | new failure |
+| dafny1/MoreInduction.dfy | proof/error counts changed; declaration outcomes unchanged |
+| dafny1/SchorrWaite-stages.dfy | new failure |
+| dafny1/SchorrWaite.dfy | proof/error counts changed; declaration outcomes unchanged |
+| dafny2/MinWindowMax.dfy | new failure |
+| dafny2/SmallestMissingNumber-functional.dfy | proof/error counts changed; declaration outcomes unchanged |
+| dafny2/SnapshotableTrees.dfy | proof/error counts changed; declaration outcomes unchanged |
+| dafny2/pq-intrinsic-extrinsic.dfy | proved former resource exhaustion |
+| dafny3/Inc.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny3/WideTrees.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny3/Zip.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny4/ACL2-extractor.dfy | proof/error counts changed; declaration outcomes unchanged |
+| dafny4/Bug88.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny4/Circ.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny4/FlyingRobots.dfy | new failure |
+| dafny4/Primes.dfy | new failure |
+| dafny4/SoftwareFoundations-Basics.dfy | proof/error counts changed; declaration outcomes unchanged |
+| dafny4/gcd.dfy | proof/error counts changed; declaration outcomes unchanged |
+| dafny4/git-issue147.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| dafny4/regression-calc.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| git-issues/git-issue-1248.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| git-issues/git-issue-132-newtype-partial-total-universal-proof-nonvacuity.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| git-issues/git-issue-143-codatatype-abstemious-constructor-helper-positive.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| git-issues/git-issue-143-codatatype-destructive-guarded-observation-positive.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| git-issues/git-issue-145-nonvacuity.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| git-issues/git-issue-1989.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| git-issues/git-issue-19b.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| git-issues/git-issue-2211.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| git-issues/git-issue-2211a.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| git-issues/git-issue-2703.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| git-issues/git-issue-370.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| git-issues/git-issue-4035.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| git-issues/git-issue-4224.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| git-issues/git-issue-4787.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| git-issues/git-issue-600.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| git-issues/git-issue-6366.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| git-issues/git-issue-6531.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| git-issues/git-issue-6533.dfy | diagnostic locations moved; declaration outcomes unchanged |
+| git-issues/git-issue-6535.dfy | diagnostic locations moved; declaration outcomes unchanged |
 
 ### suite-on
 

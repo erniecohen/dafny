@@ -126,7 +126,8 @@ The full table in [obligation-suite-comparison.md](obligation-suite-comparison.m
 names all new resource failures. Every such run exhausts the original ceiling;
 none is accepted by increasing that ceiling. The following smaller examples were resource failures in the preceding
 complete product and remain useful starting points for diagnosis. Their current
-verdicts are recorded separately in the complete comparison:
+verdicts are recorded separately in the complete comparison; `dec` now verifies
+in both settings:
 
 * `dafny0/NoTypeArgs.dfy`, `Lemma<A>`, proves
   `reverse(concat(xs, ys)) == concat(reverse(ys), reverse(xs))`. Its match
