@@ -99,6 +99,47 @@ public class ObligationLoweringTests {
       ObligationFingerprint.Expression(Lambda("y", false)));
   }
 
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task MethodExitPreservesTheCheckedEnsuresPublicationPolicy(bool refresh) {
+    const string source = "ghost predicate P(x:int) { x>=0 && x<=100 } " +
+      "lemma L(x:int) requires 0<=x<=100 ensures P(x) {}";
+    var enabled = await Translate(source, true, refresh);
+    var implementation = enabled.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var localChecks = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+      .Where(c => c.Description is EnsuresDescription).ToList();
+    Assert.True(localChecks.Count >= 2);
+    Assert.All(localChecks, check =>
+      Assert.Equal(-1, Bpl.QKeyValue.FindIntAttribute(check.Attributes, "subsumption", -1)));
+
+    var legacy = await Translate(source, false, refresh);
+    var procedure = legacy.SelectMany(p => p.TopLevelDeclarations).OfType<Bpl.Procedure>()
+      .Single(p => p.Name == implementation.Name);
+    var originalChecks = procedure.Ensures.Where(ensures => !ensures.Free).ToList();
+    Assert.All(originalChecks, check =>
+      Assert.Equal(-1, Bpl.QKeyValue.FindIntAttribute(check.Attributes, "subsumption", -1)));
+    Assert.Equal(originalChecks.Select(check => ObligationFingerprint.Expression(check.Condition)).ToArray(),
+      localChecks.Select(check => ObligationFingerprint.Expression(check.Expr)).ToArray());
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task ExplicitSplitAssertionsRetainTheirCheckAndForgetPolicy(bool refresh) {
+    const string source = "ghost predicate P(x:int) { x>=0 && x<=100 } " +
+      "lemma L(x:int) requires 0<=x<=100 { assert P(x); }";
+    foreach (var enabled in new[] { false, true }) {
+      var programs = await Translate(source, enabled, refresh);
+      var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+      var checks = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+        .Where(c => c.Description is AssertStatementDescription).ToList();
+      Assert.True(checks.Count >= 2);
+      Assert.All(checks, check =>
+        Assert.Equal(0, Bpl.QKeyValue.FindIntAttribute(check.Attributes, "subsumption", -1)));
+    }
+  }
+
   [Fact]
   public async Task MethodExitChecksTheSamePropositionAsAnImmediateAssertion() {
     const string source = "ghost predicate P(x:int) { x>=0 } lemma L(x:int) requires x>=0 ensures P(x) { assert P(x); }";
