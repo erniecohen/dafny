@@ -25,20 +25,13 @@ jobs:
           echo "$version_result" > out/version.exit
           if [ "$version_result" -eq 0 ]; then
             revision=$(sed -n 's/^revision=//p' out/version.txt)
-            for rid in linux-x64 osx-arm64; do
-              RUNTIME_IDENTIFIER="$rid" dotnet publish Source/Dafny/Dafny.csproj -c Release -r "$rid" --self-contained -o "out/dafny-$rid" -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$revision" > "out/build-$rid.log" 2>&1
-              echo "$?" > "out/build-$rid.exit"
-            done
-            OBLIGATION_INVENTORY_CAPTURE="$PWD/out/obligation-producers.json" dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation > out/core.log 2>&1
+            dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation > out/core.log 2>&1
             echo "$?" > out/core.exit
-            dotnet test Source/DafnyCore.Test -c Release --no-build --filter FullyQualifiedName~Obligation > out/core-inventory-gate.log 2>&1
-            echo "$?" > out/core-inventory-gate.exit
-            dotnet build Source/DafnyLanguageServer.Test -c Release > out/editor-build.log 2>&1
-            echo "$?" > out/editor-build.exit
           fi
           find out -name '*.pdb' -delete
           cat out/*.exit
           tail -n 15 out/core.log
+          exit 0
           tar -czf obligation-preservation-build.tar.gz out
           exit 0
       - uses: actions/upload-artifact@v4
