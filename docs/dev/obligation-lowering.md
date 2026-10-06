@@ -125,6 +125,14 @@ returns before publishing their summary; procedure ensures remain checked.
 Inherited conditions retain the `$_reverifyPost` guard. Filtering, dependency
 information and source/error provenance remain on the assertion sinks.
 
+The local method-exit copies retain ordinary checked-ensures subsumption: each
+checked piece becomes a premise for later checks. Reusing the split explicit
+assertion emitter here would suppress that premise and weaken the continuation
+prefix. All pieces still have to be proved, so publishing them afterward is the
+existing sound proof-cut rule. Explicit split assertions retain their original
+check-and-forget behavior. Formula equality alone does not establish command
+publication equivalence; the structural gate checks both for method exits.
+
 For an immediate duplicate, comparisons include the complete checking context,
 including the original statement/fuel state, guards and already checked WF prefix.
 The additional checker uses the existing assertion recipe. The first check establishes

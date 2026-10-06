@@ -1,1 +1,2 @@
 Add the experimental, default-off `--consistent-obligation-checks` option to add assertion-style checking for visible type constraints and contracts while retaining the original checked formulas, allocation predicates, membership and procedure checks, and fuel rules.
+The added method-exit checks retain the publication policy of checked procedure postconditions, so later checks can use earlier proved pieces.
