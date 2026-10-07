@@ -116,3 +116,12 @@ checks and exact summary checks are all retained. Polymorphic Boogie binders,
 dependent or attributed dummies, lambdas and extraction through old-expression
 scopes retain their existing paths without a new scoped instance. This remains
 an unaccepted native experiment pending complete structural and proof gates.
+
+The scoped support copier also handles identifiers awaiting Boogie resolution.
+Its optional name map binds only declarations in the current quantifier or let
+scope, masking and restoring shadowed names on entry and exit. Other named
+identifiers remain unresolved. Existing copier calls omit this map and retain
+their previous behavior. Let right-hand sides use the outer name map before
+installing the let declarations. Closure construction then uses declaration
+identities, so renaming support dummies cannot leave a source binder reference
+unbound or capture one under a nested binder.

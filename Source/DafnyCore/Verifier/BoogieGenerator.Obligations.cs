@@ -110,10 +110,13 @@ public partial class BoogieGenerator {
   // copied binder before traversing its body, attributes and trigger patterns.
   // Boogie's generic duplicator deliberately leaves identifier Decl references
   // alone, so cloning a binder without this map would change its binding.
-  private sealed class MethodPostconditionDuplicator(Dictionary<Bpl.Variable, Bpl.Expr> replacements) : Bpl.Duplicator {
-    public override Bpl.Expr VisitIdentifierExpr(Bpl.IdentifierExpr node) =>
-      node.Decl != null && replacements.TryGetValue(node.Decl, out var replacement)
+  private sealed class MethodPostconditionDuplicator(Dictionary<Bpl.Variable, Bpl.Expr> replacements,
+    Dictionary<string, Bpl.Expr> namedReplacements = null) : Bpl.Duplicator {
+    public override Bpl.Expr VisitIdentifierExpr(Bpl.IdentifierExpr node) {
+      if (node.Decl != null && replacements.TryGetValue(node.Decl, out var replacement)) { return replacement; }
+      return node.Decl == null && namedReplacements != null && namedReplacements.TryGetValue(node.Name, out replacement)
         ? replacement : base.VisitIdentifierExpr(node);
+    }
 
     private Bpl.Expr WithCopiedBindings(List<Bpl.Variable> variables,
       System.Func<List<Bpl.Variable>, Bpl.Expr> copyBody) {
@@ -123,8 +126,12 @@ public partial class BoogieGenerator {
         return copy;
       }).ToList();
       var saved = variables.Select(variable => replacements.GetValueOrDefault(variable)).ToList();
+      var savedNames = namedReplacements == null ? null : variables.Select(variable =>
+        namedReplacements.GetValueOrDefault(variable.TypedIdent.Name)).ToList();
       foreach (var pair in variables.Zip(copies)) {
-        replacements[pair.First] = new Bpl.IdentifierExpr(pair.Second.tok, pair.Second);
+        var identifier = new Bpl.IdentifierExpr(pair.Second.tok, pair.Second);
+        replacements[pair.First] = identifier;
+        if (namedReplacements != null) { namedReplacements[pair.First.TypedIdent.Name] = identifier; }
       }
       try {
         foreach (var pair in variables.Zip(copies)) {
@@ -137,6 +144,10 @@ public partial class BoogieGenerator {
         for (var i = 0; i < variables.Count; i++) {
           if (saved[i] == null) { replacements.Remove(variables[i]); }
           else { replacements[variables[i]] = saved[i]; }
+          if (namedReplacements != null) {
+            if (savedNames[i] == null) { namedReplacements.Remove(variables[i].TypedIdent.Name); }
+            else { namedReplacements[variables[i].TypedIdent.Name] = savedNames[i]; }
+          }
         }
       }
     }
@@ -216,6 +227,17 @@ public partial class BoogieGenerator {
     facts.Add((agreement, source));
   }
 
+  // Translation has not yet resolved every Boogie identifier. Collect only
+  // known declaration identities; the scoped copier resolves source binders
+  // lexically while leaving unrelated named identifiers unchanged.
+  private sealed class ContractReferencedVariableCollector : Bpl.Duplicator {
+    public readonly HashSet<Bpl.Variable> Variables = new(ReferenceEqualityComparer.Instance);
+    public override Bpl.Expr VisitIdentifierExpr(Bpl.IdentifierExpr node) {
+      if (node.Decl != null) { Variables.Add(node.Decl); }
+      return base.VisitIdentifierExpr(node);
+    }
+  }
+
   private sealed class ContractScopedFuelLayerDescription : ProofObligationDescription {
     public override string SuccessDescription => "existing fuel layers agree in their scope";
     public override string FailureDescription => "could not establish scoped equivalence between existing fuel layers";
@@ -234,27 +256,35 @@ public partial class BoogieGenerator {
           pair.Value.InParams[index].TypedIdent.Type == Predef.LayerType, -1), Arity: pair.Value.InParams.Count));
     var scopes = new List<List<Bpl.Variable>>();
     var equalities = new List<Bpl.Expr>();
-    void Gather(Bpl.Expr expression, Dictionary<Bpl.Variable, Bpl.Expr> substitutions) {
+    void Gather(Bpl.Expr expression, Dictionary<Bpl.Variable, Bpl.Expr> substitutions,
+      Dictionary<string, Bpl.Expr> namedSubstitutions) {
       if (expression is Bpl.QuantifierExpr quantifier) {
         // Polymorphic Boogie binders need a separate type-binding copier.
         // Retain their original checks without extracting applications.
         if (quantifier.TypeParameters.Count != 0) { return; }
         var inner = new Dictionary<Bpl.Variable, Bpl.Expr>(substitutions);
-        foreach (var dummy in quantifier.Dummies) { inner.Remove(dummy); }
+        var innerNames = new Dictionary<string, Bpl.Expr>(namedSubstitutions);
+        foreach (var dummy in quantifier.Dummies) {
+          inner.Remove(dummy);
+          innerNames[dummy.TypedIdent.Name] = new Bpl.IdentifierExpr(dummy.tok, dummy);
+        }
         scopes.Add(quantifier.Dummies);
-        Gather(quantifier.Body, inner);
+        Gather(quantifier.Body, inner, innerNames);
         scopes.RemoveAt(scopes.Count - 1);
         return;
       }
       if (expression is Bpl.LetExpr let) {
         // Let right-hand sides are evaluated in the outer lexical scope.
-        foreach (var rhs in let.Rhss) { Gather(rhs, substitutions); }
+        foreach (var rhs in let.Rhss) { Gather(rhs, substitutions, namedSubstitutions); }
         var inner = new Dictionary<Bpl.Variable, Bpl.Expr>(substitutions);
-        var copier = new MethodPostconditionDuplicator(substitutions);
+        var innerNames = new Dictionary<string, Bpl.Expr>(namedSubstitutions);
+        var copier = new MethodPostconditionDuplicator(substitutions, namedSubstitutions);
         foreach (var pair in let.Dummies.Zip(let.Rhss)) {
-          inner[pair.First] = copier.VisitExpr(pair.Second);
+          var rhs = copier.VisitExpr(pair.Second);
+          inner[pair.First] = rhs;
+          innerNames[pair.First.TypedIdent.Name] = rhs;
         }
-        Gather(let.Body, inner);
+        Gather(let.Body, inner, innerNames);
         return;
       }
       // Do not extract from lambdas or move an application out of old(...).
@@ -262,19 +292,19 @@ public partial class BoogieGenerator {
       if (scopes.Count != 0 && original.Fun is Bpl.FunctionCall function &&
           fuelFunctions.TryGetValue(function.FunctionName, out var signature) &&
           signature.Position >= 0 && original.Args.Count == signature.Arity) {
-        var application = (Bpl.NAryExpr)new MethodPostconditionDuplicator(substitutions).VisitExpr(original);
+        var application = (Bpl.NAryExpr)new MethodPostconditionDuplicator(substitutions, namedSubstitutions).VisitExpr(original);
         if (application.Args[signature.Position] is Bpl.NAryExpr successor && successor.Args.Count == 1 &&
             successor.Fun is Bpl.FunctionCall { FunctionName: "$LS" }) {
           var predecessor = (Bpl.NAryExpr)application.Clone();
           predecessor.Args = application.Args.ToList();
           predecessor.Args[signature.Position] = successor.Args[0];
           var equality = Bpl.Expr.Eq(application, predecessor);
-          var free = new Bpl.GSet<object>();
-          equality.ComputeFreeVariables(free);
+          var referenced = new ContractReferencedVariableCollector();
+          referenced.VisitExpr(equality);
           var needed = new List<Bpl.Variable>();
           var seen = new HashSet<Bpl.Variable>(ReferenceEqualityComparer.Instance);
           foreach (var variable in scopes.SelectMany(scope => scope)) {
-            if (free.Contains(variable) && seen.Add(variable)) { needed.Add(variable); }
+            if (referenced.Variables.Contains(variable) && seen.Add(variable)) { needed.Add(variable); }
           }
           // Dependent or attributed dummies need a separate closure rule.
           // Skip only this additional instance; retain every original check.
@@ -304,9 +334,11 @@ public partial class BoogieGenerator {
           equalities.Add(agreement);
         }
       }
-      foreach (var argument in original.Args) { Gather(argument, substitutions); }
+      foreach (var argument in original.Args) { Gather(argument, substitutions, namedSubstitutions); }
     }
-    foreach (var expression in expressions) { Gather(expression, new Dictionary<Bpl.Variable, Bpl.Expr>()); }
+    foreach (var expression in expressions) {
+      Gather(expression, new Dictionary<Bpl.Variable, Bpl.Expr>(), new Dictionary<string, Bpl.Expr>());
+    }
     if (equalities.Count == 0) { return; }
     var conjunction = equalities.Aggregate((left, right) => BplAnd(left, right));
     checking.Add(AssertMethodContract(origin, conjunction, new ContractScopedFuelLayerDescription(), checking.Context));

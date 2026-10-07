@@ -344,6 +344,14 @@ public class ObligationLoweringTests {
       c => c.Description?.ShortDescription == "fuel layer agreement");
   }
 
+  private sealed class ScopedFuelTestReferences : Bpl.Duplicator {
+    public readonly HashSet<Bpl.Variable> Variables = new(ReferenceEqualityComparer.Instance);
+    public override Bpl.Expr VisitIdentifierExpr(Bpl.IdentifierExpr node) {
+      if (node.Decl != null) { Variables.Add(node.Decl); }
+      return base.VisitIdentifierExpr(node);
+    }
+  }
+
   [Theory]
   [InlineData(false, false, false, false, false)]
   [InlineData(false, false, false, false, true)]
@@ -400,9 +408,9 @@ public class ObligationLoweringTests {
       var closure = Assert.IsType<Bpl.ForallExpr>(expression);
       Assert.Single(closure.Dummies);
       Assert.StartsWith("$contractFuel#", closure.Dummies[0].TypedIdent.Name);
-      var free = new Bpl.GSet<object>();
-      closure.ComputeFreeVariables(free);
-      Assert.Empty(free.OfType<Bpl.BoundVariable>());
+      var referenced = new ScopedFuelTestReferences();
+      referenced.VisitExpr(closure.Body);
+      Assert.All(referenced.Variables.OfType<Bpl.BoundVariable>(), variable => Assert.Contains(variable, closure.Dummies));
       var equality = Assert.IsType<Bpl.NAryExpr>(closure.Body);
       Assert.Equal(Bpl.BinaryOperator.Opcode.Eq, Assert.IsType<Bpl.BinaryOperator>(equality.Fun).Op);
       var upper = Assert.IsType<Bpl.NAryExpr>(equality.Args[0]);
@@ -444,9 +452,9 @@ public class ObligationLoweringTests {
       var closure = Assert.IsType<Bpl.ForallExpr>(expression);
       Assert.Equal(2, closure.Dummies.Count);
       Assert.Equal(2, closure.Dummies.Select(v => v.TypedIdent.Name).Distinct().Count());
-      var free = new Bpl.GSet<object>();
-      closure.ComputeFreeVariables(free);
-      Assert.Empty(free.OfType<Bpl.BoundVariable>());
+      var referenced = new ScopedFuelTestReferences();
+      referenced.VisitExpr(closure.Body);
+      Assert.All(referenced.Variables.OfType<Bpl.BoundVariable>(), variable => Assert.Contains(variable, closure.Dummies));
       var equality = Assert.IsType<Bpl.NAryExpr>(closure.Body);
       var application = Assert.IsType<Bpl.NAryExpr>(equality.Args[0]);
       Assert.Same(closure.Dummies[0], Assert.IsType<Bpl.IdentifierExpr>(application.Args[^2]).Decl);
