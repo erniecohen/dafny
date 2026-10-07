@@ -141,3 +141,11 @@ old-expression scopes and unsupported expression-local constructs are excluded.
 The existing reveal, hide, push and pop commands retain their original order and
 outer-scope effects. The existing contract-only ground and scoped collectors,
 body equalities and every original, canonical and summary check remain.
+
+
+The collector distinguishes generated contract proof cuts by their statement
+identity. It does not revisit those cuts when collecting source-context terms
+for a later call or exit. Every earlier cut, check and published fact remains in
+the original command stream; only the additional term search avoids feeding its
+own support expressions back into itself. Successive identical source contexts
+therefore produce the same bounded number of checked support instances.

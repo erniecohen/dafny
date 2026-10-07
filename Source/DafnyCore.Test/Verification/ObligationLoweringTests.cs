@@ -467,6 +467,34 @@ public class ObligationLoweringTests {
     Assert.Contains(commands.OfType<Bpl.AssertCmd>(), c => c.Description is AssertStatementDescription);
   }
 
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task ContractContextFuelCollectionDoesNotRevisitGeneratedProofCuts(bool refresh) {
+    const string source = "ghost function F(n:nat):int { if n==0 then 0 else F(n-1)+1 } " +
+      "lemma Use() requires true {} lemma L(n:nat) ensures true { var i:=0; " +
+      "while i<n invariant forall m:nat :: F(m)==m { i:=i+1; } Use(); Use(); }";
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p =>
+      p.Name.StartsWith("Impl$$") && p.Name.EndsWith(".L"));
+    var commands = implementation.Blocks.SelectMany(b => b.Cmds).ToList();
+    var agreements = commands.OfType<Bpl.AssertCmd>().Where(c =>
+      c.Description?.ShortDescription == "context fuel layer agreement").ToList();
+    Assert.Equal(3, agreements.Count);
+    int Instances(Bpl.Expr expression) => expression is Bpl.NAryExpr {
+      Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.And }
+    } conjunction ? conjunction.Args.Sum(Instances) : 1;
+    var count = Instances(agreements[0].Expr);
+    Assert.True(count > 0);
+    Assert.All(agreements, agreement => Assert.Equal(count, Instances(agreement.Expr)));
+    Assert.Equal(2, commands.OfType<Bpl.CallCmd>().Count(call => call.callee.EndsWith(".Use")));
+    Assert.Contains(commands.OfType<Bpl.AssertCmd>(), c => c.Description is LoopInvariant);
+    foreach (var agreement in agreements) {
+      var fingerprint = ObligationFingerprint.Expression(agreement.Expr);
+      Assert.Contains(commands.OfType<Bpl.AssumeCmd>(), c => ObligationFingerprint.Expression(c.Expr) == fingerprint);
+    }
+  }
+
   private sealed class ScopedFuelTestReferences : Bpl.Duplicator {
     public readonly HashSet<Bpl.Variable> Variables = new(ReferenceEqualityComparer.Instance);
     public override Bpl.Expr VisitIdentifierExpr(Bpl.IdentifierExpr node) {

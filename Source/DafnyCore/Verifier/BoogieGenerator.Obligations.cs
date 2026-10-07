@@ -406,7 +406,7 @@ public partial class BoogieGenerator {
         case Bpl.PredicateCmd predicate:
           Add(predicate.Expr);
           break;
-        case Bpl.IfCmd conditional:
+        case Bpl.IfCmd conditional when !contractProofCuts.Contains(conditional):
           Add(conditional.Guard);
           GatherList(conditional.Thn);
           Gather(conditional.ElseIf);
@@ -470,6 +470,10 @@ public partial class BoogieGenerator {
     }
   }
 
+  // Do not feed generated proof scaffolding back into context-term collection.
+  // Its checks and continuation facts remain in the original statement stream.
+  private readonly HashSet<Bpl.IfCmd> contractProofCuts = new(ReferenceEqualityComparer.Instance);
+
   private void PublishContractProofCut(IOrigin origin, BoogieStmtListBuilder continuation,
     BoogieStmtListBuilder checking, IReadOnlyList<(Bpl.Expr Condition, Expression Source)> facts) {
     // The verification arm checks every fact before becoming unreachable. The
@@ -485,7 +489,9 @@ public partial class BoogieGenerator {
         new AssumptionDependency(false, "verified contract continuation", fact.Source));
       publication.Add(command);
     }
-    continuation.Add(new Bpl.IfCmd(origin, null, checking.Collect(origin), null, publication.Collect(origin)));
+    var cut = new Bpl.IfCmd(origin, null, checking.Collect(origin), null, publication.Collect(origin));
+    contractProofCuts.Add(cut);
+    continuation.Add(cut);
   }
 
   private void CheckMethodPostconditions(MethodOrConstructor method, IOrigin returnOrigin,
