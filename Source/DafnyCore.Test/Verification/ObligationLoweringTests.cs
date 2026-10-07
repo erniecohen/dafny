@@ -360,7 +360,7 @@ public class ObligationLoweringTests {
       ? $"lemma Use(c:C) requires {condition} {{}} lemma L(c:C) requires 0<=c.i<=100 {{ Use(c); }}"
       : $"lemma L(c:C) requires 0<=c.i<=100 ensures {condition} {{}}");
     var programs = await Translate(source, true, refresh);
-    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.StartsWith("Impl$$") && p.Name.EndsWith(".L"));
     var commands = implementation.Blocks.SelectMany(b => b.Cmds).ToList();
     var agreement = Assert.Single(commands.OfType<Bpl.AssertCmd>().Where(c =>
       c.Description?.ShortDescription == "predicate body agreement"));
@@ -388,7 +388,7 @@ public class ObligationLoweringTests {
     const string source = "ghost predicate P(x:int) { x>=0 && x<=100 } " +
       "lemma Use(x:int) requires P(x) {} lemma L(x:int) requires P(x) ensures P(x) { hide P; Use(x); }";
     var programs = await Translate(source, true, refresh);
-    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.StartsWith("Impl$$") && p.Name.EndsWith(".L"));
     Assert.DoesNotContain(implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>(),
       c => c.Description?.ShortDescription == "predicate body agreement");
   }
