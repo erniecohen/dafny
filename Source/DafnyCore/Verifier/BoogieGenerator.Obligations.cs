@@ -111,7 +111,8 @@ public partial class BoogieGenerator {
   // Boogie's generic duplicator deliberately leaves identifier Decl references
   // alone, so cloning a binder without this map would change its binding.
   private sealed class MethodPostconditionDuplicator(Dictionary<Bpl.Variable, Bpl.Expr> replacements,
-    Dictionary<string, Bpl.Expr> namedReplacements = null, bool validateDefinitionTriggers = false) : Bpl.Duplicator {
+    Dictionary<string, Bpl.Expr> namedReplacements = null, bool validateDefinitionTriggers = false,
+    System.Func<string> freshBinderName = null) : Bpl.Duplicator {
     // Actual arguments can contain expressions absent from the definition's
     // original patterns. Only additional definition instances opt in; their
     // logical bodies and all original patterns remain unchanged.
@@ -132,6 +133,7 @@ public partial class BoogieGenerator {
       var copies = variables.Select(variable => {
         var copy = (Bpl.Variable)variable.Clone();
         copy.TypedIdent = (Bpl.TypedIdent)variable.TypedIdent.Clone();
+        if (freshBinderName != null) { copy.Name = copy.TypedIdent.Name = freshBinderName(); }
         return copy;
       }).ToList();
       var saved = variables.Select(variable => replacements.GetValueOrDefault(variable)).ToList();
@@ -539,13 +541,108 @@ public partial class BoogieGenerator {
     _ => false
   };
 
+  // Audit lexical identity before an axiom body can become a local instance.
+  // A named identifier awaiting resolution is allowed only at its lexical
+  // binder or a known global. An identifier carrying a conflicting declaration
+  // is never repaired by name. Let right-hand sides use the outer environment.
+  private static bool ContractDefinitionBindingsAreScoped(Bpl.Expr expression,
+    Dictionary<string, Bpl.Variable> bound, IReadOnlyDictionary<string, Bpl.Variable> globals,
+    bool actualArgument = false) {
+    bool Attributes(Bpl.QKeyValue attribute, Dictionary<string, Bpl.Variable> scope) =>
+      attribute == null || attribute.Params.OfType<Bpl.Expr>().All(value =>
+        ContractDefinitionBindingsAreScoped(value, scope, globals, actualArgument)) && Attributes(attribute.Next, scope);
+    Dictionary<string, Bpl.Variable> Extend(List<Bpl.Variable> variables) {
+      if (variables.Select(variable => variable.Name).Distinct().Count() != variables.Count ||
+          variables.Any(variable => variable.Name != variable.TypedIdent.Name || variable.TypedIdent.WhereExpr != null)) {
+        return null;
+      }
+      var inner = new Dictionary<string, Bpl.Variable>(bound);
+      foreach (var variable in variables) { inner[variable.Name] = variable; }
+      return inner;
+    }
+    switch (expression) {
+      case Bpl.IdentifierExpr identifier:
+        if (bound.TryGetValue(identifier.Name, out var variable)) {
+          return identifier.Decl == null || ReferenceEquals(identifier.Decl, variable);
+        }
+        if (identifier.Decl is Bpl.BoundVariable) { return false; }
+        if (actualArgument) { return true; } // Existing actual terms resolve in their method scope.
+        return globals.TryGetValue(identifier.Name, out var global) &&
+          (identifier.Decl == null || ReferenceEquals(identifier.Decl, global));
+      case Bpl.LiteralExpr:
+        return true;
+      case Bpl.NAryExpr application:
+        return application.Args.All(argument => ContractDefinitionBindingsAreScoped(argument, bound, globals, actualArgument));
+      case Bpl.OldExpr old:
+        return ContractDefinitionBindingsAreScoped(old.Expr, bound, globals, actualArgument);
+      case Bpl.QuantifierExpr quantifier when quantifier.TypeParameters.Count == 0:
+        var quantified = Extend(quantifier.Dummies);
+        if (quantified == null || !Attributes(quantifier.Attributes, quantified) ||
+            !quantifier.Dummies.All(dummy => Attributes(dummy.Attributes, quantified))) { return false; }
+        for (var trigger = quantifier.Triggers; trigger != null; trigger = trigger.Next) {
+          if (!trigger.Tr.All(term => ContractDefinitionBindingsAreScoped(term, quantified, globals, actualArgument))) { return false; }
+        }
+        return ContractDefinitionBindingsAreScoped(quantifier.Body, quantified, globals, actualArgument);
+      case Bpl.LetExpr let:
+        var local = Extend(let.Dummies);
+        return local != null && let.Dummies.Count == let.Rhss.Count &&
+          let.Rhss.All(rhs => ContractDefinitionBindingsAreScoped(rhs, bound, globals, actualArgument)) &&
+          Attributes(let.Attributes, local) && let.Dummies.All(dummy => Attributes(dummy.Attributes, local)) &&
+          ContractDefinitionBindingsAreScoped(let.Body, local, globals, actualArgument);
+      default:
+        return false;
+    }
+  }
+
+  private sealed class ContractIdentifierNameCollector : Bpl.Duplicator {
+    public readonly HashSet<string> Names = new();
+    public override Bpl.Expr VisitIdentifierExpr(Bpl.IdentifierExpr node) {
+      Names.Add(node.Name);
+      return base.VisitIdentifierExpr(node);
+    }
+  }
+
+  internal static bool TryInstantiateContractDefinition(Bpl.ForallExpr axiom,
+    Dictionary<Bpl.Variable, Bpl.Expr> bindings, IReadOnlyCollection<Bpl.Variable> sourceBound,
+    IReadOnlyDictionary<string, Bpl.Variable> globals, out Bpl.Expr instance) {
+    instance = null;
+    if (axiom.TypeParameters.Count != 0 || axiom.Dummies.Count != bindings.Count ||
+        axiom.Dummies.Select(dummy => dummy.Name).Distinct().Count() != axiom.Dummies.Count ||
+        axiom.Dummies.Any(dummy => dummy.Name != dummy.TypedIdent.Name || dummy.TypedIdent.WhereExpr != null ||
+          !bindings.TryGetValue(dummy, out var actual) || actual.Type == null ||
+          !dummy.TypedIdent.Type.Equals(actual.Type))) { return false; }
+    var sourceNames = new Dictionary<string, Bpl.Variable>();
+    foreach (var variable in sourceBound) { sourceNames[variable.Name] = variable; }
+    if (!bindings.Values.All(actual => ContractDefinitionBindingsAreScoped(actual, sourceNames, globals, true)) ||
+        !ContractDefinitionBindingsAreScoped(axiom, new Dictionary<string, Bpl.Variable>(), globals)) { return false; }
+    // Universal elimination of the complete existing body. Every implication
+    // premise and conjunct survives; no user clause or extracted equality is
+    // assumed. The caller universally closes any source-bound actuals.
+    var names = bindings.ToDictionary(pair => pair.Key.Name, pair => pair.Value);
+    var identifiers = new ContractIdentifierNameCollector();
+    identifiers.VisitExpr(axiom);
+    foreach (var actual in bindings.Values) { identifiers.VisitExpr(actual); }
+    identifiers.Names.UnionWith(globals.Keys);
+    identifiers.Names.UnionWith(sourceBound.Select(variable => variable.Name));
+    var next = 0;
+    string Fresh() {
+      string name;
+      do { name = "$contractNative#" + next++; } while (!identifiers.Names.Add(name));
+      return name;
+    }
+    instance = new MethodPostconditionDuplicator(new Dictionary<Bpl.Variable, Bpl.Expr>(bindings),
+      names, validateDefinitionTriggers: true, freshBinderName: Fresh).VisitExpr(axiom.Body);
+    return true;
+  }
+
   private void CheckContractDefinitionEqualities(IOrigin origin, BoogieStmtListBuilder checking,
     List<(Bpl.Expr Condition, Expression Source)> facts, Expression source,
     IEnumerable<Bpl.Expr> expressions, BoogieStmtListBuilder continuation) {
     if (checking.Context.ContainsHide) { return; }
     // Use only already-emitted definitions of functions visible at this boundary.
     // Every resulting equality retains all enclosing implication premises and
-    // is checked before publication. No axiom or permission is added here.
+    // is checked before publication. Complete native axiom instances support
+    // these checks locally without granting their implication premises.
     var functions = declarationMapping.Where(pair => pair.Key is Function f &&
         f.Body != null && RevealedInScope(f) && FunctionBodyIsAvailable(f, currentModule, currentScope) &&
         !f.IsOpaque && !f.IsMadeImplicitlyOpaque(options))
@@ -582,6 +679,9 @@ public partial class BoogieGenerator {
       Bpl.OldExpr old => HasRevealedApplication(old.Expr),
       _ => false
     };
+    var globals = sink.TopLevelDeclarations.OfType<Bpl.Variable>()
+      .Where(variable => variable is Bpl.GlobalVariable or Bpl.Constant).ToDictionary(variable => variable.Name);
+    var instances = new List<(Bpl.Expr Body, string Function)>();
     var scopes = new List<List<Bpl.Variable>>();
     var equalities = new List<Bpl.Expr>();
     bool Match(Bpl.Expr pattern, Bpl.Expr actual, Dictionary<string, Bpl.Variable> variables,
@@ -666,6 +766,31 @@ public partial class BoogieGenerator {
               LegalContractDefinitionTriggerTerm(pattern) ? BplTrigger(pattern) : null, copier.VisitExpr(equality));
           }
           equalities.Add(equality);
+          // Unsupported instances leave the exact same equality check intact.
+          if (!HasRevealedApplication(template.Quantifier.Body) &&
+              TryInstantiateContractDefinition(template.Quantifier, bindings,
+                scopes.SelectMany(scope => scope).ToList(), globals, out var instance)) {
+            var instanceReferences = new ContractReferencedVariableCollector();
+            instanceReferences.VisitExpr(instance);
+            var instanceBound = scopes.SelectMany(scope => scope).Where(instanceReferences.Variables.Contains)
+              .Distinct<Bpl.Variable>(ReferenceEqualityComparer.Instance).ToList();
+            if (instanceBound.Any(variable => variable.TypedIdent.WhereExpr != null || variable.Attributes != null)) { continue; }
+            if (instanceBound.Count != 0) {
+              var copies = instanceBound.Select(variable => {
+                var copy = (Bpl.Variable)variable.Clone();
+                copy.TypedIdent = (Bpl.TypedIdent)variable.TypedIdent.Clone();
+                copy.Name = copy.TypedIdent.Name = CurrentIdGenerator.FreshId("$contractAxiom#");
+                return copy;
+              }).ToList();
+              var replacements = instanceBound.Zip(copies).ToDictionary(pair => pair.First,
+                pair => (Bpl.Expr)new Bpl.IdentifierExpr(pair.Second.tok, pair.Second));
+              var copier = new MethodPostconditionDuplicator(replacements, validateDefinitionTriggers: true);
+              var pattern = copier.VisitExpr(application);
+              instance = new Bpl.ForallExpr(origin, copies,
+                LegalContractDefinitionTriggerTerm(pattern) ? BplTrigger(pattern) : null, copier.VisitExpr(instance));
+            }
+            instances.Add((instance, function.FunctionName));
+          }
         }
       }
       foreach (var argument in original.Args) { Gather(argument, substitutions, names); }
@@ -709,6 +834,12 @@ public partial class BoogieGenerator {
     }
     foreach (var command in continuation.Commands) { Context(command); }
     if (equalities.Count == 0) { return; }
+    foreach (var (instance, function) in instances) {
+      // These are consequences of native axioms, confined to the verification
+      // arm. Existing narrow equality checks and continuation facts are kept.
+      checking.Add(new Bpl.AssumeCmd(origin, instance,
+        new Bpl.QKeyValue(origin, "contractDefinitionInstance", new List<object> { function }, null)));
+    }
     var agreement = equalities.Aggregate((left, right) => BplAnd(left, right));
     checking.Add(AssertMethodContract(origin, agreement, new ContractDefinitionEqualityDescription(), checking.Context));
     facts.Add((agreement, source));

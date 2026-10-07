@@ -189,3 +189,23 @@ patterns remain, as do all original source patterns and definition axioms. The
 solver may infer patterns when no legal additional hint remains. This does not
 change fuel, definition permissions, hide/reveal scope or the default-off path.
 Native verification and full compatibility remain required before acceptance.
+
+
+The next experiment gives definition-agreement checks explicit local instances
+of the complete native definition axiom. Universal elimination of the existing
+`forall a :: B(a)` supplies `B(actuals)`. If actuals contain source-bound
+variables, universal generalization supplies the corresponding closed instance.
+Every original implication premise, conjunction, heap and fuel argument remains
+in that body. A binder audit rejects ambiguous identities, escaping dummies,
+incomplete or ill-typed substitutions and unsupported scopes. Let right-hand
+sides retain their outer scope. Illegal new trigger hints are omitted without
+omitting their logical bodies; original axiom and source patterns stay intact.
+
+These assumptions appear only in the existing verification arm. They are
+instances of already trusted axioms, never assumptions of a user clause, its
+summary or the extracted equality alone. No instance grants a can-call guard
+unconditionally, adds body visibility, or changes outer reveal behavior.
+Every narrow definition-agreement check, original and strengthened contract
+check, checked summary and continuation fact remains. Unsupported additional
+instantiations keep every existing check. Triggered false controls, native
+negative examples and complete matched gates are still required for acceptance.

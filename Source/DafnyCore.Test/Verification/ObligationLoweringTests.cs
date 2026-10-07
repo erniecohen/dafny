@@ -771,6 +771,8 @@ public class ObligationLoweringTests {
     var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
     Assert.DoesNotContain(implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>(),
       c => c.Description?.ShortDescription == "guarded definition agreement");
+    Assert.DoesNotContain(implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssumeCmd>(),
+      c => Bpl.QKeyValue.FindStringAttribute(c.Attributes, "contractDefinitionInstance") != null);
   }
 
   [Theory]
@@ -783,6 +785,112 @@ public class ObligationLoweringTests {
     var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
     Assert.DoesNotContain(implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>(),
       c => c.Description?.ShortDescription == "guarded definition agreement");
+    Assert.DoesNotContain(implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssumeCmd>(),
+      c => Bpl.QKeyValue.FindStringAttribute(c.Attributes, "contractDefinitionInstance") != null);
+  }
+
+  [Theory]
+  [InlineData(false, false)]
+  [InlineData(false, true)]
+  [InlineData(true, false)]
+  [InlineData(true, true)]
+  public async Task NativeDefinitionInstancesKeepGuardsChecksAndContinuationFacts(bool refresh, bool quantified) {
+    var condition = quantified ? "forall x:int {:trigger F(x)} :: F(x)==x" : "F(n)==n";
+    var source = "ghost function G(x:int):int { x } ghost function F(x:int):int { G(x) } " +
+      $"lemma L(n:int) ensures {condition} {{}}";
+    var programs = await Translate(source, true, refresh);
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    options.ApplyDefaultOptionsWithoutSettingsDefault();
+    foreach (var backend in programs) {
+      Assert.Equal(0, backend.Resolve(options));
+      Assert.Equal(0, backend.Typecheck(options));
+    }
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var commands = implementation.Blocks.SelectMany(b => b.Cmds).ToList();
+    var instances = commands.OfType<Bpl.AssumeCmd>().Where(c =>
+      Bpl.QKeyValue.FindStringAttribute(c.Attributes, "contractDefinitionInstance") != null).ToList();
+    Assert.NotEmpty(instances);
+    // The whole axiom supplies both the dependency's permission and the
+    // definition equality, still under the native can-call premise.
+    Assert.Contains(instances, instance => instance.Expr.ToString().Contains("F#canCall") &&
+      instance.Expr.ToString().Contains("G#canCall") && instance.Expr.ToString().Contains("=="));
+    var support = Assert.Single(commands.OfType<Bpl.AssertCmd>().Where(c =>
+      c.Description?.ShortDescription == "guarded definition agreement"));
+    Assert.True(instances.All(instance => commands.IndexOf(instance) < commands.IndexOf(support)));
+    Assert.Contains(commands.OfType<Bpl.AssumeCmd>(), fact =>
+      ObligationFingerprint.Expression(fact.Expr) == ObligationFingerprint.Expression(support.Expr));
+    Assert.Contains(commands.OfType<Bpl.AssertCmd>(), c => c.Description is EnsuresDescription);
+    if (quantified) {
+      Assert.Contains(instances, instance => instance.Expr is Bpl.ForallExpr);
+    }
+  }
+
+  [Fact]
+  public void NativeDefinitionInstanceAuditRejectsConflictingBindingsAndRetainsCompleteBody() {
+    var token = Token.NoToken;
+    var outer = new Bpl.BoundVariable(token, new Bpl.TypedIdent(token, "x", Bpl.Type.Int));
+    var shadow = new Bpl.BoundVariable(token, new Bpl.TypedIdent(token, "x", Bpl.Type.Int));
+    var escaped = new Bpl.BoundVariable(token, new Bpl.TypedIdent(token, "y", Bpl.Type.Int));
+    var globals = new Dictionary<string, Bpl.Variable>();
+    var guard = Bpl.Expr.Gt(new Bpl.IdentifierExpr(token, outer), Bpl.Expr.Literal(0));
+    var body = Bpl.Expr.Imp(guard, Bpl.Expr.Eq(new Bpl.IdentifierExpr(token, outer), Bpl.Expr.Literal(1)));
+    var axiom = new Bpl.ForallExpr(token, new List<Bpl.Variable> { outer }, null, body);
+    var bindings = new Dictionary<Bpl.Variable, Bpl.Expr> { [outer] = Bpl.Expr.Literal(3) };
+    Assert.True(BoogieGenerator.TryInstantiateContractDefinition(axiom, bindings, [], globals, out var instance));
+    Assert.Equal(Bpl.Expr.Imp(Bpl.Expr.Gt(Bpl.Expr.Literal(3), Bpl.Expr.Literal(0)),
+      Bpl.Expr.Eq(Bpl.Expr.Literal(3), Bpl.Expr.Literal(1))).ToString(), instance.ToString());
+    var invalid = new Bpl.ForallExpr(token, new List<Bpl.Variable> { outer }, null,
+      Bpl.Expr.Eq(new Bpl.IdentifierExpr(token, shadow), Bpl.Expr.Literal(1)));
+    Assert.False(BoogieGenerator.TryInstantiateContractDefinition(invalid, bindings, [], globals, out _));
+    bindings[outer] = new Bpl.IdentifierExpr(token, escaped);
+    Assert.False(BoogieGenerator.TryInstantiateContractDefinition(axiom, bindings, [], globals, out _));
+    bindings[outer] = Bpl.Expr.True;
+    Assert.False(BoogieGenerator.TryInstantiateContractDefinition(axiom, bindings, [], globals, out _));
+    bindings.Clear();
+    Assert.False(BoogieGenerator.TryInstantiateContractDefinition(axiom, bindings, [], globals, out _));
+  }
+
+  [Fact]
+  public void NativeDefinitionInstanceSubstitutionPreservesShadowingAndLetRightHandSides() {
+    var token = Token.NoToken;
+    var outer = new Bpl.BoundVariable(token, new Bpl.TypedIdent(token, "x", Bpl.Type.Int));
+    var shadow = new Bpl.BoundVariable(token, new Bpl.TypedIdent(token, "x", Bpl.Type.Int));
+    var nested = new Bpl.ForallExpr(token, new List<Bpl.Variable> { shadow }, null,
+      Bpl.Expr.Eq(new Bpl.IdentifierExpr(token, shadow), new Bpl.IdentifierExpr(token, shadow)));
+    var let = new Bpl.LetExpr(token, new List<Bpl.Variable> { shadow },
+      new List<Bpl.Expr> { new Bpl.IdentifierExpr(token, outer) }, null,
+      Bpl.Expr.Eq(new Bpl.IdentifierExpr(token, shadow), Bpl.Expr.Literal(3)));
+    var axiom = new Bpl.ForallExpr(token, new List<Bpl.Variable> { outer }, null, Bpl.Expr.And(nested, let));
+    var bindings = new Dictionary<Bpl.Variable, Bpl.Expr> { [outer] = Bpl.Expr.Literal(3) };
+    Assert.True(BoogieGenerator.TryInstantiateContractDefinition(axiom, bindings, [],
+      new Dictionary<string, Bpl.Variable>(), out var instance));
+    var conjunction = Assert.IsType<Bpl.NAryExpr>(instance);
+    var copiedQuantifier = Assert.IsType<Bpl.ForallExpr>(conjunction.Args[0]);
+    var copiedLet = Assert.IsType<Bpl.LetExpr>(conjunction.Args[1]);
+    Assert.NotSame(shadow, copiedQuantifier.Dummies[0]);
+    Assert.NotSame(shadow, copiedLet.Dummies[0]);
+    Assert.Equal("3", copiedLet.Rhss[0].ToString());
+    var equality = Assert.IsType<Bpl.NAryExpr>(copiedLet.Body);
+    Assert.Same(copiedLet.Dummies[0], Assert.IsType<Bpl.IdentifierExpr>(equality.Args[0]).Decl);
+  }
+
+  [Fact]
+  public void NativeDefinitionInstancesAvoidCapturingActualNamesUnderNestedBinders() {
+    var token = Token.NoToken;
+    var outer = new Bpl.BoundVariable(token, new Bpl.TypedIdent(token, "a", Bpl.Type.Int));
+    var nested = new Bpl.BoundVariable(token, new Bpl.TypedIdent(token, "x", Bpl.Type.Int));
+    var actual = new Bpl.Formal(token, new Bpl.TypedIdent(token, "x", Bpl.Type.Int), true);
+    var body = new Bpl.ForallExpr(token, new List<Bpl.Variable> { nested }, null,
+      Bpl.Expr.Eq(new Bpl.IdentifierExpr(token, outer), new Bpl.IdentifierExpr(token, nested)));
+    var axiom = new Bpl.ForallExpr(token, new List<Bpl.Variable> { outer }, null, body);
+    Assert.True(BoogieGenerator.TryInstantiateContractDefinition(axiom,
+      new Dictionary<Bpl.Variable, Bpl.Expr> { [outer] = new Bpl.IdentifierExpr(token, actual) }, [],
+      new Dictionary<string, Bpl.Variable>(), out var instance));
+    var closed = Assert.IsType<Bpl.ForallExpr>(instance);
+    Assert.NotEqual(actual.Name, closed.Dummies[0].Name);
+    var equality = Assert.IsType<Bpl.NAryExpr>(closed.Body);
+    Assert.Same(actual, Assert.IsType<Bpl.IdentifierExpr>(equality.Args[0]).Decl);
+    Assert.Same(closed.Dummies[0], Assert.IsType<Bpl.IdentifierExpr>(equality.Args[1]).Decl);
   }
 
   private sealed class ScopedFuelTestReferences : Bpl.Duplicator {
