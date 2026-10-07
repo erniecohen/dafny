@@ -20,14 +20,35 @@ internal static class ObligationFingerprint {
     string.Join("\n", package.Pieces.Select(p => $"{p.Kind}:{Expression(p.E)}")) +
     "\nsummary:" + Expression(package.Summary);
 
-  public static string Expression(Bpl.Expr expression) => Term(expression, new Dictionary<string,string>());
+  public static string Expression(Bpl.Expr expression) => Term(expression, new BindingScope());
 
-  private static string Term(Bpl.Expr e, Dictionary<string,string> bound) {
+  // Resolved occurrences are bound by declaration identity; unresolved ones use
+  // the innermost lexical name. Depth counts declarations, never distinct names.
+  private sealed class BindingScope {
+    private readonly Dictionary<Bpl.Variable, string> identities;
+    private readonly Dictionary<string, string> names;
+    public int Depth { get; private set; }
+    public BindingScope() {
+      identities = new(); names = new();
+    }
+    public BindingScope(BindingScope parent) {
+      identities = new(parent.identities); names = new(parent.names);
+      Depth = parent.Depth;
+    }
+    public void Bind(Bpl.Variable variable, string canonical) {
+      identities[variable] = canonical; names[variable.Name] = canonical; Depth++;
+    }
+    public string Identifier(Bpl.IdentifierExpr identifier) => identifier.Decl != null
+      ? identities.GetValueOrDefault(identifier.Decl, identifier.Name)
+      : names.GetValueOrDefault(identifier.Name, identifier.Name);
+  }
+
+  private static string Term(Bpl.Expr e, BindingScope bound) {
     var type = e.Type?.ToString() ?? "unresolved";
     string Child(Bpl.Expr x) => Term(x, bound);
     switch (e) {
       case Bpl.IdentifierExpr id:
-        return $"id:{type}:{bound.GetValueOrDefault(id.Name, id.Name)}";
+        return $"id:{type}:{bound.Identifier(id)}";
       case Bpl.LiteralExpr literal:
         return $"literal:{type}:{literal}";
       case Bpl.OldExpr old:
@@ -35,10 +56,10 @@ internal static class ObligationFingerprint {
       case Bpl.NAryExpr application:
         return $"apply:{type}:{application.Fun}({string.Join(",", application.Args.Select(Child))})";
       case Bpl.QuantifierExpr quantifier: {
-        var scoped = new Dictionary<string,string>(bound);
+        var scoped = new BindingScope(bound);
         var variables = quantifier.Dummies.Select((v,i) => {
-          var name = $"bound{bound.Count+i}";
-          scoped[v.Name] = name;
+          var name = $"bound{bound.Depth+i}";
+          scoped.Bind(v, name);
           return $"{name}:{v.TypedIdent.Type}";
         }).ToArray();
         var patterns = new List<string>();
@@ -50,10 +71,10 @@ internal static class ObligationFingerprint {
           $"patterns[{string.Join(";",patterns)}]({Term(quantifier.Body,scoped)})";
       }
       case Bpl.LambdaExpr lambda: {
-        var scoped = new Dictionary<string,string>(bound);
+        var scoped = new BindingScope(bound);
         var variables = lambda.Dummies.Select((v,i) => {
-          var name = $"bound{bound.Count+i}";
-          scoped[v.Name] = name;
+          var name = $"bound{bound.Depth+i}";
+          scoped.Bind(v, name);
           return $"{name}:{v.TypedIdent.Type}";
         }).ToArray();
         return $"lambda:{type}:types[{string.Join(",",lambda.TypeParameters)}]" +
@@ -61,10 +82,10 @@ internal static class ObligationFingerprint {
           $"({Term(lambda.Body,scoped)})";
       }
       case Bpl.LetExpr let: {
-        var scoped = new Dictionary<string,string>(bound);
+        var scoped = new BindingScope(bound);
         var variables = let.Dummies.Select((v,i) => {
-          var name=$"bound{bound.Count+i}";scoped[v.Name]=name;return $"{name}:{v.TypedIdent.Type}";
-        });
+          var name=$"bound{bound.Depth+i}";scoped.Bind(v, name);return $"{name}:{v.TypedIdent.Type}";
+        }).ToArray();
         var bindings=string.Join(",",variables);
         return $"let:{type}[{bindings}]=[{string.Join(",",let.Rhss.Select(Child))}]" +
           $"({Term(let.Body,scoped)})";
@@ -76,7 +97,7 @@ internal static class ObligationFingerprint {
     }
   }
 
-  private static string Attributes(QKeyValue? attribute, Dictionary<string,string> bound) {
+  private static string Attributes(QKeyValue? attribute, BindingScope bound) {
     var result=new List<string>();
     for (var a=attribute;a!=null;a=a.Next) {
       result.Add($"{a.Key}:[{string.Join(",",a.Params.Select(p => p is Bpl.Expr e ? Term(e,bound) : p.ToString()))}]");

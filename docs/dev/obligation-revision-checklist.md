@@ -10,8 +10,9 @@ record implementation and evidence against each requirement as revisions land.
 **Status:** requirements recorded; product revisions and their validation are
 pending. Existing structural checks and native results describe earlier
 implementations and do not discharge this checklist. Keep both PRs as drafts.
-Settle the supported-line design first, then port the same semantics to the
-development line with independent evidence.
+Settle the supported-line design first. The owner requires an explicit approval
+before any implementation is ported to #169; keep that port pending until approval.
+The development line then requires independent evidence.
 
 The target implementation must satisfy:
 
@@ -60,7 +61,7 @@ linked validation report.
 
 | ID | Required change and evidence | Status / evidence |
 | --- | --- | --- |
-| D1 | Wait for S1-S14's semantic design to settle; port that same single-check invariant, without an independently evolved solution or later scratch experiments. Adapt to the current development verifier architecture. | Pending |
+| D1 | Wait for S1-S14's semantic design to settle and obtain explicit owner approval before porting; port that same single-check invariant, without an independently evolved solution or later scratch experiments. Adapt to the current development verifier architecture. | Pending |
 | D2 | Port the lexical `ObligationFingerprint` fix and all relevant controls. | Pending |
 | D3 | Run the paired assertion-invariance tests, original issue 100, non-quantified subset/call cases, reveal-scope controls and negatives natively on the development build. Supported-line results cannot substitute. | Pending |
 | D4 | Run the development verifier suite and standard library under the fork's required configurations. Compare default-off behavior with the actual development baseline and classify multi-seed movements using S13. | Pending |
