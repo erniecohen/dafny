@@ -15,11 +15,12 @@ that clause. A summary cannot justify its own original contract. Earlier checked
 clauses may assist later clauses in their established order. No hidden definition,
 permission, fuel or source contract is removed. Local contract checks force
 checking after retaining the inherited-condition guard, so an inherited origin or an assume-mode source block cannot turn a
-relocated original check into an unchecked premise. An original ground formula
-already checked by an identical canonical piece at that state is reused once;
+relocated original check into an unchecked premise. An original formula already checked by an identical canonical piece at that
+state is reused once;
 the conservative comparison retains exact types, names, function/operator forms,
-old-state forms, fuel and boxing, and refuses quantifiers, lets and unsupported
-syntax. No check is deduplicated across an intervening obligation or state change.
+old-state forms, fuel and boxing. Quantifiers additionally retain exact bound
+names and types, attributes, and ordered trigger lists; polymorphic binders,
+where-clauses, lets and unsupported syntax are refused. No check is deduplicated across an intervening obligation or state change.
 Local call-site checks use ordinary
 publication, preserving the method-requires policy; explicit split source assertions
 keep their original check-and-forget behavior. Every new and original call

@@ -115,22 +115,81 @@ public partial class BoogieGenerator {
   }
 
 
-  // At this one program state, equality is deliberately limited to the same typed
-  // ground syntax at this scope. No alpha-renaming, fuel/boxing rewrite, quantifier,
-  // let or unsupported expression can discharge an original contract check.
-  private static bool SameGroundContractCheck(Bpl.Expr left, Bpl.Expr right) {
-    if (left.GetType() != right.GetType() || left.Type == null || right.Type == null ||
-        !left.Type.Equals(right.Type)) { return false; }
-    return (left, right) switch {
-      (Bpl.IdentifierExpr a, Bpl.IdentifierExpr b) => a.Name == b.Name &&
-        (a.Decl == null || b.Decl == null || ReferenceEquals(a.Decl, b.Decl)),
-      (Bpl.LiteralExpr a, Bpl.LiteralExpr b) => a.ToString() == b.ToString(),
-      (Bpl.OldExpr a, Bpl.OldExpr b) => SameGroundContractCheck(a.Expr, b.Expr),
-      (Bpl.NAryExpr a, Bpl.NAryExpr b) => a.Fun.GetType() == b.Fun.GetType() &&
-        a.Fun.ToString() == b.Fun.ToString() && a.Args.Count == b.Args.Count &&
-        a.Args.Zip(b.Args).All(pair => SameGroundContractCheck(pair.First, pair.Second)),
-      _ => false
-    };
+  // Reuse only the same typed syntax at this scope and state. Bound names and
+  // types, trigger lists and attributes must also match. No alpha-renaming,
+  // fuel/boxing rewrite, let or unsupported expression can discharge a check.
+  internal static bool SameContractCheck(Bpl.Expr left, Bpl.Expr right) =>
+    SameContractCheck(left, right, new Dictionary<Bpl.Variable, Bpl.Variable>());
+
+  private static bool SameContractCheck(Bpl.Expr left, Bpl.Expr right,
+    Dictionary<Bpl.Variable, Bpl.Variable> bound) {
+    if (left.GetType() != right.GetType() ||
+        left is not (Bpl.IdentifierExpr or Bpl.LiteralExpr or Bpl.OldExpr or Bpl.NAryExpr or Bpl.QuantifierExpr)) {
+      return false;
+    }
+    var leftType = left.Type ?? left.ShallowType;
+    var rightType = right.Type ?? right.ShallowType;
+    if (leftType == null || rightType == null || !leftType.Equals(rightType)) { return false; }
+    bool Same(Bpl.Expr a, Bpl.Expr b) => SameContractCheck(a, b, bound);
+    switch (left, right) {
+      case (Bpl.IdentifierExpr a, Bpl.IdentifierExpr b):
+        if (a.Name != b.Name) { return false; }
+        return a.Decl == null && b.Decl == null ||
+          a.Decl != null && b.Decl != null &&
+          (bound.TryGetValue(a.Decl, out var paired) ? ReferenceEquals(paired, b.Decl) : ReferenceEquals(a.Decl, b.Decl));
+      case (Bpl.LiteralExpr a, Bpl.LiteralExpr b):
+        return a.ToString() == b.ToString();
+      case (Bpl.OldExpr a, Bpl.OldExpr b):
+        return Same(a.Expr, b.Expr);
+      case (Bpl.NAryExpr a, Bpl.NAryExpr b):
+        if (a.Fun.GetType() != b.Fun.GetType() || !ReferenceEquals(a.TypeParameters, b.TypeParameters)) { return false; }
+        var sameFunction = (a.Fun, b.Fun) switch {
+          (Bpl.FunctionCall f, Bpl.FunctionCall g) => f.FunctionName == g.FunctionName && ReferenceEquals(f.Func, g.Func),
+          _ => a.Fun.Equals(b.Fun)
+        };
+        return sameFunction && a.Args.Count == b.Args.Count && a.Args.Zip(b.Args).All(pair => Same(pair.First, pair.Second));
+      case (Bpl.QuantifierExpr a, Bpl.QuantifierExpr b):
+        // Type parameters and where-clauses require additional binding rules.
+        // Keep their original checks rather than approximating those rules.
+        if (a.TypeParameters.Count != 0 || b.TypeParameters.Count != 0 || a.Dummies.Count != b.Dummies.Count) { return false; }
+        var scoped = new Dictionary<Bpl.Variable, Bpl.Variable>(bound);
+        foreach (var pair in a.Dummies.Zip(b.Dummies)) {
+          if (pair.First.Name != pair.Second.Name ||
+              !pair.First.TypedIdent.Type.Equals(pair.Second.TypedIdent.Type) ||
+              pair.First.TypedIdent.WhereExpr != null || pair.Second.TypedIdent.WhereExpr != null ||
+              !SameContractAttributes(pair.First.Attributes, pair.Second.Attributes, scoped)) { return false; }
+          scoped.Add(pair.First, pair.Second);
+        }
+        if (!SameContractAttributes(a.Attributes, b.Attributes, scoped)) { return false; }
+        var first = a.Triggers;
+        var second = b.Triggers;
+        while (first != null && second != null) {
+          if (first.Pos != second.Pos || first.Tr.Count != second.Tr.Count ||
+              !first.Tr.Zip(second.Tr).All(pair => SameContractCheck(pair.First, pair.Second, scoped))) { return false; }
+          first = first.Next;
+          second = second.Next;
+        }
+        return first == null && second == null && SameContractCheck(a.Body, b.Body, scoped);
+      default:
+        return false;
+    }
+  }
+
+  private static bool SameContractAttributes(Bpl.QKeyValue left, Bpl.QKeyValue right,
+    Dictionary<Bpl.Variable, Bpl.Variable> bound) {
+    while (left != null && right != null) {
+      if (left.Key != right.Key || left.Params.Count != right.Params.Count) { return false; }
+      foreach (var pair in left.Params.Zip(right.Params)) {
+        if (pair.First is Bpl.Expr a && pair.Second is Bpl.Expr b) {
+          if (!SameContractCheck(a, b, bound)) { return false; }
+        } else if (pair.First is Bpl.Expr || pair.Second is Bpl.Expr || !Equals(pair.First, pair.Second)) {
+          return false;
+        }
+      }
+      left = left.Next;
+      right = right.Next;
+    }
+    return left == null && right == null;
   }
 
   private Bpl.PredicateCmd AssertMethodContract(IOrigin origin, Bpl.Expr condition,
@@ -168,7 +227,7 @@ public partial class BoogieGenerator {
         checkedPieces.Add(check);
       }
       foreach (var original in clause.OriginalChecks) {
-        if (checkedPieces.Any(piece => SameGroundContractCheck(piece, original.Condition))) { continue; }
+        if (checkedPieces.Any(piece => SameContractCheck(piece, original.Condition))) { continue; }
         builder.Add(AssertMethodContract(ObligationOrigin(returnOrigin, ToDafnyToken(original.tok)), original.Condition,
           description, builder.Context));
       }

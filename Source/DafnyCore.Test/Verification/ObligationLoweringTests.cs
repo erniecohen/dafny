@@ -221,6 +221,33 @@ public class ObligationLoweringTests {
   }
 
   [Fact]
+  public void ExactContractReuseRetainsBindingsTriggersFuelAndBoxing() {
+    var token = Bpl.Token.NoToken;
+    Bpl.Expr Formula(int layer = 1, string name = "F", bool otherTrigger = false,
+      string variableName = "x", Bpl.Type? variableType = null, int weight = 0) {
+      var variable = new Bpl.BoundVariable(token, new Bpl.TypedIdent(token, variableName, variableType ?? Bpl.Type.Int));
+      var id = new Bpl.IdentifierExpr(token, variable);
+      var call = new Bpl.NAryExpr(token,
+        new Bpl.FunctionCall(new Bpl.IdentifierExpr(token, name, variable.TypedIdent.Type)),
+        new List<Bpl.Expr> { Bpl.Expr.Literal(layer), id }) { Type = variable.TypedIdent.Type };
+      var trigger = new Bpl.Trigger(token, true, new List<Bpl.Expr> { otherTrigger ? id : call });
+      var attributes = new Bpl.QKeyValue(token, "weight", new List<object> { Bpl.Expr.Literal(weight) }, null);
+      return new Bpl.ForallExpr(token, new List<Bpl.TypeVariable>(), new List<Bpl.Variable> { variable },
+        attributes, trigger, Bpl.Expr.Eq(call, id));
+    }
+    var original = Formula();
+    Assert.True(BoogieGenerator.SameContractCheck(original, Formula()));
+    Assert.False(BoogieGenerator.SameContractCheck(original, Formula(layer: 2)));
+    Assert.False(BoogieGenerator.SameContractCheck(original, Formula(name: "$Box")));
+    Assert.False(BoogieGenerator.SameContractCheck(original, Formula(otherTrigger: true)));
+    Assert.False(BoogieGenerator.SameContractCheck(original, Formula(variableName: "y")));
+    Assert.False(BoogieGenerator.SameContractCheck(original, Formula(variableType: Bpl.Type.Real)));
+    Assert.False(BoogieGenerator.SameContractCheck(original, Formula(weight: 1)));
+    var heap = new Bpl.IdentifierExpr(token, "heap", Bpl.Type.Int);
+    Assert.False(BoogieGenerator.SameContractCheck(heap, new Bpl.OldExpr(token, heap)));
+  }
+
+  [Fact]
   public async Task LocalMethodCallChecksPublishTheirCheckedPieces() {
     const string source = "ghost predicate P(x:int) { x>=0 && x<=100 } lemma Use(x:int) requires P(x) {} " +
       "lemma L(x:int) requires 0<=x<=100 { Use(x); }";
