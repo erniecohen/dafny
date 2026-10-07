@@ -111,7 +111,16 @@ public partial class BoogieGenerator {
   // Boogie's generic duplicator deliberately leaves identifier Decl references
   // alone, so cloning a binder without this map would change its binding.
   private sealed class MethodPostconditionDuplicator(Dictionary<Bpl.Variable, Bpl.Expr> replacements,
-    Dictionary<string, Bpl.Expr> namedReplacements = null) : Bpl.Duplicator {
+    Dictionary<string, Bpl.Expr> namedReplacements = null, bool validateDefinitionTriggers = false) : Bpl.Duplicator {
+    // Actual arguments can contain expressions absent from the definition's
+    // original patterns. Only additional definition instances opt in; their
+    // logical bodies and all original patterns remain unchanged.
+    public override Bpl.Trigger VisitTrigger(Bpl.Trigger node) {
+      var copied = base.VisitTrigger(node);
+      return validateDefinitionTriggers && !copied.Tr.All(LegalContractDefinitionTriggerTerm)
+        ? copied.Next : copied;
+    }
+
     public override Bpl.Expr VisitIdentifierExpr(Bpl.IdentifierExpr node) {
       if (node.Decl != null && replacements.TryGetValue(node.Decl, out var replacement)) { return replacement; }
       return node.Decl == null && namedReplacements != null && namedReplacements.TryGetValue(node.Name, out replacement)
@@ -514,6 +523,22 @@ public partial class BoogieGenerator {
     public override string ShortDescription => "guarded definition agreement";
   }
 
+  private static bool LegalContractDefinitionTriggerTerm(Bpl.Expr expression) => expression switch {
+    Bpl.IdentifierExpr or Bpl.LiteralExpr => true,
+    Bpl.OldExpr old => LegalContractDefinitionTriggerTerm(old.Expr),
+    Bpl.NAryExpr application => application.Fun switch {
+      Bpl.BinaryOperator op when op.Op is Bpl.BinaryOperator.Opcode.Eq or Bpl.BinaryOperator.Opcode.Gt or
+        Bpl.BinaryOperator.Opcode.Ge or Bpl.BinaryOperator.Opcode.Lt or Bpl.BinaryOperator.Opcode.Le or
+        Bpl.BinaryOperator.Opcode.And or Bpl.BinaryOperator.Opcode.Or or Bpl.BinaryOperator.Opcode.Imp or
+        Bpl.BinaryOperator.Opcode.Iff => false,
+      Bpl.UnaryOperator { Op: Bpl.UnaryOperator.Opcode.Not } => false,
+      _ => application.Args.All(LegalContractDefinitionTriggerTerm)
+    },
+    // Keep the quantified proposition when a binder or let cannot provide a
+    // safe additional matching pattern; only the optional hint is omitted.
+    _ => false
+  };
+
   private void CheckContractDefinitionEqualities(IOrigin origin, BoogieStmtListBuilder checking,
     List<(Bpl.Expr Condition, Expression Source)> facts, Expression source,
     IEnumerable<Bpl.Expr> expressions, BoogieStmtListBuilder continuation) {
@@ -620,7 +645,7 @@ public partial class BoogieGenerator {
           var bindings = new Dictionary<Bpl.Variable, Bpl.Expr>();
           if (!Match(template.Application, application, variables, bindings) || bindings.Count != variables.Count) { continue; }
           var namedBindings = bindings.ToDictionary(pair => pair.Key.Name, pair => pair.Value);
-          var equality = new MethodPostconditionDuplicator(bindings, namedBindings).VisitExpr(template.Consequence);
+          var equality = new MethodPostconditionDuplicator(bindings, namedBindings, validateDefinitionTriggers: true).VisitExpr(template.Consequence);
           var references = new ContractReferencedVariableCollector();
           references.VisitExpr(equality);
           var needed = scopes.SelectMany(scope => scope).Where(references.Variables.Contains)
@@ -635,8 +660,10 @@ public partial class BoogieGenerator {
             }).ToList();
             var replacements = needed.Zip(copies).ToDictionary(pair => pair.First,
               pair => (Bpl.Expr)new Bpl.IdentifierExpr(pair.Second.tok, pair.Second));
-            var copier = new MethodPostconditionDuplicator(replacements);
-            equality = new Bpl.ForallExpr(origin, copies, BplTrigger(copier.VisitExpr(application)), copier.VisitExpr(equality));
+            var copier = new MethodPostconditionDuplicator(replacements, validateDefinitionTriggers: true);
+            var pattern = copier.VisitExpr(application);
+            equality = new Bpl.ForallExpr(origin, copies,
+              LegalContractDefinitionTriggerTerm(pattern) ? BplTrigger(pattern) : null, copier.VisitExpr(equality));
           }
           equalities.Add(equality);
         }

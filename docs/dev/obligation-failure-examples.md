@@ -189,3 +189,23 @@ procedure ensures; variants removing added checks are for diagnosis only.
 Reparsed Boogie observations do not establish native product acceptance. No
 product correction or expected-verdict update is included in this report.
 Resource regressions remain open. AI assisted the investigation.
+
+
+## Newly generated definition-support patterns
+
+An unaccepted definition-support candidate introduces three Boogie resolution
+crashes with consistent obligation checks enabled: `dafny2/SnapshotableTrees.dfy`
+reports equality in triggers, `dafny3/InfiniteTrees.dfy` reports arithmetic
+comparisons in triggers, and `dafny4/MonadicLaws.dfy` reports quantifiers in
+triggers. Both additional-axiom settings reproduce the errors. They occur before
+solver verification and truncate declaration evidence; they are distinct from
+postcondition failures and resource exhaustion. The original source and flags
+are retained.
+
+Definition support constructs new universally closed function-application
+patterns and substitutes actual arguments into copied definition-body patterns.
+Boogie recursively validates their arguments, so an outer function application
+does not legalize a forbidden nested expression. The current correction
+validates these new hints while retaining the entire checked proposition and
+every original trigger. Native reproduction of the original files is required
+before claiming the crashes repaired.

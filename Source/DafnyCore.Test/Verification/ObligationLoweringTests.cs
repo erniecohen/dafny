@@ -707,6 +707,59 @@ public class ObligationLoweringTests {
   }
 
   [Theory]
+  [InlineData(false, "n==0")]
+  [InlineData(true, "n==0")]
+  [InlineData(false, "n<0")]
+  [InlineData(true, "n<0")]
+  [InlineData(false, "(forall k:int :: k>=n)")]
+  [InlineData(true, "(forall k:int :: k>=n)")]
+  public async Task DefinitionInstancesKeepTheirChecksWithLegalNewTriggerHints(bool refresh, string argument) {
+    var source = "ghost function T(n:int):int { n } ghost function F(n:int,p:bool):int { n } " +
+      $"lemma L() ensures forall n:int {{:trigger T(n)}} :: F(n,{argument})==n {{}}";
+    var programs = await Translate(source, true, refresh);
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    options.ApplyDefaultOptionsWithoutSettingsDefault();
+    foreach (var backend in programs) {
+      Assert.Equal(0, backend.Resolve(options));
+      Assert.Equal(0, backend.Typecheck(options));
+    }
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var commands = implementation.Blocks.SelectMany(b => b.Cmds).ToList();
+    var support = commands.OfType<Bpl.AssertCmd>().Where(c =>
+      c.Description?.ShortDescription == "guarded definition agreement").ToList();
+    Assert.NotEmpty(support);
+    Assert.All(support, check => Assert.Contains(commands.OfType<Bpl.AssumeCmd>(), fact =>
+      ObligationFingerprint.Expression(fact.Expr) == ObligationFingerprint.Expression(check.Expr)));
+    Assert.Contains(commands.OfType<Bpl.AssertCmd>(), c => c.Description is EnsuresDescription);
+    // The source's valid pattern remains in the original procedure goal.
+    var procedure = programs.SelectMany(p => p.TopLevelDeclarations).OfType<Bpl.Procedure>()
+      .Single(p => p.Name == implementation.Name);
+    Assert.Contains(procedure.Ensures, e => !e.Free && e.Condition.ToString().Contains(".T("));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task SubstitutedDefinitionBodyPatternsRemainLegalWithoutDroppingTheProposition(bool refresh) {
+    const string source = "ghost function G(n:int,p:bool):int { n } " +
+      "ghost predicate F(n:int,p:bool) { forall k:int {:trigger G(k,p)} :: G(k,p)==k } " +
+      "lemma L(n:int) ensures F(n,n<0) {}";
+    var programs = await Translate(source, true, refresh);
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    options.ApplyDefaultOptionsWithoutSettingsDefault();
+    foreach (var backend in programs) {
+      Assert.Equal(0, backend.Resolve(options));
+      Assert.Equal(0, backend.Typecheck(options));
+    }
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var support = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+      .Where(c => c.Description?.ShortDescription == "guarded definition agreement").ToList();
+    Assert.NotEmpty(support);
+    Assert.Contains(support, check => check.Expr.ToString().Contains("forall"));
+    Assert.Contains(support, check => check.Expr.ToString().Contains("F#canCall"));
+  }
+
+  [Theory]
   [InlineData(false, false)]
   [InlineData(false, true)]
   [InlineData(true, false)]

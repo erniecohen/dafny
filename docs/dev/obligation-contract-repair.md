@@ -4,9 +4,9 @@ This candidate retains legacy return-position reveal visibility and every origin
 postcondition formula, inherited guard, trigger and fuel term. It checks the
 original implementation postconditions locally at every explicit return and
 fallthrough, together with the assertion-style pieces, before publishing each
-clause summary. Only the implementation procedure's corresponding user-defined
-ensures become free: the callable procedure's contracts and frame/heap boilerplate
-are unchanged. Missing saved original checks fail closed. Filtered translation
+clause summary. The implementation procedure retains the exact original checked user-defined
+ensures alongside the existing free counterparts. Callable contracts and
+frame/heap boilerplate are unchanged. Missing saved original checks fail closed. Filtered translation
 keeps the previous path.
 
 The local argument is a proof cut: all exits check the exact saved original
@@ -177,3 +177,15 @@ terms, old-state arguments, lexical closure and checked publication. Each new
 instance is again a specialization of the existing unconditional successor law
 for that exact resolved function. Original contract-only ground and scoped
 collectors remain unchanged.
+
+
+Newly materialized definition support validates its additional trigger hints
+after substituting actual arguments. An argument can contain equality, a
+comparison or a quantifier that the original definition's formal argument did
+not contain; the resulting copied pattern can be illegal in Boogie. Only an
+ill-formed additional pattern is omitted, leaving its complete guarded
+proposition, every support check and every published consequence intact. Legal
+patterns remain, as do all original source patterns and definition axioms. The
+solver may infer patterns when no legal additional hint remains. This does not
+change fuel, definition permissions, hide/reveal scope or the default-off path.
+Native verification and full compatibility remain required before acceptance.
