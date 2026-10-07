@@ -210,6 +210,40 @@ public class ObligationLoweringTests {
     }
   }
 
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task RelocatedQuantifiersRetainTheirLexicalBindings(bool refresh) {
+    const string source = "ghost function F(x:int):int { x } lemma L() " +
+      "ensures forall x:int {:trigger F(x)} :: F(x)==x {}";
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    void Check(Bpl.Expr expression, HashSet<Bpl.Variable> bound) {
+      switch (expression) {
+        case Bpl.IdentifierExpr { Decl: Bpl.BoundVariable variable }:
+          Assert.Contains(variable, bound);
+          break;
+        case Bpl.NAryExpr application:
+          foreach (var arg in application.Args) { Check(arg, bound); }
+          break;
+        case Bpl.OldExpr old:
+          Check(old.Expr, bound);
+          break;
+        case Bpl.QuantifierExpr quantifier:
+          var scoped = new HashSet<Bpl.Variable>(bound.Concat(quantifier.Dummies));
+          Check(quantifier.Body, scoped);
+          for (var trigger = quantifier.Triggers; trigger != null; trigger = trigger.Next) {
+            foreach (var term in trigger.Tr) { Check(term, scoped); }
+          }
+          break;
+      }
+    }
+    var goals = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+      .Where(c => c.Description is EnsuresDescription).ToList();
+    Assert.NotEmpty(goals);
+    foreach (var goal in goals) { Check(goal.Expr, new HashSet<Bpl.Variable>()); }
+  }
+
   [Fact]
   public async Task AnExactGroundPostconditionIsCheckedOnceAtEachExit() {
     const string source = "lemma L(x:int) returns (r:int) ensures r==x { r:=x; }";

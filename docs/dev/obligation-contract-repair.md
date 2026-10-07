@@ -29,3 +29,9 @@ precondition still has to be checked before the actual call.
 This is an unaccepted product-repair experiment. Structural and native evidence,
 including unchanged complete files and matched seeds, must establish its actual
 behavior before any completeness or performance claim. AI assisted the work.
+
+The expression copier rebinds every copied bound variable in quantifier and
+lambda bodies, attributes and triggers, and in let bodies. Let right-hand sides
+retain their outer scope. Known procedure formals are rebound to implementation
+formals; unresolved named identifiers remain unresolved until normal resolution.
+This retains lexical binding as well as the emitted formula text.

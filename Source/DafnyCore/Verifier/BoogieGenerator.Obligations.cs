@@ -106,14 +106,69 @@ public partial class BoogieGenerator {
 
   private readonly Dictionary<MethodOrConstructor, IReadOnlyList<MethodPostconditionClause>> methodPostconditionClauses = new();
 
-  // Contract expressions are not resolved yet. Clone them without requiring a
-  // declaration on every named identifier, rebinding only known formal objects.
-  private sealed class MethodPostconditionDuplicator(Dictionary<Bpl.Variable, Bpl.Expr> formals) : Bpl.Duplicator {
+  // Clone unresolved named identifiers, and rebind known formals and every
+  // copied binder before traversing its body, attributes and trigger patterns.
+  // Boogie's generic duplicator deliberately leaves identifier Decl references
+  // alone, so cloning a binder without this map would change its binding.
+  private sealed class MethodPostconditionDuplicator(Dictionary<Bpl.Variable, Bpl.Expr> replacements) : Bpl.Duplicator {
     public override Bpl.Expr VisitIdentifierExpr(Bpl.IdentifierExpr node) =>
-      node.Decl != null && formals.TryGetValue(node.Decl, out var replacement)
+      node.Decl != null && replacements.TryGetValue(node.Decl, out var replacement)
         ? replacement : base.VisitIdentifierExpr(node);
-  }
 
+    private Bpl.Expr WithCopiedBindings(List<Bpl.Variable> variables,
+      System.Func<List<Bpl.Variable>, Bpl.Expr> copyBody) {
+      var copies = variables.Select(variable => {
+        var copy = (Bpl.Variable)variable.Clone();
+        copy.TypedIdent = (Bpl.TypedIdent)variable.TypedIdent.Clone();
+        return copy;
+      }).ToList();
+      var saved = variables.Select(variable => replacements.GetValueOrDefault(variable)).ToList();
+      foreach (var pair in variables.Zip(copies)) {
+        replacements[pair.First] = new Bpl.IdentifierExpr(pair.Second.tok, pair.Second);
+      }
+      try {
+        foreach (var pair in variables.Zip(copies)) {
+          pair.Second.TypedIdent.Type = (Bpl.Type)Visit(pair.First.TypedIdent.Type);
+          pair.Second.TypedIdent.WhereExpr = pair.First.TypedIdent.WhereExpr == null ? null : VisitExpr(pair.First.TypedIdent.WhereExpr);
+          pair.Second.Attributes = pair.First.Attributes == null ? null : VisitQKeyValue(pair.First.Attributes);
+        }
+        return copyBody(copies);
+      } finally {
+        for (var i = 0; i < variables.Count; i++) {
+          if (saved[i] == null) { replacements.Remove(variables[i]); }
+          else { replacements[variables[i]] = saved[i]; }
+        }
+      }
+    }
+
+    public override Bpl.Expr VisitBinderExpr(Bpl.BinderExpr node) =>
+      WithCopiedBindings(node.Dummies, copies => {
+        var result = (Bpl.BinderExpr)node.Clone();
+        result.Dummies = copies;
+        result.Body = VisitExpr(node.Body);
+        result.Attributes = node.Attributes == null ? null : VisitQKeyValue(node.Attributes);
+        if (node is Bpl.QuantifierExpr quantifier) {
+          ((Bpl.QuantifierExpr)result).Triggers = quantifier.Triggers == null ? null : VisitTrigger(quantifier.Triggers);
+        }
+        return result;
+      });
+
+    public override Bpl.QuantifierExpr VisitQuantifierExpr(Bpl.QuantifierExpr node) =>
+      (Bpl.QuantifierExpr)VisitBinderExpr(node);
+
+    public override Bpl.Expr VisitLetExpr(Bpl.LetExpr node) {
+      // The right-hand sides are outside the let bindings' scope.
+      var rhss = node.Rhss.Select(VisitExpr).ToList();
+      return WithCopiedBindings(node.Dummies, copies => {
+        var result = (Bpl.LetExpr)node.Clone();
+        result.Dummies = copies;
+        result.Rhss = rhss;
+        result.Body = VisitExpr(node.Body);
+        result.Attributes = node.Attributes == null ? null : VisitQKeyValue(node.Attributes);
+        return result;
+      });
+    }
+  }
 
   // Reuse only the same typed syntax at this scope and state. Bound names and
   // types, trigger lists and attributes must also match. No alpha-renaming,
