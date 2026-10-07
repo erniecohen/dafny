@@ -102,13 +102,22 @@ public partial class BoogieGenerator {
     return HasSourceLocations(piece) ? new NestedOrigin(source, piece) : source;
   }
 
+  private record MethodPostconditionClause(AttributedExpression Source, IReadOnlyList<Bpl.Ensures> OriginalChecks);
+
+  private readonly Dictionary<MethodOrConstructor, IReadOnlyList<MethodPostconditionClause>> methodPostconditionClauses = new();
+
   private void CheckMethodPostconditions(MethodOrConstructor method, IOrigin returnOrigin,
     BoogieStmtListBuilder builder, ExpressionTranslator etran) {
     // The declared contract WF procedure establishes permissions in clause order.
-    // Check each clause locally at this exit, then publish its guarded summary.
-    // The procedure's checked ensures remain as the final semantic bridge.
+    // Check both the assertion-style pieces and the exact original contract
+    // formulas before publishing a summary. Rechecking the same contract after
+    // that summary creates an unnecessary cut and a different solver context.
     if (assertionOnlyFilter != null) { return; }
-    foreach (var ensures in ConjunctsOf(method.Ens)) {
+    if (!methodPostconditionClauses.TryGetValue(method, out var clauses)) {
+      throw new System.InvalidOperationException("Missing original method postcondition checks");
+    }
+    foreach (var clause in clauses) {
+      var ensures = clause.Source;
       builder.Add(TrAssumeCmd(ensures.E.Origin, etran.CanCallAssumptionForVerification(ensures.E)));
       var lowering = LowerProposition(builder.Context, ensures.E, etran);
       var (error, success) = CustomErrorMessage(ensures.Attributes);
@@ -123,6 +132,10 @@ public partial class BoogieGenerator {
         // Keep that policy for their local copies; explicit split assertions retain
         // their separate check-and-forget policy.
         builder.Add(Assert(ObligationOrigin(returnOrigin, piece.Tok), check, description, builder.Context));
+      }
+      foreach (var original in clause.OriginalChecks) {
+        builder.Add(Assert(ObligationOrigin(returnOrigin, ToDafnyToken(original.tok)), original.Condition,
+          description, builder.Context));
       }
       Bpl.Expr guard = ensures.E.Origin.IsInherited(currentModule) ||
         lowering.Pieces.Any(piece => piece.IsChecked && piece.Tok.IsInherited(currentModule))

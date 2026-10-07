@@ -149,8 +149,11 @@ public class ObligationLoweringTests {
     var originalChecks = procedure.Ensures.Where(ensures => !ensures.Free).ToList();
     Assert.All(originalChecks, check =>
       Assert.Equal(-1, Bpl.QKeyValue.FindIntAttribute(check.Attributes, "subsumption", -1)));
-    Assert.Equal(originalChecks.Select(check => ObligationFingerprint.Expression(check.Condition)).ToArray(),
-      localChecks.Select(check => ObligationFingerprint.Expression(check.Expr)).ToArray());
+    Assert.All(originalChecks, original => Assert.Contains(localChecks,
+      check => ObligationFingerprint.Expression(check.Expr) == ObligationFingerprint.Expression(original.Condition)));
+    var enabledProcedure = enabled.SelectMany(p => p.TopLevelDeclarations).OfType<Bpl.Procedure>()
+      .Single(p => p.Name == implementation.Name);
+    Assert.All(enabledProcedure.Ensures, check => Assert.True(check.Free));
   }
 
   [Theory]
@@ -168,6 +171,36 @@ public class ObligationLoweringTests {
       Assert.All(checks, check =>
         Assert.Equal(0, Bpl.QKeyValue.FindIntAttribute(check.Attributes, "subsumption", -1)));
     }
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task OriginalPostconditionFormulasAreCheckedAtExplicitReturnsAndFallthrough(bool refresh) {
+    const string source = "lemma L(x:int) returns (r:int) ensures r==x { if x==0 { r:=x; return; } r:=x; }";
+    var legacy = await Translate(source, false, refresh);
+    var enabled = await Translate(source, true, refresh);
+    var implementation = enabled.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var procedure = legacy.SelectMany(p => p.TopLevelDeclarations).OfType<Bpl.Procedure>()
+      .Single(p => p.Name == implementation.Name);
+    var localChecks = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+      .Where(c => c.Description is EnsuresDescription).ToList();
+    foreach (var original in procedure.Ensures.Where(e => !e.Free)) {
+      Assert.True(localChecks.Count(c => ObligationFingerprint.Expression(c.Expr) ==
+        ObligationFingerprint.Expression(original.Condition)) >= 2);
+    }
+  }
+
+  [Fact]
+  public async Task LocalMethodCallChecksPublishTheirCheckedPieces() {
+    const string source = "ghost predicate P(x:int) { x>=0 && x<=100 } lemma Use(x:int) requires P(x) {} " +
+      "lemma L(x:int) requires 0<=x<=100 { Use(x); }";
+    var programs = await Translate(source, true);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var checks = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+      .Where(c => c.Description is PreconditionSatisfied).ToList();
+    Assert.True(checks.Count >= 2);
+    Assert.All(checks, check => Assert.Equal(-1, Bpl.QKeyValue.FindIntAttribute(check.Attributes, "subsumption", -1)));
   }
 
   [Fact]

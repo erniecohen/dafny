@@ -1,3 +1,7 @@
 Add the experimental, default-off `--consistent-obligation-checks` option to add assertion-style checking for visible type constraints and contracts while retaining the original checked formulas, allocation predicates, membership and procedure checks, and fuel rules.
 The added method-exit checks retain the publication policy of checked procedure postconditions, so later checks can use earlier proved pieces.
 Method and forall proof bodies preserve the legacy hide/reveal scopes, including definitions retained for checks following terminal reveal hints.
+
+The experimental contract adapter checks original method postconditions at each
+return before publishing clause summaries and preserves ordinary publication for
+added method-call checks. Complete acceptance remains pending.

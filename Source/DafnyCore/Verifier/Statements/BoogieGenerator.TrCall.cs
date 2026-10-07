@@ -384,7 +384,10 @@ public partial class BoogieGenerator {
         var description = new PreconditionSatisfied(direct, error, success);
         foreach (var piece in lowering.Pieces) {
           if (piece.IsChecked) {
-            builder.Add(AssertAndForget(builder.Context, ObligationOrigin(tok, piece.Tok), piece.E, description));
+            // Method requires publish checked pieces in order. Preserve that
+            // prefix for local copies, as at method exits; source split asserts
+            // retain their separate check-and-forget publication policy.
+            builder.Add(Assert(ObligationOrigin(tok, piece.Tok), piece.E, description, builder.Context));
           }
         }
         var summary = TrAssumeCmd(tok, lowering.Summary);

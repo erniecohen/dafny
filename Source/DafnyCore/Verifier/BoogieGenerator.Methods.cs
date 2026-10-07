@@ -552,6 +552,17 @@ namespace Microsoft.Dafny {
       List<Variable> inParams = Boogie.Formal.StripWhereClauses(proc.InParams);
       List<Variable> outParams = Boogie.Formal.StripWhereClauses(proc.OutParams);
 
+      if (methodPostconditionClauses.TryGetValue(m, out var clauses)) {
+        var formals = proc.InParams.Concat(proc.OutParams).Zip(inParams.Concat(outParams))
+          .ToDictionary(pair => pair.First, pair => (Bpl.Expr)new Bpl.IdentifierExpr(pair.Second.tok, pair.Second));
+        var substitution = Bpl.Substituter.SubstitutionFromDictionary(formals);
+        methodPostconditionClauses[m] = clauses.Select(clause => new MethodPostconditionClause(clause.Source,
+          clause.OriginalChecks.Select(original => new Bpl.Ensures(original.tok, false,
+            Bpl.Substituter.Apply(substitution, original.Condition), original.Comment, original.Attributes) {
+              Description = original.Description
+            }).ToList())).ToList();
+      }
+
       var builder = new BoogieStmtListBuilder(this, options, new BodyTranslationContext(m.ContainsHide));
       builder.Add(new CommentCmd("AddMethodImpl: " + m + ", " + proc));
       var etran = new ExpressionTranslator(this, Predef, m.Origin,
@@ -592,6 +603,7 @@ namespace Microsoft.Dafny {
         }
       }
 
+      methodPostconditionClauses.Remove(m);
       IsAllocContext = null;
       Reset();
     }
@@ -1777,7 +1789,13 @@ namespace Microsoft.Dafny {
       var name = MethodName(m, kind);
       var req = GetRequires();
       var mod = new List<Bpl.IdentifierExpr> { ordinaryEtran.HeapCastToIdentifierExpr };
+      var consolidatePostconditions = kind == MethodTranslationKind.Implementation &&
+        assertionOnlyFilter == null && options.Get(CommonOptionBag.ConsistentObligationChecks);
+      var postconditionClauses = consolidatePostconditions ? new List<MethodPostconditionClause>() : null;
       var ens = GetEnsures();
+      if (consolidatePostconditions) {
+        methodPostconditionClauses.Add(m, postconditionClauses);
+      }
       var proc = new Bpl.Procedure(m.Origin, name, [],
         inParams, outParams.Values.ToList(), false, req, mod, ens, etran.TrAttributes(m.Attributes, null));
       AddVerboseNameAttribute(proc, m.FullDafnyName, kind);
@@ -1875,6 +1893,7 @@ namespace Microsoft.Dafny {
         // USER-DEFINED SPECIFICATIONS
         var comment = "user-defined postconditions";
         foreach (var p in ConjunctsOf(m.Ens)) {
+          var originalChecks = consolidatePostconditions ? new List<Bpl.Ensures>() : null;
           var (errorMessage, successMessage) = CustomErrorMessage(p.Attributes);
           AddEnsures(ens, FreeEnsures(p.E.Origin, etran.CanCallAssumptionForVerification(p.E), comment, true));
           comment = null;
@@ -1889,8 +1908,21 @@ namespace Microsoft.Dafny {
             } else if (split.IsOnlyChecked && !bodyKind) {
               // don't include in split
             } else {
-              AddEnsures(ens, EnsuresWithDependencies(split.Tok, split.IsOnlyFree || this.assertionOnlyFilter != null, p.E, post, errorMessage, successMessage, null));
+              var original = EnsuresWithDependencies(split.Tok, split.IsOnlyFree || this.assertionOnlyFilter != null,
+                p.E, post, errorMessage, successMessage, null);
+              var emitted = original;
+              if (consolidatePostconditions && !original.Free) {
+                originalChecks.Add(original);
+                // Only this implementation declaration becomes free. The exact
+                // formula is checked at every source return and fallthrough,
+                // before its summary; the callable procedure is unchanged.
+                emitted = EnsuresWithDependencies(split.Tok, true, p.E, post, errorMessage, successMessage, null);
+              }
+              AddEnsures(ens, emitted);
             }
+          }
+          if (consolidatePostconditions) {
+            postconditionClauses.Add(new MethodPostconditionClause(p, originalChecks));
           }
         }
         if (m is Constructor && kind == MethodTranslationKind.Call) {
