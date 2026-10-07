@@ -387,7 +387,7 @@ public partial class BoogieGenerator {
             // Method requires publish checked pieces in order. Preserve that
             // prefix for local copies, as at method exits; source split asserts
             // retain their separate check-and-forget publication policy.
-            builder.Add(Assert(ObligationOrigin(tok, piece.Tok), piece.E, description, builder.Context));
+            builder.Add(AssertMethodContract(ObligationOrigin(tok, piece.Tok), piece.E, description, builder.Context));
           }
         }
         var summary = TrAssumeCmd(tok, lowering.Summary);

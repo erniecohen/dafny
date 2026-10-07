@@ -115,6 +115,29 @@ public partial class BoogieGenerator {
   }
 
 
+  // At this one program state, equality is deliberately limited to the same typed
+  // ground syntax at this scope. No alpha-renaming, fuel/boxing rewrite, quantifier,
+  // let or unsupported expression can discharge an original contract check.
+  private static bool SameGroundContractCheck(Bpl.Expr left, Bpl.Expr right) {
+    if (left.GetType() != right.GetType() || left.Type == null || right.Type == null ||
+        !left.Type.Equals(right.Type)) { return false; }
+    return (left, right) switch {
+      (Bpl.IdentifierExpr a, Bpl.IdentifierExpr b) => a.Name == b.Name &&
+        (a.Decl == null || b.Decl == null || ReferenceEquals(a.Decl, b.Decl)),
+      (Bpl.LiteralExpr a, Bpl.LiteralExpr b) => a.ToString() == b.ToString(),
+      (Bpl.OldExpr a, Bpl.OldExpr b) => SameGroundContractCheck(a.Expr, b.Expr),
+      (Bpl.NAryExpr a, Bpl.NAryExpr b) => a.Fun.GetType() == b.Fun.GetType() &&
+        a.Fun.ToString() == b.Fun.ToString() && a.Args.Count == b.Args.Count &&
+        a.Args.Zip(b.Args).All(pair => SameGroundContractCheck(pair.First, pair.Second)),
+      _ => false
+    };
+  }
+
+  private Bpl.PredicateCmd AssertMethodContract(IOrigin origin, Bpl.Expr condition,
+    ProofObligationDescription description, BodyTranslationContext context) =>
+    Assert(new ForceCheckOrigin(origin), condition, description,
+      context with { AssertMode = AssertMode.Check });
+
   private void CheckMethodPostconditions(MethodOrConstructor method, IOrigin returnOrigin,
     BoogieStmtListBuilder builder, ExpressionTranslator etran) {
     // The declared contract WF procedure establishes permissions in clause order.
@@ -131,6 +154,7 @@ public partial class BoogieGenerator {
       var lowering = LowerProposition(builder.Context, ensures.E, etran);
       var (error, success) = CustomErrorMessage(ensures.Attributes);
       var description = new EnsuresDescription(ensures.E, error, success);
+      var checkedPieces = new List<Bpl.Expr>();
       foreach (var piece in lowering.Pieces) {
         if (!piece.IsChecked) { continue; }
         var check = piece.E;
@@ -140,10 +164,12 @@ public partial class BoogieGenerator {
         // Checked procedure ensures publish each proved piece to the continuation.
         // Keep that policy for their local copies; explicit split assertions retain
         // their separate check-and-forget policy.
-        builder.Add(Assert(ObligationOrigin(returnOrigin, piece.Tok), check, description, builder.Context));
+        builder.Add(AssertMethodContract(ObligationOrigin(returnOrigin, piece.Tok), check, description, builder.Context));
+        checkedPieces.Add(check);
       }
       foreach (var original in clause.OriginalChecks) {
-        builder.Add(Assert(ObligationOrigin(returnOrigin, ToDafnyToken(original.tok)), original.Condition,
+        if (checkedPieces.Any(piece => SameGroundContractCheck(piece, original.Condition))) { continue; }
+        builder.Add(AssertMethodContract(ObligationOrigin(returnOrigin, ToDafnyToken(original.tok)), original.Condition,
           description, builder.Context));
       }
       Bpl.Expr guard = ensures.E.Origin.IsInherited(currentModule) ||

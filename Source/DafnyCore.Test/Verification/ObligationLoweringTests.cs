@@ -191,6 +191,35 @@ public class ObligationLoweringTests {
     }
   }
 
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task InheritedOriginalPostconditionsStillHaveCheckedLocalGoals(bool refresh) {
+    const string source = "module A { method L() returns (r:int) ensures r==0 { r:=0; } } " +
+      "module B refines A { method L... { ...; } }";
+    var legacy = await Translate(source, false, refresh);
+    var enabled = await Translate(source, true, refresh);
+    var implementations = enabled.SelectMany(p => p.Implementations).Where(p => p.Name.EndsWith(".L")).ToList();
+    Assert.NotEmpty(implementations);
+    foreach (var implementation in implementations) {
+      var original = legacy.SelectMany(p => p.TopLevelDeclarations).OfType<Bpl.Procedure>()
+        .Single(p => p.Name == implementation.Name);
+      var checks = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>().ToList();
+      Assert.All(original.Ensures.Where(e => !e.Free), goal => Assert.Contains(checks,
+        check => ObligationFingerprint.Expression(check.Expr) == ObligationFingerprint.Expression(goal.Condition)));
+    }
+  }
+
+  [Fact]
+  public async Task AnExactGroundPostconditionIsCheckedOnceAtEachExit() {
+    const string source = "lemma L(x:int) returns (r:int) ensures r==x { r:=x; }";
+    var programs = await Translate(source, true);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var checks = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+      .Where(c => c.Description is EnsuresDescription).ToList();
+    Assert.Single(checks);
+  }
+
   [Fact]
   public async Task LocalMethodCallChecksPublishTheirCheckedPieces() {
     const string source = "ghost predicate P(x:int) { x>=0 && x<=100 } lemma Use(x:int) requires P(x) {} " +
