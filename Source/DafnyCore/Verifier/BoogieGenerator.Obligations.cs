@@ -613,6 +613,9 @@ public partial class BoogieGenerator {
         var application = (Bpl.NAryExpr)new MethodPostconditionDuplicator(substitutions, names).VisitExpr(original);
         foreach (var template in templates.Where(template =>
                    ((Bpl.FunctionCall)template.Application.Fun).FunctionName == function.FunctionName)) {
+          // A visible wrapper must not export reveal-parameter applications
+          // from an opaque dependency's definition into the continuation.
+          if (HasRevealedApplication(template.Consequence)) { continue; }
           var variables = template.Quantifier.Dummies.ToDictionary(dummy => dummy.Name);
           var bindings = new Dictionary<Bpl.Variable, Bpl.Expr>();
           if (!Match(template.Application, application, variables, bindings) || bindings.Count != variables.Count) { continue; }

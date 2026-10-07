@@ -298,3 +298,8 @@ new instance. Only already emitted, visible, nonopaque function definitions are
 eligible; hidden contexts and proof-local reveal permissions are not transported.
 Original source commands, guards, heaps, fuel arguments and outer reveal scopes
 remain unchanged.
+
+A visible wrapper does not authorize exporting an opaque dependency's
+reveal-parameter application. Such a definition consequence is conservatively
+excluded from the additional instance pass, even when the wrapper itself is
+visible. This does not remove any original check, axiom or continuation fact.

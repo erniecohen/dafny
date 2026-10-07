@@ -684,6 +684,18 @@ public class ObligationLoweringTests {
       c => c.Description?.ShortDescription == "guarded definition agreement");
   }
 
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task ContractDefinitionSupportDoesNotExportAnOpaqueDependency(bool refresh) {
+    const string source = "opaque ghost function G(n:nat):int { n } " +
+      "ghost function F(n:nat):int { G(n) } lemma L(n:nat) ensures F(n)==n {}";
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    Assert.DoesNotContain(implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>(),
+      c => c.Description?.ShortDescription == "guarded definition agreement");
+  }
+
   private sealed class ScopedFuelTestReferences : Bpl.Duplicator {
     public readonly HashSet<Bpl.Variable> Variables = new(ReferenceEqualityComparer.Instance);
     public override Bpl.Expr VisitIdentifierExpr(Bpl.IdentifierExpr node) {
