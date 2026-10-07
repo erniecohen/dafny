@@ -523,7 +523,7 @@ public partial class BoogieGenerator {
     // is checked before publication. No axiom or permission is added here.
     var functions = declarationMapping.Where(pair => pair.Key is Function f &&
         f.Body != null && RevealedInScope(f) && FunctionBodyIsAvailable(f, currentModule, currentScope) &&
-        !f.IsOpaque && !f.IsMadeImplicitlyOpaque)
+        !f.IsOpaque && !f.IsMadeImplicitlyOpaque(options))
       .Select(pair => pair.Value.Name).ToHashSet();
     var templates = new List<(Bpl.ForallExpr Quantifier, Bpl.NAryExpr Application, Bpl.Expr Consequence)>();
     foreach (var axiom in sink.TopLevelDeclarations.OfType<Bpl.Axiom>().ToList()) {
