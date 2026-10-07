@@ -1,10 +1,24 @@
 # Obligation lowering validation status
 
-The [requested review revisions](obligation-review-change-request.md) now govern
-the next implementation. Their [revision checklist](obligation-revision-checklist.md)
-tracks the single-check design and acceptance requirements. The additive design
-and its evidence below describe the preceding implementation; the requested
-replacement is not yet implemented or validated.
+The [requested review revisions](obligation-review-change-request.md) govern the
+single-check replacement in PR #168. Product commit
+`d93ff6137` implements the replacement; current native proof and complete suite/
+standard-library acceptance are pending. Its [build and structural capture](https://github.com/erniecohen/dafny/actions/runs/37675524107)
+is a diagnostic run; its wrapper status is not an acceptance result.
+
+The [foundation build](https://github.com/erniecohen/dafny/actions/runs/37672843215)
+completed both native builds and all 46 structural/inventory controls. This includes
+the lexical binder correction and its positive/negative shadowing controls. The
+seven direct fixed-Boogie free-contract/negative controls have their expected
+verifier summary counts under Z3 5.1.0. These establish interface encoding only;
+they do not establish Dafny source, suite or library acceptance.
+
+The reports below describe the preceding additive implementation and remain
+historical evidence for triage. They do not validate the single-check replacement.
+The [revision checklist](obligation-revision-checklist.md) tracks current evidence.
+Porting implementation to PR #169 requires explicit owner approval first.
+
+## Historical additive implementation
 
 The change for [issue 100](https://github.com/erniecohen/dafny/issues/100)
 is experimental and default off. It has not been merged or released. Complete
