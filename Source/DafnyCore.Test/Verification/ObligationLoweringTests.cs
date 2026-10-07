@@ -261,7 +261,7 @@ public class ObligationLoweringTests {
   [InlineData(false, true)]
   [InlineData(true, false)]
   [InlineData(true, true)]
-  public async Task MethodContractSummariesUseCheckedOrdinaryPublication(bool refresh, bool call) {
+  public async Task MethodContractProofCutRetainsEveryCheckedPublicationFact(bool refresh, bool call) {
     var source = "ghost predicate P(x:int) { x>=0 && x<=100 } " +
       (call ? "lemma Use(x:int) requires P(x) {} lemma L(x:int) requires 0<=x<=100 { Use(x); }"
             : "lemma L(x:int) requires 0<=x<=100 ensures P(x) {}");
@@ -275,7 +275,14 @@ public class ObligationLoweringTests {
     var check = Assert.Single(commands.OfType<Bpl.AssertCmd>().Where(c =>
       ObligationFingerprint.Expression(c.Expr) == fingerprint));
     Assert.Equal(-1, Bpl.QKeyValue.FindIntAttribute(check.Attributes, "subsumption", -1));
-    Assert.DoesNotContain(commands.OfType<Bpl.AssumeCmd>(), c =>
+    var publicationFacts = commands.OfType<Bpl.AssumeCmd>().Select(c =>
+      ObligationFingerprint.Expression(c.Expr)).ToList();
+    var goals = commands.OfType<Bpl.AssertCmd>().Where(c =>
+      c.Description is EnsuresDescription or PreconditionSatisfied).ToList();
+    Assert.All(goals, goal => Assert.Contains(ObligationFingerprint.Expression(goal.Expr), publicationFacts));
+    var verificationBlock = Assert.Single(implementation.Blocks.Where(b => b.Cmds.Contains(check)));
+    Assert.Contains(verificationBlock.Cmds.OfType<Bpl.AssumeCmd>(), c => c.Expr.Equals(Bpl.Expr.False));
+    Assert.DoesNotContain(verificationBlock.Cmds.OfType<Bpl.AssumeCmd>(), c =>
       ObligationFingerprint.Expression(c.Expr) == fingerprint);
   }
 

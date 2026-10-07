@@ -40,3 +40,19 @@ summary's proposition, guards, trigger structure and fuel in the continuation.
 It adds a proof obligation rather than an unchecked assumption, retaining every
 original and canonical check. Native comparisons must determine its solver
 behavior; no performance or acceptance claim follows from this local argument.
+
+The next candidate makes the contract proof cut explicit in ordinary Boogie
+control flow. A verification arm checks every canonical, original and exact
+summary goal with the same ordered preparation, then ends with `assume false`.
+The continuation arm receives those exact checked formulas and the same
+declared-contract permissions. The proof arm's terminal assumption occurs after
+all checks; it cannot discharge an earlier failed assertion. The other arm does
+not execute until the verification obligations have been discharged. This is the
+usual demonic-choice proof cut: the VC requires both the checked facts and the
+continuation under those facts. No source evaluation, heap update or visibility
+command is duplicated or moved, and no batching option or focus marker is added.
+
+Every old and strengthened goal, including the exact summary checks, remains.
+All previously published facts are retained, including inherited guards, trigger
+patterns and fuel terms. Negative controls and matched native source/seed gates
+are required to validate this cut and determine its actual solver behavior.

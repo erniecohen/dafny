@@ -175,6 +175,23 @@ public partial class BoogieGenerator {
     Assert(new ForceCheckOrigin(origin), condition, description,
       context with { AssertMode = AssertMode.Check });
 
+  private void PublishContractProofCut(IOrigin origin, BoogieStmtListBuilder continuation,
+    BoogieStmtListBuilder checking, IReadOnlyList<(Bpl.Expr Condition, Expression Source)> facts) {
+    // The verification arm checks every fact before becoming unreachable. The
+    // continuation arm receives exactly those facts and the justified contract
+    // permissions. Both arms stay in the existing VC; no batching marker or
+    // visibility scope is introduced.
+    checking.Add(TrAssumeCmd(origin, Bpl.Expr.False));
+    var publication = new BoogieStmtListBuilder(this, options, continuation.Context);
+    foreach (var fact in facts) {
+      var command = TrAssumeCmd(origin, fact.Condition);
+      proofDependencies?.AddProofDependencyId(command, origin,
+        new AssumptionDependency(false, "verified contract continuation", fact.Source));
+      publication.Add(command);
+    }
+    continuation.Add(new Bpl.IfCmd(origin, null, checking.Collect(origin), null, publication.Collect(origin)));
+  }
+
   private void CheckMethodPostconditions(MethodOrConstructor method, IOrigin returnOrigin,
     BoogieStmtListBuilder builder, ExpressionTranslator etran) {
     // The declared contract WF procedure establishes permissions in clause order.
@@ -185,9 +202,14 @@ public partial class BoogieGenerator {
     if (!methodPostconditionClauses.TryGetValue(method, out var clauses)) {
       throw new System.InvalidOperationException("Missing original method postcondition checks");
     }
+    var continuation = builder;
+    builder = new BoogieStmtListBuilder(this, options, continuation.Context);
+    var facts = new List<(Bpl.Expr Condition, Expression Source)>();
     foreach (var clause in clauses) {
       var ensures = clause.Source;
-      builder.Add(TrAssumeCmd(ensures.E.Origin, etran.CanCallAssumptionForVerification(ensures.E)));
+      var permission = etran.CanCallAssumptionForVerification(ensures.E);
+      builder.Add(TrAssumeCmd(ensures.E.Origin, permission));
+      facts.Add((permission, ensures.E));
       var lowering = LowerProposition(builder.Context, ensures.E, etran);
       var (error, success) = CustomErrorMessage(ensures.Attributes);
       var description = new EnsuresDescription(ensures.E, error, success);
@@ -201,19 +223,24 @@ public partial class BoogieGenerator {
         // Keep that policy for their local copies; explicit split assertions retain
         // their separate check-and-forget policy.
         builder.Add(AssertMethodContract(ObligationOrigin(returnOrigin, piece.Tok), check, description, builder.Context));
+        facts.Add((check, ensures.E));
       }
       foreach (var original in clause.OriginalChecks) {
         builder.Add(AssertMethodContract(ObligationOrigin(returnOrigin, ToDafnyToken(original.tok)), original.Condition,
           description, builder.Context));
+        facts.Add((original.Condition, ensures.E));
       }
       Bpl.Expr guard = ensures.E.Origin.IsInherited(currentModule) ||
         lowering.Pieces.Any(piece => piece.IsChecked && piece.Tok.IsInherited(currentModule))
         ? new Bpl.IdentifierExpr(returnOrigin, "$_reverifyPost", Bpl.Type.Bool) : Bpl.Expr.True;
       // Check the exact publication form too. Ordinary assertion publication
       // retains its facts, triggers and fuel without a separate assumed cut.
+      var summary = BplImp(guard, lowering.Summary);
       builder.Add(AssertMethodContract(ObligationOrigin(returnOrigin, ensures.E.Origin),
-        BplImp(guard, lowering.Summary), description, builder.Context));
+        summary, description, builder.Context));
+      facts.Add((summary, ensures.E));
     }
+    PublishContractProofCut(returnOrigin, continuation, builder, facts);
   }
 
   private Bpl.Expr HigherOrderRequirement(IOrigin origin, int arity, IEnumerable<Bpl.Expr> arguments) =>

@@ -9,7 +9,7 @@ namespace DafnyCore.Test.Verification;
 
 public class ObligationCoverageTests {
   private static readonly HashSet<string> Sinks = new() {
-    "Assert", "AssertAndForget", "AssertMethodContract", "AssertNS", "AssertCmd", "AssertSink", "Requires", "Ensures",
+    "Assert", "AssertAndForget", "AssertMethodContract", "PublishContractProofCut", "AssertNS", "AssertCmd", "AssertSink", "Requires", "Ensures",
     "FreeRequires", "FreeEnsures", "RequiresWithDependencies", "EnsuresWithDependencies",
     "CheckSubrange", "GetSubrangeCheck", "CheckSubsetType", "CheckResultToBeInType",
     "CheckResultToBeInType_Aux", "TrSplitExpr", "TrSplitExprForMethodSpec", "LowerProposition",

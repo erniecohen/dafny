@@ -375,9 +375,13 @@ public partial class BoogieGenerator {
     if (options.Get(CommonOptionBag.ConsistentObligationChecks) && !call.IsFree) {
       var callEtran = method is TwoStateLemma
         ? etran.WithVerificationOldHeap(etran.OldAt(atLabel).HeapExpr) : etran;
+      var checking = new BoogieStmtListBuilder(this, options, builder.Context);
+      var facts = new List<(Bpl.Expr Condition, Expression Source)>();
       foreach (var requirement in ConjunctsOf(callee.Req)) {
         var instantiated = Substitute(requirement.E, receiver, substMap, tySubst);
-        builder.Add(TrAssumeCmd(tok, callEtran.CanCallAssumptionForVerification(instantiated)));
+        var permission = callEtran.CanCallAssumptionForVerification(instantiated);
+        checking.Add(TrAssumeCmd(tok, permission));
+        facts.Add((permission, instantiated));
         var lowering = LowerProposition(builder.Context, instantiated, callEtran);
         var (error, success) = CustomErrorMessage(requirement.Attributes);
         var direct = Substitute(requirement.E, receiver, directSubstMap, tySubst);
@@ -387,14 +391,17 @@ public partial class BoogieGenerator {
             // Method requires publish checked pieces in order. Preserve that
             // prefix for local copies, as at method exits; source split asserts
             // retain their separate check-and-forget publication policy.
-            builder.Add(AssertMethodContract(ObligationOrigin(tok, piece.Tok), piece.E, description, builder.Context));
+            checking.Add(AssertMethodContract(ObligationOrigin(tok, piece.Tok), piece.E, description, checking.Context));
+            facts.Add((piece.E, instantiated));
           }
         }
         // Retain the exact summary through checked ordinary publication,
         // alongside every canonical piece and the original call requires.
-        builder.Add(AssertMethodContract(ObligationOrigin(tok, instantiated.Origin),
-          lowering.Summary, description, builder.Context));
+        checking.Add(AssertMethodContract(ObligationOrigin(tok, instantiated.Origin),
+          lowering.Summary, description, checking.Context));
+        facts.Add((lowering.Summary, instantiated));
       }
+      PublishContractProofCut(tok, builder, checking, facts);
     }
     builder.Add(call);
 
