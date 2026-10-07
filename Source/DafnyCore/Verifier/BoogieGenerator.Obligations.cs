@@ -175,6 +175,47 @@ public partial class BoogieGenerator {
     Assert(new ForceCheckOrigin(origin), condition, description,
       context with { AssertMode = AssertMode.Check });
 
+  private sealed class ContractFuelLayerDescription : ProofObligationDescription {
+    public override string SuccessDescription => "existing fuel layers agree";
+    public override string FailureDescription => "could not establish equivalence between existing fuel layers";
+    public override string ShortDescription => "fuel layer agreement";
+  }
+
+  private void CheckContractFuelLayers(IOrigin origin, BoogieStmtListBuilder checking,
+    List<(Bpl.Expr Condition, Expression Source)> facts, Expression source, IEnumerable<Bpl.Expr> expressions) {
+    // Instantiate the existing unconditional layer-synonym law, then check the
+    // instances before using them. No can-call permission or body visibility is
+    // inferred, and no existing check or fuel argument is replaced.
+    var fuelFunctions = declarationMapping.Where(pair => pair.Key is Function f && f.IsFuelAware())
+      .ToDictionary(pair => pair.Value.Name, pair => (
+        Position: Enumerable.Range(0, pair.Value.InParams.Count).FirstOrDefault(index =>
+          pair.Value.InParams[index].TypedIdent.Name == "$ly" &&
+          pair.Value.InParams[index].TypedIdent.Type == Predef.LayerType, -1), Arity: pair.Value.InParams.Count));
+    var equalities = new List<Bpl.Expr>();
+    var visited = new HashSet<Bpl.Expr>(ReferenceEqualityComparer.Instance);
+    void Gather(Bpl.Expr expression) {
+      // Do not extract applications from binders, lets or old-expression scopes.
+      // Unsupported terms retain all existing checking and publication paths.
+      if (expression is not Bpl.NAryExpr application || !visited.Add(expression)) { return; }
+      if (application.Fun is Bpl.FunctionCall function &&
+          fuelFunctions.TryGetValue(function.FunctionName, out var signature) &&
+          signature.Position >= 0 && application.Args.Count == signature.Arity &&
+          application.Args[signature.Position] is Bpl.NAryExpr successor && successor.Args.Count == 1 &&
+          successor.Fun is Bpl.FunctionCall { FunctionName: "$LS" }) {
+        var predecessor = (Bpl.NAryExpr)application.Clone();
+        predecessor.Args = application.Args.ToList();
+        predecessor.Args[signature.Position] = successor.Args[0];
+        equalities.Add(Bpl.Expr.Eq(application, predecessor));
+      }
+      foreach (var argument in application.Args) { Gather(argument); }
+    }
+    foreach (var expression in expressions) { Gather(expression); }
+    if (equalities.Count == 0) { return; }
+    var agreement = equalities.Aggregate((left, right) => BplAnd(left, right));
+    checking.Add(AssertMethodContract(origin, agreement, new ContractFuelLayerDescription(), checking.Context));
+    facts.Add((agreement, source));
+  }
+
   private void PublishContractProofCut(IOrigin origin, BoogieStmtListBuilder continuation,
     BoogieStmtListBuilder checking, IReadOnlyList<(Bpl.Expr Condition, Expression Source)> facts) {
     // The verification arm checks every fact before becoming unreachable. The
@@ -212,6 +253,9 @@ public partial class BoogieGenerator {
       builder.Add(TrAssumeCmd(ensures.E.Origin, permission));
       facts.Add((permission, ensures.E));
       var lowering = LowerProposition(builder.Context, ensures.E, etran);
+      CheckContractFuelLayers(ensures.E.Origin, builder, facts, ensures.E,
+        new[] { lowering.Summary, permission }.Concat(lowering.Pieces.Select(piece => piece.E))
+          .Concat(clause.OriginalChecks.Select(original => original.Condition)));
       var (error, success) = CustomErrorMessage(ensures.Attributes);
       var description = new EnsuresDescription(ensures.E, error, success);
       foreach (var piece in lowering.Pieces) {

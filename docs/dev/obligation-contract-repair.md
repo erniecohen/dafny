@@ -58,3 +58,20 @@ patterns and fuel terms. Negative controls and matched native source/seed gates
 are required to validate this cut and determine its actual solver behavior.
 
 An empty user-contract package emits no proof cut or additional control flow.
+
+
+The next experiment checks finite ground instances of the existing layer-synonym
+axiom before the contract goals. For a known fuel-aware function and unchanged
+arguments, the trusted axiom states `f(Succ(layer), args) == f(layer, args)`.
+Each generated instance preserves the exact function, type arguments, receiver,
+old/current heap, reveal flag and value arguments. Its only replacement is the
+fuel argument by the already present successor's child. The generated function
+signature supplies the fuel position; an unknown function or shape is skipped.
+No new background axiom, can-call permission, hidden body or higher fuel is added.
+
+The instances themselves are checked and published as a conjunction before
+being used. All canonical, original and exact summary checks remain, as do their
+facts, trigger structure, fuel terms and visibility effects. The collector does
+not extract applications from quantified binders, lets or old-expression scopes;
+it introduces no escaping bound variable. Native negative controls and matched
+source/seed comparisons must validate this experiment before acceptance.

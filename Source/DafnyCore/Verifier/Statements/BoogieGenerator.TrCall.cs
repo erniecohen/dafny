@@ -383,6 +383,8 @@ public partial class BoogieGenerator {
         checking.Add(TrAssumeCmd(tok, permission));
         facts.Add((permission, instantiated));
         var lowering = LowerProposition(builder.Context, instantiated, callEtran);
+        CheckContractFuelLayers(tok, checking, facts, instantiated,
+          new[] { lowering.Summary, permission }.Concat(lowering.Pieces.Select(piece => piece.E)));
         var (error, success) = CustomErrorMessage(requirement.Attributes);
         var direct = Substitute(requirement.E, receiver, directSubstMap, tySubst);
         var description = new PreconditionSatisfied(direct, error, success);

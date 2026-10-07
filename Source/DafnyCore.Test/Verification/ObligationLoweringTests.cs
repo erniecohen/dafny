@@ -286,6 +286,64 @@ public class ObligationLoweringTests {
       ObligationFingerprint.Expression(c.Expr) == fingerprint);
   }
 
+  [Theory]
+  [InlineData(false, false, false)]
+  [InlineData(false, true, false)]
+  [InlineData(true, false, false)]
+  [InlineData(true, true, false)]
+  [InlineData(false, false, true)]
+  [InlineData(false, true, true)]
+  [InlineData(true, false, true)]
+  [InlineData(true, true, true)]
+  public async Task ContractFuelSupportChecksExistingSuccessorInstances(bool refresh, bool call, bool generic) {
+    var parameters = generic ? "<T>" : "";
+    var source = $"ghost function F{parameters}(n:nat):int {{ if n==0 then 0 else F{parameters}(n-1)+1 }} " +
+      (call ? $"lemma Use{parameters}(n:nat) requires F{parameters}(n)==n {{}} lemma L{parameters}(n:nat) {{ Use{parameters}(n); }}"
+            : $"lemma L{parameters}(n:nat) ensures F{parameters}(n)==n {{}}");
+    var fuelPosition = generic ? 1 : 0;
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var commands = implementation.Blocks.SelectMany(b => b.Cmds).ToList();
+    var agreement = Assert.Single(commands.OfType<Bpl.AssertCmd>().Where(c =>
+      c.Description?.ShortDescription == "fuel layer agreement"));
+    Assert.Equal(-1, Bpl.QKeyValue.FindIntAttribute(agreement.Attributes, "subsumption", -1));
+    void Check(Bpl.Expr expression) {
+      var operation = Assert.IsType<Bpl.NAryExpr>(expression);
+      if (operation.Fun is Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.And }) {
+        Assert.All(operation.Args, Check);
+        return;
+      }
+      Assert.IsType<Bpl.BinaryOperator>(operation.Fun);
+      Assert.Equal(Bpl.BinaryOperator.Opcode.Eq, ((Bpl.BinaryOperator)operation.Fun).Op);
+      var upper = Assert.IsType<Bpl.NAryExpr>(operation.Args[0]);
+      var lower = Assert.IsType<Bpl.NAryExpr>(operation.Args[1]);
+      Assert.EndsWith(".F", Assert.IsType<Bpl.FunctionCall>(upper.Fun).FunctionName);
+      Assert.Equal(upper.Fun, lower.Fun);
+      var successor = Assert.IsType<Bpl.NAryExpr>(upper.Args[fuelPosition]);
+      Assert.Equal("$LS", Assert.IsType<Bpl.FunctionCall>(successor.Fun).FunctionName);
+      Assert.Equal(ObligationFingerprint.Expression(successor.Args[0]), ObligationFingerprint.Expression(lower.Args[fuelPosition]));
+      Assert.Equal(upper.Args.Count, lower.Args.Count);
+      for (var i = 0; i < upper.Args.Count; i++) {
+        if (i != fuelPosition) { Assert.Same(upper.Args[i], lower.Args[i]); }
+      }
+    }
+    Check(agreement.Expr);
+    Assert.Contains(commands.OfType<Bpl.AssumeCmd>(), c =>
+      ObligationFingerprint.Expression(c.Expr) == ObligationFingerprint.Expression(agreement.Expr));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task ContractFuelSupportDoesNotExtractBoundApplications(bool refresh) {
+    const string source = "ghost function F(n:nat):int { if n==0 then 0 else F(n-1)+1 } " +
+      "lemma L() ensures forall n:nat :: F(n)==n {}";
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    Assert.DoesNotContain(implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>(),
+      c => c.Description?.ShortDescription == "fuel layer agreement");
+  }
+
   [Fact]
   public async Task MethodExitChecksTheSamePropositionAsAnImmediateAssertion() {
     const string source = "ghost predicate P(x:int) { x>=0 } lemma L(x:int) requires x>=0 ensures P(x) { assert P(x); }";
