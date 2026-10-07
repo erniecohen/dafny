@@ -623,6 +623,67 @@ public class ObligationLoweringTests {
     Assert.Contains(commands.OfType<Bpl.AssumeCmd>(), c => ObligationFingerprint.Expression(c.Expr) == fingerprint);
   }
 
+  [Theory]
+  [InlineData(false, false, false)]
+  [InlineData(false, false, true)]
+  [InlineData(false, true, false)]
+  [InlineData(false, true, true)]
+  [InlineData(true, false, false)]
+  [InlineData(true, false, true)]
+  [InlineData(true, true, false)]
+  [InlineData(true, true, true)]
+  public async Task ContractDefinitionSupportChecksGuardedRecursiveEqualities(bool refresh, bool call, bool quantified) {
+    var condition = quantified ? "forall k:nat :: F(k)==k" : "F(n)==n";
+    var source = "ghost function F(n:nat):int { if n==0 then 0 else F(n-1)+1 } " +
+      (call ? $"lemma Use(n:nat) requires {condition} {{}} lemma L(n:nat) {{ Use(n); }}"
+            : $"lemma L(n:nat) ensures {condition} {{}}");
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var commands = implementation.Blocks.SelectMany(b => b.Cmds).ToList();
+    var agreement = Assert.Single(commands.OfType<Bpl.AssertCmd>().Where(c =>
+      c.Description?.ShortDescription == "guarded definition agreement"));
+    Assert.Equal(-1, Bpl.QKeyValue.FindIntAttribute(agreement.Attributes, "subsumption", -1));
+    Assert.Contains("F#canCall", agreement.Expr.ToString());
+    void Check(Bpl.Expr expression) {
+      if (expression is Bpl.NAryExpr { Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.And } } conjunction) {
+        Assert.All(conjunction.Args, Check);
+        return;
+      }
+      if (expression is Bpl.ForallExpr closure) {
+        Assert.NotEmpty(closure.Dummies);
+        var references = new ScopedFuelTestReferences();
+        references.VisitExpr(closure.Body);
+        Assert.All(references.Variables.OfType<Bpl.BoundVariable>(), variable => Assert.Contains(variable, closure.Dummies));
+        expression = closure.Body;
+      }
+      var implication = Assert.IsType<Bpl.NAryExpr>(expression);
+      Assert.Equal(Bpl.BinaryOperator.Opcode.Imp, Assert.IsType<Bpl.BinaryOperator>(implication.Fun).Op);
+      var equality = Assert.IsType<Bpl.NAryExpr>(implication.Args[1]);
+      Assert.Equal(Bpl.BinaryOperator.Opcode.Eq, Assert.IsType<Bpl.BinaryOperator>(equality.Fun).Op);
+      var application = Assert.IsType<Bpl.NAryExpr>(equality.Args[0]);
+      Assert.EndsWith(".F", Assert.IsType<Bpl.FunctionCall>(application.Fun).FunctionName);
+      Assert.Contains("$LS", application.ToString());
+    }
+    Check(agreement.Expr);
+    Assert.Contains(commands.OfType<Bpl.AssumeCmd>(), c =>
+      ObligationFingerprint.Expression(c.Expr) == ObligationFingerprint.Expression(agreement.Expr));
+    Assert.Contains(commands.OfType<Bpl.AssertCmd>(), c => c.Description?.ShortDescription is "ensures" or "precondition");
+  }
+
+  [Theory]
+  [InlineData(false, false)]
+  [InlineData(false, true)]
+  [InlineData(true, false)]
+  [InlineData(true, true)]
+  public async Task ContractDefinitionSupportDoesNotTransportOpaqueOrHiddenDefinitions(bool refresh, bool hidden) {
+    var source = (hidden ? "ghost" : "opaque ghost") + " function F(n:nat):int { if n==0 then 0 else F(n-1)+1 } " +
+      "lemma L(n:nat) ensures F(n)==n { " + (hidden ? "hide *;" : "") + " }";
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    Assert.DoesNotContain(implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>(),
+      c => c.Description?.ShortDescription == "guarded definition agreement");
+  }
+
   private sealed class ScopedFuelTestReferences : Bpl.Duplicator {
     public readonly HashSet<Bpl.Variable> Variables = new(ReferenceEqualityComparer.Instance);
     public override Bpl.Expr VisitIdentifierExpr(Bpl.IdentifierExpr node) {

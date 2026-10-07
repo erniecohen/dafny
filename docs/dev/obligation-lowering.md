@@ -277,3 +277,24 @@ and cost regressions reported. A diagnostic workflow wrapper that exits zero is
 only a container for outcomes. The validation report must say which underlying
 gates completed and which remain pending. Independent soundness review is
 required before merging; tests and this local argument do not replace it.
+
+### Checked instances of existing guarded definitions
+
+Contract support may select a function application from the lowered obligation
+or already translated source predicates and loop invariants. For an emitted
+function definition `forall d :: G(d) ==> (F(t(d)) == B(d))`, structural matching
+of `F(t(d))` against the application gives a substitution for every axiom dummy.
+The support formula is the resulting instance of `G ==> F == B`. Conjunctive
+axiom bodies may contribute their equality conjunct, while every enclosing
+implication premise is retained. This is universal elimination followed by
+conjunction elimination; it adds no trusted axiom or call permission.
+
+All instances are checked before publication, alongside every original and
+strengthened check. Universally close referenced source binders, including
+existential source binders, without exporting a witness. Copy let bindings in
+lexical order and keep declaration and identifier names consistent. Unsupported
+polymorphic, lambda, old-expression and attributed-binder scopes contribute no
+new instance. Only already emitted, visible, nonopaque function definitions are
+eligible; hidden contexts and proof-local reveal permissions are not transported.
+Original source commands, guards, heaps, fuel arguments and outer reveal scopes
+remain unchanged.

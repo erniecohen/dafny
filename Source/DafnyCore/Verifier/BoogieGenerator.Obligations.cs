@@ -508,6 +508,182 @@ public partial class BoogieGenerator {
     }
   }
 
+  private sealed class ContractDefinitionEqualityDescription : ProofObligationDescription {
+    public override string SuccessDescription => "existing guarded function definition agrees";
+    public override string FailureDescription => "could not establish an existing guarded function definition";
+    public override string ShortDescription => "guarded definition agreement";
+  }
+
+  private void CheckContractDefinitionEqualities(IOrigin origin, BoogieStmtListBuilder checking,
+    List<(Bpl.Expr Condition, Expression Source)> facts, Expression source,
+    IEnumerable<Bpl.Expr> expressions, BoogieStmtListBuilder continuation) {
+    if (checking.Context.ContainsHide) { return; }
+    // Use only already-emitted definitions of functions visible at this boundary.
+    // Every resulting equality retains all enclosing implication premises and
+    // is checked before publication. No axiom or permission is added here.
+    var functions = declarationMapping.Where(pair => pair.Key is Function f &&
+        f.Body != null && RevealedInScope(f) && FunctionBodyIsAvailable(f, currentModule, currentScope) &&
+        !f.IsOpaque && !f.IsMadeImplicitlyOpaque)
+      .Select(pair => pair.Value.Name).ToHashSet();
+    var templates = new List<(Bpl.ForallExpr Quantifier, Bpl.NAryExpr Application, Bpl.Expr Consequence)>();
+    foreach (var axiom in sink.TopLevelDeclarations.OfType<Bpl.Axiom>().ToList()) {
+      if (axiom.Expr is not Bpl.ForallExpr quantifier || quantifier.TypeParameters.Count != 0 ||
+          quantifier.Dummies.Any(dummy => dummy.TypedIdent.WhereExpr != null) ||
+          quantifier.Body is not Bpl.NAryExpr { Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.Imp } }) { continue; }
+      void Definitions(Bpl.Expr expression, Bpl.Expr guard) {
+        if (expression is not Bpl.NAryExpr { Fun: Bpl.BinaryOperator op, Args.Count: 2 } binary) { return; }
+        if (op.Op == Bpl.BinaryOperator.Opcode.Imp) {
+          Definitions(binary.Args[1], BplAnd(guard, binary.Args[0]));
+        } else if (op.Op == Bpl.BinaryOperator.Opcode.And) {
+          Definitions(binary.Args[0], guard);
+          Definitions(binary.Args[1], guard);
+        } else if ((op.Op is Bpl.BinaryOperator.Opcode.Eq or Bpl.BinaryOperator.Opcode.Iff) &&
+                   binary.Args[0] is Bpl.NAryExpr { Fun: Bpl.FunctionCall function } application &&
+                   functions.Contains(function.FunctionName)) {
+          templates.Add((quantifier, application, BplImp(guard, expression)));
+        }
+      }
+      Definitions(quantifier.Body, Bpl.Expr.True);
+    }
+    if (templates.Count == 0) { return; }
+    var revealFunctions = declarationMapping.Values.Where(function =>
+        function.InParams.Any(parameter => parameter.TypedIdent.Name == "$reveal"))
+      .Select(function => function.Name).ToHashSet();
+    bool HasRevealedApplication(Bpl.Expr expression) => expression switch {
+      Bpl.NAryExpr application => application.Fun is Bpl.FunctionCall function &&
+        revealFunctions.Contains(function.FunctionName) || application.Args.Any(HasRevealedApplication),
+      Bpl.QuantifierExpr quantifier => HasRevealedApplication(quantifier.Body),
+      Bpl.LetExpr let => let.Rhss.Any(HasRevealedApplication) || HasRevealedApplication(let.Body),
+      Bpl.OldExpr old => HasRevealedApplication(old.Expr),
+      _ => false
+    };
+    var scopes = new List<List<Bpl.Variable>>();
+    var equalities = new List<Bpl.Expr>();
+    bool Match(Bpl.Expr pattern, Bpl.Expr actual, Dictionary<string, Bpl.Variable> variables,
+      Dictionary<Bpl.Variable, Bpl.Expr> bindings) {
+      if (pattern is Bpl.IdentifierExpr identifier && variables.TryGetValue(identifier.Name, out var variable)) {
+        if (!bindings.TryGetValue(variable, out var previous)) { bindings.Add(variable, actual); return true; }
+        return Same(previous, actual);
+      }
+      if (pattern is Bpl.IdentifierExpr p && actual is Bpl.IdentifierExpr a) {
+        return p.Name == a.Name && (p.Decl == null || a.Decl == null || ReferenceEquals(p.Decl, a.Decl));
+      }
+      if (pattern is Bpl.LiteralExpr && actual is Bpl.LiteralExpr) { return pattern.Equals(actual); }
+      if (pattern is Bpl.NAryExpr { Fun: Bpl.FunctionCall pf } pn &&
+          actual is Bpl.NAryExpr { Fun: Bpl.FunctionCall af } an &&
+          pf.FunctionName == af.FunctionName && pn.Args.Count == an.Args.Count) {
+        return pn.Args.Zip(an.Args).All(pair => Match(pair.First, pair.Second, variables, bindings));
+      }
+      return false;
+    }
+    bool Same(Bpl.Expr left, Bpl.Expr right) => ReferenceEquals(left, right) ||
+      Match(left, right, new Dictionary<string, Bpl.Variable>(), new Dictionary<Bpl.Variable, Bpl.Expr>());
+    void Gather(Bpl.Expr expression, Dictionary<Bpl.Variable, Bpl.Expr> substitutions,
+      Dictionary<string, Bpl.Expr> names) {
+      if (HasRevealedApplication(expression)) { return; }
+      if (expression is Bpl.QuantifierExpr quantifier) {
+        if (quantifier.TypeParameters.Count != 0) { return; }
+        var inner = new Dictionary<Bpl.Variable, Bpl.Expr>(substitutions);
+        var innerNames = new Dictionary<string, Bpl.Expr>(names);
+        foreach (var dummy in quantifier.Dummies) {
+          inner.Remove(dummy);
+          innerNames[dummy.TypedIdent.Name] = new Bpl.IdentifierExpr(dummy.tok, dummy);
+        }
+        scopes.Add(quantifier.Dummies);
+        Gather(quantifier.Body, inner, innerNames);
+        scopes.RemoveAt(scopes.Count - 1);
+        return;
+      }
+      if (expression is Bpl.LetExpr let) {
+        foreach (var rhs in let.Rhss) { Gather(rhs, substitutions, names); }
+        var inner = new Dictionary<Bpl.Variable, Bpl.Expr>(substitutions);
+        var innerNames = new Dictionary<string, Bpl.Expr>(names);
+        var copier = new MethodPostconditionDuplicator(substitutions, names);
+        foreach (var pair in let.Dummies.Zip(let.Rhss)) {
+          var rhs = copier.VisitExpr(pair.Second);
+          inner[pair.First] = rhs;
+          innerNames[pair.First.TypedIdent.Name] = rhs;
+        }
+        Gather(let.Body, inner, innerNames);
+        return;
+      }
+      // Never lift applications from a lambda or an old-expression scope.
+      if (expression is not Bpl.NAryExpr original) { return; }
+      if (original.Fun is Bpl.FunctionCall function && functions.Contains(function.FunctionName)) {
+        var application = (Bpl.NAryExpr)new MethodPostconditionDuplicator(substitutions, names).VisitExpr(original);
+        foreach (var template in templates.Where(template =>
+                   ((Bpl.FunctionCall)template.Application.Fun).FunctionName == function.FunctionName)) {
+          var variables = template.Quantifier.Dummies.ToDictionary(dummy => dummy.Name);
+          var bindings = new Dictionary<Bpl.Variable, Bpl.Expr>();
+          if (!Match(template.Application, application, variables, bindings) || bindings.Count != variables.Count) { continue; }
+          var namedBindings = bindings.ToDictionary(pair => pair.Key.Name, pair => pair.Value);
+          var equality = new MethodPostconditionDuplicator(bindings, namedBindings).VisitExpr(template.Consequence);
+          var references = new ContractReferencedVariableCollector();
+          references.VisitExpr(equality);
+          var needed = scopes.SelectMany(scope => scope).Where(references.Variables.Contains)
+            .Distinct<Bpl.Variable>(ReferenceEqualityComparer.Instance).ToList();
+          if (needed.Any(variable => variable.TypedIdent.WhereExpr != null || variable.Attributes != null)) { continue; }
+          if (needed.Count != 0) {
+            var copies = needed.Select(variable => {
+              var copy = (Bpl.Variable)variable.Clone();
+              copy.TypedIdent = (Bpl.TypedIdent)variable.TypedIdent.Clone();
+              copy.Name = copy.TypedIdent.Name = CurrentIdGenerator.FreshId("$contractDefinition#");
+              return copy;
+            }).ToList();
+            var replacements = needed.Zip(copies).ToDictionary(pair => pair.First,
+              pair => (Bpl.Expr)new Bpl.IdentifierExpr(pair.Second.tok, pair.Second));
+            var copier = new MethodPostconditionDuplicator(replacements);
+            equality = new Bpl.ForallExpr(origin, copies, BplTrigger(copier.VisitExpr(application)), copier.VisitExpr(equality));
+          }
+          equalities.Add(equality);
+        }
+      }
+      foreach (var argument in original.Args) { Gather(argument, substitutions, names); }
+    }
+    foreach (var expression in expressions) {
+      Gather(expression, new Dictionary<Bpl.Variable, Bpl.Expr>(), new Dictionary<string, Bpl.Expr>());
+    }
+    // Read source predicates and loop invariants without transporting their
+    // truth values or proof-local visibility. Generated cuts remain untouched.
+    void GatherList(Bpl.StmtList statements) {
+      if (statements == null) { return; }
+      if (statements.PrefixCommands != null) {
+        foreach (var command in statements.PrefixCommands) { Context(command); }
+      }
+      foreach (var block in statements.BigBlocks) {
+        foreach (var command in block.simpleCmds) { Context(command); }
+        Context(block.ec);
+      }
+    }
+    void Context(object command) {
+      switch (command) {
+        case Bpl.PredicateCmd predicate:
+          Gather(predicate.Expr, new Dictionary<Bpl.Variable, Bpl.Expr>(), new Dictionary<string, Bpl.Expr>());
+          break;
+        case Bpl.IfCmd conditional when !contractProofCuts.Contains(conditional):
+          if (conditional.Guard != null) {
+            Gather(conditional.Guard, new Dictionary<Bpl.Variable, Bpl.Expr>(), new Dictionary<string, Bpl.Expr>());
+          }
+          GatherList(conditional.Thn);
+          Context(conditional.ElseIf);
+          GatherList(conditional.ElseBlock);
+          break;
+        case Bpl.WhileCmd loop:
+          if (loop.Guard != null) { Gather(loop.Guard, new Dictionary<Bpl.Variable, Bpl.Expr>(), new Dictionary<string, Bpl.Expr>()); }
+          foreach (var invariant in loop.Invariants) {
+            Gather(invariant.Expr, new Dictionary<Bpl.Variable, Bpl.Expr>(), new Dictionary<string, Bpl.Expr>());
+          }
+          GatherList(loop.Body);
+          break;
+      }
+    }
+    foreach (var command in continuation.Commands) { Context(command); }
+    if (equalities.Count == 0) { return; }
+    var agreement = equalities.Aggregate((left, right) => BplAnd(left, right));
+    checking.Add(AssertMethodContract(origin, agreement, new ContractDefinitionEqualityDescription(), checking.Context));
+    facts.Add((agreement, source));
+  }
+
   // Do not feed generated proof scaffolding back into context-term collection.
   // Its checks and continuation facts remain in the original statement stream.
   private readonly HashSet<Bpl.IfCmd> contractProofCuts = new(ReferenceEqualityComparer.Instance);
@@ -559,6 +735,9 @@ public partial class BoogieGenerator {
           .Concat(clause.OriginalChecks.Select(original => original.Condition)));
       CheckContractContextFuelLayers(ensures.E.Origin, builder, facts, ensures.E, continuation);
       CheckContractBodyEqualities(ensures.E.Origin, builder, facts, lowering);
+      CheckContractDefinitionEqualities(ensures.E.Origin, builder, facts, ensures.E,
+        new[] { lowering.Summary, permission }.Concat(lowering.Pieces.Select(piece => piece.E))
+          .Concat(clause.OriginalChecks.Select(original => original.Condition)), continuation);
       var (error, success) = CustomErrorMessage(ensures.Attributes);
       var description = new EnsuresDescription(ensures.E, error, success);
       foreach (var piece in lowering.Pieces) {
