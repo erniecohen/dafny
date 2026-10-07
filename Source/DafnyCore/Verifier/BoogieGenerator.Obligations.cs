@@ -209,10 +209,10 @@ public partial class BoogieGenerator {
       Bpl.Expr guard = ensures.E.Origin.IsInherited(currentModule) ||
         lowering.Pieces.Any(piece => piece.IsChecked && piece.Tok.IsInherited(currentModule))
         ? new Bpl.IdentifierExpr(returnOrigin, "$_reverifyPost", Bpl.Type.Bool) : Bpl.Expr.True;
-      var summary = TrAssumeCmd(returnOrigin, BplImp(guard, lowering.Summary));
-      proofDependencies?.AddProofDependencyId(summary, returnOrigin,
-        new AssumptionDependency(false, "checked method postcondition", ensures.E));
-      builder.Add(summary);
+      // Check the exact publication form too. Ordinary assertion publication
+      // retains its facts, triggers and fuel without a separate assumed cut.
+      builder.Add(AssertMethodContract(ObligationOrigin(returnOrigin, ensures.E.Origin),
+        BplImp(guard, lowering.Summary), description, builder.Context));
     }
   }
 

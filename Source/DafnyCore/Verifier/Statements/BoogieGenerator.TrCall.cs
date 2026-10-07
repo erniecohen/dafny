@@ -390,10 +390,10 @@ public partial class BoogieGenerator {
             builder.Add(AssertMethodContract(ObligationOrigin(tok, piece.Tok), piece.E, description, builder.Context));
           }
         }
-        var summary = TrAssumeCmd(tok, lowering.Summary);
-        proofDependencies?.AddProofDependencyId(summary, tok,
-          new AssumptionDependency(false, "checked method precondition", instantiated));
-        builder.Add(summary);
+        // Retain the exact summary through checked ordinary publication,
+        // alongside every canonical piece and the original call requires.
+        builder.Add(AssertMethodContract(ObligationOrigin(tok, instantiated.Origin),
+          lowering.Summary, description, builder.Context));
       }
     }
     builder.Add(call);

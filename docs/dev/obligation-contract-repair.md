@@ -33,3 +33,10 @@ lambda bodies, attributes and triggers, and in let bodies. Let right-hand sides
 retain their outer scope. Known procedure formals are rebound to implementation
 formals; unresolved named identifiers remain unresolved until normal resolution.
 This retains lexical binding as well as the emitted formula text.
+
+The candidate additionally checks the exact publication formula at method exits
+and call sites, using ordinary assertion publication. This retains the previous
+summary's proposition, guards, trigger structure and fuel in the continuation.
+It adds a proof obligation rather than an unchecked assumption, retaining every
+original and canonical check. Native comparisons must determine its solver
+behavior; no performance or acceptance claim follows from this local argument.

@@ -256,6 +256,29 @@ public class ObligationLoweringTests {
     Assert.All(checks, check => Assert.Equal(-1, Bpl.QKeyValue.FindIntAttribute(check.Attributes, "subsumption", -1)));
   }
 
+  [Theory]
+  [InlineData(false, false)]
+  [InlineData(false, true)]
+  [InlineData(true, false)]
+  [InlineData(true, true)]
+  public async Task MethodContractSummariesUseCheckedOrdinaryPublication(bool refresh, bool call) {
+    var source = "ghost predicate P(x:int) { x>=0 && x<=100 } " +
+      (call ? "lemma Use(x:int) requires P(x) {} lemma L(x:int) requires 0<=x<=100 { Use(x); }"
+            : "lemma L(x:int) requires 0<=x<=100 ensures P(x) {}");
+    var packages = new List<BoogieGenerator.PropositionLowering>();
+    var programs = await Translate(source, true, refresh, packages.Add);
+    var summary = packages.Single(p => p.Source.Resolved is FunctionCallExpr { Function.Name: "P" } &&
+      p.Inputs.Preparation == BoogieGenerator.ObligationPreparation.DeclaredContract).Summary;
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var commands = implementation.Blocks.SelectMany(b => b.Cmds).ToList();
+    var fingerprint = ObligationFingerprint.Expression(summary);
+    var check = Assert.Single(commands.OfType<Bpl.AssertCmd>().Where(c =>
+      ObligationFingerprint.Expression(c.Expr) == fingerprint));
+    Assert.Equal(-1, Bpl.QKeyValue.FindIntAttribute(check.Attributes, "subsumption", -1));
+    Assert.DoesNotContain(commands.OfType<Bpl.AssumeCmd>(), c =>
+      ObligationFingerprint.Expression(c.Expr) == fingerprint);
+  }
+
   [Fact]
   public async Task MethodExitChecksTheSamePropositionAsAnImmediateAssertion() {
     const string source = "ghost predicate P(x:int) { x>=0 } lemma L(x:int) requires x>=0 ensures P(x) { assert P(x); }";

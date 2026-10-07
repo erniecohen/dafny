@@ -5,3 +5,5 @@ Method and forall proof bodies preserve the legacy hide/reveal scopes, including
 The experimental contract adapter checks original method postconditions at each
 return before publishing clause summaries and preserves ordinary publication for
 added method-call checks. Complete acceptance remains pending.
+
+The experimental contract path also checks the exact published summary without removing its continuation facts or any original check.
