@@ -357,7 +357,7 @@ public class ObligationLoweringTests {
     const string declarations = "class C { var i:int } ghost predicate P(c:C) reads c { c.i>=0 && c.i<=100 } ";
     var condition = old ? "old(P(c))" : "P(c)";
     var source = declarations + (call
-      ? $"lemma Use(c:C) requires {condition} {{}} lemma L(c:C) requires 0<=c.i<=100 {{ Use(c); }}"
+      ? (old ? "twostate " : "") + $"lemma Use(c:C) requires {condition} {{}} lemma L(c:C) requires 0<=c.i<=100 {{ Use(c); }}"
       : $"lemma L(c:C) requires 0<=c.i<=100 ensures {condition} {{}}");
     var programs = await Translate(source, true, refresh);
     var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.StartsWith("Impl$$") && p.Name.EndsWith(".L"));
