@@ -145,10 +145,10 @@ in both settings:
   when that divisor is composite. It exhausts its resource ceiling with the
   feature enabled under both settings.
 
-No controlled instantiation-level cause has been established for these resource
-failures. Extra obligations and quantified premises can change search, but
-that general observation does not diagnose these particular runs or justify
-accepting their regressions.
+The preceding complete comparisons did not establish controlled causes for
+these resource failures. The focused native investigation below now localizes
+the added-package boundaries for the six remaining suite examples; precise
+instantiation chains and product corrections remain open.
 
 ## Scope diagnosis and remaining limits
 
@@ -225,4 +225,96 @@ variation without a source or binary change; controlled default-off library
 cost remains unaccepted.
 
 The separate quantified power regression and resource regressions remain open.
+
+## Focused native diagnosis of the six suite regressions
+
+The current product was compared with the baseline on the unchanged complete
+files below, under both additional-axiom settings and native solver seeds 0,
+1 and 7. The original resource ceilings, assertion batching, declaration-order
+policy, fuel and reveal scopes were retained. No filtered source reconstruction
+or printed-Boogie replay substitutes for these native controls.
+
+The legacy assertion formulas are retained exactly in five cases. In
+`M2.SchorrWaite`, the changed allocation checks retain each original predicate
+and conjoin an explicit boxed-allocation predicate. The scope commands are
+retained. Native pruned captures retain the same axiom inventories, including
+their trigger formulas, for the five single-batch targets. There is no evidence
+here of a removed original check, reduced original fuel or lost definition
+axiom. `MinimumWindowMax` is already isolated in the source: its failure is the
+existing maintained loop invariant at line 65, with its original per-batch
+resource ceiling, rather than one of the newly inserted postcondition checks.
+
+A separate [scratch native diagnostic build](https://github.com/erniecohen/dafny/actions/runs/37554159139)
+omits only identified additions. With no omission, its complete operational
+Boogie and target assertion-batch outcome/resource vectors match the current
+product under both axiom settings. This establishes the control before
+interpreting each omission. The original source assertions and checked
+procedure contracts remain in the following safe diagnostic variants:
+
+| Unchanged source and target | Safe omission that restores the target | Important negative control |
+| --- | --- | --- |
+| `dafny0/NoTypeArgs.dfy`, `Lemma` | Complete added method-exit package | Omitting only emitted exit summaries does not restore native verification |
+| `dafny1/ExtensibleArrayAuto.dfy`, `ExtensibleArray.Set` | Complete added method-exit packages | Omitting only exit summaries or only call-site packages does not restore the target |
+| `dafny1/SchorrWaite-stages.dfy`, `M2.SchorrWaite` | Only the new exit-summary assumptions; all old and new checks remain | Removing whole exit packages or only new boxed-allocation conjuncts does not restore the target |
+| `dafny4/FlyingRobots.dfy`, `FormArmy` | Complete added call-site precondition packages; original call checks remain | Removing whole exit packages or their summaries does not restore the target |
+| `dafny4/Primes.dfy`, `Composite` | Added exit and call-site packages together | Either family alone still exhausts the original ceiling; allocation omissions do not change that result |
+| `dafny2/MinWindowMax.dfy`, `MinimumWindowMax` | Complete added call-site precondition packages, with additional axioms off | Exit-package, summary and allocation omissions do not restore that target; it already verifies with additional axioms on |
+
+These results localize particular additions to particular resource regressions.
+They do not propose deleting those additions from the product, establish a
+uniform improvement, or certify the entire files: existing resource failures
+in other declarations remain visible in the complete-file captures. No
+expected verdict or source contract was changed.
+
+The matched seed comparison shows baseline sensitivity as well. `NoTypeArgs`,
+`SchorrWaite` and `Primes` have baseline resource failures at another tested
+seed, and `FlyingRobots` fails at both other tested seeds. The enabled
+`ExtensibleArray.Set` target verifies at the other two seeds. The enabled
+`NoTypeArgs` and `Primes` targets also verify at one of them. `MinimumWindowMax`
+has a resource-sensitive baseline in both axiom settings; the enabled target
+verifies at every tested seed with additional axioms on. The original seed-0
+regressions are reproduced, but these observations refute treating the failures
+as seed-independent semantic impossibility.
+
+### NoTypeArgs solver-input diagnosis
+
+Before the appended exit package, the original `Lemma` body, quantified
+assertions, trigger sets and fuel are unchanged. The package introduces
+preparation permissions, a duplicate checked postcondition and a lower-fuel
+summary assumption. The original checked procedure ensures remains.
+
+Replaying the captured native SMT reproduces the original control resource
+entries. Replacing only the one newly appended concrete summary term with
+`true` restores the proof while retaining every original and additional
+checked formula. Profiling shows a large reduction in quantifier instances,
+without changing the maximum instantiation generation. This establishes a
+causal contribution of that summary to search in the captured VC.
+
+That conclusion must retain its boundary: suppressing summary emission during
+native translation does **not** repair this case, while removing the complete
+new exit package does. Replacing the summary's fuel argument in the existing
+SMT also does not repair it, although regeneration through printed Boogie can
+succeed. VC construction, optimization or ordering therefore remains part of
+the unresolved explanation. The exact instantiation chain is not established,
+and this is not evidence that an original check was given less fuel.
+
+### Diagnostic trust boundary
+
+Reparsed Boogie controls do not faithfully reproduce every native failure.
+The enabled `ExtensibleArray.Set` and axiom-off `MinimumWindowMax` failures
+disappear in those controls. Even an apparently matching replay control does
+not establish that an ablated replay preserves the native checking environment.
+The native omission results above take precedence over those exploratory
+replays.
+
+An omission that deletes new exit checks but leaves their summary assumptions
+can make those summaries unchecked premises before the final procedure
+ensures. Such successes are excluded from the safe-omission table: retaining
+the old assertion syntax alone would not preserve the proof boundary. The
+instrumentation is scratch-only and must not be merged into the product.
+
+The added-package boundaries are now localized for all six examples. Precise
+solver instantiation chains and a correction preserving the intended extra
+checking power remain unresolved. Complete enabled acceptance remains open.
+
 AI assisted the investigation.

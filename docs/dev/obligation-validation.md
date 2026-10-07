@@ -122,6 +122,21 @@ Every changed program/declaration verdict is reviewed in
 was replaced. These results do not establish uniform superiority, complete
 checking-environment preservation or end-to-end matching invariance.
 
+## Focused diagnosis after the complete comparisons
+
+The [six-case native causal investigation](obligation-failure-examples.md#focused-native-diagnosis-of-the-six-suite-regressions)
+uses unchanged complete-file captures, matched baseline/current seed runs and
+controlled native omissions under both additional-axiom settings. Current
+product versus scratch instrumentation with no omissions matches operational
+Boogie and target assertion-batch outcome/resource vectors. The study localizes
+new exit-package, exit-summary and call-site-package contributions to the six
+remaining suite regressions. No original assertion, contract, resource ceiling,
+fuel setting or reveal was changed in the product. Native omissions remain
+scratch diagnostics; unchecked-summary variants are excluded as proof evidence.
+Precise solver instantiation chains and a product correction retaining the
+intended additional checking power remain open. This is focused diagnosis,
+not another full-suite gate or completed acceptance.
+
 ## Outstanding acceptance
 
 Enabled completeness/performance, controlled default-off library cost,
