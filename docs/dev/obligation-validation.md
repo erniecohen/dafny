@@ -1,5 +1,11 @@
 # Obligation lowering validation status
 
+The [requested review revisions](obligation-review-change-request.md) now govern
+the next implementation. Their [revision checklist](obligation-revision-checklist.md)
+tracks the single-check design and acceptance requirements. The additive design
+and its evidence below describe the preceding implementation; the requested
+replacement is not yet implemented or validated.
+
 The change for [issue 100](https://github.com/erniecohen/dafny/issues/100)
 is experimental and default off. It has not been merged or released. Complete
 native suite and standard-library comparisons of the current reveal-scope

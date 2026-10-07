@@ -1,5 +1,11 @@
 # Local obligation lowering
 
+The [requested review revisions](obligation-review-change-request.md) now govern
+the next implementation. Their [revision checklist](obligation-revision-checklist.md)
+tracks the single-check design and acceptance requirements. The additive design
+and its evidence below describe the preceding implementation; the requested
+replacement is not yet implemented or validated.
+
 `--consistent-obligation-checks` is an experimental, default-off verification option.
 It can also be set as `consistent-obligation-checks = true` in `[options]` of a
 `dfyconfig.toml`. It changes proof construction, not the source language. It adds

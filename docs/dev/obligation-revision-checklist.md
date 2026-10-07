@@ -1,0 +1,74 @@
+# Issue 100 revision checklist
+
+The [requested revisions](obligation-review-change-request.md) are the governing
+requirements for the next implementation of PRs [#168](https://github.com/erniecohen/dafny/pull/168)
+and [#169](https://github.com/erniecohen/dafny/pull/169). They supersede the additive
+check-package design and exclude the later body/context-collection and
+definition-support experiments. Preserve the request in full; use this file to
+record implementation and evidence against each requirement as revisions land.
+
+**Status:** requirements recorded; product revisions and their validation are
+pending. Existing structural checks and native results describe earlier
+implementations and do not discharge this checklist. Keep both PRs as drafts.
+Settle the supported-line design first, then port the same semantics to the
+development line with independent evidence.
+
+The target implementation must satisfy:
+
+> Dafny now translates an implicit proof obligation using the same relevant local
+> pre-check support as an immediate explicit assertion of that obligation, while
+> checking the obligation only once and without consulting unrelated body terms.
+
+## Supported-line implementation: PR #168
+
+Do not mark an item complete from source inspection alone when native verification
+is required. Record the implementing commit, exact baseline/build/solver identity,
+test scope, completed verdict and remaining limits in the evidence column or a
+linked validation report.
+
+| ID / request section | Required change and evidence | Status / evidence |
+| --- | --- | --- |
+| S1 / 1 | Replace additive packages with one strengthened actual implicit check. Reuse relevant assertion-style preparation and preserve the original kind's publication. Remove duplicate proofs of the same proposition. | Pending |
+| S2 / 2 | Check each postcondition locally at every return/fallthrough in the active body reveal scope. Retain a caller-visible contract without a second implementation proof. Preserve inherited `$_reverifyPost`, clause order, earlier-clause facts, diagnostics and dependencies. Verify free/nonchecking Boogie `ensures` semantics with a small direct Boogie test before relying on it. Justify any split-summary publication. | Pending |
+| S3 / 3 | Check each instantiated method-call precondition once at the pre-call heap. Preserve callee assumptions without duplicate call checks; verify free/nonchecking `requires` semantics. Preserve receivers, generics, boxing, old arguments, frame/termination checks and call order. Retain only normal call publication. | Pending |
+| S4 / 4 | Apply canonical preparation to the existing ordinary and higher-order function-precondition assertions; add no parallel proof package. | Pending |
+| S5 / 5 | For visible subset/newtype constraints, check required base membership and the guarded defining constraint with assertion-equivalent support, then derive the symbolic membership fact using its existing introduction rule. Keep hidden constraints abstract. Cover results, assignments, constructor arguments, conversions, defaults/constants, collections and lambdas. | Pending |
+| S6 / 6 | Replace duplicate conversion assertions with one guarded constraint proof, followed only by required symbolic/type publication. | Pending |
+| S7 / 7 | Use one assertion-equivalent allocation check with existing representation bridges, then derive the downstream representation. Preserve current/old/labeled-old heaps; old-allocation negatives must fail. | Pending |
+| S8 / 8 | Audit every source-expressible implicit obligation against the producer inventory, including bounds, nullness, domains, destructors, division/modulo, invariants and iterator/yield contracts. Document specialized internal checks outside the source-proposition criterion. | Pending |
+| S9 / 9 | Keep the withdrawn global occurrence/polarity/value fuel rewrite withdrawn. Use the existing explicit-assertion fuel/layer machinery locally; introduce no global expression policy. | Pending |
+| S10 / 10 | Ensure support depends only on the proposition and legitimate local verifier state. Reject body/prefix/invariant/context term collection and all later collection/definition-support experiments as product changes to either PR. | Pending |
+| S11 / 11 | Fix `ObligationFingerprint` using lexical binder identities/stacks. Distinguish the specified shadowing counterexamples and retain a positive alpha-equivalence control. | Pending |
+| S12 / 12 | Add quantified and non-quantified paired assertion-invariance tests for exits, subsets, method/function preconditions, bounds and old allocation. Add no-body-leakage, active scoped-reveal and no-duplicate-contract-proof structural controls. | Pending |
+| S13 / 13 | Rerun stable exit-package, exit-summary and call-package regressions on the single-check implementation before solver-specific repairs. Classify partially successful baseline/candidate seed movements as solver/resource variance. Keep source hints and resource ceilings unchanged. | Pending |
+| S14 / 14 | Rewrite the PR description around single-check assertion-equivalent lowering. Complete every supported-line acceptance item below before requesting approval. | Pending |
+
+## Supported-line acceptance
+
+- [ ] Original issue 100 source verifies without its redundant final assertion at the existing ceiling.
+- [ ] The subset reproducer verifies without its redundant assertion.
+- [ ] Representative method and function precondition examples verify without redundant assertions.
+- [ ] All negative controls remain negative.
+- [ ] Scoped-reveal examples retain their previous proofs at the actual check point.
+- [ ] Default-off translation, verdicts and resource behavior remain compatible with the supported baseline under the fork's required gates.
+- [ ] Enabled mode has no unexplained stable correctness regression.
+- [ ] Remaining resource movements are classified with multiple seeds using S13's policy.
+- [ ] No body/context scanning, new background axiom or global fuel policy is introduced.
+- [ ] Producer inventory, normal regression integration, documentation, required suite/library gates and independent soundness review are complete.
+
+## Development port: PR #169
+
+| ID | Required change and evidence | Status / evidence |
+| --- | --- | --- |
+| D1 | Wait for S1-S14's semantic design to settle; port that same single-check invariant, without an independently evolved solution or later scratch experiments. Adapt to the current development verifier architecture. | Pending |
+| D2 | Port the lexical `ObligationFingerprint` fix and all relevant controls. | Pending |
+| D3 | Run the paired assertion-invariance tests, original issue 100, non-quantified subset/call cases, reveal-scope controls and negatives natively on the development build. Supported-line results cannot substitute. | Pending |
+| D4 | Run the development verifier suite and standard library under the fork's required configurations. Compare default-off behavior with the actual development baseline and classify multi-seed movements using S13. | Pending |
+| D5 | Confirm the development-specific producer inventory; document branch-specific lowering and soundness differences, exact evidence scope and remaining limits. Request approval only after development-specific acceptance. | Pending |
+
+## Updating this record
+
+Keep the full request unchanged. Update statuses and evidence here as commits land,
+and link current validation from both PR descriptions. A successful focused case,
+public build or solver replay does not complete a whole-suite/library requirement.
+Do not close an item merely because a superseded implementation passed its tests.
