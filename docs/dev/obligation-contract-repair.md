@@ -159,3 +159,21 @@ equality. The existing unconditional law holds for every heap and every value;
 instantiating it with an old-state value is therefore valid. No old/current
 state conversion, source evaluation, reveal permission or body expansion occurs.
 Every earlier support instance, original check and published fact remains.
+
+
+Context collection also covers resolved non-opaque fuel-aware function signatures
+whose Boogie declarations have not yet been emitted. Refinement implementations
+can precede inherited function declarations, so the declaration cache alone is
+not a complete signature registry. The additional registry reads resolved source
+metadata and mirrors the existing function-signature layout: type arguments,
+fuel, prior heap when applicable, current heap when read, receiver and source
+arguments. It emits no declaration, assigns no parameter name, and changes no
+existing cache entry or source visibility. Conflicting duplicate signatures fail
+closed. Opaque functions are excluded from this additional registry.
+
+Every earlier cache-based instance is still collected by its unchanged pass. A
+second pass adds only signatures absent from that cache, using the same existing
+terms, old-state arguments, lexical closure and checked publication. Each new
+instance is again a specialization of the existing unconditional successor law
+for that exact resolved function. Original contract-only ground and scoped
+collectors remain unchanged.

@@ -551,6 +551,78 @@ public class ObligationLoweringTests {
     Assert.Contains(commands.OfType<Bpl.AssumeCmd>(), c => ObligationFingerprint.Expression(c.Expr) == fingerprint);
   }
 
+  [Theory]
+  [InlineData(false, false, false, false)]
+  [InlineData(false, false, false, true)]
+  [InlineData(false, false, true, false)]
+  [InlineData(false, false, true, true)]
+  [InlineData(false, true, false, false)]
+  [InlineData(false, true, false, true)]
+  [InlineData(false, true, true, false)]
+  [InlineData(false, true, true, true)]
+  [InlineData(true, false, false, false)]
+  [InlineData(true, false, false, true)]
+  [InlineData(true, false, true, false)]
+  [InlineData(true, false, true, true)]
+  [InlineData(true, true, false, false)]
+  [InlineData(true, true, false, true)]
+  [InlineData(true, true, true, false)]
+  [InlineData(true, true, true, true)]
+  public async Task RefinedContextFuelSupportUsesResolvedSignatures(bool refresh, bool call, bool quantified, bool generic) {
+    var typeParameter = generic ? "<T>" : "";
+    var parameter = generic ? ",u:T" : "";
+    var argument = generic ? ",u" : "";
+    var invariant = quantified ? "forall m:nat :: old(F(c,m" + argument + "))==old(c.x)+m" :
+      "old(F(c,0" + argument + "))==old(c.x)";
+    var source = "module M0 { class C { ghost var x:int } ghost function F" + typeParameter +
+      "(c:C,n:nat" + parameter + "):int reads c { if n==0 then c.x else F(c,n-1" + argument + ")+1 } " +
+      "lemma Use() requires true {} lemma L" + typeParameter + "(c:C,n:nat" + parameter + ") " +
+      (call ? "" : "ensures true ") + "} module M1 refines M0 { lemma L ... " +
+      "{ var i:=0; while i<n invariant " + invariant + " { i:=i+1; } " + (call ? "Use();" : "") + " } }";
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p =>
+      p.Name.StartsWith("Impl$$M1.") && p.Name.EndsWith(".L"));
+    var commands = implementation.Blocks.SelectMany(b => b.Cmds).ToList();
+    var agreement = Assert.Single(commands.OfType<Bpl.AssertCmd>().Where(c =>
+      c.Description?.ShortDescription == "context fuel layer agreement"));
+    var closed = 0;
+    void Check(Bpl.Expr expression) {
+      if (expression is Bpl.NAryExpr { Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.And } } conjunction) {
+        Assert.All(conjunction.Args, Check);
+        return;
+      }
+      if (expression is Bpl.ForallExpr closure) {
+        closed++;
+        Assert.Single(closure.Dummies);
+        var referenced = new ScopedFuelTestReferences();
+        referenced.VisitExpr(closure.Body);
+        Assert.All(referenced.Variables.OfType<Bpl.BoundVariable>(), variable => Assert.Contains(variable, closure.Dummies));
+        expression = closure.Body;
+      }
+      var equality = Assert.IsType<Bpl.NAryExpr>(expression);
+      Assert.Equal(Bpl.BinaryOperator.Opcode.Eq, Assert.IsType<Bpl.BinaryOperator>(equality.Fun).Op);
+      var upper = Assert.IsType<Bpl.NAryExpr>(equality.Args[0]);
+      var lower = Assert.IsType<Bpl.NAryExpr>(equality.Args[1]);
+      Assert.Equal("M1.__default.F", Assert.IsType<Bpl.FunctionCall>(upper.Fun).FunctionName);
+      var position = generic ? 1 : 0;
+      Assert.IsType<Bpl.OldExpr>(upper.Args[position + 1]);
+      Assert.IsType<Bpl.OldExpr>(lower.Args[position + 1]);
+      var successor = Assert.IsType<Bpl.NAryExpr>(upper.Args[position]);
+      Assert.Equal("$LS", Assert.IsType<Bpl.FunctionCall>(successor.Fun).FunctionName);
+      Assert.Equal(ObligationFingerprint.Expression(successor.Args[0]), ObligationFingerprint.Expression(lower.Args[position]));
+      for (var i = 0; i < upper.Args.Count; i++) {
+        if (i != position) {
+          Assert.Equal(ObligationFingerprint.Expression(upper.Args[i]), ObligationFingerprint.Expression(lower.Args[i]));
+        }
+      }
+    }
+    Check(agreement.Expr);
+    Assert.Equal(quantified, closed > 0);
+    Assert.Contains(commands.OfType<Bpl.AssertCmd>(), c => c.Description is LoopInvariant);
+    var fingerprint = ObligationFingerprint.Expression(agreement.Expr);
+    Assert.Contains(commands.OfType<Bpl.AssumeCmd>(), c => ObligationFingerprint.Expression(c.Expr) == fingerprint);
+  }
+
   private sealed class ScopedFuelTestReferences : Bpl.Duplicator {
     public readonly HashSet<Bpl.Variable> Variables = new(ReferenceEqualityComparer.Instance);
     public override Bpl.Expr VisitIdentifierExpr(Bpl.IdentifierExpr node) {

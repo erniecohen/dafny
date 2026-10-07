@@ -254,11 +254,12 @@ public partial class BoogieGenerator {
   }
 
   private List<Bpl.Expr> ContractScopedFuelEqualities(IOrigin origin,
-    IEnumerable<Bpl.Expr> expressions, bool includeGround) {
+    IEnumerable<Bpl.Expr> expressions, bool includeGround,
+    IReadOnlyDictionary<string, (int Position, int Arity)> additionalFunctions = null) {
     // These are checked instances of the same unconditional layer-synonym law
     // used above. Close over every referenced source dummy universally, for
     // either source quantifier polarity. Never export an existential witness.
-    var fuelFunctions = declarationMapping.Where(pair => pair.Key is Function f && f.IsFuelAware())
+    var fuelFunctions = additionalFunctions ?? declarationMapping.Where(pair => pair.Key is Function f && f.IsFuelAware())
       .ToDictionary(pair => pair.Value.Name, pair => (
         Position: Enumerable.Range(0, pair.Value.InParams.Count).FirstOrDefault(index =>
           pair.Value.InParams[index].TypedIdent.Name == "$ly" &&
@@ -351,6 +352,29 @@ public partial class BoogieGenerator {
     return equalities;
   }
 
+  private IReadOnlyDictionary<string, (int Position, int Arity)> AdditionalContextFuelFunctions() {
+    // The declaration cache contains only functions already emitted. Refinement
+    // implementations can precede their inherited function declarations. Read
+    // resolved source signatures without emitting declarations, assigning names
+    // or changing the original cache. This mirrors GetFunctionBoogieDefinition.
+    var existing = declarationMapping.Values.Select(function => function.Name).ToHashSet();
+    var result = new Dictionary<string, (int Position, int Arity)>();
+    foreach (var function in program.RawModules().SelectMany(module => module.TopLevelDecls)
+               .OfType<TopLevelDeclWithMembers>().SelectMany(declaration => declaration.Members).OfType<Function>()) {
+      if (!function.IsFuelAware() || existing.Contains(function.FullSanitizedName) ||
+          function.IsOpaque || function.IsMadeImplicitlyOpaque(options)) { continue; }
+      var position = GetTypeParams(function).Count();
+      var arity = position + 1 + (function is TwoStateFunction ? 1 : 0) + (function.ReadsHeap ? 1 : 0) +
+        (function.IsStatic ? 0 : 1) + function.Ins.Count;
+      var signature = (Position: position, Arity: arity);
+      if (result.TryGetValue(function.FullSanitizedName, out var previous) && previous != signature) {
+        throw new System.InvalidOperationException("Conflicting context fuel signatures");
+      }
+      result[function.FullSanitizedName] = signature;
+    }
+    return result;
+  }
+
   private sealed class ContractContextFuelLayerDescription : ProofObligationDescription {
     public override string SuccessDescription => "existing context fuel layers agree";
     public override string FailureDescription => "could not establish fuel equivalence for an existing context term";
@@ -426,6 +450,13 @@ public partial class BoogieGenerator {
     // Do not Collect() or modify the original builder or its commands.
     foreach (var command in continuation.Commands) { Gather(command); }
     var equalities = ContractScopedFuelEqualities(origin, expressions, true);
+    // Retain every cache-based instance above. Add only signatures missing from
+    // that cache; the same eligibility, lexical closure and checked publication
+    // rules apply. The original contract-only collectors stay unchanged.
+    var additionalFunctions = AdditionalContextFuelFunctions();
+    if (additionalFunctions.Count != 0) {
+      equalities.AddRange(ContractScopedFuelEqualities(origin, expressions, true, additionalFunctions));
+    }
     if (equalities.Count == 0) { return; }
     var agreement = equalities.Aggregate((left, right) => BplAnd(left, right));
     checking.Add(AssertMethodContract(origin, agreement, new ContractContextFuelLayerDescription(), checking.Context));
