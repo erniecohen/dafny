@@ -327,6 +327,9 @@ public partial class BoogieGenerator {
               var copy = (Bpl.Variable)variable.Clone();
               copy.TypedIdent = (Bpl.TypedIdent)variable.TypedIdent.Clone();
               copy.TypedIdent.Name = CurrentIdGenerator.FreshId("$contractFuel#");
+              // Boogie stores the declaration name separately from TypedIdent.
+              // Keep emitted identifiers and binder declarations in agreement.
+              copy.Name = copy.TypedIdent.Name;
               return copy;
             }).ToList();
             var replacements = needed.Zip(copies).ToDictionary(pair => pair.First,

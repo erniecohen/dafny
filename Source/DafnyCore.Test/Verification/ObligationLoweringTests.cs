@@ -627,6 +627,12 @@ public class ObligationLoweringTests {
     public readonly HashSet<Bpl.Variable> Variables = new(ReferenceEqualityComparer.Instance);
     public override Bpl.Expr VisitIdentifierExpr(Bpl.IdentifierExpr node) {
       if (node.Decl != null) { Variables.Add(node.Decl); }
+      if (node.Decl is Bpl.BoundVariable) {
+        // Both names participate in Boogie emission. Checking only Decl identity
+        // would miss a fresh binder whose printed uses retain the source name.
+        Assert.Equal(node.Decl.TypedIdent.Name, node.Decl.Name);
+        Assert.Equal(node.Decl.Name, node.Name);
+      }
       return base.VisitIdentifierExpr(node);
     }
   }
