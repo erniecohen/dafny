@@ -6,6 +6,12 @@ using Bpl = Microsoft.Boogie;
 namespace Microsoft.Dafny;
 
 public partial class BoogieGenerator {
+  // Temporary causal instrumentation on this scratch branch only. The default
+  // emits the current product translation. Each named diagnostic omission keeps
+  // every legacy assertion and checked procedure contract; it is not acceptance.
+  private static bool OmitDiagnosticObligationPart(string part) =>
+    System.Environment.GetEnvironmentVariable("DAFNY_OBLIGATION_DIAGNOSTIC")?.Split(',').Contains(part) ?? false;
+
   // This package constructs expressions only. Preparation permissions remain the
   // responsibility of the existing WF/declared-contract/guarded introduction path.
   internal enum ObligationPreparation { CheckedExpression, DeclaredContract, GuardedIntroduction }
@@ -107,14 +113,14 @@ public partial class BoogieGenerator {
     // The declared contract WF procedure establishes permissions in clause order.
     // Check each clause locally at this exit, then publish its guarded summary.
     // The procedure's checked ensures remain as the final semantic bridge.
-    if (assertionOnlyFilter != null) { return; }
+    if (assertionOnlyFilter != null || OmitDiagnosticObligationPart("exit")) { return; }
     foreach (var ensures in ConjunctsOf(method.Ens)) {
       builder.Add(TrAssumeCmd(ensures.E.Origin, etran.CanCallAssumptionForVerification(ensures.E)));
       var lowering = LowerProposition(builder.Context, ensures.E, etran);
       var (error, success) = CustomErrorMessage(ensures.Attributes);
       var description = new EnsuresDescription(ensures.E, error, success);
       foreach (var piece in lowering.Pieces) {
-        if (!piece.IsChecked) { continue; }
+        if (!piece.IsChecked || OmitDiagnosticObligationPart("exit-checks")) { continue; }
         var check = piece.E;
         if (piece.Tok.IsInherited(currentModule)) {
           check = BplImp(new Bpl.IdentifierExpr(returnOrigin, "$_reverifyPost", Bpl.Type.Bool), check);
@@ -130,7 +136,7 @@ public partial class BoogieGenerator {
       var summary = TrAssumeCmd(returnOrigin, BplImp(guard, lowering.Summary));
       proofDependencies?.AddProofDependencyId(summary, returnOrigin,
         new AssumptionDependency(false, "checked method postcondition", ensures.E));
-      builder.Add(summary);
+      if (!OmitDiagnosticObligationPart("exit-summary")) { builder.Add(summary); }
     }
   }
 
@@ -140,7 +146,7 @@ public partial class BoogieGenerator {
   private Bpl.Expr AllocationObligation(IOrigin origin, Bpl.Expr value, Type type,
     ExpressionTranslator etran) {
     var legacy = GetWhereClause(origin, value, type, etran, ISALLOC, true);
-    if (legacy == null || !options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+    if (legacy == null || !options.Get(CommonOptionBag.ConsistentObligationChecks) || OmitDiagnosticObligationPart("allocation")) {
       return legacy;
     }
     return BplAnd(legacy, ExplicitAllocationPredicate(origin, value, type, etran.HeapExpr));

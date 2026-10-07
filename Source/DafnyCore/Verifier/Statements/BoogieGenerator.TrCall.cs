@@ -372,7 +372,7 @@ public partial class BoogieGenerator {
       // of the predicate.
       call.IsFree = true;
     }
-    if (options.Get(CommonOptionBag.ConsistentObligationChecks) && !call.IsFree) {
+    if (options.Get(CommonOptionBag.ConsistentObligationChecks) && !call.IsFree && !OmitDiagnosticObligationPart("call")) {
       var callEtran = method is TwoStateLemma
         ? etran.WithVerificationOldHeap(etran.OldAt(atLabel).HeapExpr) : etran;
       foreach (var requirement in ConjunctsOf(callee.Req)) {
