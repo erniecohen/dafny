@@ -106,6 +106,15 @@ public partial class BoogieGenerator {
 
   private readonly Dictionary<MethodOrConstructor, IReadOnlyList<MethodPostconditionClause>> methodPostconditionClauses = new();
 
+  // Contract expressions are not resolved yet. Clone them without requiring a
+  // declaration on every named identifier, rebinding only known formal objects.
+  private sealed class MethodPostconditionDuplicator(Dictionary<Bpl.Variable, Bpl.Expr> formals) : Bpl.Duplicator {
+    public override Bpl.Expr VisitIdentifierExpr(Bpl.IdentifierExpr node) =>
+      node.Decl != null && formals.TryGetValue(node.Decl, out var replacement)
+        ? replacement : base.VisitIdentifierExpr(node);
+  }
+
+
   private void CheckMethodPostconditions(MethodOrConstructor method, IOrigin returnOrigin,
     BoogieStmtListBuilder builder, ExpressionTranslator etran) {
     // The declared contract WF procedure establishes permissions in clause order.

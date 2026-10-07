@@ -555,10 +555,10 @@ namespace Microsoft.Dafny {
       if (methodPostconditionClauses.TryGetValue(m, out var clauses)) {
         var formals = proc.InParams.Concat(proc.OutParams).Zip(inParams.Concat(outParams))
           .ToDictionary(pair => pair.First, pair => (Bpl.Expr)new Bpl.IdentifierExpr(pair.Second.tok, pair.Second));
-        var substitution = Bpl.Substituter.SubstitutionFromDictionary(formals);
+        var duplicator = new MethodPostconditionDuplicator(formals);
         methodPostconditionClauses[m] = clauses.Select(clause => new MethodPostconditionClause(clause.Source,
           clause.OriginalChecks.Select(original => new Bpl.Ensures(original.tok, false,
-            Bpl.Substituter.Apply(substitution, original.Condition), original.Comment, original.Attributes) {
+            (Bpl.Expr)duplicator.Visit(original.Condition), original.Comment, original.Attributes) {
               Description = original.Description
             }).ToList())).ToList();
       }
