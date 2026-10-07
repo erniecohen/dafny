@@ -107,10 +107,7 @@ public partial class BoogieGenerator {
         var dafnyAssertion = new ForallExpr(stmt.Origin, [indexVar],
           dafnyRange, new TypeTestExpr(indexVar.Origin, dIndex, indexVar.Type), null);
         var rangeDescription = new ForRangeAssignable(desc, dafnyAssertion);
-        if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
-          CheckVisibleTypeObligations(tok, x, Type.Int, indexVar.Type, rangeDescription, builder, etran);
-        }
-        builder.Add(Assert(tok, cre, rangeDescription, builder.Context));
+        CheckTypeMembership(tok, cre, x, Type.Int, indexVar.Type, rangeDescription, builder, etran);
       }
     }
 
@@ -244,9 +241,18 @@ public partial class BoogieGenerator {
 
       builder.Add(TrAssumeCmd(loopInv.E.Origin, BplImp(w, etran.CanCallAssumptionForVerification(loopInv.E))));
       invariants.Add(TrAssumeCmd(loopInv.E.Origin, BplImp(w, etran.CanCallAssumptionForVerification(loopInv.E))));
-      var ss = TrSplitExpr(builder.Context, loopInv.E, etran, false, out var splitHappened);
+      var lowering = options.Get(CommonOptionBag.ConsistentObligationChecks)
+        ? LowerProposition(builder.Context, loopInv.E, etran) : null;
+      bool splitHappened;
+      List<SplitExprInfo> ss;
+      if (lowering != null) {
+        ss = lowering.Pieces.ToList();
+        splitHappened = lowering.SplitHappened;
+      } else {
+        ss = TrSplitExpr(builder.Context, loopInv.E, etran, false, out splitHappened);
+      }
       if (!splitHappened) {
-        var wInv = BplImp(w, etran.TrExpr(loopInv.E));
+        var wInv = BplImp(w, lowering != null ? lowering.Pieces[0].E : etran.TrExpr(loopInv.E));
         invariants.Add(Assert(loopInv.E.Origin, wInv, new LoopInvariant(loopInv.E, errorMessage, successMessage), builder.Context));
       } else {
         foreach (var split in ss) {

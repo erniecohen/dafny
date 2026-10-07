@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DafnyCore.Verifier;
@@ -22,8 +23,8 @@ public partial class BoogieGenerator {
     var explicitAssertion = preparation == ObligationPreparation.CheckedExpression;
     var savedStatement = stmtContext;
     var savedAdjustment = adjustFuelForExists;
-    // Extra implicit checks start with the existing assertion policy. The
-    // original checks and explicit assertions keep their original translator,
+    // Lower the actual implicit check with the existing assertion policy at
+    // this program point. Explicit assertions retain their original translator,
     // statement context, fuel choices and splitting decisions.
     var checking = explicitAssertion ? etran : etran.CloneForObligation();
     try {
@@ -72,19 +73,39 @@ public partial class BoogieGenerator {
   }
 
   private void CheckPropositionUnderGuard(IOrigin origin, Expression condition, Bpl.Expr guard,
-    ProofObligationDescription description, BoogieStmtListBuilder builder, ExpressionTranslator etran) {
+    ProofObligationDescription description, BoogieStmtListBuilder builder, ExpressionTranslator etran,
+    Func<Bpl.Expr, Bpl.Expr> close = null, bool forget = false, Bpl.QKeyValue attributes = null) {
+    close ??= expression => expression;
     // A guarded introduction does not grant its can-call premise unconditionally.
     var lowering = LowerProposition(builder.Context, condition, etran,
       preparation: ObligationPreparation.GuardedIntroduction, guard: guard);
     foreach (var piece in lowering.Pieces) {
       if (piece.IsChecked) {
-        builder.Add(AssertAndForget(builder.Context, ObligationOrigin(origin, piece.Tok), BplImp(guard, piece.E), description));
+        var token = ObligationOrigin(origin, piece.Tok);
+        var check = close(BplImp(guard, piece.E));
+        builder.Add(forget
+          ? AssertAndForget(builder.Context, token, check, description, origin, attributes)
+          : Assert(token, check, description, origin, builder.Context, attributes));
       }
     }
-    var summary = TrAssumeCmd(origin, BplImp(guard, lowering.Summary));
-    proofDependencies?.AddProofDependencyId(summary, origin,
-      new AssumptionDependency(false, "checked guarded obligation", condition));
-    builder.Add(summary);
+    if (lowering.SplitHappened && !forget) {
+      // Ordinary split-assertion publication, after the sole checked pieces.
+      var summary = TrAssumeCmd(origin, close(BplImp(guard, lowering.Summary)));
+      proofDependencies?.AddProofDependencyId(summary, origin,
+        new AssumptionDependency(false, "checked guarded obligation", condition));
+      builder.Add(summary);
+    }
+  }
+
+  internal void CheckOpaquePostcondition(IOrigin origin, Expression condition,
+    ProofObligationDescription description, BoogieStmtListBuilder builder, ExpressionTranslator etran,
+    Bpl.QKeyValue attributes) {
+    if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+      CheckPropositionUnderGuard(origin, condition, Bpl.Expr.True, description, builder, etran,
+        attributes: attributes);
+    } else {
+      builder.Add(Assert(origin, etran.TrExpr(condition), description, builder.Context, attributes));
+    }
   }
 
   private static IOrigin ObligationOrigin(IOrigin source, IOrigin piece) {
@@ -104,11 +125,16 @@ public partial class BoogieGenerator {
 
   private void CheckMethodPostconditions(MethodOrConstructor method, IOrigin returnOrigin,
     BoogieStmtListBuilder builder, ExpressionTranslator etran) {
-    // The declared contract WF procedure establishes permissions in clause order.
-    // Check each clause locally at this exit, then publish its guarded summary.
-    // The procedure's checked ensures remain as the final semantic bridge.
+    CheckExitPostconditions(method.Ens, returnOrigin, builder, etran, true);
+  }
+
+  private void CheckExitPostconditions(List<AttributedExpression> clauses, IOrigin returnOrigin,
+    BoogieStmtListBuilder builder, ExpressionTranslator etran, bool reverifyInherited) {
+    // Contract WF establishes the same declared permissions in clause order.
+    // This is the sole implementation proof of each clause, at its actual exit
+    // while body reveals are active. The procedure copy is nonchecking.
     if (assertionOnlyFilter != null) { return; }
-    foreach (var ensures in ConjunctsOf(method.Ens)) {
+    foreach (var ensures in ConjunctsOf(clauses)) {
       builder.Add(TrAssumeCmd(ensures.E.Origin, etran.CanCallAssumptionForVerification(ensures.E)));
       var lowering = LowerProposition(builder.Context, ensures.E, etran);
       var (error, success) = CustomErrorMessage(ensures.Attributes);
@@ -117,20 +143,26 @@ public partial class BoogieGenerator {
         if (!piece.IsChecked) { continue; }
         var check = piece.E;
         if (piece.Tok.IsInherited(currentModule)) {
+          if (!reverifyInherited) { continue; }
           check = BplImp(new Bpl.IdentifierExpr(returnOrigin, "$_reverifyPost", Bpl.Type.Bool), check);
         }
-        // Checked procedure ensures publish each proved piece to the continuation.
-        // Keep that policy for their local copies; explicit split assertions retain
-        // their separate check-and-forget policy.
-        builder.Add(Assert(ObligationOrigin(returnOrigin, piece.Tok), check, description, builder.Context));
+        // Retain ordinary checked-ensures publication and inherited guarding.
+        // Force the actual contract check even in a source assume-mode region.
+        builder.Add(Assert(new ForceCheckOrigin(ObligationOrigin(returnOrigin, piece.Tok)),
+          check, description, builder.Context with { AssertMode = AssertMode.Check }));
       }
-      Bpl.Expr guard = ensures.E.Origin.IsInherited(currentModule) ||
-        lowering.Pieces.Any(piece => piece.IsChecked && piece.Tok.IsInherited(currentModule))
+      var inherited = ensures.E.Origin.IsInherited(currentModule) ||
+        lowering.Pieces.Any(piece => piece.IsChecked && piece.Tok.IsInherited(currentModule));
+      Bpl.Expr guard = inherited && reverifyInherited
         ? new Bpl.IdentifierExpr(returnOrigin, "$_reverifyPost", Bpl.Type.Bool) : Bpl.Expr.True;
-      var summary = TrAssumeCmd(returnOrigin, BplImp(guard, lowering.Summary));
-      proofDependencies?.AddProofDependencyId(summary, returnOrigin,
-        new AssumptionDependency(false, "checked method postcondition", ensures.E));
-      builder.Add(summary);
+      if (lowering.SplitHappened && (reverifyInherited || !inherited)) {
+        // A split check publishes its established source clause, as an assertion
+        // does. An unsplit assertion already publishes its exact checked fact.
+        var summary = TrAssumeCmd(returnOrigin, BplImp(guard, lowering.Summary));
+        proofDependencies?.AddProofDependencyId(summary, returnOrigin,
+          new AssumptionDependency(false, "checked method postcondition", ensures.E));
+        builder.Add(summary);
+      }
     }
   }
 
@@ -143,7 +175,9 @@ public partial class BoogieGenerator {
     if (legacy == null || !options.Get(CommonOptionBag.ConsistentObligationChecks)) {
       return legacy;
     }
-    return BplAnd(legacy, ExplicitAllocationPredicate(origin, value, type, etran.HeapExpr));
+    // The existing allocation boxing bridge supplies the typed counterpart.
+    // Check only the representation used by an explicit allocated assertion.
+    return ExplicitAllocationPredicate(origin, value, type, etran.HeapExpr);
   }
 
   private Bpl.Expr ExplicitAllocationPredicate(IOrigin origin, Bpl.Expr value, Type type, Bpl.Expr heap) =>

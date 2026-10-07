@@ -111,7 +111,9 @@ namespace Microsoft.Dafny {
             if (kind == MethodTranslationKind.Implementation && split.Tok.IsInherited(currentModule)) {
               // this postcondition was inherited into this module, so just ignore it
             } else {
-              ens.Add(Ensures(split.Tok, split.IsOnlyFree, p.E, split.E, null, null, comment));
+              var nonchecking = options.Get(CommonOptionBag.ConsistentObligationChecks) &&
+                kind == MethodTranslationKind.Implementation && assertionOnlyFilter == null;
+              ens.Add(Ensures(split.Tok, split.IsOnlyFree || nonchecking, p.E, split.E, null, null, comment));
               comment = null;
             }
           }
@@ -317,7 +319,14 @@ namespace Microsoft.Dafny {
       YieldHavoc(iter.Origin, iter, builder, etran);
 
       // translate the body of the iterator
-      var stmts = TrStmt2StmtList(builder, iter.Body, localVariables, etran);
+      Bpl.StmtList stmts;
+      if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+        TrStmtList([iter.Body], builder, localVariables, etran, null, processLabels: false);
+        CheckExitPostconditions(iter.Ensures, iter.Origin, builder, etran, false);
+        stmts = builder.Collect(iter.Body.StartToken);
+      } else {
+        stmts = TrStmt2StmtList(builder, iter.Body, localVariables, etran);
+      }
 
       if (EmitImplementation(iter.Attributes)) {
         // emit the impl only when there are proof obligations.

@@ -1819,7 +1819,9 @@ namespace Microsoft.Dafny {
                 "in the two-state lemma's previous state" + IsAllocated.HelperFormal(formal),
                 dafnyFormalIdExpr
               );
-              var require = Requires(formal.Origin, false, null, MkIsAlloc(etran.TrExpr(dafnyFormalIdExpr), formal.Type, prevHeap),
+              var locallyChecked = options.Get(CommonOptionBag.ConsistentObligationChecks) &&
+                kind is MethodTranslationKind.Call or MethodTranslationKind.CoCall;
+              var require = Requires(formal.Origin, locallyChecked, null, MkIsAlloc(etran.TrExpr(dafnyFormalIdExpr), formal.Type, prevHeap),
                 desc.FailureDescription, desc.SuccessDescription, null);
               require.Description = desc;
               req.Add(require);
@@ -1849,7 +1851,12 @@ namespace Microsoft.Dafny {
               } else if (s.IsOnlyFree && !bodyKind) {
                 // don't include in split -- it would be ignored, anyhow
               } else {
-                req.Add(RequiresWithDependencies(s.Tok, s.IsOnlyFree, p.E, s.E, errorMessage, successMessage, null));
+                // Calls check user preconditions locally exactly once. Keep the
+                // callee-visible proposition without a second call obligation.
+                var locallyChecked = options.Get(CommonOptionBag.ConsistentObligationChecks) &&
+                  kind is MethodTranslationKind.Call or MethodTranslationKind.CoCall;
+                req.Add(RequiresWithDependencies(s.Tok, s.IsOnlyFree || locallyChecked,
+                  p.E, s.E, errorMessage, successMessage, null));
                 // the free here is not linked to the free on the original expression (this is free things generated in the splitting.)
               }
             }
@@ -1889,7 +1896,13 @@ namespace Microsoft.Dafny {
             } else if (split.IsOnlyChecked && !bodyKind) {
               // don't include in split
             } else {
-              AddEnsures(ens, EnsuresWithDependencies(split.Tok, split.IsOnlyFree || this.assertionOnlyFilter != null, p.E, post, errorMessage, successMessage, null));
+              // Each user clause is proved locally at every actual exit. The
+              // procedure copy remains available to callers, without rechecking.
+              var locallyChecked = options.Get(CommonOptionBag.ConsistentObligationChecks) &&
+                kind == MethodTranslationKind.Implementation && assertionOnlyFilter == null;
+              AddEnsures(ens, EnsuresWithDependencies(split.Tok,
+                split.IsOnlyFree || locallyChecked || this.assertionOnlyFilter != null,
+                p.E, post, errorMessage, successMessage, null));
             }
           }
         }

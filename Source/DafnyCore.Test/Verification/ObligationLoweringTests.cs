@@ -67,13 +67,62 @@ public class ObligationLoweringTests {
   }
 
   [Fact]
-  public async Task VisibleSubsetRetainsMembershipBridgeAndAddsGuardedInlining() {
+  public async Task VisibleSubsetChecksConstraintAndDerivesMembershipWithoutDuplicateProof() {
     const string source = "datatype D = D(i: int) ghost predicate P(d: D) { d.i >= 0 } type S = d: D | P(d) witness D(0) ghost function F(i: nat): S { D(i) }";
     var text = ObligationFingerprint.Emit(await Translate(source, true));
     Assert.Contains("P#canCall", text);
     Assert.Contains("$Is", text);
-    var legacy = ObligationFingerprint.Emit(await Translate(source, false));
-    Assert.True(text.Split("assert ").Length > legacy.Split("assert ").Length);
+    var programs = await Translate(source, true);
+    var implementation = programs.SelectMany(p => p.Implementations)
+      .Single(p => p.Name.Contains("CheckWellformed") && p.Name.EndsWith(".F"));
+    var checks = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+      .Where(c => c.Description is SubrangeCheck).ToList();
+    Assert.NotEmpty(checks);
+    Assert.DoesNotContain(checks, check => ObligationFingerprint.Expression(check.Expr).Contains("Tclass._module.S"));
+  }
+
+  [Fact]
+  public async Task QuantifiedInitializerChecksVisibleConstraintWithinItsIndexRange() {
+    const string source = "type S = x:int | x>=0 witness 0 " +
+      "ghost function G(i:int):int { i } ghost function F(n:nat):seq<S> { seq(n, G) }";
+    var programs = await Translate(source, true);
+    var implementation = programs.SelectMany(p => p.Implementations)
+      .Single(p => p.Name.Contains("CheckWellformed") && p.Name.EndsWith(".F"));
+    var checks = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+      .Where(c => c.Description is SubrangeCheck).ToList();
+    Assert.NotEmpty(checks);
+    Assert.Contains(checks, c => c.Expr is Bpl.ForallExpr);
+    Assert.DoesNotContain(checks, c => ObligationFingerprint.Expression(c.Expr).Contains("Tclass._module.S"));
+    Assert.All(checks.Where(c => c.Expr is Bpl.ForallExpr), c =>
+      Assert.Equal(0, Bpl.QKeyValue.FindIntAttribute(c.Attributes, "subsumption", -1)));
+  }
+
+  [Theory]
+  [InlineData("lemma L(x:int) requires x>=0 { assert P(x); while false invariant P(x) {} }")]
+  [InlineData("lemma L(x:int) requires x>=0 { assert P(x); opaque ensures P(x) {} }")]
+  public async Task InvariantAndOpaqueChecksUseImmediateAssertionContent(string body) {
+    var packages = new List<BoogieGenerator.PropositionLowering>();
+    await Translate("ghost predicate P(x:int) { x>=0 } " + body, true, observer: packages.Add);
+    var explicitCheck = packages.Single(p => p.Source.Resolved is FunctionCallExpr { Function.Name: "P" } &&
+      p.Inputs.Preparation == BoogieGenerator.ObligationPreparation.CheckedExpression);
+    var implicitChecks = packages.Where(p => p.Source.Resolved is FunctionCallExpr { Function.Name: "P" } &&
+      p.Inputs.Preparation != BoogieGenerator.ObligationPreparation.CheckedExpression).ToList();
+    Assert.NotEmpty(implicitChecks);
+    Assert.All(implicitChecks, p => Assert.Equal(ObligationFingerprint.Content(explicitCheck), ObligationFingerprint.Content(p)));
+  }
+
+  [Fact]
+  public async Task IteratorExitsCheckLocallyWithoutDuplicateProcedureEnsures() {
+    const string source = "iterator I(b:bool) ensures true { if b { return; } }";
+    var programs = await Translate(source, true);
+    var implementation = programs.SelectMany(p => p.Implementations)
+      .Single(p => p.Name.Contains("Impl") && p.Name.EndsWith(".I"));
+    var checks = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+      .Where(c => c.Description is EnsuresDescription).ToList();
+    Assert.Equal(2, checks.Count);
+    var procedure = programs.SelectMany(p => p.TopLevelDeclarations).OfType<Bpl.Procedure>()
+      .Single(p => p.Name == implementation.Name);
+    Assert.All(procedure.Ensures, ensures => Assert.True(ensures.Free || ensures.Description is not EnsuresDescription));
   }
 
   [Fact]
@@ -180,14 +229,12 @@ public class ObligationLoweringTests {
     Assert.All(localChecks, check =>
       Assert.Equal(-1, Bpl.QKeyValue.FindIntAttribute(check.Attributes, "subsumption", -1)));
 
-    var legacy = await Translate(source, false, refresh);
-    var procedure = legacy.SelectMany(p => p.TopLevelDeclarations).OfType<Bpl.Procedure>()
+    var procedure = enabled.SelectMany(p => p.TopLevelDeclarations).OfType<Bpl.Procedure>()
       .Single(p => p.Name == implementation.Name);
-    var originalChecks = procedure.Ensures.Where(ensures => !ensures.Free).ToList();
-    Assert.All(originalChecks, check =>
-      Assert.Equal(-1, Bpl.QKeyValue.FindIntAttribute(check.Attributes, "subsumption", -1)));
-    Assert.Equal(originalChecks.Select(check => ObligationFingerprint.Expression(check.Condition)).ToArray(),
-      localChecks.Select(check => ObligationFingerprint.Expression(check.Expr)).ToArray());
+    var userEnsures = procedure.Ensures.Where(ensures => ensures.Description is EnsuresDescription).ToList();
+    Assert.NotEmpty(userEnsures);
+    Assert.All(userEnsures, ensures => Assert.True(ensures.Free));
+    Assert.Equal(2, localChecks.Count);
   }
 
   [Theory]
@@ -293,7 +340,7 @@ public class ObligationLoweringTests {
     Assert.Single(explicitChecks);
     var implicitChecks = checks.Where(c => c.Description is IsAllocated).ToList();
     Assert.NotEmpty(implicitChecks);
-    Assert.All(implicitChecks, c => Assert.Contains(explicitChecks[0], ObligationFingerprint.Expression(c.Expr)));
+    Assert.All(implicitChecks, c => Assert.Equal(explicitChecks[0], ObligationFingerprint.Expression(c.Expr)));
   }
 
   [Fact]
@@ -331,7 +378,7 @@ public class ObligationLoweringTests {
   }
 
   [Fact]
-  public async Task CastChecksRetainTheirOriginalGuardedFormula() {
+  public async Task CastChecksUseOneGuardedAssertionStyleProof() {
     const string source = "ghost predicate P(i:int) { i>=0 } type S = i:int | P(i) witness 0 " +
       "lemma L(i:int) { var s := i as S; }";
     async Task<string[]> Checks(bool enabled) {
@@ -344,12 +391,13 @@ public class ObligationLoweringTests {
     var original = await Checks(false);
     var enriched = await Checks(true);
     Assert.NotEmpty(original);
-    Assert.All(original, check => Assert.Contains(check, enriched));
-    Assert.True(enriched.Length > original.Length);
+    Assert.Single(original);
+    Assert.Single(enriched);
+    Assert.Contains("==>", enriched[0]);
   }
 
   [Fact]
-  public async Task AllocationChecksRetainTheirOriginalTypedFormula() {
+  public async Task AllocationChecksUseOneCanonicalRepresentation() {
     const string source = "class C {} twostate lemma Use(c:C) {} lemma L(c:C) { Use(c); }";
     async Task<string[]> Checks(bool enabled) {
       var programs = await Translate(source, enabled);
@@ -361,7 +409,63 @@ public class ObligationLoweringTests {
     var original = await Checks(false);
     var enriched = await Checks(true);
     Assert.NotEmpty(original);
-    Assert.All(original, check => Assert.Contains(enriched, added => added.Contains(check)));
+    Assert.Equal(original.Length, enriched.Length);
+    Assert.All(enriched, check => Assert.Contains("$IsAllocBox", check));
+  }
+
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task MethodCallsHaveOneLocalPreconditionProof(bool refresh) {
+    const string source = "ghost predicate P(x:int) { x>=0 } lemma Use(x:int) requires P(x) {} " +
+      "lemma L(x:int) requires x>=0 { Use(x); }";
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var checks = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+      .Where(c => c.Description is PreconditionSatisfied).ToList();
+    Assert.Single(checks);
+    var calls = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.CallCmd>()
+      .Where(c => c.callee.EndsWith(".Use")).ToList();
+    Assert.Single(calls);
+    var procedure = programs.SelectMany(p => p.TopLevelDeclarations).OfType<Bpl.Procedure>()
+      .Single(p => p.Name == calls[0].callee);
+    Assert.DoesNotContain(procedure.Requires, requirement => !requirement.Free &&
+      ObligationFingerprint.Expression(requirement.Condition).Contains(".P"));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task UnrelatedBodyTermsDoNotChangeImplicitCheckSupport(bool refresh) {
+    const string declarations = "ghost predicate P(x:int) { x>=0 } ghost function Q(x:int):int { x } ";
+    async Task<string[]> Support(string prefix) {
+      var packages = new List<BoogieGenerator.PropositionLowering>();
+      await Translate(declarations + "lemma L(x:int) requires x>=0 ensures P(x) { " + prefix + " }",
+        true, refresh, packages.Add);
+      return packages.Where(p => p.Inputs.Preparation == BoogieGenerator.ObligationPreparation.DeclaredContract &&
+        p.Source.Resolved is FunctionCallExpr { Function.Name: "P" })
+        .Select(ObligationFingerprint.Content).ToArray();
+    }
+    var empty = await Support("");
+    Assert.NotEmpty(empty);
+    Assert.Equal(empty, await Support("assert Q(1)==1; assert forall z:int {:trigger Q(z)} :: Q(z)==z;"));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task EarlyReturnsAndFallthroughKeepOneLocalPostconditionSite(bool refresh) {
+    const string source = "ghost predicate P(x:int) { x>=0 } lemma L(x:int,b:bool) " +
+      "requires x>=0 ensures P(x) { if b { return; } }";
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var checks = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+      .Where(c => c.Description is EnsuresDescription).ToList();
+    Assert.Equal(2, checks.Count);
+    var procedure = programs.SelectMany(p => p.TopLevelDeclarations).OfType<Bpl.Procedure>()
+      .Single(p => p.Name == implementation.Name);
+    Assert.DoesNotContain(procedure.Ensures, ensures => !ensures.Free && ensures.Description is EnsuresDescription);
   }
 
 }

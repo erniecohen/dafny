@@ -832,7 +832,10 @@ namespace Microsoft.Dafny {
                   Expression precond = Substitute(p.E, e.Receiver, substMap, e.GetTypeArgumentSubstitutions());
                   builder.Add(TrAssumeCmd(precond.Origin, etran.CanCallAssumptionForVerification(precond)));
                   var (errorMessage, successMessage) = CustomErrorMessage(p.Attributes);
-                  foreach (var ss in TrSplitExpr(builder.Context, precond, etran, true, out _)) {
+                  var preconditionPieces = options.Get(CommonOptionBag.ConsistentObligationChecks)
+                    ? LowerProposition(builder.Context, precond, etran).Pieces
+                    : TrSplitExpr(builder.Context, precond, etran, true, out _).ToList();
+                  foreach (var ss in preconditionPieces) {
                     if (ss.IsChecked) {
                       var tok = new NestedOrigin(GetToken(expr), ss.Tok, "this proposition could not be proved");
                       var desc = new PreconditionSatisfied(directPrecond, errorMessage, successMessage);
@@ -1806,8 +1809,8 @@ namespace Microsoft.Dafny {
       if (cre != null) {
         // assert (forall i0,i1,i2,... ::
         //            0 <= i0 < ... && ... ==> init.requires(i0,i1,i2,...) is Subtype);
-        q = new Bpl.ForallExpr(tok, bvs, BplImp(ante, cre));
-        builder.Add(AssertAndForget(builder.Context, init.Origin, q, subrangeDesc));
+        CheckTypeMembership(init.Origin, cre, apply, sourceType.Result, elementType, subrangeDesc,
+          builder, etran, expression => new Bpl.ForallExpr(tok, bvs, BplImp(ante, expression)), forget: true);
       }
 
       if (forArray) {
