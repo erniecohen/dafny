@@ -46,7 +46,11 @@ public partial class BoogieGenerator {
       foreach (AttributedExpression ensures in ConjunctsOf(f.Ens)) {
         var functionHeight = generator.currentModule.CallGraph.GetSCCRepresentativePredecessorCount(f);
         var splits = new List<SplitExprInfo>();
-        generator.TrSplitExpr(context, ensures.E, splits, true, functionHeight, true, etran);
+        if (generator.options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+          splits.AddRange(generator.LowerProposition(context, ensures.E, etran, heightLimit: functionHeight).Pieces);
+        } else {
+          generator.TrSplitExpr(context, ensures.E, splits, true, functionHeight, true, etran);
+        }
         var (errorMessage, successMessage) = generator.CustomErrorMessage(ensures.Attributes);
         var canCalls = etran.CanCallAssumptionForVerification(ensures.E, new CanCallOptions(true, f));
         generator.AddEnsures(ens, generator.FreeEnsures(ensures.E.Origin, canCalls, null, true));

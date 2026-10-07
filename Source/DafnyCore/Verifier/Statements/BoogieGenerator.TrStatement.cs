@@ -72,8 +72,12 @@ public partial class BoogieGenerator {
             AssumeCanCallForByMethodDecl(method2, builder);
           }
 
-          if (options.Get(CommonOptionBag.ConsistentObligationChecks) && codeContext is MethodOrConstructor returningMethod) {
-            CheckMethodPostconditions(returningMethod, returnStmt1.Origin, builder, etran);
+          if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+            if (codeContext is MethodOrConstructor returningMethod) {
+              CheckMethodPostconditions(returningMethod, returnStmt1.Origin, builder, etran);
+            } else if (codeContext is IteratorDecl returningIterator) {
+              CheckExitPostconditions(returningIterator.Ensures, returnStmt1.Origin, builder, etran, false);
+            }
           }
 
           foreach (var _ in Enumerable.Range(0, builder.Context.ScopeDepth)) {
@@ -140,7 +144,9 @@ public partial class BoogieGenerator {
           var fieldSub = new SpecialFieldSubstituter(fieldSubstMap);
 
           foreach (var p in iter.YieldEnsures) {
-            var ss = TrSplitExpr(builder.Context, p.E, yeEtran, true, out var splitHappened);
+            var ss = options.Get(CommonOptionBag.ConsistentObligationChecks)
+              ? LowerProposition(builder.Context, p.E, yeEtran).Pieces.ToList()
+              : TrSplitExpr(builder.Context, p.E, yeEtran, true, out _);
             foreach (var split in ss) {
               if (split.Tok.IsInherited(currentModule)) {
                 // this postcondition was inherited into this module, so just ignore it

@@ -4133,7 +4133,8 @@ namespace Microsoft.Dafny {
     }
 
     public void CheckSubrange(IOrigin tok, Bpl.Expr bSource, Type sourceType, Type targetType,
-      Expression source, BoogieStmtListBuilder builder, string errorMsgPrefix = "", ExpressionTranslator etran = null) {
+      Expression source, BoogieStmtListBuilder builder, string errorMsgPrefix = "", ExpressionTranslator etran = null,
+      Func<Bpl.Expr, Bpl.Expr> close = null, bool forget = false) {
       Contract.Requires(tok != null);
       Contract.Requires(bSource != null);
       Contract.Requires(sourceType != null);
@@ -4142,10 +4143,7 @@ namespace Microsoft.Dafny {
 
       var cre = GetSubrangeCheck(tok, bSource, sourceType, targetType, source, null, out var desc, errorMsgPrefix);
       if (cre != null) {
-        if (options.Get(CommonOptionBag.ConsistentObligationChecks) && etran != null) {
-          CheckVisibleTypeObligations(tok, bSource, sourceType, targetType, desc, builder, etran);
-        }
-        builder.Add(Assert(tok, cre, desc, builder.Context));
+        CheckTypeMembership(tok, cre, bSource, sourceType, targetType, desc, builder, etran, close, forget);
       }
     }
 

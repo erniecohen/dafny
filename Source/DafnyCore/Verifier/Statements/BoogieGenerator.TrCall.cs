@@ -384,13 +384,18 @@ public partial class BoogieGenerator {
         var description = new PreconditionSatisfied(direct, error, success);
         foreach (var piece in lowering.Pieces) {
           if (piece.IsChecked) {
-            builder.Add(AssertAndForget(builder.Context, ObligationOrigin(tok, piece.Tok), piece.E, description));
+            builder.Add(Assert(new ForceCheckOrigin(ObligationOrigin(tok, piece.Tok)), piece.E,
+              description, builder.Context with { AssertMode = AssertMode.Check }));
           }
         }
-        var summary = TrAssumeCmd(tok, lowering.Summary);
-        proofDependencies?.AddProofDependencyId(summary, tok,
-          new AssumptionDependency(false, "checked method precondition", instantiated));
-        builder.Add(summary);
+        if (lowering.SplitHappened) {
+          // Publish only the established pre-call clause. Subsequent heap/out
+          // havoc performs the normal invalidation of facts at the actual call.
+          var summary = TrAssumeCmd(tok, lowering.Summary);
+          proofDependencies?.AddProofDependencyId(summary, tok,
+            new AssumptionDependency(false, "checked method precondition", instantiated));
+          builder.Add(summary);
+        }
       }
     }
     builder.Add(call);

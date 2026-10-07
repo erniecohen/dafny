@@ -1656,11 +1656,11 @@ public partial class BoogieGenerator {
 
       var canCall = etran.CanCallAssumption(boogieConstraint);
       var description = new ConversionSatisfiesConstraints(errorMsgPrefix, kind, rdt.Name, dafnyConstraint);
-      // Retain the original guarded formula and its fuel-indexed terms.
-      var constraint = etran.TrExpr(boogieConstraint);
-      builder.Add(Assert(tok, BplImp(canCall, constraint), description, builder.Context));
       if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
         CheckPropositionUnderGuard(tok, boogieConstraint, canCall, description, builder, etran);
+      } else {
+        var constraint = etran.TrExpr(boogieConstraint);
+        builder.Add(Assert(tok, BplImp(canCall, constraint), description, builder.Context));
       }
     }
   }

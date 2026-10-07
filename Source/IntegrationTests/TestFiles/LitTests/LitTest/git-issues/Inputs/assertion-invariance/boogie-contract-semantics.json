@@ -1,0 +1,37 @@
+[
+  {
+    "name": "free-ensures-no-second-proof",
+    "source": "procedure P(); free ensures false; implementation P() { return; }",
+    "expected_errors": 0
+  },
+  {
+    "name": "free-ensures-available-at-call",
+    "source": "procedure P() returns (x:int); free ensures x == 42; procedure C(); implementation C() { var x:int; call x := P(); assert x == 42; }",
+    "expected_errors": 0
+  },
+  {
+    "name": "free-requires-no-call-check",
+    "source": "procedure P(); free requires false; procedure C(); implementation C() { call P(); }",
+    "expected_errors": 0
+  },
+  {
+    "name": "free-requires-callee-assumption",
+    "source": "procedure P(x:int); free requires x > 0; implementation P(x:int) { assert x > 0; }",
+    "expected_errors": 0
+  },
+  {
+    "name": "checked-local-negative",
+    "source": "procedure P(); free ensures false; implementation P() { assert false; return; }",
+    "expected_errors": 1
+  },
+  {
+    "name": "checked-call-negative",
+    "source": "procedure P(); free requires false; procedure C(); implementation C() { assert false; call P(); }",
+    "expected_errors": 1
+  },
+  {
+    "name": "checked-boilerplate-retained",
+    "source": "procedure P(x:int); free requires true; requires x > 0; procedure C(); implementation C() { call P(0); }",
+    "expected_errors": 1
+  }
+]
