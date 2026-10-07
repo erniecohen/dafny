@@ -75,3 +75,21 @@ facts, trigger structure, fuel terms and visibility effects. The collector does
 not extract applications from quantified binders, lets or old-expression scopes;
 it introduces no escaping bound variable. Native negative controls and matched
 source/seed comparisons must validate this experiment before acceptance.
+
+
+The next experiment checks a guarded folding equality for a non-fuel-aware
+predicate whose existing assertion-style lowering already includes a free
+`canCall && predicate && body` piece. The equality retains that exact predicate
+application and body expression. It keeps the can-call premise, the actual
+reveal flag when present, and good-heap guards for the actual heap arguments.
+These guards are not granted unconditionally. The equality follows from the
+existing function definition and is itself checked before publication or use.
+The new equality omits other consequences of that axiom; every existing
+permission, goal and published fact remains unchanged.
+
+No new body expansion is performed: existing splitting already enforces body
+availability, SCC height, `no_inline`, safe substitution and visibility. Blind
+contexts, fuel-aware root functions and unsupported free-piece shapes retain
+all existing checking paths. Both the original and strengthened checks remain,
+as do the layer-equality checks and exact summary checks. This is an unaccepted
+native experiment; isolated solver-input diagnostics are not product acceptance.

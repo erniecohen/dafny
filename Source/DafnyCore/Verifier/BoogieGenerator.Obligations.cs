@@ -216,6 +216,48 @@ public partial class BoogieGenerator {
     facts.Add((agreement, source));
   }
 
+  private sealed class ContractBodyEqualityDescription : ProofObligationDescription {
+    public override string SuccessDescription => "available predicate definition agrees";
+    public override string FailureDescription => "could not establish the available predicate definition";
+    public override string ShortDescription => "predicate body agreement";
+  }
+
+  private void CheckContractBodyEqualities(IOrigin origin, BoogieStmtListBuilder checking,
+    List<(Bpl.Expr Condition, Expression Source)> facts, PropositionLowering lowering) {
+    // An inlined free piece already contains can-call && predicate && body.
+    // Check the guarded folding equality before using it. The existing splitter
+    // has enforced visibility, SCC height, no_inline and safe substitution.
+    if (checking.Context.ContainsHide) { return; }
+    var functions = declarationMapping.Where(pair => pair.Key is Function f && !f.IsFuelAware())
+      .ToDictionary(pair => pair.Value.Name, pair => pair.Value);
+    foreach (var piece in lowering.Pieces.Where(piece => piece.IsOnlyFree)) {
+      if (piece.E is not Bpl.NAryExpr {
+            Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.And }, Args.Count: 2
+          } preparation ||
+          preparation.Args[0] is not Bpl.NAryExpr { Fun: Bpl.FunctionCall } permission ||
+          preparation.Args[1] is not Bpl.NAryExpr {
+            Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.And }, Args.Count: 2
+          } proposition ||
+          proposition.Args[0] is not Bpl.NAryExpr { Fun: Bpl.FunctionCall } application ||
+          !functions.TryGetValue(((Bpl.FunctionCall)application.Fun).FunctionName, out var function) ||
+          ((Bpl.FunctionCall)permission.Fun).FunctionName != function.Name + "#canCall" ||
+          application.Args.Count != function.InParams.Count) { continue; }
+      var agreement = BplImp(permission, Bpl.Expr.Eq(application, proposition.Args[1]));
+      // Keep the existing Boolean heap trigger as a guard and retain the
+      // actual reveal flag. Neither guard is granted unconditionally.
+      for (var i = function.InParams.Count - 1; i >= 0; i--) {
+        if (function.InParams[i].TypedIdent.Type == Predef.HeapType) {
+          agreement = BplImp(FunctionCall(origin, BuiltinFunction.IsGoodHeap, null, application.Args[i]), agreement);
+        } else if (function.InParams[i].TypedIdent.Name == "$reveal" &&
+                   function.InParams[i].TypedIdent.Type == Bpl.Type.Bool) {
+          agreement = BplImp(application.Args[i], agreement);
+        }
+      }
+      checking.Add(AssertMethodContract(origin, agreement, new ContractBodyEqualityDescription(), checking.Context));
+      facts.Add((agreement, lowering.Source));
+    }
+  }
+
   private void PublishContractProofCut(IOrigin origin, BoogieStmtListBuilder continuation,
     BoogieStmtListBuilder checking, IReadOnlyList<(Bpl.Expr Condition, Expression Source)> facts) {
     // The verification arm checks every fact before becoming unreachable. The
@@ -256,6 +298,7 @@ public partial class BoogieGenerator {
       CheckContractFuelLayers(ensures.E.Origin, builder, facts, ensures.E,
         new[] { lowering.Summary, permission }.Concat(lowering.Pieces.Select(piece => piece.E))
           .Concat(clause.OriginalChecks.Select(original => original.Condition)));
+      CheckContractBodyEqualities(ensures.E.Origin, builder, facts, lowering);
       var (error, success) = CustomErrorMessage(ensures.Attributes);
       var description = new EnsuresDescription(ensures.E, error, success);
       foreach (var piece in lowering.Pieces) {

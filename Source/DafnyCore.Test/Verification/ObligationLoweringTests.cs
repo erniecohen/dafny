@@ -344,6 +344,55 @@ public class ObligationLoweringTests {
       c => c.Description?.ShortDescription == "fuel layer agreement");
   }
 
+  [Theory]
+  [InlineData(false, false, false)]
+  [InlineData(false, true, false)]
+  [InlineData(true, false, false)]
+  [InlineData(true, true, false)]
+  [InlineData(false, false, true)]
+  [InlineData(false, true, true)]
+  [InlineData(true, false, true)]
+  [InlineData(true, true, true)]
+  public async Task ContractBodyAgreementRetainsTheActualHeapAndGuard(bool refresh, bool call, bool old) {
+    const string declarations = "class C { var i:int } ghost predicate P(c:C) reads c { c.i>=0 && c.i<=100 } ";
+    var condition = old ? "old(P(c))" : "P(c)";
+    var source = declarations + (call
+      ? $"lemma Use(c:C) requires {condition} {{}} lemma L(c:C) requires 0<=c.i<=100 {{ Use(c); }}"
+      : $"lemma L(c:C) requires 0<=c.i<=100 ensures {condition} {{}}");
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var commands = implementation.Blocks.SelectMany(b => b.Cmds).ToList();
+    var agreement = Assert.Single(commands.OfType<Bpl.AssertCmd>().Where(c =>
+      c.Description?.ShortDescription == "predicate body agreement"));
+    Assert.Equal(-1, Bpl.QKeyValue.FindIntAttribute(agreement.Attributes, "subsumption", -1));
+    var heapGuard = Assert.IsType<Bpl.NAryExpr>(agreement.Expr);
+    Assert.Equal(Bpl.BinaryOperator.Opcode.Imp, Assert.IsType<Bpl.BinaryOperator>(heapGuard.Fun).Op);
+    var heap = Assert.IsType<Bpl.NAryExpr>(heapGuard.Args[0]);
+    Assert.Equal("$IsGoodHeap", Assert.IsType<Bpl.FunctionCall>(heap.Fun).FunctionName);
+    var permissionGuard = Assert.IsType<Bpl.NAryExpr>(heapGuard.Args[1]);
+    var permission = Assert.IsType<Bpl.NAryExpr>(permissionGuard.Args[0]);
+    Assert.EndsWith(".P#canCall", Assert.IsType<Bpl.FunctionCall>(permission.Fun).FunctionName);
+    var equality = Assert.IsType<Bpl.NAryExpr>(permissionGuard.Args[1]);
+    Assert.Equal(Bpl.BinaryOperator.Opcode.Eq, Assert.IsType<Bpl.BinaryOperator>(equality.Fun).Op);
+    var application = Assert.IsType<Bpl.NAryExpr>(equality.Args[0]);
+    Assert.EndsWith(".P", Assert.IsType<Bpl.FunctionCall>(application.Fun).FunctionName);
+    Assert.Same(application.Args[0], heap.Args[0]);
+    Assert.Contains(commands.OfType<Bpl.AssumeCmd>(), c =>
+      ObligationFingerprint.Expression(c.Expr) == ObligationFingerprint.Expression(agreement.Expr));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task ContractBodyAgreementDoesNotExpandBlindContexts(bool refresh) {
+    const string source = "ghost predicate P(x:int) { x>=0 && x<=100 } " +
+      "lemma Use(x:int) requires P(x) {} lemma L(x:int) requires P(x) ensures P(x) { hide P; Use(x); }";
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    Assert.DoesNotContain(implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>(),
+      c => c.Description?.ShortDescription == "predicate body agreement");
+  }
+
   [Fact]
   public async Task MethodExitChecksTheSamePropositionAsAnImmediateAssertion() {
     const string source = "ghost predicate P(x:int) { x>=0 } lemma L(x:int) requires x>=0 ensures P(x) { assert P(x); }";
