@@ -209,3 +209,17 @@ Every narrow definition-agreement check, original and strengthened contract
 check, checked summary and continuation fact remains. Unsupported additional
 instantiations keep every existing check. Triggered false controls, native
 negative examples and complete matched gates are still required for acceptance.
+
+
+The next experiment additionally exposes a guarded consequence of each audited
+complete native instance. Its certificate follows a path through implication
+consequents and conjunction children of the original axiom body, retaining every
+premise. The final equality must be the exact native leaf, not a substituted user
+formula or a detached expression with similar text. Propositional elimination,
+universal elimination and source-bound generalization establish the instance.
+A second lexical audit rejects escaping binders and captured unresolved actuals.
+The complete native instance and every existing support assertion are retained;
+unsupported additional consequences keep their existing checks. Both forms stay
+in the verification arm. No source clause, summary or can-call guard is granted
+by this certificate, and no fuel or reveal behavior changes. This remains an
+unaccepted experiment requiring native false controls and complete matched gates.

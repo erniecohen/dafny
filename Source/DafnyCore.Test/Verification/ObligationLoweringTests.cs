@@ -893,6 +893,66 @@ public class ObligationLoweringTests {
     Assert.Same(closed.Dummies[0], Assert.IsType<Bpl.IdentifierExpr>(equality.Args[1]).Decl);
   }
 
+  [Fact]
+  public void GuardedNativeConsequenceCertificateKeepsEveryImplicationPremise() {
+    var token = Token.NoToken;
+    var a = new Bpl.Formal(token, new Bpl.TypedIdent(token, "a", Bpl.Type.Bool), true);
+    var b = new Bpl.Formal(token, new Bpl.TypedIdent(token, "b", Bpl.Type.Bool), true);
+    var x = new Bpl.Formal(token, new Bpl.TypedIdent(token, "x", Bpl.Type.Int), true);
+    var pa = new Bpl.IdentifierExpr(token, a);
+    var pb = new Bpl.IdentifierExpr(token, b);
+    var equality = Bpl.Expr.Eq(new Bpl.IdentifierExpr(token, x), Bpl.Expr.Literal(1));
+    var body = Bpl.Expr.Imp(pa, Bpl.Expr.And(Bpl.Expr.True, Bpl.Expr.Imp(pb, equality)));
+    Assert.True(BoogieGenerator.ContractConsequenceHasNativePath(body,
+      Bpl.Expr.Imp(Bpl.Expr.And(pa, pb), equality)));
+    Assert.False(BoogieGenerator.ContractConsequenceHasNativePath(body, Bpl.Expr.Imp(pb, equality)));
+    Assert.False(BoogieGenerator.ContractConsequenceHasNativePath(body, equality));
+    var detached = Bpl.Expr.Eq(new Bpl.IdentifierExpr(token, x), Bpl.Expr.Literal(1));
+    Assert.False(BoogieGenerator.ContractConsequenceHasNativePath(body,
+      Bpl.Expr.Imp(Bpl.Expr.And(pa, pb), detached)));
+  }
+
+  [Fact]
+  public void GuardedNativeInstancesRejectCapturedUnresolvedActuals() {
+    var token = Token.NoToken;
+    var nested = new Bpl.BoundVariable(token, new Bpl.TypedIdent(token, "x", Bpl.Type.Int));
+    var unresolved = new Bpl.IdentifierExpr(token, "x", Bpl.Type.Int);
+    var captured = new Bpl.ForallExpr(token, new List<Bpl.Variable> { nested }, null,
+      Bpl.Expr.Eq(unresolved, new Bpl.IdentifierExpr(token, nested)));
+    var globals = new Dictionary<string, Bpl.Variable>();
+    Assert.False(BoogieGenerator.ContractGuardedInstanceIsScoped(captured, new[] { unresolved }, globals));
+    var escaped = new Bpl.IdentifierExpr(token, nested);
+    Assert.False(BoogieGenerator.ContractGuardedInstanceIsScoped(Bpl.Expr.Eq(escaped, escaped), [], globals));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task GuardedNativeInstancesRetainCompleteInstancesAndSupportChecks(bool refresh) {
+    const string source = "ghost function G(n:int):int { n } ghost function F(n:int):int { G(n) } " +
+      "lemma L(n:int) ensures F(n)==n {}";
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var commands = implementation.Blocks.SelectMany(b => b.Cmds).ToList();
+    var guarded = commands.OfType<Bpl.AssumeCmd>().Where(c =>
+      Bpl.QKeyValue.FindStringAttribute(c.Attributes, "contractGuardedDefinitionInstance") != null).ToList();
+    Assert.NotEmpty(guarded);
+    Assert.Contains(commands.OfType<Bpl.AssumeCmd>(), c =>
+      Bpl.QKeyValue.FindStringAttribute(c.Attributes, "contractDefinitionInstance") != null);
+    var check = Assert.Single(commands.OfType<Bpl.AssertCmd>().Where(c =>
+      c.Description?.ShortDescription == "guarded definition agreement"));
+    Assert.All(guarded, instance => Assert.True(commands.IndexOf(instance) < commands.IndexOf(check)));
+    Assert.Contains(commands.OfType<Bpl.AssumeCmd>(), fact =>
+      ObligationFingerprint.Expression(fact.Expr) == ObligationFingerprint.Expression(check.Expr));
+    Assert.Contains(commands.OfType<Bpl.AssertCmd>(), c => c.Description is EnsuresDescription);
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    options.ApplyDefaultOptionsWithoutSettingsDefault();
+    foreach (var backend in programs) {
+      Assert.Equal(0, backend.Resolve(options));
+      Assert.Equal(0, backend.Typecheck(options));
+    }
+  }
+
   private sealed class ScopedFuelTestReferences : Bpl.Duplicator {
     public readonly HashSet<Bpl.Variable> Variables = new(ReferenceEqualityComparer.Instance);
     public override Bpl.Expr VisitIdentifierExpr(Bpl.IdentifierExpr node) {

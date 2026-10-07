@@ -602,6 +602,54 @@ public partial class BoogieGenerator {
     }
   }
 
+  internal static bool ContractConsequenceHasNativePath(Bpl.Expr nativeBody, Bpl.Expr consequence) {
+    bool Search(Bpl.Expr expression, Bpl.Expr guard) {
+      if (expression is not Bpl.NAryExpr { Fun: Bpl.BinaryOperator op, Args.Count: 2 } binary) { return false; }
+      if (op.Op == Bpl.BinaryOperator.Opcode.Imp) {
+        return Search(binary.Args[1], BplAnd(guard, binary.Args[0]));
+      }
+      if (op.Op == Bpl.BinaryOperator.Opcode.And) {
+        return Search(binary.Args[0], guard) || Search(binary.Args[1], guard);
+      }
+      if (op.Op is not (Bpl.BinaryOperator.Opcode.Eq or Bpl.BinaryOperator.Opcode.Iff)) { return false; }
+      var expected = BplImp(guard, expression);
+      if (ReferenceEquals(expected, consequence)) { return true; }
+      return expected is Bpl.NAryExpr { Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.Imp } } implied &&
+        consequence is Bpl.NAryExpr { Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.Imp }, Args.Count: 2 } candidate &&
+        implied.Args[0].Equals(candidate.Args[0]) && ReferenceEquals(expression, candidate.Args[1]);
+    }
+    return Search(nativeBody, Bpl.Expr.True);
+  }
+
+  private sealed class ContractInstanceNames : Bpl.Duplicator {
+    public readonly HashSet<string> Unresolved = new();
+    public readonly HashSet<string> Binders = new();
+    public override Bpl.Expr VisitIdentifierExpr(Bpl.IdentifierExpr node) {
+      if (node.Decl == null) { Unresolved.Add(node.Name); }
+      return base.VisitIdentifierExpr(node);
+    }
+    public override Bpl.Expr VisitBinderExpr(Bpl.BinderExpr node) {
+      Binders.UnionWith(node.Dummies.Select(dummy => dummy.Name));
+      return base.VisitBinderExpr(node);
+    }
+    public override Bpl.Expr VisitLetExpr(Bpl.LetExpr node) {
+      Binders.UnionWith(node.Dummies.Select(dummy => dummy.Name));
+      return base.VisitLetExpr(node);
+    }
+  }
+
+  internal static bool ContractGuardedInstanceIsScoped(Bpl.Expr consequence, IEnumerable<Bpl.Expr> actuals,
+    IReadOnlyDictionary<string, Bpl.Variable> globals) {
+    if (!ContractDefinitionBindingsAreScoped(consequence, new Dictionary<string, Bpl.Variable>(), globals, true)) { return false; }
+    var actualNames = new ContractInstanceNames();
+    foreach (var actual in actuals) { actualNames.VisitExpr(actual); }
+    var consequenceNames = new ContractInstanceNames();
+    consequenceNames.VisitExpr(consequence);
+    // An unresolved free actual must not become captured by a copied binder.
+    // Unsupported extra hints retain the original support assertion.
+    return !actualNames.Unresolved.Overlaps(consequenceNames.Binders);
+  }
+
   internal static bool TryInstantiateContractDefinition(Bpl.ForallExpr axiom,
     Dictionary<Bpl.Variable, Bpl.Expr> bindings, IReadOnlyCollection<Bpl.Variable> sourceBound,
     IReadOnlyDictionary<string, Bpl.Variable> globals, out Bpl.Expr instance) {
@@ -681,7 +729,7 @@ public partial class BoogieGenerator {
     };
     var globals = sink.TopLevelDeclarations.OfType<Bpl.Variable>()
       .Where(variable => variable is Bpl.GlobalVariable or Bpl.Constant).ToDictionary(variable => variable.Name);
-    var instances = new List<(Bpl.Expr Body, string Function)>();
+    var instances = new List<(Bpl.Expr Body, string Function, Bpl.Expr GuardedConsequence)>();
     var scopes = new List<List<Bpl.Variable>>();
     var equalities = new List<Bpl.Expr>();
     bool Match(Bpl.Expr pattern, Bpl.Expr actual, Dictionary<string, Bpl.Variable> variables,
@@ -789,7 +837,12 @@ public partial class BoogieGenerator {
               instance = new Bpl.ForallExpr(origin, copies,
                 LegalContractDefinitionTriggerTerm(pattern) ? BplTrigger(pattern) : null, copier.VisitExpr(instance));
             }
-            instances.Add((instance, function.FunctionName));
+            // Universal elimination followed by guarded conjunction/implication
+            // elimination certifies this exact source path. The existing closed
+            // support assertion remains, including its guards and fuel terms.
+            var guarded = ContractConsequenceHasNativePath(template.Quantifier.Body, template.Consequence) &&
+              ContractGuardedInstanceIsScoped(equality, bindings.Values, globals) ? equality : null;
+            instances.Add((instance, function.FunctionName, guarded));
           }
         }
       }
@@ -834,11 +887,15 @@ public partial class BoogieGenerator {
     }
     foreach (var command in continuation.Commands) { Context(command); }
     if (equalities.Count == 0) { return; }
-    foreach (var (instance, function) in instances) {
+    foreach (var (instance, function, guarded) in instances) {
       // These are consequences of native axioms, confined to the verification
       // arm. Existing narrow equality checks and continuation facts are kept.
       checking.Add(new Bpl.AssumeCmd(origin, instance,
         new Bpl.QKeyValue(origin, "contractDefinitionInstance", new List<object> { function }, null)));
+      if (guarded != null) {
+        checking.Add(new Bpl.AssumeCmd(origin, guarded,
+          new Bpl.QKeyValue(origin, "contractGuardedDefinitionInstance", new List<object> { function }, null)));
+      }
     }
     var agreement = equalities.Aggregate((left, right) => BplAnd(left, right));
     checking.Add(AssertMethodContract(origin, agreement, new ContractDefinitionEqualityDescription(), checking.Context));
