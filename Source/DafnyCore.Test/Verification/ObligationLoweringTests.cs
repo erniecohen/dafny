@@ -495,6 +495,62 @@ public class ObligationLoweringTests {
     }
   }
 
+  [Theory]
+  [InlineData(false, false, false)]
+  [InlineData(false, false, true)]
+  [InlineData(false, true, false)]
+  [InlineData(false, true, true)]
+  [InlineData(true, false, false)]
+  [InlineData(true, false, true)]
+  [InlineData(true, true, false)]
+  [InlineData(true, true, true)]
+  public async Task ContractContextFuelSupportRetainsOldHeapArguments(bool refresh, bool call, bool quantified) {
+    var invariant = quantified ? "forall m:nat :: old(F(c,m))==old(c.x)+m" : "old(F(c,0))==old(c.x)";
+    var source = "class C { ghost var x:int } ghost function F(c:C,n:nat):int reads c " +
+      "{ if n==0 then c.x else F(c,n-1)+1 } lemma Use() requires true {} " +
+      "lemma L(c:C,n:nat) " + (call ? "" : "ensures true ") +
+      "{ var i:=0; while i<n invariant " + invariant + " { i:=i+1; } " + (call ? "Use();" : "") + " }";
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p =>
+      p.Name.StartsWith("Impl$$") && p.Name.EndsWith(".L"));
+    var commands = implementation.Blocks.SelectMany(b => b.Cmds).ToList();
+    var agreement = Assert.Single(commands.OfType<Bpl.AssertCmd>().Where(c =>
+      c.Description?.ShortDescription == "context fuel layer agreement"));
+    var closed = 0;
+    void Check(Bpl.Expr expression) {
+      if (expression is Bpl.NAryExpr { Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.And } } conjunction) {
+        Assert.All(conjunction.Args, Check);
+        return;
+      }
+      if (expression is Bpl.ForallExpr closure) {
+        closed++;
+        Assert.Single(closure.Dummies);
+        var referenced = new ScopedFuelTestReferences();
+        referenced.VisitExpr(closure.Body);
+        Assert.All(referenced.Variables.OfType<Bpl.BoundVariable>(), variable => Assert.Contains(variable, closure.Dummies));
+        expression = closure.Body;
+      }
+      var equality = Assert.IsType<Bpl.NAryExpr>(expression);
+      Assert.Equal(Bpl.BinaryOperator.Opcode.Eq, Assert.IsType<Bpl.BinaryOperator>(equality.Fun).Op);
+      var upper = Assert.IsType<Bpl.NAryExpr>(equality.Args[0]);
+      var lower = Assert.IsType<Bpl.NAryExpr>(equality.Args[1]);
+      Assert.EndsWith(".F", Assert.IsType<Bpl.FunctionCall>(upper.Fun).FunctionName);
+      Assert.IsType<Bpl.OldExpr>(upper.Args[1]);
+      Assert.IsType<Bpl.OldExpr>(lower.Args[1]);
+      var successor = Assert.IsType<Bpl.NAryExpr>(upper.Args[0]);
+      Assert.Equal("$LS", Assert.IsType<Bpl.FunctionCall>(successor.Fun).FunctionName);
+      Assert.Equal(ObligationFingerprint.Expression(successor.Args[0]), ObligationFingerprint.Expression(lower.Args[0]));
+      for (var i = 1; i < upper.Args.Count; i++) {
+        Assert.Equal(ObligationFingerprint.Expression(upper.Args[i]), ObligationFingerprint.Expression(lower.Args[i]));
+      }
+    }
+    Check(agreement.Expr);
+    Assert.Equal(quantified, closed > 0);
+    Assert.Contains(commands.OfType<Bpl.AssertCmd>(), c => c.Description is LoopInvariant);
+    var fingerprint = ObligationFingerprint.Expression(agreement.Expr);
+    Assert.Contains(commands.OfType<Bpl.AssumeCmd>(), c => ObligationFingerprint.Expression(c.Expr) == fingerprint);
+  }
+
   private sealed class ScopedFuelTestReferences : Bpl.Duplicator {
     public readonly HashSet<Bpl.Variable> Variables = new(ReferenceEqualityComparer.Instance);
     public override Bpl.Expr VisitIdentifierExpr(Bpl.IdentifierExpr node) {

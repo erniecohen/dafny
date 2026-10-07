@@ -381,6 +381,10 @@ public partial class BoogieGenerator {
         EligibleTriggers(quantifier.Triggers) && Eligible(quantifier.Body),
       Bpl.LetExpr let => EligibleVariables(let.Dummies) && EligibleAttributes(let.Attributes) &&
         let.Rhss.All(Eligible) && Eligible(let.Body),
+      // Eligibility may inspect old arguments, but the collector still never
+      // descends into an OldExpr to extract an application. A copied application
+      // retains each old heap/value argument on both sides of its equality.
+      Bpl.OldExpr old => Eligible(old.Expr),
       Bpl.IdentifierExpr or Bpl.LiteralExpr => true,
       _ => false
     };

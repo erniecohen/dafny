@@ -136,8 +136,9 @@ predicate as a premise: the law holds for any current values of implementation
 locals and heaps. Every new equality is checked before use and publication.
 
 An expression containing a reveal-parameter function application, including a
-nested argument, is conservatively excluded from context collection. Lambdas,
-old-expression scopes and unsupported expression-local constructs are excluded.
+nested argument, is conservatively excluded from context collection. Lambdas
+and unsupported expression-local constructs are excluded. The collector does
+not extract a function application from inside an old-expression scope.
 The existing reveal, hide, push and pop commands retain their original order and
 outer-scope effects. The existing contract-only ground and scoped collectors,
 body equalities and every original, canonical and summary check remain.
@@ -149,3 +150,12 @@ for a later call or exit. Every earlier cut, check and published fact remains in
 the original command stream; only the additional term search avoids feeding its
 own support expressions back into itself. Successive identical source contexts
 therefore produce the same bounded number of checked support instances.
+
+Context eligibility now permits existing old heap or value arguments. The
+collector itself still does not descend into an `OldExpr` to extract a function
+application. When an eligible application already takes `old(heap)` or another
+old-state argument, that exact argument is retained on both sides of its fuel
+equality. The existing unconditional law holds for every heap and every value;
+instantiating it with an old-state value is therefore valid. No old/current
+state conversion, source evaluation, reveal permission or body expansion occurs.
+Every earlier support instance, original check and published fact remains.
