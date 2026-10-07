@@ -153,7 +153,43 @@ public class ObligationLoweringTests {
       check => ObligationFingerprint.Expression(check.Expr) == ObligationFingerprint.Expression(original.Condition)));
     var enabledProcedure = enabled.SelectMany(p => p.TopLevelDeclarations).OfType<Bpl.Procedure>()
       .Single(p => p.Name == implementation.Name);
-    Assert.All(enabledProcedure.Ensures, check => Assert.True(check.Free));
+    foreach (var original in originalChecks) {
+      Assert.Contains(enabledProcedure.Ensures, check => !check.Free &&
+        ObligationFingerprint.Expression(check.Condition) == ObligationFingerprint.Expression(original.Condition));
+      Assert.Contains(enabledProcedure.Ensures, check => check.Free &&
+        ObligationFingerprint.Expression(check.Condition) == ObligationFingerprint.Expression(original.Condition));
+    }
+  }
+
+  [Theory]
+  [InlineData(false, false)]
+  [InlineData(false, true)]
+  [InlineData(true, false)]
+  [InlineData(true, true)]
+  public async Task OriginalProcedurePostconditionGoalsRemainAlongsideTheirLocalCopies(bool refresh, bool quantified) {
+    var source = quantified
+      ? "ghost function F(x:int):int { x } lemma L(b:bool) " +
+        "ensures forall x:int {:trigger F(x)} :: F(x)==x { if b { return; } }"
+      : "lemma L(x:int,b:bool) returns (r:int) ensures r==x { r:=x; if b { return; } }";
+    var legacy = await Translate(source, false, refresh);
+    var enabled = await Translate(source, true, refresh);
+    var implementation = enabled.SelectMany(p => p.Implementations).Single(p =>
+      p.Name.StartsWith("Impl$$") && p.Name.EndsWith(".L"));
+    var original = legacy.SelectMany(p => p.TopLevelDeclarations).OfType<Bpl.Procedure>()
+      .Single(p => p.Name == implementation.Name);
+    var retained = enabled.SelectMany(p => p.TopLevelDeclarations).OfType<Bpl.Procedure>()
+      .Single(p => p.Name == implementation.Name);
+    var localChecks = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+      .Where(c => c.Description is EnsuresDescription).ToList();
+    Assert.NotEmpty(original.Ensures.Where(e => !e.Free));
+    foreach (var goal in original.Ensures.Where(e => !e.Free)) {
+      var fingerprint = ObligationFingerprint.Expression(goal.Condition);
+      Assert.Contains(retained.Ensures, e => !e.Free &&
+        ObligationFingerprint.Expression(e.Condition) == fingerprint);
+      Assert.Contains(retained.Ensures, e => e.Free &&
+        ObligationFingerprint.Expression(e.Condition) == fingerprint);
+      Assert.True(localChecks.Count(c => ObligationFingerprint.Expression(c.Expr) == fingerprint) >= 2);
+    }
   }
 
   [Theory]

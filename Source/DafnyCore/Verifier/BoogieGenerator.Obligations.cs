@@ -715,8 +715,8 @@ public partial class BoogieGenerator {
     BoogieStmtListBuilder builder, ExpressionTranslator etran) {
     // The declared contract WF procedure establishes permissions in clause order.
     // Check both the assertion-style pieces and the exact original contract
-    // formulas before publishing a summary. Rechecking the same contract after
-    // that summary creates an unnecessary cut and a different solver context.
+    // formulas before publishing a summary. The original checked procedure
+    // declaration is retained as an additional legacy exit goal.
     if (assertionOnlyFilter != null) { return; }
     if (!methodPostconditionClauses.TryGetValue(method, out var clauses)) {
       throw new System.InvalidOperationException("Missing original method postcondition checks");

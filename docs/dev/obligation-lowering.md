@@ -303,3 +303,13 @@ A visible wrapper does not authorize exporting an opaque dependency's
 reveal-parameter application. Such a definition consequence is conservatively
 excluded from the additional instance pass, even when the wrapper itself is
 visible. This does not remove any original check, axiom or continuation fact.
+
+The enabled implementation also retains each exact original checked procedure
+ensures declaration alongside its existing free declaration and every local
+checked copy. Thus the original procedure-level goal remains in Boogie lowering;
+its source, heap/formal bindings, fuel, attributes and dependency provenance are
+unchanged. This adds a legacy exit obligation without removing any canonical
+check, original local check, support check, checked summary or continuation fact.
+The declared goal is required independently; it is not an assumption used to
+justify the preceding local checks. Default-off and assertion filtering retain
+the original branch, and no batching or visibility scope is introduced.

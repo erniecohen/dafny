@@ -1913,9 +1913,10 @@ namespace Microsoft.Dafny {
               var emitted = original;
               if (consolidatePostconditions && !original.Free) {
                 originalChecks.Add(original);
-                // Only this implementation declaration becomes free. The exact
-                // formula is checked at every source return and fallthrough,
-                // before its summary; the callable procedure is unchanged.
+                // Keep the exact legacy checked declaration as well as the
+                // existing local checks and free declaration. The original
+                // procedure-level goal remains in Boogie lowering.
+                AddEnsures(ens, original);
                 emitted = EnsuresWithDependencies(split.Tok, true, p.E, post, errorMessage, successMessage, null);
               }
               AddEnsures(ens, emitted);
