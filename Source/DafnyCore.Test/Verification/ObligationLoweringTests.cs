@@ -335,13 +335,124 @@ public class ObligationLoweringTests {
   [Theory]
   [InlineData(false)]
   [InlineData(true)]
-  public async Task ContractFuelSupportDoesNotExtractBoundApplications(bool refresh) {
+  public async Task GroundContractFuelSupportDoesNotExtractBoundApplications(bool refresh) {
     const string source = "ghost function F(n:nat):int { if n==0 then 0 else F(n-1)+1 } " +
       "lemma L() ensures forall n:nat :: F(n)==n {}";
     var programs = await Translate(source, true, refresh);
     var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
     Assert.DoesNotContain(implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>(),
       c => c.Description?.ShortDescription == "fuel layer agreement");
+  }
+
+  [Theory]
+  [InlineData(false, false, false, false, false)]
+  [InlineData(false, false, false, false, true)]
+  [InlineData(false, false, false, true, false)]
+  [InlineData(false, false, false, true, true)]
+  [InlineData(false, false, true, false, false)]
+  [InlineData(false, false, true, false, true)]
+  [InlineData(false, false, true, true, false)]
+  [InlineData(false, false, true, true, true)]
+  [InlineData(false, true, false, false, false)]
+  [InlineData(false, true, false, false, true)]
+  [InlineData(false, true, false, true, false)]
+  [InlineData(false, true, false, true, true)]
+  [InlineData(false, true, true, false, false)]
+  [InlineData(false, true, true, false, true)]
+  [InlineData(false, true, true, true, false)]
+  [InlineData(false, true, true, true, true)]
+  [InlineData(true, false, false, false, false)]
+  [InlineData(true, false, false, false, true)]
+  [InlineData(true, false, false, true, false)]
+  [InlineData(true, false, false, true, true)]
+  [InlineData(true, false, true, false, false)]
+  [InlineData(true, false, true, false, true)]
+  [InlineData(true, false, true, true, false)]
+  [InlineData(true, false, true, true, true)]
+  [InlineData(true, true, false, false, false)]
+  [InlineData(true, true, false, false, true)]
+  [InlineData(true, true, false, true, false)]
+  [InlineData(true, true, false, true, true)]
+  [InlineData(true, true, true, false, false)]
+  [InlineData(true, true, true, false, true)]
+  [InlineData(true, true, true, true, false)]
+  [InlineData(true, true, true, true, true)]
+  public async Task ContractScopedFuelSupportClosesBothQuantifierPolaritiesAndLets(
+    bool refresh, bool call, bool existential, bool let, bool generic) {
+    var parameters = generic ? "<T>" : "";
+    var body = let ? $"(var m:=n; F{parameters}(m)==m)" : $"F{parameters}(n)==n";
+    var condition = (existential ? "exists" : "forall") + " n:nat :: " + body;
+    var source = $"ghost function F{parameters}(n:nat):int {{ if n==0 then 0 else F{parameters}(n-1)+1 }} " +
+      (call ? $"lemma Use{parameters}() requires {condition} {{}} lemma L{parameters}() {{ Use{parameters}(); }}"
+            : $"lemma L{parameters}() ensures {condition} {{}}");
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p =>
+      p.Name.StartsWith("Impl$$") && p.Name.EndsWith(".L"));
+    var commands = implementation.Blocks.SelectMany(b => b.Cmds).ToList();
+    var agreement = Assert.Single(commands.OfType<Bpl.AssertCmd>().Where(c =>
+      c.Description?.ShortDescription == "scoped fuel layer agreement"));
+    Assert.Equal(-1, Bpl.QKeyValue.FindIntAttribute(agreement.Attributes, "subsumption", -1));
+    void Check(Bpl.Expr expression) {
+      if (expression is Bpl.NAryExpr { Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.And } } conjunction) {
+        Assert.All(conjunction.Args, Check);
+        return;
+      }
+      var closure = Assert.IsType<Bpl.ForallExpr>(expression);
+      Assert.Single(closure.Dummies);
+      Assert.StartsWith("$contractFuel#", closure.Dummies[0].TypedIdent.Name);
+      var free = new Bpl.GSet<object>();
+      closure.ComputeFreeVariables(free);
+      Assert.Empty(free.OfType<Bpl.BoundVariable>());
+      var equality = Assert.IsType<Bpl.NAryExpr>(closure.Body);
+      Assert.Equal(Bpl.BinaryOperator.Opcode.Eq, Assert.IsType<Bpl.BinaryOperator>(equality.Fun).Op);
+      var upper = Assert.IsType<Bpl.NAryExpr>(equality.Args[0]);
+      var lower = Assert.IsType<Bpl.NAryExpr>(equality.Args[1]);
+      Assert.EndsWith(".F", Assert.IsType<Bpl.FunctionCall>(upper.Fun).FunctionName);
+      var position = generic ? 1 : 0;
+      var successor = Assert.IsType<Bpl.NAryExpr>(upper.Args[position]);
+      Assert.Equal("$LS", Assert.IsType<Bpl.FunctionCall>(successor.Fun).FunctionName);
+      Assert.Equal(ObligationFingerprint.Expression(successor.Args[0]), ObligationFingerprint.Expression(lower.Args[position]));
+      for (var i = 0; i < upper.Args.Count; i++) {
+        if (i != position) {
+          Assert.Equal(ObligationFingerprint.Expression(upper.Args[i]), ObligationFingerprint.Expression(lower.Args[i]));
+        }
+      }
+      Assert.Same(closure.Dummies[0], Assert.IsType<Bpl.IdentifierExpr>(upper.Args.Last()).Decl);
+      Assert.Equal(ObligationFingerprint.Expression(upper), ObligationFingerprint.Expression(Assert.Single(closure.Triggers.Tr)));
+    }
+    Check(agreement.Expr);
+    Assert.Contains(commands.OfType<Bpl.AssumeCmd>(), c =>
+      ObligationFingerprint.Expression(c.Expr) == ObligationFingerprint.Expression(agreement.Expr));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task ContractScopedFuelSupportRetainsNestedBindings(bool refresh) {
+    const string source = "ghost function G(n:nat,m:nat):int { if n==0 then m else G(n-1,m)+1 } " +
+      "lemma L() ensures forall n:nat :: exists m:nat :: G(n,m)==n+m {}";
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p =>
+      p.Name.StartsWith("Impl$$") && p.Name.EndsWith(".L"));
+    var agreement = Assert.Single(implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+      .Where(c => c.Description?.ShortDescription == "scoped fuel layer agreement"));
+    void Check(Bpl.Expr expression) {
+      if (expression is Bpl.NAryExpr { Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.And } } conjunction) {
+        Assert.All(conjunction.Args, Check);
+        return;
+      }
+      var closure = Assert.IsType<Bpl.ForallExpr>(expression);
+      Assert.Equal(2, closure.Dummies.Count);
+      Assert.Equal(2, closure.Dummies.Select(v => v.TypedIdent.Name).Distinct().Count());
+      var free = new Bpl.GSet<object>();
+      closure.ComputeFreeVariables(free);
+      Assert.Empty(free.OfType<Bpl.BoundVariable>());
+      var equality = Assert.IsType<Bpl.NAryExpr>(closure.Body);
+      var application = Assert.IsType<Bpl.NAryExpr>(equality.Args[0]);
+      Assert.Same(closure.Dummies[0], Assert.IsType<Bpl.IdentifierExpr>(application.Args[^2]).Decl);
+      Assert.Same(closure.Dummies[1], Assert.IsType<Bpl.IdentifierExpr>(application.Args[^1]).Decl);
+    }
+    Check(agreement.Expr);
   }
 
   [Theory]

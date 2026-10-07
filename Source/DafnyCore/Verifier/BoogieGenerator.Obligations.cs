@@ -216,6 +216,103 @@ public partial class BoogieGenerator {
     facts.Add((agreement, source));
   }
 
+  private sealed class ContractScopedFuelLayerDescription : ProofObligationDescription {
+    public override string SuccessDescription => "existing fuel layers agree in their scope";
+    public override string FailureDescription => "could not establish scoped equivalence between existing fuel layers";
+    public override string ShortDescription => "scoped fuel layer agreement";
+  }
+
+  private void CheckContractQuantifiedFuelLayers(IOrigin origin, BoogieStmtListBuilder checking,
+    List<(Bpl.Expr Condition, Expression Source)> facts, Expression source, IEnumerable<Bpl.Expr> expressions) {
+    // These are checked instances of the same unconditional layer-synonym law
+    // used above. Close over every referenced source dummy universally, for
+    // either source quantifier polarity. Never export an existential witness.
+    var fuelFunctions = declarationMapping.Where(pair => pair.Key is Function f && f.IsFuelAware())
+      .ToDictionary(pair => pair.Value.Name, pair => (
+        Position: Enumerable.Range(0, pair.Value.InParams.Count).FirstOrDefault(index =>
+          pair.Value.InParams[index].TypedIdent.Name == "$ly" &&
+          pair.Value.InParams[index].TypedIdent.Type == Predef.LayerType, -1), Arity: pair.Value.InParams.Count));
+    var scopes = new List<List<Bpl.Variable>>();
+    var equalities = new List<Bpl.Expr>();
+    void Gather(Bpl.Expr expression, Dictionary<Bpl.Variable, Bpl.Expr> substitutions) {
+      if (expression is Bpl.QuantifierExpr quantifier) {
+        // Polymorphic Boogie binders need a separate type-binding copier.
+        // Retain their original checks without extracting applications.
+        if (quantifier.TypeParameters.Count != 0) { return; }
+        var inner = new Dictionary<Bpl.Variable, Bpl.Expr>(substitutions);
+        foreach (var dummy in quantifier.Dummies) { inner.Remove(dummy); }
+        scopes.Add(quantifier.Dummies);
+        Gather(quantifier.Body, inner);
+        scopes.RemoveAt(scopes.Count - 1);
+        return;
+      }
+      if (expression is Bpl.LetExpr let) {
+        // Let right-hand sides are evaluated in the outer lexical scope.
+        foreach (var rhs in let.Rhss) { Gather(rhs, substitutions); }
+        var inner = new Dictionary<Bpl.Variable, Bpl.Expr>(substitutions);
+        var copier = new MethodPostconditionDuplicator(substitutions);
+        foreach (var pair in let.Dummies.Zip(let.Rhss)) {
+          inner[pair.First] = copier.VisitExpr(pair.Second);
+        }
+        Gather(let.Body, inner);
+        return;
+      }
+      // Do not extract from lambdas or move an application out of old(...).
+      if (expression is not Bpl.NAryExpr original) { return; }
+      if (scopes.Count != 0 && original.Fun is Bpl.FunctionCall function &&
+          fuelFunctions.TryGetValue(function.FunctionName, out var signature) &&
+          signature.Position >= 0 && original.Args.Count == signature.Arity) {
+        var application = (Bpl.NAryExpr)new MethodPostconditionDuplicator(substitutions).VisitExpr(original);
+        if (application.Args[signature.Position] is Bpl.NAryExpr successor && successor.Args.Count == 1 &&
+            successor.Fun is Bpl.FunctionCall { FunctionName: "$LS" }) {
+          var predecessor = (Bpl.NAryExpr)application.Clone();
+          predecessor.Args = application.Args.ToList();
+          predecessor.Args[signature.Position] = successor.Args[0];
+          var equality = Bpl.Expr.Eq(application, predecessor);
+          var free = new Bpl.GSet<object>();
+          equality.ComputeFreeVariables(free);
+          var needed = new List<Bpl.Variable>();
+          var seen = new HashSet<Bpl.Variable>(ReferenceEqualityComparer.Instance);
+          foreach (var variable in scopes.SelectMany(scope => scope)) {
+            if (free.Contains(variable) && seen.Add(variable)) { needed.Add(variable); }
+          }
+          // Dependent or attributed dummies need a separate closure rule.
+          // Skip only this additional instance; retain every original check.
+          if (needed.Any(variable => variable.TypedIdent.WhereExpr != null || variable.Attributes != null)) { return; }
+          Bpl.Expr agreement = equality;
+          if (needed.Count != 0) {
+            // Fresh names also keep distinct shadowed source declarations
+            // distinct when their universal closure is flattened.
+            var copies = needed.Select(variable => {
+              var copy = (Bpl.Variable)variable.Clone();
+              copy.TypedIdent = (Bpl.TypedIdent)variable.TypedIdent.Clone();
+              copy.TypedIdent.Name = CurrentIdGenerator.FreshId("$contractFuel#");
+              return copy;
+            }).ToList();
+            var replacements = needed.Zip(copies).ToDictionary(pair => pair.First,
+              pair => (Bpl.Expr)new Bpl.IdentifierExpr(pair.Second.tok, pair.Second));
+            var copier = new MethodPostconditionDuplicator(replacements);
+            foreach (var pair in needed.Zip(copies)) {
+              pair.Second.TypedIdent.Type = (Bpl.Type)copier.Visit(pair.First.TypedIdent.Type);
+              pair.Second.TypedIdent.WhereExpr = pair.First.TypedIdent.WhereExpr == null
+                ? null : copier.VisitExpr(pair.First.TypedIdent.WhereExpr);
+              pair.Second.Attributes = pair.First.Attributes == null ? null : copier.VisitQKeyValue(pair.First.Attributes);
+            }
+            agreement = new Bpl.ForallExpr(origin, copies, BplTrigger(copier.VisitExpr(application)),
+              copier.VisitExpr(equality));
+          }
+          equalities.Add(agreement);
+        }
+      }
+      foreach (var argument in original.Args) { Gather(argument, substitutions); }
+    }
+    foreach (var expression in expressions) { Gather(expression, new Dictionary<Bpl.Variable, Bpl.Expr>()); }
+    if (equalities.Count == 0) { return; }
+    var conjunction = equalities.Aggregate((left, right) => BplAnd(left, right));
+    checking.Add(AssertMethodContract(origin, conjunction, new ContractScopedFuelLayerDescription(), checking.Context));
+    facts.Add((conjunction, source));
+  }
+
   private sealed class ContractBodyEqualityDescription : ProofObligationDescription {
     public override string SuccessDescription => "available predicate definition agrees";
     public override string FailureDescription => "could not establish the available predicate definition";
@@ -296,6 +393,9 @@ public partial class BoogieGenerator {
       facts.Add((permission, ensures.E));
       var lowering = LowerProposition(builder.Context, ensures.E, etran);
       CheckContractFuelLayers(ensures.E.Origin, builder, facts, ensures.E,
+        new[] { lowering.Summary, permission }.Concat(lowering.Pieces.Select(piece => piece.E))
+          .Concat(clause.OriginalChecks.Select(original => original.Condition)));
+      CheckContractQuantifiedFuelLayers(ensures.E.Origin, builder, facts, ensures.E,
         new[] { lowering.Summary, permission }.Concat(lowering.Pieces.Select(piece => piece.E))
           .Concat(clause.OriginalChecks.Select(original => original.Condition)));
       CheckContractBodyEqualities(ensures.E.Origin, builder, facts, lowering);

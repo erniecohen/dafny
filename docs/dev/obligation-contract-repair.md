@@ -93,3 +93,26 @@ contexts, fuel-aware root functions and unsupported free-piece shapes retain
 all existing checking paths. Both the original and strengthened checks remain,
 as do the layer-equality checks and exact summary checks. This is an unaccepted
 native experiment; isolated solver-input diagnostics are not product acceptance.
+
+
+A separate collector now checks scoped instances of the same unconditional
+layer-synonym law inside ordinary universal and existential contract binders.
+Let substitution is lexical: right-hand sides retain the outer scope, and only
+the copied support expression substitutes the bound declaration. The original
+contract, source quantifiers, trigger patterns and every existing check remain
+unchanged. Each support equality is universally closed over exactly its
+referenced source dummies, with fresh binding identities and names. An
+existential source occurrence never grants or exports a witness. The source
+function application supplies a trigger covering those dummies. Generic
+function signatures retain their actual fuel position and every other argument,
+including current and old heaps and reveal flags.
+
+Universal closure is valid because the layer-synonym equality holds for every
+argument and layer, independently of can-call permissions or body visibility.
+The new conjunction is checked before publication or use. No source expression
+is evaluated, no body definition is unfolded and no higher fuel is introduced.
+The ground-support checks, guarded body equalities, canonical pieces, original
+checks and exact summary checks are all retained. Polymorphic Boogie binders,
+dependent or attributed dummies, lambdas and extraction through old-expression
+scopes retain their existing paths without a new scoped instance. This remains
+an unaccepted native experiment pending complete structural and proof gates.
