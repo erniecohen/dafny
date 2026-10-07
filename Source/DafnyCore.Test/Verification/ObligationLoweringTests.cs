@@ -344,6 +344,129 @@ public class ObligationLoweringTests {
       c => c.Description?.ShortDescription == "fuel layer agreement");
   }
 
+  [Theory]
+  [InlineData(false, false, false)]
+  [InlineData(false, false, true)]
+  [InlineData(false, true, false)]
+  [InlineData(false, true, true)]
+  [InlineData(true, false, false)]
+  [InlineData(true, false, true)]
+  [InlineData(true, true, false)]
+  [InlineData(true, true, true)]
+  public async Task ContractContextFuelSupportIncludesExistingLoopInvariants(bool refresh, bool call, bool quantified) {
+    var invariant = quantified ? "forall m:nat :: F(m)==m" : "F(i)==i";
+    var source = "ghost function F(n:nat):int { if n==0 then 0 else F(n-1)+1 } " +
+      "lemma Use() requires true {} lemma L(n:nat) " + (call ? "" : "ensures true ") +
+      "{ var i:=0; while i<n invariant " + invariant + " { i:=i+1; } " + (call ? "Use();" : "") + " }";
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p =>
+      p.Name.StartsWith("Impl$$") && p.Name.EndsWith(".L"));
+    var commands = implementation.Blocks.SelectMany(b => b.Cmds).ToList();
+    var agreement = Assert.Single(commands.OfType<Bpl.AssertCmd>().Where(c =>
+      c.Description?.ShortDescription == "context fuel layer agreement"));
+    Assert.Equal(-1, Bpl.QKeyValue.FindIntAttribute(agreement.Attributes, "subsumption", -1));
+    void Check(Bpl.Expr expression) {
+      if (expression is Bpl.NAryExpr { Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.And } } conjunction) {
+        Assert.All(conjunction.Args, Check);
+        return;
+      }
+      if (quantified) {
+        var closure = Assert.IsType<Bpl.ForallExpr>(expression);
+        Assert.Single(closure.Dummies);
+        var referenced = new ScopedFuelTestReferences();
+        referenced.VisitExpr(closure.Body);
+        Assert.All(referenced.Variables.OfType<Bpl.BoundVariable>(), variable => Assert.Contains(variable, closure.Dummies));
+        expression = closure.Body;
+      }
+      var equality = Assert.IsType<Bpl.NAryExpr>(expression);
+      Assert.Equal(Bpl.BinaryOperator.Opcode.Eq, Assert.IsType<Bpl.BinaryOperator>(equality.Fun).Op);
+      var upper = Assert.IsType<Bpl.NAryExpr>(equality.Args[0]);
+      var lower = Assert.IsType<Bpl.NAryExpr>(equality.Args[1]);
+      Assert.EndsWith(".F", Assert.IsType<Bpl.FunctionCall>(upper.Fun).FunctionName);
+      var successor = Assert.IsType<Bpl.NAryExpr>(upper.Args[0]);
+      Assert.Equal("$LS", Assert.IsType<Bpl.FunctionCall>(successor.Fun).FunctionName);
+      Assert.Equal(ObligationFingerprint.Expression(successor.Args[0]), ObligationFingerprint.Expression(lower.Args[0]));
+      Assert.Equal(upper.Args.Count, lower.Args.Count);
+      for (var i = 1; i < upper.Args.Count; i++) {
+        Assert.Equal(ObligationFingerprint.Expression(upper.Args[i]), ObligationFingerprint.Expression(lower.Args[i]));
+      }
+    }
+    Check(agreement.Expr);
+    var fingerprint = ObligationFingerprint.Expression(agreement.Expr);
+    Assert.Contains(commands.OfType<Bpl.AssumeCmd>(), c => ObligationFingerprint.Expression(c.Expr) == fingerprint);
+    var checkingBlock = Assert.Single(implementation.Blocks.Where(block => block.Cmds.Contains(agreement)));
+    Assert.Contains(checkingBlock.Cmds.OfType<Bpl.AssumeCmd>(), c => c.Expr.Equals(Bpl.Expr.False));
+    Assert.DoesNotContain(checkingBlock.Cmds.OfType<Bpl.AssumeCmd>(), c => ObligationFingerprint.Expression(c.Expr) == fingerprint);
+    // The original invariant check remains; support does not replace it.
+    Assert.Contains(commands.OfType<Bpl.AssertCmd>(), c => c.Description is LoopInvariant);
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task ContractContextFuelSupportClosesInvariantLets(bool refresh) {
+    const string source = "ghost function F(n:nat):int { if n==0 then 0 else F(n-1)+1 } " +
+      "lemma L(n:nat) ensures true { var i:=0; while i<n " +
+      "invariant forall m:nat :: (var k:=m; F(k)==m) { i:=i+1; } }";
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p =>
+      p.Name.StartsWith("Impl$$") && p.Name.EndsWith(".L"));
+    var agreement = Assert.Single(implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>().Where(c =>
+      c.Description?.ShortDescription == "context fuel layer agreement"));
+    void Check(Bpl.Expr expression) {
+      if (expression is Bpl.NAryExpr { Fun: Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.And } } conjunction) {
+        Assert.All(conjunction.Args, Check);
+        return;
+      }
+      var closure = Assert.IsType<Bpl.ForallExpr>(expression);
+      Assert.Single(closure.Dummies);
+      var referenced = new ScopedFuelTestReferences();
+      referenced.VisitExpr(closure.Body);
+      Assert.All(referenced.Variables.OfType<Bpl.BoundVariable>(), variable => Assert.Contains(variable, closure.Dummies));
+      var equality = Assert.IsType<Bpl.NAryExpr>(closure.Body);
+      var application = Assert.IsType<Bpl.NAryExpr>(equality.Args[0]);
+      Assert.Same(closure.Dummies[0], Assert.IsType<Bpl.IdentifierExpr>(application.Args.Last()).Decl);
+    }
+    Check(agreement.Expr);
+  }
+
+  [Theory]
+  [InlineData(false, false)]
+  [InlineData(false, true)]
+  [InlineData(true, false)]
+  [InlineData(true, true)]
+  public async Task ContractContextFuelSupportDoesNotTransportRevealedApplications(bool refresh, bool nested) {
+    var source = "opaque ghost function F(n:int):int { n } " +
+      "ghost function G(n:int):int decreases if n>0 then n else 0 { if n<=0 then 0 else G(n-1)+1 } " +
+      "lemma L(n:int) ensures true { assert true by { reveal F; assert " +
+      (nested ? "G(F(n))>=0" : "F(n)==n") + "; } }";
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p =>
+      p.Name.StartsWith("Impl$$") && p.Name.EndsWith(".L"));
+    Assert.DoesNotContain(implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>(), c =>
+      c.Description?.ShortDescription == "context fuel layer agreement");
+    async Task<string[]> ScopeCommands(bool enabled) => ObligationFingerprint.Emit(await Translate(source, enabled, refresh))
+      .Split('\n').Select(line => line.Trim()).Where(line =>
+        line is "push;" or "pop;" || line.StartsWith("hide ") || line.StartsWith("reveal ")).ToArray();
+    Assert.Equal(await ScopeCommands(false), await ScopeCommands(true));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task ContractContextFuelSupportRetainsImplementationLocalTerms(bool refresh) {
+    const string source = "ghost function F(n:nat):int { if n==0 then 0 else F(n-1)+1 } " +
+      "lemma L(n:nat) ensures true { if n>0 { var x:=n; assert F(x)==x; x:=0; } }";
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p =>
+      p.Name.StartsWith("Impl$$") && p.Name.EndsWith(".L"));
+    var commands = implementation.Blocks.SelectMany(b => b.Cmds).ToList();
+    var agreement = Assert.Single(commands.OfType<Bpl.AssertCmd>().Where(c =>
+      c.Description?.ShortDescription == "context fuel layer agreement"));
+    Assert.Contains(".F(", ObligationFingerprint.Expression(agreement.Expr));
+    Assert.Contains(commands.OfType<Bpl.AssertCmd>(), c => c.Description is AssertStatementDescription);
+  }
+
   private sealed class ScopedFuelTestReferences : Bpl.Duplicator {
     public readonly HashSet<Bpl.Variable> Variables = new(ReferenceEqualityComparer.Instance);
     public override Bpl.Expr VisitIdentifierExpr(Bpl.IdentifierExpr node) {

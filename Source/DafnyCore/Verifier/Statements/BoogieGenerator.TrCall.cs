@@ -387,6 +387,7 @@ public partial class BoogieGenerator {
           new[] { lowering.Summary, permission }.Concat(lowering.Pieces.Select(piece => piece.E)));
         CheckContractQuantifiedFuelLayers(tok, checking, facts, instantiated,
           new[] { lowering.Summary, permission }.Concat(lowering.Pieces.Select(piece => piece.E)));
+        CheckContractContextFuelLayers(tok, checking, facts, instantiated, builder);
         CheckContractBodyEqualities(tok, checking, facts, lowering);
         var (error, success) = CustomErrorMessage(requirement.Attributes);
         var direct = Substitute(requirement.E, receiver, directSubstMap, tySubst);

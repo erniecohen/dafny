@@ -125,3 +125,19 @@ their previous behavior. Let right-hand sides use the outer name map before
 installing the let declarations. Closure construction then uses declaration
 identities, so renaming support dummies cannot leave a source binder reference
 unbound or capture one under a nested binder.
+
+
+Context support additionally reads the already translated statement prefix,
+including loop invariants, conditional guards and predicate commands. It never
+collects or modifies the original builder. It checks the same unconditional fuel
+law for those existing terms, closing source binders universally and substituting
+lets only in the support copy. This collects terms without importing an earlier
+predicate as a premise: the law holds for any current values of implementation
+locals and heaps. Every new equality is checked before use and publication.
+
+An expression containing a reveal-parameter function application, including a
+nested argument, is conservatively excluded from context collection. Lambdas,
+old-expression scopes and unsupported expression-local constructs are excluded.
+The existing reveal, hide, push and pop commands retain their original order and
+outer-scope effects. The existing contract-only ground and scoped collectors,
+body equalities and every original, canonical and summary check remain.

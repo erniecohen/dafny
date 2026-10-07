@@ -246,6 +246,15 @@ public partial class BoogieGenerator {
 
   private void CheckContractQuantifiedFuelLayers(IOrigin origin, BoogieStmtListBuilder checking,
     List<(Bpl.Expr Condition, Expression Source)> facts, Expression source, IEnumerable<Bpl.Expr> expressions) {
+    var equalities = ContractScopedFuelEqualities(origin, expressions, false);
+    if (equalities.Count == 0) { return; }
+    var conjunction = equalities.Aggregate((left, right) => BplAnd(left, right));
+    checking.Add(AssertMethodContract(origin, conjunction, new ContractScopedFuelLayerDescription(), checking.Context));
+    facts.Add((conjunction, source));
+  }
+
+  private List<Bpl.Expr> ContractScopedFuelEqualities(IOrigin origin,
+    IEnumerable<Bpl.Expr> expressions, bool includeGround) {
     // These are checked instances of the same unconditional layer-synonym law
     // used above. Close over every referenced source dummy universally, for
     // either source quantifier polarity. Never export an existential witness.
@@ -289,7 +298,7 @@ public partial class BoogieGenerator {
       }
       // Do not extract from lambdas or move an application out of old(...).
       if (expression is not Bpl.NAryExpr original) { return; }
-      if (scopes.Count != 0 && original.Fun is Bpl.FunctionCall function &&
+      if ((includeGround || scopes.Count != 0) && original.Fun is Bpl.FunctionCall function &&
           fuelFunctions.TryGetValue(function.FunctionName, out var signature) &&
           signature.Position >= 0 && original.Args.Count == signature.Arity) {
         var application = (Bpl.NAryExpr)new MethodPostconditionDuplicator(substitutions, namedSubstitutions).VisitExpr(original);
@@ -339,10 +348,84 @@ public partial class BoogieGenerator {
     foreach (var expression in expressions) {
       Gather(expression, new Dictionary<Bpl.Variable, Bpl.Expr>(), new Dictionary<string, Bpl.Expr>());
     }
+    return equalities;
+  }
+
+  private sealed class ContractContextFuelLayerDescription : ProofObligationDescription {
+    public override string SuccessDescription => "existing context fuel layers agree";
+    public override string FailureDescription => "could not establish fuel equivalence for an existing context term";
+    public override string ShortDescription => "context fuel layer agreement";
+  }
+
+  private void CheckContractContextFuelLayers(IOrigin origin, BoogieStmtListBuilder checking,
+    List<(Bpl.Expr Condition, Expression Source)> facts, Expression source, BoogieStmtListBuilder continuation) {
+    // Read the already translated statement prefix, including loop invariants.
+    // This collects terms, not assumptions. The unconditional layer law is valid
+    // for every value of the current implementation locals and heaps, including
+    // a value different from the one at the earlier source occurrence.
+    var revealFunctions = declarationMapping.Values.Where(function =>
+      function.InParams.Any(parameter => parameter.TypedIdent.Name == "$reveal"))
+      .Select(function => function.Name).ToHashSet();
+    bool EligibleAttributes(Bpl.QKeyValue attributes) => attributes == null ||
+      attributes.Params.OfType<Bpl.Expr>().All(Eligible) && EligibleAttributes(attributes.Next);
+    bool EligibleTriggers(Bpl.Trigger triggers) => triggers == null ||
+      triggers.Tr.All(Eligible) && EligibleTriggers(triggers.Next);
+    bool EligibleVariables(IEnumerable<Bpl.Variable> variables) => variables.All(variable =>
+      variable.TypedIdent.WhereExpr == null && EligibleAttributes(variable.Attributes));
+    bool Eligible(Bpl.Expr expression) => expression switch {
+      Bpl.NAryExpr application =>
+        (application.Fun is not Bpl.FunctionCall function || !revealFunctions.Contains(function.FunctionName)) &&
+        application.Args.All(Eligible),
+      Bpl.QuantifierExpr quantifier => quantifier.TypeParameters.Count == 0 &&
+        EligibleVariables(quantifier.Dummies) && EligibleAttributes(quantifier.Attributes) &&
+        EligibleTriggers(quantifier.Triggers) && Eligible(quantifier.Body),
+      Bpl.LetExpr let => EligibleVariables(let.Dummies) && EligibleAttributes(let.Attributes) &&
+        let.Rhss.All(Eligible) && Eligible(let.Body),
+      Bpl.IdentifierExpr or Bpl.LiteralExpr => true,
+      _ => false
+    };
+    var expressions = new List<Bpl.Expr>();
+    void Add(Bpl.Expr expression) {
+      // Conservatively reject an entire expression containing a reveal-parameter
+      // application, even as a nested argument. Never transport proof-local body
+      // visibility. Unsupported expression-local scopes are also left alone.
+      if (expression != null && Eligible(expression)) { expressions.Add(expression); }
+    }
+    void GatherList(Bpl.StmtList statements) {
+      if (statements == null) { return; }
+      if (statements.PrefixCommands != null) {
+        foreach (var command in statements.PrefixCommands) { Gather(command); }
+      }
+      foreach (var block in statements.BigBlocks) {
+        foreach (var command in block.simpleCmds) { Gather(command); }
+        Gather(block.ec);
+      }
+    }
+    void Gather(object command) {
+      switch (command) {
+        case Bpl.PredicateCmd predicate:
+          Add(predicate.Expr);
+          break;
+        case Bpl.IfCmd conditional:
+          Add(conditional.Guard);
+          GatherList(conditional.Thn);
+          Gather(conditional.ElseIf);
+          GatherList(conditional.ElseBlock);
+          break;
+        case Bpl.WhileCmd loop:
+          Add(loop.Guard);
+          foreach (var invariant in loop.Invariants) { Add(invariant.Expr); }
+          GatherList(loop.Body);
+          break;
+      }
+    }
+    // Do not Collect() or modify the original builder or its commands.
+    foreach (var command in continuation.Commands) { Gather(command); }
+    var equalities = ContractScopedFuelEqualities(origin, expressions, true);
     if (equalities.Count == 0) { return; }
-    var conjunction = equalities.Aggregate((left, right) => BplAnd(left, right));
-    checking.Add(AssertMethodContract(origin, conjunction, new ContractScopedFuelLayerDescription(), checking.Context));
-    facts.Add((conjunction, source));
+    var agreement = equalities.Aggregate((left, right) => BplAnd(left, right));
+    checking.Add(AssertMethodContract(origin, agreement, new ContractContextFuelLayerDescription(), checking.Context));
+    facts.Add((agreement, source));
   }
 
   private sealed class ContractBodyEqualityDescription : ProofObligationDescription {
@@ -430,6 +513,7 @@ public partial class BoogieGenerator {
       CheckContractQuantifiedFuelLayers(ensures.E.Origin, builder, facts, ensures.E,
         new[] { lowering.Summary, permission }.Concat(lowering.Pieces.Select(piece => piece.E))
           .Concat(clause.OriginalChecks.Select(original => original.Condition)));
+      CheckContractContextFuelLayers(ensures.E.Origin, builder, facts, ensures.E, continuation);
       CheckContractBodyEqualities(ensures.E.Origin, builder, facts, lowering);
       var (error, success) = CustomErrorMessage(ensures.Attributes);
       var description = new EnsuresDescription(ensures.E, error, success);
