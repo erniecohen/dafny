@@ -1,10 +1,16 @@
 # Obligation lowering validation status
 
+The [requested review revisions](obligation-review-change-request.md) now govern
+the next implementation. Their [revision checklist](obligation-revision-checklist.md)
+tracks the single-check design and acceptance requirements. The additive design
+and its evidence below describe the preceding implementation; the requested
+replacement is not yet implemented or validated.
+
 The change for [issue 100](https://github.com/erniecohen/dafny/issues/100)
 is experimental and default off. It has not been merged or released. Complete
-native full-suite and standard-library comparisons with Z3 5.1.0 now cover the
-current correction. Enabled completeness/performance and controlled library
-cost acceptance failed. The local arguments and producer classifications are in
+native suite and standard-library comparisons of the current reveal-scope
+correction reject enabled completeness/performance and controlled default-off
+library cost acceptance. The local arguments and producer classifications are in
 [obligation-lowering.md](obligation-lowering.md); the complete qualitative verdict
 review is in [obligation-suite-comparison.md](obligation-suite-comparison.md).
 
@@ -22,21 +28,29 @@ formula, fuel term, summary and inherited guard; explicit split assertions keep
 their original check-and-forget behavior. Structural regressions compare both
 the checked expressions and their command publication policies.
 
-The current supported product is `0dff159b59c5980f6a32a2a60a256226dd04cb88`;
-the build source is `b428bb7d34fdd7c57c5b2f1f1818a73ca90ffd51`. The supported
-baseline is `ab210b78b50adb5a192542897f0a00cdb40f3c35`, including the intervening
-allocation and forall-substitution repairs. The candidate reports
-`4.11.0+fcb2042d.review.32a7e4ae`. The existing version calculation hashes modified
-upstream files, so a change to files added by the feature retains the prior suffix.
-Product/build commits and binary hashes identify the revision; the version
-string alone is insufficient. Later report edits change no product source.
+Method and forall proof bodies now retain the legacy `ReturnPosition` context.
+The opt-in path no longer inserts scope pops after terminal reveal hints.
+Previously retained reveals stay available to existing and appended checks;
+ordinary nonterminal scope boundaries are retained. No original check, summary,
+fuel term, library proof or resource ceiling was removed or weakened.
+
+The current supported product is `c515251c9a5f06490591defa3df3ef86e1b8d175`;
+the build source is `1cb6a03bb14d2d96d57a1e6ac9f1c5f8f27935d2`, reporting
+`4.11.0+fcb2042d.review.c38abced`. The supported baseline remains
+`ab210b78b50adb5a192542897f0a00cdb40f3c35`. Later registered-test/report edits
+change no product source. The preceding complete comparison measured product
+`0dff159b59c5980f6a32a2a60a256226dd04cb88`, build
+`b428bb7d34fdd7c57c5b2f1f1818a73ca90ffd51`, version
+`4.11.0+fcb2042d.review.32a7e4ae`; it does not validate the current product.
 
 ## Build and registered evidence
 
-The [supported build and normal inventory gate](https://github.com/erniecohen/dafny/actions/runs/37427679277)
-built both native platforms and the editor assembly, and passed all 39 focused
-structural checks. The independently captured producer inventory matches the
-reviewed registry. This build probe did not execute a solver.
+The [supported build and normal inventory gate](https://github.com/erniecohen/dafny/actions/runs/37494376061)
+built both native platforms and the editor assembly, and passed all 43 focused
+structural checks. These compare terminal/nested calculation reveal scope,
+forall proof scope and ordinary nonterminal boundaries under both resolvers.
+The independently captured producer inventory matches the reviewed registry.
+This build probe did not execute a solver.
 
 Focused native verification confirms the unchanged original issue 100,
 AllLiteralsAxiom and GHC-MergeSort with the option enabled, at the unchanged
@@ -50,68 +64,84 @@ across both resolvers, with additional axioms off and seed zero. The three focus
 default-off programs retain operational Boogie and complete named batch
 outcome/resource multisets.
 
-The complete registered issue 100 gate passed all 198 expected native
+The complete registered issue 100 gate passed all 222 expected native
 observations. This covers both resolver modes and both additional-axiom settings,
 ordinary and isolated negative controls, and project/CLI option precedence. The
 native capture adapter permits only the registered negative-forall fixture's
-expected missing-trigger warning. Proof inputs and expected results are unchanged.
+expected missing-trigger warning. The added terminal-reveal fixture verifies
+under both resolvers, both additional-axiom settings and both option settings.
+Existing reveal-isolation and hide-after-reveal negatives also run with ordinary
+and isolated assertions. Their expected failures are retained.
 These controls and structural checks do not replace independent soundness review.
 
-## Complete native comparisons
+The focused native library gate completes all 24 observations: the unchanged
+Filter, Split and Base64 declarations verify in baseline, default-off and enabled
+modes under both additional-axiom settings; the separate power control verifies
+in baseline/default-off and retains its enabled failure. All eight focused
+baseline/default-off batch/resource comparisons match. Actual native pruned
+declarations and solver inputs are retained with these results. These are
+complete focused checks, not full-suite acceptance.
 
-Both additional-axiom settings are complete for each of baseline, candidate with
-the option off, and candidate with it on. The complete existing runners retain
-source RUN options, committed project settings, warning policy, resource ceilings,
-batching and declaration-order behavior. No global fuel/resource increase, new
-solver seed or batching option is used to obtain these results.
+## Complete native suite and standard-library comparisons
 
-With the option off, all 1,161 suite programs match the baseline and committed
-expected verdicts. Complete named declaration and batch outcome/resource entries
-match in both settings. Expected parser/resolver and command-line negatives stay
-in the program denominator. No successfully verified proof lacks its resource log.
+Both additional-axiom settings finish all three modes: baseline, candidate with
+the feature off, and candidate with it on. Complete existing runners retain
+source RUN options, project files, warning policy, resource ceilings, batching
+and declaration order. No global fuel/resource increase, new seed or batching
+option is used. Each comparison gate completes normally and rejects enabled
+product acceptance.
 
-The standard-library comparisons cover the main Std project and all six
-target-specific parts. All 2,190 declaration verdicts and seven run verdicts match
-the baseline and committed expectations with the option off. All emitted
-operational Boogie matches after excluding complete comment lines. The baseline
-itself has expected errors/resource exhaustion; matching it does not mean every
-library lemma verifies.
+With the feature off, all 1,161 suite programs match the baseline and committed
+expected verdicts in both settings. All 6,909 named declarations and complete
+batch outcome/resource entries match. Expected parser/resolver and command-line
+negatives remain in the denominator. Enabled mode introduces six resource
+failures with additional axioms off and five with them on. AllLiteralsAxiom and
+GHC-MergeSort pass; some other formerly resource-limited declarations now pass.
+Still-successful declarations also require cost review. No baseline Errors
+declaration becomes Correct.
 
-Default-off library resources vary under the runner's existing declaration-order
-behavior documented in `std-verdicts.py`. Complete operational-input and command
-comparisons accompany the audit, but exact controlled cost compatibility remains
-unaccepted. A late capture assertion incorrectly expected one Boogie file per
-part; the completed native evidence was audited for all emitted modules instead.
-The original capture failures are retained separately. No completed proofs were
-rerun to correct that postprocessing check.
+The library comparisons retain all 2,190 declaration rows and seven project/
+target-specific run rows per mode. The unchanged `EncodeDecodeRecursively`,
+`LemmaFilterDistributesOverConcat` and `WillSplitOnDelim` verify enabled in both
+settings. The inverse `DecodeEncodeRecursively` also verifies, from baseline
+resource exhaustion. `LemmaPowSubtractsAuto` still reports Errors. Other
+formerly successful declarations exhaust their original ceilings, and some
+successful declarations require cost review.
 
-AllLiteralsAxiom and GHC-MergeSort pass in both complete enabled suite settings.
-The enabled suite nevertheless introduces resource exhaustion in other formerly
-successful declarations, and some still-successful cases require cost review.
-The enabled library introduces both resource exhaustion and proof errors. The
-four formerly Correct declarations now reporting Errors are
-`Std.Arithmetic.Power.LemmaPowSubtractsAuto`, `Std.Base64.EncodeDecodeRecursively`,
-`Std.Collections.Seq.LemmaFilterDistributesOverConcat` and
-`Std.Collections.Seq.WillSplitOnDelim`. Native diagnostics identify a failed
-postcondition, calculation steps and a function precondition.
-[Failure examples and controlled diagnosis](obligation-failure-examples.md)
-identify a definition-visibility regression in the three hide/reveal cases.
-The opt-in method-body `ReturnPosition` override adds pops after reveal hints
-and before existing checks. Native pruned declarations confirm the defining
-Filter axiom disappears from both failed calculation checks; retaining the
-relevant reveals in the outer proof scope restores all three native declarations.
-These are diagnostic witnesses, not library repairs or product acceptance.
-The quantified power failure is separately isolated to the added second-clause
-exit package; its exact solver instantiation mechanism remains unresolved.
-Complete checking-environment preservation remains unaccepted. Other
-resource-limited library declarations become successful.
-No baseline Errors declaration becomes Correct in these comparisons.
+Every candidate default-off library verdict matches the committed expectation.
+The initial additional-axioms-on baseline proves `Objects.BracketedToObject`,
+while default-off exhausts its ceiling. The required unchanged complete repeat
+returns that baseline declaration to the expected OutOfResource result and all
+baseline/default-off verdicts match. Complete operational Boogie matches
+between baseline/off and across the original and repeated runs, excluding only
+complete comments. This confirms baseline variation without a source or binary
+change. Resource entries still vary under the runner's existing declaration
+order; controlled default-off library cost remains unaccepted. The initial
+enabled library comparison has seven fresh-baseline failure movements in this
+setting, including that varying declaration; the repeat has six. With additional
+axioms off, the library has five fresh-baseline failures.
 
-Every changed suite program and library declaration verdict has been reviewed
-in [obligation-suite-comparison.md](obligation-suite-comparison.md). Expected
-verdict tables have not been changed. These regressions are not specification
-changes or grounds for broadly replacing expectations. Complete comparisons
-do not establish uniform superiority of the enabled path.
+[Failure examples and native diagnosis](obligation-failure-examples.md) retain
+the causal visibility evidence and the surviving quantified power interaction.
+Every changed program/declaration verdict is reviewed in
+[the complete comparison](obligation-suite-comparison.md). No expected verdict
+was replaced. These results do not establish uniform superiority, complete
+checking-environment preservation or end-to-end matching invariance.
+
+## Focused diagnosis after the complete comparisons
+
+The [six-case native causal investigation](obligation-failure-examples.md#focused-native-diagnosis-of-the-six-suite-regressions)
+uses unchanged complete-file captures, matched baseline/current seed runs and
+controlled native omissions under both additional-axiom settings. Current
+product versus scratch instrumentation with no omissions matches operational
+Boogie and target assertion-batch outcome/resource vectors. The study localizes
+new exit-package, exit-summary and call-site-package contributions to the six
+remaining suite regressions. No original assertion, contract, resource ceiling,
+fuel setting or reveal was changed in the product. Native omissions remain
+scratch diagnostics; unchecked-summary variants are excluded as proof evidence.
+Precise solver instantiation chains and a product correction retaining the
+intended additional checking power remain open. This is focused diagnosis,
+not another full-suite gate or completed acceptance.
 
 ## Outstanding acceptance
 
@@ -123,12 +153,12 @@ procedure, remain merge requirements. The exact-baseline comparisons do not
 replace that integration step. The pre-existing false self-postcondition is
 tracked separately in issue 166.
 
-The development draft remains at the preceding preservation revision; its
-[build](https://github.com/erniecohen/dafny/actions/runs/37394258403) and
-[normal inventory gate](https://github.com/erniecohen/dafny/actions/runs/37395195252)
-passed all 33 focused checks. The current method-exit correction still needs
-development porting and CI. Supported-port native results do not validate the
-development line.
+The development draft now ports both method-exit publication and reveal-scope
+corrections. Its [build and normal inventory gate](https://github.com/erniecohen/dafny/actions/runs/37503850171)
+passed all 41 structural checks. The development product is
+`48a6f13236a32bb4f7c4b1543c7f69b161d0b104`; its build source is
+`6270d888a60cd7a6714f8cc99885487cc6047f84`. This probe executed no solver.
+Supported-port native results do not validate development-line verification.
 
 This remains a draft. No issue closure, repository-green claim, full
 matching-closure claim, merge or release follows from these results. AI assisted

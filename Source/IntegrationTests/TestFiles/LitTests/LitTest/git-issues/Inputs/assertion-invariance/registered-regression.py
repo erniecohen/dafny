@@ -50,6 +50,7 @@ for refresh in [False,True]:
   for name in ["negative-subset","negative-guarded-constraint","negative-subset-vacuity",
     "negative-self-postcondition","negative-self-postcondition-let","negative-allocation-vacuity",
     "negative-old-argument","negative-forall","negative-higher-precondition","negative-ordered-contract",
+    "negative-proof-reveal","negative-hidden-after-reveal",
     "negative-boolean-value-argument","negative-boolean-value-higher-order",
     "negative-boolean-value-container","negative-boolean-value-let","negative-boolean-value-membership",
     "nonvacuity-boolean-value-argument","nonvacuity-boolean-value-higher-order",

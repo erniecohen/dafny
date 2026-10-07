@@ -132,6 +132,43 @@ public class ObligationLoweringTests {
   [Theory]
   [InlineData(false)]
   [InlineData(true)]
+  public void FingerprintDistinguishesLexicalShadowing(bool resolved) {
+    var token = Token.NoToken;
+    Bpl.Expr Formula(bool reflexive, string outerName, string middleName, string innerName) {
+      Bpl.Variable Bound(string name) => new Bpl.BoundVariable(token,
+        new Bpl.TypedIdent(token, name, Bpl.Type.Int));
+      var outer = Bound(outerName); var middle = Bound(middleName); var inner = Bound(innerName);
+      Bpl.Expr Id(Bpl.Variable variable) => resolved
+        ? new Bpl.IdentifierExpr(token, variable)
+        : new Bpl.IdentifierExpr(token, variable.Name, Bpl.Type.Int);
+      Bpl.Expr Quantify(Bpl.Variable variable, Bpl.Expr body) => new Bpl.ForallExpr(token,
+        new List<Bpl.TypeVariable>(), new List<Bpl.Variable> { variable }, null, null, body);
+      return Quantify(outer, Quantify(middle, Quantify(inner,
+        Bpl.Expr.Eq(Id(reflexive ? inner : middle), Id(inner)))));
+    }
+    var shadowed = Formula(false, "x", "x", "y");
+    var reflexive = Formula(true, "x", "x", "y");
+    Assert.NotEqual(ObligationFingerprint.Expression(shadowed), ObligationFingerprint.Expression(reflexive));
+    Assert.Equal(ObligationFingerprint.Expression(shadowed),
+      ObligationFingerprint.Expression(Formula(false, "a", "b", "c")));
+  }
+
+  [Fact]
+  public void FingerprintKeepsResolvedOuterReferencesUnderShadowing() {
+    var token = Token.NoToken;
+    var outer = new Bpl.BoundVariable(token, new Bpl.TypedIdent(token, "x", Bpl.Type.Int));
+    var inner = new Bpl.BoundVariable(token, new Bpl.TypedIdent(token, "x", Bpl.Type.Int));
+    Bpl.Expr Formula(Bpl.Variable used) => new Bpl.ForallExpr(token,
+      new List<Bpl.TypeVariable>(), new List<Bpl.Variable> { outer }, null, null,
+      new Bpl.ForallExpr(token, new List<Bpl.TypeVariable>(), new List<Bpl.Variable> { inner }, null, null,
+        Bpl.Expr.Eq(new Bpl.IdentifierExpr(token, used), Bpl.Expr.Literal(0))));
+    Assert.NotEqual(ObligationFingerprint.Expression(Formula(outer)),
+      ObligationFingerprint.Expression(Formula(inner)));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
   public async Task MethodExitPreservesTheCheckedEnsuresPublicationPolicy(bool refresh) {
     const string source = "ghost predicate P(x:int) { x>=0 && x<=100 } " +
       "lemma L(x:int) requires 0<=x<=100 ensures P(x) {}";
