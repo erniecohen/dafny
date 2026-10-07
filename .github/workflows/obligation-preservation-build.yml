@@ -28,6 +28,8 @@ jobs:
             for rid in linux-x64 osx-arm64; do
               RUNTIME_IDENTIFIER="$rid" dotnet publish Source/Dafny/Dafny.csproj -c Release -r "$rid" --self-contained -o "out/dafny-$rid" -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$revision" > "out/build-$rid.log" 2>&1
               echo "$?" > "out/build-$rid.exit"
+              dotnet publish .github/review/boogie-contract-probe/BoogieContractProbe.csproj -c Release -r "$rid" --self-contained -o "out/boogie-$rid" -p:GeneratePackageOnBuild=false > "out/boogie-$rid.log" 2>&1
+              echo "$?" > "out/boogie-$rid.exit"
             done
             OBLIGATION_INVENTORY_CAPTURE="$PWD/out/obligation-producers.json" dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation > out/core.log 2>&1
             echo "$?" > out/core.exit
