@@ -181,6 +181,7 @@ public partial class BoogieGenerator {
     // continuation arm receives exactly those facts and the justified contract
     // permissions. Both arms stay in the existing VC; no batching marker or
     // visibility scope is introduced.
+    if (facts.Count == 0) { return; }
     checking.Add(TrAssumeCmd(origin, Bpl.Expr.False));
     var publication = new BoogieStmtListBuilder(this, options, continuation.Context);
     foreach (var fact in facts) {
