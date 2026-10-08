@@ -1,10 +1,24 @@
 # Obligation lowering validation status
 
 The [requested review revisions](obligation-review-change-request.md) govern the
-single-check replacement in PR #168. Product commit
-`d93ff6137` implements the replacement; current native proof and complete suite/
-standard-library acceptance are pending. Its [build and structural capture](https://github.com/erniecohen/dafny/actions/runs/37675524107)
-is a diagnostic run; its wrapper status is not an acceptance result.
+single-check replacement in PR #168. The supported semantic revision is
+`8ddf1458b`, with structural-fixture selection corrected in `98a174573`.
+Current native proof and complete suite/standard-library acceptance remain
+pending. The [latest completed diagnostic build](https://github.com/erniecohen/dafny/actions/runs/37709973478)
+compiled both native platforms and the editor, and passed 59 of 61 structural
+controls. Its two old-array controls selected both the contract-WF and body
+implementations; the current fixture selects the body. These are fixture failures,
+not failed native proofs. The normal inventory gate was intentionally stale.
+
+The captured 282 producer groups have been reviewed against the source audit.
+All captured verifier file hashes match the current source. The registry now
+records the single-check contract/type adapters and locally closed initializer,
+sequence, invariant, yield, opaque, witness, forall and calculation checks.
+Normal inventory and the corrected structural controls require a fresh build.
+The cast control confirms one enabled target check versus two legacy checks.
+The fingerprint now retains binary/unary opcode identity as well as lexical
+binder identity; implication/conjunction and addition/subtraction have negative
+controls. Old-array reads use one canonical allocation predicate.
 
 The [foundation build](https://github.com/erniecohen/dafny/actions/runs/37672843215)
 completed both native builds and all 46 structural/inventory controls. This includes

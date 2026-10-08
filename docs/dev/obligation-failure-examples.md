@@ -1,5 +1,10 @@
 # Obligation failures and reveal-scope repair
 
+These findings describe the superseded additive implementation. They are retained
+for regression triage and do not validate the single-check replacement. Current
+source and evidence are tracked in [the validation record](obligation-validation.md)
+and [revision checklist](obligation-revision-checklist.md).
+
 These examples were diagnosed in the preceding exit-publication product,
 identified in [obligation-suite-comparison.md](obligation-suite-comparison.md).
 The current correction removes both opt-in `ReturnPosition=false` overrides,
