@@ -8,7 +8,7 @@ definition-support experiments. Preserve the request in full; use this file to
 record implementation and evidence against each requirement as revisions land.
 
 **Status:** the supported single-check product revision is implemented in
-`8e7f54505`, including the allocation correction, shared universal assertion layer rule and source-local preparation and iterator frame/old-heap repairs; source acceptance and complete validation remain pending. Historical native results describe earlier implementations and do not discharge this checklist. Keep both PRs as drafts.
+`8e7f54505`, including the allocation correction, shared universal assertion layer rule and source-local preparation and iterator frame/old-heap repairs; current structural and focused native gates pass; complete validation remains pending. Historical native results describe earlier implementations and do not discharge this checklist. Keep both PRs as drafts.
 Settle the supported-line design first. The owner requires an explicit approval
 before any implementation is ported to #169; keep that port pending until approval.
 The development line then requires independent evidence. The [current preparation diagnosis](obligation-local-preparation-diagnosis.md) records the local repair and rejected preceding native evidence.
@@ -45,11 +45,11 @@ linked validation report.
 
 ## Supported-line acceptance
 
-- [ ] Original issue 100 source verifies without its redundant final assertion at the existing ceiling (preceding registered gate passed; fresh iterator-repair source acceptance pending).
-- [ ] The subset reproducer verifies without its redundant assertion (preceding registered gate passed; fresh iterator-repair source acceptance pending).
-- [ ] Representative method and function precondition examples verify without redundant assertions.
-- [ ] All negative controls remain negative.
-- [ ] Scoped-reveal examples retain their previous proofs at the actual check point.
+- [x] Original issue 100 source verifies without its redundant final assertion at the existing ceiling (current complete registered and paired gates pass).
+- [x] The subset reproducer verifies without its redundant assertion (current complete registered and paired gates pass).
+- [x] Representative method and function precondition examples verify without redundant assertions (current complete paired gate).
+- [x] All negative controls remain negative (232 expected-negative observations in the current complete paired gate have invalid VCs).
+- [x] Scoped-reveal examples retain their previous proofs at the actual check point (current structural and registered/paired controls).
 - [ ] Default-off translation, verdicts and resource behavior remain compatible with the supported baseline under the fork's required gates.
 - [ ] Enabled mode has no unexplained stable correctness regression.
 - [ ] Remaining resource movements are classified with multiple seeds using S13's policy.

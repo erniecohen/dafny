@@ -3,7 +3,7 @@
 The [requested review revisions](obligation-review-change-request.md) govern the
 single-check replacement in PR #168. The supported semantic revision is now
 `8e7f54505`, restoring source-local assertion well-formedness preparation and the
-frozen initializer application's domain guard. It also preserves iterator yield frames and old heaps. Its native acceptance is pending.
+frozen initializer application's domain guard. It also preserves iterator yield frames and old heaps. Its focused native gates pass; complete acceptance remains pending.
 The [current causal analysis](obligation-local-preparation-diagnosis.md) records
 the rejected preceding source gates, controlled generated-Boogie experiments,
 negative outcomes and multi-seed classification.
@@ -41,9 +41,15 @@ passes both native builds, both Boogie probes, the editor build and all 73
 structural controls in capture and normal inventory modes. The reviewed
 287-group inventory matches. Native version:
 `4.11.0+fcb2042d.review.6c3dfb23`; build source: `2165f4084`.
-Fresh registered/paired gates and complete baseline/default-off/enabled suite
-and standard-library comparisons use this build. Native acceptance, ordinary
-CI and independent soundness review are still pending.
+Its complete registered gate passes all 242 observations. Its complete paired
+gate passes all 656 observations with both resolvers and both axiom settings;
+all 232 expected-negative observations contain genuine invalid verification
+conditions. These include the repaired iterator context and initializer domain,
+original and subset positives, method/function preconditions, old allocation
+and reveal controls. This is focused acceptance, not repository acceptance.
+Complete baseline/default-off/enabled suite and standard-library comparisons
+use this build and are in progress. Ordinary CI and independent soundness
+review are still pending.
 
 The preceding preparation matrices are now complete (216 suite observations
 and 72 library observations). Their focused baseline/default-off vectors match
