@@ -1,6 +1,7 @@
 # Guarded contract preparation: current focused result
 
-Semantic candidate `338b82396`, corrected product pin `69dc750b5`, build source
+The preceding measured semantic candidate `338b82396`, corrected product pin
+`69dc750b5`, build source
 `861472a9d` and Z3 5.1.0 are the current measured inputs. The native version is
 `4.11.0+fcb2042d.review.4bb429b4`. The
 [build](https://github.com/erniecohen/dafny/actions/runs/37776297807) passes all ten
@@ -80,7 +81,9 @@ body on the same platform with Z3 5.1.0, both axiom settings and seeds 0, 1 and 
 The unchanged reparsed native control fails each seed. Removing the one empty
 certified-WF branch, or replacing it by `G ==> G` with its original guard,
 verifies every seed. All false exit controls fail, and both real exit checks are
-byte unchanged in the positive variants. The baseline controls verify.
+byte unchanged in the positive variants. The baseline controls verify. The
+static SMT prefix is identical, including background declarations, axioms and
+solver options; the dynamic verification condition changes with the branch.
 
 The proposed compiler correction uses the tautology, preserving guard terms
 without an empty control-flow split. Its fresh build and native result remain
