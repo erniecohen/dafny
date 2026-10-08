@@ -166,8 +166,13 @@ Porting implementation to PR #169 requires explicit owner approval first.
 ## Certified contract preparation candidate
 
 The new candidate `98b0dd509` implements the
-[certified-preparation argument](obligation-certified-preparation.md). Its build
-and new native gates are pending. Eight additional structural observations cover
+[certified-preparation argument](obligation-certified-preparation.md). Its [build](https://github.com/erniecohen/dafny/actions/runs/37731304101)
+passes all ten recorded stages, including both native platforms, both probes,
+the editor and the complete 363-test core unit suite. All 85 structural
+observations pass in capture and normal modes; the reviewed 287-group inventory
+matches independently. Compiled product pin: `072175269`; build source:
+`8d23f3fc8`; native version: `4.11.0+fcb2042d.review.77d7a235`.
+New native gates remain pending. Eight additional structural observations cover
 independent specification-domain proofs, a mandatory false first postcondition,
 conditional-reads anti-vacuity and recursive fuel identity after reads traversal.
 Five new native fixtures extend the complete registered scope to 274 observations
