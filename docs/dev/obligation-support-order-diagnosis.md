@@ -82,3 +82,11 @@ hash, the helper's parameter arity, and the exit call's invocation hash; no
 producer or assertion count changed. The reviewed inventory is updated to those
 source bytes. No proof verdict table is changed. A fresh normal inventory/core
 check and focused native verification remain required.
+
+The fresh [normal validation](https://github.com/erniecohen/dafny/actions/runs/37808373912)
+for product `fe6ddd1ba` passes all ten actual stages: both platform bundles and
+contract probes, editor compilation, 95 obligation tests in capture and normal
+modes, 373 core tests, and the byte-exact reviewed 287-group inventory. Focused
+native verification is running for the known targets and relevant controls at
+the original ceilings; it is still pending. No whole-suite/library iteration
+or development-line port has been launched.

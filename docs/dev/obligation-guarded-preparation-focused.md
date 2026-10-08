@@ -7,8 +7,10 @@ fragments retain the previous order. Actual checks, expression/fuel state,
 certified facts, source state and reveal scopes are retained. The
 [native support-order diagnosis](obligation-support-order-diagnosis.md) completes
 36 observations for the preceding `a709df226` product with faithful native
-controls, but does not validate this new compiler candidate. Fresh compilation
-and focused current-candidate verification remain pending. No whole-suite
+controls, but does not validate this new compiler candidate. The fresh [normal build](https://github.com/erniecohen/dafny/actions/runs/37808373912)
+passes all ten actual stages: 95 obligation tests in each mode, 373 core tests,
+the exact 287-group inventory, both platform bundles/probes and editor
+compilation. Focused current-candidate native verification remains pending. No whole-suite
 iteration or development port is being performed.
 
 **Newest correction:** semantic/product pin `a709df226` replaces empty
