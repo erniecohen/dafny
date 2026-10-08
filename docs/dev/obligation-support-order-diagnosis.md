@@ -60,3 +60,13 @@ ordering argument does not promise monotone solver cost. Fresh compilation and
 focused current-candidate evidence are required before crediting a product
 improvement. No source proof hint, ceiling, expected verdict, background axiom,
 global fuel policy, default-off branch or whole-suite iteration is changed.
+
+The first current-product build attempt
+([run 37805731745](https://github.com/erniecohen/dafny/actions/runs/37805731745))
+recorded compilation errors at the existing method-call and yield helper uses.
+The recording workflow itself succeeded, but its eight build/test stages failed;
+only package retrieval and version generation succeeded. No verification result
+is credited to that attempt. The compatibility repair preserves the original
+optional preparation-guard position and makes the new postcondition support
+parameter optional. Calls and yields therefore retain their preceding behavior.
+Fresh compilation and focused proof validation are still required.
