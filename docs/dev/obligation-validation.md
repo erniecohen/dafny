@@ -2,23 +2,26 @@
 
 The [requested review revisions](obligation-review-change-request.md) govern the
 single-check replacement in PR #168. The supported semantic revision is
-`8ddf1458b`, with structural-fixture selection corrected in `98a174573`.
-Current native proof and complete suite/standard-library acceptance remain
-pending. The [latest completed diagnostic build](https://github.com/erniecohen/dafny/actions/runs/37709973478)
-compiled both native platforms and the editor, and passed 59 of 61 structural
-controls. Its two old-array controls selected both the contract-WF and body
-implementations; the current fixture selects the body. These are fixture failures,
-not failed native proofs. The normal inventory gate was intentionally stale.
+`2ad5d25a5`, incorporating the exact old-array allocation representation from
+`64d02eb77` and the closed universal layer rule. Native source and complete
+suite/standard-library acceptance remain pending.
 
-The captured 282 producer groups have been reviewed against the source audit.
-All captured verifier file hashes match the current source. The registry now
-records the single-check contract/type adapters and locally closed initializer,
-sequence, invariant, yield, opaque, witness, forall and calculation checks.
-Normal inventory and the corrected structural controls require a fresh build.
-The cast control confirms one enabled target check versus two legacy checks.
-The fingerprint now retains binary/unary opcode identity as well as lexical
-binder identity; implication/conjunction and addition/subtraction have negative
-controls. Old-array reads use one canonical allocation predicate.
+The [current diagnostic build](https://github.com/erniecohen/dafny/actions/runs/37712822558)
+compiled both native platforms and the editor, and passed all 63 structural
+controls. The two newest controls compare the recursive predicate layers of
+an implicit range-bound type constraint with an explicit universal assertion,
+under both resolvers. The normal inventory gate rejected its outdated registry;
+the newly captured 284 producer groups have now been reviewed and committed.
+Every captured verifier file hash matches the current source. The normal gate
+requires a fresh run against this registry; diagnostic capture is not acceptance.
+
+The [preceding diagnostic build](https://github.com/erniecohen/dafny/actions/runs/37711275949)
+passed all 61 earlier structural controls, including exact old-array allocation
+identity under both resolvers. Its normal registry was also outdated. The cast
+control confirms one enabled target check versus two legacy checks. The structural
+fingerprint retains lexical binder and binary/unary opcode identities, with
+negative controls for shadowing, implication/conjunction and addition/subtraction.
+These builds execute no native proofs.
 
 The [foundation build](https://github.com/erniecohen/dafny/actions/runs/37672843215)
 completed both native builds and all 46 structural/inventory controls. This includes
