@@ -1,6 +1,9 @@
 name: Obligation regression harness build
 on:
   workflow_dispatch:
+  push:
+    branches: [scratch/codex/issue100-preservation-build]
+    paths: [.github/workflows/obligation-regression-build.yml]
 permissions:
   contents: read
 jobs:
