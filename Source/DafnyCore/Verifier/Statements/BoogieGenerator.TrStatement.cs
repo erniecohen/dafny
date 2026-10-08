@@ -74,7 +74,7 @@ public partial class BoogieGenerator {
 
           if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
             if (codeContext is MethodOrConstructor returningMethod) {
-              CheckMethodPostconditions(returningMethod, returnStmt1.Origin, builder, etran);
+              CheckMethodPostconditions(returningMethod, returnStmt1.Origin, builder, locals, etran);
             }
           }
 
@@ -143,7 +143,7 @@ public partial class BoogieGenerator {
 
           foreach (var p in iter.YieldEnsures) {
             var ss = options.Get(CommonOptionBag.ConsistentObligationChecks)
-              ? LowerProposition(builder.Context, p.E, yeEtran).Pieces.ToList()
+              ? LowerDeclaredProposition(p.E, builder, locals, yeEtran).Pieces.ToList()
               : TrSplitExpr(builder.Context, p.E, yeEtran, true, out _);
             foreach (var split in ss) {
               if (split.Tok.IsInherited(currentModule)) {

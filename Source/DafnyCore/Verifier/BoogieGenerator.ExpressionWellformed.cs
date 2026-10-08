@@ -1754,11 +1754,12 @@ namespace Microsoft.Dafny {
 
       var sourceType = init.Type.AsArrowType;
       Contract.Assert(sourceType.Args.Count == dims.Count);
+      Bpl.Expr initializerValue = null;
       var args = Concat(
         Map(Enumerable.Range(0, dims.Count), ii => TypeToTy(sourceType.Args[ii])),
         Cons(TypeToTy(sourceType.Result),
           Cons(etran.HeapExpr,
-            Cons(etran.TrExpr(init),
+            Cons(initializerValue = etran.TrExpr(init),
               indices.ConvertAll(idx => (Bpl.Expr)FunctionCall(tok, BuiltinFunction.Box, null, idx))))));
       // check precond
       var pre = FunctionCall(tok, Requires(dims.Count), Bpl.Type.Bool, args);
@@ -1811,10 +1812,20 @@ namespace Microsoft.Dafny {
       CheckElementInitReturnSubrangeCheck(dims, init, out var dafnySource, out var checkContext);
       var cre = GetSubrangeCheck(apply.tok, apply, sourceType.Result, elementType, dafnySource, checkContext, out var subrangeDesc);
       if (cre != null) {
+        Bpl.Expr valueCanCall = null;
+        if (this.options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+          // The constraint's value is the frozen initializer application. Its
+          // domain is part of CanCall(C(init(indices))), not a new assumption.
+          // The separate existing range-bound domain check remains mandatory.
+          var application = new ApplyExpr(tok, new BoogieWrapper(initializerValue, init.Type),
+            bvs.ConvertAll(indexBv => (Expression)new BoogieWrapper(new Bpl.IdentifierExpr(indexBv.tok, indexBv), Type.Int)),
+            Token.NoToken) { Type = sourceType.Result };
+          valueCanCall = etran.CanCallAssumption(application);
+        }
         // assert (forall i0,i1,i2,... ::
         //            0 <= i0 < ... && ... ==> init.requires(i0,i1,i2,...) is Subtype);
         CheckTypeMembership(init.Origin, cre, apply, sourceType.Result, elementType, subrangeDesc,
-          builder, etran, expression => new Bpl.ForallExpr(tok, bvs, BplImp(ante, expression)), forget: true, universalClosure: true);
+          builder, etran, expression => new Bpl.ForallExpr(tok, bvs, BplImp(ante, expression)), forget: true, universalClosure: true, valueCanCall: valueCanCall);
       }
 
       if (forArray) {

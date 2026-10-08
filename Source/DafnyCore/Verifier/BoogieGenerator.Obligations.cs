@@ -20,14 +20,14 @@ public partial class BoogieGenerator {
   private PropositionLowering LowerProposition(BodyTranslationContext context, Expression condition,
     ExpressionTranslator etran, bool applyInduction = true, int heightLimit = int.MaxValue,
     ObligationPreparation preparation = ObligationPreparation.DeclaredContract, Bpl.Expr guard = null,
-    bool universalClosure = false) {
+    bool universalClosure = false, ExpressionTranslator preparedTranslator = null) {
     var explicitAssertion = preparation == ObligationPreparation.CheckedExpression;
     var savedStatement = stmtContext;
     var savedAdjustment = adjustFuelForExists;
     // Lower the actual implicit check with the existing assertion policy at
     // this program point. Explicit assertions retain their original translator,
     // statement context, fuel choices and splitting decisions.
-    var checking = explicitAssertion ? etran : etran.CloneForObligation();
+    var checking = preparedTranslator ?? (explicitAssertion ? etran : etran.CloneForObligation());
     try {
       if (!explicitAssertion) {
         stmtContext = StmtType.ASSERT;
@@ -57,6 +57,26 @@ public partial class BoogieGenerator {
         stmtContext = savedStatement;
         adjustFuelForExists = savedAdjustment;
       }
+    }
+  }
+
+  private PropositionLowering LowerDeclaredProposition(Expression condition,
+    BoogieStmtListBuilder builder, Variables locals, ExpressionTranslator etran, Bpl.Expr preparationGuard = null) {
+    // Declared can-call permission alone omits the immediate assertion's local
+    // WF setup. Run that same source-only preparation, then lower the sole P
+    // check with the same fresh translator and its resulting fuel state.
+    var savedStatement = stmtContext;
+    var savedAdjustment = adjustFuelForExists;
+    var checking = etran.CloneForObligation();
+    try {
+      stmtContext = StmtType.ASSERT;
+      adjustFuelForExists = true;
+      BplIfIf(condition.Origin, preparationGuard != null, preparationGuard, builder,
+        preparation => TrStmt_CheckWellformed(condition, preparation, locals, checking, false));
+      return LowerProposition(builder.Context, condition, etran, preparedTranslator: checking);
+    } finally {
+      stmtContext = savedStatement;
+      adjustFuelForExists = savedAdjustment;
     }
   }
 
@@ -140,19 +160,27 @@ public partial class BoogieGenerator {
   }
 
   private void CheckMethodPostconditions(MethodOrConstructor method, IOrigin returnOrigin,
-    BoogieStmtListBuilder builder, ExpressionTranslator etran) {
-    CheckExitPostconditions(method.Ens, returnOrigin, builder, etran, true);
+    BoogieStmtListBuilder builder, Variables locals, ExpressionTranslator etran) {
+    CheckExitPostconditions(method.Ens, returnOrigin, builder, locals, etran, true);
   }
 
   private void CheckExitPostconditions(List<AttributedExpression> clauses, IOrigin returnOrigin,
-    BoogieStmtListBuilder builder, ExpressionTranslator etran, bool reverifyInherited) {
+    BoogieStmtListBuilder builder, Variables locals, ExpressionTranslator etran, bool reverifyInherited) {
     // Contract WF establishes the same declared permissions in clause order.
     // This is the sole implementation proof of each clause, at its actual exit
     // while body reveals are active. The procedure copy is nonchecking.
     if (assertionOnlyFilter != null) { return; }
     foreach (var ensures in ConjunctsOf(clauses)) {
       builder.Add(TrAssumeCmd(ensures.E.Origin, etran.CanCallAssumptionForVerification(ensures.E)));
-      var lowering = LowerProposition(builder.Context, ensures.E, etran);
+      // An inherited clause must not introduce unguarded local WF assertions.
+      // Locally declared clauses still receive their immediate assertion's WF,
+      // even if splitting subsequently inlines an inherited callee expression.
+      Bpl.Expr preparationGuard = ensures.E.Origin.IsInherited(currentModule)
+        ? reverifyInherited
+          ? new Bpl.IdentifierExpr(returnOrigin, "$_reverifyPost", Bpl.Type.Bool)
+          : Bpl.Expr.False
+        : null;
+      var lowering = LowerDeclaredProposition(ensures.E, builder, locals, etran, preparationGuard);
       var (error, success) = CustomErrorMessage(ensures.Attributes);
       var description = new EnsuresDescription(ensures.E, error, success);
       foreach (var piece in lowering.Pieces) {

@@ -842,7 +842,7 @@ namespace Microsoft.Dafny {
         AssumeCanCallForByMethodDecl(m, builder);
       }
       if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
-        CheckMethodPostconditions(m, m.Origin, builder, etran);
+        CheckMethodPostconditions(m, m.Origin, builder, localVariables, etran);
       }
       var stmts = builder.Collect(m.Body.StartToken); // EndToken might make more sense, but it requires updating most of the regression tests.
       DefiniteAssignmentTrackers = beforeOutTrackers;

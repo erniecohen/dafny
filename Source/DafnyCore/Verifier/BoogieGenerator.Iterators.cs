@@ -322,7 +322,7 @@ namespace Microsoft.Dafny {
       Bpl.StmtList stmts;
       if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
         TrStmtList([iter.Body], builder, localVariables, etran, null, processLabels: false);
-        CheckExitPostconditions(iter.Ensures, iter.Origin, builder, etran, false);
+        CheckExitPostconditions(iter.Ensures, iter.Origin, builder, localVariables, etran, false);
         stmts = builder.Collect(iter.Body.StartToken);
       } else {
         stmts = TrStmt2StmtList(builder, iter.Body, localVariables, etran);
