@@ -142,3 +142,6 @@ further resource investigation. Five suite targets still fail at some seeds, so
 targeted enabled acceptance remains false. Original sources, ceilings, hints,
 project settings and expected verdicts were not changed. No whole-suite run is
 an iteration step for these remaining cases.
+
+The [remaining-resource assertion comparison](obligation-remaining-resource-assertions.md)
+records the completed three-case follow-up and its terminal-scope limit.
