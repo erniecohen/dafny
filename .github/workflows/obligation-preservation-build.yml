@@ -35,6 +35,17 @@ jobs:
             echo "$?" > out/core.exit
             dotnet test Source/DafnyCore.Test -c Release --no-build --filter FullyQualifiedName~Obligation > out/core-inventory-gate.log 2>&1
             echo "$?" > out/core-inventory-gate.exit
+            curl -fsSLo z3-metadata.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+            metadata_download=$?
+            echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3-metadata.zip' | sha256sum -c - > out/metadata-solver.log 2>&1
+            metadata_hash=$?
+            if [ "$metadata_download" -eq 0 ] && [ "$metadata_hash" -eq 0 ]; then
+              unzip -q z3-metadata.zip
+              chmod +x z3-5.1.0-x64-glibc-2.39/bin/z3
+              export PATH="$PWD/z3-5.1.0-x64-glibc-2.39/bin:$PATH"
+              z3 --version >> out/metadata-solver.log 2>&1
+            fi
+            # Core unit tests inspect solver version metadata; no proof is run.
             dotnet test Source/DafnyCore.Test -c Release --no-build > out/core-all.log 2>&1
             echo "$?" > out/core-all.exit
             mkdir -p out/tests
