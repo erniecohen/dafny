@@ -41,6 +41,15 @@ for refresh in [False,True]:
 print("PASS implicit subset constraints")
 for refresh in [False,True]:
  for axioms in [False,True]:
+  for name in ["sequence-constraint","sequence-empty","array-initializer"]:
+   code,output=verify(name,refresh,axioms)
+   assert code==0,output
+  for name in ["negative-sequence-constraint","negative-array-initializer"]:
+   code,output=verify(name,refresh,axioms)
+   assert code==4 and "error" in output and "parse errors" not in output,output
+print("PASS range-bound collection constraints")
+for refresh in [False,True]:
+ for axioms in [False,True]:
   for enabled in [False,True]:
    code,output=verify("terminal-reveal-scope",refresh,axioms,enabled=enabled)
    assert code==0,output

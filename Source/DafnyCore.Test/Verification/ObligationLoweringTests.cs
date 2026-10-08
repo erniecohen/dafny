@@ -18,7 +18,7 @@ public class ObligationLoweringTests {
     var reporter = new BatchErrorReporter(options);
     var result = await ProgramParser.Parse(source, new Uri("untitled:obligation.dfy"), reporter);
     await new ProgramResolver(result.Program).Resolve(CancellationToken.None);
-    Assert.Equal(0, reporter.ErrorCount);
+    Assert.True(reporter.ErrorCount == 0, string.Join("\n", reporter.AllMessages.Select(message => message.Message)));
     return BoogieGenerator.Translate(result.Program, reporter, new BoogieGenerator.TranslatorFlags(options) {
       ObligationLowered = observer
     }).Select(pair => pair.Item2).ToList();
@@ -84,10 +84,10 @@ public class ObligationLoweringTests {
   [Fact]
   public async Task QuantifiedInitializerChecksVisibleConstraintWithinItsIndexRange() {
     const string source = "type S = x:int | x>=0 witness 0 " +
-      "ghost function G(i:int):int { i } ghost function F(n:nat):seq<S> { seq(n, G) }";
+      "function G(i:int):int { i } method F(n:nat) returns (a:array<S>) { a := new S[n](G); }";
     var programs = await Translate(source, true);
     var implementation = programs.SelectMany(p => p.Implementations)
-      .Single(p => p.Name.Contains("CheckWellformed") && p.Name.EndsWith(".F"));
+      .Single(p => p.Name.Contains("Impl") && p.Name.EndsWith(".F"));
     var checks = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
       .Where(c => c.Description is SubrangeCheck).ToList();
     Assert.NotEmpty(checks);
@@ -97,9 +97,24 @@ public class ObligationLoweringTests {
       Assert.Equal(0, Bpl.QKeyValue.FindIntAttribute(c.Attributes, "subsumption", -1)));
   }
 
+  [Fact]
+  public async Task SequenceResultsDeriveMembershipFromRangeBoundElementChecks() {
+    const string source = "type S = x:int | x>=0 witness 0 " +
+      "ghost function G(i:int):int { i } ghost function F(n:nat):seq<S> { seq(n, G) }";
+    var programs = await Translate(source, true);
+    var implementation = programs.SelectMany(p => p.Implementations)
+      .Single(p => p.Name.Contains("CheckWellformed") && p.Name.EndsWith(".F"));
+    var checks = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+      .Where(c => c.Description is SubrangeCheck).ToList();
+    Assert.NotEmpty(checks);
+    Assert.Contains(checks, c => c.Expr is Bpl.ForallExpr);
+    Assert.DoesNotContain(checks, c => ObligationFingerprint.Expression(c.Expr).Contains("Tclass._module.S"));
+  }
+
   [Theory]
   [InlineData("lemma L(x:int) requires x>=0 { assert P(x); while false invariant P(x) {} }")]
   [InlineData("lemma L(x:int) requires x>=0 { assert P(x); opaque ensures P(x) {} }")]
+  [InlineData("lemma L(x:int) requires x>=0 { forall i | i==x ensures P(i) { assert P(i); } }")]
   public async Task InvariantAndOpaqueChecksUseImmediateAssertionContent(string body) {
     var packages = new List<BoogieGenerator.PropositionLowering>();
     await Translate("ghost predicate P(x:int) { x>=0 } " + body, true, observer: packages.Add);
@@ -113,13 +128,13 @@ public class ObligationLoweringTests {
 
   [Fact]
   public async Task IteratorExitsCheckLocallyWithoutDuplicateProcedureEnsures() {
-    const string source = "iterator I(b:bool) ensures true { if b { return; } }";
+    const string source = "iterator I() yields (x:int) ensures true { yield 0; }";
     var programs = await Translate(source, true);
     var implementation = programs.SelectMany(p => p.Implementations)
       .Single(p => p.Name.Contains("Impl") && p.Name.EndsWith(".I"));
     var checks = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
       .Where(c => c.Description is EnsuresDescription).ToList();
-    Assert.Equal(2, checks.Count);
+    Assert.Single(checks);
     var procedure = programs.SelectMany(p => p.TopLevelDeclarations).OfType<Bpl.Procedure>()
       .Single(p => p.Name == implementation.Name);
     Assert.All(procedure.Ensures, ensures => Assert.True(ensures.Free || ensures.Description is not EnsuresDescription));
@@ -391,7 +406,7 @@ public class ObligationLoweringTests {
     var original = await Checks(false);
     var enriched = await Checks(true);
     Assert.NotEmpty(original);
-    Assert.Single(original);
+    Assert.Equal(2, original.Length); // Legacy rechecked the target-typed converted result.
     Assert.Single(enriched);
     Assert.Contains("==>", enriched[0]);
   }

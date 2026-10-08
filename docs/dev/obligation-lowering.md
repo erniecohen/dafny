@@ -112,7 +112,10 @@ types retain their specialized representation rules.
 
 Assignments, method/function results, constructor arguments, default/constant
 values, collection entries and lambda results enter through this type recipe.
-Quantified array/sequence initializer membership universally closes its actual
+Sequence covariance checks close the actual element constraints over the existing
+sequence-index range, then derive sequence membership with the existing prelude
+axiom. Hidden element constraints remain abstract. No collection/body terms are
+searched for support. Quantified array/sequence initializer membership closes its actual
 constraint checks over the existing index variables and range. Every guarded
 piece is closed; no index variable escapes. Its original check-and-forget policy
 is retained, so it adds no continuation membership assumption or summary.
@@ -152,7 +155,7 @@ before the normal gate passes.
 | ordered-expression-wf | Nullness, bounds, map/set domains, destructor queries and division/modulo use their operational Boogie constructors at ordered WF sites. These already express the same immediate scalar assertion predicates; they need no added proof package. |
 | type-witness-conversion | Guarded visible conversion constraints share the recipe; primitive range, integrality, character and ordinal facts retain their exact operational formulas. |
 | membership-frame-spec-bridges | Type membership adapters share the recipe. Type-test value translation remains a Boolean symbolic test rather than a proof obligation. |
-| forall-proof-export, statement-wf-calculations | Source proof/calc splitting and arbitrary-bound-variable export retain their trusted scope and quantification; existence/update/heap-state obligations retain specialized proof rules. |
+| forall-proof-export, statement-wf-calculations | Actual source proof/calc checks use assertion lowering; arbitrary-bound-variable export retains its trusted scope and quantification; existence/update/heap-state obligations retain specialized proof rules. |
 | termination | Lexicographic decrease/boundedness over frozen measures; specialized proof rule, not a single independently assertable source clause. |
 | definite-assignment | Internal tracker-bit state invariant; no source-expression counterpart. |
 | if-guards, match-completeness | Ordered guard/query/domain predicates, pattern membership and binding scopes; existential witness/completeness proof rules retained. |

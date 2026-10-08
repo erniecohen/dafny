@@ -75,8 +75,6 @@ public partial class BoogieGenerator {
           if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
             if (codeContext is MethodOrConstructor returningMethod) {
               CheckMethodPostconditions(returningMethod, returnStmt1.Origin, builder, etran);
-            } else if (codeContext is IteratorDecl returningIterator) {
-              CheckExitPostconditions(returningIterator.Ensures, returnStmt1.Origin, builder, etran, false);
             }
           }
 
@@ -644,11 +642,20 @@ public partial class BoogieGenerator {
             }
           }
           TrStmt_CheckWellformed(CalcStmt.Rhs(stmt.Steps[i]), b, locals, etran, false);
-          var ss = TrSplitExpr(builder.Context, stmt.Steps[i], etran, true, out var splitHappened);
+          var lowering = options.Get(CommonOptionBag.ConsistentObligationChecks)
+            ? LowerProposition(b.Context, stmt.Steps[i], etran) : null;
+          List<SplitExprInfo> ss;
+          bool splitHappened;
+          if (lowering != null) {
+            ss = lowering.Pieces.ToList();
+            splitHappened = lowering.SplitHappened;
+          } else {
+            ss = TrSplitExpr(builder.Context, stmt.Steps[i], etran, true, out splitHappened);
+          }
           // assert step:
           AddComment(b, stmt, "assert line" + i.ToString() + " " + (stmt.StepOps[i] ?? stmt.Op).ToString() + " line" + (i + 1).ToString());
           if (!splitHappened) {
-            b.Add(AssertAndForget(b.Context, stmt.Lines[i + 1].Origin, etran.TrExpr(stmt.Steps[i]), new CalculationStep(stmt.Steps[i], stmt.Hints[i])));
+            b.Add(AssertAndForget(b.Context, stmt.Lines[i + 1].Origin, lowering != null ? ss[0].E : etran.TrExpr(stmt.Steps[i]), new CalculationStep(stmt.Steps[i], stmt.Hints[i])));
           } else {
             foreach (var split in ss) {
               if (split.IsChecked) {

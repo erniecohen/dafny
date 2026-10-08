@@ -768,5 +768,40 @@
     "name": "nonvacuity-boolean-value-membership",
     "expected": 4,
     "group": "negative"
+  },
+  {
+    "name": "sequence-constraint",
+    "expected": 0,
+    "group": "range-bound-constraints"
+  },
+  {
+    "name": "sequence-constraint-explicit",
+    "expected": 0,
+    "group": "range-bound-constraints"
+  },
+  {
+    "name": "sequence-empty",
+    "expected": 0,
+    "group": "range-bound-constraints"
+  },
+  {
+    "name": "negative-sequence-constraint",
+    "expected": 4,
+    "group": "range-bound-constraints"
+  },
+  {
+    "name": "array-initializer",
+    "expected": 0,
+    "group": "range-bound-constraints"
+  },
+  {
+    "name": "array-initializer-explicit",
+    "expected": 0,
+    "group": "range-bound-constraints"
+  },
+  {
+    "name": "negative-array-initializer",
+    "expected": 4,
+    "group": "range-bound-constraints"
   }
 ]

@@ -1031,8 +1031,13 @@ namespace Microsoft.Dafny {
                   !membershipTarget.IsRefType && !ee.E.Type.IsTraitType && !membershipTarget.IsArrowType) {
                 CheckSubrange(unaryExpr.Origin, etran.TrExpr(ee.E), ee.E.Type, ee.ToType,
                   ee.E, builder, ee.messagePrefix, etran: etran);
+                if (options.Get(CommonOptionBag.ConsistentObligationChecks)) { break; }
               }
               CheckResultToBeInType(unaryExpr.Origin, ee.E, ee.ToType, locals, builder, etran, ee.messagePrefix);
+              // The conversion above has established the target's constraints
+              // for this exact converted value. Do not check the same target
+              // again merely because the expression now has that target type.
+              if (options.Get(CommonOptionBag.ConsistentObligationChecks)) { break; }
             }
 
             CheckResultToBeInType(expr.Origin, expr, expr.Type, locals, builder, etran);

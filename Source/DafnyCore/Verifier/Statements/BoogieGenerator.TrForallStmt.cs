@@ -556,7 +556,10 @@ public partial class BoogieGenerator {
       foreach (var ens in ConjunctsOf(forallStmt.Ens)) {
         definedness.Add(TrAssumeCmd(ens.E.Origin, etran.CanCallAssumptionForVerification(ens.E)));
 
-        foreach (var split in TrSplitExpr(definedness.Context, ens.E, etran, true, out var splitHappened)) {
+        var pieces = options.Get(CommonOptionBag.ConsistentObligationChecks)
+          ? LowerProposition(definedness.Context, ens.E, etran).Pieces.ToList()
+          : TrSplitExpr(definedness.Context, ens.E, etran, true, out _);
+        foreach (var split in pieces) {
           if (split.IsChecked) {
             definedness.Add(Assert(split.Tok, split.E, new ForallPostcondition(ens.E), definedness.Context));
           }
