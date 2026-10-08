@@ -105,3 +105,44 @@ New local WF setup, earlier-clause publication and moving the check from
 procedure ensures into the body change the VC; their causal effects require
 controlled replay before any further product change. No case-specific proof
 hint, cap increase or source special case is made.
+
+## Opaque existential fuel handoff
+
+A subsequent recursive-predicate inspection found a separate mismatch in
+`8e7f54505`'s opaque block adapter. The proposition
+`(exists x :: (exists y :: P(x+y)) && P(x)) == (exists z :: P(z))`
+uses a recursive `P`. After local WF consumed the one-shot existential fuel
+adjustment, the guarded lowering adapter reset it. The opaque check's left
+existential used one layer while the immediate explicit assertion used two;
+the right existential retained two. Both resolvers had the same mismatch.
+A comparison with a nonrecursive predicate would not exercise this fuel
+difference and is insufficient as a regression control.
+
+The repair preserves the same fresh translator and consumed preparation state
+through guarded lowering, retaining the opaque check's original publication
+policy. Four structural controls compare the recursive equality in method and
+opaque contracts with the immediate assertion under both resolvers and require
+a fuel term to be present. This correction needs its own passing build and
+fresh native gates; earlier completed and running gates remain evidence of
+their recorded revisions. No implementation is ported to PR #169.
+
+## Power causal replay
+
+A complete 24-observation generated-Boogie replay, at seeds 0, 1 and 7, agrees
+on both native platforms. The unchanged default-off control verifies; the
+enabled control fails. Removing only exit WF preparation makes every seed
+verify. Removing the first clause's summary or check, or raising its summary
+layer, does not. Restoring checked procedure ensures and removing local exit
+preparation also verifies. Every false-exit control remains invalid. These
+variants isolate local preparation as the cause of the solver result; omitting
+required preparation is excluded as a product workaround.
+
+An actual source-level replay of the current build also completes 24
+observations with invalid false controls. Appending only the second quantified
+postcondition as an explicit assertion verifies at all three seeds with the
+option off; appending both postconditions as explicit assertions gives
+error/verified/error. With the option on, original, second-only and both-assert
+variants fail at all three seeds. These source insertions are diagnosis only.
+The partly successful normal assertion path is classified as solver variance
+under S13. This evidence does not establish uniform improvement or discharge
+the enabled Power regression.

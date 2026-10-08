@@ -2,8 +2,8 @@
 
 The [requested review revisions](obligation-review-change-request.md) govern the
 single-check replacement in PR #168. The supported semantic revision is now
-`8e7f54505`, restoring source-local assertion well-formedness preparation and the
-frozen initializer application's domain guard. It also preserves iterator yield frames and old heaps. Its focused native gates pass; complete acceptance remains pending.
+`58d8ac112`, restoring source-local assertion well-formedness preparation and the
+frozen initializer application's domain guard. It also preserves iterator yield frames and old heaps. Its own build and native acceptance are pending after the opaque existential fuel correction.
 The [current causal analysis](obligation-local-preparation-diagnosis.md) records
 the rejected preceding source gates, controlled generated-Boogie experiments,
 negative outcomes and multi-seed classification.
@@ -36,7 +36,7 @@ fresh complete native gates; the corrected build is recorded below. Completed
 earlier multi-seed/library inputs remain diagnostic evidence of their recorded revision. Required complete suite
 and standard-library gates remain pending.
 
-The [corrected iterator build](https://github.com/erniecohen/dafny/actions/runs/37719808505)
+The [preceding corrected iterator build](https://github.com/erniecohen/dafny/actions/runs/37719808505)
 passes both native builds, both Boogie probes, the editor build and all 73
 structural controls in capture and normal inventory modes. The reviewed
 287-group inventory matches. Native version:
@@ -47,8 +47,9 @@ all 232 expected-negative observations contain genuine invalid verification
 conditions. These include the repaired iterator context and initializer domain,
 original and subset positives, method/function preconditions, old allocation
 and reveal controls. This is focused acceptance, not repository acceptance.
-Complete baseline/default-off/enabled suite and standard-library comparisons
-use this build and are in progress. Ordinary CI and independent soundness
+Complete baseline/default-off/enabled comparisons of that build remain
+diagnostic evidence of the iterator revision. They cannot validate the later
+opaque existential correction. Ordinary CI and independent soundness
 review are still pending.
 
 The preceding preparation matrices are now complete (216 suite observations
@@ -57,6 +58,12 @@ exactly, and the unchanged original succeeds enabled across three seeds. The
 Power target fails enabled at every seed in that revision. Its higher checked
 fuel layer and body result are retained; the [analysis](obligation-local-preparation-diagnosis.md)
 records the stable error separately from partially successful seed movements.
+
+The current opaque correction preserves the consumed existential fuel state
+through guarded lowering. Recursive-predicate equality controls cover method
+and opaque contracts under both resolvers. A fresh build and native gates are
+required; the [diagnosis](obligation-local-preparation-diagnosis.md) records the
+actual one-layer mismatch and the separate Power causal replay.
 
 The [first repair build](https://github.com/erniecohen/dafny/actions/runs/37717196930)
 compiled both platforms and the editor but rejected the inherited fixture's

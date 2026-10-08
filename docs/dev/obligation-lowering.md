@@ -211,3 +211,9 @@ correctness repairs. Source hints, caps and batching remain unchanged.
 Historical additive-design results are retained in the validation reports for
 regression triage, and do not validate this replacement. PR #169 remains pending
 approval and requires independent development-line evidence after porting.
+
+Opaque contracts preserve the same fresh translator and consumed existential
+adjustment from source-local WF through the sole guarded proposition check,
+as declared exits do. Recursive-predicate equality controls exercise this
+handoff under both resolvers; a nonrecursive predicate cannot establish fuel
+identity. Original command publication remains separate from checked content.
