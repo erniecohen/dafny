@@ -1,3 +1,4 @@
+using DafnyCore.Verifier;
 using Microsoft.Dafny;
 using Bpl = Microsoft.Boogie;
 
@@ -66,7 +67,7 @@ public class ObligationCertifiedPreparationTests {
 
   [Fact]
   public void UnchangedPreparationKeepsLabelOrigins() {
-    var context = new BoogieGenerator.BodyTranslationContext(false);
+    var context = new BodyTranslationContext(false);
     var source = new BoogieStmtListBuilder(null, null, context);
     var origin = new Token(3, 4);
     source.Add(new Bpl.AssumeCmd(Bpl.Token.NoToken, Bpl.Expr.True));
