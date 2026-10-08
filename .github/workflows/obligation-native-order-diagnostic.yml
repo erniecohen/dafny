@@ -1,0 +1,51 @@
+name: Native obligation support-order diagnostic build
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - name: Build pristine and instrumented native drivers without solver execution
+        run: |
+          set +e
+          mkdir -p out
+          git rev-parse HEAD > out/source.txt
+          cp .github/review/base out/product-base.txt
+          sh Scripts/fetch-boogie-packages.sh > out/packages.log 2>&1
+          echo "$?" > out/packages.exit
+          sh .github/review/version.sh > out/version.txt 2>&1
+          version_result=$?
+          echo "$version_result" > out/version.exit
+          if [ "$version_result" -eq 0 ]; then
+            revision=$(sed -n 's/^revision=//p' out/version.txt)
+            RUNTIME_IDENTIFIER=osx-arm64 dotnet publish Source/Dafny/Dafny.csproj -c Release -r osx-arm64 --self-contained -o out/pristine-osx-arm64 -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$revision" > out/pristine.log 2>&1
+            pristine_result=$?
+            echo "$pristine_result" > out/pristine.exit
+            if [ "$pristine_result" -eq 0 ]; then
+              python3 .github/review/native-order-diagnostic/enable.py > out/instrumentation.log 2>&1
+              instrumentation_result=$?
+              echo "$instrumentation_result" > out/instrumentation.exit
+              if [ "$instrumentation_result" -eq 0 ]; then
+                RUNTIME_IDENTIFIER=osx-arm64 dotnet publish Source/Dafny/Dafny.csproj -c Release -r osx-arm64 --self-contained -o out/diagnostic-osx-arm64 -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$revision" > out/diagnostic.log 2>&1
+                echo "$?" > out/diagnostic.exit
+                cmp out/pristine-osx-arm64/DafnyCore.dll out/diagnostic-osx-arm64/DafnyCore.dll > out/core-identity.log 2>&1
+                echo "$?" > out/core-identity.exit
+                sha256sum out/pristine-osx-arm64/DafnyCore.dll out/diagnostic-osx-arm64/DafnyCore.dll out/pristine-osx-arm64/DafnyDriver.dll out/diagnostic-osx-arm64/DafnyDriver.dll > out/assemblies.sha256
+              fi
+            fi
+          fi
+          find out -name '*.pdb' -delete
+          cat out/*.exit
+          tar -czf native-order-diagnostic-build.tar.gz out
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-order-diagnostic-build
+          path: native-order-diagnostic-build.tar.gz
+          retention-days: 14
