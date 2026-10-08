@@ -1,5 +1,13 @@
 # Obligation lowering validation status
 
+**Latest evidence:** product `fe6ddd1ba` has [68 focused suite/control observations](obligation-guarded-preparation-focused.md)
+and [92 completed known-library/control observations](obligation-current-focused-library.md).
+The library result explicitly combines 84 preserved observations from a harness-failed
+attempt and eight controls from its completed follow-up. Remaining resource failures
+and strict default-off cost acceptance stay open. No whole-suite/library run was
+launched for this revision. Complete-gate results below belong to earlier pinned
+revisions and cannot establish current acceptance.
+
 **Current focused result:** semantic/product `fe6ddd1ba`, with the
 [accepted compiler build](https://github.com/erniecohen/dafny/actions/runs/37808373912),
 completes 68 native observations on macOS arm64 with Z3 5.1.0, both additional-axiom
@@ -40,7 +48,7 @@ approval requirement before porting to the development line.
 The [requested review revisions](obligation-review-change-request.md) govern the
 single-check replacement in PR #168. The preceding semantic correction is `98b0dd509`, compiled product `072175269`,
 built from `8d23f3fc8`. Its structural, registered/paired and normal registered/editor
-integration gates pass. Its [complete current suite/library gates](obligation-current-complete-gates.md)
+integration gates pass. Its [historical complete suite/library gates](obligation-current-complete-gates.md)
 finish under both axiom settings and reject enabled acceptance. Exact default-off
 suite verdict/resource compatibility passes; strict default-off library resource
 equality remains rejected despite unchanged verdicts and operational Boogie.

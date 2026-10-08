@@ -1,6 +1,14 @@
-# Complete current obligation-check gates
+# Historical complete obligation-check gates
 
-**Newest correction:** semantic/product pin `a709df226` replaces empty
+**Latest evidence:** product `fe6ddd1ba` has [68 focused suite/control observations](obligation-guarded-preparation-focused.md)
+and [92 completed known-library/control observations](obligation-current-focused-library.md).
+The library result explicitly combines 84 preserved observations from a harness-failed
+attempt and eight controls from its completed follow-up. Remaining resource failures
+and strict default-off cost acceptance stay open. No whole-suite/library run was
+launched for this revision. Complete-gate results below belong to earlier pinned
+revisions and cannot establish current acceptance.
+
+**Preceding correction:** semantic/product pin `a709df226` replaces empty
 certified-WF branches by `G ==> G`, retaining the guard terms without an empty
 control-flow split. Its [build](https://github.com/erniecohen/dafny/actions/runs/37781426875)
 passes all ten actual stages, both platforms and probes, the editor build,
