@@ -42,3 +42,19 @@ also cannot explain every movement in the complete library. The initial replay
 attempt placed the literal equalities before their declarations and was rejected
 as invalid input; the corrected fresh complete replay requires error-free solver
 execution and preserves that rejected attempt separately.
+
+## Fresh additional-axiom observation
+
+The completed cost matrix supplies another same-executor MembersSpec pair with
+additional axioms enabled. Its baseline/default-off Boogie is again
+byte-identical while resource counts differ. A fresh read-only analysis finds an
+explicit bijective generated-symbol rename after which the entire dynamic
+suffix and static-prefix command multiset are identical. The non-literal
+background assertion sequence is also identical. Moving a literal declaration
+changes declaration positions and generated names; the same two ground literal
+equalities appear at different static positions.
+
+This extends the structural ordering observation to the other axiom setting.
+It is not another direct solver replay or full-library acceptance. The complete
+24-observation replay above is the executed causal evidence; neither analysis
+asserts equality of the native query bytes or a waiver of strict resource equality.

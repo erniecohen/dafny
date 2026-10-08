@@ -19,6 +19,10 @@ changed to obtain acceptance.
 | Seven-part library | On | 2,197 / 2,190 | 7,724 / 7,724 / 7,756 | Equal | Different | Rejected |
 
 All three modes finish every part. There are no safety timeouts or crashes.
+Both baseline and default-off also match the committed expected verdict tables
+in all four gates. The [enabled verdict appendix](obligation-current-verdict-changes.md)
+records all 60 changed suite rows in each setting and every changed library
+declaration, including improvements and diagnostic/count movements.
 Both suite runs satisfy exact default-off compatibility. Both library runs
 retain identical default-off verdicts and operational Boogie but fail the
 fork's strict resource-equality requirement. The [captured-query ordering
@@ -42,7 +46,9 @@ eleven with them on. Its union is `NthAppendB`, `INDUCTION_EVEN_ODD`,
 and `sorted_ascending`. Submitted diagnostic matrices retain each original
 full-run command and ceiling and cover the failure and cost-review unions over
 three seeds, both axiom settings and baseline/default-off/enabled modes.
-Filtered seed-zero movements relative to the complete gate are recorded;
+The [completed seed record](obligation-current-seed-classification.md) classifies
+the suite failure/cost unions and library cost union. The library failure matrix
+still awaits durable evidence. Filtered seed-zero movements relative to the complete gate are recorded;
 filtered success cannot replace a full-gate result.
 
 One raw body VC moves from `Invalid` to `Valid`: `Absy.Foo` in
