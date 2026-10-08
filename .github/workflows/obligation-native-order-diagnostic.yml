@@ -6,6 +6,7 @@ on:
     paths: [.github/workflows/obligation-native-order-diagnostic.yml]
 permissions:
   contents: read
+  actions: read
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -13,7 +14,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
-      - name: Build pristine and instrumented native drivers without solver execution
+      - name: Compile and assemble focused native diagnostic without solver execution
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set +e
           mkdir -p out
@@ -26,19 +29,21 @@ jobs:
           echo "$version_result" > out/version.exit
           if [ "$version_result" -eq 0 ]; then
             revision=$(sed -n 's/^revision=//p' out/version.txt)
-            RUNTIME_IDENTIFIER=osx-arm64 dotnet publish Source/Dafny/Dafny.csproj -c Release -r osx-arm64 --self-contained -o out/pristine-osx-arm64 -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$revision" > out/pristine.log 2>&1
-            pristine_result=$?
-            echo "$pristine_result" > out/pristine.exit
-            if [ "$pristine_result" -eq 0 ]; then
-              python3 .github/review/native-order-diagnostic/enable.py > out/instrumentation.log 2>&1
-              instrumentation_result=$?
-              echo "$instrumentation_result" > out/instrumentation.exit
-              if [ "$instrumentation_result" -eq 0 ]; then
-                RUNTIME_IDENTIFIER=osx-arm64 dotnet publish Source/Dafny/Dafny.csproj -c Release -r osx-arm64 --self-contained -o out/diagnostic-osx-arm64 -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$revision" > out/diagnostic.log 2>&1
-                echo "$?" > out/diagnostic.exit
-                cmp out/pristine-osx-arm64/DafnyCore.dll out/diagnostic-osx-arm64/DafnyCore.dll > out/core-identity.log 2>&1
-                echo "$?" > out/core-identity.exit
-                sha256sum out/pristine-osx-arm64/DafnyCore.dll out/diagnostic-osx-arm64/DafnyCore.dll out/pristine-osx-arm64/DafnyDriver.dll out/diagnostic-osx-arm64/DafnyDriver.dll > out/assemblies.sha256
+            python3 .github/review/native-order-diagnostic/enable.py > out/instrumentation.log 2>&1
+            instrumentation_result=$?
+            echo "$instrumentation_result" > out/instrumentation.exit
+            if [ "$instrumentation_result" -eq 0 ]; then
+              RUNTIME_IDENTIFIER=osx-arm64 dotnet publish Source/Dafny/Dafny.csproj -c Release -r osx-arm64 --self-contained -o out/rebuilt-osx-arm64 -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$revision" > out/diagnostic.log 2>&1
+              diagnostic_result=$?
+              echo "$diagnostic_result" > out/diagnostic.exit
+              if [ "$diagnostic_result" -eq 0 ]; then
+                gh run download 37781426875 -R erniecohen/dafny -n obligation-preservation-build -D base-artifact > out/base-download.log 2>&1
+                download_result=$?
+                echo "$download_result" > out/base-download.exit
+                if [ "$download_result" -eq 0 ]; then
+                  python3 .github/review/native-order-diagnostic/assemble.py > out/assembly.log 2>&1
+                  echo "$?" > out/assembly.exit
+                fi
               fi
             fi
           fi

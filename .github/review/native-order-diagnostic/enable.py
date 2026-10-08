@@ -6,10 +6,10 @@ root=Path.cwd()
 source=root/'.github/review/native-order-diagnostic/NativeSupportOrderDiagnostic.cs'
 assert source.is_file()
 targets={
- 'Source/DafnyDriver/Legacy/SynchronousCliCompilation.cs':(
-  '      foreach (var prog in BoogieGenerator.Translate(dafnyProgram, dafnyProgram.Reporter)) {',
-  '      foreach (var prog in BoogieGenerator.Translate(dafnyProgram, dafnyProgram.Reporter)) {\n        NativeSupportOrderDiagnostic.Apply(prog.Item2);'),
- 'Source/DafnyDriver/DafnyDriver.csproj':(
+ 'Source/DafnyLanguageServer/Language/DafnyProgramVerifier.cs':(
+  '          return translator.DoTranslation(resolution.ResolvedProgram, moduleDefinition);',
+  '          var translated = translator.DoTranslation(resolution.ResolvedProgram, moduleDefinition);\n          NativeSupportOrderDiagnostic.Apply(translated);\n          return translated;'),
+ 'Source/DafnyLanguageServer/DafnyLanguageServer.csproj':(
   '</Project>',
   '  <ItemGroup><Compile Include="../../.github/review/native-order-diagnostic/NativeSupportOrderDiagnostic.cs" /></ItemGroup>\n</Project>')
 }

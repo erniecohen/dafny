@@ -7,7 +7,7 @@ using Bpl = Microsoft.Boogie;
 
 namespace Microsoft.Dafny;
 
-// Scratch-only diagnostic, linked into the driver after the pristine build.
+// Scratch-only diagnostic, linked into the verification frontend for the native CLI path.
 // It operates on native blocks; no Boogie printing/parsing is used as input.
 internal static class NativeSupportOrderDiagnostic {
   internal static void Apply(Bpl.Program program) {
