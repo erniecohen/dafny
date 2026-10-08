@@ -36,6 +36,7 @@ for case in cases:
        "--boogie","/normalizeDeclarationOrder:0","--boogie",f"/randomSeed:{seed}",
        "--bprint",str(directory/"program.bpl"),
        "--log-format",f"csv;LogFileName={directory/'resources.csv'}"]
+     command.extend(case.get("options", []))
      if source.stem in ["issue100-original","issue100-explicit","issue100-final-true","subset-short","subset-short-explicit","negative-self-postcondition-let"]:
       command.extend(["--solver-log",str(directory/"solver.smt2"),"--pprint",str(directory/"passive.bpl")])
      if args.shipped: command.append(f"--additional-axioms:{str(axioms).lower()}")
