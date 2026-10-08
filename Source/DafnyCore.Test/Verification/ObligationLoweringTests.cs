@@ -209,9 +209,11 @@ public class ObligationLoweringTests {
       Assert.Equal(0, program.Resolve(options));
       Assert.Equal(0, program.Typecheck(options));
     }
-    var text = ObligationFingerprint.Emit(programs);
-    Assert.Contains("$_OldIterHeap", text);
-    Assert.DoesNotContain("$_ReadsFrame", text);
+    var body = programs.SelectMany(p => p.Implementations)
+      .Single(p => p.Name.Contains("Impl") && p.Name.EndsWith(".I"));
+    var checks = body.Blocks.SelectMany(block => block.Cmds).OfType<Bpl.AssertCmd>().ToList();
+    Assert.Contains(checks, check => ObligationFingerprint.Expression(check.Expr).Contains("$_OldIterHeap"));
+    Assert.DoesNotContain(checks, check => ObligationFingerprint.Expression(check.Expr).Contains("$_ReadsFrame"));
   }
 
   [Fact]
