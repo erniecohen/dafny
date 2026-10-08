@@ -3,7 +3,7 @@
 The [requested review revisions](obligation-review-change-request.md) govern the
 single-check replacement in PR #168. The supported semantic revision is now
 `58d8ac112`, restoring source-local assertion well-formedness preparation and the
-frozen initializer application's domain guard. It also preserves iterator yield frames and old heaps. Its own build and native acceptance are pending after the opaque existential fuel correction.
+frozen initializer application's domain guard. It also preserves iterator yield frames and old heaps. Its own build passes; fresh native acceptance is pending after the opaque existential fuel correction.
 The [current causal analysis](obligation-local-preparation-diagnosis.md) records
 the rejected preceding source gates, controlled generated-Boogie experiments,
 negative outcomes and multi-seed classification.
@@ -61,9 +61,59 @@ records the stable error separately from partially successful seed movements.
 
 The current opaque correction preserves the consumed existential fuel state
 through guarded lowering. Recursive-predicate equality controls cover method
-and opaque contracts under both resolvers. A fresh build and native gates are
-required; the [diagnosis](obligation-local-preparation-diagnosis.md) records the
+and opaque contracts under both resolvers. Its [77-control build](https://github.com/erniecohen/dafny/actions/runs/37724174182)
+passes all nine recorded stages, including both native platforms, both probes,
+the editor and both capture/normal structural runs. The normal 287-group
+inventory matches. Build source: `d3dc53c8e`; native version:
+`4.11.0+fcb2042d.review.6c3dfb23`. Exact artifact identities distinguish this
+build from the preceding build with that same reported version. Fresh native
+gates are required; the [diagnosis](obligation-local-preparation-diagnosis.md) records the
 actual one-layer mismatch and the separate Power causal replay.
+
+## Complete library evidence of the preceding iterator revision
+
+The preceding iterator revision `8e7f54505`, build `2165f4084`, completes the
+entire seven-part standard-library gate in baseline, default-off and enabled
+modes under both additional-axiom settings, using Z3 5.1.0. Each mode contains
+2,190 declaration rows and seven run rows. Baseline/default-off have 7,724
+recorded batches, and enabled mode has 8,994. No run is truncated or accepted
+from a missing log.
+
+Every default-off verdict and every emitted operational Boogie program matches
+its corresponding baseline in both settings. Named batch resource counts still
+differ. The strict default-off compatibility gate therefore rejects both runs;
+Boogie-text identity is not proof of identical solver queries or proof cost.
+The focused exact comparisons recorded above cannot substitute for this full
+scope. The source retains its legacy explicit-assertion lowering branch when
+the feature is off. The cause of the full-scope resource differences remains
+under investigation; no tolerance or baseline expectation is changed.
+
+Enabled mode has 14 newly failing declarations with additional axioms off and
+13 with them on, plus cost movements requiring review in each setting. No
+baseline `Errors` declaration becomes `Correct`. The five new `Errors`
+declarations shared by both settings are:
+
+- `DivMod.LemmaDivByMultiple`: the existing callee result does not establish
+  the final division postcondition in the new exit VC.
+- `Power.LemmaPowSubtractsAuto`: the second quantified postcondition remains
+  invalid in the controlled replay described in the diagnosis.
+- `BulkActions.BatchArrayWriter._ctor`: local postcondition preparation reports
+  an insufficient reads clause for `Valid()`.
+- `Collections.Seq.LemmaMapDistributesOverConcat` and
+  `LemmaMapPartialFunctionDistributesOverConcat`: local postcondition
+  preparation reports function preconditions that depend on labeled entry
+  requirements. Their expression-local reveals do not remain globally active.
+
+The remaining newly failing declarations exhaust their original resource
+ceilings. These include division/modulo lemmas, Base64 controls, JSON sequence
+well-formedness and a producer invocation. Both complete runs reject enabled
+acceptance. Current source-level controls will compare these errors with actual
+immediate assertions, without changing library proofs or adding hints.
+
+The full-suite attempts of this preceding revision were interrupted before all
+three modes completed; they are incomplete execution evidence. Fresh complete
+suite and standard-library gates for `58d8ac112` are queued separately and do
+not inherit either acceptance or rejection from the preceding native build.
 
 The [first repair build](https://github.com/erniecohen/dafny/actions/runs/37717196930)
 compiled both platforms and the editor but rejected the inherited fixture's

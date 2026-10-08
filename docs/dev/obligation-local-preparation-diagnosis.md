@@ -122,8 +122,9 @@ The repair preserves the same fresh translator and consumed preparation state
 through guarded lowering, retaining the opaque check's original publication
 policy. Four structural controls compare the recursive equality in method and
 opaque contracts with the immediate assertion under both resolvers and require
-a fuel term to be present. This correction needs its own passing build and
-fresh native gates; earlier completed and running gates remain evidence of
+a fuel term to be present. Its [77-control build](https://github.com/erniecohen/dafny/actions/runs/37724174182)
+passes both native platforms, the editor and normal inventory. Fresh native
+gates are still required; earlier completed and running gates remain evidence of
 their recorded revisions. No implementation is ported to PR #169.
 
 ## Power causal replay
@@ -137,7 +138,7 @@ preparation also verifies. Every false-exit control remains invalid. These
 variants isolate local preparation as the cause of the solver result; omitting
 required preparation is excluded as a product workaround.
 
-An actual source-level replay of the current build also completes 24
+An actual source-level replay of the preceding iterator build also completes 24
 observations with invalid false controls. Appending only the second quantified
 postcondition as an explicit assertion verifies at all three seeds with the
 option off; appending both postconditions as explicit assertions gives
@@ -146,3 +147,25 @@ variants fail at all three seeds. These source insertions are diagnosis only.
 The partly successful normal assertion path is classified as solver variance
 under S13. This evidence does not establish uniform improvement or discharge
 the enabled Power regression.
+
+## Complete library errors requiring local-context diagnosis
+
+The [complete preceding library comparisons](obligation-validation.md#complete-library-evidence-of-the-preceding-iterator-revision)
+identify five new `Errors` declarations in both additional-axiom settings.
+Besides Power, the constructor failure is specifically an added reads-frame
+check at the `Valid()` postcondition. The two sequence-map failures are added
+function-domain checks whose source entry requirements have labels `X` and
+`Y`; their bodies reveal these labels only inside statement expressions.
+Contract well-formedness and an immediate body assertion may have different
+reads/visibility premises here. Actual explicit-assertion controls and the
+emitted check/context comparison must settle that distinction before a
+product correction. Removing preparation or publishing hidden entry facts is
+not accepted from solver success alone.
+
+`LemmaDivByMultiple` fails its final `(b*d)/d == b` check after the existing
+`LemmaDivMultiplesVanish` call. The new local exit preparation, call contract
+and actual arithmetic encodings require separate inspection. A resource
+failure in a different seed is not evidence of a missing source premise.
+The complete gates preserve original library source, caps and expected
+verdicts; the current fresh comparisons and targeted seed controls do not
+alter those proof inputs.
