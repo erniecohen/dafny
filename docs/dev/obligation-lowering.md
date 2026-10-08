@@ -92,7 +92,10 @@ summary counts: successful input processing alone does not mean a proved program
 Iterator final contracts follow the same local exit/free implementation-copy rule,
 with their original inherited-clause exclusion. Yield ensures adapts the existing
 local check, retaining check-and-forget followed by the original yield-summary and
-havoc. Opaque-block ensures adapts its original local assertion and attributes;
+havoc. Yield preparation uses the body's iterator reads policy and the exact
+saved iteration old heap; it does not invent a method reads-frame variable.
+Inherited yield clauses retain their preparation/check exclusion.
+Opaque-block ensures adapts its original local assertion and attributes;
 loop invariants adapt their existing checked pieces, with normal invariant
 assumptions and loop-state guards. These paths add no second proof of a clause.
 

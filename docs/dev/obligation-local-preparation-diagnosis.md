@@ -18,6 +18,31 @@ The replay restored the frozen application's domain in the local constraint guar
 
 The repair checks the guarded constraint once. The independent existing range-bound domain check remains mandatory and retains check-and-forget. Base membership and any derived symbolic representation carry the same domain guard; no unconditional domain/can-call assumption is introduced. The initializer handle is captured at its original evaluation point and is not translated again.
 
+## Iterator preparation context
+
+The first native paired trial of the local preparation revision (`a08a9485c`)
+accepted its first 476 observations, then rejected a yield negative control with
+an undeclared `$_ReadsFrame`. Its fresh two-state yield translator had a default
+method reads-frame name, while iterator bodies intentionally disable method
+reads checks: an iterator's reads clause denotes locations retained across yield,
+not a method's readable frame. The new WF replay made that incorrect context
+observable. An internal translation error is not accepted negative evidence.
+
+The repair in `126dfd96b` preserves the body's existing translator/frame policy
+and replaces only its old heap with the exact saved iteration heap for the yield
+clause. Inherited yield clauses keep their exclusion from preparation/checks.
+Body-specific structural controls resolve and typecheck the generated Boogie,
+retain the saved old heap and reject an undeclared method-frame reference. The
+current reviewed source pin is `8e7f54505`; its own build and native acceptance
+are pending. Previously prepared full comparisons of the earlier revision will
+not be submitted as acceptance of this correction.
+
+The private paired adapter also now treats a missing/empty verification log as
+rejected evidence and continues the remaining observations. It must never count
+an internal error as a successful negative control. This changes evidence
+collection only; all source, solver options, resource limits and expectations
+remain fixed.
+
 ## Evidence boundaries
 
 The controlled generated-Boogie experiment completed all 42 observations, covering original/explicit controls, isolated preparation/scope/literal/domain changes, three seeds and invalid false controls. Literal-anchor and published-domain variants are diagnosis only and are excluded from the source repair. These replays establish causal evidence for these examples, not source-level acceptance, universal assertion invariance or independent soundness review.
