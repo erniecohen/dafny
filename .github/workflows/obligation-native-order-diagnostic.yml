@@ -1,4 +1,5 @@
 name: Native obligation support-order diagnostic build
+# The named support expression may be a conjunction of can-call facts.
 on:
   workflow_dispatch:
   push:

@@ -10,7 +10,7 @@ new CLI does not use. That attempt produced no instrumentation audit and was
 rejected. Its rebuilt core identity also differed. Neither rebuilt core is used.
 
 The current build changes only the language-server verification frontend at
-`DafnyProgramVerifier.DoTranslation`, before the native program reaches Boogie.
+`DafnyProgramVerifier.GetVerificationTasksAsync`, after translation, before the native program reaches Boogie.
 It assembles that component onto the exact preceding public build at semantic
 product `a709df226`; every other binary, including the verifier core and driver,
 must remain byte exact. Applied source hashes and assembly provenance are saved.

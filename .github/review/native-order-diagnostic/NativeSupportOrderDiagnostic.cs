@@ -35,7 +35,7 @@ internal static class NativeSupportOrderDiagnostic {
     var location = locations[0];
     var commands = location.block.Cmds;
     var prefix = commands.FindLastIndex(location.index - 1, cmd =>
-      cmd is Bpl.AssumeCmd { Expr: Bpl.NAryExpr { Fun: Bpl.FunctionCall call } } && call.FunctionName == function);
+      cmd is Bpl.AssumeCmd support && ContainsCall(support.Expr, function));
     var check = commands.FindIndex(location.index, cmd => cmd is Bpl.AssertCmd);
     Require(prefix >= 0 && check > location.index, "Expected local support and actual check");
     var moved = commands[prefix];
@@ -81,6 +81,11 @@ internal static class NativeSupportOrderDiagnostic {
       allBranchTransferObjectsRetained = true, negativeEntryCheckAdded = negative != null
     }) + "\n");
   }
+
+  private static bool ContainsCall(Bpl.Expr expression, string name) =>
+    expression is Bpl.NAryExpr node &&
+    ((node.Fun is Bpl.FunctionCall call && call.FunctionName == name) ||
+      node.Args.Any(argument => ContainsCall(argument, name)));
 
   private static void Require(bool condition, string message) {
     if (!condition) { throw new InvalidOperationException(message); }
