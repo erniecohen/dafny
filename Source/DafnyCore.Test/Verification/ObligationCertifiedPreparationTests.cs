@@ -70,6 +70,34 @@ public class ObligationCertifiedPreparationTests {
   }
 
   [Fact]
+  public void IndependentSupportCanFollowPurePrivatePreparation() {
+    var support = new Bpl.AssumeCmd(Bpl.Token.NoToken, Bpl.Expr.Gt(Id("x"), Bpl.Expr.Literal(0)));
+    var arguments = new HashSet<string> { "arg" };
+    List<object> commands = [Bpl.Cmd.SimpleAssign(Bpl.Token.NoToken, Id("arg"), Id("x"))];
+    var normalized = CertifiedContractPreparation.Normalize(commands, arguments);
+    Assert.True(CertifiedContractPreparation.CanMoveLeadingSupport(support, normalized, arguments));
+    Assert.Same(commands[0], normalized[0]);
+  }
+
+  [Fact]
+  public void SupportReadingAPrivateWriteKeepsItsOriginalPlacement() {
+    var support = new Bpl.AssumeCmd(Bpl.Token.NoToken, Bpl.Expr.Eq(Id("arg"), Bpl.Expr.Literal(0)));
+    var arguments = new HashSet<string> { "arg" };
+    List<object> commands = [Bpl.Cmd.SimpleAssign(Bpl.Token.NoToken, Id("arg"), Bpl.Expr.Literal(1))];
+    var normalized = CertifiedContractPreparation.Normalize(commands, arguments);
+    Assert.False(CertifiedContractPreparation.CanMoveLeadingSupport(support, normalized, arguments));
+  }
+
+  [Fact]
+  public void SupportReadingAHavocTargetKeepsItsOriginalPlacement() {
+    var support = new Bpl.AssumeCmd(Bpl.Token.NoToken, Bpl.Expr.Eq(Id("x"), Bpl.Expr.Literal(0)));
+    List<object> commands = [new Bpl.HavocCmd(Bpl.Token.NoToken, [Id("x")])];
+    var arguments = new HashSet<string>();
+    var normalized = CertifiedContractPreparation.Normalize(commands, arguments);
+    Assert.False(CertifiedContractPreparation.CanMoveLeadingSupport(support, normalized, arguments));
+  }
+
+  [Fact]
   public void UnchangedPreparationKeepsLabelOrigins() {
     var context = new BodyTranslationContext(false);
     var source = new BoogieStmtListBuilder(null, null, context);

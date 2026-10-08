@@ -1,10 +1,29 @@
 # Issue 100 revision checklist
 
-**Newest correction pending:** empty certified-WF branches now retain their
-guard in the tautology `G ==> G`, without an empty control-flow split. The
-focused generated-Boogie diagnosis verifies Power at all selected seeds, but
-this edit still needs its own build and native result; it inherits no earlier
-acceptance. Known regressions remain the iteration scope.
+**Current candidate under validation:** semantic/product `cb6610359` keeps the
+existing leading can-call command and places it after accepted certified pure
+preparation only when it reads no assigned or havoced variable. Unsupported
+fragments retain the previous order. Actual checks, expression/fuel state,
+certified facts, source state and reveal scopes are retained. The
+[native support-order diagnosis](obligation-support-order-diagnosis.md) completes
+36 observations for the preceding `a709df226` product with faithful native
+controls, but does not validate this new compiler candidate. Fresh compilation
+and focused current-candidate verification remain pending. No whole-suite
+iteration or development port is being performed.
+
+**Newest correction:** semantic/product pin `a709df226` replaces empty
+certified-WF branches by `G ==> G`, retaining the guard terms without an empty
+control-flow split. Its [build](https://github.com/erniecohen/dafny/actions/runs/37781426875)
+passes all ten actual stages, both platforms and probes, the editor build,
+92 structural observations in each mode, the exact 287-group inventory and all
+370 core unit tests. Its [focused native result](obligation-guarded-preparation-focused.md)
+completes 68 observations: Power verifies all three seeds in both axiom settings,
+with its two actual exit checks byte unchanged. All observed specification-WF
+checks, sixteen positive controls and four genuine invalid controls behave as
+required. Five suite targets still have resource failures at selected seeds;
+targeted enabled acceptance remains false. The earlier baseline evidence is
+explicitly reused; only six default-off Power observations are newly executed
+and match that baseline exactly. No whole-suite or whole-library run was launched.
 
 **Preceding measured candidate:** semantic correction `338b82396`, product pin
 `69dc750b5`, build `861472a9d` passes all ten build stages, 92 structural
@@ -25,7 +44,7 @@ check-package design and exclude the later body/context-collection and
 definition-support experiments. Preserve the request in full; use this file to
 record implementation and evidence against each requirement as revisions land.
 
-**Status:** the declared-contract preparation correction is implemented as
+**Historical complete-gate status (superseded product):** the declared-contract preparation correction was implemented as
 candidate `98b0dd509`, compiled product pin `072175269`. Its accepted build passes
 all ten stages, 85 structural observations in capture and normal modes, the
 independent 287-group inventory and all 363 core unit tests. Its complete native
@@ -77,6 +96,13 @@ linked validation report.
 | S14 / 14 | Rewrite the PR description around single-check assertion-equivalent lowering. Complete every supported-line acceptance item below before requesting approval. | Pending |
 
 ## Supported-line acceptance
+
+The checked registered/paired items below record the completed `072175269`
+comparison. They do not discharge current `a709df226` acceptance. The newest
+68-observation native result above supplies current focused issue/subset,
+preparation and Power evidence. Current full registered/paired evidence and
+strict default-off library resource compatibility remain open; no full-suite
+rerun is authorized as an iteration loop for the existing regressions.
 
 - [x] Original issue 100 source verifies without its redundant final assertion at the existing ceiling (current complete registered/paired gates pass).
 - [x] The subset reproducer verifies without its redundant assertion (current complete registered/paired gates pass).
