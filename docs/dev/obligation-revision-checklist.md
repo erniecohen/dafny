@@ -1,6 +1,6 @@
 # Issue 100 revision checklist
 
-**Current candidate under validation:** semantic/product `cb6610359` keeps the
+**Current candidate under validation:** semantic/product `fe6ddd1ba` keeps the
 existing leading can-call command and places it after accepted certified pure
 preparation only when it reads no assigned or havoced variable. Unsupported
 fragments retain the previous order. Actual checks, expression/fuel state,
