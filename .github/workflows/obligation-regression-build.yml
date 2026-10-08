@@ -25,13 +25,19 @@ jobs:
           version_result=$?
           echo "$version_result" > out/version.exit
           if [ "$version_result" -eq 0 ]; then
-            dotnet build Source/IntegrationTests -c Release > out/integration-build.log 2>&1
+            revision=$(sed -n 's/^revision=//p' out/version.txt)
+            dotnet build Source/IntegrationTests -c Release -p:SourceRevisionId="$revision" > out/integration-build.log 2>&1
             integration_result=$?
             echo "$integration_result" > out/integration-build.exit
-            dotnet build Source/DafnyLanguageServer.Test -c Release > out/editor-build.log 2>&1
+            dotnet build Source/DafnyLanguageServer.Test -c Release -p:SourceRevisionId="$revision" > out/editor-build.log 2>&1
             editor_result=$?
             echo "$editor_result" > out/editor-build.exit
             if [ "$integration_result" -eq 0 ] && [ "$editor_result" -eq 0 ]; then
+              dotnet Binaries/net10.0/Dafny.dll --version > out/wrapper-version.txt
+              echo "$?" > out/wrapper-version.exit
+              # The legacy driver intentionally disables assembly-info generation.
+              dotnet Binaries/net10.0/DafnyDriver.dll --version > out/legacy-driver-version.txt
+              echo "$?" > out/legacy-driver-version.exit
               cp -R Source/IntegrationTests/bin/Release/net10.0 out/integration
               cp -R Source/DafnyLanguageServer.Test/bin/Release/net10.0 out/editor
               cp -R Binaries/net10.0 out/driver
