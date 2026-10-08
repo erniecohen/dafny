@@ -1,0 +1,57 @@
+name: Native obligation duplicate-support diagnostic build
+# Scratch-only local duplicate-support hypothesis; no solver work in this build.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - name: Compile and assemble focused native diagnostic without solver execution
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          mkdir -p out
+          git rev-parse HEAD > out/source.txt
+          cp .github/review/base out/product-base.txt
+          sh Scripts/fetch-boogie-packages.sh > out/packages.log 2>&1
+          echo "$?" > out/packages.exit
+          sh .github/review/version.sh > out/version.txt 2>&1
+          version_result=$?
+          echo "$version_result" > out/version.exit
+          if [ "$version_result" -eq 0 ]; then
+            revision=$(sed -n 's/^revision=//p' out/version.txt)
+            python3 .github/review/native-duplicate-diagnostic/enable.py > out/instrumentation.log 2>&1
+            instrumentation_result=$?
+            echo "$instrumentation_result" > out/instrumentation.exit
+            if [ "$instrumentation_result" -eq 0 ]; then
+              RUNTIME_IDENTIFIER=osx-arm64 dotnet publish Source/Dafny/Dafny.csproj -c Release -r osx-arm64 --self-contained -o out/rebuilt-osx-arm64 -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$revision" > out/diagnostic.log 2>&1
+              diagnostic_result=$?
+              echo "$diagnostic_result" > out/diagnostic.exit
+              if [ "$diagnostic_result" -eq 0 ]; then
+                gh run download 37808373912 -R erniecohen/dafny -n obligation-preservation-build -D base-artifact > out/base-download.log 2>&1
+                download_result=$?
+                echo "$download_result" > out/base-download.exit
+                if [ "$download_result" -eq 0 ]; then
+                  python3 .github/review/native-duplicate-diagnostic/assemble.py > out/assembly.log 2>&1
+                  echo "$?" > out/assembly.exit
+                fi
+              fi
+            fi
+          fi
+          find out -name '*.pdb' -delete
+          cat out/*.exit
+          tar -czf native-duplicate-diagnostic-build.tar.gz out
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-duplicate-diagnostic-build
+          path: native-duplicate-diagnostic-build.tar.gz
+          retention-days: 14
