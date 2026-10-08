@@ -1164,7 +1164,9 @@ namespace Microsoft.Dafny {
         (TraitDecl)f.OverriddenFunction.EnclosingClass, (TopLevelDeclWithMembers)f.EnclosingClass);
       foreach (var en in ConjunctsOf(f.OverriddenFunction.Ens)) {
         var subEn = sub.Substitute(en.E);
-        foreach (var s in TrSplitExpr(new BodyTranslationContext(false), subEn, etran, false, out _).Where(s => s.IsChecked)) {
+        foreach (var s in (options.Get(CommonOptionBag.ConsistentObligationChecks)
+          ? LowerProposition(builder.Context, subEn, etran).Pieces
+          : TrSplitExpr(new BodyTranslationContext(false), subEn, etran, false, out _)).Where(s => s.IsChecked)) {
           builder.Add(TrAssumeCmd(f.Origin, etran.CanCallAssumptionForVerification(subEn, cco)));
           var constraint = Expression.CreateImplies(allOverrideEns, subEn);
           builder.Add(Assert(f.Origin, s.E, new FunctionContractOverride(true, constraint), builder.Context));
@@ -1262,7 +1264,9 @@ namespace Microsoft.Dafny {
       //generating class pre-conditions
       cco = new CanCallOptions(true, f);
       foreach (var req in ConjunctsOf(f.Req)) {
-        foreach (var s in TrSplitExpr(new BodyTranslationContext(false), req.E, etran, false, out _).Where(s => s.IsChecked)) {
+        foreach (var s in (options.Get(CommonOptionBag.ConsistentObligationChecks)
+          ? LowerProposition(builder.Context, req.E, etran).Pieces
+          : TrSplitExpr(new BodyTranslationContext(false), req.E, etran, false, out _)).Where(s => s.IsChecked)) {
           builder.Add(TrAssumeCmd(f.Origin, etran.CanCallAssumptionForVerification(req.E, cco)));
           var constraint = Expression.CreateImplies(allTraitReqs, req.E);
           builder.Add(Assert(f.Origin, s.E, new FunctionContractOverride(false, constraint), builder.Context));
@@ -1523,7 +1527,9 @@ namespace Microsoft.Dafny {
         (TraitDecl)m.OverriddenMethod.EnclosingClass, (TopLevelDeclWithMembers)m.EnclosingClass);
       foreach (var en in ConjunctsOf(m.OverriddenMethod.Ens)) {
         var subEn = sub.Substitute(en.E);
-        foreach (var s in TrSplitExpr(new BodyTranslationContext(false), subEn, etran, false, out _).Where(s => s.IsChecked)) {
+        foreach (var s in (options.Get(CommonOptionBag.ConsistentObligationChecks)
+          ? LowerProposition(builder.Context, subEn, etran).Pieces
+          : TrSplitExpr(new BodyTranslationContext(false), subEn, etran, false, out _)).Where(s => s.IsChecked)) {
           builder.Add(TrAssumeCmd(m.OverriddenMethod.Origin, etran.CanCallAssumptionForVerification(subEn)));
           var constraint = Expression.CreateImplies(allOverrideEns, subEn);
           builder.Add(Assert(m.Origin, s.E, new EnsuresStronger(constraint), builder.Context));
@@ -1552,7 +1558,9 @@ namespace Microsoft.Dafny {
 
       // generating class pre-conditions
       foreach (var req in ConjunctsOf(m.Req)) {
-        foreach (var s in TrSplitExpr(new BodyTranslationContext(false), req.E, etran, false, out _).Where(s => s.IsChecked)) {
+        foreach (var s in (options.Get(CommonOptionBag.ConsistentObligationChecks)
+          ? LowerProposition(builder.Context, req.E, etran).Pieces
+          : TrSplitExpr(new BodyTranslationContext(false), req.E, etran, false, out _)).Where(s => s.IsChecked)) {
           builder.Add(TrAssumeCmd(m.Origin, etran.CanCallAssumptionForVerification(req.E)));
           var constraint = Expression.CreateImplies(allTraitReqs, req.E);
           builder.Add(Assert(m.Origin, s.E, new RequiresWeaker(constraint), builder.Context));

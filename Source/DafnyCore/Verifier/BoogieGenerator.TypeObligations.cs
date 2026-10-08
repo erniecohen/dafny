@@ -46,7 +46,8 @@ public partial class BoogieGenerator {
     Func<Bpl.Expr, Bpl.Expr> close = null, bool forget = false) {
     close ??= expression => expression;
     if (options.Get(CommonOptionBag.ConsistentObligationChecks) && etran != null &&
-        CheckVisibleTypeObligations(origin, value, sourceType, targetType, description, builder, etran, close, forget)) {
+        (CheckSequenceTypeMembership(origin, value, sourceType, targetType, description, builder, etran, close, forget) ||
+         CheckVisibleTypeObligations(origin, value, sourceType, targetType, description, builder, etran, close, forget))) {
       // This is the existing introduction rule's derived representation of the
       // single constraint check, not an additional proof of the same constraint.
       if (!forget) {
@@ -61,4 +62,32 @@ public partial class BoogieGenerator {
         : Assert(origin, close(membership), description, builder.Context));
     }
   }
+  private bool CheckSequenceTypeMembership(IOrigin origin, Bpl.Expr value, Type sourceType,
+    Type targetType, ProofObligationDescription description, BoogieStmtListBuilder builder,
+    ExpressionTranslator etran, Func<Bpl.Expr, Bpl.Expr> close, bool forget) {
+    if (targetType.NormalizeExpandKeepConstraints() is not SeqType targetSequence ||
+        sourceType.NormalizeToAncestorType() is not SeqType sourceSequence) {
+      return false;
+    }
+    var sequence = AdaptBoxing(origin, value, sourceType, sourceSequence);
+    var variable = new Bpl.BoundVariable(origin, new Bpl.TypedIdent(origin,
+      CurrentIdGenerator.FreshId("$typeIndex#"), Bpl.Type.Int));
+    var index = new Bpl.IdentifierExpr(origin, variable);
+    var range = BplAnd(Bpl.Expr.Le(Bpl.Expr.Literal(0), index),
+      Bpl.Expr.Lt(index, FunctionCall(origin, BuiltinFunction.SeqLength, null, sequence)));
+    var boxed = FunctionCall(origin, BuiltinFunction.SeqIndex, Predef.BoxType, sequence, index);
+    var element = UnboxUnlessInherentlyBoxed(boxed, sourceSequence.Arg);
+    var membership = GetSubrangeCheck(origin, element, sourceSequence.Arg, targetSequence.Arg,
+      null, null, out _);
+    if (membership == null) { return false; }
+
+    // The existing sequence membership axiom is exactly the range-bound
+    // conjunction of element memberships. Close every actual element check
+    // over that range; no index variable or local permission escapes it.
+    CheckTypeMembership(origin, membership, element, sourceSequence.Arg, targetSequence.Arg,
+      description, builder, etran,
+      expression => close(new Bpl.ForallExpr(origin, [variable], BplImp(range, expression))), forget);
+    return true;
+  }
+
 }

@@ -1813,9 +1813,18 @@ public partial class BoogieGenerator {
     ExpressionTranslator etran, BodyTranslationContext context, WitnessCheck desc) {
     witnessCheckBuilder.Add(new Bpl.AssumeCmd(witnessExpr.Origin, etran.CanCallAssumptionForVerification(witnessExpr)));
 
-    var ss = TrSplitExpr(context, witnessExpr, etran, true, out var splitHappened);
+    var lowering = options.Get(CommonOptionBag.ConsistentObligationChecks)
+      ? LowerProposition(context, witnessExpr, etran) : null;
+    List<SplitExprInfo> ss;
+    bool splitHappened;
+    if (lowering != null) {
+      ss = lowering.Pieces.ToList();
+      splitHappened = lowering.SplitHappened;
+    } else {
+      ss = TrSplitExpr(context, witnessExpr, etran, true, out splitHappened);
+    }
     if (!splitHappened) {
-      witnessCheckBuilder.Add(Assert(witnessExpr.Origin, etran.TrExpr(witnessExpr), desc, context));
+      witnessCheckBuilder.Add(Assert(witnessExpr.Origin, lowering != null ? ss[0].E : etran.TrExpr(witnessExpr), desc, context));
     } else {
       foreach (var split in ss) {
         if (split.IsChecked) {

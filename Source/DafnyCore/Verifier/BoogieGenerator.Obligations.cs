@@ -99,10 +99,23 @@ public partial class BoogieGenerator {
 
   internal void CheckOpaquePostcondition(IOrigin origin, Expression condition,
     ProofObligationDescription description, BoogieStmtListBuilder builder, ExpressionTranslator etran,
-    Bpl.QKeyValue attributes) {
+    Variables locals, Bpl.QKeyValue attributes) {
     if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
-      CheckPropositionUnderGuard(origin, condition, Bpl.Expr.True, description, builder, etran,
-        attributes: attributes);
+      // Use the immediate assertion's local WF path, before proving the block
+      // clause. The outer contract-WF check occurs after block havoc and cannot
+      // supply this body's local can-call/trigger preparation by itself.
+      var savedStatement = stmtContext;
+      var savedAdjustment = adjustFuelForExists;
+      try {
+        stmtContext = StmtType.ASSERT;
+        adjustFuelForExists = true;
+        TrStmt_CheckWellformed(condition, builder, locals, etran, false);
+        CheckPropositionUnderGuard(origin, condition, Bpl.Expr.True, description, builder, etran,
+          attributes: attributes);
+      } finally {
+        stmtContext = savedStatement;
+        adjustFuelForExists = savedAdjustment;
+      }
     } else {
       builder.Add(Assert(origin, etran.TrExpr(condition), description, builder.Context, attributes));
     }

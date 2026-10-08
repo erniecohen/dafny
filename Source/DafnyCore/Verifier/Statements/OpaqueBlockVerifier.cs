@@ -37,7 +37,7 @@ public static class OpaqueBlockVerifier {
     foreach (var ensure in block.Ensures) {
       totalEnsures.Add(ensure);
       generator.CheckOpaquePostcondition(ensure.Origin, ensure.E,
-        new OpaqueEnsuresDescription(), blockBuilder, etran,
+        new OpaqueEnsuresDescription(), blockBuilder, etran, locals,
         etran.TrAttributes(ensure.Attributes, null));
     }
 
