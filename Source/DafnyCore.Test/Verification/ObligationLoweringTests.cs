@@ -69,6 +69,44 @@ public class ObligationLoweringTests {
   [Theory]
   [InlineData(false)]
   [InlineData(true)]
+  public async Task LocalExitIncludesAssertionWellformednessPreparationAndOnePostconditionCheck(bool refresh) {
+    const string source = "ghost predicate P(x:int) { x>=0 } lemma L() ensures forall x:int :: P(x) {}";
+    var programs = await Translate(source, true, refresh);
+    var body = programs.SelectMany(p => p.Implementations)
+      .Single(p => p.Name.Contains("Impl") && p.Name.EndsWith(".L"));
+    var commands = body.Blocks.SelectMany(b => b.Cmds).ToList();
+    Assert.Contains(commands, command => command is Bpl.HavocCmd);
+    Assert.Single(commands.OfType<Bpl.AssertCmd>().Where(check => check.Description is EnsuresDescription));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task InheritedExitWellformednessRetainsReverificationGuard(bool refresh) {
+    const string source = "module A { predicate P(x:int) { x>=0 } " +
+      "lemma L() ensures forall x:int :: P(x) {} } module B refines A { lemma L ... { ... assert true; } }";
+    var text = ObligationFingerprint.Emit(await Translate(source, true, refresh));
+    Assert.Contains("if ($_reverifyPost)", text);
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task InitializerConstraintRetainsItsFrozenApplicationDomainGuard(bool refresh) {
+    const string source = "type S = x:int | x>=0 witness 0 function G(i:int):int { i } " +
+      "method L(n:nat) returns(a:array<S>) { a := new S[n](G); }";
+    var programs = await Translate(source, true, refresh);
+    var body = programs.SelectMany(p => p.Implementations)
+      .Single(p => p.Name.Contains("Impl") && p.Name.EndsWith(".L"));
+    var check = Assert.Single(body.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+      .Where(command => command.Description is SubrangeCheck));
+    Assert.Contains("Requires1", ObligationFingerprint.Expression(check.Expr));
+    Assert.Equal(0, Bpl.QKeyValue.FindIntAttribute(check.Attributes, "subsumption", -1));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
   public async Task QuantifiedTypeChecksRetainTheExplicitUniversalPredicateLayers(bool refresh) {
     const string source = "ghost predicate P(x:int) decreases x { x<=0 || P(x-1) } type S = x:int | P(x) witness 0 " +
       "function G(i:int):int { i } method L(n:nat) returns(a:array<S>) " +

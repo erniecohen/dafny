@@ -8,7 +8,7 @@ namespace Microsoft.Dafny;
 public partial class BoogieGenerator {
   private bool CheckVisibleTypeObligations(IOrigin origin, Bpl.Expr value, Type sourceType,
     Type targetType, ProofObligationDescription description, BoogieStmtListBuilder builder,
-    ExpressionTranslator etran, Func<Bpl.Expr, Bpl.Expr> close = null, bool forget = false, bool universalClosure = false) {
+    ExpressionTranslator etran, Func<Bpl.Expr, Bpl.Expr> close = null, bool forget = false, bool universalClosure = false, Bpl.Expr valueCanCall = null) {
     if (targetType.NormalizeExpandKeepConstraints() is not UserDefinedType udt ||
         udt.ResolvedClass is not RedirectingTypeDecl declaration || declaration.Var == null ||
         declaration is NonNullTypeDecl || !RevealedInScope(udt.ResolvedClass) ||
@@ -27,7 +27,7 @@ public partial class BoogieGenerator {
       // This is the authoritative combined predicate used by the numeric $Is axiom.
       constraint = ModuleResolver.GetImpliedTypeConstraint(wrapper, udt);
     } else {
-      CheckSubrange(origin, value, sourceType, baseType, null, builder, etran: etran, close: close, forget: forget, universalClosure: universalClosure);
+      CheckSubrange(origin, value, sourceType, baseType, null, builder, etran: etran, close: close, forget: forget, universalClosure: universalClosure, valueCanCall: valueCanCall);
       constraint = Substitute(declaration.Constraint, null,
         new Dictionary<IVariable, Expression> { { declaration.Var, wrapper } }, typeMap);
     }
@@ -36,6 +36,7 @@ public partial class BoogieGenerator {
     // membership is checked separately; symbolic target membership is then a
     // consequence of these checks under the existing introduction axiom.
     var guard = etran.CanCallAssumption(constraint);
+    if (valueCanCall != null) { guard = BplAnd(valueCanCall, guard); }
     CheckPropositionUnderGuard(origin, constraint, guard, description, builder, etran, close, forget, universalClosure: universalClosure);
     return true;
   }
@@ -43,28 +44,30 @@ public partial class BoogieGenerator {
   private void CheckTypeMembership(IOrigin origin, Bpl.Expr membership, Bpl.Expr value,
     Type sourceType, Type targetType, ProofObligationDescription description,
     BoogieStmtListBuilder builder, ExpressionTranslator etran,
-    Func<Bpl.Expr, Bpl.Expr> close = null, bool forget = false, bool universalClosure = false) {
+    Func<Bpl.Expr, Bpl.Expr> close = null, bool forget = false, bool universalClosure = false, Bpl.Expr valueCanCall = null) {
     close ??= expression => expression;
     if (options.Get(CommonOptionBag.ConsistentObligationChecks) && etran != null &&
-        (CheckSequenceTypeMembership(origin, value, sourceType, targetType, description, builder, etran, close, forget) ||
-         CheckVisibleTypeObligations(origin, value, sourceType, targetType, description, builder, etran, close, forget, universalClosure))) {
+        (CheckSequenceTypeMembership(origin, value, sourceType, targetType, description, builder, etran, close, forget, valueCanCall) ||
+         CheckVisibleTypeObligations(origin, value, sourceType, targetType, description, builder, etran, close, forget, universalClosure, valueCanCall))) {
       // This is the existing introduction rule's derived representation of the
       // single constraint check, not an additional proof of the same constraint.
       if (!forget) {
-        var derived = TrAssumeCmd(origin, close(membership));
+        var guardedMembership = valueCanCall == null ? membership : BplImp(valueCanCall, membership);
+        var derived = TrAssumeCmd(origin, close(guardedMembership));
         proofDependencies?.AddProofDependencyId(derived, origin,
-          new AssumptionDependency(false, "derived checked type membership", new BoogieWrapper(close(membership), Type.Bool)));
+          new AssumptionDependency(false, "derived checked type membership", new BoogieWrapper(close(guardedMembership), Type.Bool)));
         builder.Add(derived);
       }
     } else {
+      var guardedMembership = valueCanCall == null ? membership : BplImp(valueCanCall, membership);
       builder.Add(forget
-        ? AssertAndForget(builder.Context, origin, close(membership), description)
-        : Assert(origin, close(membership), description, builder.Context));
+        ? AssertAndForget(builder.Context, origin, close(guardedMembership), description)
+        : Assert(origin, close(guardedMembership), description, builder.Context));
     }
   }
   private bool CheckSequenceTypeMembership(IOrigin origin, Bpl.Expr value, Type sourceType,
     Type targetType, ProofObligationDescription description, BoogieStmtListBuilder builder,
-    ExpressionTranslator etran, Func<Bpl.Expr, Bpl.Expr> close, bool forget) {
+    ExpressionTranslator etran, Func<Bpl.Expr, Bpl.Expr> close, bool forget, Bpl.Expr valueCanCall) {
     if (targetType.NormalizeExpandKeepConstraints() is not SeqType targetSequence ||
         sourceType.NormalizeToAncestorType() is not SeqType sourceSequence) {
       return false;
@@ -86,7 +89,7 @@ public partial class BoogieGenerator {
     // over that range; no index variable or local permission escapes it.
     CheckTypeMembership(origin, membership, element, sourceSequence.Arg, targetSequence.Arg,
       description, builder, etran,
-      expression => close(new Bpl.ForallExpr(origin, [variable], BplImp(range, expression))), forget, universalClosure: true);
+      expression => close(new Bpl.ForallExpr(origin, [variable], BplImp(range, expression))), forget, universalClosure: true, valueCanCall: valueCanCall);
     return true;
   }
 
