@@ -1,12 +1,16 @@
 # Obligation lowering validation status
 
 The [requested review revisions](obligation-review-change-request.md) govern the
-single-check replacement in PR #168. The supported semantic revision is now
-`58d8ac112`, restoring source-local assertion well-formedness preparation and the
-frozen initializer application's domain guard. It also preserves iterator yield frames and old heaps. Its own structural and focused native gates pass. Complete suite/library comparisons finish and reject enabled acceptance; strict default-off library cost remains unaccepted.
-The [current causal analysis](obligation-local-preparation-diagnosis.md) records
-the rejected preceding source gates, controlled generated-Boogie experiments,
-negative outcomes and multi-seed classification.
+single-check replacement in PR #168. The current semantic correction is `98b0dd509`, compiled product `072175269`,
+built from `8d23f3fc8`. Its structural, registered/paired and normal registered/editor
+integration gates pass. Its [complete current suite/library gates](obligation-current-complete-gates.md)
+finish under both axiom settings and reject enabled acceptance. Exact default-off
+suite verdict/resource compatibility passes; strict default-off library resource
+equality remains rejected despite unchanged verdicts and operational Boogie.
+The [current causal analysis](obligation-local-preparation-diagnosis.md) and
+[query ordering diagnosis](obligation-default-off-query-diagnosis.md) distinguish
+actual semantic preparation repairs, explained stable solver failure and limited
+ordering evidence. The older revisions below remain historical evidence only.
 
 The [preceding 63-control build](https://github.com/erniecohen/dafny/actions/runs/37713397830)
 compiled both native platforms and the editor, passed all structural controls and
@@ -212,9 +216,20 @@ isolated diagnostic branch, makes all seeds verify. Removing only the first
 clause's WF or only the certified divisor assumptions does not. False exit
 controls remain invalid. Omitting relevant preparation is excluded from the
 product; this is an explained solver-search effect, not a repair or an
-acceptance claim. Fresh complete suite and standard-library gates have been submitted
-under both axiom settings with the original inputs, ceilings and verdict tables.
-Their durable results remain pending.
+acceptance claim. The fresh [complete suite and standard-library comparisons](obligation-current-complete-gates.md)
+now finish with unchanged proof bytes, hints, ceilings, batching and expected tables.
+Both suite runs preserve every default-off verdict/resource vector. Both library
+runs preserve default-off verdicts and operational Boogie, but strict resource
+comparison rejects them. Enabled suite mode has six resource failures in each
+setting; the complete source remains negative for the ill-formed specification
+whose body VC becomes valid. Enabled library mode has eleven/ten newly failing
+declarations, including stable Power subtraction. Complete failure/cost seed
+matrices are diagnostic; they do not relax any raw full-gate rejection.
+
+The actual normal registered issue-100 test and editor option-invalidation test
+also pass, each with exactly one executed/passed test. The linked report records
+both the hosted harness and exact native compiler/server assembly provenance.
+Independent soundness review and overall acceptance remain open.
 
 Eight additional structural observations cover
 independent specification-domain proofs, a mandatory false first postcondition,
