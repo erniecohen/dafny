@@ -41,9 +41,10 @@ are seeds 0, 1 and 7 in that order.
 platform scope. This is not a like-for-like replay of the previous full Linux
 gate, nor attribution of the improvement to the new normalization. Each of the
 other five suite targets still fails at least one selected seed. The iterator
-has partial success in both baseline and enabled modes and remains the
-request-section-13 variance case. The other movements are retained rather than
-waived. Power's stable proof failure remains unresolved.
+and `AltPrimeDefinition` have partial success in both baseline and enabled modes
+in this current matrix, so request section 13 classifies them as solver/resource
+variance rather than translation defects. The remaining movements stay open.
+Power's stable proof failure remains unresolved.
 
 All sixteen positive control observations verify, including the unchanged
 original issue 100 and the subset reproducer. All four negative guarded-argument
