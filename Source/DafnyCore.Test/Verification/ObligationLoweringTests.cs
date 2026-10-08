@@ -180,6 +180,17 @@ public class ObligationLoweringTests {
   }
 
   [Fact]
+  public void FingerprintDistinguishesOperatorIdentities() {
+    var x = new Bpl.IdentifierExpr(Token.NoToken, "x", Bpl.Type.Bool);
+    var y = new Bpl.IdentifierExpr(Token.NoToken, "y", Bpl.Type.Bool);
+    Assert.NotEqual(ObligationFingerprint.Expression(Bpl.Expr.Imp(x, y)),
+      ObligationFingerprint.Expression(Bpl.Expr.And(x, y)));
+    var n = new Bpl.IdentifierExpr(Token.NoToken, "n", Bpl.Type.Int);
+    Assert.NotEqual(ObligationFingerprint.Expression(Bpl.Expr.Add(n, Bpl.Expr.Literal(1))),
+      ObligationFingerprint.Expression(Bpl.Expr.Sub(n, Bpl.Expr.Literal(1))));
+  }
+
+  [Fact]
   public void FingerprintNormalizesLambdaBindersWithoutChangingTheirBodies() {
     var token = Token.NoToken;
     Bpl.LambdaExpr Lambda(string name, bool body) {
@@ -358,6 +369,21 @@ public class ObligationLoweringTests {
     Assert.All(implicitChecks, c => Assert.Equal(explicitChecks[0], ObligationFingerprint.Expression(c.Expr)));
   }
 
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task OldArrayAccessChecksOneAssertionEquivalentAllocationPredicate(bool refresh) {
+    const string source = "lemma L(a:array<int>,i:nat) requires i<a.Length " +
+      "{ assert old(allocated(a)); var x := old(a[i]); }";
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var checks = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>().ToList();
+    var explicitCheck = Assert.Single(checks.Where(c => c.Description is AssertStatementDescription));
+    var allocation = Assert.Single(checks.Where(c => c.Description is IsAllocated));
+    Assert.Equal(ObligationFingerprint.Expression(explicitCheck.Expr),
+      ObligationFingerprint.Expression(allocation.Expr));
+  }
+
   [Fact]
   public async Task ExplicitAndImplicitHigherOrderRequiresUseTheSameHeapAndActuals() {
     const string source = "lemma L(f:int-->int,i:int) requires f.requires(i) { assert f.requires(i); var v := f(i); }";
@@ -408,7 +434,7 @@ public class ObligationLoweringTests {
     Assert.NotEmpty(original);
     Assert.Equal(2, original.Length); // Legacy rechecked the target-typed converted result.
     Assert.Single(enriched);
-    Assert.Contains("==>", enriched[0]);
+    Assert.Contains("binary:Imp(", enriched[0]);
   }
 
   [Fact]

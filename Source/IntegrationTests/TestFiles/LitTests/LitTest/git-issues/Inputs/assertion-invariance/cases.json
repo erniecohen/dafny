@@ -803,5 +803,20 @@
     "name": "negative-array-initializer",
     "expected": 4,
     "group": "range-bound-constraints"
+  },
+  {
+    "name": "old-array-access",
+    "expected": 0,
+    "group": "old-allocation"
+  },
+  {
+    "name": "old-array-access-explicit",
+    "expected": 0,
+    "group": "old-allocation"
+  },
+  {
+    "name": "negative-old-array-access",
+    "expected": 4,
+    "group": "old-allocation"
   }
 ]

@@ -53,8 +53,17 @@ internal static class ObligationFingerprint {
         return $"literal:{type}:{literal}";
       case Bpl.OldExpr old:
         return $"old:{type}({Child(old.Expr)})";
-      case Bpl.NAryExpr application:
-        return $"apply:{type}:{application.Fun}({string.Join(",", application.Args.Select(Child))})";
+      case Bpl.NAryExpr application: {
+        // Boogie's operator ToString() can return only the CLR class name.
+        // Keep opcode identity rather than conflating, for example, => and &&.
+        var operation = application.Fun switch {
+          Bpl.BinaryOperator binary => $"binary:{binary.Op}",
+          Bpl.UnaryOperator unary => $"unary:{unary.Op}",
+          Bpl.FunctionCall function => $"function:{function}",
+          _ => $"{application.Fun.GetType().FullName}:{application}"
+        };
+        return $"apply:{type}:{operation}({string.Join(",", application.Args.Select(Child))})";
+      }
       case Bpl.QuantifierExpr quantifier: {
         var scoped = new BindingScope(bound);
         var variables = quantifier.Dummies.Select((v,i) => {
