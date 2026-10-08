@@ -1,5 +1,14 @@
 # Guarded contract preparation: current focused result
 
+**Newest correction:** semantic/product pin `a709df226` replaces empty
+certified-WF branches by `G ==> G`, retaining the guard terms without an empty
+control-flow split. Its [build](https://github.com/erniecohen/dafny/actions/runs/37781426875)
+passes all ten actual stages, both platforms and probes, the editor build,
+92 structural observations in each mode, the exact 287-group inventory and all
+370 core unit tests. The 68-observation native known-regression diagnostic is
+pending; no preceding result validates this edit. Whole-suite runs are not an
+iteration step while the known regressions remain unresolved.
+
 The preceding measured semantic candidate `338b82396`, corrected product pin
 `69dc750b5`, build source
 `861472a9d` and Z3 5.1.0 are the current measured inputs. The native version is
