@@ -1,17 +1,25 @@
 # Obligation lowering validation status
 
-**Current candidate under validation:** semantic/product `fe6ddd1ba` keeps the
-existing leading can-call command and places it after accepted certified pure
-preparation only when it reads no assigned or havoced variable. Unsupported
-fragments retain the previous order. Actual checks, expression/fuel state,
-certified facts, source state and reveal scopes are retained. The
-[native support-order diagnosis](obligation-support-order-diagnosis.md) completes
-36 observations for the preceding `a709df226` product with faithful native
-controls, but does not validate this new compiler candidate. Fresh compilation
-and focused current-candidate verification remain pending. No whole-suite
-iteration or development port is being performed.
+**Latest evidence:** product `fe6ddd1ba` has [68 focused suite/control observations](obligation-guarded-preparation-focused.md)
+and [92 completed known-library/control observations](obligation-current-focused-library.md).
+The library result explicitly combines 84 preserved observations from a harness-failed
+attempt and eight controls from its completed follow-up. Remaining resource failures
+and strict default-off cost acceptance stay open. No whole-suite/library run was
+launched for this revision. Complete-gate results below belong to earlier pinned
+revisions and cannot establish current acceptance.
 
-**Newest correction:** semantic/product pin `a709df226` replaces empty
+**Current focused result:** semantic/product `fe6ddd1ba`, with the
+[accepted compiler build](https://github.com/erniecohen/dafny/actions/runs/37808373912),
+completes 68 native observations on macOS arm64 with Z3 5.1.0, both additional-axiom
+settings and original resource ceilings. All reported independent specification-WF
+results are Correct; all sixteen positive controls verify, all four negative
+controls contain genuine Invalid VCs, and six default-off Power vectors exactly
+match the recorded baseline. Baseline and preceding `a709df226` results are
+explicitly reused. Composite gains one successful seed; Power remains green.
+Five suite targets still exhaust resources at selected seeds, so focused enabled
+acceptance is rejected. No whole-suite/library job or development port is run.
+
+**Preceding correction:** semantic/product pin `a709df226` replaces empty
 certified-WF branches by `G ==> G`, retaining the guard terms without an empty
 control-flow split. Its [build](https://github.com/erniecohen/dafny/actions/runs/37781426875)
 passes all ten actual stages, both platforms and probes, the editor build,
@@ -40,7 +48,7 @@ approval requirement before porting to the development line.
 The [requested review revisions](obligation-review-change-request.md) govern the
 single-check replacement in PR #168. The preceding semantic correction is `98b0dd509`, compiled product `072175269`,
 built from `8d23f3fc8`. Its structural, registered/paired and normal registered/editor
-integration gates pass. Its [complete current suite/library gates](obligation-current-complete-gates.md)
+integration gates pass. Its [historical complete suite/library gates](obligation-current-complete-gates.md)
 finish under both axiom settings and reject enabled acceptance. Exact default-off
 suite verdict/resource compatibility passes; strict default-off library resource
 equality remains rejected despite unchanged verdicts and operational Boogie.

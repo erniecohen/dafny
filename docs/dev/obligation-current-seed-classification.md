@@ -1,6 +1,14 @@
 # Current affected-declaration seed classification
 
-This diagnostic uses the current compiled product `072175269`, baseline
+**Latest evidence:** product `fe6ddd1ba` has [68 focused suite/control observations](obligation-guarded-preparation-focused.md)
+and [92 completed known-library/control observations](obligation-current-focused-library.md).
+The library result explicitly combines 84 preserved observations from a harness-failed
+attempt and eight controls from its completed follow-up. Remaining resource failures
+and strict default-off cost acceptance stay open. No whole-suite/library run was
+launched for this revision. Complete-gate results below belong to earlier pinned
+revisions and cannot establish current acceptance.
+
+This diagnostic uses the preceding compiled product `072175269`, baseline
 `ab210b78b` and Z3 5.1.0. It preserves source hints and resource ceilings.
 Suite commands retain the exact original full-run options and one core per
 process; the library retains its complete original project and two-core setting.

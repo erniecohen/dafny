@@ -1,7 +1,15 @@
 # Current enabled verdict-table changes
 
+**Latest evidence:** product `fe6ddd1ba` has [68 focused suite/control observations](obligation-guarded-preparation-focused.md)
+and [92 completed known-library/control observations](obligation-current-focused-library.md).
+The library result explicitly combines 84 preserved observations from a harness-failed
+attempt and eight controls from its completed follow-up. Remaining resource failures
+and strict default-off cost acceptance stay open. No whole-suite/library run was
+launched for this revision. Complete-gate results below belong to earlier pinned
+revisions and cannot establish current acceptance.
+
 This appendix records every enabled verdict-table movement in the completed
-current `072175269` comparisons with baseline `ab210b78b` and Z3 5.1.0.
+preceding `072175269` comparisons with baseline `ab210b78b` and Z3 5.1.0.
 Both baseline and default-off exactly match their committed expected verdict
 tables in all four complete gates. No table is rebased here. The [complete-gate
 report](obligation-current-complete-gates.md) records scope, resource failures,
