@@ -5,9 +5,14 @@ certified-WF branches by `G ==> G`, retaining the guard terms without an empty
 control-flow split. Its [build](https://github.com/erniecohen/dafny/actions/runs/37781426875)
 passes all ten actual stages, both platforms and probes, the editor build,
 92 structural observations in each mode, the exact 287-group inventory and all
-370 core unit tests. The 68-observation native known-regression diagnostic is
-pending; no preceding result validates this edit. Whole-suite runs are not an
-iteration step while the known regressions remain unresolved.
+370 core unit tests. Its [focused native result](obligation-guarded-preparation-focused.md)
+completes 68 observations: Power verifies all three seeds in both axiom settings,
+with its two actual exit checks byte unchanged. All observed specification-WF
+checks, sixteen positive controls and four genuine invalid controls behave as
+required. Five suite targets still have resource failures at selected seeds;
+targeted enabled acceptance remains false. The earlier baseline evidence is
+explicitly reused; only six default-off Power observations are newly executed
+and match that baseline exactly. No whole-suite or whole-library run was launched.
 
 The preceding measured semantic candidate `338b82396`, corrected product pin
 `69dc750b5`, build source
@@ -94,7 +99,46 @@ byte unchanged in the positive variants. The baseline controls verify. The
 static SMT prefix is identical, including background declarations, axioms and
 solver options; the dynamic verification condition changes with the branch.
 
-The proposed compiler correction uses the tautology, preserving guard terms
-without an empty control-flow split. Its fresh build and native result remain
-pending. These replay outcomes identify a cause in generated Boogie; they do not
+The compiler correction uses the tautology, preserving guard terms without an
+empty control-flow split. Its fresh build and focused native result are complete
+and recorded below. These replay outcomes identify a cause in generated Boogie; they do not
 establish native candidate acceptance or repair the remaining resource cases.
+
+
+## Current native empty-branch correction
+
+Semantic/product `a709df226`, build `a9971975f` and Z3 5.1.0 complete 68 native
+observations on macOS arm64. The six suite targets and Power use enabled mode
+under both axiom settings and seeds 0, 1 and 7. Six new default-off Power controls
+match the earlier baseline outcomes and resource vectors exactly. Other baseline
+results below are explicitly reused from the completed 146-observation result,
+with unchanged source/project/option inputs on the same platform. They are not
+newly executed baseline or complete compatibility evidence.
+
+| Target | Earlier baseline | Preceding enabled | Current enabled |
+| --- | --- | --- | --- |
+| `ExtensibleArray.Append` | VVV | VVV | VVV |
+| `SnapTree.Iterator.MoveNext` | VRR | RVV | RVV |
+| `FormArmy` | VRR | RRR | RRR |
+| `AltPrimeDefinition` | VVR | VRR | VRR |
+| `Composite` | VVV | VRR | VRR |
+| `RemoveFactor` | VRR | RRR | RRR |
+| `Power.LemmaPowSubtractsAuto` | VVV | EEE | VVV |
+
+Both axiom settings give these same vectors. All observed independent
+specification-WF checks remain Correct. All sixteen positive controls verify;
+all four guarded-argument negative controls contain genuine Invalid body VCs
+while their independent specification-WF checks remain Correct.
+
+The current native Power body contains the guard tautology and no empty branch
+in its certified preparation. Its two actual quantified exit checks are byte
+identical to those of the failed preceding native candidate, including their
+fuel and triggers. This establishes the focused native Power repair; it does not
+establish complete-suite or complete-library acceptance.
+
+Iterator and `AltPrimeDefinition` remain the request-section-13 partially
+successful variance cases. `FormArmy`, `RemoveFactor` and `Composite` require
+further resource investigation. Five suite targets still fail at some seeds, so
+targeted enabled acceptance remains false. Original sources, ceilings, hints,
+project settings and expected verdicts were not changed. No whole-suite run is
+an iteration step for these remaining cases.

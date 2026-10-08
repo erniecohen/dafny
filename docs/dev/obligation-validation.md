@@ -5,9 +5,14 @@ certified-WF branches by `G ==> G`, retaining the guard terms without an empty
 control-flow split. Its [build](https://github.com/erniecohen/dafny/actions/runs/37781426875)
 passes all ten actual stages, both platforms and probes, the editor build,
 92 structural observations in each mode, the exact 287-group inventory and all
-370 core unit tests. The 68-observation native known-regression diagnostic is
-pending; no preceding result validates this edit. Whole-suite runs are not an
-iteration step while the known regressions remain unresolved.
+370 core unit tests. Its [focused native result](obligation-guarded-preparation-focused.md)
+completes 68 observations: Power verifies all three seeds in both axiom settings,
+with its two actual exit checks byte unchanged. All observed specification-WF
+checks, sixteen positive controls and four genuine invalid controls behave as
+required. Five suite targets still have resource failures at selected seeds;
+targeted enabled acceptance remains false. The earlier baseline evidence is
+explicitly reused; only six default-off Power observations are newly executed
+and match that baseline exactly. No whole-suite or whole-library run was launched.
 
 **Preceding measured candidate:** semantic correction `338b82396`, product pin
 `69dc750b5`, build `861472a9d` passes all ten build stages, 92 structural
