@@ -8,7 +8,7 @@ definition-support experiments. Preserve the request in full; use this file to
 record implementation and evidence against each requirement as revisions land.
 
 **Status:** the supported single-check product revision is implemented in
-`58d8ac112`, including the allocation correction, shared universal assertion layer rule and source-local preparation and iterator frame/old-heap repairs; the preceding structural/focused gates passed; the current 77-control build passes and fresh native acceptance remains pending after the opaque fuel handoff correction. Historical native results describe earlier implementations and do not discharge this checklist. Keep both PRs as drafts.
+`58d8ac112`, including the allocation correction, shared universal assertion layer rule and source-local preparation and iterator frame/old-heap repairs; the preceding structural/focused gates passed; the current 77-control build and complete focused native gates pass. Its full suite/library gates finish and reject enabled acceptance; strict default-off library cost remains rejected. The declared-contract preparation correction is proposed and still requires its own evidence. Historical native results describe earlier implementations and do not discharge this checklist. Keep both PRs as drafts.
 Settle the supported-line design first. The owner requires an explicit approval
 before any implementation is ported to #169; keep that port pending until approval.
 The development line then requires independent evidence. The [current preparation diagnosis](obligation-local-preparation-diagnosis.md) records the local repair and rejected preceding native evidence.
@@ -45,12 +45,12 @@ linked validation report.
 
 ## Supported-line acceptance
 
-- [ ] Original issue 100 source verifies without its redundant final assertion at the existing ceiling (preceding iterator revision passed; fresh current gates required).
-- [ ] The subset reproducer verifies without its redundant assertion (preceding iterator revision passed; fresh current gates required).
-- [ ] Representative method and function precondition examples verify without redundant assertions (preceding iterator revision passed; fresh current gate required).
-- [ ] All negative controls remain negative (232 expected-negative observations in the preceding complete paired gate have invalid VCs; fresh current gate required).
-- [ ] Scoped-reveal examples retain their previous proofs at the actual check point (preceding controls passed; fresh current controls required).
-- [ ] Default-off translation, verdicts and resource behavior remain compatible with the supported baseline under the fork's required gates (preceding full library verdicts and operational Boogie match, but strict resource compatibility rejects both settings; current complete gates pending).
+- [x] Original issue 100 source verifies without its redundant final assertion at the existing ceiling (current complete registered/paired gates pass).
+- [x] The subset reproducer verifies without its redundant assertion (current complete registered/paired gates pass).
+- [x] Representative method and function precondition examples verify without redundant assertions (current paired gate passes).
+- [x] All registered/paired negative controls remain negative (all 232 expected-negative observations in the current complete paired gate have invalid VCs; full-suite negative verdict review remains required).
+- [x] Scoped-reveal examples retain their previous proofs at the actual check point (current registered/paired and structural controls pass).
+- [ ] Default-off translation, verdicts and resource behavior remain compatible with the supported baseline under the fork's required gates (current full-suite verdicts and resource vectors match exactly in both settings; current library verdicts and operational Boogie match, but strict library resource equality rejects both settings).
 - [ ] Enabled mode has no unexplained stable correctness regression.
 - [ ] Remaining resource movements are classified with multiple seeds using S13's policy.
 - [ ] No body/context scanning, new background axiom or global fuel policy is introduced.
