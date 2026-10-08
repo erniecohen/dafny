@@ -2,6 +2,9 @@ name: Native obligation duplicate-support diagnostic build
 # Scratch-only local duplicate-support hypothesis; no solver work in this build.
 on:
   workflow_dispatch:
+  push:
+    branches: [scratch/codex/issue100-preservation-build]
+    paths: [.github/workflows/obligation-native-duplicate-diagnostic.yml]
 permissions:
   contents: read
   actions: read
