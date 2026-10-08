@@ -1,6 +1,12 @@
 # Issue 100 revision checklist
 
-**Current candidate:** semantic correction `338b82396`, product pin
+**Newest correction pending:** empty certified-WF branches now retain their
+guard in the tautology `G ==> G`, without an empty control-flow split. The
+focused generated-Boogie diagnosis verifies Power at all selected seeds, but
+this edit still needs its own build and native result; it inherits no earlier
+acceptance. Known regressions remain the iteration scope.
+
+**Preceding measured candidate:** semantic correction `338b82396`, product pin
 `69dc750b5`, build `861472a9d` passes all ten build stages, 92 structural
 observations in both modes, the independent 287-group inventory and all 370 core
 unit tests. Its [focused known-regression diagnostic](obligation-guarded-preparation-focused.md)

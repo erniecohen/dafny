@@ -71,3 +71,18 @@ The supported-line PR remains a draft. Independent soundness review, remaining
 regression work and complete acceptance remain open. Another whole-suite run is
 not an iteration step while these known regressions remain unresolved. The
 development-line port still requires explicit owner approval.
+
+
+## Follow-up empty-branch diagnostic
+
+Thirty focused generated-Boogie observations replay the current compiled Power
+body on the same platform with Z3 5.1.0, both axiom settings and seeds 0, 1 and 7.
+The unchanged reparsed native control fails each seed. Removing the one empty
+certified-WF branch, or replacing it by `G ==> G` with its original guard,
+verifies every seed. All false exit controls fail, and both real exit checks are
+byte unchanged in the positive variants. The baseline controls verify.
+
+The proposed compiler correction uses the tautology, preserving guard terms
+without an empty control-flow split. Its fresh build and native result remain
+pending. These replay outcomes identify a cause in generated Boogie; they do not
+establish native candidate acceptance or repair the remaining resource cases.

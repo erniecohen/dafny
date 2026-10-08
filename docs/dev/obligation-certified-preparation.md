@@ -76,8 +76,10 @@ The function-WF routine identifies these argument variables as it creates them;
 eligibility does not infer privacy from variable names. Repeated assignments,
 guards mentioning assigned temporaries, calls, real assertions, conditional
 havoc, labels, scope commands and other statement forms retain the original
-translation. Empty branches retain their guards and terms. Preparation still
-runs the original traversal, and the actual proposition lowering is unchanged.
+translation. Empty branches become the tautology `G ==> G`, using the original
+guard expression on both sides and retaining any comments. This preserves the
+guard terms without an empty control-flow split. Preparation still runs the
+original traversal, and the actual proposition lowering is unchanged.
 
 The justification projects away the private temporaries. On an active branch,
 each unique temporary has the same value as before; on an inactive branch,
@@ -92,3 +94,14 @@ checks unchanged succeeds at three seeds in both axiom settings; false checks
 remain invalid. Moving only assumptions while preserving conditional bindings
 does not repair it. These are diagnostics, not native acceptance of the new
 compiler candidate. Fresh compilation and complete native gates are required.
+
+
+A focused replay of the current native Power body reproduces its failure at all
+three seeds under both axiom settings. Replacing its one empty certified branch
+by `G ==> G` verifies every selected seed, with both actual quantified exit checks
+byte unchanged. False exit controls still fail. The tautology is true in every
+Boogie state because expressions are total and the antecedent and consequent
+are the identical expression; it adds no assumed domain fact or proposition.
+This identifies the empty control-flow split in the replay, but fresh native
+compiler evidence is still required. No whole-suite run is an iteration step
+while the known regressions remain unresolved.

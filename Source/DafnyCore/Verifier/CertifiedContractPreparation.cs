@@ -79,8 +79,11 @@ internal static class CertifiedContractPreparation {
         var nestedGuards = guards.Append(branch.Guard).ToList();
         var body = Commands(branch.Thn);
         if (body.All(item => item is Bpl.CommentCmd)) {
-          // Retain even an empty branch's guard expression and its terms.
-          result.Add(new Bpl.IfCmd(branch.tok, Guard(nestedGuards), branch.Thn, null, null));
+          // A certified empty branch imposes no condition. Retain its guard
+          // expression and terms in a tautology without introducing a CFG split.
+          result.AddRange(body);
+          var guard = Guard(nestedGuards);
+          result.Add(new Bpl.AssumeCmd(branch.tok, Bpl.Expr.Imp(guard, guard)));
         } else {
           Flatten(body, nestedGuards, result);
         }

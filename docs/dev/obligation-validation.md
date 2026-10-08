@@ -1,6 +1,12 @@
 # Obligation lowering validation status
 
-**Current candidate:** semantic correction `338b82396`, product pin
+**Newest correction pending:** empty certified-WF branches now retain their
+guard in the tautology `G ==> G`, without an empty control-flow split. The
+focused generated-Boogie diagnosis verifies Power at all selected seeds, but
+this edit still needs its own build and native result; it inherits no earlier
+acceptance. Known regressions remain the iteration scope.
+
+**Preceding measured candidate:** semantic correction `338b82396`, product pin
 `69dc750b5`, build `861472a9d` passes all ten build stages, 92 structural
 observations in both modes, the independent 287-group inventory and all 370 core
 unit tests. Its [focused known-regression diagnostic](obligation-guarded-preparation-focused.md)
@@ -13,7 +19,7 @@ validate this new candidate. Keep both PRs as drafts and retain the owner's
 approval requirement before porting to the development line.
 
 The [requested review revisions](obligation-review-change-request.md) govern the
-single-check replacement in PR #168. The current semantic correction is `98b0dd509`, compiled product `072175269`,
+single-check replacement in PR #168. The preceding semantic correction is `98b0dd509`, compiled product `072175269`,
 built from `8d23f3fc8`. Its structural, registered/paired and normal registered/editor
 integration gates pass. Its [complete current suite/library gates](obligation-current-complete-gates.md)
 finish under both axiom settings and reject enabled acceptance. Exact default-off
