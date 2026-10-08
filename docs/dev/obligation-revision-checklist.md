@@ -8,7 +8,7 @@ definition-support experiments. Preserve the request in full; use this file to
 record implementation and evidence against each requirement as revisions land.
 
 **Status:** the supported single-check product revision is implemented in
-`f6c230fb0`, including the allocation correction, shared universal assertion layer rule and source-local preparation repair; source acceptance and complete validation remain pending. Historical native results describe earlier implementations and do not discharge this checklist. Keep both PRs as drafts.
+`a08a9485c`, including the allocation correction, shared universal assertion layer rule and source-local preparation repair; source acceptance and complete validation remain pending. Historical native results describe earlier implementations and do not discharge this checklist. Keep both PRs as drafts.
 Settle the supported-line design first. The owner requires an explicit approval
 before any implementation is ported to #169; keep that port pending until approval.
 The development line then requires independent evidence. The [current preparation diagnosis](obligation-local-preparation-diagnosis.md) records the local repair and rejected preceding native evidence.

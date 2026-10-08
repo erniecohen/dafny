@@ -2,7 +2,7 @@
 
 The [requested review revisions](obligation-review-change-request.md) govern the
 single-check replacement in PR #168. The supported semantic revision is now
-`f6c230fb0`, restoring source-local assertion well-formedness preparation and the
+`a08a9485c`, restoring source-local assertion well-formedness preparation and the
 frozen initializer application's domain guard. Its native acceptance is pending.
 The [current causal analysis](obligation-local-preparation-diagnosis.md) records
 the rejected preceding source gates, controlled generated-Boogie experiments,
@@ -16,11 +16,14 @@ initializer positives. All paired negative observations retained invalid VCs.
 Focused default-off comparisons matched their baseline outcome/resource vectors;
 complete suite and standard-library acceptance remain pending.
 
-The [preparation-repair build](https://github.com/erniecohen/dafny/actions/runs/37717196930)
-is pending. It adds structural controls for local quantifier well-formedness,
-one postcondition check, inherited guarding and the frozen initializer domain.
-Fresh native gates must use this build's actual binaries, and its newly captured
-producer registry must be reviewed before the normal inventory gate passes.
+The [first preparation-repair build](https://github.com/erniecohen/dafny/actions/runs/37717196930)
+compiled both native platforms and the editor. It passed 67 of 69 structural
+controls; the two inherited controls had a fixture syntax error, now corrected.
+Its normal inventory was outdated. The captured 287 groups have been reviewed,
+including their exact source hashes; the later one-line existential-state repair
+changes only the complete adapter-file hash in that inventory. A new build must
+confirm the repaired fixtures, existential-state comparison and normal registry
+before native gates use its binaries.
 
 The [preceding diagnostic build](https://github.com/erniecohen/dafny/actions/runs/37711275949)
 passed all 61 earlier structural controls, including exact old-array allocation
