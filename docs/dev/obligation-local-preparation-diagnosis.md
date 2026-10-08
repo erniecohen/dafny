@@ -1,6 +1,6 @@
 # Local preparation diagnosis for the single-check replacement
 
-This analysis belongs to PR #168 and the [requested revisions](obligation-review-change-request.md), especially S1, S2, S5, S9, S10 and S13. It concerns semantic revision `2ad5d25a5`, built from `cbe74d128` in the [63-control build](https://github.com/erniecohen/dafny/actions/runs/37713397830). That build passed compilation, the structural controls and the normal reviewed producer-inventory gate. Native source acceptance nevertheless failed. The source preparation repair is `f6c230fb0`, its existential-state handoff correction is `f5c5abf18`, and the current reviewed source/inventory pin is `a08a9485c`. The first repair build compiled both platforms but rejected a structural fixture syntax error and outdated inventory; both have been corrected. A fresh build and native acceptance are pending. No implementation has been ported to PR #169.
+This analysis belongs to PR #168 and the [requested revisions](obligation-review-change-request.md), especially S1, S2, S5, S9, S10 and S13. It concerns semantic revision `2ad5d25a5`, built from `cbe74d128` in the [63-control build](https://github.com/erniecohen/dafny/actions/runs/37713397830). That build passed compilation, the structural controls and the normal reviewed producer-inventory gate. Native source acceptance nevertheless failed. The source preparation repair is `f6c230fb0`, its existential-state handoff correction is `f5c5abf18`, and the current reviewed source/inventory pin is `a08a9485c`. The first repair build compiled both platforms but rejected a structural fixture syntax error and outdated inventory; both have been corrected. The [current build](https://github.com/erniecohen/dafny/actions/runs/37717887176) now passes all 71 structural controls and the normal reviewed inventory. Its complete registered native gate passes all 242 observations. Complete paired, suite/library and independent soundness acceptance remain pending. No implementation has been ported to PR #169.
 
 ## Original exit obligation
 
@@ -17,6 +17,31 @@ The `array-initializer` positive failed its subset constraint under both resolve
 The replay restored the frozen application's domain in the local constraint guard, under the existing index range. This made the positive succeed at all three seeds. The corresponding guarded false constraint still failed with an invalid verification condition. Publishing the earlier domain assertion also made the positive succeed in a diagnostic variant, but would change the original continuation policy and is excluded from the product repair.
 
 The repair checks the guarded constraint once. The independent existing range-bound domain check remains mandatory and retains check-and-forget. Base membership and any derived symbolic representation carry the same domain guard; no unconditional domain/can-call assumption is introduced. The initializer handle is captured at its original evaluation point and is not translated again.
+
+## Iterator preparation context
+
+The first native paired trial of the local preparation revision (`a08a9485c`)
+accepted its first 476 observations, then rejected a yield negative control with
+an undeclared `$_ReadsFrame`. Its fresh two-state yield translator had a default
+method reads-frame name, while iterator bodies intentionally disable method
+reads checks: an iterator's reads clause denotes locations retained across yield,
+not a method's readable frame. The new WF replay made that incorrect context
+observable. An internal translation error is not accepted negative evidence.
+
+The repair in `126dfd96b` preserves the body's existing translator/frame policy
+and replaces only its old heap with the exact saved iteration heap for the yield
+clause. Inherited yield clauses keep their exclusion from preparation/checks.
+Body-specific structural controls resolve and typecheck the generated Boogie,
+retain the saved old heap and reject an undeclared method-frame reference. The
+current reviewed source pin is `8e7f54505`; its own build and native acceptance
+are pending. Previously prepared full comparisons of the earlier revision will
+not be submitted as acceptance of this correction.
+
+The private paired adapter also now treats a missing/empty verification log as
+rejected evidence and continues the remaining observations. It must never count
+an internal error as a successful negative control. This changes evidence
+collection only; all source, solver options, resource limits and expectations
+remain fixed.
 
 ## Evidence boundaries
 

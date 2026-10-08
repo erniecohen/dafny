@@ -2,8 +2,8 @@
 
 The [requested review revisions](obligation-review-change-request.md) govern the
 single-check replacement in PR #168. The supported semantic revision is now
-`a08a9485c`, restoring source-local assertion well-formedness preparation and the
-frozen initializer application's domain guard. Its native acceptance is pending.
+`8e7f54505`, restoring source-local assertion well-formedness preparation and the
+frozen initializer application's domain guard. It also preserves iterator yield frames and old heaps. Its native acceptance is pending.
 The [current causal analysis](obligation-local-preparation-diagnosis.md) records
 the rejected preceding source gates, controlled generated-Boogie experiments,
 negative outcomes and multi-seed classification.
@@ -16,14 +16,30 @@ initializer positives. All paired negative observations retained invalid VCs.
 Focused default-off comparisons matched their baseline outcome/resource vectors;
 complete suite and standard-library acceptance remain pending.
 
-The [first preparation-repair build](https://github.com/erniecohen/dafny/actions/runs/37717196930)
-compiled both native platforms and the editor. It passed 67 of 69 structural
-controls; the two inherited controls had a fixture syntax error, now corrected.
-Its normal inventory was outdated. The captured 287 groups have been reviewed,
-including their exact source hashes; the later one-line existential-state repair
-changes only the complete adapter-file hash in that inventory. A new build must
-confirm the repaired fixtures, existential-state comparison and normal registry
-before native gates use its binaries.
+The [current preparation build](https://github.com/erniecohen/dafny/actions/runs/37717887176)
+compiled both native platforms and the editor. All 71 structural controls and
+the normal reviewed 287-group inventory gate passed. These include local
+quantifier WF, one postcondition proof, inherited preparation guarding,
+initializer domain preservation and nested-existential fuel identity with an
+immediate assertion under both resolvers. Native version:
+`4.11.0+fcb2042d.review.7ebd2a20`; build source: `ece2a91fb`.
+
+The complete registered native gate now passes all 242 observations using that
+build and Z3 5.1.0, including the unchanged original issue 100, subset and
+range-bound collection positives, reveal-scope controls, negative controls and
+project/CLI precedence. This is registered acceptance, not suite/library or
+independent soundness acceptance. The complete paired trial then rejected an iterator-yield translation error:
+local preparation referenced an undeclared method reads frame. Its first 476
+observations passed, but the full gate was incomplete. The frame/old-heap repair
+in `126dfd96b` and its body-specific resolution/typechecking controls require a
+fresh build and complete native gates. Running earlier multi-seed/library inputs
+remain diagnostic evidence of their recorded revision. Required complete suite
+and standard-library gates remain pending.
+
+The [first repair build](https://github.com/erniecohen/dafny/actions/runs/37717196930)
+compiled both platforms and the editor but rejected the inherited fixture's
+missing semicolon and outdated registry. Both have been corrected; its partial
+structural result is superseded by the current normal gate.
 
 The [preceding diagnostic build](https://github.com/erniecohen/dafny/actions/runs/37711275949)
 passed all 61 earlier structural controls, including exact old-array allocation

@@ -141,9 +141,16 @@ public partial class BoogieGenerator {
             );
           var fieldSub = new SpecialFieldSubstituter(fieldSubstMap);
 
+          // Iterator reads clauses describe locations retained across a yield;
+          // they are not method reads frames. Preserve the body's existing frame
+          // policy together with the yield's exact old heap for local WF.
+          var yieldCheckEtran = options.Get(CommonOptionBag.ConsistentObligationChecks)
+            ? etran.WithVerificationOldHeap(new Bpl.IdentifierExpr(s.Origin, "$_OldIterHeap", Predef.HeapType))
+            : null;
           foreach (var p in iter.YieldEnsures) {
             var ss = options.Get(CommonOptionBag.ConsistentObligationChecks)
-              ? LowerDeclaredProposition(p.E, builder, locals, yeEtran).Pieces.ToList()
+              ? LowerDeclaredProposition(p.E, builder, locals, yieldCheckEtran,
+                p.E.Origin.IsInherited(currentModule) ? Bpl.Expr.False : null).Pieces.ToList()
               : TrSplitExpr(builder.Context, p.E, yeEtran, true, out _);
             foreach (var split in ss) {
               if (split.Tok.IsInherited(currentModule)) {

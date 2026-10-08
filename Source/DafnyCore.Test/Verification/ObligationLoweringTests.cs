@@ -197,6 +197,25 @@ public class ObligationLoweringTests {
     Assert.All(implicitChecks, p => Assert.Equal(ObligationFingerprint.Content(explicitCheck), ObligationFingerprint.Content(p)));
   }
 
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task YieldPreparationPreservesIteratorReadsPolicyAndOldHeap(bool refresh) {
+    const string source = "iterator I() yields (r:int) yield ensures r>=old(r) { yield 0; }";
+    var programs = await Translate(source, true, refresh);
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    options.ApplyDefaultOptionsWithoutSettingsDefault();
+    foreach (var program in programs) {
+      Assert.Equal(0, program.Resolve(options));
+      Assert.Equal(0, program.Typecheck(options));
+    }
+    var body = programs.SelectMany(p => p.Implementations)
+      .Single(p => p.Name.Contains("Impl") && p.Name.EndsWith(".I"));
+    var checks = body.Blocks.SelectMany(block => block.Cmds).OfType<Bpl.AssertCmd>().ToList();
+    Assert.Contains(checks, check => ObligationFingerprint.Expression(check.Expr).Contains("$_OldIterHeap"));
+    Assert.DoesNotContain(checks, check => ObligationFingerprint.Expression(check.Expr).Contains("$_ReadsFrame"));
+  }
+
   [Fact]
   public async Task IteratorExitsCheckLocallyWithoutDuplicateProcedureEnsures() {
     const string source = "iterator I() yields (x:int) ensures true { yield 0; }";
