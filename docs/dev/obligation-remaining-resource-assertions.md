@@ -59,3 +59,34 @@ verdict or product proof hint changed. Targeted enabled acceptance and strict
 default-off library resource compatibility remain open. Iterator and
 `AltPrimeDefinition` remain the separate section-13 partially successful cases;
 this diagnostic does not authorize product tuning for their seed movements.
+
+## Local support-order replay and its limits
+
+A completed 36-observation generated-Boogie diagnostic moves one existing
+leading can-call assumption past pure private-argument WF preparation, before
+the first actual check. It preserves the original commands, facts, check formulas,
+fuel and scope. It includes unchanged controls and false-entry controls for
+`RemoveFactor` and `Composite`, both axiom settings and seeds 0, 1 and 7. All
+false-entry controls fail genuinely.
+
+The unchanged `RemoveFactor` replay agrees with the preceding native outcomes
+and resource vectors; moving the assumption does not repair it. The unchanged
+`Composite` replay does not reproduce native verification. Its apparent
+improvement after reordering therefore cannot support a native product change.
+No compiler change is made from this replay.
+
+The background declarations and axioms are identical in the compared traces,
+but the replay is not a faithful serialization of the native verifier state.
+Its model-generation setting remains different: error-trace output does not
+enable model generation. The generated body also differs after printing and
+reparsing. Dafny source conditionals carry `BlockRewriter.AllowSplitQ`; Boogie's
+`IfCmd.Emit` does not emit that attribute, although structured-block resolution
+copies it to the generated goto. Conjunction grouping and literal-negation
+representation can also change. The compared pruned bodies show different dead
+paths and SSA variables. These differences explain why printed-program equality
+is insufficient for this diagnostic; they do not establish the cause of the
+native regression.
+
+The next diagnosis must operate on the native translated AST and require its
+unchanged control to reproduce the current native query and result before
+attributing any change. It remains limited to the existing failing methods.

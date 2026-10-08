@@ -33,7 +33,7 @@ check-package design and exclude the later body/context-collection and
 definition-support experiments. Preserve the request in full; use this file to
 record implementation and evidence against each requirement as revisions land.
 
-**Status:** the declared-contract preparation correction is implemented as
+**Historical complete-gate status (superseded product):** the declared-contract preparation correction was implemented as
 candidate `98b0dd509`, compiled product pin `072175269`. Its accepted build passes
 all ten stages, 85 structural observations in capture and normal modes, the
 independent 287-group inventory and all 363 core unit tests. Its complete native
@@ -85,6 +85,13 @@ linked validation report.
 | S14 / 14 | Rewrite the PR description around single-check assertion-equivalent lowering. Complete every supported-line acceptance item below before requesting approval. | Pending |
 
 ## Supported-line acceptance
+
+The checked registered/paired items below record the completed `072175269`
+comparison. They do not discharge current `a709df226` acceptance. The newest
+68-observation native result above supplies current focused issue/subset,
+preparation and Power evidence. Current full registered/paired evidence and
+strict default-off library resource compatibility remain open; no full-suite
+rerun is authorized as an iteration loop for the existing regressions.
 
 - [x] Original issue 100 source verifies without its redundant final assertion at the existing ceiling (current complete registered/paired gates pass).
 - [x] The subset reproducer verifies without its redundant assertion (current complete registered/paired gates pass).

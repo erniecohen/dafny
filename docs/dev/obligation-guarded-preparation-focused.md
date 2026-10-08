@@ -14,9 +14,11 @@ targeted enabled acceptance remains false. The earlier baseline evidence is
 explicitly reused; only six default-off Power observations are newly executed
 and match that baseline exactly. No whole-suite or whole-library run was launched.
 
+## Preceding candidate: 146 observations
+
 The preceding measured semantic candidate `338b82396`, corrected product pin
 `69dc750b5`, build source
-`861472a9d` and Z3 5.1.0 are the current measured inputs. The native version is
+`861472a9d` and Z3 5.1.0 are the inputs to the preceding comparison. The native version is
 `4.11.0+fcb2042d.review.4bb429b4`. The
 [build](https://github.com/erniecohen/dafny/actions/runs/37776297807) passes all ten
 actual stages, both native platforms, both probes, the editor build, 92 structural
@@ -24,9 +26,9 @@ observations in capture and normal modes, the independent 287-group inventory
 and all 370 core unit tests. An earlier test type-name error and a registry
 text-decoding mismatch are corrected; neither was a completed candidate gate.
 
-## Only the known regressions and targeted controls
+### Only the known regressions and targeted controls
 
-The complete focused diagnostic has 146 observations on the macOS arm64 native
+The preceding complete focused diagnostic has 146 observations on the macOS arm64 native
 build: the six existing suite regressions, Power, and original issue/subset/new
 preparation controls. It preserves the original proof files, project settings,
 resource ceilings, solver options and one-core verification commands. The known
@@ -59,7 +61,7 @@ other five suite targets still fails at least one selected seed. The iterator
 and `AltPrimeDefinition` have partial success in both baseline and enabled modes
 in this current matrix, so request section 13 classifies them as solver/resource
 variance rather than translation defects. The remaining movements stay open.
-Power's stable proof failure remains unresolved.
+Power's stable proof failure was unresolved in this preceding candidate; the newest native result above repairs it.
 
 All sixteen positive control observations verify, including the unchanged
 original issue 100 and the subset reproducer. All four negative guarded-argument
