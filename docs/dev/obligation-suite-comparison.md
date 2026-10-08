@@ -1,5 +1,10 @@
 # Full-suite and standard-library obligation comparison
 
+These findings describe the superseded additive implementation. They are retained
+for regression triage and do not validate the single-check replacement. Current
+source and evidence are tracked in [the validation record](obligation-validation.md)
+and [revision checklist](obligation-revision-checklist.md).
+
 Status: complete native comparisons for the legacy reveal-scope correction with Z3 5.1.0; enabled acceptance failed. The option remains experimental and default off.
 
 Product and build identities are recorded in [obligation-validation.md](obligation-validation.md). The complete existing runners compare baseline, candidate with the option off, and candidate with it on, under both additional-axiom settings. Proof inputs, source options, warning policy, resource ceilings and expected-verdict tables are unchanged. These results supersede the preceding exit-publication comparison.

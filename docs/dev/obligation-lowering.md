@@ -173,7 +173,7 @@ replace semantic review of the specialized constructors or native paired tests.
 The fingerprint uses resolved binder identities and lexical unresolved-name
 scopes, with depth counting declarations. Nested same-name binders cannot collapse
 outer and inner variables; alpha-equivalent renaming remains equivalent. Function
-applications, quantifier kinds, ordered trigger patterns, attributes, types,
+applications, binary/unary opcode identities, quantifier kinds, ordered trigger patterns, attributes, types,
 ground identifiers, heap/fuel, can-call and check/free roles remain significant.
 Package-content comparisons also check guards/preparation separately. Complete
 commands and typed declarations are separate evidence from pre-resolution hashes.
