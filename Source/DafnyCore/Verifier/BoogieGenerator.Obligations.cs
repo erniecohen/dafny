@@ -61,7 +61,8 @@ public partial class BoogieGenerator {
   }
 
   private PropositionLowering LowerDeclaredProposition(Expression condition,
-    BoogieStmtListBuilder builder, Variables locals, ExpressionTranslator etran, Bpl.Expr preparationGuard = null) {
+    BoogieStmtListBuilder builder, Variables locals, ExpressionTranslator etran, Bpl.AssumeCmd leadingSupport,
+    Bpl.Expr preparationGuard = null) {
     // Replay assertion-local setup using the contract's independently checked
     // non-read WF facts. Do not prove those facts twice or assume body reads
     // bounds: specification WF has a different reads policy. The same fresh
@@ -79,8 +80,15 @@ public partial class BoogieGenerator {
       BplIfIf(condition.Origin, preparationGuard != null, preparationGuard, preparation,
         guarded => TrStmt_CheckWellformed(condition, guarded, locals, checking, false,
           omitReadsAssertions: true, certifiedArgumentTemporaries: argumentTemporaries));
-      builder.AppendAlreadyTranslated(preparation, CertifiedContractPreparation.Normalize(
-        preparation.Commands, argumentTemporaries));
+      var normalized = CertifiedContractPreparation.Normalize(preparation.Commands, argumentTemporaries);
+      // Match assertion-local support order only across certified pure setup.
+      // Preserve the original placement if a write/havoc can change its truth,
+      // or normalization rejected any part of the generated fragment.
+      var supportAfterPreparation = !ReferenceEquals(normalized, preparation.Commands) &&
+        CertifiedContractPreparation.CanMoveLeadingSupport(leadingSupport, normalized, argumentTemporaries);
+      if (!supportAfterPreparation) { builder.Add(leadingSupport); }
+      builder.AppendAlreadyTranslated(preparation, normalized);
+      if (supportAfterPreparation) { builder.Add(leadingSupport); }
       return LowerProposition(builder.Context, condition, etran, preparedTranslator: checking);
     } finally {
       stmtContext = savedStatement;
@@ -184,7 +192,7 @@ public partial class BoogieGenerator {
     // while body reveals are active. The procedure copy is nonchecking.
     if (assertionOnlyFilter != null) { return; }
     foreach (var ensures in ConjunctsOf(clauses)) {
-      builder.Add(TrAssumeCmd(ensures.E.Origin, etran.CanCallAssumptionForVerification(ensures.E)));
+      var leadingSupport = TrAssumeCmd(ensures.E.Origin, etran.CanCallAssumptionForVerification(ensures.E));
       // An inherited clause must not introduce unguarded local WF assertions.
       // Locally declared clauses still receive their immediate assertion's WF,
       // even if splitting subsequently inlines an inherited callee expression.
@@ -193,7 +201,7 @@ public partial class BoogieGenerator {
           ? new Bpl.IdentifierExpr(returnOrigin, "$_reverifyPost", Bpl.Type.Bool)
           : Bpl.Expr.False
         : null;
-      var lowering = LowerDeclaredProposition(ensures.E, builder, locals, etran, preparationGuard);
+      var lowering = LowerDeclaredProposition(ensures.E, builder, locals, etran, leadingSupport, preparationGuard);
       var (error, success) = CustomErrorMessage(ensures.Attributes);
       var description = new EnsuresDescription(ensures.E, error, success);
       foreach (var piece in lowering.Pieces) {

@@ -90,3 +90,5 @@ native regression.
 The next diagnosis must operate on the native translated AST and require its
 unchanged control to reproduce the current native query and result before
 attributing any change. It remains limited to the existing failing methods.
+
+The subsequent [native AST comparison](obligation-support-order-diagnosis.md) completes all 36 observations with faithful controls. It improves one Composite seed; remaining resource failures and product acceptance stay open.

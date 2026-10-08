@@ -105,3 +105,14 @@ are the identical expression; it adds no assumed domain fact or proposition.
 This identifies the empty control-flow split in the replay, but fresh native
 compiler evidence is still required. No whole-suite run is an iteration step
 while the known regressions remain unresolved.
+
+## Leading support order
+
+The [native support-order diagnosis](obligation-support-order-diagnosis.md)
+records a general local correction under validation. Create the existing support
+expression at its original point; move its command after normalized certified
+preparation only when it is independent of every private assignment and havoc
+target. The same expression/command and every preparation fact remain before the
+mandatory P check. Unsupported fragments retain the original order. This is
+state-preserving commutation of an assume with independent pure setup, not a
+new fact, proof, fuel policy or body-term collection.

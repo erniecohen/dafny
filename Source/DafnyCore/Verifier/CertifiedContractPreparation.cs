@@ -27,6 +27,31 @@ internal static class CertifiedContractPreparation {
     return result;
   }
 
+  internal static bool CanMoveLeadingSupport(Bpl.AssumeCmd support,
+    IReadOnlyList<object> normalized, ISet<string> argumentTemporaries) {
+    var reads = new IdentifierNames();
+    reads.VisitExpr(support.Expr);
+    foreach (var command in normalized) {
+      switch (command) {
+        case Bpl.CommentCmd or Bpl.AssumeCmd:
+          break;
+        case Bpl.HavocCmd havoc:
+          if (havoc.Vars.Any(variable => reads.Names.Contains(variable.Name))) { return false; }
+          break;
+        case Bpl.AssignCmd assignment:
+          foreach (var lhs in assignment.Lhss) {
+            if (lhs is not Bpl.SimpleAssignLhs simple ||
+                !argumentTemporaries.Contains(simple.AssignedVariable.Name) ||
+                reads.Names.Contains(simple.AssignedVariable.Name)) { return false; }
+          }
+          break;
+        default:
+          return false;
+      }
+    }
+    return true;
+  }
+
   private static bool Eligible(IReadOnlyList<object> commands, bool conditional,
     ISet<string> argumentTemporaries, Dictionary<string, int> writes, List<Bpl.Expr> guards) {
     foreach (var command in commands) {
