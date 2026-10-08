@@ -8,13 +8,14 @@ public class ObligationTranslationCollection { }
 
 [Collection("Obligation translation")]
 public class ObligationLoweringTests {
-  internal static async Task<List<Bpl.Program>> Translate(string source, bool enabled, bool refresh = false, Action<BoogieGenerator.PropositionLowering>? observer = null) {
+  internal static async Task<List<Bpl.Program>> Translate(string source, bool enabled, bool refresh = false, Action<BoogieGenerator.PropositionLowering>? observer = null, bool readsOnMethods = false) {
     Microsoft.Dafny.Type.ResetScopes();
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
     options.Set(CommonOptionBag.TypeSystemRefresh, refresh);
     options.Set(CommonOptionBag.GeneralNewtypes, refresh);
     options.Set(CommonOptionBag.ConsistentObligationChecks, enabled);
+    options.Set(MethodOrConstructor.ReadsClausesOnMethods, readsOnMethods);
     var reporter = new BatchErrorReporter(options);
     var result = await ProgramParser.Parse(source, new Uri("untitled:obligation.dfy"), reporter);
     await new ProgramResolver(result.Program).Resolve(CancellationToken.None);

@@ -21,6 +21,8 @@ def verify(name,refresh=False,axioms=False,enabled=True,project=False,override=N
   f"--additional-axioms:{str(axioms).lower()}","--boogie","/normalizeDeclarationOrder:0"]
  if not project or override is not None:
   command.append(f"--consistent-obligation-checks:{str(enabled if override is None else override).lower()}")
+ if name in ["certified-spec-only-reads","negative-certified-conditional-reads"]:
+  command.append("--reads-clauses-on-methods")
  if isolate: command.append("--isolate-assertions")
  result=subprocess.run(command,text=True,capture_output=True,timeout=120)
  output=result.stdout+result.stderr
