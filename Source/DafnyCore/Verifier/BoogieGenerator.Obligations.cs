@@ -73,10 +73,14 @@ public partial class BoogieGenerator {
     try {
       stmtContext = StmtType.ASSERT;
       adjustFuelForExists = true;
-      BplIfIf(condition.Origin, preparationGuard != null, preparationGuard, builder,
-        preparation => TrStmt_CheckWellformed(condition,
-          preparation.WithContext(preparation.Context with { AssertMode = AssertMode.Assume }),
-          locals, checking, false, omitReadsAssertions: true));
+      var argumentTemporaries = new HashSet<string>();
+      var preparation = new BoogieStmtListBuilder(this, options,
+        builder.Context with { AssertMode = AssertMode.Assume });
+      BplIfIf(condition.Origin, preparationGuard != null, preparationGuard, preparation,
+        guarded => TrStmt_CheckWellformed(condition, guarded, locals, checking, false,
+          omitReadsAssertions: true, certifiedArgumentTemporaries: argumentTemporaries));
+      builder.AppendAlreadyTranslated(preparation, CertifiedContractPreparation.Normalize(
+        preparation.Commands, argumentTemporaries));
       return LowerProposition(builder.Context, condition, etran, preparedTranslator: checking);
     } finally {
       stmtContext = savedStatement;

@@ -81,6 +81,15 @@ for refresh in [False,True]:
     code,output=verify(name,refresh,axioms,isolate=isolate)
     assert code==4 and "error" in output and "parse errors" not in output,output
 print("PASS certified contract preparation and false controls")
+for refresh in [False,True]:
+ for axioms in [False,True]:
+  for name in ["certified-guarded-arguments","certified-guarded-arguments-explicit"]:
+   code,output=verify(name,refresh,axioms)
+   assert code==0,output
+  for isolate in [False,True]:
+   code,output=verify("negative-certified-guarded-arguments",refresh,axioms,isolate=isolate)
+   assert code==4 and "error" in output and "parse errors" not in output,output
+print("PASS guarded private argument preparation")
 (work/"subset.dfy").write_text((fixtures/"subset-short.dfy").read_text())
 (work/"dfyconfig.toml").write_text("[options]\nconsistent-obligation-checks = true\n")
 code,output=verify("subset-short",project=True)

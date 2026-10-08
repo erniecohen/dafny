@@ -1,3 +1,5 @@
 Add the experimental, default-off `--consistent-obligation-checks` option to prepare and check matching implicit obligations once using the existing local assertion machinery.
 Method and iterator postconditions are checked at each body exit while reveal scopes are active; nonchecking procedure copies retain their interface semantics.
 Method/function preconditions and visible type/conversion/allocation obligations use a single prepared check. Explicit assertions, existing fuel rules and legacy hide/reveal scopes are preserved.
+
+Certified contract preparation preserves guards while binding eligible private function arguments once; actual obligation checks, source state and fuel remain unchanged.

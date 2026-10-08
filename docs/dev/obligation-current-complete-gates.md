@@ -1,5 +1,16 @@
 # Complete current obligation-check gates
 
+**Current candidate:** guarded contract preparation now retains certified
+facts under their original guards while binding only fresh, private function
+arguments outside those branches. The actual proposition checks and their fuel
+state remain unchanged. Calls, real assertions, scope changes, labels and other
+unsupported fragments retain their original translation. A source-only inventory
+capture has 287 groups; the final independent inventory gate is still required.
+The candidate is not yet compiled or validated natively. All complete gates and
+seed classifications below describe the preceding compiled product `072175269`
+and cannot establish acceptance of this new candidate. The supported-line PR
+remains a draft; the development-line port still requires the owner's approval.
+
 This records the completed supported-line comparisons for the certified
 preparation correction `98b0dd509`, compiled product `072175269`, build source
 `8d23f3fc8`, native version `4.11.0+fcb2042d.review.77d7a235`, against baseline
