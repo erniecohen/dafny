@@ -58,11 +58,15 @@ public class ObligationCertifiedPreparationTests {
   }
 
   [Fact]
-  public void AnEmptyBranchRetainsItsGuardExpression() {
+  public void AnEmptyBranchRetainsItsGuardInATautology() {
     var guard = Bpl.Expr.Gt(Id("x"), Bpl.Expr.Literal(0));
     List<object> commands = [Branch(guard)];
     var normalized = CertifiedContractPreparation.Normalize(commands, new HashSet<string>());
-    Assert.Same(guard, Assert.IsType<Bpl.IfCmd>(Assert.Single(normalized)).Guard);
+    var assumption = Assert.IsType<Bpl.AssumeCmd>(Assert.Single(normalized));
+    var tautology = Assert.IsType<Bpl.NAryExpr>(assumption.Expr);
+    Assert.Equal(Bpl.BinaryOperator.Opcode.Imp, Assert.IsType<Bpl.BinaryOperator>(tautology.Fun).Op);
+    Assert.Same(guard, tautology.Args[0]);
+    Assert.Same(guard, tautology.Args[1]);
   }
 
   [Fact]
