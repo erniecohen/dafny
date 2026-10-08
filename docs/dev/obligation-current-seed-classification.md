@@ -9,12 +9,14 @@ Every matrix covers baseline/default-off/enabled, both axiom settings and seeds
 A vector is in seed order. These are filtered diagnostics; recorded seed-zero
 full-control movements must not be hidden or treated as whole-gate acceptance.
 
-The completed suite failure matrix has 108 observations, suite cost matrix
-198, and library cost matrix 144. All three have zero seed-zero outcome
-movements relative to their completed full-gate controls. The complete library
-failure matrix remains pending durable evidence; an attempt with no durable
-artifact receipt is excluded. Power has its separate completed native/causal
-matrix. The [complete gates](obligation-current-complete-gates.md) remain rejected.
+All four matrices have durable completed evidence: suite failures 108,
+suite cost 198, library cost 144, and library failures 198, for 648 observations.
+The first three have zero seed-zero outcome movements relative to their
+completed full-gate controls. The recovered library failure matrix has four
+recorded movements and a platform boundary, detailed below. An earlier attempt
+without a durable artifact receipt is excluded. Power has its separate completed
+native/causal matrix. The [complete gates](obligation-current-complete-gates.md)
+remain rejected.
 
 S13's both-partial variance rule requires **both** baseline and enabled vectors
 to contain successful and unsuccessful seeds. A partly successful baseline with
@@ -85,6 +87,55 @@ change a limit or add a proof hint.
 | `Std.JSON.ZeroCopy.Serializer.MembersSpec (well-formedness)` | On | VVV | VVV | VVV | Every selected seed verifies; enabled uses more resources at every selected seed; sampled default-off resource difference is retained |
 | `Std.Unicode.Utf8EncodingScheme.LemmaDeserializeSerialize (correctness)` | Off | VVV | VVV | VVV | Every selected seed verifies; enabled uses more resources at every selected seed |
 | `Std.Unicode.Utf8EncodingScheme.LemmaDeserializeSerialize (correctness)` | On | VVV | VVV | VVV | Every selected seed verifies; enabled uses no more resources at these selected seeds |
+
+## Library failures
+
+This completed matrix has 198 observations on macOS arm64. The complete library
+controls used Linux x86-64; both use the exact accepted platform-specific native
+compiler and Z3 5.1.0. Four enabled seed-zero outcomes move from OutOfResource
+in the full Linux controls to Correct here: `LemmaModMultiplesVanish` with
+additional axioms on, `LemmaMulModNoopLeft` in both settings, and `LemmaRoundDown`
+with additional axioms on. These are recorded platform/scope boundaries, not
+an exact replay of the Linux full gate. The earlier attempt without a durable
+artifact receipt remains excluded. Power subtraction is covered by its separate
+complete native and causal matrices.
+
+| Declaration | Additional axioms | Baseline | Default off | Enabled | Classification |
+| --- | --- | --- | --- | --- | --- |
+| `Std.Arithmetic.DivMod.LemmaDivByMultipleIsStronglyOrdered (correctness)` | Off | VVR | VVR | RRR | Enabled exhausts resources at every selected seed; baseline is partly successful; remains an open resource movement |
+| `Std.Arithmetic.DivMod.LemmaDivByMultipleIsStronglyOrdered (correctness)` | On | VVR | VVR | RRR | Enabled exhausts resources at every selected seed; baseline is partly successful; remains an open resource movement |
+| `Std.Arithmetic.DivMod.LemmaModMultiplesVanish (correctness)` | Off | VVV | VVV | RVR | Enabled has a seed-sensitive resource failure; baseline verifies every selected seed |
+| `Std.Arithmetic.DivMod.LemmaModMultiplesVanish (correctness)` | On | VVV | VVV | VRR | Enabled has a seed-sensitive resource failure; baseline verifies every selected seed |
+| `Std.Arithmetic.DivMod.LemmaMulModNoopLeft (correctness)` | Off | VVV | VVV | VRV | Enabled has a seed-sensitive resource failure; baseline verifies every selected seed |
+| `Std.Arithmetic.DivMod.LemmaMulModNoopLeft (correctness)` | On | VVV | VVV | VVV | Every selected seed verifies |
+| `Std.Arithmetic.DivMod.LemmaRemainder (correctness)` | Off | VVV | VVV | RRR | Enabled exhausts resources at every selected seed; baseline verifies every selected seed |
+| `Std.Arithmetic.DivMod.LemmaRemainder (correctness)` | On | VVV | VVV | RRR | Enabled exhausts resources at every selected seed; baseline verifies every selected seed |
+| `Std.Arithmetic.DivMod.LemmaRoundDown (correctness)` | Off | VVV | VVV | RRR | Enabled exhausts resources at every selected seed; baseline verifies every selected seed |
+| `Std.Arithmetic.DivMod.LemmaRoundDown (correctness)` | On | VVV | VVV | VVR | Enabled has a seed-sensitive resource failure; baseline verifies every selected seed |
+| `Std.Arithmetic.Power.LemmaPowStrictlyIncreases (correctness)` | Off | VVV | VVV | RRR | Enabled exhausts resources at every selected seed; baseline verifies every selected seed |
+| `Std.Arithmetic.Power.LemmaPowStrictlyIncreases (correctness)` | On | VVV | VVV | VVV | Every selected seed verifies |
+| `Std.Base64.DecodeValidEncode1Padding (correctness)` | Off | VVR | VVR | RVV | S13 both-partial solver/resource variance |
+| `Std.Base64.DecodeValidEncode1Padding (correctness)` | On | RRV | RRV | VVV | Enabled verifies every selected seed; baseline is partly successful |
+| `Std.Base64.EncodeBVIsBase64 (correctness)` | Off | RRR | RRR | RRR | Baseline and enabled exhaust resources at every selected seed |
+| `Std.Base64.EncodeBVIsBase64 (correctness)` | On | VRR | VRR | RRR | Enabled exhausts resources at every selected seed; baseline is partly successful; remains an open resource movement |
+| `Std.Collections.Seq.LemmaMaxOfConcat (correctness)` | Off | VVV | VVV | RRR | Enabled exhausts resources at every selected seed; baseline verifies every selected seed |
+| `Std.Collections.Seq.LemmaMaxOfConcat (correctness)` | On | VVV | VVV | RRR | Enabled exhausts resources at every selected seed; baseline verifies every selected seed |
+| `Std.JSON.ZeroCopy.Deserializer.Sequences.Elements (well-formedness)` | Off | VRV | VRV | RRV | S13 both-partial solver/resource variance; sampled default-off resource difference is retained |
+| `Std.JSON.ZeroCopy.Deserializer.Sequences.Elements (well-formedness)` | On | VRV | VRV | RRV | S13 both-partial solver/resource variance; sampled default-off resource difference is retained |
+| `Std.Termination.TerminationMetric.MultisetOrdinalDecreasesToSubMultiset (correctness)` | Off | VVV | VVV | RRR | Enabled exhausts resources at every selected seed; baseline verifies every selected seed |
+| `Std.Termination.TerminationMetric.MultisetOrdinalDecreasesToSubMultiset (correctness)` | On | VVV | VVV | RRR | Enabled exhausts resources at every selected seed; baseline verifies every selected seed |
+
+`LemmaRemainder`, `LemmaMaxOfConcat` and
+`MultisetOrdinalDecreasesToSubMultiset` exhaust resources at all selected enabled
+seeds while baseline verifies all three, under both axiom settings.
+`LemmaRoundDown` and `LemmaPowStrictlyIncreases` have the same pattern with
+additional axioms off. These are stable sampled resource regressions, not S13
+both-partial variance. The JSON `Elements` well-formedness target and the
+one-padding Base64 decoding target (axioms off) are both-partial.
+
+All baseline/default-off outcome vectors match in this matrix. The JSON
+`Elements` target retains a seed-zero default-off resource difference in both
+axiom settings. No resource policy or complete-gate rejection is waived.
 
 ## Interpretation and remaining limits
 

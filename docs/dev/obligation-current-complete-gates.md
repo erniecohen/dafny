@@ -47,9 +47,11 @@ and `sorted_ascending`. Submitted diagnostic matrices retain each original
 full-run command and ceiling and cover the failure and cost-review unions over
 three seeds, both axiom settings and baseline/default-off/enabled modes.
 The [completed seed record](obligation-current-seed-classification.md) classifies
-the suite failure/cost unions and library cost union. The library failure matrix
-still awaits durable evidence. Filtered seed-zero movements relative to the complete gate are recorded;
-filtered success cannot replace a full-gate result.
+all four failure/cost unions in 648 observations. Suite failure, suite cost and
+library cost matrices have no seed-zero outcome movements. The recovered library
+failure matrix uses the accepted macOS arm64 binaries and has four recorded
+movements relative to the full Linux controls. That platform/scope boundary is
+explicit; filtered success cannot replace a full-gate result.
 
 One raw body VC moves from `Invalid` to `Valid`: `Absy.Foo` in
 `git-issues/git-issue-2703.dfy`. The source intentionally declares
@@ -94,10 +96,15 @@ establish the required local support invariant. Both are diagnostic experiments
 only. The [preparation diagnosis](obligation-local-preparation-diagnosis.md)
 records them without presenting a product workaround or lost-fuel claim.
 
-Submitted resource/cost seed matrices cover every other affected library
-declaration, preserving the original project, source and caps. Results are pending. Partly
-successful baseline/candidate vectors are classified under S13 as
-solver/resource variance. That classification does not rewrite the raw gate.
+Completed resource/cost seed matrices cover every other affected library
+declaration, preserving the original project, source and caps. Remainder,
+sequence maximum of concatenation and multiset-ordinal submultiset targets
+exhaust resources at all selected enabled seeds while baseline verifies all
+three, in both axiom settings. Round-down and strictly increasing power have
+that pattern with additional axioms off. The JSON Elements well-formedness
+target and one-padding Base64 decoding (axioms off) are both-partial under S13.
+Baseline/default-off outcome vectors match; sampled default-off resource
+differences remain recorded. These classifications do not rewrite the raw gate.
 
 ## Normal regression and editor integration
 
@@ -122,3 +129,28 @@ independent soundness review and overall acceptance remain open. Strict
 default-off library cost remains rejected, enabled resource movements require
 review, and no uniform solver-improvement claim is made. PR #168 stays a draft;
 porting to #169 still requires explicit owner approval.
+
+## Statement-expression reads audit
+
+A proposed additional negative used a heap-reading function as the argument
+of a proof statement in a postcondition:
+
+~~~dafny
+class C { var x: int }
+function Read(o: C): int reads o { o.x }
+lemma Proof(x: int) {}
+method Bad(o: C)
+  reads {}
+  ensures (Proof(Read(o)); false)
+{}
+~~~
+
+This is not a valid-specification counterexample. Statement translation inside
+the specification-WF procedure itself asserts the reads bound for Read(o);
+the corresponding body preparation assumes that independently checked bound.
+The specification-WF and body both fail in all twelve baseline/default-off/enabled,
+resolver and axiom combinations observed. No false complete source is accepted,
+and this probe justifies no compiler correction. The wider diagnostic stopped
+at a harness assumption that the direct false control would emit a separate
+verifiable specification-WF implementation; none is emitted there. It is not recorded
+as a completed matrix or product acceptance.

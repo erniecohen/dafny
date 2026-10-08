@@ -223,8 +223,13 @@ runs preserve default-off verdicts and operational Boogie, but strict resource
 comparison rejects them. Enabled suite mode has six resource failures in each
 setting; the complete source remains negative for the ill-formed specification
 whose body VC becomes valid. Enabled library mode has eleven/ten newly failing
-declarations, including stable Power subtraction. Complete failure/cost seed
-matrices are diagnostic; they do not relax any raw full-gate rejection.
+declarations, including stable Power subtraction. All four affected-declaration
+failure/cost seed matrices finish, covering 648 observations. The [seed record](obligation-current-seed-classification.md)
+preserves the recovered library matrix's platform boundary, four full-control
+movements, candidate-only failures and stable resource regressions. These
+diagnostics do not relax any raw full-gate rejection. The subsequent statement-expression
+reads hypothesis is rejected by its independent specification-WF checks; no
+compiler change follows from that incomplete diagnostic.
 
 The actual normal registered issue-100 test and editor option-invalidation test
 also pass, each with exactly one executed/passed test. The linked report records
