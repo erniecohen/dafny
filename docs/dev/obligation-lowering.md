@@ -42,7 +42,11 @@ declared contract, or guarded introduction; those categories confer no permissio
 by themselves. Existing WF/contract paths establish permissions in their original
 order. `LowerDeclaredProposition` replays the immediate assertion's source-local
 WF preparation, then lowers the sole contract check with that same fresh
-translator. Inherited source clauses guard this preparation consistently with
+translator. Its declared-contract adapter uses independently certified non-read
+WF facts and omits body reads-frame assertions without skipping their expression
+traversal. The actual clause is always checked in the original checking context.
+The [licensing argument and controls](obligation-certified-preparation.md) explain
+why the independent specification-WF proof is essential. Inherited source clauses guard this preparation consistently with
 reverification. This restores quantifier-local binder and can-call support;
 matching only the final expression is insufficient. Free splitter pieces are
 not independently proved theorems. The causal evidence and acceptance limits

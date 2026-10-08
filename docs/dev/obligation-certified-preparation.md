@@ -40,8 +40,10 @@ postcondition specification-WF, and delayed precondition reads checks can
 depend on requirements not yet proved at a call. They must be neither checked
 again nor assumed by this replay. Still translate those reads expressions, so
 traversal/fuel state and legitimate metadata can-call support match the
-existing assertion traversal. Discard only the reads assertion at its dedicated
-WF sink. Preserve all other guards and source-local setup; inspect no surrounding
+existing assertion traversal. Discard only the body reads assertion at its dedicated
+WF sink. A nested lambda establishes its own declared frame and keeps its
+existing independent WF policy, rather than inheriting the surrounding method
+reads bound. Preserve all other guards and source-local setup; inspect no surrounding
 body expressions and introduce no background axiom.
 
 ## Required controls
