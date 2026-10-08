@@ -1,6 +1,9 @@
 name: Native obligation support-order diagnostic build
 on:
   workflow_dispatch:
+  push:
+    branches: [scratch/codex/issue100-preservation-build]
+    paths: [.github/workflows/obligation-native-order-diagnostic.yml]
 permissions:
   contents: read
 jobs:
