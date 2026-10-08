@@ -4,4 +4,5 @@ PASS implicit subset constraints
 PASS range-bound collection constraints
 PASS legacy terminal reveal scopes
 PASS false controls
+PASS certified contract preparation and false controls
 PASS project option and CLI precedence

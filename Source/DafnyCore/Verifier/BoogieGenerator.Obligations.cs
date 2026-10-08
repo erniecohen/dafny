@@ -62,9 +62,11 @@ public partial class BoogieGenerator {
 
   private PropositionLowering LowerDeclaredProposition(Expression condition,
     BoogieStmtListBuilder builder, Variables locals, ExpressionTranslator etran, Bpl.Expr preparationGuard = null) {
-    // Declared can-call permission alone omits the immediate assertion's local
-    // WF setup. Run that same source-only preparation, then lower the sole P
-    // check with the same fresh translator and its resulting fuel state.
+    // Replay assertion-local setup using the contract's independently checked
+    // non-read WF facts. Do not prove those facts twice or assume body reads
+    // bounds: specification WF has a different reads policy. The same fresh
+    // translator and consumed fuel state then lower the sole mandatory P check.
+    // See docs/dev/obligation-certified-preparation.md for the licensing argument.
     var savedStatement = stmtContext;
     var savedAdjustment = adjustFuelForExists;
     var checking = etran.CloneForObligation();
@@ -72,7 +74,9 @@ public partial class BoogieGenerator {
       stmtContext = StmtType.ASSERT;
       adjustFuelForExists = true;
       BplIfIf(condition.Origin, preparationGuard != null, preparationGuard, builder,
-        preparation => TrStmt_CheckWellformed(condition, preparation, locals, checking, false));
+        preparation => TrStmt_CheckWellformed(condition,
+          preparation.WithContext(preparation.Context with { AssertMode = AssertMode.Assume }),
+          locals, checking, false, omitReadsAssertions: true));
       return LowerProposition(builder.Context, condition, etran, preparedTranslator: checking);
     } finally {
       stmtContext = savedStatement;

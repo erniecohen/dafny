@@ -818,5 +818,30 @@
     "name": "negative-old-array-access",
     "expected": 4,
     "group": "old-allocation"
+  },
+  {
+    "name": "certified-contract-domain",
+    "expected": 0,
+    "group": "certified-contract-preparation"
+  },
+  {
+    "name": "negative-certified-contract-domain",
+    "expected": 4,
+    "group": "certified-contract-preparation"
+  },
+  {
+    "name": "negative-certified-first-postcondition",
+    "expected": 4,
+    "group": "certified-contract-preparation"
+  },
+  {
+    "name": "negative-certified-conditional-reads",
+    "expected": 4,
+    "group": "certified-contract-preparation"
+  },
+  {
+    "name": "certified-spec-only-reads",
+    "expected": 0,
+    "group": "certified-contract-preparation"
   }
 ]

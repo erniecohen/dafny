@@ -43,6 +43,11 @@ namespace Microsoft.Dafny {
     public readonly List<Func<Bpl.Cmd>> CreateAsserts;
     public readonly bool LValueContext;
     public readonly Bpl.QKeyValue AssertKv;
+    // A declared contract's independent WF proof licenses non-read domain
+    // facts. Body reads bounds have a different policy and must not be assumed.
+    // Keep their traversal (including fuel state), but omit their dedicated sink.
+    public bool OmitReadsAssertions { get; init; }
+
 
     public WFOptions() {
     }
@@ -79,7 +84,7 @@ namespace Microsoft.Dafny {
     /// </summary>
     public WFOptions WithReadsChecks(bool doReadsChecks) {
       return new WFOptions(SelfCallsAllowance, doReadsChecks, DoOnlyCoarseGrainedTerminationChecks,
-        Locals, CreateAsserts, LValueContext, AssertKv);
+        Locals, CreateAsserts, LValueContext, AssertKv) { OmitReadsAssertions = OmitReadsAssertions };
     }
 
     /// <summary>
@@ -87,11 +92,12 @@ namespace Microsoft.Dafny {
     /// </summary>
     public WFOptions WithLValueContext(bool lValueContext) {
       return new WFOptions(SelfCallsAllowance, DoReadsChecks, DoOnlyCoarseGrainedTerminationChecks,
-        Locals, CreateAsserts, lValueContext, AssertKv);
+        Locals, CreateAsserts, lValueContext, AssertKv) { OmitReadsAssertions = OmitReadsAssertions };
     }
 
     public Action<IOrigin, Bpl.Expr, ProofObligationDescription, Bpl.QKeyValue> AssertSink(BoogieGenerator tran, BoogieStmtListBuilder builder) {
       return (t, e, d, qk) => {
+        if (OmitReadsAssertions) { return; }
         if (Locals != null) {
           var b = BoogieGenerator.BplLocalVar(tran.CurrentIdGenerator.FreshId("b$reqreads#"), Bpl.Type.Bool, Locals);
           CreateAsserts.Add(() => tran.Assert(t, b, d, builder.Context, qk));

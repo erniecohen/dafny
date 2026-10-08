@@ -1,7 +1,7 @@
 # Declared-contract preparation argument
 
-This is the planned correction following `58d8ac112`'s complete library
-rejection. Its own structural and native evidence is required before acceptance.
+This is the implemented candidate correction following `58d8ac112`'s complete library
+rejection. Its own structural and native evidence is required before acceptance. No gate of the preceding revision validates this candidate.
 The actual implicit proposition remains mandatory and is checked once.
 
 ## Existing well-formedness proof
@@ -21,7 +21,7 @@ At a method exit, input/entry conditions and the permitted heap/output typing
 hold, and earlier postconditions have already been checked in order. At a
 method call, actuals have been frozen and typed, ordinary frame/termination
 checks precede the contract checks, and earlier requirements have been checked.
-The existing modular specification-WF proof licenses the clause's local domain
+Iterator yield contracts use their existing specification WF, exact yield old heap and inherited guard. The existing modular specification-WF proof licenses the clause's local domain
 support at these points. Inherited preparation keeps its existing guard.
 A filtered body-only result cannot substitute for specification-WF acceptance.
 

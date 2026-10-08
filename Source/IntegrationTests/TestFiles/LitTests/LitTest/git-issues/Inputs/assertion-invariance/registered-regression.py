@@ -68,6 +68,17 @@ for refresh in [False,True]:
     code,output=verify(name,refresh,axioms,isolate=isolate)
     assert code==4 and "error" in output and "parse errors" not in output,output
 print("PASS false controls")
+for refresh in [False,True]:
+ for axioms in [False,True]:
+  for name in ["certified-contract-domain","certified-spec-only-reads"]:
+   code,output=verify(name,refresh,axioms)
+   assert code==0,output
+  for name in ["negative-certified-contract-domain","negative-certified-first-postcondition",
+    "negative-certified-conditional-reads"]:
+   for isolate in [False,True]:
+    code,output=verify(name,refresh,axioms,isolate=isolate)
+    assert code==4 and "error" in output and "parse errors" not in output,output
+print("PASS certified contract preparation and false controls")
 (work/"subset.dfy").write_text((fixtures/"subset-short.dfy").read_text())
 (work/"dfyconfig.toml").write_text("[options]\nconsistent-obligation-checks = true\n")
 code,output=verify("subset-short",project=True)
