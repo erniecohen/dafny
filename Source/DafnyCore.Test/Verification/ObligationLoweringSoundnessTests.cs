@@ -73,7 +73,7 @@ public class ObligationLoweringSoundnessTests {
       "lemma L(x:int) requires x>0 ensures F(x) {}";
     var programs = await ObligationLoweringTests.Translate(source, true, refresh);
     var implementations = programs.SelectMany(p => p.Implementations).ToList();
-    var specification = implementations.Single(p => p.Name.Contains("CheckWellformed") && p.Name.EndsWith(".L"));
+    var specification = implementations.Single(p => p.Name.Contains("CheckWellFormed") && p.Name.EndsWith(".L"));
     Assert.Contains(specification.Blocks.SelectMany(b => b.Cmds).OfType<Microsoft.Boogie.AssertCmd>(),
       check => check.Description is PreconditionSatisfied);
     var body = implementations.Single(p => p.Name.Contains("Impl") && p.Name.EndsWith(".L"));
@@ -94,7 +94,12 @@ public class ObligationLoweringSoundnessTests {
     var checks = body.Blocks.SelectMany(b => b.Cmds).OfType<Microsoft.Boogie.AssertCmd>()
       .Where(check => check.Description is EnsuresDescription).ToList();
     Assert.NotEmpty(checks);
-    Assert.Equal(Microsoft.Boogie.Expr.False.ToString(), checks[0].Expr.ToString());
+    Assert.Equal("Lit", Assert.IsType<Microsoft.Boogie.FunctionCall>(
+      Assert.IsType<Microsoft.Boogie.NAryExpr>(checks[0].Expr).Fun).ToString());
+    var literal = Assert.IsType<Microsoft.Boogie.LiteralExpr>(
+      Assert.Single(Assert.IsType<Microsoft.Boogie.NAryExpr>(checks[0].Expr).Args));
+    Assert.True(literal.isBool);
+    Assert.False(literal.asBool);
   }
 
   [Theory]
@@ -106,7 +111,7 @@ public class ObligationLoweringSoundnessTests {
       "ghost predicate F() reads if flag then {this} else {} { !flag } " +
       "ghost method M() requires F() reads {} {} " +
       "ghost method Bad() requires flag reads {} { M(); } }";
-    var programs = await ObligationLoweringTests.Translate(source, true, refresh);
+    var programs = await ObligationLoweringTests.Translate(source, true, refresh, readsOnMethods: true);
     var body = programs.SelectMany(p => p.Implementations)
       .Single(p => p.Name.Contains("Impl") && p.Name.EndsWith(".Bad"));
     var commands = body.Blocks.SelectMany(b => b.Cmds).ToList();
@@ -125,8 +130,8 @@ public class ObligationLoweringSoundnessTests {
     const string declarations = "class C {} ghost predicate P(i:int) decreases i { i<=0 || P(i-1) } " +
       "ghost predicate A(c:C) reads if exists j:int :: P(j) then {c} else {} { true } ";
     var packages = new List<BoogieGenerator.PropositionLowering>();
-    await ObligationLoweringTests.Translate(declarations + "lemma L(c:C) reads {} ensures " +
-      proposition + " { assert " + proposition + "; }", true, refresh, packages.Add);
+    await ObligationLoweringTests.Translate(declarations + "ghost method L(c:C) reads {} ensures " +
+      proposition + " { assert " + proposition + "; }", true, refresh, packages.Add, readsOnMethods: true);
     var explicitCheck = Assert.Single(packages.Where(p => p.Source.Resolved is BinaryExpr &&
       p.Inputs.Preparation == BoogieGenerator.ObligationPreparation.CheckedExpression));
     var implicitChecks = packages.Where(p => p.Source.Resolved is BinaryExpr &&

@@ -163,6 +163,17 @@ historical evidence for triage. They do not validate the single-check replacemen
 The [revision checklist](obligation-revision-checklist.md) tracks current evidence.
 Porting implementation to PR #169 requires explicit owner approval first.
 
+## Certified contract preparation candidate
+
+The new candidate `98b0dd509` implements the
+[certified-preparation argument](obligation-certified-preparation.md). Its build
+and new native gates are pending. Eight additional structural observations cover
+independent specification-domain proofs, a mandatory false first postcondition,
+conditional-reads anti-vacuity and recursive fuel identity after reads traversal.
+Five new native fixtures extend the complete registered scope to 274 observations
+and paired scope to 676, including 244 expected-negative observations.
+The preceding evidence below cannot validate this candidate.
+
 ## Completed native evidence of the current fuel revision
 
 Product `58d8ac112`, build `d3dc53c8e`, completes all three modes of both
@@ -173,8 +184,11 @@ match exactly in both settings. Expected parser/resolver and command-line
 negatives remain in the denominator. Enabled mode has 14 newly failing
 declarations with additional axioms off and 15 with them on. No baseline
 `Errors` declaration becomes `Correct`. Both enabled gates reject acceptance.
-The new errors include `ReadsOnMethods.OnlySpecReads` and `InForall` in
-`github-issue-39.dfy`; the other new failures exhaust existing resource ceilings.
+The new correctness-declaration errors include `ReadsOnMethods.OnlySpecReads`
+and `InForall` in `github-issue-39.dfy`. Both already have failed specification-WF
+checks in baseline/default-off; the complete source programs are expected
+negatives in all modes. These declaration movements are not newly rejected
+valid source programs. The other new failures exhaust existing resource ceilings.
 All affected examples remain in the complete comparison evidence.
 
 The completed suite failure inventory is:
@@ -225,8 +239,8 @@ retain invalid VCs. In particular, the constructor's body assertion adds a
 reads-frame requirement absent from specification postcondition WF. Replaying
 those WF assertions added obligations, beyond the intended local support.
 The [declared-contract preparation argument](obligation-certified-preparation.md)
-records the proposed correction and required anti-vacuity controls before
-implementation. It is not yet validated or accepted.
+records the correction and required anti-vacuity controls before
+implementation. The new candidate is not yet validated or accepted.
 
 The [expanded compiler-unit probe](https://github.com/erniecohen/dafny/actions/runs/37727158566)
 retains the nine passing structural/build stages. Its additional complete core

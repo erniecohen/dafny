@@ -837,11 +837,17 @@
   {
     "name": "negative-certified-conditional-reads",
     "expected": 4,
-    "group": "certified-contract-preparation"
+    "group": "certified-contract-preparation",
+    "options": [
+      "--reads-clauses-on-methods"
+    ]
   },
   {
     "name": "certified-spec-only-reads",
     "expected": 0,
-    "group": "certified-contract-preparation"
+    "group": "certified-contract-preparation",
+    "options": [
+      "--reads-clauses-on-methods"
+    ]
   }
 ]
