@@ -84,7 +84,7 @@ public class ObligationLoweringTests {
   [InlineData(true)]
   public async Task InheritedExitWellformednessRetainsReverificationGuard(bool refresh) {
     const string source = "module A { predicate P(x:int) { x>=0 } " +
-      "lemma L() ensures forall x:int :: P(x) {} } module B refines A { lemma L ... { ... assert true; } }";
+      "lemma L() ensures forall x:int :: P(x) {} } module B refines A { lemma L ... { ...; assert true; } }";
     var text = ObligationFingerprint.Emit(await Translate(source, true, refresh));
     Assert.Contains("if ($_reverifyPost)", text);
   }
