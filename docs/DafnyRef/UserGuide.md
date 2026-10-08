@@ -2404,7 +2404,7 @@ and what information it produces about the verification process.
 * `--manual-lemma-induction` - disables automatic inducntion for lemmas
 
 * `--isolate-assertions` - verify assertions individually
-* `--consistent-obligation-checks` - add assertion-style checking to matching implicit obligations while retaining the original checks and fuel rules (experimental, disabled by default; also a project-file option).
+* `--consistent-obligation-checks` - prepare and check matching implicit obligations once using the existing local assertion machinery and fuel rules (experimental, disabled by default; also a project-file option).
 
 * `--extract-counterexample` - if verification fails, report a potential
   counterexample as a set of assumptions that can be inserted into the code.
