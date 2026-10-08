@@ -1,19 +1,26 @@
 # Obligation lowering validation status
 
 The [requested review revisions](obligation-review-change-request.md) govern the
-single-check replacement in PR #168. The supported semantic revision is
-`2ad5d25a5`, incorporating the exact old-array allocation representation from
-`64d02eb77` and the closed universal layer rule. Native source and complete
-suite/standard-library acceptance remain pending.
+single-check replacement in PR #168. The supported semantic revision is now
+`f6c230fb0`, restoring source-local assertion well-formedness preparation and the
+frozen initializer application's domain guard. Its native acceptance is pending.
+The [current causal analysis](obligation-local-preparation-diagnosis.md) records
+the rejected preceding source gates, controlled generated-Boogie experiments,
+negative outcomes and multi-seed classification.
 
-The [current diagnostic build](https://github.com/erniecohen/dafny/actions/runs/37712822558)
-compiled both native platforms and the editor, and passed all 63 structural
-controls. The two newest controls compare the recursive predicate layers of
-an implicit range-bound type constraint with an explicit universal assertion,
-under both resolvers. The normal inventory gate rejected its outdated registry;
-the newly captured 284 producer groups have now been reviewed and committed.
-Every captured verifier file hash matches the current source. The normal gate
-requires a fresh run against this registry; diagnostic capture is not acceptance.
+The [preceding 63-control build](https://github.com/erniecohen/dafny/actions/runs/37713397830)
+compiled both native platforms and the editor, passed all structural controls and
+the normal reviewed 284-group producer-inventory gate. Native gates of its
+semantic revision `2ad5d25a5` still rejected the original issue 100 and quantified
+initializer positives. All paired negative observations retained invalid VCs.
+Focused default-off comparisons matched their baseline outcome/resource vectors;
+complete suite and standard-library acceptance remain pending.
+
+The [preparation-repair build](https://github.com/erniecohen/dafny/actions/runs/37717196930)
+is pending. It adds structural controls for local quantifier well-formedness,
+one postcondition check, inherited guarding and the frozen initializer domain.
+Fresh native gates must use this build's actual binaries, and its newly captured
+producer registry must be reviewed before the normal inventory gate passes.
 
 The [preceding diagnostic build](https://github.com/erniecohen/dafny/actions/runs/37711275949)
 passed all 61 earlier structural controls, including exact old-array allocation

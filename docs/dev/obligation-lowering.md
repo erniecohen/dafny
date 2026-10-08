@@ -40,7 +40,13 @@ then restores the surrounding statement/fuel state. It does not globally change
 expression polarity or fuel. Preparation is recorded as checked expression,
 declared contract, or guarded introduction; those categories confer no permission
 by themselves. Existing WF/contract paths establish permissions in their original
-order. Free splitter pieces are not independently proved theorems.
+order. `LowerDeclaredProposition` replays the immediate assertion's source-local
+WF preparation, then lowers the sole contract check with that same fresh
+translator. Inherited source clauses guard this preparation consistently with
+reverification. This restores quantifier-local binder and can-call support;
+matching only the final expression is insufficient. Free splitter pieces are
+not independently proved theorems. The causal evidence and acceptance limits
+are recorded in [the preparation diagnosis](obligation-local-preparation-diagnosis.md).
 
 ## Contracts and publication
 
@@ -123,7 +129,10 @@ predicate layers before applying that same binder/range closure. The ordinary
 source-quantifier path calls the same extracted rule without changing its fuel
 policy. A structural control compares recursive predicate layers with an explicit
 universal assertion under both resolvers. Its original check-and-forget policy
-is retained, so it adds no continuation membership assumption or summary.
+is retained, so it adds no continuation membership assumption or summary. For
+an initializer application, the frozen value's can-call domain is included in
+the defining-constraint guard under that range. The existing separate domain
+check remains mandatory; no domain fact is assumed unconditionally.
 
 Conversions choose the canonical guarded constraint check or the legacy direct
 check according to the option; they never emit both. Primitive range/integrality,
