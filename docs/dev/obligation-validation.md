@@ -166,15 +166,40 @@ Porting implementation to PR #169 requires explicit owner approval first.
 ## Certified contract preparation candidate
 
 The new candidate `98b0dd509` implements the
-[certified-preparation argument](obligation-certified-preparation.md). Its build
-and new native gates are pending. Eight additional structural observations cover
+[certified-preparation argument](obligation-certified-preparation.md). Its [build](https://github.com/erniecohen/dafny/actions/runs/37731304101)
+passes all ten recorded stages, including both native platforms, both probes,
+the editor and the complete 363-test core unit suite. All 85 structural
+observations pass in capture and normal modes; the reviewed 287-group inventory
+matches independently. Compiled product pin: `072175269`; build source:
+`8d23f3fc8`; native version: `4.11.0+fcb2042d.review.77d7a235`.
+The complete registered native gate passes all 274 observations. The complete
+paired gate passes all 676 observations; every one of the 244 expected-negative
+observations contains a genuine invalid VC. The conditional-reads caller control
+independently confirms that the callee's specification-WF passes while the
+caller's false requirement fails in all four registered modes. These are focused
+acceptance of this exact candidate, not full-suite acceptance.
+
+The fresh 72-observation library matrix completes with exact focused default-off
+outcome/resource equality in both axiom settings and all three seeds. Filter
+concatenation, delimiter splitting and encode/decode pass enabled; Power
+subtraction remains an enabled error at every seed. Its checked formula retains
+the higher assertion fuel layer. Generated division Boogie uses the same
+arithmetic wrappers in the legacy procedure postcondition and the new local
+check; a wrapper change does not explain that failure. The fresh 216-observation
+suite/original matrix and 112-observation actual-source diagnostic are pending.
+The latter requires actual solver query files for its same-host default-off cost
+repeats. Fresh complete suite and standard-library gates have been submitted
+under both axiom settings with the original inputs, ceilings and verdict tables.
+Their durable results remain pending.
+
+Eight additional structural observations cover
 independent specification-domain proofs, a mandatory false first postcondition,
 conditional-reads anti-vacuity and recursive fuel identity after reads traversal.
 Five new native fixtures extend the complete registered scope to 274 observations
 and paired scope to 676, including 244 expected-negative observations.
 The preceding evidence below cannot validate this candidate.
 
-## Completed native evidence of the current fuel revision
+## Completed native evidence of the preceding fuel revision
 
 Product `58d8ac112`, build `d3dc53c8e`, completes all three modes of both
 additional-axiom settings with Z3 5.1.0. Each full-suite mode contains 1,161
@@ -212,7 +237,7 @@ The completed suite failure inventory is:
 | `git-issues/github-issue-39.dfy` / `InForall` | `Errors` | both |
 
 
-Both current library gates also finish all seven parts and 2,197 rows per mode.
+Both preceding library gates also finish all seven parts and 2,197 rows per mode.
 Default-off preserves every verdict and operational Boogie program, but fails
 strict resource equality. Enabled mode retains the five errors listed above
 and has 14 new failures with additional axioms off and 13 with them on. Cost
@@ -223,7 +248,7 @@ variance but does not prove that baseline/candidate solver queries are identical
 or discharge the fork's strict library cost gate. The requested solver-query
 capture produced no query files, so it supplies no query-identity evidence.
 
-The current 216-observation suite/original matrix and 72-observation library
+The preceding 216-observation suite/original matrix and 72-observation library
 matrix complete. Their focused default-off outcome/resource comparisons match.
 The original issue succeeds enabled across three seeds under both resolvers
 and axiom settings. The three repaired library targets pass across all three
