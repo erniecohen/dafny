@@ -8,10 +8,10 @@ definition-support experiments. Preserve the request in full; use this file to
 record implementation and evidence against each requirement as revisions land.
 
 **Status:** the supported single-check product revision is implemented in
-`2ad5d25a5`, including the allocation representation correction in `64d02eb77` and the shared universal assertion layer rule; source acceptance and complete validation remain pending. Historical native results describe earlier implementations and do not discharge this checklist. Keep both PRs as drafts.
+`a08a9485c`, including the allocation correction, shared universal assertion layer rule and source-local preparation repair; source acceptance and complete validation remain pending. Historical native results describe earlier implementations and do not discharge this checklist. Keep both PRs as drafts.
 Settle the supported-line design first. The owner requires an explicit approval
 before any implementation is ported to #169; keep that port pending until approval.
-The development line then requires independent evidence.
+The development line then requires independent evidence. The [current preparation diagnosis](obligation-local-preparation-diagnosis.md) records the local repair and rejected preceding native evidence.
 
 The target implementation must satisfy:
 
@@ -40,7 +40,7 @@ linked validation report.
 | S10 / 10 | Ensure support depends only on the proposition and legitimate local verifier state. Reject body/prefix/invariant/context term collection and all later collection/definition-support experiments as product changes to either PR. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
 | S11 / 11 | Fix `ObligationFingerprint` using lexical binder identities/stacks. Distinguish the specified shadowing counterexamples and retain a positive alpha-equivalence control. | Implemented in `426a8d413`; the opcode controls are added in `8ddf1458b`; the binder and opcode controls pass in the [current 63-test diagnostic build](https://github.com/erniecohen/dafny/actions/runs/37712822558). |
 | S12 / 12 | Add quantified and non-quantified paired assertion-invariance tests for exits, subsets, method/function preconditions, bounds and old allocation. Add no-body-leakage, active scoped-reveal and no-duplicate-contract-proof structural controls. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
-| S13 / 13 | Rerun stable exit-package, exit-summary and call-package regressions on the single-check implementation before solver-specific repairs. Classify partially successful baseline/candidate seed movements as solver/resource variance. Keep source hints and resource ceilings unchanged. | Pending |
+| S13 / 13 | Rerun stable exit-package, exit-summary and call-package regressions on the single-check implementation before solver-specific repairs. Classify partially successful baseline/candidate seed movements as solver/resource variance. Keep source hints and resource ceilings unchanged. | Pre-repair complete matrices and causal replay are documented in [the diagnosis](obligation-local-preparation-diagnosis.md); new-revision native gates and complete-suite evidence remain pending. |
 | S14 / 14 | Rewrite the PR description around single-check assertion-equivalent lowering. Complete every supported-line acceptance item below before requesting approval. | Pending |
 
 ## Supported-line acceptance

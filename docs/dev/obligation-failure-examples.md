@@ -1,5 +1,10 @@
 # Obligation failures and reveal-scope repair
 
+The single-check replacement's original-exit and initializer failures, causal
+Boogie experiments and subsequent local preparation repair are documented in
+[the current diagnosis](obligation-local-preparation-diagnosis.md). The material
+below remains historical.
+
 These findings describe the superseded additive implementation. They are retained
 for regression triage and do not validate the single-check replacement. Current
 source and evidence are tracked in [the validation record](obligation-validation.md)
