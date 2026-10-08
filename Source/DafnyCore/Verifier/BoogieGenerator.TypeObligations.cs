@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DafnyCore.Verifier;
 using Bpl = Microsoft.Boogie;
 
 namespace Microsoft.Dafny;

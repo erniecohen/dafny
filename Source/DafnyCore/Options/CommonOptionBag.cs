@@ -73,7 +73,7 @@ public class CommonOptionBag {
   public static readonly Option<bool> MapComprehensionDomainTriggers = new("--map-comprehension-domain-triggers",
     "Use explicit and inferred triggers when proving membership in map and imap comprehensions with general key expressions. Defaults to false.");
   public static readonly Option<bool> ConsistentObligationChecks = new("--consistent-obligation-checks", () => false,
-    "Add assertion-style checking to matching implicit obligations while retaining the original checks and fuel rules.");
+    "Prepare and check matching implicit obligations once using the existing local assertion machinery and fuel rules.");
 
   public static readonly Option<bool> ManualLemmaInduction =
     new("--manual-lemma-induction", "Turn off automatic induction for lemmas.");

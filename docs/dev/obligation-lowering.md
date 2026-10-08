@@ -1,285 +1,193 @@
 # Local obligation lowering
 
-The [requested review revisions](obligation-review-change-request.md) now govern
-the next implementation. Their [revision checklist](obligation-revision-checklist.md)
-tracks the single-check design and acceptance requirements. The additive design
-and its evidence below describe the preceding implementation; the requested
-replacement is not yet implemented or validated.
+The [requested revisions](obligation-review-change-request.md) govern this change.
+The [revision checklist](obligation-revision-checklist.md) records acceptance and
+remaining work. PR #168 implements the single-check design; native acceptance is
+pending. The development implementation must wait for explicit owner approval
+before porting and then obtain its own evidence.
 
-`--consistent-obligation-checks` is an experimental, default-off verification option.
-It can also be set as `consistent-obligation-checks = true` in `[options]` of a
-`dfyconfig.toml`. It changes proof construction, not the source language. It adds
-no background axiom, changes no assertion-isolation setting, and increases no
-global fuel or resource limit.
+`--consistent-obligation-checks` is experimental and disabled by default. Its
+project-file spelling is `consistent-obligation-checks = true`. The option changes
+how an existing obligation is prepared and checked. It introduces no background
+axiom, body/context term collector, global fuel policy, resource increase or
+assertion-isolation setting.
 
-## Boundary and baselines
+## Local invariant
 
-The development baseline is `858e4bfbcf00fbf0146255c0a4b0efdfc4deb66f`
-(the actual full commit is recorded in the accompanying validation report).
-The current shipped-line baseline is `ab210b78b50adb5a192542897f0a00cdb40f3c35`
-(the exact merge boundary is recorded in the validation report). Earlier diagnostics
-used `ad1360af0f776c0be6cf57e4f0d38bbdf1ecc365`.
-The design was prepared against `4b2742fb9924eed47c7bd40779e4283a1e65ce6d`.
-The option preserves the intervening soundness repairs; their guarded assumptions,
-allocation/result restrictions, co-recursive boundaries and additional-axiom
-policy are independent of this option.
+For an implicit source proposition P, the intended comparison is an immediate,
+unannotated `assert P` at the same program point. The implicit check must have the
+relevant local support that assertion would provide, check P once, and preserve
+the original kind of check's normal publication. An intervening assertion of a
+different proposition, explicit proof blocks, labels, custom triggers, reveals
+and fuel overrides retain their own semantics.
 
-The intended comparison is an unannotated immediate `assert P` before an implicit
-check of the same instantiated P, with the same state and visibility. An
-assertion before an intervening Q may legitimately help Q. Proof blocks, labels,
-reveals, fuel overrides, custom triggers and selective checking keep their own
-semantics. Both the inserted check and the implicit check belong to a comparison.
+Support comes from P and legitimate verifier state: frozen actuals/results,
+current/old/labeled heaps, receiver and type substitutions, declared well-formedness,
+SCC restrictions, frame, and current hide/reveal scope. No preceding or surrounding
+body expressions are consulted. The later context/body collection experiments are
+excluded from this implementation.
 
-This implementation supplies a common local expression package for source
-propositions and guarded visible type introductions. It does not claim equality
-of all preprocessing or all unbounded E-matching closures of Z3. Specialized
-Boogie obligations and hidden representations have the explicit boundaries
-listed below.
+`LowerProposition` extracts the existing assertion splitter and fuel policy for
+the actual check. It returns checked/free/both pieces, whether splitting happened,
+and the normal post-check summary. It emits no commands. Unsplit conditions retain
+the assertion path's second translation; split conditions retain its original
+inlining/induction restrictions. Explicit assertions keep their existing translator,
+one-shot fuel adjustments, scope and publication.
 
-## Package and prerequisites
+Implicit lowering uses a fresh translator with the same heaps, layers, receiver,
+SCC and frames. It temporarily selects the existing assertion statement context,
+then restores the surrounding statement/fuel state. It does not globally change
+expression polarity or fuel. Preparation is recorded as checked expression,
+declared contract, or guarded introduction; those categories confer no permission
+by themselves. Existing WF/contract paths establish permissions in their original
+order. Free splitter pieces are not independently proved theorems.
 
-`LowerProposition` constructs checked/free/both pieces using the existing splitter,
-a continuation summary, and inputs describing the body context, translator,
-induction, inlining height, preparation justification and optional guard. It emits
-no command itself. Its semantic source remains the resolved expression; displayed
-`GetAssertedExpr` trees are never used as operational predicates.
+## Contracts and publication
 
-The expression translator supplies current, old and labeled heaps, receiver,
-inter/intra-SCC fuel, self-call limit, frame scope and type representation. The
-resolved expression already carries capture-avoiding substitutions, types,
-triggers and attributes. Body context supplies hide scope and checking mode.
+Each method postcondition is checked inside the translated body at every return
+and fallthrough, before reveal-scope commands are popped. The implementation
+procedure's user `ensures` copies are nonchecking/free. Caller procedures retain
+their normal postconditions. Frame/heap boilerplate remains checked as before.
+Inherited clauses keep `$_reverifyPost` guarding. Clause order, custom errors and
+proof dependencies are retained, so earlier established clauses can support later
+ones.
 
-Preparation has three explicit categories:
+The sole local check uses ordinary assertion publication, matching the previous
+checked-ensures continuation. An unsplit assertion already publishes its checked
+fact; no additional summary is emitted. After a split, the normal source summary
+is published once, after all checked pieces. This is the splitter's existing proof
+cut, not an added proof preceding a legacy check. Explicit split assertions retain
+check-and-forget publication.
 
-* `CheckedExpression`: the explicit assertion's existing ordered WF path has run.
-* `DeclaredContract`: use the established contract-WF procedure and frozen actuals
-  or result variables. Clause order is preserved; a later clause cannot prepare
-  an earlier one.
-* `GuardedIntroduction`: check CC implies C for the defining type constraint.
-  CC is recorded and retained on checks and publication, never assumed globally.
-  Evaluation/WF of the frozen source value is a separate prerequisite.
+Method-call preconditions use frozen formal/actual substitutions at the pre-call
+heap and current visibility. Their local assertions are the sole user-contract
+checks; call procedure user `requires` copies are free, while implementation
+preconditions remain callee assumptions. Receiver, generics, boxing, old arguments,
+reads/modifies frames and termination retain their original order. Old-argument
+allocation contracts likewise become nonchecking only at calls whose local
+allocation obligation is checked. Other checked boilerplate remains intact.
+Ordinary call havoc and outputs govern which established facts survive a call.
 
-The categories record the existing justification rather than granting a new
-permission. Free splitter pieces are not independently established theorems.
-Statement adapters check only checked/both pieces and publish the canonical
-summary according to the original statement policy. Procedure adapters preserve
-the original checked/free role conventions.
+Ordinary function preconditions adapt their existing checked assertion rather than
+adding a parallel proof. Higher-order calls and `.requires` share the existing
+`RequiresN` constructor, including heap, arity, types, receiver and boxed actuals.
+Function postcondition checks retain their existing procedure placement, declared
+can-call allowance and SCC-height restriction, with the local assertion lowering
+applied to that actual checked contract. No self-call result-type assumption is
+introduced before its body result is checked.
 
-## Preservation of existing checks
+The direct fixture [boogie-contract-semantics.json](../../Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/assertion-invariance/boogie-contract-semantics.json)
+checks the fixed Boogie semantics: free ensures imposes no implementation proof
+and remains available at calls; free requires imposes no call check and remains
+a callee assumption. Three negative controls require failed local assertions and
+retained checked boilerplate to be reported. Validation checks the verifier's
+summary counts: successful input processing alone does not mean a proved program.
 
-The enabled path uses the existing splitter and expression translator with their
-original fuel rules. It does not replace them with a new polarity-sensitive fuel
-policy. In particular, a universal quantifier in an implication antecedent retains
-the exact checked fuel applications emitted by the original assertion path.
-Boolean arguments, exact lets, containers, equivalence operands and continuation
-translation also retain the original rules.
+Iterator final contracts follow the same local exit/free implementation-copy rule,
+with their original inherited-clause exclusion. Yield ensures adapts the existing
+local check, retaining check-and-forget followed by the original yield-summary and
+havoc. Opaque-block ensures adapts its original local assertion and attributes;
+loop invariants adapt their existing checked pieces, with normal invariant
+assumptions and loop-state guards. These paths add no second proof of a clause.
 
-`LowerProposition` extracts the expression-level checking sequence of
-`TrAssertCondition`. If splitting does not happen, it retains the original second
-translation of the complete condition. Explicit assertions keep their existing
-translator, statement context, counters, fuel decisions and publication path.
-A structural comparison summary for them is constructed only when the diagnostic
-observer is present; normal translation does not construct it.
+Legacy `ReturnPosition` scope behavior is retained in method, iterator and forall
+proof bodies. Previously retained reveals remain available to outer checks;
+ordinary nonterminal scope boundaries are retained. Scope preservation includes
+Boogie's commands as well as formula/fuel identity.
 
-An added implicit check uses a fresh translator with the same heaps, layers,
-receiver, frame, SCC and visibility inputs. It starts with the existing assertion
-statement policy and restores the surrounding statement/fuel state afterward.
-Its summary uses the already trusted assume-after-assert policy and is published
-only after its checked pieces. No extra check can consume the surrounding check's
-fuel adjustment. This extraction preserves the existing policy, including its
-one-shot adjustment decisions; it does not claim to replace that policy with a
-new structural fuel theory.
+## Visible types, conversions and allocation
 
-Original procedure and type-membership checks remain. Cast constraints retain the
-original guarded direct formula as well as the added assertion-style pieces.
-Allocation checks retain the original typed predicate as a conjunct and add the
-boxed predicate used by explicit allocation assertions. These preservation rules
-are separate from solver acceptance: retaining formulas does not establish an
-unbounded E-matching closure theorem or a successful whole-program verifier run.
+For a visible redirecting type, the membership obligation checks required base
+membership and `CanCall(C(v)) ==> C(v)` using the assertion lowering under that
+guard. The already translated value is wrapped without reevaluating the source.
+Generic substitutions are capture avoiding. Numeric parents use the authoritative
+combined predicate used by the existing numeric membership axiom; nonnumeric
+parents recurse through the base-membership check.
 
-## Local correctness and cuts
+The existing introduction axiom then derives symbolic `$Is` membership. Its
+representation may be published where the original check needs it, but is not
+proved again as a second assertion. Can-call is not assumed unconditionally.
+Hidden/provided constraints remain abstract; partial/total arrows and non-null
+types retain their specialized representation rules.
 
-The core uses the existing splitter's correctness obligation: under its established
-WF/visibility/recursion prerequisites, successful checked pieces justify the source
-proposition and its permitted summary layers. Retaining SCC limits and check/free
-roles is essential to this obligation; inlining is not a license to expose a
-hidden definition. The implementation does not replace that trusted obligation
-with a test of a few examples.
+Assignments, method/function results, constructor arguments, default/constant
+values, collection entries and lambda results enter through this type recipe.
+Quantified array/sequence initializer membership universally closes its actual
+constraint checks over the existing index variables and range. Every guarded
+piece is closed; no index variable escapes. Its original check-and-forget policy
+is retained, so it adds no continuation membership assumption or summary.
 
-For a guarded type introduction, assume G only inside a proof of `G ==> piece`.
-If G is false the resulting implication and publication are vacuous; no
-unconditional can-call or membership follows. If G is true, the core's checked
-pieces establish C in the same value/type/heap context. Thus publishing
-`G ==> summary(C)` is a proof cut after its checks. The original `$Is`/`$IsBox`
-check remains and must discharge through the existing introduction axiom.
-For nonnumeric parents, parent membership is checked first. Numeric parent
-constraints use `GetImpliedTypeConstraint`, the same authoritative combined
-constructor used by the numeric type axioms, with generic substitution.
+Conversions choose the canonical guarded constraint check or the legacy direct
+check according to the option; they never emit both. Primitive range/integrality,
+Unicode and ordinal obligations retain their separate necessary checks.
 
-The value wrapper names a translated value; it does not reevaluate its source.
-No result-type fact about a function's self call is published before checking
-the body value. Function postconditions keep their SCC-height limit and
-`CanCallOptions` allowance. The enabled permission traversal preserves that
-allowance through exact lets, constant definitions and sequence initializers.
-Dropping it can let a false self postcondition justify itself.
+Allocation checks use the boxed predicate of explicit `allocated(e)`, with the
+exact current, old or labeled heap. They check one representation. Existing
+prelude allocation and box/unbox/type bridges supply the corresponding typed
+fact. General allocation assumptions, arrow axioms, heap succession and where
+clauses are unchanged. Fresh old arguments/receivers must still fail.
 
-Local method preconditions use the frozen formal-actual map at the pre-call heap.
-Their canonical checks occur in the existing call position; frame, termination,
-boxing and old-allocation checks retain their order. The call's procedure requires
-remain checked. Local postconditions are checked at fallthrough and explicit
-returns before publishing their summary; procedure ensures remain checked.
-Inherited conditions retain the `$_reverifyPost` guard. Filtering, dependency
-information and source/error provenance remain on the assertion sinks.
-
-The local method-exit copies retain ordinary checked-ensures subsumption: each
-checked piece becomes a premise for later checks. Reusing the split explicit
-assertion emitter here would suppress that premise and weaken the continuation
-prefix. All pieces still have to be proved, so publishing them afterward is the
-existing sound proof-cut rule. Explicit split assertions retain their original
-check-and-forget behavior. Formula equality alone does not establish command
-publication equivalence; the structural gate checks both for method exits.
-
-For an immediate duplicate, comparisons include the complete checking context,
-including the original statement/fuel state, guards and already checked WF prefix.
-The additional checker uses the existing assertion recipe. The first check establishes
-only its permitted summary; the second is an administrative cut using that fact.
-This local argument does not yet establish the required end-to-end invariance or
-matching closure. Those claims require acceptance evidence after the preservation
-revision, not evidence from the superseded fuel-policy implementation.
-
-Method and forall proof-body translation preserve the legacy `ReturnPosition`
-context. Added checks do not force terminal bodies or calculation hints into a
-new scope. Reveals retained by the legacy translation remain available to the
-existing checks and appended local checks; nonterminal scopes retain their
-existing pushes and pops. Boogie's
-[scope commands](https://github.com/erniecohen/boogie/blob/v3.5.5%2Breview.37e4435d/Source/Core/AST/Commands/ChangeScope.cs)
-affect hide/reveal availability, so preservation includes command scope as well
-as checked formulas and literal fuel indices. The preceding candidate's opt-in
-context overrides caused the three documented definition-visibility failures.
-Native validation verifies all three unchanged declarations under both additional-axiom settings; the independent power exit-package failure remains reproduced.
-
-Guards and frozen-variable equalities must be included when comparing different
-front ends; they cannot be silently removed by the comparison tool.
-
-## Allocation bridge
-
-Explicit `allocated(e)` uses `$IsAllocBox(Box(value), type, heap)`. Matching
-checked availability obligations retain their original typed predicate and add
-this boxed form as a conjunct. The prelude already equates unboxed and boxed
-allocation at values of the corresponding representation, and its box/unbox/type
-bridges supply the representation fact. Inherently boxed values remain boxed.
-The factory keeps the exact current/old/labeled heap and preserves the legacy
-null/no-obligation result. Allocation assumptions, arrow axioms, heap succession
-and general where clauses are unchanged. A fresh object at an old-argument or
-old-receiver site must still fail.
+The local soundness argument uses the trusted splitter and existing type/allocation
+introduction rules. It does not assert that finite tests prove unbounded trigger
+closure, semantic soundness, or uniform solver performance. Independent soundness
+review and native acceptance remain necessary.
 
 ## Producer audit
 
-`obligation-producers.json` records every registered sink/contract/WF/permission
-call, assertion construction and assertion-returning factory by file, containing
-member, producer, count, token hash and complete file hash. The Roslyn test rejects an unknown producer
-file, a changed recorded call or a new factory. Renamed wrappers returning an
-assertion/contract are recorded as factories; changes to their bodies change the
-hash. This is a source coverage gate, not a proof of every helper's semantics.
+`obligation-producers.json` records registered assertion, contract, WF and
+permission producers by source file, member, count, token hash and complete file
+hash. Its normal Roslyn gate rejects changes and unclassified files. Explicit
+capture is diagnostic only; the captured inventory must be reviewed and committed
+before the normal gate passes.
 
-| Inventory family | Semantic constructor, prerequisites and status |
-|---|---|
-| explicit-predicates | resolved source proposition; ordered WF, labels and proof scopes; shared core |
-| canonical-proposition-core | tactical conjunction/disjunction, safe body substitution, induction/prefix cases; shared core, existing proof rules retained |
-| canonical-obligation-adapters | proposition package, guarded and method exit cuts, allocation fact; shared core |
-| guarded-type-introduction | visible redirecting constraint and exact raw CC; shared core plus original membership bridge |
-| function-contracts | instantiated requires/ensures and frozen body result; declared WF/self-call/SCC limits; shared core and type recipe |
-| method-calls | frozen actuals, caller visibility and pre-call heaps; shared local core plus checked procedure requires |
-| method-override-contracts | source contracts through shared spec lowering; frame/termination/override implications retain specialized constructors |
-| forall-proof-export | arbitrary bound variables/range, proof checks through core, separate typed exporter; no local-variable fact escapes; forall assign/call algorithms retained |
-| assignment-initialization | RHS/field/array/constructor result membership through direct type recipe; simultaneous-evaluation and quantified initializer algorithms retained |
-| ordered-expression-wf | non-null, indexing, maps, destructors, numeric definedness, lambda domain/frames; direct operational Boogie factories retained in ordered WF; diagnostic ASTs excluded |
-| type-witness-conversion | numeric/bitvector/Unicode/integrality/ordinal bounds and visible converted-value constraints; guarded constraints share core; primitive bounds and witnesses retain specialized rules |
-| membership-frame-spec-bridges | symbolic membership, frame containment, type tests and spec split wrappers; source specs share core; axioms/type tests remain symbolic |
-| loop-contracts | resolved invariants share split core; frozen for-index membership uses type recipe; lexicographic decreases and frame/order checks retain specialized rules |
-| iterator-contracts | source yield/iterator contracts share split core and direct output type recipe; history/heap/yield-count state machine retained |
-| constant-initializers | existing initializer WF before constrained result; direct type recipe |
-| datatype-constructors | constructor-field WF then constrained result; type recipe; codatatype suspended-membership rules retained |
-| termination | lexicographic decreases, boundedness, old/current measures; specialized operational Boogie constructors, no new source predicate/inlining |
-| definite-assignment | tracker bits and return availability; internal state invariant, no user-expressible predicate counterpart |
-| if-guards | ordered guard WF and binding-guard existence/scoped variables; existing constructor retained |
-| match-completeness | constructor query/coverage, pattern and binding types; direct type recipe for bindings, specialized completeness constructor |
-| statement-wf-calculations | source calc/assign-such-that checks share splitter; update/existence/heap transition checks retain specialized rules |
-| opaque-block-contracts | declared block ensures via split core; block frame/WF and visibility scopes retained |
-| let-permissions | exact bindings and separately justified Skolem permissions; self-call context preserved; no witness conflation |
-| visibility | reveal/hide availability facts and legacy return-position scope context retained |
-| value-translation | original arithmetic/logical operand and fuel representation; no assertion recipe guessed from a value |
-| value-permission-translation | heaps/arrow requires/quantifier guards and can-call traversal; values retain original semantics and complete context |
-| extreme-prefix-contracts | prefix lemma/predicate proof rule and rank; existing specialized proof construction retained |
-| definition-consequence-axioms | definition/result consequences and availability guards; outside local-check migration; no axioms changed |
-| assertion-contract-sinks | provenance, checking/filtering/subsumption and checked/free emission; sinks retained |
-| diagnostics-only | displayed obligation explanations; deliberately excluded from semantic construction |
+| Family | Constructor and scope |
+| --- | --- |
+| explicit-predicates, canonical-proposition-core | Existing resolved-source assertion splitting, ordered WF, proof scopes and induction; explicit publication unchanged. |
+| canonical-obligation-adapters | Actual guarded/exit checks and their permitted post-check publication; canonical allocation representation. |
+| guarded-type-introduction | Visible defining constraint under its can-call guard, necessary base membership, then derived symbolic representation. |
+| method-calls, method-override-contracts | Frozen actual/pre-call checks and local body exits; free interface copies; override/frame/termination implications retain their specialized proof rules. |
+| function-contracts | Existing function precondition and SCC-limited postcondition checks; result membership through the type recipe. |
+| assignment-initialization, constant-initializers, datatype-constructors | Ordered evaluation/WF and type recipe, including range-bound quantified initializer checks. Codatatype suspended membership retains its specialized rule. |
+| loop-contracts, iterator-contracts, opaque-block-contracts | Actual invariant/yield/block/exit clauses use local assertion lowering; loop guards, iterator history/yield state, frames and publication retained. |
+| ordered-expression-wf | Nullness, bounds, map/set domains, destructor queries and division/modulo use their operational Boogie constructors at ordered WF sites. These already express the same immediate scalar assertion predicates; they need no added proof package. |
+| type-witness-conversion | Guarded visible conversion constraints share the recipe; primitive range, integrality, character and ordinal facts retain their exact operational formulas. |
+| membership-frame-spec-bridges | Type membership adapters share the recipe. Type-test value translation remains a Boolean symbolic test rather than a proof obligation. |
+| forall-proof-export, statement-wf-calculations | Source proof/calc splitting and arbitrary-bound-variable export retain their trusted scope and quantification; existence/update/heap-state obligations retain specialized proof rules. |
+| termination | Lexicographic decrease/boundedness over frozen measures; specialized proof rule, not a single independently assertable source clause. |
+| definite-assignment | Internal tracker-bit state invariant; no source-expression counterpart. |
+| if-guards, match-completeness | Ordered guard/query/domain predicates, pattern membership and binding scopes; existential witness/completeness proof rules retained. |
+| let-permissions, visibility | Exact binding/Skolem permissions and hide/reveal availability; neither is an extra proof of P. |
+| value-translation, value-permission-translation | Value semantics, can-call traversal and heap/arrow representation; no body-term discovery or global fuel policy. |
+| extreme-prefix-contracts | Rank/prefix proof construction retains its specialized rule and SCC boundary. |
+| definition-consequence-axioms | Existing definitions, guarded consequences and result axioms; outside local-check migration and unchanged. |
+| assertion-contract-sinks, diagnostics-only | Checking/filtering/provenance sinks retained. Display-only obligation ASTs are never used as operational predicates. |
 
-Two direct membership producers stay deliberately specialized: type-test value
-translation is a symbolic Boolean test, and quantified array/sequence initializer
-membership binds all indices under its range with forget/subsumption semantics.
-The latter has no single already-evaluated scalar point to which the direct
-introduction recipe can be applied safely. Its arbitrary-index recipe is retained;
-the scalar constructor/collection/lambda adapters do not claim to cover it.
-Partial/total arrow subtypes, non-null declarations and provided/opaque types
-also retain their specialized or abstract symbolic introduction rules. An AST
-containing a hidden constraint does not authorize exposing it.
+This inventory supplies coverage and makes exclusions reviewable; it does not
+replace semantic review of the specialized constructors or native paired tests.
 
-Higher-order `RequiresN` has a shared semantic constructor and uses current heap for both `.requires` and call WF.
-`ApplyN` selects `$OneHeap` for read-effect-free functions; that distinction is
-intentional. Arrow type arguments, receiver, arity and boxed actuals are preserved.
-`.reads`'s domain requirement is a separate check; it is not discarded because
-the result is a set. Its declared frame and termination prerequisites remain.
+## Fingerprints and required evidence
 
-## Evidence and acceptance
+The fingerprint uses resolved binder identities and lexical unresolved-name
+scopes, with depth counting declarations. Nested same-name binders cannot collapse
+outer and inner variables; alpha-equivalent renaming remains equivalent. Function
+applications, quantifier kinds, ordered trigger patterns, attributes, types,
+ground identifiers, heap/fuel, can-call and check/free roles remain significant.
+Package-content comparisons also check guards/preparation separately. Complete
+commands and typed declarations are separate evidence from pre-resolution hashes.
 
-The typed fingerprint normalizes lexical binder alpha-renaming only. It retains
-function/operator applications, quantifier kinds and ordered multi-patterns,
-attributes, types, ground identifiers, `Lit`, box/unbox, membership, heaps, fuel,
-can-call and checked/free roles within the pieces and summary. The package
-content fingerprint excludes the separate input guard and preparation metadata;
-pair tests check those explicitly, and complete command emission retains them. It substitutes no administrative
-temporary or independent witness. Complete Boogie emission and selected passive
-Boogie/SMT inputs accompany the structural package tests; proof dependencies and
-scope availability are reviewed in command emission as well as expression content.
-The observer runs before Boogie resolution, so some internal expression type
-fields are recorded as `unresolved`. The content fingerprint alone therefore
-does not certify complete typed package equivalence; the emitted declarations,
-preparation/guard checks and command-level comparisons remain separate evidence.
+Acceptance requires the original issue 100 at its unchanged resource ceiling,
+subset and method/function precondition positives without redundant assertions,
+paired quantified and scalar checks, active reveal scopes, no-body-leakage and
+no-duplicate-contract controls, and expected negative outcomes. Parser failures,
+timeouts and resource exhaustion are not accepted negative evidence.
 
-The paired runner preserves original examples, records hashes, commands, solver
-checksum, exit/outcomes and total/maximum-batch resource counts. The unchanged
-#100 source must pass at the existing 16,000,000 limit, with no batch isolation.
-The final quantified assertion and `assert true` are explanatory comparisons.
-Subset #2107's short/recursive variants and #4217/#2170/#2185/#5148 remain separate
-cases. Historical reports are baselined before interpreting a success as a fix.
+The supported baseline is `ab210b78b50adb5a192542897f0a00cdb40f3c35`.
+Default-off suite/library verdict and resource comparisons and enabled sweeps must
+use the exact supported fork, fixed Boogie and Z3 5.1.0. Stable errors are
+investigated from generated Boogie before any repair. Cases partially successful
+on both baseline and candidate seeds are resource/solver variance, not source
+correctness repairs. Source hints, caps and batching remain unchanged.
 
-In #100, the final explicit assertion supplies a local postcondition check and
-its permitted quantified summary before the procedure's ensures check. The
-enabled method-exit adapter supplies that same local recipe without changing
-the source. The forall proof body retains its legacy scope context, including
-when it is the method's final statement. The original checked procedure ensures
-and quantified export remain.
-The recorded successful reproducer uses one ordinary batch for the lemma; a
-new assertion-isolation setting or fresh per-assertion budget is not its repair.
-
-The complete let-bound self-postcondition contradiction tracked in
-[issue 166](https://github.com/erniecohen/dafny/issues/166) is a separate,
-pre-existing default-path soundness defect. The enabled permission traversal
-rejects it; default-off compatibility does not imply that the baseline theory
-is sound.
-
-Negative controls cover false/recursive subset constraints, guarded permissions,
-casts and both sides of numeric bounds, non-null/index/domain/destructor/division
-checks, ordinary/higher-order/receiver/generic preconditions, fresh old arguments,
-self postconditions, hide/reveal/proof scopes, early returns, loop and yield
-contracts, and empty forall domains. Parsing failures, timeouts and resource
-exhaustion are not accepted negative evidence.
-
-The required compatibility evidence includes the verifier suite and standard
-library with the option off, both additional-axiom settings, controlled resource
-comparisons against the exact baseline, and an enabled sweep with changed verdicts
-and cost regressions reported. A diagnostic workflow wrapper that exits zero is
-only a container for outcomes. The validation report must say which underlying
-gates completed and which remain pending. Independent soundness review is
-required before merging; tests and this local argument do not replace it.
+Historical additive-design results are retained in the validation reports for
+regression triage, and do not validate this replacement. PR #169 remains pending
+approval and requires independent development-line evidence after porting.
