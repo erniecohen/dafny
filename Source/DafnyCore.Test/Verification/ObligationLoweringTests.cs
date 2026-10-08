@@ -376,7 +376,7 @@ public class ObligationLoweringTests {
     const string source = "lemma L(a:array<int>,i:nat) requires i<a.Length " +
       "{ assert old(allocated(a)); var x := old(a[i]); }";
     var programs = await Translate(source, true, refresh);
-    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.Contains("Impl") && p.Name.EndsWith(".L"));
     var checks = implementation.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>().ToList();
     var explicitCheck = Assert.Single(checks.Where(c => c.Description is AssertStatementDescription));
     var allocation = Assert.Single(checks.Where(c => c.Description is IsAllocated));
