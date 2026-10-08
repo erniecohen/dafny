@@ -405,7 +405,7 @@ namespace Microsoft.Dafny {
                 new NonNull("array", e.Seq), builder.Context));
               if (etran.UsesOldHeap) {
                 builder.Add(Assert(GetToken(e.Seq), options.Get(CommonOptionBag.ConsistentObligationChecks)
-                  ? ExplicitAllocationPredicate(GetToken(e.Seq), seq, eSeqType, etran.HeapExpr)
+                  ? ExplicitAllocationPredicate(GetToken(e.Seq), seq, e.Seq.Type, etran.HeapExpr)
                   : MkIsAlloc(seq, eSeqType, etran.HeapExpr),
                   new IsAllocated("array", null, e.Seq), builder.Context));
               }
