@@ -1,0 +1,61 @@
+name: Obligation regression harness build
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - name: Build portable integration harnesses without running proofs
+        shell: bash
+        run: |
+          set +e
+          mkdir -p out
+          git rev-parse HEAD > out/source.txt
+          sh Scripts/fetch-boogie-packages.sh > out/packages.log 2>&1
+          echo "$?" > out/packages.exit
+          sh .github/review/version.sh > out/version.txt 2>&1
+          version_result=$?
+          echo "$version_result" > out/version.exit
+          if [ "$version_result" -eq 0 ]; then
+            dotnet build Source/IntegrationTests -c Release > out/integration-build.log 2>&1
+            integration_result=$?
+            echo "$integration_result" > out/integration-build.exit
+            dotnet build Source/DafnyLanguageServer.Test -c Release > out/editor-build.log 2>&1
+            editor_result=$?
+            echo "$editor_result" > out/editor-build.exit
+            if [ "$integration_result" -eq 0 ] && [ "$editor_result" -eq 0 ]; then
+              cp -R Source/IntegrationTests/bin/Release/net10.0 out/integration
+              cp -R Source/DafnyLanguageServer.Test/bin/Release/net10.0 out/editor
+              cp -R Binaries/net10.0 out/driver
+              task_dotnet=$(readlink -f "$(command -v dotnet)")
+              task_dotnet_root=$(dirname "$task_dotnet")
+              task_sdk=$(dotnet --version)
+              dotnet --list-runtimes > out/runtimes.txt
+              task_runtime=$(dotnet --list-runtimes | awk '$1 == "Microsoft.NETCore.App" && $2 ~ /^10\./ {print $2}' | sort -V | tail -n 1)
+              mkdir -p out/runtime/host/fxr out/runtime/shared/Microsoft.NETCore.App out/vstest
+              cp "$task_dotnet" out/runtime/dotnet
+              cp -R "$task_dotnet_root/host/fxr/$task_runtime" out/runtime/host/fxr/
+              cp -R "$task_dotnet_root/shared/Microsoft.NETCore.App/$task_runtime" out/runtime/shared/Microsoft.NETCore.App/
+              cp "$task_dotnet_root/sdk/$task_sdk/"*.dll out/vstest/
+              cp "$task_dotnet_root/sdk/$task_sdk/"vstest.console.* out/vstest/
+              cp -R "$task_dotnet_root/sdk/$task_sdk/Extensions" out/vstest/
+              echo "$?" > out/harness-runtime.exit
+              out/runtime/dotnet --list-runtimes > out/portable-runtimes.txt
+              echo "$?" > out/runtime-metadata.exit
+            fi
+          fi
+          find out -name '*.pdb' -delete
+          cat out/*.exit
+          tar -czf obligation-regression-build.tar.gz out
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: obligation-regression-build
+          path: obligation-regression-build.tar.gz
+          retention-days: 30
