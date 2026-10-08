@@ -70,3 +70,15 @@ is credited to that attempt. The compatibility repair preserves the original
 optional preparation-guard position and makes the new postcondition support
 parameter optional. Calls and yields therefore retain their preceding behavior.
 Fresh compilation and focused proof validation are still required.
+
+The compatibility-repaired product
+([run 37807569735](https://github.com/erniecohen/dafny/actions/runs/37807569735))
+compiled both platform bundles and contract probes, built the editor tests, and
+passed 95 obligation unit tests. Its normal inventory assertion and complete
+core-test invocation rejected an outdated reviewed source inventory. The
+recording workflow's success did not override those failures. The captured
+287 groups were audited: changes were confined to the modified helper file's
+hash, the helper's parameter arity, and the exit call's invocation hash; no
+producer or assertion count changed. The reviewed inventory is updated to those
+source bytes. No proof verdict table is changed. A fresh normal inventory/core
+check and focused native verification remain required.
