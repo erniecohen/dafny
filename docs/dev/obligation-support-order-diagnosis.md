@@ -1,6 +1,6 @@
 # Native assertion-local support ordering
 
-A completed 36-observation native diagnostic uses the current `a709df226`
+A completed 36-observation native diagnostic uses the preceding `a709df226`
 verifier, Z3 5.1.0, macOS arm64, both additional-axiom settings and seeds 0, 1
 and 7. It changes only the placement of one existing leading can-call assumption
 within the generated body of `Composite` or `RemoveFactor`. All original command,
@@ -36,7 +36,7 @@ attempt completed Composite but rejected RemoveFactor because the diagnostic
 locator missed its conjunction of can-call facts. All incomplete attempts remain
 separate from this completed 36-observation result.
 
-## General local correction, pending compilation and native validation
+## General local correction
 
 The product candidate creates the existing leading support expression at its
 original point, preserving its expression, origin and attributes. It emits that
@@ -90,3 +90,27 @@ modes, 373 core tests, and the byte-exact reviewed 287-group inventory. Focused
 native verification is running for the known targets and relevant controls at
 the original ceilings; it is still pending. No whole-suite/library iteration
 or development-line port has been launched.
+
+## Current native product result
+
+Product `fe6ddd1ba` completes a focused 68-observation gate using the accepted
+normal build above. The [current target table](obligation-guarded-preparation-focused.md)
+records both axiom settings and seeds 0, 1 and 7. Composite reproduces the native
+diagnostic's VRV vector; Power and ExtensibleArray verify every selected seed.
+FormArmy and RemoveFactor remain RRR. Iterator and AltPrimeDefinition retain
+their preceding partly successful vectors and section-13 classification.
+
+All sixteen positive controls verify, all four negative controls have genuine
+Invalid VCs, and every reported independent specification-WF result is Correct.
+Six newly executed default-off Power vectors match the recorded baseline exactly.
+Earlier baseline and a709 results are reused explicitly. All available
+seed-zero body assertion texts are unchanged from a709, including their
+expressions and attributes after removing comments/dependency ids. This is a
+textual check of actual formulas, not native AST serialization equivalence.
+
+The durable gate completes its diagnostic denominator but rejects targeted
+enabled acceptance because resource failures remain. Neither whole-suite nor
+whole-library acceptance is claimed. This correction implements the justified
+local support-order change; it does not fix all known regressions or make the
+opt-in path uniformly better than legacy. No source hints, limits, solver
+options, retained reveals or expected proof verdicts are changed.

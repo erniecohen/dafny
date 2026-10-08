@@ -1,19 +1,40 @@
 # Guarded contract preparation: current focused result
 
-**Current candidate under validation:** semantic/product `fe6ddd1ba` keeps the
-existing leading can-call command and places it after accepted certified pure
-preparation only when it reads no assigned or havoced variable. Unsupported
-fragments retain the previous order. Actual checks, expression/fuel state,
-certified facts, source state and reveal scopes are retained. The
-[native support-order diagnosis](obligation-support-order-diagnosis.md) completes
-36 observations for the preceding `a709df226` product with faithful native
-controls, but does not validate this new compiler candidate. The fresh [normal build](https://github.com/erniecohen/dafny/actions/runs/37808373912)
-passes all ten actual stages: 95 obligation tests in each mode, 373 core tests,
-the exact 287-group inventory, both platform bundles/probes and editor
-compilation. Focused current-candidate native verification remains pending. No whole-suite
-iteration or development port is being performed.
+**Current focused result:** semantic/product `fe6ddd1ba`, with the
+[accepted compiler build](https://github.com/erniecohen/dafny/actions/runs/37808373912),
+completes 68 native observations on macOS arm64 with Z3 5.1.0, both additional-axiom
+settings and original resource ceilings. All reported independent specification-WF
+results are Correct; all sixteen positive controls verify, all four negative
+controls contain genuine Invalid VCs, and six default-off Power vectors exactly
+match the recorded baseline. Baseline and preceding `a709df226` results are
+explicitly reused. Composite gains one successful seed; Power remains green.
+Five suite targets still exhaust resources at selected seeds, so focused enabled
+acceptance is rejected. No whole-suite/library job or development port is run.
 
-**Newest correction:** semantic/product pin `a709df226` replaces empty
+The current target vectors follow. `V` means Correct and `R` means
+OutOfResource; positions are seeds 0, 1 and 7. Both axiom settings agree.
+
+| Target | Recorded baseline | Preceding a709 candidate | Current fe6 candidate |
+| --- | --- | --- | --- |
+| Power subtraction | VVV | VVV | VVV |
+| `ExtensibleArray.Append` | VVV | VVV | VVV |
+| `SnapTree.Iterator.MoveNext` | VRR | RVV | RVV |
+| `FormArmy` | VRR | RRR | RRR |
+| `AltPrimeDefinition` | VVR | VRR | VRR |
+| `Composite` | VVV | VRR | VRV |
+| `RemoveFactor` | VRR | RRR | RRR |
+
+Iterator and AltPrimeDefinition remain the section-13 partly successful
+comparisons; their seed movements do not justify case-specific product tuning.
+FormArmy and RemoveFactor still fail all selected seeds, and Composite retains
+one failing seed despite a fully successful baseline. These are resource
+rejections, not genuine Invalid proof results. This is not uniform improvement
+over the legacy path. The current single-check formulas are unchanged from a709
+in the fourteen available seed-zero printed-body comparisons, after excluding
+comments and dependency ids. This textual check preserves assertion expressions
+and attributes, but is not a claim of serialized native AST equivalence.
+
+**Preceding correction:** semantic/product pin `a709df226` replaces empty
 certified-WF branches by `G ==> G`, retaining the guard terms without an empty
 control-flow split. Its [build](https://github.com/erniecohen/dafny/actions/runs/37781426875)
 passes all ten actual stages, both platforms and probes, the editor build,

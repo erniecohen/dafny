@@ -1,19 +1,17 @@
 # Obligation lowering validation status
 
-**Current candidate under validation:** semantic/product `fe6ddd1ba` keeps the
-existing leading can-call command and places it after accepted certified pure
-preparation only when it reads no assigned or havoced variable. Unsupported
-fragments retain the previous order. Actual checks, expression/fuel state,
-certified facts, source state and reveal scopes are retained. The
-[native support-order diagnosis](obligation-support-order-diagnosis.md) completes
-36 observations for the preceding `a709df226` product with faithful native
-controls, but does not validate this new compiler candidate. The fresh [normal build](https://github.com/erniecohen/dafny/actions/runs/37808373912)
-passes all ten actual stages: 95 obligation tests in each mode, 373 core tests,
-the exact 287-group inventory, both platform bundles/probes and editor
-compilation. Focused current-candidate native verification remains pending. No whole-suite
-iteration or development port is being performed.
+**Current focused result:** semantic/product `fe6ddd1ba`, with the
+[accepted compiler build](https://github.com/erniecohen/dafny/actions/runs/37808373912),
+completes 68 native observations on macOS arm64 with Z3 5.1.0, both additional-axiom
+settings and original resource ceilings. All reported independent specification-WF
+results are Correct; all sixteen positive controls verify, all four negative
+controls contain genuine Invalid VCs, and six default-off Power vectors exactly
+match the recorded baseline. Baseline and preceding `a709df226` results are
+explicitly reused. Composite gains one successful seed; Power remains green.
+Five suite targets still exhaust resources at selected seeds, so focused enabled
+acceptance is rejected. No whole-suite/library job or development port is run.
 
-**Newest correction:** semantic/product pin `a709df226` replaces empty
+**Preceding correction:** semantic/product pin `a709df226` replaces empty
 certified-WF branches by `G ==> G`, retaining the guard terms without an empty
 control-flow split. Its [build](https://github.com/erniecohen/dafny/actions/runs/37781426875)
 passes all ten actual stages, both platforms and probes, the editor build,
