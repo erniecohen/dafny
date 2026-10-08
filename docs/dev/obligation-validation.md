@@ -16,7 +16,7 @@ initializer positives. All paired negative observations retained invalid VCs.
 Focused default-off comparisons matched their baseline outcome/resource vectors;
 complete suite and standard-library acceptance remain pending.
 
-The [current preparation build](https://github.com/erniecohen/dafny/actions/runs/37717887176)
+The [preceding preparation build](https://github.com/erniecohen/dafny/actions/runs/37717887176)
 compiled both native platforms and the editor. All 71 structural controls and
 the normal reviewed 287-group inventory gate passed. These include local
 quantifier WF, one postcondition proof, inherited preparation guarding,
@@ -32,9 +32,25 @@ independent soundness acceptance. The complete paired trial then rejected an ite
 local preparation referenced an undeclared method reads frame. Its first 476
 observations passed, but the full gate was incomplete. The frame/old-heap repair
 in `126dfd96b` and its body-specific resolution/typechecking controls require a
-fresh build and complete native gates. Running earlier multi-seed/library inputs
-remain diagnostic evidence of their recorded revision. Required complete suite
+fresh complete native gates; the corrected build is recorded below. Completed
+earlier multi-seed/library inputs remain diagnostic evidence of their recorded revision. Required complete suite
 and standard-library gates remain pending.
+
+The [corrected iterator build](https://github.com/erniecohen/dafny/actions/runs/37719808505)
+passes both native builds, both Boogie probes, the editor build and all 73
+structural controls in capture and normal inventory modes. The reviewed
+287-group inventory matches. Native version:
+`4.11.0+fcb2042d.review.6c3dfb23`; build source: `2165f4084`.
+Fresh registered/paired gates and complete baseline/default-off/enabled suite
+and standard-library comparisons use this build. Native acceptance, ordinary
+CI and independent soundness review are still pending.
+
+The preceding preparation matrices are now complete (216 suite observations
+and 72 library observations). Their focused baseline/default-off vectors match
+exactly, and the unchanged original succeeds enabled across three seeds. The
+Power target fails enabled at every seed in that revision. Its higher checked
+fuel layer and body result are retained; the [analysis](obligation-local-preparation-diagnosis.md)
+records the stable error separately from partially successful seed movements.
 
 The [first repair build](https://github.com/erniecohen/dafny/actions/runs/37717196930)
 compiled both platforms and the editor but rejected the inherited fixture's
