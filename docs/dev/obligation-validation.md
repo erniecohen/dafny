@@ -185,10 +185,34 @@ concatenation, delimiter splitting and encode/decode pass enabled; Power
 subtraction remains an enabled error at every seed. Its checked formula retains
 the higher assertion fuel layer. Generated division Boogie uses the same
 arithmetic wrappers in the legacy procedure postcondition and the new local
-check; a wrapper change does not explain that failure. The fresh 216-observation
-suite/original matrix and 112-observation actual-source diagnostic are pending.
-The latter requires actual solver query files for its same-host default-off cost
-repeats. Fresh complete suite and standard-library gates have been submitted
+check; a wrapper change does not explain that preceding failure. The fresh
+216-observation suite/original matrix completes with exact focused baseline/off
+batch vectors. The original issue succeeds enabled across all seeds, resolvers
+and axiom settings. NoTypeArgs and ExtensibleArray succeed enabled at all tested
+seeds; SchorrWaite, Primes and MinWindowMax have partly successful vectors in both
+baseline and enabled modes and are classified as solver/resource variance under
+S13. FlyingRobots retains resource exhaustion at all enabled seeds while baseline
+is partly successful, so that resource movement remains open.
+
+The complete 112-observation actual-source diagnostic verifies all four untouched
+originals (division, writer constructor and both map concatenations) enabled
+across three seeds. All 36 false controls retain invalid VCs. Immediate body
+assertions still fail, reflecting their additional body WF obligations. The
+current certified support repairs the original contracts without duplicating
+those obligations or assuming the actual contract's truth. Actual solver-query
+files are present for four same-host MembersSpec repeats. The [query ordering
+diagnosis](obligation-default-off-query-diagnosis.md) establishes a limited cause
+for that sample's resource differences, including an unchanged-baseline repeat;
+strict complete-library resource acceptance is still pending.
+
+A complete 48-observation current generated-Boogie Power replay retains both
+mandatory exit checks. The enabled control fails at every seed in both axiom
+settings. Removing the second clause's WF materialization, or placing WF in an
+isolated diagnostic branch, makes all seeds verify. Removing only the first
+clause's WF or only the certified divisor assumptions does not. False exit
+controls remain invalid. Omitting relevant preparation is excluded from the
+product; this is an explained solver-search effect, not a repair or an
+acceptance claim. Fresh complete suite and standard-library gates have been submitted
 under both axiom settings with the original inputs, ceilings and verdict tables.
 Their durable results remain pending.
 
