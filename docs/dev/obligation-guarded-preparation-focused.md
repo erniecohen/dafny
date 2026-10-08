@@ -1,5 +1,16 @@
 # Guarded contract preparation: current focused result
 
+**Current candidate under validation:** semantic/product `cb6610359` keeps the
+existing leading can-call command and places it after accepted certified pure
+preparation only when it reads no assigned or havoced variable. Unsupported
+fragments retain the previous order. Actual checks, expression/fuel state,
+certified facts, source state and reveal scopes are retained. The
+[native support-order diagnosis](obligation-support-order-diagnosis.md) completes
+36 observations for the preceding `a709df226` product with faithful native
+controls, but does not validate this new compiler candidate. Fresh compilation
+and focused current-candidate verification remain pending. No whole-suite
+iteration or development port is being performed.
+
 **Newest correction:** semantic/product pin `a709df226` replaces empty
 certified-WF branches by `G ==> G`, retaining the guard terms without an empty
 control-flow split. Its [build](https://github.com/erniecohen/dafny/actions/runs/37781426875)
