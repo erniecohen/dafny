@@ -62,3 +62,33 @@ existential. Reads-sink suppression must preserve translation/fuel state rather
 than skipping the traversal. Keep explicit assertions unchanged. Run all paired
 negatives and original/subset controls, then fresh complete suite/library gates.
 The existing gate inputs, source hints, ceilings and verdict tables stay fixed.
+
+## Guarded private argument bindings
+
+A subsequent candidate normalizes only the freshly generated certified-WF
+fragment. Pure deterministic branches can become guarded assumptions. The only
+assignments moved before those assumptions bind freshly allocated function-WF
+argument temporaries: they are private to this traversal, assigned exactly once,
+and never change source variables or heaps. Each supporting fact retains the
+conjunction of its original branch guards, expression, attributes and fuel.
+
+The function-WF routine identifies these argument variables as it creates them;
+eligibility does not infer privacy from variable names. Repeated assignments,
+guards mentioning assigned temporaries, calls, real assertions, conditional
+havoc, labels, scope commands and other statement forms retain the original
+translation. Empty branches retain their guards and terms. Preparation still
+runs the original traversal, and the actual proposition lowering is unchanged.
+
+The justification projects away the private temporaries. On an active branch,
+each unique temporary has the same value as before; on an inactive branch,
+its newly assigned value is unobservable outside preparation and every fact
+about it is guarded off. All non-temporary variables retain their state.
+Consequently the same certified support holds at the same check point.
+Moving a repeated assignment or a variable that a guard reads would invalidate
+that argument, so those fragments are excluded.
+
+The generated-Boogie Power experiment with private bindings moved and original
+checks unchanged succeeds at three seeds in both axiom settings; false checks
+remain invalid. Moving only assumptions while preserving conditional bindings
+does not repair it. These are diagnostics, not native acceptance of the new
+compiler candidate. Fresh compilation and complete native gates are required.

@@ -1,5 +1,16 @@
 # Issue 100 revision checklist
 
+**Current candidate:** guarded contract preparation now retains certified
+facts under their original guards while binding only fresh, private function
+arguments outside those branches. The actual proposition checks and their fuel
+state remain unchanged. Calls, real assertions, scope changes, labels and other
+unsupported fragments retain their original translation. A source-only inventory
+capture has 287 groups; the final independent inventory gate is still required.
+The candidate is not yet compiled or validated natively. All complete gates and
+seed classifications below describe the preceding compiled product `072175269`
+and cannot establish acceptance of this new candidate. The supported-line PR
+remains a draft; the development-line port still requires the owner's approval.
+
 The [requested revisions](obligation-review-change-request.md) are the governing
 requirements for the next implementation of PRs [#168](https://github.com/erniecohen/dafny/pull/168)
 and [#169](https://github.com/erniecohen/dafny/pull/169). They supersede the additive
@@ -13,8 +24,15 @@ all ten stages, 85 structural observations in capture and normal modes, the
 independent 287-group inventory and all 363 core unit tests. Its complete native
 registered/paired gates pass 274/676 observations, including 244 genuine invalid
 negative observations. Its focused 72-observation library matrix still rejects
-enabled Power subtraction at every seed. Fresh complete suite/library and other
-diagnostic results are pending. The preceding `58d8ac112` full gates rejected
+enabled Power subtraction at every seed. Its 216-observation matrix and 112-observation actual-source diagnostic finish;
+the four targeted original library failures are repaired. Power's stable solver
+failure is isolated to the second clause's materialized WF path in a separate
+48-observation replay; omissions remain diagnostic. A 24-observation exact-query
+replay explains one sampled default-off ordering/cost movement. The [complete current suite/library gates](obligation-current-complete-gates.md)
+finish and reject enabled acceptance. Exact default-off suite compatibility passes;
+strict default-off library resource equality remains rejected. Normal registered
+and editor integration tests pass with recorded compiler/harness provenance.
+All four affected-declaration seed matrices finish with 648 observations and recorded scope/platform limits; independent soundness review remains open. The preceding `58d8ac112` full gates rejected
 enabled acceptance and strict default-off library resource equality. Historical
 results cannot discharge the current revision's acceptance. Keep both PRs as drafts.
 Settle the supported-line design first. The owner requires an explicit approval
@@ -48,7 +66,7 @@ linked validation report.
 | S10 / 10 | Ensure support depends only on the proposition and legitimate local verifier state. Reject body/prefix/invariant/context term collection and all later collection/definition-support experiments as product changes to either PR. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
 | S11 / 11 | Fix `ObligationFingerprint` using lexical binder identities/stacks. Distinguish the specified shadowing counterexamples and retain a positive alpha-equivalence control. | Implemented in `426a8d413`; the opcode controls are added in `8ddf1458b`; the binder and opcode controls pass in the [current 85-observation normal build](https://github.com/erniecohen/dafny/actions/runs/37731304101). |
 | S12 / 12 | Add quantified and non-quantified paired assertion-invariance tests for exits, subsets, method/function preconditions, bounds and old allocation. Add no-body-leakage, active scoped-reveal and no-duplicate-contract-proof structural controls. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
-| S13 / 13 | Rerun stable exit-package, exit-summary and call-package regressions on the single-check implementation before solver-specific repairs. Classify partially successful baseline/candidate seed movements as solver/resource variance. Keep source hints and resource ceilings unchanged. | Complete matrices of both preceding revisions and causal replay are documented in [the diagnosis](obligation-local-preparation-diagnosis.md); new-revision native gates and complete-suite evidence remain pending. |
+| S13 / 13 | Rerun stable exit-package, exit-summary and call-package regressions on the single-check implementation before solver-specific repairs. Classify partially successful baseline/candidate seed movements as solver/resource variance. Keep source hints and resource ceilings unchanged. | Complete matrices of both preceding revisions and causal replay are documented in [the diagnosis](obligation-local-preparation-diagnosis.md); current complete focused gates and causal/query replays finish; current complete suite/library gates finish and remain rejected; all four affected-declaration seed matrices finish and are classified in the [current seed record](obligation-current-seed-classification.md), with platform/scope limits and raw gate rejections retained. |
 | S14 / 14 | Rewrite the PR description around single-check assertion-equivalent lowering. Complete every supported-line acceptance item below before requesting approval. | Pending |
 
 ## Supported-line acceptance
@@ -56,11 +74,11 @@ linked validation report.
 - [x] Original issue 100 source verifies without its redundant final assertion at the existing ceiling (current complete registered/paired gates pass).
 - [x] The subset reproducer verifies without its redundant assertion (current complete registered/paired gates pass).
 - [x] Representative method and function precondition examples verify without redundant assertions (current paired gate passes).
-- [x] All registered/paired negative controls remain negative (all 244 expected-negative observations in the current complete paired gate have invalid VCs; full-suite negative verdict review remains required).
+- [x] All registered/paired negative controls remain negative (all 244 expected-negative observations in the current complete paired gate have invalid VCs; the full-suite ill-formed-specification body movement is documented with its still-failing independent specification-WF).
 - [x] Scoped-reveal examples retain their previous proofs at the actual check point (current registered/paired and structural controls pass).
-- [ ] Default-off translation, verdicts and resource behavior remain compatible with the supported baseline under the fork's required gates (preceding full-suite verdicts and resource vectors matched exactly in both settings; preceding library verdicts and operational Boogie matched, but strict library resource equality rejected both settings; current complete gates are pending).
+- [ ] Default-off translation, verdicts and resource behavior remain compatible with the supported baseline under the fork's required gates (current full-suite verdicts and resource vectors match exactly in both settings; current library verdicts and operational Boogie match, but strict library resource equality rejects both settings).
 - [ ] Enabled mode has no unexplained stable correctness regression.
-- [ ] Remaining resource movements are classified with multiple seeds using S13's policy.
+- [x] Remaining resource movements are classified with multiple seeds using S13's policy (648 observations; the recovered library failure matrix has an explicit platform boundary and four full-control movements; classification does not imply acceptance).
 - [ ] No body/context scanning, new background axiom or global fuel policy is introduced.
 - [ ] Producer inventory, normal regression integration, documentation, required suite/library gates and independent soundness review are complete.
 

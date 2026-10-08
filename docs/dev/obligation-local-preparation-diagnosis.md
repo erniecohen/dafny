@@ -169,3 +169,27 @@ failure in a different seed is not evidence of a missing source premise.
 The complete gates preserve original library source, caps and expected
 verdicts; the current fresh comparisons and targeted seed controls do not
 alter those proof inputs.
+
+## Current certified-preparation diagnosis
+
+The current `072175269` product's complete 112-observation actual-source
+diagnostic repairs all four original division/constructor/map failures across
+three seeds; all 36 false controls remain invalid. Immediate body assertions
+still add WF obligations not licensed by the declared specification's policy.
+This confirms that replaying certified non-read support addresses the duplicated
+domain and reads checks without weakening the actual clause check.
+
+Its separate 48-observation reparsed Power experiment keeps both actual local
+exit checks. Under both axiom settings, enabled control, first-WF omission and
+certified-divisor-assumption omission fail at every tested seed. Second-WF
+omission, both-WF omission and an isolated WF branch verify at every seed.
+False exit controls remain invalid. The second quantified clause's materialized
+WF terms/path therefore cause the stable solver result in this experiment.
+The higher checked layer, lower-layer body result and earlier-clause publication
+remain. This explains a search regression without evidence of lost fuel or a
+missing checked formula. Omissions and branch isolation remain diagnostic;
+they are not a product workaround or universal proof-preservation claim.
+
+The [default-off query diagnosis](obligation-default-off-query-diagnosis.md)
+separately demonstrates ordering differences in otherwise identical logical
+query inputs for one resource sample. It does not relax complete gate acceptance.

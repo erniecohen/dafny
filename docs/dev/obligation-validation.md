@@ -1,12 +1,27 @@
 # Obligation lowering validation status
 
+**Current candidate:** guarded contract preparation now retains certified
+facts under their original guards while binding only fresh, private function
+arguments outside those branches. The actual proposition checks and their fuel
+state remain unchanged. Calls, real assertions, scope changes, labels and other
+unsupported fragments retain their original translation. A source-only inventory
+capture has 287 groups; the final independent inventory gate is still required.
+The candidate is not yet compiled or validated natively. All complete gates and
+seed classifications below describe the preceding compiled product `072175269`
+and cannot establish acceptance of this new candidate. The supported-line PR
+remains a draft; the development-line port still requires the owner's approval.
+
 The [requested review revisions](obligation-review-change-request.md) govern the
-single-check replacement in PR #168. The supported semantic revision is now
-`58d8ac112`, restoring source-local assertion well-formedness preparation and the
-frozen initializer application's domain guard. It also preserves iterator yield frames and old heaps. Its own structural and focused native gates pass. Complete suite/library comparisons finish and reject enabled acceptance; strict default-off library cost remains unaccepted.
-The [current causal analysis](obligation-local-preparation-diagnosis.md) records
-the rejected preceding source gates, controlled generated-Boogie experiments,
-negative outcomes and multi-seed classification.
+single-check replacement in PR #168. The current semantic correction is `98b0dd509`, compiled product `072175269`,
+built from `8d23f3fc8`. Its structural, registered/paired and normal registered/editor
+integration gates pass. Its [complete current suite/library gates](obligation-current-complete-gates.md)
+finish under both axiom settings and reject enabled acceptance. Exact default-off
+suite verdict/resource compatibility passes; strict default-off library resource
+equality remains rejected despite unchanged verdicts and operational Boogie.
+The [current causal analysis](obligation-local-preparation-diagnosis.md) and
+[query ordering diagnosis](obligation-default-off-query-diagnosis.md) distinguish
+actual semantic preparation repairs, explained stable solver failure and limited
+ordering evidence. The older revisions below remain historical evidence only.
 
 The [preceding 63-control build](https://github.com/erniecohen/dafny/actions/runs/37713397830)
 compiled both native platforms and the editor, passed all structural controls and
@@ -185,12 +200,52 @@ concatenation, delimiter splitting and encode/decode pass enabled; Power
 subtraction remains an enabled error at every seed. Its checked formula retains
 the higher assertion fuel layer. Generated division Boogie uses the same
 arithmetic wrappers in the legacy procedure postcondition and the new local
-check; a wrapper change does not explain that failure. The fresh 216-observation
-suite/original matrix and 112-observation actual-source diagnostic are pending.
-The latter requires actual solver query files for its same-host default-off cost
-repeats. Fresh complete suite and standard-library gates have been submitted
-under both axiom settings with the original inputs, ceilings and verdict tables.
-Their durable results remain pending.
+check; a wrapper change does not explain that preceding failure. The fresh
+216-observation suite/original matrix completes with exact focused baseline/off
+batch vectors. The original issue succeeds enabled across all seeds, resolvers
+and axiom settings. NoTypeArgs and ExtensibleArray succeed enabled at all tested
+seeds; SchorrWaite, Primes and MinWindowMax have partly successful vectors in both
+baseline and enabled modes and are classified as solver/resource variance under
+S13. FlyingRobots retains resource exhaustion at all enabled seeds while baseline
+is partly successful, so that resource movement remains open.
+
+The complete 112-observation actual-source diagnostic verifies all four untouched
+originals (division, writer constructor and both map concatenations) enabled
+across three seeds. All 36 false controls retain invalid VCs. Immediate body
+assertions still fail, reflecting their additional body WF obligations. The
+current certified support repairs the original contracts without duplicating
+those obligations or assuming the actual contract's truth. Actual solver-query
+files are present for four same-host MembersSpec repeats. The [query ordering
+diagnosis](obligation-default-off-query-diagnosis.md) establishes a limited cause
+for that sample's resource differences, including an unchanged-baseline repeat;
+strict complete-library resource acceptance is still pending.
+
+A complete 48-observation current generated-Boogie Power replay retains both
+mandatory exit checks. The enabled control fails at every seed in both axiom
+settings. Removing the second clause's WF materialization, or placing WF in an
+isolated diagnostic branch, makes all seeds verify. Removing only the first
+clause's WF or only the certified divisor assumptions does not. False exit
+controls remain invalid. Omitting relevant preparation is excluded from the
+product; this is an explained solver-search effect, not a repair or an
+acceptance claim. The fresh [complete suite and standard-library comparisons](obligation-current-complete-gates.md)
+now finish with unchanged proof bytes, hints, ceilings, batching and expected tables.
+Both suite runs preserve every default-off verdict/resource vector. Both library
+runs preserve default-off verdicts and operational Boogie, but strict resource
+comparison rejects them. Enabled suite mode has six resource failures in each
+setting; the complete source remains negative for the ill-formed specification
+whose body VC becomes valid. Enabled library mode has eleven/ten newly failing
+declarations, including stable Power subtraction. All four affected-declaration
+failure/cost seed matrices finish, covering 648 observations. The [seed record](obligation-current-seed-classification.md)
+preserves the recovered library matrix's platform boundary, four full-control
+movements, candidate-only failures and stable resource regressions. These
+diagnostics do not relax any raw full-gate rejection. The subsequent statement-expression
+reads hypothesis is rejected by its independent specification-WF checks; no
+compiler change follows from that incomplete diagnostic.
+
+The actual normal registered issue-100 test and editor option-invalidation test
+also pass, each with exactly one executed/passed test. The linked report records
+both the hosted harness and exact native compiler/server assembly provenance.
+Independent soundness review and overall acceptance remain open.
 
 Eight additional structural observations cover
 independent specification-domain proofs, a mandatory false first postcondition,

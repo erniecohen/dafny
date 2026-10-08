@@ -47,6 +47,8 @@ namespace Microsoft.Dafny {
     // facts. Body reads bounds have a different policy and must not be assumed.
     // Keep their traversal (including fuel state), but omit their dedicated sink.
     public bool OmitReadsAssertions { get; init; }
+    // Private function-WF argument bindings created only by this preparation.
+    internal ISet<string> CertifiedArgumentTemporaries { get; init; }
 
 
     public WFOptions() {
@@ -84,7 +86,7 @@ namespace Microsoft.Dafny {
     /// </summary>
     public WFOptions WithReadsChecks(bool doReadsChecks) {
       return new WFOptions(SelfCallsAllowance, doReadsChecks, DoOnlyCoarseGrainedTerminationChecks,
-        Locals, CreateAsserts, LValueContext, AssertKv) { OmitReadsAssertions = OmitReadsAssertions };
+        Locals, CreateAsserts, LValueContext, AssertKv) { OmitReadsAssertions = OmitReadsAssertions, CertifiedArgumentTemporaries = CertifiedArgumentTemporaries };
     }
 
     /// <summary>
@@ -92,7 +94,7 @@ namespace Microsoft.Dafny {
     /// </summary>
     public WFOptions WithLValueContext(bool lValueContext) {
       return new WFOptions(SelfCallsAllowance, DoReadsChecks, DoOnlyCoarseGrainedTerminationChecks,
-        Locals, CreateAsserts, lValueContext, AssertKv) { OmitReadsAssertions = OmitReadsAssertions };
+        Locals, CreateAsserts, lValueContext, AssertKv) { OmitReadsAssertions = OmitReadsAssertions, CertifiedArgumentTemporaries = CertifiedArgumentTemporaries };
     }
 
     public Action<IOrigin, Bpl.Expr, ProofObligationDescription, Bpl.QKeyValue> AssertSink(BoogieGenerator tran, BoogieStmtListBuilder builder) {
@@ -713,6 +715,7 @@ namespace Microsoft.Dafny {
                 substMap.Add(p, ie);
                 locals.GetOrAdd(new Bpl.LocalVariable(local.Origin, new Bpl.TypedIdent(local.Origin, local.AssignUniqueName(CurrentDeclaration.IdGenerator), TrType(local.Type))));
                 Bpl.IdentifierExpr lhs = (Bpl.IdentifierExpr)etran.TrExpr(ie);  // TODO: is this cast always justified?
+                wfOptions.CertifiedArgumentTemporaries?.Add(lhs.Name);
                 Expression ee = e.Args[i];
                 directSubstMap.Add(p, ee);
 

@@ -942,7 +942,7 @@ public partial class BoogieGenerator {
 
   public void TrStmt_CheckWellformed(Expression expr, BoogieStmtListBuilder builder, Variables locals,
     ExpressionTranslator etran, bool subsumption, bool lValueContext = false, AddResultCommands addResultCommands = null,
-    bool omitReadsAssertions = false) {
+    bool omitReadsAssertions = false, ISet<string> certifiedArgumentTemporaries = null) {
     Contract.Requires(expr != null);
     Contract.Requires(builder != null);
     Contract.Requires(locals != null);
@@ -959,7 +959,9 @@ public partial class BoogieGenerator {
       ];
       kv = new Bpl.QKeyValue(expr.Origin, "subsumption", args, null);
     }
-    var options = new WFOptions(kv) { OmitReadsAssertions = omitReadsAssertions };
+    var options = new WFOptions(kv) {
+      OmitReadsAssertions = omitReadsAssertions, CertifiedArgumentTemporaries = certifiedArgumentTemporaries
+    };
     // Only do reads checks if reads clauses on methods are enabled and the reads clause is not *.
     // The latter is important to avoid any extra verification cost for backwards compatibility.
     if (etran.readsFrame != null) {
