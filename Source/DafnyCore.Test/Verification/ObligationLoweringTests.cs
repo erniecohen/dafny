@@ -364,6 +364,24 @@ public class ObligationLoweringTests {
     Assert.All(implicitPackages,p=>Assert.Equal(ObligationFingerprint.Content(explicitPackage),ObligationFingerprint.Content(p)));
   }
 
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task ExitPreparationPreservesTheImmediateAssertionsExistentialFuelState(bool refresh) {
+    const string proposition = "exists x:int :: (exists y:int :: P(x+y)) && P(x)";
+    var source = "ghost predicate P(i:int) { i>=0 } lemma L() ensures " + proposition +
+      " { assert " + proposition + "; }";
+    var packages = new List<BoogieGenerator.PropositionLowering>();
+    await Translate(source, true, refresh, packages.Add);
+    var explicitCheck = Assert.Single(packages.Where(p => p.Source.Resolved is ExistsExpr &&
+      p.Inputs.Preparation == BoogieGenerator.ObligationPreparation.CheckedExpression));
+    var implicitChecks = packages.Where(p => p.Source.Resolved is ExistsExpr &&
+      p.Inputs.Preparation == BoogieGenerator.ObligationPreparation.DeclaredContract).ToList();
+    Assert.NotEmpty(implicitChecks);
+    Assert.All(implicitChecks, p => Assert.Equal(ObligationFingerprint.Content(explicitCheck),
+      ObligationFingerprint.Content(p)));
+  }
+
   [Fact]
   public async Task QuantifiedOldHeapPolicyIsIndependentOfMethodOrder() {
     const string declarations="class C { var i:int } ghost predicate P(c:C,x:int) reads c { c.i==x } ";

@@ -29,7 +29,7 @@ public partial class BoogieGenerator {
     // statement context, fuel choices and splitting decisions.
     var checking = preparedTranslator ?? (explicitAssertion ? etran : etran.CloneForObligation());
     try {
-      if (!explicitAssertion) {
+      if (!explicitAssertion && preparedTranslator == null) {
         stmtContext = StmtType.ASSERT;
         adjustFuelForExists = true;
       }
