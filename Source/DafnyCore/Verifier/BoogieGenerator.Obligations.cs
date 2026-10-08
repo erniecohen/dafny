@@ -61,8 +61,8 @@ public partial class BoogieGenerator {
   }
 
   private PropositionLowering LowerDeclaredProposition(Expression condition,
-    BoogieStmtListBuilder builder, Variables locals, ExpressionTranslator etran, Bpl.AssumeCmd leadingSupport,
-    Bpl.Expr preparationGuard = null) {
+    BoogieStmtListBuilder builder, Variables locals, ExpressionTranslator etran,
+    Bpl.Expr preparationGuard = null, Bpl.AssumeCmd leadingSupport = null) {
     // Replay assertion-local setup using the contract's independently checked
     // non-read WF facts. Do not prove those facts twice or assume body reads
     // bounds: specification WF has a different reads policy. The same fresh
@@ -84,9 +84,10 @@ public partial class BoogieGenerator {
       // Match assertion-local support order only across certified pure setup.
       // Preserve the original placement if a write/havoc can change its truth,
       // or normalization rejected any part of the generated fragment.
-      var supportAfterPreparation = !ReferenceEquals(normalized, preparation.Commands) &&
+      var supportAfterPreparation = leadingSupport != null &&
+        !ReferenceEquals(normalized, preparation.Commands) &&
         CertifiedContractPreparation.CanMoveLeadingSupport(leadingSupport, normalized, argumentTemporaries);
-      if (!supportAfterPreparation) { builder.Add(leadingSupport); }
+      if (leadingSupport != null && !supportAfterPreparation) { builder.Add(leadingSupport); }
       builder.AppendAlreadyTranslated(preparation, normalized);
       if (supportAfterPreparation) { builder.Add(leadingSupport); }
       return LowerProposition(builder.Context, condition, etran, preparedTranslator: checking);
@@ -201,7 +202,8 @@ public partial class BoogieGenerator {
           ? new Bpl.IdentifierExpr(returnOrigin, "$_reverifyPost", Bpl.Type.Bool)
           : Bpl.Expr.False
         : null;
-      var lowering = LowerDeclaredProposition(ensures.E, builder, locals, etran, leadingSupport, preparationGuard);
+      var lowering = LowerDeclaredProposition(ensures.E, builder, locals, etran, preparationGuard,
+        leadingSupport: leadingSupport);
       var (error, success) = CustomErrorMessage(ensures.Attributes);
       var description = new EnsuresDescription(ensures.E, error, success);
       foreach (var piece in lowering.Pieces) {
