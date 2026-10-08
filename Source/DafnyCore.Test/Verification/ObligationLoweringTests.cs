@@ -401,6 +401,33 @@ public class ObligationLoweringTests {
       ObligationFingerprint.Content(p)));
   }
 
+  [Theory]
+  [InlineData(false, false)]
+  [InlineData(false, true)]
+  [InlineData(true, false)]
+  [InlineData(true, true)]
+  public async Task PreparedExistentialEqualityRetainsImmediateAssertionFuel(bool refresh, bool opaque) {
+    const string proposition = "(exists x:int :: (exists y:int :: P(x+y)) && P(x)) == " +
+      "(exists z:int :: P(z))";
+    const string declarations = "ghost predicate P(i:int) decreases i { i<=0 || P(i-1) } ";
+    var source = declarations + (opaque
+      ? "lemma L() { opaque ensures " + proposition + " { assert " + proposition + "; } }"
+      : "lemma L() ensures " + proposition + " { assert " + proposition + "; }");
+    var packages = new List<BoogieGenerator.PropositionLowering>();
+    await Translate(source, true, refresh, packages.Add);
+    var explicitCheck = Assert.Single(packages.Where(p => p.Source.Resolved is BinaryExpr &&
+      p.Inputs.Preparation == BoogieGenerator.ObligationPreparation.CheckedExpression));
+    var preparation = opaque
+      ? BoogieGenerator.ObligationPreparation.GuardedIntroduction
+      : BoogieGenerator.ObligationPreparation.DeclaredContract;
+    var implicitChecks = packages.Where(p => p.Source.Resolved is BinaryExpr &&
+      p.Inputs.Preparation == preparation).ToList();
+    Assert.NotEmpty(implicitChecks);
+    Assert.All(implicitChecks, p => Assert.Equal(ObligationFingerprint.Content(explicitCheck),
+      ObligationFingerprint.Content(p)));
+    Assert.Contains("$LS", ObligationFingerprint.Content(explicitCheck));
+  }
+
   [Fact]
   public async Task QuantifiedOldHeapPolicyIsIndependentOfMethodOrder() {
     const string declarations="class C { var i:int } ghost predicate P(c:C,x:int) reads c { c.i==x } ";

@@ -97,11 +97,13 @@ public partial class BoogieGenerator {
 
   private void CheckPropositionUnderGuard(IOrigin origin, Expression condition, Bpl.Expr guard,
     ProofObligationDescription description, BoogieStmtListBuilder builder, ExpressionTranslator etran,
-    Func<Bpl.Expr, Bpl.Expr> close = null, bool forget = false, Bpl.QKeyValue attributes = null, bool universalClosure = false) {
+    Func<Bpl.Expr, Bpl.Expr> close = null, bool forget = false, Bpl.QKeyValue attributes = null,
+    bool universalClosure = false, ExpressionTranslator preparedTranslator = null) {
     close ??= expression => expression;
     // A guarded introduction does not grant its can-call premise unconditionally.
     var lowering = LowerProposition(builder.Context, condition, etran,
-      preparation: ObligationPreparation.GuardedIntroduction, guard: guard, universalClosure: universalClosure);
+      preparation: ObligationPreparation.GuardedIntroduction, guard: guard, universalClosure: universalClosure,
+      preparedTranslator: preparedTranslator);
     foreach (var piece in lowering.Pieces) {
       if (piece.IsChecked) {
         var token = ObligationOrigin(origin, piece.Tok);
@@ -129,12 +131,15 @@ public partial class BoogieGenerator {
       // supply this body's local can-call/trigger preparation by itself.
       var savedStatement = stmtContext;
       var savedAdjustment = adjustFuelForExists;
+      var checking = etran.CloneForObligation();
       try {
         stmtContext = StmtType.ASSERT;
         adjustFuelForExists = true;
-        TrStmt_CheckWellformed(condition, builder, locals, etran, false);
+        TrStmt_CheckWellformed(condition, builder, locals, checking, false);
+        // Preparation can consume the one-shot existential adjustment. Keep
+        // that state, as the immediate assertion does, for the sole P check.
         CheckPropositionUnderGuard(origin, condition, Bpl.Expr.True, description, builder, etran,
-          attributes: attributes);
+          attributes: attributes, preparedTranslator: checking);
       } finally {
         stmtContext = savedStatement;
         adjustFuelForExists = savedAdjustment;

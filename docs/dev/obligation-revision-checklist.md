@@ -8,7 +8,7 @@ definition-support experiments. Preserve the request in full; use this file to
 record implementation and evidence against each requirement as revisions land.
 
 **Status:** the supported single-check product revision is implemented in
-`8e7f54505`, including the allocation correction, shared universal assertion layer rule and source-local preparation and iterator frame/old-heap repairs; source acceptance and complete validation remain pending. Historical native results describe earlier implementations and do not discharge this checklist. Keep both PRs as drafts.
+`58d8ac112`, including the allocation correction, shared universal assertion layer rule and source-local preparation and iterator frame/old-heap repairs; the preceding structural/focused gates passed; fresh build and native acceptance remain pending after the opaque fuel handoff correction. Historical native results describe earlier implementations and do not discharge this checklist. Keep both PRs as drafts.
 Settle the supported-line design first. The owner requires an explicit approval
 before any implementation is ported to #169; keep that port pending until approval.
 The development line then requires independent evidence. The [current preparation diagnosis](obligation-local-preparation-diagnosis.md) records the local repair and rejected preceding native evidence.
@@ -38,18 +38,18 @@ linked validation report.
 | S8 / 8 | Audit every source-expressible implicit obligation against the producer inventory, including bounds, nullness, domains, destructors, division/modulo, invariants and iterator/yield contracts. Document specialized internal checks outside the source-proposition criterion. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
 | S9 / 9 | Keep the withdrawn global occurrence/polarity/value fuel rewrite withdrawn. Use the existing explicit-assertion fuel/layer machinery locally; introduce no global expression policy. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
 | S10 / 10 | Ensure support depends only on the proposition and legitimate local verifier state. Reject body/prefix/invariant/context term collection and all later collection/definition-support experiments as product changes to either PR. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
-| S11 / 11 | Fix `ObligationFingerprint` using lexical binder identities/stacks. Distinguish the specified shadowing counterexamples and retain a positive alpha-equivalence control. | Implemented in `426a8d413`; the opcode controls are added in `8ddf1458b`; the binder and opcode controls pass in the [current 71-test normal build](https://github.com/erniecohen/dafny/actions/runs/37717887176). |
+| S11 / 11 | Fix `ObligationFingerprint` using lexical binder identities/stacks. Distinguish the specified shadowing counterexamples and retain a positive alpha-equivalence control. | Implemented in `426a8d413`; the opcode controls are added in `8ddf1458b`; the binder and opcode controls pass in the [current 73-test normal build](https://github.com/erniecohen/dafny/actions/runs/37719808505). |
 | S12 / 12 | Add quantified and non-quantified paired assertion-invariance tests for exits, subsets, method/function preconditions, bounds and old allocation. Add no-body-leakage, active scoped-reveal and no-duplicate-contract-proof structural controls. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
-| S13 / 13 | Rerun stable exit-package, exit-summary and call-package regressions on the single-check implementation before solver-specific repairs. Classify partially successful baseline/candidate seed movements as solver/resource variance. Keep source hints and resource ceilings unchanged. | Pre-repair complete matrices and causal replay are documented in [the diagnosis](obligation-local-preparation-diagnosis.md); new-revision native gates and complete-suite evidence remain pending. |
+| S13 / 13 | Rerun stable exit-package, exit-summary and call-package regressions on the single-check implementation before solver-specific repairs. Classify partially successful baseline/candidate seed movements as solver/resource variance. Keep source hints and resource ceilings unchanged. | Complete matrices of both preceding revisions and causal replay are documented in [the diagnosis](obligation-local-preparation-diagnosis.md); new-revision native gates and complete-suite evidence remain pending. |
 | S14 / 14 | Rewrite the PR description around single-check assertion-equivalent lowering. Complete every supported-line acceptance item below before requesting approval. | Pending |
 
 ## Supported-line acceptance
 
-- [ ] Original issue 100 source verifies without its redundant final assertion at the existing ceiling (preceding registered gate passed; fresh iterator-repair source acceptance pending).
-- [ ] The subset reproducer verifies without its redundant assertion (preceding registered gate passed; fresh iterator-repair source acceptance pending).
-- [ ] Representative method and function precondition examples verify without redundant assertions.
-- [ ] All negative controls remain negative.
-- [ ] Scoped-reveal examples retain their previous proofs at the actual check point.
+- [ ] Original issue 100 source verifies without its redundant final assertion at the existing ceiling (preceding iterator revision passed; fresh current gates required).
+- [ ] The subset reproducer verifies without its redundant assertion (preceding iterator revision passed; fresh current gates required).
+- [ ] Representative method and function precondition examples verify without redundant assertions (preceding iterator revision passed; fresh current gate required).
+- [ ] All negative controls remain negative (232 expected-negative observations in the preceding complete paired gate have invalid VCs; fresh current gate required).
+- [ ] Scoped-reveal examples retain their previous proofs at the actual check point (preceding controls passed; fresh current controls required).
 - [ ] Default-off translation, verdicts and resource behavior remain compatible with the supported baseline under the fork's required gates.
 - [ ] Enabled mode has no unexplained stable correctness regression.
 - [ ] Remaining resource movements are classified with multiple seeds using S13's policy.
