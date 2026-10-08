@@ -49,7 +49,8 @@ public static class NativeDuplicateSupportDiagnostic {
       // Include the function name, so distinct unresolved calls never match.
       sameOperator = f.FunctionName == g.FunctionName && ReferenceEquals(f.Func, g.Func);
     } else if (n.Fun is Bpl.BinaryOperator && m.Fun is Bpl.BinaryOperator ||
-               n.Fun is Bpl.UnaryOperator && m.Fun is Bpl.UnaryOperator) {
+               n.Fun is Bpl.UnaryOperator && m.Fun is Bpl.UnaryOperator ||
+               n.Fun is Bpl.TypeCoercion && m.Fun is Bpl.TypeCoercion) {
       sameOperator = n.Fun.Equals(m.Fun);
     } else { return false; }
     return sameOperator && n.Args.Zip(m.Args).All(pair => Same(pair.First, pair.Second));

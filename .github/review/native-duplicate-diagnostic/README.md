@@ -13,3 +13,8 @@ build's outcome/resource vectors and captured queries before causal conclusions.
 False-entry controls must remain genuinely Invalid. Every actual assertion and
 branch-transfer object remains untouched. Normal product workflows do not enable
 this instrumentation, and it supplies no product or whole-suite acceptance.
+
+The type-coercion comparator uses the exact Boogie cast target type and recursively
+compares its operand. This enables the existing typed empty-set expressions in
+the remaining diagnostic; it adds no coercion or rewrite. The first diagnostic
+attempt retained unsupported casts and rejected that incomplete scope.

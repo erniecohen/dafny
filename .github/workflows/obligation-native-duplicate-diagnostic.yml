@@ -1,5 +1,5 @@
 name: Native obligation duplicate-support diagnostic build
-# Scratch-only local duplicate-support hypothesis; no solver work in this build.
+# Scratch-only local duplicate-support hypothesis, including identical type coercions.
 on:
   workflow_dispatch:
   push:
