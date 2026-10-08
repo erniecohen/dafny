@@ -3,7 +3,7 @@
 The [requested review revisions](obligation-review-change-request.md) govern the
 single-check replacement in PR #168. The supported semantic revision is now
 `58d8ac112`, restoring source-local assertion well-formedness preparation and the
-frozen initializer application's domain guard. It also preserves iterator yield frames and old heaps. Its own build passes; fresh native acceptance is pending after the opaque existential fuel correction.
+frozen initializer application's domain guard. It also preserves iterator yield frames and old heaps. Its own structural and focused native gates pass. Complete suite/library comparisons finish and reject enabled acceptance; strict default-off library cost remains unaccepted.
 The [current causal analysis](obligation-local-preparation-diagnosis.md) records
 the rejected preceding source gates, controlled generated-Boogie experiments,
 negative outcomes and multi-seed classification.
@@ -115,6 +115,29 @@ three modes completed; they are incomplete execution evidence. Fresh complete
 suite and standard-library gates for `58d8ac112` are queued separately and do
 not inherit either acceptance or rejection from the preceding native build.
 
+## Current native focused acceptance
+
+The current fuel revision `58d8ac112`, built from `d3dc53c8e`, completes the
+registered gate's 242 observations and the paired gate's 656 observations with
+Z3 5.1.0. Both resolver modes and both additional-axiom settings are covered;
+all 232 expected-negative observations have genuine invalid verification
+conditions. Original, subset, method/function precondition, allocation,
+initializer, iterator and retained-reveal controls pass at their original
+ceilings. These are focused acceptance results, not complete repository
+acceptance.
+
+A separate four-observation inspection of the current native emitted Boogie
+confirms the recursive opaque equality's checked formula matches the immediate
+assertion under both resolvers, including fuel layers and quantifier triggers.
+The comparison normalizes fresh binder names, whitespace and the leading
+command's subsumption attribute only. It establishes translation identity for
+this control, not verification of the otherwise unproved recursive proposition.
+
+Fresh complete suite and library comparisons retain the unchanged baseline
+proof files, gate runners, expected tables and limits. Those results and the
+current resource/error seed classifications remain pending. The preceding
+library rejection above is not treated as current acceptance.
+
 The [first repair build](https://github.com/erniecohen/dafny/actions/runs/37717196930)
 compiled both platforms and the editor but rejected the inherited fixture's
 missing semicolon and outdated registry. Both have been corrected; its partial
@@ -139,6 +162,78 @@ The reports below describe the preceding additive implementation and remain
 historical evidence for triage. They do not validate the single-check replacement.
 The [revision checklist](obligation-revision-checklist.md) tracks current evidence.
 Porting implementation to PR #169 requires explicit owner approval first.
+
+## Completed native evidence of the current fuel revision
+
+Product `58d8ac112`, build `d3dc53c8e`, completes all three modes of both
+additional-axiom settings with Z3 5.1.0. Each full-suite mode contains 1,161
+program rows and 6,909 declarations. Baseline/default-off have 7,605 batches;
+enabled has 7,695. Default-off verdicts and every recorded resource vector
+match exactly in both settings. Expected parser/resolver and command-line
+negatives remain in the denominator. Enabled mode has 14 newly failing
+declarations with additional axioms off and 15 with them on. No baseline
+`Errors` declaration becomes `Correct`. Both enabled gates reject acceptance.
+The new errors include `ReadsOnMethods.OnlySpecReads` and `InForall` in
+`github-issue-39.dfy`; the other new failures exhaust existing resource ceilings.
+All affected examples remain in the complete comparison evidence.
+
+The completed suite failure inventory is:
+
+| Source / declaration | Enabled result | Axiom settings |
+| --- | --- | --- |
+| `dafny0/ReadsOnMethods.dfy` / `OnlySpecReads` | `Errors` | both |
+| `dafny1/ExtensibleArrayAuto.dfy` / `ExtensibleArray.Set` | `OutOfResource` | both |
+| `dafny2/MinWindowMax.dfy` / `MinimumWindowMax` | `OutOfResource` | on only |
+| `dafny2/SnapshotableTrees.dfy` / `SnapTree.Iterator.MoveNext` | `OutOfResource` | both |
+| `dafny2/SnapshotableTrees.dfy` / `SnapTree.Iterator.Push` | `OutOfResource` | both |
+| `dafny4/FlyingRobots.dfy` / `FormArmy` | `OutOfResource` | both |
+| `dafny4/NumberRepresentations.dfy` / `dec` | `OutOfResource` | both |
+| `dafny4/Primes.dfy` / `AltPrimeDefinition` | `OutOfResource` | both |
+| `dafny4/Primes.dfy` / `Composite` | `OutOfResource` | both |
+| `dafny4/Primes.dfy` / `RemoveFactor` | `OutOfResource` | both |
+| `dafny4/UnionFind.dfy` / `M3.UnionFind.JoinMaintainsReaches1` | `OutOfResource` | both |
+| `git-issues/github-issue-2174.dfy` / `CommLShiftUpCast` | `OutOfResource` | both |
+| `git-issues/github-issue-2174.dfy` / `MaskedCommLShiftUpCast` | `OutOfResource` | both |
+| `git-issues/github-issue-2174.dfy` / `PushUpCastIntoLShift` | `OutOfResource` | both |
+| `git-issues/github-issue-39.dfy` / `InForall` | `Errors` | both |
+
+
+Both current library gates also finish all seven parts and 2,197 rows per mode.
+Default-off preserves every verdict and operational Boogie program, but fails
+strict resource equality. Enabled mode retains the five errors listed above
+and has 14 new failures with additional axioms off and 13 with them on. Cost
+movements require review. No expected verdict, hint or ceiling has changed.
+An unchanged-baseline repeat itself has resource movements; a separate pair
+of same-binary default-off repeats also moves resources. This establishes
+variance but does not prove that baseline/candidate solver queries are identical
+or discharge the fork's strict library cost gate. The requested solver-query
+capture produced no query files, so it supplies no query-identity evidence.
+
+The current 216-observation suite/original matrix and 72-observation library
+matrix complete. Their focused default-off outcome/resource comparisons match.
+The original issue succeeds enabled across three seeds under both resolvers
+and axiom settings. The three repaired library targets pass across all three
+seeds; Power subtraction retains a stable enabled error. Partially successful
+seed vectors remain solver/resource variance under S13, rather than stable
+correctness regressions.
+
+A complete 112-observation actual-source diagnostic covers division, the writer
+constructor and both map-concatenation failures. Untouched originals pass in
+baseline/default-off and fail enabled at all three seeds. Adding an immediate
+assertion also fails at all three seeds in all three modes. False controls
+retain invalid VCs. In particular, the constructor's body assertion adds a
+reads-frame requirement absent from specification postcondition WF. Replaying
+those WF assertions added obligations, beyond the intended local support.
+The [declared-contract preparation argument](obligation-certified-preparation.md)
+records the proposed correction and required anti-vacuity controls before
+implementation. It is not yet validated or accepted.
+
+The [expanded compiler-unit probe](https://github.com/erniecohen/dafny/actions/runs/37727158566)
+retains the nine passing structural/build stages. Its additional complete core
+unit stage reports 354 passed and one failed of 355: `RoundTripCurrentVersion`
+cannot find Z3 in the hosted test environment and its missing-solver diagnostic
+throws. The wrapper's success does not make this stage pass. This source-only
+probe performs no verification and does not replace native proof gates.
 
 ## Historical additive implementation
 
