@@ -1,15 +1,16 @@
 # Obligation lowering validation status
 
-**Current candidate:** guarded contract preparation now retains certified
-facts under their original guards while binding only fresh, private function
-arguments outside those branches. The actual proposition checks and their fuel
-state remain unchanged. Calls, real assertions, scope changes, labels and other
-unsupported fragments retain their original translation. A source-only inventory
-capture has 287 groups; the final independent inventory gate is still required.
-The candidate is not yet compiled or validated natively. All complete gates and
-seed classifications below describe the preceding compiled product `072175269`
-and cannot establish acceptance of this new candidate. The supported-line PR
-remains a draft; the development-line port still requires the owner's approval.
+**Current candidate:** semantic correction `338b82396`, product pin
+`69dc750b5`, build `861472a9d` passes all ten build stages, 92 structural
+observations in both modes, the independent 287-group inventory and all 370 core
+unit tests. Its [focused known-regression diagnostic](obligation-guarded-preparation-focused.md)
+completes 146 observations: selected default-off vectors agree exactly, but five
+of six suite targets still fail at some seeds and Power fails at every seed.
+Original issue/subset positives and genuine invalid negative controls retain their
+expected results. No new whole-suite or whole-library run was launched.
+The complete gates below describe the preceding product `072175269`; they cannot
+validate this new candidate. Keep both PRs as drafts and retain the owner's
+approval requirement before porting to the development line.
 
 The [requested review revisions](obligation-review-change-request.md) govern the
 single-check replacement in PR #168. The current semantic correction is `98b0dd509`, compiled product `072175269`,
