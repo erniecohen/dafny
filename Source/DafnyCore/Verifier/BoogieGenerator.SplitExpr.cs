@@ -33,6 +33,24 @@ namespace Microsoft.Dafny {
   public record BodyTranslationContext(bool ContainsHide, int ScopeDepth = 0, bool ReturnPosition = true, AssertMode AssertMode = AssertMode.Keep);
 
   public partial class BoogieGenerator {
+    // The existing positive-universal assertion rule. Generated range-bound
+    // obligations share this rule on their body before the existing Boogie
+    // binder/range closure is applied; this does not invent another fuel policy.
+    private bool TrSplitUniversalCheck(Expression expression, List<SplitExprInfo> splits,
+      ExpressionTranslator etran) {
+      var checking = etran.LayerOffset(1);
+      var check = checking.TrExpr(expression);
+      var adjustToken = TrSplitNeedsTokenAdjustment(expression);
+      if (adjustToken) { check.tok = new ForceCheckOrigin(expression.Origin); }
+      if (checking.Statistics_CustomLayerFunctionCount == 0) {
+        splits.Add(ToSplitExprInfo(SplitExprInfo.K.Both, check));
+        return adjustToken;
+      }
+      splits.Add(ToSplitExprInfo(SplitExprInfo.K.Checked, check));
+      splits.Add(ToSplitExprInfo(SplitExprInfo.K.Free, etran.TrExpr(expression)));
+      return true;
+    }
+
     /// <summary>
     /// Tries to split the expression into tactical conjuncts (if "position") or disjuncts (if "!position").
     /// If a (necessarily boolean) function call appears as a top-level conjunct, then inline the function
@@ -379,21 +397,7 @@ namespace Microsoft.Dafny {
                 // Don't use induction on these quantifiers.
                 // Nevertheless, produce two translated versions of the quantifier, one that uses #2 functions (that is, layerOffset 1)
                 // for checking and one that uses #1 functions (that is, layerOffset 0) for assuming.
-                var etranBoost = etran.LayerOffset(1);
-                var r = etranBoost.TrExpr(expr);
-                var needsTokenAdjustment = TrSplitNeedsTokenAdjustment(expr);
-                if (needsTokenAdjustment) {
-                  r.tok = new ForceCheckOrigin(expr.Origin);
-                }
-                if (etranBoost.Statistics_CustomLayerFunctionCount == 0) {
-                  // apparently, the LayerOffset(1) we did had no effect
-                  splits.Add(ToSplitExprInfo(SplitExprInfo.K.Both, r));
-                  return needsTokenAdjustment;
-                } else {
-                  splits.Add(ToSplitExprInfo(SplitExprInfo.K.Checked, r));  // check the boosted expression
-                  splits.Add(ToSplitExprInfo(SplitExprInfo.K.Free, etran.TrExpr(expr)));  // assume the ordinary expression
-                  return true;
-                }
+                return TrSplitUniversalCheck(expr, splits, etran);
               }
             } else if (((position && expr is ExistsExpr) || (!position && expr is ForallExpr))) {
               // produce two translated versions of the quantifier, one that uses #1 functions (that is, layerOffset 0)

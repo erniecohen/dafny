@@ -19,7 +19,8 @@ public partial class BoogieGenerator {
 
   private PropositionLowering LowerProposition(BodyTranslationContext context, Expression condition,
     ExpressionTranslator etran, bool applyInduction = true, int heightLimit = int.MaxValue,
-    ObligationPreparation preparation = ObligationPreparation.DeclaredContract, Bpl.Expr guard = null) {
+    ObligationPreparation preparation = ObligationPreparation.DeclaredContract, Bpl.Expr guard = null,
+    bool universalClosure = false) {
     var explicitAssertion = preparation == ObligationPreparation.CheckedExpression;
     var savedStatement = stmtContext;
     var savedAdjustment = adjustFuelForExists;
@@ -33,7 +34,9 @@ public partial class BoogieGenerator {
         adjustFuelForExists = true;
       }
       var pieces = new List<SplitExprInfo>();
-      var split = TrSplitExpr(context, condition, pieces, true, heightLimit, applyInduction, checking);
+      var split = universalClosure
+        ? TrSplitUniversalCheck(condition, pieces, checking)
+        : TrSplitExpr(context, condition, pieces, true, heightLimit, applyInduction, checking);
       if (!split) {
         // TrAssertCondition has always translated the unsplit condition again.
         // Keep that exact formula, rather than replacing it by the splitter's
@@ -74,11 +77,11 @@ public partial class BoogieGenerator {
 
   private void CheckPropositionUnderGuard(IOrigin origin, Expression condition, Bpl.Expr guard,
     ProofObligationDescription description, BoogieStmtListBuilder builder, ExpressionTranslator etran,
-    Func<Bpl.Expr, Bpl.Expr> close = null, bool forget = false, Bpl.QKeyValue attributes = null) {
+    Func<Bpl.Expr, Bpl.Expr> close = null, bool forget = false, Bpl.QKeyValue attributes = null, bool universalClosure = false) {
     close ??= expression => expression;
     // A guarded introduction does not grant its can-call premise unconditionally.
     var lowering = LowerProposition(builder.Context, condition, etran,
-      preparation: ObligationPreparation.GuardedIntroduction, guard: guard);
+      preparation: ObligationPreparation.GuardedIntroduction, guard: guard, universalClosure: universalClosure);
     foreach (var piece in lowering.Pieces) {
       if (piece.IsChecked) {
         var token = ObligationOrigin(origin, piece.Tok);
