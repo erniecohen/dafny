@@ -12,7 +12,7 @@ public class ObligationCoverageTests {
     "Assert", "AssertAndForget", "AssertNS", "AssertCmd", "AssertSink", "Requires", "Ensures",
     "FreeRequires", "FreeEnsures", "RequiresWithDependencies", "EnsuresWithDependencies",
     "CheckSubrange", "GetSubrangeCheck", "CheckSubsetType", "CheckResultToBeInType",
-    "CheckResultToBeInType_Aux", "TrSplitExpr", "TrSplitExprForMethodSpec", "LowerProposition",
+    "CheckResultToBeInType_Aux", "TrSplitExpr", "TrSplitExprForMethodSpec", "TrSplitUniversalCheck", "LowerProposition",
     "CheckPropositionUnderGuard", "CheckOpaquePostcondition", "CheckExitPostconditions", "CheckVisibleTypeObligations", "CheckTypeMembership", "CheckSequenceTypeMembership", "AllocationObligation",
     "CanCallAssumption", "CanCallAssumptionForVerification", "MakeAssertCmd", "CheckWellformed",
     "CheckWellformedWithResult", "TrStmt_CheckWellformed", "CheckFrameSubset", "CheckCallTermination"

@@ -117,7 +117,12 @@ sequence-index range, then derive sequence membership with the existing prelude
 axiom. Hidden element constraints remain abstract. No collection/body terms are
 searched for support. Quantified array/sequence initializer membership closes its actual
 constraint checks over the existing index variables and range. Every guarded
-piece is closed; no index variable escapes. Its original check-and-forget policy
+piece is closed; no index variable escapes. Generated universal constraint checks
+share the existing positive-universal assertion rule for the checked and assumed
+predicate layers before applying that same binder/range closure. The ordinary
+source-quantifier path calls the same extracted rule without changing its fuel
+policy. A structural control compares recursive predicate layers with an explicit
+universal assertion under both resolvers. Its original check-and-forget policy
 is retained, so it adds no continuation membership assumption or summary.
 
 Conversions choose the canonical guarded constraint check or the legacy direct

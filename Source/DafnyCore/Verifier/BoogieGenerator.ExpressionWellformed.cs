@@ -1814,7 +1814,7 @@ namespace Microsoft.Dafny {
         // assert (forall i0,i1,i2,... ::
         //            0 <= i0 < ... && ... ==> init.requires(i0,i1,i2,...) is Subtype);
         CheckTypeMembership(init.Origin, cre, apply, sourceType.Result, elementType, subrangeDesc,
-          builder, etran, expression => new Bpl.ForallExpr(tok, bvs, BplImp(ante, expression)), forget: true);
+          builder, etran, expression => new Bpl.ForallExpr(tok, bvs, BplImp(ante, expression)), forget: true, universalClosure: true);
       }
 
       if (forArray) {

@@ -66,6 +66,39 @@ public class ObligationLoweringTests {
     Assert.Equal(legacy, await ScopeCommands(true));
   }
 
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task QuantifiedTypeChecksRetainTheExplicitUniversalPredicateLayers(bool refresh) {
+    const string source = "ghost predicate P(x:int) decreases x { x<=0 || P(x-1) } type S = x:int | P(x) witness 0 " +
+      "function G(i:int):int { i } method L(n:nat) returns(a:array<S>) " +
+      "{ assert forall i:int {:induction false} | 0<=i<n :: P(G(i)); a := new S[n](G); }";
+    var programs = await Translate(source, true, refresh);
+    var body = programs.SelectMany(p => p.Implementations)
+      .Single(p => p.Name.Contains("Impl") && p.Name.EndsWith(".L"));
+    var checks = body.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>().ToList();
+    static IEnumerable<Bpl.Expr> Expressions(Bpl.Expr expression) {
+      yield return expression;
+      var children = expression switch {
+        Bpl.NAryExpr application => application.Args,
+        Bpl.QuantifierExpr quantifier => new List<Bpl.Expr> { quantifier.Body },
+        _ => new List<Bpl.Expr>()
+      };
+      foreach (var child in children) {
+        foreach (var nested in Expressions(child)) { yield return nested; }
+      }
+    }
+    static string[] Layers(IEnumerable<Bpl.AssertCmd> commands) => commands
+      .SelectMany(command => Expressions(command.Expr)).OfType<Bpl.NAryExpr>()
+      .Where(application => application.Fun is Bpl.FunctionCall && application.Fun.ToString()!.EndsWith(".P"))
+      .Select(application => ObligationFingerprint.Expression(application.Args[0])).Distinct().Order().ToArray();
+    var explicitLayers = Layers(checks.Where(check => check.Description is AssertStatementDescription));
+    var implicitLayers = Layers(checks.Where(check => check.Description is SubrangeCheck));
+    Assert.NotEmpty(explicitLayers);
+    Assert.NotEmpty(implicitLayers);
+    Assert.Equal(explicitLayers, implicitLayers);
+  }
+
   [Fact]
   public async Task VisibleSubsetChecksConstraintAndDerivesMembershipWithoutDuplicateProof() {
     const string source = "datatype D = D(i: int) ghost predicate P(d: D) { d.i >= 0 } type S = d: D | P(d) witness D(0) ghost function F(i: nat): S { D(i) }";
