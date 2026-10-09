@@ -1,3 +1,3 @@
 from pathlib import Path
 import runpy
-runpy.run_path(str(Path.cwd()/".github/review/native-family-diagnostic/enable.py"),run_name="__main__")
+runpy.run_path(str(Path.cwd()/".github/review/native-structured-terminal-diagnostic/enable.py"),run_name="__main__")
