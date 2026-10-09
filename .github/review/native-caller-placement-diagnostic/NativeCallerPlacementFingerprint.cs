@@ -45,6 +45,7 @@ internal static class NativeCallerPlacementFingerprint {
           Bpl.BinaryOperator binary => $"binary:{binary.Op}",
           Bpl.UnaryOperator unary => $"unary:{unary.Op}",
           Bpl.FunctionCall function => $"function:{function}",
+          Bpl.TypeCoercion coercion => $"coercion:{coercion.Type}",
           _ => $"{application.Fun.GetType().FullName}:{application}"
         };
         return $"apply:{type}:{operation}({string.Join(",", application.Args.Select(Child))})";

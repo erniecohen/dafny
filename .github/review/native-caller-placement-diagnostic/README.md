@@ -18,3 +18,8 @@ unresolved formal names, requires frozen identifier actuals with matching
 types, rejects all formal/actual binder capture and unknown expression nodes,
 and leaves the actual verifier program untouched. Full native input controls
 still establish instrumentation fidelity.
+
+Coercions fingerprint their destination type and canonicalized operand, rather
+than embedding the printed operand with its original binder names. Boogie
+TypeCoercion equality depends on that destination type; different target types
+remain different, and no bound name escapes lexical canonicalization there.
