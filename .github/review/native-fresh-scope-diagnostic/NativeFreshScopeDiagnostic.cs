@@ -34,7 +34,7 @@ public static class NativeFreshScopeDiagnostic {
     }return true;
   }
   private static void CollectAtoms(IReadOnlyList<object> commands,List<Bpl.Expr> guards,List<(object Source,List<Bpl.Expr> Guards)> output){foreach(var c in commands){if(c is Bpl.IfCmd b){var body=Commands(b.Thn);Require(body!=null&&b.Guard!=null,"Uncertified branch reached audit");var nested=guards.Append(b.Guard).ToList();if(body.All(x=>x is Bpl.CommentCmd)){output.Add((b,nested));}else{CollectAtoms(body,nested,output);}}else if(c is not Bpl.CommentCmd){output.Add((c,guards));}}}
-  private static bool GuardMatches(IReadOnlyList<Bpl.Expr> guards,Bpl.Expr expression){if(guards.Count==1){return ReferenceEquals(guards[0],expression);}return expression is Bpl.NAryExpr conjunction&&conjunction.Fun is Bpl.BinaryOperator op&&op.Op==Bpl.BinaryOperator.Opcode.And&&conjunction.Args.Count==2&&ReferenceEquals(and.Args[1],guards[^1])&&GuardMatches(guards.Take(guards.Count-1).ToList(),and.Args[0]);}
+  private static bool GuardMatches(IReadOnlyList<Bpl.Expr> guards,Bpl.Expr expression){if(guards.Count==1){return ReferenceEquals(guards[0],expression);}return expression is Bpl.NAryExpr conjunction&&conjunction.Fun is Bpl.BinaryOperator op&&op.Op==Bpl.BinaryOperator.Opcode.And&&conjunction.Args.Count==2&&ReferenceEquals(conjunction.Args[1],guards[^1])&&GuardMatches(guards.Take(guards.Count-1).ToList(),conjunction.Args[0]);}
   private static bool NormalizeEligible(IReadOnlyList<object> commands,ISet<string> arguments,ISet<Bpl.Variable> fresh,List<Bpl.Expr> ancestors,Dictionary<string,int> writes,HashSet<string> argumentWrites,List<Bpl.Expr> guards,ref int havocCount){
     foreach(var c in commands){switch(c){
       case Bpl.CommentCmd or Bpl.AssumeCmd:break;
