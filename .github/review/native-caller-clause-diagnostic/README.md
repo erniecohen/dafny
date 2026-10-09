@@ -15,3 +15,11 @@ record any dependency/description changes rather than silently erasing them.
 False-entry controls must be genuinely Invalid. No support deletion, source proof
 hint, new axiom, global fuel rewrite, raised ceiling or product adoption follows
 from compilation or diagnostic execution alone.
+
+
+The scratch build also compiles a native Linux diagnostic. Each platform uses
+the exact accepted compiler bundle with only its corresponding newly compiled
+Core and LanguageServer assemblies replaced; provenance and all other bytes are
+checked independently. Native platform controls remain mandatory. This enables
+the same frozen focused comparison on either native platform, without changing
+normal product compilation or previously submitted inputs.
