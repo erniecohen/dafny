@@ -49,14 +49,19 @@ public static class NativeCallerPlacementDiagnostic {
         Require(original.Contains(call) && !call.IsFree, "Missing or nonchecking actual call");
         var procedure = program.TopLevelDeclarations.OfType<Bpl.Procedure>().Single(p => p.Name == call.callee);
         Require(procedure.InParams.Count == call.Ins.Count, "Mismatched actuals");
-        var map = new Dictionary<Bpl.Variable, Bpl.Expr>();
-        for (int i = 0; i < call.Ins.Count; i++) { map[procedure.InParams[i]] = call.Ins[i]; }
-        var substitution = Bpl.Substituter.SubstitutionFromDictionary(map);
+        var map = new Dictionary<string, (Bpl.Variable Formal, Bpl.IdentifierExpr Actual)>();
+        for (int i = 0; i < call.Ins.Count; i++) {
+          Require(call.Ins[i] is Bpl.IdentifierExpr, "Only frozen identifier actuals are supported");
+          var actual = (Bpl.IdentifierExpr)call.Ins[i];
+          Require(actual.Type?.ToString() == procedure.InParams[i].TypedIdent.Type.ToString(), "Actual type differs");
+          Require(map.TryAdd(procedure.InParams[i].Name, (procedure.InParams[i], actual)), "Repeated formal name");
+        }
+        var substitution = new UnresolvedFormalActualSubstitution(map);
         var requirements = procedure.Requires.Where(req => !req.Free).ToList();
         var generated = group.Select(site => site.Check).ToList();
         Require(requirements.Count == generated.Count, "Duplicate or missing procedure check");
         for (int i = 0; i < requirements.Count; i++) {
-          var actual = NativeCallerPlacementFingerprint.Expression(Bpl.Substituter.Apply(substitution, requirements[i].Condition));
+          var actual = NativeCallerPlacementFingerprint.Expression(substitution.Substitute(requirements[i].Condition));
           var expected = NativeCallerPlacementFingerprint.Expression(generated[i].Expr);
           Require(actual == expected, "Actual check formula differs from substituted procedure require");
           Require(!original.Contains(generated[i]), "Omitted local check still emitted");
@@ -89,6 +94,52 @@ public static class NativeCallerPlacementDiagnostic {
       allPostTranslationCommandsRetained = true, allBranchTransfersRetained = true,
       negativeEntryCheckAdded = negative != null, originalRemainingChecks = checks.Count
     }) + "\n");
+  }
+  // This audit runs before resolution. Use a cloned, restricted substitution,
+  // rejecting binder capture rather than resolving/mutating the native program.
+  private sealed class UnresolvedFormalActualSubstitution : Bpl.Duplicator {
+    private readonly Dictionary<string, (Bpl.Variable Formal, Bpl.IdentifierExpr Actual)> map;
+    private readonly HashSet<string> protectedNames;
+    public UnresolvedFormalActualSubstitution(Dictionary<string, (Bpl.Variable Formal, Bpl.IdentifierExpr Actual)> map) {
+      this.map = map; protectedNames = new(map.Keys.Concat(map.Values.Select(value => value.Actual.Name)));
+    }
+    public Bpl.Expr Substitute(Bpl.Expr expression) {
+      RejectCapture(expression); return (Bpl.Expr)Visit(expression);
+    }
+    public override Bpl.Expr VisitIdentifierExpr(Bpl.IdentifierExpr node) {
+      if (map.TryGetValue(node.Name, out var value)) {
+        Require(node.Decl == null || ReferenceEquals(node.Decl, value.Formal), "Ambiguous resolved formal identity");
+        return base.VisitIdentifierExpr(value.Actual);
+      }
+      return base.VisitIdentifierExpr(node);
+    }
+    private void Attributes(Bpl.QKeyValue attributes) {
+      for (var item = attributes; item != null; item = item.Next) {
+        foreach (var expression in item.Params.OfType<Bpl.Expr>()) { RejectCapture(expression); }
+      }
+    }
+    private void Binders(IEnumerable<Bpl.Variable> variables) {
+      Require(variables.All(variable => !protectedNames.Contains(variable.Name)), "Binder capture or shadowing unsupported in this audit");
+    }
+    private void RejectCapture(Bpl.Expr expression) {
+      switch (expression) {
+        case Bpl.IdentifierExpr or Bpl.LiteralExpr: return;
+        case Bpl.OldExpr old: RejectCapture(old.Expr); return;
+        case Bpl.NAryExpr application:
+          foreach (var argument in application.Args) { RejectCapture(argument); } return;
+        case Bpl.QuantifierExpr quantifier:
+          Binders(quantifier.Dummies); Attributes(quantifier.Attributes); RejectCapture(quantifier.Body);
+          for (var trigger = quantifier.Triggers; trigger != null; trigger = trigger.Next) {
+            foreach (var term in trigger.Tr) { RejectCapture(term); }
+          }
+          return;
+        case Bpl.LambdaExpr lambda:
+          Binders(lambda.Dummies); Attributes(lambda.Attributes); RejectCapture(lambda.Body); return;
+        case Bpl.LetExpr let:
+          Binders(let.Dummies); foreach (var rhs in let.Rhss) { RejectCapture(rhs); } RejectCapture(let.Body); return;
+        default: throw new InvalidOperationException("Unsupported expression in formal/actual audit");
+      }
+    }
   }
   private static void Require(bool condition, string message) { if (!condition) { throw new InvalidOperationException(message); } }
 }
