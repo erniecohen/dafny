@@ -431,3 +431,26 @@ Remainder improves from RRR in both axiom settings to VVR off and VRR on. Three
 failures remain. A separate guarded fresh-binder normalization experiment is
 compiling; it is not a product fix. The implementation and acceptance boundary
 remain unchanged, and no development-line port is made.
+
+
+### Fresh multiset baseline: complete, resource movement retained
+
+The [focused current-library record](obligation-current-focused-library.md#fresh-multiset-baseline-comparison)
+adds eighteen paired current/baseline/false-entry observations. At original
+seeds 0/1/7, baseline VVV and enabled RVV agree across axiom settings; six entry
+false controls contain genuine Invalid VCs and reported independent WF checks
+are Correct. This resolves the historical compiler/platform baseline gap, not
+the seed-zero resource movement. Section 13 both-partial classification is not
+established. No wider run or product adaptation is justified by this result alone.
+
+
+### Guarded fresh-binder normalization: complete, mixed benefit
+
+The [focused library record](obligation-current-focused-library.md#guarded-normalization-of-fresh-binders-complete-mixed-benefit)
+records eighteen observations on compiler `4844204ef`: six faithful native
+controls, twelve exact actual-check/full-attribute/raw-preparation comparisons,
+independent guarded retention, six genuinely Invalid controls and Correct reported
+WF checks. Remainder becomes RVR with added axioms off and VVV with them on. This
+is not a complete repair: it loses scope-only's axioms-off seed-zero success.
+Both experiments remain scratch diagnostics; no axiom-specific normalization,
+product adoption, broader suite/library iteration or development port follows.

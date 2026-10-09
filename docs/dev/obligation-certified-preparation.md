@@ -198,3 +198,15 @@ Invalid controls. It partly improves Remainder (VVR without added axioms, VRR
 with them), leaving three failures. The follow-up separately tests guarded
 normalization of fresh singly written binders. Neither experiment has been
 adopted; see the current focused library record for its exact compiler boundary.
+
+
+The guarded-normalization follow-up also completes eighteen native observations
+on compiler `4844204ef`, with exact original raw-preparation/actual-check/full-
+attribute controls, an independent guard-expression identity audit and six
+genuine Invalid controls. Its vectors are RVR without added axioms and VVV with
+them. It loses the preceding scope-only seed-zero success without added axioms;
+normalization is therefore not adopted as a complete or uniform repair. Every
+guard is constructed explicitly to retain literal guards rather than relying
+on the native conjunction helper's Boolean simplifications. The current product
+certificate remains unchanged; the recorded scope-only proposal also remains
+experimental pending a general implementation and structural acceptance.

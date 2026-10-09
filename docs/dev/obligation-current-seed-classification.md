@@ -215,3 +215,14 @@ shows identical logical content after bijective generated-name renaming and
 changed static ordering. It cannot waive the full library's exact cost rule.
 Overall acceptance and the independent soundness review remain open; no uniform
 solver-improvement claim is made. No implementation is ported to #169.
+
+
+## Fresh multiset baseline gap filled
+
+The [focused library comparison](obligation-current-focused-library.md#fresh-multiset-baseline-comparison)
+now pairs normal compiler `df4c7066f` and the unchanged baseline on the original
+multiset source/project at seeds 0/1/7, in both axiom settings. Baseline is VVV,
+enabled RVV; six entry-false controls are genuinely Invalid and reported WF
+checks are Correct. The eighteen-observation gate does not establish both-partial
+variance or repair the seed-zero resource movement. No seed range is expanded
+and no case-specific product change follows from this classification.
