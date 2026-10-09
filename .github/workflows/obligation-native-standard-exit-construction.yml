@@ -1,0 +1,64 @@
+name: Standard unconditional exit construction diagnostic
+on:
+  workflow_dispatch:
+  push:
+    branches: [scratch/codex/issue100-preservation-build]
+    paths: [.github/workflows/obligation-native-standard-exit-construction.yml]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - name: Record build and preservation checks without solver execution
+        run: |
+          set +e
+          mkdir -p out
+          git rev-parse HEAD > out/source.txt
+          python3 .github/review/native-standard-exit-construction-diagnostic/enable.py > out/instrumentation.log 2>&1
+          echo "$?" > out/instrumentation.exit
+          sh Scripts/fetch-boogie-packages.sh > out/packages.log 2>&1
+          echo "$?" > out/packages.exit
+          sh .github/review/version.sh > out/version.txt 2>&1
+          version_result=$?
+          echo "$version_result" > out/version.exit
+          if [ "$version_result" -eq 0 ]; then
+            revision=$(sed -n 's/^revision=//p' out/version.txt)
+            for rid in linux-x64 osx-arm64; do
+              RUNTIME_IDENTIFIER="$rid" dotnet publish Source/Dafny/Dafny.csproj -c Release -r "$rid" --self-contained -o "out/dafny-$rid" -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$revision" > "out/build-$rid.log" 2>&1
+              echo "$?" > "out/build-$rid.exit"
+              dotnet publish .github/review/boogie-contract-probe/BoogieContractProbe.csproj -c Release -r "$rid" --self-contained -o "out/boogie-$rid" -p:GeneratePackageOnBuild=false > "out/boogie-$rid.log" 2>&1
+              echo "$?" > "out/boogie-$rid.exit"
+            done
+            OBLIGATION_INVENTORY_CAPTURE="$PWD/out/obligation-producers.json" dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation > out/core.log 2>&1
+            echo "$?" > out/core.exit
+            curl -fsSLo z3-metadata.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+            metadata_download=$?
+            echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3-metadata.zip' | sha256sum -c - > out/metadata-solver.log 2>&1
+            metadata_hash=$?
+            if [ "$metadata_download" -eq 0 ] && [ "$metadata_hash" -eq 0 ]; then
+              unzip -q z3-metadata.zip
+              chmod +x z3-5.1.0-x64-glibc-2.39/bin/z3
+              export PATH="$PWD/z3-5.1.0-x64-glibc-2.39/bin:$PATH"
+              z3 --version >> out/metadata-solver.log 2>&1
+            fi
+            # Core unit tests inspect solver version metadata; no proof is run.
+            mkdir -p out/tests
+            cp -R Source/DafnyCore.Test/bin/Release/net10.0 out/tests/core
+            dotnet build Source/DafnyLanguageServer.Test -c Release > out/editor-build.log 2>&1
+            echo "$?" > out/editor-build.exit
+          fi
+          find out -name '*.pdb' -delete
+          cat out/*.exit
+          tail -n 15 out/core.log
+          tar -czf obligation-native-standard-exit-construction.tar.gz out
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: obligation-native-standard-exit-construction
+          path: obligation-native-standard-exit-construction.tar.gz
+          retention-days: 30
