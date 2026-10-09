@@ -73,9 +73,9 @@ This is partial benefit, not a complete repair or a product change. Scoping alon
 leaves three of the six failures. It preserves conditional havocs and empty
 branches; it does not normalize or remove their guarded support.
 
-### Follow-up: guarded normalization of fresh binders, pending
+### Guarded normalization of fresh binders: complete, mixed benefit
 
-The [scratch follow-up compiler](https://github.com/erniecohen/dafny/actions/runs/37986737769)
+The [scratch follow-up compiler](https://github.com/erniecohen/dafny/actions/runs/37987506010)
 extends the existing guarded normalization only to resolved locals created by
 that same preparation. Every write must occur once. Havoc variables must have
 no where clause and be absent from ancestor guards; argument bindings must be
@@ -85,8 +85,27 @@ full attributes and token; each original binding and havoc remains once in order
 Empty branches retain their guard terms in tautologies. An independent audit
 inspects the normalized implication spine against original expression and
 attribute identities. Actual checks, fuel and source reveal visibility remain.
-Compilation and native preservation/negative controls are pending. This is an
-experiment, not adopted product normalization or supported-line acceptance.
+Compiler `4844204ef` passes all eight actual build stages. The complete
+comparison contains eighteen native observations at the original options and
+limits. All six controls reproduce the prior native outcomes and resource
+counts; both seed-zero emitted modules retain their complete noncomment Boogie
+token streams. All twelve selected/false variants retain the original raw
+preparation and all eight actual check expressions/full attributes, and pass the
+independent guarded-fact/binding/havoc retention audit. All six false-entry
+controls contain genuine Invalid VCs; reported independent WF checks are Correct.
+
+| Preparation policy | Axioms off, seeds 0/1/7 | Axioms on, seeds 0/1/7 |
+| --- | --- | --- |
+| Unchanged native control | RRR | RRR |
+| Fresh-local scope alone, preceding comparison | VVR | VRR |
+| Guarded fresh-binder normalization plus scope | RVR | VVV |
+
+The normalization improves the sampled axioms-on path, but seed zero with axioms
+off exhausts again where scope alone succeeded. Thus it is not uniformly better
+than the preceding scope experiment and does not repair both supported settings.
+No normalization or scope change is adopted. These results distinguish intact
+checks/support from proof-search success; they do not identify a missing fact,
+justify an axiom-specific product workaround, or close regression acceptance.
 
 ## Fresh multiset baseline comparison
 
