@@ -383,3 +383,35 @@ local substitutions, not arbitrary surrounding body terms. No new axiom, fuel or
 publication policy, extra proof, raised ceiling, batching change or product
 adoption is proposed. No whole-suite/library iteration or development port is
 involved.
+
+## Captured argument values: complete, no repair
+
+The [corrected audit compiler](https://github.com/erniecohen/dafny/actions/runs/37999108823)
+passes all eight actual stages. The complete twelve-observation native gate covers
+original and named-lambda source forms at seed zero in both axiom settings. All
+four native full-module/outcome/resource controls match. All eight original and
+projected actual-formula/full-metadata comparisons, typed binding and value-stability
+controls, retained preparation/support/summary/command-order controls and normal
+Boogie typechecking pass. All four entry-false controls remain genuinely Invalid
+and independent specification WF is Correct. Every selected positive still
+exhausts resources. Reject argument substitution as the repair.
+
+The complete correctness query is identical to native for the named-lambda form
+in both settings; the original form's query changes but still exhausts resources.
+The initial runner's optional query hash selected the independent WF log. Offline
+collection corrects this using the separate correctness log, validates the two
+declarations and single-VC log shape and outcomes, and requires every false-entry
+query to differ. Raw logs and the original hash fields are retained. No result
+is inferred from the WF-only hash. The earlier pre-inference audit failure also
+remains separately retained, with zero complete proof observations.
+
+The earlier construction comparison also selected fresh normalization and scope
+extensions. It therefore does not isolate standard construction alone. A
+[construction-only compiler](https://github.com/erniecohen/dafny/actions/runs/37999913438)
+is building the next narrow comparison: original normalization and scope policy
+in every variant, standard WF complete can-call support retained before the same
+actual checks, and only the extra early caller support construction omitted.
+Complete support formulas/attributes, raw and normalized typed fresh-state
+preparation, actual check formulas/metadata, negative and independent WF controls
+are mandatory. No unique support, reveal effect, fuel or publication policy is
+removed. No diagnostic has been adopted into the product.
