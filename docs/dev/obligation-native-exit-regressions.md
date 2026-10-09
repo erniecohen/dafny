@@ -1,11 +1,18 @@
 # Native investigation of the remaining exit regressions
 
-This is diagnosis of the current semantic/product `fe6ddd1ba`, not a completed
-repair or acceptance result. Both experiments use the exact accepted macOS arm64
-base and Z3 5.1.0, original proof sources, resource ceilings, options and retained
-terminal reveal scopes. Only the core and verification frontend are instrumented
-in scratch builds; all other binary files remain byte-identical to the accepted
-base. No whole-suite or whole-library gate is run.
+This file retains investigations with their named source/compiler identities;
+the first sections below concern historical product `fe6ddd1ba`. The current
+single-check semantics are `991b60037`, followed by the command-neutral structural
+observer `df4c7066f`. Its latest completed isolation, current-query replay and
+[bounded seed classification](obligation-current-seed-classification.md) preserve
+controls and explicitly distinguish diagnostic success from product acceptance.
+Composite now meets review section 13's both-partial rule. RemoveFactor remains
+open at the unchanged combined ceiling; no grouping policy or resource increase
+is adopted. No whole-suite/library iteration or development port is run.
+
+The historical experiments use the exact accepted macOS arm64 base and Z3 5.1.0,
+original sources, ceilings and terminal reveal scopes. Scratch builds replace
+only the core and verification frontend; other binary files remain exact.
 
 ## Whole source-clause preparation
 
@@ -1148,3 +1155,29 @@ as a product remedy. Do not add automatic isolation to the single-check option.
 The current semantic implementation remains unchanged. Original combined-query
 Composite and RemoveFactor resource acceptance stays open. No source proof hint,
 resource increase, broader suite iteration or development-line port is adopted.
+
+
+## One duplicate local can-call assumption: validation pending
+
+Source inspection finds a difference from immediate assertion preparation:
+`TrStmt_CheckWellformed` already ends with the whole proposition's can-call
+support, while declared-exit lowering additionally emits its earlier-created
+leading support. For pure normalized preparation the leading command is already
+commuted to follow that same WF fragment. The two selected RemoveFactor formulas
+are expected to be structurally identical; native validation must establish this,
+not printed text or logical-equivalence guessing.
+
+A [focused scratch compiler](https://github.com/erniecohen/dafny/actions/runs/37973692714)
+is being built to test omission of only this extra command. It requires native
+structural expression equality and a strict lexical fingerprint, absent attributes
+on both assumptions, and retention of every original preparation command once.
+Expression construction and translator traversal still occur at their original
+points. All distinct support terms, fuel, actual check formulas/full attributes,
+publication and transfers remain. It scans only this proposition's newly generated
+preparation, with no body/context term collection or new supporting instance.
+
+Native positive results, faithful complete-input controls and genuine negative
+controls remain pending. No product change is adopted from source inspection.
+The separate assertion-command-type audit finds a distinct postcondition error
+wrapper and optional expansion metadata, but no solver-generation subtype branch
+for this selected case; no check-type change or speculative compiler trial is made.

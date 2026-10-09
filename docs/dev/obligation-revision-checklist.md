@@ -371,3 +371,13 @@ with identical counts. Only generated names, one integer declaration position
 and two existing ground literal axiom positions differ. This confirms the current
 sample's ordering cause; it does not waive complete-library cost acceptance or
 change product translation. The baseline itself has repeat-dependent ordering.
+
+
+The [bounded current seed extension](obligation-current-seed-classification.md)
+completes fifty-six observations with eight faithful full-input controls and
+eight genuine negatives. It fills only the five missing seeds in the predetermined
+0–7 range. Composite now has successful and resource-exhausted seeds in both
+baseline and enabled mode and falls under S13's no-case-specific-tuning rule.
+RemoveFactor remains all-resource-exhausted in enabled mode and stays open.
+A strictly duplicate local can-call-support diagnostic is under validation;
+no grouping policy, positive proof hint, resource increase or port is adopted.
