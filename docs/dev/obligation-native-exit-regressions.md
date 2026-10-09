@@ -726,6 +726,10 @@ changes only that caller source-clause boundary, retaining the existing complete
 preparation, splitting, sole checks, pure-scope policy and original contracts.
 The experimental policy applies generally to ordinary checked calls; selected
 names bound the observation and false-entry control, not a product rule.
-Compilation and native comparison remain pending. No product adoption, support
+All six actual compilation/assembly stages pass. The 24-observation native
+comparison remains pending: Composite seeds 0/1, repaired FormArmy seed 0 and
+unchanged-exit RemoveFactor seed 0, in both axiom settings, each with native,
+whole-clause and false-entry variants. Require faithful controls, exact actual
+check/attribute comparisons and genuine Invalid controls. No product adoption, support
 deletion, global fuel change, new axiom or raised ceiling follows from these
 source-oracle observations.
