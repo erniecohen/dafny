@@ -473,3 +473,22 @@ axioms off and RVR with them on, complementing the preceding normalization-only
 result. No axiom-specific choice or product adoption is made. The next grounded
 question concerns assertion-local expression construction order, not arbitrary
 body terms, increased ceilings or a new global fuel policy.
+
+
+### Completed construction-order and individual-check diagnostics
+
+The [focused library record](obligation-current-focused-library.md) now includes
+the complete thirty-six-observation standard-construction comparison. All actual
+formula/full-metadata, typed fresh-state preparation, complete unique support and
+false/WF controls pass, but only four of twelve selected positives verify. Reject
+it as a complete repair; no product semantic change is adopted.
+
+The separate eighteen-observation individual-check diagnosis verifies every
+individual Remainder obligation at seed zero in both axiom settings and all three
+source forms. All six exact native controls and six exact-line genuine negatives
+pass. The original combined failures remain; isolation changes batching and is
+not original combined-ceiling acceptance. The observed source/implicit split
+publication difference is under causal investigation. Do not weaken product
+checking or claim missing fuel from these observations. Governing-requirement,
+remaining resource, strict default-off and independent soundness acceptance
+remain open. PR #169 remains unchanged pending explicit owner approval.
