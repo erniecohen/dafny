@@ -1,5 +1,8 @@
 # Issue 100 revision checklist
 
+Current [native exit-regression diagnosis](obligation-native-exit-regressions.md) completes 36 whole-clause observations and twelve RemoveFactor family-isolation observations. Whole-clause preparation is rejected as a resource repair despite identical actual checks. RemoveFactor seed-zero exhaustion is localized to exit translation with faithful native controls; no product repair or acceptance is claimed.
+
+
 **Latest evidence:** product `fe6ddd1ba` has [68 focused suite/control observations](obligation-guarded-preparation-focused.md)
 and [92 completed known-library/control observations](obligation-current-focused-library.md).
 The library result explicitly combines 84 preserved observations from a harness-failed
