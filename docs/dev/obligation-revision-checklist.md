@@ -228,3 +228,12 @@ controls and fourteen strict actual-check/attribute comparisons pass. This is
 twenty-two observations across two frozen gates, not a successful single run.
 General adoption must preserve inherited/filtered free-call publication and
 outer reveal scope. Remaining regressions and review acceptance stay open.
+
+
+The new direct Boogie publication gate completes all eleven observations with
+expected successful/error summaries, including the false local proof branch,
+inherited/free-call exclusion and post-call state-change negatives. It uses the
+exact pinned package bytes matched to the accepted compiler and Z3 5.1.0, at
+unchanged limits. This validates the contract-publication mechanism, not the
+pending seventy-two-observation native Dafny regression gate or overall review
+acceptance.
