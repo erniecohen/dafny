@@ -88,6 +88,23 @@ attribute identities. Actual checks, fuel and source reveal visibility remain.
 Compilation and native preservation/negative controls are pending. This is an
 experiment, not adopted product normalization or supported-line acceptance.
 
+## Fresh multiset baseline comparison
+
+A separate eighteen-observation comparison retains the exact original project,
+source, limits, two-core setting, default ordering, normal compiler `df4c7066f`
+and unchanged baseline `ab210`, with pinned Z3 5.1.0. Seeds 0/1/7 yield baseline
+VVV and enabled RVV under both axiom settings. The six fresh enabled observations
+reproduce the preceding current outcomes and costs. Six additional entry-false
+controls at the actual lemma entry contain genuine Invalid VCs at that line;
+all reported independent specification-WF checks are Correct.
+
+This fills the compiler/platform baseline gap. It does not establish section
+13's both-partial condition: the baseline succeeds at every selected seed,
+while enabled mode exhausts seed zero. The current resource movement remains
+open; its successful seeds must not be hidden by reporting only seed zero.
+No source proof hint, ceiling increase, broader library/suite run or product
+change is made. This is complete diagnostic evidence, not positive acceptance.
+
 ## Preceding compiler record
 
 Semantic/product `fe6ddd1ba` uses the [accepted native compiler build](https://github.com/erniecohen/dafny/actions/runs/37808373912).
