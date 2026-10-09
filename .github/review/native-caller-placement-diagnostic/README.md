@@ -8,3 +8,7 @@ requirements. Reject mismatches and unsupported scopes. Other translation
 families remain legacy in the hybrid. Native baseline/current controls require
 exact complete input/outcome/resource fidelity; the false control must be Invalid.
 This is causal diagnosis, never product acceptance or a case-specific policy.
+
+The existing caller-summary compiler workflow is the build entry point at this
+scratch revision; its enable script selects these placement instrumentation
+sources. Runtime selection uses the separate caller-placement diagnostic flag.
