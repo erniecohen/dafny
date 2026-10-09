@@ -255,3 +255,6 @@ git-issues/git-issue-100.dfy
 
 # Terminal method and forall hints retain legacy reveal scopes (#100).
 # Covered by the registered issue 100 gate above.
+
+# Caller preparation uses standard post-WF support construction (#100).
+# Paired quantified caller and false controls are in the registered issue 100 gate.

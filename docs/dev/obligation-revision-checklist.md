@@ -520,3 +520,16 @@ Reject this repair; the initial WF-only optional hash was corrected offline and
 retained explicitly. A construction-only comparison is building to separate the
 earlier compound experiment from fresh normalization/scope extensions. Product
 semantics, acceptance requirements and PR #169 remain unchanged.
+
+### General caller construction candidate
+
+The construction-only comparison completes thirty-six observations: original
+and named-lambda Remainder callers verify at seeds 0/1/7 in both axiom settings,
+with twelve faithful native controls, four full-module controls, twenty-four
+actual-formula/full-metadata/raw-and-normalized-preparation/complete-support
+comparisons, twelve genuinely Invalid controls and Correct independent WF.
+Original normalization, scope, fuel, publication, source and ceilings remain.
+Candidate `b3888f933` applies the general standard construction path and adds
+structural and registered paired/negative regressions. Its normal build and
+relevant native gates remain pending; the other review acceptance items and
+PR #169 remain open/unchanged.

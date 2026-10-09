@@ -380,7 +380,10 @@ public partial class BoogieGenerator {
         ? etran.WithVerificationOldHeap(etran.OldAt(atLabel).HeapExpr) : etran;
       foreach (var requirement in ConjunctsOf(callee.Req)) {
         var instantiated = Substitute(requirement.E, receiver, substMap, tySubst);
-        callerProof.Add(TrAssumeCmd(tok, callEtran.CanCallAssumptionForVerification(instantiated)));
+        // TrStmt_CheckWellformed constructs the complete can-call support after
+        // WF and before the sole actual check, as an immediate assertion does.
+        // An extra early construction duplicates that support and consumes
+        // expression-construction state before the assertion's preparation.
         var lowering = LowerDeclaredProposition(instantiated, callerProof, locals, callEtran);
         purePreparation &= lowering.PurePreparation;
         var (error, success) = CustomErrorMessage(requirement.Attributes);
