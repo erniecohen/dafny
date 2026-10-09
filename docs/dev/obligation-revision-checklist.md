@@ -151,5 +151,8 @@ repair. Paired user-defined method-call isolation now completes twelve observati
 localizes both selected body failures to that producer. Its six-observation preparation-emission
 follow-up completes with strictly identical actual checks: Composite improves
 only after that diagnostic support omission, while FormArmy still exhausts
-resources. The omission is excluded as a product fix. Split caller publication
-is the next pending boundary; remaining resource acceptance and the other outstanding review requirements stay open.
+resources. The omission is excluded as a product fix. The three-observation split caller-publication follow-up also completes with
+strictly identical actual checks, all pre-check support retained and faithful
+native/invalid controls. FormArmy seed 0 still exhausts resources with the two
+extra summaries omitted; that hypothesis is rejected as a repair. Remaining
+resource acceptance and the other outstanding review requirements stay open.

@@ -340,5 +340,13 @@ pieces, and Boogie checked requirements publish their checked pieces without
 that extra whole-P summary. A narrow FormArmy comparison keeps all preparation,
 actual checks, fuel and checked-piece publication and isolates only this extra
 post-check summary. It generates the original summary/dependency ID before
-omitting its emission so actual attributes can be compared strictly. That
-comparison is pending; no broader product conclusion is drawn yet.
+omitting its emission so actual attributes can be compared strictly. All three observations now complete. The unchanged native control reproduces
+its complete SMT input, outcome and resource count; the false-entry control is
+genuinely Invalid, and all reported independent WF checks are Correct. Both
+comparisons retain the same 15 actual assertion expressions and all attributes,
+including dependency IDs. Two whole-precondition summaries are omitted, with all
+pre-check preparation and ordinary checked-piece publication retained. FormArmy
+seed 0 still exhausts its original resource limit. The
+[publication diagnostic compiler](https://github.com/erniecohen/dafny/actions/runs/37886833332)
+passes all six actual stages. Removing the extra summary is rejected as a
+resource repair; no product change or acceptance follows from this comparison.
