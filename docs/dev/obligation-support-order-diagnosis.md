@@ -114,3 +114,53 @@ whole-library acceptance is claimed. This correction implements the justified
 local support-order change; it does not fix all known regressions or make the
 opt-in path uniformly better than legacy. No source hints, limits, solver
 options, retained reveals or expected proof verdicts are changed.
+
+
+## Native duplicate-support hypothesis
+
+The current `fe6ddd1ba` preparation can finish with consecutive identical,
+unattributed can-call assumptions. A scratch-only native diagnostic tests
+omitting one duplicate at that fresh certified preparation boundary. The same
+support command remains before the actual check, with every fact, triggering
+subterm, heap and fuel layer intact. There is no body-term collection, new
+proposition proof or product policy based on declaration names.
+
+The diagnostic completes 54 observations for only Composite, FormArmy and
+RemoveFactor, both axiom settings and seeds 0, 1 and 7. Eighteen unchanged
+native controls reproduce the current outcome/resource vectors; all six
+seed-zero complete input streams through their last proof query reproduce
+canonically, including both FormArmy WF and body queries. All eighteen
+false-entry controls contain genuine Invalid VCs, and all reported independent
+specification-WF checks are Correct. Every actual native assertion and
+branch-transfer object remains intact. Identical local support is explicitly
+witnessed after each omitted duplicate.
+
+| Target | Current native control | Duplicate omitted |
+| --- | --- | --- |
+| `Composite` | VRV | VRV |
+| `FormArmy` | RRR | RRR |
+| `RemoveFactor` | RRR | RRR |
+
+Both axiom settings agree. Duplicate removal repairs none of these resource
+outcomes; the successful Composite seeds cost more. This hypothesis is rejected
+as a repair, and no corresponding product change is made. Stronger logical
+availability of facts does not imply monotone solver resource use.
+
+The first scratch attempt preserves a complete 36-observation Composite/FormArmy
+subset but rejects the RemoveFactor scope: its conservative expression matcher
+does not recognize an identical typed coercion around the empty-set expression.
+The matcher is extended to compare that exact cast target and operand, using
+the pinned Boogie operator equality. A fresh 18-observation follow-up executes
+only RemoveFactor and its controls; the completed first subset is reused
+explicitly. No Composite/FormArmy proofs are repeated. The original failed
+outer gate and both immutable artifacts remain recorded; neither scratch build
+establishes product acceptance.
+
+The compiler-only scratch [first build](https://github.com/erniecohen/dafny/actions/runs/37815916741)
+and [typed-coercion follow-up](https://github.com/erniecohen/dafny/actions/runs/37817411795)
+each pass all six actual stages. Only the instrumented core and verification
+frontend are assembled onto the exact accepted current native base; all other
+binary files are byte-identical. These are diagnostic builds, not accepted
+normal product builds. Original proof sources, ceilings, solver options and
+reveal scopes are unchanged. No whole-suite/library gate or development port
+is performed.
