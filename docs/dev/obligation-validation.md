@@ -1,5 +1,13 @@
 # Obligation lowering validation status
 
+**Latest validation boundary:** the [current focused library refresh](obligation-current-focused-library.md)
+completes 96 normal-compiler observations, including thirty genuine negatives and
+Correct reported specification-WF checks. Remainder still exhausts all selected
+enabled seeds against a freshly successful baseline; multiset fails at seed zero
+and verifies seeds one/seven. The [fixed-range suite classification](obligation-current-seed-classification.md)
+puts Composite under section 13's both-partial rule; RemoveFactor remains open.
+These diagnostics do not close supported-line resource/default-off acceptance.
+
 **Current product `991b60037`:** the [focused native record](obligation-caller-publication-native.md)
 combines 68 retained observations with four successful controls, including all-six FormArmy and AltPrimeDefinition
 proofs, sixteen positive controls, eight genuine negative controls and exact

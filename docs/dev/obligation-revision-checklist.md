@@ -6,9 +6,11 @@ is justified. RemoveFactor still exhausts every selected enabled seed. The
 strict duplicate-support comparison is rejected as a repair, and the original
 postcondition wrapper produces exactly the same full solver queries and resource
 counts. These completed diagnostics are preserved in the
-[exit-regression record](obligation-native-exit-regressions.md). The known-library
-record still belongs to the preceding `fe6ddd1ba` compiler; a focused current
-refresh is required before treating it as evidence for `df4c7066f`. Overall
+[exit-regression record](obligation-native-exit-regressions.md). The [current known-library refresh](obligation-current-focused-library.md)
+completes 96 observations on `df4c7066f`: the functional and reveal cases pass,
+but Remainder remains RRR against fresh baseline VVV and multiset remains RVV
+at seeds 0/1/7, in both axiom settings. All thirty negatives are genuinely Invalid
+and all reported independent WF checks are Correct. Overall
 acceptance remains open and the development port still requires owner approval.
 
 **Latest source revision `df4c7066f` extends the structural control to actual preparation commands; verifier commands are unchanged.**
@@ -404,3 +406,16 @@ exactly identical complete solver input, outcome and resource count; RemoveFacto
 still exhausts resources. All preparation, fuel, publication and other command
 objects/order/transfers remain. The free procedure contract stays nonchecking.
 No wrapper change, automatic assertion isolation or support omission is adopted.
+
+
+### Current known-library refresh completes
+
+The [current focused library record](obligation-current-focused-library.md)
+completes 96 observations using normal compiler `df4c7066f`/build `63fb750a9` and
+pinned Z3 5.1.0. Eight known cases verify at all selected seeds, thirty genuine
+negative observations and all reported independent WF checks behave as required.
+Remainder remains a stable current resource movement (enabled RRR, fresh baseline
+VVV under both axiom settings); multiset is RVV. The old library result remains
+explicitly historical. The fresh quantified-local scope comparison is under
+validation and is not adopted from inspection. Default-off cost-policy acceptance
+and overall supported-line acceptance remain open; no development port is made.
