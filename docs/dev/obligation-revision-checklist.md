@@ -142,3 +142,10 @@ Keep the full request unchanged. Update statuses and evidence here as commits la
 and link current validation from both PR descriptions. A successful focused case,
 public build or solver replay does not complete a whole-suite/library requirement.
 Do not close an item merely because a superseded implementation passed its tests.
+
+
+The [native solver-profile diagnosis](obligation-native-exit-regressions.md#faithful-solver-profiles-distinguish-the-remaining-searches)
+adds completed faithful twelve- and six-observation captures at existing failing
+seeds. They distinguish active quantifiers without establishing a resource
+repair. Paired user-defined method-call isolation is pending; remaining resource
+acceptance and the other outstanding review requirements stay open.

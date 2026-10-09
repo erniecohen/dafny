@@ -213,3 +213,49 @@ This confirms that the localized exit failure does not arise from replacing
 background axioms in that comparison. It does not by itself identify which body
 VC difference causes resource exhaustion. The checked product fuel remains the
 same, and neither alias elimination nor duplicate-support removal repairs it.
+
+
+## Faithful solver profiles distinguish the remaining searches
+
+A completed twelve-observation comparison profiles the unchanged native current
+and baseline translations at Composite seed 1, RemoveFactor seed 0 and FormArmy
+seed 0, in both additional-axiom settings. All twelve prior outcomes, resource
+counts and complete SMT streams through the last query agree exactly. Every
+reported independent specification-WF check is Correct. The same pinned Z3
+5.1.0 receives the native input directly with quantifier reporting enabled;
+no compiler instrumentation, source hint, proof option or ceiling changes.
+
+A subsequent six-observation capture, at those same seeds with additional axioms
+off, adds diagnostic verbosity and an unchanged byte-for-byte input tee. All six
+reference outcomes, resource counts and complete streams again match exactly.
+The preceding profiles agree across the two axiom settings; the second capture
+therefore narrows the inspection without repeating both settings.
+
+| Native comparison | Profile finding | Limit of the inference |
+| --- | --- | --- |
+| FormArmy | The largest reported counters belong to existing pairwise integer-index quantifiers over sequences; related heap-update quantifiers also grow. | This identifies active quantifiers, not the support command that causes the changed search. |
+| Composite | Current reported instantiation counters are lower than the successful baseline, including arithmetic-wrapper quantifiers. | Resource exhaustion is not explained by a universal increase in instantiation counts. |
+| RemoveFactor | Current reported counters are also lower; set insertion/difference axioms are prominent in both versions. | The previously localized exit change still needs a causal explanation within its body VC. |
+
+These are per-quantifier reporting comparisons, not summed solver totals. Z3's
+[quantifier reporting implementation](https://github.com/Z3Prover/z3/blob/z3-5.1.0/src/smt/smt_quantifier.cpp)
+prints cumulative counters, while
+[the instantiation queue](https://github.com/Z3Prover/z3/blob/z3-5.1.0/src/smt/qi_queue.cpp)
+can print intermediate reports. Repeated rows must not be added. Transformed
+quantifier clones can share an identifier. The
+[SMT parser](https://github.com/Z3Prover/z3/blob/z3-5.1.0/src/parsers/smt2/smt2parser.cpp)
+assigns a default identifier from the input scanner's closing line, so mapping
+uses captured native input rather than line numbers from Boogie's solver log.
+All quantifiers at a matching line are retained when the mapping is ambiguous.
+
+The source-level assertion implementation also confirms that `AssertMode.Check`
+retains ordinary assertion publication. It does not select `AssertAndForget`
+or add `subsumption 0` to these caller checks. This rules out that proposed
+explanation; it does not establish equivalence of the complete search contexts.
+
+The next causal boundary is only user-defined method-call preconditions and
+their matching procedure requirements. A scratch compiler keeps the single
+mandatory proof on either the local or legacy procedure side and isolates this
+producer from other opt-in translation changes. Original input, resource policy
+and reveal scope remain unchanged. That comparison is pending. No profile result
+is promoted to a product repair, full-suite/library acceptance or completed review.
