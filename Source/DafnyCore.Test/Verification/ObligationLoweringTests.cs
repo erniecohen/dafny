@@ -730,10 +730,10 @@ public class ObligationLoweringTests {
       }
       Assert.Contains(commands, c => c.Contains("$IsAlloc"));
       Assert.Contains(commands, c => c.Contains(".P#canCall"));
-      Assert.NotNull(snapshot.LeadingSupport);
-      Assert.Null(snapshot.LeadingSupport.Attributes);
+      // This local clause retains its full standard support in Commands above;
+      // it no longer constructs a redundant leading copy before that traversal.
+      Assert.Null(snapshot.LeadingSupport);
       commands.Add("leading-after:" + snapshot.LeadingSupportAfterPreparation);
-      commands.Add("leading:" + Expression(snapshot.LeadingSupport.Expr));
       commands.Add("heap:" + Expression(snapshot.Heap));
       return commands.ToArray();
     }
