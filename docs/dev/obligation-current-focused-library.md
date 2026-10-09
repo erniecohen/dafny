@@ -56,8 +56,37 @@ existing-variable and unresolved havocs are rejected. Writes still require the
 recorded fresh argument bindings. Existing guard structure and command positions
 remain. Calls, real assertions, labels, unsupported branches and statement
 expressions retain their previous scope policy. No source reveal is moved.
-Compiler/native controls and genuine negatives must complete before considering
-adoption; no product change follows from this source audit alone.
+The comparison completes all eighteen native observations on compiler
+`ed934ccf2`. The six native controls retain the prior outcomes and resource
+counts, and the two seed-zero emitted modules retain their complete noncomment
+Boogie token streams. All twelve selected/false variants retain all eight actual
+check expressions, full attributes and the entire preparation fingerprint. All
+six false-entry controls contain genuine Invalid VCs; independent reported
+specification-WF checks remain Correct.
+
+| Preparation policy | Axioms off, seeds 0/1/7 | Axioms on, seeds 0/1/7 |
+| --- | --- | --- |
+| Unchanged native control | RRR | RRR |
+| Existing proof branch with fresh-local eligibility | VVR | VRR |
+
+This is partial benefit, not a complete repair or a product change. Scoping alone
+leaves three of the six failures. It preserves conditional havocs and empty
+branches; it does not normalize or remove their guarded support.
+
+### Follow-up: guarded normalization of fresh binders, pending
+
+The [scratch follow-up compiler](https://github.com/erniecohen/dafny/actions/runs/37986737769)
+extends the existing guarded normalization only to resolved locals created by
+that same preparation. Every write must occur once. Havoc variables must have
+no where clause and be absent from ancestor guards; argument bindings must be
+absent from every guard. Existing-state writes and unsupported commands retain
+the original policy. Each original fact retains its ancestor guards, expression,
+full attributes and token; each original binding and havoc remains once in order.
+Empty branches retain their guard terms in tautologies. An independent audit
+inspects the normalized implication spine against original expression and
+attribute identities. Actual checks, fuel and source reveal visibility remain.
+Compilation and native preservation/negative controls are pending. This is an
+experiment, not adopted product normalization or supported-line acceptance.
 
 ## Preceding compiler record
 

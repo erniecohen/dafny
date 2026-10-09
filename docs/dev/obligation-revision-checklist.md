@@ -419,3 +419,15 @@ VVV under both axiom settings); multiset is RVV. The old library result remains
 explicitly historical. The fresh quantified-local scope comparison is under
 validation and is not adopted from inspection. Default-off cost-policy acceptance
 and overall supported-line acceptance remain open; no development port is made.
+
+
+### Fresh binder scope comparison: complete, only partial benefit
+
+The [focused library record](obligation-current-focused-library.md) now records
+all eighteen scope-comparison observations on compiler `ed934ccf2`: six faithful
+native controls, twelve exact actual-check/full-attribute/preparation comparisons,
+six genuinely Invalid false-entry controls and Correct independent WF checks.
+Remainder improves from RRR in both axiom settings to VVR off and VRR on. Three
+failures remain. A separate guarded fresh-binder normalization experiment is
+compiling; it is not a product fix. The implementation and acceptance boundary
+remain unchanged, and no development-line port is made.

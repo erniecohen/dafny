@@ -190,3 +190,11 @@ projects away those private binder locals after the mandatory check while the
 ordinary call publishes its original contracts. This is not normalization or
 support omission, and does not license adoption before native and structural
 controls pass. The implemented product certificate is unchanged.
+
+
+The fresh-local scope comparison has now completed eighteen observations with
+strict original-preparation/actual-check metadata controls and six genuine
+Invalid controls. It partly improves Remainder (VVR without added axioms, VRR
+with them), leaving three failures. The follow-up separately tests guarded
+normalization of fresh singly written binders. Neither experiment has been
+adopted; see the current focused library record for its exact compiler boundary.
