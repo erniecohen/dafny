@@ -172,3 +172,13 @@ This is a conditional diagnosis; the full current path previously still failed
 with all caller WF omitted. Removing legitimate support is excluded as a product
 fix. The PR description is rewritten around the requested design;
 S14 acceptance and the remaining review requirements remain open.
+
+
+The [combined caller-emission diagnosis](obligation-native-exit-regressions.md#combined-caller-emissions-explain-the-remaining-selected-search)
+completes five full-current FormArmy observations with two faithful complete-SMT
+controls, a genuine Invalid control and all fifteen actual checks/full attributes
+strictly unchanged. Omitting WF or split summaries alone still exhausts resources;
+omitting both restores the selected proof. Leading can-call omission is not
+needed for that restoration. This explains a selected bounded search without
+authorizing product support deletion or establishing multi-seed acceptance.
+Remaining review acceptance stays open.

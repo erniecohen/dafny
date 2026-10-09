@@ -454,3 +454,48 @@ caller translation difference can affect this resource-limited search. Removing
 legitimate assertion-style support is excluded as a product fix, and this
 single-seed causal result does not establish uniform improvement, multi-seed
 acceptance or a whole-suite/library result. No product change follows from it.
+
+
+## Combined caller emissions explain the remaining selected search
+
+The preceding full-current FormArmy experiment still exhausted resources when
+either all caller WF emissions or only the two whole-precondition summaries were
+omitted. A five-observation follow-up tests their combination, then the remaining
+leading clause can-call emissions. It changes emissions only after constructing
+every original object and dependency identifier. Complete original WF traversal
+and fuel consumption remain in effect. All fifteen actual assertion formulas
+and their full attributes match strictly across all five observations.
+
+The unchanged current control and unchanged WF-omission control reproduce their
+previous complete SMT streams, outcomes and resource counts. All reported
+independent specification-WF checks are Correct. The false-entry control contains
+a genuine Invalid VC. The
+[diagnostic compiler build](https://github.com/erniecohen/dafny/actions/runs/37894540510)
+passes all six actual stages and preserves the accepted native bundle except for
+the two explicitly instrumented assemblies. Product `fe6ddd1ba` and Z3 5.1.0,
+original source, seed zero, additional axioms off and the original ceiling remain
+fixed.
+
+| Full-current FormArmy variant | Result |
+| --- | --- |
+| Unchanged current | OutOfResource |
+| Caller WF emission omitted | OutOfResource |
+| Caller WF and the two split summaries omitted | Correct |
+| Those emissions and the four leading can-call assumptions omitted | Correct |
+| False entry assertion in the final diagnostic | Invalid |
+
+Together with the earlier summary-only result, this shows that either retained
+emission family can keep this selected search over its existing ceiling even
+when the other is removed. Omitting both restores the proof; removing leading
+can-call emissions is unnecessary for that restoration. The actual checks retain
+their original terms, guards and fuel. This is a bounded solver-search effect of
+additional emitted facts, rather than evidence that the proposition became false
+or that its check received fewer triggering subterms or less fuel.
+
+This deliberately weakened diagnostic is not a product repair. Assertion-style
+preparation must remain available for the mandatory check, and the original
+kind's normal publication must be preserved. The result is confined to the
+selected seed/configuration and does not establish a particular instantiation
+chain, multi-seed stability or supported-line acceptance. No new whole-suite or
+whole-library run, solver fallback, raised ceiling, source hint or development
+port is included.
