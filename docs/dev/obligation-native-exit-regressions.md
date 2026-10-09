@@ -949,18 +949,38 @@ and its rejection does not establish that the current implementation newly
 introduced a join. Both control-flow audits and the native results remain valid
 within their stated scope.
 
-## Exact native unified-exit construction: focused comparison pending
+## Exact native unified-exit construction produces the same solver input
 
 The separate-terminal-path experiment above does not reconstruct legacy behavior.
 The exact pinned Boogie pass constructs a common `GeneratedUnifiedExit` when
-there are multiple terminal returns. A further scratch comparison restores the
-two terminal returns in RemoveFactor and invokes that public pass, then appends
-the original certified preparation/check/publication fragment unchanged. It
-preserves every command once, the sole static check, all dependency attributes,
-original fuel traversal and one mandatory check per reachable exit path. The
-comparison changes only terminal control-flow construction, with a native control
-and a genuine false-entry control, both axiom settings and the original ceiling.
-Its compiler and six-observation native validation are pending; no repair or
-product adoption is claimed. This diagnostic is based on structural revision
-`df4c7066f` and the accepted corrected compiler build, so its native control must
-also reproduce the preceding recorded input/outcome/resource evidence.
+there are multiple terminal returns. The [focused scratch compiler](https://github.com/erniecohen/dafny/actions/runs/37957404907)
+passes all eight actual stages, using accepted structural revision `df4c7066f`
+and the corrected normal compiler bundle. Only the diagnostic core and language
+server components are rebuilt; every other native binary remains byte exact.
+
+The completed native comparison restores the two terminal returns in RemoveFactor
+and invokes that public pass, then appends the original certified preparation,
+check and publication fragment unchanged. It retains every original command once,
+the sole static postcondition check, all full dependency attributes, original fuel
+traversal and one mandatory check on each reachable exit path. All six observations
+complete at seed zero, both axiom settings and the original ceiling. Both native
+controls reproduce the preceding recorded outcome, resource vector and complete
+solver stream; four strict actual-check/full-attribute comparisons pass, both
+false-entry controls have genuine Invalid VCs, and reported independent WF results
+remain Correct.
+
+The native and unified variants have **identical complete solver inputs through
+the last check-sat**, in both axiom settings. Both exhaust the original resource
+ceiling with identical resource vectors. This rules out this terminal-construction
+change as a repair more directly than outcome equality alone. No construction is
+adopted. The new compiler's faithful native controls confirm only this bounded
+reference scope; they do not reidentify the earlier complete native fixture gates.
+
+The preceding translation-family attribution belongs to product `fe6ddd1ba`,
+before the current caller-publication correction. It must not be treated as a
+current causal result. A focused current-candidate family comparison is pending:
+only Composite seeds zero/one and RemoveFactor seed zero, faithful native/legacy
+controls, exit-only/body-only original translation and genuine false-entry controls.
+Each family retains the required proof through its local check or original checked
+procedure contract. No support omission, source hint or increased ceiling is a
+product change. Compiler and native validation for this comparison remain pending.

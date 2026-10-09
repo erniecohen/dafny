@@ -312,3 +312,10 @@ remain. RemoveFactor seed zero still exhausts resources in both axiom settings.
 The preceding duplicate-ID resolution failure remains preserved and contributes
 no relocated proof result. Reject the placement as a repair and adopt neither
 scratch construction.
+
+The [exact native unified-exit comparison](obligation-native-exit-regressions.md#exact-native-unified-exit-construction-produces-the-same-solver-input)
+completes six observations with faithful native controls, all full check attributes,
+and genuine Invalid controls. Native and transformed complete solver inputs and
+resource vectors are identical in both axiom settings; this construction is
+rejected as a RemoveFactor repair. Current-candidate family attribution is pending;
+the earlier family diagnosis belongs to a preceding product.
