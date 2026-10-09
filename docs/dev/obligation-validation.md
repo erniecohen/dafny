@@ -1,10 +1,12 @@
 # Obligation lowering validation status
 
 **Current product `991b60037`:** the [focused native record](obligation-caller-publication-native.md)
-retains 68 completed observations, including all-six FormArmy and AltPrimeDefinition
-proofs, sixteen positive controls, four genuine negative controls and exact
-default-off Power vectors. Four further false-call controls require a collection
-follow-up. Composite and RemoveFactor remain unresolved; acceptance is incomplete.
+combines 68 retained observations with four successful controls, including all-six FormArmy and AltPrimeDefinition
+proofs, sixteen positive controls, eight genuine negative controls and exact
+default-off Power vectors. The original collection failure is preserved; this is
+not a single successful 72-observation run. Composite and RemoveFactor remain
+unresolved. The support-preserving exit scope also leaves RemoveFactor RRR;
+acceptance is incomplete.
 
 **Preceding evidence:** product `fe6ddd1ba` has [68 focused suite/control observations](obligation-guarded-preparation-focused.md)
 and [92 completed known-library/control observations](obligation-current-focused-library.md).

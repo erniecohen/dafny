@@ -40,15 +40,19 @@ Power observations reproduce the recorded baseline target outcomes and complete
 resource vectors exactly. Baseline and preceding product evidence are explicitly
 reused; they are not new executions or complete compatibility evidence.
 
-The full submission includes four additional direct calls to a method with
-literal `requires false`, under both resolver and additional-axiom settings.
-Their raw logs and verification JSON identify the failed precondition at the
-source call, but the collection gate incorrectly requires a nonempty independent
-WF result for that trivial specification. Its nonzero result remains preserved.
-Those four observations are excluded from the accepted-control count pending a
-fresh four-only gate that records each process exit and accepts an empty WF list
+The original full submission includes four additional direct calls to a method
+with literal `requires false`, under both resolver and additional-axiom settings.
+Its collection gate incorrectly requires a nonempty independent WF result for
+that trivial specification. The nonzero gate result and its 68 completed
+observations remain preserved. A fresh four-only gate records each process exit,
+requires a genuine Invalid VC at the source call, and accepts an empty WF list
 only for this literal fixture while requiring every emitted WF result Correct.
-The completed 68 observations are retained and are not rerun.
+All four controls pass those expectations. No completed observation is rerun.
+
+The current product therefore has 72 completed observations explicitly combining
+68 retained observations and four successful follow-up controls. All sixteen
+positive controls verify and all eight negative controls are genuinely Invalid.
+This is not a single successful 72-observation gate or product acceptance.
 
 ## Printed-interface audit
 
@@ -72,12 +76,22 @@ tuning. The candidate is not uniformly better than legacy and review acceptance
 is not complete.
 
 A [compiler-only exit-scope diagnostic](https://github.com/erniecohen/dafny/actions/runs/37918822079)
-passes all six actual stages. It retains the complete RemoveFactor exit proof,
-including preparation, checks, split summaries, clause order, fuel traversal,
-active reveal state and normal procedure contracts, inside the existing proof
-branch. Only certified pure preparation is admitted. Focused native execution
-and faithful-control/negative validation remain pending; this scratch experiment
-is not adopted in the product.
+passes all six actual stages. Its 18-observation focused native gate also
+completes: unchanged native, scoped exit proof and a false entry assertion, at
+seeds 0/1/7 in both axiom settings. It retains the complete RemoveFactor exit
+proof, including preparation, checks, split summaries, clause order, fuel
+traversal, active reveal state and normal procedure contracts, inside the
+existing proof branch. Preparation is certified pure. All six native controls
+reproduce original outcomes and resource counts; both complete seed-zero solver
+streams match. All twelve comparisons retain every actual check expression and
+full attribute exactly, with the same exit-command counts. All reported WF
+results are Correct and all six false-entry controls are genuinely Invalid.
+
+The scoped positive remains RRR in both settings. Thus retaining support in a
+local exit proof branch does not repair RemoveFactor at any tested seed. The
+completed diagnostic gate validates the experiment and its controls; it does
+not establish a positive proof result. This construction is rejected as a
+resource repair and is not adopted in the product.
 
 Current full registered/paired native evidence, strict complete default-off
 library resource compatibility, ordinary required CI and independent soundness

@@ -1,6 +1,6 @@
 # Issue 100 revision checklist
 
-**Caller-publication candidate `991b60037` has 68 retained native observations; four additional controls remain pending.**
+**Caller-publication candidate `991b60037` has 72 completed native observations across two frozen gates; regression acceptance remains open.**
 It preserves the inherited/free-call interface, publishes original contracts for
 ordinary locally checked calls, and scopes only certified pure preparation.
 Statement-expression reveals and unsupported effects keep their prior outer
@@ -11,8 +11,8 @@ tests in each mode, 382 core tests, the unchanged 287-group inventory and the
 editor build. The preceding build passes all structural controls but fails only
 the old registry comparison; that failed build is retained. The refresh changes
 only audited source-layout records, not counts or classifications. The [current native record](obligation-caller-publication-native.md) preserves
-68 completed observations and the collection failure requiring only four fresh
-controls. FormArmy and AltPrimeDefinition are VVV in both axiom settings;
+68 completed observations and its preserved collection failure, plus four
+successful fresh controls. FormArmy and AltPrimeDefinition are VVV in both axiom settings;
 Composite and RemoveFactor remain unresolved. Review acceptance is incomplete.
 
 Current [native exit-regression diagnosis](obligation-native-exit-regressions.md) completes 36 whole-clause observations and 36 family-isolation observations, explicitly combining twelve RemoveFactor observations with a 24-observation follow-up for the other two cases. Whole-clause preparation is rejected as a resource repair despite identical actual checks. RemoveFactor seed-zero exhaustion is localized to exit translation, while Composite seed1 and FormArmy seed0 exhaustion is reproduced by the body family, with faithful native controls; no product repair or acceptance is claimed. A further 54-observation private-argument substitution diagnostic preserves every actual check and does not repair any target; Composite/FormArmy solver streams remain identical to their controls at every tested seed. A twelve-observation certified caller-order follow-up also leaves the two selected failing seeds unchanged, with faithful controls and strictly retained checks.
@@ -124,8 +124,8 @@ linked validation report.
 ## Supported-line acceptance
 
 The checked registered/paired items below record the completed `072175269`
-comparison. They do not discharge current `fe6ddd1ba` acceptance. The newest
-68-observation native result above supplies current focused issue/subset,
+comparison. They do not discharge current `991b60037` acceptance. The newest
+combined 72-observation native result supplies current focused issue/subset,
 preparation and Power evidence. Current full registered/paired evidence and
 strict default-off library resource compatibility remain open; no full-suite
 rerun is authorized as an iteration loop for the existing regressions.
@@ -237,5 +237,15 @@ expected successful/error summaries, including the false local proof branch,
 inherited/free-call exclusion and post-call state-change negatives. It uses the
 exact pinned package bytes matched to the accepted compiler and Z3 5.1.0, at
 unchanged limits. This validates the contract-publication mechanism, not the
-pending seventy-two-observation native Dafny regression gate or overall review
-acceptance.
+combined native observations as complete product validation or discharge
+overall review acceptance.
+
+The [current follow-up record](obligation-caller-publication-native.md) completes
+the four direct false-call controls after correcting only the literal-spec WF
+collection expectation. All four are genuinely Invalid. The current product's
+72 observations are explicitly 68 retained plus four fresh; the original failed
+gate remains preserved. The 18-observation support-preserving exit-scope
+experiment has faithful native controls, strict original check/attribute
+comparisons and six genuine Invalid controls, but scoped RemoveFactor remains
+RRR in both axiom settings. Reject it as a resource repair; do not adopt it or
+claim remaining regression/review acceptance.

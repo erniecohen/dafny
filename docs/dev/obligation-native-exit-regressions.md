@@ -637,3 +637,26 @@ Composite is not repaired by the earlier caller-scope construction, and
 RemoveFactor has not been tested with it. Product `fe6ddd1ba` remains unchanged.
 No source hint, raised limit, new background axiom, global fuel rewrite,
 whole-suite/library iteration or development port is used.
+
+
+### Current product and retained-support exit follow-up
+
+The [current native record](obligation-caller-publication-native.md) belongs to
+product `991b60037`. Its 72 observations explicitly combine 68 preserved results
+from a collection-failed gate with four successful fresh false-call controls.
+FormArmy and AltPrimeDefinition are VVV in both axiom settings. Composite is RRV
+and RemoveFactor RRR; neither is claimed repaired. All sixteen positive controls
+verify and all eight negative controls are genuinely Invalid. The prior failed
+gate is not reclassified as successful and no completed scope is discarded.
+
+A complete eighteen-observation native RemoveFactor exit-scope diagnostic retains
+every original exit preparation/check/summary, current reveal context and fuel
+traversal, and normal procedure contracts. At seeds 0/1/7 in both axiom settings,
+native and scoped positives both remain RRR. All six native outcome/resource
+controls and both seed-zero complete-query controls are exact; twelve actual
+check/full-attribute comparisons and exit-command counts are exact. Independent
+WF remains Correct and all six false-entry controls are genuine Invalid VCs.
+The diagnostic's successful execution validates that controlled negative result,
+not a repair or product acceptance. The scope construction is not adopted.
+There is no support deletion, raised ceiling, source hint, whole-suite/library
+iteration or development port.
