@@ -1,11 +1,17 @@
 # Issue 100 revision checklist
 
-**New caller-publication candidate is pending compilation and native validation.**
+**Caller-publication candidate `991b60037` passes compiler/structural validation; native verification remains pending.**
 It preserves the inherited/free-call interface, publishes original contracts for
 ordinary locally checked calls, and scopes only certified pure preparation.
 Statement-expression reveals and unsupported effects keep their prior outer
-scope. The completed scratch diagnostics below motivate this candidate; they
-do not validate its binaries or settle remaining regressions.
+scope. The completed scratch diagnostics below motivate this candidate. Its
+[normal compiler build](https://github.com/erniecohen/dafny/actions/runs/37914777052)
+passes all ten actual stages: both platform/Boogie-probe builds, 104 obligation
+tests in each mode, 382 core tests, the unchanged 287-group inventory and the
+editor build. The preceding build passes all structural controls but fails only
+the old registry comparison; that failed build is retained. The refresh changes
+only audited source-layout records, not counts or classifications. Focused native
+validation remains pending and remaining regressions are not claimed settled.
 
 Current [native exit-regression diagnosis](obligation-native-exit-regressions.md) completes 36 whole-clause observations and 36 family-isolation observations, explicitly combining twelve RemoveFactor observations with a 24-observation follow-up for the other two cases. Whole-clause preparation is rejected as a resource repair despite identical actual checks. RemoveFactor seed-zero exhaustion is localized to exit translation, while Composite seed1 and FormArmy seed0 exhaustion is reproduced by the body family, with faithful native controls; no product repair or acceptance is claimed. A further 54-observation private-argument substitution diagnostic preserves every actual check and does not repair any target; Composite/FormArmy solver streams remain identical to their controls at every tested seed. A twelve-observation certified caller-order follow-up also leaves the two selected failing seeds unchanged, with faithful controls and strictly retained checks.
 
