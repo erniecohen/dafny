@@ -1,5 +1,66 @@
 # Current focused standard-library regressions
 
+## Current normal-compiler refresh
+
+The focused refresh completes **96 native observations** on normal structural
+compiler `df4c7066f`, build `63fb750a9`, and Z3 5.1.0. It reruns only the ten
+known functional, scope and resource cases below and their existing negatives;
+six fresh unchanged-baseline Remainder comparisons and six entry-false Remainder
+controls complete the scope. The original entire project/source, options,
+resource ceilings, two-core setting and default declaration normalization remain.
+No whole-library or whole-suite iteration is run.
+
+The vectors are seeds 0/1/7 and agree between the two axiom settings:
+
+| Known case | Current enabled | Fresh baseline in this scope |
+| --- | --- | --- |
+| `LemmaDivByMultiple` | VVV | Not rerun |
+| `BatchArrayWriter` constructor | VVV | Not rerun |
+| `LemmaMapDistributesOverConcat` | VVV | Not rerun |
+| `LemmaMapPartialFunctionDistributesOverConcat` | VVV | Not rerun |
+| `LemmaFilterDistributesOverConcat` | VVV | Not rerun |
+| `WillSplitOnDelim` | VVV | Not rerun |
+| `EncodeDecodeRecursively` | VVV | Not rerun |
+| `LemmaRemainder` | RRR | VVV |
+| `LemmaMaxOfConcat` | VVV | Not rerun |
+| `MultisetOrdinalDecreasesToSubMultiset` | RVV | Not rerun |
+
+V means Correct and R OutOfResource. All thirty negatives contain genuine Invalid
+VCs; Remainder's six new controls identify the inserted source false assertion.
+All reported independent specification-WF checks are Correct. The diagnostic gate
+completes successfully, but its positive resource failures remain and product
+acceptance is false. Remainder is a current stable sampled resource regression,
+with a successful fresh baseline under both axiom settings; it is not section
+13's both-partial variance. Multiset's current seed-zero failure is retained;
+its historical baseline has a separate compiler/platform boundary.
+
+### Quantified preparation remains in the outer continuation
+
+Remainder's current generated body has eight actual assertions: four caller
+precondition pieces, two postcondition pieces and two lambda-definedness checks.
+The legacy VC has the corresponding checked requires/ensures and the same two
+lambda checks. Counts alone do not establish formula or input equivalence.
+
+The current local preparation for `LemmaDivInductionAuto` contains conditional
+havocs of fresh quantified-WF binder locals, followed by their can-call support.
+The existing normalization rejects conditional havocs; the scope certificate
+also rejects all havocs. Consequently the entire caller proof remains in the
+outer continuation, rather than the existing locally terminating proof branch.
+This is a concrete source/Boogie difference, not yet a causal resource diagnosis.
+
+The [scratch fresh-local scope comparison](https://github.com/erniecohen/dafny/actions/runs/37981555012)
+tests a stricter declaration-based certificate without dropping or rewriting
+preparation, fuel, actual formulas or full attributes. A havoc is eligible only
+if its identifier resolves to a local declared during that same preparation;
+existing-variable and unresolved havocs are rejected. Writes still require the
+recorded fresh argument bindings. Existing guard structure and command positions
+remain. Calls, real assertions, labels, unsupported branches and statement
+expressions retain their previous scope policy. No source reveal is moved.
+Compiler/native controls and genuine negatives must complete before considering
+adoption; no product change follows from this source audit alone.
+
+## Preceding compiler record
+
 Semantic/product `fe6ddd1ba` uses the [accepted native compiler build](https://github.com/erniecohen/dafny/actions/runs/37808373912).
 This record covers only the previously identified declarations and relevant
 controls: 92 observations on macOS arm64 with Z3 5.1.0. Original source,

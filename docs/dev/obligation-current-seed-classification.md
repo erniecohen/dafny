@@ -23,8 +23,9 @@ and 5 verify. The preceding 0/1/7 subset alone did not establish the baseline's
 partial-success classification. This extended, fixed scope does; it is neither
 a product repair nor evidence of uniform improvement. Do not expand the seed
 range to search for a preferred verdict. RemoveFactor does not meet the
-both-partial rule, and remains unresolved in this focused suite scope. The known-library result
-still uses the preceding compiler and must be refreshed separately.
+both-partial rule, and remains unresolved in this focused suite scope. The [focused current-library refresh](obligation-current-focused-library.md)
+separately confirms stable Remainder resource exhaustion and a seed-zero multiset
+resource movement; those results must not be hidden by the suite classification.
 
 **Preceding current semantic evidence at seeds 0/1/7:**
 Accepted native semantic evidence: accepted product `991b60037`, recorded in

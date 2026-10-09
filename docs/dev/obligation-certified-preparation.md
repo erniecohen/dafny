@@ -1,8 +1,12 @@
 # Declared-contract preparation argument
 
-This is the implemented candidate correction following `58d8ac112`'s complete library
-rejection. Its own structural and native evidence is required before acceptance. No gate of the preceding revision validates this candidate.
-The actual implicit proposition remains mandatory and is checked once.
+The current single-check semantic implementation is `991b60037`, with the
+command-neutral actual-preparation observer and structural controls in `df4c7066f`.
+The proposition remains mandatory and is checked once. The
+[registered and paired native controls](obligation-caller-publication-native.md)
+validate the required functional mechanisms at their named compiler identities;
+[current regression acceptance](obligation-revision-checklist.md) remains open.
+Earlier experiment boundaries below are retained as history, not current gates.
 
 ## Existing well-formedness proof
 
@@ -171,3 +175,18 @@ publish ordinary requirements, and a modifying call invalidates the relevant
 pre-call fact. The three new negative controls identify their failing assertions.
 This establishes the required Boogie mechanism; native Dafny regression acceptance
 is separate and remains pending.
+
+
+## Fresh quantified-local scope proposal: not adopted
+
+The [current focused library diagnosis](obligation-current-focused-library.md#quantified-preparation-remains-in-the-outer-continuation)
+identifies a scope-certificate boundary for quantified WF havocs. The scratch
+proposal preserves every preparation command at the actual caller check and
+extends only eligibility for the existing terminating caller-proof branch.
+Every eligible havoc must refer by declaration identity to a local added during
+that same preparation. Existing-state writes/havocs, unsupported commands and
+statement-expression visibility effects remain excluded. The proposed argument
+projects away those private binder locals after the mandatory check while the
+ordinary call publishes its original contracts. This is not normalization or
+support omission, and does not license adoption before native and structural
+controls pass. The implemented product certificate is unchanged.
