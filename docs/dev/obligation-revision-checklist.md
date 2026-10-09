@@ -204,3 +204,14 @@ results identify the inserted false assertion, while four OOR results remain
 inconclusive. Validation is rejected. This does not settle general publication,
 remaining regressions, negative validation or current review acceptance; product
 adoption remains pending.
+
+
+The [normal call-contract publication follow-up](obligation-native-exit-regressions.md#original-call-contract-publication-with-a-local-proof-scope)
+retains eighteen completed FormArmy observations and adds only the four unfinished
+direct false-precondition controls after a scratch count-audit correction.
+FormArmy is VVV in both axiom settings with original call-contract publication;
+all ten negative observations are genuinely Invalid. Six native full-stream/cost
+controls and fourteen strict actual-check/attribute comparisons pass. This is
+twenty-two observations across two frozen gates, not a successful single run.
+General adoption must preserve inherited/filtered free-call publication and
+outer reveal scope. Remaining regressions and review acceptance stay open.

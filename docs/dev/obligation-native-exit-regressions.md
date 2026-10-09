@@ -583,3 +583,57 @@ still need to be established before adopting this experiment in product code.
 Composite remains unresolved by the scoped construction; RemoveFactor has not
 been tested with it. Product `fe6ddd1ba` remains unchanged, with no whole-suite/
 library iteration, raised ceiling, source hint or development port.
+
+
+### Original call-contract publication with a local proof scope
+
+The next diagnostic keeps every original caller preparation, actual check and
+split summary in its local proof branch, but publishes no copied internal check
+pieces to the continuation. Instead, it marks the original nonchecking user
+requirements with Boogie's existing `always_assume` attribute. The ordinary
+Boogie call supplies the original contract conditions with its own formal/actual
+substitution, boxing and pre-call heap handling. Every condition object is
+retained by identity; no condition is retranslated, no additional proposition
+check is introduced, and each check retains its original preparation and fuel.
+
+The [first diagnostic compiler](https://github.com/erniecohen/dafny/actions/runs/37909310841)
+passes all six actual stages. Eighteen FormArmy observations complete, with six
+unchanged controls reproducing the full solver streams, outcomes and resource
+counts, and twelve strict comparisons of all fifteen original assertion
+expressions and full attributes. In both axiom settings, positions at seeds
+0, 1 and 7 are:
+
+| FormArmy variant | Results |
+| --- | --- |
+| Unchanged current | RRR |
+| Local proof scope, original call-contract publication | VVV |
+| Same translation with an added false entry assertion | III |
+
+All six positive observations verify at their original resource ceiling, and
+all six false-entry observations are genuine Invalid VCs. The direct source
+false-precondition fixture initially stops before verification because its
+scratch audit incorrectly assumes literal preparation contains zero commands.
+The completed eighteen observations and the unsuccessful original gate are
+preserved; that gate is not reclassified as successful.
+
+A [follow-up compiler](https://github.com/erniecohen/dafny/actions/runs/37912361023)
+changes only that diagnostic count check. A fresh gate runs only the four
+unfinished observations: a direct call to a method with `requires false`,
+unchanged and scoped, in both axiom settings. All four are genuinely Invalid,
+with the failing precondition identified at the source call. The two strict
+actual-check/attribute comparisons pass, and observed preparation counts match.
+The four-observation diagnostic gate succeeds; it explicitly reuses the retained
+FormArmy results from the earlier compiler. This provides twenty-two completed
+observations across the two frozen gates and ten genuine negative results.
+It does not provide product acceptance or a single twenty-two-observation run.
+
+A source audit also identifies a restriction on general adoption. For inherited
+or filtered `free` calls, the original Boogie translation skips ordinary checked
+requirements. Globally marking their contract copies `always_assume` would newly
+publish those propositions on the free-call paths. A general correction must
+preserve that distinction, alongside original outer reveals and unsupported
+preparation effects; the scratch marker must not be adopted indiscriminately.
+Composite is not repaired by the earlier caller-scope construction, and
+RemoveFactor has not been tested with it. Product `fe6ddd1ba` remains unchanged.
+No source hint, raised limit, new background axiom, global fuel rewrite,
+whole-suite/library iteration or development port is used.
