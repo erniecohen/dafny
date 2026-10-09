@@ -1,11 +1,18 @@
 # Native investigation of the remaining exit regressions
 
-This is diagnosis of the current semantic/product `fe6ddd1ba`, not a completed
-repair or acceptance result. Both experiments use the exact accepted macOS arm64
-base and Z3 5.1.0, original proof sources, resource ceilings, options and retained
-terminal reveal scopes. Only the core and verification frontend are instrumented
-in scratch builds; all other binary files remain byte-identical to the accepted
-base. No whole-suite or whole-library gate is run.
+This file retains investigations with their named source/compiler identities;
+the first sections below concern historical product `fe6ddd1ba`. The current
+single-check semantics are `991b60037`, followed by the command-neutral structural
+observer `df4c7066f`. Its latest completed isolation, current-query replay and
+[bounded seed classification](obligation-current-seed-classification.md) preserve
+controls and explicitly distinguish diagnostic success from product acceptance.
+Composite now meets review section 13's both-partial rule. RemoveFactor remains
+open at the unchanged combined ceiling; no grouping policy or resource increase
+is adopted. No whole-suite/library iteration or development port is run.
+
+The historical experiments use the exact accepted macOS arm64 base and Z3 5.1.0,
+original sources, ceilings and terminal reveal scopes. Scratch builds replace
+only the core and verification frontend; other binary files remain exact.
 
 ## Whole source-clause preparation
 
@@ -1148,3 +1155,74 @@ as a product remedy. Do not add automatic isolation to the single-check option.
 The current semantic implementation remains unchanged. Original combined-query
 Composite and RemoveFactor resource acceptance stays open. No source proof hint,
 resource increase, broader suite iteration or development-line port is adopted.
+
+
+## Removing strictly duplicate local support does not repair the regression
+
+Source inspection finds a difference from immediate assertion preparation:
+`TrStmt_CheckWellformed` already ends with the whole proposition's can-call
+support, while declared-exit lowering additionally emits its earlier-created
+leading support. For pure normalized preparation the leading command is already
+commuted to follow that same WF fragment. The two selected RemoveFactor formulas
+are structurally identical, as established by the completed native audit below;
+this is not inferred from printed text or logical-equivalence guessing.
+
+A [focused scratch compiler](https://github.com/erniecohen/dafny/actions/runs/37973692714)
+tests omission of only this extra command. It requires native
+structural expression equality and a strict lexical fingerprint, absent attributes
+on both assumptions, and retention of every original preparation command once.
+Expression construction and translator traversal still occur at their original
+points. All distinct support terms, fuel, actual check formulas/full attributes,
+publication and transfers remain. It scans only this proposition's newly generated
+preparation, with no body/context term collection or new supporting instance.
+
+All six native observations complete. The assumptions are structurally identical
+and have identical strict fingerprints; both native controls reproduce complete
+solver input, outcome and resource count, all four actual-check/full-attribute
+comparisons pass, all reported WF results are Correct and both false entries
+contain genuine Invalid VCs. Every original WF preparation command remains once.
+RemoveFactor still exhausts resources in both axiom settings. Removing this
+strictly duplicate command is therefore rejected as a resource repair and no
+product change is adopted.
+The separate assertion-command-type audit finds a distinct postcondition error
+wrapper and optional expansion metadata, but no direct solver-generation subtype
+branch for this selected case. The subsequent wrapper-only comparison tests
+possible visitor effects explicitly; no product check-type change follows from
+the source audit.
+
+
+## Original postcondition wrapper produces exactly the same solver input
+
+The [wrapper-only scratch compiler](https://github.com/erniecohen/dafny/actions/runs/37976081754)
+compares the original Boogie `AssertEnsuresCmd` shape with the current local
+assertion. The wrapper contains the exact actual checked expression as command
+metadata; it is not inserted into a procedure contract. The procedure's original
+free contract remains, with no second checked ensures. All other commands retain
+their object identities and original positions; preparation, fuel, publication,
+transfers, thirteen static checks and every actual expression/full attribute
+remain. Description and error-mining metadata also retain their references.
+
+The source audit above finds no direct subtype switch in solver generation for
+this selected case, but standard visitors additionally visit the wrapper's
+ensures condition. That audit cannot establish native input identity or rule out
+all traversal effects. Require unchanged full-input/outcome/resource controls,
+strict actual-check comparisons and genuine Invalid entry controls before drawing
+any conclusion.
+
+All eight actual compiler stages pass. All six native observations complete at
+the original combined ceiling, with two exact full-input/outcome/resource native
+controls, four strict actual-check/full-attribute comparisons, Correct reported
+WF checks and two genuine Invalid entry controls. The two wrapper/native pairs
+also produce exactly identical complete solver inputs through the final check,
+with identical resource counts and OutOfResource outcomes. The wrapper alone has
+no measured solver effect in this scope and is rejected as a resource repair.
+No product check-type change is adopted.
+
+The combined result excludes this check wrapper, strictly duplicate local support,
+the selected pure-preparation omissions and the tested exit-layout constructions
+as repairs for RemoveFactor. It does not identify a particular quantifier or
+prove that adding support is cost-monotone. Individual-check isolation verifies
+every check, while the original combined query and the ordinary-body remainder
+in the contract-only grouping exhaust resources. That localizes the unresolved
+behavior to combined proof search; isolation changes complete-query context and
+aggregate budgets and is not an accepted implementation remedy.

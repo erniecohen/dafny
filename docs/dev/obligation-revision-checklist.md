@@ -1,5 +1,16 @@
 # Issue 100 revision checklist
 
+**Latest review boundary:** the fixed 0–7 seed classification places Composite
+under section 13's both-partial variance rule; no further case-specific tuning
+is justified. RemoveFactor still exhausts every selected enabled seed. The
+strict duplicate-support comparison is rejected as a repair, and the original
+postcondition wrapper produces exactly the same full solver queries and resource
+counts. These completed diagnostics are preserved in the
+[exit-regression record](obligation-native-exit-regressions.md). The known-library
+record still belongs to the preceding `fe6ddd1ba` compiler; a focused current
+refresh is required before treating it as evidence for `df4c7066f`. Overall
+acceptance remains open and the development port still requires owner approval.
+
 **Latest source revision `df4c7066f` extends the structural control to actual preparation commands; verifier commands are unchanged.**
 The observer is absent during ordinary verification. The
 [corrected compiler build](https://github.com/erniecohen/dafny/actions/runs/37955030278)
@@ -371,3 +382,25 @@ with identical counts. Only generated names, one integer declaration position
 and two existing ground literal axiom positions differ. This confirms the current
 sample's ordering cause; it does not waive complete-library cost acceptance or
 change product translation. The baseline itself has repeat-dependent ordering.
+
+
+The [bounded current seed extension](obligation-current-seed-classification.md)
+completes fifty-six observations with eight faithful full-input controls and
+eight genuine negatives. It fills only the five missing seeds in the predetermined
+0–7 range. Composite now has successful and resource-exhausted seeds in both
+baseline and enabled mode and falls under S13's no-case-specific-tuning rule.
+RemoveFactor remains all-resource-exhausted in enabled mode and stays open.
+The strictly duplicate local can-call-support diagnostic completes and is rejected as a repair;
+no grouping policy, positive proof hint, resource increase or port is adopted.
+
+
+### Postcondition-wrapper comparison completes
+
+The [native wrapper comparison](obligation-native-exit-regressions.md#original-postcondition-wrapper-produces-exactly-the-same-solver-input)
+completes six observations: two faithful native controls, four strict actual
+formula/full-metadata comparisons and two genuine Invalid entries. All reported
+specification-WF checks are Correct. Both wrapper/native positive pairs have
+exactly identical complete solver input, outcome and resource count; RemoveFactor
+still exhausts resources. All preparation, fuel, publication and other command
+objects/order/transfers remain. The free procedure contract stays nonchecking.
+No wrapper change, automatic assertion isolation or support omission is adopted.

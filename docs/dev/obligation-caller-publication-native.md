@@ -237,3 +237,14 @@ Composite seeds verify with contract isolation. RemoveFactor's isolated exit and
 recursive-call checks verify, but its eleven-check ordinary-body remainder still
 exhausts resources. No grouping policy is adopted. These results identify a
 combined-query resource interaction without closing original-ceiling acceptance.
+
+
+The [fixed-range seed extension](obligation-current-seed-classification.md)
+completes fifty-six observations with eight exact full-input fidelity controls,
+eight genuine negatives and forty new baseline/enabled observations at seeds
+2–6. Combining explicitly retained seeds 0/1/7 gives baseline/enabled Composite
+vectors VVRVVVVV/RRRRVVRV. Both paths are partly successful, so review section 13
+excludes further case-specific product tuning. RemoveFactor remains
+VRRRRRRR/RRRRRRRR and stays open. A separate six-observation strict duplicate
+can-call-support comparison also completes without repairing it. Neither result
+changes product semantics or makes the candidate uniformly better than legacy.

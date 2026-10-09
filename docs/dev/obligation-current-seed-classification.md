@@ -1,6 +1,33 @@
 # Current affected-declaration seed classification
 
-**Current native semantic evidence:** accepted product `991b60037`, recorded in
+**Latest bounded classification:** the five previously untested seeds 2–6
+complete the predetermined natural range 0–7 for Composite and RemoveFactor.
+The fresh gate has fifty-six observations on the accepted structural compiler
+`df4c7066f`/build `63fb750a9`, baseline `ab210b78b` and Z3 5.1.0: forty new
+baseline/enabled seed observations, eight seed-zero controls with exact complete
+solver-input/outcome/resource fidelity, and eight genuine Invalid source false
+entries. All reported independent WF checks are Correct. Original sources,
+options and combined resource ceilings remain; there is no assertion isolation
+or positive source hint. Prior seeds 0/1/7 below are explicitly reused, rather
+than claimed as newly executed.
+
+Both axiom settings yield these combined vectors, in seed order 0 through 7:
+
+| Declaration | Baseline | Enabled | Review section 13 classification |
+| --- | --- | --- | --- |
+| Composite | VVRVVVVV | RRRRVVRV | Both paths partly succeed and partly exhaust resources; no further case-specific product tuning |
+| RemoveFactor | VRRRRRRR | RRRRRRRR | Enabled still exhausts every tested seed; remains open |
+
+In particular, baseline Composite seed 2 exhausts resources and enabled seeds 4
+and 5 verify. The preceding 0/1/7 subset alone did not establish the baseline's
+partial-success classification. This extended, fixed scope does; it is neither
+a product repair nor evidence of uniform improvement. Do not expand the seed
+range to search for a preferred verdict. RemoveFactor does not meet the
+both-partial rule, and remains unresolved in this focused suite scope. The known-library result
+still uses the preceding compiler and must be refreshed separately.
+
+**Preceding current semantic evidence at seeds 0/1/7:**
+Accepted native semantic evidence: accepted product `991b60037`, recorded in
 [the current native validation](obligation-caller-publication-native.md), completes
 72 focused observations explicitly combined from 68 retained observations and four
 fresh controls. The original collection failure is retained. Both axiom settings
@@ -11,7 +38,7 @@ positions in seed order 0/1/7 and baseline evidence explicitly reused:
 | --- | --- | --- | --- |
 | Power subtraction | VVV | VVV | All selected seeds verify |
 | AltPrimeDefinition | VVR | VVV | Earlier failure repaired in the tested scope |
-| Composite | VVV | RRV | Two enabled-only resource failures remain unresolved |
+| Composite | VVV | RRV | Preceding subset; expanded classification above is S13 both-partial variance |
 | ExtensibleArray.Append | VVV | VVV | All selected seeds verify |
 | FormArmy | VRR | VVV | Earlier failure repaired in the tested scope |
 | RemoveFactor | VRR | RRR | All enabled seeds exhaust resources; remains unresolved |
