@@ -345,3 +345,12 @@ bijective query analysis retains the complete dynamic suffix and static command
 multiset, with differences confined to one declaration and two literal-axiom
 positions. The earlier replay stays historical; no whole-library cost acceptance
 or waiver follows from this sample.
+
+
+The [naturally constructed exit comparison](obligation-native-exit-regressions.md#naturally-constructed-exits-still-produce-the-native-query)
+completes six observations with retained full checks/attributes/support/fuel,
+faithful controls and genuine Invalid entries. Withholding the fragment before
+native block construction and appending it once after native unification still
+produces the exact native complete query and exhausted resource count. Reject
+this remaining exit-skeleton construction as a repair; no product policy changes.
+Composite and RemoveFactor acceptance remain open.
