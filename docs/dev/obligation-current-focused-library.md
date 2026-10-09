@@ -1,5 +1,8 @@
 # Current focused standard-library regressions
 
+**Current candidate:** [canonical caller construction native evidence](obligation-canonical-caller-native.md) records the normal `b3888f933` compiler, complete 310 registered observations, successful Remainder seed vectors, 96 known-library observations and the explicitly combined 72 known-suite/control observations. Remaining resource and review acceptance requirements stay open; preceding results below retain their original compiler identities.
+
+
 ## Current normal-compiler refresh
 
 The focused refresh completes **96 native observations** on normal structural

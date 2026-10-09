@@ -1,6 +1,9 @@
 # Issue 100 revision checklist
 
-**Latest review boundary:** the fixed 0–7 seed classification places Composite
+**Current candidate:** [canonical caller construction native evidence](obligation-canonical-caller-native.md) records the normal `b3888f933` compiler, complete 310 registered observations, successful Remainder seed vectors, 96 known-library observations and the explicitly combined 72 known-suite/control observations. Remaining resource and review acceptance requirements stay open; preceding results below retain their original compiler identities.
+
+
+**Prior review boundary before `b3888f933`:** the fixed 0–7 seed classification places Composite
 under section 13's both-partial variance rule; no further case-specific tuning
 is justified. RemoveFactor still exhausts every selected enabled seed. The
 strict duplicate-support comparison is rejected as a repair, and the original
@@ -13,7 +16,7 @@ at seeds 0/1/7, in both axiom settings. All thirty negatives are genuinely Inval
 and all reported independent WF checks are Correct. Overall
 acceptance remains open and the development port still requires owner approval.
 
-**Latest source revision `df4c7066f` extends the structural control to actual preparation commands; verifier commands are unchanged.**
+**Preceding source revision `df4c7066f` extends the structural control to actual preparation commands; verifier commands are unchanged.**
 The observer is absent during ordinary verification. The
 [corrected compiler build](https://github.com/erniecohen/dafny/actions/runs/37955030278)
 passes all ten actual stages, 106 obligation tests in each mode, all 384 core
