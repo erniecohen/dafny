@@ -1077,3 +1077,32 @@ pre-CFG terminal-copy results. None is adopted. Current semantic product
 `991b60037` is unchanged; Composite/RemoveFactor resource acceptance remains
 open, with no proof hint, support omission, raised ceiling, full-suite iteration
 or development port.
+
+
+## Individual checks verify when isolated
+
+A fresh complete thirty-observation diagnostic uses the accepted structural
+compiler and Z3 5.1.0, at the existing failing Composite seeds zero/one and
+RemoveFactor seed zero, in both axiom settings. Each has ordinary enabled/off
+controls, corresponding `--isolate-assertions` observations and a source false-entry
+control with isolation enabled. All twelve ordinary controls reproduce their
+recorded complete solver streams, outcomes and resource vectors exactly.
+All six negatives contain genuine Invalid VCs at the exact inserted assertions;
+all reported independent WF results remain Correct.
+
+Every positive isolated declaration verifies: Composite has twenty-two individual
+batches and RemoveFactor thirteen, in both enabled and legacy paths. There is
+no individually unproved obligation in this bounded scope. The ordinary enabled
+combined VC still exhausts resources in every selected case. This points to
+interaction in the combined verification condition rather than a missing local
+proof check; it does not identify a universal quantifier or arithmetic cause.
+
+Isolation changes batching and aggregate available budget. These successes are
+not proofs under the original single combined ceiling, product repairs or a
+request to globally isolate assertions. Original sources and per-batch limits
+remain fixed apart from the explicit negative-control insertion. A narrower
+scratch comparison marks only freshly generated actual caller/exit contract
+checks, retaining every formula, existing full attribute/dependency ID, support,
+fuel, publication, transfer and static check count. Other source assertions are
+unmarked. Its compiler/native results remain pending; no grouping policy is
+adopted.

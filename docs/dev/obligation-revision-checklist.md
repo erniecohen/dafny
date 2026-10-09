@@ -354,3 +354,13 @@ native block construction and appending it once after native unification still
 produces the exact native complete query and exhausted resource count. Reject
 this remaining exit-skeleton construction as a repair; no product policy changes.
 Composite and RemoveFactor acceptance remain open.
+
+
+The [assertion-isolation diagnosis](obligation-native-exit-regressions.md#individual-checks-verify-when-isolated)
+completes thirty observations with twelve exact ordinary controls and six
+genuine source false-entry failures. All positive individual batches verify
+at the selected existing failing seeds in both paths; combined enabled VCs still
+exhaust resources. This is evidence of combined-query interaction, not an adopted
+batching policy or original combined-cap acceptance. A contract-only grouping
+comparison is pending and retains all existing preparation/check/publication
+semantics. Remaining review acceptance stays open.
