@@ -454,3 +454,22 @@ WF checks. Remainder becomes RVR with added axioms off and VVV with them on. Thi
 is not a complete repair: it loses scope-only's axioms-off seed-zero success.
 Both experiments remain scratch diagnostics; no axiom-specific normalization,
 product adoption, broader suite/library iteration or development port follows.
+
+
+### Direct caller comparison remains failing; support-order benefit is partial
+
+The [current focused library record](obligation-current-focused-library.md#direct-caller-assertion-comparison-remaining-invariance-failure)
+completes twenty-four native source comparisons: original and named-lambda callers
+remain RRR under both settings, while immediate assertions of the same call
+preconditions yield VVV. Six faithful original controls, six exact-line genuine
+Invalid controls and independent WF checks pass. Thus the current candidate still
+fails the governing assertion-invariance example at its original ceiling; it is
+not closed by relabeling it as both-partial variance.
+
+The eighteen-observation certified caller support-order comparison retains all
+actual check metadata, original preparation, both original support formulas and
+command identities, and all negative/WF controls. It yields VVV with additional
+axioms off and RVR with them on, complementing the preceding normalization-only
+result. No axiom-specific choice or product adoption is made. The next grounded
+question concerns assertion-local expression construction order, not arbitrary
+body terms, increased ceilings or a new global fuel policy.
