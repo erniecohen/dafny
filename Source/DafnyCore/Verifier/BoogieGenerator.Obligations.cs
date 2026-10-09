@@ -19,6 +19,12 @@ public partial class BoogieGenerator {
     internal bool PurePreparation { get; init; }
   }
 
+  // Structural tests observe only this check's freshly generated preparation.
+  // The observer is absent during ordinary verification and changes no commands.
+  internal record DeclaredPreparationSnapshot(Expression Source,
+    IReadOnlyList<object> Commands, ISet<string> ArgumentTemporaries,
+    Bpl.AssumeCmd LeadingSupport, bool LeadingSupportAfterPreparation, Bpl.Expr Heap);
+
   private PropositionLowering LowerProposition(BodyTranslationContext context, Expression condition,
     ExpressionTranslator etran, bool applyInduction = true, int heightLimit = int.MaxValue,
     ObligationPreparation preparation = ObligationPreparation.DeclaredContract, Bpl.Expr guard = null,
@@ -92,6 +98,8 @@ public partial class BoogieGenerator {
       if (leadingSupport != null && !supportAfterPreparation) { builder.Add(leadingSupport); }
       builder.AppendAlreadyTranslated(preparation, normalized);
       if (supportAfterPreparation) { builder.Add(leadingSupport); }
+      flags.ObligationPrepared?.Invoke(new DeclaredPreparationSnapshot(condition,
+        normalized, argumentTemporaries, leadingSupport, supportAfterPreparation, checking.HeapExpr));
       return LowerProposition(builder.Context, condition, etran, preparedTranslator: checking) with {
         // Only the current proposition and its fresh preparation are inspected.
         // Statement expressions may reveal facts or change visibility; keep

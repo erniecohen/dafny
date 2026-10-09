@@ -160,3 +160,14 @@ with a direct `requires false` source call remains Invalid. Private preparation
 bindings affect no source state, and rejected effects stay in their old outer
 scope. This argument still requires the candidate's own structural and native
 validation; preceding scratch results are not product acceptance.
+
+
+The current direct native Boogie gate completes all eleven registered contract
+fixtures against the candidate-matched pinned Boogie packages and Z3 5.1.0.
+All expected summaries pass at the unchanged limits: normal publication is
+available, a false local proof branch remains rejected even when the following
+call publishes a false contract, the original inherited/free interface does not
+publish ordinary requirements, and a modifying call invalidates the relevant
+pre-call fact. The three new negative controls identify their failing assertions.
+This establishes the required Boogie mechanism; native Dafny regression acceptance
+is separate and remains pending.

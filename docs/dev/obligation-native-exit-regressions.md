@@ -637,3 +637,269 @@ Composite is not repaired by the earlier caller-scope construction, and
 RemoveFactor has not been tested with it. Product `fe6ddd1ba` remains unchanged.
 No source hint, raised limit, new background axiom, global fuel rewrite,
 whole-suite/library iteration or development port is used.
+
+
+### Current product and retained-support exit follow-up
+
+The [current native record](obligation-caller-publication-native.md) belongs to
+product `991b60037`. Its 72 observations explicitly combine 68 preserved results
+from a collection-failed gate with four successful fresh false-call controls.
+FormArmy and AltPrimeDefinition are VVV in both axiom settings. Composite is RRV
+and RemoveFactor RRR; neither is claimed repaired. All sixteen positive controls
+verify and all eight negative controls are genuinely Invalid. The prior failed
+gate is not reclassified as successful and no completed scope is discarded.
+
+A complete eighteen-observation native RemoveFactor exit-scope diagnostic retains
+every original exit preparation/check/summary, current reveal context and fuel
+traversal, and normal procedure contracts. At seeds 0/1/7 in both axiom settings,
+native and scoped positives both remain RRR. All six native outcome/resource
+controls and both seed-zero complete-query controls are exact; twelve actual
+check/full-attribute comparisons and exit-command counts are exact. Independent
+WF remains Correct and all six false-entry controls are genuine Invalid VCs.
+The diagnostic's successful execution validates that controlled negative result,
+not a repair or product acceptance. The scope construction is not adopted.
+There is no support deletion, raised ceiling, source hint, whole-suite/library
+iteration or development port.
+
+
+## Ordinary assertion oracle and terminal-scope controls
+
+On current product `991b60037`, a source-level diagnostic records all 44 native
+observations for RemoveFactor seed 0 and Composite seeds 0/1, in both option and
+additional-axiom settings. Each uses the original source, an inserted assertion
+of its own obligation, or an `assert true` at the same position. Eight separate
+false-entry controls contain genuine Invalid VCs at the inserted assertions.
+The six unchanged enabled controls reproduce prior outcomes and resource vectors;
+all four seed-zero complete solver streams match exactly. Original ceilings,
+options, batches, per-process cores and the accepted compiler/Z3 5.1.0 remain.
+The inserted assertions are disposable diagnostics, not product proof hints.
+
+The native collection gate is rejected, and that result remains preserved. Its
+collector incorrectly requires nonempty independent specification-WF JSON and
+rejects any warning despite retaining the original `--allow-warnings` policy.
+Both selected methods emit no independent WF result or WF implementation here.
+Each observation has the same existing bodyless-method warning, shifted by the
+one inserted source line where applicable. A separate offline audit confirms
+all 44 source hashes/results, that exact warning policy, six faithful controls
+and eight genuine negatives. This audit does not turn the rejected gate into a
+successful native gate, establish warning-free whole-project verification, or
+supply independent specification-WF proof evidence.
+
+Both additional-axiom settings have the following results. V is Correct and R
+is OutOfResource. The three columns are different source variants, not seeds.
+
+| Target / seed / option | Original source | Own-proposition assertion | Same-position `assert true` |
+| --- | --- | --- | --- |
+| RemoveFactor / 0 / off | V | R | R |
+| RemoveFactor / 0 / on | R | R | R |
+| Composite / 0 / off | V | V | V |
+| Composite / 0 / on | R | V | R |
+| Composite / 1 / off | V | V | V |
+| Composite / 1 / on | R | R | R |
+
+RemoveFactor's inserted assertion appears after the original terminal conditional.
+The generated Boogie adds eleven push/pop pairs throughout that preceding
+conditional/calculation when either final statement is inserted; the original
+and current implicit-check variants have zero such pairs. Thus the
+ordinary source-assertion comparison has a terminal-scope confound; even the
+true assertion exhausts the legacy proof. The explicit assertion
+and current implicit exit equality have exact expression tokens in both axiom
+settings, including both product fuel layers. This bounded comparison excludes
+the different dependency IDs and the explicit split assertion's subsumption
+attribute; it does not claim full command/metadata equivalence. Matching
+resource counts for the explicit and implicit failures do not imply identical
+solver streams; those streams differ. This is neither a repair nor evidence
+that the current implicit check loses fuel.
+
+Composite's assertion is placed immediately before its existing recursive call:
+`assert 2 <= a && !IsPrime(a);`. It restores the enabled seed-zero proof, but
+seed one still exhausts resources; the true assertion restores neither seed.
+All these Composite variants have the same three push/pop pairs, so that
+particular terminal-scope confound does not explain its seed-zero improvement.
+Whole-method success alone does not identify the failing local obligation or
+prove that its support was missing. The explicit assertion publishes preparation
+and its established proposition in the surrounding continuation, while the
+current ordinary caller uses a certified local proof branch and original normal
+call-contract publication. Those contexts and the number of checks differ.
+
+There is also a concrete preparation boundary to test: the explicit assertion
+prepares the whole conjunction with its short-circuit guard, whereas the current
+caller prepares its top-level conjuncts separately, using the preceding checked
+conjunct as a premise. These guards are logically equivalent at their checks,
+but their generated control flow differs. A
+[scratch compiler comparison](https://github.com/erniecohen/dafny/actions/runs/37933841924)
+changes only that caller source-clause boundary, retaining the existing complete
+preparation, splitting, sole checks, pure-scope policy and original contracts.
+The experimental policy applies generally to ordinary checked calls; selected
+names bound the observation and false-entry control, not a product rule.
+All six actual compilation/assembly stages pass. The corresponding macOS
+24-observation comparison completes with its frozen inputs unchanged.
+A [second scratch build](https://github.com/erniecohen/dafny/actions/runs/37935823909)
+compiles the same diagnostic for both native platforms; all eight actual stages
+pass. Each platform retains the exact accepted compiler bundle except its own
+new Core and LanguageServer assemblies. No product adoption, support deletion,
+global fuel change, new axiom or raised ceiling follows from compilation or the
+source-oracle observations.
+
+### Whole caller source-clause result: partial macOS improvement, rejected adoption
+
+Both native comparisons complete all 24 observations with Z3 5.1.0: Composite
+seeds 0/1, repaired FormArmy seed 0 and unchanged-exit RemoveFactor seed 0, in
+both axiom settings, each with native, whole-clause and false-entry variants.
+On each platform, all eight native controls reproduce prior outcomes and resource
+vectors, and all six seed-zero complete solver streams match exactly. All eight
+false-entry controls per platform are genuinely Invalid, and all reported
+independent WF results are Correct. The identical controls establish native
+fidelity only for this measured scope.
+
+On each platform, every one of the sixteen actual-expression comparisons is
+exact, with unchanged check counts, source origins, triggers and fuel terms.
+Both strict gates nevertheless reject twelve comparisons because dependency ID
+attributes change; only FormArmy retains every full attribute. An offline
+inspection finds only ID-string changes in the compared attributes, with a
+one-to-one mapping; it does not amend either strict gate or validate dependency
+objects, coverage entries or descriptions. Both rejected gates and their complete
+evidence remain preserved.
+
+| Target / tested seed | Native control, both platforms | Whole clause, macOS | Whole clause, Linux |
+| --- | --- | --- | --- |
+| Composite / 0 | OutOfResource | Correct | OutOfResource |
+| Composite / 1 | OutOfResource | OutOfResource | OutOfResource |
+| FormArmy / 0 | Correct | Correct | Correct |
+| RemoveFactor / 0 | OutOfResource | OutOfResource | OutOfResource |
+
+Both axiom settings give the same results. FormArmy and RemoveFactor also retain
+identical complete native/whole-clause solver streams and resource vectors on
+each platform. Composite's streams change within each platform. A cross-platform
+comparison finds all 24 complete canonical solver inputs through the final
+`check-sat` exactly equal, including command order, options and quantifier IDs.
+All actual-check expression/origin/full-attribute fingerprints also match across
+platforms. Only whole-clause Composite at seed zero has a different verdict and
+resource vector. Both solvers report version 5.1.0, but their recorded native
+binary hashes differ.
+
+The seed-zero result therefore records proof-search behavior that differs between
+the native solver builds on identical complete inputs. It does not identify CPU,
+OS, compiler, floating-point behavior, quantifier instantiation or missing facts
+as the cause. The partial macOS improvement does not settle Composite seed one or
+RemoveFactor, and the strict metadata restriction remains. Adopt no product
+change or general resource-repair claim from this construction.
+
+### Two exit argument-allocation facts do not repair RemoveFactor
+
+The saved current Boogie identifies two additional private set-argument allocation
+assumptions immediately before RemoveFactor's sole fallthrough postcondition
+check. A [scratch compiler](https://github.com/erniecohen/dafny/actions/runs/37940625142)
+passes all eight actual compilation/assembly stages and tests only that boundary.
+The diagnostic traverses the original complete preparation and fuel path, then
+omits exactly those two `$IsAlloc(t, TSet(TInt), $Heap)` assumptions. It requires
+the frozen private argument, integer-set type and current heap, and rejects
+unsupported commands or source writes. All private assignments, other WF/can-call
+support, the actual check, normal summary, procedure contracts and branch
+transfers remain. This deliberate support omission is causal diagnosis and is
+excluded as a product fix.
+
+All six native observations complete at seed zero with Z3 5.1.0 and the original
+sources, ceiling, core count, warning policy and batches: native, two-fact omission
+and false-entry variants, in both axiom settings. Both native controls reproduce
+prior outcomes, resource vectors and complete solver streams. All four strict
+actual-expression/full-attribute comparisons pass, including dependency IDs;
+every variant retains the same thirteen actual checks. Both false-entry controls
+are genuinely Invalid, and every reported specification-WF result is Correct.
+The complete diagnostic gate passes; this does not make its positive proof
+observations successful.
+
+| RemoveFactor / seed zero, both axiom settings | Result |
+| --- | --- |
+| Unchanged current | OutOfResource |
+| Only the two private exit allocation facts omitted | OutOfResource |
+| False-entry control with the same omission | Invalid |
+
+Omitting this two-fact subset is insufficient to repair the selected regression.
+The changed resource count does not establish zero search influence, and no new
+quantifier profile or causal instantiation chain is inferred. Retain the result
+and reject adoption; RemoveFactor remains unresolved. No whole-suite/library
+rerun or development-line port follows from this diagnostic.
+
+## Quantified fuel identity from the new issue comment
+
+The [reported identity example](https://github.com/erniecohen/dafny/issues/100#issuecomment-6073435411)
+is related to the assertion/implicit-check mismatch and is already repaired by
+current product `991b60037` in this measured scope. The
+[unchanged reproducer](examples/obligation-fuel-identity.dfy) uses a recursive
+`End` function under a nested universal/existential formula. Its lemma has the
+same formula as both precondition and postcondition and an empty body. A
+nonrecursive predicate wrapper is the reported workaround.
+
+A complete focused comparison uses the accepted native compiler and Z3 5.1.0,
+default resolver/seed, normal batches and warning policy, with additional axioms
+off/on and consistent obligation checks off/on. Sixteen complete-file invocations
+produce 28 targeted correctness observations: original raw and wrapped identities,
+the immediate own-proposition assertion variant, false-entry variants of both
+identities, and the symbolic witness `End(s, [v]) == v`. Supporting function
+checks and every reported specification-WF check are Correct, without warnings.
+All twelve wrapped/witness positive controls have only Valid VCs, and all eight
+false-entry controls contain genuine Invalid VCs. The complete diagnostic gate
+passes; the retained default-off proof failures are expected observations.
+
+| Case, both additional-axiom settings | Default off | Current opt-in |
+| --- | --- | --- |
+| Raw `requires P; ensures P; {}` | Postcondition fails | Verifies |
+| Same raw identity with immediate `assert P` | Assertion proves; postcondition fails | Verifies |
+| Predicate-wrapped identity | Verifies | Verifies |
+| Symbolic `End(s, [v]) == v` witness | Verifies | Verifies |
+| False assertion in either identity | Invalid | Invalid |
+
+The generated Boogie explains the important distinction. The default-off
+precondition states and triggers the existential's recursive application at
+`$LS($LZ)`, while its checked procedure postcondition uses
+`$LS($LS($LZ))`. The explicit assertion uses `$LS($LZ)` and succeeds, but leaves
+the old checked postcondition at the mismatched layer. In current opt-in mode,
+the sole body-exit check also uses `$LS($LZ)`, including the existential trigger.
+Its printed expression is token-identical to the precondition and explicit
+assertion under capture-free renaming of the two distinct quantified binders,
+including types, operators, free identifiers and fuel terms. The remaining
+fuel-two procedure postcondition is free/nonchecking; it is not a second
+implementation obligation.
+
+This uses the existing explicit assertion policy that decreases fuel locally
+when translating an existential assertion. No global expression/fuel policy is
+rewritten, and no new product change, background axiom, redundant proof or source
+hint is needed for the original example. The failure does not refute the source
+identity; additionally, the verified symbolic witness shows how `End` can reach
+any natural value. This is evidence for the exact example and settings, not a
+universal guarantee for every quantified identity or a repair of Composite and
+RemoveFactor. No whole-suite/library run or development-line port is involved.
+
+## Pure exit preparation does not explain RemoveFactor exhaustion
+
+A completed six-observation comparison retains the sole exit check and normal
+publication while omitting all seven certified pure exit-WF command emissions
+for RemoveFactor seed zero, in both additional-axiom settings. The complete
+original preparation and translator/fuel traversal still run. Leading can-call
+support, actual formulas, every assertion attribute, procedure contracts and
+branch transfers remain unchanged. Guards reject escaped private arguments and
+any uncertified preparation. The
+[scratch compiler](https://github.com/erniecohen/dafny/actions/runs/37949568995)
+passes all eight actual compilation/assembly stages.
+
+Both untouched controls reproduce their prior complete solver input, outcome
+and resource count exactly. All four actual-check/full-attribute comparisons
+pass, both false-entry controls have genuine Invalid VCs, and every reported
+independent WF result is Correct. The complete diagnostic gate passes. Both
+positive preparation-omission observations still exhaust the original resource
+ceiling; this remains a rejected repair, not positive verification acceptance.
+No support omission is adopted.
+
+The separate unused-declaration hypothesis has no supporting input evidence:
+the selected original and private-argument-substitution solver inputs contain
+no unused private constants, and have the same three unused background function
+declarations. No additional proof run is needed for that hypothesis.
+
+The remaining placement boundary is the common exit block: a body assertion
+can merge terminal paths that a checked procedure postcondition treated as
+separate exits. A further support-preserving scratch comparison will place the
+unchanged exit fragment on those terminal paths and audit exactly one mandatory
+check per reachable exit. That comparison is pending; it establishes no repair
+until native controls and complete observations pass. Composite, RemoveFactor
+and complete review acceptance remain open.

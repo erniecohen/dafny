@@ -1,6 +1,19 @@
 # Obligation lowering validation status
 
-**Latest evidence:** product `fe6ddd1ba` has [68 focused suite/control observations](obligation-guarded-preparation-focused.md)
+**Current product `991b60037`:** the [focused native record](obligation-caller-publication-native.md)
+combines 68 retained observations with four successful controls, including all-six FormArmy and AltPrimeDefinition
+proofs, sixteen positive controls, eight genuine negative controls and exact
+default-off Power vectors. The original collection failure is preserved; this is
+not a single successful 72-observation run. Composite and RemoveFactor remain
+unresolved. The support-preserving exit scope also leaves RemoveFactor RRR;
+acceptance is incomplete. Separately, the complete current registered gate passes
+298 invocations with exact expected output, and the complete paired gate passes
+688 observations in both resolver/axiom configurations. All 225 registered and
+248 paired negatives contain genuine Invalid VCs, and all positives have only
+Valid VCs. These focused fixture results establish current functional controls;
+they do not settle the remaining resource regressions or full compatibility.
+
+**Preceding evidence:** product `fe6ddd1ba` has [68 focused suite/control observations](obligation-guarded-preparation-focused.md)
 and [92 completed known-library/control observations](obligation-current-focused-library.md).
 The library result explicitly combines 84 preserved observations from a harness-failed
 attempt and eight controls from its completed follow-up. Remaining resource failures
@@ -8,7 +21,7 @@ and strict default-off cost acceptance stay open. No whole-suite/library run was
 launched for this revision. Complete-gate results below belong to earlier pinned
 revisions and cannot establish current acceptance.
 
-**Current focused result:** semantic/product `fe6ddd1ba`, with the
+**Preceding focused result:** semantic/product `fe6ddd1ba`, with the
 [accepted compiler build](https://github.com/erniecohen/dafny/actions/runs/37808373912),
 completes 68 native observations on macOS arm64 with Z3 5.1.0, both additional-axiom
 settings and original resource ceilings. All reported independent specification-WF

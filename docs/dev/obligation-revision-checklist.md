@@ -1,16 +1,24 @@
 # Issue 100 revision checklist
 
-**New caller-publication candidate is pending compilation and native validation.**
+**Caller-publication candidate `991b60037` has 72 completed native observations across two frozen gates; regression acceptance remains open.**
 It preserves the inherited/free-call interface, publishes original contracts for
 ordinary locally checked calls, and scopes only certified pure preparation.
 Statement-expression reveals and unsupported effects keep their prior outer
-scope. The completed scratch diagnostics below motivate this candidate; they
-do not validate its binaries or settle remaining regressions.
+scope. The completed scratch diagnostics below motivate this candidate. Its
+[normal compiler build](https://github.com/erniecohen/dafny/actions/runs/37914777052)
+passes all ten actual stages: both platform/Boogie-probe builds, 104 obligation
+tests in each mode, 382 core tests, the unchanged 287-group inventory and the
+editor build. The preceding build passes all structural controls but fails only
+the old registry comparison; that failed build is retained. The refresh changes
+only audited source-layout records, not counts or classifications. The [current native record](obligation-caller-publication-native.md) preserves
+68 completed observations and its preserved collection failure, plus four
+successful fresh controls. FormArmy and AltPrimeDefinition are VVV in both axiom settings;
+Composite and RemoveFactor remain unresolved. Review acceptance is incomplete.
 
 Current [native exit-regression diagnosis](obligation-native-exit-regressions.md) completes 36 whole-clause observations and 36 family-isolation observations, explicitly combining twelve RemoveFactor observations with a 24-observation follow-up for the other two cases. Whole-clause preparation is rejected as a resource repair despite identical actual checks. RemoveFactor seed-zero exhaustion is localized to exit translation, while Composite seed1 and FormArmy seed0 exhaustion is reproduced by the body family, with faithful native controls; no product repair or acceptance is claimed. A further 54-observation private-argument substitution diagnostic preserves every actual check and does not repair any target; Composite/FormArmy solver streams remain identical to their controls at every tested seed. A twelve-observation certified caller-order follow-up also leaves the two selected failing seeds unchanged, with faithful controls and strictly retained checks.
 
 
-**Latest evidence:** product `fe6ddd1ba` has [68 focused suite/control observations](obligation-guarded-preparation-focused.md)
+**Preceding evidence:** product `fe6ddd1ba` has [68 focused suite/control observations](obligation-guarded-preparation-focused.md)
 and [92 completed known-library/control observations](obligation-current-focused-library.md).
 The library result explicitly combines 84 preserved observations from a harness-failed
 attempt and eight controls from its completed follow-up. Remaining resource failures
@@ -18,7 +26,7 @@ and strict default-off cost acceptance stay open. No whole-suite/library run was
 launched for this revision. Complete-gate results below belong to earlier pinned
 revisions and cannot establish current acceptance.
 
-**Current focused result:** semantic/product `fe6ddd1ba`, with the
+**Preceding focused result:** semantic/product `fe6ddd1ba`, with the
 [accepted compiler build](https://github.com/erniecohen/dafny/actions/runs/37808373912),
 completes 68 native observations on macOS arm64 with Z3 5.1.0, both additional-axiom
 settings and original resource ceilings. All reported independent specification-WF
@@ -98,35 +106,40 @@ linked validation report.
 
 | ID / request section | Required change and evidence | Status / evidence |
 | --- | --- | --- |
-| S1 / 1 | Replace additive packages with one strengthened actual implicit check. Reuse relevant assertion-style preparation and preserve the original kind's publication. Remove duplicate proofs of the same proposition. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
-| S2 / 2 | Check each postcondition locally at every return/fallthrough in the active body reveal scope. Retain a caller-visible contract without a second implementation proof. Preserve inherited `$_reverifyPost`, clause order, earlier-clause facts, diagnostics and dependencies. Verify free/nonchecking Boogie `ensures` semantics with a small direct Boogie test before relying on it. Justify any split-summary publication. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
-| S3 / 3 | Check each instantiated method-call precondition once at the pre-call heap. Preserve callee assumptions without duplicate call checks; verify free/nonchecking `requires` semantics. Preserve receivers, generics, boxing, old arguments, frame/termination checks and call order. Retain only normal call publication. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
-| S4 / 4 | Apply canonical preparation to the existing ordinary and higher-order function-precondition assertions; add no parallel proof package. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
-| S5 / 5 | For visible subset/newtype constraints, check required base membership and the guarded defining constraint with assertion-equivalent support, then derive the symbolic membership fact using its existing introduction rule. Keep hidden constraints abstract. Cover results, assignments, constructor arguments, conversions, defaults/constants, collections and lambdas. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
-| S6 / 6 | Replace duplicate conversion assertions with one guarded constraint proof, followed only by required symbolic/type publication. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
-| S7 / 7 | Use one assertion-equivalent allocation check with existing representation bridges, then derive the downstream representation. Preserve current/old/labeled-old heaps; old-allocation negatives must fail. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
-| S8 / 8 | Audit every source-expressible implicit obligation against the producer inventory, including bounds, nullness, domains, destructors, division/modulo, invariants and iterator/yield contracts. Document specialized internal checks outside the source-proposition criterion. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
-| S9 / 9 | Keep the withdrawn global occurrence/polarity/value fuel rewrite withdrawn. Use the existing explicit-assertion fuel/layer machinery locally; introduce no global expression policy. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
-| S10 / 10 | Ensure support depends only on the proposition and legitimate local verifier state. Reject body/prefix/invariant/context term collection and all later collection/definition-support experiments as product changes to either PR. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
-| S11 / 11 | Fix `ObligationFingerprint` using lexical binder identities/stacks. Distinguish the specified shadowing counterexamples and retain a positive alpha-equivalence control. | Implemented in `426a8d413`; the opcode controls are added in `8ddf1458b`; the binder and opcode controls pass in the [current normal build](https://github.com/erniecohen/dafny/actions/runs/37808373912), with 95 obligation tests in each mode and 373 core tests. |
-| S12 / 12 | Add quantified and non-quantified paired assertion-invariance tests for exits, subsets, method/function preconditions, bounds and old allocation. Add no-body-leakage, active scoped-reveal and no-duplicate-contract-proof structural controls. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
+| S1 / 1 | Replace additive packages with one strengthened actual implicit check. Reuse relevant assertion-style preparation and preserve the original kind's publication. Remove duplicate proofs of the same proposition. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`, with subsequent corrections through `991b60037`. Current structural and registered/paired native fixture controls pass; [bounded evidence and remaining acceptance](obligation-caller-publication-native.md) are recorded separately |
+| S2 / 2 | Check each postcondition locally at every return/fallthrough in the active body reveal scope. Retain a caller-visible contract without a second implementation proof. Preserve inherited `$_reverifyPost`, clause order, earlier-clause facts, diagnostics and dependencies. Verify free/nonchecking Boogie `ensures` semantics with a small direct Boogie test before relying on it. Justify any split-summary publication. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`, with subsequent corrections through `991b60037`. Current structural and registered/paired native fixture controls pass; [bounded evidence and remaining acceptance](obligation-caller-publication-native.md) are recorded separately |
+| S3 / 3 | Check each instantiated method-call precondition once at the pre-call heap. Preserve callee assumptions without duplicate call checks; verify free/nonchecking `requires` semantics. Preserve receivers, generics, boxing, old arguments, frame/termination checks and call order. Retain only normal call publication. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`, with subsequent corrections through `991b60037`. Current structural and registered/paired native fixture controls pass; [bounded evidence and remaining acceptance](obligation-caller-publication-native.md) are recorded separately |
+| S4 / 4 | Apply canonical preparation to the existing ordinary and higher-order function-precondition assertions; add no parallel proof package. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`, with subsequent corrections through `991b60037`. Current structural and registered/paired native fixture controls pass; [bounded evidence and remaining acceptance](obligation-caller-publication-native.md) are recorded separately |
+| S5 / 5 | For visible subset/newtype constraints, check required base membership and the guarded defining constraint with assertion-equivalent support, then derive the symbolic membership fact using its existing introduction rule. Keep hidden constraints abstract. Cover results, assignments, constructor arguments, conversions, defaults/constants, collections and lambdas. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`, with subsequent corrections through `991b60037`. Current structural and registered/paired native fixture controls pass; [bounded evidence and remaining acceptance](obligation-caller-publication-native.md) are recorded separately |
+| S6 / 6 | Replace duplicate conversion assertions with one guarded constraint proof, followed only by required symbolic/type publication. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`, with subsequent corrections through `991b60037`. Current structural and registered/paired native fixture controls pass; [bounded evidence and remaining acceptance](obligation-caller-publication-native.md) are recorded separately |
+| S7 / 7 | Use one assertion-equivalent allocation check with existing representation bridges, then derive the downstream representation. Preserve current/old/labeled-old heaps; old-allocation negatives must fail. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`, with subsequent corrections through `991b60037`. Current structural and registered/paired native fixture controls pass; [bounded evidence and remaining acceptance](obligation-caller-publication-native.md) are recorded separately |
+| S8 / 8 | Audit every source-expressible implicit obligation against the producer inventory, including bounds, nullness, domains, destructors, division/modulo, invariants and iterator/yield contracts. Document specialized internal checks outside the source-proposition criterion. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`, with subsequent corrections through `991b60037`. Current structural and registered/paired native fixture controls pass; [bounded evidence and remaining acceptance](obligation-caller-publication-native.md) are recorded separately |
+| S9 / 9 | Keep the withdrawn global occurrence/polarity/value fuel rewrite withdrawn. Use the existing explicit-assertion fuel/layer machinery locally; introduce no global expression policy. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`, with subsequent corrections through `991b60037`. Current structural and registered/paired native fixture controls pass; [bounded evidence and remaining acceptance](obligation-caller-publication-native.md) are recorded separately |
+| S10 / 10 | Ensure support depends only on the proposition and legitimate local verifier state. Reject body/prefix/invariant/context term collection and all later collection/definition-support experiments as product changes to either PR. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`, with subsequent corrections through `991b60037`. Current structural and registered/paired native fixture controls pass; [bounded evidence and remaining acceptance](obligation-caller-publication-native.md) are recorded separately |
+| S11 / 11 | Fix `ObligationFingerprint` using lexical binder identities/stacks. Distinguish the specified shadowing counterexamples and retain a positive alpha-equivalence control. | Implemented in `426a8d413`; the opcode controls are added in `8ddf1458b`; the binder and opcode controls pass in the [current normal build](https://github.com/erniecohen/dafny/actions/runs/37914777052), with 104 obligation tests in each mode and 382 core tests. |
+| S12 / 12 | Add quantified and non-quantified paired assertion-invariance tests for exits, subsets, method/function preconditions, bounds and old allocation. Add no-body-leakage, active scoped-reveal and no-duplicate-contract-proof structural controls. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`, with subsequent corrections through `991b60037`. Current structural and registered/paired native fixture controls pass; [bounded evidence and remaining acceptance](obligation-caller-publication-native.md) are recorded separately |
 | S13 / 13 | Rerun stable exit-package, exit-summary and call-package regressions on the single-check implementation before solver-specific repairs. Classify partially successful baseline/candidate seed movements as solver/resource variance. Keep source hints and resource ceilings unchanged. | Complete matrices of both preceding revisions and causal replay are documented in [the diagnosis](obligation-local-preparation-diagnosis.md); current complete focused gates and causal/query replays finish; preceding complete suite/library gates finish and remain rejected; all four affected-declaration seed matrices finish and are classified in the [current seed record](obligation-current-seed-classification.md), with platform/scope limits and raw gate rejections retained. |
 | S14 / 14 | Rewrite the PR description around single-check assertion-equivalent lowering. Complete every supported-line acceptance item below before requesting approval. | Description rewritten; supported-line acceptance remains pending |
 
 ## Supported-line acceptance
 
-The checked registered/paired items below record the completed `072175269`
-comparison. They do not discharge current `fe6ddd1ba` acceptance. The newest
-68-observation native result above supplies current focused issue/subset,
-preparation and Power evidence. Current full registered/paired evidence and
-strict default-off library resource compatibility remain open; no full-suite
-rerun is authorized as an iteration loop for the existing regressions.
+The current `991b60037` registered and paired fixture gates are complete:
+298 registered invocations match their exact expected output, and 688 paired
+observations pass across both resolvers and additional-axiom settings. All 225
+registered and 248 paired negative observations contain genuine Invalid VCs;
+all positive observations have only Valid VCs. The
+[current native record](obligation-caller-publication-native.md) preserves these
+two separate complete gates and their exact toolchain/scope boundaries. The
+combined 72-observation result supplies current multi-seed regression and Power
+comparison evidence. Remaining resource regressions and strict complete
+default-off library resource compatibility remain open; no full-suite rerun is
+authorized as an iteration loop for the existing regressions.
 
 - [x] Original issue 100 source verifies without its redundant final assertion at the existing ceiling (preceding registered/paired gates pass; current focused original/subset controls also pass).
 - [x] The subset reproducer verifies without its redundant assertion (preceding registered/paired gates pass; current focused original/subset controls also pass).
-- [x] Representative method and function precondition examples verify without redundant assertions (preceding paired gate passes; full current paired acceptance remains open).
-- [x] All registered/paired negative controls remain negative (all 244 expected-negative observations in the preceding complete paired gate have invalid VCs; the full-suite ill-formed-specification body movement is documented with its still-failing independent specification-WF).
-- [x] Scoped-reveal examples retain their previous proofs at the actual check point (preceding registered/paired controls and current structural controls pass; the current focused library scope cases all pass).
+- [x] Representative method and function precondition examples verify without redundant assertions (the complete current paired gate passes).
+- [x] All registered/paired negative controls remain negative (225 registered and 248 paired current negative observations contain genuine Invalid VCs; the earlier full-suite ill-formed-specification movement remains documented with its still-failing independent specification-WF).
+- [x] Scoped-reveal examples retain their previous proofs at the actual check point (current registered/paired and structural controls pass; preceding focused library scope evidence is retained separately).
 - [ ] Default-off translation, verdicts and resource behavior remain compatible with the supported baseline under the fork's required gates (preceding full-suite verdicts and resource vectors match exactly in both settings; preceding library verdicts and operational Boogie match, but strict library resource equality rejects both settings; current focused cost controls confirm baseline nonrepeatability).
 - [ ] Enabled mode has no unexplained stable correctness regression.
 - [x] Remaining resource movements are classified with multiple seeds using S13's policy (648 observations; the recovered library failure matrix has an explicit platform boundary and four full-control movements; classification does not imply acceptance).
@@ -222,3 +235,50 @@ controls and fourteen strict actual-check/attribute comparisons pass. This is
 twenty-two observations across two frozen gates, not a successful single run.
 General adoption must preserve inherited/filtered free-call publication and
 outer reveal scope. Remaining regressions and review acceptance stay open.
+
+
+The new direct Boogie publication gate completes all eleven observations with
+expected successful/error summaries, including the false local proof branch,
+inherited/free-call exclusion and post-call state-change negatives. It uses the
+exact pinned package bytes matched to the accepted compiler and Z3 5.1.0, at
+unchanged limits. This validates the contract-publication mechanism, not the
+combined native observations as complete product validation or discharge
+overall review acceptance.
+
+The [current follow-up record](obligation-caller-publication-native.md) completes
+the four direct false-call controls after correcting only the literal-spec WF
+collection expectation. All four are genuinely Invalid. The current product's
+72 observations are explicitly 68 retained plus four fresh; the original failed
+gate remains preserved. The 18-observation support-preserving exit-scope
+experiment has faithful native controls, strict original check/attribute
+comparisons and six genuine Invalid controls, but scoped RemoveFactor remains
+RRR in both axiom settings. Reject it as a resource repair; do not adopt it or
+claim remaining regression/review acceptance.
+
+
+The [original contract-copy diagnostic](obligation-caller-publication-native.md#original-contract-reuse-diagnostic-rejected-resource-repair)
+completes 24 focused observations with eight faithful native controls, sixteen
+strict actual-check/full-attribute comparisons and eight genuine Invalid entry
+controls. All eight copied/native full solver streams, resource vectors and
+outcomes are identical. Reject specification retranslation as a repair for the
+tested Composite/RemoveFactor regressions; repaired FormArmy stays Correct.
+A scratch-only distinct-dependency correction compiles but receives no native
+submission after this refutation. Product lowering remains unchanged and review
+acceptance remains open.
+
+The current registered fixture gate completes all 298 committed invocations with
+exact expected output: 73 positive observations have only Valid VCs and all 225
+negative observations contain genuine Invalid VCs. Expected no-trigger warnings
+are confined to negative-forall. The separate current paired gate completes all 688 observations, with 440
+positive observations containing only Valid VCs and 248 genuine Invalid negative
+observations. No resource repair or complete review acceptance follows from
+these functional results. See [the current record](obligation-caller-publication-native.md).
+
+The [pure exit-preparation comparison](obligation-native-exit-regressions.md#pure-exit-preparation-does-not-explain-removefactor-exhaustion)
+completes six native observations with faithful full-input controls, strictly
+retained actual checks/full attributes, and genuine Invalid false entries.
+RemoveFactor seed zero still exhausts resources in both axiom settings after
+all seven certified pure exit-WF emissions are omitted. Complete original
+preparation/fuel traversal, leading support, sole check and normal publication
+remain. Reject the omission as a repair; product `991b60037` is unchanged.
+The support-preserving terminal-path placement comparison remains pending.

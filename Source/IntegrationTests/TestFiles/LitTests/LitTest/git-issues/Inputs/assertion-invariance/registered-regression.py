@@ -76,7 +76,7 @@ for refresh in [False,True]:
    code,output=verify(name,refresh,axioms)
    assert code==0,output
   for name in ["negative-certified-contract-domain","negative-certified-first-postcondition",
-    "negative-certified-conditional-reads"]:
+    "negative-certified-conditional-reads","negative-call-scope-publication"]:
    for isolate in [False,True]:
     code,output=verify(name,refresh,axioms,isolate=isolate)
     assert code==4 and "error" in output and "parse errors" not in output,output
