@@ -107,6 +107,74 @@ No normalization or scope change is adopted. These results distinguish intact
 checks/support from proof-search success; they do not identify a missing fact,
 justify an axiom-specific product workaround, or close regression acceptance.
 
+## Direct caller assertion comparison: remaining invariance failure
+
+The current normal compiler `df4c7066f` is checked on twenty-four original,
+frozen-lambda, immediate-precondition-assertion and source-false observations,
+at seeds 0/1/7 in both axiom settings. The entire original project, options,
+two-core setting, default ordering, warning policy and ceilings remain. Naming
+the existing lambda supplies a separate control for that source change. The
+immediate assertions are exactly the callee's two preconditions with actual
+`d`/`f` substitutions and the original explicit triggers. They are paired
+review diagnostics, never source hints retained as the product repair.
+
+| Source form | Axioms off, seeds 0/1/7 | Axioms on, seeds 0/1/7 |
+| --- | --- | --- |
+| Original caller | RRR | RRR |
+| Same lambda named, no redundant assertion | RRR | RRR |
+| Named lambda and immediate precondition assertions | VVV | VVV |
+
+All six original controls reproduce the prior outcomes and costs; both seed-zero
+emitted modules retain the complete noncomment Boogie token streams. Six genuine
+source-false controls fail at the inserted assertion, and reported independent
+WF checks are Correct. The earlier unparenthesized source attempt stopped on the
+unchanged warning policy; only this fresh complete warning-clean comparison is
+acceptance evidence for the diagnostic. It still does not establish product
+acceptance: the redundant assertion supplies help the current implicit path
+fails to obtain within the same ceiling. The lambda-binding change alone does
+not explain the success. The generated frozen body has eight actual assertions;
+the asserted body has thirteen, including the added three split proposition
+checks and their legitimate explicit WF/numeric checks. Neither body's caller
+preparation contains a `Reads1` term or body reads-frame assertion, so the
+omitted reads sink is not established as the cause in this example.
+
+## Certified caller support order: complete, mixed benefit
+
+The [audited compiler](https://github.com/erniecohen/dafny/actions/runs/37989882373),
+source `492309dd0`, passes all eight actual stages and completes eighteen native
+observations at the original source/project/limits. It constructs the existing
+caller can-call expression at its original point, then passes that same command
+to the existing certified support-order helper. Movement requires normalized
+preparation and independence from every written/havocked private local. All
+selected original support commands remain once at the end before the actual
+clause check; unsupported fragments retain the original policy.
+
+| Preparation policy | Axioms off, seeds 0/1/7 | Axioms on, seeds 0/1/7 |
+| --- | --- | --- |
+| Unchanged native control | RRR | RRR |
+| Fresh normalization/scope, preceding comparison | RVR | VVV |
+| Same preparation plus existing certified caller support order | VVV | RVR |
+
+All six controls retain the prior outcomes/costs and both seed-zero module token
+streams. All twelve selected/false variants retain the original raw preparation,
+all eight actual check expressions/full attributes, the independent guarded-
+fact/binding/havoc audit and both original caller support formulas/full attributes.
+Each original support command object remains exactly once. All six genuine false
+controls remain Invalid and reported independent WF checks remain Correct. This
+is complementary partial benefit, not a uniform repair: the axioms-on zero/seven
+successes disappear. No axiom-dependent choice or product policy is adopted.
+
+The source audit also distinguishes command placement from expression creation:
+the caller constructs its extra leading can-call expression before the assertion-
+WF traversal. That assigns quantified binder names before fresh WF locals, while
+an explicit assertion first runs WF and then constructs its can-call support.
+The frozen native body materializes locals numbered 3/4/5; the explicit source
+preparation materializes 0/2/4. Names alone are not missing semantic facts and do
+not prove a fuel difference, but moving an already constructed command does not
+replay that construction order. A subsequent local construction-order comparison
+must retain actual checks and the complete support formula set, compare fresh
+locals by typed declaration roles, and retain genuine negatives before adoption.
+
 ## Fresh multiset baseline comparison
 
 A separate eighteen-observation comparison retains the exact original project,
