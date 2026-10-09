@@ -257,5 +257,48 @@ The next causal boundary is only user-defined method-call preconditions and
 their matching procedure requirements. A scratch compiler keeps the single
 mandatory proof on either the local or legacy procedure side and isolates this
 producer from other opt-in translation changes. Original input, resource policy
-and reveal scope remain unchanged. That comparison is pending. No profile result
+and reveal scope remain unchanged. The completed comparison is recorded below. No profile result
 is promoted to a product repair, full-suite/library acceptance or completed review.
+
+
+## User-defined method-call checks are sufficient at the selected seeds
+
+A completed twelve-observation native comparison separates exactly two paired
+translation decisions: the sole user-defined precondition proof in `TrCall` and
+its nonchecking procedure `requires` copy. Legacy mode retains the checked
+procedure requirement; local mode retains the mandatory local proof. Two-state
+old allocation, function preconditions, membership, frame, termination, exits
+and other translation decisions remain in the other family. Preparation choices
+within the new caller replay are an explicit interaction with that family.
+
+Only Composite seed 1 and FormArmy seed 0 are executed, with additional axioms
+off, original source/options/ceilings and one verifier core. The earlier
+both-setting native profiles and family comparisons are retained. All four
+unchanged current/legacy controls match complete native solver streams through
+the last query, outcomes and resources. All four false-entry controls have
+genuine Invalid VCs, and every reported independent specification-WF check is
+Correct. No actual obligation is dropped in either isolated translation.
+
+| Target and seed | All legacy | New method calls only | Current except method calls | All current |
+| --- | --- | --- | --- | --- |
+| Composite, 1 | Correct | OutOfResource | Correct | OutOfResource |
+| FormArmy, 0 | Correct | OutOfResource | Correct | OutOfResource |
+
+The user-defined method-call producer is sufficient to reproduce both selected
+failures; the remaining current translation changes verify when those calls use
+legacy requirements. Composite's calls-only complete stream equals the preceding
+other/body-only stream. FormArmy's streams differ despite matching resource
+counts, so stream identity is not claimed there. These results narrow the prior
+body-family finding to a particular producer; they do not distinguish its WF
+support, local proof lowering/placement and normal publication.
+
+The [paired caller compiler](https://github.com/erniecohen/dafny/actions/runs/37884342637)
+passes all six actual stages. No product repair or broader seed acceptance follows
+from disabling the new producer. A six-observation follow-up will traverse the
+same complete caller WF path and consume its original translator/fuel state,
+while diagnostically omitting only certified pure preparation-command emission.
+It retains leading can-call support and the actual check/publication and requires
+strict assertion-expression/attribute equality. Unsupported fragments, havoc,
+non-private writes, real assertions and scope changes cannot be omitted.
+This deliberate support omission is causal diagnosis, not a proposed product
+fix: the intended product must retain assertion-equivalent proving support.

@@ -147,5 +147,6 @@ Do not close an item merely because a superseded implementation passed its tests
 The [native solver-profile diagnosis](obligation-native-exit-regressions.md#faithful-solver-profiles-distinguish-the-remaining-searches)
 adds completed faithful twelve- and six-observation captures at existing failing
 seeds. They distinguish active quantifiers without establishing a resource
-repair. Paired user-defined method-call isolation is pending; remaining resource
-acceptance and the other outstanding review requirements stay open.
+repair. Paired user-defined method-call isolation now completes twelve observations and
+localizes both selected body failures to that producer. Its preparation-emission
+follow-up remains diagnostic and pending; remaining resource acceptance and the other outstanding review requirements stay open.
