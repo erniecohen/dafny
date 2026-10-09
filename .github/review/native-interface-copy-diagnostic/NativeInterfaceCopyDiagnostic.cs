@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using DafnyCore.Verifier;
 using Bpl = Microsoft.Boogie;
 namespace Microsoft.Dafny;
 // Scratch-only reuse of the already translated call specification.
@@ -10,6 +11,10 @@ public static class NativeInterfaceCopyDiagnostic {
   private static readonly HashSet<Bpl.Requires> UserRequirements = new(ReferenceEqualityComparer.Instance);
   private static readonly List<(Bpl.Procedure Original, Bpl.Procedure Copy)> Copies = new();
   private static int FreshDependencies;
+  private static readonly Dictionary<Bpl.ICarriesAttributes, Func<ProofDependency>> DependencyFactories = new(ReferenceEqualityComparer.Instance);
+  public static void DependencyFactory(Bpl.ICarriesAttributes node, Func<ProofDependency> factory) {
+    if (Selection()!=null) { Require(DependencyFactories.TryAdd(node,factory),"Repeated source dependency factory"); }
+  }
   private static string[] Selection() {
     var value=Environment.GetEnvironmentVariable("OBLIGATION_DIAGNOSTIC_INTERFACE_COPY");
     if (value==null) { return null; }
@@ -36,9 +41,18 @@ public static class NativeInterfaceCopyDiagnostic {
     Require(identifiers.Count<=1,"Repeated dependency id");
     foreach (var id in identifiers) {
       Require(manager!=null && manager.ProofDependenciesById.ContainsKey(id),"Untracked original dependency");
-      var dependency=manager.ProofDependenciesById[id]; manager.AddProofDependencyId(copy,tok,dependency); FreshDependencies++;
+      var dependency=manager.ProofDependenciesById[id];
+      Require(DependencyFactories.TryGetValue(original,out var factory),"Missing source dependency factory");
+      var copiedDependency=factory();
+      Require(!ReferenceEquals(copiedDependency,dependency) && copiedDependency.GetType()==dependency.GetType() &&
+        copiedDependency.Range.Equals(dependency.Range) && copiedDependency.Description==dependency.Description,"Source dependency payload changed");
+      var memberSets=manager.idsByMemberName.Values.Where(v=>v.Deps.Contains(dependency)).Select(v=>v.Deps).ToArray();
+      Require(memberSets.Length==1,"Ambiguous original dependency coverage set");
+      var priorCount=memberSets[0].Count;
+      manager.AddProofDependencyId(copy,tok,copiedDependency); FreshDependencies++;
       var fresh=(string)copy.Attributes.Params.Single();
-      Require(fresh!=id && ReferenceEquals(manager.ProofDependenciesById[fresh],dependency),"Source dependency changed");
+      Require(fresh!=id && ReferenceEquals(manager.ProofDependenciesById[fresh],copiedDependency) &&
+        memberSets[0].Contains(copiedDependency) && memberSets[0].Count==priorCount+1,"Copied dependency entry merged or changed");
     }
     return copy.Attributes;
   }
@@ -85,7 +99,7 @@ public static class NativeInterfaceCopyDiagnostic {
     var path=Environment.GetEnvironmentVariable("OBLIGATION_DIAGNOSTIC_AUDIT");Require(!string.IsNullOrEmpty(path)&&!File.Exists(path),"Missing/repeated audit destination");
     File.WriteAllText(path,JsonSerializer.Serialize(new {
       target=parts[1],variant=parts[0],copiedInterfaces=Copies.Count,freshDependencyIds=FreshDependencies,
-      originalContractExpressionsAndFormalsRetainedByIdentity=true,sourceDependenciesAndDescriptionsRetained=true,
+      originalContractExpressionsAndFormalsRetainedByIdentity=true,sourceDependenciesAndDescriptionsRetained=true,distinctDependencyEntriesRetained=true,
       oldAllocationRequirementPublicationUnchanged=true,ordinaryUserRequirementsRemainNonchecking=true,
       actualCallerAndExitLoweringUnchanged=true,negativeEntryAdded=negative!=null,
       actualCheckFingerprints=checks,actualChecks=checks.Length,

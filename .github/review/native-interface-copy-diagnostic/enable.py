@@ -10,6 +10,11 @@ targets={
   ('        sink.AddTopLevelDeclaration(AddMethod(m, MethodTranslationKind.CoCall));\n        if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {\n          sink.AddTopLevelDeclaration(AddMethod(m, MethodTranslationKind.CoCall, publishCheckedRequires: true));\n        }',
    '        var originalCoCall = AddMethod(m, MethodTranslationKind.CoCall);\n        sink.AddTopLevelDeclaration(originalCoCall);\n        if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {\n          sink.AddTopLevelDeclaration(NativeInterfaceCopyDiagnostic.Enabled\n            ? NativeInterfaceCopyDiagnostic.Copy(originalCoCall, proofDependencies)\n            : AddMethod(m, MethodTranslationKind.CoCall, publishCheckedRequires: true));\n        }'),
   ('                if (publishCheckedRequires && locallyChecked) {','                NativeInterfaceCopyDiagnostic.User(requirement, locallyChecked);\n                if (publishCheckedRequires && locallyChecked) {')],
+ 'Source/DafnyCore/Verifier/BoogieGenerator.cs':[
+  ('      proofDependencies?.AddProofDependencyId(ens, tok, new EnsuresDependency(tok, dafnyCondition));',
+   '      proofDependencies?.AddProofDependencyId(ens, tok, new EnsuresDependency(tok, dafnyCondition));\n      NativeInterfaceCopyDiagnostic.DependencyFactory(ens, () => new EnsuresDependency(tok, dafnyCondition));'),
+  ('      proofDependencies?.AddProofDependencyId(req, tok, new RequiresDependency(tok, dafnyCondition));',
+   '      proofDependencies?.AddProofDependencyId(req, tok, new RequiresDependency(tok, dafnyCondition));\n      NativeInterfaceCopyDiagnostic.DependencyFactory(req, () => new RequiresDependency(tok, dafnyCondition));')],
  'Source/DafnyLanguageServer/Language/DafnyProgramVerifier.cs':[
   ('          return translator.DoTranslation(resolution.ResolvedProgram, moduleDefinition);',
    '          var translated = translator.DoTranslation(resolution.ResolvedProgram, moduleDefinition);\n          NativeInterfaceCopyDiagnostic.Apply(translated);\n          return translated;')],
