@@ -595,6 +595,24 @@ public class ObligationLoweringTests {
   [Theory]
   [InlineData(false)]
   [InlineData(true)]
+  public async Task CallerUniversalSupportFollowsItsWellformednessWitness(bool refresh) {
+    const string source = "ghost function F(i:int):int requires i>0 { i } " +
+      "lemma Use() requires forall i:int {:trigger F(i)} :: i>0 ==> F(i)>0 {} " +
+      "lemma L() { Use(); }";
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var commands = implementation.Blocks.SelectMany(b => b.Cmds).ToList();
+    var witness = Assert.Single(commands.OfType<Bpl.HavocCmd>());
+    var supports = commands.OfType<Bpl.AssumeCmd>().Where(c =>
+      c.Expr is Bpl.QuantifierExpr && ObligationFingerprint.Expression(c.Expr).Contains(".F#canCall")).ToList();
+    Assert.NotEmpty(supports);
+    Assert.All(supports, support => Assert.True(commands.IndexOf(witness) < commands.IndexOf(support)));
+    Assert.Single(commands.OfType<Bpl.AssertCmd>().Where(c => c.Description is PreconditionSatisfied));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
   public async Task MethodCallsHaveOneLocalPreconditionProof(bool refresh) {
     const string source = "ghost predicate P(x:int) { x>=0 } lemma Use(x:int) requires P(x) {} " +
       "lemma L(x:int) requires x>=0 { Use(x); }";

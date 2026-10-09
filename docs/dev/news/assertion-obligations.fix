@@ -3,3 +3,5 @@ Method and iterator postconditions are checked at each body exit while reveal sc
 Method/function preconditions and visible type/conversion/allocation obligations use a single prepared check. Explicit assertions, existing fuel rules and legacy hide/reveal scopes are preserved.
 
 Certified contract preparation preserves guards while binding eligible private function arguments once; actual obligation checks, source state and fuel remain unchanged.
+
+Opt-in method-call preparation constructs complete can-call support at the standard assertion point, after well-formedness preparation and before the existing single check, without an extra early construction.
