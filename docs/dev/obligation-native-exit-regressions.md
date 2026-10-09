@@ -93,3 +93,44 @@ passes all six actual stages. Selected names bound only the audited proof scope;
 family gating applies consistently across the translated module and supplies
 no proposed product policy. This single-seed finding is causal evidence within
 the recorded scope, not a multi-seed repair or a compatibility waiver.
+
+
+## Composite and FormArmy: the body family is sufficient
+
+A fresh 24-observation follow-up runs only Composite's failing seed 1 and
+FormArmy's failing seed 0, in both axiom settings. The completed RemoveFactor
+comparison is reused explicitly. All eight unchanged baseline/current controls
+reproduce their outcomes, resource counts and complete SMT streams. All eight
+false-entry controls contain genuine Invalid VCs and every reported independent
+specification-WF check is Correct. The compiler and all other inputs are the same
+as the preceding family experiment.
+
+The older native campaigns did not save Composite seed-one SMT inputs. Four
+additional reference captures use the exact accepted unmodified baseline and
+current native bundles, reproduce the recorded outcomes/resource counts, and
+supply the missing complete streams. An initial preparation stops before queue
+submission on those missing files; it is retained and supplies no proof result.
+The fresh follow-up requires the actual captured streams rather than weakening
+its fidelity criterion.
+
+Both axiom settings give the following results:
+
+| Target and seed | All legacy | New exits only | New body only | All new |
+| --- | --- | --- | --- | --- |
+| Composite, 1 | Correct | Correct | OutOfResource | OutOfResource |
+| FormArmy, 0 | Correct | Correct | OutOfResource | OutOfResource |
+
+At these specific failing seeds, the body-side translation changes are sufficient
+to reproduce resource exhaustion; the new exits alone verify. This differs from
+RemoveFactor, whose isolated exit translation reproduces the complete failing
+current query. The isolated Composite/FormArmy streams differ from the complete
+current/baseline streams, so no claim of pairwise query identity is made there.
+
+The saved native bodies show assertion-style method-call preparation before the
+recursive Composite call and both FlyRobotArmy calls in FormArmy. That is a
+concrete next boundary to investigate. The broad body family also includes
+function-precondition, allocation and type checking, so this result alone does
+not identify one particular call or support command. These are single-seed
+causal boundaries, not multi-seed repairs, a semantic counterexample, or evidence
+of uniform improvement over legacy. No product change follows from disabling
+one family in this diagnostic.
