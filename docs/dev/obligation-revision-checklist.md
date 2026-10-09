@@ -182,3 +182,13 @@ omitting both restores the selected proof. Leading can-call omission is not
 needed for that restoration. This explains a selected bounded search without
 authorizing product support deletion or establishing multi-seed acceptance.
 Remaining review acceptance stays open.
+
+
+The [support-preserving caller scope experiment](obligation-native-exit-regressions.md#support-retained-in-local-caller-proof-scopes)
+preserves every original preparation and sole check. Four individual original/
+scoped observations complete with faithful native controls and unchanged actual
+formulas/full attributes. FormArmy seed zero verifies when scoped; Composite seed
+one still exhausts resources. Both new scoped false controls exhaust resources
+and are inconclusive, so their complete diagnostic gates reject acceptance.
+No product repair, uniform improvement or current review acceptance is claimed.
+General call publication and negative validation remain required before adoption.

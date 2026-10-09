@@ -499,3 +499,46 @@ selected seed/configuration and does not establish a particular instantiation
 chain, multi-seed stability or supported-line acceptance. No new whole-suite or
 whole-library run, solver fallback, raised ceiling, source hint or development
 port is included.
+
+
+## Support retained in local caller proof scopes
+
+A scratch comparison keeps every original leading can-call, WF preparation,
+mandatory check and split summary, in its original order, inside the existing
+`PathAsideBlock` mechanism. The path cutoff follows every mandatory check. The
+continuation assumes the exact checked precondition pieces and performs the
+original call. Each original check and preparation object occurs exactly once;
+full expression traversal, fuel, heap, visibility and actual assertion attributes
+remain unchanged. No supporting fact is removed from its own check.
+
+The experiment covers only Composite seed one and FormArmy seed zero, with
+additional axioms off and unchanged sources, options and resource ceilings.
+Each unchanged native control reproduces its complete previous solver stream,
+outcome and resource count. All 33 Composite and 15 FormArmy actual checks and
+full attributes match strictly under source-keyed ordering. The
+[Composite compiler build](https://github.com/erniecohen/dafny/actions/runs/37896736816)
+and corrected
+[FormArmy compiler build](https://github.com/erniecohen/dafny/actions/runs/37902649612)
+pass all six actual stages; their source difference corrects a diagnostic call
+count only. Earlier audit-count failures are preserved and excluded from proof
+results.
+
+| Target | Unchanged current | Caller preparation scoped locally | False assertion after first scoped check |
+| --- | --- | --- | --- |
+| Composite, seed 1 | OutOfResource | OutOfResource | OutOfResource |
+| FormArmy, seed 0 | OutOfResource | Correct | OutOfResource |
+
+Four individual original/scoped observations completed. Both attempted negatives
+exhaust resources and contain no genuine Invalid VC. Both full diagnostic gates
+therefore reject acceptance; those negatives are inconclusive, not passed
+controls. The FormArmy result is a promising support-preserving construction,
+not an accepted product repair or a multi-seed result. Composite is not repaired.
+
+A general implementation must publish the original call contract facts, not
+blindly publish internal assertion-split pieces when induction or splitting
+changes their representation. The selected FormArmy pieces had already been
+strictly matched to the substituted legacy requirements; Composite has the two
+plain recursive-call conditions. Existing normal can-call requirements and
+previously retained outer reveal scope must remain. Product `fe6ddd1ba` is
+unchanged. No full suite/library iteration, resource increase, source proof hint,
+support deletion or development port follows from this experiment.
