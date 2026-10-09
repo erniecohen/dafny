@@ -1,5 +1,5 @@
 name: Native obligation private-binding diagnostic build
-# Scratch-only pure private-argument substitution; audit unresolved native syntax without following Proc.
+# Scratch-only pure private-argument substitution; audit fresh aliases in their own procedure scope.
 on:
   workflow_dispatch:
   push:

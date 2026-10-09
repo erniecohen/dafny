@@ -75,7 +75,7 @@ public static class NativeBindingDiagnostic {
   private sealed class Uses : Bpl.ReadOnlyVisitor {
     internal readonly HashSet<string> Names = new();
     // Translation is audited before Boogie resolution: Proc is not linked yet.
-    // Visit procedure declarations separately through the containing program.
+    // Visit the matching procedure declaration separately in the same scope.
     public override Bpl.Implementation VisitImplementation(Bpl.Implementation node) {
       VisitVariableSeq(node.LocVars); VisitBlockList(node.Blocks);
       VisitDeclWithFormals(node);
@@ -114,8 +114,15 @@ public static class NativeBindingDiagnostic {
     lock (Gate) { eliminated = Eliminated.Order().ToArray(); fragments = Fragments; }
     Require(parts[0] == "native-control" ? eliminated.Length == 0 : eliminated.Length > 0,
       "Expected certified private argument bindings");
-    var uses = new Uses(); uses.VisitProgram(program);
-    Require(!eliminated.Any(uses.Names.Contains), "Eliminated binding escapes fresh local preparation");
+    // Identifier spelling is scoped to an implementation/procedure. Other
+    // implementations can legally reuse it for distinct local variables.
+    var uses = new Uses(); uses.VisitImplementation(impl);
+    var contracts = program.TopLevelDeclarations.OfType<Bpl.Procedure>()
+      .Where(procedure => procedure.Name == impl.Name).ToList();
+    Require(contracts.Count == 1, "Missing matching implementation contract");
+    uses.VisitProcedure(contracts[0]);
+    var escaped = eliminated.Where(uses.Names.Contains).ToArray();
+    Require(escaped.Length == 0, "Eliminated binding escapes fresh local preparation: " + string.Join(",", escaped));
     Require(impl.LocVars.Where(v => eliminated.Contains(v.Name)).All(v => v.TypedIdent.WhereExpr == null),
       "Eliminated variable has an implicit where clause");
     var actual = checks.Select(cmd => new {
