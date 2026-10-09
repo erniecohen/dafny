@@ -97,3 +97,33 @@ Current full registered/paired native evidence, strict complete default-off
 library resource compatibility, ordinary required CI and independent soundness
 review remain open. No whole-suite/library iteration or development-line port
 is launched. Porting to PR #169 still requires explicit owner approval.
+
+## Original contract reuse diagnostic
+
+The current product translates the checked-call publication interface separately
+from the original interface. A
+[scratch compiler](https://github.com/erniecohen/dafny/actions/runs/37924616057)
+passes all six actual compilation/assembly stages for a focused comparison that
+instead copies the original translated contract. It retains expression objects,
+formal/type bindings, frame expressions and descriptions, marks only ordinary
+locally checked user requirements, and changes no actual caller/exit check,
+preparation or fuel. The comparison covers the remaining Composite/RemoveFactor
+targets and already repaired FormArmy, with faithful native controls, exact
+actual-check/attribute comparisons and false-entry controls. Native results are
+pending; this is not a product change or accepted repair.
+
+Source inspection also finds a bookkeeping restriction in that first scratch
+compiler: fresh dependency IDs reference the original dependency objects. The
+coverage manager stores objects in a per-declaration set, so those entries merge,
+unlike the distinct entries from separate translation. Fresh IDs alone do not
+preserve that bookkeeping. That diagnostic cannot be adopted as-is.
+
+Scratch revision `d58172ea8` captures factories at original dependency creation,
+retaining the exact original source origin and Dafny expression. Each copied
+contract receives a fresh dependency object and ID; runtime guards require one
+new entry in the original per-declaration coverage set and matching dependency
+type, range and description. Its
+[compiler-only validation](https://github.com/erniecohen/dafny/actions/runs/37927075933)
+is pending. It does not retranslate logical expressions. The earlier frozen
+comparison remains unchanged and any eventual adoption needs fresh native
+evidence for the corrected bookkeeping.
