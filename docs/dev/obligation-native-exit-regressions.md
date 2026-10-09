@@ -698,11 +698,15 @@ is OutOfResource. The three columns are different source variants, not seeds.
 | Composite / 1 / on | R | R | R |
 
 RemoveFactor's inserted assertion appears after the original terminal conditional.
-The generated Boogie adds push/pop scope commands throughout that preceding
-conditional/calculation when either final statement is inserted. Thus the
+The generated Boogie adds eleven push/pop pairs throughout that preceding
+conditional/calculation when either final statement is inserted; the original
+and current implicit-check variants have zero such pairs. Thus the
 ordinary source-assertion comparison has a terminal-scope confound; even the
-true assertion exhausts the legacy proof. Its actual equality still uses the
-same two product fuel layers as the current implicit exit check. Matching
+true assertion exhausts the legacy proof. The explicit assertion
+and current implicit exit equality have exact expression tokens in both axiom
+settings, including both product fuel layers. This bounded comparison excludes
+the different dependency IDs and the explicit split assertion's subsumption
+attribute; it does not claim full command/metadata equivalence. Matching
 resource counts for the explicit and implicit failures do not imply identical
 solver streams; those streams differ. This is neither a repair nor evidence
 that the current implicit check loses fuel.
@@ -710,6 +714,8 @@ that the current implicit check loses fuel.
 Composite's assertion is placed immediately before its existing recursive call:
 `assert 2 <= a && !IsPrime(a);`. It restores the enabled seed-zero proof, but
 seed one still exhausts resources; the true assertion restores neither seed.
+All these Composite variants have the same three push/pop pairs, so that
+particular terminal-scope confound does not explain its seed-zero improvement.
 Whole-method success alone does not identify the failing local obligation or
 prove that its support was missing. The explicit assertion publishes preparation
 and its established proposition in the surrounding continuation, while the
@@ -726,10 +732,43 @@ changes only that caller source-clause boundary, retaining the existing complete
 preparation, splitting, sole checks, pure-scope policy and original contracts.
 The experimental policy applies generally to ordinary checked calls; selected
 names bound the observation and false-entry control, not a product rule.
-All six actual compilation/assembly stages pass. The 24-observation native
-comparison remains pending: Composite seeds 0/1, repaired FormArmy seed 0 and
-unchanged-exit RemoveFactor seed 0, in both axiom settings, each with native,
-whole-clause and false-entry variants. Require faithful controls, exact actual
-check/attribute comparisons and genuine Invalid controls. No product adoption, support
-deletion, global fuel change, new axiom or raised ceiling follows from these
+All six actual compilation/assembly stages pass. The corresponding macOS
+24-observation comparison remains queued with its frozen inputs unchanged.
+A [second scratch build](https://github.com/erniecohen/dafny/actions/runs/37935823909)
+compiles the same diagnostic for both native platforms; all eight actual stages
+pass. Each platform retains the exact accepted compiler bundle except its own
+new Core and LanguageServer assemblies. No product adoption, support deletion,
+global fuel change, new axiom or raised ceiling follows from compilation or the
 source-oracle observations.
+
+### Whole caller source-clause result: rejected repair
+
+The second build completes all 24 native observations on Linux with Z3 5.1.0:
+Composite seeds 0/1, repaired FormArmy seed 0 and unchanged-exit RemoveFactor seed
+0, in both axiom settings, each with native, whole-clause and false-entry variants.
+All eight native controls reproduce prior outcomes and resource vectors; all six
+seed-zero complete solver streams match exactly. All eight false-entry controls
+are genuinely Invalid, and all reported independent WF results are Correct.
+The identical controls establish platform fidelity only for this measured scope.
+
+Every one of the sixteen actual-expression comparisons is exact, with unchanged
+check counts, source origins, triggers and fuel terms. The strict gate nevertheless
+rejects twelve comparisons because dependency ID attributes change; only FormArmy
+retains every full attribute. An offline inspection finds only ID-string changes
+in the compared attributes, with a one-to-one mapping; it does not amend the
+strict gate or validate dependency objects, coverage entries or descriptions.
+The original rejected gate and complete evidence remain preserved.
+
+| Target / tested seeds | Native control | Whole source-clause preparation |
+| --- | --- | --- |
+| Composite / 0 and 1 | OutOfResource at both seeds | OutOfResource at both seeds |
+| FormArmy / 0 | Correct | Correct |
+| RemoveFactor / 0 | OutOfResource | OutOfResource |
+
+Both axiom settings give the same results. FormArmy and RemoveFactor also retain
+identical complete native/whole-clause solver streams and resource vectors.
+Composite's streams change but its proof remains exhausted. The caller clause
+boundary does not repair either tested Composite failure. Reject this
+construction as a resource repair, retain the metadata restriction, and adopt
+no product change. The separate queued macOS comparison is left intact.
+

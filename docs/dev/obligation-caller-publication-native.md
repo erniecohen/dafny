@@ -174,6 +174,11 @@ RemoveFactor's legacy source also exhausts resources after a final `assert true`
 which changes preceding terminal scopes. Composite's inserted own-precondition
 assertion restores enabled seed zero but not seed one. An offline audit confirms
 six faithful controls and eight genuine negatives without replacing the failed
-native gate or claiming independent WF evidence. The whole-caller-clause
-preparation comparison is scratch-only and pending; both resource regressions
-remain unresolved.
+native gate or claiming independent WF evidence. The scratch whole-caller-clause
+comparison then completes all 24 Linux observations with faithful native controls,
+exact actual check expressions and eight genuine Invalid controls. Its strict
+gate rejects dependency-ID attribute differences. Whole-clause preparation leaves
+Composite exhausted at both tested seeds; FormArmy and RemoveFactor retain exact
+native solver streams and outcomes. Reject this proposed resource repair and
+adopt no product change. The separate macOS comparison remains queued unchanged;
+both resource regressions remain unresolved.
