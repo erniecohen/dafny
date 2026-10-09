@@ -5,3 +5,5 @@ Method/function preconditions and visible type/conversion/allocation obligations
 Certified contract preparation preserves guards while binding eligible private function arguments once; actual obligation checks, source state and fuel remain unchanged.
 
 Opt-in method-call preparation constructs complete can-call support at the standard assertion point, after well-formedness preparation and before the existing single check, without an extra early construction.
+
+Opt-in local postconditions use standard complete can-call construction after well-formedness preparation, while inherited and statement-expression clauses retain their original leading support and reveal effects.

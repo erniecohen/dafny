@@ -7,4 +7,5 @@ PASS false controls
 PASS certified contract preparation and false controls
 PASS guarded private argument preparation
 PASS canonical caller wellformedness preparation
+PASS canonical local exit wellformedness preparation
 PASS project option and CLI precedence

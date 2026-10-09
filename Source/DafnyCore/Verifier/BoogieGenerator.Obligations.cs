@@ -210,11 +210,21 @@ public partial class BoogieGenerator {
     // while body reveals are active. The procedure copy is nonchecking.
     if (assertionOnlyFilter != null) { return; }
     foreach (var ensures in ConjunctsOf(clauses)) {
-      var leadingSupport = TrAssumeCmd(ensures.E.Origin, etran.CanCallAssumptionForVerification(ensures.E));
+      var inheritedClause = ensures.E.Origin.IsInherited(currentModule);
+      // Local clauses receive the complete standard can-call support after WF
+      // and before their sole actual check. Avoid constructing an extra copy
+      // first: that also consumes assertion-local expression-construction state.
+      // Preserve original leading support across inherited guards or statement
+      // expressions, whose visibility effects are kept in the outer scope.
+      var retainLeadingSupport = inheritedClause ||
+        ensures.E.DescendantsAndSelf.Any(expression => expression.Resolved is StmtExpr);
+      var leadingSupport = retainLeadingSupport
+        ? TrAssumeCmd(ensures.E.Origin, etran.CanCallAssumptionForVerification(ensures.E))
+        : null;
       // An inherited clause must not introduce unguarded local WF assertions.
       // Locally declared clauses still receive their immediate assertion's WF,
       // even if splitting subsequently inlines an inherited callee expression.
-      Bpl.Expr preparationGuard = ensures.E.Origin.IsInherited(currentModule)
+      Bpl.Expr preparationGuard = inheritedClause
         ? reverifyInherited
           ? new Bpl.IdentifierExpr(returnOrigin, "$_reverifyPost", Bpl.Type.Bool)
           : Bpl.Expr.False
