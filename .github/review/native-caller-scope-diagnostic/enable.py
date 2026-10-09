@@ -31,6 +31,9 @@ targets={
  'Source/DafnyLanguageServer/Language/DafnyProgramVerifier.cs':[
   ('          return translator.DoTranslation(resolution.ResolvedProgram, moduleDefinition);',
    '          var translated = translator.DoTranslation(resolution.ResolvedProgram, moduleDefinition);\n          NativeCallerScopeDiagnostic.Apply(translated);\n          return translated;')],
+ 'Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs':[
+  ('                req.Add(RequiresWithDependencies(s.Tok, s.IsOnlyFree || locallyChecked,\n                  p.E, s.E, errorMessage, successMessage, null));',
+   '                var canonicalRequirement = RequiresWithDependencies(s.Tok, s.IsOnlyFree || locallyChecked,\n                  p.E, s.E, errorMessage, successMessage, null);\n                NativeCallerScopeDiagnostic.CanonicalRequirement(canonicalRequirement, locallyChecked);\n                req.Add(canonicalRequirement);')],
  'Source/DafnyCore/DafnyCore.csproj':[
   ('</Project>', '  <ItemGroup><Compile Include="../../.github/review/native-caller-scope-diagnostic/*.cs" /></ItemGroup>\n</Project>')]}
 for name,edits in targets.items():

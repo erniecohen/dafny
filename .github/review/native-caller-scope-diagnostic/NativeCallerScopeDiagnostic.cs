@@ -27,15 +27,26 @@ public static class NativeCallerScopeDiagnostic {
     var value = Environment.GetEnvironmentVariable("OBLIGATION_DIAGNOSTIC_CALLER_SCOPE");
     if (value == null) { return null; }
     var parts = value.Split(':');
-    Require(parts.Length == 2 && new[] { "native-control", "scoped-caller", "false-scoped-control", "false-prepared-control" }.Contains(parts[0]) &&
-      new[] { "Composite", "FormArmy" }.Contains(parts[1]), "Unknown caller scope diagnostic");
+    Require(parts.Length == 2 && new[] { "native-control", "scoped-caller", "false-scoped-control", "false-prepared-control", "canonical-caller", "false-canonical-entry" }.Contains(parts[0]) &&
+      new[] { "Composite", "FormArmy", "ScopeFalseProbe" }.Contains(parts[1]), "Unknown caller scope diagnostic");
     return parts;
+  }
+  private static readonly Dictionary<Bpl.Requires, Bpl.Expr> CanonicalRequirements = new();
+  private static bool Canonical() {
+    var parts = Selection();
+    return parts != null && (parts[0] == "canonical-caller" || parts[0] == "false-canonical-entry");
+  }
+  public static void CanonicalRequirement(Bpl.Requires requirement, bool locallyChecked) {
+    if (!locallyChecked || !Canonical()) { return; }
+    Require(requirement.Free, "Canonical publication must not add a second proof");
+    CanonicalRequirements.Add(requirement, requirement.Condition);
+    requirement.Attributes = BoogieGenerator.AlwaysAssumeAttribute(requirement.tok, requirement.Attributes);
   }
   public static Scope Begin(string declaration, Bpl.CallCmd call, BoogieStmtListBuilder original) {
     var parts = Selection(); var selected = parts != null && parts[1] == declaration;
     var scoped = selected && parts[0] != "native-control";
     var result = new Scope { Selected = selected, Scoped = scoped, Declaration = declaration, Call = call,
-      Negative = scoped && parts[0].StartsWith("false-", StringComparison.Ordinal) && Scopes.Count == 0,
+      Negative = scoped && (parts[0] == "false-scoped-control" || parts[0] == "false-prepared-control") && Scopes.Count == 0,
       Builder = scoped ? new BoogieStmtListBuilder(original.tran, original.Options, original.Context) : original };
     result.Start = result.Builder.Commands.Count; if (selected) { Scopes.Add(result); } return result;
   }
@@ -71,6 +82,7 @@ public static class NativeCallerScopeDiagnostic {
   }
   public static IEnumerable<Bpl.AssumeCmd> Publications(Scope scope) {
     Require(scope.Scoped && scope.Publications.Count == 0, "Unexpected publication");
+    if (Canonical()) { yield break; }
     foreach (var check in scope.Checks) {
       RejectPrivateEscape(check.Expr);
       var fact = new Bpl.AssumeCmd(check.tok, check.Expr); scope.Publications.Add(fact); yield return fact;
@@ -96,15 +108,28 @@ public static class NativeCallerScopeDiagnostic {
     if (impls.Count == 0) { return; } Require(impls.Count == 1, "Ambiguous implementation");
     var impl = impls.Single(); var commands = impl.Blocks.SelectMany(block => block.Cmds).ToList();
     int Count(object value) => commands.Count(command => ReferenceEquals(command, value));
-    Require(Scopes.Count == (parts[1] == "FormArmy" ? 4 : 1) && Preparations == (parts[1] == "FormArmy" ? 4 : 2),
+    Require(Scopes.Count == (parts[1] == "FormArmy" ? 4 : 1) && Preparations == (parts[1] == "FormArmy" ? 4 : parts[1] == "ScopeFalseProbe" ? 1 : 2),
       $"Unexpected caller scope: {Scopes.Count} calls, {Preparations} clause preparations");
-    Require(PreparationCommands.Count == (parts[1] == "FormArmy" ? 12 : 6), "Unexpected WF scope");
+    Require(PreparationCommands.Count == (parts[1] == "FormArmy" ? 12 : parts[1] == "ScopeFalseProbe" ? 0 : 6), "Unexpected WF scope");
     Require(PreparationCommands.All(command => Count(command) == 1), "Preparation removed or duplicated");
     Require(Scopes.All(scope => Count(scope.Call) == 1 && scope.Commands.All(command => Count(command) == 1)), "Original caller command removed or duplicated");
-    Require(Scopes.Sum(scope => scope.Checks.Count) == (parts[1] == "FormArmy" ? 6 : 2), "Unexpected mandatory check count");
-    Require(Scopes.All(scope => scope.Publications.Count == (scope.Scoped ? scope.Checks.Count : 0)), "Missing normal publication");
+    Require(Scopes.Sum(scope => scope.Checks.Count) == (parts[1] == "FormArmy" ? 6 : parts[1] == "ScopeFalseProbe" ? 1 : 2), "Unexpected mandatory check count");
+    Require(Scopes.All(scope => scope.Publications.Count == (scope.Scoped && !Canonical() ? scope.Checks.Count : 0)), "Missing normal publication");
     Require(Scopes.All(scope => scope.Publications.Zip(scope.Checks).All(pair => ReferenceEquals(pair.First.Expr, pair.Second.Expr) && Count(pair.First) == 1)), "Publication differs from checked fact");
+    var canonicalContracts = new List<Bpl.Requires>();
+    if (Canonical()) {
+      foreach (var scope in Scopes) {
+        var procedure = program.TopLevelDeclarations.OfType<Bpl.Procedure>().Single(p => p.Name == scope.Call.callee);
+        canonicalContracts.AddRange(procedure.Requires.Where(CanonicalRequirements.ContainsKey));
+      }
+      Require(canonicalContracts.Count == (parts[1] == "FormArmy" ? 6 : parts[1] == "ScopeFalseProbe" ? 1 : 2), "Missing normal caller contract publication");
+      Require(canonicalContracts.All(req => req.Free && Bpl.QKeyValue.FindBoolAttribute(req.Attributes, "always_assume") && ReferenceEquals(req.Condition, CanonicalRequirements[req])), "Contract changed or checked twice");
+    }
     var negatives = Scopes.Where(scope => scope.NegativeCheck != null).Select(scope => scope.NegativeCheck).ToList();
+    if (parts[0] == "false-canonical-entry") {
+      var entry = new Bpl.AssertCmd(impl.tok, Bpl.Expr.False);
+      impl.Blocks.First().Cmds.Insert(0, entry); commands.Insert(0, entry); negatives.Add(entry);
+    }
     Require(negatives.Count == (parts[0].StartsWith("false-", StringComparison.Ordinal) ? 1 : 0) && negatives.All(check => Count(check) == 1), "Missing scoped negative");
     var checks = commands.OfType<Bpl.AssertCmd>().Where(check => !negatives.Contains(check)).Select(check => new {
       expression = NativeCallerScopeFingerprint.Expression(check.Expr),
@@ -115,6 +140,9 @@ public static class NativeCallerScopeDiagnostic {
     File.WriteAllText(path, JsonSerializer.Serialize(new {
       target = parts[1], variant = parts[0], scopedCallers = Scopes.Count(scope => scope.Scoped),
       mandatoryCallerChecks = Scopes.Sum(scope => scope.Checks.Count), normalPublishedPieces = Scopes.Sum(scope => scope.Publications.Count),
+      canonicalContractPublication = Canonical(), canonicalPublishedRequirements = canonicalContracts.Count,
+      originalContractConditionsRetainedByIdentity = true, canonicalRequirementsNoncheckingAndAlwaysAssumed = !Canonical() || canonicalContracts.All(req => req.Free && Bpl.QKeyValue.FindBoolAttribute(req.Attributes, "always_assume")),
+      negativeEntryCheckAdded = parts[0] == "false-canonical-entry",
       preparationFragments = Preparations, preparationCommands = PreparationCommands.Count,
       allOriginalPreparationAndCallerObjectsRetainedOnce = true, allActualCheckObjectsRetainedOnce = true,
       allOriginalFuelTraversalRetained = true, publishedPiecesEqualActualChecksByIdentity = true,
