@@ -37,6 +37,19 @@ assert s.count(before)==1;s=s.replace(before,after)
 assert s.count('          builder.Add(summary);')==1
 s=s.replace('          builder.Add(summary);','          if (NativeCallerPlacementDiagnostic.EmitSummary((codeContext as Declaration)?.Name, summary)) { builder.Add(summary); }')
 changed=s.encode('utf-8');record['files'][str(p.relative_to(root))]['after']=sha(changed);p.write_bytes(changed)
+p=verifier/'BoogieGenerator.Obligations.cs';raw=p.read_bytes();s=raw.decode('utf-8-sig')
+before='Bpl.Expr preparationGuard = null, Bpl.AssumeCmd leadingSupport = null)'
+after='Bpl.Expr preparationGuard = null, Bpl.AssumeCmd leadingSupport = null, bool callerForDiagnostic = false)'
+assert s.count(before)==1;s=s.replace(before,after)
+before='      var normalized = CertifiedContractPreparation.Normalize(preparation.Commands, argumentTemporaries);'
+after=before+'\n      if (callerForDiagnostic) { normalized = NativeCallerPlacementDiagnostic.Preparation((codeContext as Declaration)?.Name, preparation.Commands, normalized, argumentTemporaries); }'
+assert s.count(before)==1;s=s.replace(before,after)
+changed=s.encode('utf-8');record['files'][str(p.relative_to(root))]={'before':sha(raw),'after':sha(changed)};p.write_bytes(changed)
+p=verifier/'Statements/BoogieGenerator.TrCall.cs';raw=p.read_bytes();s=raw.decode('utf-8-sig')
+before='var lowering = LowerDeclaredProposition(instantiated, builder, locals, callEtran);'
+after='var lowering = LowerDeclaredProposition(instantiated, builder, locals, callEtran, callerForDiagnostic: true);'
+assert s.count(before)==1;s=s.replace(before,after)
+changed=s.encode('utf-8');record['files'][str(p.relative_to(root))]['after']=sha(changed);p.write_bytes(changed)
 targets={
  'Source/DafnyLanguageServer/Language/DafnyProgramVerifier.cs':(
   '          return translator.DoTranslation(resolution.ResolvedProgram, moduleDefinition);',

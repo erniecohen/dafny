@@ -23,3 +23,9 @@ Coercions fingerprint their destination type and canonicalized operand, rather
 than embedding the printed operand with its original binder names. Boogie
 TypeCoercion equality depends on that destination type; different target types
 remain different, and no bound name escapes lexical canonicalization there.
+
+The following scratch revision additionally isolates private-argument
+allocatedness inside the selected caller's certified preparation. It omits only
+two matching current-heap assumptions, retains every other command object and
+full traversal/fuel state, and checks the same six procedure requirements once.
+That support reduction is diagnosis only, never a product policy or acceptance.

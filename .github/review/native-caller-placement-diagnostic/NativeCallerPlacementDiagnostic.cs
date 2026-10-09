@@ -15,10 +15,39 @@ public static class NativeCallerPlacementDiagnostic {
     var value = Environment.GetEnvironmentVariable("OBLIGATION_DIAGNOSTIC_CALLER_PLACEMENT");
     if (value == null) { return null; }
     var parts = value.Split(':');
-    Require(parts.Length == 2 && new[] { "native-control", "off-control", "preparation-legacy-check", "false-entry-control" }.Contains(parts[0]) && parts[1] == "FormArmy", "Unknown placement diagnostic");
+    Require(parts.Length == 2 && new[] { "native-control", "off-control", "preparation-legacy-check", "without-caller-allocatedness", "false-entry-control" }.Contains(parts[0]) && parts[1] == "FormArmy", "Unknown placement diagnostic");
     return parts;
   }
-  private static bool Hybrid() => Selection() is { } parts && parts[0] is "preparation-legacy-check" or "false-entry-control";
+  private static bool Hybrid() => Selection() is { } parts && parts[0] is "preparation-legacy-check" or "without-caller-allocatedness" or "false-entry-control";
+  private static readonly List<Bpl.AssumeCmd> OmittedAllocatedness = new();
+  private static int SelectedPreparations;
+  public static IReadOnlyList<object> Preparation(string declaration, IReadOnlyList<object> original,
+    IReadOnlyList<object> normalized, ISet<string> argumentTemporaries) {
+    var parts = Selection(); if (parts == null || declaration != parts[1]) { return normalized; }
+    SelectedPreparations++;
+    if (parts[0] is not ("without-caller-allocatedness" or "false-entry-control")) { return normalized; }
+    Require(!ReferenceEquals(original, normalized), "Uncertified WF fragment");
+    foreach (var command in normalized) {
+      if (command is Bpl.CommentCmd or Bpl.AssumeCmd) { continue; }
+      Require(command is Bpl.AssignCmd, "Unsupported WF command or havoc");
+      foreach (var lhs in ((Bpl.AssignCmd)command).Lhss) {
+        Require(lhs is Bpl.SimpleAssignLhs simple && argumentTemporaries.Contains(simple.AssignedVariable.Name), "Non-private WF write");
+      }
+    }
+    var retained = new List<object>();
+    foreach (var command in normalized) {
+      if (command is Bpl.AssumeCmd assumption && assumption.Expr is Bpl.NAryExpr application &&
+          application.Fun is Bpl.FunctionCall function && function.ToString() == "$IsAlloc") {
+        Require(application.Args.Count == 3 && application.Args[0] is Bpl.IdentifierExpr argument &&
+          argumentTemporaries.Contains(argument.Name), "Allocatedness argument is not private");
+        Require(application.Args[2] is Bpl.IdentifierExpr heap && heap.Name == "$Heap", "Unexpected allocatedness heap");
+        Require(!OmittedAllocatedness.Contains(assumption), "Repeated allocatedness omission");
+        OmittedAllocatedness.Add(assumption);
+      } else { retained.Add(command); }
+    }
+    Require(retained.SequenceEqual(normalized.Where(command => !OmittedAllocatedness.Any(omitted => ReferenceEquals(omitted, command))), ReferenceEqualityComparer.Instance), "Other preparation objects changed");
+    return retained;
+  }
   public static bool Enabled(string family, bool enabled) {
     Require(family is "prepare" or "check" or "other", "Unknown family");
     return Hybrid() ? enabled && family == "prepare" : enabled;
@@ -73,6 +102,10 @@ public static class NativeCallerPlacementDiagnostic {
       Require(sites.All(site => original.Contains(site.Check)), "Native local check missing");
       Require(summaries.All(site => original.Contains(site.Summary)), "Native summary missing");
     }
+    Require(SelectedPreparations == 4, "Unexpected selected preparation scope");
+    var omitAllocatedness = parts[0] is "without-caller-allocatedness" or "false-entry-control";
+    Require(OmittedAllocatedness.Count == (omitAllocatedness ? 2 : 0), "Unexpected allocatedness count");
+    Require(OmittedAllocatedness.All(command => !original.Contains(command)), "Omitted allocatedness still emitted");
     var generatedChecks = sites.Select(site => new {
       expression = NativeCallerPlacementFingerprint.Expression(site.Check.Expr),
       attributes = NativeCallerPlacementFingerprint.Attributes(site.Check.Attributes, new NativeCallerPlacementFingerprint.BindingScope()),
@@ -89,7 +122,9 @@ public static class NativeCallerPlacementDiagnostic {
     File.WriteAllText(path, JsonSerializer.Serialize(new {
       target = parts[1], variant = parts[0], hybrid = Hybrid(), localChecksGenerated = sites.Count,
       localCheckFingerprints = generatedChecks, substitutedProcedureComparisons = equal,
-      allPrecheckPreparationRetained = true, originalCallerLoweringTraversed = true,
+      allOtherPrecheckPreparationRetained = true, originalCallerLoweringTraversed = true,
+      omittedAllocatedness = OmittedAllocatedness.Count, selectedPreparations = SelectedPreparations,
+      omittedAllocatednessFingerprints = OmittedAllocatedness.Select(command => NativeCallerPlacementFingerprint.Expression(command.Expr)).ToArray(),
       soleCallerCheckThroughProcedure = Hybrid(), omittedSummaries = Hybrid() ? summaries.Count : 0,
       allPostTranslationCommandsRetained = true, allBranchTransfersRetained = true,
       negativeEntryCheckAdded = negative != null, originalRemainingChecks = checks.Count
