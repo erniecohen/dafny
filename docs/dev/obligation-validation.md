@@ -1,5 +1,8 @@
 # Obligation lowering validation status
 
+**Current candidate:** [canonical caller construction native evidence](obligation-canonical-caller-native.md) records the normal `b3888f933` compiler, complete 310 registered observations, successful Remainder seed vectors, 96 known-library observations and the explicitly combined 72 known-suite/control observations. Remaining resource and review acceptance requirements stay open; preceding results below retain their original compiler identities.
+
+
 **Latest validation boundary:** the [current focused library refresh](obligation-current-focused-library.md)
 completes 96 normal-compiler observations, including thirty genuine negatives and
 Correct reported specification-WF checks. Remainder still exhausts all selected
