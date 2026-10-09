@@ -1,6 +1,12 @@
 # Obligation lowering validation status
 
-**Latest evidence:** product `fe6ddd1ba` has [68 focused suite/control observations](obligation-guarded-preparation-focused.md)
+**Current product `991b60037`:** the [focused native record](obligation-caller-publication-native.md)
+retains 68 completed observations, including all-six FormArmy and AltPrimeDefinition
+proofs, sixteen positive controls, four genuine negative controls and exact
+default-off Power vectors. Four further false-call controls require a collection
+follow-up. Composite and RemoveFactor remain unresolved; acceptance is incomplete.
+
+**Preceding evidence:** product `fe6ddd1ba` has [68 focused suite/control observations](obligation-guarded-preparation-focused.md)
 and [92 completed known-library/control observations](obligation-current-focused-library.md).
 The library result explicitly combines 84 preserved observations from a harness-failed
 attempt and eight controls from its completed follow-up. Remaining resource failures
@@ -8,7 +14,7 @@ and strict default-off cost acceptance stay open. No whole-suite/library run was
 launched for this revision. Complete-gate results below belong to earlier pinned
 revisions and cannot establish current acceptance.
 
-**Current focused result:** semantic/product `fe6ddd1ba`, with the
+**Preceding focused result:** semantic/product `fe6ddd1ba`, with the
 [accepted compiler build](https://github.com/erniecohen/dafny/actions/runs/37808373912),
 completes 68 native observations on macOS arm64 with Z3 5.1.0, both additional-axiom
 settings and original resource ceilings. All reported independent specification-WF

@@ -1,6 +1,6 @@
 # Issue 100 revision checklist
 
-**Caller-publication candidate `991b60037` passes compiler/structural validation; native verification remains pending.**
+**Caller-publication candidate `991b60037` has 68 retained native observations; four additional controls remain pending.**
 It preserves the inherited/free-call interface, publishes original contracts for
 ordinary locally checked calls, and scopes only certified pure preparation.
 Statement-expression reveals and unsupported effects keep their prior outer
@@ -10,13 +10,15 @@ passes all ten actual stages: both platform/Boogie-probe builds, 104 obligation
 tests in each mode, 382 core tests, the unchanged 287-group inventory and the
 editor build. The preceding build passes all structural controls but fails only
 the old registry comparison; that failed build is retained. The refresh changes
-only audited source-layout records, not counts or classifications. Focused native
-validation remains pending and remaining regressions are not claimed settled.
+only audited source-layout records, not counts or classifications. The [current native record](obligation-caller-publication-native.md) preserves
+68 completed observations and the collection failure requiring only four fresh
+controls. FormArmy and AltPrimeDefinition are VVV in both axiom settings;
+Composite and RemoveFactor remain unresolved. Review acceptance is incomplete.
 
 Current [native exit-regression diagnosis](obligation-native-exit-regressions.md) completes 36 whole-clause observations and 36 family-isolation observations, explicitly combining twelve RemoveFactor observations with a 24-observation follow-up for the other two cases. Whole-clause preparation is rejected as a resource repair despite identical actual checks. RemoveFactor seed-zero exhaustion is localized to exit translation, while Composite seed1 and FormArmy seed0 exhaustion is reproduced by the body family, with faithful native controls; no product repair or acceptance is claimed. A further 54-observation private-argument substitution diagnostic preserves every actual check and does not repair any target; Composite/FormArmy solver streams remain identical to their controls at every tested seed. A twelve-observation certified caller-order follow-up also leaves the two selected failing seeds unchanged, with faithful controls and strictly retained checks.
 
 
-**Latest evidence:** product `fe6ddd1ba` has [68 focused suite/control observations](obligation-guarded-preparation-focused.md)
+**Preceding evidence:** product `fe6ddd1ba` has [68 focused suite/control observations](obligation-guarded-preparation-focused.md)
 and [92 completed known-library/control observations](obligation-current-focused-library.md).
 The library result explicitly combines 84 preserved observations from a harness-failed
 attempt and eight controls from its completed follow-up. Remaining resource failures
@@ -24,7 +26,7 @@ and strict default-off cost acceptance stay open. No whole-suite/library run was
 launched for this revision. Complete-gate results below belong to earlier pinned
 revisions and cannot establish current acceptance.
 
-**Current focused result:** semantic/product `fe6ddd1ba`, with the
+**Preceding focused result:** semantic/product `fe6ddd1ba`, with the
 [accepted compiler build](https://github.com/erniecohen/dafny/actions/runs/37808373912),
 completes 68 native observations on macOS arm64 with Z3 5.1.0, both additional-axiom
 settings and original resource ceilings. All reported independent specification-WF
