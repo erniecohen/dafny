@@ -124,6 +124,7 @@ contract receives a fresh dependency object and ID; runtime guards require one
 new entry in the original per-declaration coverage set and matching dependency
 type, range and description. Its
 [compiler-only validation](https://github.com/erniecohen/dafny/actions/runs/37927075933)
-is pending. It does not retranslate logical expressions. The earlier frozen
+passes all six actual compilation/assembly stages. Its native dependency guards
+have not yet executed. It does not retranslate logical expressions. The earlier frozen
 comparison remains unchanged and any eventual adoption needs fresh native
 evidence for the corrected bookkeeping.
