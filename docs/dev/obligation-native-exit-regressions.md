@@ -870,3 +870,36 @@ identity; additionally, the verified symbolic witness shows how `End` can reach
 any natural value. This is evidence for the exact example and settings, not a
 universal guarantee for every quantified identity or a repair of Composite and
 RemoveFactor. No whole-suite/library run or development-line port is involved.
+
+## Pure exit preparation does not explain RemoveFactor exhaustion
+
+A completed six-observation comparison retains the sole exit check and normal
+publication while omitting all seven certified pure exit-WF command emissions
+for RemoveFactor seed zero, in both additional-axiom settings. The complete
+original preparation and translator/fuel traversal still run. Leading can-call
+support, actual formulas, every assertion attribute, procedure contracts and
+branch transfers remain unchanged. Guards reject escaped private arguments and
+any uncertified preparation. The
+[scratch compiler](https://github.com/erniecohen/dafny/actions/runs/37949568995)
+passes all eight actual compilation/assembly stages.
+
+Both untouched controls reproduce their prior complete solver input, outcome
+and resource count exactly. All four actual-check/full-attribute comparisons
+pass, both false-entry controls have genuine Invalid VCs, and every reported
+independent WF result is Correct. The complete diagnostic gate passes. Both
+positive preparation-omission observations still exhaust the original resource
+ceiling; this remains a rejected repair, not positive verification acceptance.
+No support omission is adopted.
+
+The separate unused-declaration hypothesis has no supporting input evidence:
+the selected original and private-argument-substitution solver inputs contain
+no unused private constants, and have the same three unused background function
+declarations. No additional proof run is needed for that hypothesis.
+
+The remaining placement boundary is the common exit block: a body assertion
+can merge terminal paths that a checked procedure postcondition treated as
+separate exits. A further support-preserving scratch comparison will place the
+unchanged exit fragment on those terminal paths and audit exactly one mandatory
+check per reachable exit. That comparison is pending; it establishes no repair
+until native controls and complete observations pass. Composite, RemoveFactor
+and complete review acceptance remain open.

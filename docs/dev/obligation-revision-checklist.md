@@ -269,6 +269,16 @@ acceptance remains open.
 The current registered fixture gate completes all 298 committed invocations with
 exact expected output: 73 positive observations have only Valid VCs and all 225
 negative observations contain genuine Invalid VCs. Expected no-trigger warnings
-are confined to negative-forall. The current 688-observation paired fixture gate
-remains pending; no resource repair or complete review acceptance follows from
-this functional result. See [the current record](obligation-caller-publication-native.md).
+are confined to negative-forall. The separate current paired gate completes all 688 observations, with 440
+positive observations containing only Valid VCs and 248 genuine Invalid negative
+observations. No resource repair or complete review acceptance follows from
+these functional results. See [the current record](obligation-caller-publication-native.md).
+
+The [pure exit-preparation comparison](obligation-native-exit-regressions.md#pure-exit-preparation-does-not-explain-removefactor-exhaustion)
+completes six native observations with faithful full-input controls, strictly
+retained actual checks/full attributes, and genuine Invalid false entries.
+RemoveFactor seed zero still exhausts resources in both axiom settings after
+all seven certified pure exit-WF emissions are omitted. Complete original
+preparation/fuel traversal, leading support, sole check and normal publication
+remain. Reject the omission as a repair; product `991b60037` is unchanged.
+The support-preserving terminal-path placement comparison remains pending.

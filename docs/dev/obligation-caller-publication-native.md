@@ -205,3 +205,12 @@ assertion's fuel-one encoding and trigger, matching the hypothesis. Sixteen
 complete-file invocations include twelve successful wrapped/witness controls and
 eight genuine Invalid false controls. No new product change follows; the two
 remaining resource regressions stay open.
+
+The [pure exit-preparation comparison](obligation-native-exit-regressions.md#pure-exit-preparation-does-not-explain-removefactor-exhaustion)
+completes six native observations with faithful full-input controls, strictly
+retained actual checks/full attributes, and genuine Invalid false entries.
+RemoveFactor seed zero still exhausts resources in both axiom settings after
+all seven certified pure exit-WF emissions are omitted. Complete original
+preparation/fuel traversal, leading support, sole check and normal publication
+remain. Reject the omission as a repair; product `991b60037` is unchanged.
+The support-preserving terminal-path placement comparison remains pending.
