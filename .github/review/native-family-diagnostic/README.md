@@ -14,3 +14,18 @@ consistently across the translated module. Native baseline/current controls and
 genuine false-entry controls are required. Original source, limits, axiom settings
 and reveal scope remain unchanged. This is not a proposed product policy or an
 acceptance gate, and normal product workflows do not enable it.
+
+## Current-candidate comparison
+
+The earlier accepted family diagnosis belongs to a preceding product. The current
+caller-publication correction changed body translation, so that attribution must
+be checked again before explaining its remaining failures. This build uses the
+accepted structural revision and its exact compiler binaries as its base.
+The focused matrix selects only remaining Composite seeds zero/one and
+RemoveFactor seed zero, under both axiom settings. It has faithful current and
+legacy controls, exit-only and body-only original translation, and genuine
+false-entry controls for each hybrid. Every family retains its mandatory proof:
+legacy exit mode uses checked procedure ensures, and legacy call mode keeps the
+original checked call requires. No source proof hint or resource increase is
+introduced. Native and legacy controls must reproduce recorded full solver
+inputs, outcomes and resource counts. This diagnostic is not a product policy.

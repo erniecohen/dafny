@@ -67,6 +67,9 @@ public static class NativeFamilyDiagnostic {
     Require(!string.IsNullOrEmpty(path) && !File.Exists(path), "Missing or repeated audit destination");
     File.WriteAllText(path, JsonSerializer.Serialize(new {
       target = parts[1], variant = parts[0], familyGateVisits = gates,
+      checkedProcedureEnsures = impl.Proc.Ensures.Count(e => !e.Free),
+      freeProcedureEnsures = impl.Proc.Ensures.Count(e => e.Free),
+      checkedProcedurePostconditionExpressions = impl.Proc.Ensures.Where(e => !e.Free).Select(e => NativeFamilyFingerprint.Expression(e.Condition)).ToArray(),
       actualCheckFingerprints = actual, allActualCheckObjectsRetained = true,
       allPostTranslationCommandObjectsRetained = true, allBranchTransferObjectsRetained = true,
       negativeEntryCheckAdded = negative != null, actualChecks = checks.Count
