@@ -32,6 +32,12 @@ public static class NativeCallerScopeDiagnostic {
     return parts;
   }
   private static readonly Dictionary<Bpl.Requires, Bpl.Expr> CanonicalRequirements = new();
+  private static bool AlwaysAssumed(Bpl.Requires requirement) {
+    for (var attribute = requirement.Attributes; attribute != null; attribute = attribute.Next) {
+      if (attribute.Key == "always_assume" && !attribute.Params.Any()) { return true; }
+    }
+    return false;
+  }
   private static bool Canonical() {
     var parts = Selection();
     return parts != null && (parts[0] == "canonical-caller" || parts[0] == "false-canonical-entry");
@@ -123,7 +129,7 @@ public static class NativeCallerScopeDiagnostic {
         canonicalContracts.AddRange(procedure.Requires.Where(CanonicalRequirements.ContainsKey));
       }
       Require(canonicalContracts.Count == (parts[1] == "FormArmy" ? 6 : parts[1] == "ScopeFalseProbe" ? 1 : 2), "Missing normal caller contract publication");
-      Require(canonicalContracts.All(req => req.Free && Bpl.QKeyValue.FindBoolAttribute(req.Attributes, "always_assume") && ReferenceEquals(req.Condition, CanonicalRequirements[req])), "Contract changed or checked twice");
+      Require(canonicalContracts.All(req => req.Free && AlwaysAssumed(req) && ReferenceEquals(req.Condition, CanonicalRequirements[req])), "Contract changed or checked twice");
     }
     var negatives = Scopes.Where(scope => scope.NegativeCheck != null).Select(scope => scope.NegativeCheck).ToList();
     if (parts[0] == "false-canonical-entry") {
@@ -141,7 +147,7 @@ public static class NativeCallerScopeDiagnostic {
       target = parts[1], variant = parts[0], scopedCallers = Scopes.Count(scope => scope.Scoped),
       mandatoryCallerChecks = Scopes.Sum(scope => scope.Checks.Count), normalPublishedPieces = Scopes.Sum(scope => scope.Publications.Count),
       canonicalContractPublication = Canonical(), canonicalPublishedRequirements = canonicalContracts.Count,
-      originalContractConditionsRetainedByIdentity = true, canonicalRequirementsNoncheckingAndAlwaysAssumed = !Canonical() || canonicalContracts.All(req => req.Free && Bpl.QKeyValue.FindBoolAttribute(req.Attributes, "always_assume")),
+      originalContractConditionsRetainedByIdentity = true, canonicalRequirementsNoncheckingAndAlwaysAssumed = !Canonical() || canonicalContracts.All(req => req.Free && AlwaysAssumed(req)),
       negativeEntryCheckAdded = parts[0] == "false-canonical-entry",
       preparationFragments = Preparations, preparationCommands = PreparationCommands.Count,
       allOriginalPreparationAndCallerObjectsRetainedOnce = true, allActualCheckObjectsRetainedOnce = true,
