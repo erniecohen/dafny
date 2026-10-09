@@ -42,6 +42,10 @@ public static class NativeFamilyDiagnostic {
     if (implementations.Count == 0) { return; }
     Require(implementations.Count == 1, "Ambiguous diagnostic implementation");
     var impl = implementations[0];
+    // Translation has not run resolution yet, so Implementation.Proc is unset.
+    var procedures = program.TopLevelDeclarations.OfType<Bpl.Procedure>().Where(p => p.Name == impl.Name).ToList();
+    Require(procedures.Count == 1, "Missing or ambiguous implementation procedure");
+    var procedure = procedures.Single();
     var original = impl.Blocks.SelectMany(block => block.Cmds).ToList();
     var checks = original.OfType<Bpl.AssertCmd>().ToList();
     var transfers = impl.Blocks.Select(block => block.TransferCmd).ToList();
@@ -67,9 +71,9 @@ public static class NativeFamilyDiagnostic {
     Require(!string.IsNullOrEmpty(path) && !File.Exists(path), "Missing or repeated audit destination");
     File.WriteAllText(path, JsonSerializer.Serialize(new {
       target = parts[1], variant = parts[0], familyGateVisits = gates,
-      checkedProcedureEnsures = impl.Proc.Ensures.Count(e => !e.Free),
-      freeProcedureEnsures = impl.Proc.Ensures.Count(e => e.Free),
-      checkedProcedurePostconditionExpressions = impl.Proc.Ensures.Where(e => !e.Free).Select(e => NativeFamilyFingerprint.Expression(e.Condition)).ToArray(),
+      checkedProcedureEnsures = procedure.Ensures.Count(e => !e.Free),
+      freeProcedureEnsures = procedure.Ensures.Count(e => e.Free),
+      checkedProcedurePostconditionExpressions = procedure.Ensures.Where(e => !e.Free).Select(e => NativeFamilyFingerprint.Expression(e.Condition)).ToArray(),
       actualCheckFingerprints = actual, allActualCheckObjectsRetained = true,
       allPostTranslationCommandObjectsRetained = true, allBranchTransferObjectsRetained = true,
       negativeEntryCheckAdded = negative != null, actualChecks = checks.Count
