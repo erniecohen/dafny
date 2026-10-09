@@ -363,7 +363,16 @@ the extra positivity assertion is not responsible. These source assertions remai
 diagnostics, not proof hints to be adopted into the product.
 
 A [captured-argument compiler](https://github.com/erniecohen/dafny/actions/runs/37997471051)
-is building a narrow substitution comparison. It captures only the existing
+passes all eight actual compiler stages. Its first native control stops before
+proof because the scratch audit requires an RHS inferred type before normal
+Boogie resolution. There are zero complete observations: this failed execution
+is retained and is not proof evidence or a conclusion about substitutions. A
+[corrected audit build](https://github.com/erniecohen/dafny/actions/runs/37999108823)
+is in progress. It checks the original assignment target against its declared
+type, rejects a differing known RHS type, records unset inferred types explicitly,
+and retains normal Boogie resolution/typechecking.
+
+The same narrow substitution comparison It captures only the existing
 call-argument freeze assignments and the same actual caller checks. Selected
 checks use the already computed argument value expressions through those exact
 typed binding equalities, with no reevaluation. All binding, preparation, support,

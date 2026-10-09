@@ -505,3 +505,10 @@ The next scratch comparison tests existing frozen argument substitutions without
 reevaluation, omitted support, altered fuel/publication, duplicate proof or body
 term collection. Product `991b60037` and development PR #169 remain unchanged;
 the open acceptance requirements are not waived.
+
+The captured-argument diagnostic first fails in its own pre-resolution type
+audit, before any complete native proof observation. The failed execution is
+retained separately. Its corrected audit compares declared assignment targets
+and records unset RHS inferred types, preserving normal Boogie typechecking;
+the same focused gate remains pending. This does not change the product or close
+the governing requirement.
