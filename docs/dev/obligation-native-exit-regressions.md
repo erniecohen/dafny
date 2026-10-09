@@ -1176,8 +1176,36 @@ points. All distinct support terms, fuel, actual check formulas/full attributes,
 publication and transfers remain. It scans only this proposition's newly generated
 preparation, with no body/context term collection or new supporting instance.
 
-Native positive results, faithful complete-input controls and genuine negative
-controls remain pending. No product change is adopted from source inspection.
+All six native observations complete. The assumptions are structurally identical
+and have identical strict fingerprints; both native controls reproduce complete
+solver input, outcome and resource count, all four actual-check/full-attribute
+comparisons pass, all reported WF results are Correct and both false entries
+contain genuine Invalid VCs. Every original WF preparation command remains once.
+RemoveFactor still exhausts resources in both axiom settings. Removing this
+strictly duplicate command is therefore rejected as a resource repair and no
+product change is adopted.
 The separate assertion-command-type audit finds a distinct postcondition error
-wrapper and optional expansion metadata, but no solver-generation subtype branch
-for this selected case; no check-type change or speculative compiler trial is made.
+wrapper and optional expansion metadata, but no direct solver-generation subtype
+branch for this selected case. The subsequent wrapper-only comparison tests
+possible visitor effects explicitly; no product check-type change follows from
+the source audit.
+
+
+## Original postcondition wrapper: validation pending
+
+The [wrapper-only scratch compiler](https://github.com/erniecohen/dafny/actions/runs/37976081754)
+compares the original Boogie `AssertEnsuresCmd` shape with the current local
+assertion. The wrapper contains the exact actual checked expression as command
+metadata; it is not inserted into a procedure contract. The procedure's original
+free contract remains, with no second checked ensures. All other commands retain
+their object identities and original positions; preparation, fuel, publication,
+transfers, thirteen static checks and every actual expression/full attribute
+remain. Description and error-mining metadata also retain their references.
+
+The source audit above finds no direct subtype switch in solver generation for
+this selected case, but standard visitors additionally visit the wrapper's
+ensures condition. That audit cannot establish native input identity or rule out
+all traversal effects. Require unchanged full-input/outcome/resource controls,
+strict actual-check comparisons and genuine Invalid entry controls before drawing
+any conclusion. The native comparison remains pending; no check-type change is
+adopted as a product correction.
