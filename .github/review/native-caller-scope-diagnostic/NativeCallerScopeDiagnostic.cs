@@ -27,7 +27,7 @@ public static class NativeCallerScopeDiagnostic {
     var value = Environment.GetEnvironmentVariable("OBLIGATION_DIAGNOSTIC_CALLER_SCOPE");
     if (value == null) { return null; }
     var parts = value.Split(':');
-    Require(parts.Length == 2 && new[] { "native-control", "scoped-caller", "false-scoped-control" }.Contains(parts[0]) &&
+    Require(parts.Length == 2 && new[] { "native-control", "scoped-caller", "false-scoped-control", "false-prepared-control" }.Contains(parts[0]) &&
       new[] { "Composite", "FormArmy" }.Contains(parts[1]), "Unknown caller scope diagnostic");
     return parts;
   }
@@ -35,7 +35,7 @@ public static class NativeCallerScopeDiagnostic {
     var parts = Selection(); var selected = parts != null && parts[1] == declaration;
     var scoped = selected && parts[0] != "native-control";
     var result = new Scope { Selected = selected, Scoped = scoped, Declaration = declaration, Call = call,
-      Negative = scoped && parts[0] == "false-scoped-control" && Scopes.Count == 0,
+      Negative = scoped && parts[0].StartsWith("false-", StringComparison.Ordinal) && Scopes.Count == 0,
       Builder = scoped ? new BoogieStmtListBuilder(original.tran, original.Options, original.Context) : original };
     result.Start = result.Builder.Commands.Count; if (selected) { Scopes.Add(result); } return result;
   }
@@ -53,6 +53,11 @@ public static class NativeCallerScopeDiagnostic {
   }
   public static void Check(Scope scope, Bpl.PredicateCmd command) {
     Require(command is Bpl.AssertCmd, "Expected mandatory caller check");
+    // The pre-check control tests the context after every legitimate preparation
+    // command but before establishing P. The earlier post-check control remains.
+    if (scope.Negative && Selection()[0] == "false-prepared-control" && scope.NegativeCheck == null) {
+      scope.Builder.Add(Negative(scope));
+    }
     scope.Checks.Add((Bpl.AssertCmd)command);
   }
   public static void Finish(Scope scope) {
@@ -100,7 +105,7 @@ public static class NativeCallerScopeDiagnostic {
     Require(Scopes.All(scope => scope.Publications.Count == (scope.Scoped ? scope.Checks.Count : 0)), "Missing normal publication");
     Require(Scopes.All(scope => scope.Publications.Zip(scope.Checks).All(pair => ReferenceEquals(pair.First.Expr, pair.Second.Expr) && Count(pair.First) == 1)), "Publication differs from checked fact");
     var negatives = Scopes.Where(scope => scope.NegativeCheck != null).Select(scope => scope.NegativeCheck).ToList();
-    Require(negatives.Count == (parts[0] == "false-scoped-control" ? 1 : 0) && negatives.All(check => Count(check) == 1), "Missing scoped negative");
+    Require(negatives.Count == (parts[0].StartsWith("false-", StringComparison.Ordinal) ? 1 : 0) && negatives.All(check => Count(check) == 1), "Missing scoped negative");
     var checks = commands.OfType<Bpl.AssertCmd>().Where(check => !negatives.Contains(check)).Select(check => new {
       expression = NativeCallerScopeFingerprint.Expression(check.Expr),
       attributes = NativeCallerScopeFingerprint.Attributes(check.Attributes, new NativeCallerScopeFingerprint.BindingScope()),

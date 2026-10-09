@@ -16,7 +16,7 @@ assert fragment.count(before)==1;fragment=fragment.replace(before,after)
 assert fragment.endswith('    }\n')
 fragment=fragment[:-6]+'''      NativeCallerScopeDiagnostic.Finish(scope);
       if (scope.Scoped) {
-        if (scope.Negative) { callerBuilder.Add(NativeCallerScopeDiagnostic.Negative(scope)); }
+        if (scope.Negative && scope.NegativeCheck == null) { callerBuilder.Add(NativeCallerScopeDiagnostic.Negative(scope)); }
         PathAsideBlock(tok, callerBuilder, builder);
         foreach (var fact in NativeCallerScopeDiagnostic.Publications(scope)) { builder.Add(fact); }
       }
