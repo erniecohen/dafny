@@ -134,3 +134,47 @@ not identify one particular call or support command. These are single-seed
 causal boundaries, not multi-seed repairs, a semantic counterexample, or evidence
 of uniform improvement over legacy. No product change follows from disabling
 one family in this diagnostic.
+
+
+## Fresh private argument aliases do not explain these failures
+
+A separate completed 54-observation native diagnostic substitutes defined values
+for fresh private function-WF arguments only inside a newly generated, accepted
+pure ground preparation fragment. It rejects source-state writes, havoc,
+forward/repeated bindings, binders, old expressions and unsupported forms.
+For a fresh private `t`, `t := e; assume Q(t)` becomes `assume Q(e)`, in original
+order, preserving facts over observable values, guards, function symbols,
+boxing, heaps and fuel. An escape audit examines the containing implementation
+and its corresponding procedure contract, including where clauses and attributes.
+No alias may survive there. The original source and actual-check lowering are
+unchanged; this is a scratch diagnostic, not a proposed product simplification.
+
+All eighteen native controls reproduce current outcomes/resource counts, and
+all six seed-zero complete streams through their last query match the accepted
+native references. All eighteen false-entry controls have genuine Invalid VCs;
+every reported independent specification-WF check is Correct. Each of the
+36 candidate/negative comparisons has strictly identical actual assertion
+expressions and attributes, including dependency IDs. Two argument bindings are
+substituted in each target. Branch transfers and post-translation command
+objects remain unchanged apart from the explicit negative entry check.
+
+| Target | Current native | Private arguments substituted |
+| --- | --- | --- |
+| Composite | VRV | VRV |
+| FormArmy | RRR | RRR |
+| RemoveFactor | RRR | RRR |
+
+The complete canonical SMT streams are identical between control and candidate
+for every Composite and FormArmy seed in both axiom settings. Their resource
+counts also match exactly. RemoveFactor's streams differ, but every tested seed
+still exhausts the unchanged ceiling. This rejects private argument aliases as
+an established resource repair for these cases. No product change follows.
+
+The [scoped diagnostic compiler](https://github.com/erniecohen/dafny/actions/runs/37877352182)
+passes all six actual stages. Two preceding attempts are preserved and excluded:
+the first syntax audit follows an unresolved procedure link and stops before
+verification; the second completes one native control before a spelling-based
+all-program escape audit conflates distinct local scopes. Generated Boogie
+shows the same private spelling in Composite and ProductPlusOneIsPrime. The
+fresh completed scope corrects only the audit, retains all original proof inputs
+and does not treat either aborted attempt as hypothesis evidence.
