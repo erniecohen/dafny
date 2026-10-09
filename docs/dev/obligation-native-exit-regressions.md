@@ -660,3 +660,72 @@ The diagnostic's successful execution validates that controlled negative result,
 not a repair or product acceptance. The scope construction is not adopted.
 There is no support deletion, raised ceiling, source hint, whole-suite/library
 iteration or development port.
+
+
+## Ordinary assertion oracle and terminal-scope controls
+
+On current product `991b60037`, a source-level diagnostic records all 44 native
+observations for RemoveFactor seed 0 and Composite seeds 0/1, in both option and
+additional-axiom settings. Each uses the original source, an inserted assertion
+of its own obligation, or an `assert true` at the same position. Eight separate
+false-entry controls contain genuine Invalid VCs at the inserted assertions.
+The six unchanged enabled controls reproduce prior outcomes and resource vectors;
+all four seed-zero complete solver streams match exactly. Original ceilings,
+options, batches, per-process cores and the accepted compiler/Z3 5.1.0 remain.
+The inserted assertions are disposable diagnostics, not product proof hints.
+
+The native collection gate is rejected, and that result remains preserved. Its
+collector incorrectly requires nonempty independent specification-WF JSON and
+rejects any warning despite retaining the original `--allow-warnings` policy.
+Both selected methods emit no independent WF result or WF implementation here.
+Each observation has the same existing bodyless-method warning, shifted by the
+one inserted source line where applicable. A separate offline audit confirms
+all 44 source hashes/results, that exact warning policy, six faithful controls
+and eight genuine negatives. This audit does not turn the rejected gate into a
+successful native gate, establish warning-free whole-project verification, or
+supply independent specification-WF proof evidence.
+
+Both additional-axiom settings have the following results. V is Correct and R
+is OutOfResource. The three columns are different source variants, not seeds.
+
+| Target / seed / option | Original source | Own-proposition assertion | Same-position `assert true` |
+| --- | --- | --- | --- |
+| RemoveFactor / 0 / off | V | R | R |
+| RemoveFactor / 0 / on | R | R | R |
+| Composite / 0 / off | V | V | V |
+| Composite / 0 / on | R | V | R |
+| Composite / 1 / off | V | V | V |
+| Composite / 1 / on | R | R | R |
+
+RemoveFactor's inserted assertion appears after the original terminal conditional.
+The generated Boogie adds push/pop scope commands throughout that preceding
+conditional/calculation when either final statement is inserted. Thus the
+ordinary source-assertion comparison has a terminal-scope confound; even the
+true assertion exhausts the legacy proof. Its actual equality still uses the
+same two product fuel layers as the current implicit exit check. Matching
+resource counts for the explicit and implicit failures do not imply identical
+solver streams; those streams differ. This is neither a repair nor evidence
+that the current implicit check loses fuel.
+
+Composite's assertion is placed immediately before its existing recursive call:
+`assert 2 <= a && !IsPrime(a);`. It restores the enabled seed-zero proof, but
+seed one still exhausts resources; the true assertion restores neither seed.
+Whole-method success alone does not identify the failing local obligation or
+prove that its support was missing. The explicit assertion publishes preparation
+and its established proposition in the surrounding continuation, while the
+current ordinary caller uses a certified local proof branch and original normal
+call-contract publication. Those contexts and the number of checks differ.
+
+There is also a concrete preparation boundary to test: the explicit assertion
+prepares the whole conjunction with its short-circuit guard, whereas the current
+caller prepares its top-level conjuncts separately, using the preceding checked
+conjunct as a premise. These guards are logically equivalent at their checks,
+but their generated control flow differs. A
+[scratch compiler comparison](https://github.com/erniecohen/dafny/actions/runs/37933841924)
+changes only that caller source-clause boundary, retaining the existing complete
+preparation, splitting, sole checks, pure-scope policy and original contracts.
+The experimental policy applies generally to ordinary checked calls; selected
+names bound the observation and false-entry control, not a product rule.
+Compilation and native comparison remain pending. No product adoption, support
+deletion, global fuel change, new axiom or raised ceiling follows from these
+source-oracle observations.

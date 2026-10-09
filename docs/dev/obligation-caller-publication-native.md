@@ -166,3 +166,14 @@ passes all six actual compilation/assembly stages. Those native dependency
 guards have not executed. Following the unchanged solver-stream refutation,
 no native gate is launched for this metadata correction and neither scratch
 construction is adopted. The original frozen evidence is retained.
+
+
+The [ordinary-assertion comparison](obligation-native-exit-regressions.md#ordinary-assertion-oracle-and-terminal-scope-controls)
+preserves 44 produced native observations and its rejected collection gate.
+RemoveFactor's legacy source also exhausts resources after a final `assert true`,
+which changes preceding terminal scopes. Composite's inserted own-precondition
+assertion restores enabled seed zero but not seed one. An offline audit confirms
+six faithful controls and eight genuine negatives without replacing the failed
+native gate or claiming independent WF evidence. The whole-caller-clause
+preparation comparison is scratch-only and pending; both resource regressions
+remain unresolved.
