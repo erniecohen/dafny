@@ -1,12 +1,37 @@
 # Current affected-declaration seed classification
 
-**Latest evidence:** product `fe6ddd1ba` has [68 focused suite/control observations](obligation-guarded-preparation-focused.md)
-and [92 completed known-library/control observations](obligation-current-focused-library.md).
-The library result explicitly combines 84 preserved observations from a harness-failed
-attempt and eight controls from its completed follow-up. Remaining resource failures
-and strict default-off cost acceptance stay open. No whole-suite/library run was
-launched for this revision. Complete-gate results below belong to earlier pinned
-revisions and cannot establish current acceptance.
+**Current native semantic evidence:** accepted product `991b60037`, recorded in
+[the current native validation](obligation-caller-publication-native.md), completes
+72 focused observations explicitly combined from 68 retained observations and four
+fresh controls. The original collection failure is retained. Both axiom settings
+have the following vectors at unchanged sources/options/resource ceilings, with
+positions in seed order 0/1/7 and baseline evidence explicitly reused:
+
+| Declaration | Recorded baseline | Current enabled | Classification |
+| --- | --- | --- | --- |
+| Power subtraction | VVV | VVV | All selected seeds verify |
+| AltPrimeDefinition | VVR | VVV | Earlier failure repaired in the tested scope |
+| Composite | VVV | RRV | Two enabled-only resource failures remain unresolved |
+| ExtensibleArray.Append | VVV | VVV | All selected seeds verify |
+| FormArmy | VRR | VVV | Earlier failure repaired in the tested scope |
+| RemoveFactor | VRR | RRR | All enabled seeds exhaust resources; remains unresolved |
+| Iterator.MoveNext | VRR | RVR | Both-partial variance under S13; no targeted product repair |
+
+V means Correct and R OutOfResource. The selected negatives remain genuinely
+Invalid and reported independent WF results remain Correct. These results do not
+establish uniform solver improvement or complete review acceptance. Structural
+revision `df4c7066f` subsequently adds an internal preparation observer and tests;
+its [accepted corrected compiler build](https://github.com/erniecohen/dafny/actions/runs/37955030278)
+passes 106 obligation tests in each mode and 384 core tests, with the unchanged
+287-group inventory. That build does not reidentify the preceding native results.
+
+**Historical classifications below:** product `fe6ddd1ba` has
+[68 focused suite/control observations](obligation-guarded-preparation-focused.md)
+and [92 known-library/control observations](obligation-current-focused-library.md),
+explicitly combining 84 preserved observations and eight fresh controls.
+The older tables below belong to product `072175269`; their verdicts are retained
+as history and must not be presented as the current candidate. Strict complete
+default-off cost acceptance and supported-line review acceptance remain open.
 
 This diagnostic uses the preceding compiled product `072175269`, baseline
 `ab210b78b` and Z3 5.1.0. It preserves source hints and resource ceilings.
@@ -33,7 +58,7 @@ baseline with an enabled-only seed failure is recorded separately. This
 classification diagnoses fixed-run search behavior; it does not weaken a check,
 change a limit or add a proof hint.
 
-## Suite failures
+## Historical suite failures
 
 | Declaration | Additional axioms | Baseline | Default off | Enabled | Classification |
 | --- | --- | --- | --- | --- | --- |
@@ -49,7 +74,7 @@ change a limit or add a proof hint.
 | `Composite (correctness)` | On | VVV | VVV | RVV | Enabled has a seed-sensitive resource failure; baseline verifies every selected seed |
 | `RemoveFactor (correctness)` | Off | VRR | VRR | RRR | Enabled exhausts resources at every selected seed; baseline is partly successful; remains an open resource movement |
 | `RemoveFactor (correctness)` | On | VRR | VRR | RRR | Enabled exhausts resources at every selected seed; baseline is partly successful; remains an open resource movement |
-## Suite cost-review union
+## Historical suite cost-review union
 
 | Declaration | Additional axioms | Baseline | Default off | Enabled | Classification |
 | --- | --- | --- | --- | --- | --- |
@@ -75,7 +100,7 @@ change a limit or add a proof hint.
 | `INDUCTION_EVEN_ODD (correctness)` | On | VRR | VRR | VRV | S13 both-partial solver/resource variance |
 | `FibSumManual (correctness)` | Off | VVV | VVV | VVV | Every selected seed verifies; enabled uses more resources at every selected seed |
 | `FibSumManual (correctness)` | On | VVV | VVV | VVV | Every selected seed verifies; enabled uses more resources at every selected seed |
-## Library cost-review union
+## Historical library cost-review union
 
 | Declaration | Additional axioms | Baseline | Default off | Enabled | Classification |
 | --- | --- | --- | --- | --- | --- |
@@ -96,7 +121,7 @@ change a limit or add a proof hint.
 | `Std.Unicode.Utf8EncodingScheme.LemmaDeserializeSerialize (correctness)` | Off | VVV | VVV | VVV | Every selected seed verifies; enabled uses more resources at every selected seed |
 | `Std.Unicode.Utf8EncodingScheme.LemmaDeserializeSerialize (correctness)` | On | VVV | VVV | VVV | Every selected seed verifies; enabled uses no more resources at these selected seeds |
 
-## Library failures
+## Historical library failures
 
 This completed matrix has 198 observations on macOS arm64. The complete library
 controls used Linux x86-64; both use the exact accepted platform-specific native
