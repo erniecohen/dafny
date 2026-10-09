@@ -178,3 +178,38 @@ all-program escape audit conflates distinct local scopes. Generated Boogie
 shows the same private spelling in Composite and ProductPlusOneIsPrime. The
 fresh completed scope corrects only the audit, retains all original proof inputs
 and does not treat either aborted attempt as hypothesis evidence.
+
+
+## Certified caller support order does not repair the failing seeds
+
+The current exit path passes leading can-call support into the common certified
+preparation helper; method-call checks still emit that support directly before
+preparation. A further native diagnostic uses the same helper for only caller
+support. It moves the existing assumption object after setup only when the
+complete-fragment certificate proves noninterference, and retains its original
+placement otherwise. Every caller support object is audited as present exactly
+once. No preparation facts, actual checks, fuel, guards or publication change.
+
+The completed scope has twelve observations: Composite's failing seed 1 and
+FormArmy's failing seed 0, both axiom settings, unchanged/caller-order/false-entry
+variants. All four controls match current outcomes, resources and complete SMT
+streams through their last query. All four negative controls have genuine
+Invalid VCs and every reported independent specification-WF check is Correct.
+All eight candidate/negative comparisons have identical actual assertion
+expressions and attributes, including dependency IDs. Two caller supports move
+in Composite and four in FormArmy; their objects remain present exactly once.
+
+Both targets still exhaust the unchanged ceiling in both settings, with resource
+counts identical to their controls. Candidate solver streams differ, so no
+pairwise stream identity is claimed. This rejects caller support order as a
+repair of these specific failing seeds. A larger seed sweep is not justified
+by this result. The [compiler-only diagnostic](https://github.com/erniecohen/dafny/actions/runs/37877821143)
+passes all six actual stages. No product change or whole-suite/library run follows.
+
+For RemoveFactor's preceding native family comparison, all 33 background SMT
+assertions are identical between legacy and current in each axiom setting; the
+checked body VC differs and current has two additional constant declarations.
+This confirms that the localized exit failure does not arise from replacing
+background axioms in that comparison. It does not by itself identify which body
+VC difference causes resource exhaustion. The checked product fuel remains the
+same, and neither alias elimination nor duplicate-support removal repairs it.
