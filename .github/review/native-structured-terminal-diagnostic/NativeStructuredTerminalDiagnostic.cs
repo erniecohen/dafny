@@ -37,9 +37,9 @@ public static class NativeStructuredTerminalDiagnostic {
     foreach(var command in commands) {
       if(command is Bpl.Cmd simple){yield return simple;}
       else if(command is Bpl.IfCmd conditional) {
-        Require(conditional.ElseIf==null,"Unsupported else-if in retained source audit");
         foreach(var c in FlatList(conditional.Thn)){yield return c;}
         if(conditional.ElseBlock!=null){foreach(var c in FlatList(conditional.ElseBlock)){yield return c;}}
+        if(conditional.ElseIf!=null){foreach(var c in Flat(new object[]{conditional.ElseIf})){yield return c;}}
       } else {Require(command is Bpl.TransferCmd,"Unsupported source statement kind");}
     }
   }
