@@ -542,3 +542,44 @@ plain recursive-call conditions. Existing normal can-call requirements and
 previously retained outer reveal scope must remain. Product `fe6ddd1ba` is
 unchanged. No full suite/library iteration, resource increase, source proof hint,
 support deletion or development port follows from this experiment.
+
+
+### FormArmy scope follow-up at all existing seeds
+
+A subsequent FormArmy-only matrix executes all eighteen observations at seeds
+0, 1 and 7, in both additional-axiom settings: unchanged current, the same caller
+scope construction, and a distinct false assertion before the first mandatory
+caller check. The latter is inserted after that call's preparation. The prior
+false assertions after the first check are preserved and remain inconclusive;
+the new control does not replace or reinterpret them.
+
+The [diagnostic compiler](https://github.com/erniecohen/dafny/actions/runs/37903599649)
+passes all six actual stages. Its positive translation is unchanged. All six
+native controls reproduce the complete reference solver streams, outcomes and
+resource counts. The scoped seed-zero positive also reproduces the previous
+complete scoped stream and cost. All twelve candidate/control comparisons retain
+all fifteen actual assertion expressions and full attributes strictly. Each
+check retains its own original preparation and fuel; every preparation/caller
+object remains exactly once, and reported independent WF results are Correct.
+
+Both axiom settings give these vectors. Positions are seeds 0, 1 and 7;
+`V` means Correct, `R` OutOfResource and `I` a genuine Invalid VC with the added
+false assertion's own diagnostic confirmed.
+
+| FormArmy variant | Results |
+| --- | --- |
+| Unchanged current | RRR |
+| Caller preparation scoped locally | VVV |
+| New false assertion before the first check | IRR |
+
+Thus all six real-program scoped observations verify at their original ceiling.
+This establishes the improvement across the tested seeds/configurations for this
+construction. It does not establish universal improvement or product acceptance.
+Only two of six new negative controls are genuinely Invalid; four exhaust
+resources. The completed eighteen-observation execution therefore has a rejected
+validation gate. The earlier after-check negatives remain rejected as well.
+General call publication, representative source cases and negative validation
+still need to be established before adopting this experiment in product code.
+Composite remains unresolved by the scoped construction; RemoveFactor has not
+been tested with it. Product `fe6ddd1ba` remains unchanged, with no whole-suite/
+library iteration, raised ceiling, source hint or development port.

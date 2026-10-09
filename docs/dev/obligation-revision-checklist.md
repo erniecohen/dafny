@@ -192,3 +192,15 @@ one still exhausts resources. Both new scoped false controls exhaust resources
 and are inconclusive, so their complete diagnostic gates reject acceptance.
 No product repair, uniform improvement or current review acceptance is claimed.
 General call publication and negative validation remain required before adoption.
+
+
+The [FormArmy scope seed follow-up](obligation-native-exit-regressions.md#formarmy-scope-follow-up-at-all-existing-seeds)
+executes all eighteen observations with six faithful native controls, twelve
+strict actual-check/attribute comparisons and exact reproduction of the earlier
+scoped seed-zero positive. Scoped FormArmy is VVV in both axiom settings, against
+current RRR, without removing its own check preparation or changing fuel/limits.
+The distinct before-check negative is IRR in both settings; its two Invalid
+results identify the inserted false assertion, while four OOR results remain
+inconclusive. Validation is rejected. This does not settle general publication,
+remaining regressions, negative validation or current review acceptance; product
+adoption remains pending.
