@@ -91,7 +91,7 @@ public static class NativeCallerScopeDiagnostic {
     if (impls.Count == 0) { return; } Require(impls.Count == 1, "Ambiguous implementation");
     var impl = impls.Single(); var commands = impl.Blocks.SelectMany(block => block.Cmds).ToList();
     int Count(object value) => commands.Count(command => ReferenceEquals(command, value));
-    Require(Scopes.Count == (parts[1] == "FormArmy" ? 2 : 1) && Preparations == (parts[1] == "FormArmy" ? 4 : 2),
+    Require(Scopes.Count == (parts[1] == "FormArmy" ? 4 : 1) && Preparations == (parts[1] == "FormArmy" ? 4 : 2),
       $"Unexpected caller scope: {Scopes.Count} calls, {Preparations} clause preparations");
     Require(PreparationCommands.Count == (parts[1] == "FormArmy" ? 12 : 6), "Unexpected WF scope");
     Require(PreparationCommands.All(command => Count(command) == 1), "Preparation removed or duplicated");
