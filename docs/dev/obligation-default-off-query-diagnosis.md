@@ -90,4 +90,36 @@ Thus the observed input differences are confined to those command positions
 and their resulting generated names. No checked formula, fact, trigger or fuel
 term changes. This extends the historical structural diagnosis to the current
 compiler; the earlier direct-solver replay remains historical and is not newly
-executed here. No full-library equality waiver or current replay claim follows.
+executed here. No full-library equality waiver follows. The current controlled replay below
+was subsequently completed; keep the earlier replay as separate historical evidence.
+
+
+## Current exact-query replay confirms the sampled ordering cause
+
+A fresh sixteen-observation direct Z3 5.1.0 replay uses all eight complete solver
+streams from the current compiler comparison above. Each raw stream verifies and
+reproduces its own native resource count exactly. Thus the baseline repeat
+variation and every sampled baseline/current cost difference are reproduced by
+the captured inputs themselves.
+
+For each stream, an explicit bijective generated-symbol rename preserves all
+uses and lexical binder occurrences. The entire dynamic query suffix is exact,
+and the static command multiset is exact. Restoring one integer declaration's
+position and the order of the two existing ground literal equalities makes all
+eight diagnostic inputs identical. All eight normalized replays verify with
+exactly the same resource count. No fact, checked formula, trigger, fuel layer,
+solver option or resource ceiling is changed.
+
+This extends the bounded causal result to the current accepted structural
+compiler, both additional-axiom settings and both repeats. Generated Boogie is
+byte-identical within each setting; the sampled proof-cost variation comes from
+solver-input ordering and generated names. It does not establish what internal
+allocation or collection behavior selected those orders, nor does it explain
+unsampled library cost movements.
+
+The normalized queries are diagnostic copies, not a product translation change,
+new native compiler gate or complete-library cost waiver. This replay contains
+no new negative controls; the preceding eight native observations supply their
+reported independent WF results. Strict default-off library resource acceptance
+remains open, including the distinction between unchanged generated Boogie and
+exact native query bytes. No broader verification suite is launched.

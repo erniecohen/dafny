@@ -118,8 +118,12 @@ publication fixtures. They do not rerun the whole verifier suite or standard
 library, establish a repair for remaining resource regressions, or discharge
 complete review acceptance.
 
-Strict complete default-off library resource compatibility, ordinary required
-CI and independent soundness review remain open. No whole-suite/library iteration or development-line port
+Strict complete default-off library resource compatibility and independent
+soundness review remain open. The subsequent [required PR CI](https://github.com/erniecohen/dafny/actions/runs/37957406530)
+passes on head `4662c33b0`, including the corrected actual-preparation structural
+control and inventory, all verifier shards, verdict comparisons, standard-library
+jobs and registered regression integration. Those CI solver/configuration
+boundaries remain distinct from pinned native regression acceptance. No whole-suite/library iteration or development-line port
 is launched. Porting to PR #169 still requires explicit owner approval.
 
 ## Original contract reuse diagnostic: rejected resource repair
@@ -224,3 +228,12 @@ remain. RemoveFactor seed zero still exhausts resources in both axiom settings.
 The preceding duplicate-ID resolution failure remains preserved and contributes
 no relocated proof result. Reject the placement as a repair and adopt neither
 scratch construction.
+
+
+The completed [contract-only grouping diagnosis](obligation-native-exit-regressions.md#contract-checks-verify-the-remaining-body-group-still-exhausts-resources)
+retains eighteen native observations, six faithful controls, twelve strict actual
+check/full-attribute comparisons and six genuine negatives. The two selected
+Composite seeds verify with contract isolation. RemoveFactor's isolated exit and
+recursive-call checks verify, but its eleven-check ordinary-body remainder still
+exhausts resources. No grouping policy is adopted. These results identify a
+combined-query resource interaction without closing original-ceiling acceptance.
