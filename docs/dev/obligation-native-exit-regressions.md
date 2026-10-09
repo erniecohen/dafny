@@ -294,7 +294,7 @@ support, local proof lowering/placement and normal publication.
 
 The [paired caller compiler](https://github.com/erniecohen/dafny/actions/runs/37884342637)
 passes all six actual stages. No product repair or broader seed acceptance follows
-from disabling the new producer. A six-observation follow-up will traverse the
+from disabling the new producer. The completed six-observation follow-up below traverses the
 same complete caller WF path and consume its original translator/fuel state,
 while diagnostically omitting only certified pure preparation-command emission.
 It retains leading can-call support and the actual check/publication and requires
@@ -302,3 +302,43 @@ strict assertion-expression/attribute equality. Unsupported fragments, havoc,
 non-private writes, real assertions and scope changes cannot be omitted.
 This deliberate support omission is causal diagnosis, not a proposed product
 fix: the intended product must retain assertion-equivalent proving support.
+
+
+## Caller WF emission separates Composite from FormArmy
+
+The follow-up completes six native observations at the same two seeds, with
+additional axioms off. It traverses the complete current caller WF path and
+consumes the same translator/fuel state, then omits only accepted pure preparation
+commands for the selected caller. Leading can-call support, every actual check,
+normal publication and the call remain. Unsupported fragments, havoc, source
+writes, real assertions and scope changes are rejected.
+
+Both unchanged controls reproduce complete native streams, outcomes and resource
+counts. Both negatives have genuine Invalid VCs, every reported independent WF
+check is Correct, and all four comparisons have strictly identical actual
+assertion expressions and attributes, including dependency IDs. Composite retains
+33 actual checks and FormArmy retains 15. Two prepared fragments are omitted in
+Composite and four in FormArmy. The
+[diagnostic compiler](https://github.com/erniecohen/dafny/actions/runs/37886097322)
+passes all six actual stages.
+
+| Target and seed | Current native | Caller WF commands omitted |
+| --- | --- | --- |
+| Composite, 1 | OutOfResource | Correct |
+| FormArmy, 0 | OutOfResource | OutOfResource |
+
+Composite's selected resource failure depends on these additional caller WF
+commands in this comparison. FormArmy's failure survives their omission; it
+requires a different explanation within the caller producer. This deliberate
+support omission is not a product repair. The intended product must retain
+assertion-equivalent pre-check support, regardless of the diagnostic outcome.
+
+The next source-level difference is split caller publication. Current local
+checks publish their ordinary checked pieces and then separately assume the
+whole source precondition. Legacy `GetRequires(Call)` skips free-only splitter
+pieces, and Boogie checked requirements publish their checked pieces without
+that extra whole-P summary. A narrow FormArmy comparison keeps all preparation,
+actual checks, fuel and checked-piece publication and isolates only this extra
+post-check summary. It generates the original summary/dependency ID before
+omitting its emission so actual attributes can be compared strictly. That
+comparison is pending; no broader product conclusion is drawn yet.

@@ -148,5 +148,8 @@ The [native solver-profile diagnosis](obligation-native-exit-regressions.md#fait
 adds completed faithful twelve- and six-observation captures at existing failing
 seeds. They distinguish active quantifiers without establishing a resource
 repair. Paired user-defined method-call isolation now completes twelve observations and
-localizes both selected body failures to that producer. Its preparation-emission
-follow-up remains diagnostic and pending; remaining resource acceptance and the other outstanding review requirements stay open.
+localizes both selected body failures to that producer. Its six-observation preparation-emission
+follow-up completes with strictly identical actual checks: Composite improves
+only after that diagnostic support omission, while FormArmy still exhausts
+resources. The omission is excluded as a product fix. Split caller publication
+is the next pending boundary; remaining resource acceptance and the other outstanding review requirements stay open.
