@@ -372,7 +372,7 @@ is in progress. It checks the original assignment target against its declared
 type, rejects a differing known RHS type, records unset inferred types explicitly,
 and retains normal Boogie resolution/typechecking.
 
-The same narrow substitution comparison It captures only the existing
+The same narrow substitution comparison captures only the existing
 call-argument freeze assignments and the same actual caller checks. Selected
 checks use the already computed argument value expressions through those exact
 typed binding equalities, with no reevaluation. All binding, preparation, support,
@@ -415,3 +415,38 @@ Complete support formulas/attributes, raw and normalized typed fresh-state
 preparation, actual check formulas/metadata, negative and independent WF controls
 are mandatory. No unique support, reveal effect, fuel or publication policy is
 removed. No diagnostic has been adopted into the product.
+
+## Standard construction alone: all selected seeds verify
+
+The [construction-only compiler](https://github.com/erniecohen/dafny/actions/runs/37999913438)
+passes all eight actual build stages. Its complete seed-zero comparison contains
+twelve observations; all four selected positives verify and all preservation,
+false-entry and independent WF controls pass. The separate complete thirty-six-
+observation follow-up keeps the same compiler and tests seeds 0, 1 and 7 in both
+axiom settings, for original and named-lambda source forms.
+
+| Source form | Native, either setting | Standard construction, axioms off | Standard construction, axioms on |
+| --- | --- | --- | --- |
+| Original | RRR | VVV | VVV |
+| Named lambda | RRR | VVV | VVV |
+
+All twelve native outcome/resource controls and four complete seed-zero module
+controls match. All twenty-four comparisons retain the eight actual check
+formulas and full metadata, both raw and normalized preparation through typed
+fresh-declaration roles, original normalization/scope policy, and the complete
+unique can-call support formulas/attributes before the check. All twelve
+entry-false controls remain genuinely Invalid; independent specification WF is
+Correct. The original combined ceiling, warning policy, source and project
+options, declaration order and core count remain fixed. No assertion isolation,
+positive source hint, extra proof, fuel/publication rewrite or fresh-scope
+extension is selected.
+
+This isolates a successful canonical construction path, rather than the earlier
+compound normalization/scope experiment. The general product candidate
+`b3888f933` removes the extra early caller can-call construction and uses the
+complete support already emitted by the standard statement-WF path after WF,
+before the same sole actual check. It adds a structural witness/support-order
+control and registered quantified implicit/explicit and false-source fixtures.
+Normal compiler and relevant native gates are pending. Scratch evidence is not
+relabeled as product evidence, closure of the other regressions, complete
+default-off compatibility, or independent soundness review.

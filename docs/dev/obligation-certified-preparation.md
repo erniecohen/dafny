@@ -1,6 +1,6 @@
 # Declared-contract preparation argument
 
-The current single-check semantic implementation is `991b60037`, with the
+The previously validated single-check semantic implementation is `991b60037`, with the
 command-neutral actual-preparation observer and structural controls in `df4c7066f`.
 The proposition remains mandatory and is checked once. The
 [registered and paired native controls](obligation-caller-publication-native.md)
@@ -210,3 +210,24 @@ guard is constructed explicitly to retain literal guards rather than relying
 on the native conjunction helper's Boolean simplifications. The current product
 certificate remains unchanged; the recorded scope-only proposal also remains
 experimental pending a general implementation and structural acceptance.
+
+## Standard caller support construction candidate
+
+Candidate `b3888f933` keeps the original normalized statement-WF preparation and
+scope policy and uses its complete can-call support at the usual assertion point:
+after WF and before the actual caller check. The caller had constructed another
+copy of complete support before running that same preparation. Removing that
+extra construction introduces no fact or proof obligation; complete support
+remains present before the unchanged mandatory checks. Contract-WF licensing,
+earlier-clause publication, frozen inputs, exact heaps, diagnostics, full
+check metadata, fuel, call ordering and outer reveal effects retain their
+existing paths. This is a caller change, not a change to guarded/inherited
+leading support at exits.
+
+The controlled native comparison retains every unique complete support formula
+and its attributes and compares both original and normalized preparation under
+typed fresh-declaration roles, with actual check formulas and metadata unchanged.
+All selected Remainder cases verify at the original ceiling for seeds 0/1/7 in
+both axiom settings; false and independent WF controls pass. Normal candidate
+compiler validation remains pending. The result does not establish a general
+resource-monotonicity guarantee or resolve the remaining independent review.
