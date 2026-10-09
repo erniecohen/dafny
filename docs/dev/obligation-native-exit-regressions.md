@@ -900,6 +900,39 @@ The remaining placement boundary is the common exit block: a body assertion
 can merge terminal paths that a checked procedure postcondition treated as
 separate exits. A further support-preserving scratch comparison will place the
 unchanged exit fragment on those terminal paths and audit exactly one mandatory
-check per reachable exit. That comparison is pending; it establishes no repair
-until native controls and complete observations pass. Composite, RemoveFactor
+check per reachable exit. The completed comparison below rejects that placement as a repair. Composite, RemoveFactor
 and complete review acceptance remain open.
+
+## Terminal-path exit placement is also a rejected repair
+
+A support-preserving scratch comparison moves the unchanged certified exit
+fragment from the common exit block to its two terminal predecessor paths. It
+keeps every preparation command, leading can-call support, actual check, normal
+summary and procedure contract. All other body command objects and transfers
+remain unchanged. A control-flow audit requires exactly one mandatory check on
+each of the two reachable terminating paths. The additional static exit check
+represents the second path; no path checks its clause twice.
+
+The first trial is retained as a failed diagnostic: copying statement dependency
+IDs violates Boogie's uniqueness rule, so the relocated variant stops at
+resolution before producing a proof result. Its native control completes. The
+[corrected compiler](https://github.com/erniecohen/dafny/actions/runs/37952630209)
+passes all eight actual stages and preserves the first exit's original entries.
+The second receives fresh IDs and distinct dependency objects with equal source
+ranges, descriptions and policies. Runtime guards require additional entries in
+the original coverage set and restoration of the manager's declaration context.
+
+All six corrected native observations complete at RemoveFactor seed zero, for
+both additional-axiom settings. Both native controls reproduce complete solver
+inputs, outcomes and resource counts exactly. Four comparisons preserve every
+unique check expression, origin and non-ID assertion attribute; the necessary
+additional dependency IDs are validated separately rather than described as
+literal full-attribute equality. Both false-entry controls contain genuine
+Invalid VCs, and every reported independent WF result is Correct.
+
+Both relocated positive observations still exhaust their original resource
+ceiling. The complete diagnostic gate passes, but terminal-path placement is
+rejected as a repair within the explicitly recorded fresh-metadata boundary.
+Neither scratch exit construction is adopted. This result does not establish
+that all placement choices have no search effect or settle the remaining
+Composite/RemoveFactor regressions.
