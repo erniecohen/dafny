@@ -1049,5 +1049,31 @@ A remaining bounded exit-skeleton comparison withholds the already generated
 fragment before root statement collection, lets native Boogie construct the two
 terminal returns naturally, then uses the exact pinned unified-exit pass and
 appends the unchanged fragment once. This differs from reconstructing returns
-after CFG generation and from copying the check into two branches. Its compiler
-and native evidence remain pending; it is not a product policy.
+after CFG generation and from copying the check into two branches. Its completed compiler/native result follows; it is not a product policy.
+
+
+## Naturally constructed exits still produce the native query
+
+The [source-skeleton scratch compiler](https://github.com/erniecohen/dafny/actions/runs/37966133403)
+passes all eight actual stages against the accepted structural base. All six
+native observations complete, with two exact complete-input/outcome/resource
+controls, four strict actual-check/full-attribute comparisons, Correct reported
+WF results and two genuine Invalid false entries.
+
+The already prepared pure exit fragment is withheld before native statement
+collection, anonymous naming and successor construction. The resulting two
+native terminal returns go directly through the pinned `GenerateUnifiedExit`
+pass; no return or block is reconstructed afterward. Its new shared exit then
+receives the entire original fragment once and in order. All original source
+and native body commands, fuel traversal, preparation, publication, actual
+formulas and full dependency attributes remain. Both actual exit paths have
+one mandatory check, with thirteen static assertions and no dependency copies.
+
+Native and transformed complete solver streams through the last check-sat are
+exactly identical in both axiom settings. RemoveFactor seed zero still exhausts
+resources with the same count. This rejects the remaining source-skeleton
+construction as a resource repair, beyond the earlier post-CFG unification and
+pre-CFG terminal-copy results. None is adopted. Current semantic product
+`991b60037` is unchanged; Composite/RemoveFactor resource acceptance remains
+open, with no proof hint, support omission, raised ceiling, full-suite iteration
+or development port.
