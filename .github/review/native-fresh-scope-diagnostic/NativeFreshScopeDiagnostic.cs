@@ -65,7 +65,14 @@ public static class NativeFreshScopeDiagnostic {
   private sealed class ReadNames:Bpl.ReadOnlyVisitor{internal HashSet<string> Names{get;}=new();public override Bpl.Expr VisitIdentifierExpr(Bpl.IdentifierExpr n){Names.Add(n.Name);return n;}}
 
   private static string[] Selection(){var value=Environment.GetEnvironmentVariable("OBLIGATION_DIAGNOSTIC_FRESH_SCOPE");if(value==null){return null;}var p=value.Split(':');Require(p.Length==2&&p[1]=="LemmaRemainder"&&new[]{"native-control","fresh-scope","false-entry"}.Contains(p[0]),"Unknown selection");return p;}
-  public static bool UseCallerSupportOrder(string declaration){var p=Selection();return p!=null&&p[1]==declaration&&p[0]!="native-control";}
+  private static readonly List<object> CallerSupports=new();
+  private static readonly Dictionary<Bpl.AssumeCmd,string> OriginalCallerSupports=new(ReferenceEqualityComparer.Instance);
+  public static bool UseCallerSupportOrder(string declaration,Bpl.AssumeCmd support){var p=Selection();if(p==null||p[1]!=declaration){return false;}OriginalCallerSupports.Add(support,JsonSerializer.Serialize(CommandKey(support)));return p[0]!="native-control";}
+  public static void ObserveCallerSupport(string declaration,Bpl.AssumeCmd support,IReadOnlyList<object> commands){
+    var p=Selection();if(p==null||p[1]!=declaration){return;}
+    var fingerprint=JsonSerializer.Serialize(CommandKey(support));var count=commands.Count(c=>ReferenceEquals(c,support));Require(count==1&&OriginalCallerSupports[support]==fingerprint,"Original caller support changed or was duplicated/lost");
+    CallerSupports.Add(new{fingerprint,originalCommandRetainedExactlyOnce=true,selected=p[0]!="native-control",atEndBeforeActualCheck=ReferenceEquals(commands.Last(),support)});
+  }
   public static bool Scope(string declaration,IReadOnlyList<object> commands,ISet<string> arguments,ISet<Bpl.Variable> fresh){
     var p=Selection();if(p==null||p[1]!=declaration){return false;}
     var havocs=new List<Bpl.HavocCmd>();var eligible=Eligible(commands,arguments,fresh,havocs);var selected=p[0]!="native-control"&&eligible&&havocs.Count>0;
@@ -94,7 +101,7 @@ public static class NativeFreshScopeDiagnostic {
   };
   private static string Key(Bpl.AssertCmd c)=>JsonSerializer.Serialize(new{expression=NativeFreshScopeFingerprint.Expression(c.Expr),attributes=NativeFreshScopeFingerprint.Attributes(c.Attributes,new NativeFreshScopeFingerprint.BindingScope()),line=c.tok.line,col=c.tok.col});
   public static void Apply(Bpl.Program program){var p=Selection();if(p==null){return;}var targets=program.TopLevelDeclarations.OfType<Bpl.Implementation>().Where(i=>i.Name=="Impl$$Std_mArithmetic_mDivMod.__default.LemmaRemainder").ToList();if(targets.Count==0){return;}Require(targets.Count==1,"Unexpected implementation count");var impl=targets.Single();var checks=impl.Blocks.SelectMany(b=>b.Cmds).OfType<Bpl.AssertCmd>().Select(Key).OrderBy(x=>x,StringComparer.Ordinal).ToArray();Require(checks.Length==8,"Unexpected original check count");var negative=p[0]=="false-entry";if(negative){impl.Blocks.First().Cmds.Insert(0,new Bpl.AssertCmd(impl.tok,Bpl.Expr.False));}
-    var path=Environment.GetEnvironmentVariable("OBLIGATION_DIAGNOSTIC_AUDIT");Require(!string.IsNullOrEmpty(path)&&!File.Exists(path),"Missing/repeated audit");File.WriteAllText(path,JsonSerializer.Serialize(new{target=p[1],variant=p[0],actualCheckFingerprints=checks,staticCheckCount=checks.Length,preparations=Preparations,normalizations=Normalizations,negativeEntryAdded=negative,allPreparationCommandsRetained=true,noSupportFuelFormulaOrAttributeRewrite=true,onlyExistingCallerProofScopePolicyExtended=true,existingCertifiedCallerSupportOrderExtended=true,existingVariableHavocsRejected=true,statementExpressionScopeExclusionRetained=true,productPolicy=false})+"\n");
+    var path=Environment.GetEnvironmentVariable("OBLIGATION_DIAGNOSTIC_AUDIT");Require(!string.IsNullOrEmpty(path)&&!File.Exists(path),"Missing/repeated audit");File.WriteAllText(path,JsonSerializer.Serialize(new{target=p[1],variant=p[0],actualCheckFingerprints=checks,staticCheckCount=checks.Length,preparations=Preparations,normalizations=Normalizations,callerSupports=CallerSupports,negativeEntryAdded=negative,allPreparationCommandsRetained=true,noSupportFuelFormulaOrAttributeRewrite=true,onlyExistingCallerProofScopePolicyExtended=true,existingCertifiedCallerSupportOrderExtended=true,existingVariableHavocsRejected=true,statementExpressionScopeExclusionRetained=true,productPolicy=false})+"\n");
   }
   private static void Require(bool condition,string message){if(!condition){throw new InvalidOperationException(message);}}
 }

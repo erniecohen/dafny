@@ -20,10 +20,12 @@ p=root/'Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrCall.cs';raw=p.re
 before="""        callerProof.Add(TrAssumeCmd(tok, callEtran.CanCallAssumptionForVerification(instantiated)));
         var lowering = LowerDeclaredProposition(instantiated, callerProof, locals, callEtran);"""
 after="""        var diagnosticLeadingSupport = TrAssumeCmd(tok, callEtran.CanCallAssumptionForVerification(instantiated));
-        var diagnosticOrder = NativeFreshScopeDiagnostic.UseCallerSupportOrder((codeContext as Declaration)?.Name);
+        var diagnosticOrder = NativeFreshScopeDiagnostic.UseCallerSupportOrder((codeContext as Declaration)?.Name, diagnosticLeadingSupport);
         if (!diagnosticOrder) { callerProof.Add(diagnosticLeadingSupport); }
         var lowering = LowerDeclaredProposition(instantiated, callerProof, locals, callEtran,
-          leadingSupport: diagnosticOrder ? diagnosticLeadingSupport : null);"""
+          leadingSupport: diagnosticOrder ? diagnosticLeadingSupport : null);
+        NativeFreshScopeDiagnostic.ObserveCallerSupport((codeContext as Declaration)?.Name,
+          diagnosticLeadingSupport, callerProof.Commands);"""
 assert s2.count(before)==1;changed=s2.replace(before,after).encode();p.write_bytes(changed);record['files'][str(p.relative_to(root))]={'before':sha(raw),'after':sha(changed)}
 for name,before,after in [
  ('Source/DafnyLanguageServer/Language/DafnyProgramVerifier.cs','          return translator.DoTranslation(resolution.ResolvedProgram, moduleDefinition);','          var translated = translator.DoTranslation(resolution.ResolvedProgram, moduleDefinition);\n          NativeFreshScopeDiagnostic.Apply(translated);\n          return translated;'),
