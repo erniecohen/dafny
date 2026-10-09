@@ -13,6 +13,18 @@ part=part.replace(old,"""        PurePreparation = !condition.DescendantsAndSelf
           ((!ReferenceEquals(normalized, preparation.Commands) &&
             CertifiedContractPreparation.CanScope(normalized, argumentTemporaries)) || diagnosticScope)""")
 changed=(s[:start]+part+s[end:]).encode();p.write_bytes(changed);record['files'][str(p.relative_to(root))]={'before':sha(raw),'after':sha(changed)}
+# Construct the same original can-call expression at the same original point.
+# Only pass its command to the existing certified support-order machinery in
+# selected variants. Native control retains its original command position.
+p=root/'Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrCall.cs';raw=p.read_bytes();s2=raw.decode('utf-8-sig')
+before="""        callerProof.Add(TrAssumeCmd(tok, callEtran.CanCallAssumptionForVerification(instantiated)));
+        var lowering = LowerDeclaredProposition(instantiated, callerProof, locals, callEtran);"""
+after="""        var diagnosticLeadingSupport = TrAssumeCmd(tok, callEtran.CanCallAssumptionForVerification(instantiated));
+        var diagnosticOrder = NativeFreshScopeDiagnostic.UseCallerSupportOrder((codeContext as Declaration)?.Name);
+        if (!diagnosticOrder) { callerProof.Add(diagnosticLeadingSupport); }
+        var lowering = LowerDeclaredProposition(instantiated, callerProof, locals, callEtran,
+          leadingSupport: diagnosticOrder ? diagnosticLeadingSupport : null);"""
+assert s2.count(before)==1;changed=s2.replace(before,after).encode();p.write_bytes(changed);record['files'][str(p.relative_to(root))]={'before':sha(raw),'after':sha(changed)}
 for name,before,after in [
  ('Source/DafnyLanguageServer/Language/DafnyProgramVerifier.cs','          return translator.DoTranslation(resolution.ResolvedProgram, moduleDefinition);','          var translated = translator.DoTranslation(resolution.ResolvedProgram, moduleDefinition);\n          NativeFreshScopeDiagnostic.Apply(translated);\n          return translated;'),
  ('Source/DafnyCore/DafnyCore.csproj','</Project>','  <ItemGroup><Compile Include="../../.github/review/native-fresh-scope-diagnostic/*.cs" /></ItemGroup>\n</Project>')]:
