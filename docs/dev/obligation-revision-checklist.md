@@ -1,13 +1,24 @@
 # Issue 100 revision checklist
 
 **Latest source revision `df4c7066f` extends the structural control to actual preparation commands; verifier commands are unchanged.**
-The observer is absent during ordinary verification. Its capture-mode 106 tests
-pass in the [initial build](https://github.com/erniecohen/dafny/actions/runs/37954039075);
-the normal inventory/core gates reject source-decoding/JSON registry metadata.
-That metadata is corrected without changing producer counts, token hashes or
-classifications, and normal validation remains pending. Retain the initial failure.
+The observer is absent during ordinary verification. The
+[corrected compiler build](https://github.com/erniecohen/dafny/actions/runs/37955030278)
+passes all ten actual stages, 106 obligation tests in each mode, all 384 core
+tests, the unchanged 287-group producer inventory and the editor build. The
+actual-preparation control preserves private argument bindings, allocation and
+can-call facts, heap and ordering when unrelated body assertions are inserted;
+changing the checked argument still changes its fingerprint.
+The [initial build](https://github.com/erniecohen/dafny/actions/runs/37954039075)
+passes the structural controls but rejects source-decoding/JSON registry metadata;
+retain that failure. Only registry source hashes/formatting were corrected, without
+changing producer counts, token hashes or classifications.
+The preceding [PR CI run](https://github.com/erniecohen/dafny/actions/runs/37953891034)
+passes all eight verifier shards, both verdict comparisons, all four standard-library
+jobs and its registered regression step. Its subsequent structural inventory step
+fails on that same registry metadata; the corrected build above passes it.
+CI proof jobs using the other test solver are distinct from pinned Z3 5.1.0 evidence.
 Native results below belong to accepted caller-publication product `991b60037`,
-not a newly accepted compiler identity for this structural revision.
+not a newly accepted native compiler identity for this structural revision.
 
 **Caller-publication candidate `991b60037` has 72 completed native observations across two frozen gates; regression acceptance remains open.**
 It preserves the inherited/free-call interface, publishes original contracts for
