@@ -1,0 +1,3 @@
+# Certified exit fragment on terminal paths
+
+Scratch causal diagnostic only. Retain complete certified pure preparation, sole actual check, normal summary publication, contracts and fuel traversal. Move the unchanged common-exit fragment to both terminal predecessor paths, preserving each cloned expression, full attribute payload and source origin. Audit that every reachable terminating path contains exactly one mandatory postcondition check; retain every other original body command and transfer. The native control remains untouched, and a distinct false-entry control must contain an Invalid VC. No new hints, resource caps, batches, background axioms or product policy.
