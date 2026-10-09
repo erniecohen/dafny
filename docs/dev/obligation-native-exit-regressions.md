@@ -771,4 +771,3 @@ Composite's streams change but its proof remains exhausted. The caller clause
 boundary does not repair either tested Composite failure. Reject this
 construction as a resource repair, retain the metadata restriction, and adopt
 no product change. The separate queued macOS comparison is left intact.
-
