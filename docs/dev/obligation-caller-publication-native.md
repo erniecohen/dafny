@@ -175,10 +175,14 @@ which changes preceding terminal scopes. Composite's inserted own-precondition
 assertion restores enabled seed zero but not seed one. An offline audit confirms
 six faithful controls and eight genuine negatives without replacing the failed
 native gate or claiming independent WF evidence. The scratch whole-caller-clause
-comparison then completes all 24 Linux observations with faithful native controls,
-exact actual check expressions and eight genuine Invalid controls. Its strict
-gate rejects dependency-ID attribute differences. Whole-clause preparation leaves
-Composite exhausted at both tested seeds; FormArmy and RemoveFactor retain exact
-native solver streams and outcomes. Reject this proposed resource repair and
-adopt no product change. The separate macOS comparison remains queued unchanged;
-both resource regressions remain unresolved.
+comparison completes all 24 observations on each native platform with faithful
+controls, exact actual check expressions and eight genuine Invalid controls per
+platform. Both strict gates reject dependency-ID attribute differences.
+Whole-clause preparation restores Composite seed zero on macOS; the identical
+complete solver input still exhausts resources on Linux. All 24 complete solver
+inputs and actual-check fingerprints match across platforms, while their native
+Z3 5.1.0 binaries differ. Composite seed one still fails on both. FormArmy and
+RemoveFactor retain exact native solver streams and outcomes. This is a bounded
+native solver-build difference, without a demonstrated underlying cause or general
+repair. Adopt no product change; both resource regressions and the metadata
+restriction remain unresolved.

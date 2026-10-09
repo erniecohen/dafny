@@ -733,7 +733,7 @@ preparation, splitting, sole checks, pure-scope policy and original contracts.
 The experimental policy applies generally to ordinary checked calls; selected
 names bound the observation and false-entry control, not a product rule.
 All six actual compilation/assembly stages pass. The corresponding macOS
-24-observation comparison remains queued with its frozen inputs unchanged.
+24-observation comparison completes with its frozen inputs unchanged.
 A [second scratch build](https://github.com/erniecohen/dafny/actions/runs/37935823909)
 compiles the same diagnostic for both native platforms; all eight actual stages
 pass. Each platform retains the exact accepted compiler bundle except its own
@@ -741,33 +741,46 @@ new Core and LanguageServer assemblies. No product adoption, support deletion,
 global fuel change, new axiom or raised ceiling follows from compilation or the
 source-oracle observations.
 
-### Whole caller source-clause result: rejected repair
+### Whole caller source-clause result: partial macOS improvement, rejected adoption
 
-The second build completes all 24 native observations on Linux with Z3 5.1.0:
-Composite seeds 0/1, repaired FormArmy seed 0 and unchanged-exit RemoveFactor seed
-0, in both axiom settings, each with native, whole-clause and false-entry variants.
-All eight native controls reproduce prior outcomes and resource vectors; all six
-seed-zero complete solver streams match exactly. All eight false-entry controls
-are genuinely Invalid, and all reported independent WF results are Correct.
-The identical controls establish platform fidelity only for this measured scope.
+Both native comparisons complete all 24 observations with Z3 5.1.0: Composite
+seeds 0/1, repaired FormArmy seed 0 and unchanged-exit RemoveFactor seed 0, in
+both axiom settings, each with native, whole-clause and false-entry variants.
+On each platform, all eight native controls reproduce prior outcomes and resource
+vectors, and all six seed-zero complete solver streams match exactly. All eight
+false-entry controls per platform are genuinely Invalid, and all reported
+independent WF results are Correct. The identical controls establish native
+fidelity only for this measured scope.
 
-Every one of the sixteen actual-expression comparisons is exact, with unchanged
-check counts, source origins, triggers and fuel terms. The strict gate nevertheless
-rejects twelve comparisons because dependency ID attributes change; only FormArmy
-retains every full attribute. An offline inspection finds only ID-string changes
-in the compared attributes, with a one-to-one mapping; it does not amend the
-strict gate or validate dependency objects, coverage entries or descriptions.
-The original rejected gate and complete evidence remain preserved.
+On each platform, every one of the sixteen actual-expression comparisons is
+exact, with unchanged check counts, source origins, triggers and fuel terms.
+Both strict gates nevertheless reject twelve comparisons because dependency ID
+attributes change; only FormArmy retains every full attribute. An offline
+inspection finds only ID-string changes in the compared attributes, with a
+one-to-one mapping; it does not amend either strict gate or validate dependency
+objects, coverage entries or descriptions. Both rejected gates and their complete
+evidence remain preserved.
 
-| Target / tested seeds | Native control | Whole source-clause preparation |
-| --- | --- | --- |
-| Composite / 0 and 1 | OutOfResource at both seeds | OutOfResource at both seeds |
-| FormArmy / 0 | Correct | Correct |
-| RemoveFactor / 0 | OutOfResource | OutOfResource |
+| Target / tested seed | Native control, both platforms | Whole clause, macOS | Whole clause, Linux |
+| --- | --- | --- | --- |
+| Composite / 0 | OutOfResource | Correct | OutOfResource |
+| Composite / 1 | OutOfResource | OutOfResource | OutOfResource |
+| FormArmy / 0 | Correct | Correct | Correct |
+| RemoveFactor / 0 | OutOfResource | OutOfResource | OutOfResource |
 
 Both axiom settings give the same results. FormArmy and RemoveFactor also retain
-identical complete native/whole-clause solver streams and resource vectors.
-Composite's streams change but its proof remains exhausted. The caller clause
-boundary does not repair either tested Composite failure. Reject this
-construction as a resource repair, retain the metadata restriction, and adopt
-no product change. The separate queued macOS comparison is left intact.
+identical complete native/whole-clause solver streams and resource vectors on
+each platform. Composite's streams change within each platform. A cross-platform
+comparison finds all 24 complete canonical solver inputs through the final
+`check-sat` exactly equal, including command order, options and quantifier IDs.
+All actual-check expression/origin/full-attribute fingerprints also match across
+platforms. Only whole-clause Composite at seed zero has a different verdict and
+resource vector. Both solvers report version 5.1.0, but their recorded native
+binary hashes differ.
+
+The seed-zero result therefore records proof-search behavior that differs between
+the native solver builds on identical complete inputs. It does not identify CPU,
+OS, compiler, floating-point behavior, quantifier instantiation or missing facts
+as the cause. The partial macOS improvement does not settle Composite seed one or
+RemoveFactor, and the strict metadata restriction remains. Adopt no product
+change or general resource-repair claim from this construction.
