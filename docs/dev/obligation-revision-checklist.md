@@ -362,3 +362,12 @@ genuine source false-entry failures. All positive individual batches verify
 at the selected existing failing seeds in both paths; combined enabled VCs still
 exhaust resources. This is evidence of combined-query interaction, not an adopted
 batching policy or original combined-cap acceptance. The completed [contract-only grouping comparison](obligation-native-exit-regressions.md#contract-checks-verify-the-remaining-body-group-still-exhausts-resources) has eighteen observations with six faithful native controls, twelve strict check/full-metadata comparisons and six genuine negatives. Composite verifies at both selected seeds, but RemoveFactor still exhausts resources in the eleven-check ordinary-body remainder; its two isolated contract checks verify. This rejects contract-only grouping as a product repair. Full-query context and aggregate budgets differ despite retained local preparation/fuel. Remaining combined-query review acceptance stays open.
+
+
+The current [default-off exact-query replay](obligation-default-off-query-diagnosis.md#current-exact-query-replay-confirms-the-sampled-ordering-cause)
+completes sixteen observations: all eight raw streams reproduce their native
+resource counts exactly, while all eight explicitly normalized streams verify
+with identical counts. Only generated names, one integer declaration position
+and two existing ground literal axiom positions differ. This confirms the current
+sample's ordering cause; it does not waive complete-library cost acceptance or
+change product translation. The baseline itself has repeat-dependent ordering.

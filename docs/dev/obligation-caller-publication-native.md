@@ -118,8 +118,12 @@ publication fixtures. They do not rerun the whole verifier suite or standard
 library, establish a repair for remaining resource regressions, or discharge
 complete review acceptance.
 
-Strict complete default-off library resource compatibility, ordinary required
-CI and independent soundness review remain open. No whole-suite/library iteration or development-line port
+Strict complete default-off library resource compatibility and independent
+soundness review remain open. The subsequent [required PR CI](https://github.com/erniecohen/dafny/actions/runs/37957406530)
+passes on head `4662c33b0`, including the corrected actual-preparation structural
+control and inventory, all verifier shards, verdict comparisons, standard-library
+jobs and registered regression integration. Those CI solver/configuration
+boundaries remain distinct from pinned native regression acceptance. No whole-suite/library iteration or development-line port
 is launched. Porting to PR #169 still requires explicit owner approval.
 
 ## Original contract reuse diagnostic: rejected resource repair
