@@ -93,9 +93,18 @@ completed diagnostic gate validates the experiment and its controls; it does
 not establish a positive proof result. This construction is rejected as a
 resource repair and is not adopted in the product.
 
-Current full registered/paired native evidence, strict complete default-off
-library resource compatibility, ordinary required CI and independent soundness
-review remain open. No whole-suite/library iteration or development-line port
+Fresh complete focused gates are submitted for the current compiled product:
+the committed registered helper has 298 invocations, and all 172 paired/negative
+fixtures produce 688 observations across both resolvers and axiom settings.
+The registered helper includes its original terminal-reveal control and the new
+false-precondition call outside the paired manifest. Invocation counting is
+checked before submission; the registered comparison preserves the exact
+committed helper body and expected output, with observational native logging
+and genuine Invalid checks. These results remain pending. They do not rerun the
+whole verifier suite or standard library.
+
+Strict complete default-off library resource compatibility, ordinary required
+CI and independent soundness review remain open. No whole-suite/library iteration or development-line port
 is launched. Porting to PR #169 still requires explicit owner approval.
 
 ## Original contract reuse diagnostic: rejected resource repair
