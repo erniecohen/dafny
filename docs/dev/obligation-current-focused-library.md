@@ -1,9 +1,11 @@
 # Current focused standard-library regressions
 
-**Current candidate:** [canonical caller construction native evidence](obligation-canonical-caller-native.md) records the normal `b3888f933` compiler, complete 310 registered observations, successful Remainder seed vectors, 96 known-library observations and the explicitly combined 72 known-suite/control observations. Remaining resource and review acceptance requirements stay open; preceding results below retain their original compiler identities.
+**Current exit candidate:** [canonical local exit construction](obligation-canonical-exit-native.md) records product pin `1e6fa5126`, the completed normal compiler/structural build (112 obligation tests, 390 core tests, 287 producer groups), the completed bounded multiset diagnostic and pending complete focused native gates. No current exit-product proof acceptance is claimed. The separately validated caller correction and earlier evidence retain their named source identities below.
+
+**Validated caller candidate:** [canonical caller construction native evidence](obligation-canonical-caller-native.md) records the normal `b3888f933` compiler, complete 310 registered observations, successful Remainder seed vectors, 96 known-library observations and the explicitly combined 72 known-suite/control observations. Remaining resource and review acceptance requirements stay open; preceding results below retain their original compiler identities.
 
 
-## Current normal-compiler refresh
+## Preceding normal-compiler refresh before the caller correction
 
 The focused refresh completes **96 native observations** on normal structural
 compiler `df4c7066f`, build `63fb750a9`, and Z3 5.1.0. It reruns only the ten
