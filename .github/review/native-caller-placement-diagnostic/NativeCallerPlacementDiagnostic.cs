@@ -23,8 +23,9 @@ public static class NativeCallerPlacementDiagnostic {
     Require(family is "prepare" or "check" or "other", "Unknown family");
     return Hybrid() ? enabled && family == "prepare" : enabled;
   }
-  public static bool EmitCheck(string declaration, Bpl.CallCmd call, Bpl.AssertCmd check) {
-    Sites.Add(new(declaration, call, check)); return !Hybrid();
+  public static bool EmitCheck(string declaration, Bpl.CallCmd call, Bpl.PredicateCmd command) {
+    Require(command is Bpl.AssertCmd, "Expected mandatory caller assertion");
+    Sites.Add(new(declaration, call, (Bpl.AssertCmd)command)); return !Hybrid();
   }
   public static bool EmitSummary(string declaration, Bpl.AssumeCmd summary) {
     Summaries.Add((declaration, summary)); return !Hybrid();
