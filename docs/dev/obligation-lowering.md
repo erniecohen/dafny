@@ -76,7 +76,13 @@ preconditions remain callee assumptions. Receiver, generics, boxing, old argumen
 reads/modifies frames and termination retain their original order. Old-argument
 allocation contracts likewise become nonchecking only at calls whose local
 allocation obligation is checked. Other checked boilerplate remains intact.
-Ordinary call havoc and outputs govern which established facts survive a call.
+Ordinary call havoc and outputs govern which established facts survive a call. The current caller-publication candidate gives ordinary locally checked calls a
+separate nonchecking interface with the existing `always_assume` attribute on
+original user requirements. Inherited/filtered free calls retain their original
+interface. Pure certified preparation stays local to the sole proof branch;
+statement-expression reveals and unsupported effects retain their outer scope.
+The direct Boogie fixtures include publication, a false local branch before a
+false published contract, inherited free-call exclusion and heap invalidation.
 
 Ordinary function preconditions adapt their existing checked assertion rather than
 adding a parallel proof. Higher-order calls and `.requires` share the existing
