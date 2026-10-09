@@ -51,11 +51,17 @@ public static class NativeFreshScopeDiagnostic {
   }
   private static List<object> CanonicalCommands(IReadOnlyList<object> commands,List<Bpl.Expr> guards){
     var result=new List<object>();foreach(var c in commands){
-      if(c is Bpl.IfCmd b){var body=Commands(b.Thn);if(body==null){result.Add(c);continue;}var nested=guards.Append(b.Guard).ToList();if(b.Guard!=null&&body.All(x=>x is Bpl.CommentCmd)){result.AddRange(body);var g=nested.Aggregate(Bpl.Expr.And);result.Add(new Bpl.AssumeCmd(b.tok,Bpl.Expr.Imp(g,g)));}else if(b.Guard!=null){result.AddRange(CanonicalCommands(body,nested));}else{result.Add(c);}}
-      else if(c is Bpl.AssumeCmd a&&guards.Count>0){result.Add(new Bpl.AssumeCmd(a.tok,Bpl.Expr.Imp(guards.Aggregate(Bpl.Expr.And),a.Expr),a.Attributes));}
+      if(c is Bpl.IfCmd b){var body=Commands(b.Thn);if(body==null){result.Add(c);continue;}var nested=guards.Append(b.Guard).ToList();if(b.Guard!=null&&body.All(x=>x is Bpl.CommentCmd)){result.AddRange(body);var g=Guard(nested);result.Add(new Bpl.AssumeCmd(b.tok,Bpl.Expr.Imp(g,g)));}else if(b.Guard!=null){result.AddRange(CanonicalCommands(body,nested));}else{result.Add(c);}}
+      else if(c is Bpl.AssumeCmd a&&guards.Count>0){result.Add(new Bpl.AssumeCmd(a.tok,Bpl.Expr.Imp(Guard(guards),a.Expr),a.Attributes));}
       else{result.Add(c);}
     }return result;
   }
+  // Retain every original guard, including literal guards, for the independent
+  // identity audit. Expr.And may erase a literal true/false operand.
+  private static Bpl.Expr Guard(IReadOnlyList<Bpl.Expr> guards)=>guards.Aggregate((left,right)=>{
+    var conjunction=Bpl.Expr.Binary(Bpl.BinaryOperator.Opcode.And,left,right);
+    conjunction.Type=Bpl.Type.Bool;return conjunction;
+  });
   private sealed class ReadNames:Bpl.ReadOnlyVisitor{internal HashSet<string> Names{get;}=new();public override Bpl.Expr VisitIdentifierExpr(Bpl.IdentifierExpr n){Names.Add(n.Name);return n;}}
 
   private static string[] Selection(){var value=Environment.GetEnvironmentVariable("OBLIGATION_DIAGNOSTIC_FRESH_SCOPE");if(value==null){return null;}var p=value.Split(':');Require(p.Length==2&&p[1]=="LemmaRemainder"&&new[]{"native-control","fresh-scope","false-entry"}.Contains(p[0]),"Unknown selection");return p;}
