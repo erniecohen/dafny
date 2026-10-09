@@ -1,5 +1,5 @@
 name: Native obligation private-binding diagnostic build
-# Scratch-only pure private-argument substitution; no solver work in this build.
+# Scratch-only pure private-argument substitution; audit unresolved native syntax without following Proc.
 on:
   workflow_dispatch:
   push:

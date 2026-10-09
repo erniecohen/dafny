@@ -74,6 +74,27 @@ public static class NativeBindingDiagnostic {
   }
   private sealed class Uses : Bpl.ReadOnlyVisitor {
     internal readonly HashSet<string> Names = new();
+    // Translation is audited before Boogie resolution: Proc is not linked yet.
+    // Visit procedure declarations separately through the containing program.
+    public override Bpl.Implementation VisitImplementation(Bpl.Implementation node) {
+      VisitVariableSeq(node.LocVars); VisitBlockList(node.Blocks);
+      VisitDeclWithFormals(node);
+      if (node.Attributes != null) { VisitQKeyValue(node.Attributes); }
+      return node;
+    }
+    public override Bpl.Variable VisitVariable(Bpl.Variable node) {
+      if (node.TypedIdent.WhereExpr != null) { VisitExpr(node.TypedIdent.WhereExpr); }
+      if (node.Attributes != null) { VisitQKeyValue(node.Attributes); }
+      return base.VisitVariable(node);
+    }
+    public override Bpl.Cmd VisitAssertCmd(Bpl.AssertCmd node) {
+      if (node.Attributes != null) { VisitQKeyValue(node.Attributes); }
+      return base.VisitAssertCmd(node);
+    }
+    public override Bpl.Cmd VisitAssumeCmd(Bpl.AssumeCmd node) {
+      if (node.Attributes != null) { VisitQKeyValue(node.Attributes); }
+      return base.VisitAssumeCmd(node);
+    }
     public override Bpl.Expr VisitIdentifierExpr(Bpl.IdentifierExpr node) {
       Names.Add(node.Name); return node;
     }
@@ -93,7 +114,7 @@ public static class NativeBindingDiagnostic {
     lock (Gate) { eliminated = Eliminated.Order().ToArray(); fragments = Fragments; }
     Require(parts[0] == "native-control" ? eliminated.Length == 0 : eliminated.Length > 0,
       "Expected certified private argument bindings");
-    var uses = new Uses(); uses.VisitImplementation(impl);
+    var uses = new Uses(); uses.VisitProgram(program);
     Require(!eliminated.Any(uses.Names.Contains), "Eliminated binding escapes fresh local preparation");
     Require(impl.LocVars.Where(v => eliminated.Contains(v.Name)).All(v => v.TypedIdent.WhereExpr == null),
       "Eliminated variable has an implicit where clause");
