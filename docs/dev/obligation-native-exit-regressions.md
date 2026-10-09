@@ -399,7 +399,58 @@ reproduce this selected failure. Relocating the actual precondition proof is
 therefore unnecessary to reproduce it. Together with the earlier omission
 experiments, this establishes more than one search-sensitive caller boundary;
 it does not establish a product repair or a universal account of solver cost.
-The next narrow comparison isolates private-argument allocatedness assumptions
-inside this same hybrid while preserving every other preparation command and
-the sole checked requirements. That deliberate omission is diagnosis only;
-the product continues to retain legitimate assertion-equivalent support.
+The allocatedness-only follow-up below now identifies a concrete
+search-sensitive fact inside this hybrid. Its deliberate omission remains
+diagnosis only; the product retains legitimate assertion-equivalent support.
+
+
+## Private-argument allocatedness tips the legacy-check hybrid over its ceiling
+
+Only FormArmy seed 0 with additional axioms off is tested. The three-observation
+follow-up retains the complete original caller WF/fuel traversal, every other
+WF/can-call command, all private assignments and the same six sole checked
+procedure requirements. It omits only two assumptions of this form, one before
+each `FlyRobotArmy` call:
+
+```boogie
+assume $IsAlloc(t, TSeq(Tclass._module.Bot()), $Heap);
+```
+
+Here `t` is that function application's private frozen sequence argument. The
+audit requires a certified pure fragment, a matching private argument and the
+current pre-call heap. Unsupported commands, havoc, source writes, a different
+heap, repeated omissions or a change to any retained command object are rejected.
+No fuel traversal, actual precondition, trigger pattern, call position, procedure
+contract or other preparation fact is changed.
+
+All three observations complete. The unchanged hybrid reproduces its complete
+native SMT input, outcome and resources. The omitted-fact variant verifies at
+the original resource ceiling; its false-entry control is genuinely Invalid.
+Every reported independent WF check is Correct. All six generated formulas
+strictly match their formal-to-actual substituted procedure requirements, and
+both comparisons preserve all generated expression fingerprints and full
+attributes, including dependency IDs. The
+[allocatedness diagnostic compiler](https://github.com/erniecohen/dafny/actions/runs/37891920242)
+passes all six actual stages.
+
+| FormArmy seed 0, additional axioms off | Result |
+| --- | --- |
+| Full preparation, sole legacy caller proof | OutOfResource |
+| Only the two argument allocatedness assumptions omitted | Correct |
+| False-entry control with those assumptions omitted | Invalid |
+
+These extra allocatedness facts are sufficient contributors to resource
+exhaustion in this selected legacy-check hybrid. This directly demonstrates a
+search cost from additional pre-check support while the checked propositions
+stay the same; it is not evidence of reduced fuel or a weaker actual check.
+The earlier faithful profiles identify active sequence-index and heap-related
+quantifiers, but no new profile of this variant is captured, so specific counter
+changes or a particular instantiation chain are not asserted here.
+
+The scope matters: the full current path still exhausts resources in the earlier
+experiment that omits the complete caller WF fragment. Removing these two facts
+therefore does not fully explain or repair that current path. More than one
+caller translation difference can affect this resource-limited search. Removing
+legitimate assertion-style support is excluded as a product fix, and this
+single-seed causal result does not establish uniform improvement, multi-seed
+acceptance or a whole-suite/library result. No product change follows from it.

@@ -164,7 +164,11 @@ Invalid negative. All six substituted procedure preconditions match the generate
 local formulas. FormArmy seed 0 still exhausts resources when the full new
 preparation precedes a sole legacy call proof; relocation is unnecessary to
 reproduce that selected failure. Active body background assertions also match
-baseline exactly in all three selected cases. The private-argument allocatedness
-isolation is pending and is explicitly a diagnostic support omission, not a
-product proposal. The PR description is rewritten around the requested design;
+baseline exactly in all three selected cases. The completed three-observation private-argument allocatedness
+isolation restores the selected hybrid proof after omitting only two allocation
+assumptions. All six check formulas/full generated attributes remain identical,
+all other preparation is retained, and the native/Invalid controls are faithful.
+This is a conditional diagnosis; the full current path previously still failed
+with all caller WF omitted. Removing legitimate support is excluded as a product
+fix. The PR description is rewritten around the requested design;
 S14 acceptance and the remaining review requirements remain open.
