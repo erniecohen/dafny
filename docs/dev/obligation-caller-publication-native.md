@@ -98,19 +98,33 @@ library resource compatibility, ordinary required CI and independent soundness
 review remain open. No whole-suite/library iteration or development-line port
 is launched. Porting to PR #169 still requires explicit owner approval.
 
-## Original contract reuse diagnostic
+## Original contract reuse diagnostic: rejected resource repair
 
-The current product translates the checked-call publication interface separately
-from the original interface. A
+The product translates the checked-call publication interface separately from
+the original interface. A
 [scratch compiler](https://github.com/erniecohen/dafny/actions/runs/37924616057)
-passes all six actual compilation/assembly stages for a focused comparison that
-instead copies the original translated contract. It retains expression objects,
-formal/type bindings, frame expressions and descriptions, marks only ordinary
-locally checked user requirements, and changes no actual caller/exit check,
-preparation or fuel. The comparison covers the remaining Composite/RemoveFactor
-targets and already repaired FormArmy, with faithful native controls, exact
-actual-check/attribute comparisons and false-entry controls. Native results are
-pending; this is not a product change or accepted repair.
+passes all six actual compilation/assembly stages for a focused native comparison
+that instead copies the original translated contract. It retains expression
+objects, formal/type bindings, frame expressions and descriptions, marks only
+ordinary locally checked user requirements, and changes no actual caller/exit
+check, preparation or fuel.
+
+All 24 observations complete with Z3 5.1.0, original source inputs/options,
+resource ceilings and core counts: Composite seeds 0/1, RemoveFactor seed 0 and
+already repaired FormArmy seed 0, in both additional-axiom settings, each with
+native/copy/false-entry variants. All eight native controls reproduce original
+outcomes and resource vectors; all six seed-zero full solver streams match the
+recorded native inputs. All sixteen actual-check/full-attribute comparisons
+pass, all reported independent WF outcomes are Correct, and all eight entry
+controls contain genuine Invalid assertions.
+
+More strongly, every copied/native pair has the exact same complete solver
+stream, single-batch resource vector and outcome, including Composite seed 1.
+Composite remains OutOfResource at both seeds, RemoveFactor remains
+OutOfResource, and FormArmy remains Correct in both settings. Specification
+retranslation is therefore not a resource cause in this tested scope. Reject
+this construction as a resource repair and do not adopt it in the product.
+Successful diagnostic execution is distinct from positive proof acceptance.
 
 Source inspection also finds a bookkeeping restriction in that first scratch
 compiler: fresh dependency IDs reference the original dependency objects. The
@@ -124,7 +138,7 @@ contract receives a fresh dependency object and ID; runtime guards require one
 new entry in the original per-declaration coverage set and matching dependency
 type, range and description. Its
 [compiler-only validation](https://github.com/erniecohen/dafny/actions/runs/37927075933)
-passes all six actual compilation/assembly stages. Its native dependency guards
-have not yet executed. It does not retranslate logical expressions. The earlier frozen
-comparison remains unchanged and any eventual adoption needs fresh native
-evidence for the corrected bookkeeping.
+passes all six actual compilation/assembly stages. Those native dependency
+guards have not executed. Following the unchanged solver-stream refutation,
+no native gate is launched for this metadata correction and neither scratch
+construction is adopted. The original frozen evidence is retained.

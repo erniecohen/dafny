@@ -249,3 +249,14 @@ experiment has faithful native controls, strict original check/attribute
 comparisons and six genuine Invalid controls, but scoped RemoveFactor remains
 RRR in both axiom settings. Reject it as a resource repair; do not adopt it or
 claim remaining regression/review acceptance.
+
+
+The [original contract-copy diagnostic](obligation-caller-publication-native.md#original-contract-reuse-diagnostic-rejected-resource-repair)
+completes 24 focused observations with eight faithful native controls, sixteen
+strict actual-check/full-attribute comparisons and eight genuine Invalid entry
+controls. All eight copied/native full solver streams, resource vectors and
+outcomes are identical. Reject specification retranslation as a repair for the
+tested Composite/RemoveFactor regressions; repaired FormArmy stays Correct.
+A scratch-only distinct-dependency correction compiles but receives no native
+submission after this refutation. Product lowering remains unchanged and review
+acceptance remains open.
