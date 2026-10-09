@@ -333,11 +333,44 @@ ordinary publication. Both later publish the complete proposition. Making prior
 pieces available immediately can change matching in the combined VC; formula
 equality alone does not prove that this publication difference causes exhaustion.
 
-A [scratch publication comparison](https://github.com/erniecohen/dafny/actions/runs/37994951374)
-is compiling. It adds only the existing explicit split-publication attribute to
-the same actual caller commands, after translation, with all formulas, original
-metadata, preparation, fuel, complete summaries, other commands and transfers
-retained. This deliberately changes piece publication for causal diagnosis. It
-is not a proposed removal of established facts from the product path. Genuine
-false controls and faithful native controls remain mandatory before any
-conclusion. No whole-suite/library iteration or development port is involved.
+The [scratch publication comparison](https://github.com/erniecohen/dafny/actions/runs/37994951374)
+now completes all twelve native observations. Both original and named-lambda
+sources still exhaust resources at seed zero in both axiom settings. All four
+native full-module/outcome/resource controls, eight actual-expression/full-original-
+metadata and command-retention comparisons, four genuine Invalid controls and
+independent WF controls pass. Thus changing only the three split-publication
+attributes does not repair Remainder. Reject it; product publication stays intact.
+
+## One large source assertion is sufficient
+
+The preceding successful source comparison inserted both `assert d > 0` and an
+assertion of the larger induction precondition. A complete twelve-observation
+native comparison now separates them at seed zero, in both axiom settings, with
+the normal compiler, original combined ceiling and no assertion isolation.
+
+| Named-lambda source form | Axioms off | Axioms on |
+| --- | --- | --- |
+| No redundant assertion | R | R |
+| Both immediate precondition assertions | V | V |
+| Only `assert d > 0` | R | R |
+| Only the larger precondition assertion | V | V |
+
+All four unchanged controls retain the complete module streams, outcomes and
+resource counts. All four new false-entry controls fail genuinely at their exact
+inserted assertion, and independent specification WF remains Correct. The larger
+proposition alone supplies the essential help in this paired source comparison;
+the extra positivity assertion is not responsible. These source assertions remain
+diagnostics, not proof hints to be adopted into the product.
+
+A [captured-argument compiler](https://github.com/erniecohen/dafny/actions/runs/37997471051)
+is building a narrow substitution comparison. It captures only the existing
+call-argument freeze assignments and the same actual caller checks. Selected
+checks use the already computed argument value expressions through those exact
+typed binding equalities, with no reevaluation. All binding, preparation, support,
+complete summary, call-interface and metadata commands remain. Value stability,
+binder capture and full original/projected formula controls are mandatory; native
+projection observes existing ASTs without constructing new ones. This tests
+local substitutions, not arbitrary surrounding body terms. No new axiom, fuel or
+publication policy, extra proof, raised ceiling, batching change or product
+adoption is proposed. No whole-suite/library iteration or development port is
+involved.
