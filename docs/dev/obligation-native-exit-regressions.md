@@ -820,3 +820,53 @@ The changed resource count does not establish zero search influence, and no new
 quantifier profile or causal instantiation chain is inferred. Retain the result
 and reject adoption; RemoveFactor remains unresolved. No whole-suite/library
 rerun or development-line port follows from this diagnostic.
+
+## Quantified fuel identity from the new issue comment
+
+The [reported identity example](https://github.com/erniecohen/dafny/issues/100#issuecomment-6073435411)
+is related to the assertion/implicit-check mismatch and is already repaired by
+current product `991b60037` in this measured scope. The
+[unchanged reproducer](examples/obligation-fuel-identity.dfy) uses a recursive
+`End` function under a nested universal/existential formula. Its lemma has the
+same formula as both precondition and postcondition and an empty body. A
+nonrecursive predicate wrapper is the reported workaround.
+
+A complete focused comparison uses the accepted native compiler and Z3 5.1.0,
+default resolver/seed, normal batches and warning policy, with additional axioms
+off/on and consistent obligation checks off/on. Sixteen complete-file invocations
+produce 28 targeted correctness observations: original raw and wrapped identities,
+the immediate own-proposition assertion variant, false-entry variants of both
+identities, and the symbolic witness `End(s, [v]) == v`. Supporting function
+checks and every reported specification-WF check are Correct, without warnings.
+All twelve wrapped/witness positive controls have only Valid VCs, and all eight
+false-entry controls contain genuine Invalid VCs. The complete diagnostic gate
+passes; the retained default-off proof failures are expected observations.
+
+| Case, both additional-axiom settings | Default off | Current opt-in |
+| --- | --- | --- |
+| Raw `requires P; ensures P; {}` | Postcondition fails | Verifies |
+| Same raw identity with immediate `assert P` | Assertion proves; postcondition fails | Verifies |
+| Predicate-wrapped identity | Verifies | Verifies |
+| Symbolic `End(s, [v]) == v` witness | Verifies | Verifies |
+| False assertion in either identity | Invalid | Invalid |
+
+The generated Boogie explains the important distinction. The default-off
+precondition states and triggers the existential's recursive application at
+`$LS($LZ)`, while its checked procedure postcondition uses
+`$LS($LS($LZ))`. The explicit assertion uses `$LS($LZ)` and succeeds, but leaves
+the old checked postcondition at the mismatched layer. In current opt-in mode,
+the sole body-exit check also uses `$LS($LZ)`, including the existential trigger.
+Its printed expression is token-identical to the precondition and explicit
+assertion under capture-free renaming of the two distinct quantified binders,
+including types, operators, free identifiers and fuel terms. The remaining
+fuel-two procedure postcondition is free/nonchecking; it is not a second
+implementation obligation.
+
+This uses the existing explicit assertion policy that decreases fuel locally
+when translating an existential assertion. No global expression/fuel policy is
+rewritten, and no new product change, background axiom, redundant proof or source
+hint is needed for the original example. The failure does not refute the source
+identity; additionally, the verified symbolic witness shows how `End` can reach
+any natural value. This is evidence for the exact example and settings, not a
+universal guarantee for every quantified identity or a repair of Composite and
+RemoveFactor. No whole-suite/library run or development-line port is involved.

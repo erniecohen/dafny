@@ -195,3 +195,13 @@ RemoveFactor's exit leaves seed zero OutOfResource in both axiom settings. The
 complete diagnostic gate passes, but this is neither a successful positive proof
 nor a resource repair; legitimate support omission remains excluded as a product
 fix. No product change is adopted.
+
+The new [quantified fuel identity](obligation-native-exit-regressions.md#quantified-fuel-identity-from-the-new-issue-comment)
+from issue #100 verifies unchanged with current product `991b60037` opt-in, in
+both additional-axiom settings. Default off reproduces the failure; adding an
+immediate source assertion proves that assertion but still leaves the old
+postcondition failing. The opt-in sole exit check uses the existing existential
+assertion's fuel-one encoding and trigger, matching the hypothesis. Sixteen
+complete-file invocations include twelve successful wrapped/witness controls and
+eight genuine Invalid false controls. No new product change follows; the two
+remaining resource regressions stay open.
