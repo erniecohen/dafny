@@ -645,4 +645,87 @@ public class ObligationLoweringTests {
     Assert.DoesNotContain(procedure.Ensures, ensures => !ensures.Free && ensures.Description is EnsuresDescription);
   }
 
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task CheckedCallPublishesOriginalContractWithoutChangingFreeInterface(bool refresh) {
+    const string source = "ghost predicate P(x:int) { x>=0 } lemma Use(x:int) requires P(x) {} " +
+      "lemma L(x:int) requires x>=0 { Use(x); }";
+    var programs = await Translate(source, true, refresh);
+    var implementation = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var commands = implementation.Blocks.SelectMany(b => b.Cmds).ToList();
+    Assert.Single(commands.OfType<Bpl.AssertCmd>().Where(c => c.Description is PreconditionSatisfied));
+    // The sole local proof branch terminates; normal continuation publication
+    // comes from the original Call-kind contract, not internal checked pieces.
+    Assert.Contains(commands.OfType<Bpl.AssumeCmd>(), c => c.Expr is Bpl.LiteralExpr { isBool: true, asBool: false });
+    var call = Assert.Single(commands.OfType<Bpl.CallCmd>().Where(c => c.callee.EndsWith(".Use")));
+    Assert.StartsWith("$CheckedRequires$", call.callee);
+    var procedures = programs.SelectMany(p => p.TopLevelDeclarations).OfType<Bpl.Procedure>().ToList();
+    var checkedInterface = procedures.Single(p => p.Name == call.callee);
+    var freeInterface = procedures.Single(p => p.Name == call.callee.Replace("$CheckedRequires$", ""));
+    Assert.Equal(freeInterface.Requires.Count, checkedInterface.Requires.Count);
+    Assert.Equal(freeInterface.Requires.Select(c => ObligationFingerprint.Expression(c.Condition)),
+      checkedInterface.Requires.Select(c => ObligationFingerprint.Expression(c.Condition)));
+    var published = checkedInterface.Requires.Where((c, index) =>
+      c.CanAlwaysAssume() && !freeInterface.Requires[index].CanAlwaysAssume()).ToList();
+    Assert.NotEmpty(published);
+    Assert.All(published, c => Assert.True(c.Free));
+    var disabled = await Translate(source, false, refresh);
+    Assert.DoesNotContain(disabled.SelectMany(p => p.TopLevelDeclarations).OfType<Bpl.Procedure>(),
+      p => p.Name.StartsWith("$CheckedRequires$"));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task InheritedFreeCallsRetainTheirOriginalNonpublishingInterface(bool refresh) {
+    const string source = "module Ext { predicate P(x:int) { x>=0 } lemma Use(x:int) requires P(x) {} } " +
+      "module Base { import Ext lemma L(x:int) requires Ext.P(x) { Ext.Use(x); } } " +
+      "module Derived refines Base { lemma L ... { ...; assert true; } }";
+    var programs = await Translate(source, true, refresh);
+    var calls = programs.SelectMany(p => p.Implementations).SelectMany(p => p.Blocks)
+      .SelectMany(b => b.Cmds).OfType<Bpl.CallCmd>().Where(c => c.IsFree && c.callee.EndsWith(".Use")).ToList();
+    Assert.NotEmpty(calls);
+    var procedures = programs.SelectMany(p => p.TopLevelDeclarations).OfType<Bpl.Procedure>().ToList();
+    foreach (var call in calls) {
+      Assert.DoesNotContain("$CheckedRequires$", call.callee);
+      var procedure = procedures.First(p => p.Name == call.callee);
+      Assert.DoesNotContain(procedure.Requires, c => c.CanAlwaysAssume() && c.Condition.ToString().Contains(".P("));
+    }
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task CallerProofScopesPreserveExistingOuterRevealCommands(bool refresh) {
+    const string source = "ghost predicate P(x:int) { x>=0 } lemma Use(x:int) requires P(x) {} " +
+      "lemma L(x:int) requires x>=0 { hide P; reveal P(); Use(x); assert P(x); }";
+    async Task<string[]> Visibility(bool enabled) {
+      var text = ObligationFingerprint.Emit(await Translate(source, enabled, refresh));
+      return text.Split('\n').Select(line => line.Trim()).Where(line =>
+        line.StartsWith("hide ") || line.StartsWith("reveal ") || line is "push;" or "pop;").ToArray();
+    }
+    var legacy = await Visibility(false);
+    Assert.Contains(legacy, line => line.StartsWith("reveal "));
+    Assert.Equal(legacy, await Visibility(true));
+  }
+
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task StatementExpressionRevealsKeepTheirOuterContinuationEffects(bool refresh) {
+    const string source = "ghost predicate P(x:int) { x>=0 } " +
+      "lemma Use(x:int) requires (reveal P(); P(x)) {} " +
+      "lemma L(x:int) requires x>=0 { hide P; Use(x); assert P(x); }";
+    var programs = await Translate(source, true, refresh);
+    var body = programs.SelectMany(p => p.Implementations).Single(p => p.Name.EndsWith(".L"));
+    var commands = body.Blocks.SelectMany(b => b.Cmds).ToList();
+    Assert.DoesNotContain(commands.OfType<Bpl.AssumeCmd>(),
+      c => c.Expr is Bpl.LiteralExpr { isBool: true, asBool: false });
+    Assert.Contains("reveal ", ObligationFingerprint.Emit(programs));
+    Assert.Single(commands.OfType<Bpl.CallCmd>().Where(c => c.callee.EndsWith(".Use")));
+  }
+
 }

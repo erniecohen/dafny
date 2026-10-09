@@ -27,6 +27,23 @@ internal static class CertifiedContractPreparation {
     return result;
   }
 
+  internal static bool CanScope(IReadOnlyList<object> normalized, ISet<string> argumentTemporaries) {
+    foreach (var command in normalized) {
+      switch (command) {
+        case Bpl.CommentCmd or Bpl.AssumeCmd:
+          break;
+        case Bpl.AssignCmd assignment:
+          if (assignment.Lhss.Any(lhs => lhs is not Bpl.SimpleAssignLhs simple ||
+              !argumentTemporaries.Contains(simple.AssignedVariable.Name))) { return false; }
+          break;
+        default:
+          // In particular, do not hide havocs, calls or reveal/hide commands.
+          return false;
+      }
+    }
+    return true;
+  }
+
   internal static bool CanMoveLeadingSupport(Bpl.AssumeCmd support,
     IReadOnlyList<object> normalized, ISet<string> argumentTemporaries) {
     var reads = new IdentifierNames();

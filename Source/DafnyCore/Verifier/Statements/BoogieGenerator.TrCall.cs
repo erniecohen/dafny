@@ -373,19 +373,23 @@ public partial class BoogieGenerator {
       call.IsFree = true;
     }
     if (options.Get(CommonOptionBag.ConsistentObligationChecks) && !call.IsFree) {
+      call.callee = CheckedCallName(callee, isCoCall ? MethodTranslationKind.CoCall : MethodTranslationKind.Call);
+      var callerProof = new BoogieStmtListBuilder(this, options, builder.Context);
+      var purePreparation = true;
       var callEtran = method is TwoStateLemma
         ? etran.WithVerificationOldHeap(etran.OldAt(atLabel).HeapExpr) : etran;
       foreach (var requirement in ConjunctsOf(callee.Req)) {
         var instantiated = Substitute(requirement.E, receiver, substMap, tySubst);
-        builder.Add(TrAssumeCmd(tok, callEtran.CanCallAssumptionForVerification(instantiated)));
-        var lowering = LowerDeclaredProposition(instantiated, builder, locals, callEtran);
+        callerProof.Add(TrAssumeCmd(tok, callEtran.CanCallAssumptionForVerification(instantiated)));
+        var lowering = LowerDeclaredProposition(instantiated, callerProof, locals, callEtran);
+        purePreparation &= lowering.PurePreparation;
         var (error, success) = CustomErrorMessage(requirement.Attributes);
         var direct = Substitute(requirement.E, receiver, directSubstMap, tySubst);
         var description = new PreconditionSatisfied(direct, error, success);
         foreach (var piece in lowering.Pieces) {
           if (piece.IsChecked) {
-            builder.Add(Assert(new ForceCheckOrigin(ObligationOrigin(tok, piece.Tok)), piece.E,
-              description, builder.Context with { AssertMode = AssertMode.Check }));
+            callerProof.Add(Assert(new ForceCheckOrigin(ObligationOrigin(tok, piece.Tok)), piece.E,
+              description, callerProof.Context with { AssertMode = AssertMode.Check }));
           }
         }
         if (lowering.SplitHappened) {
@@ -394,8 +398,18 @@ public partial class BoogieGenerator {
           var summary = TrAssumeCmd(tok, lowering.Summary);
           proofDependencies?.AddProofDependencyId(summary, tok,
             new AssumptionDependency(false, "checked method precondition", instantiated));
-          builder.Add(summary);
+          callerProof.Add(summary);
         }
+      }
+      if (purePreparation) {
+        // Every check keeps all its preparation and preceding checked clauses.
+        // Preparation-private facts do not become ambient facts for later code.
+        // The original call interface publishes the original contract below.
+        PathAsideBlock(tok, callerProof, builder);
+      } else {
+        // Preserve pre-existing outer effects for unsupported preparation,
+        // including statement-expression reveals and visibility commands.
+        builder.AppendAlreadyTranslated(callerProof, callerProof.Commands);
       }
     }
     builder.Add(call);
