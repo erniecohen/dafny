@@ -1,6 +1,6 @@
 # Remaining resource cases: immediate-assertion diagnosis
 
-The current semantic/product `a709df226` has a completed focused native Power
+The earlier semantic/product `a709df226` had a completed focused native Power
 repair, but three non-exempt suite targets retain resource failures. A separate
 42-observation diagnostic compares their original sources with copies that add
 an immediate explicit assertion of each final postcondition. It uses the exact
@@ -92,3 +92,5 @@ unchanged control to reproduce the current native query and result before
 attributing any change. It remains limited to the existing failing methods.
 
 The subsequent [native AST comparison](obligation-support-order-diagnosis.md) completes all 36 observations with faithful controls. It improves one Composite seed; remaining resource failures and product acceptance stay open.
+
+The subsequent [native exit-regression investigation](obligation-native-exit-regressions.md) rejects whole-clause preparation as a resource repair and localizes RemoveFactor seed-zero resource exhaustion to the exit translation family. Product acceptance remains open.

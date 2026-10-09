@@ -164,3 +164,5 @@ binary files are byte-identical. These are diagnostic builds, not accepted
 normal product builds. Original proof sources, ceilings, solver options and
 reveal scopes are unchanged. No whole-suite/library gate or development port
 is performed.
+
+The subsequent [native exit-regression investigation](obligation-native-exit-regressions.md) rejects whole-clause preparation as a resource repair and localizes RemoveFactor seed-zero resource exhaustion to the exit translation family. Product acceptance remains open.
