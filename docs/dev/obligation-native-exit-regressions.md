@@ -896,12 +896,13 @@ the selected original and private-argument-substitution solver inputs contain
 no unused private constants, and have the same three unused background function
 declarations. No additional proof run is needed for that hypothesis.
 
-The remaining placement boundary is the common exit block: a body assertion
-can merge terminal paths that a checked procedure postcondition treated as
-separate exits. A further support-preserving scratch comparison will place the
-unchanged exit fragment on those terminal paths and audit exactly one mandatory
-check per reachable exit. The completed comparison below rejects that placement as a repair. Composite, RemoveFactor
-and complete review acceptance remain open.
+The support-preserving placement comparison below moves the unchanged fragment
+to terminal paths and audits exactly one mandatory check per reachable exit.
+It rejects that alternative as a repair. The original motivation incorrectly
+assumed that legacy procedure postconditions remained separate per terminal
+path throughout Boogie. The pinned Boogie implementation also unifies returns,
+as confirmed below. Composite, RemoveFactor and complete review acceptance
+remain open.
 
 ## Terminal-path exit placement is also a rejected repair
 
@@ -936,3 +937,14 @@ rejected as a repair within the explicitly recorded fresh-metadata boundary.
 Neither scratch exit construction is adopted. This result does not establish
 that all placement choices have no search effect or settle the remaining
 Composite/RemoveFactor regressions.
+
+
+Source inspection of the exact pinned Boogie release corrects the initial
+placement hypothesis: [GenerateUnifiedExit](https://github.com/erniecohen/boogie/blob/v3.5.5%2Breview.37e4435d/Source/VCGeneration/Transformations/DesugarReturns.cs#L11)
+joins multiple returns before [InjectPostConditions](https://github.com/erniecohen/boogie/blob/v3.5.5%2Breview.37e4435d/Source/VCGeneration/Transformations/DesugarReturns.cs#L63)
+adds checked procedure postconditions. Thus the legacy pipeline also has a
+common postcondition check. The completed terminal-path diagnostic is a
+support-preserving alternative, not a faithful reconstruction of the old CFG,
+and its rejection does not establish that the current implementation newly
+introduced a join. Both control-flow audits and the native results remain valid
+within their stated scope.
