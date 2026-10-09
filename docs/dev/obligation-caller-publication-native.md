@@ -93,15 +93,20 @@ completed diagnostic gate validates the experiment and its controls; it does
 not establish a positive proof result. This construction is rejected as a
 resource repair and is not adopted in the product.
 
-Fresh complete focused gates are submitted for the current compiled product:
-the committed registered helper has 298 invocations, and all 172 paired/negative
-fixtures produce 688 observations across both resolvers and axiom settings.
-The registered helper includes its original terminal-reveal control and the new
-false-precondition call outside the paired manifest. Invocation counting is
-checked before submission; the registered comparison preserves the exact
-committed helper body and expected output, with observational native logging
-and genuine Invalid checks. These results remain pending. They do not rerun the
-whole verifier suite or standard library.
+The complete current registered gate passes all 298 committed invocations with
+the exact expected output: 73 positive observations have only Valid VCs, and all
+225 expected negative observations contain genuine Invalid VCs. Eight expected
+no-trigger warnings occur only in the negative-forall fixture. The helper
+includes its original terminal-reveal control and new false-precondition call
+outside the paired manifest. Invocation counting is checked before submission;
+its committed body and expected output remain exact, with observational native
+CSV/VC JSON logging and genuine Invalid checks.
+
+The separate complete gate for all 172 paired/negative fixtures remains pending:
+688 observations across both resolvers and axiom settings, with 248 expected
+negative observations. These focused gates do not rerun the whole verifier suite
+or standard library, establish a repair for remaining resource regressions, or
+discharge complete review acceptance.
 
 Strict complete default-off library resource compatibility, ordinary required
 CI and independent soundness review remain open. No whole-suite/library iteration or development-line port

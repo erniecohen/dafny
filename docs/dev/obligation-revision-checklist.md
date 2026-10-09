@@ -260,3 +260,10 @@ tested Composite/RemoveFactor regressions; repaired FormArmy stays Correct.
 A scratch-only distinct-dependency correction compiles but receives no native
 submission after this refutation. Product lowering remains unchanged and review
 acceptance remains open.
+
+The current registered fixture gate completes all 298 committed invocations with
+exact expected output: 73 positive observations have only Valid VCs and all 225
+negative observations contain genuine Invalid VCs. Expected no-trigger warnings
+are confined to negative-forall. The current 688-observation paired fixture gate
+remains pending; no resource repair or complete review acceptance follows from
+this functional result. See [the current record](obligation-caller-publication-native.md).
