@@ -204,12 +204,18 @@ namespace Microsoft.Dafny {
       // the method spec itself
       if (!isByMethod) {
         sink.AddTopLevelDeclaration(AddMethod(m, MethodTranslationKind.Call));
+        if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+          sink.AddTopLevelDeclaration(AddMethod(m, MethodTranslationKind.Call, publishCheckedRequires: true));
+        }
       }
       if (m is ExtremeLemma) {
         // Let the CoCall and Impl forms to use m.PrefixLemma signature and specification (and
         // note that m.PrefixLemma.Body == m.Body.
         m = ((ExtremeLemma)m).PrefixLemma;
         sink.AddTopLevelDeclaration(AddMethod(m, MethodTranslationKind.CoCall));
+        if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+          sink.AddTopLevelDeclaration(AddMethod(m, MethodTranslationKind.CoCall, publishCheckedRequires: true));
+        }
 
       }
       if (!m.HasVerifyFalseAttribute && m.Body != null && InVerificationScope(m)) {
@@ -1742,9 +1748,13 @@ namespace Microsoft.Dafny {
 
     /// <summary>
     /// This method is expected to be called at most once for each parameter combination, and in particular
-    /// at most once for each value of "kind".
+    /// at most once for each value of "kind" and checked-requirements publication mode.
     /// </summary>
-    private Boogie.Procedure AddMethod(MethodOrConstructor m, MethodTranslationKind kind) {
+    private static string CheckedCallName(ICodeContext method, MethodTranslationKind kind) =>
+      "$CheckedRequires$" + MethodName(method, kind);
+
+    private Boogie.Procedure AddMethod(MethodOrConstructor m, MethodTranslationKind kind,
+      bool publishCheckedRequires = false) {
       Contract.Requires(m != null);
       Contract.Requires(m.EnclosingClass != null);
       Contract.Requires(Predef != null);
@@ -1782,7 +1792,7 @@ namespace Microsoft.Dafny {
       GenerateMethodParameters(m.Origin, m, kind, etran, inParams, out var outParams);
 
 
-      var name = MethodName(m, kind);
+      var name = publishCheckedRequires ? CheckedCallName(m, kind) : MethodName(m, kind);
       var req = GetRequires();
       var mod = new List<Bpl.IdentifierExpr> { ordinaryEtran.HeapCastToIdentifierExpr };
       var ens = GetEnsures();
@@ -1863,8 +1873,15 @@ namespace Microsoft.Dafny {
                 // callee-visible proposition without a second call obligation.
                 var locallyChecked = options.Get(CommonOptionBag.ConsistentObligationChecks) &&
                   kind is MethodTranslationKind.Call or MethodTranslationKind.CoCall;
-                req.Add(RequiresWithDependencies(s.Tok, s.IsOnlyFree || locallyChecked,
-                  p.E, s.E, errorMessage, successMessage, null));
+                var requirement = RequiresWithDependencies(s.Tok, s.IsOnlyFree || locallyChecked,
+                  p.E, s.E, errorMessage, successMessage, null);
+                if (publishCheckedRequires && locallyChecked) {
+                  // Boogie publishes the original call contract after the sole
+                  // local proof, using its own argument/heap substitution. The
+                  // original interface remains for inherited/filtered free calls.
+                  requirement.Attributes = AlwaysAssumeAttribute(s.Tok, requirement.Attributes);
+                }
+                req.Add(requirement);
                 // the free here is not linked to the free on the original expression (this is free things generated in the splitting.)
               }
             }

@@ -1,6 +1,13 @@
 # Issue 100 revision checklist
 
-Current [native exit-regression diagnosis](obligation-native-exit-regressions.md) completes 36 whole-clause observations and 36 family-isolation observations, explicitly combining twelve RemoveFactor observations with a 24-observation follow-up for the other two cases. Whole-clause preparation is rejected as a resource repair despite identical actual checks. RemoveFactor seed-zero exhaustion is localized to exit translation, while Composite seed1 and FormArmy seed0 exhaustion is reproduced by the body family, with faithful native controls; no product repair or acceptance is claimed.
+**New caller-publication candidate is pending compilation and native validation.**
+It preserves the inherited/free-call interface, publishes original contracts for
+ordinary locally checked calls, and scopes only certified pure preparation.
+Statement-expression reveals and unsupported effects keep their prior outer
+scope. The completed scratch diagnostics below motivate this candidate; they
+do not validate its binaries or settle remaining regressions.
+
+Current [native exit-regression diagnosis](obligation-native-exit-regressions.md) completes 36 whole-clause observations and 36 family-isolation observations, explicitly combining twelve RemoveFactor observations with a 24-observation follow-up for the other two cases. Whole-clause preparation is rejected as a resource repair despite identical actual checks. RemoveFactor seed-zero exhaustion is localized to exit translation, while Composite seed1 and FormArmy seed0 exhaustion is reproduced by the body family, with faithful native controls; no product repair or acceptance is claimed. A further 54-observation private-argument substitution diagnostic preserves every actual check and does not repair any target; Composite/FormArmy solver streams remain identical to their controls at every tested seed. A twelve-observation certified caller-order follow-up also leaves the two selected failing seeds unchanged, with faithful controls and strictly retained checks.
 
 
 **Latest evidence:** product `fe6ddd1ba` has [68 focused suite/control observations](obligation-guarded-preparation-focused.md)
@@ -101,10 +108,10 @@ linked validation report.
 | S8 / 8 | Audit every source-expressible implicit obligation against the producer inventory, including bounds, nullness, domains, destructors, division/modulo, invariants and iterator/yield contracts. Document specialized internal checks outside the source-proposition criterion. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
 | S9 / 9 | Keep the withdrawn global occurrence/polarity/value fuel rewrite withdrawn. Use the existing explicit-assertion fuel/layer machinery locally; introduce no global expression policy. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
 | S10 / 10 | Ensure support depends only on the proposition and legitimate local verifier state. Reject body/prefix/invariant/context term collection and all later collection/definition-support experiments as product changes to either PR. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
-| S11 / 11 | Fix `ObligationFingerprint` using lexical binder identities/stacks. Distinguish the specified shadowing counterexamples and retain a positive alpha-equivalence control. | Implemented in `426a8d413`; the opcode controls are added in `8ddf1458b`; the binder and opcode controls pass in the [current 85-observation normal build](https://github.com/erniecohen/dafny/actions/runs/37731304101). |
+| S11 / 11 | Fix `ObligationFingerprint` using lexical binder identities/stacks. Distinguish the specified shadowing counterexamples and retain a positive alpha-equivalence control. | Implemented in `426a8d413`; the opcode controls are added in `8ddf1458b`; the binder and opcode controls pass in the [current normal build](https://github.com/erniecohen/dafny/actions/runs/37808373912), with 95 obligation tests in each mode and 373 core tests. |
 | S12 / 12 | Add quantified and non-quantified paired assertion-invariance tests for exits, subsets, method/function preconditions, bounds and old allocation. Add no-body-leakage, active scoped-reveal and no-duplicate-contract-proof structural controls. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
 | S13 / 13 | Rerun stable exit-package, exit-summary and call-package regressions on the single-check implementation before solver-specific repairs. Classify partially successful baseline/candidate seed movements as solver/resource variance. Keep source hints and resource ceilings unchanged. | Complete matrices of both preceding revisions and causal replay are documented in [the diagnosis](obligation-local-preparation-diagnosis.md); current complete focused gates and causal/query replays finish; preceding complete suite/library gates finish and remain rejected; all four affected-declaration seed matrices finish and are classified in the [current seed record](obligation-current-seed-classification.md), with platform/scope limits and raw gate rejections retained. |
-| S14 / 14 | Rewrite the PR description around single-check assertion-equivalent lowering. Complete every supported-line acceptance item below before requesting approval. | Pending |
+| S14 / 14 | Rewrite the PR description around single-check assertion-equivalent lowering. Complete every supported-line acceptance item below before requesting approval. | Description rewritten; supported-line acceptance remains pending |
 
 ## Supported-line acceptance
 
@@ -142,3 +149,76 @@ Keep the full request unchanged. Update statuses and evidence here as commits la
 and link current validation from both PR descriptions. A successful focused case,
 public build or solver replay does not complete a whole-suite/library requirement.
 Do not close an item merely because a superseded implementation passed its tests.
+
+
+The [native solver-profile diagnosis](obligation-native-exit-regressions.md#faithful-solver-profiles-distinguish-the-remaining-searches)
+adds completed faithful twelve- and six-observation captures at existing failing
+seeds. They distinguish active quantifiers without establishing a resource
+repair. Paired user-defined method-call isolation now completes twelve observations and
+localizes both selected body failures to that producer. Its six-observation preparation-emission
+follow-up completes with strictly identical actual checks: Composite improves
+only after that diagnostic support omission, while FormArmy still exhausts
+resources. The omission is excluded as a product fix. The three-observation split caller-publication follow-up also completes with
+strictly identical actual checks, all pre-check support retained and faithful
+native/invalid controls. FormArmy seed 0 still exhausts resources with the two
+extra summaries omitted; that hypothesis is rejected as a repair. Remaining
+resource acceptance and the other outstanding review requirements stay open.
+
+
+The [support-preserving caller placement comparison](obligation-native-exit-regressions.md#existing-background-assertions-and-the-sole-legacy-caller-proof)
+completes four observations with faithful baseline/current controls and an
+Invalid negative. All six substituted procedure preconditions match the generated
+local formulas. FormArmy seed 0 still exhausts resources when the full new
+preparation precedes a sole legacy call proof; relocation is unnecessary to
+reproduce that selected failure. Active body background assertions also match
+baseline exactly in all three selected cases. The completed three-observation private-argument allocatedness
+isolation restores the selected hybrid proof after omitting only two allocation
+assumptions. All six check formulas/full generated attributes remain identical,
+all other preparation is retained, and the native/Invalid controls are faithful.
+This is a conditional diagnosis; the full current path previously still failed
+with all caller WF omitted. Removing legitimate support is excluded as a product
+fix. The PR description is rewritten around the requested design;
+S14 acceptance and the remaining review requirements remain open.
+
+
+The [combined caller-emission diagnosis](obligation-native-exit-regressions.md#combined-caller-emissions-explain-the-remaining-selected-search)
+completes five full-current FormArmy observations with two faithful complete-SMT
+controls, a genuine Invalid control and all fifteen actual checks/full attributes
+strictly unchanged. Omitting WF or split summaries alone still exhausts resources;
+omitting both restores the selected proof. Leading can-call omission is not
+needed for that restoration. This explains a selected bounded search without
+authorizing product support deletion or establishing multi-seed acceptance.
+Remaining review acceptance stays open.
+
+
+The [support-preserving caller scope experiment](obligation-native-exit-regressions.md#support-retained-in-local-caller-proof-scopes)
+preserves every original preparation and sole check. Four individual original/
+scoped observations complete with faithful native controls and unchanged actual
+formulas/full attributes. FormArmy seed zero verifies when scoped; Composite seed
+one still exhausts resources. Both new scoped false controls exhaust resources
+and are inconclusive, so their complete diagnostic gates reject acceptance.
+No product repair, uniform improvement or current review acceptance is claimed.
+General call publication and negative validation remain required before adoption.
+
+
+The [FormArmy scope seed follow-up](obligation-native-exit-regressions.md#formarmy-scope-follow-up-at-all-existing-seeds)
+executes all eighteen observations with six faithful native controls, twelve
+strict actual-check/attribute comparisons and exact reproduction of the earlier
+scoped seed-zero positive. Scoped FormArmy is VVV in both axiom settings, against
+current RRR, without removing its own check preparation or changing fuel/limits.
+The distinct before-check negative is IRR in both settings; its two Invalid
+results identify the inserted false assertion, while four OOR results remain
+inconclusive. Validation is rejected. This does not settle general publication,
+remaining regressions, negative validation or current review acceptance; product
+adoption remains pending.
+
+
+The [normal call-contract publication follow-up](obligation-native-exit-regressions.md#original-call-contract-publication-with-a-local-proof-scope)
+retains eighteen completed FormArmy observations and adds only the four unfinished
+direct false-precondition controls after a scratch count-audit correction.
+FormArmy is VVV in both axiom settings with original call-contract publication;
+all ten negative observations are genuinely Invalid. Six native full-stream/cost
+controls and fourteen strict actual-check/attribute comparisons pass. This is
+twenty-two observations across two frozen gates, not a successful single run.
+General adoption must preserve inherited/filtered free-call publication and
+outer reveal scope. Remaining regressions and review acceptance stay open.

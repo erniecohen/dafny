@@ -15,7 +15,9 @@ public partial class BoogieGenerator {
     bool ApplyInduction, int InliningHeight, ObligationPreparation Preparation, Bpl.Expr Guard);
 
   internal record PropositionLowering(Expression Source, PropositionInputs Inputs,
-    IReadOnlyList<SplitExprInfo> Pieces, Bpl.Expr Summary, bool SplitHappened);
+    IReadOnlyList<SplitExprInfo> Pieces, Bpl.Expr Summary, bool SplitHappened) {
+    internal bool PurePreparation { get; init; }
+  }
 
   private PropositionLowering LowerProposition(BodyTranslationContext context, Expression condition,
     ExpressionTranslator etran, bool applyInduction = true, int heightLimit = int.MaxValue,
@@ -90,7 +92,14 @@ public partial class BoogieGenerator {
       if (leadingSupport != null && !supportAfterPreparation) { builder.Add(leadingSupport); }
       builder.AppendAlreadyTranslated(preparation, normalized);
       if (supportAfterPreparation) { builder.Add(leadingSupport); }
-      return LowerProposition(builder.Context, condition, etran, preparedTranslator: checking);
+      return LowerProposition(builder.Context, condition, etran, preparedTranslator: checking) with {
+        // Only the current proposition and its fresh preparation are inspected.
+        // Statement expressions may reveal facts or change visibility; keep
+        // their established outer effects in the original continuation.
+        PurePreparation = !ReferenceEquals(normalized, preparation.Commands) &&
+          !condition.DescendantsAndSelf.Any(expression => expression.Resolved is StmtExpr) &&
+          CertifiedContractPreparation.CanScope(normalized, argumentTemporaries)
+      };
     } finally {
       stmtContext = savedStatement;
       adjustFuelForExists = savedAdjustment;

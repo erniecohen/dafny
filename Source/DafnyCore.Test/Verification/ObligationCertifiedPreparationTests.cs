@@ -109,4 +109,19 @@ public class ObligationCertifiedPreparationTests {
       CertifiedContractPreparation.Normalize(source.Commands, new HashSet<string>()));
     Assert.Same(origin, target.Collect(Bpl.Token.NoToken).BigBlocks[0].tok);
   }
+
+  [Fact]
+  public void CallerScopeRejectsHavocAndSourceWritesButKeepsPrivateBindings() {
+    var arguments = new HashSet<string> { "arg" };
+    Assert.True(CertifiedContractPreparation.CanScope(
+      [Bpl.Cmd.SimpleAssign(Bpl.Token.NoToken, Id("arg"), Id("x")),
+        new Bpl.AssumeCmd(Bpl.Token.NoToken, Bpl.Expr.Gt(Id("arg"), Bpl.Expr.Literal(0)))], arguments));
+    Assert.False(CertifiedContractPreparation.CanScope(
+      [new Bpl.HavocCmd(Bpl.Token.NoToken, [Id("x")])], arguments));
+    Assert.False(CertifiedContractPreparation.CanScope(
+      [Bpl.Cmd.SimpleAssign(Bpl.Token.NoToken, Id("x"), Id("arg"))], arguments));
+    Assert.False(CertifiedContractPreparation.CanScope(
+      [new Bpl.CallCmd(Bpl.Token.NoToken, "reveal", [], [])], arguments));
+  }
+
 }
