@@ -512,3 +512,11 @@ retained separately. Its corrected audit compares declared assignment targets
 and records unset RHS inferred types, preserving normal Boogie typechecking;
 the same focused gate remains pending. This does not change the product or close
 the governing requirement.
+
+The corrected captured-value comparison completes all twelve observations and
+preservation/negative/WF controls, but every selected positive still exhausts
+resources. The named-lambda form's complete correctness query is unchanged.
+Reject this repair; the initial WF-only optional hash was corrected offline and
+retained explicitly. A construction-only comparison is building to separate the
+earlier compound experiment from fresh normalization/scope extensions. Product
+semantics, acceptance requirements and PR #169 remain unchanged.
