@@ -23,7 +23,8 @@ and 5 verify. The preceding 0/1/7 subset alone did not establish the baseline's
 partial-success classification. This extended, fixed scope does; it is neither
 a product repair nor evidence of uniform improvement. Do not expand the seed
 range to search for a preferred verdict. RemoveFactor does not meet the
-both-partial rule, and remains the product's unresolved grouped resource case.
+both-partial rule, and remains unresolved in this focused suite scope. The known-library result
+still uses the preceding compiler and must be refreshed separately.
 
 **Preceding current semantic evidence at seeds 0/1/7:**
 Accepted native semantic evidence: accepted product `991b60037`, recorded in

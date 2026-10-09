@@ -1157,18 +1157,18 @@ Composite and RemoveFactor resource acceptance stays open. No source proof hint,
 resource increase, broader suite iteration or development-line port is adopted.
 
 
-## One duplicate local can-call assumption: validation pending
+## Removing strictly duplicate local support does not repair the regression
 
 Source inspection finds a difference from immediate assertion preparation:
 `TrStmt_CheckWellformed` already ends with the whole proposition's can-call
 support, while declared-exit lowering additionally emits its earlier-created
 leading support. For pure normalized preparation the leading command is already
 commuted to follow that same WF fragment. The two selected RemoveFactor formulas
-are expected to be structurally identical; native validation must establish this,
-not printed text or logical-equivalence guessing.
+are structurally identical, as established by the completed native audit below;
+this is not inferred from printed text or logical-equivalence guessing.
 
 A [focused scratch compiler](https://github.com/erniecohen/dafny/actions/runs/37973692714)
-is being built to test omission of only this extra command. It requires native
+tests omission of only this extra command. It requires native
 structural expression equality and a strict lexical fingerprint, absent attributes
 on both assumptions, and retention of every original preparation command once.
 Expression construction and translator traversal still occur at their original
@@ -1191,7 +1191,7 @@ possible visitor effects explicitly; no product check-type change follows from
 the source audit.
 
 
-## Original postcondition wrapper: validation pending
+## Original postcondition wrapper produces exactly the same solver input
 
 The [wrapper-only scratch compiler](https://github.com/erniecohen/dafny/actions/runs/37976081754)
 compares the original Boogie `AssertEnsuresCmd` shape with the current local
@@ -1207,5 +1207,22 @@ this selected case, but standard visitors additionally visit the wrapper's
 ensures condition. That audit cannot establish native input identity or rule out
 all traversal effects. Require unchanged full-input/outcome/resource controls,
 strict actual-check comparisons and genuine Invalid entry controls before drawing
-any conclusion. The native comparison remains pending; no check-type change is
-adopted as a product correction.
+any conclusion.
+
+All eight actual compiler stages pass. All six native observations complete at
+the original combined ceiling, with two exact full-input/outcome/resource native
+controls, four strict actual-check/full-attribute comparisons, Correct reported
+WF checks and two genuine Invalid entry controls. The two wrapper/native pairs
+also produce exactly identical complete solver inputs through the final check,
+with identical resource counts and OutOfResource outcomes. The wrapper alone has
+no measured solver effect in this scope and is rejected as a resource repair.
+No product check-type change is adopted.
+
+The combined result excludes this check wrapper, strictly duplicate local support,
+the selected pure-preparation omissions and the tested exit-layout constructions
+as repairs for RemoveFactor. It does not identify a particular quantifier or
+prove that adding support is cost-monotone. Individual-check isolation verifies
+every check, while the original combined query and the ordinary-body remainder
+in the contract-only grouping exhaust resources. That localizes the unresolved
+behavior to combined proof search; isolation changes complete-query context and
+aggregate budgets and is not an accepted implementation remedy.
