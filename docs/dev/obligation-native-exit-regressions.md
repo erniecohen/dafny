@@ -1019,3 +1019,35 @@ exit commands move into those tails before CFG resolution, one mandatory check
 on each path, unchanged fuel/preparation/publication and validated fresh source
 dependencies. Compiler and native validation remain pending; no construction is
 adopted or positive proof result claimed.
+
+
+## Pre-CFG terminal placement reproduces the same solver input
+
+The [corrected scratch compiler](https://github.com/erniecohen/dafny/actions/runs/37964711809)
+passes all eight actual stages using the accepted structural compiler as its base.
+The first attempt stopped before verification because its source-command audit
+rejected a normal nested else-if; that failure remains preserved with zero proof
+observations. The correction traverses that structure for retention auditing only.
+
+All six corrected native observations complete at the original source and ceiling,
+with two faithful complete-input/outcome/resource controls, four strict unique
+actual-check/origin/non-ID-attribute comparisons, Correct reported WF results and
+two genuine Invalid entries. The full exit fragment is prepared at the original
+local point and placed in the two structured terminal branches before native
+block naming and successor construction. Original source commands remain once;
+one branch retains the original fragment and the other has validated distinct
+source dependency/coverage entries. There is one mandatory postcondition check
+on each actual exit path. Fuel, preparation and normal publication remain.
+
+RemoveFactor seed zero still exhausts resources in both axiom settings. More
+strongly, all six complete solver streams through the final check-sat are identical
+to their corresponding earlier post-CFG terminal-placement streams. Thus moving
+this same terminal-copy construction earlier does not expose a different search.
+Reject it as a repair; neither scratch construction is adopted.
+
+A remaining bounded exit-skeleton comparison withholds the already generated
+fragment before root statement collection, lets native Boogie construct the two
+terminal returns naturally, then uses the exact pinned unified-exit pass and
+appends the unchanged fragment once. This differs from reconstructing returns
+after CFG generation and from copying the check into two branches. Its compiler
+and native evidence remain pending; it is not a product policy.

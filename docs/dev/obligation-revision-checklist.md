@@ -163,7 +163,7 @@ authorized as an iteration loop for the existing regressions.
 - [ ] Default-off translation, verdicts and resource behavior remain compatible with the supported baseline under the fork's required gates (preceding full-suite verdicts and resource vectors match exactly in both settings; preceding library verdicts and operational Boogie match, but strict library resource equality rejects both settings; current focused cost controls confirm baseline nonrepeatability).
 - [ ] Enabled mode has no unexplained stable correctness regression.
 - [x] Remaining resource movements are classified with multiple seeds using S13's policy (648 observations; the recovered library failure matrix has an explicit platform boundary and four full-control movements; classification does not imply acceptance).
-- [ ] No body/context scanning, new background axiom or global fuel policy is introduced.
+- [x] No body/context scanning, new background axiom or global fuel policy is introduced (source audit, the unchanged producer inventory and current actual-preparation no-body-leakage controls; independent soundness review remains separate).
 - [ ] Producer inventory, normal regression integration, documentation, required suite/library gates and independent soundness review are complete.
 
 ## Development port: PR #169
@@ -317,7 +317,7 @@ The [exact native unified-exit comparison](obligation-native-exit-regressions.md
 completes six observations with faithful native controls, all full check attributes,
 and genuine Invalid controls. Native and transformed complete solver inputs and
 resource vectors are identical in both axiom settings; this construction is
-rejected as a RemoveFactor repair. Current-candidate family attribution is pending;
+rejected as a RemoveFactor repair. Current-candidate family attribution completes below;
 the earlier family diagnosis belongs to a preceding product.
 
 The [current-candidate family diagnosis](obligation-native-exit-regressions.md#current-candidate-family-diagnosis)
@@ -328,3 +328,20 @@ isolated families Correct. The preserved first scratch audit failure contributes
 zero proof results. No hybrid is adopted. The corrected [required PR CI](https://github.com/erniecohen/dafny/actions/runs/37957406530)
 also completes successfully; this does not repair the opt-in resource regressions
 or discharge strict complete default-off resource compatibility.
+
+
+The [pre-CFG terminal comparison](obligation-native-exit-regressions.md#pre-cfg-terminal-placement-reproduces-the-same-solver-input)
+completes six observations with faithful controls, retained checks/support/fuel,
+validated dependency copies and genuine Invalid entries. Every complete solver
+stream matches the preceding post-CFG terminal-copy experiment; RemoveFactor
+still exhausts resources. The initial nested-else-if audit failure supplies no
+proof result and remains preserved. No placement is adopted.
+
+The [current default-off MembersSpec diagnosis](obligation-default-off-query-diagnosis.md#current-compiler-repeats-preserve-boogie-not-exact-cost)
+completes eight fresh observations on the accepted current compiler and original
+baseline. All checks verify and every Boogie module is byte-identical within its
+axiom setting; strict resource equality rejects all four pairs. An explicit
+bijective query analysis retains the complete dynamic suffix and static command
+multiset, with differences confined to one declaration and two literal-axiom
+positions. The earlier replay stays historical; no whole-library cost acceptance
+or waiver follows from this sample.
