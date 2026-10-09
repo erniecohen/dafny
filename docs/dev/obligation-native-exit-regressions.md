@@ -1104,5 +1104,47 @@ remain fixed apart from the explicit negative-control insertion. A narrower
 scratch comparison marks only freshly generated actual caller/exit contract
 checks, retaining every formula, existing full attribute/dependency ID, support,
 fuel, publication, transfer and static check count. Other source assertions are
-unmarked. Its compiler/native results remain pending; no grouping policy is
+unmarked. The completed contract-only comparison follows; no grouping policy is
 adopted.
+
+
+## Contract checks verify; the remaining body group still exhausts resources
+
+The [contract-only scratch compiler](https://github.com/erniecohen/dafny/actions/runs/37969057895)
+passes all eight actual stages against the accepted structural compiler. All
+eighteen native observations complete with Z3 5.1.0, unchanged sources and
+per-batch ceilings: Composite seeds zero/one and RemoveFactor seed zero, both
+additional-axiom settings, each with native, contract-isolated and false-entry
+variants. All six native controls reproduce complete solver inputs, outcomes
+and resource vectors; all twelve comparisons preserve actual check formulas,
+original full attributes and dependency IDs except the added isolation marker.
+All six false controls contain genuine Invalid VCs and every reported independent
+WF result is Correct.
+
+Only the actual locally generated caller and exit contract checks are marked.
+No ordinary source assertion is marked, and no preparation command, fuel choice,
+publication, transfer or original static check is changed. Composite verifies
+at both selected seeds in both axiom settings, with eight isolated contract
+checks and one remaining body batch.
+
+RemoveFactor remains OutOfResource in both settings. Its isolated postcondition
+and recursive-call precondition are Valid. The failing third batch contains the
+eleven original ordinary body checks: PickLargest definedness, calculation and
+explicit assertion steps, and recursive termination obligations. Every one of
+these checks verifies separately in the preceding global-isolation diagnostic.
+This establishes the location of the remaining grouped failure; it does not
+identify a particular false or individually unprovable body obligation.
+
+The pinned Boogie split implementation retains the preceding commands for an
+isolated assertion and prunes future or unrelated blocks. In the remainder,
+isolated assertions become assumptions under their existing subsumption policy;
+blocks no longer leading to a checked assertion are pruned. Thus local preparation
+and fuel remain, but complete-query trigger-visible context changes. Isolation
+also changes the total available budget. Neither successful isolation result is
+an unchanged combined-query acceptance result or evidence of uniform improvement.
+The contract-only construction does not repair both regressions and is rejected
+as a product remedy. Do not add automatic isolation to the single-check option.
+
+The current semantic implementation remains unchanged. Original combined-query
+Composite and RemoveFactor resource acceptance stays open. No source proof hint,
+resource increase, broader suite iteration or development-line port is adopted.

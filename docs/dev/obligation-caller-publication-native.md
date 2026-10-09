@@ -224,3 +224,12 @@ remain. RemoveFactor seed zero still exhausts resources in both axiom settings.
 The preceding duplicate-ID resolution failure remains preserved and contributes
 no relocated proof result. Reject the placement as a repair and adopt neither
 scratch construction.
+
+
+The completed [contract-only grouping diagnosis](obligation-native-exit-regressions.md#contract-checks-verify-the-remaining-body-group-still-exhausts-resources)
+retains eighteen native observations, six faithful controls, twelve strict actual
+check/full-attribute comparisons and six genuine negatives. The two selected
+Composite seeds verify with contract isolation. RemoveFactor's isolated exit and
+recursive-call checks verify, but its eleven-check ordinary-body remainder still
+exhausts resources. No grouping policy is adopted. These results identify a
+combined-query resource interaction without closing original-ceiling acceptance.

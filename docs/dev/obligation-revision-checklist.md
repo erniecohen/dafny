@@ -361,6 +361,4 @@ completes thirty observations with twelve exact ordinary controls and six
 genuine source false-entry failures. All positive individual batches verify
 at the selected existing failing seeds in both paths; combined enabled VCs still
 exhaust resources. This is evidence of combined-query interaction, not an adopted
-batching policy or original combined-cap acceptance. A contract-only grouping
-comparison is pending and retains all existing preparation/check/publication
-semantics. Remaining review acceptance stays open.
+batching policy or original combined-cap acceptance. The completed [contract-only grouping comparison](obligation-native-exit-regressions.md#contract-checks-verify-the-remaining-body-group-still-exhausts-resources) has eighteen observations with six faithful native controls, twelve strict check/full-metadata comparisons and six genuine negatives. Composite verifies at both selected seeds, but RemoveFactor still exhausts resources in the eleven-check ordinary-body remainder; its two isolated contract checks verify. This rejects contract-only grouping as a product repair. Full-query context and aggregate budgets differ despite retained local preparation/fuel. Remaining combined-query review acceptance stays open.
