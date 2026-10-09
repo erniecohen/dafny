@@ -784,3 +784,39 @@ OS, compiler, floating-point behavior, quantifier instantiation or missing facts
 as the cause. The partial macOS improvement does not settle Composite seed one or
 RemoveFactor, and the strict metadata restriction remains. Adopt no product
 change or general resource-repair claim from this construction.
+
+### Two exit argument-allocation facts do not repair RemoveFactor
+
+The saved current Boogie identifies two additional private set-argument allocation
+assumptions immediately before RemoveFactor's sole fallthrough postcondition
+check. A [scratch compiler](https://github.com/erniecohen/dafny/actions/runs/37940625142)
+passes all eight actual compilation/assembly stages and tests only that boundary.
+The diagnostic traverses the original complete preparation and fuel path, then
+omits exactly those two `$IsAlloc(t, TSet(TInt), $Heap)` assumptions. It requires
+the frozen private argument, integer-set type and current heap, and rejects
+unsupported commands or source writes. All private assignments, other WF/can-call
+support, the actual check, normal summary, procedure contracts and branch
+transfers remain. This deliberate support omission is causal diagnosis and is
+excluded as a product fix.
+
+All six native observations complete at seed zero with Z3 5.1.0 and the original
+sources, ceiling, core count, warning policy and batches: native, two-fact omission
+and false-entry variants, in both axiom settings. Both native controls reproduce
+prior outcomes, resource vectors and complete solver streams. All four strict
+actual-expression/full-attribute comparisons pass, including dependency IDs;
+every variant retains the same thirteen actual checks. Both false-entry controls
+are genuinely Invalid, and every reported specification-WF result is Correct.
+The complete diagnostic gate passes; this does not make its positive proof
+observations successful.
+
+| RemoveFactor / seed zero, both axiom settings | Result |
+| --- | --- |
+| Unchanged current | OutOfResource |
+| Only the two private exit allocation facts omitted | OutOfResource |
+| False-entry control with the same omission | Invalid |
+
+Omitting this two-fact subset is insufficient to repair the selected regression.
+The changed resource count does not establish zero search influence, and no new
+quantifier profile or causal instantiation chain is inferred. Retain the result
+and reject adoption; RemoveFactor remains unresolved. No whole-suite/library
+rerun or development-line port follows from this diagnostic.

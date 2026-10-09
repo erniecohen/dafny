@@ -186,3 +186,12 @@ RemoveFactor retain exact native solver streams and outcomes. This is a bounded
 native solver-build difference, without a demonstrated underlying cause or general
 repair. Adopt no product change; both resource regressions and the metadata
 restriction remain unresolved.
+
+The subsequent [two-fact exit diagnostic](obligation-native-exit-regressions.md#two-exit-argument-allocation-facts-do-not-repair-removefactor)
+completes six native observations with two faithful complete-input controls,
+four strict actual-check/full-attribute comparisons and two genuine Invalid
+controls. Removing only the two private integer-set allocation assumptions at
+RemoveFactor's exit leaves seed zero OutOfResource in both axiom settings. The
+complete diagnostic gate passes, but this is neither a successful positive proof
+nor a resource repair; legitimate support omission remains excluded as a product
+fix. No product change is adopted.
