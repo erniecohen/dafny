@@ -90,6 +90,7 @@ namespace Microsoft.Dafny {
       public string UniqueIdPrefix = null;
       public bool ReportRanges = false;
       internal Action<PropositionLowering> ObligationLowered { get; init; }
+      internal Action<DeclaredPreparationSnapshot> ObligationPrepared { get; init; }
     }
 
     [NotDelayed]

@@ -8,7 +8,7 @@ public class ObligationTranslationCollection { }
 
 [Collection("Obligation translation")]
 public class ObligationLoweringTests {
-  internal static async Task<List<Bpl.Program>> Translate(string source, bool enabled, bool refresh = false, Action<BoogieGenerator.PropositionLowering>? observer = null, bool readsOnMethods = false) {
+  internal static async Task<List<Bpl.Program>> Translate(string source, bool enabled, bool refresh = false, Action<BoogieGenerator.PropositionLowering>? observer = null, bool readsOnMethods = false, Action<BoogieGenerator.DeclaredPreparationSnapshot>? preparationObserver = null) {
     Microsoft.Dafny.Type.ResetScopes();
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
@@ -21,7 +21,8 @@ public class ObligationLoweringTests {
     await new ProgramResolver(result.Program).Resolve(CancellationToken.None);
     Assert.True(reporter.ErrorCount == 0, string.Join("\n", reporter.AllMessages.Select(message => message.Message)));
     return BoogieGenerator.Translate(result.Program, reporter, new BoogieGenerator.TranslatorFlags(options) {
-      ObligationLowered = observer
+      ObligationLowered = observer,
+      ObligationPrepared = preparationObserver
     }).Select(pair => pair.Item2).ToList();
   }
 
@@ -627,6 +628,64 @@ public class ObligationLoweringTests {
     var empty = await Support("");
     Assert.NotEmpty(empty);
     Assert.Equal(empty, await Support("assert Q(1)==1; assert forall z:int {:trigger Q(z)} :: Q(z)==z;"));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task UnrelatedBodyTermsDoNotChangeActualExitPreparation(bool refresh) {
+    const string declarations = "ghost predicate P(s:set<int>) { |s|>=0 } " +
+      "ghost function Q(x:int):int { x } ";
+    const string unrelated = "assert Q(1)==1; assert forall z:int {:trigger Q(z)} :: Q(z)==z;";
+    async Task<string[]> Preparation(string prefix, string argument = "s") {
+      var snapshots = new List<BoogieGenerator.DeclaredPreparationSnapshot>();
+      await Translate(declarations + "lemma L(s:set<int>) ensures P(" + argument + ") { " + prefix + " }",
+        true, refresh, preparationObserver: snapshots.Add);
+      var snapshot = Assert.Single(snapshots.Where(p =>
+        p.Source.Resolved is FunctionCallExpr { Function.Name: "P" }));
+      var arguments = new Dictionary<string, string>();
+      foreach (var assignment in snapshot.Commands.OfType<Bpl.AssignCmd>()) {
+        foreach (var lhs in assignment.Lhss) {
+          var simple = Assert.IsType<Bpl.SimpleAssignLhs>(lhs);
+          Assert.Contains(simple.AssignedVariable.Name, snapshot.ArgumentTemporaries);
+          Assert.True(arguments.TryAdd(simple.AssignedVariable.Name, "argument" + arguments.Count));
+        }
+      }
+      Assert.NotEmpty(arguments);
+      Assert.True(snapshot.ArgumentTemporaries.SetEquals(arguments.Keys));
+      string Expression(Bpl.Expr expression) => ObligationFingerprint.PreparationExpression(expression, arguments);
+      var commands = new List<string>();
+      foreach (var command in snapshot.Commands) {
+        switch (command) {
+          case Bpl.CommentCmd: break;
+          case Bpl.AssignCmd assignment:
+            commands.Add("assign:" + string.Join(",", assignment.Lhss.Select(lhs =>
+              Expression(((Bpl.SimpleAssignLhs)lhs).AssignedVariable))) + ":" +
+              string.Join(",", assignment.Rhss.Select(Expression)));
+            break;
+          case Bpl.AssumeCmd assumption:
+            Assert.Null(assumption.Attributes);
+            commands.Add("assume:" + Expression(assumption.Expr));
+            break;
+          default:
+            Assert.True(false, "Unexpected non-pure preparation command " + command.GetType().Name);
+            break;
+        }
+      }
+      Assert.Contains(commands, c => c.Contains("$IsAlloc"));
+      Assert.Contains(commands, c => c.Contains(".P#canCall"));
+      Assert.NotNull(snapshot.LeadingSupport);
+      Assert.Null(snapshot.LeadingSupport.Attributes);
+      commands.Add("leading-after:" + snapshot.LeadingSupportAfterPreparation);
+      commands.Add("leading:" + Expression(snapshot.LeadingSupport.Expr));
+      commands.Add("heap:" + Expression(snapshot.Heap));
+      return commands.ToArray();
+    }
+    var empty = await Preparation("");
+    Assert.Equal(empty, await Preparation(unrelated));
+    // A change to the checked argument must remain observable; normalization
+    // is limited to certified private argument names, never source terms.
+    Assert.NotEqual(empty, await Preparation("", "s-{0}"));
   }
 
   [Theory]

@@ -22,25 +22,36 @@ internal static class ObligationFingerprint {
 
   public static string Expression(Bpl.Expr expression) => Term(expression, new BindingScope());
 
+  // Only recorded fresh preparation arguments may be renamed by this overload.
+  // Source variables, functions, heaps, triggers and fuel remain literal.
+  public static string PreparationExpression(Bpl.Expr expression, IReadOnlyDictionary<string, string> arguments) =>
+    Term(expression, new BindingScope(arguments));
+
   // Resolved occurrences are bound by declaration identity; unresolved ones use
   // the innermost lexical name. Depth counts declarations, never distinct names.
   private sealed class BindingScope {
     private readonly Dictionary<Bpl.Variable, string> identities;
     private readonly Dictionary<string, string> names;
+    private readonly IReadOnlyDictionary<string, string> preparationArguments;
     public int Depth { get; private set; }
-    public BindingScope() {
+    public BindingScope(IReadOnlyDictionary<string, string>? arguments = null) {
       identities = new(); names = new();
+      preparationArguments = arguments ?? new Dictionary<string, string>();
     }
     public BindingScope(BindingScope parent) {
       identities = new(parent.identities); names = new(parent.names);
       Depth = parent.Depth;
+      preparationArguments = parent.preparationArguments;
     }
     public void Bind(Bpl.Variable variable, string canonical) {
       identities[variable] = canonical; names[variable.Name] = canonical; Depth++;
     }
-    public string Identifier(Bpl.IdentifierExpr identifier) => identifier.Decl != null
-      ? identities.GetValueOrDefault(identifier.Decl, identifier.Name)
-      : names.GetValueOrDefault(identifier.Name, identifier.Name);
+    public string Identifier(Bpl.IdentifierExpr identifier) {
+      var name = identifier.Decl != null
+        ? identities.GetValueOrDefault(identifier.Decl, identifier.Name)
+        : names.GetValueOrDefault(identifier.Name, identifier.Name);
+      return preparationArguments.GetValueOrDefault(name, name);
+    }
   }
 
   private static string Term(Bpl.Expr e, BindingScope bound) {
