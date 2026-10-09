@@ -231,3 +231,19 @@ All selected Remainder cases verify at the original ceiling for seeds 0/1/7 in
 both axiom settings; false and independent WF controls pass. Normal candidate
 compiler validation remains pending. The result does not establish a general
 resource-monotonicity guarantee or resolve the remaining independent review.
+
+
+### Canonical local exit construction
+
+A locally declared postcondition without a statement expression has the same
+independently licensed non-read WF preparation described above. Its standard
+well-formedness traversal emits the complete can-call formula before the sole
+actual clause check. Constructing another copy before that traversal is unnecessary
+and consumes expression-construction state before the assertion's standard point.
+The local exit path therefore retains the complete standard support rather than
+constructing the extra leading copy. It preserves the actual formula, metadata,
+fuel, normal publication and clause order; this adds no assumption or proof of P.
+Inherited clauses retain the original leading support and `$_reverifyPost` guards.
+Statement-expression clauses retain it too, along with their previous outer reveal
+and visibility effects. The decision inspects only the current proposition and
+its legitimate inheritance/effect context, never unrelated body expressions.

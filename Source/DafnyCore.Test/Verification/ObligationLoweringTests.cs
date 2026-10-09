@@ -87,8 +87,10 @@ public class ObligationLoweringTests {
   public async Task InheritedExitWellformednessRetainsReverificationGuard(bool refresh) {
     const string source = "module A { predicate P(x:int) { x>=0 } " +
       "lemma L() ensures forall x:int :: P(x) {} } module B refines A { lemma L ... { ...; assert true; } }";
-    var text = ObligationFingerprint.Emit(await Translate(source, true, refresh));
+    var snapshots = new List<BoogieGenerator.DeclaredPreparationSnapshot>();
+    var text = ObligationFingerprint.Emit(await Translate(source, true, refresh, preparationObserver: snapshots.Add));
     Assert.Contains("if ($_reverifyPost)", text);
+    Assert.Contains(snapshots, snapshot => snapshot.LeadingSupport != null);
   }
 
   [Theory]
@@ -591,6 +593,42 @@ public class ObligationLoweringTests {
     Assert.All(enriched, check => Assert.Contains("$IsAllocBox", check));
   }
 
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task ExitUniversalSupportFollowsItsWellformednessWitness(bool refresh) {
+    const string source = "ghost function F(i:int):int requires i>0 { i } " +
+      "lemma L() ensures forall i:int {:trigger F(i)} :: i>0 ==> F(i)>0 {}";
+    var snapshots = new List<BoogieGenerator.DeclaredPreparationSnapshot>();
+    var programs = await Translate(source, true, refresh, preparationObserver: snapshots.Add);
+    var body = programs.SelectMany(p => p.Implementations)
+      .Single(p => p.Name.Contains("Impl") && p.Name.EndsWith(".L"));
+    var commands = body.Blocks.SelectMany(b => b.Cmds).ToList();
+    var witness = Assert.Single(commands.OfType<Bpl.HavocCmd>());
+    var supports = commands.OfType<Bpl.AssumeCmd>().Where(c =>
+      c.Expr is Bpl.QuantifierExpr && ObligationFingerprint.Expression(c.Expr).Contains(".F#canCall")).ToList();
+    Assert.NotEmpty(supports);
+    Assert.All(supports, support => Assert.True(commands.IndexOf(witness) < commands.IndexOf(support)));
+    Assert.Null(Assert.Single(snapshots).LeadingSupport);
+    Assert.Single(commands.OfType<Bpl.AssertCmd>().Where(c => c.Description is EnsuresDescription));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task ExitStatementExpressionRevealsRetainOriginalLeadingSupport(bool refresh) {
+    const string source = "ghost predicate P(x:int) { x>=0 } " +
+      "lemma L(x:int) requires x>=0 ensures (reveal P(); P(x)) { hide P; }";
+    var snapshots = new List<BoogieGenerator.DeclaredPreparationSnapshot>();
+    var programs = await Translate(source, true, refresh, preparationObserver: snapshots.Add);
+    Assert.NotNull(Assert.Single(snapshots).LeadingSupport);
+    Assert.Contains("reveal ", ObligationFingerprint.Emit(programs));
+    var body = programs.SelectMany(p => p.Implementations)
+      .Single(p => p.Name.Contains("Impl") && p.Name.EndsWith(".L"));
+    Assert.Single(body.Blocks.SelectMany(b => b.Cmds).OfType<Bpl.AssertCmd>()
+      .Where(c => c.Description is EnsuresDescription));
+  }
 
   [Theory]
   [InlineData(false)]
