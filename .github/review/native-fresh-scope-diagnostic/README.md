@@ -1,13 +1,14 @@
-# Fresh quantified preparation scope diagnostic
+# Fresh quantified preparation normalization diagnostic
 
-This scratch-only comparison changes only eligibility for the existing local
-caller-proof scope. Every preparation command, actual checked expression, fuel,
-attribute and normal call publication remains. Havoc is eligible only when its
-identifier refers by declaration identity to a local newly registered during that
-same preparation; existing-variable and unresolved havocs are rejected. Writes
-still require the recorded fresh function-argument bindings. Structured guards
-retain their original commands and positions, without normalization or movement.
-Calls, real assertions, labels, unsupported branches and statement expressions
-retain the original scope policy. The candidate can be considered only after
-native controls, exact actual-check/full-attribute and preparation comparisons,
-independent specification-WF and genuine Invalid entry controls complete.
+This scratch-only follow-up retains all checks and extends the existing guarded
+normalization only to havoc identifiers resolved to locals created by that same
+preparation. Every write must be unique. Havoc variables must have no where
+clause and occur in no ancestor guard; argument-binding writes must occur in no
+guard. Existing-state/unknown havocs and writes, calls, real assertions, labels,
+unsupported branches and statement expressions remain excluded. Every original
+supporting fact keeps the conjunction of its original guards and full attributes;
+every original private binding and havoc remains once. Empty guards remain in
+tautologies, following the existing normalization policy. Actual checks, fuel,
+call publication and source visibility are unchanged. Native controls, strict
+actual-check metadata and original guarded-support comparisons, independent
+specification-WF and genuine Invalid controls are mandatory before adoption.
