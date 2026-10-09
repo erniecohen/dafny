@@ -213,4 +213,14 @@ RemoveFactor seed zero still exhausts resources in both axiom settings after
 all seven certified pure exit-WF emissions are omitted. Complete original
 preparation/fuel traversal, leading support, sole check and normal publication
 remain. Reject the omission as a repair; product `991b60037` is unchanged.
-The support-preserving terminal-path placement comparison remains pending.
+The terminal-path placement comparison completes below.
+
+The [terminal-path exit comparison](obligation-native-exit-regressions.md#terminal-path-exit-placement-is-also-a-rejected-repair)
+completes six corrected native observations with faithful controls, strictly
+retained unique check formulas/origins/non-ID attributes, separately validated
+fresh source dependencies, and genuine Invalid entries. Exactly one mandatory
+check occurs on each reachable exit path; all preparation and normal publication
+remain. RemoveFactor seed zero still exhausts resources in both axiom settings.
+The preceding duplicate-ID resolution failure remains preserved and contributes
+no relocated proof result. Reject the placement as a repair and adopt neither
+scratch construction.
