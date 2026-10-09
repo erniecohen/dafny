@@ -35,7 +35,7 @@ only audited source-layout records, not counts or classifications. The [current 
 successful fresh controls. FormArmy and AltPrimeDefinition are VVV in both axiom settings;
 Composite and RemoveFactor remain unresolved. Review acceptance is incomplete.
 
-Current [native exit-regression diagnosis](obligation-native-exit-regressions.md) completes 36 whole-clause observations and 36 family-isolation observations, explicitly combining twelve RemoveFactor observations with a 24-observation follow-up for the other two cases. Whole-clause preparation is rejected as a resource repair despite identical actual checks. RemoveFactor seed-zero exhaustion is localized to exit translation, while Composite seed1 and FormArmy seed0 exhaustion is reproduced by the body family, with faithful native controls; no product repair or acceptance is claimed. A further 54-observation private-argument substitution diagnostic preserves every actual check and does not repair any target; Composite/FormArmy solver streams remain identical to their controls at every tested seed. A twelve-observation certified caller-order follow-up also leaves the two selected failing seeds unchanged, with faithful controls and strictly retained checks.
+The historical [native exit-regression diagnosis](obligation-native-exit-regressions.md), on preceding product `fe6ddd1ba`, completes 36 whole-clause observations and 36 family-isolation observations, explicitly combining twelve RemoveFactor observations with a 24-observation follow-up for the other two cases. Whole-clause preparation is rejected as a resource repair despite identical actual checks. RemoveFactor seed-zero exhaustion is localized to exit translation, while Composite seed1 and FormArmy seed0 exhaustion is reproduced by the body family, with faithful native controls; no product repair or acceptance is claimed. A further 54-observation private-argument substitution diagnostic preserves every actual check and does not repair any target; Composite/FormArmy solver streams remain identical to their controls at every tested seed. A twelve-observation certified caller-order follow-up also leaves the two selected failing seeds unchanged, with faithful controls and strictly retained checks.
 
 
 **Preceding evidence:** product `fe6ddd1ba` has [68 focused suite/control observations](obligation-guarded-preparation-focused.md)
@@ -319,3 +319,12 @@ and genuine Invalid controls. Native and transformed complete solver inputs and
 resource vectors are identical in both axiom settings; this construction is
 rejected as a RemoveFactor repair. Current-candidate family attribution is pending;
 the earlier family diagnosis belongs to a preceding product.
+
+The [current-candidate family diagnosis](obligation-native-exit-regressions.md#current-candidate-family-diagnosis)
+completes 36 focused observations with twelve faithful legacy/current full-input
+controls and twelve genuine Invalid entries. RemoveFactor's exit attribution is
+confirmed; Composite seed one is now a combined-family interaction, with both
+isolated families Correct. The preserved first scratch audit failure contributes
+zero proof results. No hybrid is adopted. The corrected [required PR CI](https://github.com/erniecohen/dafny/actions/runs/37957406530)
+also completes successfully; this does not repair the opt-in resource regressions
+or discharge strict complete default-off resource compatibility.

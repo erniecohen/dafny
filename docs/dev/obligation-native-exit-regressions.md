@@ -976,11 +976,46 @@ change as a repair more directly than outcome equality alone. No construction is
 adopted. The new compiler's faithful native controls confirm only this bounded
 reference scope; they do not reidentify the earlier complete native fixture gates.
 
-The preceding translation-family attribution belongs to product `fe6ddd1ba`,
-before the current caller-publication correction. It must not be treated as a
-current causal result. A focused current-candidate family comparison is pending:
-only Composite seeds zero/one and RemoveFactor seed zero, faithful native/legacy
-controls, exit-only/body-only original translation and genuine false-entry controls.
-Each family retains the required proof through its local check or original checked
-procedure contract. No support omission, source hint or increased ceiling is a
-product change. Compiler and native validation for this comparison remain pending.
+## Current-candidate family diagnosis
+
+The preceding family attribution belongs to product `fe6ddd1ba`, before the
+caller-publication correction. The [current-candidate compiler](https://github.com/erniecohen/dafny/actions/runs/37959795786)
+passes all eight actual stages, using accepted structural revision `df4c7066f`
+and the normal compiler bundle. A first attempt compiled successfully but its
+scratch audit accessed an implementation's unresolved procedure link and aborted
+before verification. That failed attempt contributes zero proof observations.
+The corrected audit finds the procedure directly by declaration name, changing
+no translated proof commands.
+
+The corrected native gate completes all 36 observations at original sources,
+ceilings, options and one core. It selects only Composite seeds zero/one and
+RemoveFactor seed zero, both axiom settings. Twelve current/legacy controls
+reproduce exact prior complete solver streams, resource vectors and outcomes.
+Twelve false-entry controls contain genuine Invalid VCs; reported independent
+WF results remain Correct. Each hybrid retains its required proofs: legacy exit
+translation keeps checked procedure ensures, while canonical exit translation
+checks locally and has nonchecking procedure copies. Legacy call translation
+retains its checked requirements. The remaining family also applies inside exit
+WF preparation; “body-only” is shorthand, not an assertion of zero interaction.
+
+| Target / seed | Legacy | Current full | Exit family only | Remaining family only |
+| --- | --- | --- | --- | --- |
+| Composite / 0 | Correct | OutOfResource | Correct | OutOfResource |
+| Composite / 1 | Correct | OutOfResource | Correct | Correct |
+| RemoveFactor / 0 | Correct | OutOfResource | OutOfResource | Correct |
+
+Both axiom settings give the same table. RemoveFactor's exit attribution is
+reproduced on the current candidate. Composite seed zero's remaining-family
+failure is also reproduced, but seed one's full-mode failure is an **interaction**:
+both isolated families verify, unlike the earlier candidate's body attribution.
+This is causal localization, not a product repair. It does not justify disabling
+one family for named cases or omitting any obligation/support.
+
+The next focused exit comparison changes placement before native Boogie names
+structured blocks and assigns successors. The prior terminal-path relocation
+happened after that construction and cannot settle this boundary. Its selected
+source ends with a conditional and two simple fallthrough tails. The same certified
+exit commands move into those tails before CFG resolution, one mandatory check
+on each path, unchanged fuel/preparation/publication and validated fresh source
+dependencies. Compiler and native validation remain pending; no construction is
+adopted or positive proof result claimed.
