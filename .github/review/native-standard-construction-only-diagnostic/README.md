@@ -1,0 +1,5 @@
+# Standard caller construction alone
+
+Scratch diagnostic for the observed caller assertion comparison. Native controls retain the extra early complete can-call construction; selected controls rely on the standard complete can-call support produced by TrStmt_CheckWellformed after WF and before the same actual checks. Both complete support formulas and all attributes must agree.
+
+Unlike the earlier compound construction comparison, every variant uses the original CertifiedContractPreparation.Normalize result and the original CanScope decision. No fresh-havoc scope or canonical normalization extension is selected. Typed fresh-declaration frames only observe original and normalized preparation for comparison; they never rewrite commands. Actual checks and complete attributes, normal publication, argument bindings, fuel, guarded support, call order and outer reveal effects are retained. Entry-false controls remain mandatory. This is a narrow diagnostic, not a product change or general construction policy.
