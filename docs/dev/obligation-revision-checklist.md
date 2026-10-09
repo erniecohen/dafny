@@ -101,10 +101,10 @@ linked validation report.
 | S8 / 8 | Audit every source-expressible implicit obligation against the producer inventory, including bounds, nullness, domains, destructors, division/modulo, invariants and iterator/yield contracts. Document specialized internal checks outside the source-proposition criterion. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
 | S9 / 9 | Keep the withdrawn global occurrence/polarity/value fuel rewrite withdrawn. Use the existing explicit-assertion fuel/layer machinery locally; introduce no global expression policy. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
 | S10 / 10 | Ensure support depends only on the proposition and legitimate local verifier state. Reject body/prefix/invariant/context term collection and all later collection/definition-support experiments as product changes to either PR. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
-| S11 / 11 | Fix `ObligationFingerprint` using lexical binder identities/stacks. Distinguish the specified shadowing counterexamples and retain a positive alpha-equivalence control. | Implemented in `426a8d413`; the opcode controls are added in `8ddf1458b`; the binder and opcode controls pass in the [current 85-observation normal build](https://github.com/erniecohen/dafny/actions/runs/37731304101). |
+| S11 / 11 | Fix `ObligationFingerprint` using lexical binder identities/stacks. Distinguish the specified shadowing counterexamples and retain a positive alpha-equivalence control. | Implemented in `426a8d413`; the opcode controls are added in `8ddf1458b`; the binder and opcode controls pass in the [current normal build](https://github.com/erniecohen/dafny/actions/runs/37808373912), with 95 obligation tests in each mode and 373 core tests. |
 | S12 / 12 | Add quantified and non-quantified paired assertion-invariance tests for exits, subsets, method/function preconditions, bounds and old allocation. Add no-body-leakage, active scoped-reveal and no-duplicate-contract-proof structural controls. | Implemented across `d93ff6137`, `874f87b64`, `8ddf1458b`, `64d02eb77` and `2ad5d25a5`; native acceptance pending |
 | S13 / 13 | Rerun stable exit-package, exit-summary and call-package regressions on the single-check implementation before solver-specific repairs. Classify partially successful baseline/candidate seed movements as solver/resource variance. Keep source hints and resource ceilings unchanged. | Complete matrices of both preceding revisions and causal replay are documented in [the diagnosis](obligation-local-preparation-diagnosis.md); current complete focused gates and causal/query replays finish; preceding complete suite/library gates finish and remain rejected; all four affected-declaration seed matrices finish and are classified in the [current seed record](obligation-current-seed-classification.md), with platform/scope limits and raw gate rejections retained. |
-| S14 / 14 | Rewrite the PR description around single-check assertion-equivalent lowering. Complete every supported-line acceptance item below before requesting approval. | Pending |
+| S14 / 14 | Rewrite the PR description around single-check assertion-equivalent lowering. Complete every supported-line acceptance item below before requesting approval. | Description rewritten; supported-line acceptance remains pending |
 
 ## Supported-line acceptance
 
@@ -156,3 +156,15 @@ strictly identical actual checks, all pre-check support retained and faithful
 native/invalid controls. FormArmy seed 0 still exhausts resources with the two
 extra summaries omitted; that hypothesis is rejected as a repair. Remaining
 resource acceptance and the other outstanding review requirements stay open.
+
+
+The [support-preserving caller placement comparison](obligation-native-exit-regressions.md#existing-background-assertions-and-the-sole-legacy-caller-proof)
+completes four observations with faithful baseline/current controls and an
+Invalid negative. All six substituted procedure preconditions match the generated
+local formulas. FormArmy seed 0 still exhausts resources when the full new
+preparation precedes a sole legacy call proof; relocation is unnecessary to
+reproduce that selected failure. Active body background assertions also match
+baseline exactly in all three selected cases. The private-argument allocatedness
+isolation is pending and is explicitly a diagnostic support omission, not a
+product proposal. The PR description is rewritten around the requested design;
+S14 acceptance and the remaining review requirements remain open.

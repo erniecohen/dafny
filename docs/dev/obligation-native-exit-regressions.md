@@ -350,3 +350,56 @@ seed 0 still exhausts its original resource limit. The
 [publication diagnostic compiler](https://github.com/erniecohen/dafny/actions/runs/37886833332)
 passes all six actual stages. Removing the extra summary is rejected as a
 resource repair; no product change or acceptance follows from this comparison.
+
+
+## Existing background assertions and the sole legacy caller proof
+
+The faithful raw solver captures also permit comparing the assertions active at
+the body query. Interpreting each push/pop excludes earlier, popped independent
+WF queries. All active background assertions are byte-identical between baseline
+and current translation for Composite, FormArmy and RemoveFactor. Their body VCs
+are different. This provides no evidence that an added or removed background
+axiom explains these selected failures; local preparation and VC encoding remain
+the relevant boundaries.
+
+A further four-observation FormArmy seed-zero comparison keeps the complete new
+caller preparation but restores the sole checked procedure requirements. All
+other opt-in translation families remain legacy in this hybrid. It traverses the
+original caller lowering/fuel state and generates each local check for audit,
+but emits no duplicate local caller proof and no extra post-check summary. The
+actual call retains its checked requirements, original actuals and pre-call heap.
+
+The audit compares all six generated local precondition expressions with the
+corresponding checked procedure requirements under formal-to-actual substitution.
+Every typed lexical fingerprint agrees, including guards, operators, trigger
+patterns, coercion destinations and fuel. The generated formulas also agree
+with the unchanged current control. Their full attributes are compared and
+differ solely in generated proof-dependency IDs; this is recorded explicitly.
+The clone-only comparison supports unresolved identifiers at this stage,
+requires frozen typed identifier actuals, rejects binder capture and unsupported
+expressions, and leaves the native verifier program untouched. The earlier
+post-resolution substitution adapter is rejected before producing a hybrid
+proof result.
+
+Both unchanged baseline/current controls reproduce their full native SMT inputs,
+outcomes and resources. The false-entry hybrid is genuinely Invalid, every
+reported independent WF check is Correct, and the
+[corrected diagnostic compiler](https://github.com/erniecohen/dafny/actions/runs/37890532431)
+passes all six actual stages.
+
+| FormArmy seed 0, additional axioms off | Result |
+| --- | --- |
+| Unchanged baseline | Correct |
+| Unchanged current | OutOfResource |
+| Full new caller preparation, sole legacy caller proof | OutOfResource |
+| False-entry hybrid | Invalid |
+
+Preparation/leading-support in the legacy checking encoding is sufficient to
+reproduce this selected failure. Relocating the actual precondition proof is
+therefore unnecessary to reproduce it. Together with the earlier omission
+experiments, this establishes more than one search-sensitive caller boundary;
+it does not establish a product repair or a universal account of solver cost.
+The next narrow comparison isolates private-argument allocatedness assumptions
+inside this same hybrid while preserving every other preparation command and
+the sole checked requirements. That deliberate omission is diagnosis only;
+the product continues to retain legitimate assertion-equivalent support.
