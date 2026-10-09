@@ -123,18 +123,23 @@ linked validation report.
 
 ## Supported-line acceptance
 
-The checked registered/paired items below record the completed `072175269`
-comparison. They do not discharge current `991b60037` acceptance. The newest
-combined 72-observation native result supplies current focused issue/subset,
-preparation and Power evidence. Current full registered/paired evidence and
-strict default-off library resource compatibility remain open; no full-suite
-rerun is authorized as an iteration loop for the existing regressions.
+The current `991b60037` registered and paired fixture gates are complete:
+298 registered invocations match their exact expected output, and 688 paired
+observations pass across both resolvers and additional-axiom settings. All 225
+registered and 248 paired negative observations contain genuine Invalid VCs;
+all positive observations have only Valid VCs. The
+[current native record](obligation-caller-publication-native.md) preserves these
+two separate complete gates and their exact toolchain/scope boundaries. The
+combined 72-observation result supplies current multi-seed regression and Power
+comparison evidence. Remaining resource regressions and strict complete
+default-off library resource compatibility remain open; no full-suite rerun is
+authorized as an iteration loop for the existing regressions.
 
 - [x] Original issue 100 source verifies without its redundant final assertion at the existing ceiling (preceding registered/paired gates pass; current focused original/subset controls also pass).
 - [x] The subset reproducer verifies without its redundant assertion (preceding registered/paired gates pass; current focused original/subset controls also pass).
-- [x] Representative method and function precondition examples verify without redundant assertions (preceding paired gate passes; full current paired acceptance remains open).
-- [x] All registered/paired negative controls remain negative (all 244 expected-negative observations in the preceding complete paired gate have invalid VCs; the full-suite ill-formed-specification body movement is documented with its still-failing independent specification-WF).
-- [x] Scoped-reveal examples retain their previous proofs at the actual check point (preceding registered/paired controls and current structural controls pass; the current focused library scope cases all pass).
+- [x] Representative method and function precondition examples verify without redundant assertions (the complete current paired gate passes).
+- [x] All registered/paired negative controls remain negative (225 registered and 248 paired current negative observations contain genuine Invalid VCs; the earlier full-suite ill-formed-specification movement remains documented with its still-failing independent specification-WF).
+- [x] Scoped-reveal examples retain their previous proofs at the actual check point (current registered/paired and structural controls pass; preceding focused library scope evidence is retained separately).
 - [ ] Default-off translation, verdicts and resource behavior remain compatible with the supported baseline under the fork's required gates (preceding full-suite verdicts and resource vectors match exactly in both settings; preceding library verdicts and operational Boogie match, but strict library resource equality rejects both settings; current focused cost controls confirm baseline nonrepeatability).
 - [ ] Enabled mode has no unexplained stable correctness regression.
 - [x] Remaining resource movements are classified with multiple seeds using S13's policy (648 observations; the recovered library failure matrix has an explicit platform boundary and four full-control movements; classification does not imply acceptance).

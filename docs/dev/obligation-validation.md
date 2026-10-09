@@ -6,7 +6,12 @@ proofs, sixteen positive controls, eight genuine negative controls and exact
 default-off Power vectors. The original collection failure is preserved; this is
 not a single successful 72-observation run. Composite and RemoveFactor remain
 unresolved. The support-preserving exit scope also leaves RemoveFactor RRR;
-acceptance is incomplete.
+acceptance is incomplete. Separately, the complete current registered gate passes
+298 invocations with exact expected output, and the complete paired gate passes
+688 observations in both resolver/axiom configurations. All 225 registered and
+248 paired negatives contain genuine Invalid VCs, and all positives have only
+Valid VCs. These focused fixture results establish current functional controls;
+they do not settle the remaining resource regressions or full compatibility.
 
 **Preceding evidence:** product `fe6ddd1ba` has [68 focused suite/control observations](obligation-guarded-preparation-focused.md)
 and [92 completed known-library/control observations](obligation-current-focused-library.md).

@@ -102,11 +102,21 @@ outside the paired manifest. Invocation counting is checked before submission;
 its committed body and expected output remain exact, with observational native
 CSV/VC JSON logging and genuine Invalid checks.
 
-The separate complete gate for all 172 paired/negative fixtures remains pending:
-688 observations across both resolvers and axiom settings, with 248 expected
-negative observations. These focused gates do not rerun the whole verifier suite
-or standard library, establish a repair for remaining resource regressions, or
-discharge complete review acceptance.
+The separate complete gate for all 172 paired/negative fixtures passes all
+688 observations across both resolvers and additional-axiom settings. All 440
+positive observations have only Valid VCs, and all 248 negative observations
+contain genuine Invalid VCs. Source hashes match the committed fixtures; every
+reported outcome is Valid or Invalid, without resource exhaustion, unknown or
+timeout. Eight expected no-trigger warnings are confined to negative-empty-domain
+and negative-forall. Both focused gates use the accepted native
+`4.11.0+fcb2042d.review.c345966c` bundle for product `991b60037` and Z3 5.1.0,
+with original sources, options, resource ceilings and per-process core count.
+
+These are two independently completed gates, with distinct scopes and
+expectations. They validate the current single-check, reveal-scope and call
+publication fixtures. They do not rerun the whole verifier suite or standard
+library, establish a repair for remaining resource regressions, or discharge
+complete review acceptance.
 
 Strict complete default-off library resource compatibility, ordinary required
 CI and independent soundness review remain open. No whole-suite/library iteration or development-line port
