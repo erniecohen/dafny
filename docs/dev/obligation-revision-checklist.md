@@ -492,3 +492,16 @@ publication difference is under causal investigation. Do not weaken product
 checking or claim missing fuel from these observations. Governing-requirement,
 remaining resource, strict default-off and independent soundness acceptance
 remain open. PR #169 remains unchanged pending explicit owner approval.
+
+
+The publication-only comparison also completes: all twelve native observations
+and preservation/false/WF controls pass, but all four selected positive cases
+still exhaust resources. Reject it. A separate twelve-observation original-
+ceiling comparison establishes that asserting the large induction precondition
+alone is sufficient at seed zero in both settings, while asserting positivity
+alone is not. All exact native and genuine negative controls pass. The remaining
+governing-requirement failure is therefore localized to the larger proposition.
+The next scratch comparison tests existing frozen argument substitutions without
+reevaluation, omitted support, altered fuel/publication, duplicate proof or body
+term collection. Product `991b60037` and development PR #169 remain unchanged;
+the open acceptance requirements are not waived.
