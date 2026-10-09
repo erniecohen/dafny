@@ -4,7 +4,7 @@ root=Path.cwd();folder=root/'.github/review/native-fresh-scope-diagnostic';sha=l
 record={'instrumentation':{p.name:sha(p.read_bytes()) for p in sources},'files':{}}
 p=root/'Source/DafnyCore/Verifier/BoogieGenerator.Obligations.cs';raw=p.read_bytes();s=raw.decode('utf-8-sig');start=s.index('  private PropositionLowering LowerDeclaredProposition(');end=s.index('  private Bpl.Expr AssertionSummary(',start);part=s[start:end]
 old='      var argumentTemporaries = new HashSet<string>();';assert part.count(old)==1;part=part.replace(old,'      var precedingLocals = new HashSet<Bpl.Variable>(locals.Values, ReferenceEqualityComparer.Instance);\n'+old)
-old='      var normalized = CertifiedContractPreparation.Normalize(preparation.Commands, argumentTemporaries);';assert part.count(old)==1;part=part.replace(old,'      var freshLocals = new HashSet<Bpl.Variable>(locals.Values.Where(v => !precedingLocals.Contains(v)), ReferenceEqualityComparer.Instance);\n      var normalized = NativeFreshScopeDiagnostic.NormalizeFresh((codeContext as Declaration)?.Name, preparation.Commands, argumentTemporaries, freshLocals);')
+old='      var normalized = CertifiedContractPreparation.Normalize(preparation.Commands, argumentTemporaries);';assert part.count(old)==1;part=part.replace(old,'      var freshLocalOrder = locals.Values.Where(v => !precedingLocals.Contains(v)).ToList();\n      var freshLocals = new HashSet<Bpl.Variable>(freshLocalOrder, ReferenceEqualityComparer.Instance);\n      var normalized = NativeFreshScopeDiagnostic.NormalizeFresh((codeContext as Declaration)?.Name, preparation.Commands, argumentTemporaries, freshLocals, freshLocalOrder);')
 old='      return LowerProposition(builder.Context, condition, etran, preparedTranslator: checking) with {';assert part.count(old)==1;part=part.replace(old,'      var diagnosticScope = NativeFreshScopeDiagnostic.Scope((codeContext as Declaration)?.Name, normalized, argumentTemporaries, freshLocals);\n'+old)
 old="""        PurePreparation = !ReferenceEquals(normalized, preparation.Commands) &&
           !condition.DescendantsAndSelf.Any(expression => expression.Resolved is StmtExpr) &&
@@ -19,11 +19,14 @@ changed=(s[:start]+part+s[end:]).encode();p.write_bytes(changed);record['files']
 p=root/'Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrCall.cs';raw=p.read_bytes();s2=raw.decode('utf-8-sig')
 before="""        callerProof.Add(TrAssumeCmd(tok, callEtran.CanCallAssumptionForVerification(instantiated)));
         var lowering = LowerDeclaredProposition(instantiated, callerProof, locals, callEtran);"""
-after="""        var diagnosticLeadingSupport = TrAssumeCmd(tok, callEtran.CanCallAssumptionForVerification(instantiated));
-        var diagnosticOrder = NativeFreshScopeDiagnostic.UseCallerSupportOrder((codeContext as Declaration)?.Name, diagnosticLeadingSupport);
-        if (!diagnosticOrder) { callerProof.Add(diagnosticLeadingSupport); }
-        var lowering = LowerDeclaredProposition(instantiated, callerProof, locals, callEtran,
-          leadingSupport: diagnosticOrder ? diagnosticLeadingSupport : null);
+after="""        var diagnosticOrder = NativeFreshScopeDiagnostic.UseStandardCallerConstruction((codeContext as Declaration)?.Name);
+        Bpl.AssumeCmd diagnosticLeadingSupport = null;
+        if (!diagnosticOrder) {
+          diagnosticLeadingSupport = TrAssumeCmd(tok, callEtran.CanCallAssumptionForVerification(instantiated));
+          NativeFreshScopeDiagnostic.RegisterOriginalCallerSupport((codeContext as Declaration)?.Name, diagnosticLeadingSupport);
+          callerProof.Add(diagnosticLeadingSupport);
+        }
+        var lowering = LowerDeclaredProposition(instantiated, callerProof, locals, callEtran);
         NativeFreshScopeDiagnostic.ObserveCallerSupport((codeContext as Declaration)?.Name,
           diagnosticLeadingSupport, callerProof.Commands);"""
 assert s2.count(before)==1;changed=s2.replace(before,after).encode();p.write_bytes(changed);record['files'][str(p.relative_to(root))]={'before':sha(raw),'after':sha(changed)}

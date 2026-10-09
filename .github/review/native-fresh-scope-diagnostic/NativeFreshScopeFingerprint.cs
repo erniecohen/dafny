@@ -6,6 +6,7 @@ using Bpl = Microsoft.Boogie;
 namespace Microsoft.Dafny;
 internal static class NativeFreshScopeFingerprint {
   public static string Expression(Bpl.Expr expression) => Term(expression, new BindingScope());
+  public static string Expression(Bpl.Expr expression, BindingScope scope) => Term(expression, scope);
 
   // Resolved occurrences are bound by declaration identity; unresolved ones use
   // the innermost lexical name. Depth counts declarations, never distinct names.

@@ -21,3 +21,15 @@ preparation is eligible and the support reads no written/havocked private local;
 unsupported fragments retain the original position. Native control retains the
 original position. No support expression, check, attribute, fuel, original project
 ceiling or publication is removed or rewritten. This remains a scratch diagnostic.
+
+
+The construction-order follow-up removes the extra early caller can-call
+construction in selected variants. Standard assertion-WF traversal already emits
+its complete can-call support after WF, before the actual P check. Native controls
+retain the original extra construction. Compare complete support formulas/full
+attributes against those controls; never infer their preservation merely from
+source order. Retain all actual P checks/full attributes. Fresh locals are compared
+by captured typed declaration roles with the existing lexical binder fingerprint,
+without rewriting expressions. All original guarded preparation facts/bindings/
+havocs and genuine Invalid controls remain mandatory. No new axiom, global fuel
+policy, body/context collection, source hint or product adoption is introduced.

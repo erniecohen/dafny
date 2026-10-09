@@ -10,7 +10,7 @@ namespace Microsoft.Dafny;
 public static class NativeFreshScopeDiagnostic {
   private static readonly List<object> Preparations=new();
   private static readonly List<object> Normalizations=new();
-  public static IReadOnlyList<object> NormalizeFresh(string declaration,IReadOnlyList<object> commands,ISet<string> arguments,ISet<Bpl.Variable> fresh){
+  public static IReadOnlyList<object> NormalizeFresh(string declaration,IReadOnlyList<object> commands,ISet<string> arguments,ISet<Bpl.Variable> fresh,IReadOnlyList<Bpl.Variable> freshOrder){
     var p=Selection();var ordinary=CertifiedContractPreparation.Normalize(commands,arguments);
     if(p==null||p[1]!=declaration){return ordinary;}
     var writes=new Dictionary<string,int>();var argumentWrites=new HashSet<string>();var guards=new List<Bpl.Expr>();var havocCount=0;
@@ -18,7 +18,9 @@ public static class NativeFreshScopeDiagnostic {
     var guardReads=new ReadNames();foreach(var g in guards){guardReads.VisitExpr(g);}eligible&=!argumentWrites.Any(guardReads.Names.Contains);
     var selected=p[0]!="native-control"&&eligible;var result=selected?CanonicalCommands(commands,new List<Bpl.Expr>()):ordinary;
     var certificate=!selected||RetainedCanonicalState(commands,result);Require(certificate,"Original guarded preparation was not retained");
-    Normalizations.Add(new{eligible,selected,havocCount,allWritesUnique=writes.Values.All(n=>n==1),noArgumentWrittenInAnyGuard=!argumentWrites.Any(guardReads.Names.Contains),originalCommands=commands.Select(CommandKey).ToArray(),normalizedCommands=result.Select(CommandKey).ToArray(),allGuardedFactsBindingsAndHavocsRetained=certificate,noExistingStateWrittenOrHavocked=true,noHavocWhereClausesOrAncestorGuardReads=true});return result;
+    Require(freshOrder.Count==fresh.Count&&freshOrder.Distinct(ReferenceEqualityComparer.Instance).Count()==fresh.Count&&fresh.SetEquals(freshOrder),"Fresh declaration-role table changed");
+    var frame=new NativeFreshScopeFingerprint.BindingScope();for(var i=0;i<freshOrder.Count;i++){frame.Bind(freshOrder[i],"fresh"+i);}
+    Normalizations.Add(new{freshLocalTypes=freshOrder.Select(v=>v.TypedIdent.Type.ToString()).ToArray(),originalCommandsAlphaFresh=commands.Select(c=>CommandKeyFrame(c,frame)).ToArray(),normalizedCommandsAlphaFresh=result.Select(c=>CommandKeyFrame(c,frame)).ToArray(),eligible,selected,havocCount,allWritesUnique=writes.Values.All(n=>n==1),noArgumentWrittenInAnyGuard=!argumentWrites.Any(guardReads.Names.Contains),originalCommands=commands.Select(CommandKey).ToArray(),normalizedCommands=result.Select(CommandKey).ToArray(),allGuardedFactsBindingsAndHavocsRetained=certificate,noExistingStateWrittenOrHavocked=true,noHavocWhereClausesOrAncestorGuardReads=true});return result;
   }
 
   // Independent audit: enumerate original facts with their lexical guards, then
@@ -67,11 +69,16 @@ public static class NativeFreshScopeDiagnostic {
   private static string[] Selection(){var value=Environment.GetEnvironmentVariable("OBLIGATION_DIAGNOSTIC_FRESH_SCOPE");if(value==null){return null;}var p=value.Split(':');Require(p.Length==2&&p[1]=="LemmaRemainder"&&new[]{"native-control","fresh-scope","false-entry"}.Contains(p[0]),"Unknown selection");return p;}
   private static readonly List<object> CallerSupports=new();
   private static readonly Dictionary<Bpl.AssumeCmd,string> OriginalCallerSupports=new(ReferenceEqualityComparer.Instance);
-  public static bool UseCallerSupportOrder(string declaration,Bpl.AssumeCmd support){var p=Selection();if(p==null||p[1]!=declaration){return false;}OriginalCallerSupports.Add(support,JsonSerializer.Serialize(CommandKey(support)));return p[0]!="native-control";}
+  public static bool UseStandardCallerConstruction(string declaration){var p=Selection();return p!=null&&p[1]==declaration&&p[0]!="native-control";}
+  public static void RegisterOriginalCallerSupport(string declaration,Bpl.AssumeCmd support){var p=Selection();if(p!=null&&p[1]==declaration){OriginalCallerSupports.Add(support,JsonSerializer.Serialize(CommandKey(support)));}}
   public static void ObserveCallerSupport(string declaration,Bpl.AssumeCmd support,IReadOnlyList<object> commands){
     var p=Selection();if(p==null||p[1]!=declaration){return;}
-    var fingerprint=JsonSerializer.Serialize(CommandKey(support));var count=commands.Count(c=>ReferenceEquals(c,support));Require(count==1&&OriginalCallerSupports[support]==fingerprint,"Original caller support changed or was duplicated/lost");
-    CallerSupports.Add(new{fingerprint,originalCommandRetainedExactlyOnce=true,selected=p[0]!="native-control",atEndBeforeActualCheck=ReferenceEquals(commands.Last(),support)});
+    var retained=commands.Last() as Bpl.AssumeCmd;Require(retained!=null,"Standard WF support is absent before the actual check");
+    var wfFingerprint=JsonSerializer.Serialize(CommandKey(retained));var wfCount=commands.Count(c=>ReferenceEquals(c,retained));Require(wfCount==1,"Standard WF support was lost or duplicated");
+    string fingerprint;var extraCount=0;
+    if(support!=null){fingerprint=JsonSerializer.Serialize(CommandKey(support));extraCount=commands.Count(c=>ReferenceEquals(c,support));Require(extraCount==1&&OriginalCallerSupports[support]==fingerprint,"Original caller support changed");}
+    else{fingerprint=wfFingerprint;}
+    CallerSupports.Add(new{fingerprint,wfFingerprint,standardWfCommandRetainedExactlyOnce=true,extraEarlySupportConstructed=support!=null,extraEarlySupportObjectCount=extraCount,selected=p[0]!="native-control",standardSupportAtEndBeforeActualCheck=ReferenceEquals(commands.Last(),retained)});
   }
   public static bool Scope(string declaration,IReadOnlyList<object> commands,ISet<string> arguments,ISet<Bpl.Variable> fresh){
     var p=Selection();if(p==null||p[1]!=declaration){return false;}
@@ -99,9 +106,21 @@ public static class NativeFreshScopeDiagnostic {
     Bpl.IfCmd b=>new{kind="if",guard=b.Guard==null?"nondeterministic":NativeFreshScopeFingerprint.Expression(b.Guard),thenCommands=Commands(b.Thn)?.Select(CommandKey).ToArray()},
     _=>new{kind=c.GetType().Name}
   };
+  // Fresh locals are declared in a captured ordered frame. Resolved references
+  // use declaration identity; unresolved references use that frame's unique name
+  // table. Nested quantifiers retain the existing lexical shadowing rules. This
+  // is observational fingerprinting, never substitution into verifier commands.
+  private static object CommandKeyFrame(object c,NativeFreshScopeFingerprint.BindingScope frame)=>c switch{
+    Bpl.CommentCmd=>new{kind="comment"},
+    Bpl.AssumeCmd a=>new{kind="assume",expression=NativeFreshScopeFingerprint.Expression(a.Expr,frame),attributes=NativeFreshScopeFingerprint.Attributes(a.Attributes,frame)},
+    Bpl.AssignCmd a=>new{kind="assign",lhs=a.Lhss.Select(v=>NativeFreshScopeFingerprint.Expression(v.DeepAssignedIdentifier,frame)).ToArray(),rhs=a.Rhss.Select(v=>NativeFreshScopeFingerprint.Expression(v,frame)).ToArray()},
+    Bpl.HavocCmd h=>new{kind="havoc",variables=h.Vars.Select(v=>NativeFreshScopeFingerprint.Expression(v,frame)).ToArray()},
+    Bpl.IfCmd b=>new{kind="if",guard=b.Guard==null?"nondeterministic":NativeFreshScopeFingerprint.Expression(b.Guard,frame),thenCommands=Commands(b.Thn)?.Select(v=>CommandKeyFrame(v,frame)).ToArray()},
+    _=>new{kind=c.GetType().Name}
+  };
   private static string Key(Bpl.AssertCmd c)=>JsonSerializer.Serialize(new{expression=NativeFreshScopeFingerprint.Expression(c.Expr),attributes=NativeFreshScopeFingerprint.Attributes(c.Attributes,new NativeFreshScopeFingerprint.BindingScope()),line=c.tok.line,col=c.tok.col});
   public static void Apply(Bpl.Program program){var p=Selection();if(p==null){return;}var targets=program.TopLevelDeclarations.OfType<Bpl.Implementation>().Where(i=>i.Name=="Impl$$Std_mArithmetic_mDivMod.__default.LemmaRemainder").ToList();if(targets.Count==0){return;}Require(targets.Count==1,"Unexpected implementation count");var impl=targets.Single();var checks=impl.Blocks.SelectMany(b=>b.Cmds).OfType<Bpl.AssertCmd>().Select(Key).OrderBy(x=>x,StringComparer.Ordinal).ToArray();Require(checks.Length==8,"Unexpected original check count");var negative=p[0]=="false-entry";if(negative){impl.Blocks.First().Cmds.Insert(0,new Bpl.AssertCmd(impl.tok,Bpl.Expr.False));}
-    var path=Environment.GetEnvironmentVariable("OBLIGATION_DIAGNOSTIC_AUDIT");Require(!string.IsNullOrEmpty(path)&&!File.Exists(path),"Missing/repeated audit");File.WriteAllText(path,JsonSerializer.Serialize(new{target=p[1],variant=p[0],actualCheckFingerprints=checks,staticCheckCount=checks.Length,preparations=Preparations,normalizations=Normalizations,callerSupports=CallerSupports,negativeEntryAdded=negative,allPreparationCommandsRetained=true,noSupportFuelFormulaOrAttributeRewrite=true,onlyExistingCallerProofScopePolicyExtended=true,existingCertifiedCallerSupportOrderExtended=true,existingVariableHavocsRejected=true,statementExpressionScopeExclusionRetained=true,productPolicy=false})+"\n");
+    var path=Environment.GetEnvironmentVariable("OBLIGATION_DIAGNOSTIC_AUDIT");Require(!string.IsNullOrEmpty(path)&&!File.Exists(path),"Missing/repeated audit");File.WriteAllText(path,JsonSerializer.Serialize(new{target=p[1],variant=p[0],actualCheckFingerprints=checks,staticCheckCount=checks.Length,preparations=Preparations,normalizations=Normalizations,callerSupports=CallerSupports,negativeEntryAdded=negative,allPreparationCommandsRetained=true,noSupportFuelFormulaOrAttributeRewrite=true,onlyExistingCallerProofScopePolicyExtended=true,standardAssertionWfCallerConstruction=true,existingVariableHavocsRejected=true,statementExpressionScopeExclusionRetained=true,productPolicy=false})+"\n");
   }
   private static void Require(bool condition,string message){if(!condition){throw new InvalidOperationException(message);}}
 }
