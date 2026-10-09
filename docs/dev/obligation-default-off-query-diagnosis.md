@@ -1,15 +1,13 @@
 # Default-off solver query ordering diagnosis
 
-**Latest evidence:** product `fe6ddd1ba` has [68 focused suite/control observations](obligation-guarded-preparation-focused.md)
-and [92 completed known-library/control observations](obligation-current-focused-library.md).
-The library result explicitly combines 84 preserved observations from a harness-failed
-attempt and eight controls from its completed follow-up. Remaining resource failures
-and strict default-off cost acceptance stay open. No whole-suite/library run was
-launched for this revision. Complete-gate results below belong to earlier pinned
-revisions and cannot establish current acceptance.
+**Current evidence:** eight focused native `MembersSpec` comparisons use source
+`df4c7066f`, accepted compiler source `63fb750a9`, the original supported baseline
+`ab210b78b` and Z3 5.1.0. The complete targeted gate finishes; all eight WF checks
+verify. Exact default-off resource equality remains rejected. This is not a
+whole-library acceptance result. The earlier evidence below is historical.
 
 This is limited causal evidence for the `MembersSpec` standard-library sample,
-not acceptance of the complete strict resource comparison. It uses the current
+not acceptance of the complete strict resource comparison. It uses the historical
 compiled product `072175269`, build source `8d23f3fc8`, baseline `ab210b78b`
 and Z3 5.1.0. Neither product translation nor project gates were changed for it.
 
@@ -66,3 +64,30 @@ This extends the structural ordering observation to the other axiom setting.
 It is not another direct solver replay or full-library acceptance. The complete
 24-observation replay above is the executed causal evidence; neither analysis
 asserts equality of the native query bytes or a waiver of strict resource equality.
+
+
+## Current compiler repeats preserve Boogie, not exact cost
+
+The fresh scope is baseline/default-off, both additional-axiom settings, with
+two repeats of each. Sources, project configuration, normalization, solver,
+platform, cores and original ceiling are fixed. The candidate uses the
+[accepted structural compiler](https://github.com/erniecohen/dafny/actions/runs/37955030278).
+No prior proof results are reused in these eight observations.
+
+Every emitted Boogie module is byte-identical between baseline and current
+within its axiom setting, including both repeats. Resource counts differ in
+all four baseline/current paired comparisons; even the two unchanged baseline
+runs differ in the axiom-off setting. Every observation verifies, and the scope
+contains no negative controls. A successful diagnostic wrapper is not acceptance
+of strict resource equality.
+
+A fresh read-only query analysis establishes an explicit bijection over generated
+symbols, including all binder occurrences. After that rename, all eight full
+dynamic suffixes match and the static command multisets match. Removing only
+the declaration of one integer constant and the two ground literal equalities
+for 4294967295 and 4294967296 leaves the entire command sequence identical.
+Thus the observed input differences are confined to those command positions
+and their resulting generated names. No checked formula, fact, trigger or fuel
+term changes. This extends the historical structural diagnosis to the current
+compiler; the earlier direct-solver replay remains historical and is not newly
+executed here. No full-library equality waiver or current replay claim follows.
