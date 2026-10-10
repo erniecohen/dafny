@@ -1,10 +1,9 @@
 # Local obligation lowering
 
-The [requested revisions](obligation-review-change-request.md) govern this change.
-The [revision checklist](obligation-revision-checklist.md) records acceptance and
-remaining work. PR #168 implements the single-check design; native acceptance is
-pending. The development implementation must wait for explicit owner approval
-before porting and then obtain its own evidence.
+This development port follows the final reviewed design merged in #168 as
+1256f92b. The local invariant and adapter arguments below describe that design.
+[Development differences and validation](obligation-dev-port.md) govern #169;
+supported-line measurements cited below are historical reference evidence.
 
 `--consistent-obligation-checks` is experimental and disabled by default. Its
 project-file spelling is `consistent-obligation-checks = true`. The option changes
@@ -50,7 +49,7 @@ why the independent specification-WF proof is essential. Inherited source clause
 reverification. This restores quantifier-local binder and can-call support;
 matching only the final expression is insufficient. Free splitter pieces are
 not independently proved theorems. The causal evidence and acceptance limits
-are recorded in [the preparation diagnosis](obligation-local-preparation-diagnosis.md).
+are recorded in [the preparation diagnosis](https://github.com/erniecohen/dafny/blob/1256f92b/docs/dev/obligation-local-preparation-diagnosis.md).
 
 ## Contracts and publication
 

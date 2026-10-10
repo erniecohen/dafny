@@ -14,14 +14,7 @@ on:
     branches: ['review/**', 'dev']
   workflow_dispatch:
     inputs:
-          - name: Obligation lowering inventory and structural comparisons
-        run: dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation --logger "console;verbosity=normal"
-      - name: Editor obligation option invalidates verification results
-        env:
-          Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
-        run: dotnet test Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~ConsistentObligationChecksTest --logger "console;verbosity=normal"
-
-  binaries:
+      binaries:
         description: Also build the self-contained binaries (a release is made only for a tag)
         type: boolean
         default: false
@@ -319,6 +312,12 @@ jobs:
           dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Cardinality
           dotnet test Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~Cardinality
           dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~CardinalityEmissionTests
+      - name: Obligation lowering inventory and structural comparisons
+        run: dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation --logger "console;verbosity=normal"
+      - name: Editor obligation option invalidates verification results
+        env:
+          Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
+        run: dotnet test Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~ConsistentObligationChecksTest --logger "console;verbosity=normal"
       - name: Run the tests named in .github/review/regressions
         env:
           DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS: cs

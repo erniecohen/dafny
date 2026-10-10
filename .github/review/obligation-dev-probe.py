@@ -24,10 +24,12 @@ if code==0:
  solver=(root/'z3-5.1.0-x64-glibc-2.39/bin/z3').resolve();solver.chmod(0o755)
  import shutil
  target=Path('Binaries/z3/bin/z3-5.1.0');target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(solver,target)
- env=dict(os.environ,Z3=str(solver),DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS='cs')
+ env=dict(os.environ,Z3=str(solver),PATH=str(solver.parent)+os.pathsep+os.environ['PATH'],DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS='cs')
  phase('inventory-gate',['dotnet','test','Source/DafnyCore.Test/DafnyCore.Test.csproj','-c','Release','--no-build','--filter','FullyQualifiedName~ObligationCoverageTests','--logger','trx;LogFileName=tests.trx','--results-directory',str((root/'inventory-gate').resolve())],env)
  phase('core-all',['dotnet','test','Source/DafnyCore.Test/DafnyCore.Test.csproj','-c','Release','--no-build','--logger','trx;LogFileName=tests.trx','--results-directory',str((root/'core-all').resolve())],env)
  phase('registered',['dotnet','test','Source/IntegrationTests','-c','Release','--filter','DisplayName~git-issue-100.dfy','--logger','trx;LogFileName=tests.trx','--results-directory',str((root/'registered').resolve())],env)
+ phase('original-diagnostic',['python3','.github/review/assertion-invariance.py','out/dafny/Dafny',str(solver),str((root/'original-diagnostic').resolve()),'--all-resolvers','--cases','issue100-original,issue100-explicit,issue100-final-true'],env)
+ phase('controls-diagnostic',['python3','.github/review/obligation-dev-controls.py','Binaries/net8.0/DafnyDriver.dll',str(solver),str((root/'controls-diagnostic').resolve())],env)
  phase('editor',['dotnet','test','Source/DafnyLanguageServer.Test','-c','Release','--filter','FullyQualifiedName~ConsistentObligationChecksTest','--logger','trx;LogFileName=tests.trx','--results-directory',str((root/'editor').resolve())],env)
  (root/'identities.json').write_text(json.dumps({'source':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dafny':subprocess.check_output(['dotnet','out/dafny/Dafny.dll','--version'],text=True).strip(),'solver':subprocess.check_output([str(solver),'--version'],text=True).strip(),'core_sha256':hashlib.sha256(Path('out/dafny/DafnyCore.dll').read_bytes()).hexdigest(),'solver_sha256':hashlib.sha256(solver.read_bytes()).hexdigest()},indent=2)+'\n')
 (root/'results.json').write_text(json.dumps({'diagnostic':True,'phases':results},indent=2)+'\n')

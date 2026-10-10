@@ -1,22 +1,13 @@
 # Declared-contract preparation argument
 
-The previously validated single-check semantic implementation is `991b60037`, with the
-command-neutral actual-preparation observer and structural controls in `df4c7066f`.
-The proposition remains mandatory and is checked once. The
-[registered and paired native controls](obligation-caller-publication-native.md)
-validate the required functional mechanisms at their named compiler identities;
-[current regression acceptance](obligation-revision-checklist.md) remains open.
-Earlier experiment boundaries below are retained as history, not current gates.
-The [final review](obligation-final-review.md) records a subsequently reproduced
-labeled two-state termination-context defect and its source correction
-`1c30dd990`. Final native correctness validation and soundness signoff remain
-pending; the earlier controls do not certify that correction.
-The reviewed producer registry is refreshed to the correction's captured
-inventory: all 287 groups retain their producer, count and classification.
-Changes are confined to file hashes for the five corrected translator files,
-four call-expression hashes and the two added optional-parameter arities.
-The four expression hashes were independently reproduced from the source;
-this registry refresh does not waive the fresh normal inventory/core gate.
+This argument is adapted from the final implementation merged in #168 as
+1256f92b, including the separate caller termination context added during final
+review. The proposition remains mandatory and is checked once.
+
+The [development report](obligation-dev-port.md) records the dev-specific
+helpers and independent validation. The dev inventory was captured from its
+own source and has 280 producer groups across 26 files; supported-line counts
+and measurements in the historical sections below are reference evidence.
 
 ## Existing well-formedness proof
 
@@ -163,7 +154,7 @@ while the known regressions remain unresolved.
 
 ## Leading support order
 
-The [native support-order diagnosis](obligation-support-order-diagnosis.md)
+The [native support-order diagnosis](https://github.com/erniecohen/dafny/blob/1256f92b/docs/dev/obligation-support-order-diagnosis.md)
 records a general local correction under validation. Create the existing support
 expression at its original point; move its command after normalized certified
 preparation only when it is independent of every private assignment and havoc
@@ -230,7 +221,7 @@ is separate and remains pending.
 
 ## Fresh quantified-local scope proposal: not adopted
 
-The [current focused library diagnosis](obligation-current-focused-library.md#quantified-preparation-remains-in-the-outer-continuation)
+The [current focused library diagnosis](https://github.com/erniecohen/dafny/blob/1256f92b/docs/dev/obligation-current-focused-library.md#quantified-preparation-remains-in-the-outer-continuation)
 identifies a scope-certificate boundary for quantified WF havocs. The scratch
 proposal preserves every preparation command at the actual caller check and
 extends only eligibility for the existing terminating caller-proof branch.

@@ -29,3 +29,34 @@ expected-verdict table or original benchmark is changed. Proof repairs under
 #170 and the later default-on decision under #171 are separate work.
 
 AI assisted implementation and validation. A new review is required before merge.
+
+## Branch-specific producer audit
+
+The independent Roslyn capture found 280 groups across 26 verifier files. All
+118 structural tests passed in the [development diagnostic](https://github.com/erniecohen/dafny/actions/runs/38049408314); the subsequent normal inventory gate must check the committed capture.
+
+The differences from the 287-group supported registry are explicit:
+
+- Dev has no local additional-axiom literal helper or the supported line's
+  lambda-handle allocation helpers. Its original permission interfaces remain.
+- Dev has floating-point NaN, special-function, arithmetic and conversion
+  checks absent from the supported source: two NaN checks, four extra special
+  function checks, twelve extra ordered-WF assertions and nine extra conversion
+  assertions. These retain their existing specialized lowering. Generic result
+  constraints continue through the guarded type-membership adapter.
+- Dev's co-recursive suspended-value checks remain mandatory before destructor
+  observation, constructor arguments, co-recursive results and let-pattern
+  binding. The original check's `$Is` predicate remains a separate proof rule;
+  the opt-in clause adapter does not replace it with a free assumption.
+- Dev's constant-field type substitution, general-trait casts and existing
+  lambda handle construction remain unchanged. New contract replay retains the
+  original lambda frame policy and caller termination context.
+- Opaque blocks, forall exports, iterator yield/exit contracts, match/if
+  completeness, witnesses, frames, termination and allocation retain the same
+  specialized obligations as the audited reference, adapted to the dev APIs.
+
+The default-off caller/callee termination branch reproduces dev's prior
+translator selection. Enabled replay uses separate source contexts, not an
+assumption that identifies the two heaps. The positive and negative replay
+fixtures inspect individual declaration outcomes, so an independently invalid
+assertion cannot conceal acceptance of a false caller precondition.
