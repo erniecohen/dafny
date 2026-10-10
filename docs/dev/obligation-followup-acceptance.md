@@ -14,7 +14,7 @@ Pinned baseline: `ab210b78b50adb5a192542897f0a00cdb40f3c35`. Each complete compa
 
 | Scope | Configurations | Coverage per mode | Status |
 |---|---|---|---|
-| Complete verifier-suite verdict gate | Both resolver defaults, both axiom settings | 1,161 planned programs | Refreshed resolver / additional axioms ON complete; three other axes pending |
+| Complete verifier-suite verdict gate | Both resolver defaults, both axiom settings | 1,161 planned programs | Two axes complete; legacy / axioms ON and refreshed / axioms OFF pending |
 | Complete standard-library gate | Committed resolver settings, both axiom settings | Seven parts, 2,190 declarations | Additional axioms ON complete; OFF pending |
 | Registered regression gate | Both resolvers and axiom settings | 322 invocations, including 233 negative controls | Passed |
 | Paired assertion-invariance gate | Both resolvers and axiom settings | 688 observations, including 248 negative controls | Passed |
@@ -32,6 +32,10 @@ Ten commonly passing declarations exceed the declared significant-cost threshold
 `git-issue-2703` changes one body correctness result from Errors to Correct. Its contract is `ensures 2 / 0 == 1`; the independent division-by-zero specification-WF check remains Errors, as do the two other invalid function-definition WF checks in that file. Replaying the impossible domain condition makes the dependent body check vacuous. The complete module remains rejected in every mode; this body-only result is not verification of the invalid contract. The report's soundness argument explicitly requires the independent WF checks to succeed.
 
 This axis also has 36 baseline-versus-committed-expected program differences. They include resolver-dependent diagnostics and existing resource outcomes; candidate OFF reproduces the actual pinned baseline exactly. They are reported separately from candidate changes, and the expected table has not been edited. Fifty-nine baseline-versus-ON program output rows differ, including moved diagnostic locations; these are not all logical verdict regressions. The declaration-level transition and cost lists above are the relevant acceptance evidence.
+
+### Legacy resolver, additional axioms OFF
+
+All three modes complete 1,161 programs, 6,909 declarations and 7,605 VCs, with no safety timeout or crash. OFF matches every baseline verdict and VC resource count exactly; this baseline also matches the committed expected program table. ON adds four resource failures: `PriorityQueue.SiftDown`, `M2.SchorrWaite`, `RemoveFactor` and `M3.UnionFind.JoinMaintainsReaches1`. Nine commonly passing declarations cross the significant-cost threshold: iterator `MoveNext`, `Composite`, `dec`, `AltPrimeDefinition`, `inc`, `sorted_merge`, `FibSumManual`, `Fill_All` and `Fill_True`. Commonly passing declarations have a slightly lower aggregate cost, which does not waive these failures or increases. The same invalid division-by-zero contract body in `git-issue-2703` becomes vacuously Correct while all its independent WF failures remain; no complete module is thereby accepted. The full comparison gate rejects enabled-mode acceptance.
 
 ### First completed standard-library axis
 
