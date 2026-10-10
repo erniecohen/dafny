@@ -14,7 +14,14 @@ on:
     branches: ['review/**', 'dev']
   workflow_dispatch:
     inputs:
-      binaries:
+          - name: Obligation lowering inventory and structural comparisons
+        run: dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation --logger "console;verbosity=normal"
+      - name: Editor obligation option invalidates verification results
+        env:
+          Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
+        run: dotnet test Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~ConsistentObligationChecksTest --logger "console;verbosity=normal"
+
+  binaries:
         description: Also build the self-contained binaries (a release is made only for a tag)
         type: boolean
         default: false
@@ -298,6 +305,13 @@ jobs:
           unzip -q z3h.zip -d Binaries/z3/bin
           chmod +x "Binaries/z3/bin/z3-$v"
           "Binaries/z3/bin/z3-$v" --version
+      - name: Pinned solver for obligation controls
+        run: |
+          curl -fsSLo z3-obligation.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
+          echo "$Z3_LINUX_X64_SHA256  z3-obligation.zip" | sha256sum -c -
+          unzip -q z3-obligation.zip
+          cp "$Z3_LINUX_X64/bin/z3" Binaries/z3/bin/z3-5.1.0
+          chmod +x Binaries/z3/bin/z3-5.1.0
       - name: Build the test harness
         run: dotnet build Source/IntegrationTests -c Release
       - name: Cardinality resolver and translation admission tests

@@ -1,0 +1,127 @@
+name: Development obligation paired comparisons
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  Z3_RELEASE: https://github.com/Z3Prover/z3/releases/download/z3-5.1.0
+  Z3_LINUX_X64: z3-5.1.0-x64-glibc-2.39
+  Z3_LINUX_X64_SHA256: f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [baseline, candidate]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.mode == 'baseline' && '858e4bfbcf00fbf0146255c0a4b0efdfc4deb66f' || github.sha }}
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build native command and preserve source identity
+        run: |
+          revision=$(git rev-parse --short=8 HEAD)
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:SourceRevisionId="$revision"
+          dotnet out/dafny/Dafny.dll --version | tee out/dafny-version.txt
+          git rev-parse HEAD > out/source.txt
+          tar -C out -czf dafny.tar.gz dafny dafny-version.txt source.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dev-build-${{ matrix.mode }}
+          path: dafny.tar.gz
+          retention-days: 14
+  suite:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [baseline, off, on]
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: dev-build-${{ matrix.mode == 'baseline' && 'baseline' || 'candidate' }}
+      - name: Native input and pinned solver
+        run: |
+          mkdir -p out/toolchain
+          tar -C out/toolchain -xzf dafny.tar.gz
+          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
+          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+          chmod +x "$Z3_LINUX_X64/bin/z3"
+          echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
+      - name: Record suite verdicts and all available RU batches
+        run: |
+          python3 .github/review/obligation-dev-comparison.py suite --mode ${{ matrix.mode }} --shard ${{ matrix.shard }}/4 --root out/comparison/suite-${{ matrix.mode }}-${{ matrix.shard }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dev-comparison-suite-${{ matrix.mode }}-${{ matrix.shard }}
+          path: out/comparison
+          retention-days: 14
+  library:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [baseline, off, on]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/download-artifact@v4
+        with:
+          name: dev-build-${{ matrix.mode == 'baseline' && 'baseline' || 'candidate' }}
+      - name: Native input and pinned solver
+        run: |
+          mkdir -p out/toolchain
+          tar -C out/toolchain -xzf dafny.tar.gz
+          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
+          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+          chmod +x "$Z3_LINUX_X64/bin/z3"
+          echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
+      - name: Record library verdicts and declaration RU
+        run: |
+          python3 .github/review/obligation-dev-comparison.py library --mode ${{ matrix.mode }} --root out/comparison/library-${{ matrix.mode }}-0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dev-comparison-library-${{ matrix.mode }}
+          path: out/comparison
+          retention-days: 14
+  compare:
+    needs: [suite, library]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dev-comparison-*
+          merge-multiple: true
+          path: out/comparison
+      - run: python3 .github/review/obligation-dev-comparison.py summarize
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dev-comparison-summary
+          path: out/comparison/comparison.json
+          retention-days: 14
