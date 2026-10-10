@@ -9,7 +9,7 @@ def run(name,command):
  (folder/'command.json').write_text(json.dumps(command))
  r=subprocess.run(command,text=True,capture_output=True,timeout=180)
  (folder/'output.txt').write_text(r.stdout+r.stderr)
- row={'name':name,'exit':r.returncode,'summaries':[x for x in (r.stdout+r.stderr).splitlines() if 'verifier finished' in x]}
+ row={'name':name,'exit':r.returncode,'executed_verification':bool(re.search(r'(?:Dafny|Boogie) program verifier finished with (?!0 verified, 0 errors(?:\n|$))',r.stdout+r.stderr)),'summaries':[x for x in (r.stdout+r.stderr).splitlines() if 'verifier finished' in x]}
  observations.append(row);return folder,row
 for mode in ['baseline','candidate']:
  native=Path('out/'+mode+'/dafny/Dafny').resolve()
@@ -37,7 +37,7 @@ boogie=str(Path('out/native-boogie/boogie').resolve())
 for name,content in variants.items():
  path=root/(name+'.bpl');path.write_text(content)
  for seed in [0,1,7]:
-  command=[boogie,str(path),'/proc:Impl$$_module.__default.wfi','/vcsCores:1','/typeEncoding:m','/normalizeDeclarationOrder:0','/rlimit:16000000','/timeLimit:60',f'/randomSeed:{seed}','/proverOpt:PROVER_PATH='+str(solver),'/trace']
+  command=[boogie,str(path),'/vcsCores:1','/typeEncoding:m','/normalizeDeclarationOrder:0','/rlimit:16000000','/timeLimit:60',f'/randomSeed:{seed}','/proverOpt:PROVER_PATH='+str(solver),'/trace']
   run(f'boogie-{name}-seed-{seed}',command)
 (root/'summary.json').write_text(json.dumps({'diagnostic':True,'solver':subprocess.check_output([str(solver),'--version'],text=True).strip(),'solver_sha256':hashlib.sha256(solver.read_bytes()).hexdigest(),'observations':observations},indent=2)+'\n')
 print('Recorded native baseline and controlled Boogie observations; strict original acceptance is unchanged.')
