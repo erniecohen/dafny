@@ -127,6 +127,32 @@ still exhaust resources. This confirms faithful product reproduction of that
 negative result. The comparison is against the caller-only candidate, not a
 claim of exact equivalence with the legacy translation.
 
+## Bounded legacy/current trigger and fuel inventory
+
+An additional offline comparison uses the already faithful legacy control and
+this normal compiler's saved `RemoveFactor` query at seed zero, with additional
+axioms off and unchanged source and ceiling. All 33 background assertions are
+exactly equal. The local induction quantifier, including its full ordered
+patterns and body, is also structurally equal after a sort-preserving, one-to-one
+correspondence of its free parameters and lexical binder normalization.
+
+Two further parameter correspondences are justified by identical typed defining
+equalities for the picked value and recursive-call set argument. With that
+correspondence, the query-wide unique ground-term inventories match exactly:
+ten layered `product` applications, five set differences, three membership
+applications and seven product can-call applications. The `product` applications
+retain both existing fuel-layer shapes. No term is removed from these selected
+inventories; this is an inspection of saved inputs, with no new solver run or
+modified proof input.
+
+These observations narrow the missing-support hypothesis for this case. They do
+not establish that each term has the same availability on every VC path, that
+Z3 makes the same useful instantiations, or that the two complete VCs are
+logically equivalent. The bounded audit includes lexical shadowing, alpha-renaming,
+capture, repeated-parameter and sort-mismatch controls. The legacy query verifies
+and the current combined query reaches its original resource ceiling; the causal
+explanation and product remedy remain open.
+
 RemoveFactor, section 13's both-partial classification, complete default-off
 cost-policy acceptance, required final repository gates and independent soundness review
 remain open. The [request](obligation-review-change-request.md) and
