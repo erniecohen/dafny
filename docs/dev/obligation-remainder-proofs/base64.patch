@@ -1,0 +1,64 @@
+--- a/Source/DafnyStandardLibraries/src/Std/Base64.dfy
++++ b/Source/DafnyStandardLibraries/src/Std/Base64.dfy
+@@ -904,23 +904,58 @@
+     }
+   }
+ 
++  // Concatenation preserves an unpadded prefix, and the entire four-character
++  // suffix remains the final block. No encoding implementation is needed here.
++  lemma UnpaddedPrefixWithPaddingIsBase64(prefix: string, suffix: string)
++    requires IsUnpaddedBase64String(prefix)
++    requires Is1Padding(suffix) || Is2Padding(suffix)
++    ensures IsBase64String(prefix + suffix)
++  {
++    hide *;
++    reveal IsUnpaddedBase64String, Is1Padding, Is2Padding, IsBase64String;
++    var s := prefix + suffix;
++    assert |suffix| == 4;
++    assert s[..(|s| - 4)] == prefix;
++    assert s[(|s| - 4)..] == suffix;
++  }
++
++  lemma UnpaddedStringIsBase64(s: string)
++    requires IsUnpaddedBase64String(s)
++    ensures IsBase64String(s)
++  {
++    hide *;
++    reveal IsUnpaddedBase64String, IsBase64String;
++  }
++
+   lemma EncodeBVIsBase64(b: seq<bv8>)
+     ensures IsBase64String(EncodeBV(b))
+   {
+-    EncodeBVLengthExact(b);
+-    if |EncodeBV(b)| < 4 {
+-    } else if |b| % 3 == 0 {
++    // Separate the modulo arithmetic and string concatenation from the
++    // bit-vector encoding proofs, rather than unfolding them together.
++    hide *;
++    if |b| % 3 == 0 {
+       EncodeUnpaddedBase64(b);
++      UnpaddedStringIsBase64(EncodeUnpadded(b));
++      EncodeBVIsUnpadded(b);
+     } else if |b| % 3 == 1 {
+       var bStart := b[..(|b| - 1)];
+       var bEnd := b[(|b| - 1)..];
++      assert |bStart| % 3 == 0;
++      assert |bEnd| == 1;
+       EncodeUnpaddedBase64(bStart);
+       Encode2PaddingIs2Padding(bEnd);
++      UnpaddedPrefixWithPaddingIsBase64(EncodeUnpadded(bStart), Encode2Padding(bEnd));
++      EncodeBVIs2Padded(b);
+     } else {
+       var bStart := b[..(|b| - 2)];
+       var bEnd := b[(|b| - 2)..];
++      assert |b| % 3 == 2;
++      assert |bStart| % 3 == 0;
++      assert |bEnd| == 2;
+       EncodeUnpaddedBase64(bStart);
+       Encode1PaddingIs1Padding(bEnd);
++      UnpaddedPrefixWithPaddingIsBase64(EncodeUnpadded(bStart), Encode1Padding(bEnd));
++      EncodeBVIs1Padded(b);
+     }
+   }
+ 

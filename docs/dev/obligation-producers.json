@@ -1,0 +1,2585 @@
+[
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "Assert/5",
+    "Producer": "Assert",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "C99E662A00FB9FF3A83383ACA6BCE3A990748FA6DE92A97FFB13EE3E496D7E9A",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "AssertAndForget/4",
+    "Producer": "AssertAndForget",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "58DFEF51453B0277B1304736A30E602A624F3A2E9D89535379F1AC2937F2F426",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "Check_NewRestrictions/7",
+    "Producer": "Assert",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "CD4C8A45464AC55E822A99C28AA722EFC890B88AB2E5BB43FBA111AB18E02DA8",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "CheckCasePatternShape/7",
+    "Producer": "Assert",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "CA6DFA440A619A4ADD0976653084B1E54B8ED7F6351CD10D1DEDB0847A34DFF7",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "CheckCasePatternShape/7",
+    "Producer": "CheckSubrange",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "528AD324950EDB99462F4B9A4B6505371A6DB281BCE7023D66BD75D5AED9CA80",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "CheckFrameEmpty/6",
+    "Producer": "Assert",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "875F0E27F3F2EDC3923EF0752E7E83D6F377E05F2931DB5C3E529FA3E07F4E0B",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "CheckFrameSubset/10",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "4FE75F53F19328D63E47AB24BBCC96288D0AF2BA755628B9EE71387F2595A742",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "CheckFrameSubset/9",
+    "Producer": "Assert",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "338DBB8CEAE22F1EC1D47B9360112CADD76A2B63B58A0061DCB00077B4B5953E",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "CheckFrameSubset/9",
+    "Producer": "CheckFrameSubset",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "453F46250F1A61FFD27CC638285DD5A63628FF7E34E47D9D4CE9371A83723F4E",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "CheckNonNull/5",
+    "Producer": "Assert",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "13168F69156B8788480E8753EF9A856996BE54D129C1FFF5C6FAE7F5269A2C30",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "CheckSubrange/12",
+    "Producer": "CheckTypeMembership",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "605A92E193BCE190906B926BFE687A1ECED03E02037AEF183E4BC03A4CE62481",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "CheckSubrange/12",
+    "Producer": "GetSubrangeCheck",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "28CFB7381020FB6DAED8059CB49DD1DF7F3106211EA3BCB72533475C2F42B270",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "Ensures/8",
+    "Producer": "factory Ensures",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "59BA0660C3ACF93B164B7C1EBFC2A29F6FCD4A7B223199DE526407774D6CEC45",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "Ensures/8",
+    "Producer": "new Ensures",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "27DCBB16595D254B3ED4BBDB6BCB270D041425AAEADD3FC17FE73472A3A18244",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "EnsuresWithDependencies/7",
+    "Producer": "Ensures",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "A6143664715F64DC4A0FC427BC0EA15978DD634E6B0834242C36E48B29B9925F",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "EnsuresWithDependencies/7",
+    "Producer": "factory EnsuresWithDependencies",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "E991E468A10049126D4D2DF31C337AB1A4BF7DFD2D44BC1B37FC9437E229E0DB",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "FreeEnsures/4",
+    "Producer": "Ensures",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "7D81A9A02F9980A7685721D8CC2F7A705CE1E7DAED52A045DBB608AB82C9BC4C",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "FreeEnsures/4",
+    "Producer": "factory FreeEnsures",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "44623612BF921E28A3B82291407BD7DE676A98D8342EB9C841C04E29ACDA6E65",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "FreeRequires/4",
+    "Producer": "factory FreeRequires",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "6B1DF2FAF8943D0A1B52B92A1337FADF9215BC6C4A5A9FC969CBA75E56BCC774",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "FreeRequires/4",
+    "Producer": "Requires",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "D42889F295087E5B56BEA41E8574E924B14E361D7B17C31F70E19DAB26D392D0",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "Requires/8",
+    "Producer": "factory Requires",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "D6B86C3F662BB9F129B6EEB4DCE14F32CBAB8A510A78C328D5CE0C67917D633A",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "Requires/8",
+    "Producer": "new Requires",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "11524F194A4EE51DEEAE933BF8FE17F3FA50AD519BADB005FB8352C545763428",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "RequiresWithDependencies/7",
+    "Producer": "factory RequiresWithDependencies",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "E57238100D4E5BF85D0B0AE584D02BC4264A39CCE0D25A0FAB0907B8D95836AA",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "RequiresWithDependencies/7",
+    "Producer": "Requires",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "F4A8C82ADB237C3F2B6EAE135DCCCC21575BBEF7CD01217EA1A1456ABAB1C5C5",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "TrAssertCmd/3",
+    "Producer": "factory TrAssertCmd",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "691C24F4D9F6248CA706767DCCB944E263AC7DCBC796A1A6A40497CCB2D541D4",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "TrAssertCmd/3",
+    "Producer": "new AssertCmd",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 2,
+    "Hash": "3753777D4040C8F02F21E1E0464FEB630B7345A6140B378B77B33B8DD5A0253F",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "TrAssertCmdDesc/4",
+    "Producer": "factory TrAssertCmdDesc",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "17363A84DECB7A5E3AF137FE7B34943B9AD2D28B4D86A697B7538C13D67672AC",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "TrAssertCmdDesc/4",
+    "Producer": "new AssertCmd",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "4F018CFD8AA82F08F49871E0A8368FB69D1C3E48AD590005E9A92794FD0BE0E6",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "TrSplitExpr/5",
+    "Producer": "TrSplitExpr",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "6AC8C14C10B366AB7B3F601373E1BEF854090644066E1E6E245A901BF89E52A5",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.cs",
+    "Member": "TrSplitExprForMethodSpec/4",
+    "Producer": "TrSplitExpr",
+    "Family": "membership-frame-spec-bridges",
+    "Count": 1,
+    "Hash": "6AC8C14C10B366AB7B3F601373E1BEF854090644066E1E6E245A901BF89E52A5",
+    "FileHash": "F731E442F09BABE68DC2BE36E4C819564BCCBF460E60A8BD97232E42186D8860"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Decreases.cs",
+    "Member": "CheckCallTermination/14",
+    "Producer": "Assert",
+    "Family": "termination",
+    "Count": 1,
+    "Hash": "2B24225E56A34DEB3F3467B62C9B01FCDE9A2A062509819F54D8E6CF1795844C",
+    "FileHash": "1668E06F3D8E07B8C5562AA3908908A904389420FB6A1891FEE57140C2058701"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Decreases.cs",
+    "Member": "CheckCallTermination/14",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "termination",
+    "Count": 2,
+    "Hash": "FD36DA1D6493790BCF1922560D8CF66AFD24901A5DD6D0D93BDA7F4993BD524E",
+    "FileHash": "1668E06F3D8E07B8C5562AA3908908A904389420FB6A1891FEE57140C2058701"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Decreases.cs",
+    "Member": "DecreasesCheck/10",
+    "Producer": "Assert",
+    "Family": "termination",
+    "Count": 1,
+    "Hash": "9916E6D94180323BE451799CFF664F6A44DEC89ADAD857F6EBA12896869346A7",
+    "FileHash": "1668E06F3D8E07B8C5562AA3908908A904389420FB6A1891FEE57140C2058701"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.DefiniteAssignment.cs",
+    "Member": "CheckDefiniteAssignment/2",
+    "Producer": "Assert",
+    "Family": "definite-assignment",
+    "Count": 1,
+    "Hash": "1B0CD019659ACA1DAEE2C13FB1D9DEAB002786C2DE839498121FE4418AD69F08",
+    "FileHash": "C24A68431784B6AD8F44F82723D36773E87285A43EEF44B27E0FC42DD2D14540"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.DefiniteAssignment.cs",
+    "Member": "CheckDefiniteAssignmentReturn/3",
+    "Producer": "Assert",
+    "Family": "definite-assignment",
+    "Count": 1,
+    "Hash": "DDC41037212C4EECDE24360070B176DAF3F9ECD78065A97B100E53F0F466D3CF",
+    "FileHash": "C24A68431784B6AD8F44F82723D36773E87285A43EEF44B27E0FC42DD2D14540"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.DefiniteAssignment.cs",
+    "Member": "CheckDefiniteAssignmentSurrogate/4",
+    "Producer": "Assert",
+    "Family": "definite-assignment",
+    "Count": 1,
+    "Hash": "DDC41037212C4EECDE24360070B176DAF3F9ECD78065A97B100E53F0F466D3CF",
+    "FileHash": "C24A68431784B6AD8F44F82723D36773E87285A43EEF44B27E0FC42DD2D14540"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs",
+    "Member": "ArrowApplicationAllocationFact/1",
+    "Producer": "Requires",
+    "Family": "value-permission-translation",
+    "Count": 1,
+    "Hash": "3849AFF1C1D0E5A8F8109594F36451B9C09D8720D18F8951442162D9B3AB1131",
+    "FileHash": "617631AC36BDC54BD13BE0CF15614008984F292CDB29D85D58AD2EB85BBDB2EF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs",
+    "Member": "BuildLambdaHandleFamily/2",
+    "Producer": "CanCallAssumption",
+    "Family": "value-permission-translation",
+    "Count": 1,
+    "Hash": "54FC761427D194DE6E7DA4FF1E72D21B383918C5FB3C88C0EB7B66F0468ED1CF",
+    "FileHash": "617631AC36BDC54BD13BE0CF15614008984F292CDB29D85D58AD2EB85BBDB2EF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs",
+    "Member": "CanCallAssumption/2",
+    "Producer": "CanCallAssumption",
+    "Family": "value-permission-translation",
+    "Count": 44,
+    "Hash": "5655DD53D5ADC07AECE314EBEAE9721977F8505627F9691EF31C1D7B012FBAD0",
+    "FileHash": "617631AC36BDC54BD13BE0CF15614008984F292CDB29D85D58AD2EB85BBDB2EF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs",
+    "Member": "CanCallAssumption/2",
+    "Producer": "Requires",
+    "Family": "value-permission-translation",
+    "Count": 1,
+    "Hash": "3849AFF1C1D0E5A8F8109594F36451B9C09D8720D18F8951442162D9B3AB1131",
+    "FileHash": "617631AC36BDC54BD13BE0CF15614008984F292CDB29D85D58AD2EB85BBDB2EF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs",
+    "Member": "CanCallAssumption/3",
+    "Producer": "CanCallAssumption",
+    "Family": "value-permission-translation",
+    "Count": 1,
+    "Hash": "BA90776040C55273DD554227B7935AC1379FAE7F36A26AFBEEBD62CF0852D9CD",
+    "FileHash": "617631AC36BDC54BD13BE0CF15614008984F292CDB29D85D58AD2EB85BBDB2EF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs",
+    "Member": "CanCallAssumptionForVerification/2",
+    "Producer": "CanCallAssumption",
+    "Family": "value-permission-translation",
+    "Count": 1,
+    "Hash": "E4B3CA8C4123D666C09E6BC93FBE0C76E58402034EB64AEB37B0AD1FC82135E7",
+    "FileHash": "617631AC36BDC54BD13BE0CF15614008984F292CDB29D85D58AD2EB85BBDB2EF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs",
+    "Member": "LambdaCanCallAssumption/2",
+    "Producer": "CanCallAssumption",
+    "Family": "value-permission-translation",
+    "Count": 3,
+    "Hash": "868D40C728008D69723D14505A57870889B8D47D97E4D5C149AA10BC94360CD1",
+    "FileHash": "617631AC36BDC54BD13BE0CF15614008984F292CDB29D85D58AD2EB85BBDB2EF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs",
+    "Member": "LambdaCanCallAssumption/2",
+    "Producer": "Requires",
+    "Family": "value-permission-translation",
+    "Count": 1,
+    "Hash": "2AAD5018121D28F6920A9101351A34FE0A857B5D51B9DE8DE93FB47176DF88DB",
+    "FileHash": "617631AC36BDC54BD13BE0CF15614008984F292CDB29D85D58AD2EB85BBDB2EF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs",
+    "Member": "PureArrowApplicationAllocationFact/1",
+    "Producer": "Requires",
+    "Family": "value-permission-translation",
+    "Count": 1,
+    "Hash": "3849AFF1C1D0E5A8F8109594F36451B9C09D8720D18F8951442162D9B3AB1131",
+    "FileHash": "617631AC36BDC54BD13BE0CF15614008984F292CDB29D85D58AD2EB85BBDB2EF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs",
+    "Member": "TrExpr/1",
+    "Producer": "GetSubrangeCheck",
+    "Family": "value-permission-translation",
+    "Count": 1,
+    "Hash": "8CF0F8D027C23CCCE14C87CA260EB4D842B51B3D57A1E1DA56596A287A2B23C2",
+    "FileHash": "617631AC36BDC54BD13BE0CF15614008984F292CDB29D85D58AD2EB85BBDB2EF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "AssertSink/2",
+    "Producer": "Assert",
+    "Family": "ordered-expression-wf",
+    "Count": 2,
+    "Hash": "179720C59219E6BE130101E0BB0031756BB0C5261670D924BC06B00801D01E6A",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckElementInit/9",
+    "Producer": "AssertAndForget",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "65BEA1E8CB9EEFEE909529F723785080986FEBAF9F077E75ACD15E2B51F9E3E9",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckElementInit/9",
+    "Producer": "AssertSink",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "A4217A27E21B06E0C4D7C0C174E323E87F34CBDF0E8496B76B0BBB84F2369CF0",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckElementInit/9",
+    "Producer": "CanCallAssumption",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "9263FADC1CCC1638411CD118484AEBFC61E971DFB86714E4CBE9A958C9CE10FC",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckElementInit/9",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "52FED58AEC09AB3513B86C4E47E0A05BC2EE9488838821340AA8BB905F1AF6D6",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckElementInit/9",
+    "Producer": "CheckFrameSubset",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "63E8338DC59262D2105E69CA51DBA1A5E4558DFCFF144BB0CB66A2DDCD9622EE",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckElementInit/9",
+    "Producer": "CheckTypeMembership",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "ED8F702161168D42B0C06978F0101CDD66F2364ED5462341057C628D16E0FA3D",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckElementInit/9",
+    "Producer": "GetSubrangeCheck",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "BEE044E76CAA6FBFE84390F0C00ED221AC78D9DEA3BB045CC32EB9965774DA57",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckElementInit/9",
+    "Producer": "Requires",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "6476FFB2A89536752E67E2A3FB262F9EC20C534CC4F15A8B8AF5EEB0677B7669",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckFrameWellFormed/5",
+    "Producer": "Assert",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "EB9A61AAD5E97EA8FFD29D8A7FE5F2253BE4D020B93FC0BB4C93DD0EDF2B02BA",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckFrameWellFormed/5",
+    "Producer": "CheckWellformed",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "C2B18252641DF930D3C36E56674CDDD313EE5D0C3480BC391EFADD8A08CE260A",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckNonNullAndAllocated/3",
+    "Producer": "Assert",
+    "Family": "ordered-expression-wf",
+    "Count": 2,
+    "Hash": "97EA7468D38E94543226300CF9C0E624F8FA16C84D3A26DD6274C4241DD412F5",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckNotGhostVariant/8",
+    "Producer": "Assert",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "AE32BEA677A35670D28804F83ABB7C74850B86E887F49B348D216242FC4219B2",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckSubsetType/6",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "F40215AFB985C1505C0BF5DFB7CCD651C48985A481028FC73422775A7F2A872F",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckSubsetType/6",
+    "Producer": "CheckSubrange",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "A44AA47D3AF2A8D57A43ADEE898CCAC2D96537C1A6FCE9089458D46BB6D8A48E",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckSuspendedValueMembership/4",
+    "Producer": "Assert",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "6DC5CC72D140BCA44D3693D835B1A8546A219388F9D738BAC0E3C24CF8C070F5",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformed/5",
+    "Producer": "CheckWellformedWithResult",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "267CD4B17B819F0645CEB32258847A6E0F4862D0A0F1411DF9B754215F5BBA24",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedAndAssume/6",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "ordered-expression-wf",
+    "Count": 3,
+    "Hash": "D547BE17A4474B07A51AAB55845C1883AA07D7F29C5AF05EAD66C51C406C45F1",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedAndAssume/6",
+    "Producer": "CheckWellformed",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "31A306E95CACA7A53B425C13A04A7EDE2B7FCA828C58B5F0837579C231936F9F",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedLetExprWithResult/7",
+    "Producer": "Assert",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "0E1350C025279464681448992ECCFA15A8C091E43AE32DE27ADFF899B2B53D60",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedLetExprWithResult/7",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "ordered-expression-wf",
+    "Count": 2,
+    "Hash": "AE7A20054D59CCDDDFA26F04A92D8891CE4634EEF76F6344B01AB05FE9E5553F",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedLetExprWithResult/7",
+    "Producer": "CheckSubsetType",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "F575C618C0693220380D9763A39B91FE89629DD2242B4C15F4D7710812889261",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedLetExprWithResult/7",
+    "Producer": "CheckWellformed",
+    "Family": "ordered-expression-wf",
+    "Count": 2,
+    "Hash": "4C34DD353655B6D9F7D6448EB841202B792A74866212E61D28B697E1D91EC82F",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedLetExprWithResult/7",
+    "Producer": "CheckWellformedWithResult",
+    "Family": "ordered-expression-wf",
+    "Count": 2,
+    "Hash": "267D1DF09E11947B820F805DCA495BBC0A4E8A59EB1972169118835A6735ACB0",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellFormednessOfIndexList/8",
+    "Producer": "Assert",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "4AD03859FD3D7028B4EED72276D0071F506500CD6D7EE7800FE8ECA261DD1A92",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellFormednessOfIndexList/8",
+    "Producer": "CheckWellformed",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "36BEEF6331B1FA91DF86422E70A01D8292258623D2CAA78C1C60DC57E5B8A304",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedSpecialFunction/7",
+    "Producer": "Assert",
+    "Family": "ordered-expression-wf",
+    "Count": 2,
+    "Hash": "9EBE350AD0A21E0429414E333CE38524632B5840A574E51ED8EF11AA8FD3812B",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedSpecialFunction/7",
+    "Producer": "CheckWellformed",
+    "Family": "ordered-expression-wf",
+    "Count": 2,
+    "Hash": "1B755A60311756FE8BD896BA73FADBA1F197B5D6BBEE00192C4A23AA3356024A",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedStmtExpr/6",
+    "Producer": "CheckWellformedWithResult",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "B412A0AF7567EEEA1889259716243F0018FA1D12B07E36CACC690A7BC9223D9B",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedWithResult/6",
+    "Producer": "AllocationObligation",
+    "Family": "ordered-expression-wf",
+    "Count": 9,
+    "Hash": "428D6DF149563E0EC1A6FB43F2DC5D03A8B204F7BD2AC9EDFFACD7E578999C8F",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedWithResult/6",
+    "Producer": "Assert",
+    "Family": "ordered-expression-wf",
+    "Count": 35,
+    "Hash": "266F43DCF27FFE1DEC16CBBB2F9F39DDAD46C6B6559A0C7E83B67603E40ACA34",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedWithResult/6",
+    "Producer": "AssertAndForget",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "C59180A2D0910F166A9C8CD38837A0A7EC6ED8709EBEB25DBAF75CE6E8D81CE9",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedWithResult/6",
+    "Producer": "AssertSink",
+    "Family": "ordered-expression-wf",
+    "Count": 8,
+    "Hash": "A04FA968F55B5C87D0FFBEECAEA0210877295090BD81FC7B89455FC4DF0F3ED2",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedWithResult/6",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "ordered-expression-wf",
+    "Count": 8,
+    "Hash": "F30D5602FE3CAAF6DDCD090D31D5F6C3758327E42028BEC2DBB4E98C4F20F268",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedWithResult/6",
+    "Producer": "CheckCallTermination",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "5BDD1DC536022E2C3BB2D4E4C830A9806B620810658D824F44800BDFEB523C76",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedWithResult/6",
+    "Producer": "CheckFrameSubset",
+    "Family": "ordered-expression-wf",
+    "Count": 4,
+    "Hash": "870579B5E71DC51E2C4ADA57AB2DC7120AAF2A3DBE07D77EFFBFED3F447CCB0D",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedWithResult/6",
+    "Producer": "CheckResultToBeInType",
+    "Family": "ordered-expression-wf",
+    "Count": 10,
+    "Hash": "CF352C04204889417ACCCEDC2EDACE9CA271F53D55C08C51335E2C971557A548",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedWithResult/6",
+    "Producer": "CheckSubrange",
+    "Family": "ordered-expression-wf",
+    "Count": 11,
+    "Hash": "74F065503C0EA0F3C47A2CF5910B448A60BFA3F02135E54AFDCE8F185673C246",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedWithResult/6",
+    "Producer": "CheckSubsetType",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "2F77DBF51F957B3D5C8243511B5F2D533FAA9A62D9523B7A1DE47E5E09177AB5",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedWithResult/6",
+    "Producer": "CheckWellformed",
+    "Family": "ordered-expression-wf",
+    "Count": 37,
+    "Hash": "34C5BB51569041707121480FD01E4B9FA81673894F1B32CCB669A49151AF53E4",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedWithResult/6",
+    "Producer": "CheckWellformedWithResult",
+    "Family": "ordered-expression-wf",
+    "Count": 8,
+    "Hash": "1ADE1B2600A70E2A59C53220615F96A6B484630C6F4213962A70626982195140",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedWithResult/6",
+    "Producer": "LowerProposition",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "6075B07DF851F760C23D5E84F02B87FDA5B5B3E1B1677A276F140ED5ECEDEFF4",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedWithResult/6",
+    "Producer": "Requires",
+    "Family": "ordered-expression-wf",
+    "Count": 2,
+    "Hash": "662DEC6649402731695E9C006200B3E9669816F6220E60D08F785727A3916800",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.ExpressionWellformed.cs",
+    "Member": "CheckWellformedWithResult/6",
+    "Producer": "TrSplitExpr",
+    "Family": "ordered-expression-wf",
+    "Count": 1,
+    "Hash": "F432FD1A82614F875357E4DB4DB298E2885ADE7AE995A8E7ADAE7EA5FFFE352D",
+    "FileHash": "C24E5EE3B5736DE25BBBB997EFA8C88414FA518B56750CA5105885120BB081BF"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Fields.cs",
+    "Member": "AddWellformednessCheck/1",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "constant-initializers",
+    "Count": 1,
+    "Hash": "7F59AD985D90E676D31FD6BE942476673BEFA6FE7CF8468FDE1A3CE3756ABA5C",
+    "FileHash": "C647C268575CDB80C31B5E21E22D7916C04E97DEFDFC31B78FE69D25D5D8985A"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Fields.cs",
+    "Member": "AddWellformednessCheck/1",
+    "Producer": "CheckSubrange",
+    "Family": "constant-initializers",
+    "Count": 1,
+    "Hash": "A55E8ABF4DB28FC3DC2516A25A4F6DB67CE510D00891D448BDD3F26B7C23666C",
+    "FileHash": "C647C268575CDB80C31B5E21E22D7916C04E97DEFDFC31B78FE69D25D5D8985A"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Fields.cs",
+    "Member": "AddWellformednessCheck/1",
+    "Producer": "CheckWellformed",
+    "Family": "constant-initializers",
+    "Count": 1,
+    "Hash": "8947D5101F6D63823B11CA790500B3B4B36FEBA83394D91322BFEBA2828E0036",
+    "FileHash": "C647C268575CDB80C31B5E21E22D7916C04E97DEFDFC31B78FE69D25D5D8985A"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Fields.cs",
+    "Member": "AddWellformednessCheck/1",
+    "Producer": "FreeRequires",
+    "Family": "constant-initializers",
+    "Count": 1,
+    "Hash": "B01E4ED95D3A3515D6EF0FA7C3CE1FB282938D706623E932EFAB663973DBE54F",
+    "FileHash": "C647C268575CDB80C31B5E21E22D7916C04E97DEFDFC31B78FE69D25D5D8985A"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Functions.cs",
+    "Member": "AddFunctionConsequenceAxiom/3",
+    "Producer": "CanCallAssumption",
+    "Family": "definition-consequence-axioms",
+    "Count": 1,
+    "Hash": "CA84E9E9D95BE5F6A2DEECBCE83002128927C9A3DB6CCDCAD360A83C1B4A4685",
+    "FileHash": "D934DD7BBF4EF7CD4510460C3CF73E96DBB97FA2DB2FEB431E7711AA4DFA469C"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Functions.cs",
+    "Member": "FunctionHandle/1",
+    "Producer": "CanCallAssumption",
+    "Family": "definition-consequence-axioms",
+    "Count": 1,
+    "Hash": "A97381795BFE4B9C6185E77F3D9B7222FFEBDB2BC31AD091A02E79881E5870AB",
+    "FileHash": "D934DD7BBF4EF7CD4510460C3CF73E96DBB97FA2DB2FEB431E7711AA4DFA469C"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Functions.cs",
+    "Member": "FunctionHandle/1",
+    "Producer": "Requires",
+    "Family": "definition-consequence-axioms",
+    "Count": 3,
+    "Hash": "726220485CDCFC397BC3EE2359AACCA0D2BEF9FE5B27158D65B49B3783B4FC51",
+    "FileHash": "D934DD7BBF4EF7CD4510460C3CF73E96DBB97FA2DB2FEB431E7711AA4DFA469C"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Functions.cs",
+    "Member": "GetFunctionAxiom/3",
+    "Producer": "CanCallAssumption",
+    "Family": "definition-consequence-axioms",
+    "Count": 1,
+    "Hash": "BF258F9B734C9265820981903F8FBC5BE930872781B6B91F33584C68463D7A6A",
+    "FileHash": "D934DD7BBF4EF7CD4510460C3CF73E96DBB97FA2DB2FEB431E7711AA4DFA469C"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Functions.Wellformedness.cs",
+    "Member": "Check/1",
+    "Producer": "AllocationObligation",
+    "Family": "function-contracts",
+    "Count": 1,
+    "Hash": "B4406818C5006506CE6CD01A8743B5955AABF58923757157765B4FC6288C5E42",
+    "FileHash": "7F3C71B44A2D790EC8CA2E0F25CE61E0CFDFA0DDE4FABC9A71ABE2D569350D60"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Functions.Wellformedness.cs",
+    "Member": "Check/1",
+    "Producer": "Assert",
+    "Family": "function-contracts",
+    "Count": 1,
+    "Hash": "C1DC6018BB8CD583FC2D7EBE893031C4E25639850F17DBC6BD3F8C4DBB11F5CE",
+    "FileHash": "7F3C71B44A2D790EC8CA2E0F25CE61E0CFDFA0DDE4FABC9A71ABE2D569350D60"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Functions.Wellformedness.cs",
+    "Member": "Check/1",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "function-contracts",
+    "Count": 2,
+    "Hash": "DC92769A9E6A3D67295EA6D9218C4528E53D0854AC4BE90F12CD1AA54EAFF2CD",
+    "FileHash": "7F3C71B44A2D790EC8CA2E0F25CE61E0CFDFA0DDE4FABC9A71ABE2D569350D60"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Functions.Wellformedness.cs",
+    "Member": "Check/1",
+    "Producer": "CheckSubrange",
+    "Family": "function-contracts",
+    "Count": 1,
+    "Hash": "F8670F7716DF8BE6AED8209ACCA6A8E4DCAC6EF9BE5EB78B49B69703C980839B",
+    "FileHash": "7F3C71B44A2D790EC8CA2E0F25CE61E0CFDFA0DDE4FABC9A71ABE2D569350D60"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Functions.Wellformedness.cs",
+    "Member": "Check/1",
+    "Producer": "CheckWellformed",
+    "Family": "function-contracts",
+    "Count": 3,
+    "Hash": "4D158AB88D933F2841373F5569CCA6FF25D918E0A42A72335F830E689EE397BB",
+    "FileHash": "7F3C71B44A2D790EC8CA2E0F25CE61E0CFDFA0DDE4FABC9A71ABE2D569350D60"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Functions.Wellformedness.cs",
+    "Member": "Check/1",
+    "Producer": "EnsuresWithDependencies",
+    "Family": "function-contracts",
+    "Count": 1,
+    "Hash": "4854AFE920A9D82A2DB68B3249B572C91C34A0F2B9D89FCF30AD17C9A12213AA",
+    "FileHash": "7F3C71B44A2D790EC8CA2E0F25CE61E0CFDFA0DDE4FABC9A71ABE2D569350D60"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Functions.Wellformedness.cs",
+    "Member": "Check/1",
+    "Producer": "FreeEnsures",
+    "Family": "function-contracts",
+    "Count": 1,
+    "Hash": "8E65332479028B87EE05FE3764D5EA5B34DF2F360ADEE75ADE3462C15E4AD3F5",
+    "FileHash": "7F3C71B44A2D790EC8CA2E0F25CE61E0CFDFA0DDE4FABC9A71ABE2D569350D60"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Functions.Wellformedness.cs",
+    "Member": "Check/1",
+    "Producer": "LowerProposition",
+    "Family": "function-contracts",
+    "Count": 1,
+    "Hash": "3AB07E9724B0462539638302EF31D6E4D44FA274D8A6E61DC906376D8E4F994A",
+    "FileHash": "7F3C71B44A2D790EC8CA2E0F25CE61E0CFDFA0DDE4FABC9A71ABE2D569350D60"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Functions.Wellformedness.cs",
+    "Member": "Check/1",
+    "Producer": "new Ensures",
+    "Family": "function-contracts",
+    "Count": 1,
+    "Hash": "DED047A169AA39B3D75E96A90CE83F5B8AFE9B695B7AF9CDEFF01AC703D2D98F",
+    "FileHash": "7F3C71B44A2D790EC8CA2E0F25CE61E0CFDFA0DDE4FABC9A71ABE2D569350D60"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Functions.Wellformedness.cs",
+    "Member": "Check/1",
+    "Producer": "TrSplitExpr",
+    "Family": "function-contracts",
+    "Count": 1,
+    "Hash": "70D16F26B1EB81DD93E5F7E7104D6DEF1BAB65BA640543CE5DB7B741779A521F",
+    "FileHash": "7F3C71B44A2D790EC8CA2E0F25CE61E0CFDFA0DDE4FABC9A71ABE2D569350D60"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Functions.Wellformedness.cs",
+    "Member": "GetBodyCheckBuilder/5",
+    "Producer": "CheckSubsetType",
+    "Family": "function-contracts",
+    "Count": 1,
+    "Hash": "5E934956533E829D78CB35192AD8D46CA719B35D78636DE8DF7CF6CD06A00165",
+    "FileHash": "7F3C71B44A2D790EC8CA2E0F25CE61E0CFDFA0DDE4FABC9A71ABE2D569350D60"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Functions.Wellformedness.cs",
+    "Member": "GetBodyCheckBuilder/5",
+    "Producer": "CheckWellformedWithResult",
+    "Family": "function-contracts",
+    "Count": 1,
+    "Hash": "9191DBA451681F3FFB996A3A12C8835E890A31CB7F2588976BDCA6DF3ED26D5D",
+    "FileHash": "7F3C71B44A2D790EC8CA2E0F25CE61E0CFDFA0DDE4FABC9A71ABE2D569350D60"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Functions.Wellformedness.cs",
+    "Member": "GetExpressionTranslator/4",
+    "Producer": "Requires",
+    "Family": "function-contracts",
+    "Count": 1,
+    "Hash": "073E363B671045ACC95ADEF8AE27AFBDDFA4612BCCC542279546C48945785DC0",
+    "FileHash": "7F3C71B44A2D790EC8CA2E0F25CE61E0CFDFA0DDE4FABC9A71ABE2D569350D60"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Functions.Wellformedness.cs",
+    "Member": "GetWellformednessProcedureRequires/2",
+    "Producer": "Requires",
+    "Family": "function-contracts",
+    "Count": 1,
+    "Hash": "E11D6841D723966850B57737F7907FF234E78058D7B35E313D95327E2B7C4721",
+    "FileHash": "7F3C71B44A2D790EC8CA2E0F25CE61E0CFDFA0DDE4FABC9A71ABE2D569350D60"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Iterators.cs",
+    "Member": "AddIteratorImpl/2",
+    "Producer": "CheckExitPostconditions",
+    "Family": "iterator-contracts",
+    "Count": 1,
+    "Hash": "69853260573921105A012CADACEAF1E2293581E0E5AC9816DA9E90BC337C3316",
+    "FileHash": "78E342E87426FE372ABE142D21133DED3CF2DD9EDB1D2FE03142C6F5F1D49FDE"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Iterators.cs",
+    "Member": "AddIteratorProc/2",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "iterator-contracts",
+    "Count": 2,
+    "Hash": "83B20DFEDF4DCB1117FEAAFF93F94A5B06D07C86835DB3F6EA0DB60F39B8CF2F",
+    "FileHash": "78E342E87426FE372ABE142D21133DED3CF2DD9EDB1D2FE03142C6F5F1D49FDE"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Iterators.cs",
+    "Member": "AddIteratorProc/2",
+    "Producer": "Ensures",
+    "Family": "iterator-contracts",
+    "Count": 2,
+    "Hash": "13E303E20D92FFF8FD8477492EAADF33845A6713061B01BC0DC8F82D04643F0B",
+    "FileHash": "78E342E87426FE372ABE142D21133DED3CF2DD9EDB1D2FE03142C6F5F1D49FDE"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Iterators.cs",
+    "Member": "AddIteratorProc/2",
+    "Producer": "FreeEnsures",
+    "Family": "iterator-contracts",
+    "Count": 1,
+    "Hash": "2780C92962E60AFCDB1E8B1B6C796B74B559919B1105E12F0B0198C81AF02778",
+    "FileHash": "78E342E87426FE372ABE142D21133DED3CF2DD9EDB1D2FE03142C6F5F1D49FDE"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Iterators.cs",
+    "Member": "AddIteratorProc/2",
+    "Producer": "FreeRequires",
+    "Family": "iterator-contracts",
+    "Count": 1,
+    "Hash": "4B11CA4639F0D85D1154705B4AD1D39345D706D522295A9B7FBCB84AC1A54E68",
+    "FileHash": "78E342E87426FE372ABE142D21133DED3CF2DD9EDB1D2FE03142C6F5F1D49FDE"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Iterators.cs",
+    "Member": "AddIteratorProc/2",
+    "Producer": "Requires",
+    "Family": "iterator-contracts",
+    "Count": 1,
+    "Hash": "33FF67F13759C967E6C855E5F61DCE97E2FF6BBEF6F196297F2B7101EC683748",
+    "FileHash": "78E342E87426FE372ABE142D21133DED3CF2DD9EDB1D2FE03142C6F5F1D49FDE"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Iterators.cs",
+    "Member": "AddIteratorProc/2",
+    "Producer": "TrSplitExprForMethodSpec",
+    "Family": "iterator-contracts",
+    "Count": 2,
+    "Hash": "926C1273B7012433A6718C4A081E75ED8E43F539BDB706A6D3B9933CF07617F2",
+    "FileHash": "78E342E87426FE372ABE142D21133DED3CF2DD9EDB1D2FE03142C6F5F1D49FDE"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Iterators.cs",
+    "Member": "AddIteratorWellformednessCheck/2",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "iterator-contracts",
+    "Count": 1,
+    "Hash": "4FE75F53F19328D63E47AB24BBCC96288D0AF2BA755628B9EE71387F2595A742",
+    "FileHash": "78E342E87426FE372ABE142D21133DED3CF2DD9EDB1D2FE03142C6F5F1D49FDE"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Iterators.cs",
+    "Member": "AddIteratorWellformednessCheck/2",
+    "Producer": "CheckSubrange",
+    "Family": "iterator-contracts",
+    "Count": 1,
+    "Hash": "407D04EBF73E9346F7052A78F416A26E9C38429FC21EC1604695BB8917544DF1",
+    "FileHash": "78E342E87426FE372ABE142D21133DED3CF2DD9EDB1D2FE03142C6F5F1D49FDE"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Iterators.cs",
+    "Member": "AddIteratorWellformednessCheck/2",
+    "Producer": "CheckWellformed",
+    "Family": "iterator-contracts",
+    "Count": 2,
+    "Hash": "4E32C549466F84A7952500B068E5FDABA3AF6C4712914BD629D4840A090617C3",
+    "FileHash": "78E342E87426FE372ABE142D21133DED3CF2DD9EDB1D2FE03142C6F5F1D49FDE"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.LetExpr.cs",
+    "Member": "AddLetSuchThenCanCallAxiom/3",
+    "Producer": "CanCallAssumption",
+    "Family": "let-permissions",
+    "Count": 1,
+    "Hash": "9462A0F2C20560E40A07F446657541285064555B47C081FFDFA5F13EA2B8E3A6",
+    "FileHash": "1D0AFA31FF511044EC1E6A1D55D45948BF9BAA4AAFBBD1AAD7C8553EDA7DEE59"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.LetExpr.cs",
+    "Member": "LetCanCallAssumption/2",
+    "Producer": "CanCallAssumption",
+    "Family": "let-permissions",
+    "Count": 3,
+    "Hash": "91DBD5408AEB3E2DEB17B2DEF6026CCA99B7A6DF114C9444A576E46D6616CCC3",
+    "FileHash": "1D0AFA31FF511044EC1E6A1D55D45948BF9BAA4AAFBBD1AAD7C8553EDA7DEE59"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddFunctionOverrideCheckImpl/1",
+    "Producer": "FreeRequires",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "FDEA5C82A48E1B4DCDB257EC175AD789B8A455C9FC1D9133A04A6FEB62FAF091",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddFunctionOverrideCheckImpl/1",
+    "Producer": "Requires",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "52A5A7127002124763FB7AA1F54DCCA1D5A2A3581341F6DE8D72DFEE0BE05CAF",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddFunctionOverrideEnsChk/7",
+    "Producer": "Assert",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "25B80E9703A85F5D5AE27C5E37A2C41CED9B600FCC9C3AE532EA090061D4A014",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddFunctionOverrideEnsChk/7",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "method-override-contracts",
+    "Count": 2,
+    "Hash": "9E6194224D80DF473FEED4C2CA424E43262EC3C7E8DEA02FBCC8504B43A7E432",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddFunctionOverrideEnsChk/7",
+    "Producer": "LowerProposition",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "AB4EF12B5F4A4C9A3469D6707C6F1A67C7006F1CB341336584980E8A9CEFED1D",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddFunctionOverrideEnsChk/7",
+    "Producer": "TrSplitExpr",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "BCC17B34D10707AADD3AFA8C08F352616ABABA40C6E692ECA33C5394B2775D4C",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddFunctionOverrideReqsChk/5",
+    "Producer": "Assert",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "088E4216ECCD599DEF1B322304294DE569CEE9E956A117FE0887D2ED83F0F559",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddFunctionOverrideReqsChk/5",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "method-override-contracts",
+    "Count": 2,
+    "Hash": "F126C2D7207FF8FD04006119D6B86DF703A151BC4E047547915231FE4DF9ED55",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddFunctionOverrideReqsChk/5",
+    "Producer": "LowerProposition",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "AC4B7EA31CC78D1A33D197D4AE6F6F2CAD5B8A0ABC6B925AF36BB70B81C2646C",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddFunctionOverrideReqsChk/5",
+    "Producer": "TrSplitExpr",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "AA18D25ACB78C1D2F04C5A7B1A1C768542AFB7BF8273FD67E8225F63E7F5200F",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddFunctionOverrideSubsetChk/6",
+    "Producer": "Assert",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "CC11C572FF808907D1563F85EBD173CC6E6C64097D3C636F547D10094EEBB6F1",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddMethod/3",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "method-override-contracts",
+    "Count": 3,
+    "Hash": "D7D1BC4C901E56F97B15E300BECC05251B2C78C7D7382488AB976C074C1A7024",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddMethod/3",
+    "Producer": "Ensures",
+    "Family": "method-override-contracts",
+    "Count": 2,
+    "Hash": "44048B8AD55EFCC6EDBC5AB793662B7F7B7A2D47EF4CB955FFFA4E1F358B5D4D",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddMethod/3",
+    "Producer": "EnsuresWithDependencies",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "AF3DAB3347D639E0F15D702310D44EECE021D04D847DC64D5C360B3F62486174",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddMethod/3",
+    "Producer": "FreeEnsures",
+    "Family": "method-override-contracts",
+    "Count": 2,
+    "Hash": "81863FEAE462F1E83E9CAD270C6E97E89C27ECFA5C2527AB62B2ADF3EA680180",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddMethod/3",
+    "Producer": "FreeRequires",
+    "Family": "method-override-contracts",
+    "Count": 3,
+    "Hash": "610EF84F8BCD73CDEB804C28E61C142B795BC6B862AFEFAC774D3583359E75A5",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddMethod/3",
+    "Producer": "Requires",
+    "Family": "method-override-contracts",
+    "Count": 2,
+    "Hash": "FED43A03E98025C30938C610C574839C106DA424035DD56A4D39611D13985EAE",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddMethod/3",
+    "Producer": "RequiresWithDependencies",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "217586A91727F5DF0180A5276260270CDAD805AA76CA2953140353F0BB5C4761",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddMethod/3",
+    "Producer": "TrSplitExprForMethodSpec",
+    "Family": "method-override-contracts",
+    "Count": 2,
+    "Hash": "43C03530FF083216ECA0C9626D7ED466A5E98B108ED38E802563EB5DAE5431FA",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddMethodOverrideEnsChk/5",
+    "Producer": "Assert",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "AE910CF89F6F4F09A7B98BBE00BC8E6C83EB4CD550029F9EF5B34AB7B4B4E8FC",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddMethodOverrideEnsChk/5",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "method-override-contracts",
+    "Count": 2,
+    "Hash": "359BB07AF8B4BE830E7F057D975BA26908F9D0902A6BD995CBEA09FADCFD6FB9",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddMethodOverrideEnsChk/5",
+    "Producer": "LowerProposition",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "AB4EF12B5F4A4C9A3469D6707C6F1A67C7006F1CB341336584980E8A9CEFED1D",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddMethodOverrideEnsChk/5",
+    "Producer": "TrSplitExpr",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "BCC17B34D10707AADD3AFA8C08F352616ABABA40C6E692ECA33C5394B2775D4C",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddMethodOverrideFrameSubsetChk/7",
+    "Producer": "Assert",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "E6F1907E0EBD13A91C7C34DF1E6E0350453AE50C6EDDD09701B60EAD9E0F4D50",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddMethodOverrideFrameSubsetChk/7",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "29B0FBD5EC3C59F91B6242B68225070848B67592EF2D9123652E2D7819161C16",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddMethodOverrideReqsChk/5",
+    "Producer": "Assert",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "D33AF7ED251329D4FE9AA602B3D0CE861EAF0A1F8A886B200622A01EFBB07EBA",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddMethodOverrideReqsChk/5",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "method-override-contracts",
+    "Count": 2,
+    "Hash": "9ACFE1EEFA6CA38D7AFF88960DB46E62102E42F488DBDE9ABCFB43E02946A831",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddMethodOverrideReqsChk/5",
+    "Producer": "LowerProposition",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "AC4B7EA31CC78D1A33D197D4AE6F6F2CAD5B8A0ABC6B925AF36BB70B81C2646C",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddMethodOverrideReqsChk/5",
+    "Producer": "TrSplitExpr",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "AA18D25ACB78C1D2F04C5A7B1A1C768542AFB7BF8273FD67E8225F63E7F5200F",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddOverrideTerminationChk/6",
+    "Producer": "Assert",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "D184EA50A321482EB8F34EBDAE059BFBB44BF3EC3770629E158AF7671F0A88CB",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "AddOverrideTerminationChk/6",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "method-override-contracts",
+    "Count": 2,
+    "Hash": "48B862B6D6090326F5D3DF16F0EFCB6F6A3264003E6387687EE6198E3A1A2D48",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "TrMethodBody/4",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "method-override-contracts",
+    "Count": 2,
+    "Hash": "6938C97096FCCA42DC5044C18FF4DD8080362D40192547B5A03ED31A74E12E28",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "TrMethodContractWellformednessCheck/5",
+    "Producer": "AllocationObligation",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "68A884EF337DB00BE4F2435A3214E714B2D62B287A3562853B9F6E6F00BA68F1",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "TrMethodContractWellformednessCheck/5",
+    "Producer": "Assert",
+    "Family": "method-override-contracts",
+    "Count": 2,
+    "Hash": "D08F3CC32086DAF441A570EE10CFFF9402B583A3B51FA66C031C9B98D5879798",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "TrMethodContractWellformednessCheck/5",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "4FE75F53F19328D63E47AB24BBCC96288D0AF2BA755628B9EE71387F2595A742",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "TrMethodContractWellformednessCheck/5",
+    "Producer": "CheckSubrange",
+    "Family": "method-override-contracts",
+    "Count": 1,
+    "Hash": "407D04EBF73E9346F7052A78F416A26E9C38429FC21EC1604695BB8917544DF1",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs",
+    "Member": "TrMethodContractWellformednessCheck/5",
+    "Producer": "CheckWellformed",
+    "Family": "method-override-contracts",
+    "Count": 2,
+    "Hash": "A8076E07EA4B39313BB1FA2DD7050943E0B335EE94AA445EAA53271C5E757C7B",
+    "FileHash": "CD8DBAB6A373BBCB39C779937789D1CE2689C278B2DA633FB4ABA6C349E30A68"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Obligations.cs",
+    "Member": "CheckExitPostconditions/6",
+    "Producer": "Assert",
+    "Family": "canonical-obligation-adapters",
+    "Count": 1,
+    "Hash": "6BA02B564809825EBD7FAFB311FBF58BF31BBD0ECAF4A771C0BBA7A0D243E147",
+    "FileHash": "96CF14C9DBC171A8F033F79186542A965B2D9F0E74694AAB66DB27943B008838"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Obligations.cs",
+    "Member": "CheckExitPostconditions/6",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "canonical-obligation-adapters",
+    "Count": 1,
+    "Hash": "E62AD8ABD479B241023ECCDD49FF2B3C2FBA30AF8496A6804929DA8FAD381C10",
+    "FileHash": "96CF14C9DBC171A8F033F79186542A965B2D9F0E74694AAB66DB27943B008838"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Obligations.cs",
+    "Member": "CheckExitPostconditions/6",
+    "Producer": "LowerDeclaredProposition",
+    "Family": "canonical-obligation-adapters",
+    "Count": 1,
+    "Hash": "5C71E62D076B2D1EA70043A1D2E253FBC9A6C0355DE7820EED337AAE09020260",
+    "FileHash": "96CF14C9DBC171A8F033F79186542A965B2D9F0E74694AAB66DB27943B008838"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Obligations.cs",
+    "Member": "CheckMethodPostconditions/5",
+    "Producer": "CheckExitPostconditions",
+    "Family": "canonical-obligation-adapters",
+    "Count": 1,
+    "Hash": "11AB9A48A78E7FED2F378E664D8A8D95D92F6C8300C7934C9EB7ACB7F88FA66D",
+    "FileHash": "96CF14C9DBC171A8F033F79186542A965B2D9F0E74694AAB66DB27943B008838"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Obligations.cs",
+    "Member": "CheckOpaquePostcondition/7",
+    "Producer": "Assert",
+    "Family": "canonical-obligation-adapters",
+    "Count": 1,
+    "Hash": "FF4E7A9F87B8FBB7ABACCFC4B035A9C6ADE66F0FA556377F9C0A6A067E2BCE4B",
+    "FileHash": "96CF14C9DBC171A8F033F79186542A965B2D9F0E74694AAB66DB27943B008838"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Obligations.cs",
+    "Member": "CheckOpaquePostcondition/7",
+    "Producer": "CheckPropositionUnderGuard",
+    "Family": "canonical-obligation-adapters",
+    "Count": 1,
+    "Hash": "1F1DED837865992961A10EADCB07C00A26BDF8F6B43251F9C050157885E3CE42",
+    "FileHash": "96CF14C9DBC171A8F033F79186542A965B2D9F0E74694AAB66DB27943B008838"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Obligations.cs",
+    "Member": "CheckOpaquePostcondition/7",
+    "Producer": "TrStmt_CheckWellformed",
+    "Family": "canonical-obligation-adapters",
+    "Count": 1,
+    "Hash": "234358AEABD6D1A76CC07C4CA9057788631276EF68BB79C787674630279DAC1B",
+    "FileHash": "96CF14C9DBC171A8F033F79186542A965B2D9F0E74694AAB66DB27943B008838"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Obligations.cs",
+    "Member": "CheckPropositionUnderGuard/11",
+    "Producer": "Assert",
+    "Family": "canonical-obligation-adapters",
+    "Count": 1,
+    "Hash": "0B0D9AFB1463F375473CC2DFFBB2882F7BA79FFA97C05301E99AB4475A9BE4F6",
+    "FileHash": "96CF14C9DBC171A8F033F79186542A965B2D9F0E74694AAB66DB27943B008838"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Obligations.cs",
+    "Member": "CheckPropositionUnderGuard/11",
+    "Producer": "AssertAndForget",
+    "Family": "canonical-obligation-adapters",
+    "Count": 1,
+    "Hash": "420836046ED8BB98EFB345F12D78AD66CAEA30DDCD3A74882382281D16626CC0",
+    "FileHash": "96CF14C9DBC171A8F033F79186542A965B2D9F0E74694AAB66DB27943B008838"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Obligations.cs",
+    "Member": "CheckPropositionUnderGuard/11",
+    "Producer": "LowerProposition",
+    "Family": "canonical-obligation-adapters",
+    "Count": 1,
+    "Hash": "29730BE4A3261102E2241297304AFC6376190C3897DD002C1C5F4202048B48C7",
+    "FileHash": "96CF14C9DBC171A8F033F79186542A965B2D9F0E74694AAB66DB27943B008838"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Obligations.cs",
+    "Member": "HigherOrderRequirement/3",
+    "Producer": "Requires",
+    "Family": "canonical-obligation-adapters",
+    "Count": 1,
+    "Hash": "969118E8696F1FEC279E25595EB0357ACF381D568D2342BE72D608966BFA91EE",
+    "FileHash": "96CF14C9DBC171A8F033F79186542A965B2D9F0E74694AAB66DB27943B008838"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Obligations.cs",
+    "Member": "LowerDeclaredProposition/7",
+    "Producer": "LowerProposition",
+    "Family": "canonical-obligation-adapters",
+    "Count": 1,
+    "Hash": "4BD0ACCAD9A309A29D3077C87C1812C2C0359215B37E37EA7A40C121E4DBB777",
+    "FileHash": "96CF14C9DBC171A8F033F79186542A965B2D9F0E74694AAB66DB27943B008838"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Obligations.cs",
+    "Member": "LowerDeclaredProposition/7",
+    "Producer": "TrStmt_CheckWellformed",
+    "Family": "canonical-obligation-adapters",
+    "Count": 1,
+    "Hash": "6C9526DFE09DCDE16EED53131046825972A51D80A93F2A6CA811B79FE596FA7D",
+    "FileHash": "96CF14C9DBC171A8F033F79186542A965B2D9F0E74694AAB66DB27943B008838"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Obligations.cs",
+    "Member": "LowerProposition/9",
+    "Producer": "TrSplitExpr",
+    "Family": "canonical-obligation-adapters",
+    "Count": 1,
+    "Hash": "E847F88B38541498F50FA7ABCCE7CDC25C9617013F2B54D7EF0CEF60EEB870D3",
+    "FileHash": "96CF14C9DBC171A8F033F79186542A965B2D9F0E74694AAB66DB27943B008838"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Obligations.cs",
+    "Member": "LowerProposition/9",
+    "Producer": "TrSplitUniversalCheck",
+    "Family": "canonical-obligation-adapters",
+    "Count": 1,
+    "Hash": "DBD2187B08C37AA686F48493F7CA630B47013F638DC4DB4C3FE6DBFC38D8C03D",
+    "FileHash": "96CF14C9DBC171A8F033F79186542A965B2D9F0E74694AAB66DB27943B008838"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.SplitExpr.cs",
+    "Member": "TrSplitExpr/7",
+    "Producer": "CanCallAssumption",
+    "Family": "canonical-proposition-core",
+    "Count": 1,
+    "Hash": "EC7F0E4C0E48264B58B884997E61853063ABDF44D8182B4B1B5424A693DDB1EB",
+    "FileHash": "F5474901324BED0D8ACD7664313F6827B354296C0C0DCEB6BEAD888461E23164"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.SplitExpr.cs",
+    "Member": "TrSplitExpr/7",
+    "Producer": "TrSplitExpr",
+    "Family": "canonical-proposition-core",
+    "Count": 20,
+    "Hash": "CFE17C9763E447CB6BC8DE9BC848A295AA31ABCD0D71F7454D76FAA0A1D37A7F",
+    "FileHash": "F5474901324BED0D8ACD7664313F6827B354296C0C0DCEB6BEAD888461E23164"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.SplitExpr.cs",
+    "Member": "TrSplitExpr/7",
+    "Producer": "TrSplitUniversalCheck",
+    "Family": "canonical-proposition-core",
+    "Count": 1,
+    "Hash": "F798D9AC8E51FB1368B2BC4F341F655C31008F3C8F0C887232CB3E1DC5A85BFF",
+    "FileHash": "F5474901324BED0D8ACD7664313F6827B354296C0C0DCEB6BEAD888461E23164"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.SplitExpr.cs",
+    "Member": "TrSplitFunctionCallExpr/7",
+    "Producer": "TrSplitExpr",
+    "Family": "canonical-proposition-core",
+    "Count": 1,
+    "Hash": "75F4266CA0DF90EFB320DCA7A42FBF9389677ABB175E84821BE8DD9266035D66",
+    "FileHash": "F5474901324BED0D8ACD7664313F6827B354296C0C0DCEB6BEAD888461E23164"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.TypeObligations.cs",
+    "Member": "CheckSequenceTypeMembership/10",
+    "Producer": "CheckTypeMembership",
+    "Family": "guarded-type-introduction",
+    "Count": 1,
+    "Hash": "5271C29C9C44831413C43ACB585CCDB0CEF4ECB72BD50E55C813D4FEDFDBBA9B",
+    "FileHash": "9C41F303A402D8238133B734A1CCF75CA7D44EA6B25E87BC67F93E3D30647A11"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.TypeObligations.cs",
+    "Member": "CheckSequenceTypeMembership/10",
+    "Producer": "GetSubrangeCheck",
+    "Family": "guarded-type-introduction",
+    "Count": 1,
+    "Hash": "9C0B050212A73E672C971BB05D0ECCEEBEC33384485FAB8180E58E13F8D1DB28",
+    "FileHash": "9C41F303A402D8238133B734A1CCF75CA7D44EA6B25E87BC67F93E3D30647A11"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.TypeObligations.cs",
+    "Member": "CheckTypeMembership/12",
+    "Producer": "Assert",
+    "Family": "guarded-type-introduction",
+    "Count": 1,
+    "Hash": "E6F8E9EF6BB6EE78712A114A04B1FBF4342FDBBFD34F2BAC5F9D526DBC1E6CF0",
+    "FileHash": "9C41F303A402D8238133B734A1CCF75CA7D44EA6B25E87BC67F93E3D30647A11"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.TypeObligations.cs",
+    "Member": "CheckTypeMembership/12",
+    "Producer": "AssertAndForget",
+    "Family": "guarded-type-introduction",
+    "Count": 1,
+    "Hash": "BF300E2B5BF063A1949929DFE1A78BA9DF48049174484DC42BDA08DA3867BB16",
+    "FileHash": "9C41F303A402D8238133B734A1CCF75CA7D44EA6B25E87BC67F93E3D30647A11"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.TypeObligations.cs",
+    "Member": "CheckTypeMembership/12",
+    "Producer": "CheckSequenceTypeMembership",
+    "Family": "guarded-type-introduction",
+    "Count": 1,
+    "Hash": "22D2417DFCE87B5D14CE7403CFC952A057CE9D0705F194BE24E6FA8BFFDB6A83",
+    "FileHash": "9C41F303A402D8238133B734A1CCF75CA7D44EA6B25E87BC67F93E3D30647A11"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.TypeObligations.cs",
+    "Member": "CheckTypeMembership/12",
+    "Producer": "CheckVisibleTypeObligations",
+    "Family": "guarded-type-introduction",
+    "Count": 1,
+    "Hash": "CD073FA89826D1A3A29FE0130ABE9C739426312B5DB35AD8C8D70DAAE0CC5BB3",
+    "FileHash": "9C41F303A402D8238133B734A1CCF75CA7D44EA6B25E87BC67F93E3D30647A11"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.TypeObligations.cs",
+    "Member": "CheckVisibleTypeObligations/11",
+    "Producer": "CanCallAssumption",
+    "Family": "guarded-type-introduction",
+    "Count": 1,
+    "Hash": "BFBE9572FC5F4E5391ED1E756716D7B16C5535283DA11BAB78BA34361390D7FA",
+    "FileHash": "9C41F303A402D8238133B734A1CCF75CA7D44EA6B25E87BC67F93E3D30647A11"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.TypeObligations.cs",
+    "Member": "CheckVisibleTypeObligations/11",
+    "Producer": "CheckPropositionUnderGuard",
+    "Family": "guarded-type-introduction",
+    "Count": 1,
+    "Hash": "782BECAB21BEE888B4406387AFEA5A685BA7082CFE49B25105EFF934EB4E1561",
+    "FileHash": "9C41F303A402D8238133B734A1CCF75CA7D44EA6B25E87BC67F93E3D30647A11"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.TypeObligations.cs",
+    "Member": "CheckVisibleTypeObligations/11",
+    "Producer": "CheckSubrange",
+    "Family": "guarded-type-introduction",
+    "Count": 1,
+    "Hash": "FA514068146B01F63B68DBE1EFA7D9E0D0E19A202664D5C7B0A65057F6379BCF",
+    "FileHash": "9C41F303A402D8238133B734A1CCF75CA7D44EA6B25E87BC67F93E3D30647A11"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Types.cs",
+    "Member": "AddArrowTypeAxioms/1",
+    "Producer": "Requires",
+    "Family": "type-witness-conversion",
+    "Count": 12,
+    "Hash": "AD5F8CC72C24D398F88CF9335FB90C2E78FD0FE73EC4FD60986CC82E0CBFCABE",
+    "FileHash": "B9DC687C06ACD9C3638E2AF78684D466B3FA6F08941174D08578731573E96C7D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Types.cs",
+    "Member": "AddRedirectingTypeDeclAxioms/3",
+    "Producer": "CanCallAssumption",
+    "Family": "type-witness-conversion",
+    "Count": 1,
+    "Hash": "5588F03AEC3F6A5DFD706A7B7287AB04E2EA8799EBFD20CBDBEA5C5B198DC7D8",
+    "FileHash": "B9DC687C06ACD9C3638E2AF78684D466B3FA6F08941174D08578731573E96C7D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Types.cs",
+    "Member": "AddWellformednessCheck/1",
+    "Producer": "Assert",
+    "Family": "type-witness-conversion",
+    "Count": 1,
+    "Hash": "E48E8B35A81CCEEB806F3A89D916F9D4FF4B3DD4A808F031A32AE8AE133134A3",
+    "FileHash": "B9DC687C06ACD9C3638E2AF78684D466B3FA6F08941174D08578731573E96C7D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Types.cs",
+    "Member": "AddWellformednessCheck/1",
+    "Producer": "CheckResultToBeInType",
+    "Family": "type-witness-conversion",
+    "Count": 3,
+    "Hash": "293A34CD68E420E90DBEB771FC067B338567BD0626F98DCCC55E944A04500979",
+    "FileHash": "B9DC687C06ACD9C3638E2AF78684D466B3FA6F08941174D08578731573E96C7D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Types.cs",
+    "Member": "AddWellformednessCheck/1",
+    "Producer": "CheckWellformedWithResult",
+    "Family": "type-witness-conversion",
+    "Count": 1,
+    "Hash": "C3535CC259F90D7155B23D548265BE389FD76D1921938E2875F8D7A8243E6ED4",
+    "FileHash": "B9DC687C06ACD9C3638E2AF78684D466B3FA6F08941174D08578731573E96C7D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Types.cs",
+    "Member": "CheckResultToBeInType_Aux/7",
+    "Producer": "Assert",
+    "Family": "type-witness-conversion",
+    "Count": 1,
+    "Hash": "9C20225FA3D11AA14065352BDD7532F93709675E22D72D7F365E3F6463E326C9",
+    "FileHash": "B9DC687C06ACD9C3638E2AF78684D466B3FA6F08941174D08578731573E96C7D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Types.cs",
+    "Member": "CheckResultToBeInType_Aux/7",
+    "Producer": "CanCallAssumption",
+    "Family": "type-witness-conversion",
+    "Count": 1,
+    "Hash": "81D50CDEF792720DDE52A0D9F486D7BE2DA98997096544CEB8E3175DCECB0D17",
+    "FileHash": "B9DC687C06ACD9C3638E2AF78684D466B3FA6F08941174D08578731573E96C7D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Types.cs",
+    "Member": "CheckResultToBeInType_Aux/7",
+    "Producer": "CheckPropositionUnderGuard",
+    "Family": "type-witness-conversion",
+    "Count": 1,
+    "Hash": "89583C36537512A25731599FEA3CD4DF968293C0BA7E0756BD4A32F7EDE1ECF3",
+    "FileHash": "B9DC687C06ACD9C3638E2AF78684D466B3FA6F08941174D08578731573E96C7D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Types.cs",
+    "Member": "CheckResultToBeInType_Aux/7",
+    "Producer": "CheckResultToBeInType_Aux",
+    "Family": "type-witness-conversion",
+    "Count": 1,
+    "Hash": "AFC2CCB7F2419043A73AC82B44BFEBB1802A0F087C02258C54CF8DD103D7FBAA",
+    "FileHash": "B9DC687C06ACD9C3638E2AF78684D466B3FA6F08941174D08578731573E96C7D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Types.cs",
+    "Member": "CheckResultToBeInType/7",
+    "Producer": "Assert",
+    "Family": "type-witness-conversion",
+    "Count": 9,
+    "Hash": "C13D863962A1DDA5FEBE08EAF1455F70B43D5C593C8CFA53D20AD7A92C381AFD",
+    "FileHash": "B9DC687C06ACD9C3638E2AF78684D466B3FA6F08941174D08578731573E96C7D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Types.cs",
+    "Member": "CheckResultToBeInType/7",
+    "Producer": "CheckResultToBeInType_Aux",
+    "Family": "type-witness-conversion",
+    "Count": 1,
+    "Hash": "57F996E900F4297653C95E9BB62C71E8B3B8566C23FC4E4390413E5626941E68",
+    "FileHash": "B9DC687C06ACD9C3638E2AF78684D466B3FA6F08941174D08578731573E96C7D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Types.cs",
+    "Member": "CheckResultToBeInType/7",
+    "Producer": "CheckSubrange",
+    "Family": "type-witness-conversion",
+    "Count": 1,
+    "Hash": "14F53D728938A30F9EFA928CC7D30FDBC4E6E241742FF33809F9E7AFC0B45541",
+    "FileHash": "B9DC687C06ACD9C3638E2AF78684D466B3FA6F08941174D08578731573E96C7D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Types.cs",
+    "Member": "GenerateAndCheckGuesses/8",
+    "Producer": "Assert",
+    "Family": "type-witness-conversion",
+    "Count": 1,
+    "Hash": "54C47C7CACE1A363B45B3825F6D8D1F29066BFA392CAAA90C12C0EC4B5B54694",
+    "FileHash": "B9DC687C06ACD9C3638E2AF78684D466B3FA6F08941174D08578731573E96C7D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Types.cs",
+    "Member": "GenerateAndCheckGuesses/8",
+    "Producer": "CanCallAssumption",
+    "Family": "type-witness-conversion",
+    "Count": 1,
+    "Hash": "A5449B3F666B3069A6A53E3B6D6F01FE83F51F6BB4298A2015F922F488B6071D",
+    "FileHash": "B9DC687C06ACD9C3638E2AF78684D466B3FA6F08941174D08578731573E96C7D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Types.cs",
+    "Member": "SplitAndAssertExpression/5",
+    "Producer": "Assert",
+    "Family": "type-witness-conversion",
+    "Count": 1,
+    "Hash": "682A5B7C1E81A51B6EF4E53AC81CACF151F828ADE6CD3D9E75A7C10AA5BF0223",
+    "FileHash": "B9DC687C06ACD9C3638E2AF78684D466B3FA6F08941174D08578731573E96C7D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Types.cs",
+    "Member": "SplitAndAssertExpression/5",
+    "Producer": "AssertAndForget",
+    "Family": "type-witness-conversion",
+    "Count": 1,
+    "Hash": "A58A4B18A4CA1C00E80750CC5918017667201015485D98581DA18099F46FD825",
+    "FileHash": "B9DC687C06ACD9C3638E2AF78684D466B3FA6F08941174D08578731573E96C7D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Types.cs",
+    "Member": "SplitAndAssertExpression/5",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "type-witness-conversion",
+    "Count": 1,
+    "Hash": "6AA05DDC94F32F8873BB79FD2D9E1B33859022A43C95F5CBD2ADAD18FF5247E5",
+    "FileHash": "B9DC687C06ACD9C3638E2AF78684D466B3FA6F08941174D08578731573E96C7D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Types.cs",
+    "Member": "SplitAndAssertExpression/5",
+    "Producer": "LowerProposition",
+    "Family": "type-witness-conversion",
+    "Count": 1,
+    "Hash": "0BF9F7A3EF87EBBDC7B996FCA2779481BA273513312B1AD217632F583052FFFF",
+    "FileHash": "B9DC687C06ACD9C3638E2AF78684D466B3FA6F08941174D08578731573E96C7D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/BoogieGenerator.Types.cs",
+    "Member": "SplitAndAssertExpression/5",
+    "Producer": "TrSplitExpr",
+    "Family": "type-witness-conversion",
+    "Count": 1,
+    "Hash": "7D73407B90A70F1713F5998DD1DFCB39C5AB5D48257D614F9CD7F958516387FB",
+    "FileHash": "B9DC687C06ACD9C3638E2AF78684D466B3FA6F08941174D08578731573E96C7D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Datatypes/BoogieGenerator.DataTypes.cs",
+    "Member": "AddWellformednessCheck/1",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "datatype-constructors",
+    "Count": 1,
+    "Hash": "4FE75F53F19328D63E47AB24BBCC96288D0AF2BA755628B9EE71387F2595A742",
+    "FileHash": "6D3756043C3E0F4E9F6ABDA2D44E03B0F1A7C77974B3D42C8A1467109C1F5C69"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Datatypes/BoogieGenerator.DataTypes.cs",
+    "Member": "AddWellformednessCheck/1",
+    "Producer": "CheckSubrange",
+    "Family": "datatype-constructors",
+    "Count": 1,
+    "Hash": "4F6AB76A8B97BE877888F40DC79AB13E29187D788627F2BAAA08A4AA14E7ABF2",
+    "FileHash": "6D3756043C3E0F4E9F6ABDA2D44E03B0F1A7C77974B3D42C8A1467109C1F5C69"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Datatypes/BoogieGenerator.DataTypes.cs",
+    "Member": "AddWellformednessCheck/1",
+    "Producer": "CheckWellformedWithResult",
+    "Family": "datatype-constructors",
+    "Count": 1,
+    "Hash": "48600C89A84759E47395FC7E646AFF260052B461BB975D82066E5115BFDB95D3",
+    "FileHash": "6D3756043C3E0F4E9F6ABDA2D44E03B0F1A7C77974B3D42C8A1467109C1F5C69"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Expressions/TranslateBinaryExpr.cs",
+    "Member": "BinaryExprCanCallAssumption/2",
+    "Producer": "CanCallAssumption",
+    "Family": "value-translation",
+    "Count": 3,
+    "Hash": "36F3E87B833D227B9765A69A873627D5F249EE2FCD4073F5D77E7F8C897EE7AC",
+    "FileHash": "400F061FAC5D7B2E814E612E18B9029DD42D6FECE5A905CA956EA85541A298F2"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrAssignment.cs",
+    "Member": "AssertDistinctness/4",
+    "Producer": "Assert",
+    "Family": "assignment-initialization",
+    "Count": 1,
+    "Hash": "2E11C5376E68321084A0F54FDBD0B2E4A2F65366D8C0EC10D98D893A88C72F88",
+    "FileHash": "0538CD02C84A934043447BEB59C832E89C99C4D67F11EEAE61ABD3CA8A3B9DE8"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrAssignment.cs",
+    "Member": "AssertDistinctness/6",
+    "Producer": "Assert",
+    "Family": "assignment-initialization",
+    "Count": 1,
+    "Hash": "3D366B30B7968970AD9B8F2C9E821BE8E6AA225009B87A31999A76B4BA4CE9C6",
+    "FileHash": "0538CD02C84A934043447BEB59C832E89C99C4D67F11EEAE61ABD3CA8A3B9DE8"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrAssignment.cs",
+    "Member": "ProcessLhss/13",
+    "Producer": "Assert",
+    "Family": "assignment-initialization",
+    "Count": 3,
+    "Hash": "2580685640A70DAABA03100C3B8555C82DF6E5226970B9DDD961703C339E100C",
+    "FileHash": "0538CD02C84A934043447BEB59C832E89C99C4D67F11EEAE61ABD3CA8A3B9DE8"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrAssignment.cs",
+    "Member": "ProcessLhss/13",
+    "Producer": "TrStmt_CheckWellformed",
+    "Family": "assignment-initialization",
+    "Count": 1,
+    "Hash": "A14CEFFCCF9A494AA9A35A443AAE3DFEA882B83A76CDE38641749ECA5065E73F",
+    "FileHash": "0538CD02C84A934043447BEB59C832E89C99C4D67F11EEAE61ABD3CA8A3B9DE8"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrAssignment.cs",
+    "Member": "TrAssignmentRhs/10",
+    "Producer": "Assert",
+    "Family": "assignment-initialization",
+    "Count": 3,
+    "Hash": "9EBED4D003D2837379339FFEB3BCC9B9A11B4875140EFA13CC1F9B9E5B320F14",
+    "FileHash": "0538CD02C84A934043447BEB59C832E89C99C4D67F11EEAE61ABD3CA8A3B9DE8"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrAssignment.cs",
+    "Member": "TrAssignmentRhs/10",
+    "Producer": "CheckSubrange",
+    "Family": "assignment-initialization",
+    "Count": 3,
+    "Hash": "C57D2E17FE5B9FEEC15236990EC852F3C46CB0D1B0453ED55D2414012501F454",
+    "FileHash": "0538CD02C84A934043447BEB59C832E89C99C4D67F11EEAE61ABD3CA8A3B9DE8"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrAssignment.cs",
+    "Member": "TrAssignmentRhs/10",
+    "Producer": "CheckTypeMembership",
+    "Family": "assignment-initialization",
+    "Count": 1,
+    "Hash": "D627B920F21CC3F646267F9CB8216F44D88D017C44DEF185D43641620F9027C0",
+    "FileHash": "0538CD02C84A934043447BEB59C832E89C99C4D67F11EEAE61ABD3CA8A3B9DE8"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrAssignment.cs",
+    "Member": "TrAssignmentRhs/10",
+    "Producer": "CheckWellformed",
+    "Family": "assignment-initialization",
+    "Count": 3,
+    "Hash": "87D8F97C3676541AC81C02AD0487D6492911D0304FB052435193B1247F9C0517",
+    "FileHash": "0538CD02C84A934043447BEB59C832E89C99C4D67F11EEAE61ABD3CA8A3B9DE8"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrAssignment.cs",
+    "Member": "TrAssignmentRhs/10",
+    "Producer": "GetSubrangeCheck",
+    "Family": "assignment-initialization",
+    "Count": 1,
+    "Hash": "F6C2CD83A77F3CA03B36A6EFBAEE5F60C2069C4627CF397B66C526FAFB199563",
+    "FileHash": "0538CD02C84A934043447BEB59C832E89C99C4D67F11EEAE61ABD3CA8A3B9DE8"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrAssignment.cs",
+    "Member": "TrAssignmentRhs/10",
+    "Producer": "TrStmt_CheckWellformed",
+    "Family": "assignment-initialization",
+    "Count": 1,
+    "Hash": "E5BDED165139A072CB3004D2E074E15AEC9AE8DE07F48B990640B95F255C4B42",
+    "FileHash": "0538CD02C84A934043447BEB59C832E89C99C4D67F11EEAE61ABD3CA8A3B9DE8"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrCall.cs",
+    "Member": "ProcessCallStmt/8",
+    "Producer": "AllocationObligation",
+    "Family": "method-calls",
+    "Count": 4,
+    "Hash": "B3425EA5FA025EAFAB265AFF987468A9860DD133A3BC2273CD8541F4FCF0BA35",
+    "FileHash": "C8E812C7C2B18BD2A228B5EAE9756BC982AF87E4D85983A0DF100FBF2BAD4C1D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrCall.cs",
+    "Member": "ProcessCallStmt/8",
+    "Producer": "Assert",
+    "Family": "method-calls",
+    "Count": 6,
+    "Hash": "B1FC5BA632273665E0A847C6A6550E3B12950746BB1766A0189A135ED77E3489",
+    "FileHash": "C8E812C7C2B18BD2A228B5EAE9756BC982AF87E4D85983A0DF100FBF2BAD4C1D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrCall.cs",
+    "Member": "ProcessCallStmt/8",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "method-calls",
+    "Count": 1,
+    "Hash": "746BDB2CABF74CB84DE435E5EC4AA24DA628F885B02FEE61D4D60B6E41E9599C",
+    "FileHash": "C8E812C7C2B18BD2A228B5EAE9756BC982AF87E4D85983A0DF100FBF2BAD4C1D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrCall.cs",
+    "Member": "ProcessCallStmt/8",
+    "Producer": "CheckCallTermination",
+    "Family": "method-calls",
+    "Count": 1,
+    "Hash": "7CACB0BC98D9CFDFFE6609BF7B9DD76673821169C8C325DC099CA41EB9DC44C9",
+    "FileHash": "C8E812C7C2B18BD2A228B5EAE9756BC982AF87E4D85983A0DF100FBF2BAD4C1D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrCall.cs",
+    "Member": "ProcessCallStmt/8",
+    "Producer": "CheckFrameSubset",
+    "Family": "method-calls",
+    "Count": 2,
+    "Hash": "4658A39437B652CFEC38BC34227F3B8C231A2B5A55BC5FB04A3D39073A086FDB",
+    "FileHash": "C8E812C7C2B18BD2A228B5EAE9756BC982AF87E4D85983A0DF100FBF2BAD4C1D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrCall.cs",
+    "Member": "ProcessCallStmt/8",
+    "Producer": "CheckSubrange",
+    "Family": "method-calls",
+    "Count": 1,
+    "Hash": "DDB3A490518F59CCD3238914F53A65B23930B5670E84107A775393FAC774FF26",
+    "FileHash": "C8E812C7C2B18BD2A228B5EAE9756BC982AF87E4D85983A0DF100FBF2BAD4C1D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrCall.cs",
+    "Member": "ProcessCallStmt/8",
+    "Producer": "LowerDeclaredProposition",
+    "Family": "method-calls",
+    "Count": 1,
+    "Hash": "FDE694D84B647FCFAF4D139C1FBD43A5B75EABD26641862B5B00699FBEAEA36D",
+    "FileHash": "C8E812C7C2B18BD2A228B5EAE9756BC982AF87E4D85983A0DF100FBF2BAD4C1D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrCall.cs",
+    "Member": "ProcessCallStmt/8",
+    "Producer": "TrStmt_CheckWellformed",
+    "Family": "method-calls",
+    "Count": 3,
+    "Hash": "EFE6F41FAE6305E1F7C277A63C72A48D1E62FA8DDFCB479A0FCBBD0EDBED10C6",
+    "FileHash": "C8E812C7C2B18BD2A228B5EAE9756BC982AF87E4D85983A0DF100FBF2BAD4C1D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrCall.cs",
+    "Member": "TrCallStmt/5",
+    "Producer": "CheckSubrange",
+    "Family": "method-calls",
+    "Count": 1,
+    "Hash": "63405D77EE06587FC8B94E0D83A51F7C56A16A625103DBF6FF64574D4E9C5BFC",
+    "FileHash": "C8E812C7C2B18BD2A228B5EAE9756BC982AF87E4D85983A0DF100FBF2BAD4C1D"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrForallStmt.cs",
+    "Member": "TrForall_NewValueAssumption/9",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "forall-proof-export",
+    "Count": 3,
+    "Hash": "5D87BDC563631FDFDF16E12BF268E54C5F3073E1B13408D71EE0A7867CCB63F2",
+    "FileHash": "B860BFD0FE81E8609B4CC2A246CB28608F3AA1259EFC6699E4C2EEABBFDD2090"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrForallStmt.cs",
+    "Member": "TrForallAssign/6",
+    "Producer": "Assert",
+    "Family": "forall-proof-export",
+    "Count": 2,
+    "Hash": "F3F35722B1C0E7ACA9AAC7DB53E58D2B9BEAD339DC21E22AD5F9602B0C6EC249",
+    "FileHash": "B860BFD0FE81E8609B4CC2A246CB28608F3AA1259EFC6699E4C2EEABBFDD2090"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrForallStmt.cs",
+    "Member": "TrForallAssign/6",
+    "Producer": "CheckSubrange",
+    "Family": "forall-proof-export",
+    "Count": 1,
+    "Hash": "3F5D866ED7122175C495D216D5BBB0493265C860D65217B1CEF809B776925B0F",
+    "FileHash": "B860BFD0FE81E8609B4CC2A246CB28608F3AA1259EFC6699E4C2EEABBFDD2090"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrForallStmt.cs",
+    "Member": "TrForallAssign/6",
+    "Producer": "TrStmt_CheckWellformed",
+    "Family": "forall-proof-export",
+    "Count": 3,
+    "Hash": "5376957C1D0B7FE83CAC5BAAC4F5CE04FBE70B27C45F76C9A2335F1664E7D291",
+    "FileHash": "B860BFD0FE81E8609B4CC2A246CB28608F3AA1259EFC6699E4C2EEABBFDD2090"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrForallStmt.cs",
+    "Member": "TrForallProof/5",
+    "Producer": "Assert",
+    "Family": "forall-proof-export",
+    "Count": 1,
+    "Hash": "FD694F88F41A56C1222F5D114D32536FB9C524D756C356A3F6546A9D1243313E",
+    "FileHash": "B860BFD0FE81E8609B4CC2A246CB28608F3AA1259EFC6699E4C2EEABBFDD2090"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrForallStmt.cs",
+    "Member": "TrForallProof/5",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "forall-proof-export",
+    "Count": 2,
+    "Hash": "1B901A87BE52B292D3933388DFF227DEDD7C70A2F463BC93A41BEDE948B29E0B",
+    "FileHash": "B860BFD0FE81E8609B4CC2A246CB28608F3AA1259EFC6699E4C2EEABBFDD2090"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrForallStmt.cs",
+    "Member": "TrForallProof/5",
+    "Producer": "LowerProposition",
+    "Family": "forall-proof-export",
+    "Count": 1,
+    "Hash": "164D3735603FDC3EEA457EDF0E1214D4AC12C41AB5209E4C36A45CE14DF07296",
+    "FileHash": "B860BFD0FE81E8609B4CC2A246CB28608F3AA1259EFC6699E4C2EEABBFDD2090"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrForallStmt.cs",
+    "Member": "TrForallProof/5",
+    "Producer": "TrSplitExpr",
+    "Family": "forall-proof-export",
+    "Count": 1,
+    "Hash": "A5C0398EC2B0B15056A321C98E3A47CCE4EC9BC4B8D08A35880B9119651B0154",
+    "FileHash": "B860BFD0FE81E8609B4CC2A246CB28608F3AA1259EFC6699E4C2EEABBFDD2090"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrForallStmt.cs",
+    "Member": "TrForallProof/5",
+    "Producer": "TrStmt_CheckWellformed",
+    "Family": "forall-proof-export",
+    "Count": 2,
+    "Hash": "C1676AE5DF2BB8711A3CB2F737ECF6CAB1E6A6EB331F25272A5DF0D6CE687ACB",
+    "FileHash": "B860BFD0FE81E8609B4CC2A246CB28608F3AA1259EFC6699E4C2EEABBFDD2090"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrForallStmt.cs",
+    "Member": "TrForallStmtCall/13",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "forall-proof-export",
+    "Count": 4,
+    "Hash": "1D4557654407243BABD6E956C0362B73ECF64D82D6F177BC97B6F7E9F0795ADA",
+    "FileHash": "B860BFD0FE81E8609B4CC2A246CB28608F3AA1259EFC6699E4C2EEABBFDD2090"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrForallStmt.cs",
+    "Member": "TrForallStmtCall/13",
+    "Producer": "TrStmt_CheckWellformed",
+    "Family": "forall-proof-export",
+    "Count": 1,
+    "Hash": "10FEF9E9F9080BAF1491BBD74849CF14A39BF423AD922E2707084BF92F58DB6D",
+    "FileHash": "B860BFD0FE81E8609B4CC2A246CB28608F3AA1259EFC6699E4C2EEABBFDD2090"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrLoop.cs",
+    "Member": "TrForLoop/4",
+    "Producer": "Assert",
+    "Family": "loop-contracts",
+    "Count": 1,
+    "Hash": "26F8789430F4497388E79DDAA674BEAD5B08773DE40219567ADD3939E7DE8D7F",
+    "FileHash": "F913F121D0F099F3404F486463E40E4CE31808CE2CA1BB67879CF2C0D0D5BB30"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrLoop.cs",
+    "Member": "TrForLoop/4",
+    "Producer": "CheckTypeMembership",
+    "Family": "loop-contracts",
+    "Count": 1,
+    "Hash": "678AF384B8152265239DC6AD5D9D19032CD5ED41123F42E04CCB70C2161DE6C4",
+    "FileHash": "F913F121D0F099F3404F486463E40E4CE31808CE2CA1BB67879CF2C0D0D5BB30"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrLoop.cs",
+    "Member": "TrForLoop/4",
+    "Producer": "CheckWellformed",
+    "Family": "loop-contracts",
+    "Count": 2,
+    "Hash": "6D6AA40E1244B21558C88DDB2DBD15CC67E05313B6451BBAD7AF0B548F4E868B",
+    "FileHash": "F913F121D0F099F3404F486463E40E4CE31808CE2CA1BB67879CF2C0D0D5BB30"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrLoop.cs",
+    "Member": "TrForLoop/4",
+    "Producer": "GetSubrangeCheck",
+    "Family": "loop-contracts",
+    "Count": 1,
+    "Hash": "5D4329EB0B653D0A51423D3981D5260946741A6E499EDFF932772C7827FF2DFF",
+    "FileHash": "F913F121D0F099F3404F486463E40E4CE31808CE2CA1BB67879CF2C0D0D5BB30"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrLoop.cs",
+    "Member": "TrLoop/8",
+    "Producer": "Assert",
+    "Family": "loop-contracts",
+    "Count": 4,
+    "Hash": "43DF928A311B44F783764D7688EB868BC305E7CF7EC608FC368757BD3DEC14AB",
+    "FileHash": "F913F121D0F099F3404F486463E40E4CE31808CE2CA1BB67879CF2C0D0D5BB30"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrLoop.cs",
+    "Member": "TrLoop/8",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "loop-contracts",
+    "Count": 6,
+    "Hash": "D3E4FC15B7E21EAD26DA98894A39AEA6112150FA551CD1B142A585B3AE9B4365",
+    "FileHash": "F913F121D0F099F3404F486463E40E4CE31808CE2CA1BB67879CF2C0D0D5BB30"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrLoop.cs",
+    "Member": "TrLoop/8",
+    "Producer": "CheckFrameSubset",
+    "Family": "loop-contracts",
+    "Count": 1,
+    "Hash": "3C2EED7959733B6792F5B67D7CB16B324E704A9FC730BB24EB3B0373CE607E34",
+    "FileHash": "F913F121D0F099F3404F486463E40E4CE31808CE2CA1BB67879CF2C0D0D5BB30"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrLoop.cs",
+    "Member": "TrLoop/8",
+    "Producer": "LowerProposition",
+    "Family": "loop-contracts",
+    "Count": 1,
+    "Hash": "6808E5BCEDFDBB0A81F3339E0583047D1111EAF3BAF8F385AF09E12A40659794",
+    "FileHash": "F913F121D0F099F3404F486463E40E4CE31808CE2CA1BB67879CF2C0D0D5BB30"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrLoop.cs",
+    "Member": "TrLoop/8",
+    "Producer": "TrSplitExpr",
+    "Family": "loop-contracts",
+    "Count": 1,
+    "Hash": "8AEFFDA4B3E1FF9014276EF95E79271C915E87B6249A1CEA35B9DBB9D98D24E2",
+    "FileHash": "F913F121D0F099F3404F486463E40E4CE31808CE2CA1BB67879CF2C0D0D5BB30"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrLoop.cs",
+    "Member": "TrLoop/8",
+    "Producer": "TrStmt_CheckWellformed",
+    "Family": "loop-contracts",
+    "Count": 3,
+    "Hash": "50EC7665875160C287094CBAD07FE9C237EFB1EB88B8AE75D7B5BFBCF77319F3",
+    "FileHash": "F913F121D0F099F3404F486463E40E4CE31808CE2CA1BB67879CF2C0D0D5BB30"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrPredicateStatement.cs",
+    "Member": "TrAssertCondition/3",
+    "Producer": "Assert",
+    "Family": "explicit-predicates",
+    "Count": 1,
+    "Hash": "E5620994BD4B0489706D3721692232945569CC60E6EEF1CA47A79CB3B4E05EE1",
+    "FileHash": "8F88BCDBB776AA3091641A5100B28B55D3ABAFAEE6DFD7850495B9984944BDA2"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrPredicateStatement.cs",
+    "Member": "TrAssertCondition/3",
+    "Producer": "AssertAndForget",
+    "Family": "explicit-predicates",
+    "Count": 1,
+    "Hash": "8C3F384861E75495F80067D5B860BA8E52C99D19184FFBDF175612B90A928CC6",
+    "FileHash": "8F88BCDBB776AA3091641A5100B28B55D3ABAFAEE6DFD7850495B9984944BDA2"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrPredicateStatement.cs",
+    "Member": "TrAssertCondition/3",
+    "Producer": "LowerProposition",
+    "Family": "explicit-predicates",
+    "Count": 1,
+    "Hash": "39D7C6B91C96300A6E79772FA0E28696F987139BF5EC54A68D64F2B8DBB15A04",
+    "FileHash": "8F88BCDBB776AA3091641A5100B28B55D3ABAFAEE6DFD7850495B9984944BDA2"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrPredicateStatement.cs",
+    "Member": "TrAssertCondition/3",
+    "Producer": "TrSplitExpr",
+    "Family": "explicit-predicates",
+    "Count": 1,
+    "Hash": "65B80703A75069F17867364E1125B967AC8411492F3FBF0FD9623E68B9F678E3",
+    "FileHash": "8F88BCDBB776AA3091641A5100B28B55D3ABAFAEE6DFD7850495B9984944BDA2"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrPredicateStatement.cs",
+    "Member": "TrAssertStmt/4",
+    "Producer": "TrStmt_CheckWellformed",
+    "Family": "explicit-predicates",
+    "Count": 1,
+    "Hash": "26006A4DED10B29FCF0916059693CF9FF2BDF5CFA9FFFBF9A8C9D785B352786E",
+    "FileHash": "8F88BCDBB776AA3091641A5100B28B55D3ABAFAEE6DFD7850495B9984944BDA2"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrPredicateStatement.cs",
+    "Member": "TrAssumeStmt/4",
+    "Producer": "TrStmt_CheckWellformed",
+    "Family": "explicit-predicates",
+    "Count": 1,
+    "Hash": "C686CBEFB477DA31A114F639AF67BB237D6116FBEEAD9E982008821FB6EF8C52",
+    "FileHash": "8F88BCDBB776AA3091641A5100B28B55D3ABAFAEE6DFD7850495B9984944BDA2"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrPredicateStatement.cs",
+    "Member": "TrExpectStmt/4",
+    "Producer": "TrStmt_CheckWellformed",
+    "Family": "explicit-predicates",
+    "Count": 2,
+    "Hash": "6BE96B93CD0D44A5E2712A89CE83998A379DF613E6C4CD4A31BAB4A5AF5A49E7",
+    "FileHash": "8F88BCDBB776AA3091641A5100B28B55D3ABAFAEE6DFD7850495B9984944BDA2"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs",
+    "Member": "TrAlternatives/7",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "statement-wf-calculations",
+    "Count": 1,
+    "Hash": "664F6741B124504E56640F402703F098196855028A99F1D82B544BE1B18AD9CB",
+    "FileHash": "E5E603187F0556C5144AF67247B3D0AC69F7DCE5F10492539EC5E824A40CA009"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs",
+    "Member": "TrAlternatives/7",
+    "Producer": "TrStmt_CheckWellformed",
+    "Family": "statement-wf-calculations",
+    "Count": 1,
+    "Hash": "52646DD8D6F4C40BB1453AA4021B4D70920D2033999248A7A8223324527448C4",
+    "FileHash": "E5E603187F0556C5144AF67247B3D0AC69F7DCE5F10492539EC5E824A40CA009"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs",
+    "Member": "TrCalcStmt/4",
+    "Producer": "AssertAndForget",
+    "Family": "statement-wf-calculations",
+    "Count": 3,
+    "Hash": "D529E0F220EB9E66C30FD6E2CCA5B21F69CEAD1EDA1435DA3F4F6FF8CA309592",
+    "FileHash": "E5E603187F0556C5144AF67247B3D0AC69F7DCE5F10492539EC5E824A40CA009"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs",
+    "Member": "TrCalcStmt/4",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "statement-wf-calculations",
+    "Count": 1,
+    "Hash": "7C3CA89DB00FA5482BFFC2C880BBE83F444EAEF2A8BE3CD92C926098E2359B3A",
+    "FileHash": "E5E603187F0556C5144AF67247B3D0AC69F7DCE5F10492539EC5E824A40CA009"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs",
+    "Member": "TrCalcStmt/4",
+    "Producer": "LowerProposition",
+    "Family": "statement-wf-calculations",
+    "Count": 1,
+    "Hash": "C2C3D6BAEF3EE50444B3AD5DDA9646E36DB4F81417398BD3A00761887D97C411",
+    "FileHash": "E5E603187F0556C5144AF67247B3D0AC69F7DCE5F10492539EC5E824A40CA009"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs",
+    "Member": "TrCalcStmt/4",
+    "Producer": "TrSplitExpr",
+    "Family": "statement-wf-calculations",
+    "Count": 1,
+    "Hash": "6B86566D26567B0CFD3250EA92BD92B9551CCC28F9369A59A79E976E1C79CCCE",
+    "FileHash": "E5E603187F0556C5144AF67247B3D0AC69F7DCE5F10492539EC5E824A40CA009"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs",
+    "Member": "TrCalcStmt/4",
+    "Producer": "TrStmt_CheckWellformed",
+    "Family": "statement-wf-calculations",
+    "Count": 4,
+    "Hash": "42925F46B0797864FC2C18720DB8EACC6F57112B06E19E4E582B1603BC0906B0",
+    "FileHash": "E5E603187F0556C5144AF67247B3D0AC69F7DCE5F10492539EC5E824A40CA009"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs",
+    "Member": "TrStmt_CheckWellformed/10",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "statement-wf-calculations",
+    "Count": 1,
+    "Hash": "F40215AFB985C1505C0BF5DFB7CCD651C48985A481028FC73422775A7F2A872F",
+    "FileHash": "E5E603187F0556C5144AF67247B3D0AC69F7DCE5F10492539EC5E824A40CA009"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs",
+    "Member": "TrStmt_CheckWellformed/10",
+    "Producer": "CheckWellformedWithResult",
+    "Family": "statement-wf-calculations",
+    "Count": 1,
+    "Hash": "F3FE1B5DCC6AF3154C846ED9116206B85268617C45C26B5ADF384D093612ECA3",
+    "FileHash": "E5E603187F0556C5144AF67247B3D0AC69F7DCE5F10492539EC5E824A40CA009"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs",
+    "Member": "TrStmt/4",
+    "Producer": "Assert",
+    "Family": "statement-wf-calculations",
+    "Count": 1,
+    "Hash": "788DF49545A7CCCF7D07DE595F7DB5A1DCCDD1215306F2E2710F9F19A364D2C6",
+    "FileHash": "E5E603187F0556C5144AF67247B3D0AC69F7DCE5F10492539EC5E824A40CA009"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs",
+    "Member": "TrStmt/4",
+    "Producer": "AssertAndForget",
+    "Family": "statement-wf-calculations",
+    "Count": 1,
+    "Hash": "7D73851951CBC5D526B1658ACA7D79987D583150D9EDD59448F1D87FAA139AD5",
+    "FileHash": "E5E603187F0556C5144AF67247B3D0AC69F7DCE5F10492539EC5E824A40CA009"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs",
+    "Member": "TrStmt/4",
+    "Producer": "CanCallAssumption",
+    "Family": "statement-wf-calculations",
+    "Count": 1,
+    "Hash": "F8B1AD4BCD6CBCEC5EF12EE1869ADC2472E63DF074E350E737C1F4D1ACD56938",
+    "FileHash": "E5E603187F0556C5144AF67247B3D0AC69F7DCE5F10492539EC5E824A40CA009"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs",
+    "Member": "TrStmt/4",
+    "Producer": "CanCallAssumptionForVerification",
+    "Family": "statement-wf-calculations",
+    "Count": 1,
+    "Hash": "F80143D280EA657F39D9FB8F041388214D0294D567061B2502E21AB97CBAA498",
+    "FileHash": "E5E603187F0556C5144AF67247B3D0AC69F7DCE5F10492539EC5E824A40CA009"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs",
+    "Member": "TrStmt/4",
+    "Producer": "CheckFrameSubset",
+    "Family": "statement-wf-calculations",
+    "Count": 1,
+    "Hash": "FC7F75E9347F15512CD48482AA7C43BB28C3C511BB4D7CE7CD0961E4E9DB184C",
+    "FileHash": "E5E603187F0556C5144AF67247B3D0AC69F7DCE5F10492539EC5E824A40CA009"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs",
+    "Member": "TrStmt/4",
+    "Producer": "CheckSubrange",
+    "Family": "statement-wf-calculations",
+    "Count": 1,
+    "Hash": "9E0B87C7E2A01F280FAD37CC5FDEC4A808E9AF36FE18F98583A04CA7DAC8EEAA",
+    "FileHash": "E5E603187F0556C5144AF67247B3D0AC69F7DCE5F10492539EC5E824A40CA009"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs",
+    "Member": "TrStmt/4",
+    "Producer": "LowerDeclaredProposition",
+    "Family": "statement-wf-calculations",
+    "Count": 1,
+    "Hash": "CA3BFB0E5457F1F22F1C77BDEAE9CA5BEE6F6061721642EA93D735A86EE72AC0",
+    "FileHash": "E5E603187F0556C5144AF67247B3D0AC69F7DCE5F10492539EC5E824A40CA009"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs",
+    "Member": "TrStmt/4",
+    "Producer": "TrSplitExpr",
+    "Family": "statement-wf-calculations",
+    "Count": 1,
+    "Hash": "1969B15A3A0598F8A0EFED79A63607E84C6834B1555803EEDE5DC0F46419F8A1",
+    "FileHash": "E5E603187F0556C5144AF67247B3D0AC69F7DCE5F10492539EC5E824A40CA009"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs",
+    "Member": "TrStmt/4",
+    "Producer": "TrStmt_CheckWellformed",
+    "Family": "statement-wf-calculations",
+    "Count": 3,
+    "Hash": "CF216DE99DD696880D90E6CBF887138F36C5B83C074E0AEBDE92797D6F3E5994",
+    "FileHash": "E5E603187F0556C5144AF67247B3D0AC69F7DCE5F10492539EC5E824A40CA009"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/IfStatementVerifier.cs",
+    "Member": "EmitBoogie/5",
+    "Producer": "TrStmt_CheckWellformed",
+    "Family": "if-guards",
+    "Count": 1,
+    "Hash": "5F1B348A27117431E27FEC73C2C21EA51AB1AD3E1620E0542FDD9302A70E3850",
+    "FileHash": "6D83C1D7807A28043AC88002587518022165F68A927C1DBC9825161149A7776A"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/MatchVerifier.cs",
+    "Member": "CtorInvocation/8",
+    "Producer": "CheckSubrange",
+    "Family": "match-completeness",
+    "Count": 1,
+    "Hash": "44EE67D50710E93E6BAD26B4B8A1F9BB3088EC35E351A04AAC30F603094D8DA6",
+    "FileHash": "984AB85E5467A9D1E2FD2AD472096032BDBAC7920E4CAC71227A579F4615AC67"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/MatchVerifier.cs",
+    "Member": "TrMatchExpr/7",
+    "Producer": "Assert",
+    "Family": "match-completeness",
+    "Count": 1,
+    "Hash": "54031B560E4E76C9B8BC3A3B4391DFE426B73B7BB9D447DC2C099D37A80DEF39",
+    "FileHash": "984AB85E5467A9D1E2FD2AD472096032BDBAC7920E4CAC71227A579F4615AC67"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/MatchVerifier.cs",
+    "Member": "TrMatchExpr/7",
+    "Producer": "CheckWellformed",
+    "Family": "match-completeness",
+    "Count": 1,
+    "Hash": "B5B93D9D93750E6FDCAE4F15464CFC201DA0CABECD06AE52D4F412406E6E906D",
+    "FileHash": "984AB85E5467A9D1E2FD2AD472096032BDBAC7920E4CAC71227A579F4615AC67"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/MatchVerifier.cs",
+    "Member": "TrMatchExpr/7",
+    "Producer": "CheckWellformedWithResult",
+    "Family": "match-completeness",
+    "Count": 1,
+    "Hash": "BB67EECCAE7D78B237CD3FF7E392C8CC582FD82CDB08D55CD895C1AAC4DC1C47",
+    "FileHash": "984AB85E5467A9D1E2FD2AD472096032BDBAC7920E4CAC71227A579F4615AC67"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/MatchVerifier.cs",
+    "Member": "TrMatchStmt/5",
+    "Producer": "Assert",
+    "Family": "match-completeness",
+    "Count": 1,
+    "Hash": "B8525961CD04F305598A9F2E4CA90BC7518B4DD36B6B75C89E3BB8063C2A1B41",
+    "FileHash": "984AB85E5467A9D1E2FD2AD472096032BDBAC7920E4CAC71227A579F4615AC67"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/MatchVerifier.cs",
+    "Member": "TrMatchStmt/5",
+    "Producer": "TrStmt_CheckWellformed",
+    "Family": "match-completeness",
+    "Count": 1,
+    "Hash": "673FC71212523465216188759595754AB43EF23CC7ED086D2E5CDA10DD00BA18",
+    "FileHash": "984AB85E5467A9D1E2FD2AD472096032BDBAC7920E4CAC71227A579F4615AC67"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/OpaqueBlockVerifier.cs",
+    "Member": "EmitBoogie/6",
+    "Producer": "Assert",
+    "Family": "opaque-block-contracts",
+    "Count": 1,
+    "Hash": "5E007CF68B1A7583B37008D0874E94712CD95768E4E304DA7B9364EF122BCE06",
+    "FileHash": "996CBCC8D7F390B326B2D4366A9C81339D3E3BC965B2BD7493DDD44743102470"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/OpaqueBlockVerifier.cs",
+    "Member": "EmitBoogie/6",
+    "Producer": "CheckFrameSubset",
+    "Family": "opaque-block-contracts",
+    "Count": 1,
+    "Hash": "5F336C6653CA6B3A8B0C6BBD3362EE04CB9049A9A7B4D06130106B68B865D8C1",
+    "FileHash": "996CBCC8D7F390B326B2D4366A9C81339D3E3BC965B2BD7493DDD44743102470"
+  },
+  {
+    "File": "Source/DafnyCore/Verifier/Statements/OpaqueBlockVerifier.cs",
+    "Member": "EmitBoogie/6",
+    "Producer": "CheckOpaquePostcondition",
+    "Family": "opaque-block-contracts",
+    "Count": 1,
+    "Hash": "B7979E9E559B83A4982005547A03BB5E95EF09CEE392E048C5DF6D0719078E3E",
+    "FileHash": "996CBCC8D7F390B326B2D4366A9C81339D3E3BC965B2BD7493DDD44743102470"
+  }
+]

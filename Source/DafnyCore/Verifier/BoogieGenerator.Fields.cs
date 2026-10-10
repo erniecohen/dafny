@@ -229,7 +229,7 @@ namespace Microsoft.Dafny {
       // check well-formedness of the RHS expression
       CheckWellformed(decl.Rhs, new WFOptions(null, true), locals, builder, etran);
       builder.Add(new Bpl.AssumeCmd(decl.Rhs.Origin, etran.CanCallAssumptionForVerification(decl.Rhs)));
-      CheckSubrange(decl.Rhs.Origin, etran.TrExpr(decl.Rhs), decl.Rhs.Type, decl.Type, decl.Rhs, builder);
+      CheckSubrange(decl.Rhs.Origin, etran.TrExpr(decl.Rhs), decl.Rhs.Type, decl.Type, decl.Rhs, builder, etran: etran);
 
       if (EmitImplementation(decl.Attributes)) {
         // emit the impl only when there are proof obligations.

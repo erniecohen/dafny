@@ -82,7 +82,7 @@ public partial class BoogieGenerator {
       }
 
       Bpl.Expr bRhs = bLhss[i];  // the RHS (bRhs) of the assignment to the actual call-LHS (lhs) was a LHS (bLhss[i]) in the Boogie call statement
-      CheckSubrange(lhs.Origin, bRhs, s.Method.Outs[i].Type.Subst(tySubst), rhsTypeConstraint, null, builder);
+      CheckSubrange(lhs.Origin, bRhs, s.Method.Outs[i].Type.Subst(tySubst), rhsTypeConstraint, null, builder, etran: etran);
       bRhs = CondApplyBox(lhs.Origin, bRhs, lhs.Type, lhsType);
 
       lhsBuilders[i](bRhs, false, builder, etran);
@@ -224,7 +224,7 @@ public partial class BoogieGenerator {
         builder.Add(new CommentCmd("ProcessCallStmt: CheckSubrange"));
         // Check the subrange without boxing
         var beforeBox = etran.TrExpr(actual);
-        CheckSubrange(actual.Origin, beforeBox, actual.Type, formal.Type.Subst(tySubst), actual, builder);
+        CheckSubrange(actual.Origin, beforeBox, actual.Type, formal.Type.Subst(tySubst), actual, builder, etran: etran);
         bActual = AdaptBoxing(actual.Origin, beforeBox, actual.Type, formal.Type.Subst(tySubst));
         dActual = actual;
       }
@@ -241,7 +241,7 @@ public partial class BoogieGenerator {
     // check that its arguments were all available at that time as well.
     if (etran.UsesOldHeap) {
       if (!method.IsStatic && !(method is Constructor)) {
-        Bpl.Expr wh = GetWhereClause(receiver.Origin, etran.TrExpr(receiver), receiver.Type, etran, ISALLOC, true);
+        Bpl.Expr wh = AllocationObligation(receiver.Origin, etran.TrExpr(receiver), receiver.Type, etran);
         if (wh != null) {
           var desc = new IsAllocated("receiver argument", "in the state in which the method is invoked", receiver);
           builder.Add(Assert(receiver.Origin, wh, desc, builder.Context));
@@ -249,7 +249,7 @@ public partial class BoogieGenerator {
       }
       for (int i = 0; i < Args.Count; i++) {
         Expression ee = Args[i];
-        Bpl.Expr wh = GetWhereClause(ee.Origin, etran.TrExpr(ee), ee.Type, etran, ISALLOC, true);
+        Bpl.Expr wh = AllocationObligation(ee.Origin, etran.TrExpr(ee), ee.Type, etran);
         if (wh != null) {
           var desc = new IsAllocated("argument", "in the state in which the method is invoked", ee);
           builder.Add(Assert(ee.Origin, wh, desc, builder.Context));
@@ -257,7 +257,7 @@ public partial class BoogieGenerator {
       }
     } else if (method is TwoStateLemma) {
       if (!method.IsStatic) {
-        Bpl.Expr wh = GetWhereClause(receiver.Origin, etran.TrExpr(receiver), receiver.Type, etran.OldAt(atLabel), ISALLOC, true);
+        Bpl.Expr wh = AllocationObligation(receiver.Origin, etran.TrExpr(receiver), receiver.Type, etran.OldAt(atLabel));
         if (wh != null) {
           var desc = new IsAllocated("receiver argument", "in the two-state lemma's previous state", receiver, atLabel);
           builder.Add(Assert(receiver.Origin, wh, desc, builder.Context));
@@ -268,7 +268,7 @@ public partial class BoogieGenerator {
         var formal = callee.Ins[i];
         if (formal.IsOld) {
           Expression ee = Args[i];
-          Bpl.Expr wh = GetWhereClause(ee.Origin, etran.TrExpr(ee), ee.Type, etran.OldAt(atLabel), ISALLOC, true);
+          Bpl.Expr wh = AllocationObligation(ee.Origin, etran.TrExpr(ee), ee.Type, etran.OldAt(atLabel));
           if (wh != null) {
             var pIdx = Args.Count == 1 ? "" : " at index " + i;
             var desc = new IsAllocated(
@@ -330,8 +330,9 @@ public partial class BoogieGenerator {
         // The callee's decreases clause is evaluated in the callee's state, in which "old" denotes the
         // previous heap of a two-state lemma: the heap at its label, if the call has one.
         var calleeEtran = method is TwoStateLemma && atLabel != null ? etran.WithOld(etran.OldAt(atLabel)) : null;
-        CheckCallTermination(tok, contextDecreases, calleeDecreases, null, receiver, substMap, directSubstMap, tySubst, etran, oldCaller, builder, codeContext.InferredDecreases, null,
-          calleeEtran);
+        var callerEtran = builder.Context.CallerTerminationTranslator ?? etran;
+        CheckCallTermination(tok, contextDecreases, calleeDecreases, null, receiver, substMap, directSubstMap, tySubst, callerEtran, oldCaller, builder, codeContext.InferredDecreases, null,
+          calleeEtran ?? etran);
       }
     }
 
@@ -371,6 +372,53 @@ public partial class BoogieGenerator {
       // uninterpreted) anyway, so the refined module will have checked the call precondition for all possible definitions
       // of the predicate.
       call.IsFree = true;
+    }
+    if (options.Get(CommonOptionBag.ConsistentObligationChecks) && !call.IsFree) {
+      call.callee = CheckedCallName(callee, isCoCall ? MethodTranslationKind.CoCall : MethodTranslationKind.Call);
+      var callerProof = new BoogieStmtListBuilder(this, options, builder.Context);
+      var purePreparation = true;
+      var callEtran = method is TwoStateLemma
+        ? etran.WithVerificationOldHeap(etran.OldAt(atLabel).HeapExpr) : etran;
+      foreach (var requirement in ConjunctsOf(callee.Req)) {
+        var instantiated = Substitute(requirement.E, receiver, substMap, tySubst);
+        // TrStmt_CheckWellformed constructs the complete can-call support after
+        // WF and before the sole actual check, as an immediate assertion does.
+        // An extra early construction duplicates that support and consumes
+        // expression-construction state before the assertion's preparation.
+        // Rebase old expressions in the callee clause, but not old expressions
+        // in the caller's decreases clause. The existing call termination check
+        // above also keeps those two heap contexts separate.
+        var lowering = LowerDeclaredProposition(instantiated, callerProof, locals, callEtran,
+          callerTerminationTranslator: builder.Context.CallerTerminationTranslator ?? (method is TwoStateLemma ? etran : null));
+        purePreparation &= lowering.PurePreparation;
+        var (error, success) = CustomErrorMessage(requirement.Attributes);
+        var direct = Substitute(requirement.E, receiver, directSubstMap, tySubst);
+        var description = new PreconditionSatisfied(direct, error, success);
+        foreach (var piece in lowering.Pieces) {
+          if (piece.IsChecked) {
+            callerProof.Add(Assert(new ForceCheckOrigin(ObligationOrigin(tok, piece.Tok)), piece.E,
+              description, callerProof.Context with { AssertMode = AssertMode.Check }));
+          }
+        }
+        if (lowering.SplitHappened) {
+          // Publish only the established pre-call clause. Subsequent heap/out
+          // havoc performs the normal invalidation of facts at the actual call.
+          var summary = TrAssumeCmd(tok, lowering.Summary);
+          proofDependencies?.AddProofDependencyId(summary, tok,
+            new AssumptionDependency(false, "checked method precondition", instantiated));
+          callerProof.Add(summary);
+        }
+      }
+      if (purePreparation) {
+        // Every check keeps all its preparation and preceding checked clauses.
+        // Preparation-private facts do not become ambient facts for later code.
+        // The original call interface publishes the original contract below.
+        PathAsideBlock(tok, callerProof, builder);
+      } else {
+        // Preserve pre-existing outer effects for unsupported preparation,
+        // including statement-expression reveals and visibility commands.
+        builder.AppendAlreadyTranslated(callerProof, callerProof.Commands);
+      }
     }
     builder.Add(call);
 

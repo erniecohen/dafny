@@ -249,3 +249,13 @@ git-issues/github-issue-132-statement-binders-negative.dfy
 git-issues/github-issue-132-pure-callback.dfy
 git-issues/git-issue-2064.dfy
 git-issues/github-issue-99.dfy
+
+# Consistent obligation checks and project option precedence.
+git-issues/git-issue-100.dfy
+
+# Terminal method and forall hints retain legacy reveal scopes (#100).
+# Covered by the registered issue 100 gate above.
+
+# Caller preparation uses standard post-WF support construction (#100).
+# Paired quantified caller and false controls are in the registered issue 100 gate.
+# Canonical local-exit support order and paired/negative WF fixtures are covered by git-issue-100.

@@ -111,7 +111,9 @@ namespace Microsoft.Dafny {
             if (kind == MethodTranslationKind.Implementation && split.Tok.IsInherited(currentModule)) {
               // this postcondition was inherited into this module, so just ignore it
             } else {
-              ens.Add(Ensures(split.Tok, split.IsOnlyFree, p.E, split.E, null, null, comment));
+              var nonchecking = options.Get(CommonOptionBag.ConsistentObligationChecks) &&
+                kind == MethodTranslationKind.Implementation && assertionOnlyFilter == null;
+              ens.Add(Ensures(split.Tok, split.IsOnlyFree || nonchecking, p.E, split.E, null, null, comment));
               comment = null;
             }
           }
@@ -159,7 +161,7 @@ namespace Microsoft.Dafny {
         var e = formal.DefaultValue;
         CheckWellformed(e, new WFOptions(null, false, false, true), localVariables, builder, etran.WithReadsFrame(etran.readsFrame, null));
         builder.Add(new Bpl.AssumeCmd(e.Origin, etran.CanCallAssumptionForVerification(e)));
-        CheckSubrange(e.Origin, etran.TrExpr(e), e.Type, formal.Type, e, builder);
+        CheckSubrange(e.Origin, etran.TrExpr(e), e.Type, formal.Type, e, builder, etran: etran);
       }
       // check well-formedness of the preconditions, and then assume each one of them
       var wfOptions = new WFOptions();
@@ -317,7 +319,14 @@ namespace Microsoft.Dafny {
       YieldHavoc(iter.Origin, iter, builder, etran);
 
       // translate the body of the iterator
-      var stmts = TrStmt2StmtList(builder, iter.Body, localVariables, etran);
+      Bpl.StmtList stmts;
+      if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+        TrStmtList([iter.Body], builder, localVariables, etran, null, processLabels: false);
+        CheckExitPostconditions(iter.Ensures, iter.Origin, builder, localVariables, etran, false);
+        stmts = builder.Collect(iter.Body.StartToken);
+      } else {
+        stmts = TrStmt2StmtList(builder, iter.Body, localVariables, etran);
+      }
 
       if (EmitImplementation(iter.Attributes)) {
         // emit the impl only when there are proof obligations.
