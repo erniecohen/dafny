@@ -14,7 +14,7 @@ Pinned baseline: `ab210b78b50adb5a192542897f0a00cdb40f3c35`. Each complete compa
 
 | Scope | Configurations | Coverage per mode | Status |
 |---|---|---|---|
-| Complete verifier-suite verdict gate | Both resolver defaults, both axiom settings | 1,161 planned programs | Pending |
+| Complete verifier-suite verdict gate | Both resolver defaults, both axiom settings | 1,161 planned programs | Refreshed resolver / additional axioms ON complete; three other axes pending |
 | Complete standard-library gate | Committed resolver settings, both axiom settings | Seven parts, 2,190 declarations | Pending |
 | Registered regression gate | Both resolvers and axiom settings | 322 invocations, including 233 negative controls | Passed |
 | Paired assertion-invariance gate | Both resolvers and axiom settings | 688 observations, including 248 negative controls | Passed |
@@ -22,6 +22,16 @@ Pinned baseline: `ab210b78b50adb5a192542897f0a00cdb40f3c35`. Each complete compa
 | New issue 100, explicit witness-type control | Same matrix; only `p: seq<nat>` annotation | 48 complete files, 84 targeted correctness observations | Passed |
 
 Infrastructure-interrupted attempts do not count as completed comparisons; their frozen complete inputs are retained for unchanged retries. The fresh registered gate passes all 322 observations with exact committed output: 89 positive observations and 233 genuine Invalid negatives. The fresh paired gate passes all 688 observations over 172 cases: 440 positives contain only Valid VCs and 248 negatives contain Invalid VCs; every recorded VC is Valid or Invalid. These frozen-candidate results do not replace the pending broad comparisons. Each library comparison also repeats the unchanged baseline. Verdict compatibility remains mandatory. The report will identify default-OFF resource differences, compare them with baseline repeat variation and emitted-Boogie identity, and explicitly retain any failure of the strict resource-equality criterion. Enabled-mode declaration failures, resource exhaustion, timeouts, newly accepted invalid checks and substantial per-declaration cost increases will be listed separately. No expected verdict table or proof resource ceiling has been changed.
+
+### First completed full-suite axis
+
+The refreshed-resolver / additional-axioms-ON comparison has complete coverage in all three modes: 1,161 programs, 6,925 declarations and 7,596 VCs per mode, with no safety timeout or crash. Feature OFF matches every baseline verdict and VC resource count exactly. The comparison gate rejects enabled-mode acceptance. Three formerly Correct declarations exhaust their original resources: `PriorityQueue.SiftDown`, `SnapTree.Iterator.MoveNext` and `RemoveFactor`. `RotateA` also moves from Errors to resource exhaustion. Conversely, `MultiSets.test7` and `SchorrWaite` move from resource exhaustion to Correct. These changes are all retained rather than replacing the expected table.
+
+Ten commonly passing declarations exceed the declared significant-cost threshold (more than twice baseline cost and at least 100,000 additional resources): `Composite`, `NumberRepresentations.dec`, `AltPrimeDefinition`, `NumberRepresentations.inc`, `sorted_merge`, `FibSumManual`, `Fill_All`, `Fill_True`, `Lucas_Theorem` and `FindWinner`. Aggregate resources across commonly passing declarations decrease slightly, but that does not waive these declaration regressions or the three new resource failures. The archived comparison includes every changed declaration, including smaller changes.
+
+`git-issue-2703` changes one body correctness result from Errors to Correct. Its contract is `ensures 2 / 0 == 1`; the independent division-by-zero specification-WF check remains Errors, as do the two other invalid function-definition WF checks in that file. Replaying the impossible domain condition makes the dependent body check vacuous. The complete module remains rejected in every mode; this body-only result is not verification of the invalid contract. The report's soundness argument explicitly requires the independent WF checks to succeed.
+
+This axis also has 36 baseline-versus-committed-expected program differences. They include resolver-dependent diagnostics and existing resource outcomes; candidate OFF reproduces the actual pinned baseline exactly. They are reported separately from candidate changes, and the expected table has not been edited. Fifty-nine baseline-versus-ON program output rows differ, including moved diagnostic locations; these are not all logical verdict regressions. The declaration-level transition and cost lists above are the relevant acceptance evidence.
 
 ## Unresolved cases and new reproducer
 
