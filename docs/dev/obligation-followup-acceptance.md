@@ -1,0 +1,51 @@
+# PR 168 follow-up acceptance report
+
+**Status: validation in progress; not approved for merge.** This report follows [the follow-up review](https://github.com/erniecohen/dafny/pull/168#issuecomment-6091926707). The complete request is preserved in [obligation-followup-review.md](obligation-followup-review.md). No further verifier change is planned unless validation identifies a concrete, generalizable defect.
+
+## Frozen candidate and oracle correction
+
+Verifier implementation: `1e6fa5126d8076983f0841629194dc64094f0b2f`. Compiled-source pin: `aa25d753ab1e3aebe4cc08d14313e705d741446b`; normal build source: `4386c3bc548d0fd91e981d1cc84db6bc668a1bfb`. The oracle correction distinguishes bound identifiers, free identifiers and renamed preparation temporaries. Six direct Boogie-AST controls cover both resolved and unresolved occurrences, the reviewer's free-constant collision, pairwise category separation and preparation renaming without capture. No verifier translation changed in that correction.
+
+[The normal build](https://github.com/erniecohen/dafny/actions/runs/38012015266) passed all ten actual stages. Both structural runs passed 118 tests; all 396 core tests passed; the reviewed 287-group producer inventory matched. Native proof acceptance is a separate requirement.
+
+## Broad comparison
+
+Pinned baseline: `ab210b78b50adb5a192542897f0a00cdb40f3c35`. Each complete comparison runs baseline, candidate feature OFF and candidate feature ON using identical inputs, options and resource ceilings with Z3 5.1.0. The suite covers legacy and refreshed resolver defaults, retaining tests' explicit RUN overrides. The standard library retains its committed project options: refreshed resolver and general newtypes enabled. A legacy override is not a supported library gate. Both additional-axiom settings are covered throughout.
+
+| Scope | Configurations | Coverage per mode | Status |
+|---|---|---|---|
+| Complete verifier-suite verdict gate | Both resolver defaults, both axiom settings | 1,161 planned programs | Pending |
+| Complete standard-library gate | Committed resolver settings, both axiom settings | Seven parts, 2,190 declarations | Pending |
+| Registered regression gate | Both resolvers and axiom settings | 322 invocations, including 233 negative controls | Pending |
+| Paired assertion-invariance gate | Both resolvers and axiom settings | 688 observations, including 248 negative controls | Pending |
+| New issue 100 identity example | Baseline/OFF/ON, both resolvers and axiom settings | 48 complete files, 84 targeted correctness observations | Pending |
+
+Each library comparison also repeats the unchanged baseline. Verdict compatibility remains mandatory. The report will identify default-OFF resource differences, compare them with baseline repeat variation and emitted-Boogie identity, and explicitly retain any failure of the strict resource-equality criterion. Enabled-mode declaration failures, resource exhaustion, timeouts, newly accepted invalid checks and substantial per-declaration cost increases will be listed separately. No expected verdict table or proof resource ceiling has been changed.
+
+## Unresolved cases and new reproducer
+
+The follow-up review records `RemoveFactor` as baseline `VRRRRRRR` and enabled `RRRRRRRR` over the existing seed range. That remains an unresolved regression. No expanded seed search, increased cap, source assertion or special-case lowering is being pursued. Prior narrower improvements are recorded in [obligation-canonical-exit-native.md](obligation-canonical-exit-native.md); they are not whole-suite acceptance.
+
+The [new issue 100 example](https://github.com/erniecohen/dafny/issues/100#issuecomment-6073435411) is being rerun with its direct identity contract, immediate assertion and wrapped predicate. False assertions and an independent symbolic witness are included. The final report will distinguish fresh frozen-candidate results from preceding-build results.
+
+## Soundness argument
+
+Here P_i denotes a checked clause after the existing ConjunctsOf decomposition. For a checked contract clause P_i, let C_i be the incoming typed value/receiver/type-argument and heap context, together with already established preceding clauses. The required licensing statement is C_i entails the guarded well-formedness facts replayed before P_i. It does not require P_i or a later clause.
+
+**Independent certification and clause order.** TrMethodContractWellformednessCheck has no user requires on its procedure interface. It checks default values, then each requires clause's well-formedness before assuming that clause. It checks frames/decreases, applies the declared modifies effect, havocs outputs, and checks each ensures clause's well-formedness before assuming that clause. Thus non-read domain, nullness, bounds, type/allocation and call/termination obligations are certified under typed incoming values and preceding clauses, in the appropriate pre/post heaps. Within a short-circuit expression, a branch guard is an evaluation condition, not an assumption that the whole clause is true. Decomposing a conjunction establishes its left component before proceeding to the next component. This is the ordinary compositional WF rule, not circular proof of P_i. Whole-module verification must succeed, including these specification-WF procedures; a body-only or filtered run cannot certify the contract.
+
+**Replay.** LowerDeclaredProposition uses TrStmt_CheckWellformed with a fresh translator and an Assume-mode builder; it does not use CheckWellformedAndAssume, so it does not assume the proposition being checked. Domain assertions become assumptions of the independently certified facts after the same substitutions for actuals and type arguments. Fresh function-argument assignments are definitional equalities. Existing can-call support is justified by the certified function-call domain conditions and the called function's verified contract. Havoced binders receive the ordinary type restrictions. Pre-call actuals are already evaluated/type-checked; post-state values use the original frame and heap context. Consequently replay is an instantiation of the independent WF certificate under C_i, not a fresh unchecked hypothesis.
+
+**Reads.** OmitReadsAssertions suppresses only WFOptions.AssertSink, the dedicated body reads-frame membership/subset assertion sink. It retains traversal, expression construction and can-call support, but does not assume that a contract expression belongs to the implementation body's reads frame. CheckFrameSubset's remaining makeAssume callback supplies only can-call support for the callee's declared reads expressions, whose WF is certified under its established preconditions; its enclosing-frame subset assertion is omitted. Nested lambdas establish their own declared frame and use their own WF policy. Delayed specification reads checks may use all established requirements; they are not replayed as facts before a caller clause.
+
+**Guards and normalization.** Normalization inspects only newly generated preparation. It accepts assumptions and unique writes to recorded fresh argument temporaries, rejects writes to source state, unsupported branches, calls, labels and scope commands, and rejects writes to any variable read by a guard. Conditional assumptions become G implies A; their guards are retained, not asserted. Moving a pure fresh assignment outside a branch changes only its private definition; all facts using that definition retain the original guard. Empty branches contribute only G implies G. Unsupported fragments retain their original command order and outer effects. Leading support moves only when no generated write can affect it.
+
+**Actual checking and publication.** The prepared translator is passed to the common assertion splitter, preserving the same trigger expressions, fuel layers and one-shot existential adjustment that an immediate assertion uses. Every checked piece is still mandatory; assumption-mode replay does not turn P_i into an assumption. A split clause publishes its established source summary only after its checked pieces. An unsplit ordinary assert already publishes the checked fact. The implementation forces the actual contract check where required by the original obligation. Call checks and preceding checked clauses share the pre-call proof path; pure preparation is confined to a terminating PathAside branch. The actual call then uses the checked-call interface with the original requirement publication and ordinary heap/output havoc. Pre-call facts are not transported across a modifying call as post-call facts.
+
+**Visibility and inheritance.** Exit checks occur at the actual exit while body reveals remain active. Inherited preparation and checks retain re-verification guards. Free/filtered/inherited calls retain their original interfaces. Statement-expression reveals and visibility changes are rejected by the pure-scoping test and retain their established outer effects. Scope, current/old heap, receiver, type instantiation and assertion fuel settings come from the original translator; the global assertion state is restored afterward.
+
+The argument is relative to Dafny's existing verified-contract and background-theory semantics and requires the complete verification scope. Negative controls and structural comparisons check particular implementation boundaries; they corroborate this argument but do not replace it. No background axiom or global fuel/trigger policy is added by this implementation.
+
+## Merge recommendation
+
+Keep PR 168 in draft until the complete comparisons and per-declaration analysis are finished. Passing the structural tests alone does not establish broad compatibility or performance acceptance. Any unresolved verdict or cost regression, including `RemoveFactor`, must remain explicit in the final recommendation. PR 169 has not been ported.
