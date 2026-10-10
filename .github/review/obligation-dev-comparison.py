@@ -38,8 +38,10 @@ else:
      for row in (folder/'verdicts.tsv').read_text().splitlines():
       source=row.split('\t')[0];path=folder/'resources'/source/'results.json'
       if not path.exists():missing.append(source);continue
+      try:content=json.loads(path.read_text())
+      except json.JSONDecodeError:
+       missing.append({'source':source,'reason':'empty or invalid verifier JSON','bytes':path.stat().st_size});continue
       proof_jsons+=1
-      content=json.loads(path.read_text())
       for declaration in content.get('verificationResults',[]):
        for vc in declaration['vcResults']:
         key=f"{source}|{declaration['name']}|{vc['vcNum']}|{vc.get('randomSeed','0')}"

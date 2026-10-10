@@ -111,7 +111,7 @@ The existing gate inputs, source hints, ceilings and verdict tables stay fixed.
 
 ## Guarded private argument bindings
 
-A subsequent candidate normalizes only the freshly generated certified-WF
+The implementation normalizes only the freshly generated certified-WF
 fragment. Pure deterministic branches can become guarded assumptions. The only
 assignments moved before those assumptions bind freshly allocated function-WF
 argument temporaries: they are private to this traversal, assigned exactly once,
@@ -135,27 +135,10 @@ Consequently the same certified support holds at the same check point.
 Moving a repeated assignment or a variable that a guard reads would invalidate
 that argument, so those fragments are excluded.
 
-The generated-Boogie Power experiment with private bindings moved and original
-checks unchanged succeeds at three seeds in both axiom settings; false checks
-remain invalid. Moving only assumptions while preserving conditional bindings
-does not repair it. These are diagnostics, not native acceptance of the new
-compiler candidate. Fresh compilation and complete native gates are required.
-
-
-A focused replay of the current native Power body reproduces its failure at all
-three seeds under both axiom settings. Replacing its one empty certified branch
-by `G ==> G` verifies every selected seed, with both actual quantified exit checks
-byte unchanged. False exit controls still fail. The tautology is true in every
-Boogie state because expressions are total and the antecedent and consequent
-are the identical expression; it adds no assumed domain fact or proposition.
-This identifies the empty control-flow split in the replay, but fresh native
-compiler evidence is still required. No whole-suite run is an iteration step
-while the known regressions remain unresolved.
-
 ## Leading support order
 
 The [native support-order diagnosis](https://github.com/erniecohen/dafny/blob/1256f92b/docs/dev/obligation-support-order-diagnosis.md)
-records a general local correction under validation. Create the existing support
+records the supported-line diagnosis for this local correction. Create the existing support
 expression at its original point; move its command after normalized certified
 preparation only when it is independent of every private assignment and havoc
 target. The same expression/command and every preparation fact remain before the
@@ -166,7 +149,7 @@ new fact, proof, fuel policy or body-term collection.
 
 ## Caller proof scopes and original call publication
 
-The current candidate retains each ordinary method call's complete preparation,
+The implementation retains each ordinary method call's complete preparation,
 sole checked pieces and ordinary split summaries in one existing `PathAsideBlock`.
 The branch ends after all required checks. Earlier requirements remain available
 while proving later requirements; every check keeps its own complete preparation,
@@ -208,20 +191,9 @@ scope. This argument still requires the candidate's own structural and native
 validation; preceding scratch results are not product acceptance.
 
 
-The current direct native Boogie gate completes all eleven registered contract
-fixtures against the candidate-matched pinned Boogie packages and Z3 5.1.0.
-All expected summaries pass at the unchanged limits: normal publication is
-available, a false local proof branch remains rejected even when the following
-call publishes a false contract, the original inherited/free interface does not
-publish ordinary requirements, and a modifying call invalidates the relevant
-pre-call fact. The three new negative controls identify their failing assertions.
-This establishes the required Boogie mechanism; native Dafny regression acceptance
-is separate and remains pending.
-
-
 ## Fresh quantified-local scope proposal: not adopted
 
-The [current focused library diagnosis](https://github.com/erniecohen/dafny/blob/1256f92b/docs/dev/obligation-current-focused-library.md#quantified-preparation-remains-in-the-outer-continuation)
+The [supported-line focused library diagnosis](https://github.com/erniecohen/dafny/blob/1256f92b/docs/dev/obligation-current-focused-library.md#quantified-preparation-remains-in-the-outer-continuation)
 identifies a scope-certificate boundary for quantified WF havocs. The scratch
 proposal preserves every preparation command at the actual caller check and
 extends only eligibility for the existing terminating caller-proof branch.
@@ -239,23 +211,12 @@ strict original-preparation/actual-check metadata controls and six genuine
 Invalid controls. It partly improves Remainder (VVR without added axioms, VRR
 with them), leaving three failures. The follow-up separately tests guarded
 normalization of fresh singly written binders. Neither experiment has been
-adopted; see the current focused library record for its exact compiler boundary.
+adopted; see the supported-line focused library record for its exact compiler boundary.
 
 
-The guarded-normalization follow-up also completes eighteen native observations
-on compiler `4844204ef`, with exact original raw-preparation/actual-check/full-
-attribute controls, an independent guard-expression identity audit and six
-genuine Invalid controls. Its vectors are RVR without added axioms and VVV with
-them. It loses the preceding scope-only seed-zero success without added axioms;
-normalization is therefore not adopted as a complete or uniform repair. Every
-guard is constructed explicitly to retain literal guards rather than relying
-on the native conjunction helper's Boolean simplifications. The current product
-certificate remains unchanged; the recorded scope-only proposal also remains
-experimental pending a general implementation and structural acceptance.
+## Standard caller support construction
 
-## Standard caller support construction candidate
-
-Candidate `b3888f933` keeps the original normalized statement-WF preparation and
+The final implementation keeps the original normalized statement-WF preparation and
 scope policy and uses its complete can-call support at the usual assertion point:
 after WF and before the actual caller check. The caller had constructed another
 copy of complete support before running that same preparation. Removing that
@@ -265,15 +226,6 @@ earlier-clause publication, frozen inputs, exact heaps, diagnostics, full
 check metadata, fuel, call ordering and outer reveal effects retain their
 existing paths. This is a caller change, not a change to guarded/inherited
 leading support at exits.
-
-The controlled native comparison retains every unique complete support formula
-and its attributes and compares both original and normalized preparation under
-typed fresh-declaration roles, with actual check formulas and metadata unchanged.
-All selected Remainder cases verify at the original ceiling for seeds 0/1/7 in
-both axiom settings; false and independent WF controls pass. Normal candidate
-compiler validation remains pending. The result does not establish a general
-resource-monotonicity guarantee or resolve the remaining independent review.
-
 
 ### Canonical local exit construction
 

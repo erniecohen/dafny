@@ -1,8 +1,14 @@
 name: Development obligation port probe
 on:
   workflow_dispatch:
+    inputs:
+      scope:
+        type: choice
+        options: [full, boundary]
+        default: full
 permissions:
   contents: read
+  actions: read
 jobs:
   port:
     runs-on: ubuntu-24.04
@@ -16,7 +22,34 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: actions/download-artifact@v4
+        if: inputs.scope == 'boundary'
+        with:
+          name: dev-build-baseline
+          run-id: 38049710147
+          github-token: ${{ github.token }}
+          path: out/baseline-download
+      - uses: actions/download-artifact@v4
+        if: inputs.scope == 'boundary'
+        with:
+          name: dev-build-candidate
+          run-id: 38049710147
+          github-token: ${{ github.token }}
+          path: out/candidate-download
+      - name: Capture original native and Boogie boundary
+        if: inputs.scope == 'boundary'
+        run: |
+          mkdir -p out/baseline out/candidate
+          tar -C out/baseline -xzf out/baseline-download/dafny.tar.gz
+          tar -C out/candidate -xzf out/candidate-download/dafny.tar.gz
+          curl -fsSLo z3-boundary.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3-boundary.zip' | sha256sum -c -
+          unzip -q z3-boundary.zip
+          chmod +x z3-5.1.0-x64-glibc-2.39/bin/z3
+          dotnet tool install boogie --version 3.5.5 --tool-path out/native-boogie
+          Z3="$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" python3 .github/review/obligation-dev-boundary.py
       - name: Capture build and structural results
+        if: inputs.scope != 'boundary'
         run: |
           python3 .github/review/obligation-dev-probe.py
       - uses: actions/upload-artifact@v4

@@ -60,3 +60,42 @@ translator selection. Enabled replay uses separate source contexts, not an
 assumption that identifies the two heaps. The positive and negative replay
 fixtures inspect individual declaration outcomes, so an independently invalid
 assertion cannot conceal acceptance of a false caller precondition.
+
+## Native development comparison (diagnostic)
+
+At compiler source `6ffb00e14f7409c1ac9f4d2363959689096d2cc3`, the
+[paired native run](https://github.com/erniecohen/dafny/actions/runs/38049710147)
+uses Dafny 4.11.1, .NET 8, Boogie 3.5.5 and checksum-pinned Z3 5.1.0.
+The baseline compiler is built independently from the dev base named above.
+No source hints, original tests, ceilings or expected-verdict tables change.
+
+All 1153 uniform suite programs completed in every mode. Default-off has zero
+verdict differences and exactly identical resource observations across all
+8100 recorded VC batches (1,406,010,712 RU). Of the 1153 inputs, 1115 emit
+nonempty parseable proof JSON; 38 have no proof JSON, including one parser-error
+input with an empty file. Their actual diagnostic verdicts remain in the rows.
+
+Enabled mode has 58 row differences: 48 change only diagnostic source locations,
+and ten change summary counts. Of the latter, four split combined constraints
+into separate invalid conjuncts (ForLoops, ResultInTypeNewtype,
+ResultInTypeSubsetType and git-issue-356-errors2); their source remains rejected.
+`Absy.Foo` in git-issue-2703 has an invalid division-by-zero contract WF check in
+both modes. Its separate correctness proof becomes valid under the independently
+required WF domain facts; the complete source remains rejected. The only Invalid-to-Valid VC remains inside that independently rejected source.
+
+The remaining five summary changes are resource transitions: ExtensibleArray
+and Lucas-up lose completion; TwoDuplicates and Primes gain completion;
+SnapshotableTrees has one fewer exhausted batch. Per-batch results also expose
+exhaustion moving between two methods in ExtensibleArrayAuto, two SchorrWaite
+batches and two SmallestMissingNumber methods. Six formerly valid batches exhaust
+and five exhausted batches become valid. The original files are retained for
+review and proof-maintenance assessment; aggregate RU alone does not justify
+these changes. Enabled total is 1,401,305,594 RU across 8100 batches.
+
+The seven standard-library runs contain 2432 declaration groups. Baseline and
+default-off both report 2424 Correct, three Errors and five OutOfResource, with
+zero verdict differences. Their RU totals are 1,348,166,370 and 1,348,165,801.
+Seventy-one declaration totals differ by at most 146 RU; batch counts match.
+These runs retain the Makefile declaration order, whose small resource-count
+variation across runs is documented by the existing standard-library runner.
+Enabled-library results and the strict original issue 100 gate are pending.

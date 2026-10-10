@@ -28,7 +28,8 @@ class RecordedSubprocess:
                 'refresh':next((x for x in command if x.startswith('--type-system-refresh')), ''),
                 'isolate':'--isolate-assertions' in command})
         return result
-scope = {'__name__':'__diagnostic__', '__file__':str(source), 'observe':observe}
+scope = {'__name__':'__diagnostic__', '__file__':str(source), 'observe':observe,
+    'print':lambda *items, **kwargs: print('Diagnostic checkpoint:', *(str(x).removeprefix('PASS ') for x in items), **kwargs)}
 tree = ast.parse(source.read_text())
 # Use the recording facade without altering the imported module globally.
 tree.body = [node for node in tree.body if not (isinstance(node,ast.Import) and any(a.name=='subprocess' for a in node.names))]
