@@ -46,7 +46,11 @@ public partial class BoogieGenerator {
       foreach (AttributedExpression ensures in ConjunctsOf(f.Ens)) {
         var functionHeight = generator.currentModule.CallGraph.GetSCCRepresentativePredecessorCount(f);
         var splits = new List<SplitExprInfo>();
-        bool splitHappened /*we actually don't care*/ = generator.TrSplitExpr(context, ensures.E, splits, true, functionHeight, true, etran);
+        if (generator.options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+          splits.AddRange(generator.LowerProposition(context, ensures.E, etran, heightLimit: functionHeight).Pieces);
+        } else {
+          generator.TrSplitExpr(context, ensures.E, splits, true, functionHeight, true, etran);
+        }
         var (errorMessage, successMessage) = generator.CustomErrorMessage(ensures.Attributes);
         var canCalls = etran.CanCallAssumption(ensures.E, new CanCallOptions(true, f));
         generator.AddEnsures(ens, generator.FreeEnsures(ensures.E.Origin, canCalls, null, true));
@@ -106,10 +110,10 @@ public partial class BoogieGenerator {
           generator.CheckWellformed(e, wfo, locals, builder,
             etran.WithReadsFrame(etran.readsFrame, null)); // No frame scope for default values
           builder.Add(new AssumeCmd(e.Origin, etran.CanCallAssumption(e)));
-          generator.CheckSubrange(e.Origin, etran.TrExpr(e), e.Type, formal.Type, e, builder);
+          generator.CheckSubrange(e.Origin, etran.TrExpr(e), e.Type, formal.Type, e, builder, etran: etran);
 
           if (formal.IsOld) {
-            Expr wh = generator.GetWhereClause(e.Origin, etran.TrExpr(e), e.Type, etran.Old, ISALLOC, true);
+            Expr wh = generator.AllocationObligation(e.Origin, etran.TrExpr(e), e.Type, etran.Old);
             if (wh != null) {
               var desc = new IsAllocated("default value", "in the two-state function's previous state", e);
               builder.Add(generator.Assert(generator.GetToken(e), wh, desc, builder.Context));

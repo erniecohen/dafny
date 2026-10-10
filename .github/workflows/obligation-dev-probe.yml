@@ -1,0 +1,27 @@
+name: Development obligation port probe
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  port:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Capture build and structural results
+        run: |
+          python3 .github/review/obligation-dev-probe.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: obligation-dev-probe
+          path: out/obligation-dev-probe
+          retention-days: 14

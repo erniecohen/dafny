@@ -344,7 +344,7 @@ public partial class BoogieGenerator {
         lhsType = ((MultiSelectExpr)lhs).Type;
       }
       var translatedRhs = etran.TrExpr(rhs);
-      CheckSubrange(r.Origin, translatedRhs, rhs.Type, lhsType, rhs, definedness);
+      CheckSubrange(r.Origin, translatedRhs, rhs.Type, lhsType, rhs, definedness, etran: etran);
       if (lhs is MemberSelectExpr) {
         var fse = (MemberSelectExpr)lhs;
         Contract.Assert(lhsField != null);
@@ -544,13 +544,18 @@ public partial class BoogieGenerator {
     PathAsideBlock(forallStmt.Origin, ensuresDefinedness, definedness);
 
     if (forallStmt.Body != null) {
+      // Preserve the legacy proof-body scope, including definitions revealed
+      // for the existing forall postcondition checks that follow the body.
       TrStmt(forallStmt.Body, definedness, locals, etran);
 
       // check that postconditions hold
       foreach (var ens in ConjunctsOf(forallStmt.Ens)) {
         definedness.Add(TrAssumeCmd(ens.E.Origin, etran.CanCallAssumption(ens.E)));
 
-        foreach (var split in TrSplitExpr(definedness.Context, ens.E, etran, true, out var splitHappened)) {
+        var pieces = options.Get(CommonOptionBag.ConsistentObligationChecks)
+          ? LowerProposition(definedness.Context, ens.E, etran).Pieces.ToList()
+          : TrSplitExpr(definedness.Context, ens.E, etran, true, out _);
+        foreach (var split in pieces) {
           if (split.IsChecked) {
             definedness.Add(Assert(split.Tok, split.E, new ForallPostcondition(ens.E), definedness.Context));
           }

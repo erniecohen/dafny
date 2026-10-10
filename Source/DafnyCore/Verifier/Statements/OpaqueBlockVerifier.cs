@@ -36,10 +36,9 @@ public static class OpaqueBlockVerifier {
 
     foreach (var ensure in block.Ensures) {
       totalEnsures.Add(ensure);
-      blockBuilder.Add(generator.Assert(
-        ensure.Origin, etran.TrExpr(ensure.E),
-        new OpaqueEnsuresDescription(), builder.Context,
-        etran.TrAttributes(ensure.Attributes, null)));
+      generator.CheckOpaquePostcondition(ensure.Origin, ensure.E,
+        new OpaqueEnsuresDescription(), blockBuilder, etran, locals,
+        etran.TrAttributes(ensure.Attributes, null));
     }
 
     BoogieGenerator.ExpressionTranslator beforeBlockExpressionTranslator;

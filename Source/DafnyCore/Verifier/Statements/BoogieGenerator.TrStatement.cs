@@ -72,6 +72,12 @@ public partial class BoogieGenerator {
             AssumeCanCallForByMethodDecl(method2, builder);
           }
 
+          if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+            if (codeContext is MethodOrConstructor returningMethod) {
+              CheckMethodPostconditions(returningMethod, returnStmt1.Origin, builder, locals, etran);
+            }
+          }
+
           foreach (var _ in Enumerable.Range(0, builder.Context.ScopeDepth)) {
             builder.Add(new ChangeScope(returnStmt1.Origin, ChangeScope.Modes.Pop));
           }
@@ -135,8 +141,17 @@ public partial class BoogieGenerator {
             );
           var fieldSub = new SpecialFieldSubstituter(fieldSubstMap);
 
+          // Iterator reads clauses describe locations retained across a yield;
+          // they are not method reads frames. Preserve the body's existing frame
+          // policy together with the yield's exact old heap for local WF.
+          var yieldCheckEtran = options.Get(CommonOptionBag.ConsistentObligationChecks)
+            ? etran.WithVerificationOldHeap(new Bpl.IdentifierExpr(s.Origin, "$_OldIterHeap", Predef.HeapType))
+            : null;
           foreach (var p in iter.YieldEnsures) {
-            var ss = TrSplitExpr(builder.Context, p.E, yeEtran, true, out var splitHappened);
+            var ss = options.Get(CommonOptionBag.ConsistentObligationChecks)
+              ? LowerDeclaredProposition(p.E, builder, locals, yieldCheckEtran,
+                p.E.Origin.IsInherited(currentModule) ? Bpl.Expr.False : null).Pieces.ToList()
+              : TrSplitExpr(builder.Context, p.E, yeEtran, true, out _);
             foreach (var split in ss) {
               if (split.Tok.IsInherited(currentModule)) {
                 // this postcondition was inherited into this module, so just ignore it
@@ -431,7 +446,7 @@ public partial class BoogieGenerator {
           void AddResultCommands(BoogieStmtListBuilder returnBuilder, Expression result) {
             Contract.Assert(pat.Expr.Type != null);
             var bResult = etran.TrExpr(result);
-            CheckSubrange(result.Origin, bResult, rhs.Type, pat.Expr.Type, rhs, returnBuilder);
+            CheckSubrange(result.Origin, bResult, rhs.Type, pat.Expr.Type, rhs, returnBuilder, etran: etran);
             returnBuilder.Add(TrAssumeCmdWithDependenciesAndExtend(etran, rhs.Origin, rhs,
               e => Bpl.Expr.Eq(boogieTupleReference, AdaptBoxing(rhs.Origin, e, rhs.Type, pat.Expr.Type))));
           }
@@ -441,7 +456,7 @@ public partial class BoogieGenerator {
           builder.Add(new CommentCmd("CheckWellformedWithResult: any expression"));
           builder.Add(TrAssumeCmd(rhs.Origin, MkIs(boogieTupleReference, pat.Expr.Type)));
 
-          CheckCasePatternShape(pat, rhs, boogieTupleReference, rhs.Origin, pat.Expr.Type, builder);
+          CheckCasePatternShape(pat, rhs, boogieTupleReference, rhs.Origin, pat.Expr.Type, builder, etran);
           builder.Add(TrAssumeCmdWithDependenciesAndExtend(etran, varDeclPattern.Origin, pat.Expr,
             e => Expr.Eq(e, boogieTupleReference), "variable declaration"));
           break;
@@ -627,11 +642,20 @@ public partial class BoogieGenerator {
             }
           }
           TrStmt_CheckWellformed(CalcStmt.Rhs(stmt.Steps[i]), b, locals, etran, false);
-          var ss = TrSplitExpr(builder.Context, stmt.Steps[i], etran, true, out var splitHappened);
+          var lowering = options.Get(CommonOptionBag.ConsistentObligationChecks)
+            ? LowerProposition(b.Context, stmt.Steps[i], etran) : null;
+          List<SplitExprInfo> ss;
+          bool splitHappened;
+          if (lowering != null) {
+            ss = lowering.Pieces.ToList();
+            splitHappened = lowering.SplitHappened;
+          } else {
+            ss = TrSplitExpr(builder.Context, stmt.Steps[i], etran, true, out splitHappened);
+          }
           // assert step:
           AddComment(b, stmt, "assert line" + i.ToString() + " " + (stmt.StepOps[i] ?? stmt.Op).ToString() + " line" + (i + 1).ToString());
           if (!splitHappened) {
-            b.Add(AssertAndForget(b.Context, stmt.Lines[i + 1].Origin, etran.TrExpr(stmt.Steps[i]), new CalculationStep(stmt.Steps[i], stmt.Hints[i])));
+            b.Add(AssertAndForget(b.Context, stmt.Lines[i + 1].Origin, lowering != null ? ss[0].E : etran.TrExpr(stmt.Steps[i]), new CalculationStep(stmt.Steps[i], stmt.Hints[i])));
           } else {
             foreach (var split in ss) {
               if (split.IsChecked) {
@@ -910,7 +934,9 @@ public partial class BoogieGenerator {
   }
 
   public void TrStmt_CheckWellformed(Expression expr, BoogieStmtListBuilder builder, Variables locals,
-    ExpressionTranslator etran, bool subsumption, bool lValueContext = false, AddResultCommands addResultCommands = null) {
+    ExpressionTranslator etran, bool subsumption, bool lValueContext = false, AddResultCommands addResultCommands = null,
+    bool omitReadsAssertions = false, ISet<string> certifiedArgumentTemporaries = null,
+    ExpressionTranslator callerTerminationTranslator = null) {
     Contract.Requires(expr != null);
     Contract.Requires(builder != null);
     Contract.Requires(locals != null);
@@ -927,7 +953,10 @@ public partial class BoogieGenerator {
       ];
       kv = new Bpl.QKeyValue(expr.Origin, "subsumption", args, null);
     }
-    var options = new WFOptions(kv);
+    var options = new WFOptions(kv) {
+      OmitReadsAssertions = omitReadsAssertions, CertifiedArgumentTemporaries = certifiedArgumentTemporaries,
+      CallerTerminationTranslator = callerTerminationTranslator ?? builder.Context.CallerTerminationTranslator
+    };
     // Only do reads checks if reads clauses on methods are enabled and the reads clause is not *.
     // The latter is important to avoid any extra verification cost for backwards compatibility.
     if (etran.readsFrame != null) {

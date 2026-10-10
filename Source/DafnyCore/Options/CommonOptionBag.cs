@@ -70,6 +70,9 @@ public class CommonOptionBag {
       IsHidden = true
     };
 
+  public static readonly Option<bool> ConsistentObligationChecks = new("--consistent-obligation-checks", () => false,
+    "Prepare and check matching implicit obligations once using the existing local assertion machinery and fuel rules.");
+
   public static readonly Option<bool> ManualLemmaInduction =
     new("--manual-lemma-induction", "Turn off automatic induction for lemmas.");
 
@@ -539,6 +542,8 @@ NoGhost - disable printing of functions, ghost methods, and proof
       }
     }
 
+    DafnyOptions.RegisterLegacyUi(ConsistentObligationChecks, DafnyOptions.ParseBoolean,
+      "Verification options", "consistentObligationChecks");
     DafnyOptions.RegisterLegacyUi(AddCompileSuffix, DafnyOptions.ParseBoolean, "Compilation options", "compileSuffix");
 
     QuantifierSyntax = QuantifierSyntax.FromAmong("3", "4");
@@ -694,6 +699,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(VerificationCoverageReport, OptionScope.Cli);
     OptionRegistry.RegisterOption(NoTimeStampForCoverageReport, OptionScope.Cli);
     OptionRegistry.RegisterOption(DefaultFunctionOpacity, OptionScope.Module);
+    OptionRegistry.RegisterOption(ConsistentObligationChecks, OptionScope.Cli);
     OptionRegistry.RegisterOption(OptimizeErasableDatatypeWrapper, OptionScope.Cli); // TODO needs translation record registration
     OptionRegistry.RegisterOption(AddCompileSuffix, OptionScope.Cli);  // TODO needs translation record registration
     OptionRegistry.RegisterOption(SystemModule, OptionScope.Cli);
