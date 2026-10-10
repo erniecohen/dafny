@@ -15,6 +15,7 @@ twostate lemma ReplayHelper(c: ReplayCell)
 
 twostate lemma ReplayCallee(c: ReplayCell)
   requires old(c.n) >= 0
+  requires old(c.n) == 2
   requires (ReplayHelper(c); old(c.n) == 2)
   decreases old(c.n) + 1
 {
