@@ -29,9 +29,21 @@ internal static class ObligationFingerprint {
 
   // Resolved occurrences are bound by declaration identity; unresolved ones use
   // the innermost lexical name. Depth counts declarations, never distinct names.
+  private abstract record IdentifierIdentity;
+  private sealed record BoundIdentifier(int Index) : IdentifierIdentity;
+  private sealed record FreeIdentifier(string Name) : IdentifierIdentity;
+  private sealed record PreparationIdentifier(string Role) : IdentifierIdentity;
+
+  private static string IdentifierTerm(IdentifierIdentity identity) => identity switch {
+    BoundIdentifier bound => $"bound[{bound.Index}]",
+    FreeIdentifier free => $"free[{System.Text.Json.JsonSerializer.Serialize(free.Name)}]",
+    PreparationIdentifier preparation => $"preparation[{System.Text.Json.JsonSerializer.Serialize(preparation.Role)}]",
+    _ => throw new InvalidOperationException("Unknown fingerprint identifier category")
+  };
+
   private sealed class BindingScope {
-    private readonly Dictionary<Bpl.Variable, string> identities;
-    private readonly Dictionary<string, string> names;
+    private readonly Dictionary<Bpl.Variable, int> identities;
+    private readonly Dictionary<string, int> names;
     private readonly IReadOnlyDictionary<string, string> preparationArguments;
     public int Depth { get; private set; }
     public BindingScope(IReadOnlyDictionary<string, string>? arguments = null) {
@@ -43,14 +55,22 @@ internal static class ObligationFingerprint {
       Depth = parent.Depth;
       preparationArguments = parent.preparationArguments;
     }
-    public void Bind(Bpl.Variable variable, string canonical) {
-      identities[variable] = canonical; names[variable.Name] = canonical; Depth++;
+    public void Bind(Bpl.Variable variable, int index) {
+      identities[variable] = index; names[variable.Name] = index; Depth++;
     }
-    public string Identifier(Bpl.IdentifierExpr identifier) {
-      var name = identifier.Decl != null
-        ? identities.GetValueOrDefault(identifier.Decl, identifier.Name)
-        : names.GetValueOrDefault(identifier.Name, identifier.Name);
-      return preparationArguments.GetValueOrDefault(name, name);
+    public IdentifierIdentity Identifier(Bpl.IdentifierExpr identifier) {
+      if (identifier.Decl != null) {
+        if (identities.TryGetValue(identifier.Decl, out var index)) {
+          return new BoundIdentifier(index);
+        }
+      } else if (names.TryGetValue(identifier.Name, out var index)) {
+        return new BoundIdentifier(index);
+      }
+      // Preparation renaming applies only to free occurrences of recorded
+      // temporaries. It must never capture a lexical or declaration-bound use.
+      return preparationArguments.TryGetValue(identifier.Name, out var role)
+        ? new PreparationIdentifier(role)
+        : new FreeIdentifier(identifier.Name);
     }
   }
 
@@ -59,7 +79,7 @@ internal static class ObligationFingerprint {
     string Child(Bpl.Expr x) => Term(x, bound);
     switch (e) {
       case Bpl.IdentifierExpr id:
-        return $"id:{type}:{bound.Identifier(id)}";
+        return $"id:{type}:{IdentifierTerm(bound.Identifier(id))}";
       case Bpl.LiteralExpr literal:
         return $"literal:{type}:{literal}";
       case Bpl.OldExpr old:
@@ -78,9 +98,9 @@ internal static class ObligationFingerprint {
       case Bpl.QuantifierExpr quantifier: {
         var scoped = new BindingScope(bound);
         var variables = quantifier.Dummies.Select((v,i) => {
-          var name = $"bound{bound.Depth+i}";
-          scoped.Bind(v, name);
-          return $"{name}:{v.TypedIdent.Type}";
+          var index = bound.Depth+i;
+          scoped.Bind(v, index);
+          return $"bound[{index}]:{v.TypedIdent.Type}";
         }).ToArray();
         var patterns = new List<string>();
         for (var t = quantifier.Triggers; t != null; t = t.Next) {
@@ -93,9 +113,9 @@ internal static class ObligationFingerprint {
       case Bpl.LambdaExpr lambda: {
         var scoped = new BindingScope(bound);
         var variables = lambda.Dummies.Select((v,i) => {
-          var name = $"bound{bound.Depth+i}";
-          scoped.Bind(v, name);
-          return $"{name}:{v.TypedIdent.Type}";
+          var index = bound.Depth+i;
+          scoped.Bind(v, index);
+          return $"bound[{index}]:{v.TypedIdent.Type}";
         }).ToArray();
         return $"lambda:{type}:types[{string.Join(",",lambda.TypeParameters)}]" +
           $"[{string.Join(",",variables)}]:attributes[{Attributes(lambda.Attributes,scoped)}]" +
@@ -104,7 +124,7 @@ internal static class ObligationFingerprint {
       case Bpl.LetExpr let: {
         var scoped = new BindingScope(bound);
         var variables = let.Dummies.Select((v,i) => {
-          var name=$"bound{bound.Depth+i}";scoped.Bind(v, name);return $"{name}:{v.TypedIdent.Type}";
+          var index=bound.Depth+i;scoped.Bind(v, index);return $"bound[{index}]:{v.TypedIdent.Type}";
         }).ToArray();
         var bindings=string.Join(",",variables);
         return $"let:{type}[{bindings}]=[{string.Join(",",let.Rhss.Select(Child))}]" +

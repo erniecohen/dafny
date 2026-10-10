@@ -301,6 +301,59 @@ public class ObligationLoweringTests {
   [Theory]
   [InlineData(false)]
   [InlineData(true)]
+  public void FingerprintSeparatesBoundAndFreeIdentifierNamespaces(bool resolved) {
+    var token = Token.NoToken;
+    var variable = new Bpl.BoundVariable(token, new Bpl.TypedIdent(token, "x", Bpl.Type.Int));
+    var free = new Bpl.Constant(token, new Bpl.TypedIdent(token, "bound0", Bpl.Type.Int), false);
+    Bpl.Expr Id(Bpl.Variable declaration) => resolved
+      ? new Bpl.IdentifierExpr(token, declaration)
+      : new Bpl.IdentifierExpr(token, declaration.Name, Bpl.Type.Int);
+    Bpl.Expr Formula(Bpl.Expr left) => new Bpl.ForallExpr(token, new List<Bpl.TypeVariable>(),
+      new List<Bpl.Variable> { variable }, null, null, Bpl.Expr.Eq(left, Id(variable)));
+    // The reviewer example uses an actual free Boogie constant, not source text.
+    Assert.NotEqual(ObligationFingerprint.Expression(Formula(Id(variable))),
+      ObligationFingerprint.Expression(Formula(Id(free))));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public void FingerprintSeparatesPreparationIdentifiersFromBoundAndFreeIdentifiers(bool resolved) {
+    var token = Token.NoToken;
+    var variable = new Bpl.BoundVariable(token, new Bpl.TypedIdent(token, "x", Bpl.Type.Int));
+    var free = new Bpl.Constant(token, new Bpl.TypedIdent(token, "bound0", Bpl.Type.Int), false);
+    var temporary = new Bpl.LocalVariable(token, new Bpl.TypedIdent(token, "temporary", Bpl.Type.Int));
+    Bpl.Expr Id(Bpl.Variable declaration) => resolved
+      ? new Bpl.IdentifierExpr(token, declaration)
+      : new Bpl.IdentifierExpr(token, declaration.Name, Bpl.Type.Int);
+    Bpl.Expr Formula(Bpl.Expr left) => new Bpl.ForallExpr(token, new List<Bpl.TypeVariable>(),
+      new List<Bpl.Variable> { variable }, null, null, Bpl.Expr.Eq(left, Id(variable)));
+    var arguments = new Dictionary<string, string> { [temporary.Name] = "bound0" };
+    var fingerprints = new Bpl.Variable[] { variable, free, temporary }.Select(declaration =>
+      ObligationFingerprint.PreparationExpression(Formula(Id(declaration)), arguments)).ToArray();
+    Assert.Equal(3, fingerprints.Distinct().Count());
+    var other = new Bpl.LocalVariable(token, new Bpl.TypedIdent(token, "renamed", Bpl.Type.Int));
+    Assert.Equal(fingerprints[2], ObligationFingerprint.PreparationExpression(Formula(Id(other)),
+      new Dictionary<string, string> { [other.Name] = "bound0" }));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public void PreparationRenamingDoesNotCaptureBoundIdentifiers(bool resolved) {
+    var token = Token.NoToken;
+    var variable = new Bpl.BoundVariable(token, new Bpl.TypedIdent(token, "bound0", Bpl.Type.Int));
+    Bpl.Expr Id() => resolved ? new Bpl.IdentifierExpr(token, variable)
+      : new Bpl.IdentifierExpr(token, variable.Name, Bpl.Type.Int);
+    var formula = new Bpl.ForallExpr(token, new List<Bpl.TypeVariable>(),
+      new List<Bpl.Variable> { variable }, null, null, Bpl.Expr.Eq(Id(), Id()));
+    Assert.Equal(ObligationFingerprint.Expression(formula), ObligationFingerprint.PreparationExpression(
+      formula, new Dictionary<string, string> { [variable.Name] = "argument0" }));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
   public void FingerprintDistinguishesLexicalShadowing(bool resolved) {
     var token = Token.NoToken;
     Bpl.Expr Formula(bool reflexive, string outerName, string middleName, string innerName) {
