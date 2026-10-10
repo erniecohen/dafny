@@ -15,7 +15,7 @@ Pinned baseline: `ab210b78b50adb5a192542897f0a00cdb40f3c35`. Each complete compa
 | Scope | Configurations | Coverage per mode | Status |
 |---|---|---|---|
 | Complete verifier-suite verdict gate | Both resolver defaults, both axiom settings | 1,161 planned programs | Refreshed resolver / additional axioms ON complete; three other axes pending |
-| Complete standard-library gate | Committed resolver settings, both axiom settings | Seven parts, 2,190 declarations | Pending |
+| Complete standard-library gate | Committed resolver settings, both axiom settings | Seven parts, 2,190 declarations | Additional axioms ON complete; OFF pending |
 | Registered regression gate | Both resolvers and axiom settings | 322 invocations, including 233 negative controls | Passed |
 | Paired assertion-invariance gate | Both resolvers and axiom settings | 688 observations, including 248 negative controls | Passed |
 | New issue 100, unchanged original | Baseline/OFF/ON, both resolvers and axiom settings | 48 complete files, 84 targeted correctness observations | Complete; refreshed-resolver WF failure is shared with baseline |
@@ -32,6 +32,14 @@ Ten commonly passing declarations exceed the declared significant-cost threshold
 `git-issue-2703` changes one body correctness result from Errors to Correct. Its contract is `ensures 2 / 0 == 1`; the independent division-by-zero specification-WF check remains Errors, as do the two other invalid function-definition WF checks in that file. Replaying the impossible domain condition makes the dependent body check vacuous. The complete module remains rejected in every mode; this body-only result is not verification of the invalid contract. The report's soundness argument explicitly requires the independent WF checks to succeed.
 
 This axis also has 36 baseline-versus-committed-expected program differences. They include resolver-dependent diagnostics and existing resource outcomes; candidate OFF reproduces the actual pinned baseline exactly. They are reported separately from candidate changes, and the expected table has not been edited. Fifty-nine baseline-versus-ON program output rows differ, including moved diagnostic locations; these are not all logical verdict regressions. The declaration-level transition and cost lists above are the relevant acceptance evidence.
+
+### First completed standard-library axis
+
+The additional-axioms-ON library comparison completes all seven parts and 2,190 declarations in baseline, OFF, ON and an unchanged baseline repeat. There are 7,724 VCs in baseline/OFF/repeat and 7,756 in ON; no safety timeout or crash occurs. OFF matches all baseline verdicts, but 1,876 VC-resource observations and 249 declaration-resource observations differ. Operational Boogie is identical between baseline, OFF and baseline repeat for every part. The repeat itself has 1,841 changed VC-resource observations and 218 changed declaration observations; `Std.JSON.ZeroCopy.Deserializer.Objects.BracketedToObject` changes from resource exhaustion to Correct. Of the 249 OFF declaration differences, 65 lie within the two observed baseline measurements and 184 lie outside that observed range and remain unresolved. Two executions do not establish the full variability range. The strict resource-equality gate remains rejected, and the unstable baseline verdict is explicitly retained.
+
+Enabled mode adds resource failures in `Std.Arithmetic.DivMod.LemmaModNegNeg` and `Std.Base64.EncodeBVIsBase64`. Five commonly passing declarations cross the significant-cost threshold: `LemmaMulModNoopLeft`, `LemmaMulEqualityConverse`, `LemmaDivIsDivRecursive`, `LemmaMapDistributesOverConcat` and `LemmaRemainder`. Four baseline resource failures become Correct: `LemmaFundamentalDivModConverse`, `EncodeDecodeValid`, `BatchReader.Read` and `PartitionCodeUnitSequenceChecked`. These gains do not waive the new failures or performance regressions.
+
+This is a complete comparison, not a green standard-library verification claim: baseline/OFF have 21 resource-exhausted and two Error declarations; ON has 19 resource-exhausted and the same two Error declarations. The unchanged baseline repeat has 20 resource-exhausted and the same two Error declarations. The existing Errors are `LittleEndianNat.ToNatLeft` specification WF and `Mul.LemmaMulOrderingAuto` correctness. The two Invalid VCs remain Invalid in all modes. No invalid complete module is promoted to accepted verification. The baseline also differs in two output rows from the committed expected table, which is retained unchanged.
 
 ## Unresolved cases and new reproducer
 
