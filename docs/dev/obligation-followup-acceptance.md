@@ -14,7 +14,7 @@ Pinned baseline: `ab210b78b50adb5a192542897f0a00cdb40f3c35`. Each complete compa
 
 | Scope | Configurations | Coverage per mode | Status |
 |---|---|---|---|
-| Complete verifier-suite verdict gate | Both resolver defaults, both axiom settings | 1,161 planned programs | Two axes complete; legacy / axioms ON and refreshed / axioms OFF pending |
+| Complete verifier-suite verdict gate | Both resolver defaults, both axiom settings | 1,161 planned programs | Three axes complete; refreshed / axioms OFF pending |
 | Complete standard-library gate | Committed resolver settings, both axiom settings | Seven parts, 2,190 declarations | Additional axioms ON complete; OFF pending |
 | Registered regression gate | Both resolvers and axiom settings | 322 invocations, including 233 negative controls | Passed |
 | Paired assertion-invariance gate | Both resolvers and axiom settings | 688 observations, including 248 negative controls | Passed |
@@ -36,6 +36,10 @@ This axis also has 36 baseline-versus-committed-expected program differences. Th
 ### Legacy resolver, additional axioms OFF
 
 All three modes complete 1,161 programs, 6,909 declarations and 7,605 VCs, with no safety timeout or crash. OFF matches every baseline verdict and VC resource count exactly; this baseline also matches the committed expected program table. ON adds four resource failures: `PriorityQueue.SiftDown`, `M2.SchorrWaite`, `RemoveFactor` and `M3.UnionFind.JoinMaintainsReaches1`. Nine commonly passing declarations cross the significant-cost threshold: iterator `MoveNext`, `Composite`, `dec`, `AltPrimeDefinition`, `inc`, `sorted_merge`, `FibSumManual`, `Fill_All` and `Fill_True`. Commonly passing declarations have a slightly lower aggregate cost, which does not waive these failures or increases. The same invalid division-by-zero contract body in `git-issue-2703` becomes vacuously Correct while all its independent WF failures remain; no complete module is thereby accepted. The full comparison gate rejects enabled-mode acceptance.
+
+### Legacy resolver, additional axioms ON
+
+All three modes complete 1,161 programs, 6,909 declarations and 7,605 VCs without safety timeout or crash. OFF matches all baseline verdicts and VC resources exactly, and the baseline matches the committed expected table. ON adds five resource failures: `ExtensibleArray.Append`, `PriorityQueue.SiftDown`, `M2.SchorrWaite`, `RemoveFactor` and `M3.UnionFind.JoinMaintainsReaches1`. Ten commonly passing declarations cross the significant-cost threshold: iterator `MoveNext`, `Composite`, `dec`, `AltPrimeDefinition`, `inc`, `sorted_merge`, `FibSumManual`, `Fill_All`, `Fill_True` and `FindWinner`. Commonly passing aggregate resources increase slightly. The same independently WF-invalid division-by-zero example has the body-only transition already analyzed above. The full comparison rejects enabled-mode acceptance; prior passing focused results for `Append` do not replace this full-file result.
 
 ### First completed standard-library axis
 
