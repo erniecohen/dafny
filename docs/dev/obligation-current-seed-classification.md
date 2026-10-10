@@ -1,6 +1,19 @@
 # Current affected-declaration seed classification
 
-**Latest bounded classification:** the five previously untested seeds 2–6
+**Current general local-exit candidate at selected seeds:** product `1e6fa5126`
+completes the unchanged 68-observation known-suite/control gate on normal build
+`5afd17884` and Z3 5.1.0. At seeds 0/1/7, both axiom settings give Power,
+AltPrimeDefinition, Append and FormArmy VVV; Composite VVR; RemoveFactor RRR;
+and the iterator VVR. This general local-clause change improves Composite zero
+and one without case-specific tuning. The historical both-partial rule remains
+applicable; there is no new full 0-7 result on this compiler. The separate current
+known-library gate completes 96 observations: all ten cases, including Remainder
+and multiset, verify at all selected seeds; thirty negatives remain Invalid and
+reported independent WF is Correct. The [current normal record](obligation-canonical-exit-native.md)
+distinguishes these fresh gates from the preserved older classification below.
+
+
+**Preceding full bounded classification:** the five previously untested seeds 2–6
 complete the predetermined natural range 0–7 for Composite and RemoveFactor.
 The fresh gate has fifty-six observations on the accepted structural compiler
 `df4c7066f`/build `63fb750a9`, baseline `ab210b78b` and Z3 5.1.0: forty new

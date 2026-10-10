@@ -3,8 +3,7 @@
 The general local-exit candidate is `a2a98968c`, with actual-preparation audit
 revision/product pin `1e6fa5126`. It extends the independently validated
 [caller construction correction](obligation-canonical-caller-native.md).
-It has normal compiler and structural acceptance below; focused native gates
-are submitted but have no completed result yet. PR #168 remains draft.
+It has normal compiler/structural acceptance and completed registered, known-library and known-suite records below. The complete paired fixture gate also passes. Remaining supported-line acceptance is open; PR #168 remains draft.
 
 ## General local policy
 
@@ -54,18 +53,82 @@ New structural controls check support after quantified WF witnesses, inherited
 leading support and guards, statement-expression reveals, and independence of
 actual exit preparation from unrelated body terms.
 
-Three separate complete focused gates are frozen against this normal compiler:
-322 registered observations, 96 unchanged known-library observations, and 68
-unchanged known-suite/control observations. The registered helper includes new
-paired quantified-exit and genuine negative controls; direct false-call controls
-are covered there. Each gate preserves original inputs, project flags, solver,
-ceilings, core limits and seed policy, and checks the exact compiler source and
-component hashes in addition to its version. These gates are pending; there is
-no current native-product result to report yet. No whole-suite or whole-library
-iteration was launched for this exit revision.
+The complete registered native helper passes **322 observations**: 89 positive
+observations with Valid VCs and 233 negative observations with genuine Invalid
+VCs. Its output equals the committed expectation exactly; there are no resource,
+timeout or inconclusive outcomes. Both resolver/axiom settings are covered where
+the helper specifies them. New paired quantified-exit and negative controls,
+original issue 100, subset/call preparation, scoped reveals, independent WF and
+project-option precedence controls pass.
+
+The unchanged known-library gate completes **96 observations**: all 66 positive
+observations verify, all thirty negative controls contain genuine Invalid VCs,
+and all reported independent specification-WF checks are Correct. All ten known
+cases, including original Remainder and multiset ordinal decrease, are VVV at
+seeds 0/1/7 in both axiom settings at original full-project settings and ceilings.
+Six fresh unchanged-baseline Remainder observations also verify. The normal
+multiset outcome/resource vectors match the selected scratch vectors at all
+three seeds. Both normal seed-zero WF and correctness solver-command streams
+match their selected scratch streams exactly through the final check-sat.
+
+The unchanged known-suite/control gate completes **68 observations**, with four
+genuine Invalid negatives and no reported independent specification-WF failure.
+All original issue/subset/guarded-argument controls pass. The six selected
+**default-off Power outcome/resource vectors exactly match baseline**; this
+sample does not establish complete default-off compatibility. Both axiom
+settings have these enabled vectors at seeds 0/1/7:
+
+| Case | Normal local-exit candidate |
+| --- | --- |
+| Power subtraction | VVV |
+| AltPrimeDefinition | VVV |
+| Composite | VVR |
+| ExtensibleArray.Append | VVV |
+| FormArmy | VVV |
+| RemoveFactor | RRR |
+| Iterator.MoveNext | VVR |
+
+V is Correct and R OutOfResource. Composite improves at zero and one as a result
+of this general local-exit policy; no case-specific product tuning is introduced.
+The historical both-partial classification continues to govern Composite and
+the iterator. This compiler has no fresh full 0-7 classification. RemoveFactor
+still exhausts the original combined ceiling at all selected seeds. Thus the
+gate supplies a completed diagnosis, not all-positive suite acceptance.
+
+The complete **688-observation paired assertion-invariance fixture gate passes**
+on the same normal compiler: 440 positive observations have only Valid VCs and
+all 248 negative observations contain genuine Invalid VCs. Every recorded VC
+is Valid or Invalid, with no resource, timeout or inconclusive outcome. All 172
+cases run under both resolver modes and both axiom settings at their original
+options and ceilings. The earlier result on a different semantic revision is
+retained separately; it is not substituted for this fresh gate. All current gates preserve original
+inputs, project flags, solver, ceilings, core limits and seed policy and check
+exact compiler source/component hashes as well as version. No whole-suite or
+whole-library iteration was launched for this exit revision.
+
+## Solver-input shape diagnosis
+
+An offline exact comparison of all six multiset construction-only query pairs
+finds identical complete command streams through check-sat except the sole
+combined VC assertion. Those VC formulas normalize identically using only
+lexical let/binder handling and Boolean implication, negation, associativity,
+commutativity, idempotency and true/false identities. Trigger and no-pattern
+terms retain their structure modulo lexical binder identities; other annotations,
+function/fuel/layer symbols and background assertions remain exact. The audit
+includes negative binder-shadowing, capture, trigger-order and implication
+controls. This identifies Boolean query shape as the varying input in these
+pairs, not a changed background axiom or missing fuel. It is a bounded analysis,
+not a claim that all logically equivalent inputs have equal solver cost.
+
+Both seed-zero RemoveFactor construction-only pairs have the same bounded
+Boolean-equivalence property. Both current normal seed-zero full solver streams
+are exactly equal to their preceding rejected scratch-selected streams and
+still exhaust resources. This confirms faithful product reproduction of that
+negative result. The comparison is against the caller-only candidate, not a
+claim of exact equivalence with the legacy translation.
 
 RemoveFactor, section 13's both-partial classification, complete default-off
-cost-policy acceptance, final functional gates and independent soundness review
+cost-policy acceptance, required final repository gates and independent soundness review
 remain open. The [request](obligation-review-change-request.md) and
 [checklist](obligation-revision-checklist.md) govern completion. PR #169 remains
 unchanged and its port requires explicit owner approval.
