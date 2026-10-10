@@ -6,12 +6,25 @@ completes the unchanged 68-observation known-suite/control gate on normal build
 AltPrimeDefinition, Append and FormArmy VVV; Composite VVR; RemoveFactor RRR;
 and the iterator VVR. This general local-clause change improves Composite zero
 and one without case-specific tuning. The historical both-partial rule remains
-applicable; there is no new full 0-7 result on this compiler. The separate current
+applicable to Composite and the iterator. The separate current
 known-library gate completes 96 observations: all ten cases, including Remainder
 and multiset, verify at all selected seeds; thirty negatives remain Invalid and
 reported independent WF is Correct. The [current normal record](obligation-canonical-exit-native.md)
 distinguishes these fresh gates from the preserved older classification below.
 
+
+**Current RemoveFactor fixed-range completion:** a separate ten-observation
+native gate on the same normal compiler finishes only seeds 2-6 in both axiom
+settings. Its source, solver, project options, warning policy and combined
+ceiling are unchanged. Combining those ten fresh observations with the six
+explicitly reused current 0/1/7 observations gives **RRRRRRRR** in both settings.
+The preserved legacy vector remains **VRRRRRRR**. RemoveFactor therefore still
+does not satisfy section 13's both-partial rule and remains unresolved. This
+completed diagnostic gate does not establish all-positive proof acceptance, and
+the fixed range is not extended to search for a preferred result. The current
+[normal record](obligation-canonical-exit-native.md#bounded-legacycurrent-trigger-and-fuel-inventory)
+also records an offline comparison of retained induction patterns, ground terms
+and fuel shapes; it does not establish the cause of the resource exhaustion.
 
 **Preceding full bounded classification:** the five previously untested seeds 2–6
 complete the predetermined natural range 0–7 for Composite and RemoveFactor.

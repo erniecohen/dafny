@@ -91,8 +91,13 @@ settings have these enabled vectors at seeds 0/1/7:
 V is Correct and R OutOfResource. Composite improves at zero and one as a result
 of this general local-exit policy; no case-specific product tuning is introduced.
 The historical both-partial classification continues to govern Composite and
-the iterator. This compiler has no fresh full 0-7 classification. RemoveFactor
-still exhausts the original combined ceiling at all selected seeds. Thus the
+the iterator. A separate completed ten-observation gate now finishes only
+RemoveFactor's existing fixed range 0-7: fresh seeds 2-6 in both axiom settings,
+combined with the six explicitly reused current observations at 0/1/7.
+RemoveFactor exhausts the original combined ceiling at every one of those eight
+seeds in both settings. This does not meet section 13's both-partial rule; the
+preserved legacy vector is VRRRRRRR. No seed range is expanded or product change
+selected to obtain a preferred verdict. Thus the
 gate supplies a completed diagnosis, not all-positive suite acceptance.
 
 The complete **688-observation paired assertion-invariance fixture gate passes**
