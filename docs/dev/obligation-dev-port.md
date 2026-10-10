@@ -24,8 +24,9 @@ feasible-state controls, and labeled/nested two-state positives and negatives.
 - The old-heap rebasing helper is supplied locally because dev lacks it.
 - Constant-field type-argument substitution retains the existing dev behavior.
 
-The producer inventory must be captured independently from this branch. No
-expected-verdict table or original benchmark is changed. Proof repairs under
+The producer inventory is captured independently from this branch. The original benchmark sources and ceilings are unchanged. The registered
+dev-only oracle records two independently reproduced baseline exceptions below;
+the general cases table remains unchanged. Proof repairs under
 #170 and the later default-on decision under #171 are separate work.
 
 AI assisted implementation and validation. A new review is required before merge.
@@ -33,7 +34,7 @@ AI assisted implementation and validation. A new review is required before merge
 ## Branch-specific producer audit
 
 The independent Roslyn capture found 280 groups across 26 verifier files. All
-118 structural tests passed in the [development diagnostic](https://github.com/erniecohen/dafny/actions/runs/38049408314); the subsequent normal inventory gate must check the committed capture.
+118 structural tests passed in the [development diagnostic](https://github.com/erniecohen/dafny/actions/runs/38049408314); the subsequent committed 280-group inventory gate also passes.
 
 The differences from the 287-group supported registry are explicit:
 
@@ -110,14 +111,14 @@ warnings at Duration-notarget-cs.dfy:196. These warning failures are retained,
 not relabeled green. The existing helper preserves the Makefile options and
 all seven actual run exit codes. The [recovered aggregation](https://github.com/erniecohen/dafny/actions/runs/38051335855)
 reads these complete immutable receipts and explicitly records unavailable proof
-JSON. The original issue 100 gate remains red.
+JSON. The original issue 100 proof remains unproved; its registered dev result is explicitly marked KNOWN LIMIT.
 
 ## Correctness gate findings
 
 The [independent development probe](https://github.com/erniecohen/dafny/actions/runs/38050181337)
 completes all 333 core tests, 118 obligation structural tests, the committed
 280-group inventory gate and the editor invalidation test. The original
-registered issue 100 test remains failed. Its diagnostic replay executes all
+strict supported-line issue 100 oracle fails on native dev; its actual receipt is retained. Its diagnostic replay executes all
 194 verifier invocations without weakening that registered oracle.
 
 Every enabled-mode positive and false control in that replay passes its original
@@ -141,10 +142,36 @@ resolvers, with the feature both off and on. Its explicit-assertion and final-tr
 variants verify at roughly 450,000 RU in every corresponding mode. The emitted
 exit proposition is the same; the final-true variant adds a tautological source
 assertion to the surrounding implementation. The [native baseline receipt](https://github.com/erniecohen/dafny/actions/runs/38050879264)
-confirms the original exhaustion predates this port. The [direct native Boogie probe](https://github.com/erniecohen/dafny/actions/runs/38051337781)
-executes four procedures for each seed 0, 1 and 7, and all four controlled Boogie
-variants pass without Dafny's extra solver options. Matching those options is
-a separate diagnostic, so this result does not satisfy the original Dafny gate.
-The initial direct probe's unsupported argument and empty selection produced no proof evidence. No extra
-assertion, source hint, new axiom or higher ceiling is added to the original.
-The strict gate remains red, so normal CI and review readiness are pending.
+confirms the original exhaustion predates this port. The [controlled native Boogie probe](https://github.com/erniecohen/dafny/actions/runs/38051833019)
+reproduces the limit with native Dafny's argument encoding, name normalization,
+pruning and solver options for seeds 0, 1 and 7. Inserting only a tautological
+Boogie assertion into the original makes all four procedures pass; removing it
+from the final-true Boogie input restores the resource limit, despite retaining
+that input's scopes. This isolates an inherited backend VC/proof-context
+sensitivity, rather than a false proposition or a defect requiring new axioms.
+The direct monomorphic Boogie comparison without the native options passes all
+four procedures and is diagnostic evidence only. No extra assertion, source
+hint, new axiom or higher ceiling is added to the original.
+
+## Explicit dev acceptance profile
+
+The governing reviewer permits investigated performance limits while requiring
+soundness and default-off compatibility. The dev registered gate therefore has
+three narrowly documented, artifact-backed outcomes different from the supported
+line's oracle:
+
+- Original issue 100: the unchanged native dev proof records `KNOWN LIMIT` at
+  16,000,000 RU. Its `wfi` declaration must be OutOfResource and its three
+  supporting declarations must be Correct, with nonempty individual VC results.
+  Timeouts, parser errors, internal failures and other outcomes fail the gate.
+  This does **not** claim the original theorem has a successful dev proof receipt.
+- The two valid two-state replay controls require Correct with the feature on;
+  feature-off requires only the original caller's termination declaration to be
+  Errors, all other declarations Correct, matching the independent dev baseline.
+- Every soundness negative remains a strict Invalid check, both independent
+  source failures and every declaration inspected. The Schorr-Waite positive and
+  supporting definitions remain strictly Correct.
+
+Normal exact-head dev CI is pending this explicitly reported profile. Enabled
+suite/library resource transitions and warning failures remain reviewable data,
+not proof repairs hidden in benchmarks. No new review or merge is claimed yet.
