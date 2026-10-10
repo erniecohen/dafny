@@ -99,3 +99,35 @@ Seventy-one declaration totals differ by at most 146 RU; batch counts match.
 These runs retain the Makefile declaration order, whose small resource-count
 variation across runs is documented by the existing standard-library runner.
 Enabled-library results and the strict original issue 100 gate are pending.
+
+## Correctness gate findings
+
+The [independent development probe](https://github.com/erniecohen/dafny/actions/runs/38050181337)
+completes all 333 core tests, 118 obligation structural tests, the committed
+280-group inventory gate and the editor invalidation test. The original
+registered issue 100 test remains failed. Its diagnostic replay executes all
+194 verifier invocations without weakening that registered oracle.
+
+Every enabled-mode positive and false control in that replay passes its original
+expectation except the original issue 100. This includes the full Schorr-Waite
+sequential-postcondition file and all its supporting definitions, missing-edge
+and feasible-state negatives, independently false caller preconditions, and both
+labeled/nested two-state positives. Every declaration of the replay controls is
+checked individually in its verification JSON, preventing an unrelated false
+assertion from masking a soundness error.
+
+The two two-state positive controls fail only when the feature is disabled:
+their valid labeled recursive calls cannot prove termination under the dev
+legacy caller/callee translator. Enabled mode correctly separates the caller
+measure from the label's callee previous heap. The default-off implementation
+retains dev's old lowering deliberately; adapting these two expectations needs
+an independent baseline receipt, rather than changing the original fixture.
+
+The original issue 100 still exhausts its 16,000,000 resource ceiling in both
+resolvers, with the feature both off and on. Its explicit-assertion and final-true
+variants verify at roughly 450,000 RU in every corresponding mode. The emitted
+exit proposition is the same; the final-true variant adds a tautological source
+assertion to the surrounding implementation. A native baseline and direct
+Boogie probe investigate this remaining proof-context sensitivity. No extra
+assertion, source hint, new axiom or higher ceiling is added to the original.
+The strict gate remains red, so normal CI and review readiness are pending.
