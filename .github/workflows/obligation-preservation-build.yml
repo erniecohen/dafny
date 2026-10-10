@@ -18,6 +18,7 @@ jobs:
           set +e
           mkdir -p out
           git rev-parse HEAD > out/source.txt
+          dotnet --info > out/dotnet-info.txt 2>&1
           sh Scripts/fetch-boogie-packages.sh > out/packages.log 2>&1
           echo "$?" > out/packages.exit
           sh .github/review/version.sh > out/version.txt 2>&1
@@ -52,8 +53,96 @@ jobs:
             cp -R Source/DafnyCore.Test/bin/Release/net10.0 out/tests/core
             dotnet build Source/DafnyLanguageServer.Test -c Release > out/editor-build.log 2>&1
             echo "$?" > out/editor-build.exit
+            dotnet build Source/IntegrationTests -c Release > out/integration-build.log 2>&1
+            echo "$?" > out/integration-build.exit
+            # Package test hosts without running their proof-bearing tests.
+            # LitTests computes the repository root five levels above its working
+            # directory; preserve that layout and every copied dependency/content.
+            (
+              set -e
+              test_root=out/test-workspace
+              mkdir -p "$test_root/Source" "$test_root/Binaries" "$test_root/docs/dev"
+              for project in DafnyCore.Test IntegrationTests DafnyLanguageServer.Test; do
+                source_output="Source/$project/bin/Release/net10.0"
+                test -d "$source_output"
+                mkdir -p "$test_root/$source_output"
+                cp -a "$source_output/." "$test_root/$source_output/"
+              done
+              cp -a Binaries/net10.0 "$test_root/Binaries/"
+              mkdir -p "$test_root/Source/DafnyCore"
+              cp -a Source/DafnyCore/Verifier "$test_root/Source/DafnyCore/"
+              cp docs/dev/obligation-producers.json "$test_root/docs/dev/"
+              # The queued test runner supplies its platform's pinned solver here.
+              # Do not bundle the Linux metadata probe as a portable proof solver.
+              mkdir -p "$test_root/Binaries/z3/bin"
+              test -f "$test_root/Source/IntegrationTests/bin/Release/net10.0/IntegrationTests.dll"
+              test -f "$test_root/Source/IntegrationTests/bin/Release/net10.0/IntegrationTests.deps.json"
+              test -f "$test_root/Source/IntegrationTests/bin/Release/net10.0/IntegrationTests.runtimeconfig.json"
+              test -f "$test_root/Source/IntegrationTests/bin/Release/net10.0/testhost.dll"
+              test -f "$test_root/Source/IntegrationTests/bin/Release/net10.0/TestFiles/LitTests/LitTest/git-issues/git-issue-100.dfy"
+              test -f "$test_root/Source/IntegrationTests/bin/Release/net10.0/TestFiles/LitTests/LitTest/git-issues/git-issue-100.dfy.expect"
+              test -f "$test_root/Source/IntegrationTests/bin/Release/net10.0/TestFiles/LitTests/LitTest/git-issues/Inputs/assertion-invariance/registered-regression.py"
+              test -f "$test_root/Source/DafnyLanguageServer.Test/bin/Release/net10.0/DafnyLanguageServer.Test.dll"
+              test -f "$test_root/Source/DafnyLanguageServer.Test/bin/Release/net10.0/DafnyLanguageServer.Test.deps.json"
+              test -f "$test_root/Source/DafnyLanguageServer.Test/bin/Release/net10.0/DafnyLanguageServer.Test.runtimeconfig.json"
+              test -f "$test_root/Source/DafnyLanguageServer.Test/bin/Release/net10.0/testhost.dll"
+              test -f "$test_root/Binaries/net10.0/DafnyDriver.dll"
+              test -f "$test_root/Binaries/net10.0/DafnyDriver.runtimeconfig.json"
+            ) > out/test-package.log 2>&1
+            echo "$?" > out/test-package.exit
           fi
+          # Bundle the exact build SDK for both supported platforms. Each archive
+          # is selected from official release metadata and verified with SHA-512;
+          # test execution later uses this bundle, without an executor installation.
+          sdk_version=$(dotnet --version)
+          export SDK_VERSION="$sdk_version"
+          curl -fsSLo out/dotnet-releases.json https://builds.dotnet.microsoft.com/dotnet/release-metadata/10.0/releases.json > out/dotnet-metadata.log 2>&1
+          echo "$?" > out/dotnet-metadata.exit
+          for rid in linux-x64 osx-arm64; do
+            (
+              set -e
+              export SDK_RID="$rid"
+              python3 - <<'PY'
+          import hashlib, json, os, pathlib, tarfile, urllib.parse, urllib.request
+          version, rid = os.environ['SDK_VERSION'], os.environ['SDK_RID']
+          assert version.startswith('10.'), version
+          metadata = json.loads(pathlib.Path('out/dotnet-releases.json').read_text())
+          sdks = [sdk for release in metadata['releases'] for sdk in [release.get('sdk', {})] + release.get('sdks', []) if sdk.get('version') == version]
+          files = {file['url']: file for sdk in sdks for file in sdk['files'] if file['rid'] == rid and file['url'].endswith('.tar.gz')}
+          assert len(files) == 1, (version, rid, files)
+          entry = next(iter(files.values()))
+          assert urllib.parse.urlparse(entry['url']).hostname in ['builds.dotnet.microsoft.com', 'download.visualstudio.microsoft.com'], entry['url']
+          archive = pathlib.Path('out') / ('dotnet-' + rid + '.tar.gz')
+          digest = hashlib.sha512()
+          with urllib.request.urlopen(entry['url'], timeout=120) as response, archive.open('wb') as target:
+              for chunk in iter(lambda: response.read(1024 * 1024), b''):
+                  digest.update(chunk)
+                  target.write(chunk)
+          assert digest.hexdigest().lower() == entry['hash'].lower(), (rid, 'SDK checksum mismatch')
+          destination = pathlib.Path('out') / ('dotnet-' + rid)
+          destination.mkdir()
+          with tarfile.open(archive, 'r:gz') as package:
+              package.extractall(destination, filter='data')
+          assert (destination / 'dotnet').is_file()
+          assert (destination / 'sdk' / version / 'vstest.console.dll').is_file()
+          receipt = dict(version=version, rid=rid, url=entry['url'], archive_sha512=digest.hexdigest(), metadata_sha256=hashlib.sha256(pathlib.Path('out/dotnet-releases.json').read_bytes()).hexdigest())
+          pathlib.Path('out', 'dotnet-' + rid + '-package.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          archive.unlink()
+          PY
+            ) > "out/dotnet-$rid.log" 2>&1
+            echo "$?" > "out/dotnet-$rid.exit"
+          done
+          out/dotnet-linux-x64/dotnet --info > out/packaged-dotnet-info.txt 2>&1
+          echo "$?" > out/packaged-dotnet-info.exit
           find out -name '*.pdb' -delete
+          # Relative-path checksums cover hosts, product assemblies and fixture
+          # content. Stage exits remain authoritative if packaging is incomplete.
+          (
+            set -euo pipefail
+            cd out/test-workspace
+            find . -type f -print0 | sort -z | xargs -0 sha256sum
+          ) > out/test-workspace.sha256 2> out/test-inventory.log
+          echo "$?" > out/test-inventory.exit
           cat out/*.exit
           tail -n 15 out/core.log
           tar -czf obligation-preservation-build.tar.gz out
