@@ -1826,6 +1826,7 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
               Cons(CanCallAssumption(e.Function, cco),
                 e.Args.ConvertAll(ee => CanCallAssumption(ee, cco)))),
             requiresk);
+          return facts;
 
         } else if (expr is FunctionCallExpr) {
           FunctionCallExpr e = (FunctionCallExpr)expr;

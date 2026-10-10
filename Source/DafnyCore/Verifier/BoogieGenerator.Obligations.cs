@@ -281,6 +281,13 @@ public partial class BoogieGenerator {
     MkIsAllocBox(BoxIfNecessary(origin, value, type), type, heap);
 
   public partial class ExpressionTranslator {
+    // Dev does not yet expose the supported line's old-heap rebasing helper.
+    internal ExpressionTranslator WithOld(ExpressionTranslator old) {
+      var clone = new ExpressionTranslator(this, HeapExpr);
+      clone.oldEtran = old;
+      return clone;
+    }
+
     internal ExpressionTranslator CloneForObligation() =>
       CloneExpressionTranslator(this, BoogieGenerator, Predef, HeapExpr, This,
         applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster,

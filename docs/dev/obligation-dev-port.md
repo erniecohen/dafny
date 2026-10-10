@@ -21,6 +21,7 @@ feasible-state controls, and labeled/nested two-state positives and negatives.
   opt-in path adds that distinction, preserving the caller's termination context
   through labeled previous-heap replay, function WF, lambdas, and statement
   expressions. The default-off path preserves dev's prior termination lowering.
+- The old-heap rebasing helper is supplied locally because dev lacks it.
 - Constant-field type-argument substitution retains the existing dev behavior.
 
 The producer inventory must be captured independently from this branch. No
