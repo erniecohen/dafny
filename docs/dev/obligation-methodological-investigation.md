@@ -1,6 +1,6 @@
 # Assertion invariance: methodological benefit and regression diagnosis
 
-**Status: focused investigation complete; no general performance repair validated. Keep PR 168 draft.** This supplements the [consolidated acceptance report](obligation-followup-acceptance.md) and [governing follow-up review](obligation-followup-review.md). The verifier implementation remains `1e6fa5126d8076983f0841629194dc64094f0b2f`, compiled-source pin `aa25d753ab1e3aebe4cc08d14313e705d741446b`, against baseline `ab210b78b50adb5a192542897f0a00cdb40f3c35` and Z3 5.1.0. No translation, source test, expected verdict, proof ceiling or seed policy changed in this investigation. PR 169 remains unported.
+**Status: original localization complete; four later source proof repairs are documented separately. No general translator performance repair validated. Keep PR 168 draft.** This supplements the [consolidated acceptance report](obligation-followup-acceptance.md) and [governing follow-up review](obligation-followup-review.md). The verifier implementation remains `1e6fa5126d8076983f0841629194dc64094f0b2f`, compiled-source pin `aa25d753ab1e3aebe4cc08d14313e705d741446b`, against baseline `ab210b78b50adb5a192542897f0a00cdb40f3c35` and Z3 5.1.0. No translation, source test, expected verdict, proof ceiling or seed policy changed in this investigation. PR 169 remains unported.
 
 ## Purpose and requested investigation
 
@@ -24,6 +24,8 @@ Four pre-existing suite cases verify with their copies removed in the sampled di
 These copies are already unnecessary on the pinned baseline. They are cleanup candidates, **not new feature-dependent successes**. No assertions were deleted from the PR's suite. `Primes.Composite`'s intermediate conjunction was also sampled, but both original and removal versions exhaust resources in the diagnostic configuration. Removal is therefore inconclusive; it is not a terminal-only copy. The sample uses a definite-assignment relaxation and does not replace that file's original RUN command. The existing focused issue5148 explicit-assertion fixture also passes after removal on baseline; it is kept separate from independently pre-existing suite cases.
 
 The earlier complete, well-typed issue-100 identity controls remain positive evidence for the methodological goal: enabled direct postconditions verify where baseline fails even with an immediate body assertion. Supporting WF checks and genuine Invalid false controls remain part of that evidence. The unchanged refreshed-resolver example's inferred witness-type failure is retained separately. The sampler found no additional case whose assertion becomes unnecessary specifically because of this feature.
+
+The owner subsequently requested proofs for the four persistent cases. The [four-remainder proof record](obligation-remainder-proofs.md) and portable patches preserve the resulting checked source repairs, their support closure and limits. The historical localization table below describes the original unchanged-source failures; the later proof artifacts do not replace the frozen-candidate broad comparison.
 
 ## All eleven regressions
 

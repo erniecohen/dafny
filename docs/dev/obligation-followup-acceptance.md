@@ -106,6 +106,8 @@ The argument is relative to Dafny's existing verified-contract and background-th
 
 The [focused methodological investigation](obligation-methodological-investigation.md) records the owner's later request to examine removable source assertions, diagnose all eleven failures and audit Boogie/Z3 determinization settings. All eleven failures were reproduced at affected configurations. Seven pass under diagnostic isolation at unchanged per-batch resource ceilings; four persist or reveal baseline brittleness under isolation. These are context/search findings, not a validated translation repair. Four sampled pre-existing assertion copies can be removed, but baseline already verifies without them; no additional feature-dependent benefit was found in that sample.
 
+The [four-remainder proof record](obligation-remainder-proofs.md) subsequently supplies checked source repairs for Schorr-Waite, Base64 encoding, modular remainder and iterator advancement. Portable patches are review artifacts, not applied suite/library changes or a translator repair. They leave the original comparisons and acceptance criteria intact.
+
 Normalized Boogie names are already enabled. Captured SMT streams differ under default declaration-order normalization despite identical operational Boogie in two suspicious OFF-WF cases; order0 restores stream/resource repeatability locally. The larger earlier OFF outliers are not fully explained, and the alternate order introduces baseline failures elsewhere. The strict broad acceptance results below remain unchanged.
 
 ## Merge recommendation
