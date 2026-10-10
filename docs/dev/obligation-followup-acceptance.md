@@ -16,12 +16,12 @@ Pinned baseline: `ab210b78b50adb5a192542897f0a00cdb40f3c35`. Each complete compa
 |---|---|---|---|
 | Complete verifier-suite verdict gate | Both resolver defaults, both axiom settings | 1,161 planned programs | Pending |
 | Complete standard-library gate | Committed resolver settings, both axiom settings | Seven parts, 2,190 declarations | Pending |
-| Registered regression gate | Both resolvers and axiom settings | 322 invocations, including 233 negative controls | Pending |
-| Paired assertion-invariance gate | Both resolvers and axiom settings | 688 observations, including 248 negative controls | Pending |
+| Registered regression gate | Both resolvers and axiom settings | 322 invocations, including 233 negative controls | Passed |
+| Paired assertion-invariance gate | Both resolvers and axiom settings | 688 observations, including 248 negative controls | Passed |
 | New issue 100, unchanged original | Baseline/OFF/ON, both resolvers and axiom settings | 48 complete files, 84 targeted correctness observations | Complete; refreshed-resolver WF failure is shared with baseline |
 | New issue 100, explicit witness-type control | Same matrix; only `p: seq<nat>` annotation | 48 complete files, 84 targeted correctness observations | Passed |
 
-Infrastructure-interrupted attempts do not count as completed comparisons; their frozen complete inputs are retained for unchanged retries. Each library comparison also repeats the unchanged baseline. Verdict compatibility remains mandatory. The report will identify default-OFF resource differences, compare them with baseline repeat variation and emitted-Boogie identity, and explicitly retain any failure of the strict resource-equality criterion. Enabled-mode declaration failures, resource exhaustion, timeouts, newly accepted invalid checks and substantial per-declaration cost increases will be listed separately. No expected verdict table or proof resource ceiling has been changed.
+Infrastructure-interrupted attempts do not count as completed comparisons; their frozen complete inputs are retained for unchanged retries. The fresh registered gate passes all 322 observations with exact committed output: 89 positive observations and 233 genuine Invalid negatives. The fresh paired gate passes all 688 observations over 172 cases: 440 positives contain only Valid VCs and 248 negatives contain Invalid VCs; every recorded VC is Valid or Invalid. These frozen-candidate results do not replace the pending broad comparisons. Each library comparison also repeats the unchanged baseline. Verdict compatibility remains mandatory. The report will identify default-OFF resource differences, compare them with baseline repeat variation and emitted-Boogie identity, and explicitly retain any failure of the strict resource-equality criterion. Enabled-mode declaration failures, resource exhaustion, timeouts, newly accepted invalid checks and substantial per-declaration cost increases will be listed separately. No expected verdict table or proof resource ceiling has been changed.
 
 ## Unresolved cases and new reproducer
 
