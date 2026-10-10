@@ -1,6 +1,6 @@
 # Assertion invariance: methodological benefit and regression diagnosis
 
-**Status: original localization complete; four later source proof repairs are documented separately. No general translator performance repair validated. Keep PR 168 draft.** This supplements the [consolidated acceptance report](obligation-followup-acceptance.md) and [governing follow-up review](obligation-followup-review.md). The verifier implementation remains `1e6fa5126d8076983f0841629194dc64094f0b2f`, compiled-source pin `aa25d753ab1e3aebe4cc08d14313e705d741446b`, against baseline `ab210b78b50adb5a192542897f0a00cdb40f3c35` and Z3 5.1.0. No translation, source test, expected verdict, proof ceiling or seed policy changed in this investigation. PR 169 remains unported.
+**Historical status: original localization complete; four later source proof repairs are documented separately. No general translator performance repair validated. Keep PR 168 draft under the original criteria.** This supplements the [consolidated acceptance report](obligation-followup-acceptance.md) and [governing follow-up review](obligation-followup-review.md). The verifier implementation used in this investigation is `1e6fa5126d8076983f0841629194dc64094f0b2f`, compiled-source pin `aa25d753ab1e3aebe4cc08d14313e705d741446b`, against baseline `ab210b78b50adb5a192542897f0a00cdb40f3c35` and Z3 5.1.0. No translation, source test, expected verdict, proof ceiling or seed policy changed in this investigation. PR 169 remains unported.
 
 ## Purpose and requested investigation
 
@@ -48,6 +48,107 @@ Here `a0`/`a1` mean additional axioms OFF/ON. Library cases use the committed re
 | `Base64.EncodeBVIsBase64`; a1 | Isolation still fails ON at postcondition line 907 and helper/function precondition line 922. Baseline also fails isolated helper/postcondition checks at lines 922, 908 and 917. | Diagnose the bitvector/padding/string branch bridge and incoming facts; isolation alone is insufficient. |
 
 `Append` needs a configuration qualification. Its earlier legacy/a1 reproduction passed on the alternate platform in both filtered and full-file checks, so filtering was not established as the cause of the original platform-dependent failure. The refreshed/a0 full-file check reproduces the original affected result, and the same-configuration isolation passes. Neither result erases the original legacy/a1 failure.
+
+## Bounded resource costs of seven isolation cases
+
+These are historical bounded measurements from the frozen compiled source
+`aa25d753ab1e3aebe4cc08d14313e705d741446b` (implementation
+`1e6fa5126d8076983f0841629194dc64094f0b2f`), native Dafny
+`4.11.0+fcb2042d.review.5841c0e6`, compared with baseline source
+`ab210b78b50adb5a192542897f0a00cdb40f3c35`, native Dafny
+`4.11.0+fcb2042d.review.898e7500`. Both used pinned Z3 **5.1.0** and the same
+Boogie dependency `3.5.5-review.37e4435d`. They do not measure the later soundness correction
+`1c30dd9904e6087931b8efa7d35cb33cc0fb9558` or establish its final correctness.
+That correction's final validation was pending when these tables were recorded;
+its resource costs are unmeasured here. No new cost sweep was run for this record.
+
+Baseline means the baseline binary; OFF and ON mean the candidate with
+`--consistent-obligation-checks false` and `true`. Each cost cell is
+**verdict / target batch count / aggregate RU / maximum batch RU**. `C` means
+reported Correct; every target batch was Valid. Aggregate RU is the sum of the
+recorded target VC resource counts, not whole-file or helper cost. `OOR` is a
+resource-exhausted, censored observation: its recorded work is shown, but the cost
+of a successful proof is unknown. Resource counts can slightly exceed the stated
+ceiling. Ratios use aggregate RU and are shown only when both operands are
+Correct; no ratio is inferred from an OOR result. Counts are exact; ratios are
+rounded to three decimals. No elapsed-time or executor measurement is used.
+
+The unmodified inputs are the suite and standard-library sources at the compiled
+source pin above. Isolation adds only `--isolate-assertions`; original source,
+imports, project settings, inherited attributes and per-batch caps are retained.
+All invocations use `--cores 1`, `--verification-time-limit 0`, the default zero
+seed policy and normalized names. Suite cases retain `--allow-warnings`,
+`--resource-limit 16000000`, `/normalizeDeclarationOrder:0`, and matched
+`--type-system-refresh`/`--general-newtypes` values (false for legacy, true for
+refresh). Library cases verify through `src/Std/dfyconfig.toml`, retaining its
+refreshed resolver, general-newtype and other project options and
+`/normalizeDeclarationOrder:1`. Arithmetic modules retain
+`@DisableNonlinearArithmetic`.
+
+| Target shorthand (exact declaration) | Original source | Resolver / axioms / order | Per-batch RU cap |
+|---|---|---|---:|
+| SiftDown (`PriorityQueue.SiftDown`) | `LitTest/dafny1/PriorityQueue.dfy` | legacy / a0 / 0 | 16,000,000 |
+| RemoveFactor (`RemoveFactor`) | `LitTest/dafny4/Primes.dfy` | legacy / a0 / 0 | 16,000,000 |
+| Join (`M3.UnionFind.JoinMaintainsReaches1`) | `LitTest/dafny4/UnionFind.dfy` | legacy / a0 / 0 | 16,000,000 |
+| Append (`ExtensibleArray.Append`) | `LitTest/dafny1/ExtensibleArray.dfy` | refresh / a0 / 0 | 16,000,000 |
+| DivStrong (`Std.Arithmetic.DivMod.LemmaDivByMultipleIsStronglyOrdered`) | `Std/Arithmetic/DivMod.dfy` | refresh / a0 / 1 | 1,000,000 |
+| Power (`Std.Arithmetic.Power.LemmaPowStrictlyIncreases`) | `Std/Arithmetic/Power.dfy` | refresh / a0 / 1 | 1,000,000 |
+| DecodePadding (`Std.Base64.DecodeValidEncode1Padding`) | `Std/Base64.dfy` | refresh / a0 / 1 | 12,000,000 (existing `@ResourceLimit("12e6")`) |
+
+`LitTest` is `Source/IntegrationTests/TestFiles/LitTests/LitTest`; `Std` is
+`Source/DafnyStandardLibraries/src/Std`. Join retains
+`--relax-definite-assignment`. Append uses complete-file invocations with no
+symbol filter on both original and isolated inputs, with
+`DOTNET_PROCESSOR_COUNT=2`; the remaining pairs use the declaration filter and
+`DOTNET_PROCESSOR_COUNT=1`. These Append numbers are the matched refreshed/a0
+reproduction, not the distinct legacy/a1 passing configuration. Library targets
+without a source override retain the one-million-unit project cap.
+
+| Target | Mode | Original: verdict / batches / total / max RU | Isolated: verdict / batches / total / max RU | Isolated / original, same mode |
+|---|---|---|---|---:|
+| SiftDown | Baseline | C / 1 / 10,315,363 / 10,315,363 | C / 74 / 3,724,318 / 708,974 | 0.361× |
+| SiftDown | OFF | C / 1 / 10,315,363 / 10,315,363 | Unmeasured | Unknown |
+| SiftDown | ON | OOR / 1 / 16,024,316 / 16,024,316 | C / 74 / 3,640,768 / 708,974 | Censored |
+| RemoveFactor | Baseline | C / 1 / 15,158,230 / 15,158,230 | C / 13 / 172,272 / 39,290 | 0.011× |
+| RemoveFactor | OFF | C / 1 / 15,158,230 / 15,158,230 | Unmeasured | Unknown |
+| RemoveFactor | ON | OOR / 1 / 16,008,204 / 16,008,204 | C / 13 / 172,721 / 39,290 | Censored |
+| Join | Baseline | C / 1 / 8,011,980 / 8,011,980 | C / 69 / 6,949,760 / 4,878,660 | 0.867× |
+| Join | OFF | C / 1 / 8,011,980 / 8,011,980 | Unmeasured | Unknown |
+| Join | ON | OOR / 1 / 16,027,333 / 16,027,333 | C / 69 / 8,466,671 / 6,378,062 | Censored |
+| Append | Baseline | C / 1 / 8,651,815 / 8,651,815 | C / 63 / 26,960,785 / 3,360,158 | 3.116× |
+| Append | OFF | C / 1 / 8,651,815 / 8,651,815 | Unmeasured | Unknown |
+| Append | ON | OOR / 1 / 16,048,131 / 16,048,131 | C / 63 / 26,664,079 / 3,274,700 | Censored |
+| DivStrong | Baseline | C / 1 / 663,295 / 663,295 | C / 9 / 453,230 / 276,137 | 0.683× |
+| DivStrong | OFF | C / 1 / 663,295 / 663,295 | Unmeasured | Unknown |
+| DivStrong | ON | OOR / 1 / 1,032,323 / 1,032,323 | C / 9 / 636,187 / 403,619 | Censored |
+| Power | Baseline | C / 1 / 143,449 / 143,449 | C / 31 / 1,025,858 / 71,579 | 7.151× |
+| Power | OFF | C / 1 / 143,449 / 143,449 | Unmeasured | Unknown |
+| Power | ON | OOR / 1 / 1,024,729 / 1,024,729 | C / 31 / 1,129,769 / 71,821 | Censored |
+| DecodePadding | Baseline | C / 1 / 2,644,805 / 2,644,805 | C / 93 / 9,522,460 / 2,969,048 | 3.600× |
+| DecodePadding | OFF | C / 1 / 2,644,805 / 2,644,805 | Unmeasured | Unknown |
+| DecodePadding | ON | OOR / 1 / 12,084,088 / 12,084,088 | C / 93 / 9,522,043 / 2,969,048 | Censored |
+
+Isolated OFF was not measured for any of these seven pairs. Its verdict, batch
+counts and costs remain unknown; original baseline/OFF equality does not supply
+those missing measurements. All seven isolated baseline/ON target checks close
+within their unchanged per-batch caps, but more batches can consume more total
+work. The two useful completed-proof comparisons make that distinction explicit:
+
+| Target | Isolated ON / original baseline total RU | Isolated ON / isolated baseline total RU |
+|---|---:|---:|
+| SiftDown | 0.353× | 0.978× |
+| RemoveFactor | 0.011× | 1.003× |
+| Join | 1.057× | 1.218× |
+| Append | 3.082× | 0.989× |
+| DivStrong | 0.959× | 1.404× |
+| Power | 7.876× | 1.101× |
+| DecodePadding | 3.600× | 1.000× |
+
+These comparisons change proof batching; they are diagnostic cost observations,
+not a uniform translator improvement or a whole-suite performance claim. In
+particular, Append, Power and DecodePadding consume more aggregate resource units
+than their original completed baseline proofs. Original benchmark inputs remain
+unchanged.
 
 ## Triggering and fuel diagnosis
 

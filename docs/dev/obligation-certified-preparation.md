@@ -7,6 +7,16 @@ The proposition remains mandatory and is checked once. The
 validate the required functional mechanisms at their named compiler identities;
 [current regression acceptance](obligation-revision-checklist.md) remains open.
 Earlier experiment boundaries below are retained as history, not current gates.
+The [final review](obligation-final-review.md) records a subsequently reproduced
+labeled two-state termination-context defect and its source correction
+`1c30dd990`. Final native correctness validation and soundness signoff remain
+pending; the earlier controls do not certify that correction.
+The reviewed producer registry is refreshed to the correction's captured
+inventory: all 287 groups retain their producer, count and classification.
+Changes are confined to file hashes for the five corrected translator files,
+four call-expression hashes and the two added optional-parameter arities.
+The four expression hashes were independently reproduced from the source;
+this registry refresh does not waive the fresh normal inventory/core gate.
 
 ## Existing well-formedness proof
 
@@ -25,9 +35,14 @@ At a method exit, input/entry conditions and the permitted heap/output typing
 hold, and earlier postconditions have already been checked in order. At a
 method call, actuals have been frozen and typed, ordinary frame/termination
 checks precede the contract checks, and earlier requirements have been checked.
-Iterator yield contracts use their existing specification WF, exact yield old heap and inherited guard. The existing modular specification-WF proof licenses the clause's local domain
-support at these points. Inherited preparation keeps its existing guard.
-A filtered body-only result cannot substitute for specification-WF acceptance.
+Iterator yield contracts use their existing specification WF, exact yield old
+heap and inherited guard. Independent iterator specification WF already checks
+yield ensures with `$_OldIterHeap` as the previous heap; local yield replay uses
+that same heap, rather than the iterator body's entry heap. The existing modular
+specification-WF proof licenses the clause's local domain support at these
+points. Inherited preparation keeps its existing guard. These licenses require
+complete verification of the independent WF procedures and supporting contracts;
+a filtered body-only result cannot substitute for specification-WF acceptance.
 
 ## Replay, without proving WF a second time
 
@@ -49,6 +64,42 @@ WF sink. A nested lambda establishes its own declared frame and keeps its
 existing independent WF policy, rather than inheriting the surrounding method
 reads bound. Preserve all other guards and source-local setup; inspect no surrounding
 body expressions and introduce no background axiom.
+
+## Separate recursive caller and clause contexts
+
+For a checked clause `P_i`, let `C_i` contain typed actuals, receiver and type
+arguments, its precise heap context and already checked preceding clauses.
+Preparation must supply only domain facts licensed in that context, under their
+original evaluation guards. Neither `P_i` nor a later clause licenses its own
+preparation. This includes the preconditions and termination of lemma calls in
+statement expressions, as well as function calls.
+
+At a recursive call from `A` to `C`, a function or proof helper `F` in `C`'s
+clause that belongs to `A`'s recursive component also places `C` in that
+component. Independent specification WF of the clause establishes `D_F < D_C`
+under `C_i` and the clause's guards. The existing checked call establishes
+`D_C < D_A` before replay. Transitivity licenses `D_F < D_A`, with each measure
+evaluated in its own original context. Prior clauses may be used; the current
+and later clauses may not.
+
+For a two-state callee, clause `old` expressions use the call's selected previous
+heap: the original previous heap for an unlabelled call, or the captured heap
+at an explicit label. The caller's measure retains the caller's original
+previous heap. A label in a nonmodifying two-state lemma can denote its current
+heap while that lemma's previous heap is different. Nonmutation therefore does
+not permit replacing the caller's previous heap with the callee's labelled heap.
+The correction preserves a separate caller translator through WF options and
+the preparation builder context, including nested statement expressions and
+lambda/frame WF. Only the function/helper side uses the clause translator.
+Ordinary termination and lower-bound checks remain present.
+
+Method exits do not perform this caller-to-callee rebasing: their enclosing
+declaration and pre/post heaps are those of their independent specification WF.
+Iterator yields likewise retain the independently certified yield previous heap
+described above. Nested lambda WF keeps its own hypothetical heap, guards and
+terminating proof branch; it does not transport facts from that hypothetical heap
+to the clause's continuation. Complete independent WF, guard preservation and
+the established scope boundaries are prerequisites to the argument.
 
 ## Required controls
 
