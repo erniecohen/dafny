@@ -864,5 +864,45 @@
     "name": "negative-certified-guarded-arguments",
     "expected": 4,
     "group": "certified-contract-preparation"
+  },
+  {
+    "name": "schorr-initial-path",
+    "expected": 0,
+    "group": "sequential-postconditions"
+  },
+  {
+    "name": "schorr-initial-path-explicit",
+    "expected": 0,
+    "group": "sequential-postconditions"
+  },
+  {
+    "name": "negative-schorr-initial-edge",
+    "expected": 4,
+    "group": "sequential-postconditions"
+  },
+  {
+    "name": "schorr-initial-path-nonvacuity",
+    "expected": 4,
+    "group": "sequential-postconditions"
+  },
+  {
+    "name": "negative-twostate-labeled-replay",
+    "expected": 4,
+    "group": "labeled-two-state-requires"
+  },
+  {
+    "name": "twostate-labeled-recursive",
+    "expected": 0,
+    "group": "labeled-two-state-requires"
+  },
+  {
+    "name": "negative-twostate-nested-replay",
+    "expected": 4,
+    "group": "labeled-two-state-statement-expression"
+  },
+  {
+    "name": "twostate-nested-replay",
+    "expected": 0,
+    "group": "labeled-two-state-statement-expression"
   }
 ]

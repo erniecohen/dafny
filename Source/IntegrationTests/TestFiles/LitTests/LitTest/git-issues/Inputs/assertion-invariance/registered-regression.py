@@ -1,5 +1,6 @@
 """Run the original reproducer, direct repairs, and non-vacuity controls."""
 from pathlib import Path
+import json
 import subprocess
 import sys
 
@@ -24,9 +25,40 @@ def verify(name,refresh=False,axioms=False,enabled=True,project=False,override=N
  if name in ["certified-spec-only-reads","negative-certified-conditional-reads"]:
   command.append("--reads-clauses-on-methods")
  if isolate: command.append("--isolate-assertions")
+ replay=name in ["negative-twostate-labeled-replay","twostate-labeled-recursive",
+  "negative-twostate-nested-replay","twostate-nested-replay"]
+ if replay:
+  replay_log=work/f"{name}-refresh-{refresh}-axioms-{axioms}-enabled-{enabled}-isolate-{isolate}.json"
+  command.extend(["--log-format","json;LogFileName="+str(replay_log)])
  result=subprocess.run(command,text=True,capture_output=True,timeout=120)
  output=result.stdout+result.stderr
  assert not any(t in output.lower() for t in ["out of resource","timed out","internal error","unhandled exception"]),output
+ if replay:
+  declarations=json.loads(replay_log.read_text())["verificationResults"]
+  if name=="negative-twostate-labeled-replay":
+   expected={"ReplayFalse (well-formedness)":"Correct",
+    "ReplayCallee (well-formedness)":"Correct","ReplayCaller (well-formedness)":"Correct",
+    "ReplayCaller (correctness)":"Errors","DirectFalse (well-formedness)":"Correct",
+    "DirectFalse (correctness)":"Errors","ReachReplayCaller (correctness)":"Correct"}
+  elif name=="negative-twostate-nested-replay":
+   expected={"ReplayHelper (well-formedness)":"Correct","ReplayHelper (correctness)":"Correct",
+    "ReplayCallee (well-formedness)":"Correct","ReplayCaller (well-formedness)":"Correct",
+    "ReplayCaller (correctness)":"Errors","DirectFalse (well-formedness)":"Correct",
+    "DirectFalse (correctness)":"Errors","ReachReplayCaller (correctness)":"Correct"}
+  elif name=="twostate-nested-replay":
+   expected={"ReplayHelper (well-formedness)":"Correct","ReplayHelper (correctness)":"Correct",
+    "ReplayCallee (well-formedness)":"Correct","ReplayCaller (well-formedness)":"Correct",
+    "ReplayCaller (correctness)":"Correct","ReachReplayCaller (correctness)":"Correct"}
+  else:
+   expected={"ReplayValue (well-formedness)":"Correct",
+    "ReplayValueCallee (well-formedness)":"Correct","ReplayValueCaller (well-formedness)":"Correct",
+    "ReplayValueCaller (correctness)":"Correct","ReachReplayValueCaller (correctness)":"Correct"}
+  assert {d["name"]:d["outcome"] for d in declarations}==expected,output
+  for declaration in declarations:
+   outcomes=[vc["outcome"] for vc in declaration["vcResults"]]
+   assert outcomes and all(outcome in ["Valid","Invalid"] for outcome in outcomes),output
+   assert ("Invalid" in outcomes) if expected[declaration["name"]]=="Errors" else all(
+    outcome=="Valid" for outcome in outcomes),output
  return result.returncode,output
 
 for refresh in [False,True]:
@@ -106,6 +138,60 @@ for refresh in [False,True]:
   code,output=verify("negative-exit-quantified-wf",refresh,axioms)
   assert code==4 and "error" in output and "parse errors" not in output,output
 print("PASS canonical local exit wellformedness preparation")
+# This empty-body graph lemma needs earlier proved postconditions to supply
+# the concrete initial-heap path for the final existential postcondition.
+for refresh in [False,True]:
+ for axioms in [False,True]:
+  code,output=verify("schorr-initial-path",refresh,axioms)
+  assert code==0,output
+  code,output=verify("schorr-initial-path",refresh,axioms,enabled=False)
+  source=fixtures/"schorr-initial-path.dfy"
+  line=next(i for i,text in enumerate(source.read_text().splitlines(),1)
+    if text.strip()=="ensures old(Reachable(root, child, S))")
+  assert code==4 and f"schorr-initial-path.dfy({line}," in output and "1 error" in output,output
+  for enabled in [False,True]:
+   code,output=verify("schorr-initial-path-explicit",refresh,axioms,enabled=enabled)
+   assert code==0,output
+   code,output=verify("negative-schorr-initial-edge",refresh,axioms,enabled=enabled)
+   source=fixtures/"negative-schorr-initial-edge.dfy"
+   line=next(i for i,text in enumerate(source.read_text().splitlines(),1)
+     if text.strip()=="ensures old(ReachableVia(root, Path.Extend(prefix, parent), child, S))")
+   assert code==4 and f"negative-schorr-initial-edge.dfy({line}," in output,output
+   code,output=verify("schorr-initial-path-nonvacuity",refresh,axioms,enabled=enabled)
+   source=fixtures/"schorr-initial-path-nonvacuity.dfy"
+   line=next(i for i,text in enumerate(source.read_text().splitlines(),1)
+     if "assert false;" in text)
+   assert code==4 and f"schorr-initial-path-nonvacuity.dfy({line}," in output and "1 error" in output,output
+print("PASS sequential initial-heap path postconditions and false controls")
+# A second Invalid declaration must not mask unsound acceptance of the caller.
+# Check every declaration above and both independently failing source locations.
+for refresh in [False,True]:
+ for axioms in [False,True]:
+  for enabled in [False,True]:
+   code,output=verify("twostate-labeled-recursive",refresh,axioms,enabled=enabled)
+   assert code==0,output
+   code,output=verify("negative-twostate-labeled-replay",refresh,axioms,enabled=enabled)
+   source=fixtures/"negative-twostate-labeled-replay.dfy"
+   lines=source.read_text().splitlines()
+   call_line=next(i for i,text in enumerate(lines,1) if "ReplayCallee@ReplayCurrent(c);" in text)
+   false_line=next(i for i,text in enumerate(lines,1) if "Independent invalid assertion" in text)
+   assert code==4 and f"negative-twostate-labeled-replay.dfy({call_line}," in output,output
+   assert f"negative-twostate-labeled-replay.dfy({false_line}," in output,output
+print("PASS labeled recursive two-state requires and independent false controls")
+for refresh in [False,True]:
+ for axioms in [False,True]:
+  for enabled in [False,True]:
+   code,output=verify("twostate-nested-replay",refresh,axioms,enabled=enabled)
+   assert code==0,output
+   code,output=verify("negative-twostate-nested-replay",refresh,axioms,enabled=enabled)
+   source=fixtures/"negative-twostate-nested-replay.dfy"
+   lines=source.read_text().splitlines()
+   call_line=next(i for i,text in enumerate(lines,1) if "ReplayCallee@ReplayCurrent(c);" in text)
+   false_line=next(i for i,text in enumerate(lines,1) if "Independent invalid assertion" in text)
+   assert code==4 and f"negative-twostate-nested-replay.dfy({call_line}," in output,output
+   assert f"negative-twostate-nested-replay.dfy({false_line}," in output,output
+print("PASS nested two-state statement expressions and independent false controls")
+
 (work/"subset.dfy").write_text((fixtures/"subset-short.dfy").read_text())
 (work/"dfyconfig.toml").write_text("[options]\nconsistent-obligation-checks = true\n")
 code,output=verify("subset-short",project=True)

@@ -49,6 +49,10 @@ namespace Microsoft.Dafny {
     public bool OmitReadsAssertions { get; init; }
     // Private function-WF argument bindings created only by this preparation.
     internal ISet<string> CertifiedArgumentTemporaries { get; init; }
+    // A two-state contract replay may rebase the clause's previous heap to a
+    // call label. The enclosing caller's decreases measure must retain its own
+    // original heap context; the clause translator is only the callee side.
+    internal BoogieGenerator.ExpressionTranslator CallerTerminationTranslator { get; init; }
 
 
     public WFOptions() {
@@ -86,7 +90,8 @@ namespace Microsoft.Dafny {
     /// </summary>
     public WFOptions WithReadsChecks(bool doReadsChecks) {
       return new WFOptions(SelfCallsAllowance, doReadsChecks, DoOnlyCoarseGrainedTerminationChecks,
-        Locals, CreateAsserts, LValueContext, AssertKv) { OmitReadsAssertions = OmitReadsAssertions, CertifiedArgumentTemporaries = CertifiedArgumentTemporaries };
+        Locals, CreateAsserts, LValueContext, AssertKv) { OmitReadsAssertions = OmitReadsAssertions, CertifiedArgumentTemporaries = CertifiedArgumentTemporaries,
+          CallerTerminationTranslator = CallerTerminationTranslator };
     }
 
     /// <summary>
@@ -94,7 +99,8 @@ namespace Microsoft.Dafny {
     /// </summary>
     public WFOptions WithLValueContext(bool lValueContext) {
       return new WFOptions(SelfCallsAllowance, DoReadsChecks, DoOnlyCoarseGrainedTerminationChecks,
-        Locals, CreateAsserts, lValueContext, AssertKv) { OmitReadsAssertions = OmitReadsAssertions, CertifiedArgumentTemporaries = CertifiedArgumentTemporaries };
+        Locals, CreateAsserts, lValueContext, AssertKv) { OmitReadsAssertions = OmitReadsAssertions, CertifiedArgumentTemporaries = CertifiedArgumentTemporaries,
+          CallerTerminationTranslator = CallerTerminationTranslator };
     }
 
     public Action<IOrigin, Bpl.Expr, ProofObligationDescription, Bpl.QKeyValue> AssertSink(BoogieGenerator tran, BoogieStmtListBuilder builder) {
@@ -245,11 +251,14 @@ namespace Microsoft.Dafny {
     // Also encapsulates the handling for the optimization to not declare a $_ReadsFrame field if the reads clause is *:
     // if etran.readsFrame is null, the block is called with a WFOption with DoReadsChecks set to false instead.
     private record ReadsCheckDelayer(ExpressionTranslator etran, Function selfCallsAllowance,
-      Variables localVariables, BoogieStmtListBuilder builderInitializationArea, BoogieStmtListBuilder builder) {
+      Variables localVariables, BoogieStmtListBuilder builderInitializationArea, BoogieStmtListBuilder builder,
+      ExpressionTranslator callerTerminationTranslator = null) {
 
       public void DoWithDelayedReadsChecks(bool doOnlyCoarseGrainedTerminationChecks, Action<WFOptions> action) {
         var doReadsChecks = etran.readsFrame != null;
-        var options = new WFOptions(selfCallsAllowance, doReadsChecks, doReadsChecks, doOnlyCoarseGrainedTerminationChecks);
+        var options = new WFOptions(selfCallsAllowance, doReadsChecks, doReadsChecks, doOnlyCoarseGrainedTerminationChecks) {
+          CallerTerminationTranslator = callerTerminationTranslator
+        };
         action(options);
         if (doReadsChecks) {
           options.ProcessSavedReadsChecks(localVariables, builderInitializationArea, builder);
@@ -932,8 +941,9 @@ namespace Microsoft.Dafny {
                     // In the callee's decreases clause, "old" denotes the previous heap of a two-state
                     // function: the heap at its label, if the call has one.
                     var calleeEtran = e.Function is TwoStateFunction && e.AtLabel != null ? etran.WithOld(etran.OldAt(e.AtLabel)) : null;
+                    var callerEtran = wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran;
                     CheckCallTermination(callExpr.Origin, contextDecreases, calleeDecreases, allowance, e.Receiver, substMap, directSubstMap, e.GetTypeArgumentSubstitutions(),
-                      etran, false, builder, codeContext.InferredDecreases, hint, calleeEtran);
+                      callerEtran, false, builder, codeContext.InferredDecreases, hint, calleeEtran ?? etran);
                   }
                 }
               }
@@ -1253,13 +1263,16 @@ namespace Microsoft.Dafny {
                   DefineFrame(e.Origin, comprehensionEtran.ReadsFrame(e.Origin), reads, newBuilder, locals, frameName, comprehensionEtran);
 
                   // Check frame WF and that it read covers itself
-                  var delayer = new ReadsCheckDelayer(comprehensionEtran, wfOptions.SelfCallsAllowance, locals, builder, newBuilder);
+                  var delayer = new ReadsCheckDelayer(comprehensionEtran, wfOptions.SelfCallsAllowance, locals, builder, newBuilder,
+                    wfOptions.CallerTerminationTranslator);
                   delayer.DoWithDelayedReadsChecks(false, wfo => {
                     CheckFrameWellFormed(wfo, reads, locals, newBuilder, comprehensionEtran);
                   });
 
                   // continue doing reads checks, but don't delay them
-                  newOptions = new WFOptions(wfOptions.SelfCallsAllowance, true, false);
+                  newOptions = new WFOptions(wfOptions.SelfCallsAllowance, true, false) {
+                    CallerTerminationTranslator = wfOptions.CallerTerminationTranslator
+                  };
                 }
 
                 // check requires/range

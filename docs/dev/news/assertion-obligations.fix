@@ -7,3 +7,5 @@ Certified contract preparation preserves guards while binding eligible private f
 Opt-in method-call preparation constructs complete can-call support at the standard assertion point, after well-formedness preparation and before the existing single check, without an extra early construction.
 
 Opt-in local postconditions use standard complete can-call construction after well-formedness preparation, while inherited and statement-expression clauses retain their original leading support and reveal effects.
+
+Labeled two-state contract replay retains the enclosing caller's original termination heap while evaluating the callee clause at its label, including nested statement expressions.

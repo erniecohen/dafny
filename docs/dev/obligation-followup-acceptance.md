@@ -2,6 +2,8 @@
 
 **Status: all requested follow-up comparisons and analyses complete; strict acceptance rejected. Keep PR 168 draft.** This report follows [the follow-up review](https://github.com/erniecohen/dafny/pull/168#issuecomment-6091926707). The complete request is preserved in [obligation-followup-review.md](obligation-followup-review.md). The fingerprint-oracle correction is complete. Verifier translation stayed frozen throughout validation; no concrete generalizable translation defect was demonstrated by these comparisons.
 
+The later [final review](obligation-final-review.md) changes the experimental merge criteria and records a subsequent two-state replay correctness finding. The comparisons below remain evidence about their frozen compiler, rather than validation of that correction.
+
 ## Frozen candidate and oracle correction
 
 Verifier implementation: `1e6fa5126d8076983f0841629194dc64094f0b2f`. Compiled-source pin: `aa25d753ab1e3aebe4cc08d14313e705d741446b`; normal build source: `4386c3bc548d0fd91e981d1cc84db6bc668a1bfb`. The oracle correction distinguishes bound identifiers, free identifiers and renamed preparation temporaries. Six direct Boogie-AST controls cover both resolved and unresolved occurrences, the reviewer's free-constant collision, pairwise category separation and preparation renaming without capture. No verifier translation changed in that correction.

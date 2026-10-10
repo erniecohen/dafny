@@ -4,6 +4,8 @@
 
 The exact compiler boundary remains implementation `1e6fa5126d8076983f0841629194dc64094f0b2f`, compiled-source pin `aa25d753ab1e3aebe4cc08d14313e705d741446b`, baseline `ab210b78b50adb5a192542897f0a00cdb40f3c35`, pinned Boogie and Z3 5.1.0. Original project/suite settings and per-batch resource ceilings were retained. No seed search, added axiom, unchecked premise, fuel override, contract weakening or translator-specific benchmark exception was introduced.
 
+The later [final review](obligation-final-review.md) permits an experimental default-off merge after correctness and soundness closure; it retains these diagnostic patches and the original benchmark inputs.
+
 ## Success, failure and proof truth
 
 The earlier successes are valid proofs of true claims. They are sensitive to context: changing batching, declaration order or the resolver can make an original proof exceed its resource ceiling. An earlier success is not thereby invalidated, and an exhausted query supplies no counterexample. Fixed-input repeats reproduced the original outcomes rather than alternating between success and failure. The evidence therefore supports **brittle successful proof searches and repeatable bounded failures**, not a blanket explanation of bad luck.

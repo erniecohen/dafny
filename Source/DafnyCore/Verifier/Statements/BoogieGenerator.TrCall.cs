@@ -330,8 +330,9 @@ public partial class BoogieGenerator {
         // The callee's decreases clause is evaluated in the callee's state, in which "old" denotes the
         // previous heap of a two-state lemma: the heap at its label, if the call has one.
         var calleeEtran = method is TwoStateLemma && atLabel != null ? etran.WithOld(etran.OldAt(atLabel)) : null;
-        CheckCallTermination(tok, contextDecreases, calleeDecreases, null, receiver, substMap, directSubstMap, tySubst, etran, oldCaller, builder, codeContext.InferredDecreases, null,
-          calleeEtran);
+        var callerEtran = builder.Context.CallerTerminationTranslator ?? etran;
+        CheckCallTermination(tok, contextDecreases, calleeDecreases, null, receiver, substMap, directSubstMap, tySubst, callerEtran, oldCaller, builder, codeContext.InferredDecreases, null,
+          calleeEtran ?? etran);
       }
     }
 
@@ -384,7 +385,11 @@ public partial class BoogieGenerator {
         // WF and before the sole actual check, as an immediate assertion does.
         // An extra early construction duplicates that support and consumes
         // expression-construction state before the assertion's preparation.
-        var lowering = LowerDeclaredProposition(instantiated, callerProof, locals, callEtran);
+        // Rebase old expressions in the callee clause, but not old expressions
+        // in the caller's decreases clause. The existing call termination check
+        // above also keeps those two heap contexts separate.
+        var lowering = LowerDeclaredProposition(instantiated, callerProof, locals, callEtran,
+          callerTerminationTranslator: builder.Context.CallerTerminationTranslator ?? (method is TwoStateLemma ? etran : null));
         purePreparation &= lowering.PurePreparation;
         var (error, success) = CustomErrorMessage(requirement.Attributes);
         var direct = Substitute(requirement.E, receiver, directSubstMap, tySubst);
