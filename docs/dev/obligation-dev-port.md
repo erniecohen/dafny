@@ -98,7 +98,19 @@ zero verdict differences. Their RU totals are 1,348,166,370 and 1,348,165,801.
 Seventy-one declaration totals differ by at most 146 RU; batch counts match.
 These runs retain the Makefile declaration order, whose small resource-count
 variation across runs is documented by the existing standard-library runner.
-Enabled-library results and the strict original issue 100 gate are pending.
+Enabled mode reports 2425 Correct, two Errors and five OutOfResource, with
+1,359,132,616 RU. LemmaRemainder, LemmaModNegNeg and RadixStrictlyIncreasing
+lose completion; EncodeBVLengthCongruentToZeroMod4, ConcatenatedProducer.Invoke
+and LimitedProducer.Invoke gain completion. Lemma2To64's arithmetic correctness
+proof changes from Errors to Correct; its power-of-two equalities are valid.
+
+The two target-specific runs for cs and notarget still complete all 132 proofs,
+but return exit 2 because the enabled preparation yields unnecessary-requires
+warnings at Duration-notarget-cs.dfy:196. These warning failures are retained,
+not relabeled green. The existing helper preserves the Makefile options and
+all seven actual run exit codes. The [recovered aggregation](https://github.com/erniecohen/dafny/actions/runs/38051335855)
+reads these complete immutable receipts and explicitly records unavailable proof
+JSON. The original issue 100 gate remains red.
 
 ## Correctness gate findings
 
@@ -120,14 +132,19 @@ The two two-state positive controls fail only when the feature is disabled:
 their valid labeled recursive calls cannot prove termination under the dev
 legacy caller/callee translator. Enabled mode correctly separates the caller
 measure from the label's callee previous heap. The default-off implementation
-retains dev's old lowering deliberately; adapting these two expectations needs
-an independent baseline receipt, rather than changing the original fixture.
+retains dev's old lowering deliberately; the [independent native baseline replay](https://github.com/erniecohen/dafny/actions/runs/38051013330)
+confirms both failures under the original dev compiler and both resolvers.
+The original fixtures remain unchanged.
 
 The original issue 100 still exhausts its 16,000,000 resource ceiling in both
 resolvers, with the feature both off and on. Its explicit-assertion and final-true
 variants verify at roughly 450,000 RU in every corresponding mode. The emitted
 exit proposition is the same; the final-true variant adds a tautological source
-assertion to the surrounding implementation. A native baseline and direct
-Boogie probe investigate this remaining proof-context sensitivity. No extra
+assertion to the surrounding implementation. The [native baseline receipt](https://github.com/erniecohen/dafny/actions/runs/38050879264)
+confirms the original exhaustion predates this port. The [direct native Boogie probe](https://github.com/erniecohen/dafny/actions/runs/38051337781)
+executes four procedures for each seed 0, 1 and 7, and all four controlled Boogie
+variants pass without Dafny's extra solver options. Matching those options is
+a separate diagnostic, so this result does not satisfy the original Dafny gate.
+The initial direct probe's unsupported argument and empty selection produced no proof evidence. No extra
 assertion, source hint, new axiom or higher ceiling is added to the original.
 The strict gate remains red, so normal CI and review readiness are pending.

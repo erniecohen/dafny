@@ -34,10 +34,13 @@ removed,count=re.subn(r'    assert \{:id "id63"\} Lit\(true\);\n','',final);asse
 variants['final-minus-tautology']=removed
 boogie=str(Path('out/native-boogie/boogie').resolve())
 (root/'boogie-identity.json').write_text(json.dumps({'pinned_package':'Boogie 3.5.5','execution_engine_sha256':{str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in Path('out/native-boogie').rglob('Boogie.ExecutionEngine.dll')}},indent=2)+'\n')
+dafny_options=['auto_config=false','type_check=true','smt.qi.eager_threshold=44','smt.delay_units=true','model_evaluator.completion=true','model.completion=true','model.compact=false','smt.case_split=3','smt.arith.nl=false']
 for name,content in variants.items():
  path=root/(name+'.bpl');path.write_text(content)
  for seed in [0,1,7]:
   command=[boogie,str(path),'/vcsCores:1','/typeEncoding:m','/normalizeDeclarationOrder:0','/rlimit:16000000','/timeLimit:60',f'/randomSeed:{seed}','/proverOpt:PROVER_PATH='+str(solver),'/trace']
   run(f'boogie-{name}-seed-{seed}',command)
+  matched=command+['/proverOpt:O:'+option for option in dafny_options]
+  run(f'boogie-dafny-options-{name}-seed-{seed}',matched)
 (root/'summary.json').write_text(json.dumps({'diagnostic':True,'solver':subprocess.check_output([str(solver),'--version'],text=True).strip(),'solver_sha256':hashlib.sha256(solver.read_bytes()).hexdigest(),'observations':observations},indent=2)+'\n')
 print('Recorded native baseline and controlled Boogie observations; strict original acceptance is unchanged.')
