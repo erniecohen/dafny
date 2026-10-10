@@ -1,0 +1,243 @@
+# Declared-contract preparation argument
+
+This argument is adapted from the final implementation merged in #168 as
+1256f92b, including the separate caller termination context added during final
+review. The proposition remains mandatory and is checked once.
+
+The [development report](obligation-dev-port.md) records the dev-specific
+helpers and independent validation. The dev inventory was captured from its
+own source and has 280 producer groups across 26 files; supported-line counts
+and measurements in the historical sections below are reference evidence.
+
+## Existing well-formedness proof
+
+The method specification-WF procedure has no user `requires` assumptions on its
+interface. It checks each requirement's WF before assuming that requirement,
+in source order. It then checks frames, havocs permitted state and outputs,
+and checks each postcondition's WF before assuming that postcondition.
+Thus domain/null/bounds/type/termination facts for a clause are certified under
+its typed inputs, preceding clauses and its own short-circuit guards; the
+clause's truth is not supplied to its own preceding WF proof. Postcondition WF
+uses the specification policy for reads, rather than the body's reads bound.
+Delayed requirement reads checks may use all established requirements; those
+reads checks therefore cannot be assumed before checking a caller requirement.
+
+At a method exit, input/entry conditions and the permitted heap/output typing
+hold, and earlier postconditions have already been checked in order. At a
+method call, actuals have been frozen and typed, ordinary frame/termination
+checks precede the contract checks, and earlier requirements have been checked.
+Iterator yield contracts use their existing specification WF, exact yield old
+heap and inherited guard. Independent iterator specification WF already checks
+yield ensures with `$_OldIterHeap` as the previous heap; local yield replay uses
+that same heap, rather than the iterator body's entry heap. The existing modular
+specification-WF proof licenses the clause's local domain support at these
+points. Inherited preparation keeps its existing guard. These licenses require
+complete verification of the independent WF procedures and supporting contracts;
+a filtered body-only result cannot substitute for specification-WF acceptance.
+
+## Replay, without proving WF a second time
+
+Use the existing source-local statement-WF traversal and fresh translator,
+with its existing assertion fuel, binder materialization and can-call setup.
+For declared contracts only, use the existing `AssertMode.Assume` context for
+already certified non-read WF facts. Do not call `CheckWellformedAndAssume` on
+the proposition: that would assume the proposition itself. After preparation,
+restore ordinary checking and emit the sole actual clause check. No interface
+contract proof or post-check publication policy changes.
+
+Body reads-frame assertions are different: they are not licensed by
+postcondition specification-WF, and delayed precondition reads checks can
+depend on requirements not yet proved at a call. They must be neither checked
+again nor assumed by this replay. Still translate those reads expressions, so
+traversal/fuel state and legitimate metadata can-call support match the
+existing assertion traversal. Discard only the body reads assertion at its dedicated
+WF sink. A nested lambda establishes its own declared frame and keeps its
+existing independent WF policy, rather than inheriting the surrounding method
+reads bound. Preserve all other guards and source-local setup; inspect no surrounding
+body expressions and introduce no background axiom.
+
+## Separate recursive caller and clause contexts
+
+For a checked clause `P_i`, let `C_i` contain typed actuals, receiver and type
+arguments, its precise heap context and already checked preceding clauses.
+Preparation must supply only domain facts licensed in that context, under their
+original evaluation guards. Neither `P_i` nor a later clause licenses its own
+preparation. This includes the preconditions and termination of lemma calls in
+statement expressions, as well as function calls.
+
+At a recursive call from `A` to `C`, a function or proof helper `F` in `C`'s
+clause that belongs to `A`'s recursive component also places `C` in that
+component. Independent specification WF of the clause establishes `D_F < D_C`
+under `C_i` and the clause's guards. The existing checked call establishes
+`D_C < D_A` before replay. Transitivity licenses `D_F < D_A`, with each measure
+evaluated in its own original context. Prior clauses may be used; the current
+and later clauses may not.
+
+For a two-state callee, clause `old` expressions use the call's selected previous
+heap: the original previous heap for an unlabelled call, or the captured heap
+at an explicit label. The caller's measure retains the caller's original
+previous heap. A label in a nonmodifying two-state lemma can denote its current
+heap while that lemma's previous heap is different. Nonmutation therefore does
+not permit replacing the caller's previous heap with the callee's labelled heap.
+The correction preserves a separate caller translator through WF options and
+the preparation builder context, including nested statement expressions and
+lambda/frame WF. Only the function/helper side uses the clause translator.
+Ordinary termination and lower-bound checks remain present.
+
+Method exits do not perform this caller-to-callee rebasing: their enclosing
+declaration and pre/post heaps are those of their independent specification WF.
+Iterator yields likewise retain the independently certified yield previous heap
+described above. Nested lambda WF keeps its own hypothetical heap, guards and
+terminating proof branch; it does not transport facts from that hypothetical heap
+to the clause's continuation. Complete independent WF, guard preservation and
+the established scope boundaries are prerequisites to the argument.
+
+## Required controls
+
+Retain the specification's actual domain assertions while replacing their
+local duplicated proofs by certified support. Keep the actual exit/call clause
+assertion mandatory, including a false first postcondition whose later WF
+would otherwise be vacuous. A conditional function reads set supplies an
+important negative caller: its reads set is empty only when its requirement
+is true. The caller with a false requirement must still fail; assuming that
+reads-frame predicate would incorrectly make the caller's path infeasible.
+
+Compare recursive nested-existential checked formulas with immediate assertions
+under both resolvers, including a function reads expression containing another
+existential. Reads-sink suppression must preserve translation/fuel state rather
+than skipping the traversal. Keep explicit assertions unchanged. Run all paired
+negatives and original/subset controls, then fresh complete suite/library gates.
+The existing gate inputs, source hints, ceilings and verdict tables stay fixed.
+
+## Guarded private argument bindings
+
+The implementation normalizes only the freshly generated certified-WF
+fragment. Pure deterministic branches can become guarded assumptions. The only
+assignments moved before those assumptions bind freshly allocated function-WF
+argument temporaries: they are private to this traversal, assigned exactly once,
+and never change source variables or heaps. Each supporting fact retains the
+conjunction of its original branch guards, expression, attributes and fuel.
+
+The function-WF routine identifies these argument variables as it creates them;
+eligibility does not infer privacy from variable names. Repeated assignments,
+guards mentioning assigned temporaries, calls, real assertions, conditional
+havoc, labels, scope commands and other statement forms retain the original
+translation. Empty branches become the tautology `G ==> G`, using the original
+guard expression on both sides and retaining any comments. This preserves the
+guard terms without an empty control-flow split. Preparation still runs the
+original traversal, and the actual proposition lowering is unchanged.
+
+The justification projects away the private temporaries. On an active branch,
+each unique temporary has the same value as before; on an inactive branch,
+its newly assigned value is unobservable outside preparation and every fact
+about it is guarded off. All non-temporary variables retain their state.
+Consequently the same certified support holds at the same check point.
+Moving a repeated assignment or a variable that a guard reads would invalidate
+that argument, so those fragments are excluded.
+
+## Leading support order
+
+The [native support-order diagnosis](https://github.com/erniecohen/dafny/blob/1256f92b/docs/dev/obligation-support-order-diagnosis.md)
+records the supported-line diagnosis for this local correction. Create the existing support
+expression at its original point; move its command after normalized certified
+preparation only when it is independent of every private assignment and havoc
+target. The same expression/command and every preparation fact remain before the
+mandatory P check. Unsupported fragments retain the original order. This is
+state-preserving commutation of an assume with independent pure setup, not a
+new fact, proof, fuel policy or body-term collection.
+
+
+## Caller proof scopes and original call publication
+
+The implementation retains each ordinary method call's complete preparation,
+sole checked pieces and ordinary split summaries in one existing `PathAsideBlock`.
+The branch ends after all required checks. Earlier requirements remain available
+while proving later requirements; every check keeps its own complete preparation,
+original fuel traversal, current substitutions, pre-call heap and visibility.
+This changes the continuation boundary, not the strength of a check.
+
+The ordinary call targets a separately named, nonchecking Call/CoCall interface
+whose user requirements have the existing `always_assume` attribute. Conditions
+are generated by the original method-spec splitter and translators, and Boogie
+performs its original formal/actual and heap substitutions. This publishes the
+original kind of call facts, rather than copying internal assertion pieces that
+may differ under assertion induction. No second precondition proof is generated.
+Frames, termination, old allocation and output handling retain their previous
+locations and representations.
+
+The original nonchecking interface remains the target of inherited/filtered
+free calls. Those calls skip the local proof and do not acquire the ordinary
+user requirement's new publication attribute. This preserves the original
+Boogie behavior on these paths; indiscriminately marking every interface would
+not. Default-off generation creates no additional interface or proof scope.
+
+Only certified, normalized preparation can use the local proof scope. Its
+commands may be comments, assumptions or bindings of recorded fresh private
+argument variables. Havocs, source writes, calls and visibility commands reject
+scoping. A statement expression in the checked proposition also rejects scoping,
+so its previously outer reveals and other effects remain in the continuation.
+For rejected preparation, append the original commands in their original order.
+Only the proposition being checked and its freshly generated preparation are
+inspected; no surrounding body or context terms are consulted.
+
+The semantic argument separates two paths of the nondeterministic branch. One
+path proves every mandatory precondition with all its original support and then
+terminates; the other reaches the original call. Complete verification of the
+branch checks establishes the preconditions before their normal call publication.
+No later contract assumption licenses an earlier branch assertion. The diagnostic
+with a direct `requires false` source call remains Invalid. Private preparation
+bindings affect no source state, and rejected effects stay in their old outer
+scope. This argument still requires the candidate's own structural and native
+validation; preceding scratch results are not product acceptance.
+
+
+## Fresh quantified-local scope proposal: not adopted
+
+The [supported-line focused library diagnosis](https://github.com/erniecohen/dafny/blob/1256f92b/docs/dev/obligation-current-focused-library.md#quantified-preparation-remains-in-the-outer-continuation)
+identifies a scope-certificate boundary for quantified WF havocs. The scratch
+proposal preserves every preparation command at the actual caller check and
+extends only eligibility for the existing terminating caller-proof branch.
+Every eligible havoc must refer by declaration identity to a local added during
+that same preparation. Existing-state writes/havocs, unsupported commands and
+statement-expression visibility effects remain excluded. The proposed argument
+projects away those private binder locals after the mandatory check while the
+ordinary call publishes its original contracts. This is not normalization or
+support omission, and does not license adoption before native and structural
+controls pass. The implemented product certificate is unchanged.
+
+
+The fresh-local scope comparison has now completed eighteen observations with
+strict original-preparation/actual-check metadata controls and six genuine
+Invalid controls. It partly improves Remainder (VVR without added axioms, VRR
+with them), leaving three failures. The follow-up separately tests guarded
+normalization of fresh singly written binders. Neither experiment has been
+adopted; see the supported-line focused library record for its exact compiler boundary.
+
+
+## Standard caller support construction
+
+The final implementation keeps the original normalized statement-WF preparation and
+scope policy and uses its complete can-call support at the usual assertion point:
+after WF and before the actual caller check. The caller had constructed another
+copy of complete support before running that same preparation. Removing that
+extra construction introduces no fact or proof obligation; complete support
+remains present before the unchanged mandatory checks. Contract-WF licensing,
+earlier-clause publication, frozen inputs, exact heaps, diagnostics, full
+check metadata, fuel, call ordering and outer reveal effects retain their
+existing paths. This is a caller change, not a change to guarded/inherited
+leading support at exits.
+
+### Canonical local exit construction
+
+A locally declared postcondition without a statement expression has the same
+independently licensed non-read WF preparation described above. Its standard
+well-formedness traversal emits the complete can-call formula before the sole
+actual clause check. Constructing another copy before that traversal is unnecessary
+and consumes expression-construction state before the assertion's standard point.
+The local exit path therefore retains the complete standard support rather than
+constructing the extra leading copy. It preserves the actual formula, metadata,
+fuel, normal publication and clause order; this adds no assumption or proof of P.
+Inherited clauses retain the original leading support and `$_reverifyPost` guards.
+Statement-expression clauses retain it too, along with their previous outer reveal
+and visibility effects. The decision inspects only the current proposition and
+its legitimate inheritance/effect context, never unrelated body expressions.

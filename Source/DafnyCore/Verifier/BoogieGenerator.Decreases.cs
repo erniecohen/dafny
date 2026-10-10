@@ -37,13 +37,15 @@ public partial class BoogieGenerator {
                             Expression receiverReplacement, Dictionary<IVariable, Expression> substMap,
                             Dictionary<IVariable, Expression> directSubstMap,
                             Dictionary<TypeParameter, Type> typeMap,
-                            ExpressionTranslator etranCurrent, bool oldCaller, BoogieStmtListBuilder builder, bool inferredDecreases, string hint) {
+                            ExpressionTranslator etranCurrent, bool oldCaller, BoogieStmtListBuilder builder, bool inferredDecreases, string hint,
+                            ExpressionTranslator etranCallee = null) {
     Contract.Requires(tok != null);
     Contract.Requires(Cce.NonNullElements(contextDecreases));
     Contract.Requires(Cce.NonNullElements(calleeDecreases));
     Contract.Requires(Cce.NonNullDictionaryAndValues(substMap));
     Contract.Requires(etranCurrent != null);
     Contract.Requires(builder != null);
+    etranCallee ??= etranCurrent;
 
     // The interpretation of the given decreases-clause expression tuples is as a lexicographic tuple, extended into
     // an infinite tuple by appending TOP elements.  The TOP element is strictly larger than any other value given
@@ -84,8 +86,8 @@ public partial class BoogieGenerator {
       newExpressions.Add(e0direct);
       toks.Add(new NestedOrigin(tok, e1.Origin, "this decreases clause was not satisfied"));
       canCalls = BplAnd(canCalls, etranCurrent.CanCallAssumption(e1));
-      canCalls = BplAnd(canCalls, etranCurrent.CanCallAssumption(e0direct));
-      callee.Add(etranCurrent.TrExpr(e0));
+      canCalls = BplAnd(canCalls, etranCallee.CanCallAssumption(e0direct));
+      callee.Add(etranCallee.TrExpr(e0));
       caller.Add(etranCurrent.TrExpr(e1));
     }
     bool endsWithWinningTopComparison = N == contextDecreases.Count && N < calleeDecreases.Count;

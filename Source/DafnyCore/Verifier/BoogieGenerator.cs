@@ -89,6 +89,8 @@ namespace Microsoft.Dafny {
       public bool InsertChecksums { get; init; }
       public string UniqueIdPrefix = null;
       public bool ReportRanges = false;
+      internal Action<PropositionLowering> ObligationLowered { get; init; }
+      internal Action<DeclaredPreparationSnapshot> ObligationPrepared { get; init; }
     }
 
     [NotDelayed]
@@ -2789,7 +2791,7 @@ namespace Microsoft.Dafny {
       }
     }
 
-    void CheckCasePatternShape<VT>(CasePattern<VT> pat, Expression dRhs, Bpl.Expr rhs, IOrigin rhsTok, Type rhsType, BoogieStmtListBuilder builder)
+    void CheckCasePatternShape<VT>(CasePattern<VT> pat, Expression dRhs, Bpl.Expr rhs, IOrigin rhsTok, Type rhsType, BoogieStmtListBuilder builder, ExpressionTranslator etran)
       where VT : class, IVariable {
       Contract.Requires(pat != null);
       Contract.Requires(rhs != null);
@@ -2797,7 +2799,7 @@ namespace Microsoft.Dafny {
       Contract.Requires(rhsType != null);
       Contract.Requires(builder != null);
       if (pat.Var != null) {
-        CheckSubrange(rhsTok, rhs, rhsType, pat.Var.Type, dRhs, builder);
+        CheckSubrange(rhsTok, rhs, rhsType, pat.Var.Type, dRhs, builder, etran: etran);
       } else if (pat.Arguments != null) {
         Contract.Assert(pat.Ctor != null);  // follows from successful resolution
         Contract.Assert(pat.Arguments.Count == pat.Ctor.Destructors.Count);  // follows from successful resolution
@@ -2821,7 +2823,7 @@ namespace Microsoft.Dafny {
           var r = new Bpl.NAryExpr(arg.Origin, new Bpl.FunctionCall(GetReadonlyField(dtor)), new List<Bpl.Expr> { rhs });
           Type argType = dtor.Type.Subst(typeSubstMap);
           var de = CondApplyUnbox(arg.Origin, r, dtor.Type, argType);
-          CheckCasePatternShape(arg, arg.Expr, de, arg.Origin, argType, builder);
+          CheckCasePatternShape(arg, arg.Expr, de, arg.Origin, argType, builder, etran);
         }
       }
     }
@@ -4426,7 +4428,8 @@ namespace Microsoft.Dafny {
     }
 
     public void CheckSubrange(IOrigin tok, Bpl.Expr bSource, Type sourceType, Type targetType,
-      Expression source, BoogieStmtListBuilder builder, string errorMsgPrefix = "") {
+      Expression source, BoogieStmtListBuilder builder, string errorMsgPrefix = "", ExpressionTranslator etran = null,
+      Func<Bpl.Expr, Bpl.Expr> close = null, bool forget = false, bool universalClosure = false, Bpl.Expr valueCanCall = null) {
       Contract.Requires(tok != null);
       Contract.Requires(bSource != null);
       Contract.Requires(sourceType != null);
@@ -4435,7 +4438,7 @@ namespace Microsoft.Dafny {
 
       var cre = GetSubrangeCheck(tok, bSource, sourceType, targetType, source, null, out var desc, errorMsgPrefix);
       if (cre != null) {
-        builder.Add(Assert(tok, cre, desc, builder.Context));
+        CheckTypeMembership(tok, cre, bSource, sourceType, targetType, desc, builder, etran, close, forget, universalClosure, valueCanCall);
       }
     }
 
@@ -4940,8 +4943,8 @@ namespace Microsoft.Dafny {
       Contract.Requires(etran != null);
       Contract.Ensures(Contract.Result<List<SplitExprInfo>>() != null);
 
-      var splits = new List<SplitExprInfo>();
       var applyInduction = kind == MethodTranslationKind.Implementation;
+      var splits = new List<SplitExprInfo>();
       TrSplitExpr(context, expr, splits, true, int.MaxValue, applyInduction, etran);
       return splits;
     }

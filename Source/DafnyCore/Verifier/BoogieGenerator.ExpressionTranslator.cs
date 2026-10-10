@@ -738,7 +738,9 @@ namespace Microsoft.Dafny {
             // Translate with $IsAllocBox, even if it requires boxing the argument. This has the effect of giving
             // both the $IsAllocBox and $IsAlloc forms, because the axioms that connects these two is triggered
             // by $IsAllocBox.
-            return BoogieGenerator.MkIsAllocBox(BoxIfNecessary(e.E.Origin, TrExpr(e.E), e.E.Type), e.E.Type, HeapExpr);
+            return options.Get(CommonOptionBag.ConsistentObligationChecks)
+              ? BoogieGenerator.ExplicitAllocationPredicate(e.E.Origin, TrExpr(e.E), e.E.Type, HeapExpr)
+              : BoogieGenerator.MkIsAllocBox(BoxIfNecessary(e.E.Origin, TrExpr(e.E), e.E.Type), e.E.Type, HeapExpr);
           case UnaryOpExpr.ResolvedOpcode.Assigned:
             string name = null;
             switch (e.E.Resolved) {
@@ -844,7 +846,10 @@ namespace Microsoft.Dafny {
           var id = new Boogie.IdentifierExpr(GetToken(e), e.Function.FullSanitizedName, ty);
 
           var args = FunctionInvocationArguments(e, layerArgument, revealArgument, false, out var argsAreLit);
-          Expr result = new Boogie.NAryExpr(GetToken(e), new Boogie.FunctionCall(id), args);
+          Expr result = options.Get(CommonOptionBag.ConsistentObligationChecks) &&
+            e.Function.Name == "requires" && e.Function.EnclosingClass is ArrowTypeDecl arrow
+              ? BoogieGenerator.HigherOrderRequirement(GetToken(e), arrow.Arity, args)
+              : new Boogie.NAryExpr(GetToken(e), new Boogie.FunctionCall(id), args);
           result = BoogieGenerator.CondApplyUnbox(GetToken(e), result, e.Function.ResultType, e.Type);
 
           bool callIsLit = argsAreLit
@@ -1771,7 +1776,8 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
               r = BplAnd(r, correctConstructor);
             }
           } else if (e.Member is ConstantField { Rhs: { } rhs } && BoogieGenerator.RevealedInScope(e.Member)) {
-            r = CanCallAssumption(Substitute(rhs, e.Obj, new Dictionary<IVariable, Expression>(), null));
+            r = CanCallAssumption(Substitute(rhs, e.Obj, new Dictionary<IVariable, Expression>(), null),
+              options.Get(CommonOptionBag.ConsistentObligationChecks) ? cco : null);
           }
           return r;
         } else if (expr is SeqSelectExpr) {
@@ -1812,12 +1818,15 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
               Cons(TrExpr(e.Function),
                 e.Args.ConvertAll(arg => TrArg(arg)))));
 
-          var requiresk = FunctionCall(e.Origin, Requires(e.Args.Count), Boogie.Type.Bool, args);
-          return BplAnd(
+          var requiresk = options.Get(CommonOptionBag.ConsistentObligationChecks)
+            ? BoogieGenerator.HigherOrderRequirement(e.Origin, e.Args.Count, args)
+            : FunctionCall(e.Origin, Requires(e.Args.Count), Boogie.Type.Bool, args);
+          var facts = BplAnd(
             BplAnd(
               Cons(CanCallAssumption(e.Function, cco),
                 e.Args.ConvertAll(ee => CanCallAssumption(ee, cco)))),
             requiresk);
+          return facts;
 
         } else if (expr is FunctionCallExpr) {
           FunctionCallExpr e = (FunctionCallExpr)expr;
@@ -1858,7 +1867,8 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
             Token.NoToken) {
             Type = e.Initializer.Type.AsArrowType.Result
           };
-          var canCall = CanCallAssumption(dafnyInitApplication);
+          var canCall = CanCallAssumption(dafnyInitApplication,
+            options.Get(CommonOptionBag.ConsistentObligationChecks) ? cco : null);
 
           dafnyInitApplication = new ApplyExpr(e.Origin, new BoogieWrapper(initF, e.Initializer.Type),
             [new BoogieWrapper(index, Type.Int)],

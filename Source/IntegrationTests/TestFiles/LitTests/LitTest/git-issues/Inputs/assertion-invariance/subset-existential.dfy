@@ -1,0 +1,1 @@
+function Id(n:int):int { n } ghost predicate P(i:int) { exists n:int {:trigger Id(n)} :: n>=0 && Id(n)==i } type S = i:int | P(i) witness Id(0) lemma L(i:int) requires i>=0 requires Id(i)==i { var v:S := i; }
