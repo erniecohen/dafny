@@ -70,7 +70,8 @@ public partial class BoogieGenerator {
 
   private PropositionLowering LowerDeclaredProposition(Expression condition,
     BoogieStmtListBuilder builder, Variables locals, ExpressionTranslator etran,
-    Bpl.Expr preparationGuard = null, Bpl.AssumeCmd leadingSupport = null) {
+    Bpl.Expr preparationGuard = null, Bpl.AssumeCmd leadingSupport = null,
+    ExpressionTranslator callerTerminationTranslator = null) {
     // Replay assertion-local setup using the contract's independently checked
     // non-read WF facts. Do not prove those facts twice or assume body reads
     // bounds: specification WF has a different reads policy. The same fresh
@@ -79,15 +80,17 @@ public partial class BoogieGenerator {
     var savedStatement = stmtContext;
     var savedAdjustment = adjustFuelForExists;
     var checking = etran.CloneForObligation();
+    var callerChecking = (callerTerminationTranslator ?? builder.Context.CallerTerminationTranslator)?.CloneForObligation();
     try {
       stmtContext = StmtType.ASSERT;
       adjustFuelForExists = true;
       var argumentTemporaries = new HashSet<string>();
       var preparation = new BoogieStmtListBuilder(this, options,
-        builder.Context with { AssertMode = AssertMode.Assume });
+        builder.Context with { AssertMode = AssertMode.Assume, CallerTerminationTranslator = callerChecking });
       BplIfIf(condition.Origin, preparationGuard != null, preparationGuard, preparation,
         guarded => TrStmt_CheckWellformed(condition, guarded, locals, checking, false,
-          omitReadsAssertions: true, certifiedArgumentTemporaries: argumentTemporaries));
+          omitReadsAssertions: true, certifiedArgumentTemporaries: argumentTemporaries,
+          callerTerminationTranslator: callerChecking));
       var normalized = CertifiedContractPreparation.Normalize(preparation.Commands, argumentTemporaries);
       // Match assertion-local support order only across certified pure setup.
       // Preserve the original placement if a write/havoc can change its truth,

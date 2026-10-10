@@ -30,7 +30,11 @@ using PODesc = Microsoft.Dafny.ProofObligationDescription;
 using static Microsoft.Dafny.GenericErrors;
 
 namespace Microsoft.Dafny {
-  public record BodyTranslationContext(bool ContainsHide, int ScopeDepth = 0, bool ReturnPosition = true, AssertMode AssertMode = AssertMode.Keep);
+  public record BodyTranslationContext(bool ContainsHide, int ScopeDepth = 0, bool ReturnPosition = true, AssertMode AssertMode = AssertMode.Keep) {
+    // Statement-expression calls in certified replay need the same original
+    // caller context as function-WF termination checks.
+    internal BoogieGenerator.ExpressionTranslator CallerTerminationTranslator { get; init; }
+  }
 
   public partial class BoogieGenerator {
     // The existing positive-universal assertion rule. Generated range-bound
