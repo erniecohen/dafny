@@ -20,7 +20,48 @@ The correction retains the caller context separately throughout replay, includin
 
 Independently established callee specification WF licenses the function/helper measure below the callee measure, evaluated in the clause heap. The existing checked caller-to-callee termination obligation establishes the callee measure below the caller measure, evaluated in its original caller context. Transitivity licenses the replayed comparison. Rebasing only the callee side preserves this derivation; rebasing both sides does not.
 
-**Final soundness signoff and final-build correctness validation are pending. Keep the PR draft until those conditions close.**
+The independent source and generated-Boogie review found no remaining concrete
+correctness defect in the corrected replay paths. A final 48-invocation matrix
+covers baseline/OFF/ON, both resolver modes and both additional-axiom settings.
+It inspects 312 declaration outcomes, including 168 independently successful
+WF declarations. Both false-precondition callers and separate false controls
+fail genuinely; both feasible callers pass. All 16 baseline/OFF declaration and
+batch resource vectors agree. The nested positive explicitly establishes its
+helper precondition in an earlier callee clause; its first version omitted this
+independent license and was corrected before accepting the matrix.
+
+The corrected native build passes all 396 core tests and all 118 obligation
+tests, including the ordinary independent inventory gate. The reviewed inventory
+still has 287 groups with unchanged counts and classifications. The previous
+automatic CI regression failure was the nested positive fixture omission; its
+suite verdict and library jobs passed. That failed run remains historical evidence.
+
+The [final focused correctness receipt](obligation-final-correctness.json) closes
+all six actual test phases: 396 core tests, 118 obligation tests, one independent
+inventory capture, one ordinary inventory test, the actual registered issue100
+LitTest, and the editor option-invalidation test. The registered helper executes
+all 386 verifier invocations. Its 32 retained replay JSONs contain 208 declaration
+outcomes, including 112 independently successful WF declarations and 32 genuine
+expected Invalid correctness declarations. All eleven direct Boogie publication
+controls also have their exact expected verified/error counts. No empty selection,
+skipped test, safety timeout or exhausted proof is accepted.
+
+The native package comes from the [refreshed build](https://github.com/erniecohen/dafny/actions/runs/38031272435).
+The frozen gate accounts for exactly one test-input bridge: the committed nested
+positive precondition correction, source `4e1ec113527d6ce54522ab6b7cfd6fbcde34dea9`.
+Its original and replacement hashes are recorded; every other archived test
+input remains unchanged. All test load paths use the exact corrected native
+product, the explicit official .NET10 runtime, and Z3 5.1.0. This focused closure
+supplies the corrected registered regression, inventory and editor results that
+the earlier automatic CI run could not complete. That older failed CI run is
+not relabeled green; this receipt does not claim a new whole-suite comparison.
+
+**The final source/BPL review and required focused correctness gates are complete.
+The PR is ready for human review toward an experimental, default-off merge.**
+This is not a general mechanized soundness theorem or a uniform proof-cost
+improvement claim. No original benchmark or expected verdict was changed; the
+four proof patches remain diagnostic review artifacts. Changing the default or
+porting PR169 remains a separate owner decision.
 
 ## Regression evidence and maintenance cost
 
@@ -30,4 +71,4 @@ The [four proof repairs](obligation-remainder-proofs.md) record explicit initial
 
 The empty-body Schorr-Waite regression is intentionally distinct from its portable repair: enabled sequential checking supplies an established concrete path fact to the later existential postcondition, while baseline requires the explicit witness. Its supporting definitions and WF declarations are checked separately, with a missing-edge negative and an inhabited original-heap control.
 
-The linked investigation and repair reports include measured target batch counts, aggregate and maximum Z3 resource units, and completed-proof ratios for all seven isolation examples and four repaired targets. Exhausted results are censored, and unmeasured configurations are explicitly identified. These historical measurements retain their exact frozen compiler, Z3 5.1.0, resource ceilings and configuration. They do not claim corrected-compiler performance. No original benchmark, expected verdict table or ceiling is changed to improve a reported count.
+The linked investigation and repair reports include measured target batch counts, aggregate and maximum Z3 resource units, and completed-proof ratios for all seven isolation examples and four repaired targets. Exhausted results are censored, and unmeasured configurations are explicitly identified. These historical measurements retain their exact frozen compiler, Z3 5.1.0, resource ceilings and configuration. The four repaired-target costs were reproduced by the corrected-compiler focused recheck; the seven isolation costs remain historical. No original benchmark, expected verdict table or ceiling is changed to improve a reported count.

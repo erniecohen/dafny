@@ -116,9 +116,26 @@ from target cost and are not a complete surrounding-file cost comparison.
 The proof restructuring changes target batch counts in Iterator and Mod while
 retaining their original source isolation policy. The measurements support these
 specific source repairs at the original caps; they do not establish a whole-suite
-performance remedy, a new translator result, or costs for the later corrected
-compiler. The four patches remain review artifacts, and the original suite and
+performance remedy. The four patches remain review artifacts, and the original suite and
 standard-library inputs remain unchanged.
+
+## Corrected-compiler recheck
+
+The caller-termination heap correction compiles as
+`4.11.0+fcb2042d.review.d5cb659f`, product
+`1c30dd9904e6087931b8efa7d35cb33cc0fb9558`. Rechecking the same four review
+patches with Z3 5.1.0 at every original configuration and ceiling closes all
+51 target/helper invocations: 75 selected declaration occurrences and 618
+valid batches. All 17 matched baseline/OFF declaration and batch resource
+vectors agree. Every target verdict, batch count and aggregate resource count
+also matches the earlier 51-invocation combined check above. These four repair
+costs are therefore reproduced with the corrected compiler; the seven isolation
+measurements remain historical measurements of the earlier compiler.
+
+The staged Schorr-Waite benchmark retains its four original unannotated-assume
+warnings, and the source audits and surrounding-file limits below remain in
+force. This focused recheck introduces no warning or exhausted batch. It does
+not establish complete-file or entire-project proof acceptance.
 
 ## Closure, controls and limits
 
