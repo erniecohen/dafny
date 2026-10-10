@@ -102,6 +102,12 @@ Here P_i denotes a checked clause after the existing ConjunctsOf decomposition. 
 
 The argument is relative to Dafny's existing verified-contract and background-theory semantics and requires the complete verification scope. Negative controls and structural comparisons check particular implementation boundaries; they corroborate this argument but do not replace it. No background axiom or global fuel/trigger policy is added by this implementation.
 
+## Later methodological and regression investigation
+
+The [focused methodological investigation](obligation-methodological-investigation.md) records the owner's later request to examine removable source assertions, diagnose all eleven failures and audit Boogie/Z3 determinization settings. All eleven failures were reproduced at affected configurations. Seven pass under diagnostic isolation at unchanged per-batch resource ceilings; four persist or reveal baseline brittleness under isolation. These are context/search findings, not a validated translation repair. Four sampled pre-existing assertion copies can be removed, but baseline already verifies without them; no additional feature-dependent benefit was found in that sample.
+
+Normalized Boogie names are already enabled. Captured SMT streams differ under default declaration-order normalization despite identical operational Boogie in two suspicious OFF-WF cases; order0 restores stream/resource repeatability locally. The larger earlier OFF outliers are not fully explained, and the alternate order introduces baseline failures elsewhere. The strict broad acceptance results below remain unchanged.
+
 ## Merge recommendation
 
 **Do not merge under the current acceptance criteria.** The requested comparisons, fingerprint repair, structural controls, new identity reproducer, baseline-repeat analysis and implementation soundness argument are complete. Every broad comparison rejects acceptance: enabled mode has unresolved resource failures and substantial declaration-cost increases, and the library fails strict OFF resource equality despite baseline variability. The candidate is not uniformly better than the baseline. The architecture and fresh assertion-invariance controls remain supported by the evidence, but the negative tests and argument are not a mechanized general soundness proof or a performance guarantee. `RemoveFactor` remains `VRRRRRRR` versus `RRRRRRRR`; no speculative tuning was undertaken. Any further modification should follow a concrete generalizable diagnosis. PR 169 has not been ported.
