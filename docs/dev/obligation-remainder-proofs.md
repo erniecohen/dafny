@@ -1,8 +1,8 @@
 # Four persistent regressions: checked source proof repairs
 
-**Focused source proofs; verifier implementation still frozen.** The owner asked to investigate the four cases that did not yield to diagnostic assertion isolation and drive them to proofs. The [portable patches](obligation-remainder-proofs/) below reconstruct those proofs without modifying the candidate's translation. They are review artifacts, **not applied changes to the suite or shipped standard library**. PR 168 remains draft; PR 169 is unchanged.
+**Historical focused source proofs; verifier implementation frozen for these experiments.** The owner asked to investigate the four cases that did not yield to diagnostic assertion isolation and drive them to proofs. The [portable patches](obligation-remainder-proofs/) below reconstruct those proofs without modifying the candidate's translation. They are review artifacts, **not applied changes to the suite or shipped standard library**. PR 168 remains draft; PR 169 is unchanged.
 
-The exact compiler boundary remains implementation `1e6fa5126d8076983f0841629194dc64094f0b2f`, compiled-source pin `aa25d753ab1e3aebe4cc08d14313e705d741446b`, baseline `ab210b78b50adb5a192542897f0a00cdb40f3c35`, pinned Boogie and Z3 5.1.0. Original project/suite settings and per-batch resource ceilings were retained. No seed search, added axiom, unchecked premise, fuel override, contract weakening or translator-specific benchmark exception was introduced.
+The exact compiler boundary for these experiments is implementation `1e6fa5126d8076983f0841629194dc64094f0b2f`, compiled-source pin `aa25d753ab1e3aebe4cc08d14313e705d741446b`, baseline `ab210b78b50adb5a192542897f0a00cdb40f3c35`, pinned Boogie and Z3 5.1.0. Original project/suite settings and per-batch resource ceilings were retained. No seed search, added axiom, unchecked premise, fuel override, contract weakening or translator-specific benchmark exception was introduced.
 
 The later [final review](obligation-final-review.md) permits an experimental default-off merge after correctness and soundness closure; it retains these diagnostic patches and the original benchmark inputs.
 
@@ -24,6 +24,101 @@ The repairs make the mathematical steps explicit and separate unrelated search. 
 The iterator's original failed check was the final recursive `R` precondition of `Push`, already in a single-check batch. Moving read-only work before iterator writes addresses that heap transition; more assertion isolation could not localize it further. Two preliminary helper-based repairs were rejected: one failed enabled legacy-resolver checks, and another regressed refreshed-resolver proofs. They are not the retained patch.
 
 The Schorr-Waite repair also required proof closure: an intermediate empty-body helper passed enabled checking but failed baseline. Supplying the explicit initial path witness makes the retained helper independently prove in both. A parse-invalid intermediate experiment and an empty-selection wrapper were preserved as rejected diagnostics, not counted as proofs.
+
+## Bounded resource costs of four source repairs
+
+These are historical bounded measurements from the frozen compiled source
+`aa25d753ab1e3aebe4cc08d14313e705d741446b` (implementation
+`1e6fa5126d8076983f0841629194dc64094f0b2f`), native Dafny
+`4.11.0+fcb2042d.review.5841c0e6`, compared with baseline source
+`ab210b78b50adb5a192542897f0a00cdb40f3c35`, native Dafny
+`4.11.0+fcb2042d.review.898e7500`. Both used pinned Z3 **5.1.0** and the same
+Boogie dependency `3.5.5-review.37e4435d`. They do not measure the later soundness correction
+`1c30dd9904e6087931b8efa7d35cb33cc0fb9558` or establish its final correctness.
+That correction's final validation was pending when these tables were recorded;
+its resource costs are unmeasured here. No new cost sweep was run for this record.
+
+Baseline means the baseline binary; OFF and ON mean the candidate with
+`--consistent-obligation-checks false` and `true`. Each cost cell is
+**verdict / target batch count / aggregate RU / maximum batch RU**. `C` means
+reported Correct; every target batch was Valid. Aggregate RU is the sum of the
+recorded target VC resource counts, not whole-file or helper cost. `OOR` is a
+resource-exhausted, censored observation: its recorded work is shown, but the cost
+of a successful proof is unknown. Resource counts can slightly exceed the stated
+ceiling. Ratios use aggregate RU and are shown only when both operands are
+Correct; no ratio is inferred from an OOR result. Counts are exact; ratios are
+rounded to three decimals. No elapsed-time or executor measurement is used.
+
+The table matches each original affected configuration to the same configuration
+with all four portable patches applied together. Original sources are at the
+compiled source pin above; the exact repaired files are reconstructed by the
+linked patches. Every source and native component hash was checked in the retained
+inputs. The repaired-file SHA-256 values are:
+
+| Repaired file / patch | SHA-256 of complete repaired source |
+|---|---|
+| `SchorrWaite-stages.dfy` / [schorr-waite.patch](obligation-remainder-proofs/schorr-waite.patch) | `0be60363a55743acc2dfa43a5384ac38b61c67b787f9a9c168cabf4a7319e863` |
+| `SnapshotableTrees.dfy` / [iterator.patch](obligation-remainder-proofs/iterator.patch) | `fe94ca756b8a49641bec3f87a2f6fb8c2fe4bbcc838b72cee153d24eb64d51f9` |
+| `DivMod.dfy` / [modular-remainder.patch](obligation-remainder-proofs/modular-remainder.patch) | `339a0879436b7a8ee8a97e7d560ce4fac053f7296cfbeb02ba586ff3e0b1a6f2` |
+| `Base64.dfy` / [base64.patch](obligation-remainder-proofs/base64.patch) | `fc7b033a01ca0cb90603b05a3fd835c9906bf42e81834df5130ba214ea79a6a4` |
+
+All modes retain `--cores 1`, `--verification-time-limit 0`,
+`DOTNET_PROCESSOR_COUNT=1`, the default zero seed policy and normalized names.
+Suite targets use the original `--resource-limit 16000000`,
+`--allow-warnings`, `/normalizeDeclarationOrder:0`, refreshed/legacy
+`--type-system-refresh` and `--general-newtypes` settings. Schorr-Waite retains
+`--allow-deprecation`; Iterator retains
+`--solver-option=O:smt.qi.eager_threshold=80`. Library targets run through the
+complete `src/Std/dfyconfig.toml` project, retaining its options and the existing
+source attributes. No new isolation option or budget increase is applied.
+
+| Target shorthand (exact declaration) | Matched affected configuration | Per-batch RU cap |
+|---|---|---:|
+| Schorr (`M2.SchorrWaite`) | legacy / a0 / declaration order 0 | 16,000,000 |
+| Iterator (`SnapTree.Iterator.MoveNext`) | refresh / a0 / declaration order 0 | 16,000,000 |
+| Mod (`Std.Arithmetic.DivMod.LemmaModNegNeg`) | refresh / a1 / default declaration order 1; existing assertion isolation | 1,000,000 |
+| Encode (`Std.Base64.EncodeBVIsBase64`) | refresh / a1 / default declaration order 1 | 1,000,000 |
+
+| Target | Mode | Original: verdict / batches / total / max RU | Patched: verdict / batches / total / max RU | Patched / original, same mode |
+|---|---|---|---|---:|
+| Schorr | Baseline | C / 1 / 6,952,077 / 6,952,077 | C / 1 / 2,083,397 / 2,083,397 | 0.300× |
+| Schorr | OFF | C / 1 / 6,952,077 / 6,952,077 | C / 1 / 2,083,397 / 2,083,397 | 0.300× |
+| Schorr | ON | OOR / 1 / 16,037,000 / 16,037,000 | C / 1 / 3,823,038 / 3,823,038 | Censored |
+| Iterator | Baseline | C / 29 / 5,920,826 / 1,622,118 | C / 28 / 3,275,804 / 521,995 | 0.553× |
+| Iterator | OFF | C / 29 / 5,920,826 / 1,622,118 | C / 28 / 3,275,804 / 521,995 | 0.553× |
+| Iterator | ON | OOR / 29 / 21,520,666 / 16,059,620 | C / 28 / 3,347,345 / 615,328 | Censored |
+| Mod | Baseline | C / 13 / 972,336 / 386,236 | C / 11 / 46,715 / 5,805 | 0.048× |
+| Mod | OFF | C / 13 / 972,336 / 386,236 | C / 11 / 46,715 / 5,805 | 0.048× |
+| Mod | ON | OOR / 13 / 1,660,560 / 1,023,167 | C / 11 / 46,740 / 5,805 | Censored |
+| Encode | Baseline | C / 1 / 433,583 / 433,583 | C / 1 / 45,108 / 45,108 | 0.104× |
+| Encode | OFF | C / 1 / 433,583 / 433,583 | C / 1 / 45,108 / 45,108 | 0.104× |
+| Encode | ON | OOR / 1 / 1,061,524 / 1,061,524 | C / 1 / 46,895 / 46,895 | Censored |
+
+The original ON results are censored, so none has a measured successful-proof
+speedup ratio. Completed-proof comparisons are available against the original
+baseline, and between patched ON and patched baseline:
+
+| Target | Patched ON / original baseline total RU | Patched ON / patched baseline total RU |
+|---|---:|---:|
+| Schorr | 0.550× | 1.835× |
+| Iterator | 0.565× | 1.022× |
+| Mod | 0.048× | 1.001× |
+| Encode | 0.108× | 1.040× |
+
+The target table excludes independently checked added helpers. In the combined
+run, `M2.ExtendInitialPath` used 29,368 / 29,368 / 28,913 RU in baseline/OFF/ON
+(refresh/a0/order0); `Std.Base64.UnpaddedPrefixWithPaddingIsBase64` used
+40,840 / 40,840 / 52,944 RU and `Std.Base64.UnpaddedStringIsBase64` used
+13,709 / 13,709 / 13,762 RU (refresh/a1/default order). Each has one target
+batch, so its maximum equals its aggregate. These helper figures are separate
+from target cost and are not a complete surrounding-file cost comparison.
+
+The proof restructuring changes target batch counts in Iterator and Mod while
+retaining their original source isolation policy. The measurements support these
+specific source repairs at the original caps; they do not establish a whole-suite
+performance remedy, a new translator result, or costs for the later corrected
+compiler. The four patches remain review artifacts, and the original suite and
+standard-library inputs remain unchanged.
 
 ## Closure, controls and limits
 
