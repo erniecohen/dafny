@@ -1,6 +1,10 @@
 name: Full integration diagnostic build identities
 on:
   workflow_dispatch:
+    inputs:
+      candidate-only:
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -10,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        source: [dev-baseline, supported-reference, integrated]
+        source: ${{ fromJSON(inputs.candidate-only && '["integrated"]' || '["dev-baseline","supported-reference","integrated"]') }}
     steps:
       - uses: actions/checkout@v4
         with:

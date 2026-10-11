@@ -4,6 +4,13 @@ on:
     branches: ['scratch/codex/full-main-to-dev']
     paths: ['.github/workflows/full-integration-native.yml', '.github/review/full-integration-native.py']
   workflow_dispatch:
+    inputs:
+      integrated-build-run:
+        type: string
+        default: '38137142292'
+      candidate-only:
+        type: boolean
+        default: false
 permissions:
   contents: read
   actions: read
@@ -14,14 +21,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        source: [dev-baseline, supported-reference, integrated]
+        source: ${{ fromJSON(inputs.candidate-only && '["integrated"]' || '["dev-baseline","supported-reference","integrated"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: integration-build-${{ matrix.source }}
-          run-id: 38137142292
+          run-id: ${{ matrix.source == 'integrated' && inputs.integrated-build-run || '38137142292' }}
           github-token: ${{ github.token }}
           path: out/download
       - name: Install the immutable compiler and pinned solver
