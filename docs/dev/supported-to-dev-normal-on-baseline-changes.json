@@ -1,0 +1,3381 @@
+{
+  "source": "eac45d90832014b377a68e49444057d230123e58",
+  "failed_normal_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+  "normal_artifact": "verdicts-on/expected-verdicts.tsv",
+  "solver": "Z3 5.1.0",
+  "additional_axioms": true,
+  "consistent_obligation_checks": "default OFF",
+  "reference_capture": "https://github.com/erniecohen/dafny/actions/runs/38153025882",
+  "language_reference": "https://github.com/erniecohen/dafny/actions/runs/38153732399",
+  "supported_reference_source": "1256f92b0b494e8f1bf52aaec145d36a8a862f33",
+  "counts": {
+    "additions": 23,
+    "removed": 1,
+    "changed": 56,
+    "unchanged_source_language_attribution": 37,
+    "changed_source_attribution": 19
+  },
+  "pending_final_source_delta": [
+    "git-issues/git-issue-141-original.dfy",
+    "git-issues/git-issue-141-original-control.dfy"
+  ],
+  "acceptance_scope": "Historical individual stale supported-ON oracle reconciliation to preserved dev sources/language defaults. Diagnostic verdict sampling is not complete lit-test or positive-proof acceptance. Resource failures and every negative control remain visible. No library/benchmark input edits or ceilings are introduced by the baseline update.",
+  "rows": [
+    {
+      "program": "dafny0/ApproximateExactLiterals.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/ApproximateExactLiterals.dfy\t2\t\t7,8,9,10,11,12,19,20,21,22,23,24,32,36",
+      "explanation": "Preserved upstream IEEE floating-point exact/inexact literal and approximation syntax negative coverage. The native profile rejects the intended syntax/type errors before producing VCs; this is resolution coverage, not a theorem certification.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/ApproximateExactLiterals.dfy\t2\t\t7,8,9,10,11,12,19,20,21,22,23,24,32,36",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "a0be5edb780ca6cd793157558e6a85312f536e828efa2aebc2a8bdbd2b6d5aab"
+    },
+    {
+      "program": "dafny0/Fp32ApproximatePrefixErrors.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/Fp32ApproximatePrefixErrors.dfy\t2\t\t18,24,25,34,35,36,53,54,55,58,59",
+      "explanation": "Preserved upstream IEEE floating-point exact/inexact literal and approximation syntax negative coverage. The native profile rejects the intended syntax/type errors before producing VCs; this is resolution coverage, not a theorem certification.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/Fp32ApproximatePrefixErrors.dfy\t2\t\t18,24,25,34,35,36,53,54,55,58,59",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "181d0595a04a5ddd4b1baf302b40f22bb4f24f23d4daab53a191ee861717a3e8"
+    },
+    {
+      "program": "dafny0/Fp32ClassificationPredicates.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/Fp32ClassificationPredicates.dfy\t0\t15 verified, 0 errors\t",
+      "explanation": "Preserved upstream Fp32ClassificationPredicates positive IEEE floating-point coverage. The native profile has exit0, nonempty all-Correct declaration results and all-Valid VCs; this is scoped positive evidence alongside the separately captured equality, conversion and WF negative controls.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/Fp32ClassificationPredicates.dfy\t0\t15 verified, 0 errors\t",
+          "declarations": 15,
+          "declaration_outcomes": {
+            "Correct": 15
+          },
+          "vc_batches": 15,
+          "vc_outcomes": {
+            "Valid": 15
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "bf874cdc9ce8bf22b495e7945d8c8e98aa75bd7c23a41c6961137e6ae0137e12"
+    },
+    {
+      "program": "dafny0/Fp32ComprehensiveEdgeCases.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/Fp32ComprehensiveEdgeCases.dfy\t0\t10 verified, 0 errors\t",
+      "explanation": "Preserved upstream Fp32ComprehensiveEdgeCases positive IEEE floating-point coverage. The native profile has exit0, nonempty all-Correct declaration results and all-Valid VCs; this is scoped positive evidence alongside the separately captured equality, conversion and WF negative controls.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/Fp32ComprehensiveEdgeCases.dfy\t0\t10 verified, 0 errors\t",
+          "declarations": 10,
+          "declaration_outcomes": {
+            "Correct": 10
+          },
+          "vc_batches": 10,
+          "vc_outcomes": {
+            "Valid": 10
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "2600d71cc87358f1c34b6700e1a552b3245f9df8708cc7625f99e7eae84c9bc6"
+    },
+    {
+      "program": "dafny0/Fp32Equality.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/Fp32Equality.dfy\t0\t15 verified, 0 errors\t",
+      "explanation": "Preserved upstream Fp32Equality positive IEEE floating-point coverage. The native profile has exit0, nonempty all-Correct declaration results and all-Valid VCs; this is scoped positive evidence alongside the separately captured equality, conversion and WF negative controls.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/Fp32Equality.dfy\t0\t15 verified, 0 errors\t",
+          "declarations": 15,
+          "declaration_outcomes": {
+            "Correct": 15
+          },
+          "vc_batches": 15,
+          "vc_outcomes": {
+            "Valid": 15
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "a99b59a9f7385228fc28d429e5927d285f4f03b93ae0fd4df411cc99cc56af79"
+    },
+    {
+      "program": "dafny0/Fp32EqualityErrors.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/Fp32EqualityErrors.dfy\t4\t15 verified, 15 errors\t23,30,87,100,109,116,178,197,237,246,255",
+      "explanation": "Preserved upstream IEEE equality negative controls distinguish NaN and signed-zero comparisons. Every intended false assertion has an actual Invalid VC; the accompanying compatible equality declarations are Correct.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/Fp32EqualityErrors.dfy\t4\t15 verified, 15 errors\t23,30,87,100,109,116,178,197,237,246,255",
+          "declarations": 26,
+          "declaration_outcomes": {
+            "Correct": 15,
+            "Errors": 11
+          },
+          "vc_batches": 26,
+          "vc_outcomes": {
+            "Valid": 15,
+            "Invalid": 11
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "a71e97afd7444f195b7fb09b2da3cc45253f9d9b8a8af7ec509b1195dbf51427"
+    },
+    {
+      "program": "dafny0/Fp32Fp64Conversions.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/Fp32Fp64Conversions.dfy\t4\t9 verified, 9 errors\t70,76,82,88,94,99,104,109,114",
+      "explanation": "Preserved upstream fp32/fp64 conversion tests have nine Correct and nine Errors declarations, with actual Invalid VCs for incompatible or inexact conversion claims. The explicit false controls remain rejected.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/Fp32Fp64Conversions.dfy\t4\t9 verified, 9 errors\t70,76,82,88,94,99,104,109,114",
+          "declarations": 18,
+          "declaration_outcomes": {
+            "Correct": 9,
+            "Errors": 9
+          },
+          "vc_batches": 18,
+          "vc_outcomes": {
+            "Valid": 9,
+            "Invalid": 9
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "65c8d7846c03bf8955c5e318278c76a7da2530af67803f12fe32d849223962cd"
+    },
+    {
+      "program": "dafny0/Fp32InexactLiteralErrors.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/Fp32InexactLiteralErrors.dfy\t2\t\t9,10,11,12,13,16,17,18,21,22,25,26,27,30,31,32,35,36,37,38,39,46,47,48,53,63,64,65",
+      "explanation": "Preserved upstream IEEE floating-point exact/inexact literal and approximation syntax negative coverage. The native profile rejects the intended syntax/type errors before producing VCs; this is resolution coverage, not a theorem certification.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/Fp32InexactLiteralErrors.dfy\t2\t\t9,10,11,12,13,16,17,18,21,22,25,26,27,30,31,32,35,36,37,38,39,46,47,48,53,63,64,65",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "276c8c1d67ef3b2f64ff4d092a236426a8100c10c897ffef7c821d40ea5486ef"
+    },
+    {
+      "program": "dafny0/Fp32LiteralSyntax.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/Fp32LiteralSyntax.dfy\t0\t11 verified, 0 errors\t",
+      "explanation": "Preserved upstream Fp32LiteralSyntax positive IEEE floating-point coverage. The native profile has exit0, nonempty all-Correct declaration results and all-Valid VCs; this is scoped positive evidence alongside the separately captured equality, conversion and WF negative controls.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/Fp32LiteralSyntax.dfy\t0\t11 verified, 0 errors\t",
+          "declarations": 11,
+          "declaration_outcomes": {
+            "Correct": 11
+          },
+          "vc_batches": 11,
+          "vc_outcomes": {
+            "Valid": 11
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "a2f2dd052e7024b32c061f6a2be21919d1965fa7cecd1c72f8b4260c3f129da4"
+    },
+    {
+      "program": "dafny0/Fp32ResolutionAndLanguage.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/Fp32ResolutionAndLanguage.dfy\t0\t12 verified, 0 errors\t",
+      "explanation": "Preserved upstream Fp32ResolutionAndLanguage positive IEEE floating-point coverage. The native profile has exit0, nonempty all-Correct declaration results and all-Valid VCs; this is scoped positive evidence alongside the separately captured equality, conversion and WF negative controls.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/Fp32ResolutionAndLanguage.dfy\t0\t12 verified, 0 errors\t",
+          "declarations": 12,
+          "declaration_outcomes": {
+            "Correct": 12
+          },
+          "vc_batches": 12,
+          "vc_outcomes": {
+            "Valid": 12
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "0caa031e932e2f4b6bcf1aa92a77316b0337b87fd40c53bf0d04d8e831420894"
+    },
+    {
+      "program": "dafny0/Fp32SpecialValues.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/Fp32SpecialValues.dfy\t0\t12 verified, 0 errors\t",
+      "explanation": "Preserved upstream Fp32SpecialValues positive IEEE floating-point coverage. The native profile has exit0, nonempty all-Correct declaration results and all-Valid VCs; this is scoped positive evidence alongside the separately captured equality, conversion and WF negative controls.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/Fp32SpecialValues.dfy\t0\t12 verified, 0 errors\t",
+          "declarations": 12,
+          "declaration_outcomes": {
+            "Correct": 12
+          },
+          "vc_batches": 12,
+          "vc_outcomes": {
+            "Valid": 12
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "61a04bfceb115790bd76bd202a2f95a4412803dd66f98811d84406cadf37ff1a"
+    },
+    {
+      "program": "dafny0/Fp32Wellformedness.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/Fp32Wellformedness.dfy\t4\t1 verified, 11 errors\t6,7,8,9,15,23,30,34,35",
+      "explanation": "Preserved upstream IEEE arithmetic and NaN well-formedness negative controls reach the verifier. The eleven intended invalid precondition/WF checks are actual Invalid VCs and the positive declaration is Correct.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/Fp32Wellformedness.dfy\t4\t1 verified, 11 errors\t6,7,8,9,15,23,30,34,35",
+          "declarations": 5,
+          "declaration_outcomes": {
+            "Errors": 4,
+            "Correct": 1
+          },
+          "vc_batches": 5,
+          "vc_outcomes": {
+            "Invalid": 4,
+            "Valid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "b229a2637fdf695710f1d944e262b835be8dffaa74607c80d1caf1f175574602"
+    },
+    {
+      "program": "dafny0/Fp64ApproximatePrefixErrors.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/Fp64ApproximatePrefixErrors.dfy\t2\t\t11,12,13,14,18,24,25,34,35,36,53,54,55,58,59",
+      "explanation": "Preserved upstream IEEE floating-point exact/inexact literal and approximation syntax negative coverage. The native profile rejects the intended syntax/type errors before producing VCs; this is resolution coverage, not a theorem certification.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/Fp64ApproximatePrefixErrors.dfy\t2\t\t11,12,13,14,18,24,25,34,35,36,53,54,55,58,59",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "d071bf5b686e690656ad8d1fc4ab2a8d792c36b6a6a544de45b3eb07ea6fb963"
+    },
+    {
+      "program": "dafny0/Fp64ClassificationPredicates.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/Fp64ClassificationPredicates.dfy\t0\t15 verified, 0 errors\t",
+      "explanation": "Preserved upstream Fp64ClassificationPredicates positive IEEE floating-point coverage. The native profile has exit0, nonempty all-Correct declaration results and all-Valid VCs; this is scoped positive evidence alongside the separately captured equality, conversion and WF negative controls.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/Fp64ClassificationPredicates.dfy\t0\t15 verified, 0 errors\t",
+          "declarations": 15,
+          "declaration_outcomes": {
+            "Correct": 15
+          },
+          "vc_batches": 15,
+          "vc_outcomes": {
+            "Valid": 15
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "86fb3f5c28190f4399392df0746972f8ffcd81610e22b07518abe7de5afca44f"
+    },
+    {
+      "program": "dafny0/Fp64ComprehensiveEdgeCases.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/Fp64ComprehensiveEdgeCases.dfy\t0\t10 verified, 0 errors\t",
+      "explanation": "Preserved upstream Fp64ComprehensiveEdgeCases positive IEEE floating-point coverage. The native profile has exit0, nonempty all-Correct declaration results and all-Valid VCs; this is scoped positive evidence alongside the separately captured equality, conversion and WF negative controls.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/Fp64ComprehensiveEdgeCases.dfy\t0\t10 verified, 0 errors\t",
+          "declarations": 10,
+          "declaration_outcomes": {
+            "Correct": 10
+          },
+          "vc_batches": 10,
+          "vc_outcomes": {
+            "Valid": 10
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "018e9221deee9820e282fb548a43072a2506c27bc3997cfabddd7439eee2ac3b"
+    },
+    {
+      "program": "dafny0/Fp64Equality.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/Fp64Equality.dfy\t0\t15 verified, 0 errors\t",
+      "explanation": "Preserved upstream Fp64Equality positive IEEE floating-point coverage. The native profile has exit0, nonempty all-Correct declaration results and all-Valid VCs; this is scoped positive evidence alongside the separately captured equality, conversion and WF negative controls.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/Fp64Equality.dfy\t0\t15 verified, 0 errors\t",
+          "declarations": 15,
+          "declaration_outcomes": {
+            "Correct": 15
+          },
+          "vc_batches": 15,
+          "vc_outcomes": {
+            "Valid": 15
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "b6a19673f519d1ffe00c05fbe5a31c880c7ec74406ce064a0ebbddaae7a5a6e1"
+    },
+    {
+      "program": "dafny0/Fp64EqualityErrors.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/Fp64EqualityErrors.dfy\t4\t15 verified, 15 errors\t23,30,87,100,109,116,178,197,237,246,255",
+      "explanation": "Preserved upstream IEEE equality negative controls distinguish NaN and signed-zero comparisons. Every intended false assertion has an actual Invalid VC; the accompanying compatible equality declarations are Correct.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/Fp64EqualityErrors.dfy\t4\t15 verified, 15 errors\t23,30,87,100,109,116,178,197,237,246,255",
+          "declarations": 26,
+          "declaration_outcomes": {
+            "Correct": 15,
+            "Errors": 11
+          },
+          "vc_batches": 26,
+          "vc_outcomes": {
+            "Valid": 15,
+            "Invalid": 11
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "004064c6eae4c998b5629557bcec2967fb6440aee138f57487b6c3e1335eb9f3"
+    },
+    {
+      "program": "dafny0/Fp64InexactLiteralErrors.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/Fp64InexactLiteralErrors.dfy\t2\t\t9,10,11,12,13,16,17,18,21,22,25,26,27,30,31,32,35,36,37,38,39,46,47,48,53,63,64,65",
+      "explanation": "Preserved upstream IEEE floating-point exact/inexact literal and approximation syntax negative coverage. The native profile rejects the intended syntax/type errors before producing VCs; this is resolution coverage, not a theorem certification.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/Fp64InexactLiteralErrors.dfy\t2\t\t9,10,11,12,13,16,17,18,21,22,25,26,27,30,31,32,35,36,37,38,39,46,47,48,53,63,64,65",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "a339ab8bae75065fff2488c0c4135c98858d55f5821b113968325bab606a0b9c"
+    },
+    {
+      "program": "dafny0/Fp64LiteralSyntax.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/Fp64LiteralSyntax.dfy\t0\t11 verified, 0 errors\t",
+      "explanation": "Preserved upstream Fp64LiteralSyntax positive IEEE floating-point coverage. The native profile has exit0, nonempty all-Correct declaration results and all-Valid VCs; this is scoped positive evidence alongside the separately captured equality, conversion and WF negative controls.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/Fp64LiteralSyntax.dfy\t0\t11 verified, 0 errors\t",
+          "declarations": 11,
+          "declaration_outcomes": {
+            "Correct": 11
+          },
+          "vc_batches": 11,
+          "vc_outcomes": {
+            "Valid": 11
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "72ec3cd7b96105aa3ff642ecf06a8570c056a6838d8d70f5134a978ff95f358a"
+    },
+    {
+      "program": "dafny0/Fp64ResolutionAndLanguage.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/Fp64ResolutionAndLanguage.dfy\t0\t12 verified, 0 errors\t",
+      "explanation": "Preserved upstream Fp64ResolutionAndLanguage positive IEEE floating-point coverage. The native profile has exit0, nonempty all-Correct declaration results and all-Valid VCs; this is scoped positive evidence alongside the separately captured equality, conversion and WF negative controls.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/Fp64ResolutionAndLanguage.dfy\t0\t12 verified, 0 errors\t",
+          "declarations": 12,
+          "declaration_outcomes": {
+            "Correct": 12
+          },
+          "vc_batches": 12,
+          "vc_outcomes": {
+            "Valid": 12
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "0e383afb4ef04a479f0aa766a927295fd50b6eba78fafb8b6a11b8065b1816d9"
+    },
+    {
+      "program": "dafny0/Fp64SpecialValues.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/Fp64SpecialValues.dfy\t0\t12 verified, 0 errors\t",
+      "explanation": "Preserved upstream Fp64SpecialValues positive IEEE floating-point coverage. The native profile has exit0, nonempty all-Correct declaration results and all-Valid VCs; this is scoped positive evidence alongside the separately captured equality, conversion and WF negative controls.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/Fp64SpecialValues.dfy\t0\t12 verified, 0 errors\t",
+          "declarations": 12,
+          "declaration_outcomes": {
+            "Correct": 12
+          },
+          "vc_batches": 12,
+          "vc_outcomes": {
+            "Valid": 12
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "0b2361004508c4e7fa1f2e0728d5d01045084b1c4ea297e98c206cf0cd454e6e"
+    },
+    {
+      "program": "dafny0/Fp64Wellformedness.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "dafny0/Fp64Wellformedness.dfy\t4\t1 verified, 11 errors\t6,7,8,9,15,23,30,34,35",
+      "explanation": "Preserved upstream IEEE arithmetic and NaN well-formedness negative controls reach the verifier. The eleven intended invalid precondition/WF checks are actual Invalid VCs and the positive declaration is Correct.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/Fp64Wellformedness.dfy\t4\t1 verified, 11 errors\t6,7,8,9,15,23,30,34,35",
+          "declarations": 5,
+          "declaration_outcomes": {
+            "Errors": 4,
+            "Correct": 1
+          },
+          "vc_batches": 5,
+          "vc_outcomes": {
+            "Invalid": 4,
+            "Valid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "45eb5bd35bfd1046a508445ca3ee6e756d3f57e57ea5682f3286e4287765c168"
+    },
+    {
+      "program": "git-issues/git-issue-6395.dfy",
+      "kind": "added",
+      "before": null,
+      "actual": "git-issues/git-issue-6395.dfy\t4\t5 verified, 1 error\t100",
+      "explanation": "Preserved upstream generic-trait decreases fixture admits datatype implementations and deliberately fails the generic Base-to-null decreases comparison at 100. The static Base metric cannot justify the reference-only descent; five other declarations verify.",
+      "native_evidence": {
+        "supported": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-6395.dfy\t4\t5 verified, 1 error\t100",
+          "declarations": 6,
+          "declaration_outcomes": {
+            "Correct": 5,
+            "Errors": 1
+          },
+          "vc_batches": 6,
+          "vc_outcomes": {
+            "Valid": 5,
+            "Invalid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "cbc424f8836923d71a3548e674334b7c10109d961f71b291d8b597f92f7081d4"
+    },
+    {
+      "program": "dafny0/ScientificNotation.dfy",
+      "kind": "removed",
+      "before": "dafny0/ScientificNotation.dfy\t0\t9 verified, 0 errors\t",
+      "actual": null,
+      "explanation": "Upstream ScientificNotation was renamed ScientificNotationErrors when floating-point exact/inexact syntax cases were added. The new negative ScientificNotationErrors is registered and its positive FP literal counterparts are measured independently. The old path does not exist; no proof declaration is removed under the same path.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny0/ScientificNotation.dfy\t0\t9 verified, 0 errors\t",
+          "declarations": 9,
+          "declaration_outcomes": {
+            "Correct": 9
+          },
+          "vc_batches": 9,
+          "vc_outcomes": {
+            "Valid": 9
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": null,
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": null
+    },
+    {
+      "program": "dafny0/AsIs-SimplifiedExpanded-Resolve.dfy",
+      "kind": "changed",
+      "before": "dafny0/AsIs-SimplifiedExpanded-Resolve.dfy\t2\t\t405",
+      "actual": "dafny0/AsIs-SimplifiedExpanded-Resolve.dfy\t2\t\t9,10,11,12,13,14,16,22,24,32,37,38,40,45,46,48,51,52,54,56,57,59,60,61,70,71,72,73,74,75,77,83,85,93,98,99,101,106,107,109,112,113,115,117,118,120,121,122,137,138,139,140,141,142,143,145,146,149,150,151,152,155,156,157,158,161,162,164,165,166,167,168,169,170,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,196,197,198,199,200,201,202,204,205,208,209,210,211,214,215,216,217,220,221,223,224,225,226,227,228,229,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,255,257,258,262,263,265,269,270,271,281,283,284,288,289,291,295,296,297,313,320,327,359,366,373,427,428,432,434,438,439,462,463,467,469,473,474,488,495,502,509,516,528,535,542,549,556",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "dafny0/AsIs-SimplifiedExpanded-Resolve.dfy\t2\t\t9,10,11,12,13,14,16,22,24,32,37,38,40,45,46,48,51,52,54,56,57,59,60,61,70,71,72,73,74,75,77,83,85,93,98,99,101,106,107,109,112,113,115,117,118,120,121,122,137,138,139,140,141,142,143,145,146,149,150,151,152,155,156,157,158,161,162,164,165,166,167,168,169,170,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,196,197,198,199,200,201,202,204,205,208,209,210,211,214,215,216,217,220,221,223,224,225,226,227,228,229,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,255,257,258,262,263,265,269,270,271,281,283,284,288,289,291,295,296,297,313,320,327,359,366,373,427,428,432,434,438,439,462,463,467,469,473,474,488,495,502,509,516,528,535,542,549,556",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated_supported_language": {
+          "verdict": "dafny0/AsIs-SimplifiedExpanded-Resolve.dfy\t2\t\t405",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Generalized newtype/trait conversion rules reject incompatible source/target families after datatype-trait admission; the former single disabled-datatype error is replaced by the intended cast/type-test errors. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny0/AsIs-SimplifiedExpanded-Resolve.dfy\t2\t\t405",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/AsIs-SimplifiedExpanded-Resolve.dfy\t2\t\t9,10,11,12,13,14,16,22,24,32,37,38,40,45,46,48,51,52,54,56,57,59,60,61,70,71,72,73,74,75,77,83,85,93,98,99,101,106,107,109,112,113,115,117,118,120,121,122,137,138,139,140,141,142,143,145,146,149,150,151,152,155,156,157,158,161,162,164,165,166,167,168,169,170,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,196,197,198,199,200,201,202,204,205,208,209,210,211,214,215,216,217,220,221,223,224,225,226,227,228,229,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,255,257,258,262,263,265,269,270,271,281,283,284,288,289,291,295,296,297,313,320,327,359,366,373,427,428,432,434,438,439,462,463,467,469,473,474,488,495,502,509,516,528,535,542,549,556",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "3e63e2d3160db3c9834bbb919050b6e384d44f5ca87988d81995e25b204281f4"
+    },
+    {
+      "program": "dafny0/AsIs-UnusedTypeParameters.dfy",
+      "kind": "changed",
+      "before": "dafny0/AsIs-UnusedTypeParameters.dfy\t2\t\t38,43,56,61",
+      "actual": "dafny0/AsIs-UnusedTypeParameters.dfy\t4\t2 verified, 6 errors\t39,41,43,57,59,61",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "dafny0/AsIs-UnusedTypeParameters.dfy\t4\t2 verified, 6 errors\t39,41,43,57,59,61",
+          "declarations": 4,
+          "declaration_outcomes": {
+            "Correct": 2,
+            "Errors": 2
+          },
+          "vc_batches": 4,
+          "vc_outcomes": {
+            "Valid": 2,
+            "Invalid": 2
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated_supported_language": {
+          "verdict": "dafny0/AsIs-UnusedTypeParameters.dfy\t2\t\t38,43,56,61",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Refreshed type inference admits the reference casts and checks membership at verification; incompatible instantiated C/F types and explicit false assertions are still rejected. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny0/AsIs-UnusedTypeParameters.dfy\t2\t\t38,43,56,61",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/AsIs-UnusedTypeParameters.dfy\t4\t2 verified, 6 errors\t39,41,43,57,59,61",
+          "declarations": 4,
+          "declaration_outcomes": {
+            "Correct": 2,
+            "Errors": 2
+          },
+          "vc_batches": 4,
+          "vc_outcomes": {
+            "Valid": 2,
+            "Invalid": 2
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "31aa2a110da48ff640e6ffa679f85a228f2ac512d2920f267a0c6190a0bec8a5"
+    },
+    {
+      "program": "dafny0/AsIs-Verify.dfy",
+      "kind": "changed",
+      "before": "dafny0/AsIs-Verify.dfy\t2\t\t20",
+      "actual": "dafny0/AsIs-Verify.dfy\t4\t3 verified, 2 errors\t9,14",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "dafny0/AsIs-Verify.dfy\t4\t3 verified, 2 errors\t9,14",
+          "declarations": 5,
+          "declaration_outcomes": {
+            "Correct": 3,
+            "Errors": 2
+          },
+          "vc_batches": 5,
+          "vc_outcomes": {
+            "Valid": 3,
+            "Invalid": 2
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated_supported_language": {
+          "verdict": "dafny0/AsIs-Verify.dfy\t2\t\t20",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Datatype traits are now admitted, so the two narrowing casts bool~>nat to bool~>pos reach the verifier and fail membership. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny0/AsIs-Verify.dfy\t2\t\t20",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/AsIs-Verify.dfy\t4\t3 verified, 2 errors\t9,14",
+          "declarations": 5,
+          "declaration_outcomes": {
+            "Correct": 3,
+            "Errors": 2
+          },
+          "vc_batches": 5,
+          "vc_outcomes": {
+            "Valid": 3,
+            "Invalid": 2
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "6aa8626198c43f261ac4cf202ae51f4abceebb9e1cc94fc7de74f1f256da9034"
+    },
+    {
+      "program": "dafny0/AsIs.dfy",
+      "kind": "changed",
+      "before": "dafny0/AsIs.dfy\t4\t7 verified, 11 errors\t60,62,64,66,68,119,123,128,139,143,148",
+      "actual": "dafny0/AsIs.dfy\t2\t\t17,20,23,26,29",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "dafny0/AsIs.dfy\t2\t\t17,20,23,26,29",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated_supported_language": {
+          "verdict": "dafny0/AsIs.dfy\t4\t7 verified, 11 errors\t60,62,64,66,68,119,123,128,139,143,148",
+          "declarations": 10,
+          "declaration_outcomes": {
+            "Correct": 7,
+            "Errors": 3
+          },
+          "vc_batches": 10,
+          "vc_outcomes": {
+            "Valid": 7,
+            "Invalid": 3
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "explanation": "Datatype-trait defaults make the five object? assignments to value traits ill-typed before verification. No theorem is accepted by the resolution-only profile. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny0/AsIs.dfy\t4\t7 verified, 11 errors\t60,62,64,66,68,119,123,128,139,143,148",
+          "declarations": 10,
+          "declaration_outcomes": {
+            "Correct": 7,
+            "Errors": 3
+          },
+          "vc_batches": 10,
+          "vc_outcomes": {
+            "Valid": 7,
+            "Invalid": 3
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "dafny0/AsIs.dfy\t2\t\t17,20,23,26,29",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "50f2cf2f8948e48ea153f4113f3aa5a882024cb853c360d8503b7b89c60c4deb"
+    },
+    {
+      "program": "dafny0/BoundedPolymorphismResolution.dfy",
+      "kind": "changed",
+      "before": "dafny0/BoundedPolymorphismResolution.dfy\t2\t\t4,6,8,11,14,18,20,22,24,26,28,38,39,40,41,42,44,54,55,56,62,63,69,75,76,87,88,94,95,100,101,102,103,113,114,115,119,120,124,125,129,130,139,140,141,142,156,157,158,159,198,199,200,203,204,206,208,209,214,216,218,220,251,254,257,268,269,275,294,300,301,302,306,319,320,321,322,352,353,355,357,359,360,363,365,366,378,394,399,401,425,426,440,441,442,459,462,463",
+      "actual": "dafny0/BoundedPolymorphismResolution.dfy\t2\t\t4,6,8,11,14,18,20,22,24,26,28,40,56,63,69,76,88,103,115,120,125,141,142,156,157,158,159,198,199,200,203,204,206,208,209,214,216,218,220,251,254,257,268,269,275,294,300,301,302,306,352,353,355,357,359,360,363,365,366,378,394,399,401,425",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "dafny0/BoundedPolymorphismResolution.dfy\t2\t\t4,6,8,11,14,18,20,22,24,26,28,40,56,63,69,76,88,103,115,120,125,141,142,156,157,158,159,198,199,200,203,204,206,208,209,214,216,218,220,251,254,257,268,269,275,294,300,301,302,306,352,353,355,357,359,360,363,365,366,378,394,399,401,425",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated_supported_language": {
+          "verdict": "dafny0/BoundedPolymorphismResolution.dfy\t2\t\t4,6,8,11,14,18,20,22,24,26,28,38,39,40,41,42,44,54,55,56,62,63,69,75,76,87,88,94,95,100,101,102,103,113,114,115,119,120,124,125,129,130,139,140,141,142,156,157,158,159,198,199,200,203,204,206,208,209,214,216,218,220,251,254,257,268,269,275,294,300,301,302,306,319,320,321,322,352,353,355,357,359,360,363,365,366,378,394,399,401,425,426,440,441,442,459,462,463",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Datatype-trait equality/runtime-checkability and refreshed inference move the expected bounded-polymorphism diagnostics; the file remains rejected. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny0/BoundedPolymorphismResolution.dfy\t2\t\t4,6,8,11,14,18,20,22,24,26,28,38,39,40,41,42,44,54,55,56,62,63,69,75,76,87,88,94,95,100,101,102,103,113,114,115,119,120,124,125,129,130,139,140,141,142,156,157,158,159,198,199,200,203,204,206,208,209,214,216,218,220,251,254,257,268,269,275,294,300,301,302,306,319,320,321,322,352,353,355,357,359,360,363,365,366,378,394,399,401,425,426,440,441,442,459,462,463",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/BoundedPolymorphismResolution.dfy\t2\t\t4,6,8,11,14,18,20,22,24,26,28,40,56,63,69,76,88,103,115,120,125,141,142,156,157,158,159,198,199,200,203,204,206,208,209,214,216,218,220,251,254,257,268,269,275,294,300,301,302,306,352,353,355,357,359,360,363,365,366,378,394,399,401,425",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "fdc4dfd6690b92ec9ef2ae5497567e2d308b69c499658c84b5f97d675fc0ea74"
+    },
+    {
+      "program": "dafny0/DefiniteAssignment.dfy",
+      "kind": "changed",
+      "before": "dafny0/DefiniteAssignment.dfy\t4\t15 verified, 37 errors\t11,18,23,27,31,45,53,61,64,68,90,99,132,133,148,242,243,281,286,294,305,310,315,321,333,339,356,375,382,387,392,427,433,438,441,449",
+      "actual": "dafny0/DefiniteAssignment.dfy\t4\t14 verified, 37 errors\t11,18,23,27,31,45,53,61,64,68,90,99,132,133,148,242,243,281,286,294,305,310,315,321,333,339,356,375,382,387,392,427,433,438,441,449",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "dafny0/DefiniteAssignment.dfy\t4\t14 verified, 37 errors\t11,18,23,27,31,45,53,61,64,68,90,99,132,133,148,242,243,281,286,294,305,310,315,321,333,339,356,375,382,387,392,427,433,438,441,449",
+          "declarations": 43,
+          "declaration_outcomes": {
+            "Errors": 29,
+            "Correct": 14
+          },
+          "vc_batches": 43,
+          "vc_outcomes": {
+            "Invalid": 29,
+            "Valid": 14
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated_supported_language": {
+          "verdict": "dafny0/DefiniteAssignment.dfy\t4\t15 verified, 37 errors\t11,18,23,27,31,45,53,61,64,68,90,99,132,133,148,242,243,281,286,294,305,310,315,321,333,339,356,375,382,387,392,427,433,438,441,449",
+          "declarations": 44,
+          "declaration_outcomes": {
+            "Errors": 29,
+            "Correct": 15
+          },
+          "vc_batches": 44,
+          "vc_outcomes": {
+            "Invalid": 29,
+            "Valid": 15
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "explanation": "The same 37 definite-assignment errors remain at identical lines. Refreshed lowering produces one fewer fully correct declaration; declaration identities are captured separately. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny0/DefiniteAssignment.dfy\t4\t15 verified, 37 errors\t11,18,23,27,31,45,53,61,64,68,90,99,132,133,148,242,243,281,286,294,305,310,315,321,333,339,356,375,382,387,392,427,433,438,441,449",
+          "declarations": 44,
+          "declaration_outcomes": {
+            "Errors": 29,
+            "Correct": 15
+          },
+          "vc_batches": 44,
+          "vc_outcomes": {
+            "Invalid": 29,
+            "Valid": 15
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "dafny0/DefiniteAssignment.dfy\t4\t14 verified, 37 errors\t11,18,23,27,31,45,53,61,64,68,90,99,132,133,148,242,243,281,286,294,305,310,315,321,333,339,356,375,382,387,392,427,433,438,441,449",
+          "declarations": 43,
+          "declaration_outcomes": {
+            "Errors": 29,
+            "Correct": 14
+          },
+          "vc_batches": 43,
+          "vc_outcomes": {
+            "Invalid": 29,
+            "Valid": 14
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "8158595b6cad884b4f161ee4833e60daf974acbf3d083b3337629b58af5cc420"
+    },
+    {
+      "program": "dafny0/DisplayExpressions.dfy",
+      "kind": "changed",
+      "before": "dafny0/DisplayExpressions.dfy\t2\t\t7,12,17,22,27,42,74",
+      "actual": "dafny0/DisplayExpressions.dfy\t2\t\t7,12,17,22,27,41,74",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "dafny0/DisplayExpressions.dfy\t2\t\t7,12,17,22,27,41,74",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated_supported_language": {
+          "verdict": "dafny0/DisplayExpressions.dfy\t2\t\t7,12,17,22,27,42,74",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Refreshed inference reports the display-element mismatch at the element line 41 instead of the container line 42. Underspecified collections remain rejected. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny0/DisplayExpressions.dfy\t2\t\t7,12,17,22,27,42,74",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/DisplayExpressions.dfy\t2\t\t7,12,17,22,27,41,74",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "326b7edd4c154711049bf34929f828eaffed57d529b74f366cb4390e791b5eaf"
+    },
+    {
+      "program": "dafny0/MultiSets.dfy",
+      "kind": "changed",
+      "before": "dafny0/MultiSets.dfy\t4\t33 verified, 5 errors, 1 out of resource; 2 out of resource\t59,158,164,177,268,291",
+      "actual": "dafny0/MultiSets.dfy\t4\t35 verified, 5 errors\t159,165,178,269,292",
+      "explanation": "Preserved upstream assert {:split_here} true changes the test7 batch boundary and shifts later error lines by one. Two prior resource failures disappear; all five invalid controls remain. No integration proof edit was made.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny0/MultiSets.dfy\t4\t33 verified, 5 errors, 1 out of resource; 2 out of resource\t59,158,164,177,268,291",
+          "declarations": 39,
+          "declaration_outcomes": {
+            "Correct": 33,
+            "OutOfResource": 1,
+            "Errors": 5
+          },
+          "vc_batches": 39,
+          "vc_outcomes": {
+            "Valid": 33,
+            "OutOfResource": 1,
+            "Invalid": 5
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "dafny0/MultiSets.dfy\t4\t35 verified, 5 errors\t159,165,178,269,292",
+          "declarations": 39,
+          "declaration_outcomes": {
+            "Correct": 34,
+            "Errors": 5
+          },
+          "vc_batches": 40,
+          "vc_outcomes": {
+            "Valid": 35,
+            "Invalid": 5
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "ed510976e8f14ad474a70ff1e8e482ecfa8479359c5abe9aafc3eb2c835fbd86"
+    },
+    {
+      "program": "dafny0/NatTypes.dfy",
+      "kind": "changed",
+      "before": "dafny0/NatTypes.dfy\t4\t7 verified, 13 errors\t10,35,44,51,54,64,71,74,91,105,141,164,182",
+      "actual": "dafny0/NatTypes.dfy\t4\t6 verified, 16 errors\t10,35,45,48,51,54,65,71,74,91,105,126,141,164,182,190",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "dafny0/NatTypes.dfy\t4\t6 verified, 16 errors\t10,35,45,48,51,54,65,71,74,91,105,126,141,164,182,190",
+          "declarations": 16,
+          "declaration_outcomes": {
+            "Correct": 6,
+            "Errors": 10
+          },
+          "vc_batches": 16,
+          "vc_outcomes": {
+            "Valid": 6,
+            "Invalid": 10
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated_supported_language": {
+          "verdict": "dafny0/NatTypes.dfy\t4\t7 verified, 13 errors\t10,35,44,51,54,64,71,74,91,105,141,164,182",
+          "declarations": 16,
+          "declaration_outcomes": {
+            "Correct": 7,
+            "Errors": 9
+          },
+          "vc_batches": 16,
+          "vc_outcomes": {
+            "Valid": 7,
+            "Invalid": 9
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "explanation": "Refreshed inference checks numeric results and GList<nat> to GList<int> membership at verification. The new failures at 126/190 preserve numeric subset and instantiated-type constraints. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny0/NatTypes.dfy\t4\t7 verified, 13 errors\t10,35,44,51,54,64,71,74,91,105,141,164,182",
+          "declarations": 16,
+          "declaration_outcomes": {
+            "Correct": 7,
+            "Errors": 9
+          },
+          "vc_batches": 16,
+          "vc_outcomes": {
+            "Valid": 7,
+            "Invalid": 9
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "dafny0/NatTypes.dfy\t4\t6 verified, 16 errors\t10,35,45,48,51,54,65,71,74,91,105,126,141,164,182,190",
+          "declarations": 16,
+          "declaration_outcomes": {
+            "Correct": 6,
+            "Errors": 10
+          },
+          "vc_batches": 16,
+          "vc_outcomes": {
+            "Valid": 6,
+            "Invalid": 10
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "24428f7e37e2eda475e204c670a66a85093eed2746cf661d24aa1919f2589c3f"
+    },
+    {
+      "program": "dafny0/ParseErrors.dfy",
+      "kind": "changed",
+      "before": "dafny0/ParseErrors.dfy\t2\t\t7,9,10,15,18,19,20,21,28,31,58,74,75,80,81,87,96,98,100,102,113,114,116,117,119,120,122,123,125,126,133,135,137,139,142,143,155,156,178,179,183,186,189,202,211,219,220,226,227,234,235,236,237,240,241,244,245,246,247,255,256,257,261,267,272,280,283,289,298",
+      "actual": "dafny0/ParseErrors.dfy\t2\t\t7,9,10,15,18,19,20,21,28,31,58,74,75,80,81,87,96,98,100,102,113,114,116,117,119,120,122,123,125,126,133,135,137,139,142,143,155,156,178,179,183,186,189,202,211,219,220,226,227,234,235,236,237,240,241,244,245,246,247,255,256,257,261,267,272,280,283,289,299,303,308,314",
+      "explanation": "Preserved upstream negative grammar tests add illegal reads ** in a lambda and reads */** in iterators, at 299/303/308. The old final malformed newtype shifts to 314; all rows are parser/resolver failures.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny0/ParseErrors.dfy\t2\t\t7,9,10,15,18,19,20,21,28,31,58,74,75,80,81,87,96,98,100,102,113,114,116,117,119,120,122,123,125,126,133,135,137,139,142,143,155,156,178,179,183,186,189,202,211,219,220,226,227,234,235,236,237,240,241,244,245,246,247,255,256,257,261,267,272,280,283,289,298",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/ParseErrors.dfy\t2\t\t7,9,10,15,18,19,20,21,28,31,58,74,75,80,81,87,96,98,100,102,113,114,116,117,119,120,122,123,125,126,133,135,137,139,142,143,155,156,178,179,183,186,189,202,211,219,220,226,227,234,235,236,237,240,241,244,245,246,247,255,256,257,261,267,272,280,283,289,299,303,308,314",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "a6217dfa191757f109d4e923b0c5bd2aa66389ce7929008954ed59272a572ffb"
+    },
+    {
+      "program": "dafny0/Reads.dfy",
+      "kind": "changed",
+      "before": "dafny0/Reads.dfy\t4\t19 verified, 12 errors\t9,18,28,37,56,122,125,138,149,157,159",
+      "actual": "dafny0/Reads.dfy\t4\t20 verified, 17 errors\t9,18,28,37,56,122,125,138,149,157,159,176,199,201,212,224",
+      "explanation": "Preserved upstream reads ** cases distinguish ordinary heap reads from allocation-set effects: StarCaller cannot invoke reads **; UStar/UStarStar frame assertions after writes fail; allocation invalidates only UStarStar. Independent native Reads/allocation positive and false-control receipts preserve these distinctions.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny0/Reads.dfy\t4\t19 verified, 12 errors\t9,18,28,37,56,122,125,138,149,157,159",
+          "declarations": 30,
+          "declaration_outcomes": {
+            "Errors": 11,
+            "Correct": 19
+          },
+          "vc_batches": 30,
+          "vc_outcomes": {
+            "Invalid": 11,
+            "Valid": 19
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "dafny0/Reads.dfy\t4\t20 verified, 17 errors\t9,18,28,37,56,122,125,138,149,157,159,176,199,201,212,224",
+          "declarations": 35,
+          "declaration_outcomes": {
+            "Errors": 15,
+            "Correct": 20
+          },
+          "vc_batches": 35,
+          "vc_outcomes": {
+            "Invalid": 15,
+            "Valid": 20
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "6401924edffc81017a07e970e737b4baa69adf9b7feef107463c403bb2f9704d"
+    },
+    {
+      "program": "dafny0/ReadsOnMethods.dfy",
+      "kind": "changed",
+      "before": "dafny0/ReadsOnMethods.dfy\t4\t67 verified, 31 errors\t19,29,44,54,73,147,151,162,169,172,183,245,304,308,313,360,402,411,413,427,436,469,479,484,494,499,505,523,530",
+      "actual": "dafny0/ReadsOnMethods.dfy\t4\t68 verified, 35 errors\t19,29,44,54,73,147,151,162,169,172,183,245,304,308,313,360,402,411,413,427,436,469,479,484,494,499,505,523,530,544,546,558,560",
+      "explanation": "Preserved upstream EmptyCaller/SomethingCaller reject reads */** calls at 544/546/558/560, while a reads * method may invoke either. Independent complete native ReadsOnMethods controls verify every supporting definition and expected invalid edge.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny0/ReadsOnMethods.dfy\t4\t67 verified, 31 errors\t19,29,44,54,73,147,151,162,169,172,183,245,304,308,313,360,402,411,413,427,436,469,479,484,494,499,505,523,530",
+          "declarations": 95,
+          "declaration_outcomes": {
+            "Correct": 67,
+            "Errors": 28
+          },
+          "vc_batches": 95,
+          "vc_outcomes": {
+            "Valid": 67,
+            "Invalid": 28
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "dafny0/ReadsOnMethods.dfy\t4\t68 verified, 35 errors\t19,29,44,54,73,147,151,162,169,172,183,245,304,308,313,360,402,411,413,427,436,469,479,484,494,499,505,523,530,544,546,558,560",
+          "declarations": 98,
+          "declaration_outcomes": {
+            "Correct": 68,
+            "Errors": 30
+          },
+          "vc_batches": 98,
+          "vc_outcomes": {
+            "Valid": 68,
+            "Invalid": 30
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "a4869ce78a3c1a75a3916dbb62f6a70656a9a2c44b6d67941f052fd1bcbc8f34"
+    },
+    {
+      "program": "dafny0/ResolutionErrors0.dfy",
+      "kind": "changed",
+      "before": "dafny0/ResolutionErrors0.dfy\t2\t\t13,25,26,27,51,57,58,59,60,62,63,64,67,68,88,93,94,96,98,116,117,121,122,133,140,154,244,267,281,286,306,311,313,329,343,344,345,358,382,396,397,405,406,409,410,413,414,415,418,419,443,445,447,468,481,532,540,541",
+      "actual": "dafny0/ResolutionErrors0.dfy\t2\t\t13,25,26,27,51,57,58,59,60,62,63,64,67,68,88,93,94,96,98,116,117,121,122,133,140,154,244,267,281,286,306,311,313,329,343,344,345,358,384,385,396,397,405,406,409,410,413,414,415,418,419,443,445,447,468,481,532,540,541",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "dafny0/ResolutionErrors0.dfy\t2\t\t13,25,26,27,51,57,58,59,60,62,63,64,67,68,88,93,94,96,98,116,117,121,122,133,140,154,244,267,281,286,306,311,313,329,343,344,345,358,384,385,396,397,405,406,409,410,413,414,415,418,419,443,445,447,468,481,532,540,541",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated_supported_language": {
+          "verdict": "dafny0/ResolutionErrors0.dfy\t2\t\t13,25,26,27,51,57,58,59,60,62,63,64,67,68,88,93,94,96,98,116,117,121,122,133,140,154,244,267,281,286,306,311,313,329,343,344,345,358,382,396,397,405,406,409,410,413,414,415,418,419,443,445,447,468,481,532,540,541",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Refreshed inference locates conflicting bool/int instantiations at the assignments/literal sites 384/385 rather than only the call at 382; all profiles remain resolution failures. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny0/ResolutionErrors0.dfy\t2\t\t13,25,26,27,51,57,58,59,60,62,63,64,67,68,88,93,94,96,98,116,117,121,122,133,140,154,244,267,281,286,306,311,313,329,343,344,345,358,382,396,397,405,406,409,410,413,414,415,418,419,443,445,447,468,481,532,540,541",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/ResolutionErrors0.dfy\t2\t\t13,25,26,27,51,57,58,59,60,62,63,64,67,68,88,93,94,96,98,116,117,121,122,133,140,154,244,267,281,286,306,311,313,329,343,344,345,358,384,385,396,397,405,406,409,410,413,414,415,418,419,443,445,447,468,481,532,540,541",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "8f79fed5e0f935de03820fef8cb8f19691b0321f77b9b9d0cc3763eca38c0cdd"
+    },
+    {
+      "program": "dafny0/ResolutionErrors5.dfy",
+      "kind": "changed",
+      "before": "dafny0/ResolutionErrors5.dfy\t2\t\t50,58,72,73,75,76,77,78,79,83,85,86,87,88,90,93,94,96,127,128,153,167,168,182,196,197,206,209,210,214,216,222,224,234,241,251,252,260,268,283,287,305,309,315,318,320,321,328,329,337,343,346,348,349,356,362,365,367,368,375,382,418,425,430,437,439,461,462,464,465,466,467,468,469,470,471,472,473,474,475,476,477,479,482,483,485,487,522,525,533,607,608,610,620,621,623,633,634,636",
+      "actual": "dafny0/ResolutionErrors5.dfy\t2\t\t50,58,72,73,75,76,77,78,79,83,85,86,87,88,90,93,94,96,127,128,142,153,167,168,182,196,197,206,209,210,214,216,222,224,234,241,251,252,260,268,283,287,305,309,315,318,320,321,328,329,337,343,346,348,349,356,362,365,367,368,375,382,418,425,430,437,439,461,462,464,465,466,467,468,469,470,471,472,473,474,475,476,477,479,482,483,485,487,522,525,533,607,608,610,620,621,623,633,634,636",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "dafny0/ResolutionErrors5.dfy\t2\t\t50,58,72,73,75,76,77,78,79,83,85,86,87,88,90,93,94,96,127,128,142,153,167,168,182,196,197,206,209,210,214,216,222,224,234,241,251,252,260,268,283,287,305,309,315,318,320,321,328,329,337,343,346,348,349,356,362,365,367,368,375,382,418,425,430,437,439,461,462,464,465,466,467,468,469,470,471,472,473,474,475,476,477,479,482,483,485,487,522,525,533,607,608,610,620,621,623,633,634,636",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated_supported_language": {
+          "verdict": "dafny0/ResolutionErrors5.dfy\t2\t\t50,58,72,73,75,76,77,78,79,83,85,86,87,88,90,93,94,96,127,128,153,167,168,182,196,197,206,209,210,214,216,222,224,234,241,251,252,260,268,283,287,305,309,315,318,320,321,328,329,337,343,346,348,349,356,362,365,367,368,375,382,418,425,430,437,439,461,462,464,465,466,467,468,469,470,471,472,473,474,475,476,477,479,482,483,485,487,522,525,533,607,608,610,620,621,623,633,634,636",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Refreshed inference adds the undetermined prefix-equality bound diagnostic at 142. Allocation-dependent predicates remain rejected without reads **. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny0/ResolutionErrors5.dfy\t2\t\t50,58,72,73,75,76,77,78,79,83,85,86,87,88,90,93,94,96,127,128,153,167,168,182,196,197,206,209,210,214,216,222,224,234,241,251,252,260,268,283,287,305,309,315,318,320,321,328,329,337,343,346,348,349,356,362,365,367,368,375,382,418,425,430,437,439,461,462,464,465,466,467,468,469,470,471,472,473,474,475,476,477,479,482,483,485,487,522,525,533,607,608,610,620,621,623,633,634,636",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/ResolutionErrors5.dfy\t2\t\t50,58,72,73,75,76,77,78,79,83,85,86,87,88,90,93,94,96,127,128,142,153,167,168,182,196,197,206,209,210,214,216,222,224,234,241,251,252,260,268,283,287,305,309,315,318,320,321,328,329,337,343,346,348,349,356,362,365,367,368,375,382,418,425,430,437,439,461,462,464,465,466,467,468,469,470,471,472,473,474,475,476,477,479,482,483,485,487,522,525,533,607,608,610,620,621,623,633,634,636",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "0a8b6229793701bedab3b09fdeabaf155109a8dc425091abc93382c05fb4b14c"
+    },
+    {
+      "program": "dafny0/SharedDestructorsResolution.dfy",
+      "kind": "changed",
+      "before": "dafny0/SharedDestructorsResolution.dfy\t2\t\t16,35,36,37,38,41,43,44,45,46,64,69,71,72,76,78,94,97,98,99,105,107",
+      "actual": "dafny0/SharedDestructorsResolution.dfy\t2\t\t16,35,36,37,38,41,43,44,45,46,55,57,64,69,71,72,76,78,94,97,98,99",
+      "explanation": "Preserved upstream removal of duplicated Module2 ghost-destructor cases leaves the equivalent earlier cases at 55/57. Duplicate-member diagnostics remain at 97/98/99. This is resolution-only coverage, not removal of the guard.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny0/SharedDestructorsResolution.dfy\t2\t\t16,35,36,37,38,41,43,44,45,46,64,69,71,72,76,78,94,97,98,99,105,107",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/SharedDestructorsResolution.dfy\t2\t\t16,35,36,37,38,41,43,44,45,46,55,57,64,69,71,72,76,78,94,97,98,99",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "aaa84794a3006353065468109953970a4335b68363fd3314c92b562f43a1b2cd"
+    },
+    {
+      "program": "dafny0/SubsetTypesERR.dfy",
+      "kind": "changed",
+      "before": "dafny0/SubsetTypesERR.dfy\t2\t\t11,13,15,17,23,25,27,29,37,39,42,44,46,57,59,63,65",
+      "actual": "dafny0/SubsetTypesERR.dfy\t4\t0 verified, 17 errors\t11,13,15,17,23,25,27,29,37,39,42,44,46,57,59,63,65",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "dafny0/SubsetTypesERR.dfy\t4\t0 verified, 17 errors\t11,13,15,17,23,25,27,29,37,39,42,44,46,57,59,63,65",
+          "declarations": 4,
+          "declaration_outcomes": {
+            "Errors": 4
+          },
+          "vc_batches": 4,
+          "vc_outcomes": {
+            "Invalid": 4
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated_supported_language": {
+          "verdict": "dafny0/SubsetTypesERR.dfy\t2\t\t11,13,15,17,23,25,27,29,37,39,42,44,46,57,59,63,65",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Refreshed inference admits the array casts and emits all 17 intended array<Person>/array<Person?> membership failures as verifier errors instead of resolver errors; no positive theorem results. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny0/SubsetTypesERR.dfy\t2\t\t11,13,15,17,23,25,27,29,37,39,42,44,46,57,59,63,65",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/SubsetTypesERR.dfy\t4\t0 verified, 17 errors\t11,13,15,17,23,25,27,29,37,39,42,44,46,57,59,63,65",
+          "declarations": 4,
+          "declaration_outcomes": {
+            "Errors": 4
+          },
+          "vc_batches": 4,
+          "vc_outcomes": {
+            "Invalid": 4
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "d287d7923741b95da032f586455ab53ec4d5a63b403fee411b4bc09545d59a4c"
+    },
+    {
+      "program": "dafny0/Termination.dfy",
+      "kind": "changed",
+      "before": "dafny0/Termination.dfy\t4\t106 verified, 27 errors\t108,125,126,255,296,361,441,534,542,549,556,563,571,577,579,589,674,714,722,730,806,1128,1130,1143,1145,1182,1198",
+      "actual": "dafny0/Termination.dfy\t4\t105 verified, 28 errors\t108,125,126,255,296,361,441,534,542,549,556,563,571,577,579,589,674,714,722,730,806,927,1128,1130,1143,1145,1182,1198",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "dafny0/Termination.dfy\t4\t105 verified, 28 errors\t108,125,126,255,296,361,441,534,542,549,556,563,571,577,579,589,674,714,722,730,806,927,1128,1130,1143,1145,1182,1198",
+          "declarations": 118,
+          "declaration_outcomes": {
+            "Correct": 93,
+            "Errors": 25
+          },
+          "vc_batches": 130,
+          "vc_outcomes": {
+            "Valid": 105,
+            "Invalid": 25
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated_supported_language": {
+          "verdict": "dafny0/Termination.dfy\t4\t106 verified, 27 errors\t108,125,126,255,296,361,441,534,542,549,556,563,571,577,579,589,674,714,722,730,806,1128,1130,1143,1145,1182,1198",
+          "declarations": 118,
+          "declaration_outcomes": {
+            "Correct": 94,
+            "Errors": 24
+          },
+          "vc_batches": 130,
+          "vc_outcomes": {
+            "Valid": 106,
+            "Invalid": 24
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "explanation": "Refreshed lowering adds the unproved decreases obligation at 927. The same compiler with explicit supported language defaults recovers the old row exactly. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny0/Termination.dfy\t4\t106 verified, 27 errors\t108,125,126,255,296,361,441,534,542,549,556,563,571,577,579,589,674,714,722,730,806,1128,1130,1143,1145,1182,1198",
+          "declarations": 118,
+          "declaration_outcomes": {
+            "Correct": 94,
+            "Errors": 24
+          },
+          "vc_batches": 130,
+          "vc_outcomes": {
+            "Valid": 106,
+            "Invalid": 24
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "dafny0/Termination.dfy\t4\t105 verified, 28 errors\t108,125,126,255,296,361,441,534,542,549,556,563,571,577,579,589,674,714,722,730,806,927,1128,1130,1143,1145,1182,1198",
+          "declarations": 118,
+          "declaration_outcomes": {
+            "Correct": 93,
+            "Errors": 25
+          },
+          "vc_batches": 130,
+          "vc_outcomes": {
+            "Valid": 105,
+            "Invalid": 25
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "8f8057a1ade078403e6406dae0f1ca6c71c480ce719944266facd854b0169e26"
+    },
+    {
+      "program": "dafny0/TypeInferenceRefreshErrors.dfy",
+      "kind": "changed",
+      "before": "dafny0/TypeInferenceRefreshErrors.dfy\t2\t\t14,19,20,21,22,33,34,49,50,51,64,76,85,97,100,109,110,111,112,122,124,131,140,143,144,145,148,149,150,151,175,176,182,183,255,261,262,268,269,275,279,287,288,289,290,291,293,294",
+      "actual": "dafny0/TypeInferenceRefreshErrors.dfy\t2\t\t14,19,20,21,22,33,34,49,50,51,64,76,85,97,100,109,110,111,112,122,124,131,140,143,144,145,148,149,150,151,175,176,182,183,255,261,262,268,269,275,279,287,288,289,290,291,293,294,304,313",
+      "explanation": "Preserved upstream VarianceErrorMessage tests add covariant and contravariant set<object> mismatches at 304/313. The existing decimal-literal diagnostic is retained under dev wording; no proof results.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny0/TypeInferenceRefreshErrors.dfy\t2\t\t14,19,20,21,22,33,34,49,50,51,64,76,85,97,100,109,110,111,112,122,124,131,140,143,144,145,148,149,150,151,175,176,182,183,255,261,262,268,269,275,279,287,288,289,290,291,293,294",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny0/TypeInferenceRefreshErrors.dfy\t2\t\t14,19,20,21,22,33,34,49,50,51,64,76,85,97,100,109,110,111,112,122,124,131,140,143,144,145,148,149,150,151,175,176,182,183,255,261,262,268,269,275,279,287,288,289,290,291,293,294,304,313",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "b35038fe57736ce7ae15356da08a5a6fc452cb393a66cbfef6a4abb98f5dd8a0"
+    },
+    {
+      "program": "dafny1/SchorrWaite-stages.dfy",
+      "kind": "changed",
+      "before": "dafny1/SchorrWaite-stages.dfy\t4\t6 verified, 0 errors, 1 out of resource; 2 out of resource\t36",
+      "actual": "dafny1/SchorrWaite-stages.dfy\t4\t227 verified, 0 errors, 3 out of resource; 4 out of resource\t82,218,220",
+      "explanation": "Preserved upstream vcs_split_on_every_assert and split_here statements change proof batching and denominators. With refreshed language defaults the three original-ceiling limits are M0.SchorrWaite82 and M2.SchorrWaite218/220. Paired supported/integrated native same-source receipts reproduce these costs; the certified sequential-postcondition positive remains separate.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny1/SchorrWaite-stages.dfy\t4\t6 verified, 0 errors, 1 out of resource; 2 out of resource\t36",
+          "declarations": 7,
+          "declaration_outcomes": {
+            "Correct": 6,
+            "OutOfResource": 1
+          },
+          "vc_batches": 7,
+          "vc_outcomes": {
+            "Valid": 6,
+            "OutOfResource": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "dafny1/SchorrWaite-stages.dfy\t4\t227 verified, 0 errors, 3 out of resource; 4 out of resource\t82,218,220",
+          "declarations": 7,
+          "declaration_outcomes": {
+            "Correct": 5,
+            "OutOfResource": 2
+          },
+          "vc_batches": 230,
+          "vc_outcomes": {
+            "Valid": 227,
+            "OutOfResource": 3
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "1b2f60f8382c767fbd06b57344f62402065d35985dfd926903317df1691a6f1d"
+    },
+    {
+      "program": "dafny1/SchorrWaite.dfy",
+      "kind": "changed",
+      "before": "dafny1/SchorrWaite.dfy\t0\t272 verified, 0 errors\t",
+      "actual": "dafny1/SchorrWaite.dfy\t4\t275 verified, 0 errors, 1 out of resource; 2 out of resource\t243",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "dafny1/SchorrWaite.dfy\t4\t275 verified, 0 errors, 1 out of resource; 2 out of resource\t243",
+          "declarations": 10,
+          "declaration_outcomes": {
+            "Correct": 9,
+            "OutOfResource": 1
+          },
+          "vc_batches": 276,
+          "vc_outcomes": {
+            "Valid": 275,
+            "OutOfResource": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated_supported_language": {
+          "verdict": "dafny1/SchorrWaite.dfy\t0\t272 verified, 0 errors\t",
+          "declarations": 10,
+          "declaration_outcomes": {
+            "Correct": 10
+          },
+          "vc_batches": 272,
+          "vc_outcomes": {
+            "Valid": 272
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "explanation": "The refreshed resolver introduces additional obligations and the whole SchorrWaite proof reaches its original resource ceiling at line 243. Both compilers with the same explicit dev language profile agree. The separate sequential-postcondition positive remains certified. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny1/SchorrWaite.dfy\t0\t272 verified, 0 errors\t",
+          "declarations": 10,
+          "declaration_outcomes": {
+            "Correct": 10
+          },
+          "vc_batches": 272,
+          "vc_outcomes": {
+            "Valid": 272
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "dafny1/SchorrWaite.dfy\t4\t275 verified, 0 errors, 1 out of resource; 2 out of resource\t243",
+          "declarations": 10,
+          "declaration_outcomes": {
+            "Correct": 9,
+            "OutOfResource": 1
+          },
+          "vc_batches": 276,
+          "vc_outcomes": {
+            "Valid": 275,
+            "OutOfResource": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "0bf6bd96b54bbe2b4423fda25c4d6941df75d2872d3e68fea4c72ad881c991fe"
+    },
+    {
+      "program": "dafny2/MinWindowMax.dfy",
+      "kind": "changed",
+      "before": "dafny2/MinWindowMax.dfy\t0\t228 verified, 0 errors\t",
+      "actual": "dafny2/MinWindowMax.dfy\t0\t237 verified, 0 errors\t",
+      "explanation": "Preserved upstream invariant bridge and opaque Max with local reveal add nine valid obligations while keeping the theorem contract. All 237 obligations pass in the captured combined profile.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny2/MinWindowMax.dfy\t0\t228 verified, 0 errors\t",
+          "declarations": 12,
+          "declaration_outcomes": {
+            "Correct": 12
+          },
+          "vc_batches": 228,
+          "vc_outcomes": {
+            "Valid": 228
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "dafny2/MinWindowMax.dfy\t0\t237 verified, 0 errors\t",
+          "declarations": 12,
+          "declaration_outcomes": {
+            "Correct": 12
+          },
+          "vc_batches": 237,
+          "vc_outcomes": {
+            "Valid": 237
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "8ff79fa504a3a3cb05141d6fd560530a6ba8e83bf4c6974ee3a3b601974e3475"
+    },
+    {
+      "program": "dafny2/SmallestMissingNumber-functional.dfy",
+      "kind": "changed",
+      "before": "dafny2/SmallestMissingNumber-functional.dfy\t4\t53 verified, 0 errors, 7 out of resource; 8 out of resource\t157,230,277,278,279,297",
+      "actual": "dafny2/SmallestMissingNumber-functional.dfy\t4\t16 verified, 5 errors, 3 out of resource; 4 out of resource\t101,103,157,207,209,230,272",
+      "explanation": "Preserved upstream SMN double-prime proof replaces isolate_assertions/quantified bridge with explicit Elements/Cardinality/SetEquality helper steps. Refreshed type membership rejects five List<nat> to List<int> uses and three original-ceiling resource limits remain, including SMN double-prime Correct272. Same-source supported/integrated receipts expose carried resource costs; no benchmark was edited here.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny2/SmallestMissingNumber-functional.dfy\t4\t53 verified, 0 errors, 7 out of resource; 8 out of resource\t157,230,277,278,279,297",
+          "declarations": 21,
+          "declaration_outcomes": {
+            "Correct": 18,
+            "OutOfResource": 3
+          },
+          "vc_batches": 60,
+          "vc_outcomes": {
+            "Valid": 53,
+            "OutOfResource": 7
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "dafny2/SmallestMissingNumber-functional.dfy\t4\t16 verified, 5 errors, 3 out of resource; 4 out of resource\t101,103,157,207,209,230,272",
+          "declarations": 21,
+          "declaration_outcomes": {
+            "Correct": 16,
+            "Errors": 2,
+            "OutOfResource": 3
+          },
+          "vc_batches": 21,
+          "vc_outcomes": {
+            "Valid": 16,
+            "Invalid": 2,
+            "OutOfResource": 3
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "cf5d64b5b30a9174e137fdc8aa59ea5afa8f7b050883f40a35466e3843ea35ae"
+    },
+    {
+      "program": "dafny2/SmallestMissingNumber-imperative.dfy",
+      "kind": "changed",
+      "before": "dafny2/SmallestMissingNumber-imperative.dfy\t0\t8 verified, 0 errors\t",
+      "actual": "dafny2/SmallestMissingNumber-imperative.dfy\t4\t2 verified, 7 errors\t31,46,57,67,84,97,107",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "dafny2/SmallestMissingNumber-imperative.dfy\t4\t2 verified, 7 errors\t31,46,57,67,84,97,107",
+          "declarations": 8,
+          "declaration_outcomes": {
+            "Correct": 2,
+            "Errors": 6
+          },
+          "vc_batches": 8,
+          "vc_outcomes": {
+            "Valid": 2,
+            "Invalid": 6
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated_supported_language": {
+          "verdict": "dafny2/SmallestMissingNumber-imperative.dfy\t0\t8 verified, 0 errors\t",
+          "declarations": 8,
+          "declaration_outcomes": {
+            "Correct": 8
+          },
+          "vc_batches": 8,
+          "vc_outcomes": {
+            "Valid": 8
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "explanation": "Refreshed inference turns array<nat> to array<int> uses into seven membership checks; those casts cannot be proved, so the old positive row becomes seven verifier errors. Explicit supported-language profiles recover the old row. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny2/SmallestMissingNumber-imperative.dfy\t0\t8 verified, 0 errors\t",
+          "declarations": 8,
+          "declaration_outcomes": {
+            "Correct": 8
+          },
+          "vc_batches": 8,
+          "vc_outcomes": {
+            "Valid": 8
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "dafny2/SmallestMissingNumber-imperative.dfy\t4\t2 verified, 7 errors\t31,46,57,67,84,97,107",
+          "declarations": 8,
+          "declaration_outcomes": {
+            "Correct": 2,
+            "Errors": 6
+          },
+          "vc_batches": 8,
+          "vc_outcomes": {
+            "Valid": 2,
+            "Invalid": 6
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "5065e834c3c0befb29387ee902284ffa764cb9355449635fff185dc3edd6eb55"
+    },
+    {
+      "program": "dafny2/pq-intrinsic-extrinsic.dfy",
+      "kind": "changed",
+      "before": "dafny2/pq-intrinsic-extrinsic.dfy\t4\t31 verified, 0 errors, 1 out of resource; 2 out of resource\t222",
+      "actual": "dafny2/pq-intrinsic-extrinsic.dfy\t0\t52 verified, 0 errors\t",
+      "explanation": "Preserved upstream AboutInsert replaces its 70m override with vcs_split_on_every_assert, producing 52 valid obligations at the ordinary gate ceiling instead of one resource-failing batch. This pre-existing dev source change is retained, not added to tune the integration.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny2/pq-intrinsic-extrinsic.dfy\t4\t31 verified, 0 errors, 1 out of resource; 2 out of resource\t222",
+          "declarations": 32,
+          "declaration_outcomes": {
+            "Correct": 31,
+            "OutOfResource": 1
+          },
+          "vc_batches": 32,
+          "vc_outcomes": {
+            "Valid": 31,
+            "OutOfResource": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "dafny2/pq-intrinsic-extrinsic.dfy\t0\t52 verified, 0 errors\t",
+          "declarations": 32,
+          "declaration_outcomes": {
+            "Correct": 32
+          },
+          "vc_batches": 52,
+          "vc_outcomes": {
+            "Valid": 52
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "a550cea3127925965dc2c33ce45c27411a53b9106477d1f814d13baf80d2c34d"
+    },
+    {
+      "program": "dafny3/Filter.dfy",
+      "kind": "changed",
+      "before": "dafny3/Filter.dfy\t0\t28 verified, 0 errors\t",
+      "actual": "dafny3/Filter.dfy\t0\t30 verified, 0 errors\t",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "dafny3/Filter.dfy\t0\t30 verified, 0 errors\t",
+          "declarations": 30,
+          "declaration_outcomes": {
+            "Correct": 30
+          },
+          "vc_batches": 30,
+          "vc_outcomes": {
+            "Valid": 30
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated_supported_language": {
+          "verdict": "dafny3/Filter.dfy\t0\t28 verified, 0 errors\t",
+          "declarations": 28,
+          "declaration_outcomes": {
+            "Correct": 28
+          },
+          "vc_batches": 28,
+          "vc_outcomes": {
+            "Valid": 28
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "explanation": "Both profiles prove every obligation; refreshed lowering adds two correct declarations. This is a declaration denominator change, not a new accepted false assertion. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny3/Filter.dfy\t0\t28 verified, 0 errors\t",
+          "declarations": 28,
+          "declaration_outcomes": {
+            "Correct": 28
+          },
+          "vc_batches": 28,
+          "vc_outcomes": {
+            "Valid": 28
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "dafny3/Filter.dfy\t0\t30 verified, 0 errors\t",
+          "declarations": 30,
+          "declaration_outcomes": {
+            "Correct": 30
+          },
+          "vc_batches": 30,
+          "vc_outcomes": {
+            "Valid": 30
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "abde0e34f400b233072adc60343d6ec5e302270d6c56dc1e125185ac96fe4063"
+    },
+    {
+      "program": "dafny3/WideTrees.dfy",
+      "kind": "changed",
+      "before": "dafny3/WideTrees.dfy\t4\t5 verified, 1 error\t50",
+      "actual": "dafny3/WideTrees.dfy\t4\t6 verified, 1 error\t50",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "dafny3/WideTrees.dfy\t4\t6 verified, 1 error\t50",
+          "declarations": 7,
+          "declaration_outcomes": {
+            "Correct": 6,
+            "Errors": 1
+          },
+          "vc_batches": 7,
+          "vc_outcomes": {
+            "Valid": 6,
+            "Invalid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated_supported_language": {
+          "verdict": "dafny3/WideTrees.dfy\t4\t5 verified, 1 error\t50",
+          "declarations": 6,
+          "declaration_outcomes": {
+            "Correct": 5,
+            "Errors": 1
+          },
+          "vc_batches": 6,
+          "vc_outcomes": {
+            "Valid": 5,
+            "Invalid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "explanation": "Both language profiles retain the same false control at 50; refreshed lowering adds one correct declaration. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny3/WideTrees.dfy\t4\t5 verified, 1 error\t50",
+          "declarations": 6,
+          "declaration_outcomes": {
+            "Correct": 5,
+            "Errors": 1
+          },
+          "vc_batches": 6,
+          "vc_outcomes": {
+            "Valid": 5,
+            "Invalid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "dafny3/WideTrees.dfy\t4\t6 verified, 1 error\t50",
+          "declarations": 7,
+          "declaration_outcomes": {
+            "Correct": 6,
+            "Errors": 1
+          },
+          "vc_batches": 7,
+          "vc_outcomes": {
+            "Valid": 6,
+            "Invalid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "2a6ff627fec45b3b52575ed5c67c0dcfbf040fafbc3d3aaccf87f0a2973ed8c3"
+    },
+    {
+      "program": "dafny4/Primes.dfy",
+      "kind": "changed",
+      "before": "dafny4/Primes.dfy\t0\t15 verified, 0 errors\t",
+      "actual": "dafny4/Primes.dfy\t0\t27 verified, 0 errors\t",
+      "explanation": "Preserved upstream assertion splitting in RemoveFactor changes the measured denominator from 15 to 27; every obligation verifies, with the original theorem unchanged.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny4/Primes.dfy\t0\t15 verified, 0 errors\t",
+          "declarations": 15,
+          "declaration_outcomes": {
+            "Correct": 15
+          },
+          "vc_batches": 15,
+          "vc_outcomes": {
+            "Valid": 15
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "dafny4/Primes.dfy\t0\t27 verified, 0 errors\t",
+          "declarations": 15,
+          "declaration_outcomes": {
+            "Correct": 15
+          },
+          "vc_batches": 27,
+          "vc_outcomes": {
+            "Valid": 27
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "85e94660d662c3b96ff79b9ad83109283b0cbc7531401cf234827f32c3acd6ec"
+    },
+    {
+      "program": "dafny4/Regression0.dfy",
+      "kind": "changed",
+      "before": "dafny4/Regression0.dfy\t2\t\t7,11",
+      "actual": "dafny4/Regression0.dfy\t2\t\t7,9",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "dafny4/Regression0.dfy\t2\t\t7,9",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated_supported_language": {
+          "verdict": "dafny4/Regression0.dfy\t2\t\t7,11",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Refreshed collection inference locates the heterogeneous string/int sequence errors at display elements 7/9; the source remains rejected. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny4/Regression0.dfy\t2\t\t7,11",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny4/Regression0.dfy\t2\t\t7,9",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "ea4cf124fab6afa6e2e307fe5fa7c4045f256e37cfc8d622b0971df50a4e4934"
+    },
+    {
+      "program": "dafny4/Regression12.dfy",
+      "kind": "changed",
+      "before": "dafny4/Regression12.dfy\t4\t5 verified, 3 errors\t14,16,65",
+      "actual": "dafny4/Regression12.dfy\t4\t3 verified, 3 errors\t14,16,65",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "dafny4/Regression12.dfy\t4\t3 verified, 3 errors\t14,16,65",
+          "declarations": 5,
+          "declaration_outcomes": {
+            "Errors": 2,
+            "Correct": 3
+          },
+          "vc_batches": 5,
+          "vc_outcomes": {
+            "Invalid": 2,
+            "Valid": 3
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated_supported_language": {
+          "verdict": "dafny4/Regression12.dfy\t4\t5 verified, 3 errors\t14,16,65",
+          "declarations": 7,
+          "declaration_outcomes": {
+            "Errors": 2,
+            "Correct": 5
+          },
+          "vc_batches": 7,
+          "vc_outcomes": {
+            "Invalid": 2,
+            "Valid": 5
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "explanation": "The same three invalid controls remain at 14/16/65; refreshed lowering produces two fewer fully correct declarations. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny4/Regression12.dfy\t4\t5 verified, 3 errors\t14,16,65",
+          "declarations": 7,
+          "declaration_outcomes": {
+            "Errors": 2,
+            "Correct": 5
+          },
+          "vc_batches": 7,
+          "vc_outcomes": {
+            "Invalid": 2,
+            "Valid": 5
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "dafny4/Regression12.dfy\t4\t3 verified, 3 errors\t14,16,65",
+          "declarations": 5,
+          "declaration_outcomes": {
+            "Errors": 2,
+            "Correct": 3
+          },
+          "vc_batches": 5,
+          "vc_outcomes": {
+            "Invalid": 2,
+            "Valid": 3
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "1a77db54d8db42ee0467c594a0399e4b96ead91d48cd99d412779f264a4e70c8"
+    },
+    {
+      "program": "dafny4/UnionFind.dfy",
+      "kind": "changed",
+      "before": "dafny4/UnionFind.dfy\t4\t44 verified, 0 errors, 2 out of resource; 3 out of resource\t206,338",
+      "actual": "dafny4/UnionFind.dfy\t4\t235 verified, 0 errors, 1 out of resource; 2 out of resource\t338",
+      "explanation": "Preserved upstream isolate_assertions in refined M3.Join produces 235 valid obligations and removes its former Join206 limit. The existing limit at 338 remains visible; no integration ceiling/body change.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny4/UnionFind.dfy\t4\t44 verified, 0 errors, 2 out of resource; 3 out of resource\t206,338",
+          "declarations": 46,
+          "declaration_outcomes": {
+            "OutOfResource": 2,
+            "Correct": 44
+          },
+          "vc_batches": 46,
+          "vc_outcomes": {
+            "OutOfResource": 2,
+            "Valid": 44
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "dafny4/UnionFind.dfy\t4\t235 verified, 0 errors, 1 out of resource; 2 out of resource\t338",
+          "declarations": 46,
+          "declaration_outcomes": {
+            "OutOfResource": 1,
+            "Correct": 45
+          },
+          "vc_batches": 236,
+          "vc_outcomes": {
+            "OutOfResource": 1,
+            "Valid": 235
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "edb8d671ebf94829a31c37e800a3fad88969f78b29847d79dca1daf0592618bb"
+    },
+    {
+      "program": "dafny4/gcd.dfy",
+      "kind": "changed",
+      "before": "dafny4/gcd.dfy\t4\t95 verified, 0 errors, 2 out of resource; 3 out of resource\t165,253",
+      "actual": "dafny4/gcd.dfy\t0\t23 verified, 0 errors\t",
+      "explanation": "Preserved upstream explicit int annotations for division witnesses and removal of isolate_assertions produce 23 valid obligations instead of 95 valid plus two resource failures. Existing source edits are retained, not new integration tuning.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny4/gcd.dfy\t4\t95 verified, 0 errors, 2 out of resource; 3 out of resource\t165,253",
+          "declarations": 23,
+          "declaration_outcomes": {
+            "Correct": 21,
+            "OutOfResource": 2
+          },
+          "vc_batches": 97,
+          "vc_outcomes": {
+            "Valid": 95,
+            "OutOfResource": 2
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "dafny4/gcd.dfy\t0\t23 verified, 0 errors\t",
+          "declarations": 23,
+          "declaration_outcomes": {
+            "Correct": 23
+          },
+          "vc_batches": 23,
+          "vc_outcomes": {
+            "Valid": 23
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "d48e07c9a800f3f00a4c65ec8afbd8759b5eb84ac995c76d4876860fe00ab4f9"
+    },
+    {
+      "program": "dafny4/git-issue90.dfy",
+      "kind": "changed",
+      "before": "dafny4/git-issue90.dfy\t2\t\t4,5",
+      "actual": "dafny4/git-issue90.dfy\t2\t\t6",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "dafny4/git-issue90.dfy\t2\t\t6",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated_supported_language": {
+          "verdict": "dafny4/git-issue90.dfy\t2\t\t4,5",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Refreshed cycle detection rejects the recursive MyInt -> y -> x -> MyInt constraint explicitly at 6, before verification. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "dafny4/git-issue90.dfy\t2\t\t4,5",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "dafny4/git-issue90.dfy\t2\t\t6",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "568fa88b496a74ac6a3b33763ba1be5967ba89125549dc583d90a3448a328d17"
+    },
+    {
+      "program": "git-issues/git-issue-1016.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-1016.dfy\t2\t\t66,82,101,117,129",
+      "actual": "git-issues/git-issue-1016.dfy\t2\t\t66,82,101,115,127",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "git-issues/git-issue-1016.dfy\t2\t\t66,82,101,115,127",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated_supported_language": {
+          "verdict": "git-issues/git-issue-1016.dfy\t2\t\t66,82,101,117,129",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Refreshed inference reports invalid int/decimal literals in the State constructor at 115/127 instead of the enclosing Option comparisons; the source remains rejected. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-1016.dfy\t2\t\t66,82,101,117,129",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-1016.dfy\t2\t\t66,82,101,115,127",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "4886ad192901b9a76240e1353358a19df6f05262ef11d816cb5185e5fc12755e"
+    },
+    {
+      "program": "git-issues/git-issue-1016a.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-1016a.dfy\t2\t\t34",
+      "actual": "git-issues/git-issue-1016a.dfy\t2\t\t32",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "git-issues/git-issue-1016a.dfy\t2\t\t32",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated_supported_language": {
+          "verdict": "git-issues/git-issue-1016a.dfy\t2\t\t34",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Refreshed inference reports the decimal literal used as State at 32 instead of the enclosing Option comparison at 34; the source remains rejected. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-1016a.dfy\t2\t\t34",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-1016a.dfy\t2\t\t32",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "ccddd1f64d9acba03e18b3a2a414d5f26911c84f5b1bf4d662cd0bb2573255cd"
+    },
+    {
+      "program": "git-issues/git-issue-141-original-control.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-141-original-control.dfy\t4\t1 verified, 1 error\t19",
+      "actual": "git-issues/git-issue-141-original-control.dfy\t4\t1 verified, 1 error\t17",
+      "explanation": "The initial counterpart merge omitted the accepted explicit axiom OFF/ON RUN pair, shifting the sole false assertion from19 to17. This was a coverage omission:22f493a74 restores the exact accepted main source and both modes, so final native and normal receipts must record the error at19. This row documents the superseded failed-normal capture only.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-141-original-control.dfy\t4\t1 verified, 1 error\t19",
+          "declarations": 2,
+          "declaration_outcomes": {
+            "Correct": 1,
+            "Errors": 1
+          },
+          "vc_batches": 2,
+          "vc_outcomes": {
+            "Valid": 1,
+            "Invalid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-141-original-control.dfy\t4\t1 verified, 1 error\t17",
+          "declarations": 2,
+          "declaration_outcomes": {
+            "Correct": 1,
+            "Errors": 1
+          },
+          "vc_batches": 2,
+          "vc_outcomes": {
+            "Valid": 1,
+            "Invalid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "a00b9cbfc9a338de42e4ece0c520f4859900be972b6eb3731cdb88cc54fe328e",
+      "final_source_boundary": "Restored source22f493a74 differs from the historical capture; final paired-mode evidence and oracle rows are required."
+    },
+    {
+      "program": "git-issues/git-issue-141-original.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-141-original.dfy\t4\t1 verified, 1 error\t11",
+      "actual": "git-issues/git-issue-141-original.dfy\t4\t1 verified, 1 error\t9",
+      "explanation": "The initial counterpart merge omitted the accepted explicit axiom OFF/ON RUN pair, shifting the Box<int> to Box<nat> failure from11 to9. This was a coverage omission:22f493a74 restores the exact accepted main source and both modes, so final native and normal receipts must record the error at11. This row documents the superseded failed-normal capture only.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-141-original.dfy\t4\t1 verified, 1 error\t11",
+          "declarations": 2,
+          "declaration_outcomes": {
+            "Errors": 1,
+            "Correct": 1
+          },
+          "vc_batches": 2,
+          "vc_outcomes": {
+            "Invalid": 1,
+            "Valid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-141-original.dfy\t4\t1 verified, 1 error\t9",
+          "declarations": 2,
+          "declaration_outcomes": {
+            "Errors": 1,
+            "Correct": 1
+          },
+          "vc_batches": 2,
+          "vc_outcomes": {
+            "Invalid": 1,
+            "Valid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "df8bdec868bd9763927a5aa956d88393008c8d58a88aadbe29df00a74803e8f3",
+      "final_source_boundary": "Restored source22f493a74 differs from the historical capture; final paired-mode evidence and oracle rows are required."
+    },
+    {
+      "program": "git-issues/git-issue-1545.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-1545.dfy\t2\t\t5,15,17,19,21,35,44,46,50,56,58,60,62",
+      "actual": "git-issues/git-issue-1545.dfy\t4\t5 verified, 3 errors\t17,19,60",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "git-issues/git-issue-1545.dfy\t4\t5 verified, 3 errors\t17,19,60",
+          "declarations": 7,
+          "declaration_outcomes": {
+            "Correct": 5,
+            "Errors": 2
+          },
+          "vc_batches": 7,
+          "vc_outcomes": {
+            "Valid": 5,
+            "Invalid": 2
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated_supported_language": {
+          "verdict": "git-issues/git-issue-1545.dfy\t2\t\t5,15,17,19,21,35,44,46,50,56,58,60,62",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Generalized value-type tests are admitted and checked instead of being rejected as reference-only syntax. The three false subset-test assertions remain invalid at 17/19/60. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-1545.dfy\t2\t\t5,15,17,19,21,35,44,46,50,56,58,60,62",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-1545.dfy\t4\t5 verified, 3 errors\t17,19,60",
+          "declarations": 7,
+          "declaration_outcomes": {
+            "Correct": 5,
+            "Errors": 2
+          },
+          "vc_batches": 7,
+          "vc_outcomes": {
+            "Valid": 5,
+            "Invalid": 2
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "cbcfc09ebbb0d071f3bb223f2f9f7e9b27cdc1659cbcaee9daf6f50ceed3dbf2"
+    },
+    {
+      "program": "git-issues/git-issue-1604b.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-1604b.dfy\t0\t5 verified, 0 errors\t",
+      "actual": "git-issues/git-issue-1604b.dfy\t0\t6 verified, 0 errors\t",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "git-issues/git-issue-1604b.dfy\t0\t6 verified, 0 errors\t",
+          "declarations": 6,
+          "declaration_outcomes": {
+            "Correct": 6
+          },
+          "vc_batches": 6,
+          "vc_outcomes": {
+            "Valid": 6
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated_supported_language": {
+          "verdict": "git-issues/git-issue-1604b.dfy\t0\t5 verified, 0 errors\t",
+          "declarations": 5,
+          "declaration_outcomes": {
+            "Correct": 5
+          },
+          "vc_batches": 5,
+          "vc_outcomes": {
+            "Valid": 5
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "explanation": "Both language profiles prove all obligations; refreshed lowering adds one correct declaration. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-1604b.dfy\t0\t5 verified, 0 errors\t",
+          "declarations": 5,
+          "declaration_outcomes": {
+            "Correct": 5
+          },
+          "vc_batches": 5,
+          "vc_outcomes": {
+            "Valid": 5
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-1604b.dfy\t0\t6 verified, 0 errors\t",
+          "declarations": 6,
+          "declaration_outcomes": {
+            "Correct": 6
+          },
+          "vc_batches": 6,
+          "vc_outcomes": {
+            "Valid": 6
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "8fcd8681fe4bf5a4906ddf62e9320b9a7e624b976fa7509cb703718b3751656f"
+    },
+    {
+      "program": "git-issues/git-issue-1604c.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-1604c.dfy\t4\t1 verified, 3 errors\t9,11,12",
+      "actual": "git-issues/git-issue-1604c.dfy\t4\t1 verified, 5 errors\t9,11,12,15,16",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "git-issues/git-issue-1604c.dfy\t4\t1 verified, 5 errors\t9,11,12,15,16",
+          "declarations": 2,
+          "declaration_outcomes": {
+            "Correct": 1,
+            "Errors": 1
+          },
+          "vc_batches": 2,
+          "vc_outcomes": {
+            "Valid": 1,
+            "Invalid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated_supported_language": {
+          "verdict": "git-issues/git-issue-1604c.dfy\t4\t1 verified, 3 errors\t9,11,12",
+          "declarations": 2,
+          "declaration_outcomes": {
+            "Correct": 1,
+            "Errors": 1
+          },
+          "vc_batches": 2,
+          "vc_outcomes": {
+            "Valid": 1,
+            "Invalid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "explanation": "Refreshed lowering asserts the missing nat subset conditions at 15/16; both intended unchecked conversions fail in addition to the three prior invalid controls. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-1604c.dfy\t4\t1 verified, 3 errors\t9,11,12",
+          "declarations": 2,
+          "declaration_outcomes": {
+            "Correct": 1,
+            "Errors": 1
+          },
+          "vc_batches": 2,
+          "vc_outcomes": {
+            "Valid": 1,
+            "Invalid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-1604c.dfy\t4\t1 verified, 5 errors\t9,11,12,15,16",
+          "declarations": 2,
+          "declaration_outcomes": {
+            "Correct": 1,
+            "Errors": 1
+          },
+          "vc_batches": 2,
+          "vc_outcomes": {
+            "Valid": 1,
+            "Invalid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "0da7955feecab7c0994175fd990adb06418d1a1adb13d60f84497b3698c96579"
+    },
+    {
+      "program": "git-issues/git-issue-19a.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-19a.dfy\t2\t\t12,54",
+      "actual": "git-issues/git-issue-19a.dfy\t2\t\t12,54,114",
+      "explanation": "Preserved upstream reads ** and allocation-dependent quantifier fixtures add the intentionally forbidden unframed allocated use at 114. DirectUseOfAllocatedWithStarStar is admitted; the file remains resolution-negative.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-19a.dfy\t2\t\t12,54",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-19a.dfy\t2\t\t12,54,114",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "bdf4225c4abbdcaa4174e4276307af36d296beccf0bca4577a18e2137d59fbec"
+    },
+    {
+      "program": "git-issues/git-issue-19b.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-19b.dfy\t4\t19 verified, 9 errors\t36,43,50,57,64,71,102,115,131",
+      "actual": "git-issues/git-issue-19b.dfy\t4\t21 verified, 12 errors\t36,43,50,57,64,71,102,115,131,177,184,212",
+      "explanation": "Preserved upstream allocation-state fixtures add the three intended failures after an arbitrary method/allocation at 177/184/212. Lemma calls preserve the state and the corresponding assertions verify; the allocation-sensitive universal facts are not replayed unsafely.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-19b.dfy\t4\t19 verified, 9 errors\t36,43,50,57,64,71,102,115,131",
+          "declarations": 28,
+          "declaration_outcomes": {
+            "Correct": 19,
+            "Errors": 9
+          },
+          "vc_batches": 28,
+          "vc_outcomes": {
+            "Valid": 19,
+            "Invalid": 9
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-19b.dfy\t4\t21 verified, 12 errors\t36,43,50,57,64,71,102,115,131,177,184,212",
+          "declarations": 33,
+          "declaration_outcomes": {
+            "Correct": 21,
+            "Errors": 12
+          },
+          "vc_batches": 33,
+          "vc_outcomes": {
+            "Valid": 21,
+            "Invalid": 12
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "a6f376553377d1284ca3291f806d1216ea916427c2af7a3291cb5ccdda444e9b"
+    },
+    {
+      "program": "git-issues/git-issue-2026.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-2026.dfy\t4\t0 verified, 1 error\t19",
+      "actual": "git-issues/git-issue-2026.dfy\t4\t0 verified, 1 error\t20",
+      "explanation": "Preserved upstream RUN output filtering adds one source line, moving the same false loop invariant from 19 to 20. Exit, declaration verdict and negative semantics remain unchanged.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-2026.dfy\t4\t0 verified, 1 error\t19",
+          "declarations": 1,
+          "declaration_outcomes": {
+            "Errors": 1
+          },
+          "vc_batches": 1,
+          "vc_outcomes": {
+            "Invalid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-2026.dfy\t4\t0 verified, 1 error\t20",
+          "declarations": 1,
+          "declaration_outcomes": {
+            "Errors": 1
+          },
+          "vc_batches": 1,
+          "vc_outcomes": {
+            "Invalid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "acb649b6b62ad19a235ed0c7e194a559a3bb88e7568b989f31fe78d9333a7546"
+    },
+    {
+      "program": "git-issues/git-issue-2303.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-2303.dfy\t2\t\t5,10,14",
+      "actual": "git-issues/git-issue-2303.dfy\t2\t\t5,9,10,14",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "git-issues/git-issue-2303.dfy\t2\t\t5,9,10,14",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated_supported_language": {
+          "verdict": "git-issues/git-issue-2303.dfy\t2\t\t5,10,14",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Refreshed inference rejects the undetermined int0 base type at 9 and its literal use at 10; no VCs are produced. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-2303.dfy\t2\t\t5,10,14",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-2303.dfy\t2\t\t5,9,10,14",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "7b4c84dba7dfedcf272845ba8bcc6a4d9b51aebc9ef00aa79b3c6919bab834e9"
+    },
+    {
+      "program": "git-issues/git-issue-2500.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-2500.dfy\t4\t27 verified, 3 errors\t21,24,37",
+      "actual": "git-issues/git-issue-2500.dfy\t4\t25 verified, 3 errors\t21,24,37",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "git-issues/git-issue-2500.dfy\t4\t25 verified, 3 errors\t21,24,37",
+          "declarations": 28,
+          "declaration_outcomes": {
+            "Errors": 3,
+            "Correct": 25
+          },
+          "vc_batches": 28,
+          "vc_outcomes": {
+            "Invalid": 3,
+            "Valid": 25
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated_supported_language": {
+          "verdict": "git-issues/git-issue-2500.dfy\t4\t27 verified, 3 errors\t21,24,37",
+          "declarations": 30,
+          "declaration_outcomes": {
+            "Errors": 3,
+            "Correct": 27
+          },
+          "vc_batches": 30,
+          "vc_outcomes": {
+            "Invalid": 3,
+            "Valid": 27
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "explanation": "The same three invalid controls remain at 21/24/37; refreshed lowering changes the number of fully correct declarations from 27 to 25. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-2500.dfy\t4\t27 verified, 3 errors\t21,24,37",
+          "declarations": 30,
+          "declaration_outcomes": {
+            "Errors": 3,
+            "Correct": 27
+          },
+          "vc_batches": 30,
+          "vc_outcomes": {
+            "Invalid": 3,
+            "Valid": 27
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-2500.dfy\t4\t25 verified, 3 errors\t21,24,37",
+          "declarations": 28,
+          "declaration_outcomes": {
+            "Errors": 3,
+            "Correct": 25
+          },
+          "vc_batches": 28,
+          "vc_outcomes": {
+            "Invalid": 3,
+            "Valid": 25
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "a76ee5466e9c135b732588d48e7de041c9846ae17ec8ad3cf51753cd9bd01621"
+    },
+    {
+      "program": "git-issues/git-issue-2829.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-2829.dfy\t2\t\t52,53,54,56",
+      "actual": "git-issues/git-issue-2829.dfy\t2\t\t55",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "git-issues/git-issue-2829.dfy\t2\t\t55",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated_supported_language": {
+          "verdict": "git-issues/git-issue-2829.dfy\t2\t\t52,53,54,56",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Refreshed inference resolves the polymorphic string/iset expressions far enough to reject the incorrectly ordered function arguments at 55; the source remains ill-typed. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-2829.dfy\t2\t\t52,53,54,56",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-2829.dfy\t2\t\t55",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "8f3fb969fe69951e93c27cf6235e3593a1ce16d272065e99f5618e8227878d7e"
+    },
+    {
+      "program": "git-issues/git-issue-283a.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-283a.dfy\t2\t\t15,22,29",
+      "actual": "git-issues/git-issue-283a.dfy\t2\t\t15,22,29,52,70,80,86",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "git-issues/git-issue-283a.dfy\t2\t\t15,22,29,52,70,80,86",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated_supported_language": {
+          "verdict": "git-issues/git-issue-283a.dfy\t2\t\t15,22,29",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Refreshed pattern resolution rejects the same invalid tuple/constructor patterns and additional non-mutable binding/omitted-argument cases at 52/70/80/86. No proof results. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-283a.dfy\t2\t\t15,22,29",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-283a.dfy\t2\t\t15,22,29,52,70,80,86",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "67f91cf90377b00819fc1fdef60afb3b6739946adbed491f7eba8e6da63750a2"
+    },
+    {
+      "program": "git-issues/git-issue-283g.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-283g.dfy\t2\t\t21,33,42",
+      "actual": "git-issues/git-issue-283g.dfy\t2\t\t21,36,42,104",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "git-issues/git-issue-283g.dfy\t2\t\t21,36,42,104",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated_supported_language": {
+          "verdict": "git-issues/git-issue-283g.dfy\t2\t\t21,33,42",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Refreshed match inference relocates the decimal literal mismatch to 36 and adds an unresolved match-source diagnostic at 104; no proof results. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-283g.dfy\t2\t\t21,33,42",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-283g.dfy\t2\t\t21,36,42,104",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "4c14a1bbc441f0f26e0498660c84a7f6efb19754688076c6bcd26814f65fe3c0"
+    },
+    {
+      "program": "git-issues/git-issue-321.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-321.dfy\t2\t\t19,21",
+      "actual": "git-issues/git-issue-321.dfy\t4\t3 verified, 1 error\t21",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "git-issues/git-issue-321.dfy\t4\t3 verified, 1 error\t21",
+          "declarations": 4,
+          "declaration_outcomes": {
+            "Correct": 3,
+            "Errors": 1
+          },
+          "vc_batches": 4,
+          "vc_outcomes": {
+            "Valid": 3,
+            "Invalid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated_supported_language": {
+          "verdict": "git-issues/git-issue-321.dfy\t2\t\t19,21",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Refreshed inference admits the array<int>/array<nat> operations and retains an invalid membership cast at 21; three other declarations verify. The supported-language profile rejects earlier at resolution. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-321.dfy\t2\t\t19,21",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-321.dfy\t4\t3 verified, 1 error\t21",
+          "declarations": 4,
+          "declaration_outcomes": {
+            "Correct": 3,
+            "Errors": 1
+          },
+          "vc_batches": 4,
+          "vc_outcomes": {
+            "Valid": 3,
+            "Invalid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "75159a8fdd2af03a96cc03f748561867e1737f53acbedcee326d27c081677fa9"
+    },
+    {
+      "program": "git-issues/git-issue-4946d.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-4946d.dfy\t2\t\t",
+      "actual": "git-issues/git-issue-4946d.dfy\t2\t\t5",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "git-issues/git-issue-4946d.dfy\t2\t\t5",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated_supported_language": {
+          "verdict": "git-issues/git-issue-4946d.dfy\t2\t\t5",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "The old supported default rejected the option combination --general-newtypes without refresh before processing source. Dev defaults reach the intended undetermined NewProgram bound-variable type at 5. Both rows are resolution-only; explicit dev-language supported compiler agrees. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-4946d.dfy\t2\t\t",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-4946d.dfy\t2\t\t5",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "5432c8c3d60dc4d73581fe5fb383c5b218c46b125d5f877c3a60459b5b66f93a"
+    },
+    {
+      "program": "git-issues/git-issue-4983.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-4983.dfy\t2\t\t6,12,18,25",
+      "actual": "git-issues/git-issue-4983.dfy\t0\t0 verified, 0 errors\t",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "git-issues/git-issue-4983.dfy\t0\t0 verified, 0 errors\t",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated_supported_language": {
+          "verdict": "git-issues/git-issue-4983.dfy\t2\t\t6,12,18,25",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Datatype-trait defaults admit the existing Dt/Abstract to Parent return types. The program has zero verification declarations; this is successful resolution only, not proof evidence. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-4983.dfy\t2\t\t6,12,18,25",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-4983.dfy\t0\t0 verified, 0 errors\t",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "a5c28b61da3ee202ee24b0c99048ecd508c5414696b7127b29ed3f8afee1daa1"
+    },
+    {
+      "program": "git-issues/git-issue-4994.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-4994.dfy\t2\t\t12,14,16,18,25,27,29,31,35,36,38,39,41,42,44,45",
+      "actual": "git-issues/git-issue-4994.dfy\t4\t1 verified, 8 errors\t12,14,16,18,25,27,29,31",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "git-issues/git-issue-4994.dfy\t4\t1 verified, 8 errors\t12,14,16,18,25,27,29,31",
+          "declarations": 3,
+          "declaration_outcomes": {
+            "Errors": 2,
+            "Correct": 1
+          },
+          "vc_batches": 3,
+          "vc_outcomes": {
+            "Invalid": 2,
+            "Valid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated_supported_language": {
+          "verdict": "git-issues/git-issue-4994.dfy\t2\t\t12,14,16,18,25,27,29,31,35,36,38,39,41,42,44,45",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Datatype-trait defaults admit the parent/datatype/codatatype comparisons. Eight intended false assertions remain verifier errors at 12/14/16/18/25/27/29/31; the other compatible comparisons are accepted. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-4994.dfy\t2\t\t12,14,16,18,25,27,29,31,35,36,38,39,41,42,44,45",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-4994.dfy\t4\t1 verified, 8 errors\t12,14,16,18,25,27,29,31",
+          "declarations": 3,
+          "declaration_outcomes": {
+            "Errors": 2,
+            "Correct": 1
+          },
+          "vc_batches": 3,
+          "vc_outcomes": {
+            "Invalid": 2,
+            "Valid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "f533d500bb756681ed30418f35e19b8276aa173489d05272a3e253ddf30241e9"
+    },
+    {
+      "program": "git-issues/git-issue-6164.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-6164.dfy\t4\t3 verified, 2 errors\t29,69",
+      "actual": "git-issues/git-issue-6164.dfy\t4\t4 verified, 2 errors\t29,69",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "git-issues/git-issue-6164.dfy\t4\t4 verified, 2 errors\t29,69",
+          "declarations": 6,
+          "declaration_outcomes": {
+            "Correct": 4,
+            "Errors": 2
+          },
+          "vc_batches": 6,
+          "vc_outcomes": {
+            "Valid": 4,
+            "Invalid": 2
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated_supported_language": {
+          "verdict": "git-issues/git-issue-6164.dfy\t4\t3 verified, 2 errors\t29,69",
+          "declarations": 5,
+          "declaration_outcomes": {
+            "Correct": 3,
+            "Errors": 2
+          },
+          "vc_batches": 5,
+          "vc_outcomes": {
+            "Valid": 3,
+            "Invalid": 2
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "explanation": "Both language profiles retain the two invalid controls at 29/69; refreshed lowering adds one correct declaration. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-6164.dfy\t4\t3 verified, 2 errors\t29,69",
+          "declarations": 5,
+          "declaration_outcomes": {
+            "Correct": 3,
+            "Errors": 2
+          },
+          "vc_batches": 5,
+          "vc_outcomes": {
+            "Valid": 3,
+            "Invalid": 2
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-6164.dfy\t4\t4 verified, 2 errors\t29,69",
+          "declarations": 6,
+          "declaration_outcomes": {
+            "Correct": 4,
+            "Errors": 2
+          },
+          "vc_batches": 6,
+          "vc_outcomes": {
+            "Valid": 4,
+            "Invalid": 2
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "2a9045e81e5f25a2746b040bc03e0f4aa6c46f21f247f423b231293533ed534b"
+    },
+    {
+      "program": "git-issues/git-issue-6317a.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-6317a.dfy\t2\t\t9,10",
+      "actual": "git-issues/git-issue-6317a.dfy\t2\t\t14,15,16",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "git-issues/git-issue-6317a.dfy\t2\t\t14,15,16",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated_supported_language": {
+          "verdict": "git-issues/git-issue-6317a.dfy\t2\t\t9,10",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Datatype traits are admitted, then incompatible D1/D2 conditional branches are rejected at 14/15/16. No proof results. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-6317a.dfy\t2\t\t9,10",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-6317a.dfy\t2\t\t14,15,16",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "4764357510f610a3961e6a641e42c3dfc1373147c1f39db715799835ad27d23a"
+    },
+    {
+      "program": "git-issues/git-issue-6317b.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue-6317b.dfy\t2\t\t9,10",
+      "actual": "git-issues/git-issue-6317b.dfy\t0\t2 verified, 0 errors\t",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "git-issues/git-issue-6317b.dfy\t0\t2 verified, 0 errors\t",
+          "declarations": 2,
+          "declaration_outcomes": {
+            "Correct": 2
+          },
+          "vc_batches": 2,
+          "vc_outcomes": {
+            "Valid": 2
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated_supported_language": {
+          "verdict": "git-issues/git-issue-6317b.dfy\t2\t\t9,10",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "explanation": "Datatype traits are admitted and the two declarations verify. The negative sibling #6317a still rejects incompatible D1/D2 branches. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue-6317b.dfy\t2\t\t9,10",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue-6317b.dfy\t0\t2 verified, 0 errors\t",
+          "declarations": 2,
+          "declaration_outcomes": {
+            "Correct": 2
+          },
+          "vc_batches": 2,
+          "vc_outcomes": {
+            "Valid": 2
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "current_source_sha256": "492af70d47243a40c9c919c24ff5a8bd8caed84d9d00db22c2ce09ef4a95253c"
+    },
+    {
+      "program": "git-issues/git-issue5822.dfy",
+      "kind": "changed",
+      "before": "git-issues/git-issue5822.dfy\t4\t1 verified, 1 error\t7",
+      "actual": "git-issues/git-issue5822.dfy\t2\t\t9",
+      "language_reference": {
+        "supported_dev_language": {
+          "verdict": "git-issues/git-issue5822.dfy\t2\t\t9",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated_supported_language": {
+          "verdict": "git-issues/git-issue5822.dfy\t4\t1 verified, 1 error\t7",
+          "declarations": 2,
+          "declaration_outcomes": {
+            "Errors": 1,
+            "Correct": 1
+          },
+          "vc_batches": 2,
+          "vc_outcomes": {
+            "Invalid": 1,
+            "Valid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        }
+      },
+      "explanation": "Datatype-trait defaults make unextended C a value trait, so modifies this is rejected at 9 before verification. Supported reference traits are heap references and instead fail the reads check at 7. Fresh explicit dev-language supported source/compiler exactly reproduces the combined default row; reverse supported-language combined compiler recovers the supported row except the recorded #4946d pre-resolution option check.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/git-issue5822.dfy\t4\t1 verified, 1 error\t7",
+          "declarations": 2,
+          "declaration_outcomes": {
+            "Errors": 1,
+            "Correct": 1
+          },
+          "vc_batches": 2,
+          "vc_outcomes": {
+            "Invalid": 1,
+            "Valid": 1
+          },
+          "proof_evidence": "nonempty native VC results"
+        },
+        "integrated": {
+          "verdict": "git-issues/git-issue5822.dfy\t2\t\t9",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "e2098cceb55a85f5d95c946d575abd4e587b3979a5ab8f185f7a9795f1007f0e"
+    },
+    {
+      "program": "git-issues/github-issue-3860.dfy",
+      "kind": "changed",
+      "before": "git-issues/github-issue-3860.dfy\t2\t\t7",
+      "actual": "git-issues/github-issue-3860.dfy\t2\t\t9,19",
+      "explanation": "Preserved upstream second duplicated z destructor negative expands coverage. Duplicate y and z names are rejected at 9/19 before verification.",
+      "native_evidence": {
+        "supported": {
+          "verdict": "git-issues/github-issue-3860.dfy\t2\t\t7",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        },
+        "integrated": {
+          "verdict": "git-issues/github-issue-3860.dfy\t2\t\t9,19",
+          "declarations": 0,
+          "declaration_outcomes": {},
+          "vc_batches": 0,
+          "vc_outcomes": {},
+          "proof_evidence": "resolution-only or zero-VC; no theorem certification"
+        }
+      },
+      "current_source_sha256": "10906d178ede00078b578f94c4dec3251d6d2c5329d8c6d9618276b33ad98e89"
+    }
+  ]
+}
