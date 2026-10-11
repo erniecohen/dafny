@@ -1,4 +1,4 @@
-name: Full integration complete registered harness diagnosis
+name: Full integration complete registered harness language-profile recheck
 on:
   push:
     branches: ['scratch/codex/full-main-to-dev-probes']
