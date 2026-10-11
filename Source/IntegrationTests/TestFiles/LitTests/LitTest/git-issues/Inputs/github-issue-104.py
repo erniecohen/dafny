@@ -36,7 +36,7 @@ def case(name, command, mode, project_output="nested/result", extra=(), target="
     if command == "translate":
         args.append(target)
     args += ["project/dfyconfig.toml" if project_subdir else "dfyconfig.toml", "--no-verify",
-             "--type-system-refresh:" + mode]
+             "--type-system-refresh:" + mode, "--general-newtypes:" + mode]
     if command != "translate":
         args += ["--spill-translation", "--target", target]
     args += list(extra)

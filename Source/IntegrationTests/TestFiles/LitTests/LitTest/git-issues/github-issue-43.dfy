@@ -1,5 +1,5 @@
 // RUN: echo "Legacy resolver" > "%t"
-// RUN: %exits-with 2 %baredafny resolve --type-system-refresh:false --show-snippets:false --use-basename-for-filename "%s" >> "%t"
+// RUN: %exits-with 2 %baredafny resolve --type-system-refresh:false --general-newtypes:false --show-snippets:false --use-basename-for-filename "%s" >> "%t"
 // RUN: echo "Refreshed resolver" >> "%t"
 // RUN: %exits-with 2 %baredafny resolve --type-system-refresh:true --show-snippets:false --use-basename-for-filename "%s" >> "%t"
 
@@ -94,7 +94,7 @@ method GoodNoExtract(box: Box, arr: array<int>) returns (r: Status) {
   a, box.value, arr[0] :- WithoutExtract();
 }
 
-// RUN: %baredafny resolve --type-system-refresh:false --show-snippets:false --use-basename-for-filename "%S/Inputs/github-issue-43-valid.dfy" > "%t.valid"
+// RUN: %baredafny resolve --type-system-refresh:false --general-newtypes:false --show-snippets:false --use-basename-for-filename "%S/Inputs/github-issue-43-valid.dfy" > "%t.valid"
 // RUN: %baredafny resolve --type-system-refresh:true --show-snippets:false --use-basename-for-filename "%S/Inputs/github-issue-43-valid.dfy" > "%t.valid"
 
 method BadDestinationAndCall() returns (r: Option<int>) {

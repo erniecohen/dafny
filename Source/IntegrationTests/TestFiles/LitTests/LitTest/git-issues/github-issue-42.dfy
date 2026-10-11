@@ -1,4 +1,4 @@
-// RUN: %baredafny resolve --type-system-refresh:false "%s" > "%t"
+// RUN: %baredafny resolve --type-system-refresh:false --general-newtypes:false "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 // RUN: %baredafny resolve --type-system-refresh:true "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"

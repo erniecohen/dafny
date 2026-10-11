@@ -1,10 +1,10 @@
 // Regression: a heap update is a succession step only if it does not deallocate (dafny-lang/dafny#2463).
 // RUN: echo "heap (type-system-refresh:false)" > "%t"
-// RUN: %exits-with 0 %baredafny verify "%S/Inputs/git-issue-2463-heap.dfy" --type-system-refresh:false --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --verification-time-limit:60 --cores:1 --bprint "%t.bpl" >> "%t"
+// RUN: %exits-with 0 %baredafny verify "%S/Inputs/git-issue-2463-heap.dfy" --type-system-refresh:false --general-newtypes:false --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --verification-time-limit:60 --cores:1 --bprint "%t.bpl" >> "%t"
 // RUN: echo "heap (type-system-refresh:true)" >> "%t"
 // RUN: %exits-with 0 %baredafny verify "%S/Inputs/git-issue-2463-heap.dfy" --type-system-refresh:true --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --verification-time-limit:60 --cores:1 >> "%t"
 // RUN: echo "negative (type-system-refresh:false)" >> "%t"
-// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-2463-negative.dfy" --type-system-refresh:false --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --verification-time-limit:60 --cores:1 >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-2463-negative.dfy" --type-system-refresh:false --general-newtypes:false --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --verification-time-limit:60 --cores:1 >> "%t"
 // RUN: echo "negative (type-system-refresh:true)" >> "%t"
 // RUN: %exits-with 4 %baredafny verify "%S/Inputs/git-issue-2463-negative.dfy" --type-system-refresh:true --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --verification-time-limit:60 --cores:1 >> "%t"
 // RUN: echo "Boogie, extensional heaps (typeEncoding:m)" >> "%t"

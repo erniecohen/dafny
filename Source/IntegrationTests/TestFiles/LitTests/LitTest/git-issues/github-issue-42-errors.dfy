@@ -1,4 +1,4 @@
-// RUN: %exits-with 2 %baredafny resolve --type-system-refresh:false --show-snippets:false --use-basename-for-filename "%s" > "%t"
+// RUN: %exits-with 2 %baredafny resolve --type-system-refresh:false --general-newtypes:false --show-snippets:false --use-basename-for-filename "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 // RUN: %exits-with 2 %baredafny resolve --type-system-refresh:true --show-snippets:false --use-basename-for-filename "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"

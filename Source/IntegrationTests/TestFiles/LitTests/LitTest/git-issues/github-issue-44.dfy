@@ -1,6 +1,6 @@
-// RUN: %exits-with 2 %baredafny resolve --type-system-refresh:false --use-basename-for-filename --show-snippets:false "%s" > "%t"
+// RUN: %exits-with 2 %baredafny resolve --type-system-refresh:false --general-newtypes:false --use-basename-for-filename --show-snippets:false "%s" > "%t"
 // RUN: %exits-with 2 %baredafny resolve --type-system-refresh:true --use-basename-for-filename --show-snippets:false "%s" >> "%t"
-// RUN: %baredafny resolve --type-system-refresh:false --use-basename-for-filename --show-snippets:false "%S/Inputs/github-issue-44-acyclic.dfy" >> "%t"
+// RUN: %baredafny resolve --type-system-refresh:false --general-newtypes:false --use-basename-for-filename --show-snippets:false "%S/Inputs/github-issue-44-acyclic.dfy" >> "%t"
 // RUN: %baredafny resolve --type-system-refresh:true --use-basename-for-filename --show-snippets:false "%S/Inputs/github-issue-44-acyclic.dfy" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 

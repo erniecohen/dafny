@@ -1,5 +1,5 @@
 // RUN: echo "Arithmetic solver selection"
-// RUN: %baredafny verify --solver-path "%z3" --type-system-refresh:false --arithmetic-solver 6 --resource-limit 20000000 "%s" > "%t"
+// RUN: %baredafny verify --solver-path "%z3" --type-system-refresh:false --general-newtypes:false --arithmetic-solver 6 --resource-limit 20000000 "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 // RUN: %baredafny verify --solver-path "%z3" --type-system-refresh:true --arithmetic-solver 6 --resource-limit 20000000 "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"

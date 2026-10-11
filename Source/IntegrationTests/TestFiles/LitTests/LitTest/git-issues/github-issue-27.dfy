@@ -1,4 +1,4 @@
-// RUN: %baredafny resolve --type-system-refresh:false "%s" > "%t"
+// RUN: %baredafny resolve --type-system-refresh:false --general-newtypes:false "%s" > "%t"
 // RUN: %baredafny resolve --type-system-refresh:true "%s" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
@@ -83,6 +83,6 @@ abstract module RevealedClient {
 }
 
 // Genuine source duplicates must still be rejected in both resolver modes.
-// RUN: %exits-with 2 %baredafny resolve --type-system-refresh:false --show-snippets:false --use-basename-for-filename "%S/Inputs/github-issue-27-duplicates.dfy" > "%t.duplicates"
+// RUN: %exits-with 2 %baredafny resolve --type-system-refresh:false --general-newtypes:false --show-snippets:false --use-basename-for-filename "%S/Inputs/github-issue-27-duplicates.dfy" > "%t.duplicates"
 // RUN: %exits-with 2 %baredafny resolve --type-system-refresh:true --show-snippets:false --use-basename-for-filename "%S/Inputs/github-issue-27-duplicates.dfy" >> "%t.duplicates"
 // RUN: %diff "%S/Inputs/github-issue-27-duplicates.dfy.expect" "%t.duplicates"
