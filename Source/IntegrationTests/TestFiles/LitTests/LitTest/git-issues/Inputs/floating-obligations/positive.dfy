@@ -23,3 +23,21 @@ ghost method Preserve64(x: Finite64) returns (y: NonNaN64)
 {
   y := x as NonNaN64;
 }
+
+ghost method SignedZero32(x: Finite32)
+  requires (x as fp32).IsZero && !(x as fp32).IsNegative
+{
+  var literal: Finite32 := -0.0;
+  assert (literal as fp32).IsZero && (literal as fp32).IsNegative;
+  var y: Finite32 := -x;
+  assert (y as fp32).IsNegative;
+}
+
+ghost method SignedZero64(x: Finite64)
+  requires (x as fp64).IsZero && !(x as fp64).IsNegative
+{
+  var literal: Finite64 := -0.0;
+  assert (literal as fp64).IsZero && (literal as fp64).IsNegative;
+  var y: Finite64 := -x;
+  assert (y as fp64).IsNegative;
+}

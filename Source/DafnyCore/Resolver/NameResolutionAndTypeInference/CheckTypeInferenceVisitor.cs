@@ -115,6 +115,11 @@ class CheckTypeInferenceVisitor : ASTVisitor<TypeInferenceCheckingContext> {
     if (expr is NegationExpression) {
       var e = (NegationExpression)expr;
       Expression resolved = null;
+      var negationAncestry = e.E.Type.NormalizeToAncestorTypeChecked();
+      if (negationAncestry.Kind != Type.AncestorTypeKind.Resolved) {
+        return; // An unresolved or cyclic operand already has a resolution diagnostic.
+      }
+      var negationBaseType = negationAncestry.AncestorType;
       if (e.E is LiteralExpr lit) { // note, not e.E.Resolved, since we don't want to do this for double negations
         // For real-based types, float types, integer-based types, and bi (but not bitvectors), "-" followed by a literal is
         // just a literal expression with a negative value
@@ -125,7 +130,7 @@ class CheckTypeInferenceVisitor : ASTVisitor<TypeInferenceCheckingContext> {
         } else if (e.E.Type.IsNumericBased(Type.NumericPersuasion.Float)) {
           var d = (BigDec)lit.Value;
           Contract.Assert(!d.IsNegative);
-          var (significandBits, exponentBits) = e.E.Type.FloatPrecision;
+          var (significandBits, exponentBits) = negationBaseType.FloatPrecision;
 
           if (d.IsZero) {
             resolved = new DecimalLiteralExpr(e.Origin, BigDec.ZERO) {
@@ -157,7 +162,7 @@ class CheckTypeInferenceVisitor : ASTVisitor<TypeInferenceCheckingContext> {
       }
       if (resolved == null) {
         // For floating-point types, use UnaryOpExpr with Negate opcode for IEEE 754 compliance
-        if (e.E.Type.IsFloatingPointType) {
+        if (negationBaseType.IsFloatingPointType) {
           resolved = new UnaryOpExpr(e.Origin, UnaryOpExpr.Opcode.Negate, e.E);
         } else {
           // Treat all other expressions "-e" as "0 - e"

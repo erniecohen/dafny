@@ -956,8 +956,9 @@ namespace Microsoft.Dafny {
           case UnaryOpExpr.ResolvedOpcode.Lit:
             return MaybeLit(arg);
           case UnaryOpExpr.ResolvedOpcode.FloatNegate:
-            var (significand, exponent) = opExpr.E.Type.FloatPrecision;
-            var prefix = opExpr.E.Type.FloatTypeName;
+            var operandType = opExpr.E.Type.NormalizeToAncestorType();
+            var (significand, exponent) = operandType.FloatPrecision;
+            var prefix = operandType.FloatTypeName;
             var floatType = new FloatType(significand, exponent);
             var negResult = FunctionCall(GetToken(opExpr), $"{prefix}_neg", floatType, arg);
             return BoogieGenerator.IsLit(arg) ? MaybeLit(negResult, floatType) : negResult;
