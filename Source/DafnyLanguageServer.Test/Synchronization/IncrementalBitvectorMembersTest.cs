@@ -19,6 +19,8 @@ public class IncrementalBitvectorMembersTest : ClientBasedLanguageServerTest {
   public override Task InitializeAsync() => Task.CompletedTask;
 
   [Theory]
+  [InlineData("const finite32 := (0.0 as fp32).IsFinite")]
+  [InlineData("const finite64 := (0.0 as fp64).IsFinite")]
   [InlineData("newtype Foo = bv64")]
   [InlineData("newtype V = bv64\ntrait Op<T> { function op2(t0: T, t1: T): T }")]
   [InlineData("const c := (1 as bv64).RotateRight(1)")]

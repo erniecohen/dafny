@@ -1057,7 +1057,11 @@ public partial class BoogieGenerator {
     } else if (typ.IsNumericBased(Type.NumericPersuasion.Real)) {
       return Expression.CreateRealLiteral(tok, BaseTypes.BigDec.ZERO);
     } else if (typ.IsNumericBased(Type.NumericPersuasion.Float)) {
-      return new DecimalLiteralExpr(tok, BaseTypes.BigDec.ZERO) { Type = typ };
+      var (significand, exponent) = typ.FloatPrecision;
+      return new DecimalLiteralExpr(tok, BaseTypes.BigDec.ZERO) {
+        Type = typ,
+        ResolvedFloatValue = BaseTypes.BigFloat.CreateZero(false, significand, exponent)
+      };
     } else if (typ.IsBigOrdinalType) {
       return Expression.CreateNatLiteral(tok, 0, Type.BigOrdinal);
     } else if (typ.IsBitVectorType) {

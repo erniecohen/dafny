@@ -1188,7 +1188,7 @@ namespace Microsoft.Dafny {
             return MaybeLit(Boogie.Expr.Literal(n));
           }
         } else if (e.Value is BigDec) {
-          if (e.Type.IsFloatingPointType) {
+          if (e.Type.NormalizeToAncestorType().IsFloatingPointType) {
             // For DecimalLiteralExpr with floating point type, use the precomputed float value if available
             if (e is DecimalLiteralExpr { ResolvedFloatValue: not null } decLit) {
               return MaybeLit(new Bpl.LiteralExpr(GetToken(e), decLit.ResolvedFloatValue.Value), BoogieGenerator.TrType(e.Type));

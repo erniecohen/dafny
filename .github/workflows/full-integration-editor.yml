@@ -57,7 +57,7 @@ jobs:
           with zipfile.ZipFile(archive) as z:z.extractall(root)
           solver=(root/'z3-5.1.0-x64-glibc-2.39/bin/z3').resolve();solver.chmod(0o755)
           os.environ['Z3']=str(solver);os.environ['PATH']=str(solver.parent)+os.pathsep+os.environ['PATH']
-          phase('editor',['dotnet','test','Source/DafnyLanguageServer.Test','-c','Release','--filter','FullyQualifiedName~ConsistentObligationChecksTest','--logger','console;verbosity=detailed','--logger','trx;LogFileName=tests.trx','--results-directory',str(root.resolve()),'-p:SourceRevisionId='+source[:8]])
+          phase('editor',['dotnet','test','Source/DafnyLanguageServer.Test','-c','Release','--filter','FullyQualifiedName~ConsistentObligationChecksTest|FullyQualifiedName~IncrementalBitvectorMembersTest','--logger','console;verbosity=detailed','--logger','trx;LogFileName=tests.trx','--results-directory',str(root.resolve()),'-p:SourceRevisionId='+source[:8]])
           (root/'receipt.json').write_text(json.dumps({'source':source,'case':kind,'diagnostic':True,'instrumentation':'Trace logging and checkpoint messages only; feature-port-sdk10 additionally selects SDK10 while preserving net8 target','dotnet':subprocess.check_output(['dotnet','--info'],text=True),'solver':subprocess.check_output([str(solver),'--version'],text=True),'phases':rows},indent=2)+'\n')
           PY
       - uses: actions/upload-artifact@v4

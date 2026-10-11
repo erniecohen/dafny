@@ -189,7 +189,7 @@ class CheckTypeInferenceVisitor : ASTVisitor<TypeInferenceCheckingContext> {
       // Validate and set ResolvedFloatValue for float literals
       Expression toCheck = e.ResolvedExpression ?? e.Expr;
       if (toCheck is DecimalLiteralExpr decLit) {
-        var resolvedType = e.Type.Normalize();
+        var resolvedType = e.Type.NormalizeToAncestorType();
 
         if (resolvedType.IsFloatingPointType) {
           var decValue = (BigDec)decLit.Value;
@@ -217,7 +217,7 @@ class CheckTypeInferenceVisitor : ASTVisitor<TypeInferenceCheckingContext> {
       }
 
       if (e is DecimalLiteralExpr decimalLiteral && e.Value is BigDec decValue) {
-        var normalizedType = e.Type.Normalize();
+        var normalizedType = e.Type.NormalizeToAncestorType();
 
         if (!normalizedType.IsFloatingPointType) {
           return;
