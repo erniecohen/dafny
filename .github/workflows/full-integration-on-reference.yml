@@ -1,0 +1,46 @@
+name: Full integration additional axioms baseline references
+on:
+  push:
+    branches: ['scratch/codex/full-main-to-dev-probes']
+    paths: ['.github/workflows/full-integration-on-reference.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [supported-reference, integrated]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-build-${{ matrix.source }}
+          run-id: ${{ matrix.source == 'integrated' && '38139291400' || '38137142292' }}
+          github-token: ${{ github.token }}
+          path: out/download
+      - name: Install immutable compiler and pinned 5.1 solver
+        run: |
+          mkdir -p out/toolchain
+          tar -C out/toolchain -xzf out/download/dafny.tar.gz
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+          unzip -q z3.zip
+          echo "Z3=$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" >> "$GITHUB_ENV"
+      - name: Preserve exact ON reference outcomes
+        env:
+          COMPILER_SOURCE: ${{ matrix.source }}
+        run: python3 .github/review/full-integration-on-reference.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-on-reference-${{ matrix.source }}
+          path: out/on-reference
+          retention-days: 30
