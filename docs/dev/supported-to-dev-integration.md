@@ -7,6 +7,10 @@ dev `858e4bfbcf00fbf0146255c0a4b0efdfc4deb66f`, completed #169 port
 The [coverage map](supported-to-dev-coverage.json) records all 127 nonmerge
 supported commits and 52 supported PRs from public Git and GitHub metadata.
 The merge retains full supported history and reconciles source overlaps.
+The [tree map](supported-to-dev-tree.json) records every path changed on either
+line from the common base, with public blob identities and exact-copy checks.
+It is structural evidence; overlapping source still requires semantic and
+native review.
 The integration remains under validation. Existing dev counterparts are listed
 individually in the map, including the partial #136/#162 relationship; no
 counterpart is treated as blanket source equality.
@@ -38,7 +42,20 @@ changes; the flag remains experimental and off by default.
 
 ## Validation
 
-Pending fresh compilation, independent producer capture, full native controls,
-normal exact-head CI and suite/library OFF/ON comparisons. No partial port run
-certifies the combined tree. Enabled resource failures, source maintenance
-costs and intentional verdict changes must be individually recorded.
+The [three-source build receipt](https://github.com/erniecohen/dafny/actions/runs/38137142292)
+records actual successful native publish outcomes for original dev, supported
+reference and combined source `be862609d9147fb80dcea8df96eceddc722bb1ee`.
+The combined command reports `4.11.1+be862609` and uses the fixed Boogie package
+with .NET 10. Compiler and Boogie assembly hashes are in each identity artifact.
+
+The [five-mode suite/library comparison](https://github.com/erniecohen/dafny/actions/runs/38137406071)
+and [fresh controls/core/producer diagnostic](https://github.com/erniecohen/dafny/actions/runs/38137493963)
+are running. There are 192 registered regressions, including the union of both
+lines and native constrained float-wrapper positives, invalid NaN introductions
+and feasible-state false controls in both resolvers and both lowering modes.
+
+Independent producer capture, complete native controls, branch-specific library
+binary reconciliation, normal exact-head CI and the complete comparison remain
+pending. No partial-port run certifies the combined tree. Enabled resource
+failures, source maintenance costs and intentional verdict changes must be
+individually recorded.
