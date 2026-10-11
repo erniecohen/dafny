@@ -123,5 +123,10 @@
       ]
     }
   ],
-  "validation_boundary": "Expected-failure-aware scratch replay and complete maps/reads sequence validation required, then fresh full normal exact-head CI. No proof, resource ceiling, semantic verdict or archive byte changed."
+  "validation_boundary": "Expected-failure-aware scratch replay and complete maps/reads sequence validation required, then fresh full normal exact-head CI. No proof, resource ceiling, semantic verdict or archive byte changed.",
+  "initial_probe_infrastructure_failure": {
+    "run": "https://github.com/erniecohen/dafny/actions/runs/38157896322",
+    "reason": "The default shallow checkout did not contain the exact e3c0 parent needed for git-show/git-diff reference checks; both diagnostic runners stopped before native measurements. Fetch complete history and retain actual diagnostic runner exits separately from the workflow status.",
+    "native_acceptance": false
+  }
 }
