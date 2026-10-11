@@ -10,6 +10,7 @@ def phase(name,cmd,env=None):
   run=subprocess.run(cmd,stdout=output,stderr=subprocess.STDOUT,env=env)
  results.append({'name':name,'exit':run.returncode})
  (folder/'exit.txt').write_text(str(run.returncode)+'\n')
+ print(name,'actual exit',run.returncode,flush=True)
  return run.returncode
 code=phase('build',['dotnet','publish','Source/Dafny/Dafny.csproj','-c','Release','-o','out/dafny','-p:GeneratePackageOnBuild=false','-p:SourceRevisionId='+subprocess.check_output(['git','rev-parse','--short=8','HEAD'],text=True).strip()])
 if code==0:

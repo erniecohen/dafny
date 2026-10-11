@@ -1,0 +1,62 @@
+name: Full integration diagnostic build identities
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [dev-baseline, supported-reference, integrated]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.source == 'dev-baseline' && '858e4bfbcf00fbf0146255c0a4b0efdfc4deb66f' || matrix.source == 'supported-reference' && '1256f92b0b494e8f1bf52aaec145d36a8a862f33' || github.sha }}
+      - uses: actions/setup-dotnet@v4
+        if: matrix.source == 'dev-baseline'
+        with:
+          dotnet-version: 8.0.x
+      - uses: ./.github/actions/setup-dotnet
+        if: matrix.source != 'dev-baseline'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Record actual restore/build outcomes and native identities
+        shell: bash
+        run: |
+          mkdir -p out/identity
+          python3 - <<'PY'
+          import hashlib, json, pathlib, subprocess
+          root=pathlib.Path('out/identity'); phases=[]
+          def phase(name,command):
+              with (root/(name+'.txt')).open('w') as output:
+                  result=subprocess.run(command,stdout=output,stderr=subprocess.STDOUT)
+              phases.append({'name':name,'command':command,'exit':result.returncode})
+              print(name,'actual exit',result.returncode,flush=True)
+              return result.returncode
+          source=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          okay=True
+          if pathlib.Path('Scripts/fetch-boogie-packages.sh').exists():
+              okay=phase('fixed-packages',['sh','Scripts/fetch-boogie-packages.sh'])==0
+          if okay:
+              okay=phase('publish',['dotnet','publish','Source/Dafny/Dafny.csproj','-c','Release','-o','out/dafny','-p:GeneratePackageOnBuild=false','-p:SourceRevisionId='+source[:8]])==0
+          identities={'source':source,'diagnostic':True,'build_completed':okay,'phases':phases,'dotnet':subprocess.check_output(['dotnet','--info'],text=True)}
+          if okay:
+              identities['version']=subprocess.check_output(['dotnet','out/dafny/Dafny.dll','--version'],text=True).strip()
+              identities['assemblies']={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in pathlib.Path('out/dafny').glob('*.dll') if p.name.startswith(('Dafny','Boogie'))}
+              pathlib.Path('out/source.txt').write_text(source+'\n')
+              subprocess.run(['tar','-C','out','-czf','dafny.tar.gz','dafny','source.txt'],check=True)
+          (root/'identities.json').write_text(json.dumps(identities,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-build-${{ matrix.source }}
+          path: |
+            out/identity
+            dafny.tar.gz
+          retention-days: 30
