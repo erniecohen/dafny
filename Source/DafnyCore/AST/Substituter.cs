@@ -38,7 +38,12 @@ namespace Microsoft.Dafny {
       if (expr is StaticReceiverExpr) {
         var e = (StaticReceiverExpr)expr;
         var ty = e.Type.Subst(typeMap);
-        return new StaticReceiverExpr(e.Origin, ty, e.IsImplicit) { Type = ty };
+        // The discarded receiver object may mention bound variables, and the verifier checks its well-formedness.
+        return new StaticReceiverExpr(e.Origin, ty, e.IsImplicit) {
+          Type = ty,
+          ObjectToDiscard = e.ObjectToDiscard == null ? null : Substitute(e.ObjectToDiscard),
+          ContainerExpression = e.ContainerExpression
+        };
       } else if (expr is LiteralExpr literalExpr) {
         if (literalExpr.Value == null) {
           var ty = literalExpr.Type.Subst(typeMap);
@@ -823,20 +828,21 @@ namespace Microsoft.Dafny {
         var s = (ForallStmt)stmt;
         var newBoundVars = CreateBoundVarSubstitutions(s.BoundVars, false);
         var body = SubstStmt(s.Body);
-        // undo any changes to substMap (could be optimized to do this only if newBoundVars != e.Vars)
-        foreach (var bv in s.BoundVars) {
-          substMap.Remove(bv);
-        }
-
-        // Put things together
+        // The range, postconditions, attributes and bounds share the statement's binders.
         var rr = new ForallStmt(s.Origin, newBoundVars, SubstAttributes(s.Attributes), Substitute(s.Range), s.Ens.ConvertAll(SubstMayBeFreeExpr), body);
         rr.Kind = s.Kind;
         rr.CanConvert = s.CanConvert;
         rr.Bounds = SubstituteBoundedPoolList(s.Bounds);
+        foreach (var bv in s.BoundVars) {
+          substMap.Remove(bv);
+        }
+        // These quantified expressions introduce their own binders.
         if (s.EffectiveEnsuresClauses != null) {
           rr.EffectiveEnsuresClauses = s.EffectiveEnsuresClauses.ConvertAll(Substitute);
         }
-        r = rr;
+        rr.IsGhost = s.IsGhost;
+        // Keep the attributes substituted while the statement's binders were in scope.
+        return rr;
       } else if (stmt is CalcStmt) {
         var s = (CalcStmt)stmt;
         var rr = new CalcStmt(s.Origin, SubstCalcOp(s.UserSuppliedOp), s.Lines.ConvertAll(Substitute), s.Hints.ConvertAll(SubstBlockStmt), s.StepOps.ConvertAll(SubstCalcOp), SubstAttributes(s.Attributes));
@@ -844,6 +850,9 @@ namespace Microsoft.Dafny {
         rr.Steps.AddRange(s.Steps.ConvertAll(Substitute));
         rr.Result = Substitute(s.Result);
         r = rr;
+      } else if (stmt is NestedMatchStmt nestedMatchStmt) {
+        // Verification uses the resolved decision tree, including all proof bodies.
+        return SubstStmt(nestedMatchStmt.Flattened);
       } else if (stmt is MatchStmt) {
         var s = (MatchStmt)stmt;
         var rr = new MatchStmt(s.Origin, Substitute(s.Source), s.Cases.ConvertAll(SubstMatchCaseStmt), s.UsesOptionalBraces);
@@ -1065,17 +1074,25 @@ namespace Microsoft.Dafny {
       var newBoundVars = CreateBoundVarSubstitutions(e.BoundVars, forceSubstituteOfBoundVars && expr is ForallExpr or ExistsExpr or SetComprehension);
       var newRange = e.Range == null ? null : Substitute(e.Range);
       var newTerm = Substitute(e.Term);
+      var originalTermLeft = (e as MapComprehension)?.TermLeft;
+      var newTermLeft = originalTermLeft == null ? null : Substitute(originalTermLeft);
       var newAttrs = SubstAttributes(e.Attributes);
       var newBounds = SubstituteBoundedPoolList(e.Bounds);
-      if (newBoundVars != e.BoundVars || newRange != e.Range || newTerm != e.Term || newAttrs != e.Attributes ||
+      if (newBoundVars != e.BoundVars || newRange != e.Range || newTerm != e.Term || newTermLeft != originalTermLeft || newAttrs != e.Attributes ||
           newBounds != e.Bounds || !forceSubstituteOfBoundVars) {
         if (e is SetComprehension) {
           newExpr = new SetComprehension(e.Origin, ((SetComprehension)e).Finite, newBoundVars,
             newRange, newTerm, newAttrs);
         } else if (e is MapComprehension) {
           var mc = (MapComprehension)e;
-          var newTermLeft = mc.IsGeneralMapComprehension ? Substitute(mc.TermLeft) : null;
-          newExpr = new MapComprehension(e.Origin, mc.Finite, newBoundVars, newRange, newTermLeft, newTerm, newAttrs);
+          var newMap = new MapComprehension(e.Origin, mc.Finite, newBoundVars, newRange, newTermLeft, newTerm, newAttrs);
+          if (ReferenceEquals(newBoundVars, mc.BoundVars)) {
+            // The witness representation is unchanged. Keep its stable source
+            // identity; each generator owns the declarations for its own backend
+            // types, and relation arguments carry the substituted environment.
+            newMap.ProjectionFunctionsSource = mc.ProjectionFunctionsSource ?? mc;
+          }
+          newExpr = newMap;
         } else if (expr is ForallExpr forallExpr) {
           newExpr = new ForallExpr(e.Origin, newBoundVars, newRange, newTerm, newAttrs);
         } else if (expr is ExistsExpr existsExpr) {

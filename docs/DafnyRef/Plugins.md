@@ -55,10 +55,10 @@ mkdir PluginTutorial
 cd PluginTutorial
 ```
 
-Then, create a dotnet class project
+Using the .NET 10 SDK, create a class library targeting the fork's framework:
 
 ```bash
-dotnet new classlib
+dotnet new classlib --framework net10.0
 ```
 
 It will create a file `Class1.cs` that you can rename
@@ -230,6 +230,6 @@ That's it! Now, build your library while inside your folder:
 > dotnet build
 ```
 
-This will create the file `PluginTutorial/bin/Debug/net8.0/PluginTutorial.dll`.
+This will create the file `PluginTutorial/bin/Debug/net10.0/PluginTutorial.dll`.
 Now, open VSCode, open Dafny settings, and enter the absolute path to this DLL in the plugins section.
 Restart VSCode, and it should work!

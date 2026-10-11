@@ -1,0 +1,14 @@
+PASS CLI option help
+PASS original issue 100 at unchanged resource limit
+PASS implicit subset constraints
+PASS range-bound collection constraints
+PASS legacy terminal reveal scopes
+PASS false controls
+PASS certified contract preparation and false controls
+PASS guarded private argument preparation
+PASS canonical caller wellformedness preparation
+PASS canonical local exit wellformedness preparation
+PASS sequential initial-heap path postconditions and false controls
+PASS labeled recursive two-state requires and independent false controls
+PASS nested two-state statement expressions and independent false controls
+PASS project option and CLI precedence

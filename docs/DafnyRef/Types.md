@@ -771,6 +771,8 @@ unsigned arithmetic modulo 2^{number of bits}, like 2's-complement machine arith
   `-`            | 6 | bit-limited subtraction
 -----------------|------------------------------------
   `*`            | 7 | bit-limited multiplication
+  `/`            | 7 | unsigned division
+  `%`            | 7 | unsigned remainder
 -----------------|------------------------------------
   `&`            | 8 | bit-wise and
   `|`            | 8 | bit-wise or
@@ -787,6 +789,13 @@ All operators bind more tightly than equality, disequality, and comparisons.
 All binary operators are left-associative, but the
 bit-wise `&`, `|`, and `^` do not associate together (parentheses are required to disambiguate).
 The `+`, `|`, `^`, and `&` operators are commutative.
+
+For bit-vector operands `a` and `b`, `a / b` is the quotient rounded down,
+and `a % b` is the remainder of unsigned integer division.
+Both operands and the result have the same bit-vector type.
+For both operators, Dafny requires a proof that `b != 0`.
+The remainder satisfies `0 <= a % b < b`. For example,
+`(255 as bv8) / 16 == 15` and `(255 as bv8) % 16 == 15`.
 
 The right-hand operand of bit-shift operations is an `int` value,
 must be non-negative, and
@@ -819,7 +828,8 @@ method m() {
   assert (i + i) == (2 as bv4);
   assert (j - i) == (10 as bv4);
   assert (i * j) == (11 as bv4);
-  assert (i as int) / (j as int) == 3;
+  assert (i / j) == (3 as bv4);
+  assert (i % (2 as bv4)) == (1 as bv4);
   assert (j << 1) == (6 as bv4);
   assert (i << 1) == (2 as bv4);
   assert (i >> 1) == (4 as bv4);
@@ -1186,6 +1196,12 @@ datatype Result<T> = Failure(error: string) | Success(value: T)
 ```
 the instantiation `Result<int>` satisfies `(!new)`, whereas
 `Result<array<int>>` does not.
+
+A function value may capture references, and a value of a general arrow type
+`A ~> B` shows them through its reads frame (`f.reads`). So `A ~> B` does not
+satisfy `(!new)`, whatever `A` and `B` are. A partial arrow `A --> B` or a total
+arrow `A -> B` reads nothing, so it satisfies `(!new)` when `A` and `B` do:
+`int -> int` does, while `int ~> int` and `int -> array<int>` do not.
 
 Note that this characteristic of a type parameter is operative for both
 verification and compilation.
@@ -1616,6 +1632,14 @@ Similarly, for any types `T` and `U`, a value of type `imap<T,U>`
 denotes a _(possibly) infinite map_.  In most regards, `imap<T,U>` is
 like `map<T,U>`, but a map of type `imap<T,U>` is allowed to have an
 infinite domain.
+
+The default-off verifier option `--bitvector-map-keys` preserves the declared
+bitvector type of a `map` or `imap` key at a lookup. Without it, this fork's
+legacy verification encoding converts bitvector lookup keys to integers, which
+can prevent an update followed by lookup at the same key from verifying.
+Sequence and array indices continue to be converted to integers.
+The setting can also be enabled with `bitvector-map-keys = true` in the
+`[options]` section of `dfyconfig.toml`.
 
 A map can be formed using a _map display_ expression (see [Section 9.30](#sec-map-display-expression)),
 which is a possibly empty, ordered list of _maplets_, each maplet having the
@@ -3904,10 +3928,15 @@ terminate, greatest predicates are always ghost. There is also a restriction on
 the call graph that a cluster containing a greatest predicate must contain only
 greatest predicates, no other kinds of functions.
 
-[^fn-copredicate-restriction]: To be specific, Dafny has two forms of
-extreme predicates and lemmas, one in which `_k` has type `nat` and one in
-which it has type `ORDINAL` (the default). The continuous restriction
-applies only when `_k` is `nat`. Also, higher-order function support in Dafny is
+[^fn-copredicate-restriction]: To be specific, Dafny has two forms of 
+extreme predicates and lemmas, one in which `_k` has type `nat` and one in 
+which it has type `ORDINAL` (the default). The continuous restriction 
+applies when `_k` is `nat`. With `ORDINAL` indexing, the corresponding
+quantifier domain must instead be set-sized: each variable must have a type
+known not to contain ordinals, or a finite bound such as membership in a finite
+set. The check follows datatype fields and type arguments. Abstract types and
+type parameters are conservative: they need a finite bound. Membership in an
+`iset` and datatype-rank comparisons do not establish a finite bound. Also, higher-order function support in Dafny is
     rather modest and typical reasoning patterns do not involve them, so this
     restriction is not as limiting as it would have been in, e.g., Coq.
 

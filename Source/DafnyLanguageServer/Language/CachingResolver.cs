@@ -23,6 +23,7 @@ public class CachingResolver : ProgramResolver {
   private readonly Dictionary<ModuleDecl, byte[]> hashes = new();
   private readonly ResolutionCache cache;
   private readonly TelemetryPublisherBase telemetryPublisher;
+  private Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>>? initializingSystemClassMembers;
 
   public CachingResolver(
     Program program,
@@ -46,9 +47,19 @@ public class CachingResolver : ProgramResolver {
 
   protected override Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> ResolveSystemModule(Program program) {
     if (cache.Builtins == null || !new HashEquality().Equals(cache.Builtins.MyHash, program.SystemModuleManager.MyHash)) {
-      var systemClassMembers = base.ResolveSystemModule(program);
-      cache.Builtins = program.SystemModuleManager;
-      cache.SystemClassMembers = systemClassMembers;
+      // Value types register before base.ResolveSystemModule returns its class tables.
+      // Collect those callbacks separately and publish the complete cache only on success.
+      initializingSystemClassMembers = new();
+      try {
+        var systemClassMembers = base.ResolveSystemModule(program);
+        foreach (var entry in initializingSystemClassMembers) {
+          systemClassMembers[entry.Key] = entry.Value;
+        }
+        cache.Builtins = program.SystemModuleManager;
+        cache.SystemClassMembers = systemClassMembers;
+      } finally {
+        initializingSystemClassMembers = null;
+      }
       logger.LogDebug($"Resolution cache miss for system module");
     } else {
       program.SystemModuleManager = cache.Builtins;
@@ -56,6 +67,17 @@ public class CachingResolver : ProgramResolver {
     }
 
     return cache.SystemClassMembers!;
+  }
+
+  public override void AddSystemClass(TopLevelDeclWithMembers declaration, Dictionary<string, MemberDecl> members) {
+    base.AddSystemClass(declaration, members);
+    // Value types register during initial resolution; bitvectors can also be added
+    // afterward. Preserve both sets of member tables for the next cached resolution.
+    if (initializingSystemClassMembers != null) {
+      initializingSystemClassMembers[declaration] = members;
+    } else {
+      cache.SystemClassMembers![declaration] = members;
+    }
   }
 
   protected override ModuleResolutionResult ResolveModuleDeclaration(CompilationData compilation, ModuleDecl decl) {

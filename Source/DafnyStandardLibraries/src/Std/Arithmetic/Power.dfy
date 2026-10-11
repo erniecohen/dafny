@@ -398,24 +398,13 @@ module Std.Arithmetic.Power {
     requires e1 <= e2
     ensures Pow(b, e1) <= Pow(b, e2)
   {
-    var f := e => 0 <= e ==> Pow(b, e1) <= Pow(b, e1 + e);
-    forall i | IsLe(0, i) && f(i)
-      ensures f(i + 1)
-    {
-      calc {
-        Pow(b, e1 + i);
-      <= { LemmaPowPositive(b, e1 + i);
-           LemmaMulLeftInequality(Pow(b, e1 + i), 1, b); }
-        Pow(b, e1 + i) * b;
-      == { LemmaPow1(b); }
-        Pow(b, e1 + i) * Pow(b, 1);
-      == { LemmaPowAdds(b, e1 + i, 1); }
-        Pow(b, e1 + i + 1);
-      }
-    }
-    LemmaMulInductionAuto(e2 - e1, f);
-    assert Pow(b, e1) <= Pow(b, e1 + (e2 - e1)) by {
-      assert 0 <= e2 - e1;
+    if e1 == e2 {
+    } else if b == 1 {
+      Lemma1Pow(e1);
+      Lemma1Pow(e2);
+    } else {
+      // The strict theorem supplies the one concrete exponent comparison.
+      LemmaPowStrictlyIncreases(b, e1, e2);
     }
   }
 

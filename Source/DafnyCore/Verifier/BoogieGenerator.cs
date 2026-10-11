@@ -89,6 +89,8 @@ namespace Microsoft.Dafny {
       public bool InsertChecksums { get; init; }
       public string UniqueIdPrefix = null;
       public bool ReportRanges = false;
+      internal Action<PropositionLowering> ObligationLowered { get; init; }
+      internal Action<DeclaredPreparationSnapshot> ObligationPrepared { get; init; }
     }
 
     [NotDelayed]
@@ -1114,6 +1116,10 @@ namespace Microsoft.Dafny {
                     Bpl.Expr.Neg(Bpl.Expr.Sub(pow64, natFromBv)),
                     natFromBv])))));
         }
+        // Check the option before building anything, preserving the default translation.
+        if (options.Get(CommonOptionBag.AdditionalAxioms)) {
+          AddBitvectorIntRoundTripAxiom(w);
+        }
       }
     }
 
@@ -1376,6 +1382,22 @@ namespace Microsoft.Dafny {
       var attr = new Bpl.QKeyValue(tok, "builtin", new List<object>() { builtinName }, null);
       var func = new Bpl.Function(tok, name, [], args, BplFormalVar(null, returnType, false), null, attr);
       sink.AddTopLevelDeclaration(func);
+    }
+
+    private void AddBitvectorIntRoundTripAxiom(int w) {
+      Contract.Requires(0 < w);
+      var tok = Token.NoToken;
+      var xVar = new Bpl.BoundVariable(tok, new Bpl.TypedIdent(tok, "x", Bpl.Type.Int));
+      var x = new Bpl.IdentifierExpr(tok, xVar);
+      var bv = FunctionCall(tok, "nat_to_bv" + w, BplBvType(w), x);
+      var roundTrip = FunctionCall(tok, "nat_from_bv" + w, Bpl.Type.Int, bv);
+      var bound = Bpl.Expr.Literal(BaseTypes.BigNum.FromBigInt(BigInteger.One << w));
+      var range = BplAnd(Bpl.Expr.Le(Bpl.Expr.Literal(0), x), Bpl.Expr.Lt(x, bound));
+      var body = BplImp(range, Bpl.Expr.Eq(roundTrip, x));
+      var attributes = new Bpl.QKeyValue(tok, "qid", new List<object> { $"additional_axioms_bv{w}_int_round_trip" }, null);
+      // The wrapper keeps the composite pattern out of native bitvector rewriting.
+      var ax = new Bpl.ForallExpr(tok, [], [xVar], attributes, BplTrigger(roundTrip), body);
+      sink.AddTopLevelDeclaration(new Bpl.Axiom(tok, ax, $"bounded integer round trip for bv{w}"));
     }
 
     private void ComputeFunctionFuel() {
@@ -2485,7 +2507,7 @@ namespace Microsoft.Dafny {
 
       foreach (var frameExpression in calleeFrame) {
         var e = substMap != null ? Substitute(frameExpression.E, receiverReplacement, substMap) : frameExpression.E;
-        makeAssume(frameExpression.Origin, etran.CanCallAssumption(e));
+        makeAssume(frameExpression.Origin, etran.CanCallAssumptionForVerification(e));
       }
 
       // emit: assert (forall o: ref, f: Field :: o != null && $Heap[o,alloc] && (o,f) in calleeFrame ==> enclosingFrame[o,f]);
@@ -2655,7 +2677,8 @@ namespace Microsoft.Dafny {
     /// </summary>
     Bpl.Expr InRWClause_Aux(IOrigin tok, Bpl.Expr o, Bpl.Expr boxO, Bpl.Expr f, List<FrameExpression> rw, bool usedInUnchanged,
                         ExpressionTranslator etran,
-                        Expression receiverReplacement, Dictionary<IVariable, Expression> substMap) {
+                        Expression receiverReplacement, Dictionary<IVariable, Expression> substMap,
+                        bool materializeFiniteSets = false) {
       Contract.Requires(tok != null);
       Contract.Requires(o != null);
       Contract.Requires(boxO != null);
@@ -2712,8 +2735,28 @@ namespace Microsoft.Dafny {
 
           // e[Box(o)]
           bool pr;
-          disjunct = etran.TrInSet_Aux(tok, o, boxO, e, setType.Finite, true, out pr,
-            ShouldExtractObjectFromMemoryLocation(setType.Arg, f) ? ExtractObjectFromMemoryLocationCallback(tok, setType.Arg, etran) : null);
+          if (materializeFiniteSets && setType.Finite) {
+            // A finite footprint must consume the actual finite collection. In
+            // particular, unfolding a comprehension here would bypass the
+            // support premise guarding its defining membership equation.
+            var set = etran.TrExpr(e);
+            if (ShouldExtractObjectFromMemoryLocation(setType.Arg, f)) {
+              var memberVar = new Bpl.BoundVariable(tok, new Bpl.TypedIdent(tok,
+                CurrentIdGenerator.FreshId("$readsMember#"), Predef.BoxType));
+              var memberBox = new Bpl.IdentifierExpr(tok, memberVar);
+              var memberValue = UnboxUnlessInherentlyBoxed(memberBox, setType.Arg);
+              var selected = BplAnd(MkIsBox(memberBox, setType.Arg),
+                IsSetMember(tok, set, memberBox, true));
+              var reference = ExtractObjectFromMemoryLocation(tok, memberValue, setType.Arg, etran);
+              disjunct = new Bpl.ExistsExpr(tok, [memberVar],
+                BplAnd(selected, Bpl.Expr.Eq(o, reference)));
+            } else {
+              disjunct = IsSetMember(tok, set, boxO, true);
+            }
+          } else {
+            disjunct = etran.TrInSet_Aux(tok, o, boxO, e, setType.Finite, true, out pr,
+              ShouldExtractObjectFromMemoryLocation(setType.Arg, f) ? ExtractObjectFromMemoryLocationCallback(tok, setType.Arg, etran) : null);
+          }
         } else if (eType is MultiSetType multisetType) {
           // e[Box(o)] > 0
           disjunct = etran.TrInMultiSet_Aux(tok, o, boxO, e, true);
@@ -2789,7 +2832,7 @@ namespace Microsoft.Dafny {
       }
     }
 
-    void CheckCasePatternShape<VT>(CasePattern<VT> pat, Expression dRhs, Bpl.Expr rhs, IOrigin rhsTok, Type rhsType, BoogieStmtListBuilder builder)
+    void CheckCasePatternShape<VT>(CasePattern<VT> pat, Expression dRhs, Bpl.Expr rhs, IOrigin rhsTok, Type rhsType, BoogieStmtListBuilder builder, ExpressionTranslator etran)
       where VT : class, IVariable {
       Contract.Requires(pat != null);
       Contract.Requires(rhs != null);
@@ -2797,7 +2840,7 @@ namespace Microsoft.Dafny {
       Contract.Requires(rhsType != null);
       Contract.Requires(builder != null);
       if (pat.Var != null) {
-        CheckSubrange(rhsTok, rhs, rhsType, pat.Var.Type, dRhs, builder);
+        CheckSubrange(rhsTok, rhs, rhsType, pat.Var.Type, dRhs, builder, etran: etran);
       } else if (pat.Arguments != null) {
         Contract.Assert(pat.Ctor != null);  // follows from successful resolution
         Contract.Assert(pat.Arguments.Count == pat.Ctor.Destructors.Count);  // follows from successful resolution
@@ -2821,7 +2864,7 @@ namespace Microsoft.Dafny {
           var r = new Bpl.NAryExpr(arg.Origin, new Bpl.FunctionCall(GetReadonlyField(dtor)), new List<Bpl.Expr> { rhs });
           Type argType = dtor.Type.Subst(typeSubstMap);
           var de = CondApplyUnbox(arg.Origin, r, dtor.Type, argType);
-          CheckCasePatternShape(arg, arg.Expr, de, arg.Origin, argType, builder);
+          CheckCasePatternShape(arg, arg.Expr, de, arg.Origin, argType, builder, etran);
         }
       }
     }
@@ -4426,7 +4469,8 @@ namespace Microsoft.Dafny {
     }
 
     public void CheckSubrange(IOrigin tok, Bpl.Expr bSource, Type sourceType, Type targetType,
-      Expression source, BoogieStmtListBuilder builder, string errorMsgPrefix = "") {
+      Expression source, BoogieStmtListBuilder builder, string errorMsgPrefix = "", ExpressionTranslator etran = null,
+      Func<Bpl.Expr, Bpl.Expr> close = null, bool forget = false, bool universalClosure = false, Bpl.Expr valueCanCall = null) {
       Contract.Requires(tok != null);
       Contract.Requires(bSource != null);
       Contract.Requires(sourceType != null);
@@ -4435,7 +4479,7 @@ namespace Microsoft.Dafny {
 
       var cre = GetSubrangeCheck(tok, bSource, sourceType, targetType, source, null, out var desc, errorMsgPrefix);
       if (cre != null) {
-        builder.Add(Assert(tok, cre, desc, builder.Context));
+        CheckTypeMembership(tok, cre, bSource, sourceType, targetType, desc, builder, etran, close, forget, universalClosure, valueCanCall);
       }
     }
 
@@ -4466,22 +4510,31 @@ namespace Microsoft.Dafny {
     }
 
     /// <summary>
-    /// Idempotently fills in "mc.ProjectionFunctions"
+    /// Idempotently declares the components of a map-comprehension witness choice.
+    /// Each projection takes the complete witness predicate for the current key
+    /// and translated environment. All components of one choice use that same
+    /// predicate; their coordinated correctness is supplied at the source use.
     /// </summary>
-    void CreateMapComprehensionProjectionFunctions(MapComprehension mc) {
+    private readonly Dictionary<MapComprehension, List<Bpl.Function>> mapComprehensionProjectionFunctions = new();
+
+    List<Bpl.Function> GetMapComprehensionProjectionFunctions(MapComprehension mc) {
       Contract.Requires(mc != null && mc.TermLeft != null);
-      if (mc.ProjectionFunctions == null) {
+      var source = mc.ProjectionFunctionsSource ?? mc;
+      if (!mapComprehensionProjectionFunctions.TryGetValue(source, out var projections)) {
         var varNameGen = CurrentIdGenerator.NestedFreshIdGenerator(string.Format("map$project${0}#", projectionFunctionCount));
         projectionFunctionCount++;
-        mc.ProjectionFunctions = [];
+        var witnessPredicateType = new Bpl.MapType(mc.Origin, [], mc.BoundVars.ConvertAll(bv => TrType(bv.Type)), Bpl.Type.Bool);
+        projections = [];
         foreach (var bv in mc.BoundVars) {
-          var arg = BplFormalVar(null, TrType(mc.TermLeft.Type), false);
+          var arg = BplFormalVar(null, witnessPredicateType, false);
           var res = BplFormalVar(null, TrType(bv.Type), true);
           var projectFn = new Bpl.Function(mc.Origin, varNameGen.FreshId(string.Format("#{0}#", bv.Name)), [arg], res);
-          mc.ProjectionFunctions.Add(projectFn);
+          projections.Add(projectFn);
           sink.AddTopLevelDeclaration(projectFn);
         }
+        mapComprehensionProjectionFunctions.Add(source, projections);
       }
+      return projections;
     }
 
     int projectionFunctionCount = 0;
@@ -4872,7 +4925,7 @@ namespace Microsoft.Dafny {
         // performance, though some programs can be verified more quickly
         // (or verified at all) using a different solver.
         // https://microsoft.github.io/z3guide/programming/Parameters/
-        var defaultSolver = 2;
+        var defaultSolver = options.GetOrOptionDefault(BoogieOptionBag.ArithmeticSolver);
         if (arithmeticSolver == null) {
           return defaultSolver;
         }
@@ -4940,8 +4993,8 @@ namespace Microsoft.Dafny {
       Contract.Requires(etran != null);
       Contract.Ensures(Contract.Result<List<SplitExprInfo>>() != null);
 
-      var splits = new List<SplitExprInfo>();
       var applyInduction = kind == MethodTranslationKind.Implementation;
+      var splits = new List<SplitExprInfo>();
       TrSplitExpr(context, expr, splits, true, int.MaxValue, applyInduction, etran);
       return splits;
     }
@@ -5167,14 +5220,20 @@ namespace Microsoft.Dafny {
     /// antecedents for those corresponding bound variables.  If none of the bound variables is used, "body"
     /// is returned. Also, if none of the bound variables is used in "body" (whether or not they are used in "trg"),
     /// then "body" is returned.
+    /// Except: a bound variable is left out together with its antecedent, and "forall x :: A(x) ==> body", where
+    /// "body" does not mention "x", is "(exists x :: A(x)) ==> body" -- which is "body" only if "A" is inhabited.
+    /// So if any variable left out is in "possiblyEmpty" (its type is not known to be nonempty), then "body" is
+    /// replaced by "(exists L :: B) ==> body", where L are the variables left out and B their antecedents.
     /// The order of the contents of "varsAndAntecedents" matters: For any index "i" into "varsAndAntecedents", the
     /// antecedent varsAndAntecedents[i].Item2 may depend on a variable varsAndAntecedents[j].Item1 if "j GREATER-OR-EQUAL i"
     /// but not if "j LESS i".
     /// Caution: if "trg" is null, makes a forall without any triggers.
     /// </summary>
-    static Bpl.Expr BplForallTrim(IEnumerable<Tuple<Bpl.Variable, Bpl.Expr/*?*/>> varsAndAntecedents, Bpl.Trigger trg, Bpl.Expr body) {
+    static Bpl.Expr BplForallTrim(IEnumerable<Tuple<Bpl.Variable, Bpl.Expr/*?*/>> varsAndAntecedents, Bpl.Trigger trg, Bpl.Expr body,
+      ISet<Bpl.Variable> possiblyEmpty) {
       Contract.Requires(varsAndAntecedents != null);
       Contract.Requires(body != null);
+      Contract.Requires(possiblyEmpty != null);
 
       // We'd like to compute the free variables of "body" and "trg". It would be nice to use the Boogie
       // routine Bpl.Expr.ComputeFreeVariables for this purpose. However, calling it requires the Boogie
@@ -5182,27 +5241,33 @@ namespace Microsoft.Dafny {
       // free variables in "body" and "trg".
       var vis = new VariableNameVisitor();
       vis.Visit(body);
-      if (varsAndAntecedents.All(pair => !vis.Names.Contains(pair.Item1.Name))) {
-        // the body doesn't mention any of the bound variables, so no point in wrapping a quantifier around it
-        return body;
-      }
-      for (var tt = trg; tt != null; tt = tt.Next) {
-        tt.Tr.ForEach(ee => vis.Visit(ee));
-      }
-
       var args = new List<Bpl.Variable>();
       Bpl.Expr typeAntecedent = Bpl.Expr.True;
-      foreach (var pair in varsAndAntecedents) {
-        var bv = pair.Item1;
-        var wh = pair.Item2;
-        if (vis.Names.Contains(bv.Name)) {
-          args.Add(bv);
-          if (wh != null) {
-            typeAntecedent = BplAnd(typeAntecedent, wh);
-            vis.Visit(wh);  // this adds to "vis.Names" the free variables of "wh"
+      // if the body doesn't mention any of the bound variables, no bound variable is kept (but see "possiblyEmpty")
+      if (varsAndAntecedents.Any(pair => vis.Names.Contains(pair.Item1.Name))) {
+        for (var tt = trg; tt != null; tt = tt.Next) {
+          tt.Tr.ForEach(ee => vis.Visit(ee));
+        }
+
+        foreach (var pair in varsAndAntecedents) {
+          var bv = pair.Item1;
+          var wh = pair.Item2;
+          if (vis.Names.Contains(bv.Name)) {
+            args.Add(bv);
+            if (wh != null) {
+              typeAntecedent = BplAnd(typeAntecedent, wh);
+              vis.Visit(wh);  // this adds to "vis.Names" the free variables of "wh"
+            }
           }
         }
       }
+
+      var leftOut = varsAndAntecedents.Where(pair => !args.Contains(pair.Item1)).ToList();
+      if (leftOut.Any(pair => pair.Item2 != null && possiblyEmpty.Contains(pair.Item1))) {
+        var leftOutAntecedent = BplAnd(leftOut.Where(pair => pair.Item2 != null).Select(pair => pair.Item2));
+        body = BplImp(new Bpl.ExistsExpr(body.tok, leftOut.Select(pair => pair.Item1).ToList(), leftOutAntecedent), body);
+      }
+
       if (args.Count == 0) {
         return body;
       } else {

@@ -1,0 +1,8 @@
+[
+  {
+    "id": "inferred-newtype-cycle",
+    "file": "git-issues/git-issue-2134.dfy",
+    "options": [],
+    "seconds": 15
+  }
+]

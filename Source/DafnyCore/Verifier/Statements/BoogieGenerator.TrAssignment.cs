@@ -428,7 +428,8 @@ public partial class BoogieGenerator {
       TrStmt_CheckWellformed(e.Expr, builder, locals, etran, true, addResultCommands:
         (returnBuilder, result) => {
           if (cre != null) {
-            returnBuilder.Add(Assert(result.Origin, cre, desc, builder.Context));
+            CheckTypeMembership(result.Origin, cre, bRhs, e.Expr.Type, rhsTypeConstraint,
+              desc, returnBuilder, etran);
           }
         });
 
@@ -472,7 +473,7 @@ public partial class BoogieGenerator {
         TrCallStmt(allocateClass.InitCall, builder, locals, etran, nw);
       }
       // bLhs := $nw;
-      CheckSubrange(tok, nw, allocateClass.Type, rhsTypeConstraint, null, builder);
+      CheckSubrange(tok, nw, allocateClass.Type, rhsTypeConstraint, null, builder, etran: etran);
       return HandleGivenLhs(tok, bGivenLhs, lhsType, builder, stmt, bLhs, nw, allocateClass);
     } else if (rhs is AllocateArray allocateArray) {
       int j = 0;
@@ -523,7 +524,7 @@ public partial class BoogieGenerator {
         foreach (var v in allocateArray.InitDisplay) {
           var EE_ii = etran.TrExpr(v);
           // assert EE_ii satisfies any subset-type constraints;
-          CheckSubrange(v.Origin, EE_ii, v.Type, allocateArray.ElementType, v, builder);
+          CheckSubrange(v.Origin, EE_ii, v.Type, allocateArray.ElementType, v, builder, etran: etran);
           // assume nw[ii] == EE_ii;
           var ai = ReadHeap(tok, etran.HeapExpr, nw, GetArrayIndexFieldName(tok, [Bpl.Expr.Literal(ii)]));
           builder.Add(new Bpl.AssumeCmd(tok, Bpl.Expr.Eq(UnboxUnlessInherentlyBoxed(ai, allocateArray.ElementType), AdaptBoxing(tok, EE_ii, v.Type, allocateArray.ElementType))));
@@ -543,7 +544,7 @@ public partial class BoogieGenerator {
       }
       CommitAllocatedObject(tok, nw, heapAllocationRecorder, builder, etran);
       // bLhs := $nw;
-      CheckSubrange(tok, nw, allocateArray.Type, rhsTypeConstraint, null, builder);
+      CheckSubrange(tok, nw, allocateArray.Type, rhsTypeConstraint, null, builder, etran: etran);
       return HandleGivenLhs(tok, bGivenLhs, lhsType, builder, stmt, bLhs, nw, allocateArray);
     } else {
       throw new UnreachableException();

@@ -1,0 +1,77 @@
+name: Issue 75 runtime and resource comparisons
+on:
+  push:
+    branches: ['scratch/issue75/comparisons-register']
+  workflow_dispatch:
+    inputs:
+      baseline_run:
+        description: Green review run for the exact merged base
+        type: string
+        required: true
+      candidate_run:
+        description: Review run for the exact candidate
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+jobs:
+  compare:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: dafny
+          run-id: ${{ inputs.baseline_run }}
+          github-token: ${{ github.token }}
+          path: baseline-build
+      - uses: actions/download-artifact@v4
+        with:
+          name: dafny
+          run-id: ${{ inputs.candidate_run }}
+          github-token: ${{ github.token }}
+          path: candidate-build
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: verdicts-*-*
+          run-id: ${{ inputs.baseline_run }}
+          github-token: ${{ github.token }}
+          path: measurements/baseline
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: verdicts-*-*
+          run-id: ${{ inputs.candidate_run }}
+          github-token: ${{ github.token }}
+          path: measurements/candidate
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: std-verdicts-*-z3-5.1.0
+          run-id: ${{ inputs.baseline_run }}
+          github-token: ${{ github.token }}
+          path: measurements/baseline
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: std-verdicts-*-z3-5.1.0
+          run-id: ${{ inputs.candidate_run }}
+          github-token: ${{ github.token }}
+          path: measurements/candidate
+      - name: Unpack paired builds and pin Z3
+        run: |
+          mkdir baseline candidate
+          tar -C baseline -xzf baseline-build/dafny.tar.gz
+          tar -C candidate -xzf candidate-build/dafny.tar.gz
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+          unzip -q z3.zip
+      - name: Record comparisons without treating probe failures as acceptance
+        run: python3 .github/review/issue75-comparisons.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue75-comparisons
+          path: issue75-comparisons
+          retention-days: 90

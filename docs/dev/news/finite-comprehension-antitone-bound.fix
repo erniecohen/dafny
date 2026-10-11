@@ -1,0 +1,1 @@
+Integer bound discovery now checks the monotonicity of the dependent expression before substituting a later variable's bound. An upper bound on a variable no longer makes a decreasing expression such as its negation count as a finite upper bound. Finite comprehensions with independently bounded witnesses remain accepted.

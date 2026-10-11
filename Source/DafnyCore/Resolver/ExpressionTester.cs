@@ -563,7 +563,7 @@ public class ExpressionTester {
     } else if (expr is ApplyExpr) {
       ApplyExpr e = (ApplyExpr)expr;
       return UsesSpecFeatures(e.Function) || e.Args.Exists(UsesSpecFeatures);
-    } else if (expr is OldExpr || expr is UnchangedExpr) {
+    } else if (expr is OldExpr || expr is UnchangedExpr || expr is DecreasesToExpr) {
       return true;
     } else if (expr is UnaryExpr) {
       var e = (UnaryExpr)expr;

@@ -25,16 +25,20 @@ A verdict row is: program, exit code, the verifier's summary line(s) (with a
 count of proofs that ran out of resource), the lines with errors, and seconds.
 The verdict is the first four: `expected` drops the seconds, and `compare` looks
 at nothing else.  So a program's time, and the resources its finished proofs
-used, never change a verdict (the suite does not record resource counts); a
+used, never change a verdict (optional JSON logs record resource counts separately); a
 proof that no longer finishes within the limit does, since it is counted.
 
 .github/review/expected-verdicts.tsv holds the verdicts CI expects, and the
 job fails when one changes, or a program is added or removed.  To change it on
 purpose, replace it with `expected-verdicts.tsv` from the run's `verdicts`
-artifact, in a commit that says, for each program whose verdict changed, why.
+artifact (verdicts-off or verdicts-on), in a commit that says, for each program
+whose verdict changed, why. `run` accepts --additional-axioms true and
+--measurements <directory>; omitting them preserves the original invocation.
 """
 import concurrent.futures
+import json
 import os
+from pathlib import Path
 import re
 import shlex
 import subprocess
@@ -92,7 +96,7 @@ def plan(litdir, out):
 
 
 def verify(args):
-    litdir, dafny, z3, path, opts = args
+    litdir, dafny, z3, path, opts, additional_axioms, measurements = args
     own = shlex.split(opts)
     names = {t.split('=')[0].split(':')[0] for t in own if t.startswith('--')}
     fixed, i = [], 0
@@ -102,13 +106,26 @@ def verify(args):
         if name not in names:
             fixed += FIXED[i:i + 2] if takes else [name]
         i += 2 if takes else 1
-    cmd = [dafny, 'verify', path, '--solver-path', z3] + fixed + own
+    extra = ['--additional-axioms'] if additional_axioms else []
+    dest = Path(measurements).resolve() / path if measurements else None
+    if dest:
+        dest.mkdir(parents=True, exist_ok=True)
+        extra += ['--log-format', 'json;LogFileName=' + str(dest / 'results.json')]
+    # Put observations before the original options: a missing argument in an old
+    # RUN line must retain its diagnostic rather than consume an added option.
+    cmd = [dafny, 'verify', path, '--solver-path', z3] + fixed + extra + own
+    if dest:
+        (dest / 'command.json').write_text(json.dumps(cmd))
     start = time.monotonic()
     try:
         p = subprocess.run(cmd, cwd=litdir, capture_output=True, text=True, timeout=TIMEOUT)
         out, rc = p.stdout + p.stderr, str(p.returncode)
     except subprocess.TimeoutExpired:
+        if dest:
+            (dest / 'output.txt').write_text('TIMEOUT')
         return (path, 'TIMEOUT', '', '', '%.1f' % (time.monotonic() - start))
+    if dest:
+        (dest / 'output.txt').write_text(out)
     secs = '%.1f' % (time.monotonic() - start)
     fin = ''.join(re.findall(r'verifier finished with ([^\n]*)', out))
     errs = sorted(set(re.findall(r'\((\d+),\d+\): Error', out)), key=int)
@@ -116,13 +133,13 @@ def verify(args):
     return (path, rc, fin + ('; %d out of resource' % oor if oor else ''), ','.join(errs), secs)
 
 
-def run(planf, litdir, dafny, z3, out, shard='0/1', jobs=4):
+def run(planf, litdir, dafny, z3, out, shard='0/1', jobs=4, additional_axioms=False, measurements=None):
     i, n = (int(x) for x in shard.split('/'))
     with open(planf) as f:
         rows = [l.rstrip('\n').split('\t') for l in f if l.strip()]
     rows = [r if len(r) == 2 else r + [''] for r in rows]
     mine = [r for k, r in enumerate(rows) if k % n == i]
-    work = [(litdir, dafny, z3, p, o) for p, o in mine]
+    work = [(litdir, dafny, z3, p, o, additional_axioms, measurements) for p, o in mine]
     print('shard %d/%d: %d of %d programs, %d at a time' % (i, n, len(mine), len(rows), jobs), flush=True)
     with concurrent.futures.ThreadPoolExecutor(jobs) as ex, open(out, 'w') as f:
         for r in ex.map(verify, work):
@@ -204,7 +221,9 @@ if __name__ == '__main__':
         plan(*args)
     elif cmd == 'run':
         opts = dict(zip(args[5::2], args[6::2]))
-        run(*args[:5], shard=opts.get('--shard', '0/1'), jobs=int(opts.get('--jobs', '4')))
+        run(*args[:5], shard=opts.get('--shard', '0/1'), jobs=int(opts.get('--jobs', '4')),
+            additional_axioms=opts.get('--additional-axioms', 'false') == 'true',
+            measurements=opts.get('--measurements'))
     elif cmd == 'summary':
         summary(args)
     elif cmd == 'expected':

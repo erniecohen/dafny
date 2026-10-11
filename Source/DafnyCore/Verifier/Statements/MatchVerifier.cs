@@ -162,7 +162,7 @@ public class MatchStmtVerifier {
         localTypeAssumptions.Add(BoogieGenerator.TrAssumeCmd(p.Origin, wh));
       }
       generator.CheckSubrange(p.Origin, new IdentifierExpr(p.Origin, local), pFormalType, p.Type,
-        new Microsoft.Dafny.IdentifierExpr(p.Origin, p), localTypeAssumptions);
+        new Microsoft.Dafny.IdentifierExpr(p.Origin, p), localTypeAssumptions, etran: etran);
       args.Add(generator.CondApplyBox(mc.Origin, new IdentifierExpr(p.Origin, local), Cce.NonNull(p.Type), mc.Ctor.Formals[i].Type));
     }
     IdentifierExpr id = new IdentifierExpr(mc.Origin, mc.Ctor.FullName, generator.Predef.DatatypeType);

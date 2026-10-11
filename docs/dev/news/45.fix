@@ -1,0 +1,1 @@
+Fix a crash when the refreshed resolver infers a constant's type from a qualified datatype constructor.

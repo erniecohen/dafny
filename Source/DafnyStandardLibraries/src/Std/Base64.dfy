@@ -897,32 +897,46 @@ module Std.Base64 {
   lemma EncodeBVLengthCongruentToZeroMod4(b: seq<bv8>)
     ensures |EncodeBV(b)| % 4 == 0
   {
+    // Exact length is a multiple of four, with one extra block for padding.
+    EncodeBVLengthExact(b);
     if |b| % 3 == 0 {
-      EncodeUnpaddedBounds(b);
-    } else if |b| % 3 == 1 {
-      EncodeUnpaddedBounds(b[..(|b| - 1)]);
+      assert |EncodeBV(b)| == |b| / 3 * 4;
     } else {
-      EncodeUnpaddedBounds(b[..(|b| - 2)]);
+      assert |EncodeBV(b)| == |b| / 3 * 4 + 4;
     }
   }
 
   lemma EncodeBVIsBase64(b: seq<bv8>)
     ensures IsBase64String(EncodeBV(b))
   {
-    EncodeBVLengthExact(b);
-    if |EncodeBV(b)| < 4 {
-    } else if |b| % 3 == 0 {
+    EncodeBVLengthCongruentToZeroMod4(b);
+    var s := EncodeBV(b);
+    if |b| % 3 == 0 {
       EncodeUnpaddedBase64(b);
+      assert IsUnpaddedBase64String(s);
     } else if |b| % 3 == 1 {
       var bStart := b[..(|b| - 1)];
       var bEnd := b[(|b| - 1)..];
       EncodeUnpaddedBase64(bStart);
       Encode2PaddingIs2Padding(bEnd);
+      var prefix, padding := EncodeUnpadded(bStart), Encode2Padding(bEnd);
+      // The final four characters are exactly the independently certified padding.
+      assert s == prefix + padding;
+      assert s[..(|s| - 4)] == prefix;
+      assert s[(|s| - 4)..] == padding;
+      assert IsUnpaddedBase64String(s[..(|s| - 4)]);
+      assert Is2Padding(s[(|s| - 4)..]);
     } else {
       var bStart := b[..(|b| - 2)];
       var bEnd := b[(|b| - 2)..];
       EncodeUnpaddedBase64(bStart);
       Encode1PaddingIs1Padding(bEnd);
+      var prefix, padding := EncodeUnpadded(bStart), Encode1Padding(bEnd);
+      assert s == prefix + padding;
+      assert s[..(|s| - 4)] == prefix;
+      assert s[(|s| - 4)..] == padding;
+      assert IsUnpaddedBase64String(s[..(|s| - 4)]);
+      assert Is1Padding(s[(|s| - 4)..]);
     }
   }
 
@@ -1083,7 +1097,8 @@ module Std.Base64 {
     requires IsBase64String(s)
     requires |s| >= 4
     requires Is1Padding(s[(|s| - 4)..])
-    ensures    DecodeValid(s)[..(|DecodeValid(s)| - 2)] == DecodeUnpadded(s[..(|s| - 4)])
+    ensures (UnpaddedBase64Prefix(s); AboutDecodeValid(s, DecodeValid(s));
+             DecodeValid(s)[..(|DecodeValid(s)| - 2)] == DecodeUnpadded(s[..(|s| - 4)]))
   {
   }
 
@@ -1114,6 +1129,8 @@ module Std.Base64 {
     requires Is1Padding(s[(|s| - 4)..])
     ensures EncodeBV(DecodeValid(s)) == s
   {
+    UnpaddedBase64Prefix(s);
+    DecodeValidPartialsFrom1PaddedSeq(s);
     assert |DecodeValid(s)| % 3 == 2 by { DecodeValid1PaddingLengthMod3(s); }
     calc {
       EncodeBV(DecodeValid(s));

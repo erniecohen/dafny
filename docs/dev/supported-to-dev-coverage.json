@@ -1,0 +1,1175 @@
+{
+  "supported_source": "1256f92b0b494e8f1bf52aaec145d36a8a862f33",
+  "dev_base": "858e4bfbcf00fbf0146255c0a4b0efdfc4deb66f",
+  "feature_port": "9029c0461d13aa73d7c40dddd260a26db65deaef",
+  "method": "Full-history merge with branch-specific source and metadata adaptations.",
+  "pull_requests": [
+    {
+      "mergeCommit": {
+        "oid": "1256f92b0b494e8f1bf52aaec145d36a8a862f33"
+      },
+      "number": 168,
+      "title": "Check implicit obligations once with assertion-equivalent local lowering",
+      "url": "https://github.com/erniecohen/dafny/pull/168"
+    },
+    {
+      "mergeCommit": {
+        "oid": "ab210b78b50adb5a192542897f0a00cdb40f3c35"
+      },
+      "number": 167,
+      "title": "Preserve forall binder scope during substitution",
+      "url": "https://github.com/erniecohen/dafny/pull/167"
+    },
+    {
+      "mergeCommit": {
+        "oid": "ad1360af0f776c0be6cf57e4f0d38bbdf1ecc365"
+      },
+      "number": 164,
+      "title": "Explain refreshed resolver subtype variance errors (#48)",
+      "url": "https://github.com/erniecohen/dafny/pull/164"
+    },
+    {
+      "mergeCommit": {
+        "oid": "854f5a65a50658c8c415629d67d0b1bd34860fed"
+      },
+      "number": 160,
+      "title": "Repair finite-support boundaries for sets, maps, and reads",
+      "url": "https://github.com/erniecohen/dafny/pull/160"
+    },
+    {
+      "mergeCommit": {
+        "oid": "3609539a97c2b57b9fae809fd21034c39c4ab18d"
+      },
+      "number": 159,
+      "title": "Check suspended co-recursive membership before observation (4.11.0)",
+      "url": "https://github.com/erniecohen/dafny/pull/159"
+    },
+    {
+      "mergeCommit": {
+        "oid": "3d3c53b6f15c0ea69943e7fa47817bbf6d7ed4d0"
+      },
+      "number": 157,
+      "title": "Port datatype cast membership checks to 4.11.0",
+      "url": "https://github.com/erniecohen/dafny/pull/157"
+    },
+    {
+      "mergeCommit": {
+        "oid": "a0c4ef158ddb225cbda24382a295dbdd0c48c1e3"
+      },
+      "number": 156,
+      "title": "Port prefix-inequality trigger crash repair to 4.11.0",
+      "url": "https://github.com/erniecohen/dafny/pull/156"
+    },
+    {
+      "mergeCommit": {
+        "oid": "14cacf1d0071f2ed44ba1083df162928f8b180b1"
+      },
+      "number": 155,
+      "title": "Port opaque datatype type-test crash repair to 4.11.0",
+      "url": "https://github.com/erniecohen/dafny/pull/155"
+    },
+    {
+      "mergeCommit": {
+        "oid": "91cecb1154ce3878b5ef855cbd9a096b1b829ec8"
+      },
+      "number": 154,
+      "title": "Fix generic Python datatype discriminator properties on 4.11 (#148)",
+      "url": "https://github.com/erniecohen/dafny/pull/154"
+    },
+    {
+      "mergeCommit": {
+        "oid": "ba61af02f80e3741638dcd3faf82bdcfa27d549c"
+      },
+      "number": 152,
+      "title": "Fix character validity checks through numeric newtype ancestry",
+      "url": "https://github.com/erniecohen/dafny/pull/152"
+    },
+    {
+      "mergeCommit": {
+        "oid": "f9bc1c9a9b60c61114b512f8ffe5b974e62c5a49"
+      },
+      "number": 144,
+      "title": "Migrate the fork build and tools to .NET 10",
+      "url": "https://github.com/erniecohen/dafny/pull/144"
+    },
+    {
+      "mergeCommit": {
+        "oid": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d"
+      },
+      "number": 140,
+      "title": "Make predicate definitions available after assign-such-that when opted in",
+      "url": "https://github.com/erniecohen/dafny/pull/140"
+    },
+    {
+      "mergeCommit": {
+        "oid": "ab4a7a3685422243eeae8da2c6aa0e4d38d2b036"
+      },
+      "number": 139,
+      "title": "Preserve bitvector map lookup key types when opted in",
+      "url": "https://github.com/erniecohen/dafny/pull/139"
+    },
+    {
+      "mergeCommit": {
+        "oid": "88ba0ccee5c67a81d9b755b8dd189165f52436fb"
+      },
+      "number": 138,
+      "title": "Apply C# datatype cloning converters to erased subset fields",
+      "url": "https://github.com/erniecohen/dafny/pull/138"
+    },
+    {
+      "mergeCommit": {
+        "oid": "53e70116528e2bd005023c3c593528f9f003ed6a"
+      },
+      "number": 137,
+      "title": "Know function values allocated from what they capture, not their reads frames (#132)",
+      "url": "https://github.com/erniecohen/dafny/pull/137"
+    },
+    {
+      "mergeCommit": {
+        "oid": "5c3d15513818334945b0cf9504ba5c71ba07932d"
+      },
+      "number": 136,
+      "title": "Honor project output filenames on opt-in runs",
+      "url": "https://github.com/erniecohen/dafny/pull/136"
+    },
+    {
+      "mergeCommit": {
+        "oid": "8d1536d569445764b6654e57fdf1e70710167ddf"
+      },
+      "number": 135,
+      "title": "Infer direct function-result lambda domains when opted in",
+      "url": "https://github.com/erniecohen/dafny/pull/135"
+    },
+    {
+      "mergeCommit": {
+        "oid": "5436ec6b34efd32b9d3aad48c08ee685ee91c653"
+      },
+      "number": 134,
+      "title": "Skip the resource comparison when a review run is cancelled",
+      "url": "https://github.com/erniecohen/dafny/pull/134"
+    },
+    {
+      "mergeCommit": {
+        "oid": "e3d66f3fbab77116e5f1a232c0af939647981a65"
+      },
+      "number": 131,
+      "title": "Assume reflexivity of heap succession at two-state function values",
+      "url": "https://github.com/erniecohen/dafny/pull/131"
+    },
+    {
+      "mergeCommit": {
+        "oid": "b04ea97103cc2b413a7cee8330b0e13956e159fa"
+      },
+      "number": 130,
+      "title": "Instantiate the allocation axioms of heap-independent functions at their applications",
+      "url": "https://github.com/erniecohen/dafny/pull/130"
+    },
+    {
+      "mergeCommit": {
+        "oid": "2703a86d1a9adbf4fbef1f4f9380ab7c7484ef15"
+      },
+      "number": 129,
+      "title": "Check two-state recursion against the caller's entry state",
+      "url": "https://github.com/erniecohen/dafny/pull/129"
+    },
+    {
+      "mergeCommit": {
+        "oid": "38f3c1c2c895203b91b54c0d0a35a315f3a00aea"
+      },
+      "number": 128,
+      "title": "Split the heap-update succession axiom so that deallocation is not a step",
+      "url": "https://github.com/erniecohen/dafny/pull/128"
+    },
+    {
+      "mergeCommit": {
+        "oid": "3d1f2a3f6fd77c3e4c97c3f7ad4ccc63e3665ac3"
+      },
+      "number": 115,
+      "title": "Preserve bitvector member tables across language-server edits",
+      "url": "https://github.com/erniecohen/dafny/pull/115"
+    },
+    {
+      "mergeCommit": {
+        "oid": "a82e93c4c910a46698367ebe4aee0d4b354710b2"
+      },
+      "number": 114,
+      "title": "Document bitvector division and remainder",
+      "url": "https://github.com/erniecohen/dafny/pull/114"
+    },
+    {
+      "mergeCommit": {
+        "oid": "8b9635e3d48b94c1a5875f0f2e0a772d9131900b"
+      },
+      "number": 86,
+      "title": "Fix match statements in function proof substitution",
+      "url": "https://github.com/erniecohen/dafny/pull/86"
+    },
+    {
+      "mergeCommit": {
+        "oid": "785412dd09ed356caeab23a5c9b0d02d652ba65d"
+      },
+      "number": 84,
+      "title": "Gate enabled additional axioms and report paired proof resources",
+      "url": "https://github.com/erniecohen/dafny/pull/84"
+    },
+    {
+      "mergeCommit": {
+        "oid": "c559da6d47851c4dc8c66c46de5c921cf5852f40"
+      },
+      "number": 83,
+      "title": "Use replacement type representations in opt-in C# compilation",
+      "url": "https://github.com/erniecohen/dafny/pull/83"
+    },
+    {
+      "mergeCommit": {
+        "oid": "ee84f614d4192e47ee5e8fae93d5a25fa9dd7bbb"
+      },
+      "number": 80,
+      "title": "Reject expansive general-trait representations on the release line",
+      "url": "https://github.com/erniecohen/dafny/pull/80"
+    },
+    {
+      "mergeCommit": {
+        "oid": "39da8948dd03e6fe4af465ffac96db70f3188471"
+      },
+      "number": 76,
+      "title": "Expose concrete integer literal identities in local verification contexts",
+      "url": "https://github.com/erniecohen/dafny/pull/76"
+    },
+    {
+      "mergeCommit": {
+        "oid": "edff862a3da391fe2f0142343a5846edf078b2ed"
+      },
+      "number": 73,
+      "title": "Add opt-in bounded bitvector round-trip axioms (#33)",
+      "url": "https://github.com/erniecohen/dafny/pull/73"
+    },
+    {
+      "mergeCommit": {
+        "oid": "d23ba465630d1a23626d22f58a8a841ffe244c00"
+      },
+      "number": 72,
+      "title": "Reject inferred newtype cycles during legacy resolution",
+      "url": "https://github.com/erniecohen/dafny/pull/72"
+    },
+    {
+      "mergeCommit": {
+        "oid": "1d45201a027d46be24988fe0946c0bde80a702c9"
+      },
+      "number": 71,
+      "title": "Add bounded resolver CI coverage in both modes",
+      "url": "https://github.com/erniecohen/dafny/pull/71"
+    },
+    {
+      "mergeCommit": {
+        "oid": "23325d9942cceca0e2e380dae2ece827d91dd669"
+      },
+      "number": 70,
+      "title": "Add program-wide Z3 arithmetic solver selection",
+      "url": "https://github.com/erniecohen/dafny/pull/70"
+    },
+    {
+      "mergeCommit": {
+        "oid": "c3252b1eff8e2528fac0c5b526b3800d86328885"
+      },
+      "number": 69,
+      "title": "Add opt-in triggers for map-comprehension domain membership",
+      "url": "https://github.com/erniecohen/dafny/pull/69"
+    },
+    {
+      "mergeCommit": {
+        "oid": "2e0457704fff456208011a8532008e40e9b85f4b"
+      },
+      "number": 68,
+      "title": "Reject ordinal-sized quantifier domains in extreme recursion",
+      "url": "https://github.com/erniecohen/dafny/pull/68"
+    },
+    {
+      "mergeCommit": {
+        "oid": "56970b6088b4ae36f32fe4e059cc81be3bce5422"
+      },
+      "number": 67,
+      "title": "Fix Python replacement imports with opt-in dependency ordering",
+      "url": "https://github.com/erniecohen/dafny/pull/67"
+    },
+    {
+      "mergeCommit": {
+        "oid": "e3e162d3bda66cf4a91e8ddeee09affaefb1ae84"
+      },
+      "number": 66,
+      "title": "Fix spurious prefix-member duplicates in abstract imports",
+      "url": "https://github.com/erniecohen/dafny/pull/66"
+    },
+    {
+      "mergeCommit": {
+        "oid": "9a6821c9e31dd89b091c2bd0ff762a764bb3d172"
+      },
+      "number": 65,
+      "title": "REVIEW.md: the fixes since 256a1ab3, and the version d2070b81",
+      "url": "https://github.com/erniecohen/dafny/pull/65"
+    },
+    {
+      "mergeCommit": {
+        "oid": "b97a6fe9234f8ea62c4768d13a932d2be063539b"
+      },
+      "number": 64,
+      "title": "Bound the existence check of a :| statement",
+      "url": "https://github.com/erniecohen/dafny/pull/64"
+    },
+    {
+      "mergeCommit": {
+        "oid": "358265bda26b8a62135fb723e358d2a1882d4a3d"
+      },
+      "number": 63,
+      "title": "Exclude numeric range test input from standalone discovery",
+      "url": "https://github.com/erniecohen/dafny/pull/63"
+    },
+    {
+      "mergeCommit": {
+        "oid": "9af9f84826b9e337221fd7caa57f95d8646ed198"
+      },
+      "number": 62,
+      "title": "Stop expanding a cyclic type synonym during signature resolution",
+      "url": "https://github.com/erniecohen/dafny/pull/62"
+    },
+    {
+      "mergeCommit": {
+        "oid": "79597321468ca5ed5ca3f439e4fde3a0a822c79b"
+      },
+      "number": 61,
+      "title": "Check a static call's receiver inside a match",
+      "url": "https://github.com/erniecohen/dafny/pull/61"
+    },
+    {
+      "mergeCommit": {
+        "oid": "b796eff4dacf795857ff6779f5d00753944b3211"
+      },
+      "number": 60,
+      "title": "Preserve function-call triggers during refinement",
+      "url": "https://github.com/erniecohen/dafny/pull/60"
+    },
+    {
+      "mergeCommit": {
+        "oid": "d24ac25ef8840a961524dda95052b6fb9e2b1490"
+      },
+      "number": 59,
+      "title": "Resolve datatype signatures before qualified constructor arguments",
+      "url": "https://github.com/erniecohen/dafny/pull/59"
+    },
+    {
+      "mergeCommit": {
+        "oid": "cc10f9ac08ced50027e55e2e8c44bb1917c56d4f"
+      },
+      "number": 58,
+      "title": "Report unresolved assign-or-return destinations without crashing",
+      "url": "https://github.com/erniecohen/dafny/pull/58"
+    },
+    {
+      "mergeCommit": {
+        "oid": "3ab6f387a63ee3463c971770d3b0f970a9518d67"
+      },
+      "number": 57,
+      "title": "Preserve arrow syntax in ambiguous type diagnostics",
+      "url": "https://github.com/erniecohen/dafny/pull/57"
+    },
+    {
+      "mergeCommit": {
+        "oid": "64e554453371d3fb53fd949d44ddf4b2e014dc30"
+      },
+      "number": 56,
+      "title": "Fix static receiver crash for bitvector newtypes",
+      "url": "https://github.com/erniecohen/dafny/pull/56"
+    },
+    {
+      "mergeCommit": {
+        "oid": "da1d42165e0ec1b62def28ae73eb4d0817a904be"
+      },
+      "number": 55,
+      "title": "Fix audit false positives for bodyless trait instance members",
+      "url": "https://github.com/erniecohen/dafny/pull/55"
+    },
+    {
+      "mergeCommit": {
+        "oid": "d7b2b631b56c6daaa8563996ab6442b83012ddea"
+      },
+      "number": 54,
+      "title": "Infer ghost locals for decreases-to expressions",
+      "url": "https://github.com/erniecohen/dafny/pull/54"
+    },
+    {
+      "mergeCommit": {
+        "oid": "8ef1431c950d63092a6230e194de6af591995588"
+      },
+      "number": 53,
+      "title": "Fix cloning of unresolved syntactic allocation types",
+      "url": "https://github.com/erniecohen/dafny/pull/53"
+    },
+    {
+      "mergeCommit": {
+        "oid": "36811f3c789a5775b0c7fc75c77109fc35c92168"
+      },
+      "number": 52,
+      "title": "Fix null bounded pools when cloning such-that assignments",
+      "url": "https://github.com/erniecohen/dafny/pull/52"
+    },
+    {
+      "mergeCommit": {
+        "oid": "ecb15764b63e683282ddbbbbc15f88586029c259"
+      },
+      "number": 17,
+      "title": "[CI only] Verify the standard library, and record each declaration's verdict",
+      "url": "https://github.com/erniecohen/dafny/pull/17"
+    }
+  ],
+  "supported_commits": [
+    {
+      "commit": "b6116c99de47af8d838417c971e4de8a9d61a073",
+      "title": "fix: Fix antecedent in induction hypothesis (#6367)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "cf5fdba10f29b511b0da6949bce5555804581343",
+      "title": "Patch for dafny-lang/dafny#6531: guard the single-constructor equality axiom",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "f621876cb38adbb21eaec2033279cef6d22d3ba0",
+      "title": "Patch for dafny-lang/dafny#6537: every member of Map#Items is a pair",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "007b409a2f2ed0d18fd6318d58807c67453b11f0",
+      "title": "Patch for dafny-lang/dafny#6533: type-guard the heap-update forall's assumption",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "5ecb3b4a73d76798c88e37ac7ba900fe1c10c514",
+      "title": "Patch for dafny-lang/dafny#6532: keep a possibly-empty binder in BplForallTrim",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "2ce2b7a676e051040ea1da398b58d424f188b1eb",
+      "title": "Patch for dafny-lang/dafny#6534: delete the unguarded $Box($Unbox(x): T) == x",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "b0f99c7165a5b27ee8209126bd6c19fc445ef30b",
+      "title": "Patch for dafny-lang/dafny#6535: state Map#Glue's elements only inside its domain",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "7512bd56da27af5a0a62eb1d16a7f90badef22e8",
+      "title": "Patch for dafny-lang/dafny#6536: guard ORDINAL (o - m) + n by m <= Offset(o)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "b7231f88c765dc62390a9ca8ee6860c8c91f81e9",
+      "title": "Test and release note for dafny-lang/dafny#6531",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "251fbd18b7685a5985959e5b2c5ee570e3a1c5f9",
+      "title": "Test and release note for dafny-lang/dafny#6537",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "9e7df435274391e1e982fb944fe3d78073f78799",
+      "title": "Test and release note for dafny-lang/dafny#6533",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "c0713af099eb2595af0ac10eb283af889ae5b9d4",
+      "title": "Test and release note for dafny-lang/dafny#6532",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "ca79a16cf0f36a2b32782704576d17cacdd3be72",
+      "title": "Test and release note for dafny-lang/dafny#6534",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "d67ac3e98b6735bf3bda0c61bab3a3dd83ca228c",
+      "title": "Test and release note for dafny-lang/dafny#6535",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "08614142ff04ddbc0bf21753e51a487459c3aa91",
+      "title": "Test and release note for dafny-lang/dafny#6536",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "d6113a8d380cd841b94aca763e8161c36d3e8c0b",
+      "title": "CI: remove upstream's workflows from this branch",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "6acb2d0844f677e478ffc710f49f7356ddebc06a",
+      "title": "CI: add review.yml, a lean workflow for this fork",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "30970a7afb39c3343f227d9e58b9d3cf1b8d0ed9",
+      "title": "Add REVIEW.md: what this branch is, and how to check its version",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "7b6dba7fa091aac39967e8ae4cc71bef7a549368",
+      "title": "Update the expected resource counts that two fixes move",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "f3521afb72f9e8b88f9dce7b83a950c214011605",
+      "title": "CI: the version names the last product commit, and later commits keep it",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "800e08f68448bd29ea073c66c5f65f67524550a4",
+      "title": "REVIEW.md: the version names the last product commit; resource counts",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "c0a45bf8a4cc9a05699db5dbc1292f14601eeca5",
+      "title": "CI: expected verdicts, so that a changed verdict fails the suite",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "a48933e52c36037d1bcce4bb1793e7393a5fdc73",
+      "title": "Build against Boogie 3.5.5 with the fix for boogie-org/boogie#1168",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "3ff7e3647c421a36ca54aadf1c830db035f4405c",
+      "title": "Test and release note for boogie-org/boogie#1168",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "a1a8bb9fda1c0cfe5c4e01e56b23785c0181492f",
+      "title": "CI: fetch the Boogie packages before building; the version names a48933e",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "cf5c56e56df4f00bb7e3407152d1e19eb38fcbf5",
+      "title": "Repair a proof in dafny4/GHC-MergeSort.dfy that the Boogie fix pushes over its limit",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "74581b29c474800e608a1cffd29855d8c84451ad",
+      "title": "Update the expected resource counts that the Boogie fix moves",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "15d1b1194dea94e80e512efdf6825aae8bedd794",
+      "title": "Expected verdicts under the Boogie fix",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "2744075fdc2265ae9d892b5f4a7b1507830cc405",
+      "title": "REVIEW.md: the Boogie fix, boogie-org/boogie#1168, and the new version",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "5fc27c0939d0e25da2a9225cb8d207ea12742c46",
+      "title": "Refine the fix for dafny-lang/dafny#6531: guard only the direction that is false",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "f1021156c96eeb4832157221f794ae80c25057b5",
+      "title": "Release note for the refined fix for dafny-lang/dafny#6531",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "3d170c79f940f30188a7c91563119a93ff1b6fc2",
+      "title": "CI: the version names 5fc27c0, the refined fix for dafny-lang/dafny#6531",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "8feecdd58defb7dc350afa02eaa053a4bba9fd50",
+      "title": "REVIEW.md: the refined fix for dafny-lang/dafny#6531, and the version 256a1ab3",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "0a9cdbd080c2e8e5dad339000666ccae4643aa47",
+      "title": "CI: verify the standard library, and record each declaration's verdict",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "ecb15764b63e683282ddbbbbc15f88586029c259",
+      "title": "CI: expected standard-library verdicts, and REVIEW.md on the new job",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "c4060f445814eec555f7622ca0bfc99a4b27e732",
+      "title": "CI: the documents at the top of the tree are not product files",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "46311b0dd21c9441c05a4d601f13bf0e2557cffc",
+      "title": "ROADMAP.md, AGENTS.md and CLAUDE.md: where the fork is going, and how to work on it",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "70345d6f5aa6764e4013915b71ba08660b37fb74",
+      "title": "CI: the library's declaration order is not quite deterministic",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "6096a04ffc4cdd838867ca5a78819e28e82a9252",
+      "title": "Test for the box fix: a vacuity control",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "7bc13dd9411322f10e1b2090ddc1a3f793b3aa8c",
+      "title": "AGENTS.md: one option for all added axioms",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "81eb18025b3e91bd40d705f1804da189d81def41",
+      "title": "AGENTS.md: crash and message fixes need no manual or --help text and may change defaults; fix PRs merge one at a time",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "36811f3c789a5775b0c7fc75c77109fc35c92168",
+      "title": "Fix null bounded pools when cloning such-that assignments (#52)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "8ef1431c950d63092a6230e194de6af591995588",
+      "title": "Fix cloning of unresolved syntactic allocation types (#53)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "d7b2b631b56c6daaa8563996ab6442b83012ddea",
+      "title": "Infer ghost locals for decreases-to expressions (#54)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "da1d42165e0ec1b62def28ae73eb4d0817a904be",
+      "title": "Fix audit false positives for bodyless trait instance members (#55)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "64e554453371d3fb53fd949d44ddf4b2e014dc30",
+      "title": "Fix static receiver handling for bitvector newtypes (#56)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "3ab6f387a63ee3463c971770d3b0f970a9518d67",
+      "title": "Preserve arrow syntax in ambiguous type diagnostics (#57)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "cc10f9ac08ced50027e55e2e8c44bb1917c56d4f",
+      "title": "Report assign-or-return resolution errors without crashing (#58)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "d24ac25ef8840a961524dda95052b6fb9e2b1490",
+      "title": "Fix qualified datatype constructor resolution (#59)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "b796eff4dacf795857ff6779f5d00753944b3211",
+      "title": "Fix function-call triggers in refining modules (#60)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "79597321468ca5ed5ca3f439e4fde3a0a822c79b",
+      "title": "Check a static call's receiver inside a match, a binder or a lambda (#61)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "358265bda26b8a62135fb723e358d2a1882d4a3d",
+      "title": "Move the numeric-range input of the #46 regression under Inputs/ (#63)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "9af9f84826b9e337221fd7caa57f95d8646ed198",
+      "title": "Stop expanding a cyclic type synonym during signature resolution (#62)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "b97a6fe9234f8ea62c4768d13a932d2be063539b",
+      "title": "Bound the existence check of a :| statement (#64)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "9a6821c9e31dd89b091c2bd0ff762a764bb3d172",
+      "title": "REVIEW.md: the fixes since 256a1ab3, and the version d2070b81 (#65)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "e3e162d3bda66cf4a91e8ddeee09affaefb1ae84",
+      "title": "Fix spurious prefix-member duplicates in abstract imports (#66)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "56970b6088b4ae36f32fe4e059cc81be3bce5422",
+      "title": "Fix Python replacement imports with opt-in dependency ordering (#67)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "2e0457704fff456208011a8532008e40e9b85f4b",
+      "title": "Reject ordinal-sized quantifier domains in extreme recursion (#68)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "c3252b1eff8e2528fac0c5b526b3800d86328885",
+      "title": "Add opt-in triggers for map-comprehension domain membership (#69)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "23325d9942cceca0e2e380dae2ece827d91dd669",
+      "title": "Add program-wide Z3 arithmetic solver selection (#70)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "347c9eb9a30d8cc56effde42024e2bc91de93804",
+      "title": "Reject cardinality-expanding general-trait declarations",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "02fba7e8d0e0fa6dc72302edff161b24148fb440",
+      "title": "Register general-trait cardinality regression coverage",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "6cacd2ab6e9d8be651b34a7f63b2bb8532400690",
+      "title": "Include selected abstract-import representations in cardinality admission",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "28aa93b14357797bc828161e65d358a7a55c2517",
+      "title": "Register scoped facade selection regression coverage",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "f073e5e6827a6717552af3dffe74cc8770068214",
+      "title": "Record executed scoped cardinality diagnostics and controls",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "6f3711944f5d594b7fd3c6f51af9a45c112d510e",
+      "title": "Fail closed on malformed atomic cardinality types",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "dc79c8d5b1907a80643ce5765c6aecbbce1c7a2d",
+      "title": "Track the final cardinality admission guard in the release gate",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "b1dea279396370c884e17f4adb2b14fd60d6f02f",
+      "title": "Run cardinality resolver and translation guards in release CI",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "1d45201a027d46be24988fe0946c0bde80a702c9",
+      "title": "Add bounded resolver CI coverage in both modes (#71)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "e396567901ccc5bcd4540fe2f01966d936e8c57a",
+      "title": "Preserve validated translation and positive cardinality controls",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "2888ef62b0bdbb59926d0a23b2b2aaa28f950af7",
+      "title": "Track the compatibility repair as the last product commit",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "01e28c46f9b807631e8d6eeb4e6197c4cf19ba35",
+      "title": "Track the combined release product for cardinality validation",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "900cd3ca329c4e58098c5c768d841fe33aa352b0",
+      "title": "Preserve existing trait and callback regression coverage on the release line",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "61a26c4f840b9a9fd897f864ca592e13433361e1",
+      "title": "Remove an unrelated warning from the opened-view regression",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "04944e9fd4020534893d6469473a4057c892d192",
+      "title": "Record measured cardinality diagnostics and repaired fixture output",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "bfcea9af110140c5c44a8293bf4aaceec966ed38",
+      "title": "Record the measured refreshed trait-resolution printout",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "b59b530fb4e5b8acb5fff705963c2cd3b6dd371d",
+      "title": "Correct standard-library contracts for stored callbacks",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "cbe6a983ff90e609b62e94d5cd8b39ddbff5554b",
+      "title": "Name the library contract repair as the release product base",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "c7fe1dfc9382e2f7f50f51bf19af18d8c83f8b35",
+      "title": "Propagate permissive output contracts into stored function actions",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "2494edf37be637b5db08ebe852ecf8b9efbc411b",
+      "title": "Record the completed cardinality contract product base",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "61b41e35a467e03e35a95ff474d5efd68657c0b5",
+      "title": "Close stored-family and inheritance cardinality contracts in the standard library",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "93c19aa600b712b9c46938a69fdb27da1ae3fc56",
+      "title": "Record the complete standard-library contract product base",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "edff862a3da391fe2f0142343a5846edf078b2ed",
+      "title": "Add opt-in bounded bitvector round-trip axioms (#33) (#73)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "6b65cf3a2f73570696925196faae08b06cdabdc7",
+      "title": "Document exported cardinality contracts and updated release product base",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "5faaf26c2203d13a9aad37b0737112a2621f53d6",
+      "title": "Prove equal quotients by explicit Euclidean decomposition",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "65ec91fc945f93640c8d3d528851357716392f1f",
+      "title": "Record the bounded library-proof follow-up product base",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "da4816d6b142a9272656537960b698f47f3e129f",
+      "title": "Regress the actual quotient proof under the ordinary library budget",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "9c54d4dd5ed6e32873b88a7ec6cf7f8755210380",
+      "title": "Add the normal-budget standard-library quotient regression",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "a2abe41d3da886cf6c69333604d572df888845ec",
+      "title": "Include all seven normally verified release standard libraries",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "d435feef947c4ddc54ab00e094ad926ca7a8f336",
+      "title": "Record the verified library archive product base",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "3f333be11d2e39d22aebe46c1b292ef47f7c66dc",
+      "title": "Keep the documentation trait hierarchy explicitly reference-only",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "84d7f07efb218d6c9f7b45d7cb79ff2677e90475",
+      "title": "Prove concrete membership before the trait-chain nonvacuity check",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "f348294b357e286c7948d831d3a8f566813b5755",
+      "title": "Record the measured quotient-proof verdict improvement",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "39da8948dd03e6fe4af465ffac96db70f3188471",
+      "title": "Expose concrete integer literal identities in local verification contexts (#76)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "d043f23f4f8b5d5cad7da5bec2e9772769930cc1",
+      "title": "Record the integrated release compiler product revision",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "8133a7952cf3d706ba7483803e4293ca0407e708",
+      "title": "Check embedded standard libraries in the published executable",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "26f7e863ad65dc86c2aec82ba15e55b8352f8efa",
+      "title": "Refresh release libraries after integration with the current compiler",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "c9c58fd433ebcd96725b41fd86f17428854a29f9",
+      "title": "Record the freshly verified integrated release library product",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "09cd11f9bb77d8322d30da07f3d13d7b63fe45f5",
+      "title": "Record cardinality merge inputs and separate baseline differences",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "d23ba465630d1a23626d22f58a8a841ffe244c00",
+      "title": "Reject inferred newtype cycles during legacy resolution (#72)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "c559da6d47851c4dc8c66c46de5c921cf5852f40",
+      "title": "Use replacement type representations in opt-in C# compilation (#83)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "785412dd09ed356caeab23a5c9b0d02d652ba65d",
+      "title": "Gate enabled additional axioms and report paired proof resources (#84)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "8b9635e3d48b94c1a5875f0f2e0a772d9131900b",
+      "title": "Fix match statements in function proof substitution (#86)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "a82e93c4c910a46698367ebe4aee0d4b354710b2",
+      "title": "Document bitvector division and remainder (#114)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "3d1f2a3f6fd77c3e4c97c3f7ad4ccc63e3665ac3",
+      "title": "Preserve bitvector member tables across language-server edits (#115)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "38f3c1c2c895203b91b54c0d0a35a315f3a00aea",
+      "title": "Split the heap-update succession axiom so that deallocation is not a step (#128)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "2703a86d1a9adbf4fbef1f4f9380ab7c7484ef15",
+      "title": "Check two-state recursion against the caller's entry state (#129)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "5436ec6b34efd32b9d3aad48c08ee685ee91c653",
+      "title": "Skip the resource comparison when a review run is cancelled (#134)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "b04ea97103cc2b413a7cee8330b0e13956e159fa",
+      "title": "Instantiate the allocation axioms of heap-independent functions at their applications (#130)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "e3d66f3fbab77116e5f1a232c0af939647981a65",
+      "title": "Assume reflexivity of heap succession at two-state function values (#131)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "8d1536d569445764b6654e57fdf1e70710167ddf",
+      "title": "Infer direct function-result lambda domains when opted in (#135)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "5c3d15513818334945b0cf9504ba5c71ba07932d",
+      "title": "Honor project output filenames on opt-in runs (#136)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "88ba0ccee5c67a81d9b755b8dd189165f52436fb",
+      "title": "Apply C# datatype cloning converters to erased subset fields (#138)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "ab4a7a3685422243eeae8da2c6aa0e4d38d2b036",
+      "title": "Preserve bitvector map lookup key types when opted in (#139)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "4b2742fb9924eed47c7bd40779e4283a1e65ce6d",
+      "title": "Make predicate definitions available after assign-such-that when opted in (#140)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "854f5a65a50658c8c415629d67d0b1bd34860fed",
+      "title": "Repair finite-support boundaries for sets, maps, and reads (#160)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "14cacf1d0071f2ed44ba1083df162928f8b180b1",
+      "title": "Port opaque datatype type-test crash repair to 4.11.0 (#155)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "ba61af02f80e3741638dcd3faf82bdcfa27d549c",
+      "title": "Fix character validity checks through numeric newtype ancestry (#152)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "3d3c53b6f15c0ea69943e7fa47817bbf6d7ed4d0",
+      "title": "Port datatype cast membership checks to 4.11.0 (#157)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "91cecb1154ce3878b5ef855cbd9a096b1b829ec8",
+      "title": "Fix generic Python datatype discriminator properties on 4.11 (#148) (#154)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "a0c4ef158ddb225cbda24382a295dbdd0c48c1e3",
+      "title": "Port prefix-inequality trigger crash repair to 4.11.0 (#156)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "3609539a97c2b57b9fae809fd21034c39c4ab18d",
+      "title": "Check suspended co-recursive membership before observation (4.11.0) (#159)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "f9bc1c9a9b60c61114b512f8ffe5b974e62c5a49",
+      "title": "Migrate the fork build and tools to .NET 10 (#144)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "ad1360af0f776c0be6cf57e4f0d38bbdf1ecc365",
+      "title": "Explain refreshed resolver subtype variance errors (#48) (#164)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "53e70116528e2bd005023c3c593528f9f003ed6a",
+      "title": "Know function values allocated from what they capture, not their reads frames (#132) (#137)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "ab210b78b50adb5a192542897f0a00cdb40f3c35",
+      "title": "Preserve forall binder scope during substitution (#167)",
+      "integration": "history-preserved; source overlaps reconciled"
+    },
+    {
+      "commit": "1256f92b0b494e8f1bf52aaec145d36a8a862f33",
+      "title": "Check implicit obligations once with assertion-equivalent local lowering (#168)",
+      "integration": "history-preserved; source overlaps reconciled"
+    }
+  ],
+  "existing_dev_counterparts": [
+    {
+      "supported_pr": 17,
+      "dev_pr": {
+        "mergeCommit": {
+          "oid": "1e58f52cb8baef688a8bf69bfa362568b8e8ba65"
+        },
+        "number": 18,
+        "state": "MERGED",
+        "title": "[CI only] dev: verify the standard library, and record each declaration's verdict",
+        "url": "https://github.com/erniecohen/dafny/pull/18"
+      },
+      "relationship": "paired accepted change",
+      "reconciliation": "Retain dev-specific implementation and reconcile supported regression/source additions; counterpart is not source equality."
+    },
+    {
+      "supported_pr": 80,
+      "dev_pr": {
+        "mergeCommit": {
+          "oid": "97601b75712f458de37a13bf9953a0b7825122eb"
+        },
+        "number": 79,
+        "state": "MERGED",
+        "title": "Reject expansive general-trait representations before translation",
+        "url": "https://github.com/erniecohen/dafny/pull/79"
+      },
+      "relationship": "paired accepted change",
+      "reconciliation": "Retain dev-specific implementation and reconcile supported regression/source additions; counterpart is not source equality."
+    },
+    {
+      "supported_pr": 154,
+      "dev_pr": {
+        "mergeCommit": {
+          "oid": "3df67ed63eabf44e090dcbbc76f42c04f93e8cb8"
+        },
+        "number": 151,
+        "state": "MERGED",
+        "title": "Fix Python discriminator properties on generic datatypes",
+        "url": "https://github.com/erniecohen/dafny/pull/151"
+      },
+      "relationship": "paired accepted change",
+      "reconciliation": "Retain dev-specific implementation and reconcile supported regression/source additions; counterpart is not source equality."
+    },
+    {
+      "supported_pr": 155,
+      "dev_pr": {
+        "mergeCommit": {
+          "oid": "03b39f54c24d97d8def6ffc088ee3921ce2cc78d"
+        },
+        "number": 149,
+        "state": "MERGED",
+        "title": "Fix opaque datatype type-test translation",
+        "url": "https://github.com/erniecohen/dafny/pull/149"
+      },
+      "relationship": "paired accepted change",
+      "reconciliation": "Retain dev-specific implementation and reconcile supported regression/source additions; counterpart is not source equality."
+    },
+    {
+      "supported_pr": 156,
+      "dev_pr": {
+        "mergeCommit": {
+          "oid": "b373a4a39716472a1e16e383b0aacf69bbb39a8e"
+        },
+        "number": 150,
+        "state": "MERGED",
+        "title": "Fix codatatype prefix-inequality trigger translation",
+        "url": "https://github.com/erniecohen/dafny/pull/150"
+      },
+      "relationship": "paired accepted change",
+      "reconciliation": "Retain dev-specific implementation and reconcile supported regression/source additions; counterpart is not source equality."
+    },
+    {
+      "supported_pr": 157,
+      "dev_pr": {
+        "mergeCommit": {
+          "oid": "592d30f28a6d01f5fabb1545a4864b8a552691dc"
+        },
+        "number": 153,
+        "state": "MERGED",
+        "title": "Check instantiated datatype membership before casts",
+        "url": "https://github.com/erniecohen/dafny/pull/153"
+      },
+      "relationship": "paired accepted change",
+      "reconciliation": "Retain dev-specific implementation and reconcile supported regression/source additions; counterpart is not source equality."
+    },
+    {
+      "supported_pr": 159,
+      "dev_pr": {
+        "mergeCommit": {
+          "oid": "858e4bfbcf00fbf0146255c0a4b0efdfc4deb66f"
+        },
+        "number": 158,
+        "state": "MERGED",
+        "title": "Check suspended co-recursive membership before observation",
+        "url": "https://github.com/erniecohen/dafny/pull/158"
+      },
+      "relationship": "paired accepted change",
+      "reconciliation": "Retain dev-specific implementation and reconcile supported regression/source additions; counterpart is not source equality."
+    },
+    {
+      "supported_pr": 136,
+      "dev_pr": {
+        "mergeCommit": {
+          "oid": "5a46e0d7df668e823765b50f17a8fedb28cd8826"
+        },
+        "number": 162,
+        "state": "MERGED",
+        "title": "Preserve explicit run build filenames after Boogie binding",
+        "url": "https://github.com/erniecohen/dafny/pull/162"
+      },
+      "relationship": "partial",
+      "reconciliation": "Retain dev-specific implementation and reconcile supported regression/source additions; counterpart is not source equality."
+    }
+  ]
+}

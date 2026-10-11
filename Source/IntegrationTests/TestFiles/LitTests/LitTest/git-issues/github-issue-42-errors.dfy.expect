@@ -1,0 +1,3 @@
+github-issue-42-errors.dfy(8,7): Error: ghost variables such as b are allowed only in specification contexts. b was inferred to be ghost based on its declaration or initialization.
+github-issue-42-errors.dfy(11,15): Error: a `decreases to` expression is allowed only in specification and ghost contexts
+2 resolution/type errors detected in github-issue-42-errors.dfy

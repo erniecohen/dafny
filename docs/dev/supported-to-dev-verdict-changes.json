@@ -1,0 +1,675 @@
+{
+  "comparison_source": "be862609d9147fb80dcea8df96eceddc722bb1ee",
+  "baseline_compiler_source": "858e4bfbcf00fbf0146255c0a4b0efdfc4deb66f",
+  "candidate_compiler_source": "be862609d9147fb80dcea8df96eceddc722bb1ee",
+  "solver": "Z3 5.1.0",
+  "profile": "same combined inputs, consistent-obligation-checks=false, additional-axioms=false; resolver/Unicode options normalized by the diagnostic planner",
+  "denominator": 1183,
+  "changed_rows": 39,
+  "scope": "Complete diagnostic verdict comparison, not complete Lit-test acceptance. Original-dev option rejection is not a proof failure. Repeated resource summary text is preserved verbatim from the receipt.",
+  "rows": [
+    {
+      "key": "dafny0/FunctionSpecifications.dfy",
+      "baseline": [
+        "4",
+        "11 verified, 11 errors",
+        "35,61,71,117,120,135,139,148,155,162,167"
+      ],
+      "candidate": [
+        "4",
+        "10 verified, 11 errors, 1 out of resource; 2 out of resource",
+        "35,49,61,71,117,120,135,139,148,155,162,167"
+      ],
+      "category": "carried-main-resource-limit",
+      "explanation": "GoodPost has an added resource failure at line 49. Exact supported and integrated compilers on the same source both reproduce this limit in all four switch profiles; original dev passes. This is an inherited supported-line proof cost, not a false theorem or an enabled-only effect.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38139429937",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "dafny0/NoTypeArgs.dfy",
+      "baseline": [
+        "4",
+        "7 verified, 0 errors, 1 out of resource; 2 out of resource",
+        "75"
+      ],
+      "candidate": [
+        "0",
+        "8 verified, 0 errors",
+        ""
+      ],
+      "category": "proof-cost-improvement",
+      "explanation": "The previous NoTypeArgs resource failure at line 75 now verifies. The complete comparison records the same source and ceiling. No isolated causal source attribution is claimed.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "dafny1/ExtensibleArrayAuto.dfy",
+      "baseline": [
+        "4",
+        "8 verified, 0 errors, 1 out of resource; 2 out of resource",
+        "61"
+      ],
+      "candidate": [
+        "4",
+        "8 verified, 0 errors, 1 out of resource; 2 out of resource",
+        "74"
+      ],
+      "category": "resource-location-change",
+      "explanation": "One ExtensibleArrayAuto resource failure remains; its location changes from 61 to 74. Both lines are recorded individually. The supported-line regression already expects the latter location. This does not certify either obligation.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "dafny1/SchorrWaite-stages.dfy",
+      "baseline": [
+        "4",
+        "229 verified, 0 errors, 1 out of resource; 2 out of resource",
+        "220"
+      ],
+      "candidate": [
+        "4",
+        "227 verified, 0 errors, 3 out of resource; 4 out of resource",
+        "82,218,220"
+      ],
+      "category": "carried-main-resource-limit",
+      "explanation": "SchorrWaite-stages gains M0 and M2 resource failures. Supported and integrated declaration outcomes and every VC outcome/resource count match exactly for both resolvers on the unchanged complete source. The independent sequential-postcondition positive remains a separate passing test.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38139429937",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "dafny1/SchorrWaite.dfy",
+      "baseline": [
+        "0",
+        "276 verified, 0 errors",
+        ""
+      ],
+      "candidate": [
+        "4",
+        "275 verified, 0 errors, 1 out of resource; 2 out of resource",
+        "243"
+      ],
+      "category": "carried-main-resource-limit",
+      "explanation": "Whole-file refreshed SchorrWaite gains a resource failure at 243. Supported and integrated outcomes/resource counts match exactly; legacy whole-file verification passes. This is distinct from the passing sequential-postcondition positive and its missing-edge/feasible-state controls.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38139429937",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "dafny2/COST-verif-comp-2011-3-TwoDuplicates.dfy",
+      "baseline": [
+        "4",
+        "3 verified, 0 errors, 1 out of resource; 2 out of resource",
+        "74"
+      ],
+      "candidate": [
+        "0",
+        "4 verified, 0 errors",
+        ""
+      ],
+      "category": "proof-cost-improvement",
+      "explanation": "TwoDuplicates no longer reaches its previous resource ceiling at 74. The source and ceiling are unchanged; no isolated causal attribution is claimed.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "dafny2/SmallestMissingNumber-functional.dfy",
+      "baseline": [
+        "4",
+        "17 verified, 5 errors, 2 out of resource; 3 out of resource",
+        "101,103,157,207,209,230"
+      ],
+      "candidate": [
+        "4",
+        "16 verified, 5 errors, 3 out of resource; 4 out of resource",
+        "101,103,157,207,209,230,272"
+      ],
+      "category": "carried-main-resource-limit",
+      "explanation": "SmallestMissingNumber-functional gains the SMN-double-prime correctness resource failure at 272. Supported and integrated profiles have identical declaration and VC outcomes/resource counts in both resolvers, including the earlier errors and limits.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38139429937",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "dafny2/SnapshotableTrees.dfy",
+      "baseline": [
+        "4",
+        "99 verified, 1 error, 7 out of resource; 8 out of resource",
+        "72,363,383,426,451,588,596,637"
+      ],
+      "candidate": [
+        "4",
+        "103 verified, 1 error, 4 out of resource; 5 out of resource",
+        "72,363,383,426,451"
+      ],
+      "category": "proof-cost-improvement",
+      "explanation": "SnapshotableTrees retains its existing semantic error and reduces resource failures from seven to four. Removed limits are individually visible in the before/after locations. No isolated causal attribution is claimed.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "dafny4/Primes.dfy",
+      "baseline": [
+        "4",
+        "26 verified, 0 errors, 1 out of resource; 2 out of resource",
+        "170"
+      ],
+      "candidate": [
+        "0",
+        "27 verified, 0 errors",
+        ""
+      ],
+      "category": "proof-cost-improvement",
+      "explanation": "Primes now verifies the obligation that previously reached the ceiling at 170. Source and ceiling are unchanged. No isolated causal attribution is claimed.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "dafny4/UnionFind.dfy",
+      "baseline": [
+        "4",
+        "234 verified, 0 errors, 2 out of resource; 3 out of resource",
+        "151,338"
+      ],
+      "candidate": [
+        "4",
+        "235 verified, 0 errors, 1 out of resource; 2 out of resource",
+        "338"
+      ],
+      "category": "proof-cost-improvement",
+      "explanation": "UnionFind eliminates the resource failure at 151 and retains 338. Source and ceiling are unchanged. This is an improvement, not complete acceptance of the file.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-132-newtype-finite-actual-positive-triggered.dfy",
+      "baseline": [
+        "1",
+        "",
+        ""
+      ],
+      "candidate": [
+        "0",
+        "2 verified, 0 errors",
+        ""
+      ],
+      "category": "new-capability-positive",
+      "explanation": "The original dev compiler rejects the supported newtype option before verification. The integrated compiler verifies finite actual arrow carriers with the requested trigger; two verified declarations establish the positive, rather than zero-verification admission.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-132-newtype-general-arrow-characteristic-negative.dfy",
+      "baseline": [
+        "1",
+        "",
+        ""
+      ],
+      "candidate": [
+        "2",
+        "",
+        "8,9,10"
+      ],
+      "category": "new-capability-negative",
+      "explanation": "An unrestricted arrow can capture references and cannot inherit allocation-independent characteristics. The integrated resolver rejects all three requested invalid characteristics at 8, 9 and 10; original dev rejects the option earlier.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-132-newtype-hidden-characteristic-negative.dfy",
+      "baseline": [
+        "1",
+        "",
+        ""
+      ],
+      "candidate": [
+        "2",
+        "",
+        "13"
+      ],
+      "category": "new-capability-negative",
+      "explanation": "A hidden carrier does not expose the required characteristic. The integrated resolver rejects the characteristic at 13 instead of rejecting the feature option before resolution.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-132-newtype-mixed-subset-cycle-negative.dfy",
+      "baseline": [
+        "1",
+        "",
+        ""
+      ],
+      "candidate": [
+        "2",
+        "",
+        "6"
+      ],
+      "category": "new-capability-negative",
+      "explanation": "Mixed newtype/subset cycles cannot establish a finite characteristic. The integrated resolver diagnoses the actual cycle at 6 rather than the unavailable option.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-132-newtype-partial-total-positive.dfy",
+      "baseline": [
+        "1",
+        "",
+        ""
+      ],
+      "candidate": [
+        "0",
+        "3 verified, 0 errors",
+        ""
+      ],
+      "category": "new-capability-positive",
+      "explanation": "Pure partial and total arrows over the permitted carriers acquire the supported characteristics; three declarations verify. Original dev cannot accept the new option.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-132-newtype-partial-total-universal-proof-nonvacuity.dfy",
+      "baseline": [
+        "1",
+        "",
+        ""
+      ],
+      "candidate": [
+        "4",
+        "1 verified, 3 errors",
+        "16,21,25"
+      ],
+      "category": "new-capability-false-control",
+      "explanation": "The three feasible false assertions at 16, 21 and 25 remain errors with one verified supporting declaration. This tests that universal arrow facts do not make the context contradictory. Original dev stops at option parsing.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-132-newtype-partial-total-universal-proof.dfy",
+      "baseline": [
+        "1",
+        "",
+        ""
+      ],
+      "candidate": [
+        "0",
+        "7 verified, 0 errors",
+        ""
+      ],
+      "category": "new-capability-positive",
+      "explanation": "Seven declarations verify the licensed universal facts for pure partial/total arrows. The separately failing nonvacuity controls are required alongside this positive.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-132-newtype-provided-characteristic-positive.dfy",
+      "baseline": [
+        "1",
+        "",
+        ""
+      ],
+      "candidate": [
+        "0",
+        "0 verified, 0 errors",
+        ""
+      ],
+      "category": "new-capability-admission",
+      "explanation": "An explicitly provided characteristic is accepted across its declared boundary. This has zero verified declarations and demonstrates resolver admission only; it is not proof evidence.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-132-newtype-provided-inhabited-false-negative.dfy",
+      "baseline": [
+        "1",
+        "",
+        ""
+      ],
+      "candidate": [
+        "4",
+        "0 verified, 1 error",
+        "17"
+      ],
+      "category": "new-capability-false-control",
+      "explanation": "An inhabited provided carrier still rejects the false assertion at 17. Zero verified declarations does not make this a positive; the actual error is the required feasible-state negative control.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-132-newtype-provided-newtype-no-characteristic-negative.dfy",
+      "baseline": [
+        "1",
+        "",
+        ""
+      ],
+      "candidate": [
+        "2",
+        "",
+        "15,16"
+      ],
+      "category": "new-capability-negative",
+      "explanation": "A provided newtype without the required exposed characteristics is rejected at 15 and 16. No hidden definition is used to license those properties.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-132-newtype-provided-no-characteristic-negative.dfy",
+      "baseline": [
+        "1",
+        "",
+        ""
+      ],
+      "candidate": [
+        "2",
+        "",
+        "16,17,18,19,20,21"
+      ],
+      "category": "new-capability-negative",
+      "explanation": "The provided boundary lacks the six requested characteristics; the resolver rejects each request at 16 through 21. This is a precise negative resolution outcome.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-132-newtype-reference-characteristic-negative.dfy",
+      "baseline": [
+        "1",
+        "",
+        ""
+      ],
+      "candidate": [
+        "2",
+        "",
+        "9,10,13"
+      ],
+      "category": "new-capability-negative",
+      "explanation": "Reference-bearing carriers cannot claim allocation-independent characteristics. The resolver rejects the three invalid requests at 9, 10 and 13.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-132-newtype-revealed-control-positive.dfy",
+      "baseline": [
+        "1",
+        "",
+        ""
+      ],
+      "candidate": [
+        "0",
+        "0 verified, 0 errors",
+        ""
+      ],
+      "category": "new-capability-admission",
+      "explanation": "A revealed control exposes the carrier and is admitted. This profile has zero verified declarations and is recorded as resolver admission, not a theorem.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-132-newtype-sequence-allocation-negative.dfy",
+      "baseline": [
+        "1",
+        "",
+        ""
+      ],
+      "candidate": [
+        "4",
+        "2 verified, 1 error",
+        "20"
+      ],
+      "category": "new-capability-false-control",
+      "explanation": "A sequence arrow that captures a newly allocated reference cannot be assumed allocated in the previous heap. Two supporting declarations verify and the false allocation assertion at 20 fails.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-132-newtype-sequence-allocation-preallocated.dfy",
+      "baseline": [
+        "1",
+        "",
+        ""
+      ],
+      "candidate": [
+        "0",
+        "3 verified, 0 errors",
+        ""
+      ],
+      "category": "new-capability-positive",
+      "explanation": "A sequence arrow whose reference captures were already allocated satisfies the old-heap allocation boundary. Three declarations verify, paired with the new-reference negative.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-132-newtype-sequence-allocation-pure.dfy",
+      "baseline": [
+        "1",
+        "",
+        ""
+      ],
+      "candidate": [
+        "0",
+        "3 verified, 0 errors",
+        ""
+      ],
+      "category": "new-capability-positive",
+      "explanation": "A pure sequence arrow has no reference captures that could violate old-heap allocation. Three declarations verify, paired with the capture negative.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-142-negative.dfy",
+      "baseline": [
+        "4",
+        "6 verified, 6 errors",
+        "22,26,41,46,50,57"
+      ],
+      "candidate": [
+        "4",
+        "1 verified, 12 errors",
+        "10,14,18,22,26,31,36,41,46,50,57"
+      ],
+      "category": "soundness-negative-coverage",
+      "explanation": "Unicode character validity is enforced through nominal wrappers. New failures at 10, 14, 18, 31 and 36 reject invalid scalar introductions; the old negative locations remain. Invalid scalar values cannot be certified via a wrapper.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-142-runtime.dfy",
+      "baseline": [
+        "-6",
+        "",
+        "2"
+      ],
+      "candidate": [
+        "0",
+        "1 verified, 0 errors",
+        ""
+      ],
+      "category": "crash-repair-positive",
+      "explanation": "The character-wrapper runtime fixture no longer aborts during conversion; its one declaration verifies. Native type and conversion support preserve the wrapper carrier.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-142.dfy",
+      "baseline": [
+        "-6",
+        "",
+        "5"
+      ],
+      "candidate": [
+        "0",
+        "10 verified, 0 errors",
+        ""
+      ],
+      "category": "crash-repair-positive",
+      "explanation": "The wrapped character fixture no longer aborts; all ten declarations verify. Invalid scalar introductions remain covered by the paired negative fixture.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-2064.dfy",
+      "baseline": [
+        "2",
+        "",
+        "13,14,15,16,35,36,37,51,52,53,54,60,66,67,68,69,74,76,77,81,83,84,89,98,100,101,108,134,158,161,179,183,204,207"
+      ],
+      "candidate": [
+        "2",
+        "",
+        "13,14,15,16,35,36,37,51,52,53,54,59,60,66,67,68,69,74,76,77,81,83,84,89,98,100,101,108,134,158,161,179,183,204,207"
+      ],
+      "category": "soundness-resolution",
+      "explanation": "The extra error at 59 rejects an allocation-independent characteristic on an unrestricted arrow that may capture heap references. The earlier characteristic diagnostics remain unchanged.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-356-errors.dfy",
+      "baseline": [
+        "4",
+        "11 verified, 27 errors",
+        "10,16,22,28,34,47,53,66,80,87,93,100,108,115,121,135,141,153,164,170,176,189,195,207"
+      ],
+      "candidate": [
+        "4",
+        "9 verified, 30 errors",
+        "10,16,22,28,34,47,53,66,80,87,93,100,108,115,121,135,141,153,164,170,176,182,189,195,207,213,217"
+      ],
+      "category": "soundness-profile-change",
+      "explanation": "The same-input comparison removes legacy --unicode-char=false and therefore uses Unicode scalar semantics. Existing TestAOK/CTest bounds below 65536 still permit surrogate values. New errors at 182, 213 and 217 reject those invalid scalar introductions. This diagnostic profile is distinct from the fixture Lit RUN with legacy UTF-16 semantics.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-6531.dfy",
+      "baseline": [
+        "0",
+        "5 verified, 0 errors",
+        ""
+      ],
+      "candidate": [
+        "4",
+        "4 verified, 1 error",
+        "25"
+      ],
+      "category": "soundness-false-control",
+      "explanation": "The singleton-datatype equality axiom now requires the constructor discriminator in the reverse direction. An impossible constructor field cannot collapse the carrier or prove the false postcondition at 25.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-6532.dfy",
+      "baseline": [
+        "4",
+        "3 verified, 1 error",
+        "31"
+      ],
+      "candidate": [
+        "4",
+        "2 verified, 2 errors",
+        "21,31"
+      ],
+      "category": "soundness-false-control",
+      "explanation": "Facts from an empty bounded existential do not license a call whose requires clause is false. The bad call at 21 now fails in addition to the earlier false assertion at 31.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-6533.dfy",
+      "baseline": [
+        "0",
+        "2 verified, 0 errors",
+        ""
+      ],
+      "candidate": [
+        "4",
+        "1 verified, 1 error",
+        "15"
+      ],
+      "category": "soundness-false-control",
+      "explanation": "Forall heap-assignment call facts are guarded by the bound-variable type antecedent. The formerly accepted false assertion at 15 is now rejected.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-6535.dfy",
+      "baseline": [
+        "0",
+        "2 verified, 0 errors",
+        ""
+      ],
+      "candidate": [
+        "4",
+        "1 verified, 1 error",
+        "11"
+      ],
+      "category": "soundness-false-control",
+      "explanation": "Map-comprehension element facts are guarded by domain membership. An empty domain cannot introduce contradictory facts about an element; the false assertion at 11 now fails.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-6536.dfy",
+      "baseline": [
+        "4",
+        "3 verified, 1 error",
+        "15"
+      ],
+      "candidate": [
+        "0",
+        "4 verified, 0 errors",
+        ""
+      ],
+      "category": "correctness-positive",
+      "explanation": "Ordinal subtraction/addition uses the correct m <= o.Offset guard. The genuine identity at 15 now verifies; no unrelated false assertion is accepted by this change.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/git-issue-6537.dfy",
+      "baseline": [
+        "4",
+        "0 verified, 2 errors",
+        "11,15"
+      ],
+      "candidate": [
+        "0",
+        "2 verified, 0 errors",
+        ""
+      ],
+      "category": "correctness-positive",
+      "explanation": "Map and imap Items membership is guarded by genuine pair membership. Both valid facts at 11 and 15 now verify with the repaired item axioms.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/github-issue-26-ten.dfy",
+      "baseline": [
+        "-6",
+        "",
+        ""
+      ],
+      "candidate": [
+        "0",
+        "0 verified, 0 errors",
+        ""
+      ],
+      "category": "translation-crash-repair",
+      "explanation": "The bounded such-that translation no longer aborts when its concrete guess space has 59049 candidates. This profile selects no matching procedures and has zero verified declarations; it certifies translation termination only.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    },
+    {
+      "key": "git-issues/github-issue-39.dfy",
+      "baseline": [
+        "4",
+        "7 verified, 2 errors",
+        "21,152"
+      ],
+      "candidate": [
+        "4",
+        "11 verified, 15 errors",
+        "21,26,32,38,44,52,61,66,105,110,114,118,122,126,152"
+      ],
+      "category": "soundness-negative-coverage",
+      "explanation": "Computing a receiver is checked even when the selected member is static. Invalid receivers in match branches now expose their index/precondition obligations at 26, 32, 38, 44, 52, 61, 66, 105, 110, 114, 118, 122 and 126. The earlier failures at 21 and 152 remain; supported regression positives are retained.",
+      "evidence": "https://github.com/erniecohen/dafny/actions/runs/38137406071",
+      "acceptance": "Explanation for review; not an automatic oracle update"
+    }
+  ]
+}

@@ -1,3 +1,5 @@
+extern alias LegacyAsyncLinq;
+
 #nullable enable
 using System;
 using System.Collections.Generic;
@@ -72,7 +74,8 @@ public static class VerifyCommand {
       var verificationSummarized = ReportVerificationSummary(compilation, verificationResults);
       var proofDependenciesReported = ReportProofDependencies(compilation, resolution, verificationResults);
       var verificationResultsLogged = LogVerificationResults(compilation, resolution, verificationResults);
-      compilation.VerifyAllLazily().ToObservable().Subscribe(verificationResults);
+      LegacyAsyncLinq::System.Linq.AsyncEnumerable.ToObservable(compilation.VerifyAllLazily())
+        .Subscribe(verificationResults);
       await verificationSummarized;
       await verificationResultsLogged;
       await proofDependenciesReported;

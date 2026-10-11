@@ -1,0 +1,2 @@
+// CHECK: implementation.*smt_option "smt.arith.solver", "2"
+// CHECK-NOT: smt_option "smt.arith.solver", "6"

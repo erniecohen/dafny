@@ -245,7 +245,7 @@ namespace Microsoft.Dafny {
                 "type '{0}' declared as auto-initialization type, but the RHS type ({1}) does not support auto-initialization", syn.Name,
                 syn.Rhs);
             }
-            if (syn.Characteristics.ContainsNoReferenceTypes && syn.Rhs.MayInvolveReferences) {
+            if (syn.Characteristics.ContainsNoReferenceTypes && syn.Rhs.MayShowReferences) {
               reporter.Error(MessageSource.Resolver, syn.Origin,
                 "type '{0}' declared as containing no reference types, but the RHS type ({1}) may contain reference types", syn.Name,
                 syn.Rhs);

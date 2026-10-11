@@ -1,0 +1,103 @@
+name: Final integration metadata and complete finite-support sequences
+on:
+  push:
+    branches: ['scratch/codex/full-main-to-dev-probes']
+    paths: ['.github/workflows/full-integration-final-harness.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+env:
+  Z3_LINUX_X64_SHA256: f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a
+  HARNESS_Z3_4_16_0_SHA256: 87de9c9e86c877abfccb00cf24b946c4a1bda7b9cba6f363ea58311d2573c320
+jobs:
+  resources:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: verdicts-*-*
+          run-id: 38156642539
+          github-token: ${{ github.token }}
+          path: measurements
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: std-verdicts-*
+          run-id: 38156642539
+          github-token: ${{ github.token }}
+          path: measurements
+      - name: Record actual metadata replay exit
+        run: |
+          mkdir -p out/final-harness
+          set +e
+          python3 .github/review/full-integration-final-harness.py resources
+          code=$?
+          printf '%s\n' "$code" > out/final-harness/probe-exit.txt
+          echo "Diagnostic runner actual exit: $code; inspect the receipt for acceptance." >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-final-resource-repair
+          path: out/final-harness
+          retention-days: 30
+  controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/download-artifact@v4
+        with:
+          name: dafny
+          run-id: 38156642539
+          github-token: ${{ github.token }}
+          path: out/download
+      - name: Exact compiler and existing solver pins
+        run: |
+          mkdir -p out/toolchain Binaries/z3/bin
+          tar -C out/toolchain -xzf out/download/dafny.tar.gz
+          curl -fsSLo z3-5.1.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo "$Z3_LINUX_X64_SHA256  z3-5.1.zip" | sha256sum -c -
+          unzip -q z3-5.1.zip
+          cp z3-5.1.0-x64-glibc-2.39/bin/z3 Binaries/z3/bin/z3-5.1.0
+          echo "Z3=$PWD/Binaries/z3/bin/z3-5.1.0" >> "$GITHUB_ENV"
+          for v in 4.16.0 4.12.1; do
+            curl -fsSLo z3-$v.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-$v-x64-ubuntu-24.04-bin.zip
+            case $v in
+              4.16.0) sha=$HARNESS_Z3_4_16_0_SHA256 ;;
+              4.12.1) sha=e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b ;;
+            esac
+            echo "$sha  z3-$v.zip" | sha256sum -c -
+            unzip -q z3-$v.zip -d Binaries/z3/bin
+          done
+          chmod +x Binaries/z3/bin/z3-*
+      - name: Record all native RUN/check pairs and execute both complete harness fixtures
+        env:
+          DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS: cs
+        run: |
+          mkdir -p out/final-harness
+          set +e
+          python3 .github/review/full-integration-final-harness.py controls
+          code=$?
+          printf '%s\n' "$code" > out/final-harness/probe-exit.txt
+          echo "Diagnostic runner actual exit: $code; inspect the receipt for acceptance." >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-final-control-repair
+          path: out/final-harness
+          retention-days: 30
+
+# Repeat both complete sequences after the exact key-uniqueness diagnostic repair.

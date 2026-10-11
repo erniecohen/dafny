@@ -70,6 +70,11 @@ public class CommonOptionBag {
       IsHidden = true
     };
 
+  public static readonly Option<bool> MapComprehensionDomainTriggers = new("--map-comprehension-domain-triggers",
+    "Use explicit and inferred triggers when proving membership in map and imap comprehensions with general key expressions. Defaults to false.");
+  public static readonly Option<bool> ConsistentObligationChecks = new("--consistent-obligation-checks", () => false,
+    "Prepare and check matching implicit obligations once using the existing local assertion machinery and fuel rules.");
+
   public static readonly Option<bool> ManualLemmaInduction =
     new("--manual-lemma-induction", "Turn off automatic induction for lemmas.");
 
@@ -83,6 +88,12 @@ true - In the compiled target code, transform any non-extern
     non-ghost parameter into just that parameter. For example, the type
         datatype Record = Record(x: int)
     is transformed into just 'int' in the target code.".TrimStart());
+
+  public static readonly Option<bool> CsReplacementTypes = new("--cs-replacement-types",
+    "Use replacement modules' concrete representations for abstract types when compiling C#. Defaults to false.");
+
+  public static readonly Option<bool> PythonReorderReplacements = new("--python-reorder-replacements",
+    "Order Python modules by their compilation dependencies after substituting replacement modules. Defaults to false.");
 
   public static readonly Option<bool> Verbose = new("--verbose",
       "Print additional information such as which files are emitted where.");
@@ -150,6 +161,9 @@ The value may be a comma-separated list of files and folders.".TrimStart());
     ArgumentHelpName = "file",
     IsHidden = true
   };
+
+  public static readonly Option<bool> ProjectOutput = new("--project-output",
+    "Use the project's output filename when running, and require a nonempty filename stem for compiler output. Defaults to false.");
 
   public static readonly Option<FileInfo> Output = new(["--output", "-o"],
     "Specify the filename and location for the generated target language files.") {
@@ -227,9 +241,18 @@ true - All class instances are raw pointers and need to be manually deallocated"
     IsHidden = true
   };
 
+  public static readonly Option<bool> AdditionalAxioms = new("--additional-axioms", () => false,
+    "Enable additional verifier axioms. May change verification performance and proof stability. Disabled by default.");
+
   public static readonly Option<bool> AllowAxioms = new("--allow-axioms", () => false,
     "Prevents a warning from being generated for axioms, such as assume statements and functions or methods without a body, that don't have an {:axiom} attribute.") {
   };
+
+  public static readonly Option<bool> BitvectorMapKeys = new("--bitvector-map-keys", () => false,
+    "Preserve bitvector key types in map and imap lookups during verification. Disabled by default.");
+
+  public static readonly Option<bool> ContextualLambdaDomains = new("--contextual-lambda-domains", () => false,
+    "With the refreshed type system, infer omitted parameters of function-result lambdas from the declared arrow domain. Disabled by default.");
 
   public static readonly Option<bool> TypeSystemRefresh = new("--type-system-refresh", () => true,
     @"
@@ -433,6 +456,7 @@ If verification fails, report a detailed counterexample for the first failing as
       }
     });
 
+    DafnyOptions.RegisterLegacyUi(AdditionalAxioms, DafnyOptions.ParseBoolean, "Verification options", legacyName: "additionalAxioms");
     DafnyOptions.RegisterLegacyUi(AllowAxioms, DafnyOptions.ParseBoolean, "Verification options", legacyName: "allowAxioms", defaultValue: true);
     DafnyOptions.RegisterLegacyBinding(ShowHints, (options, value) => {
       options.PrintTooltips = value;
@@ -539,6 +563,8 @@ NoGhost - disable printing of functions, ghost methods, and proof
       }
     }
 
+    DafnyOptions.RegisterLegacyUi(ConsistentObligationChecks, DafnyOptions.ParseBoolean,
+      "Verification options", "consistentObligationChecks");
     DafnyOptions.RegisterLegacyUi(AddCompileSuffix, DafnyOptions.ParseBoolean, "Compilation options", "compileSuffix");
 
     QuantifierSyntax = QuantifierSyntax.FromAmong("3", "4");
@@ -659,9 +685,12 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(LogLocation, OptionScope.Cli);
     OptionRegistry.RegisterOption(LogLevelOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(ManualTriggerOption, OptionScope.Module);
+    OptionRegistry.RegisterOption(AdditionalAxioms, OptionScope.Cli);
+    OptionRegistry.RegisterOption(MapComprehensionDomainTriggers, OptionScope.Cli);
     OptionRegistry.RegisterOption(ShowHints, OptionScope.Cli);
     OptionRegistry.RegisterOption(Libraries, OptionScope.Module);
     OptionRegistry.RegisterOption(Output, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ProjectOutput, OptionScope.Cli);
     OptionRegistry.RegisterOption(PluginOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(Prelude, OptionScope.Cli);
     OptionRegistry.RegisterOption(Target, OptionScope.Cli);
@@ -669,6 +698,8 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(JsonOutput, OptionScope.Cli);
     OptionRegistry.RegisterOption(JsonDiagnostics, OptionScope.Cli);
     OptionRegistry.RegisterOption(QuantifierSyntax, OptionScope.Module);
+    OptionRegistry.RegisterOption(CsReplacementTypes, OptionScope.Cli);
+    OptionRegistry.RegisterOption(PythonReorderReplacements, OptionScope.Cli);
     OptionRegistry.RegisterOption(SpillTranslation, OptionScope.Cli);
     OptionRegistry.RegisterOption(StdIn, OptionScope.Cli);
     OptionRegistry.RegisterOption(TestAssumptions, OptionScope.Cli);
@@ -677,6 +708,8 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(GeneralTraits, OptionScope.Cli);
     OptionRegistry.RegisterOption(GeneralNewtypes, OptionScope.Cli);
     OptionRegistry.RegisterOption(TypeSystemRefresh, OptionScope.Cli);
+    OptionRegistry.RegisterOption(BitvectorMapKeys, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ContextualLambdaDomains, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationLogFormat, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerifyIncludedFiles, OptionScope.Cli);
     OptionRegistry.RegisterOption(DisableNonLinearArithmetic, OptionScope.Module);
@@ -694,6 +727,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(VerificationCoverageReport, OptionScope.Cli);
     OptionRegistry.RegisterOption(NoTimeStampForCoverageReport, OptionScope.Cli);
     OptionRegistry.RegisterOption(DefaultFunctionOpacity, OptionScope.Module);
+    OptionRegistry.RegisterOption(ConsistentObligationChecks, OptionScope.Cli);
     OptionRegistry.RegisterOption(OptimizeErasableDatatypeWrapper, OptionScope.Cli); // TODO needs translation record registration
     OptionRegistry.RegisterOption(AddCompileSuffix, OptionScope.Cli);  // TODO needs translation record registration
     OptionRegistry.RegisterOption(SystemModule, OptionScope.Cli);

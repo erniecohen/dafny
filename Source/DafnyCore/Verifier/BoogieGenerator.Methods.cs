@@ -204,12 +204,18 @@ namespace Microsoft.Dafny {
       // the method spec itself
       if (!isByMethod) {
         sink.AddTopLevelDeclaration(AddMethod(m, MethodTranslationKind.Call));
+        if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+          sink.AddTopLevelDeclaration(AddMethod(m, MethodTranslationKind.Call, publishCheckedRequires: true));
+        }
       }
       if (m is ExtremeLemma) {
         // Let the CoCall and Impl forms to use m.PrefixLemma signature and specification (and
         // note that m.PrefixLemma.Body == m.Body.
         m = ((ExtremeLemma)m).PrefixLemma;
         sink.AddTopLevelDeclaration(AddMethod(m, MethodTranslationKind.CoCall));
+        if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+          sink.AddTopLevelDeclaration(AddMethod(m, MethodTranslationKind.CoCall, publishCheckedRequires: true));
+        }
 
       }
       if (!m.HasVerifyFalseAttribute && m.Body != null && InVerificationScope(m)) {
@@ -300,6 +306,7 @@ namespace Microsoft.Dafny {
 
       Bpl.Expr indexBounds = Bpl.Expr.True;
       Bpl.Expr oDotF;
+      Bpl.Expr heapBox = null; // h[o,f] itself, when oDotF unboxes it
       if (is_array) {
         // generate h[o,Index(ii)]
         bvsTypeAxiom.Add(hVar);
@@ -329,6 +336,9 @@ namespace Microsoft.Dafny {
         // generate h[o,f]
         var ty = TrType(f.Type);
         oDotF = ReadHeap(c.Origin, h, o, new Bpl.IdentifierExpr(c.Origin, GetField(f)));
+        if (ty != Predef.BoxType) {
+          heapBox = oDotF;
+        }
         oDotF = ty == Predef.BoxType ? oDotF : ApplyUnbox(c.Origin, oDotF, ty);
         bvsTypeAxiom.Add(hVar);
         bvsTypeAxiom.Add(oVar);
@@ -379,6 +389,11 @@ namespace Microsoft.Dafny {
         isalloc_hf = MkIsAlloc(oDotF, tyexprs[0], h, true);
       } else {
         is_hf = MkIs(oDotF, f.Type); // $Is(h[o, f], ..)
+        if (heapBox != null) {
+          // The heap holds a box of the field's type, and saying so at the box, $IsBox(h[o, f], ..), is what lets
+          // the per-type box/unbox axiom conclude $Box($Unbox(h[o, f])) == h[o, f].  (No axiom says that of every box.)
+          is_hf = BplAnd(is_hf, MkIsBox(heapBox, f.Type));
+        }
         isalloc_hf = MkIsAlloc(oDotF, f.Type, h); // $IsAlloc(h[o, f], ..)
       }
 
@@ -598,11 +613,11 @@ namespace Microsoft.Dafny {
         foreach (var formal in m.Ins.Where(formal => formal.DefaultValue != null)) {
           var e = formal.DefaultValue;
           CheckWellformed(e, wfo, localVariables, builder, etran.WithReadsFrame(etran.readsFrame, null)); // No scope for default parameters
-          builder.Add(new Boogie.AssumeCmd(e.Origin, etran.CanCallAssumption(e)));
-          CheckSubrange(e.Origin, etran.TrExpr(e), e.Type, formal.Type, e, builder);
+          builder.Add(new Boogie.AssumeCmd(e.Origin, etran.CanCallAssumptionForVerification(e)));
+          CheckSubrange(e.Origin, etran.TrExpr(e), e.Type, formal.Type, e, builder, etran: etran);
 
           if (formal.IsOld) {
-            Boogie.Expr wh = GetWhereClause(e.Origin, etran.TrExpr(e), e.Type, etran.Old, ISALLOC, true);
+            Boogie.Expr wh = AllocationObligation(e.Origin, etran.TrExpr(e), e.Type, etran.Old);
             if (wh != null) {
               var desc = new IsAllocated("default value", "in the two-state lemma's previous state", e);
               builder.Add(Assert(e.Origin, wh, desc, builder.Context));
@@ -787,12 +802,12 @@ namespace Microsoft.Dafny {
             decrToks.Add(ee.Origin);
             decrTypes.Add(ee.Type.NormalizeExpand());
             decrCallerDafny.Add(ee);
-            canCalls = BplAnd(canCalls, exprTran.CanCallAssumption(ee));
+            canCalls = BplAnd(canCalls, exprTran.CanCallAssumptionForVerification(ee));
             decrCaller.Add(exprTran.TrExpr(ee));
             Expression es = Substitute(ee, receiverSubst, substMap);
             es = Substitute(es, null, decrSubstMap);
             decrCalleeDafny.Add(es);
-            canCalls = BplAnd(canCalls, exprTran.CanCallAssumption(ee));
+            canCalls = BplAnd(canCalls, exprTran.CanCallAssumptionForVerification(ee));
             decrCallee.Add(exprTran.TrExpr(es));
           }
           return BplImp(canCalls,
@@ -825,10 +840,15 @@ namespace Microsoft.Dafny {
       var beforeOutTrackers = DefiniteAssignmentTrackers;
       m.Outs.ForEach(p => AddExistingDefiniteAssignmentTracker(p, m.IsGhost));
       // translate the body
+      // Keep the legacy return context: terminal reveal hints must remain visible
+      // to existing checks and to the local postcondition checks appended below.
       TrStmt(m.Body, builder, localVariables, etran);
       m.Outs.ForEach(p => CheckDefiniteAssignmentReturn(m.Body.EndToken, p, builder));
       if (m is { FunctionFromWhichThisIsByMethodDecl: { ByMethodTok: { } } fun }) {
         AssumeCanCallForByMethodDecl(m, builder);
+      }
+      if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+        CheckMethodPostconditions(m, m.Origin, builder, localVariables, etran);
       }
       var stmts = builder.Collect(m.Body.StartToken); // EndToken might make more sense, but it requires updating most of the regression tests.
       DefiniteAssignmentTrackers = beforeOutTrackers;
@@ -1104,7 +1124,7 @@ namespace Microsoft.Dafny {
       var cco = new CanCallOptions(true, f);
       //generating class post-conditions
       foreach (var en in ConjunctsOf(f.Ens)) {
-        builder.Add(TrAssumeCmd(f.Origin, etran.CanCallAssumption(en.E, cco)));
+        builder.Add(TrAssumeCmd(f.Origin, etran.CanCallAssumptionForVerification(en.E, cco)));
         builder.Add(TrAssumeCmdWithDependencies(etran, f.Origin, en.E, "overridden function ensures clause"));
       }
 
@@ -1150,8 +1170,10 @@ namespace Microsoft.Dafny {
         (TraitDecl)f.OverriddenFunction.EnclosingClass, (TopLevelDeclWithMembers)f.EnclosingClass);
       foreach (var en in ConjunctsOf(f.OverriddenFunction.Ens)) {
         var subEn = sub.Substitute(en.E);
-        foreach (var s in TrSplitExpr(new BodyTranslationContext(false), subEn, etran, false, out _).Where(s => s.IsChecked)) {
-          builder.Add(TrAssumeCmd(f.Origin, etran.CanCallAssumption(subEn, cco)));
+        foreach (var s in (options.Get(CommonOptionBag.ConsistentObligationChecks)
+          ? LowerProposition(builder.Context, subEn, etran).Pieces
+          : TrSplitExpr(new BodyTranslationContext(false), subEn, etran, false, out _)).Where(s => s.IsChecked)) {
+          builder.Add(TrAssumeCmd(f.Origin, etran.CanCallAssumptionForVerification(subEn, cco)));
           var constraint = Expression.CreateImplies(allOverrideEns, subEn);
           builder.Add(Assert(f.Origin, s.E, new FunctionContractOverride(true, constraint), builder.Context));
         }
@@ -1239,7 +1261,7 @@ namespace Microsoft.Dafny {
       var subReqs = new List<Expression>();
       foreach (var req in ConjunctsOf(f.OverriddenFunction.Req)) {
         var subReq = sub.Substitute(req.E);
-        builder.Add(TrAssumeCmd(f.Origin, etran.CanCallAssumption(subReq, cco)));
+        builder.Add(TrAssumeCmd(f.Origin, etran.CanCallAssumptionForVerification(subReq, cco)));
         builder.Add(TrAssumeCmdWithDependencies(etran, f.Origin, subReq, "overridden function requires clause"));
         subReqs.Add(subReq);
       }
@@ -1248,8 +1270,10 @@ namespace Microsoft.Dafny {
       //generating class pre-conditions
       cco = new CanCallOptions(true, f);
       foreach (var req in ConjunctsOf(f.Req)) {
-        foreach (var s in TrSplitExpr(new BodyTranslationContext(false), req.E, etran, false, out _).Where(s => s.IsChecked)) {
-          builder.Add(TrAssumeCmd(f.Origin, etran.CanCallAssumption(req.E, cco)));
+        foreach (var s in (options.Get(CommonOptionBag.ConsistentObligationChecks)
+          ? LowerProposition(builder.Context, req.E, etran).Pieces
+          : TrSplitExpr(new BodyTranslationContext(false), req.E, etran, false, out _)).Where(s => s.IsChecked)) {
+          builder.Add(TrAssumeCmd(f.Origin, etran.CanCallAssumptionForVerification(req.E, cco)));
           var constraint = Expression.CreateImplies(allTraitReqs, req.E);
           builder.Add(Assert(f.Origin, s.E, new FunctionContractOverride(false, constraint), builder.Context));
         }
@@ -1497,7 +1521,7 @@ namespace Microsoft.Dafny {
       Contract.Requires(substMap != null);
       //generating class post-conditions
       foreach (var en in ConjunctsOf(m.Ens)) {
-        builder.Add(TrAssumeCmd(m.Origin, etran.CanCallAssumption(en.E)));
+        builder.Add(TrAssumeCmd(m.Origin, etran.CanCallAssumptionForVerification(en.E)));
         builder.Add(TrAssumeCmdWithDependencies(etran, m.Origin, en.E, "overridden ensures clause"));
       }
       // conjunction of class post-conditions
@@ -1509,8 +1533,10 @@ namespace Microsoft.Dafny {
         (TraitDecl)m.OverriddenMethod.EnclosingClass, (TopLevelDeclWithMembers)m.EnclosingClass);
       foreach (var en in ConjunctsOf(m.OverriddenMethod.Ens)) {
         var subEn = sub.Substitute(en.E);
-        foreach (var s in TrSplitExpr(new BodyTranslationContext(false), subEn, etran, false, out _).Where(s => s.IsChecked)) {
-          builder.Add(TrAssumeCmd(m.OverriddenMethod.Origin, etran.CanCallAssumption(subEn)));
+        foreach (var s in (options.Get(CommonOptionBag.ConsistentObligationChecks)
+          ? LowerProposition(builder.Context, subEn, etran).Pieces
+          : TrSplitExpr(new BodyTranslationContext(false), subEn, etran, false, out _)).Where(s => s.IsChecked)) {
+          builder.Add(TrAssumeCmd(m.OverriddenMethod.Origin, etran.CanCallAssumptionForVerification(subEn)));
           var constraint = Expression.CreateImplies(allOverrideEns, subEn);
           builder.Add(Assert(m.Origin, s.E, new EnsuresStronger(constraint), builder.Context));
         }
@@ -1530,7 +1556,7 @@ namespace Microsoft.Dafny {
       var subReqs = new List<Expression>();
       foreach (var req in ConjunctsOf(m.OverriddenMethod.Req)) {
         var subReq = sub.Substitute(req.E);
-        builder.Add(TrAssumeCmd(m.OverriddenMethod.Origin, etran.CanCallAssumption(subReq)));
+        builder.Add(TrAssumeCmd(m.OverriddenMethod.Origin, etran.CanCallAssumptionForVerification(subReq)));
         builder.Add(TrAssumeCmdWithDependencies(etran, m.Origin, subReq, "overridden requires clause"));
         subReqs.Add(subReq);
       }
@@ -1538,8 +1564,10 @@ namespace Microsoft.Dafny {
 
       // generating class pre-conditions
       foreach (var req in ConjunctsOf(m.Req)) {
-        foreach (var s in TrSplitExpr(new BodyTranslationContext(false), req.E, etran, false, out _).Where(s => s.IsChecked)) {
-          builder.Add(TrAssumeCmd(m.Origin, etran.CanCallAssumption(req.E)));
+        foreach (var s in (options.Get(CommonOptionBag.ConsistentObligationChecks)
+          ? LowerProposition(builder.Context, req.E, etran).Pieces
+          : TrSplitExpr(new BodyTranslationContext(false), req.E, etran, false, out _)).Where(s => s.IsChecked)) {
+          builder.Add(TrAssumeCmd(m.Origin, etran.CanCallAssumptionForVerification(req.E)));
           var constraint = Expression.CreateImplies(allTraitReqs, req.E);
           builder.Add(Assert(m.Origin, s.E, new RequiresWeaker(constraint), builder.Context));
         }
@@ -1585,7 +1613,7 @@ namespace Microsoft.Dafny {
         callerDafny.Add(e1);
         callee.Add(etran.TrExpr(e0));
         caller.Add(etran.TrExpr(e1));
-        var canCall = BplAnd(etran.CanCallAssumption(e1), etran.CanCallAssumption((e0)));
+        var canCall = BplAnd(etran.CanCallAssumptionForVerification(e1), etran.CanCallAssumptionForVerification((e0)));
         builder.Add(new Bpl.AssumeCmd(e1.Origin, canCall));
       }
 
@@ -1657,7 +1685,7 @@ namespace Microsoft.Dafny {
 
       var tok = m.Origin;
       var canCalls = traitFrameExps.Concat(classFrameExps)
-        .Select(e => etran.CanCallAssumption(e.E))
+        .Select(e => etran.CanCallAssumptionForVerification(e.E))
         .Aggregate((Bpl.Expr)Bpl.Expr.True, BplAnd);
       builder.Add(TrAssumeCmd(tok, canCalls));
 
@@ -1720,9 +1748,13 @@ namespace Microsoft.Dafny {
 
     /// <summary>
     /// This method is expected to be called at most once for each parameter combination, and in particular
-    /// at most once for each value of "kind".
+    /// at most once for each value of "kind" and checked-requirements publication mode.
     /// </summary>
-    private Boogie.Procedure AddMethod(MethodOrConstructor m, MethodTranslationKind kind) {
+    private static string CheckedCallName(ICodeContext method, MethodTranslationKind kind) =>
+      "$CheckedRequires$" + MethodName(method, kind);
+
+    private Boogie.Procedure AddMethod(MethodOrConstructor m, MethodTranslationKind kind,
+      bool publishCheckedRequires = false) {
       Contract.Requires(m != null);
       Contract.Requires(m.EnclosingClass != null);
       Contract.Requires(Predef != null);
@@ -1760,7 +1792,7 @@ namespace Microsoft.Dafny {
       GenerateMethodParameters(m.Origin, m, kind, etran, inParams, out var outParams);
 
 
-      var name = MethodName(m, kind);
+      var name = publishCheckedRequires ? CheckedCallName(m, kind) : MethodName(m, kind);
       var req = GetRequires();
       var mod = new List<Bpl.IdentifierExpr> { ordinaryEtran.HeapCastToIdentifierExpr };
       var ens = GetEnsures();
@@ -1805,7 +1837,9 @@ namespace Microsoft.Dafny {
                 "in the two-state lemma's previous state" + IsAllocated.HelperFormal(formal),
                 dafnyFormalIdExpr
               );
-              var require = Requires(formal.Origin, false, null, MkIsAlloc(etran.TrExpr(dafnyFormalIdExpr), formal.Type, prevHeap),
+              var locallyChecked = options.Get(CommonOptionBag.ConsistentObligationChecks) &&
+                kind is MethodTranslationKind.Call or MethodTranslationKind.CoCall;
+              var require = Requires(formal.Origin, locallyChecked, null, MkIsAlloc(etran.TrExpr(dafnyFormalIdExpr), formal.Type, prevHeap),
                 desc.FailureDescription, desc.SuccessDescription, null);
               require.Description = desc;
               req.Add(require);
@@ -1822,7 +1856,7 @@ namespace Microsoft.Dafny {
         var comment = "user-defined preconditions";
         foreach (var p in ConjunctsOf(m.Req)) {
           var (errorMessage, successMessage) = CustomErrorMessage(p.Attributes);
-          req.Add(FreeRequires(p.E.Origin, etran.CanCallAssumption(p.E), comment, true));
+          req.Add(FreeRequires(p.E.Origin, etran.CanCallAssumptionForVerification(p.E), comment, true));
           comment = null;
           if (p.Label != null && kind == MethodTranslationKind.Implementation) {
             // don't include this precondition here, but record it for later use
@@ -1835,7 +1869,19 @@ namespace Microsoft.Dafny {
               } else if (s.IsOnlyFree && !bodyKind) {
                 // don't include in split -- it would be ignored, anyhow
               } else {
-                req.Add(RequiresWithDependencies(s.Tok, s.IsOnlyFree, p.E, s.E, errorMessage, successMessage, null));
+                // Calls check user preconditions locally exactly once. Keep the
+                // callee-visible proposition without a second call obligation.
+                var locallyChecked = options.Get(CommonOptionBag.ConsistentObligationChecks) &&
+                  kind is MethodTranslationKind.Call or MethodTranslationKind.CoCall;
+                var requirement = RequiresWithDependencies(s.Tok, s.IsOnlyFree || locallyChecked,
+                  p.E, s.E, errorMessage, successMessage, null);
+                if (publishCheckedRequires && locallyChecked) {
+                  // Boogie publishes the original call contract after the sole
+                  // local proof, using its own argument/heap substitution. The
+                  // original interface remains for inherited/filtered free calls.
+                  requirement.Attributes = AlwaysAssumeAttribute(s.Tok, requirement.Attributes);
+                }
+                req.Add(requirement);
                 // the free here is not linked to the free on the original expression (this is free things generated in the splitting.)
               }
             }
@@ -1845,7 +1891,7 @@ namespace Microsoft.Dafny {
         // assume can-call conditions for the modifies clause
         comment = "user-defined frame expressions";
         foreach (var frameExpression in m.Mod.Expressions) {
-          req.Add(FreeRequires(frameExpression.Origin, etran.CanCallAssumption(frameExpression.E), comment, true));
+          req.Add(FreeRequires(frameExpression.Origin, etran.CanCallAssumptionForVerification(frameExpression.E), comment, true));
           comment = null;
         }
 
@@ -1862,7 +1908,7 @@ namespace Microsoft.Dafny {
         var comment = "user-defined postconditions";
         foreach (var p in ConjunctsOf(m.Ens)) {
           var (errorMessage, successMessage) = CustomErrorMessage(p.Attributes);
-          AddEnsures(ens, FreeEnsures(p.E.Origin, etran.CanCallAssumption(p.E), comment, true));
+          AddEnsures(ens, FreeEnsures(p.E.Origin, etran.CanCallAssumptionForVerification(p.E), comment, true));
           comment = null;
           foreach (var split in TrSplitExprForMethodSpec(new BodyTranslationContext(m.ContainsHide), p.E, etran, kind)) {
             var post = split.E;
@@ -1875,7 +1921,13 @@ namespace Microsoft.Dafny {
             } else if (split.IsOnlyChecked && !bodyKind) {
               // don't include in split
             } else {
-              AddEnsures(ens, EnsuresWithDependencies(split.Tok, split.IsOnlyFree || this.assertionOnlyFilter != null, p.E, post, errorMessage, successMessage, null));
+              // Each user clause is proved locally at every actual exit. The
+              // procedure copy remains available to callers, without rechecking.
+              var locallyChecked = options.Get(CommonOptionBag.ConsistentObligationChecks) &&
+                kind == MethodTranslationKind.Implementation && assertionOnlyFilter == null;
+              AddEnsures(ens, EnsuresWithDependencies(split.Tok,
+                split.IsOnlyFree || locallyChecked || this.assertionOnlyFilter != null,
+                p.E, post, errorMessage, successMessage, null));
             }
           }
         }

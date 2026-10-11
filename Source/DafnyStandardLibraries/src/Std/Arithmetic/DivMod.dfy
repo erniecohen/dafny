@@ -632,9 +632,10 @@ module Std.Arithmetic.DivMod {
     requires 0 <= a - a % d <= b < a + d - a % d
     ensures a / d == b / d
   {
-    var f := ab => var u := ab + b; 0 <= u - u % d <= b < u + d - u % d ==> u / d == b / d;
-    assert f(a - b) by {
-      LemmaDivInductionAuto(d, a - b, f);
+    assert a / d == b / d by {
+      LemmaFundamentalDivMod(a, d);
+      LemmaMulIsCommutative(d, a / d);
+      ModInternals.LemmaQuotientAndRemainder(b, a / d, b - (a - a % d), d);
     }
   }
 
@@ -883,7 +884,10 @@ module Std.Arithmetic.DivMod {
     ensures  a / b <= c
   {
     LemmaModMultiplesBasic(c, b);
-    assert (b * c) % b == 0;
+    assert (b * c) % b == 0 by {
+      // The remainder lemma uses c * b; match it without nonlinear arithmetic.
+      LemmaMulIsCommutative(b, c);
+    }
     var i := b * c - a;
     assert i + a == b * c;
     assert (i + a) % b == 0;
@@ -913,7 +917,10 @@ module Std.Arithmetic.DivMod {
     ensures  a / b < c
   {
     LemmaModMultiplesBasic(c, b);
-    assert (b * c) % b == 0;
+    assert (b * c) % b == 0 by {
+      // The remainder lemma uses c * b; match it without nonlinear arithmetic.
+      LemmaMulIsCommutative(b, c);
+    }
     var i := b * c - a;
     assert i + a == b * c;
     assert (i + a) % b == 0;

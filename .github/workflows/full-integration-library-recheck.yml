@@ -1,0 +1,57 @@
+name: Full integration final complete library proof closure
+on:
+  push:
+    branches: ['scratch/codex/full-main-to-dev-probes']
+    paths: ['.github/workflows/full-integration-library-recheck.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  library:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 115
+    strategy:
+      fail-fast: false
+      matrix:
+        solver: ['5.1.0', '4.16.0']
+        axioms: [off, on]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-build-integrated
+          run-id: 38139291400
+          github-token: ${{ github.token }}
+          path: out/download
+      - name: Install immutable compiler and approved solver
+        run: |
+          mkdir -p out/toolchain out/solver
+          tar -C out/toolchain -xzf out/download/dafny.tar.gz
+          if [ '${{ matrix.solver }}' = '5.1.0' ]; then
+            curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+            echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+            unzip -q z3.zip
+            echo "Z3=$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" >> "$GITHUB_ENV"
+          else
+            curl -fsSLo z3.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.16.0-x64-ubuntu-24.04-bin.zip
+            echo '87de9c9e86c877abfccb00cf24b946c4a1bda7b9cba6f363ea58311d2573c320  z3.zip' | sha256sum -c -
+            unzip -q z3.zip -d out/solver
+            chmod +x out/solver/z3-4.16.0
+            echo "Z3=$PWD/out/solver/z3-4.16.0" >> "$GITHUB_ENV"
+          fi
+      - name: Capture complete normal library profiles
+        env:
+          AXIOMS: ${{ matrix.axioms }}
+        run: python3 .github/review/full-integration-library-recheck.py > out/library-output.txt 2>&1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-library-recheck-${{ matrix.solver }}-${{ matrix.axioms }}
+          path: |
+            out/library-recheck
+            out/library-output.txt
+          retention-days: 30

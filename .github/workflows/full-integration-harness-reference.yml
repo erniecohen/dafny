@@ -1,0 +1,54 @@
+name: Full integration exact harness profile references
+on:
+  push:
+    branches: ['scratch/codex/full-main-to-dev-probes']
+    paths: ['.github/workflows/full-integration-harness-reference.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [supported-reference, dev-baseline, integrated]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-build-${{ matrix.source }}
+          run-id: ${{ matrix.source == 'integrated' && '38139291400' || '38137142292' }}
+          github-token: ${{ github.token }}
+          path: out/download
+      - name: Install immutable compiler and approved reference solvers
+        run: |
+          mkdir -p out/toolchain out/solvers
+          tar -C out/toolchain -xzf out/download/dafny.tar.gz
+          curl -fsSLo z3-5.1.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3-5.1.zip' | sha256sum -c -
+          unzip -q z3-5.1.zip
+          cp z3-5.1.0-x64-glibc-2.39/bin/z3 out/solvers/z3-5.1.0
+          for v in 4.16.0 4.12.1; do
+            curl -fsSLo z3-$v.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-$v-x64-ubuntu-24.04-bin.zip
+            case $v in
+              4.16.0) sha=87de9c9e86c877abfccb00cf24b946c4a1bda7b9cba6f363ea58311d2573c320 ;;
+              4.12.1) sha=e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b ;;
+            esac
+            echo "$sha  z3-$v.zip" | sha256sum -c -
+            unzip -q z3-$v.zip -d out/solvers
+          done
+          chmod +x out/solvers/z3-*
+      - name: Preserve each actual reference result
+        env:
+          COMPILER_SOURCE: ${{ matrix.source }}
+        run: python3 .github/review/full-integration-harness-reference.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-harness-reference-${{ matrix.source }}
+          path: out/harness-reference
+          retention-days: 30

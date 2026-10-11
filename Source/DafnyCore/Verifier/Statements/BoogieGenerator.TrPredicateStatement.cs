@@ -147,10 +147,20 @@ namespace Microsoft.Dafny {
       ExpressionTranslator etran, BoogieStmtListBuilder proofBuilder) {
 
       var (errorMessage, successMessage) = CustomErrorMessage(stmt.Attributes);
-      var splits = TrSplitExpr(proofBuilder.Context, stmt.Expr, etran, true, out var splitHappened);
+      bool splitHappened;
+      List<SplitExprInfo> splits;
+      if (options.Get(CommonOptionBag.ConsistentObligationChecks)) {
+        var lowering = LowerProposition(proofBuilder.Context, stmt.Expr, etran,
+          preparation: ObligationPreparation.CheckedExpression);
+        splits = lowering.Pieces.ToList();
+        splitHappened = lowering.SplitHappened;
+      } else {
+        splits = TrSplitExpr(proofBuilder.Context, stmt.Expr, etran, true, out splitHappened);
+      }
       if (!splitHappened) {
         var desc = new AssertStatementDescription(stmt, errorMessage, successMessage);
-        proofBuilder.Add(Assert(stmt.Origin, etran.TrExpr(stmt.Expr), desc, stmt.Origin, proofBuilder.Context,
+        proofBuilder.Add(Assert(stmt.Origin,
+          options.Get(CommonOptionBag.ConsistentObligationChecks) ? splits[0].E : etran.TrExpr(stmt.Expr), desc, stmt.Origin, proofBuilder.Context,
           etran.TrAttributes(stmt.Attributes, null)));
       } else {
         foreach (var split in splits) {

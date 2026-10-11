@@ -1,0 +1,22 @@
+name: Set up fork build SDK
+description: Install an isolated .NET 10 SDK and only the .NET 8 runtime for generated C# programs
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-dotnet@v4
+      env:
+        DOTNET_INSTALL_DIR: ${{ runner.temp }}/dafny-dotnet
+      with:
+        dotnet-version: 10.0.x
+    - name: Runtime for generated C# programs
+      shell: bash
+      run: |
+        curl -fsSL https://dot.net/v1/dotnet-install.sh -o "$RUNNER_TEMP/dotnet-install.sh"
+        bash "$RUNNER_TEMP/dotnet-install.sh" --channel 8.0 --runtime dotnet --install-dir "$DOTNET_ROOT" --no-path --skip-non-versioned-files
+    - name: Check SDK and runtime inventory
+      shell: bash
+      run: |
+        dotnet --list-sdks
+        dotnet --list-runtimes
+        test "$(dotnet --version | cut -d. -f1)" = 10
+        test -z "$(dotnet --list-sdks | grep -v '^10\.' || true)"

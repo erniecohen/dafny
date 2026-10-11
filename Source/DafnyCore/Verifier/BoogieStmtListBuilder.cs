@@ -8,17 +8,19 @@ namespace Microsoft.Dafny {
     public BodyTranslationContext Context { get; set; }
     public StmtListBuilder builder;
     public readonly List<object> Commands;
+    private readonly Dictionary<string, IOrigin> labelOrigins = new();
     public BoogieGenerator tran;
 
     public BoogieStmtListBuilder WithContext(BodyTranslationContext context) {
       if (context == Context) {
         return this;
       }
-      return new BoogieStmtListBuilder(Commands, builder, tran, Options, context);
+      return new BoogieStmtListBuilder(Commands, labelOrigins, builder, tran, Options, context);
     }
 
-    private BoogieStmtListBuilder(List<object> commands, StmtListBuilder builder, BoogieGenerator tran, DafnyOptions options, BodyTranslationContext context) {
+    private BoogieStmtListBuilder(List<object> commands, Dictionary<string, IOrigin> labelOrigins, StmtListBuilder builder, BoogieGenerator tran, DafnyOptions options, BodyTranslationContext context) {
       Commands = commands;
+      this.labelOrigins = labelOrigins;
       this.builder = builder;
       this.tran = tran;
       Options = options;
@@ -66,9 +68,28 @@ namespace Microsoft.Dafny {
 
     public void AddLabelCmd(IOrigin token, string label) {
       Commands.Add(label);
+      labelOrigins[label] = token;
       builder.AddLabelCmd(token, label);
     }
     public void AddLocalVariable(string name) { builder.AddLocalVariable(name); }
+
+    // Commands in a prepared fragment have already contributed to the
+    // translator's assertion/call count. Append them without counting twice.
+    internal void AppendAlreadyTranslated(BoogieStmtListBuilder source, IEnumerable<object> commands) {
+      foreach (var command in commands) {
+        Commands.Add(command);
+        switch (command) {
+          case Cmd cmd: builder.Add(cmd); break;
+          case StructuredCmd structured: builder.Add(structured); break;
+          case TransferCmd transfer: builder.Add(transfer); break;
+          case string label:
+            labelOrigins[label] = source.labelOrigins[label];
+            builder.AddLabelCmd(labelOrigins[label], label);
+            break;
+          default: throw new System.InvalidOperationException("Unexpected prepared statement");
+        }
+      }
+    }
 
     public StmtList Collect(Boogie.IToken tok) {
       return builder.Collect(tok);

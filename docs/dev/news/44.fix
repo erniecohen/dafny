@@ -1,0 +1,1 @@
+The resolver no longer runs forever on a cyclic type synonym or subset type, such as `type Loop = Loop`, that a later datatype or codatatype uses: it reports the cycle.
