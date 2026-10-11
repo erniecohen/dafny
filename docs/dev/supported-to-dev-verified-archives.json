@@ -1,5 +1,5 @@
 {
-  "source": "6e28abce2c6b00cb1b7314aac514351fdd8b1e9d",
+  "source": "f34df1a91e13b6ebda28bfc097e10cd2ae2c961f",
   "compiler_source": "eac45d90832014b377a68e49444057d230123e58",
   "compiler_version": "4.11.1+eac45d90",
   "solver_version": "Z3 version 4.16.0 - 64 bit",
@@ -47,7 +47,7 @@
     "Source/DafnyStandardLibraries/src/Std/Relations.md": "e8784d822e1058a3906077d215e2ebf839aeff111d1145d77cc11ebad512e905",
     "Source/DafnyStandardLibraries/src/Std/Functions.md": "90850dbe247e7331476917d6b3936d99ebf065cc1e55a66221c97c558a0c77ef",
     "Source/DafnyStandardLibraries/src/Std/Wrappers.md": "c0fcfe334f75db2af140f17b0dc0984051c441a15babdd1c8004f00de2414776",
-    "Source/DafnyStandardLibraries/src/Std/Base64.dfy": "6d3311e1be010403395ad2a05b60a258a46978c21f3b2eaca09e535fcac2fdf5",
+    "Source/DafnyStandardLibraries/src/Std/Base64.dfy": "949f9e88a20dd3fe7e5daaa8611af1a3541d8f837e309340d7c20026bbd2eba2",
     "Source/DafnyStandardLibraries/src/Std/Ordinal.md": "0cf2919e274b4939766cb01b6aca2951e75144eb7a3b998a41d748151cd38f59",
     "Source/DafnyStandardLibraries/src/Std/StatisticsExterns/ExternalMath.cs": "c76a088d711b98d8368759d07d978738a07d5ba459dd030618c07bfd58ec1298",
     "Source/DafnyStandardLibraries/src/Std/TargetSpecific/DateTimeUtils-notarget-cs.dfy": "618e55dab84253ed7f0733f77190985bb987924c1809dde1a907a5b0b7d46eb1",
@@ -112,7 +112,7 @@
     "Source/DafnyStandardLibraries/src/Std/Arithmetic/Logarithm.dfy": "08e65e363e5d0ac0bfb674cc8dcb50c0e9f18b42fae278d471e5835d0cee50e8",
     "Source/DafnyStandardLibraries/src/Std/Arithmetic/Mul.dfy": "3ee77cbaca57bdb22b80b3a6380eb60994a902598926e45a674eb38dc5ff526e",
     "Source/DafnyStandardLibraries/src/Std/Arithmetic/DivMod.dfy": "e1b23a814b64dfe8ffa72fdcda49a60e920c8538bdbbc04f7dfd0d5f81a37d55",
-    "Source/DafnyStandardLibraries/src/Std/Arithmetic/Power2.dfy": "768261ab4ccb01248f8852f2f35721ac103852c179f7f495d01a951a42659952",
+    "Source/DafnyStandardLibraries/src/Std/Arithmetic/Power2.dfy": "c299b54243a2c8fe3908eb574ee5ade2c92217d972f3fe0db61ab533aa7940a7",
     "Source/DafnyStandardLibraries/src/Std/Arithmetic/README.md": "642ca3b63cbf8342fbc6ab2f36f269c12bbb97e5c8a46bcf4899572af13c2757",
     "Source/DafnyStandardLibraries/src/Std/Arithmetic/LittleEndianNat.dfy": "2987eddac9bb1057801f0db71f1fe160fc553e1b7c34600ac6d59f792054f06c",
     "Source/DafnyStandardLibraries/src/Std/DateTimeExterns/ZonedDateTimeImpl.cs": "f7df8d28383bc888a1b5e19ac90ef3af5d0499e9c4368f3259e3d7565d23575a",
@@ -162,10 +162,273 @@
     "Source/DafnyStandardLibraries/src/Std/Arithmetic/Internal/MulInternalsNonlinear.dfy": "a9e4f91e111f8b085f35404ad3d5f9c445c084a0bf42455378fd417af5b0f81b",
     "Source/DafnyStandardLibraries/src/Std/Arithmetic/Internal/DivInternals.dfy": "34332d774149f3cc4984f0d4931d1cf6b343907bc3da70c6a23dca72ab559d50"
   },
+  "phases": [
+    {
+      "name": "Std",
+      "command": [
+        "dotnet",
+        "/home/runner/work/dafny/dafny/out/toolchain/dafny/Dafny.dll",
+        "build",
+        "-t:lib",
+        "src/Std/dfyconfig.toml",
+        "--output:/home/runner/work/dafny/dafny/Source/DafnyStandardLibraries/binaries/DafnyStandardLibraries.doo",
+        "--solver-path",
+        "/home/runner/work/dafny/dafny/out/solver/z3-4.16.0",
+        "--verification-time-limit",
+        "0",
+        "--cores",
+        "4",
+        "--additional-axioms:false",
+        "--consistent-obligation-checks:false",
+        "--hidden-no-verify=false",
+        "--log-format",
+        "json;LogFileName=/home/runner/work/dafny/dafny/out/archive-evidence/Std.json"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "TargetSpecific-notarget",
+      "command": [
+        "dotnet",
+        "/home/runner/work/dafny/dafny/out/toolchain/dafny/Dafny.dll",
+        "build",
+        "-t:lib",
+        "dfyconfig.toml",
+        "./ActionsExterns-notarget-java-cs-js-go-py.dfy",
+        "./ActionsExterns-notarget-java-cs.dfy",
+        "./Concurrent-notarget-cs.dfy",
+        "./Concurrent-notarget-java-cs-js-go-py.dfy",
+        "./DateTimeConstant-notarget-cs.dfy",
+        "./DateTimeUtils-notarget-cs.dfy",
+        "./Duration-notarget-cs.dfy",
+        "./FileIO3InternalExterns-notarget-java-cs-js-go-py.dfy",
+        "./FileIO5-notarget-java-cs-js-go-py.dfy",
+        "./LocalDateTime-notarget-cs.dfy",
+        "./Statistics-notarget-cs.dfy",
+        "./ZonedDateTime-notarget-cs.dfy",
+        "--output:/home/runner/work/dafny/dafny/Source/DafnyStandardLibraries/binaries/DafnyStandardLibraries-notarget.doo",
+        "--solver-path",
+        "/home/runner/work/dafny/dafny/out/solver/z3-4.16.0",
+        "--verification-time-limit",
+        "0",
+        "--cores",
+        "4",
+        "--additional-axioms:false",
+        "--consistent-obligation-checks:false",
+        "--hidden-no-verify=false",
+        "--log-format",
+        "json;LogFileName=/home/runner/work/dafny/dafny/out/archive-evidence/TargetSpecific-notarget.json"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "TargetSpecific-cs",
+      "command": [
+        "dotnet",
+        "/home/runner/work/dafny/dafny/out/toolchain/dafny/Dafny.dll",
+        "build",
+        "-t:lib",
+        "dfyconfig.toml",
+        "./ActionsExterns-notarget-java-cs-js-go-py.dfy",
+        "./ActionsExterns-notarget-java-cs.dfy",
+        "./Concurrent-notarget-cs.dfy",
+        "./Concurrent-notarget-java-cs-js-go-py.dfy",
+        "./DateTimeConstant-notarget-cs.dfy",
+        "./DateTimeUtils-notarget-cs.dfy",
+        "./Duration-notarget-cs.dfy",
+        "./FileIO2InternalExterns-java-cs-js.dfy",
+        "./FileIO3InternalExterns-notarget-java-cs-js-go-py.dfy",
+        "./FileIO5-notarget-java-cs-js-go-py.dfy",
+        "./LocalDateTime-notarget-cs.dfy",
+        "./Statistics-notarget-cs.dfy",
+        "./ZonedDateTime-notarget-cs.dfy",
+        "--output:/home/runner/work/dafny/dafny/Source/DafnyStandardLibraries/binaries/DafnyStandardLibraries-cs.doo",
+        "--solver-path",
+        "/home/runner/work/dafny/dafny/out/solver/z3-4.16.0",
+        "--verification-time-limit",
+        "0",
+        "--cores",
+        "4",
+        "--additional-axioms:false",
+        "--consistent-obligation-checks:false",
+        "--hidden-no-verify=false",
+        "--log-format",
+        "json;LogFileName=/home/runner/work/dafny/dafny/out/archive-evidence/TargetSpecific-cs.json"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "TargetSpecific-java",
+      "command": [
+        "dotnet",
+        "/home/runner/work/dafny/dafny/out/toolchain/dafny/Dafny.dll",
+        "build",
+        "-t:lib",
+        "dfyconfig.toml",
+        "./ActionsExterns-notarget-java-cs-js-go-py.dfy",
+        "./ActionsExterns-notarget-java-cs.dfy",
+        "./Concurrent-java.dfy",
+        "./Concurrent-notarget-java-cs-js-go-py.dfy",
+        "./FileIO2InternalExterns-java-cs-js.dfy",
+        "./FileIO3InternalExterns-notarget-java-cs-js-go-py.dfy",
+        "./FileIO5-notarget-java-cs-js-go-py.dfy",
+        "--output:/home/runner/work/dafny/dafny/Source/DafnyStandardLibraries/binaries/DafnyStandardLibraries-java.doo",
+        "--solver-path",
+        "/home/runner/work/dafny/dafny/out/solver/z3-4.16.0",
+        "--verification-time-limit",
+        "0",
+        "--cores",
+        "4",
+        "--additional-axioms:false",
+        "--consistent-obligation-checks:false",
+        "--hidden-no-verify=false",
+        "--log-format",
+        "json;LogFileName=/home/runner/work/dafny/dafny/out/archive-evidence/TargetSpecific-java.json"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "TargetSpecific-js",
+      "command": [
+        "dotnet",
+        "/home/runner/work/dafny/dafny/out/toolchain/dafny/Dafny.dll",
+        "build",
+        "-t:lib",
+        "dfyconfig.toml",
+        "./ActionsExterns-js-go-py.dfy",
+        "./ActionsExterns-notarget-java-cs-js-go-py.dfy",
+        "./Concurrent-js.dfy",
+        "./Concurrent-notarget-java-cs-js-go-py.dfy",
+        "./FileIO2InternalExterns-java-cs-js.dfy",
+        "./FileIO3InternalExterns-notarget-java-cs-js-go-py.dfy",
+        "./FileIO5-notarget-java-cs-js-go-py.dfy",
+        "--output:/home/runner/work/dafny/dafny/Source/DafnyStandardLibraries/binaries/DafnyStandardLibraries-js.doo",
+        "--solver-path",
+        "/home/runner/work/dafny/dafny/out/solver/z3-4.16.0",
+        "--verification-time-limit",
+        "0",
+        "--cores",
+        "4",
+        "--additional-axioms:false",
+        "--consistent-obligation-checks:false",
+        "--hidden-no-verify=false",
+        "--log-format",
+        "json;LogFileName=/home/runner/work/dafny/dafny/out/archive-evidence/TargetSpecific-js.json"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "TargetSpecific-go",
+      "command": [
+        "dotnet",
+        "/home/runner/work/dafny/dafny/out/toolchain/dafny/Dafny.dll",
+        "build",
+        "-t:lib",
+        "dfyconfig.toml",
+        "./ActionsExterns-js-go-py.dfy",
+        "./ActionsExterns-notarget-java-cs-js-go-py.dfy",
+        "./Concurrent-go.dfy",
+        "./Concurrent-notarget-java-cs-js-go-py.dfy",
+        "./FileIO1InternalExterns-go.dfy",
+        "./FileIO3InternalExterns-notarget-java-cs-js-go-py.dfy",
+        "./FileIO5-notarget-java-cs-js-go-py.dfy",
+        "--output:/home/runner/work/dafny/dafny/Source/DafnyStandardLibraries/binaries/DafnyStandardLibraries-go.doo",
+        "--solver-path",
+        "/home/runner/work/dafny/dafny/out/solver/z3-4.16.0",
+        "--verification-time-limit",
+        "0",
+        "--cores",
+        "4",
+        "--additional-axioms:false",
+        "--consistent-obligation-checks:false",
+        "--hidden-no-verify=false",
+        "--log-format",
+        "json;LogFileName=/home/runner/work/dafny/dafny/out/archive-evidence/TargetSpecific-go.json"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "TargetSpecific-py",
+      "command": [
+        "dotnet",
+        "/home/runner/work/dafny/dafny/out/toolchain/dafny/Dafny.dll",
+        "build",
+        "-t:lib",
+        "dfyconfig.toml",
+        "./ActionsExterns-js-go-py.dfy",
+        "./ActionsExterns-notarget-java-cs-js-go-py.dfy",
+        "./Concurrent-notarget-java-cs-js-go-py.dfy",
+        "./Concurrent-py.dfy",
+        "./FileIO3InternalExterns-notarget-java-cs-js-go-py.dfy",
+        "./FileIO4InternalExterns-py.dfy",
+        "./FileIO5-notarget-java-cs-js-go-py.dfy",
+        "--output:/home/runner/work/dafny/dafny/Source/DafnyStandardLibraries/binaries/DafnyStandardLibraries-py.doo",
+        "--solver-path",
+        "/home/runner/work/dafny/dafny/out/solver/z3-4.16.0",
+        "--verification-time-limit",
+        "0",
+        "--cores",
+        "4",
+        "--additional-axioms:false",
+        "--consistent-obligation-checks:false",
+        "--hidden-no-verify=false",
+        "--log-format",
+        "json;LogFileName=/home/runner/work/dafny/dafny/out/archive-evidence/TargetSpecific-py.json"
+      ],
+      "exit": 0
+    },
+    {
+      "name": "Arithmetic",
+      "command": [
+        "dotnet",
+        "/home/runner/work/dafny/dafny/out/toolchain/dafny/Dafny.dll",
+        "build",
+        "-t:lib",
+        "src/Std/Arithmetic/DivMod.dfy",
+        "src/Std/Arithmetic/Internal/DivInternals.dfy",
+        "src/Std/Arithmetic/Internal/DivInternalsNonlinear.dfy",
+        "src/Std/Arithmetic/Internal/GeneralInternals.dfy",
+        "src/Std/Arithmetic/Internal/ModInternals.dfy",
+        "src/Std/Arithmetic/Internal/ModInternalsNonlinear.dfy",
+        "src/Std/Arithmetic/Internal/MulInternals.dfy",
+        "src/Std/Arithmetic/Internal/MulInternalsNonlinear.dfy",
+        "src/Std/Arithmetic/LittleEndianNat.dfy",
+        "src/Std/Arithmetic/Logarithm.dfy",
+        "src/Std/Arithmetic/Mul.dfy",
+        "src/Std/Arithmetic/Power.dfy",
+        "src/Std/Arithmetic/Power2.dfy",
+        "src/Std/Collections/Seq.dfy",
+        "src/Std/Wrappers.dfy",
+        "src/Std/Relations.dfy",
+        "src/Std/Math.dfy",
+        "--output:/home/runner/work/dafny/dafny/Source/DafnyStandardLibraries/binaries/DafnyStandardLibraries-arithmetic.doo",
+        "--solver-path",
+        "/home/runner/work/dafny/dafny/out/solver/z3-4.16.0",
+        "--verification-time-limit",
+        "0",
+        "--cores",
+        "4",
+        "--additional-axioms:false",
+        "--consistent-obligation-checks:false",
+        "--hidden-no-verify=false",
+        "--resource-limit",
+        "5000000",
+        "--enforce-determinism",
+        "--reads-clauses-on-methods",
+        "--track-print-effects",
+        "--type-system-refresh",
+        "--general-newtypes",
+        "--general-traits:datatype",
+        "--log-format",
+        "json;LogFileName=/home/runner/work/dafny/dafny/out/archive-evidence/Arithmetic.json"
+      ],
+      "exit": 0
+    }
+  ],
   "archives": {
     "DafnyStandardLibraries.doo": {
-      "sha256": "989d34f535a4ff0c10628ab294610e2e2b0114fb441c13a9d896876f79d580bb",
-      "program_sha256": "6861c29fcdf77d59e959f7ad86b93f2f8bbd2776fa867bbfc82345cc769996a6",
+      "sha256": "ffe7f9f461a690cd94f7d47eea39ea574350b58a0e307a80a78a15ae51fa55f1",
+      "program_sha256": "eba83798818c8bf948fb572aed477502909f0a6730b6ce0511b8c6e12920417a",
       "manifest": {
         "doo_file_version": "1.0",
         "dafny_version": "4.11.1.0",
@@ -202,10 +465,10 @@
       },
       "declarations": 2313,
       "vc_batches": 8144,
-      "resource_units": 1286961817
+      "resource_units": 1281181134
     },
     "DafnyStandardLibraries-notarget.doo": {
-      "sha256": "9efedc2734d29d0475fe5d527d0656bfa5975aa440cc3107fcfaff8c9a6e5fa9",
+      "sha256": "ce24b3c741a9e725bfa45077b5c49357b70f5ddeda65fd780dfb28d5f1cc189d",
       "program_sha256": "f954368819a43f9ea75cd4cfe622cd0f6715546bb62fcdd48dac083ea078df1f",
       "manifest": {
         "doo_file_version": "1.0",
@@ -243,10 +506,10 @@
       },
       "declarations": 127,
       "vc_batches": 132,
-      "resource_units": 6514197
+      "resource_units": 6512017
     },
     "DafnyStandardLibraries-cs.doo": {
-      "sha256": "0fffec4cf4882dfa9a6b62be6e2a38e34c536d7a494b5c398f44494009343201",
+      "sha256": "868451ceed32db087e5b8a33f6e833a8e29608b3d86252524cba3a27b8bd1a58",
       "program_sha256": "1df5658ab2bca2632535d7f2579a4ded2283093a0dcdd3f8d7a7b46a43967501",
       "manifest": {
         "doo_file_version": "1.0",
@@ -284,10 +547,10 @@
       },
       "declarations": 127,
       "vc_batches": 132,
-      "resource_units": 6514191
+      "resource_units": 6514185
     },
     "DafnyStandardLibraries-java.doo": {
-      "sha256": "bd531271a16e342c43c4bcda7be0ee3bc8cf8e9bc950077e71d3c888a88016da",
+      "sha256": "0e6c2746cfaa841b507796f7c00f6fa37aad39469be5fca3adf1160193dd86c8",
       "program_sha256": "13f9a5c5c2efe8b05d2eff2047030c22a76c734361bb17d59d7cc34bd9c19c78",
       "manifest": {
         "doo_file_version": "1.0",
@@ -328,7 +591,7 @@
       "resource_units": 957558
     },
     "DafnyStandardLibraries-js.doo": {
-      "sha256": "d9f71276e8895e05d1d616caa3dc1132f5f509952c532a18fb46a495892cefb1",
+      "sha256": "8226be0a8cad66942d927b202cb0690a12ad37c476ec84bf96d8e0ccad7b56a3",
       "program_sha256": "f4fd7f8d4fd451bf28157bb5fa892b9b6364973a3f001d6c95880cb1b8deb0c8",
       "manifest": {
         "doo_file_version": "1.0",
@@ -369,7 +632,7 @@
       "resource_units": 1605183
     },
     "DafnyStandardLibraries-go.doo": {
-      "sha256": "9d6e8befa7edf1710c9a0cb2e26528b0273ee1cd57564f53a2a918aa9aa1328a",
+      "sha256": "a3369fa8d42aeec117e77e3383442f7daff956805280ca00518066cce31c4aa6",
       "program_sha256": "50bd5faadf6905e62e08ae0b4531420ff88e66d6c6516d587b5fdb1d978f52da",
       "manifest": {
         "doo_file_version": "1.0",
@@ -410,7 +673,7 @@
       "resource_units": 1019061
     },
     "DafnyStandardLibraries-py.doo": {
-      "sha256": "324c1f5991af42d5c7ac000c81d9370de6ce41e719160a5d6cde2ebfab3bca1a",
+      "sha256": "af4a61d9b5d38c0b9ea91e18bd82fdc90bc15f0abaaf0b5b3061a5ad859779a1",
       "program_sha256": "b735384f8b2b52ae5cefc6fcd24e8ca839619d574718a0f5fa4e8e432d778ae7",
       "manifest": {
         "doo_file_version": "1.0",
@@ -451,8 +714,8 @@
       "resource_units": 1019061
     },
     "DafnyStandardLibraries-arithmetic.doo": {
-      "sha256": "24b27839420f63c6721d65213b6449e4aea4366c5109e8d0cac1cb3b84d3c0d5",
-      "program_sha256": "4841147dbdb3f1a7748289f35f6d85f07df82851625609e5b798c2ec76e81699",
+      "sha256": "3ac463400178e9f0411986507a3efe8407fa80d146f5e79e8f8a5b513b68d8c2",
+      "program_sha256": "1d8e4006ec558e704e89a300ef9f087e4c528cb15ac187966c590c42de5a6f06",
       "manifest": {
         "doo_file_version": "1.0",
         "dafny_version": "4.11.1.0",
@@ -489,15 +752,16 @@
       },
       "declarations": 646,
       "vc_batches": 1219,
-      "resource_units": 52928203
+      "resource_units": 52084708
     }
   },
   "complete": true,
-  "prior_generation_source": "8d036639840c405690602a5efab1e05da0f70cc5",
-  "generation_run": "https://github.com/erniecohen/dafny/actions/runs/38153632234",
-  "seven_archive_proof_run": "https://github.com/erniecohen/dafny/actions/runs/38152826574",
-  "prior_arithmetic_failure": "Arithmetic initially rejected LittleEndianNat because Collections.Seq was absent from the standalone input. The certified rebuild includes Seq, Wrappers, Relations and Math at the explicit 5,000,000 RU ceiling.",
-  "proof_policy": "hidden-no-verify=false and no-verify=false; actual exit 0, nonempty Correct declarations and all Valid VCs in every archive. Supporting definitions are included.",
-  "denominator_policy": "Native archive log declarations and VCs are measured here. They differ from lit/std-verdict summary denominators and do not certify another command profile.",
-  "inherited_helper_policy": "Encode1PaddingIs1Padding retains the supported-source resource_limit 0. No new resource override was introduced."
+  "evidence_url": "https://github.com/erniecohen/dafny/actions/runs/38155259350",
+  "scope": "Complete fresh native verified generation of all eight committed archives at the final proof input hashes. Exact-head normal CI with these new bytes remains required.",
+  "previous_certification": {
+    "source": "6e28abce2c6b00cb1b7314aac514351fdd8b1e9d",
+    "url": "https://github.com/erniecohen/dafny/actions/runs/38153632234",
+    "scope": "Historical pre-final-bridge proof source certification; no claim for changed inputs."
+  },
+  "inherited_unlimited_helper": "Std.Base64.Encode1PaddingIs1Padding retains the supported-line resource_limit0; no new resource override was introduced."
 }
