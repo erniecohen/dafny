@@ -909,20 +909,34 @@ module Std.Base64 {
   lemma EncodeBVIsBase64(b: seq<bv8>)
     ensures IsBase64String(EncodeBV(b))
   {
-    EncodeBVLengthExact(b);
-    if |EncodeBV(b)| < 4 {
-    } else if |b| % 3 == 0 {
+    EncodeBVLengthCongruentToZeroMod4(b);
+    var s := EncodeBV(b);
+    if |b| % 3 == 0 {
       EncodeUnpaddedBase64(b);
+      assert IsUnpaddedBase64String(s);
     } else if |b| % 3 == 1 {
       var bStart := b[..(|b| - 1)];
       var bEnd := b[(|b| - 1)..];
       EncodeUnpaddedBase64(bStart);
       Encode2PaddingIs2Padding(bEnd);
+      var prefix, padding := EncodeUnpadded(bStart), Encode2Padding(bEnd);
+      // The final four characters are exactly the independently certified padding.
+      assert s == prefix + padding;
+      assert s[..(|s| - 4)] == prefix;
+      assert s[(|s| - 4)..] == padding;
+      assert IsUnpaddedBase64String(s[..(|s| - 4)]);
+      assert Is2Padding(s[(|s| - 4)..]);
     } else {
       var bStart := b[..(|b| - 2)];
       var bEnd := b[(|b| - 2)..];
       EncodeUnpaddedBase64(bStart);
       Encode1PaddingIs1Padding(bEnd);
+      var prefix, padding := EncodeUnpadded(bStart), Encode1Padding(bEnd);
+      assert s == prefix + padding;
+      assert s[..(|s| - 4)] == prefix;
+      assert s[(|s| - 4)..] == padding;
+      assert IsUnpaddedBase64String(s[..(|s| - 4)]);
+      assert Is1Padding(s[(|s| - 4)..]);
     }
   }
 
