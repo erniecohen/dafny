@@ -1,0 +1,45 @@
+name: Full integration verified library archive generation
+on:
+  push:
+    branches: ['scratch/codex/full-main-to-dev-probes']
+    paths: ['.github/workflows/full-integration-archives.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  archives:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-build-integrated
+          run-id: 38139291400
+          github-token: ${{ github.token }}
+          path: out/download
+      - name: Install immutable compiler and authorized archive solver
+        run: |
+          mkdir -p out/toolchain
+          tar -C out/toolchain -xzf out/download/dafny.tar.gz
+          curl -fsSLo z3.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.16.0-x64-ubuntu-24.04-bin.zip
+          echo '87de9c9e86c877abfccb00cf24b946c4a1bda7b9cba6f363ea58311d2573c320  z3.zip' | sha256sum -c -
+          unzip -q z3.zip -d out/solver
+          chmod +x out/solver/z3-4.16.0
+          echo "Z3=$PWD/out/solver/z3-4.16.0" >> "$GITHUB_ENV"
+      - name: Preserve actual verified archive outcomes
+        env:
+          ARCHIVE_SOLVER_VERSION: '4.16.0'
+        run: python3 .github/review/full-integration-archives.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-verified-library-archives
+          path: |
+            out/archive-evidence
+            Source/DafnyStandardLibraries/binaries/*.doo
+          retention-days: 30
