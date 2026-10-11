@@ -34,7 +34,7 @@ jobs:
           echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
           unzip -q z3.zip
           echo "Z3=$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" >> "$GITHUB_ENV"
-      - name: Preserve exact ON reference outcomes
+      - name: Preserve exact ON reference outcomes through the immutable launcher
         env:
           COMPILER_SOURCE: ${{ matrix.source }}
         run: python3 .github/review/full-integration-on-reference.py
