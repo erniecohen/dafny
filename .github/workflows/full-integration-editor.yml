@@ -1,0 +1,68 @@
+name: Full integration editor source and SDK diagnostics
+on:
+  push:
+    branches: ['scratch/codex/full-main-to-dev']
+    paths: ['.github/workflows/full-integration-editor.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  editor:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [feature-port-sdk8, feature-port-sdk10, supported-sdk10, integrated-sdk10]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ startsWith(matrix.source, 'feature-port') && '9029c0461d13aa73d7c40dddd260a26db65deaef' || matrix.source == 'supported-sdk10' && '1256f92b0b494e8f1bf52aaec145d36a8a862f33' || github.sha }}
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Capture instrumented editor test and explicit SDK comparison
+        env:
+          DIAGNOSTIC_SOURCE: ${{ matrix.source }}
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess,urllib.request,zipfile
+          root=pathlib.Path('out/editor-diagnostic');root.mkdir(parents=True,exist_ok=True)
+          source=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          kind=os.environ['DIAGNOSTIC_SOURCE'];rows=[]
+          if kind=='feature-port-sdk10':
+              path=pathlib.Path('global.json');config=json.loads(path.read_text());config['sdk']={'version':'10.0.100','rollForward':'latestMinor'};path.write_text(json.dumps(config,indent=2)+'\n')
+          path=pathlib.Path('Source/DafnyLanguageServer.Test/ProjectFiles/ConsistentObligationChecksTest.cs')
+          original=path.read_text();text=original.replace(': base(output) { }',': base(output, Microsoft.Extensions.Logging.LogLevel.Trace) { }')
+          text=text.replace('await SetUp(options => {','output.WriteLine("Diagnostic: starting setup");\n    await SetUp(options => {')
+          text=text.replace('var directory = GetFreshTempPath();','output.WriteLine("Diagnostic: setup complete");\n    var directory = GetFreshTempPath();')
+          text=text.replace('var document = await CreateOpenAndWaitForResolve','output.WriteLine("Diagnostic: opening document");\n    var document = await CreateOpenAndWaitForResolve')
+          text=text.replace('Assert.Contains(await GetLastDiagnostics(document),','output.WriteLine("Diagnostic: initial resolve complete");\n    Assert.Contains(await GetLastDiagnostics(document),')
+          path.write_text(text)
+          (root/'diagnostic-source.patch').write_text(subprocess.check_output(['git','diff'],text=True))
+          def phase(name,command):
+              with (root/(name+'.txt')).open('w') as output:
+                  result=subprocess.run(command,stdout=output,stderr=subprocess.STDOUT)
+              rows.append({'name':name,'command':command,'exit':result.returncode});print(name,'actual exit',result.returncode,flush=True)
+              return result.returncode
+          if pathlib.Path('Scripts/fetch-boogie-packages.sh').exists():phase('fixed-packages',['sh','Scripts/fetch-boogie-packages.sh'])
+          archive=root/'z3.zip';urllib.request.urlretrieve('https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip',archive)
+          assert hashlib.sha256(archive.read_bytes()).hexdigest()=='f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a'
+          with zipfile.ZipFile(archive) as z:z.extractall(root)
+          solver=(root/'z3-5.1.0-x64-glibc-2.39/bin/z3').resolve();solver.chmod(0o755)
+          os.environ['Z3']=str(solver);os.environ['PATH']=str(solver.parent)+os.pathsep+os.environ['PATH']
+          phase('editor',['dotnet','test','Source/DafnyLanguageServer.Test','-c','Release','--filter','FullyQualifiedName~ConsistentObligationChecksTest','--logger','console;verbosity=detailed','--logger','trx;LogFileName=tests.trx','--results-directory',str(root.resolve()),'-p:SourceRevisionId='+source[:8]])
+          (root/'receipt.json').write_text(json.dumps({'source':source,'case':kind,'diagnostic':True,'instrumentation':'Trace logging and checkpoint messages only; feature-port-sdk10 additionally selects SDK10 while preserving net8 target','dotnet':subprocess.check_output(['dotnet','--info'],text=True),'solver':subprocess.check_output([str(solver),'--version'],text=True),'phases':rows},indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-editor-${{ matrix.source }}
+          path: out/editor-diagnostic
+          retention-days: 14
