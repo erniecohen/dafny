@@ -1692,6 +1692,10 @@ module Std.Producers {
       }
 
       assert old(State()).ValidChange(State());
+      assert old(Valid()) && Valid();
+      assert fresh(Repr - old(Repr));
+      assert old(history) <= history;
+      assert ValidChange();
 
       assert Ensures(t, result);
     }
