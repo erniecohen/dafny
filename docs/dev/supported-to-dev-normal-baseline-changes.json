@@ -304,5 +304,24 @@
       "actual": "git-issues/github-issue-39.dfy\t4\t11 verified, 15 errors\t21,26,32,38,44,52,61,66,105,110,114,118,122,126,152",
       "explanation": "Computing a receiver is checked even when the selected member is static. Invalid receivers in match branches now expose their index/precondition obligations at 26, 32, 38, 44, 52, 61, 66, 105, 110, 114, 118, 122 and 126. The earlier failures at 21 and 152 remain; supported regression positives are retained."
     }
-  ]
+  ],
+  "restored_accepted_coverage": {
+    "source_commit": "22f493a74ba2c0e5f4e1abca1eac7ef634460dc3",
+    "reference": "https://github.com/erniecohen/dafny/actions/runs/38154959043",
+    "rows": [
+      {
+        "program": "git-issues/git-issue-141-original-control.dfy",
+        "before": "git-issues/git-issue-141-original-control.dfy\t4\t1 verified, 1 error\t17",
+        "actual": "git-issues/git-issue-141-original-control.dfy\t4\t1 verified, 1 error\t19",
+        "explanation": "Restore accepted main explicit axiom OFF/ON RUN pairs, moving the identical sole invalid control back two lines. Fresh native four-profile capture38154959043 preserves exit4, one Correct/Valid and one Errors/Invalid declaration/VC per mode."
+      },
+      {
+        "program": "git-issues/git-issue-141-original.dfy",
+        "before": "git-issues/git-issue-141-original.dfy\t4\t1 verified, 1 error\t9",
+        "actual": "git-issues/git-issue-141-original.dfy\t4\t1 verified, 1 error\t11",
+        "explanation": "Restore accepted main explicit axiom OFF/ON RUN pairs, moving the identical sole invalid control back two lines. Fresh native four-profile capture38154959043 preserves exit4, one Correct/Valid and one Errors/Invalid declaration/VC per mode."
+      }
+    ],
+    "normal_acceptance": "Pending exact-head complete normal capture; focused four-profile native strict checks all passed."
+  }
 }

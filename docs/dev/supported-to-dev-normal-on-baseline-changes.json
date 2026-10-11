@@ -15,10 +15,7 @@
     "unchanged_source_language_attribution": 37,
     "changed_source_attribution": 19
   },
-  "pending_final_source_delta": [
-    "git-issues/git-issue-141-original.dfy",
-    "git-issues/git-issue-141-original-control.dfy"
-  ],
+  "pending_final_source_delta": [],
   "acceptance_scope": "Historical individual stale supported-ON oracle reconciliation to preserved dev sources/language defaults. Diagnostic verdict sampling is not complete lit-test or positive-proof acceptance. Resource failures and every negative control remain visible. No library/benchmark input edits or ceilings are introduced by the baseline update.",
   "rows": [
     {
@@ -168,7 +165,7 @@
       "kind": "added",
       "before": null,
       "actual": "dafny0/Fp32EqualityErrors.dfy\t4\t15 verified, 15 errors\t23,30,87,100,109,116,178,197,237,246,255",
-      "explanation": "Preserved upstream IEEE equality negative controls distinguish NaN and signed-zero comparisons. Every intended false assertion has an actual Invalid VC; the accompanying compatible equality declarations are Correct.",
+      "explanation": "Preserved upstream IEEE equality negative controls distinguish NaN and signed-zero comparisons. Fifteen source diagnostics are grouped into eleven Errors declarations/eleven Invalid VC batches; the other fifteen declarations and VC batches are Correct/Valid. The diagnostic count is not a count of separately checked VC batches.",
       "native_evidence": {
         "supported": {
           "verdict": null,
@@ -348,7 +345,7 @@
       "kind": "added",
       "before": null,
       "actual": "dafny0/Fp32Wellformedness.dfy\t4\t1 verified, 11 errors\t6,7,8,9,15,23,30,34,35",
-      "explanation": "Preserved upstream IEEE arithmetic and NaN well-formedness negative controls reach the verifier. The eleven intended invalid precondition/WF checks are actual Invalid VCs and the positive declaration is Correct.",
+      "explanation": "Preserved upstream IEEE arithmetic and NaN well-formedness negative controls reach the verifier. Eleven source diagnostics are grouped into four Errors declarations/four Invalid VC batches; the positive declaration has one Valid VC. The diagnostic count is not a count of separately checked VC batches.",
       "native_evidence": {
         "supported": {
           "verdict": null,
@@ -496,7 +493,7 @@
       "kind": "added",
       "before": null,
       "actual": "dafny0/Fp64EqualityErrors.dfy\t4\t15 verified, 15 errors\t23,30,87,100,109,116,178,197,237,246,255",
-      "explanation": "Preserved upstream IEEE equality negative controls distinguish NaN and signed-zero comparisons. Every intended false assertion has an actual Invalid VC; the accompanying compatible equality declarations are Correct.",
+      "explanation": "Preserved upstream IEEE equality negative controls distinguish NaN and signed-zero comparisons. Fifteen source diagnostics are grouped into eleven Errors declarations/eleven Invalid VC batches; the other fifteen declarations and VC batches are Correct/Valid. The diagnostic count is not a count of separately checked VC batches.",
       "native_evidence": {
         "supported": {
           "verdict": null,
@@ -644,7 +641,7 @@
       "kind": "added",
       "before": null,
       "actual": "dafny0/Fp64Wellformedness.dfy\t4\t1 verified, 11 errors\t6,7,8,9,15,23,30,34,35",
-      "explanation": "Preserved upstream IEEE arithmetic and NaN well-formedness negative controls reach the verifier. The eleven intended invalid precondition/WF checks are actual Invalid VCs and the positive declaration is Correct.",
+      "explanation": "Preserved upstream IEEE arithmetic and NaN well-formedness negative controls reach the verifier. Eleven source diagnostics are grouped into four Errors declarations/four Invalid VC batches; the positive declaration has one Valid VC. The diagnostic count is not a count of separately checked VC batches.",
       "native_evidence": {
         "supported": {
           "verdict": null,
@@ -2364,7 +2361,9 @@
         }
       },
       "current_source_sha256": "a00b9cbfc9a338de42e4ece0c520f4859900be972b6eb3731cdb88cc54fe328e",
-      "final_source_boundary": "Restored source22f493a74 differs from the historical capture; final paired-mode evidence and oracle rows are required."
+      "final_source_boundary": "Accepted main source restored22f; all four native strict profiles passed38154959043. Candidate final row equals old supported row; final complete normal capture remains pending.",
+      "superseded_historical_actual": "git-issues/git-issue-141-original-control.dfy\t4\t1 verified, 1 error\t17",
+      "candidate_oracle_actual": "git-issues/git-issue-141-original-control.dfy\t4\t1 verified, 1 error\t19"
     },
     {
       "program": "git-issues/git-issue-141-original.dfy",
@@ -2403,7 +2402,9 @@
         }
       },
       "current_source_sha256": "df8bdec868bd9763927a5aa956d88393008c8d58a88aadbe29df00a74803e8f3",
-      "final_source_boundary": "Restored source22f493a74 differs from the historical capture; final paired-mode evidence and oracle rows are required."
+      "final_source_boundary": "Accepted main source restored22f; all four native strict profiles passed38154959043. Candidate final row equals old supported row; final complete normal capture remains pending.",
+      "superseded_historical_actual": "git-issues/git-issue-141-original.dfy\t4\t1 verified, 1 error\t9",
+      "candidate_oracle_actual": "git-issues/git-issue-141-original.dfy\t4\t1 verified, 1 error\t11"
     },
     {
       "program": "git-issues/git-issue-1545.dfy",
@@ -3377,5 +3378,25 @@
       },
       "current_source_sha256": "10906d178ede00078b578f94c4dec3251d6d2c5329d8c6d9618276b33ad98e89"
     }
-  ]
+  ],
+  "restored_accepted_coverage": {
+    "source_commit": "22f493a74ba2c0e5f4e1abca1eac7ef634460dc3",
+    "reference": "https://github.com/erniecohen/dafny/actions/runs/38154959043",
+    "rows": [
+      {
+        "program": "git-issues/git-issue-141-original-control.dfy",
+        "before": "git-issues/git-issue-141-original-control.dfy\t4\t1 verified, 1 error\t17",
+        "actual": "git-issues/git-issue-141-original-control.dfy\t4\t1 verified, 1 error\t19",
+        "explanation": "Restore accepted main explicit axiom OFF/ON RUN pairs, moving the identical sole invalid control back two lines. Fresh native four-profile capture38154959043 preserves exit4, one Correct/Valid and one Errors/Invalid declaration/VC per mode."
+      },
+      {
+        "program": "git-issues/git-issue-141-original.dfy",
+        "before": "git-issues/git-issue-141-original.dfy\t4\t1 verified, 1 error\t9",
+        "actual": "git-issues/git-issue-141-original.dfy\t4\t1 verified, 1 error\t11",
+        "explanation": "Restore accepted main explicit axiom OFF/ON RUN pairs, moving the identical sole invalid control back two lines. Fresh native four-profile capture38154959043 preserves exit4, one Correct/Valid and one Errors/Invalid declaration/VC per mode."
+      }
+    ],
+    "normal_acceptance": "Pending exact-head complete normal capture; focused four-profile native strict checks all passed."
+  },
+  "candidate_oracle_scope": "Historical exact capture rows, except both141 rows restored to accepted main locations11/19 based on complete strict native OFF/ON profiles. Final exact-head normal acceptance remains pending; historical80 differs from final78 because both restored141 rows equal the original supported oracle."
 }
