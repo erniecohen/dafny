@@ -22,16 +22,22 @@ jobs:
         with:
           ref: ${{ matrix.mode == 'baseline' && '858e4bfbcf00fbf0146255c0a4b0efdfc4deb66f' || github.sha }}
       - uses: actions/setup-dotnet@v4
+        if: matrix.mode == 'baseline'
         with:
           dotnet-version: 8.0.x
+      - uses: ./.github/actions/setup-dotnet
+        if: matrix.mode != 'baseline'
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+      - name: Fixed Boogie packages
+        if: matrix.mode == 'candidate'
+        run: sh Scripts/fetch-boogie-packages.sh
       - name: Build native command and preserve source identity
         run: |
           revision=$(git rev-parse --short=8 HEAD)
-          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:SourceRevisionId="$revision"
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false -p:SourceRevisionId="$revision"
           dotnet out/dafny/Dafny.dll --version | tee out/dafny-version.txt
           git rev-parse HEAD > out/source.txt
           tar -C out -czf dafny.tar.gz dafny dafny-version.txt source.txt
@@ -47,13 +53,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: [baseline, off, on]
+        mode: [baseline, off, on, off-axioms, on-axioms]
         shard: [0, 1, 2, 3]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+      - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: dev-build-${{ matrix.mode == 'baseline' && 'baseline' || 'candidate' }}
@@ -82,12 +86,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: [baseline, off, on]
+        mode: [baseline, off, on, off-axioms, on-axioms]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+      - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: dev-build-${{ matrix.mode == 'baseline' && 'baseline' || 'candidate' }}

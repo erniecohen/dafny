@@ -44,10 +44,11 @@ public abstract class NumericAncestryTestFixture {
 
   protected static void AssertClassification(Type type, Type.NumericAncestryKind expected) {
     Assert.Equal(expected, type.ClassifyNumericAncestry().Kind);
-    Assert.Equal(expected is Type.NumericAncestryKind.Integer or Type.NumericAncestryKind.Real,
+    Assert.Equal(expected is Type.NumericAncestryKind.Integer or Type.NumericAncestryKind.Real or Type.NumericAncestryKind.Float,
       type.IsNumericBased());
     Assert.Equal(expected == Type.NumericAncestryKind.Integer, type.IsNumericBased(Type.NumericPersuasion.Int));
     Assert.Equal(expected == Type.NumericAncestryKind.Real, type.IsNumericBased(Type.NumericPersuasion.Real));
+    Assert.Equal(expected == Type.NumericAncestryKind.Float, type.IsNumericBased(Type.NumericPersuasion.Float));
   }
 
 }

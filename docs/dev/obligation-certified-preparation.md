@@ -1,3 +1,7 @@
+> The following port/reference records are historical. Current combined-dev
+> source identities, inventory and acceptance evidence belong to
+> [the full integration report](supported-to-dev-integration.md).
+
 # Declared-contract preparation argument
 
 This argument is adapted from the final implementation merged in #168 as

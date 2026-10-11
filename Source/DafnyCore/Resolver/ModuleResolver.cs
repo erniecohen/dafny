@@ -62,7 +62,8 @@ namespace Microsoft.Dafny {
       return persuasion switch {
         Type.NumericPersuasion.Int => ancestry.Kind == Type.NumericAncestryKind.Integer,
         Type.NumericPersuasion.Real => ancestry.Kind == Type.NumericAncestryKind.Real,
-        _ => ancestry.Kind is Type.NumericAncestryKind.Integer or Type.NumericAncestryKind.Real
+        Type.NumericPersuasion.Float => ancestry.Kind == Type.NumericAncestryKind.Float,
+        _ => ancestry.Kind is Type.NumericAncestryKind.Integer or Type.NumericAncestryKind.Real or Type.NumericAncestryKind.Float
       };
     }
 

@@ -7,7 +7,9 @@ dev `858e4bfbcf00fbf0146255c0a4b0efdfc4deb66f`, completed #169 port
 The [coverage map](supported-to-dev-coverage.json) records all 127 nonmerge
 supported commits and 52 supported PRs from public Git and GitHub metadata.
 The merge retains full supported history and reconciles source overlaps.
-The integration remains under validation.
+The integration remains under validation. Existing dev counterparts are listed
+individually in the map, including the partial #136/#162 relationship; no
+counterpart is treated as blanket source equality.
 
 ## Source adaptations
 

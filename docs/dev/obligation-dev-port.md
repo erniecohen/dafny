@@ -1,3 +1,9 @@
+> Historical partial-port evidence at `9029c046`. The full supported-line
+> integration is governed by [the current integration report](supported-to-dev-integration.md).
+> Its fixed Boogie/.NET 10 source boundary has removed the old original-proof
+> acceptance exception and requires fresh independent validation. Neither these
+> old dev receipts nor imported supported-line receipts certify the combined tree.
+
 # Development port of consistent obligation checks
 
 This draft adapts the final reviewed implementation from #168 (1256f92b) to

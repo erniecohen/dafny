@@ -1,3 +1,7 @@
+> The following port/reference records are historical. Current combined-dev
+> source identities, inventory and acceptance evidence belong to
+> [the full integration report](supported-to-dev-integration.md).
+
 # Local obligation lowering
 
 This development port follows the final reviewed design merged in #168 as

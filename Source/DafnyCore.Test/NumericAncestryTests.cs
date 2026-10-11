@@ -17,6 +17,17 @@ public class NumericAncestryTests : NumericAncestryTestFixture {
   }
 
   [Fact]
+  public void FloatingPointCarriersSurviveCycleSafeNewtypeAncestry() {
+    foreach (var carrier in new Type[] { new Fp32Type(), new Fp64Type() }) {
+      var (type, declaration) = Chain("Floating", carrier, 2048);
+      AssertClassification(type, Type.NumericAncestryKind.Float);
+      Assert.Same(carrier, type.NormalizeToAncestorType());
+      declaration.BaseType = type;
+      AssertClassification(type, Type.NumericAncestryKind.Cyclic);
+    }
+  }
+
+  [Fact]
   public void NonNumericScalarFamiliesStaySeparate() {
     foreach (var type in new Type[] { Type.Bool, Type.Char, Type.BigOrdinal, new BitvectorType(Token.NoToken, 8) }) {
       AssertClassification(type, Type.NumericAncestryKind.NonNumeric);

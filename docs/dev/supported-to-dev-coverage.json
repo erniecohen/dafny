@@ -1057,5 +1057,119 @@
       "title": "Check implicit obligations once with assertion-equivalent local lowering (#168)",
       "integration": "history-preserved; source overlaps reconciled"
     }
+  ],
+  "existing_dev_counterparts": [
+    {
+      "supported_pr": 17,
+      "dev_pr": {
+        "mergeCommit": {
+          "oid": "1e58f52cb8baef688a8bf69bfa362568b8e8ba65"
+        },
+        "number": 18,
+        "state": "MERGED",
+        "title": "[CI only] dev: verify the standard library, and record each declaration's verdict",
+        "url": "https://github.com/erniecohen/dafny/pull/18"
+      },
+      "relationship": "paired accepted change",
+      "reconciliation": "Retain dev-specific implementation and reconcile supported regression/source additions; counterpart is not source equality."
+    },
+    {
+      "supported_pr": 80,
+      "dev_pr": {
+        "mergeCommit": {
+          "oid": "97601b75712f458de37a13bf9953a0b7825122eb"
+        },
+        "number": 79,
+        "state": "MERGED",
+        "title": "Reject expansive general-trait representations before translation",
+        "url": "https://github.com/erniecohen/dafny/pull/79"
+      },
+      "relationship": "paired accepted change",
+      "reconciliation": "Retain dev-specific implementation and reconcile supported regression/source additions; counterpart is not source equality."
+    },
+    {
+      "supported_pr": 154,
+      "dev_pr": {
+        "mergeCommit": {
+          "oid": "3df67ed63eabf44e090dcbbc76f42c04f93e8cb8"
+        },
+        "number": 151,
+        "state": "MERGED",
+        "title": "Fix Python discriminator properties on generic datatypes",
+        "url": "https://github.com/erniecohen/dafny/pull/151"
+      },
+      "relationship": "paired accepted change",
+      "reconciliation": "Retain dev-specific implementation and reconcile supported regression/source additions; counterpart is not source equality."
+    },
+    {
+      "supported_pr": 155,
+      "dev_pr": {
+        "mergeCommit": {
+          "oid": "03b39f54c24d97d8def6ffc088ee3921ce2cc78d"
+        },
+        "number": 149,
+        "state": "MERGED",
+        "title": "Fix opaque datatype type-test translation",
+        "url": "https://github.com/erniecohen/dafny/pull/149"
+      },
+      "relationship": "paired accepted change",
+      "reconciliation": "Retain dev-specific implementation and reconcile supported regression/source additions; counterpart is not source equality."
+    },
+    {
+      "supported_pr": 156,
+      "dev_pr": {
+        "mergeCommit": {
+          "oid": "b373a4a39716472a1e16e383b0aacf69bbb39a8e"
+        },
+        "number": 150,
+        "state": "MERGED",
+        "title": "Fix codatatype prefix-inequality trigger translation",
+        "url": "https://github.com/erniecohen/dafny/pull/150"
+      },
+      "relationship": "paired accepted change",
+      "reconciliation": "Retain dev-specific implementation and reconcile supported regression/source additions; counterpart is not source equality."
+    },
+    {
+      "supported_pr": 157,
+      "dev_pr": {
+        "mergeCommit": {
+          "oid": "592d30f28a6d01f5fabb1545a4864b8a552691dc"
+        },
+        "number": 153,
+        "state": "MERGED",
+        "title": "Check instantiated datatype membership before casts",
+        "url": "https://github.com/erniecohen/dafny/pull/153"
+      },
+      "relationship": "paired accepted change",
+      "reconciliation": "Retain dev-specific implementation and reconcile supported regression/source additions; counterpart is not source equality."
+    },
+    {
+      "supported_pr": 159,
+      "dev_pr": {
+        "mergeCommit": {
+          "oid": "858e4bfbcf00fbf0146255c0a4b0efdfc4deb66f"
+        },
+        "number": 158,
+        "state": "MERGED",
+        "title": "Check suspended co-recursive membership before observation",
+        "url": "https://github.com/erniecohen/dafny/pull/158"
+      },
+      "relationship": "paired accepted change",
+      "reconciliation": "Retain dev-specific implementation and reconcile supported regression/source additions; counterpart is not source equality."
+    },
+    {
+      "supported_pr": 136,
+      "dev_pr": {
+        "mergeCommit": {
+          "oid": "5a46e0d7df668e823765b50f17a8fedb28cd8826"
+        },
+        "number": 162,
+        "state": "MERGED",
+        "title": "Preserve explicit run build filenames after Boogie binding",
+        "url": "https://github.com/erniecohen/dafny/pull/162"
+      },
+      "relationship": "partial",
+      "reconciliation": "Retain dev-specific implementation and reconcile supported regression/source additions; counterpart is not source equality."
+    }
   ]
 }

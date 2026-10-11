@@ -2407,7 +2407,7 @@ and what information it produces about the verification process.
   Existing well-formedness, precondition and existence checks are preserved.
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
 
-* `--manual-lemma-induction` - disables automatic inducntion for lemmas
+* `--manual-lemma-induction` - disables automatic induction for lemmas
 
 * `--isolate-assertions` - verify assertions individually
 * `--consistent-obligation-checks` - prepare and check matching implicit obligations once using the existing local assertion machinery and fuel rules (experimental, disabled by default; also a project-file option).
