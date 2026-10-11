@@ -8,7 +8,7 @@ for solver in ['5.1.0','4.12.1']:
  for refresh in [False,True]:
   for case,expected in [('original',0),('positive',0),('negative',4)]:
    profiles.append((f'33-{case}-{refresh}-{solver}',f'git-issues/Inputs/github-issue-33-{case}.dfy',solver,refresh,False,'legacy',['--resource-limit:200000','--verification-time-limit:0','--additional-axioms:true'],expected))
-  profiles.append((f'33-newtypes-{solver}', 'git-issues/Inputs/github-issue-33-newtypes.dfy',solver,True,True,'datatype',['--resource-limit:200000','--verification-time-limit:0','--additional-axioms:true'],0))
+ profiles.append((f'33-newtypes-{solver}', 'git-issues/Inputs/github-issue-33-newtypes.dfy',solver,True,True,'datatype',['--resource-limit:200000','--verification-time-limit:0','--additional-axioms:true'],0))
 for refresh in [False,True]:
  for case,expected in [('original',0),('positive',0),('negative',4)]:
   profiles.append((f'1462-{case}-{refresh}','git-issues/Inputs/git-issue-1462-'+case+'.dfy','5.1.0',refresh,refresh,'legacy',['--verification-time-limit:60'],expected))
