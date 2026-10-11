@@ -884,7 +884,10 @@ module Std.Arithmetic.DivMod {
     ensures  a / b <= c
   {
     LemmaModMultiplesBasic(c, b);
-    assert (b * c) % b == 0;
+    assert (b * c) % b == 0 by {
+      // The remainder lemma uses c * b; match it without nonlinear arithmetic.
+      LemmaMulIsCommutative(b, c);
+    }
     var i := b * c - a;
     assert i + a == b * c;
     assert (i + a) % b == 0;
@@ -914,7 +917,10 @@ module Std.Arithmetic.DivMod {
     ensures  a / b < c
   {
     LemmaModMultiplesBasic(c, b);
-    assert (b * c) % b == 0;
+    assert (b * c) % b == 0 by {
+      // The remainder lemma uses c * b; match it without nonlinear arithmetic.
+      LemmaMulIsCommutative(b, c);
+    }
     var i := b * c - a;
     assert i + a == b * c;
     assert (i + a) % b == 0;
