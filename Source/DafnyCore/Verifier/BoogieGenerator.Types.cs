@@ -378,14 +378,14 @@ public partial class BoogieGenerator {
         sink.AddTopLevelDeclaration(new Axiom(tok,
           BplForall(bvarsOuter, new Bpl.Trigger(tok, true, new[] { IsT, IsU }), body)));
       }
-      /*  This is the definition of $IsAlloc function the arrow type:
+      /*  This is the allocatedness consequence axiom of arrow types for their reads sets:
         axiom (forall f: HandleType, t0: Ty, t1: Ty, h: Heap ::
           { $IsAlloc(f, Tclass._System.___hFunc1(t0, t1), h) }
           $IsGoodHeap(h)
           ==>
           (
             $IsAlloc(f, Tclass._System.___hFunc1(t0, t1), h)
-              <==>
+              ==>
               (forall bx0: Box ::
                 { Apply1(t0, t1, f, h, bx0) } { Reads1(t0, t1, f, h, bx0) }
                 $IsBox(bx0, t0) && $IsAllocBox(bx0, t0, h)
@@ -393,8 +393,10 @@ public partial class BoogieGenerator {
                 ==>
                   (everything in reads set of f(bx0) is allocated in h)
           ));
-        However, for /allocated:0 and /allocated:1, IsAlloc for arrow types is trivially true
-        and implies nothing about the reads set.
+        It is an implication, not a definition.  A function value is allocated when what it captures is
+        allocated, and its reads set does not show all it captures: () => n reads nothing and returns n.
+        The converse made such a value allocated in a heap where n is not, and so proved false, also
+        through the monotonicity of $IsAlloc along $HeapSucc (erniecohen/dafny#132).
       */
       {
         var bvarsOuter = new List<Bpl.Variable>();
@@ -423,7 +425,7 @@ public partial class BoogieGenerator {
         sink.AddTopLevelDeclaration(new Axiom(tok,
           BplForall(bvarsOuter, BplTrigger(isAlloc),
             BplImp(goodHeap,
-              BplIff(isAlloc,
+              BplImp(isAlloc,
                 BplForall(bvarsInner,
                   new Bpl.Trigger(tok, true, new List<Bpl.Expr> { applied }, BplTrigger(reads)),
                   BplImp(BplAnd(isAllocBoxes, pre), isAllocReads)))))));
@@ -634,7 +636,7 @@ public partial class BoogieGenerator {
     Contract.Requires(etran != null);
 
     List<(List<(BoundVar, Expression)>, Expression)> partialGuesses = GeneratePartialGuesses(bvars, expr);
-    Bpl.Expr w = Bpl.Expr.False;
+    var disjuncts = new List<Bpl.Expr>();
     foreach (var tup in partialGuesses) {
       var body = etran.TrExpr(tup.Item2);
       Bpl.Expr typeConstraints = Bpl.Expr.True;
@@ -659,10 +661,43 @@ public partial class BoogieGenerator {
         var triggers = TrTrigger(etran, triggerAttributes, tok, substMap, undetermined);
         body = new Bpl.ExistsExpr(tok, bvs, triggers, BplAnd(typeAntecedent, body));
       }
-      w = BplOr(body, w);
+      disjuncts.Add(body);
+    }
+    Bpl.Expr w;
+    if (disjuncts.Count <= MaxChainedGuesses) {
+      w = Bpl.Expr.False;
+      foreach (var d in disjuncts) {
+        w = BplOr(d, w);
+      }
+    } else {
+      disjuncts.Reverse();
+      w = BalancedOr(disjuncts, 0, disjuncts.Count);
     }
     builder.Add(Assert(tok, w, new LetSuchThatExists(bvars, expr, autoTriggerSearchFailed), builder.Context));
   }
+
+  /// <summary>
+  /// The disjunction of disjuncts[lo..hi), in that order, nested to a depth logarithmic in its length.
+  /// </summary>
+  private static Bpl.Expr BalancedOr(List<Bpl.Expr> disjuncts, int lo, int hi) {
+    if (hi - lo == 1) {
+      return disjuncts[lo];
+    }
+    var mid = lo + (hi - lo) / 2;
+    return BplOr(BalancedOr(disjuncts, lo, mid), BalancedOr(disjuncts, mid, hi));
+  }
+
+  /// <summary>
+  /// GenerateAndCheckGuesses chains at most this many disjuncts, as it always has, and balances a longer disjunction.
+  /// A chain is as deep as it is long, and on macOS Boogie's recursive passes overflow the stack of the thread that
+  /// runs them on a chain of about 1,000 disjuncts.
+  /// </summary>
+  private const int MaxChainedGuesses = 729;
+
+  /// <summary>
+  /// GeneratePartialGuesses returns at most about this many partial guesses.
+  /// </summary>
+  private const int MaxPartialGuesses = 20000;
 
   /// <summary>
   /// Take a linear scan through the bound variables, for each one considering specific guesses.
@@ -749,6 +784,13 @@ public partial class BoogieGenerator {
   ///
   ///   exists a :: Is(a, A) && (ZCanCall(a, 10) ==> Z(a, 10))
   ///   ZCanCall(88, 10) ==> Z(88, 10)
+  ///
+  /// Without a bound, the number of tuples is the product, over the variables, of one plus the number of guesses
+  /// for the variable, which is exponential in the number of variables, and GenerateAndCheckGuesses asserts a
+  /// disjunction with one disjunct for each tuple.  So at most MaxPartialGuesses tuples are kept, those that
+  /// quantify over the fewest variables (PartialGuessesToKeep).  The guesses are only hints: the tuple that
+  /// quantifies over every variable is always kept, and each of the others implies it.  A call that returns at most
+  /// MaxPartialGuesses tuples without the bound returns the same tuples, in the same order, with it.
   /// </summary>
   List<(List<(BoundVar, Expression)>, Expression)> GeneratePartialGuesses(List<BoundVar> bvars, Expression expression) {
     if (bvars.Count == 0) {
@@ -767,27 +809,99 @@ public partial class BoogieGenerator {
 
     var x = bvars[0];
     var otherBvars = bvars.GetRange(1, bvars.Count - 1);
-    foreach (var tup in GeneratePartialGuesses(otherBvars, expression)) {
-      // in the special case that x does not even occur in expression (and we know the type has a value for x), we can just ignore x
-      if (!FreeVariablesUtil.ContainsFreeVariable(tup.Item2, false, x) && x.Type.KnownToHaveToAValue(x.IsGhost)) {
-        result.Add(tup);
+    var partialGuesses = GeneratePartialGuesses(otherBvars, expression);
+    // in the special case that x does not even occur in a partial guess (and we know the type has a value for x), we
+    // can just ignore x (null below); otherwise, one possible result is to quantify over x, and the others guess a value for x
+    var guesses = partialGuesses.Select(tup =>
+      !FreeVariablesUtil.ContainsFreeVariable(tup.Item2, false, x) && x.Type.KnownToHaveToAValue(x.IsGhost)
+        ? null : GuessWitnesses(x, tup.Item2).ToList()).ToList();
+    var keep = PartialGuessesToKeep(partialGuesses, guesses, MaxPartialGuesses - result.Count);
+    for (var i = 0; i < partialGuesses.Count; i++) {
+      var tup = partialGuesses[i];
+      if (guesses[i] == null) {
+        if (keep(i, -1)) {
+          result.Add(tup);
+        }
         continue;
       }
 
       // one possible result is to quantify over x
-      var vs = new List<(BoundVar, Expression)>() { (x, null) };
-      vs.AddRange(tup.Item1);
-      result.Add((vs, tup.Item2));
+      if (keep(i, -1)) {
+        var vs = new List<(BoundVar, Expression)>() { (x, null) };
+        vs.AddRange(tup.Item1);
+        result.Add((vs, tup.Item2));
+      }
 
       // other possibilities involve guessing a value for x
-      foreach (var guess in GuessWitnesses(x, tup.Item2)) {
+      for (var j = 0; j < guesses[i].Count; j++) {
+        if (!keep(i, j)) {
+          continue;
+        }
+        var guess = guesses[i][j];
         var g = Substitute(tup.Item2, x, guess);
-        vs = [(x, guess)];
+        List<(BoundVar, Expression)> vs = [(x, guess)];
         AddRangeSubst(vs, tup.Item1, x, guess);
         result.Add((vs, g));
       }
     }
     return result;
+  }
+
+  /// <summary>
+  /// Decides which of the tuples that GeneratePartialGuesses builds for a variable x from the partial guesses for the
+  /// remaining variables to keep: keep(i, -1) for the one that quantifies over x (or ignores it, when guesses[i] is
+  /// null), and keep(i, j) for the one that guesses guesses[i][j].  If there are at most "budget" of them, all are kept.
+  /// Otherwise the tuples that quantify over no variable are kept, among them the one that quantifies over every
+  /// variable that it does not ignore, and the rest of the budget goes to the tuples that quantify over the fewest
+  /// variables, in order.  keep must be called once for each tuple, in the order in which they are built.
+  /// </summary>
+  private static Func<int, int, bool> PartialGuessesToKeep(List<(List<(BoundVar, Expression)>, Expression)> partialGuesses,
+    List<List<Expression>> guesses, int budget) {
+    var total = partialGuesses.Count + guesses.Sum(g => g?.Count ?? 0);
+    if (total <= budget) {
+      return (_, _) => true;
+    }
+
+    int Quantified(int i) => partialGuesses[i].Item1.Count(be => be.Item2 == null);
+    bool GuessesNothing(int i) => partialGuesses[i].Item1.TrueForAll(be => be.Item2 == null);
+    int Score(int i, int j) => Quantified(i) + (j < 0 && guesses[i] != null ? 1 : 0);
+
+    var room = budget;
+    var countByScore = new SortedDictionary<int, int>();
+    for (var i = 0; i < partialGuesses.Count; i++) {
+      if (GuessesNothing(i)) {
+        room--;
+      } else {
+        countByScore[Score(i, -1)] = countByScore.GetValueOrDefault(Score(i, -1)) + 1;
+      }
+      if (guesses[i] != null && guesses[i].Count != 0) {
+        countByScore[Score(i, 0)] = countByScore.GetValueOrDefault(Score(i, 0)) + guesses[i].Count;
+      }
+    }
+    // keep every tuple whose score is below threshold, and the first "extra" ones whose score is threshold
+    var threshold = int.MaxValue;
+    var extra = 0;
+    foreach (var (score, count) in countByScore) {
+      if (count > room) {
+        threshold = score;
+        extra = room;
+        break;
+      }
+      room -= count;
+    }
+    return (i, j) => {
+      if (j < 0 && GuessesNothing(i)) {
+        return true;
+      }
+      var score = Score(i, j);
+      if (score < threshold) {
+        return true;
+      } else if (score == threshold && 0 < extra) {
+        extra--;
+        return true;
+      }
+      return false;
+    };
   }
 
   /// <summary>
@@ -1425,11 +1539,11 @@ public partial class BoogieGenerator {
     Bpl.IdentifierExpr o = null;
     void PutSourceIntoLocal() {
       if (o == null) {
-        var oType = fromType.IsCharType ? Type.Int : fromType;
+        var oType = fromTypeFamily.IsCharType ? Type.Int : fromType;
         var oVar = locals.GetOrAdd(new Bpl.LocalVariable(tok, new Bpl.TypedIdent(tok, CurrentIdGenerator.FreshId("newtype$check#"), TrType(oType))));
         o = new Bpl.IdentifierExpr(tok, oVar);
         var rhs = etran.TrExpr(expr);
-        if (fromType.IsCharType) {
+        if (fromTypeFamily.IsCharType) {
           rhs = FunctionCall(expr.Origin, "char#ToInt", Bpl.Type.Int, rhs);
         }
         // Remove Lit wrappers for fp32/fp64-related conversions to avoid Z3 issues
@@ -1639,7 +1753,7 @@ public partial class BoogieGenerator {
         builder.Add(Assert(tok, boundsCheck, new ConversionFit("value", toType, dafnyBoundsCheck, errorMsgPrefix), builder.Context));
       }
 
-    } else if (toType.IsCharType) {
+    } else if (toTypeFamily.IsCharType) {
       if (fromType.IsNumericBased(Type.NumericPersuasion.Int)) {
         PutSourceIntoLocal();
         var boundsCheck = FunctionCall(Token.NoToken, BuiltinFunction.IsChar, null, o);
@@ -1652,30 +1766,24 @@ public partial class BoogieGenerator {
         Expression intExpr = new ExprDotName(expr.Origin, expr, new Name("Floor"), null);
         var dafnyBoundsCheck = Utils.MakeCharBoundsCheck(options, intExpr);
         builder.Add(Assert(tok, boundsCheck, new ConversionFit("real value", toType, dafnyBoundsCheck, errorMsgPrefix), builder.Context));
-      } else if (fromType.IsBitVectorType) {
-        PutSourceIntoLocal();
-        var fromWidth = fromType.AsBitVectorType.Width;
-        var toWidth = 16;
-        if (toWidth < fromWidth) {
-          // Check "expr < (1 << toWidth)" in type "fromType" (note that "1 << toWidth" is indeed a value in "fromType")
+      } else if (fromTypeFamily.IsBitVectorType) {
+        var fromWidth = fromTypeFamily.AsBitVectorType.Width;
+        // Every value in a smaller carrier is already a character. Unicode
+        // mode also excludes surrogates, first reachable at width 16.
+        if (fromWidth > (options.Get(CommonOptionBag.UnicodeCharacters) ? 15 : 16)) {
           PutSourceIntoLocal();
-          var toBound = BaseTypes.BigNum.FromBigInt(BigInteger.One << toWidth); // 1 << toWidth
-          var bound = BplBvLiteralExpr(tok, toBound, fromType.AsBitVectorType);
-          var boundsCheck = FunctionCall(expr.Origin, "lt_bv" + fromWidth, Bpl.Type.Bool, o, bound);
-          var dafnyBound = new BinaryExpr(expr.Origin, BinaryExpr.Opcode.LeftShift, Expression.CreateIntLiteral(expr.Origin, 1), Expression.CreateIntLiteral(expr.Origin, toWidth));
-          var dafnyBoundsCheck = new BinaryExpr(expr.Origin, BinaryExpr.Opcode.Lt, expr, dafnyBound);
+          var intValue = FunctionCall(tok, "nat_from_bv" + fromWidth, Bpl.Type.Int, o);
+          var boundsCheck = FunctionCall(tok, BuiltinFunction.IsChar, null, intValue);
+          Expression intExpr = new ConversionExpr(expr.Origin, expr, Type.Int);
+          var dafnyBoundsCheck = Utils.MakeCharBoundsCheck(options, intExpr);
           builder.Add(Assert(tok, boundsCheck, new ConversionFit("bit-vector value", toType, dafnyBoundsCheck, errorMsgPrefix), builder.Context));
         }
       } else if (fromType.IsBigOrdinalType) {
         PutSourceIntoLocal();
         var oi = FunctionCall(tok, "ORD#Offset", Bpl.Type.Int, o);
-        int toWidth = 16;
-        var toBound = BaseTypes.BigNum.FromBigInt(BigInteger.One << toWidth); // 1 << toWidth
-        var bound = Bpl.Expr.Literal(toBound);
-        var boundsCheck = Bpl.Expr.Lt(oi, bound);
-        var dafnyBound = new BinaryExpr(expr.Origin, BinaryExpr.Opcode.LeftShift, Expression.CreateIntLiteral(expr.Origin, 1), Expression.CreateIntLiteral(expr.Origin, toWidth));
+        var boundsCheck = FunctionCall(tok, BuiltinFunction.IsChar, null, oi);
         var offset = new ExprDotName(expr.Origin, expr, new Name("Offset"), null);
-        var dafnyBoundsCheck = new BinaryExpr(expr.Origin, BinaryExpr.Opcode.Lt, offset, dafnyBound);
+        var dafnyBoundsCheck = Utils.MakeCharBoundsCheck(options, offset);
         builder.Add(Assert(tok, boundsCheck, new ConversionFit("ORDINAL value", toType, dafnyBoundsCheck, errorMsgPrefix), builder.Context));
       }
 
@@ -1706,7 +1814,7 @@ public partial class BoogieGenerator {
       Bpl.Expr be;
       if (fromType.IsNumericBased() || fromTypeFamily.IsBitVectorType) {
         be = ConvertExpression(expr.Origin, o, fromType, toType);
-      } else if (fromType.IsCharType) {
+      } else if (fromTypeFamily.IsCharType) {
         be = ConvertExpression(expr.Origin, o, Dafny.Type.Int, toType);
       } else if (fromType.IsBigOrdinalType) {
         be = FunctionCall(expr.Origin, "ORD#Offset", Bpl.Type.Int, o);
@@ -1911,7 +2019,7 @@ public partial class BoogieGenerator {
 
   private void SplitAndAssertExpression(BoogieStmtListBuilder witnessCheckBuilder, Expression witnessExpr,
     ExpressionTranslator etran, BodyTranslationContext context, WitnessCheck desc) {
-    witnessCheckBuilder.Add(new Bpl.AssumeCmd(witnessExpr.Origin, etran.CanCallAssumption(witnessExpr)));
+    witnessCheckBuilder.Add(new Bpl.AssumeCmd(witnessExpr.Origin, etran.CanCallAssumptionForVerification(witnessExpr)));
 
     var lowering = options.Get(CommonOptionBag.ConsistentObligationChecks)
       ? LowerProposition(context, witnessExpr, etran) : null;

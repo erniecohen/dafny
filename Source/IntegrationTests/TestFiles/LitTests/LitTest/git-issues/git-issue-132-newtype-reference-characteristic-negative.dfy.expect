@@ -1,0 +1,4 @@
+git-issue-132-newtype-reference-characteristic-negative.dfy(9,5): Error: type 'WrongSequence' declared as containing no reference types, but the RHS type (SeqId<Ref?>) may contain reference types
+git-issue-132-newtype-reference-characteristic-negative.dfy(10,5): Error: type 'WrongNested' declared as containing no reference types, but the RHS type (Id<SeqId<Ref?>>) may contain reference types
+git-issue-132-newtype-reference-characteristic-negative.dfy(13,5): Error: type 'WrongActualPosition' declared as containing no reference types, but the RHS type (Project<int, Ref?>) may contain reference types
+3 resolution/type errors detected in git-issue-132-newtype-reference-characteristic-negative.dfy

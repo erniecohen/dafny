@@ -1,0 +1,1 @@
+Finite set comprehensions, finite map domains, and function reads footprints now receive membership definitions only under their justified source contexts. Arbitrary backend predicates are no longer assumed to denote finite sets. General-map witness selection preserves source types, allocation restrictions, and captured environments.

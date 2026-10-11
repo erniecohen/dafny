@@ -1,0 +1,2 @@
+git-issue-132-newtype-hidden-characteristic-negative.dfy(13,7): Error: type 'Wrong' declared as containing no reference types, but the RHS type (P.Hidden) may contain reference types
+1 resolution/type errors detected in git-issue-132-newtype-hidden-characteristic-negative.dfy

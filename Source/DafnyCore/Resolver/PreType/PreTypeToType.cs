@@ -83,6 +83,25 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
     base.VisitField(field);
   }
 
+  public override void VisitFunction(Function function) {
+    if (systemModuleManager.Options.Get(CommonOptionBag.ContextualLambdaDomains) &&
+        function.Body?.Resolved is LambdaExpr lambda && function.ResultType.AsArrowType is { } arrow &&
+        lambda.BoundVars.Count == arrow.Arity) {
+      for (var i = 0; i < lambda.BoundVars.Count; i++) {
+        var boundVar = lambda.BoundVars[i];
+        var domain = arrow.Args[i];
+        if (!boundVar.IsTypeExplicit && boundVar.UnnormalizedType is InferredTypeProxy { T: null } proxy &&
+            domain.NormalizeToAncestorType().Equals(
+              PreType2TypeUtil.PreType2FixedType(boundVar.PreType).NormalizeToAncestorType())) {
+          // A declared arrow domain supplies a checking context for this lambda,
+          // without refining unrelated quantified or comprehension variables.
+          proxy.T = domain;
+        }
+      }
+    }
+    base.VisitFunction(function);
+  }
+
   private static void VisitVariableList(IEnumerable<IVariable> variables, bool allowFutureRefinements) {
     foreach (var v in variables) {
       PreType2TypeUtil.Combine(v.Type, v.PreType, allowFutureRefinements);

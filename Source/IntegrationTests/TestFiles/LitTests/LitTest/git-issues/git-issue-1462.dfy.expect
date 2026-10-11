@@ -1,0 +1,26 @@
+original (type-system-refresh:false)
+
+Dafny program verifier finished with 1 verified, 0 errors
+original (type-system-refresh:true)
+
+Dafny program verifier finished with 1 verified, 0 errors
+positive (type-system-refresh:false)
+
+Dafny program verifier finished with 9 verified, 0 errors
+positive (type-system-refresh:true)
+
+Dafny program verifier finished with 9 verified, 0 errors
+negative (type-system-refresh:false)
+git-issue-1462-negative.dfy(13,7): Error: decreases clause might not decrease
+git-issue-1462-negative.dfy(23,5): Error: decreases clause might not decrease
+git-issue-1462-negative.dfy(43,12): Error: decreases clause might not decrease
+git-issue-1462-negative.dfy(50,6): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 10 verified, 4 errors
+negative (type-system-refresh:true)
+git-issue-1462-negative.dfy(13,7): Error: decreases clause might not decrease
+git-issue-1462-negative.dfy(23,5): Error: decreases clause might not decrease
+git-issue-1462-negative.dfy(43,12): Error: decreases clause might not decrease
+git-issue-1462-negative.dfy(50,6): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 10 verified, 4 errors

@@ -97,8 +97,8 @@ public abstract class CollectionType : NonProxyType {
     arg = cloner.CloneType(original.arg);
   }
 
-  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes) {
-    return Arg.ComputeMayInvolveReferences(visitedDatatypes);
+  public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes, bool generalArrows = false) {
+    return Arg.ComputeMayInvolveReferences(visitedDatatypes, generalArrows);
   }
 
   /// <summary>

@@ -3,6 +3,11 @@
 Thanks for contributing to Dafny!  Github is the right place to discuss feature requests, report issues with Dafny, or contact the Dafny developers.
 Dafny is an Open Source project and welcomes contributions.
 
+The fork's build and test tools require the .NET 10 SDK. Generated C# programs
+continue to target .NET 8; the .NET 10 SDK can build them, and their existing
+runtime requirements still apply. CI uses an isolated .NET 10 SDK installation
+with the .NET 8 runtime, and checks that no .NET 8 SDK is available to the build.
+
 ## Reporting issues
 
 Before reporting an issue here, consider whether it would be better handled in one of the following places:
@@ -85,7 +90,7 @@ Subsequent CI runs should pick up the successful `deep-tests` run and make the `
 ### How can I write portions of Dafny in Dafny itself?
 
 Since https://github.com/dafny-lang/dafny/pull/2399, it is possible to add \*.dfy files next to other source files.
-The plugin `dafny-msbuild` takes all the dafny files and compiles them into a single file `Source/DafnyCore/obj/Debug/net8.0/GeneratedFromDafny.cs`
+The plugin `dafny-msbuild` takes all the dafny files and compiles them into a single file `Source/DafnyCore/obj/Debug/net10.0/GeneratedFromDafny.cs`
 that is automatically included in the build process. This file contains also the Dafny run-time in C#.
 One example of such file is `Source/DafnyCore/AST/Formatting.dfy`, and you can use it as a starting point.
 

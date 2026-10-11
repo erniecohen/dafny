@@ -590,6 +590,7 @@ namespace Microsoft.Dafny {
         assignSuchThatStmt.GenResolve(this, resolutionContext);
       } else {
         // Resolve the LHSs
+        var errorCountBeforeResolvingDestinations = ErrorCount;
         if (assign != null) {
           foreach (var lhs in assign.Lhss) {
             ResolveExpression(lhs, resolutionContext);
@@ -599,7 +600,9 @@ namespace Microsoft.Dafny {
         if (assign is AssignStatement updateStmt) {
           ResolveUpdateStmt(updateStmt, resolutionContext, errorCountBeforeCheckingStmt);
         } else if (assign is AssignOrReturnStmt assignOrReturnStmt) {
-          ResolveAssignOrReturnStmt(assignOrReturnStmt, resolutionContext);
+          if (ErrorCount == errorCountBeforeResolvingDestinations) {
+            ResolveAssignOrReturnStmt(assignOrReturnStmt, resolutionContext);
+          }
         } else {
           Contract.Assert(assign == null);
         }

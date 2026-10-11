@@ -15,9 +15,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+      - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -62,6 +60,9 @@ jobs:
           python3 .github/review/obligation-dev-comparison.py summarize
           mkdir -p out/obligation-dev-probe
           cp out/comparison/comparison.json out/obligation-dev-probe/
+      - name: Fixed Boogie packages
+        if: inputs.scope == 'full'
+        run: sh Scripts/fetch-boogie-packages.sh
       - name: Capture build and structural results
         if: inputs.scope != 'boundary' && inputs.scope != 'summary'
         run: |

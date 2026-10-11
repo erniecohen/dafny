@@ -239,8 +239,8 @@ public partial class BoogieGenerator {
       TrStmt_CheckWellformed(loopInv.E, invDefinednessBuilder, locals, etran, false);
       invDefinednessBuilder.Add(TrAssumeCmdWithDependencies(etran, loopInv.E.Origin, loopInv.E, "loop invariant"));
 
-      builder.Add(TrAssumeCmd(loopInv.E.Origin, BplImp(w, etran.CanCallAssumption(loopInv.E))));
-      invariants.Add(TrAssumeCmd(loopInv.E.Origin, BplImp(w, etran.CanCallAssumption(loopInv.E))));
+      builder.Add(TrAssumeCmd(loopInv.E.Origin, BplImp(w, etran.CanCallAssumptionForVerification(loopInv.E))));
+      invariants.Add(TrAssumeCmd(loopInv.E.Origin, BplImp(w, etran.CanCallAssumptionForVerification(loopInv.E))));
       var lowering = options.Get(CommonOptionBag.ConsistentObligationChecks)
         ? LowerProposition(builder.Context, loopInv.E, etran) : null;
       bool splitHappened;
@@ -269,7 +269,7 @@ public partial class BoogieGenerator {
     }
     // check definedness of decreases clause
     foreach (Expression e in theDecreases) {
-      builder.Add(TrAssumeCmd(e.Origin, Bpl.Expr.Imp(w, etran.CanCallAssumption(e))));
+      builder.Add(TrAssumeCmd(e.Origin, Bpl.Expr.Imp(w, etran.CanCallAssumptionForVerification(e))));
       TrStmt_CheckWellformed(e, invDefinednessBuilder, locals, etran, true);
     }
     if (codeContext is IMethodCodeContext) {
@@ -363,7 +363,7 @@ public partial class BoogieGenerator {
         bodyTr(loopBodyBuilder, updatedFrameEtran);
       } else {
         foreach (Expression e in theDecreases) {
-          loopBodyBuilder.Add(TrAssumeCmd(e.Origin, BplImp(w, etran.CanCallAssumption(e))));
+          loopBodyBuilder.Add(TrAssumeCmd(e.Origin, BplImp(w, etran.CanCallAssumptionForVerification(e))));
         }
         List<Bpl.Expr> oldBfs = RecordDecreasesValue(theDecreases, loopBodyBuilder, locals, etran, "$decr$" + suffix);
         // time for the actual loop body
@@ -384,7 +384,7 @@ public partial class BoogieGenerator {
           initDecrsDafny.Add(eInit);
           decrs.Add(etran.TrExpr(e));
           // need to add can calls again because the actual loop body updates the variables
-          loopBodyBuilder.Add(TrAssumeCmd(e.Origin, BplImp(w, etran.CanCallAssumption(e))));
+          loopBodyBuilder.Add(TrAssumeCmd(e.Origin, BplImp(w, etran.CanCallAssumptionForVerification(e))));
         }
         if (includeTerminationCheck) {
           AddComment(loopBodyBuilder, loop, "loop termination check");
@@ -412,7 +412,7 @@ public partial class BoogieGenerator {
     // declarations as one big conjunction, because then CanCallAssumption will add the needed antecedents.
     if (loop.Invariants.Any()) {
       var allInvariants = loop.Invariants.Select(inv => inv.E).Aggregate((a, b) => Expression.CreateAnd(a, b));
-      loopBodyBuilder.Add(TrAssumeCmd(loop.Origin, etran.CanCallAssumption(allInvariants)));
+      loopBodyBuilder.Add(TrAssumeCmd(loop.Origin, etran.CanCallAssumptionForVerification(allInvariants)));
     }
 
     Bpl.StmtList body = loopBodyBuilder.Collect(loop.Origin);

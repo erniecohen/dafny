@@ -1,0 +1,1 @@
+lemma PlainFalse() ensures false {}

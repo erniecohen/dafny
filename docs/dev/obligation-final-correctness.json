@@ -1,0 +1,338 @@
+{
+  "status": "passed",
+  "scope": "Focused final correctness gate; no whole-suite or library performance comparison or whole-project proof acceptance",
+  "native_version": "4.11.0+fcb2042d.review.d5cb659f",
+  "native_product": "1c30dd9904e6087931b8efa7d35cb33cc0fb9558",
+  "build_source": "03d5a8ea3a6001abef122a0b1acd68e1a1103358",
+  "build_url": "https://github.com/erniecohen/dafny/actions/runs/38031272435",
+  "fixture_source_commit": "4e1ec113527d6ce54522ab6b7cfd6fbcde34dea9",
+  "solver_version": "Z3 version 5.1.0 - 64 bit",
+  "platform": "osx-arm64",
+  "sdk_version": "10.0.401",
+  "all_seventeen_build_stages_passed": true,
+  "phases": [
+    {
+      "phase": "core-all",
+      "expected_tests": 396,
+      "actual_results": 396,
+      "exit": 0,
+      "counters": {
+        "total": "396",
+        "executed": "396",
+        "passed": "396",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "accepted": true
+    },
+    {
+      "phase": "core-obligation",
+      "expected_tests": 118,
+      "actual_results": 118,
+      "exit": 0,
+      "counters": {
+        "total": "118",
+        "executed": "118",
+        "passed": "118",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "accepted": true
+    },
+    {
+      "phase": "inventory-capture",
+      "expected_tests": 1,
+      "actual_results": 1,
+      "exit": 0,
+      "counters": {
+        "total": "1",
+        "executed": "1",
+        "passed": "1",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "accepted": true
+    },
+    {
+      "phase": "inventory-gate",
+      "expected_tests": 1,
+      "actual_results": 1,
+      "exit": 0,
+      "counters": {
+        "total": "1",
+        "executed": "1",
+        "passed": "1",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "accepted": true
+    },
+    {
+      "phase": "registered",
+      "expected_tests": 1,
+      "actual_results": 1,
+      "exit": 0,
+      "counters": {
+        "total": "1",
+        "executed": "1",
+        "passed": "1",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "accepted": true
+    },
+    {
+      "phase": "editor",
+      "expected_tests": 1,
+      "actual_results": 1,
+      "exit": 0,
+      "counters": {
+        "total": "1",
+        "executed": "1",
+        "passed": "1",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "accepted": true
+    }
+  ],
+  "actual_phase_tests": 518,
+  "registered_harness": {
+    "verifier_invocations": 386,
+    "source_sha256": "1a78520720758d393880390f7a228842ce0b2573987a89dfa3706d50117e0519",
+    "retained_replay_jsons": 32,
+    "declaration_outcomes": {
+      "Correct": 176,
+      "Errors": 32
+    },
+    "wf_outcomes": {
+      "Correct": 112
+    },
+    "vc_outcomes": {
+      "Valid": 176,
+      "Invalid": 32
+    }
+  },
+  "direct_boogie_controls": [
+    {
+      "case": "free-ensures-no-second-proof",
+      "expected_errors": 0,
+      "source_sha256": "82b9b2d93ba0808f6420fd814b60f11479316aa573a56858213e0a97c0e11081",
+      "exit": 0,
+      "summary": [
+        [
+          "1",
+          "0"
+        ]
+      ],
+      "accepted": true
+    },
+    {
+      "case": "free-ensures-available-at-call",
+      "expected_errors": 0,
+      "source_sha256": "f097a2445dd7e1ab9d2693e8c4cd96fde9de2387203f9f42efe5cb661e6fa998",
+      "exit": 0,
+      "summary": [
+        [
+          "1",
+          "0"
+        ]
+      ],
+      "accepted": true
+    },
+    {
+      "case": "free-requires-no-call-check",
+      "expected_errors": 0,
+      "source_sha256": "2d8fe1c5f69cf80a762d6dab56ec631cf2c6fe8ed2d47f14758491e19e5c0bcb",
+      "exit": 0,
+      "summary": [
+        [
+          "1",
+          "0"
+        ]
+      ],
+      "accepted": true
+    },
+    {
+      "case": "free-requires-callee-assumption",
+      "expected_errors": 0,
+      "source_sha256": "66269d64c94197a1fda42cebd96c83921708a07ca7161f3e8cd0c8581037df62",
+      "exit": 0,
+      "summary": [
+        [
+          "1",
+          "0"
+        ]
+      ],
+      "accepted": true
+    },
+    {
+      "case": "checked-local-negative",
+      "expected_errors": 1,
+      "source_sha256": "2e597c1eb225e239e77f83af5bfc3917cdc90dc6b5148b595d8d9c17f292830b",
+      "exit": 0,
+      "summary": [
+        [
+          "0",
+          "1"
+        ]
+      ],
+      "accepted": true
+    },
+    {
+      "case": "checked-call-negative",
+      "expected_errors": 1,
+      "source_sha256": "4e1a9910d7a59cf290fdad96c4bc4964b54ced8308ff2b67691f4792cca335a6",
+      "exit": 0,
+      "summary": [
+        [
+          "0",
+          "1"
+        ]
+      ],
+      "accepted": true
+    },
+    {
+      "case": "checked-boilerplate-retained",
+      "expected_errors": 1,
+      "source_sha256": "d8c4fbb5ec5ea4c6058ca42a2e0275b259838ca5e5c2799a0b498e670417bed5",
+      "exit": 0,
+      "summary": [
+        [
+          "0",
+          "1"
+        ]
+      ],
+      "accepted": true
+    },
+    {
+      "case": "free-requires-always-published",
+      "expected_errors": 0,
+      "source_sha256": "6dd2f08d3ce5e8aebd96730a81d024e389da23b0726d6f4e85ef0b2f16b74d8c",
+      "exit": 0,
+      "summary": [
+        [
+          "1",
+          "0"
+        ]
+      ],
+      "accepted": true
+    },
+    {
+      "case": "scoped-negative-before-normal-publication",
+      "expected_errors": 1,
+      "source_sha256": "fa53d0aa853c4a012511e067e8c85247251303e8f8bbb14f9421fdb54c340cdc",
+      "exit": 0,
+      "summary": [
+        [
+          "0",
+          "1"
+        ]
+      ],
+      "accepted": true
+    },
+    {
+      "case": "inherited-free-interface-does-not-publish",
+      "expected_errors": 1,
+      "source_sha256": "0e7ce330d28f83d2fd5ecbdd3afa763e084094003dd771f7ff9acf4ecef696de",
+      "exit": 0,
+      "summary": [
+        [
+          "0",
+          "1"
+        ]
+      ],
+      "accepted": true
+    },
+    {
+      "case": "call-publication-invalidated-by-heap-change",
+      "expected_errors": 1,
+      "source_sha256": "be15bddb2c4d4c7cdc8f13144b8c253d8857230ae2652b328794383f64575417",
+      "exit": 0,
+      "summary": [
+        [
+          "0",
+          "1"
+        ]
+      ],
+      "accepted": true
+    }
+  ],
+  "single_fixture_bridge": {
+    "source_commit": "4e1ec113527d6ce54522ab6b7cfd6fbcde34dea9",
+    "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/assertion-invariance/twostate-nested-replay.dfy",
+    "original_sha256": "382f1fc9ce7bb4ac7b9c75c2b286e76ea3d5383bea4fbdeae962eb6e780b8ebc",
+    "corrected_sha256": "075c8d5f6e146c4f041df05bc34dc3eae726e56a026854e73524793118d799c1",
+    "change": "Add an earlier old(c.n) == 2 requirement that independently establishes the statement-expression helper precondition",
+    "other_archived_test_inputs_unchanged": true
+  },
+  "reviewed_inventory_groups": 287,
+  "full_suite_acceptance": false,
+  "prior_failed_regression_run": "https://github.com/erniecohen/dafny/actions/runs/38030251185"
+}

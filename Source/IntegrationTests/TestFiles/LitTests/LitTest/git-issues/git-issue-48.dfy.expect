@@ -1,0 +1,4 @@
+
+Dafny program verifier did not attempt verification
+git-issue-48.dfy(8,9): Error: Function body type mismatch (expected Option<int32>, got Option<?17>) (covariant type parameter 'U' would require int32 :> int)
+1 resolution/type errors detected in git-issue-48.dfy

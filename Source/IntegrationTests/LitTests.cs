@@ -28,7 +28,7 @@ namespace IntegrationTests {
     private static readonly Assembly TestDafnyAssembly = typeof(MultiBackendTest).Assembly;
     private static readonly Assembly DafnyServerAssembly = typeof(Server).Assembly;
 
-    private static readonly string RepositoryRoot = Path.GetFullPath("../../../../../"); // Up from Source/IntegrationTests/bin/Debug/net8.0/
+    private static readonly string RepositoryRoot = Path.GetFullPath("../../../../../"); // Up from Source/IntegrationTests/bin/Debug/net10.0/
 
     private static readonly string[] DefaultBoogieArguments = [
       "/infer:j",
@@ -131,6 +131,8 @@ namespace IntegrationTests {
         { "%trargs", trargs },
         { "%binaryDir", "." },
         { "%z3", Path.Join("z3", "bin", $"z3-{DafnyOptions.DefaultZ3Version}") },
+        { "%review-z3", Path.Join("z3", "bin", "z3-5.1.0") },
+        { "%review-z3-4.12.1", Path.Join("z3", "bin", "z3-4.12.1") },
         { "%repositoryRoot", RepositoryRoot.Replace(@"\", "/") },
       };
 
@@ -142,6 +144,9 @@ namespace IntegrationTests {
                 await SourceToBinary.GetCommand(output).InvokeAsync(finalArgs))
         },
         {
+          "%bounded-resolve", (args, config) =>
+            new BoundedResolveCommand(args, config.PassthroughEnvironmentVariables, DafnyDriverAssembly.Location)
+        }, {
           "%baredafny", (args, config) =>
             DafnyCommand(args, config, InvokeMainMethodsDirectly)
         }, {

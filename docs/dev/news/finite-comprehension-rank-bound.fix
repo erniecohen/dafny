@@ -1,0 +1,9 @@
+A datatype-rank comparison no longer counts as a finite bound for finite
+set or map comprehensions. A datatype containing an infinite set can have
+infinitely many values below its rank. Use a genuinely finite bound, such
+as membership in a finite collection, or an infinite comprehension instead.
+
+Finite-domain map types no longer count as finite carriers when their value
+types are infinite. Comprehensions using those complete map values as set
+elements or map keys need a finite witness bound. Maps with finite key
+carriers still admit arbitrary value types.

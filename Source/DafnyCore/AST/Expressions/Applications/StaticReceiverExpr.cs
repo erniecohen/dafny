@@ -32,6 +32,10 @@ public class StaticReceiverExpr : LiteralExpr, ICloneable<StaticReceiverExpr> {
   public StaticReceiverExpr(Cloner cloner, StaticReceiverExpr original) : base(cloner, original) {
     UnresolvedType = cloner.CloneType(original.UnresolvedType);
     IsImplicit = original.IsImplicit;
+    if (cloner.CloneResolvedFields) {
+      ObjectToDiscard = cloner.CloneExpr(original.ObjectToDiscard);
+      ContainerExpression = cloner.CloneExpr(original.ContainerExpression);
+    }
   }
 
   /// <summary>

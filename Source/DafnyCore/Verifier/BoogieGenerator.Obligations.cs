@@ -222,7 +222,7 @@ public partial class BoogieGenerator {
       var retainLeadingSupport = inheritedClause ||
         ensures.E.DescendantsAndSelf.Any(expression => expression.Resolved is StmtExpr);
       var leadingSupport = retainLeadingSupport
-        ? TrAssumeCmd(ensures.E.Origin, etran.CanCallAssumption(ensures.E))
+        ? TrAssumeCmd(ensures.E.Origin, etran.CanCallAssumptionForVerification(ensures.E))
         : null;
       // An inherited clause must not introduce unguarded local WF assertions.
       // Locally declared clauses still receive their immediate assertion's WF,
@@ -281,13 +281,6 @@ public partial class BoogieGenerator {
     MkIsAllocBox(BoxIfNecessary(origin, value, type), type, heap);
 
   public partial class ExpressionTranslator {
-    // Dev does not yet expose the supported line's old-heap rebasing helper.
-    internal ExpressionTranslator WithOld(ExpressionTranslator old) {
-      var clone = new ExpressionTranslator(this, HeapExpr);
-      clone.oldEtran = old;
-      return clone;
-    }
-
     internal ExpressionTranslator CloneForObligation() =>
       CloneExpressionTranslator(this, BoogieGenerator, Predef, HeapExpr, This,
         applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster,

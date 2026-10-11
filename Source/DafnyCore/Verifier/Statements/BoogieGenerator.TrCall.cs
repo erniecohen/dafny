@@ -217,7 +217,7 @@ public partial class BoogieGenerator {
         }
 
         if (actual is DefaultValueExpression) {
-          builder.Add(TrAssumeCmd(actual.Origin, etran.CanCallAssumption(actual)));
+          builder.Add(TrAssumeCmd(actual.Origin, etran.CanCallAssumptionForVerification(actual)));
         } else {
           TrStmt_CheckWellformed(actual, builder, locals, etran, true);
         }
@@ -326,11 +326,10 @@ public partial class BoogieGenerator {
         // The caller's decreases clause is evaluated in the caller's state on entry, which old($Heap)
         // denotes in a method.  A two-state lemma or function cannot change the heap, and in it old($Heap)
         // is its previous heap, so there the state on entry is the current one.
-        var consistent = options.Get(CommonOptionBag.ConsistentObligationChecks);
-        var oldCaller = !consistent || codeContext is not (TwoStateLemma or TwoStateFunction);
+        var oldCaller = codeContext is not (TwoStateLemma or TwoStateFunction);
         // The callee's decreases clause is evaluated in the callee's state, in which "old" denotes the
         // previous heap of a two-state lemma: the heap at its label, if the call has one.
-        var calleeEtran = consistent && method is TwoStateLemma && atLabel != null ? etran.WithOld(etran.OldAt(atLabel)) : null;
+        var calleeEtran = method is TwoStateLemma && atLabel != null ? etran.WithOld(etran.OldAt(atLabel)) : null;
         var callerEtran = builder.Context.CallerTerminationTranslator ?? etran;
         CheckCallTermination(tok, contextDecreases, calleeDecreases, null, receiver, substMap, directSubstMap, tySubst, callerEtran, oldCaller, builder, codeContext.InferredDecreases, null,
           calleeEtran ?? etran);

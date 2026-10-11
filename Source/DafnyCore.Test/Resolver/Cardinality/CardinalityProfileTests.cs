@@ -351,6 +351,6 @@ public class CardinalityProfileTests {
     public override DafnyType Subst(IDictionary<TypeParameter, DafnyType> subst) => this;
     public override DafnyType ReplaceTypeArguments(List<DafnyType> arguments) => this;
     public override bool Equals(DafnyType that, bool keepConstraints = false) => ReferenceEquals(this, that);
-    public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes) => false;
+    public override bool ComputeMayInvolveReferences(ISet<DatatypeDecl> visitedDatatypes, bool generalArrows = false) => false;
   }
 }

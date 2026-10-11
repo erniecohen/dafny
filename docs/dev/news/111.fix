@@ -1,0 +1,1 @@
+Whitespace edits no longer crash inherited-member resolution for a bitvector newtype alongside a generic trait.

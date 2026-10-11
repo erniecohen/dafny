@@ -1,0 +1,1 @@
+Fix C# compilation of generic datatype constructors with subset fields by applying the supplied converter to the erased field type.

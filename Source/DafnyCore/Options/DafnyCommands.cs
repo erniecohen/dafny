@@ -21,6 +21,7 @@ public static class DafnyCommands {
   }
 
   public static readonly IReadOnlyList<Option> VerificationOptions = new Option[] {
+    CommonOptionBag.AdditionalAxioms,
     CommonOptionBag.ProgressOption,
     CommonOptionBag.RelaxDefiniteAssignment,
     BoogieOptionBag.VerificationTimeLimit,
@@ -28,6 +29,7 @@ public static class DafnyCommands {
     CommonOptionBag.ManualLemmaInduction,
     CommonOptionBag.ConsistentObligationChecks,
     BoogieOptionBag.SolverPath,
+    BoogieOptionBag.ArithmeticSolver,
     CommonOptionBag.DisableNonLinearArithmetic,
     BoogieOptionBag.IsolateAssertions,
     BoogieOptionBag.BoogieArguments,
@@ -49,6 +51,7 @@ public static class DafnyCommands {
     CommonOptionBag.VerificationCoverageReport,
     CommonOptionBag.ExtractCounterexample,
     CommonOptionBag.ManualTriggerOption,
+    CommonOptionBag.MapComprehensionDomainTriggers,
     CommonOptionBag.ShowProofObligationExpressions
   }.ToList();
 
@@ -56,6 +59,8 @@ public static class DafnyCommands {
     BoogieOptionBag.NoVerify,
     BoogieOptionBag.HiddenNoVerify,
     CommonOptionBag.OptimizeErasableDatatypeWrapper,
+    CommonOptionBag.CsReplacementTypes,
+    CommonOptionBag.PythonReorderReplacements,
     CommonOptionBag.TestAssumptions,
     DeveloperOptionBag.Bootstrapping,
     CommonOptionBag.AddCompileSuffix,
@@ -67,6 +72,7 @@ public static class DafnyCommands {
 
   public static readonly IReadOnlyList<Option> ExecutionOptions = new Option[] {
     CommonOptionBag.Target,
+    CommonOptionBag.ProjectOutput,
     CommonOptionBag.SpillTranslation,
     CommonOptionBag.InternalIncludeRuntimeOptionForExecution,
     CommonOptionBag.ExecutionCoverageReport
@@ -102,6 +108,8 @@ public static class DafnyCommands {
     CommonOptionBag.GeneralTraits,
     CommonOptionBag.GeneralNewtypes,
     CommonOptionBag.TypeSystemRefresh,
+    CommonOptionBag.BitvectorMapKeys,
+    CommonOptionBag.ContextualLambdaDomains,
     CommonOptionBag.TypeInferenceDebug,
     CommonOptionBag.NewTypeInferenceDebug,
     Method.ReadsClausesOnMethods,

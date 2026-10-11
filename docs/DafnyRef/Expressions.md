@@ -454,6 +454,14 @@ as the following lambda expression:
 x => x + 1
 ```
 
+With `--type-system-refresh --contextual-lambda-domains`, an omitted parameter
+of a lambda that directly forms a named function's body is inferred from that
+function's declared arrow domain. For example, in
+`function Identity(f: nat->nat): nat->nat { x => f(x) }`, `x` has type `nat`.
+This option is disabled by default. Explicit parameter types are preserved;
+quantifiers, comprehensions, and lambdas without this checking context continue
+to infer base types. It does not change the legacy resolver.
+
 The _specification_ is a list of clauses `requires E` or
 `reads W`, where `E` is a boolean expression and `W` is a frame
 expression.
@@ -941,6 +949,13 @@ method, then [`old(allocated(d))`](#sec-old-expression) is `false`.
 If the expression `e` is of a reference type, then `!old(allocated(e))`
 is the same as [`fresh(e)`](#sec-fresh-expression).
 
+A function value can capture object references and previous or labeled heap states.
+Its allocation depends on those captures: captured references must be allocated
+in the heap being considered, and captured heap states must be that heap or precede
+it. An empty reads frame alone does not establish allocation of a function value.
+A pure application whose function and arguments are allocated in the invocation
+heap, and whose precondition holds, produces a result allocated in that heap.
+
 
 ## 9.25. Unchanged Expressions ([grammar](#g-unchanged-expression)) {#sec-unchanged-expression}
 
@@ -1359,7 +1374,16 @@ default to `true`. See also [Section 2.7.4](#sec-quantifier-domains) for more de
 
 If a finite set was specified ("set" keyword used), Dafny must be able to prove that the
 result is finite otherwise the set comprehension expression will not be
-accepted.
+accepted. A datatype-rank comparison, such as `d < upper`, does not
+establish a finite bound: there can be infinitely many datatype values below
+one rank. Use another finite bound, such as `d in aFiniteSet`, when the
+result type is not itself a finite carrier. The same restriction applies
+to finite map comprehensions. Infinite `iset` and `imap` comprehensions do
+not need this bound. The result carrier itself must be finite for this
+exception to apply: although each `map<bool, int>` has at most two keys,
+there are infinitely many such map values. A set comprehension producing
+those maps, or a map comprehension using them as keys, still needs finite
+witness bounds.
 
 Set comprehensions involving reference types such as
 
@@ -1543,6 +1567,16 @@ method test()
 }
 ```
 `m` maps `2` to `3`, `4` to `6`, and so on.
+
+The opt-in verification option `--map-comprehension-domain-triggers` also uses a
+comprehension's explicit or inferred triggers for the existential that defines
+membership in its domain. This applies to both `map` and `imap` comprehensions
+with general key expressions, such as `map i | 0 <= i < n :: ofs + i := e[i]`.
+A ground term matching the trigger, such as `e[j]`, can then help prove
+`ofs + j in m`. The option defaults to `false` and does not change the meaning
+of a comprehension or the translation of a simple bound-variable key.
+It can also be set as `map-comprehension-domain-triggers = true` in the
+`[options]` section of a project file.
 
 ## 9.32. Name Segment ([grammar](#g-name-segment)) {#sec-name-segment}
 

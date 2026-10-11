@@ -188,7 +188,10 @@ const $ArbitraryBoxValue: Box;
 function $Box<T>(T): Box;
 function $Unbox<T>(Box): T;
 axiom (forall<T> x : T   :: { $Box(x) } {:weight 3} $Unbox($Box(x)) == x);
-axiom (forall<T> x : Box :: { $Unbox(x): T}      $Box($Unbox(x): T) == x);
+// There is no axiom "forall<T> x: Box :: $Box($Unbox(x): T) == x".  It would say that every box holds a
+// value of every type T, which is false for a type with finitely many values, such as bool: every box
+// would be $Box(true) or $Box(false).  The inverse holds of a box that holds a value of the type, and is
+// given below for each type, guarded by $IsBox (and generated for the other types, see AddBoxUnboxAxiom).
 
 
 // Corresponding entries for boxes...
@@ -233,6 +236,12 @@ axiom (forall bx : Box, s : Ty, t : Ty ::
 axiom (forall bx : Box, s : Ty, t : Ty ::
     { $IsBox(bx, TIMap(s, t)) }
     ( $IsBox(bx, TIMap(s, t)) ==> $Box($Unbox(bx) : IMap) == bx && $Is($Unbox(bx) : IMap, TIMap(s, t))));
+axiom (forall bx : Box ::
+    { $IsBox(bx, TORDINAL) }
+    ( $IsBox(bx, TORDINAL) ==> $Box($Unbox(bx) : ORDINAL) == bx && $Is($Unbox(bx) : ORDINAL, TORDINAL)));
+axiom (forall bx : Box ::
+    { $IsBox(bx, TField) }
+    ( $IsBox(bx, TField) ==> $Box($Unbox(bx) : Field) == bx && $Is($Unbox(bx) : Field, TField)));
 
 axiom (forall<T> v : T, t : Ty ::
     { $IsBox($Box(v), t) }
@@ -390,11 +399,6 @@ axiom (forall a: ClassName, b: ClassName :: { TypeTuple(a,b) }
 
 type HandleType;
 
-function SetRef_to_SetBox(s: [ref]bool): Set;
-axiom (forall s: [ref]bool, bx: Box :: { Set#IsMember(SetRef_to_SetBox(s), bx) }
-  Set#IsMember(SetRef_to_SetBox(s), bx) == s[$Unbox(bx): ref]);
-axiom (forall s: [ref]bool :: { SetRef_to_SetBox(s) }
-  $Is(SetRef_to_SetBox(s), TSet(Tclass._System.object?())));
 
 // Functions ApplyN, RequiresN, and ReadsN are generated on demand by the translator,
 // but Apply1 is referred to in the prelude, so its definition is hardcoded here.
@@ -498,9 +502,10 @@ axiom (forall o: ORDINAL, m,n: int ::
     (0 <= m - n ==> ORD#Minus(ORD#Plus(o, ORD#FromNat(m)), ORD#FromNat(n)) == ORD#Plus(o, ORD#FromNat(m-n))) &&
     (m - n <= 0 ==> ORD#Minus(ORD#Plus(o, ORD#FromNat(m)), ORD#FromNat(n)) == ORD#Minus(o, ORD#FromNat(n-m))));
 // o-m+n == EITHER o-(m-n) OR o+(n-m)
+// (o-m is specified only for m <= ORD#Offset(o), so that is the guard)
 axiom (forall o: ORDINAL, m,n: int ::
   { ORD#Plus(ORD#Minus(o, ORD#FromNat(m)), ORD#FromNat(n)) }
-  0 <= m && 0 <= n && n <= ORD#Offset(o) + m ==>
+  0 <= m && 0 <= n && m <= ORD#Offset(o) ==>
     (0 <= m - n ==> ORD#Plus(ORD#Minus(o, ORD#FromNat(m)), ORD#FromNat(n)) == ORD#Minus(o, ORD#FromNat(m-n))) &&
     (m - n <= 0 ==> ORD#Plus(ORD#Minus(o, ORD#FromNat(m)), ORD#FromNat(n)) == ORD#Plus(o, ORD#FromNat(n-m))));
 
@@ -617,9 +622,16 @@ const $OneHeap: Heap uses {
 }
 
 function $HeapSucc(Heap, Heap): bool;
+// A write is a heap succession step if it is to a field other than alloc, or if it allocates.
+// A write to alloc in general is not: one that restores the box an unallocated reference held
+// before an allocation would be a step from a heap where the reference is allocated to one where
+// it is not, against the monotonicity of alloc below (erniecohen/dafny#81, dafny-lang/dafny#2463).
 axiom (forall h: Heap, r: ref, f: Field, x: Box :: { update(h, r, f, x) }
-  $IsGoodHeap(update(h, r, f, x)) ==>
+  f != alloc && $IsGoodHeap(update(h, r, f, x)) ==>
   $HeapSucc(h, update(h, r, f, x)));
+axiom (forall h: Heap, r: ref :: { update(h, r, alloc, $Box(true)) }
+  $IsGoodHeap(update(h, r, alloc, $Box(true))) ==>
+  $HeapSucc(h, update(h, r, alloc, $Box(true))));
 axiom (forall a,b,c: Heap :: { $HeapSucc(a,b), $HeapSucc(b,c) }
   a != c ==> $HeapSucc(a,b) && $HeapSucc(b,c) ==> $HeapSucc(a,c));
 axiom (forall h: Heap, k: Heap :: { $HeapSucc(h,k) }
@@ -811,15 +823,9 @@ axiom (forall a: Set, b: Set ::
       { Set#IsMember(a, o) } { Set#IsMember(b, o) }
       !Set#IsMember(a, o) || !Set#IsMember(b, o)));
 
-// FIXME: Finite-set comprehensions are translated into Boogie lambda expressions for Boogie maps and then converted,
-// using function Set#FromBoogieMap, to a set. The use of Boogie lambda expressions is convenient, since Boogie
-// performs lambda lifting on them. However, this is NOT right, because it allows ANY lambda to be converted
-// into a finite set. This should be fixed by doing the lambda lifting directly in Dafny and not use Boogie lambda
-// expressions.
+// Total conversion symbol, without unrestricted membership preservation.
+// The translator defines only justified finite source images under their contexts.
 function Set#FromBoogieMap([Box]bool): Set;
-axiom (forall m: [Box]bool, bx: Box ::
-  { Set#IsMember(Set#FromBoogieMap(m), bx) }
-  Set#IsMember(Set#FromBoogieMap(m), bx) == m[bx]);
 
 // ---------------------------------------------------------------
 // -- Axiomatization of isets -------------------------------------
@@ -1436,8 +1442,12 @@ function #_System._tuple#2._#Make2(Box, Box) : DatatypeType;
 function _System.Tuple2._0(DatatypeType) : Box;
 function _System.Tuple2._1(DatatypeType) : Box;
 
+// The first conjunct says that item is a pair.  The rest mention only a pair's components,
+// and item ranges over every Box, so without it any box whose projections happened to
+// name a key and its value would be an item too.
 axiom (forall m: Map, item: Box :: { Set#IsMember(Map#Items(m), item) }
   Set#IsMember(Map#Items(m), item) <==>
+    item == $Box(#_System._tuple#2._#Make2(_System.Tuple2._0($Unbox(item)), _System.Tuple2._1($Unbox(item)))) &&
     Set#IsMember(Map#Domain(m), _System.Tuple2._0($Unbox(item))) &&
     Map#Elements(m)[_System.Tuple2._0($Unbox(item))] == _System.Tuple2._1($Unbox(item)));
 
@@ -1452,9 +1462,11 @@ function Map#Glue(Set, [Box]Box, Ty): Map;
 axiom (forall a: Set, b: [Box]Box, t: Ty ::
   { Map#Domain(Map#Glue(a, b, t)) }
   Map#Domain(Map#Glue(a, b, t)) == a);
-axiom (forall a: Set, b: [Box]Box, t: Ty ::
-  { Map#Elements(Map#Glue(a, b, t)) }
-  Map#Elements(Map#Glue(a, b, t)) == b);
+// Only within the domain: map equality ignores the elements outside it, so Map#Elements(Map#Glue(a, b, t)) == b
+// would make b and b' equal whenever they agree on a.
+axiom (forall a: Set, b: [Box]Box, t: Ty, bx: Box ::
+  { Map#Elements(Map#Glue(a, b, t))[bx] }
+  Set#IsMember(a, bx) ==> Map#Elements(Map#Glue(a, b, t))[bx] == b[bx]);
 axiom (forall a: Set, b: [Box]Box, t0, t1: Ty ::
   { Map#Glue(a, b, TMap(t0, t1)) }
   // In the following line, no trigger needed, since the quantifier only gets used in negative contexts
@@ -1570,8 +1582,10 @@ axiom (forall m: IMap, v: Box :: { IMap#Values(m)[v] }
 
 function IMap#Items(IMap) : ISet;
 
+// As for Map#Items: the first conjunct says that item is a pair.
 axiom (forall m: IMap, item: Box :: { IMap#Items(m)[item] }
   IMap#Items(m)[item] <==>
+    item == $Box(#_System._tuple#2._#Make2(_System.Tuple2._0($Unbox(item)), _System.Tuple2._1($Unbox(item)))) &&
     IMap#Domain(m)[_System.Tuple2._0($Unbox(item))] &&
     IMap#Elements(m)[_System.Tuple2._0($Unbox(item))] == _System.Tuple2._1($Unbox(item)));
 
@@ -1585,9 +1599,10 @@ function IMap#Glue([Box] bool, [Box]Box, Ty): IMap;
 axiom (forall a: [Box]bool, b: [Box]Box, t: Ty ::
   { IMap#Domain(IMap#Glue(a, b, t)) }
   IMap#Domain(IMap#Glue(a, b, t)) == a);
-axiom (forall a: [Box]bool, b: [Box]Box, t: Ty ::
-  { IMap#Elements(IMap#Glue(a, b, t)) }
-  IMap#Elements(IMap#Glue(a, b, t)) == b);
+// Only within the domain, as for Map#Glue.
+axiom (forall a: [Box]bool, b: [Box]Box, t: Ty, bx: Box ::
+  { IMap#Elements(IMap#Glue(a, b, t))[bx] }
+  a[bx] ==> IMap#Elements(IMap#Glue(a, b, t))[bx] == b[bx]);
 axiom (forall a: [Box]bool, b: [Box]Box, t0, t1: Ty ::
   { IMap#Glue(a, b, TIMap(t0, t1)) }
   // In the following line, no trigger needed, since the quantifier only gets used in negative contexts

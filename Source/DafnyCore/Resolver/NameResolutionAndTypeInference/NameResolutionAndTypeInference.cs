@@ -85,7 +85,7 @@ namespace Microsoft.Dafny {
     /// </summary>
     void ResolveNamesAndInferTypesForOneDeclarationInitial(TopLevelDecl topd) {
       if (topd is NewtypeDecl newtypeDecl) {
-        // this check can be done only after it has been determined that the redirected types do not involve cycles
+        // Signature-time cycles are already rejected; inferred bases are tracked synchronously as proxies are assigned.
         AddXConstraint(newtypeDecl.Origin, "NumericType", newtypeDecl.BaseType, "newtypes must be based on some numeric type (got {0})");
         // type check the constraint, if any
         if (newtypeDecl.Var != null) {
@@ -1420,6 +1420,7 @@ namespace Microsoft.Dafny {
           Options.OutputWriter.Debug($"(invariance) assigning proxy {proxy}.T := {b}");
         }
         proxy.T = b;
+        OnTypeProxyAssigned(proxy);
       }
       proxy = b.Normalize() as TypeProxy;
       if (proxy != null && proxy.T == null && !Reaches(a, proxy, 1, [])) {
@@ -1427,6 +1428,7 @@ namespace Microsoft.Dafny {
           Options.OutputWriter.Debug("(invariance) assigning proxy {0}.T := {1}", proxy, a);
         }
         proxy.T = a;
+        OnTypeProxyAssigned(proxy);
       }
 
       ConstrainSubtypeRelation(a, b, errMsg, true);
@@ -1608,9 +1610,11 @@ namespace Microsoft.Dafny {
         Contract.Assume(false);  // possible infinite recursion
       }
       _recursionDepth++;
-      var b = AssignProxyAndHandleItsConstraints_aux(proxy, t, keepConstraints);
-      _recursionDepth--;
-      return b;
+      try {
+        return AssignProxyAndHandleItsConstraints_aux(proxy, t, keepConstraints);
+      } finally {
+        _recursionDepth--;
+      }
     }
     /// <summary>
     /// This method is called if "proxy" is an unassigned proxy and "t" is a type whose head symbol is known.
@@ -1699,6 +1703,7 @@ namespace Microsoft.Dafny {
         Options.OutputWriter.Debug("setting proxy {0}.T := {1}", proxy, t);
       }
       proxy.T = t;
+      OnTypeProxyAssigned(proxy);
 
       // check feasibility
       DetermineRootLeaf(t, out var isRoot, out var isLeaf, out _, out _);
@@ -2198,6 +2203,7 @@ namespace Microsoft.Dafny {
                     Options.OutputWriter.Debug("(merge in PartiallySolve) assigning proxy {0}.T := {1}", proxy, sub);
                   }
                   proxy.T = sub;
+                  OnTypeProxyAssigned(proxy);
                   anyNewConstraints = true;  // signal a change in the constraints
                   continue;
                 }
@@ -2576,6 +2582,7 @@ namespace Microsoft.Dafny {
           Options.OutputWriter.Debug("ProcessAssignable: assigning proxy {0}.T := {1}", lhs, join);
         }
         lhs.T = join;
+        OnTypeProxyAssigned(lhs);
         return true;
       }
     }
@@ -5068,6 +5075,7 @@ namespace Microsoft.Dafny {
             }
             Contract.Assert(proxy != meet);
             proxy.T = meet;
+            OnTypeProxyAssigned(proxy);
             Contract.Assert(t.NormalizeExpand() == meet);
             return PartiallyResolveTypeForMemberSelection(tok, t, memberName, strength + 1);
           }

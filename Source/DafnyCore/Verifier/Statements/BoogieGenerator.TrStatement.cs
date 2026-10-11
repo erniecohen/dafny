@@ -262,6 +262,13 @@ public partial class BoogieGenerator {
 
           builder.Add(new Bpl.HavocCmd(s.Origin, bHavocLHSs));
 
+          // Well-formedness was checked on arbitrary typed copies of the simple LHSs.
+          // Reinstantiate its call permissions for the values selected by the havoc.
+          // CanCallAssumption preserves the constraint's short-circuit guards.
+          if (options.Get(CommonOptionBag.AdditionalAxioms)) {
+            builder.Add(TrAssumeCmd(s.Origin, etran.CanCallAssumption(s.Expr)));
+          }
+
           // End by doing the assume
           builder.Add(TrAssumeCmdWithDependencies(etran, s.Origin, s.Expr, "assign-such-that constraint"));
           builder.AddCaptureState(s); // just do one capture state--here, at the very end (that is, don't do one before the assume)
@@ -452,7 +459,7 @@ public partial class BoogieGenerator {
           }
 
           TrStmt_CheckWellformed(rhs, builder, locals, etran, false, false, AddResultCommands);
-          builder.Add(TrAssumeCmd(rhs.Origin, etran.CanCallAssumption(rhs)));
+          builder.Add(TrAssumeCmd(rhs.Origin, etran.CanCallAssumptionForVerification(rhs)));
           builder.Add(new CommentCmd("CheckWellformedWithResult: any expression"));
           builder.Add(TrAssumeCmd(rhs.Origin, MkIs(boogieTupleReference, pat.Expr.Type)));
 
@@ -678,7 +685,7 @@ public partial class BoogieGenerator {
       builder.Add(ifCmd);
       // assume result:
       if (stmt.Steps.Count > 1) {
-        builder.Add(TrAssumeCmd(stmt.Origin, etran.CanCallAssumption(stmt.Result)));
+        builder.Add(TrAssumeCmd(stmt.Origin, etran.CanCallAssumptionForVerification(stmt.Result)));
         builder.Add(TrAssumeCmdWithDependencies(etran, stmt.Origin, stmt.Result, "calc statement result"));
       }
     }
@@ -725,7 +732,7 @@ public partial class BoogieGenerator {
     Bpl.Expr noGuard = Bpl.Expr.True;
     var b = new BoogieStmtListBuilder(this, options, builder.Context);
     foreach (var g in guards) {
-      b.Add(TrAssumeCmd(g.Origin, etran.CanCallAssumption(g)));
+      b.Add(TrAssumeCmd(g.Origin, etran.CanCallAssumptionForVerification(g)));
       noGuard = BplAnd(noGuard, Bpl.Expr.Not(etran.TrExpr(g)));
     }
 
@@ -966,7 +973,7 @@ public partial class BoogieGenerator {
       options = options.WithLValueContext(true);
     }
     CheckWellformedWithResult(expr, options, locals, builder, etran, addResultCommands);
-    builder.Add(TrAssumeCmd(expr.Origin, etran.CanCallAssumption(expr)));
+    builder.Add(TrAssumeCmd(expr.Origin, etran.CanCallAssumptionForVerification(expr)));
   }
 
   List<FrameExpression> GetContextReadsFrames() {

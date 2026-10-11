@@ -219,6 +219,7 @@ public partial class BoogieGenerator {
       Contract.Assert(whr != null); // since f.ResultType involves references, there should be an ISALLOC where clause
       if (whr != null) {
         Bpl.Expr ante = canCall;
+        Bpl.Trigger applicationTrigger = null;
         if (readsHeap) {
           // all parameters are included in the CanCall, so that's the only antecedent we need
           Contract.Assert(formals.Contains(bvHeap));
@@ -226,14 +227,26 @@ public partial class BoogieGenerator {
           // CanCall does not include the heap parameter but, since we will quantify over a heap, we need to
           // make sure the other parameters are connected to that heap
           Contract.Assert(f is not TwoStateFunction);
+          var goodHeap = FunctionCall(f.Origin, BuiltinFunction.IsGoodHeap, null, etranHeap.HeapExpr);
+          // With --additional-axioms, the axiom of a function whose parameters, receiver included, hold no
+          // references is also instantiated where the function is applied, so that what it says about the
+          // allocation of the result is available without a mention of $IsAlloc of the result
+          // (erniecohen/dafny#95).  The application mentions every bound variable but the heap, and a
+          // pattern must not be closed.  The option is checked before anything is built.
+          if (options.Get(CommonOptionBag.AdditionalAxioms) && parametersIsAlloc == Bpl.Expr.True) {
+            applicationTrigger = new Bpl.Trigger(f.Origin, true, formals.Count == 0 ? [goodHeap] : [funcAppl, goodHeap]);
+          }
           ante = BplAnd(ante, parametersIsAlloc);
           formals = Util.Cons(bvHeap, formals);
-          var goodHeap = FunctionCall(f.Origin, BuiltinFunction.IsGoodHeap, null, etranHeap.HeapExpr);
           ante = BplAnd(ante, goodHeap);
         }
 
         var axBody = BplImp(ante, whr);
-        var ax = BplForall(f.Origin, [], formals, null, BplTrigger(whr), axBody);
+        var triggers = BplTrigger(whr);
+        if (applicationTrigger != null) {
+          triggers.AddLast(applicationTrigger);
+        }
+        var ax = BplForall(f.Origin, [], formals, null, triggers, axBody);
         var allocConsequenceAxiom = new Bpl.Axiom(f.Origin, ax, "alloc consequence axiom for " + f.FullSanitizedName);
         AddOtherDefinition(boogieFunction, allocConsequenceAxiom);
       }
@@ -613,18 +626,22 @@ public partial class BoogieGenerator {
       Func<List<Bpl.Expr>, List<Bpl.Expr>> SnocSelf = x => x;
       Func<List<Bpl.Expr>, List<Bpl.Expr>> SnocPrevH = x => x;
       Expression selfExpr;
+      Bpl.Expr prevHeapVar = null, selfVar = null;
       Dictionary<IVariable, Expression> rhs_dict = new Dictionary<IVariable, Expression>();
+      Bpl.Expr handlePrevHeap = null;
       if (f is TwoStateFunction) {
         // also add previous-heap to the list of fixed arguments of the handle
-        var prevH = BplBoundVar("$prevHeap", Predef.HeapType, vars);
+        handlePrevHeap = BplBoundVar("$prevHeap", Predef.HeapType, vars);
+        prevHeapVar = handlePrevHeap;
         formals.Add(BplFormalVar("h", Predef.HeapType, true));
-        SnocPrevH = xs => Snoc(xs, prevH);
+        SnocPrevH = xs => Snoc(xs, handlePrevHeap);
       }
       if (f.IsStatic) {
         selfExpr = null;
       } else {
         var selfTy = TrType(UserDefinedType.FromTopLevelDecl(f.Origin, f.EnclosingClass));
         var self = BplBoundVar("$self", selfTy, vars);
+        selfVar = self;
         formals.Add(BplFormalVar("self", selfTy, true));
         SnocSelf = xs => Snoc(xs, self);
         var wrapperType = UserDefinedType.FromTopLevelDecl(f.Origin, f.EnclosingClass);
@@ -724,18 +741,70 @@ public partial class BoogieGenerator {
         Bpl.Expr unboxBx = FunctionCall(f.Origin, BuiltinFunction.Unbox, Predef.RefType, bx);
         Bpl.Expr lhs = IsSetMember(f.Origin, lhs_inner, bx, true);
 
-        var et = new ExpressionTranslator(this, Predef, h, f);
-        var rhs = InRWClause_Aux(f.Origin, unboxBx, bx, null, f.Reads.Expressions, false, et, selfExpr, rhs_dict);
+        var et = handlePrevHeap == null
+          ? new ExpressionTranslator(this, Predef, h, f)
+          : new ExpressionTranslator(this, Predef, h, handlePrevHeap, f);
+        // A finite footprint contains the canonical box of each selected reference, not every box
+        // whose reference unboxing happens to select it.
+        var rhs = BplAnd(MkIsBox(bx, program.SystemModuleManager.ObjectQ()),
+          InRWClause_Aux(f.Origin, unboxBx, bx, null, f.Reads.Expressions, false, et, selfExpr, rhs_dict,
+            materializeFiniteSets: true));
 
-        if (f.EnclosingClass is ArrowTypeDecl) {
-          var args_h = f.ReadsHeap ? Snoc(SnocPrevH(argsRequires), h) : argsRequires;
-          var precondition = FunctionCall(f.Origin, Requires(arity), Bpl.Type.Bool, Concat(SnocSelf(args_h), lhs_args));
-          sink.AddTopLevelDeclaration(new Axiom(f.Origin,
-            BplForall(Cons(bxVar, Concat(vars, bvars)), BplTrigger(lhs), BplImp(precondition, Bpl.Expr.Eq(lhs, rhs)))));
-        } else {
-          sink.AddTopLevelDeclaration(new Axiom(f.Origin,
-            BplForall(Cons(bxVar, Concat(vars, bvars)), BplTrigger(lhs), Bpl.Expr.Eq(lhs, rhs))));
+        Bpl.Expr available = FunctionCall(f.Origin, BuiltinFunction.IsGoodHeap, null, h);
+        if (handlePrevHeap != null) {
+          available = BplAnd(available, BplAnd(
+            FunctionCall(f.Origin, BuiltinFunction.IsGoodHeap, null, handlePrevHeap),
+            HeapSucc(handlePrevHeap, h)));
         }
+        foreach (var typeBoundAxiom in TypeBoundAxioms(f.Origin, GetTypeParams(f))) {
+          available = BplAnd(available, typeBoundAxiom);
+        }
+        if (selfExpr != null) {
+          var self = et.TrExpr(selfExpr);
+          var receiverType = ModuleResolver.GetReceiverType(f.Origin, f);
+          var receiverWhere = f.EnclosingClass is ArrowTypeDecl
+            ? GetWhereClause(f.Origin, self, receiverType, et, NOALLOC)
+            : BplAnd(ReceiverNotNull(self),
+              (handlePrevHeap == null ? et : et.Old).GoodRef(f.Origin, self, receiverType));
+          if (receiverWhere != null) {
+            available = BplAnd(available, receiverWhere);
+          }
+        }
+        for (var i = 0; i < f.Ins.Count; i++) {
+          var formal = f.Ins[i];
+          available = BplAnd(available, MkIsBox(lhs_args[i], formal.Type));
+          // Match the source function's parameter availability discipline. Ordinary formals are
+          // checked without allocation; old/new formals of two-state functions use their own heap.
+          if (handlePrevHeap != null) {
+            available = BplAnd(available,
+              MkIsAllocBox(lhs_args[i], formal.Type, formal.IsOld ? handlePrevHeap : h));
+          }
+        }
+        var requiresArgs = f.ReadsHeap ? Snoc(SnocPrevH(argsRequires), h) : argsRequires;
+        var precondition = f.EnclosingClass is ArrowTypeDecl
+          ? FunctionCall(f.Origin, Requires(arity), Bpl.Type.Bool, Concat(SnocSelf(requiresArgs), lhs_args))
+          : FunctionCall(f.Origin, RequiresName(f), Bpl.Type.Bool, Concat(SnocSelf(requiresArgs), rhs_args));
+        // .reads checks the receiving function's precondition; it does not first call that function.
+        // In particular, do not require its #canCall predicate here. An effect-free arrow's .reads
+        // is total, including at inputs where the function itself cannot be called.
+        if (f.Reads.Expressions.Count != 0) {
+          available = BplAnd(available, precondition);
+        }
+
+        var readsSubstituter = new Substituter(selfExpr, rhs_dict, new Dictionary<TypeParameter, Type>());
+        var reads = f.Reads.Expressions.ConvertAll(readsSubstituter.SubstFrameExpr);
+        Bpl.Expr readsFacts = Bpl.Expr.True;
+        foreach (var frame in reads) {
+          readsFacts = BplAnd(readsFacts, et.CanCallAssumption(frame.E));
+        }
+        var finiteSupport = et.FiniteReadsSupport(reads);
+        if (readsFacts is not Bpl.LiteralExpr { IsTrue: true }) {
+          sink.AddTopLevelDeclaration(new Axiom(f.Origin,
+            BplForall(Concat(vars, bvars), BplTrigger(lhs_inner), BplImp(available, readsFacts))));
+        }
+        sink.AddTopLevelDeclaration(new Axiom(f.Origin,
+          BplForall(Cons(bxVar, Concat(vars, bvars)), BplTrigger(lhs),
+            BplImp(BplAnd(available, finiteSupport), Bpl.Expr.Eq(lhs, rhs)))));
       }
 
       {
@@ -751,6 +820,26 @@ public partial class BoogieGenerator {
 
         AddOtherDefinition(GetOrCreateFunction(f), (new Axiom(f.Origin,
           BplForall(Concat(vars, func_vars), tr, Bpl.Expr.Eq(lhs, rhs_unboxed)))));
+      }
+
+      {
+        // IsGoodHeap(Heap) && [IsAlloc(self, C, Heap)] && [(prevHeap == Heap || HeapSucc(prevHeap, Heap))]
+        //   ==> IsAlloc(F#Handle(Ty1, .., TyN, Layer, [prevHeap,] [self]), Tclass._System.___hFuncN(..), Heap)
+        // A handle is allocated in a heap in which what it captures is allocated: its receiver, and for a
+        // two-state function its previous heap, which the heap must be or succeed.  The arrow allocation
+        // axiom is an implication, from an allocated function value to its reads set and results
+        // (erniecohen/dafny#132), so this is how a handle is known to be allocated.
+        var fhandle = FunctionCall(f.Origin, name, Predef.HandleType, SnocSelf(SnocPrevH(args)));
+        var allocated = MkIsAlloc(fhandle, ClassTyCon(program.SystemModuleManager.ArrowTypeDecls[arity], tyargs), h);
+        Bpl.Expr captured = FunctionCall(f.Origin, BuiltinFunction.IsGoodHeap, null, h);
+        if (selfVar != null) {
+          captured = BplAnd(captured, MkIsAlloc(selfVar, UserDefinedType.FromTopLevelDecl(f.Origin, f.EnclosingClass), h));
+        }
+        if (prevHeapVar != null) {
+          captured = BplAnd(captured, BplOr(Bpl.Expr.Eq(prevHeapVar, h), HeapSucc(prevHeapVar, h)));
+        }
+        AddOtherDefinition(GetOrCreateFunction(f), new Axiom(f.Origin,
+          BplForall(vars, BplTrigger(allocated), BplImp(captured, allocated))));
       }
     }
     return name;

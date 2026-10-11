@@ -31,6 +31,8 @@ public partial class BoogieGenerator {
   /// Emit to "builder" a check that calleeDecreases is less than contextDecreases.  More precisely,
   /// the check is:
   ///     allowance || (calleeDecreases LESS contextDecreases).
+  /// contextDecreases is translated by etranCurrent, in its old state if oldCaller, and calleeDecreases
+  /// by etranCallee if it is given, else by etranCurrent.
   /// </summary>
   void CheckCallTermination(IOrigin tok, List<Expression> contextDecreases, List<Expression> calleeDecreases,
                             Expression allowance,
@@ -85,8 +87,8 @@ public partial class BoogieGenerator {
       oldExpressions.Add(e1);
       newExpressions.Add(e0direct);
       toks.Add(new NestedOrigin(tok, e1.Origin, "this decreases clause was not satisfied"));
-      canCalls = BplAnd(canCalls, etranCurrent.CanCallAssumption(e1));
-      canCalls = BplAnd(canCalls, etranCallee.CanCallAssumption(e0direct));
+      canCalls = BplAnd(canCalls, etranCurrent.CanCallAssumptionForVerification(e1));
+      canCalls = BplAnd(canCalls, etranCallee.CanCallAssumptionForVerification(e0direct));
       callee.Add(etranCallee.TrExpr(e0));
       caller.Add(etranCurrent.TrExpr(e1));
     }

@@ -1,0 +1,5 @@
+// CHECK-NOT: ^(?!git-issue-82-maps-conflict\.dfy\(2,[0-9]+\): Error: key expressions might be referring to the same value$).*Error:|(?i:out of resource|timed out|timeout|internal error)
+// CHECK: ^git-issue-82-maps-conflict\.dfy\(2,[0-9]+\): Error: key expressions might be referring to the same value$
+// CHECK-NOT: Error:|(?i:out of resource|timed out|timeout|internal error)
+// CHECK: ^Dafny program verifier finished with 0 verified, 1 error$
+// CHECK-NOT: Error:|(?i:out of resource|timed out|timeout|internal error)

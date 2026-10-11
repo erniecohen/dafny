@@ -181,6 +181,16 @@ namespace Microsoft.Dafny {
         return WithHeapVariable("$Heap_at_" + label.AssignUniqueId(BoogieGenerator.CurrentIdGenerator));
       }
 
+      /// <summary>
+      /// Returns a translator like this one, in which "old" denotes the state that "old" translates in.
+      /// </summary>
+      public ExpressionTranslator WithOld(ExpressionTranslator old) {
+        Contract.Requires(old != null);
+        var et = new ExpressionTranslator(this, HeapExpr);
+        et.oldEtran = old;
+        return et;
+      }
+
       public ExpressionTranslator WithHeapVariable(string heapVariableName) {
         var heapAt = new Boogie.IdentifierExpr(Token.NoToken, heapVariableName, Predef.HeapType);
         return new ExpressionTranslator(BoogieGenerator, Predef, heapAt, This, applyLimited_CurrentFunction, layerInterCluster, layerIntraCluster, scope, readsFrame, modifiesFrame, stripLits);
@@ -468,88 +478,327 @@ namespace Microsoft.Dafny {
         return decreasesExpr;
       }
 
-      private Expr TranslateMapComprehension(MapComprehension comprehension) {
-        var e = comprehension;
-        // Translate "map x,y | R(x,y) :: F(x,y) := G(x,y)" into
-        // Map#Glue(lambda w: BoxType :: exists x,y :: R(x,y) && unbox(w) == F(x,y),
-        //          lambda w: BoxType :: G(project_x(unbox(w)), project_y(unbox(w))),
-        //          type)".
-        // where project_x and project_y are functions defined (elsewhere, in CanCallAssumption) by the following axiom:
-        //     forall x,y :: R(x,y) ==> var x',y' := project_x(unbox(F(x,y))),project_y(unbox(F(x,y))); R(x',y') && F(x',y') == F(x,y)
-        // that is (without the let expression):
-        //     forall x,y :: R(x,y) ==> R(project_x(unbox(F(x,y))), project_y(unbox(F(x,y)))) && F(project_x(unbox(F(x,y))), project_y(unbox(F(x,y)))) == F(x,y)
-        //
-        // In the common case where F(x,y) is omitted (in which case the list of bound variables is restricted to length 1):
-        // Translate "map x | R(x) :: G(x)" into
-        // Map#Glue(lambda w: BoxType :: R(unbox(w)),
-        //          lambda w: BoxType :: G(unbox(w)),
-        //          type)".
-        List<Variable> bvars = [];
-        List<bool> freeOfAlloc = BoundedPool.HasBounds(e.Bounds, BoundedPool.PoolVirtues.IndependentOfAlloc_or_ExplicitAlloc);
+      private sealed record FiniteSetView(Expr CharacteristicMap, Expr SetValue);
 
-        Boogie.QKeyValue kv = TrAttributes(e.Attributes, "trigger");
+      private FiniteSetView FiniteView(IOrigin tok, Expr characteristicMap) {
+        return new FiniteSetView(characteristicMap,
+          FunctionCall(tok, "Set#FromBoogieMap", Predef.SetType, characteristicMap));
+      }
 
-        var wVar = new Boogie.BoundVariable(GetToken(comprehension), new Boogie.TypedIdent(GetToken(comprehension), BoogieGenerator.CurrentIdGenerator.FreshId("$w#"), Predef.BoxType));
+      private Expr WithFiniteViewAlias(IOrigin tok, FiniteSetView view, Func<FiniteSetView, Expr> body) {
+        // A let alias is expanded before SMT pattern validation; a lifted map
+        // factory can then expose interpreted captures (for example, an ite).
+        // Quantify the alias and restrict it by equality to this exact source map.
+        // This is equivalent to the let-bound instance, without an arbitrary-map
+        // membership principle or a characteristic lambda inside any pattern.
+        var mapVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
+          BoogieGenerator.CurrentIdGenerator.FreshId("$finiteMap#"), Predef.ISetType));
+        var map = new Boogie.IdentifierExpr(tok, mapVar);
+        var aliased = FiniteView(tok, map);
+        return BplForall([mapVar], new Boogie.Trigger(tok, true, [aliased.SetValue]),
+          BplImp(Boogie.Expr.Eq(map, view.CharacteristicMap), body(aliased)));
+      }
 
-        Boogie.Expr keys, values;
+      private Expr DefineFiniteSetView(IOrigin tok, FiniteSetView view) {
+        return WithFiniteViewAlias(tok, view, aliased => DefineFiniteSetViewBound(tok, aliased));
+      }
+
+      private Expr DefineFiniteSetViewBound(IOrigin tok, FiniteSetView view) {
+        var b = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
+          BoogieGenerator.CurrentIdGenerator.FreshId("$finite#"), Predef.BoxType));
+        var element = new Boogie.IdentifierExpr(tok, b);
+        var member = BoogieGenerator.IsSetMember(tok, view.SetValue, element, true);
+        return BplForall([b], new Boogie.Trigger(tok, true, [member]),
+          Boogie.Expr.Iff(member, Boogie.Expr.SelectTok(tok, view.CharacteristicMap, element)));
+      }
+
+      // The same source-domain relation is used for the key domain, all components
+      // of the selected witness, and its defining choice property. Captures become
+      // ordinary lambda arguments when Boogie lifts the relation.
+      private Boogie.LambdaExpr BuildMapWitnessRelation(MapComprehension e, Expr key) {
+        BoogieGenerator.CreateBoundVariables(e.BoundVars, out var witnesses, out var args);
+        var subst = new Dictionary<IVariable, Expression>();
+        var freeOfAlloc = BoundedPool.HasBounds(e.Bounds,
+          BoundedPool.PoolVirtues.IndependentOfAlloc_or_ExplicitAlloc);
+        Boogie.Expr domain = Boogie.Expr.True;
+        for (var i = 0; i < e.BoundVars.Count; i++) {
+          var bv = e.BoundVars[i];
+          subst.Add(bv, new BoogieWrapper(args[i], bv.Type));
+          var where = BoogieGenerator.GetWhereClause(bv.Origin, args[i], bv.Type, this,
+            freeOfAlloc == null || freeOfAlloc[i] ? NOALLOC : ISALLOC);
+          if (where != null) {
+            domain = BplAnd(domain, where);
+          }
+        }
+        var range = TrExpr(BoogieGenerator.Substitute(e.Range, null, subst));
+        var sourceKey = TrExpr(BoogieGenerator.Substitute(e.TermLeft, null, subst));
+        var body = BplAnd(BplAnd(domain, range), Boogie.Expr.Eq(key,
+          BoxIfNecessary(GetToken(e), sourceKey, e.TermLeft.Type)));
+        return new Boogie.LambdaExpr(GetToken(e), [], witnesses, null, body);
+      }
+
+      private Boogie.MapType MapWitnessRelationType(MapComprehension e) {
+        return new Boogie.MapType(GetToken(e), [],
+          e.BoundVars.ConvertAll(bv => BoogieGenerator.TrType(bv.Type)), Boogie.Type.Bool);
+      }
+
+      private Boogie.LambdaExpr BuildMapWitnessFamily(MapComprehension e) {
+        var tok = GetToken(e);
+        var keyVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
+          BoogieGenerator.CurrentIdGenerator.FreshId("$familyKey#"), Predef.BoxType));
+        var key = new Boogie.IdentifierExpr(tok, keyVar);
+        return new Boogie.LambdaExpr(tok, [], [keyVar], null, BuildMapWitnessRelation(e, key));
+      }
+
+      private Expr BuildMapComprehensionKeys(MapComprehension e) {
+        var tok = GetToken(e);
+        var wVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
+          BoogieGenerator.CurrentIdGenerator.FreshId("$w#"), Predef.BoxType));
+        var w = new Boogie.IdentifierExpr(tok, wVar);
+        var freeOfAlloc = BoundedPool.HasBounds(e.Bounds,
+          BoundedPool.PoolVirtues.IndependentOfAlloc_or_ExplicitAlloc);
+        Expr body;
         if (!e.IsGeneralMapComprehension) {
           var bv = e.BoundVars[0];
-          var w = new Boogie.IdentifierExpr(GetToken(comprehension), wVar);
-          Boogie.Expr unboxw = BoogieGenerator.UnboxUnlessInherentlyBoxed(w, bv.Type);
-          Boogie.Expr typeAntecedent = BoogieGenerator.MkIsBox(w, bv.Type);
+          var antecedent = BoogieGenerator.MkIsBox(w, bv.Type);
           if (freeOfAlloc != null && !freeOfAlloc[0]) {
-            var isAlloc = BoogieGenerator.MkIsAllocBox(w, bv.Type, HeapExpr);
-            typeAntecedent = BplAnd(typeAntecedent, isAlloc);
+            antecedent = BplAnd(antecedent, BoogieGenerator.MkIsAllocBox(w, bv.Type, HeapExpr));
           }
-          var subst = new Dictionary<IVariable, Expression>();
-          subst.Add(bv, new BoogieWrapper(unboxw, bv.Type));
-
-          var ebody = BplAnd(typeAntecedent, TrExpr(BoogieGenerator.Substitute(e.Range, null, subst)));
-          keys = new Boogie.LambdaExpr(GetToken(e), [], [wVar], kv, ebody);
-          ebody = TrExpr(BoogieGenerator.Substitute(e.Term, null, subst));
-          values = new Boogie.LambdaExpr(GetToken(e), [], [wVar], kv, BoxIfNecessary(GetToken(comprehension), ebody, e.Term.Type));
+          var subst = new Dictionary<IVariable, Expression> {
+            [bv] = new BoogieWrapper(BoogieGenerator.UnboxUnlessInherentlyBoxed(w, bv.Type), bv.Type)
+          };
+          body = BplAnd(antecedent, TrExpr(BoogieGenerator.Substitute(e.Range, null, subst)));
         } else {
-          var t = e.TermLeft;
-          var w = new Boogie.IdentifierExpr(GetToken(comprehension), wVar);
-          Boogie.Expr unboxw = BoogieGenerator.UnboxUnlessInherentlyBoxed(w, t.Type);
-          Boogie.Expr typeAntecedent = BoogieGenerator.MkIsBox(w, t.Type);
-          if (freeOfAlloc != null && !freeOfAlloc[0]) {
-            var isAlloc = BoogieGenerator.MkIsAllocBox(w, t.Type, HeapExpr);
-            typeAntecedent = BplAnd(typeAntecedent, isAlloc);
-          }
-
-          BoogieGenerator.CreateBoundVariables(e.BoundVars, out var bvs, out var args);
-          Contract.Assert(e.BoundVars.Count == bvs.Count);
-          var subst = new Dictionary<IVariable, Expression>();
-          for (var i = 0; i < e.BoundVars.Count; i++) {
-            subst.Add(e.BoundVars[i], new BoogieWrapper(args[i], e.BoundVars[i].Type));
-          }
-          var rr = TrExpr(BoogieGenerator.Substitute(e.Range, null, subst));
-          var ff = TrExpr(BoogieGenerator.Substitute(t, null, subst));
-          var exst_body = BplAnd(rr, Boogie.Expr.Eq(unboxw, ff));
-          var ebody = BplAnd(typeAntecedent, new Boogie.ExistsExpr(GetToken(e), bvs, exst_body));
-          keys = new Boogie.LambdaExpr(GetToken(e), [], [wVar], kv, ebody);
-
-          BoogieGenerator.CreateMapComprehensionProjectionFunctions(e);
-          Contract.Assert(e.ProjectionFunctions != null && e.ProjectionFunctions.Count == e.BoundVars.Count);
-          subst = new Dictionary<IVariable, Expression>();
-          for (var i = 0; i < e.BoundVars.Count; i++) {
-            var p = new Boogie.NAryExpr(GetToken(e), new Boogie.FunctionCall(e.ProjectionFunctions[i]), new List<Boogie.Expr> { unboxw });
-            var prj = new BoogieWrapper(p, e.BoundVars[i].Type);
-            subst.Add(e.BoundVars[i], prj);
-          }
-          ebody = TrExpr(BoogieGenerator.Substitute(e.Term, null, subst));
-          values = new Boogie.LambdaExpr(GetToken(e), [], [wVar], kv, BoxIfNecessary(GetToken(comprehension), ebody, e.Term.Type));
+          var relation = BuildMapWitnessRelation(e, w);
+          // Source triggers must use the fresh witnesses bound by the relation.
+          var subst = e.BoundVars.Select((bv, i) => new KeyValuePair<IVariable, Expression>(bv,
+            new BoogieWrapper(new Boogie.IdentifierExpr(tok, relation.Dummies[i]), bv.Type)))
+            .ToDictionary(pair => pair.Key, pair => pair.Value);
+          var triggers = options.Get(CommonOptionBag.MapComprehensionDomainTriggers)
+            ? BoogieGenerator.TrTrigger(this, e.Attributes, tok, subst) : null;
+          body = new Boogie.ExistsExpr(tok, relation.Dummies, triggers, relation.Body);
         }
+        return new Boogie.LambdaExpr(tok, [], [wVar], TrAttributes(e.Attributes, "trigger"), body);
+      }
 
-        return BoogieGenerator.FunctionCall(GetToken(e),
-          e.Finite ? BuiltinFunction.MapGlue : BuiltinFunction.IMapGlue,
-          null,
-          e.Finite ? FunctionCall(GetToken(comprehension), "Set#FromBoogieMap", Predef.SetType, keys) : keys,
-          values, BoogieGenerator.TypeToTy(comprehension.Type));
+      private FiniteSetView BuildMapComprehensionDomain(MapComprehension e) {
+        return FiniteView(GetToken(e), BuildMapComprehensionKeys(e));
+      }
+
+      private Dictionary<IVariable, Expression> MapSelectedWitnesses(MapComprehension e,
+        Expr relation, out List<Expr> projections) {
+        var projectionFunctions = BoogieGenerator.GetMapComprehensionProjectionFunctions(e);
+        projections = [];
+        var subst = new Dictionary<IVariable, Expression>();
+        for (var i = 0; i < e.BoundVars.Count; i++) {
+          var projection = new Boogie.NAryExpr(GetToken(e),
+            new Boogie.FunctionCall(projectionFunctions[i]), [relation]);
+          projections.Add(projection);
+          subst.Add(e.BoundVars[i], new BoogieWrapper(projection, e.BoundVars[i].Type));
+        }
+        return subst;
+      }
+
+      private sealed class MapWitnessSubstituter(Variable variable, Expr replacement) : Boogie.Duplicator {
+        public override Expr VisitIdentifierExpr(Boogie.IdentifierExpr node) {
+          // Translation precedes Boogie resolution: free identifiers need not
+          // have declarations yet. Match only the fresh witness declaration.
+          return ReferenceEquals(node.Decl, variable) ? replacement : base.VisitIdentifierExpr(node);
+        }
+      }
+
+      private static IEnumerable<Expr> MapWitnessConjuncts(Expr expression) {
+        if (expression is Boogie.NAryExpr { Fun: Boogie.BinaryOperator { Op: Boogie.BinaryOperator.Opcode.And } } conjunction) {
+          return MapWitnessConjuncts(conjunction.Args[0]).Concat(MapWitnessConjuncts(conjunction.Args[1]));
+        }
+        return [expression];
+      }
+
+      private Expr MapWitnessInhabited(IOrigin tok, Boogie.LambdaExpr witness) {
+        var remaining = witness.Dummies.ToList();
+        var conjuncts = MapWitnessConjuncts(witness.Body).ToList();
+        foreach (var variable in witness.Dummies) {
+          for (var i = 0; i < conjuncts.Count; i++) {
+            if (conjuncts[i] is not Boogie.NAryExpr { Fun: Boogie.BinaryOperator { Op: Boogie.BinaryOperator.Opcode.Eq } } equation) {
+              continue;
+            }
+            Expr replacement = null;
+            if (equation.Args[0] is Boogie.IdentifierExpr left && ReferenceEquals(left.Decl, variable)) {
+              replacement = equation.Args[1];
+            } else if (equation.Args[1] is Boogie.IdentifierExpr right && ReferenceEquals(right.Decl, variable)) {
+              replacement = equation.Args[0];
+            }
+            if (replacement == null) {
+              continue;
+            }
+            var uses = new VariableNameVisitor();
+            uses.Visit(replacement);
+            if (uses.Names.Contains(variable.Name)) {
+              continue;
+            }
+            // exists x :: x == t && P(x) is P(t), when t is independent
+            // of x. Keep every source type, subset, allocation, range, and key
+            // conjunct; substitute by declaration identity to avoid capture.
+            conjuncts.RemoveAt(i);
+            var substituter = new MapWitnessSubstituter(variable, replacement);
+            conjuncts = conjuncts.ConvertAll(conjunct => substituter.VisitExpr(conjunct));
+            remaining.Remove(variable);
+            break;
+          }
+        }
+        var body = BplAnd(conjuncts);
+        return remaining.Count == 0 ? body : new Boogie.ExistsExpr(tok, remaining, body);
+      }
+
+      private Expr MapTupleWitnessCandidate(MapComprehension e, Expr key, Boogie.LambdaExpr witness) {
+        if (e.TermLeft.Resolved is not DatatypeValue { Ctor.EnclosingDatatype: TupleTypeDecl } tuple ||
+            tuple.Arguments.Count != e.BoundVars.Count) {
+          return null;
+        }
+        var indices = new List<int>();
+        foreach (var argument in tuple.Arguments) {
+          if (argument.Resolved is not IdentifierExpr identifier) {
+            return null;
+          }
+          var index = e.BoundVars.FindIndex(variable => ReferenceEquals(variable, identifier.Var));
+          if (index < 0 || indices.Contains(index)) {
+            return null;
+          }
+          indices.Add(index);
+        }
+        // These are candidate witnesses, not inverse assumptions about the key.
+        // Keep the complete original predicate, especially every source type,
+        // subset, allocation, range, and canonical boxed-key conjunct.
+        var candidate = witness.Body;
+        var tupleValue = BoogieGenerator.UnboxUnlessInherentlyBoxed(key, e.TermLeft.Type);
+        for (var position = 0; position < indices.Count; position++) {
+          var index = indices[position];
+          var destructor = tuple.Ctor.Destructors[position];
+          var field = new Boogie.NAryExpr(GetToken(e),
+            new Boogie.FunctionCall(BoogieGenerator.GetReadonlyField(destructor)), [tupleValue]);
+          var value = BoogieGenerator.CondApplyUnbox(GetToken(e), field, destructor.Type, e.BoundVars[index].Type);
+          candidate = new MapWitnessSubstituter(witness.Dummies[index], value).VisitExpr(candidate);
+        }
+        return candidate;
+      }
+
+      private Expr DefineMapSelectedWitnesses(MapComprehension e) {
+        var tok = GetToken(e);
+        var familyType = new Boogie.MapType(tok, [], [Predef.BoxType], MapWitnessRelationType(e));
+        var familyVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
+          BoogieGenerator.CurrentIdGenerator.FreshId("$choiceFamily#"), familyType));
+        var family = new Boogie.IdentifierExpr(tok, familyVar);
+        var keyVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
+          BoogieGenerator.CurrentIdGenerator.FreshId("$key#"), Predef.BoxType));
+        var key = new Boogie.IdentifierExpr(tok, keyVar);
+        var relation = Boogie.Expr.SelectTok(tok, family, key);
+        MapSelectedWitnesses(e, relation, out var projections);
+        var witness = BuildMapWitnessRelation(e, key);
+        var inhabited = MapWitnessInhabited(tok, witness);
+        var tupleCandidate = MapTupleWitnessCandidate(e, key, witness);
+        if (tupleCandidate != null) {
+          // P(candidate) implies exists witnesses :: P(witnesses). Retain that
+          // existential; this redundant disjunct only exposes its direct witness.
+          inhabited = BplOr(inhabited, tupleCandidate);
+        }
+        var selected = Boogie.Expr.SelectTok(tok, relation, projections.ToArray());
+        // The value uses this same relation family. Each projection access can
+        // activate their joint choice fact, with no lambda inside the trigger.
+        Boogie.Trigger triggers = null;
+        foreach (var projection in projections.AsEnumerable().Reverse()) {
+          triggers = new Boogie.Trigger(tok, true, [projection], triggers);
+        }
+        // Equality fixes the universally bound alias to this source family.
+        // Unlike a let, this alias remains a variable in the final SMT pattern
+        // even when lambda lifting puts conditional captures in the family term.
+        var actualFamily = BuildMapWitnessFamily(e);
+        var premise = BplAnd(Boogie.Expr.Eq(family, actualFamily), inhabited);
+        return BplForall([familyVar, keyVar], triggers, BplImp(premise, selected));
+      }
+
+      private sealed class ScopedCollectionFactVisitor : Boogie.StandardVisitor {
+        public bool Found { get; private set; }
+
+        public override Expr VisitBinderExpr(Boogie.BinderExpr node) {
+          // These aliases occur only in the guarded definitions emitted for a
+          // source collection and its selected witnesses.
+          Found |= node is Boogie.ForallExpr && node.Dummies.Any(variable =>
+            variable.Name.StartsWith("$finiteMap#", StringComparison.Ordinal) ||
+            variable.Name.StartsWith("$choiceFamily#", StringComparison.Ordinal));
+          return base.VisitBinderExpr(node);
+        }
+      }
+
+      private Expr AddFiniteComprehensionCanCallTrigger(ComprehensionExpr source,
+        List<Tuple<Boogie.Variable, Boogie.Expr>> sourceBinders, Expr childFacts) {
+        if (source is not (SetComprehension { Finite: true } or MapComprehension { Finite: true }) ||
+            childFacts is not Boogie.ForallExpr { Triggers: null } quantified ||
+            !options.AutoTriggers || Attributes.Contains(source.Attributes, "trigger") ||
+            Attributes.Contains(source.Attributes, "autotriggers") ||
+            Attributes.Contains(source.Attributes, "deleted-trigger") ||
+            source.Bounds == null || source.Bounds.Count != source.BoundVars.Count) {
+          return childFacts;
+        }
+        var facts = new ScopedCollectionFactVisitor();
+        facts.Visit(quantified.Body);
+        if (!facts.Found) {
+          return childFacts;
+        }
+        var patterns = new List<Expr>();
+        foreach (var variable in quantified.Dummies) {
+          var index = sourceBinders.FindIndex(pair => ReferenceEquals(pair.Item1, variable));
+          var nativeType = variable.TypedIdent.Type;
+          if (index < 0 || !source.BoundVars[index].Type.IsNonempty || source.Bounds[index] == null ||
+              !source.Bounds[index].Virtues.HasFlag(BoundedPool.PoolVirtues.Finite) ||
+              (nativeType != Boogie.Type.Int && nativeType != Boogie.Type.Real && nativeType != Boogie.Type.Bool)) {
+            return childFacts;
+          }
+          patterns.Add(BoogieGenerator.ApplyBox(GetToken(source), new Boogie.IdentifierExpr(variable.tok, variable)));
+        }
+        // BplForallTrim has already retained exactly the needed binders and all
+        // their type/empty-domain guards. A nested alias trigger cannot cover an
+        // enclosing source binder whose capture was lifted as an expression
+        // such as n+i. Canonical boxes let actual source witnesses activate the
+        // unchanged guarded facts. Restrict the fallback to finite native bounds.
+        quantified.Triggers = new Boogie.Trigger(GetToken(source), true, patterns);
+        return quantified;
+      }
+
+      private Expr TranslateMapComprehension(MapComprehension e) {
+        var tok = GetToken(e);
+        var keys = BuildMapComprehensionKeys(e);
+        var wVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
+          BoogieGenerator.CurrentIdGenerator.FreshId("$w#"), Predef.BoxType));
+        var w = new Boogie.IdentifierExpr(tok, wVar);
+        Dictionary<IVariable, Expression> subst;
+        if (e.IsGeneralMapComprehension) {
+          subst = MapSelectedWitnesses(e,
+            Boogie.Expr.SelectTok(tok, BuildMapWitnessFamily(e), w), out _);
+        } else {
+          var bv = e.BoundVars[0];
+          subst = new Dictionary<IVariable, Expression> {
+            [bv] = new BoogieWrapper(BoogieGenerator.UnboxUnlessInherentlyBoxed(w, bv.Type), bv.Type)
+          };
+        }
+        var value = TrExpr(BoogieGenerator.Substitute(e.Term, null, subst));
+        var values = new Boogie.LambdaExpr(tok, [], [wVar], TrAttributes(e.Attributes, "trigger"),
+          BoxIfNecessary(tok, value, e.Term.Type));
+        return BoogieGenerator.FunctionCall(tok,
+          e.Finite ? BuiltinFunction.MapGlue : BuiltinFunction.IMapGlue, null,
+          e.Finite ? FiniteView(tok, keys).SetValue : keys, values,
+          BoogieGenerator.TypeToTy(e.Type));
       }
 
       private Expr TranslateSetComprehension(SetComprehension comprehension) {
+        var characteristicMap = BuildSetComprehensionMap(comprehension);
+        return comprehension.Finite ? FiniteView(GetToken(comprehension), characteristicMap).SetValue : characteristicMap;
+      }
+
+      private FiniteSetView BuildSetComprehensionView(SetComprehension comprehension) {
+        return FiniteView(GetToken(comprehension), BuildSetComprehensionMap(comprehension));
+      }
+
+      private Expr BuildSetComprehensionMap(SetComprehension comprehension) {
         var e = comprehension;
         List<bool> freeOfAlloc = BoundedPool.HasBounds(e.Bounds, BoundedPool.PoolVirtues.IndependentOfAlloc_or_ExplicitAlloc);
 
@@ -558,8 +807,8 @@ namespace Microsoft.Dafny {
         // or if "T" is "xs", then:
         //     Set#FromBoogieMap(lambda y: BoxType :: CorrectType(y) && R[xs := Unbox(y)])
         // where Set#FromBoogieMap is omitted for iset.
-        // FIXME: This is not a good translation, see comment in PreludeCore.bpl. It should be changed to not use a Boogie lambda expression
-        // but to instead do the lambda lifting here.
+        // Boogie lifts this characteristic map. Only the common source permission
+        // path defines its finite image; there is no arbitrary-map preservation axiom.
         var yVar = new Boogie.BoundVariable(GetToken(comprehension), new Boogie.TypedIdent(GetToken(comprehension), BoogieGenerator.CurrentIdGenerator.FreshId("$y#"), Predef.BoxType));
         Boogie.Expr y = new Boogie.IdentifierExpr(GetToken(comprehension), yVar);
         Boogie.Expr lbody;
@@ -586,9 +835,50 @@ namespace Microsoft.Dafny {
         }
         Boogie.QKeyValue kv = TrAttributes(e.Attributes, "trigger");
         var lambda = new Boogie.LambdaExpr(GetToken(comprehension), [], [yVar], kv, lbody);
-        return comprehension.Type.NormalizeToAncestorType().AsSetType.Finite
-          ? FunctionCall(GetToken(comprehension), "Set#FromBoogieMap", Predef.SetType, lambda)
-          : lambda;
+        return lambda;
+      }
+
+      private Expr DefineSourceFiniteImage(ComprehensionExpr e, FiniteSetView view, Type imageType) {
+        var tok = GetToken(e);
+        return WithFiniteViewAlias(tok, view, aliased => {
+          var allWitnessesFinite = BoundedPool.MissingBounds(e.BoundVars, e.Bounds,
+            BoundedPool.PoolVirtues.Finite).Count == 0;
+          Expr support = Boogie.Expr.True;
+          if (allWitnessesFinite) {
+            if (e.Bounds.Any(pool => pool is ExplicitAllocatedBoundedPool)) {
+              support = HeapExpr == null ? Boogie.Expr.False :
+                BoogieGenerator.FunctionCall(tok, BuiltinFunction.IsGoodHeap, null, HeapExpr);
+            }
+          } else if (imageType.MayInvolveReferences) {
+            // Finite reference/image-carrier admission is relative to one finite
+            // allocation universe. Source call permissions alone do not establish
+            // this for arbitrary unallocated captures. Keep the actual predicate
+            // unchanged and require a uniform allocated image as a premise.
+            var heapVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
+              BoogieGenerator.CurrentIdGenerator.FreshId("$finiteHeap#"), Predef.HeapType));
+            var heap = new Boogie.IdentifierExpr(tok, heapVar);
+            var elementVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
+              BoogieGenerator.CurrentIdGenerator.FreshId("$finiteImage#"), Predef.BoxType));
+            var element = new Boogie.IdentifierExpr(tok, elementVar);
+            var selected = Boogie.Expr.SelectTok(tok, aliased.CharacteristicMap, element);
+            var allocated = BoogieGenerator.MkIsAllocBox(element, imageType, heap);
+            var uniformImage = BplForall([elementVar], new Boogie.Trigger(tok, true, [selected]),
+              BplImp(selected, allocated));
+            support = new Boogie.ExistsExpr(tok, [heapVar], BplAnd(
+              BoogieGenerator.FunctionCall(tok, BuiltinFunction.IsGoodHeap, null, heap), uniformImage));
+          }
+          return BplImp(support, DefineFiniteSetViewBound(tok, aliased));
+        });
+      }
+
+      public Expr FiniteCollectionDefinition(ComprehensionExpr e) {
+        return e switch {
+          SetComprehension { Finite: true } set =>
+            DefineSourceFiniteImage(set, BuildSetComprehensionView(set), set.Type.NormalizeToAncestorType().AsSetType.Arg),
+          MapComprehension { Finite: true } map =>
+            DefineSourceFiniteImage(map, BuildMapComprehensionDomain(map), map.Type.NormalizeToAncestorType().AsMapType.Domain),
+          _ => Boogie.Expr.True
+        };
       }
 
       private Expr TranslateQuantifierExpr(QuantifierExpr quantifierExpr) {
@@ -955,7 +1245,9 @@ namespace Microsoft.Dafny {
         Boogie.Type elType = BoogieGenerator.TrType(elmtType);
         Boogie.Type dType = BoogieGenerator.TrType(domainType);
         Boogie.Expr e0 = e.E0 == null ? null : TrExpr(e.E0);
-        if (e0 != null && e.E0.Type.IsBitVectorType) {
+        // Sequence and array positions are integers; map keys retain their declared type.
+        if (e0 != null && e.E0.Type.IsBitVectorType &&
+            (!options.Get(CommonOptionBag.BitvectorMapKeys) || seqType is not MapType)) {
           e0 = BoogieGenerator.ConvertExpression(GetToken(e.E0), e0, e.E0.Type, Type.Int);
         }
         Boogie.Expr e1 = e.E1 == null ? null : TrExpr(e.E1);
@@ -1341,57 +1633,342 @@ namespace Microsoft.Dafny {
         return re;
       }
 
-      private Expr TrLambdaExpr(LambdaExpr e) {
-        Contract.Requires(e != null);
+      private sealed record LambdaEnvironment(List<Variable> Binders, List<Variable> LayerBinders,
+        Expr Heap, Expr Layer, ExpressionTranslator Translator,
+        Dictionary<IVariable, Expression> Substitution, Substituter Substituter, Expr ArgumentTypes,
+        Expr ArgumentAllocation);
 
-        var bvars = new List<Boogie.Variable>();
-
-        var varNameGen = BoogieGenerator.CurrentIdGenerator.NestedFreshIdGenerator("$l#");
-
-        var heap = BplBoundVar(varNameGen.FreshId("#heap#"), Predef.HeapType, bvars);
-
-        var ves = (from bv in e.BoundVars
-                   select
-BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType, bvars)).ToList();
-        var subst = e.BoundVars.Zip(ves, (bv, ve) => {
-          var unboxy = BoogieGenerator.UnboxUnlessInherentlyBoxed(ve, bv.Type);
-          return new KeyValuePair<IVariable, Expression>(bv, new BoogieWrapper(unboxy, bv.Type));
-        }).ToDictionary(x => x.Key, x => x.Value);
-        var su = new Substituter(null, subst, new Dictionary<TypeParameter, Type>());
-        var et = this.HeapExpr != null
-          ? new ExpressionTranslator(this.BoogieGenerator, this.Predef, heap, this.Old.HeapExpr, this.scope)
-          : new ExpressionTranslator(this, heap);
-        var lvars = new List<Boogie.Variable>();
-        var ly = BplBoundVar(varNameGen.FreshId("#ly#"), Predef.LayerType, lvars);
-        et = et.WithLayer(ly);
-
-        var ebody = et.TrExpr(BoogieGenerator.Substitute(e.Body, null, subst));
-        ebody = BoogieGenerator.BoxIfNotNormallyBoxed(ebody.tok, ebody, e.Body.Type);
-
-        var isBoxes = BplAnd(ves.Zip(e.BoundVars, (ve, bv) => BoogieGenerator.MkIsBox(ve, bv.Type)));
-        Bpl.Expr reqbody;
-        if (e.Range == null) {
-          reqbody = isBoxes;
-        } else {
-          var range = BoogieGenerator.Substitute(e.Range, null, subst);
-          reqbody = BplAnd(isBoxes, BplImp(et.CanCallAssumption(range), et.TrExpr(range)));
+      // Value and common facts use the same heap, boxed arguments, previous heap,
+      // and explicit layer. Fresh copies are alpha-equivalent, including captures.
+      private LambdaEnvironment BuildLambdaEnvironment(LambdaExpr e) {
+        var binders = new List<Variable>();
+        var generator = BoogieGenerator.CurrentIdGenerator.NestedFreshIdGenerator("$l#");
+        var heap = BplBoundVar(generator.FreshId("#heap#"), Predef.HeapType, binders);
+        var arguments = e.BoundVars.Select(bv =>
+          BplBoundVar(generator.FreshId($"#{bv.Name}#"), Predef.BoxType, binders)).ToList();
+        var substitution = e.BoundVars.Zip(arguments, (bv, argument) =>
+          new KeyValuePair<IVariable, Expression>(bv,
+            new BoogieWrapper(BoogieGenerator.UnboxUnlessInherentlyBoxed(argument, bv.Type), bv.Type)))
+          .ToDictionary(pair => pair.Key, pair => pair.Value);
+        var translator = new ExpressionTranslator(this, heap);
+        if (HeapExpr != null) {
+          translator = translator.WithOld(Old);
         }
+        var layerBinders = new List<Variable>();
+        var layer = BplBoundVar(generator.FreshId("#ly#"), Predef.LayerType, layerBinders);
+        translator = translator.WithLayer(layer);
+        var types = BplAnd(arguments.Zip(e.BoundVars,
+          (argument, bv) => BoogieGenerator.MkIsBox(argument, bv.Type)));
+        var allocated = BplAnd(arguments.Zip(e.BoundVars,
+          (argument, bv) => BoogieGenerator.MkIsAllocBox(argument, bv.Type, heap)));
+        return new LambdaEnvironment(binders, layerBinders, heap, layer, translator,
+          substitution, new Substituter(null, substitution, new Dictionary<TypeParameter, Type>()), types, allocated);
+      }
 
-        var rdvars = new List<Boogie.Variable>();
-        var o = BplBoundVar(varNameGen.FreshId("#o#"), Predef.RefType, rdvars);
-        Boogie.Expr rdbody = new Boogie.LambdaExpr(GetToken(e), [], rdvars, null,
-          BoogieGenerator.InRWClause(GetToken(e), o, null, e.Reads.Expressions.ConvertAll(su.SubstFrameExpr), et, null, null));
-        rdbody = FunctionCall(GetToken(e), "SetRef_to_SetBox", Predef.SetType, rdbody);
+      private FiniteSetView BuildBoxedReadsFootprint(IOrigin tok, List<FrameExpression> reads) {
+        var bvar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
+          BoogieGenerator.CurrentIdGenerator.FreshId("$reads#"), Predef.BoxType));
+        var box = new Boogie.IdentifierExpr(tok, bvar);
+        var reference = BoogieGenerator.FunctionCall(tok, BuiltinFunction.Unbox, Predef.RefType, box);
+        var body = BplAnd(BoogieGenerator.MkIsBox(box, BoogieGenerator.program.SystemModuleManager.ObjectQ()),
+          BoogieGenerator.InRWClause_Aux(tok, reference, box, null, reads, false, this, null, null,
+            materializeFiniteSets: true));
+        return FiniteView(tok, new Boogie.LambdaExpr(tok, [], [bvar], null, body));
+      }
 
+      public Expr FiniteReadsSupport(IEnumerable<FrameExpression> reads) {
+        Expr support = Boogie.Expr.True;
+        foreach (var frame in reads) {
+          if (frame.E is not WildcardExpr && frame.E is not SetDisplayExpr &&
+              frame.E.Type.NormalizeToAncestorType() is SetType { Finite: false }) {
+            // An infinite reference iset has a finite footprint only when all
+            // selected references belong to this heap's finite allocation universe.
+            support = BplAnd(support, BoogieGenerator.MkIsAlloc(TrExpr(frame.E), frame.E.Type, HeapExpr));
+          }
+        }
+        return support;
+      }
+
+      private Boogie.LambdaExpr BuildLambdaHandleFamily(LambdaExpr e, LambdaEnvironment environment) {
+        var et = environment.Translator;
+        var body = et.TrExpr(BoogieGenerator.Substitute(e.Body, null, environment.Substitution));
+        body = BoogieGenerator.BoxIfNotNormallyBoxed(body.tok, body, e.Body.Type);
+        Expr requires = environment.ArgumentTypes;
+        if (e.Range != null) {
+          var range = BoogieGenerator.Substitute(e.Range, null, environment.Substitution);
+          requires = BplAnd(requires, BplImp(et.CanCallAssumption(range), et.TrExpr(range)));
+        }
+        var reads = e.Reads.Expressions.ConvertAll(environment.Substituter.SubstFrameExpr);
+        var footprint = et.BuildBoxedReadsFootprint(GetToken(e), reads);
+        return new Boogie.LambdaExpr(GetToken(e), [], environment.LayerBinders, null,
+          FunctionCall(GetToken(e), BoogieGenerator.Handle(e.BoundVars.Count), Predef.BoxType,
+            new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, body),
+            new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, requires),
+            new Boogie.LambdaExpr(GetToken(e), [], environment.Binders, null, footprint.SetValue)));
+      }
+
+      private Expr TrLambdaExpr(LambdaExpr e) {
+        var family = BuildLambdaHandleFamily(e, BuildLambdaEnvironment(e));
         return MaybeLit(
-          BoogieGenerator.FunctionCall(GetToken(e), BuiltinFunction.AtLayer, Predef.HandleType,
-            new Boogie.LambdaExpr(GetToken(e), [], lvars, null,
-              FunctionCall(GetToken(e), BoogieGenerator.Handle(e.BoundVars.Count), Predef.BoxType,
-                new Boogie.LambdaExpr(GetToken(e), [], bvars, null, ebody),
-                new Boogie.LambdaExpr(GetToken(e), [], bvars, null, reqbody),
-                new Boogie.LambdaExpr(GetToken(e), [], bvars, null, rdbody))),
+          BoogieGenerator.FunctionCall(GetToken(e), BuiltinFunction.AtLayer, Predef.HandleType, family,
             layerIntraCluster != null ? layerIntraCluster.ToExpr() : layerInterCluster.ToExpr()),
           Predef.HandleType);
+      }
+
+      private sealed class TotalDatatypeDestructorCollector : BottomUpVisitor {
+        public bool Found { get; private set; }
+
+        protected override void VisitOneExpr(Expression expr) {
+          if (expr is MemberSelectExpr { Member: DatatypeDestructor dtor } &&
+              dtor.EnclosingCtors.Count == dtor.EnclosingCtors[0].EnclosingDatatype.Ctors.Count) {
+            Found = true;
+          }
+        }
+      }
+
+      private Expr LambdaCanCallAssumption(LambdaExpr e, CanCallOptions cco) {
+        var environment = BuildLambdaEnvironment(e);
+        var et = environment.Translator;
+        // These source-scoped facts now retain formal allocation premises. Make
+        // existing arrow result-allocation consequences available at the actual
+        // applications used in this lambda, including pure applications at OneHeap.
+        var lambdaOptions = (cco ?? new CanCallOptions(false, null)).WithArrowAllocationFacts();
+        var reads = e.Reads.Expressions.ConvertAll(environment.Substituter.SubstFrameExpr);
+        var bodyFacts = et.CanCallAssumption(Substitute(e.Body, null, environment.Substitution), lambdaOptions);
+        Expr readsFacts = Boogie.Expr.True;
+        foreach (var frame in reads) {
+          readsFacts = BplAnd(readsFacts, et.CanCallAssumption(frame.E, lambdaOptions));
+        }
+        var footprintFact = et.DefineFiniteSetView(GetToken(e), et.BuildBoxedReadsFootprint(GetToken(e), reads));
+        if (reads.Count != 0) {
+          readsFacts = BplAnd(readsFacts, BplImp(et.FiniteReadsSupport(reads), footprintFact));
+        }
+        var range = e.Range == null ? null : Substitute(e.Range, null, environment.Substitution);
+        var rangeFacts = range == null ? Boogie.Expr.True : et.CanCallAssumption(range, lambdaOptions);
+        if (reads.Count == 0 && bodyFacts is Boogie.LiteralExpr { IsTrue: true } &&
+            rangeFacts is Boogie.LiteralExpr { IsTrue: true }) {
+          // The only fact is the constant empty footprint, already independent
+          // of the formals and range. A guarded selector quantifier is redundant.
+          return footprintFact;
+        }
+        Expr facts = BplAnd(readsFacts, bodyFacts);
+        if (range != null) {
+          facts = BplAnd(rangeFacts, BplImp(et.TrExpr(range), facts));
+        }
+        // Lambda source well-formedness checks its formals with ISALLOC in this
+        // future heap. Export child permissions only under those same premises.
+        var guard = BplAnd(BplAnd(environment.ArgumentTypes, environment.ArgumentAllocation),
+          BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, environment.Heap));
+        if (HeapExpr != null && HeapExpr is not Boogie.IdentifierExpr { Name: "$OneHeap" }) {
+          guard = BplAnd(guard, BoogieGenerator.HeapSameOrSucc(HeapExpr, environment.Heap));
+        }
+        // Heap-independent definitions use $OneHeap as a translation placeholder,
+        // not an actual source formation heap. Their well-formedness proof is
+        // generic in a good heap, which can be this allocated formal-argument heap.
+        // Actual current, previous, and labeled heaps retain their succession guard.
+        var tok = GetToken(e);
+        var familyVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
+          BoogieGenerator.CurrentIdGenerator.FreshId("$lambdaFamily#"),
+          new Boogie.MapType(tok, [], [Predef.LayerType], Predef.HandleType)));
+        var family = new Boogie.IdentifierExpr(tok, familyVar);
+        var handle = BoogieGenerator.FunctionCall(tok, BuiltinFunction.AtLayer, Predef.HandleType,
+          family, environment.Layer);
+        var arguments = environment.Binders.Skip(1).Select(variable =>
+          (Expr)new Boogie.IdentifierExpr(tok, variable)).ToList();
+        var selectorArguments = Concat(Map(e.Type.AsArrowType.TypeArgs, BoogieGenerator.TypeToTy),
+          Cons(environment.Heap, Cons(handle, arguments)));
+        // Selector patterns cover the family, layer, heap, and arguments. An
+        // equality-guarded family alias prevents interpreted captures from being
+        // expanded into patterns; it names only this exact source lambda family.
+        var readsSelector = FunctionCall(tok, BoogieGenerator.Reads(e.BoundVars.Count), Predef.SetType, selectorArguments);
+        var requiresSelector = FunctionCall(tok, BoogieGenerator.Requires(e.BoundVars.Count), Boogie.Type.Bool, selectorArguments);
+        var applySelector = FunctionCall(tok, BoogieGenerator.Apply(e.BoundVars.Count), Predef.BoxType, selectorArguments);
+        var trigger = new Boogie.Trigger(tok, true, [readsSelector],
+          new Boogie.Trigger(tok, true, [requiresSelector],
+            new Boogie.Trigger(tok, true, [applySelector])));
+        if (reads.Count == 0) {
+          // Pure arrow applications use $OneHeap. Match that application with a
+          // good future heap while retaining the formal allocation and heap-
+          // succession premises in the body of this same quantifier.
+          var pureSelectorArguments = Concat(Map(e.Type.AsArrowType.TypeArgs, BoogieGenerator.TypeToTy),
+            Cons(BoogieGenerator.NewOneHeapExpr(tok), Cons(handle, arguments)));
+          var pureApplySelector = FunctionCall(tok, BoogieGenerator.Apply(e.BoundVars.Count), Predef.BoxType,
+            pureSelectorArguments);
+          var goodHeap = BoogieGenerator.FunctionCall(tok, BuiltinFunction.IsGoodHeap, null, environment.Heap);
+          trigger = new Boogie.Trigger(tok, true, [pureApplySelector, goodHeap], trigger);
+          var constructorFacts = new TotalDatatypeDestructorCollector();
+          constructorFacts.Visit(e.Body);
+          if (e.Range != null) {
+            constructorFacts.Visit(e.Range);
+          }
+          if (constructorFacts.Found) {
+            // Match this pattern only when the source's existing child facts
+            // contain a total datatype destructor's constructor fact. Pure arrow
+            // subtype checks can need that fact before any result application;
+            // their selector types can also differ from the source result type.
+            // The complete native guard and exact family equality are unchanged.
+            var sourceTriggerTerms = new List<Expr> { handle, goodHeap };
+            sourceTriggerTerms.AddRange(arguments.Zip(e.BoundVars,
+              (argument, bv) => BoogieGenerator.MkIsBox(argument, bv.Type)));
+            trigger = new Boogie.Trigger(tok, true, sourceTriggerTerms, trigger);
+          }
+        }
+        var actualFamily = BuildLambdaHandleFamily(e, BuildLambdaEnvironment(e));
+        var familyGuard = BplAnd(Boogie.Expr.Eq(family, actualFamily), guard);
+        var guardedFacts = BplForall(Cons<Variable>(familyVar,
+          environment.LayerBinders.Concat(environment.Binders).ToList()), trigger,
+          BplImp(familyGuard, facts));
+        // With no reads expressions the characteristic predicate is constant
+        // false, independent of the lambda's arguments, heap, and precondition.
+        // Its exact empty finite view therefore needs no formal-domain premise.
+        // Emit this closed fact once: D && (forall x :: G ==> D && F) is equivalent
+        // to D && (forall x :: G ==> F). The caller preserves enclosing source guards.
+        return reads.Count == 0 ? BplAnd(footprintFact, guardedFacts) : guardedFacts;
+      }
+
+      private Expr ArrowApplicationAllocationFact(ApplyExpr e) {
+        var arrow = e.Function.Type.AsArrowType;
+        var heap = HeapExprForArrow(e.Function.Type);
+        var function = TrExpr(e.Function);
+        var types = Map(arrow.TypeArgs, BoogieGenerator.TypeToTy);
+        var arguments = e.Args.ConvertAll(argument =>
+          BoogieGenerator.BoxIfNotNormallyBoxed(argument.Origin, TrExpr(argument), argument.Type));
+        var selectorArguments = Concat(types, Cons(heap, Cons(function, arguments)));
+        var allocated = BoogieGenerator.MkIsAlloc(function, BoogieGenerator.ClassTyCon(arrow, types), heap);
+        for (var i = 0; i < arguments.Count; i++) {
+          allocated = BplAnd(allocated, BoogieGenerator.MkIsAllocBox(arguments[i], arrow.Args[i], heap));
+        }
+        var requires = FunctionCall(e.Origin, Requires(e.Args.Count), Boogie.Type.Bool, selectorArguments);
+        var goodHeap = BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, heap);
+        var applied = FunctionCall(e.Origin, Apply(e.Args.Count), Predef.BoxType, selectorArguments);
+        var resultAllocated = BoogieGenerator.MkIsAllocBox(applied, arrow.Result, heap);
+        // This is an instance of the existing allocated-arrow result axiom in
+        // Types.cs. Every premise and the exact selector heap remain explicit;
+        // it does not connect OneHeap to a current or previous heap.
+        return BplImp(BplAnd(BplAnd(goodHeap, allocated), requires), resultAllocated);
+      }
+
+      // A source-scoped consequence of pure application semantics, rather than
+      // an instance of the native Apply axiom: the native theory does not connect
+      // Apply at OneHeap with Apply at an unrelated good heap. Retain the
+      // actual-heap, type, allocation, precondition and capture guards.
+      private Expr PureArrowApplicationAllocationFact(ApplyExpr e) {
+        if (!e.Function.Type.IsArrowTypeWithoutReadEffects || HeapExpr == null ||
+            HeapExpr is Boogie.IdentifierExpr { Name: "$OneHeap" }) {
+          return Expr.True;
+        }
+        var heap = HeapExpr;
+        var arrow = e.Function.Type.AsArrowType;
+        var function = TrExpr(e.Function);
+        var types = Map(arrow.TypeArgs, BoogieGenerator.TypeToTy);
+        var arguments = e.Args.ConvertAll(argument =>
+          BoogieGenerator.BoxIfNotNormallyBoxed(argument.Origin, TrExpr(argument), argument.Type));
+        var selectorArguments = Concat(types,
+          Cons(BoogieGenerator.NewOneHeapExpr(e.Origin), Cons(function, arguments)));
+        Expr guard = BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, heap);
+        guard = BplAnd(guard, BoogieGenerator.MkIs(function, BoogieGenerator.ClassTyCon(arrow, types)));
+        guard = BplAnd(guard, BoogieGenerator.MkIsAlloc(function, BoogieGenerator.ClassTyCon(arrow, types), heap));
+        for (var i = 0; i < arguments.Count; i++) {
+          guard = BplAnd(guard, BoogieGenerator.MkIs(arguments[i], types[i], true));
+          guard = BplAnd(guard, BoogieGenerator.MkIsAllocBox(arguments[i], arrow.Args[i], heap));
+        }
+        guard = BplAnd(guard, FunctionCall(e.Origin, Requires(e.Args.Count), Boogie.Type.Bool, selectorArguments));
+        var reads = FunctionCall(e.Origin, Reads(e.Args.Count), Predef.SetType, selectorArguments);
+        var empty = BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.SetEmpty, Predef.BoxType);
+        guard = BplAnd(guard, BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.SetEqual, null, reads, empty));
+
+        // Retain actual captures as well as the allocated function and arguments.
+        // This also keeps a captured previous/labeled heap at or before this heap.
+        bool usesHeap = false, usesOldHeap = false;
+        var heapAt = new HashSet<Label>();
+        Type usesThis = null;
+        var fvs = new HashSet<IVariable>();
+        FreeVariablesUtil.ComputeFreeVariables(BoogieGenerator.options, e, fvs,
+          ref usesHeap, ref usesOldHeap, heapAt, ref usesThis, true);
+        usesOldHeap |= UsesPreviousHeap(e);
+        var capturedHeaps = new List<Expr>();
+        if (usesOldHeap) {
+          capturedHeaps.Add(Old.HeapExpr);
+        }
+        foreach (var label in heapAt.OrderBy(label => label.Name)) {
+          capturedHeaps.Add(OldAt(label).HeapExpr);
+        }
+        foreach (var capturedHeap in capturedHeaps) {
+          if (capturedHeap == null) {
+            return Expr.True;
+          }
+          guard = BplAnd(guard, BoogieGenerator.HeapSameOrSucc(capturedHeap, heap));
+        }
+        foreach (var v in fvs.OrderBy(v => v.UniqueName)) {
+          if (v.Type.MayShowReferences) {
+            guard = BplAnd(guard, BoogieGenerator.MkIsAlloc(BoogieGenerator.TrVar(e.Origin, v), v.Type, heap));
+          }
+        }
+        if (usesThis != null) {
+          guard = BplAnd(guard, BoogieGenerator.MkIsAlloc(
+            new Boogie.IdentifierExpr(e.Origin, This, BoogieGenerator.TrType(usesThis)), usesThis, heap));
+        }
+        var applied = FunctionCall(e.Origin, Apply(e.Args.Count), Predef.BoxType, selectorArguments);
+        var resultAllocated = BoogieGenerator.MkIsAllocBox(applied, arrow.Result, heap);
+        return BplImp(guard, resultAllocated);
+      }
+
+      /// <summary>
+      /// A lambda value is allocated in any good heap in which what it captures is allocated: its free variables, and
+      /// "this" if it uses it.  A lambda that uses the previous heap ("old", "fresh", "unchanged", a two-state function
+      /// or lemma) or the heap at a label also captures that heap, which the heap must be or succeed.  The arrow
+      /// allocation axiom is an implication, from an allocated function value to its reads set and results
+      /// (erniecohen/dafny#132), so this is how a lambda is known to be allocated.
+      /// </summary>
+      private Expr LambdaAllocation(LambdaExpr e) {
+        bool usesHeap = false, usesOldHeap = false;
+        var heapAt = new HashSet<Label>();
+        Type usesThis = null;
+        var fvs = new HashSet<IVariable>();
+        FreeVariablesUtil.ComputeFreeVariables(BoogieGenerator.options, e, fvs, ref usesHeap, ref usesOldHeap, heapAt, ref usesThis, true);
+        usesOldHeap |= UsesPreviousHeap(e);
+        var varNameGen = BoogieGenerator.CurrentIdGenerator.NestedFreshIdGenerator("$la#");
+        var hVar = BplBoundVar(varNameGen.FreshId("#heap#"), Predef.HeapType, out var h);
+        Bpl.Expr captured = BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, h);
+        var capturedHeaps = new List<Bpl.Expr>();
+        if (usesOldHeap) {
+          capturedHeaps.Add(Old.HeapExpr);
+        }
+        foreach (var label in heapAt.OrderBy(l => l.Name)) {
+          capturedHeaps.Add(OldAt(label).HeapExpr);
+        }
+        foreach (var heap in capturedHeaps) {
+          if (heap == null) {
+            return Expr.True;
+          }
+          captured = BplAnd(captured, BplOr(Bpl.Expr.Eq(heap, h), BoogieGenerator.HeapSucc(heap, h)));
+        }
+        foreach (var v in fvs.OrderBy(v => v.UniqueName)) {
+          if (v.Type.MayShowReferences) {
+            captured = BplAnd(captured, BoogieGenerator.MkIsAlloc(BoogieGenerator.TrVar(e.Origin, v), v.Type, h));
+          }
+        }
+        if (usesThis != null) {
+          captured = BplAnd(captured, BoogieGenerator.MkIsAlloc(new Bpl.IdentifierExpr(e.Origin, This, BoogieGenerator.TrType(usesThis)), usesThis, h));
+        }
+        // A trigger cannot hold the lambda, which binds variables, so a let names its value.
+        var fVar = BplBoundVar(varNameGen.FreshId("#f#"), Predef.HandleType, out var f);
+        var allocated = BoogieGenerator.MkIsAlloc(f, e.Type.AsArrowType, h);
+        var rule = new Bpl.ForallExpr(e.Origin, [hVar], BplTrigger(allocated), BplImp(captured, allocated));
+        return new Bpl.LetExpr(e.Origin, [fVar], [TrExpr(e)], null, rule);
+      }
+
+      /// <summary>
+      /// Whether the expression uses the previous heap in a way that ComputeFreeVariables does not report:
+      /// a two-state function without a label, called or as a value, or a call of a two-state lemma without
+      /// a label in a statement of the expression.  None of these occurs in a one-state context, whose
+      /// translation has no previous heap.
+      /// </summary>
+      private static bool UsesPreviousHeap(Expression e) {
+        return e is FunctionCallExpr { Function: TwoStateFunction, AtLabel: null }
+          || e is MemberSelectExpr { Member: TwoStateFunction or TwoStateLemma, AtLabel: null }
+          || (e is StmtExpr s && s.S.SubExpressionsIncludingTransitiveSubStatements.Any(UsesPreviousHeap))
+          || e.SubExpressions.Any(UsesPreviousHeap);
       }
 
       public Expression DesugarMatchExpr(MatchExpr e) {
@@ -1746,6 +2323,100 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
         return allowance;
       }
 
+      /// <summary>
+      /// Can-call facts for a verification obligation, with closed integer literal
+      /// identities available only in that local context. Shared function and type
+      /// axioms must use CanCallAssumption instead.
+      /// </summary>
+      public Expr CanCallAssumptionForVerification(Expression expr, CanCallOptions cco = null) {
+        var canCall = CanCallAssumption(expr, cco);
+        if (!options.Get(CommonOptionBag.AdditionalAxioms)) {
+          return canCall;
+        }
+        var collector = new LocalIntegerLiteralCollector(this);
+        collector.Visit(expr);
+        return BplAnd(BplAnd(canCall, IntegerLiteralIdentities(collector.Values)), TwoStateFunctionValueReflexivity(expr));
+      }
+
+      /// <summary>
+      /// Heap succession is reflexive at the previous heap of each two-state function that "expr" uses as a
+      /// value, whose handle is applied in a current heap that may be the same (erniecohen/dafny#94).  These
+      /// are instances of reflexivity on good heaps, local to the verification context, as the closed literal
+      /// identities are; --additional-axioms only.
+      /// </summary>
+      private Expr TwoStateFunctionValueReflexivity(Expression expr) {
+        var collector = new TwoStateFunctionValueCollector();
+        collector.Visit(expr, this);
+        Expr facts = Expr.True;
+        var heaps = new HashSet<string>();
+        foreach (var heap in collector.PreviousHeaps) {
+          if (heaps.Add(heap.ToString())) {
+            var goodHeap = BoogieGenerator.FunctionCall(heap.tok, BuiltinFunction.IsGoodHeap, null, heap);
+            facts = BplAnd(facts, BplImp(goodHeap, BoogieGenerator.HeapSucc(heap, heap)));
+          }
+        }
+        return facts;
+      }
+
+      private class TwoStateFunctionValueCollector : TopDownVisitor<ExpressionTranslator> {
+        // The previous heaps of the handles, as TrExpr gives them
+        public List<Expr> PreviousHeaps { get; } = [];
+
+        protected override bool VisitOneExpr(Expression expr, ref ExpressionTranslator etran) {
+          if (expr is OldExpr oldExpr) {
+            etran = etran.OldAt(oldExpr.AtLabel);
+          } else if (expr is MemberSelectExpr { Member: TwoStateFunction }) {
+            PreviousHeaps.Add(etran.Old.HeapExpr);
+          }
+          return true;
+        }
+      }
+
+      public Expr IntegerLiteralIdentities(IEnumerable<Expr> arguments) {
+        if (!options.Get(CommonOptionBag.AdditionalAxioms)) {
+          return Expr.True;
+        }
+        var values = new SortedSet<BigInteger>();
+        foreach (var argument in arguments) {
+          CollectIntegerLiteral(argument, values);
+        }
+        return IntegerLiteralIdentities(values);
+      }
+
+      private Expr IntegerLiteralIdentities(SortedSet<BigInteger> values) {
+        Expr identities = Expr.True;
+        foreach (var value in values) {
+          var numeral = new Bpl.LiteralExpr(Token.NoToken, BigNum.FromBigInt(value));
+          var literal = BoogieGenerator.FunctionCall(Token.NoToken, BuiltinFunction.LitInt, null, numeral);
+          identities = BplAnd(identities, Expr.Eq(literal, numeral));
+        }
+        return identities;
+      }
+
+      private static void CollectIntegerLiteral(Expr argument, SortedSet<BigInteger> values) {
+        if (argument is NAryExpr application && application.Fun.FunctionName == "LitInt" &&
+            application.Args.Count == 1 && application.Args[0] is Bpl.LiteralExpr { isBigNum: true } numeral) {
+          values.Add(numeral.asBigNum.ToBigInteger);
+        }
+      }
+
+      private class LocalIntegerLiteralCollector(ExpressionTranslator etran) : BottomUpVisitor {
+        // This set belongs to one emitted assumption. There is no deduplication
+        // across branches, obligations or declarations where a fact may be absent.
+        public SortedSet<BigInteger> Values { get; } = [];
+
+        protected override void VisitOneExpr(Expression expr) {
+          if (expr is FunctionCallExpr call) {
+            for (var i = 0; i < call.Args.Count; i++) {
+              var actual = call.Args[i];
+              var argument = etran.BoogieGenerator.AdaptBoxing(etran.GetToken(call), etran.TrExpr(actual),
+                Cce.NonNull(actual.Type), call.Function.Ins[i].Type);
+              CollectIntegerLiteral(argument, Values);
+            }
+          }
+        }
+      }
+
       public Expr CanCallAssumption(Expression expr, CanCallOptions cco = null) {
         Contract.Requires(expr != null);
         Contract.Requires(this != null);
@@ -1776,7 +2447,10 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
               r = BplAnd(r, correctConstructor);
             }
           } else if (e.Member is ConstantField { Rhs: { } rhs } && BoogieGenerator.RevealedInScope(e.Member)) {
-            r = CanCallAssumption(Substitute(rhs, e.Obj, new Dictionary<IVariable, Expression>(), null),
+            // The type arguments are substituted too: the right-hand side is stated in terms of the enclosing
+            // type's type parameters, which are not in scope here (and BplForallTrim may keep a bound
+            // variable's type antecedent, which mentions them).
+            r = CanCallAssumption(Substitute(rhs, e.Obj, new Dictionary<IVariable, Expression>(), e.TypeArgumentSubstitutionsWithParents()),
               options.Get(CommonOptionBag.ConsistentObligationChecks) ? cco : null);
           }
           return r;
@@ -1826,6 +2500,12 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
               Cons(CanCallAssumption(e.Function, cco),
                 e.Args.ConvertAll(ee => CanCallAssumption(ee, cco)))),
             requiresk);
+          var resultCarrier = e.Type.NormalizeToAncestorType();
+          if (cco is { ArrowAllocationFacts: true } &&
+              (resultCarrier.MayInvolveReferences || resultCarrier.IsArrowType)) {
+            facts = BplAnd(facts, ArrowApplicationAllocationFact(e));
+            facts = BplAnd(facts, PureArrowApplicationAllocationFact(e));
+          }
           return facts;
 
         } else if (expr is FunctionCallExpr) {
@@ -1909,40 +2589,8 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
         } else if (expr is LetExpr letExpr) {
           return LetCanCallAssumption(letExpr, cco);
 
-        } else if (expr is LambdaExpr) {
-          var e = (LambdaExpr)expr;
-
-          var bvarsAndAntecedents = new List<Tuple<Boogie.Variable, Boogie.Expr>>();
-          var varNameGen = BoogieGenerator.CurrentIdGenerator.NestedFreshIdGenerator("$l#");
-
-          Boogie.Expr heap; var hVar = BplBoundVar(varNameGen.FreshId("#heap#"), BoogieGenerator.Predef.HeapType, out heap);
-          var et = this.HeapExpr != null
-            ? new ExpressionTranslator(this.BoogieGenerator, this.Predef, heap, this.Old.HeapExpr, this.scope)
-            : new ExpressionTranslator(this, heap);
-
-          Dictionary<IVariable, Expression> subst = new Dictionary<IVariable, Expression>();
-          foreach (var bv in e.BoundVars) {
-            Boogie.Expr ve; var yVar = BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), BoogieGenerator.TrType(bv.Type), out ve);
-            var wh = BoogieGenerator.GetWhereClause(bv.Origin, new Boogie.IdentifierExpr(bv.Origin, yVar), bv.Type, et, NOALLOC);
-            bvarsAndAntecedents.Add(Tuple.Create<Boogie.Variable, Boogie.Expr>(yVar, wh));
-            subst[bv] = new BoogieWrapper(ve, bv.Type);
-          }
-
-          var canCall = et.CanCallAssumption(Substitute(e.Body, null, subst), cco);
-          if (e.Range != null) {
-            var range = Substitute(e.Range, null, subst);
-            canCall = BplAnd(CanCallAssumption(range, cco), BplImp(TrExpr(range), canCall));
-          }
-
-          // It's important to add the heap last to "bvarsAndAntecedents", because the heap may occur in the antecedents of
-          // the other variables and BplForallTrim processes the given tuples in order.
-          var goodHeap = BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, heap);
-          bvarsAndAntecedents.Add(Tuple.Create<Boogie.Variable, Boogie.Expr>(hVar, goodHeap));
-
-          //TRIG (forall $l#0#heap#0: Heap, $l#0#x#0: int :: true)
-          //TRIG (forall $l#0#heap#0: Heap, $l#0#t#0: DatatypeType :: _module.__default.TMap#canCall(_module._default.TMap$A, _module._default.TMap$B, $l#0#heap#0, $l#0#t#0, f#0))
-          //TRIG (forall $l#4#heap#0: Heap, $l#4#x#0: Box :: _0_Monad.__default.Bind#canCall(Monad._default.Associativity$B, Monad._default.Associativity$C, $l#4#heap#0, Apply1(Monad._default.Associativity$A, #$M$B, f#0, $l#4#heap#0, $l#4#x#0), g#0))
-          return BplForallTrim(bvarsAndAntecedents, null, canCall); // L_TRIGGER
+        } else if (expr is LambdaExpr lambda) {
+          return BplAnd(LambdaCanCallAssumption(lambda, cco), LambdaAllocation(lambda));
 
         } else if (expr is ComprehensionExpr) {
           var e = (ComprehensionExpr)expr;
@@ -1955,44 +2603,21 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
           if (e.Range != null) {
             canCall = BplAnd(CanCallAssumption(e.Range, cco), BplImp(TrExpr(e.Range), canCall));
           }
-          if (expr is MapComprehension mc && mc.IsGeneralMapComprehension) {
-            canCall = BplAnd(canCall, CanCallAssumption(mc.TermLeft, cco));
-
-            // The translation of "map x,y | R(x,y) :: F(x,y) := G(x,y)" makes use of projection
-            // functions project_x,project_y.  These are functions defined here by the following axiom:
-            //     forall x,y :: R(x,y) ==> var x',y' := project_x(F(x,y)),project_y(F(x,y)); R(x',y') && F(x',y') == F(x,y)
-            // that is (without the let expression):
-            //     forall x,y :: R(x,y) ==> R(project_x(F(x,y)), project_y(F(x,y))) && F(project_x(F(x,y)), project_y(F(x,y))) == F(x,y)
-            // The triggers for the quantification are those detected for the given map comprehension, if any.
-            List<Boogie.Variable> bvs;
-            List<Boogie.Expr> args;
-            BoogieGenerator.CreateBoundVariables(mc.BoundVars, out bvs, out args);
-            Contract.Assert(mc.BoundVars.Count == bvs.Count);
-            BoogieGenerator.CreateMapComprehensionProjectionFunctions(mc);
-            Contract.Assert(mc.ProjectionFunctions != null);
-            Contract.Assert(mc.ProjectionFunctions.Count == mc.BoundVars.Count);
-            var substMap = new Dictionary<IVariable, Expression>();
-            for (var i = 0; i < mc.BoundVars.Count; i++) {
-              substMap.Add(mc.BoundVars[i], new BoogieWrapper(args[i], mc.BoundVars[i].Type));
-            }
-            var R = TrExpr(Substitute(mc.Range, null, substMap));
-            var F = TrExpr(Substitute(mc.TermLeft, null, substMap));
-            var trig = BoogieGenerator.TrTrigger(this, e.Attributes, expr.Origin, substMap);
-            substMap = new Dictionary<IVariable, Expression>();
-            for (var i = 0; i < mc.BoundVars.Count; i++) {
-              var p = new Boogie.NAryExpr(BoogieGenerator.GetToken(mc), new Boogie.FunctionCall(mc.ProjectionFunctions[i]), new List<Boogie.Expr> { F });
-              substMap.Add(e.BoundVars[i], new BoogieWrapper(p, e.BoundVars[i].Type));
-            }
-            var Rprime = TrExpr(Substitute(mc.Range, null, substMap));
-            var Fprime = TrExpr(Substitute(mc.TermLeft, null, substMap));
-            var defn = BplForall(bvs, trig, BplImp(R, BplAnd(Rprime, Boogie.Expr.Eq(F, Fprime))));
-            canCall = BplAnd(canCall, defn);
+          if (e is MapComprehension { IsGeneralMapComprehension: true } mc) {
+            canCall = BplAnd(canCall, BplImp(TrExpr(e.Range), CanCallAssumption(mc.TermLeft, cco)));
           }
           // Create a list of all possible bound variables
           var bvarsAndAntecedents = TrBoundVariables_SeparateWhereClauses(e.BoundVars);
+          var possiblyEmpty = new HashSet<Boogie.Variable>(e.BoundVars.Zip(bvarsAndAntecedents)
+            .Where(pair => !pair.First.Type.IsNonempty).Select(pair => pair.Second.Item1));
           // Produce the quantified CanCall expression, with a suitably reduced set of bound variables
           var tr = BoogieGenerator.TrTrigger(this, e.Attributes, expr.Origin);
-          return BplForallTrim(bvarsAndAntecedents, tr, canCall);
+          var childFacts = BplForallTrim(bvarsAndAntecedents, tr, canCall, possiblyEmpty);
+          childFacts = AddFiniteComprehensionCanCallTrigger(e, bvarsAndAntecedents, childFacts);
+          if (e is MapComprehension { IsGeneralMapComprehension: true } generalMap) {
+            childFacts = BplAnd(childFacts, DefineMapSelectedWitnesses(generalMap));
+          }
+          return BplAnd(childFacts, FiniteCollectionDefinition(e));
 
         } else if (expr is StmtExpr) {
           var e = (StmtExpr)expr;
@@ -2053,6 +2678,7 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
 
     public class CanCallOptions {
       public bool SkipIsA;
+      public readonly bool ArrowAllocationFacts;
 
       public readonly Function EnclosingFunction; // self-call allowance is applied to the enclosing function
       public readonly bool SelfCallAllowanceAlsoForOverride;
@@ -2061,11 +2687,18 @@ BplBoundVar(varNameGen.FreshId(string.Format("#{0}#", bv.Name)), Predef.BoxType,
         return f == EnclosingFunction || (SelfCallAllowanceAlsoForOverride && f == EnclosingFunction.OverriddenFunction);
       }
 
-      public CanCallOptions(bool skipIsA, Function enclosingFunction, bool selfCallAllowanceAlsoForOverride = false) {
+      public CanCallOptions WithArrowAllocationFacts() {
+        return ArrowAllocationFacts ? this :
+          new CanCallOptions(SkipIsA, EnclosingFunction, SelfCallAllowanceAlsoForOverride, true);
+      }
+
+      public CanCallOptions(bool skipIsA, Function enclosingFunction, bool selfCallAllowanceAlsoForOverride = false,
+        bool arrowAllocationFacts = false) {
         Contract.Assert(!selfCallAllowanceAlsoForOverride ||
                         (enclosingFunction.OverriddenFunction != null &&
                          enclosingFunction.Ins.Count == enclosingFunction.OverriddenFunction.Ins.Count));
         this.SkipIsA = skipIsA;
+        this.ArrowAllocationFacts = arrowAllocationFacts;
         this.EnclosingFunction = enclosingFunction;
         this.SelfCallAllowanceAlsoForOverride = selfCallAllowanceAlsoForOverride;
       }

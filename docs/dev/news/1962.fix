@@ -1,0 +1,1 @@
+The opt-in verifier option --bitvector-map-keys preserves bitvector key types in map and imap lookups, allowing update/read proofs without changing default verification.

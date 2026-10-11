@@ -319,6 +319,8 @@ Various options control the verification process, in addition to all those descr
 - Control of the proof engine
    - `--verification-time-limit`
    - `--boogie`
+   - `--solver-path`
+   - `--arithmetic-solver`
 
 
 #### 13.6.1.4. `dafny translate <language>` {#sec-dafny-translate}
@@ -387,6 +389,16 @@ the `--input` option on the command-line.
 - Anything that is not an option and is not that one dfy file
 is an argument to the program being run (and not to dafny itself).
 - If the `--` option is used, then anything after that option is a command-line argument to the program being run.
+
+The `--output` (or `-o`) option sets the output filename and location, as for `dafny build`.
+To use `[options] output` from a project file when running, enable `--project-output`
+or set `project-output = true` in the project file. This option defaults to false;
+without it, `run` retains its usual filename derived from the source file.
+Command-line `--output` takes precedence over the project setting.
+`output = "bin/result"` names files using `result` inside `bin`; `output = "bin"`
+names files using `bin` in the project directory. It does not select an output directory.
+`--project-output` also rejects compiler output paths without a filename stem,
+such as empty values, `.`, `..`, `bin/` and `.cs`, in `build`, `run` and `test`.
 
 During development, users must use `dafny run --allow-warnings` if they want to run their Dafny code when it contains warnings.
 
@@ -478,7 +490,9 @@ To improve assurance, provide a body that proves the conclusion.
 This is equivalent to an assumption of any loop invariants in the code after the loop.
 To improve assurance, provide a body that establishes any stated invariants.
 
-* Any declaration with no body and at least one `ensures` clause.
+* Any declaration with no body and at least one `ensures` clause, except instance members of traits and declarations in abstract modules.
+A bodyless instance member of a trait specifies a contract that implementations must satisfy; it does not introduce a missing-body assumption.
+Static trait members remain subject to this check. Explicit `{:axiom}` and `{:extern}` attributes are still audited.
 Any code that calls this declaration will assume that all `ensures` clauses are true after it returns.
 To improve assurance, provide a body that proves that any `ensures` clauses hold.
 
@@ -1832,6 +1846,11 @@ Note that all input `.dfy` files and any needed runtime library code are combine
 which is then compiled by `dotnet` to a `.dll`.
 
 
+The opt-in option `--cs-replacement-types` uses the replacement module's concrete
+representation when C# code refers to an abstract type in the replaced module.
+This includes client signatures, type descriptors, and default values. The option
+is false by default and affects C# compilation only; it does not change verification.
+
 Examples of how to integrate C# libraries and source code with Dafny source code
 are contained in [this separate document](integration-cs/IntegrationCS).
 
@@ -1909,6 +1928,14 @@ The build and run steps are
 
 In one step:
 - `dafny run --target:py A.dfy`
+
+The opt-in option `--python-reorder-replacements` orders generated Python modules
+by their compilation dependencies after applying module replacements. Use it when
+a module consumes a replaceable module whose implementation would otherwise be
+emitted later. Dependencies of the implementation are emitted first as well.
+The option is disabled by default because changing module import order can change
+initialization order. A cycle introduced by replacement is reported as a
+compilation error when this option is enabled.
 
 Examples of how to integrate Python libraries and source code with Dafny source
 are contained in [this separate document](integration-py/IntegrationPython).
@@ -2345,7 +2372,42 @@ and what information it produces about the verification process.
   by placing the attribute [`{:disable-nonlinear-arithmetic}`](#sec-disable-nonlinear-arithmetic) after the module keyword.
   The attribute optionally takes the value `false` to enable nonlinear arithmetic.
 
-* `--manual-lemma-induction` - disables automatic induction for lemmas
+* `--arithmetic-solver N` - select Z3's arithmetic solver for modules without an
+  explicit [`{:z3ArithmeticSolver N}`](#sec-z3-arithmetic-solver) attribute.
+  The default is 2; values from 0 through 6 are accepted. Solver 6 can help with
+  some nonlinear arithmetic proofs, but changing solvers can change verification
+  results and resource use. See [Z3's parameter reference](https://microsoft.github.io/z3guide/programming/Parameters/)
+  for the meanings of the other values. In a project file, use
+  `arithmetic-solver = 6` in the `[options]` section. A command-line value takes
+  precedence over the project file; an explicit module attribute takes precedence
+  over either. The selected value is emitted on each verification implementation,
+  so it also takes precedence over `--solver-option O:smt.arith.solver=N` or the
+  corresponding `--boogie /proverOpt:O:smt.arith.solver=N` option.
+
+* `--additional-axioms` - enable the fork's additional verifier axioms. This
+  shared option is disabled by default. It currently supplies the bounded
+  integer/bitvector round trip: for `0 <= a < 2^N`, `(a as bvN) as int == a`.
+  It does not relax conversion fit checks. Additional axioms can change proof
+  costs and stability. Use `additional-axioms = true` in a project file's
+  `[options]` section; `--additional-axioms=false` overrides that setting.
+  This setting also applies to editor verification and is distinct from
+  `--allow-axioms`, which controls warnings about assumptions in user code.
+  It also exposes existing identities for concrete native integer literals used
+  as function-call arguments in local verification assumptions, preserving those
+  arguments and conversion checks. Shared function/type axioms are unchanged.
+  The unchanged round-trip and shift-by-zero examples pass the pinned Z3 4.12.1
+  and 5.1.0 gates in both resolver modes. Other proof costs remain solver-dependent.
+  It also assumes that heap succession is reflexive at the previous heap of a
+  two-state function used as a value, so that the value can be applied where that
+  heap is the current one, and it instantiates the existing allocation axiom of a
+  function that reads no heap and takes no references where the function is
+  applied, so that the members of its result are known to be allocated.
+  After an assign-such-that statement it also makes checked call permissions
+  available for the selected values, so predicates in the constraint can unfold.
+  Existing well-formedness, precondition and existence checks are preserved.
+  See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
+
+* `--manual-lemma-induction` - disables automatic inducntion for lemmas
 
 * `--isolate-assertions` - verify assertions individually
 * `--consistent-obligation-checks` - prepare and check matching implicit obligations once using the existing local assertion machinery and fuel rules (experimental, disabled by default; also a project-file option).

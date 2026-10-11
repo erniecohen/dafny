@@ -1,0 +1,578 @@
+{
+  "Bug142.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "Bug142.dfy(11,6): Warning: Shadowed let-variable name: state0\nBug142.dfy(12,6): Warning: Shadowed let-variable name: state0\nBug142.dfy(13,6): Warning: Shadowed let-variable name: state0\nBug142.dfy(30,6): Warning: Shadowed let-variable name: state1\nBug142.dfy(31,6): Warning: Shadowed let-variable name: state1\nBug142.dfy(32,6): Warning: Shadowed let-variable name: state1\n\nDafny program verifier did not attempt verification\n"
+  },
+  "Bug142.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "Bug142.dfy(11,6): Warning: Shadowed let-variable name: state0\nBug142.dfy(12,6): Warning: Shadowed let-variable name: state0\nBug142.dfy(13,6): Warning: Shadowed let-variable name: state0\nBug142.dfy(30,6): Warning: Shadowed let-variable name: state1\nBug142.dfy(31,6): Warning: Shadowed let-variable name: state1\nBug142.dfy(32,6): Warning: Shadowed let-variable name: state1\n\nDafny program verifier did not attempt verification\n"
+  },
+  "DecreasesTo2.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "DecreasesTo2.dfy(7,19): Error: ident expected\nDecreasesTo2.dfy(7,10): Error: expected 'to'\nDecreasesTo2.dfy(11,22): Error: ident expected\nDecreasesTo2.dfy(11,10): Error: expected 'to'\nDecreasesTo2.dfy(17,22): Error: ident expected\nDecreasesTo2.dfy(17,13): Error: expected 'to'\nDecreasesTo2.dfy(21,23): Error: ident expected\nDecreasesTo2.dfy(21,10): Error: expected 'to'\nDecreasesTo2.dfy(25,44): Error: closeparen expected\nDecreasesTo2.dfy(25,51): Error: invalid Suffix\n10 parse errors detected in DecreasesTo2.dfy\n"
+  },
+  "DecreasesTo2.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "DecreasesTo2.dfy(7,19): Error: ident expected\nDecreasesTo2.dfy(7,10): Error: expected 'to'\nDecreasesTo2.dfy(11,22): Error: ident expected\nDecreasesTo2.dfy(11,10): Error: expected 'to'\nDecreasesTo2.dfy(17,22): Error: ident expected\nDecreasesTo2.dfy(17,13): Error: expected 'to'\nDecreasesTo2.dfy(21,23): Error: ident expected\nDecreasesTo2.dfy(21,10): Error: expected 'to'\nDecreasesTo2.dfy(25,44): Error: closeparen expected\nDecreasesTo2.dfy(25,51): Error: invalid Suffix\n10 parse errors detected in DecreasesTo2.dfy\n"
+  },
+  "DecreasesTo4.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "DecreasesTo4.dfy(5,10): Error: bindings are not allowed in `decreases to` expressions.\nDecreasesTo4.dfy(9,10): Error: bindings are not allowed in `decreases to` expressions.\nDecreasesTo4.dfy(13,10): Error: bindings are not allowed in `nonincreases to` expressions.\nDecreasesTo4.dfy(17,16): Error: bindings are not allowed in `decreases to` expressions.\nDecreasesTo4.dfy(21,16): Error: 'ghost' components are not allowed in `decreases to` expressions.\nDecreasesTo4.dfy(25,23): Error: 'ghost' components are not allowed in `nonincreases to` expressions.\n6 parse errors detected in DecreasesTo4.dfy\n"
+  },
+  "DecreasesTo4.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "DecreasesTo4.dfy(5,10): Error: bindings are not allowed in `decreases to` expressions.\nDecreasesTo4.dfy(9,10): Error: bindings are not allowed in `decreases to` expressions.\nDecreasesTo4.dfy(13,10): Error: bindings are not allowed in `nonincreases to` expressions.\nDecreasesTo4.dfy(17,16): Error: bindings are not allowed in `decreases to` expressions.\nDecreasesTo4.dfy(21,16): Error: 'ghost' components are not allowed in `decreases to` expressions.\nDecreasesTo4.dfy(25,23): Error: 'ghost' components are not allowed in `nonincreases to` expressions.\n6 parse errors detected in DecreasesTo4.dfy\n"
+  },
+  "ForbidNondeterminismResolve.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "ForbidNondeterminismResolve.dfy(51,11): Warning: the modify statement with a block statement is deprecated\nForbidNondeterminismResolve.dfy(17,7): Error: nondeterministic assignment forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(18,13): Error: nondeterministic assignment forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(19,4): Error: assign-such-that statement forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(20,2): Error: nondeterministic if statement forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(23,2): Error: case-based if statement forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(32,2): Error: binding if statement forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(35,2): Error: nondeterministic loop forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(40,2): Error: case-based loop forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(48,12): Error: nondeterministic assignment forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(50,2): Error: modify statement without a body forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(64,16): Error: nondeterministic assignment forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(130,14): Error: a possibly infinite loop is allowed only if the enclosing method is declared (with 'decreases *') to be possibly non-terminating\nForbidNondeterminismResolve.dfy(79,9): Error: since yield parameters are initialized arbitrarily, iterators are forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(4,6): Error: since fields are initialized arbitrarily, constructor-less classes are forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(90,6): Error: since fields are initialized arbitrarily, constructor-less classes are forbidden by the --enforce-determinism option\n15 resolution/type errors detected in ForbidNondeterminismResolve.dfy\n"
+  },
+  "ForbidNondeterminismResolve.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "ForbidNondeterminismResolve.dfy(51,11): Warning: the modify statement with a block statement is deprecated\nForbidNondeterminismResolve.dfy(17,7): Error: nondeterministic assignment forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(18,13): Error: nondeterministic assignment forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(19,4): Error: assign-such-that statement forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(20,2): Error: nondeterministic if statement forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(23,2): Error: case-based if statement forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(32,2): Error: binding if statement forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(35,2): Error: nondeterministic loop forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(40,2): Error: case-based loop forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(48,12): Error: nondeterministic assignment forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(50,2): Error: modify statement without a body forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(64,16): Error: nondeterministic assignment forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(130,14): Error: a possibly infinite loop is allowed only if the enclosing method is declared (with 'decreases *') to be possibly non-terminating\nForbidNondeterminismResolve.dfy(79,9): Error: since yield parameters are initialized arbitrarily, iterators are forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(4,6): Error: since fields are initialized arbitrarily, constructor-less classes are forbidden by the --enforce-determinism option\nForbidNondeterminismResolve.dfy(90,6): Error: since fields are initialized arbitrarily, constructor-less classes are forbidden by the --enforce-determinism option\n15 resolution/type errors detected in ForbidNondeterminismResolve.dfy\n"
+  },
+  "GhostPrint.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "GhostPrint.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "ImplicitTypeParamPrint.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "ImplicitTypeParamPrint.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "PrecedenceLinter.ignore-indentation.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "PrecedenceLinter.ignore-indentation.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "PrecedenceLinter.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "PrecedenceLinter.dfy(554,4): Warning: unusual indentation in body of let-expression (which ends at line 558, column 35); do you perhaps need parentheses?\nPrecedenceLinter.dfy(6,4): Warning: unusual indentation in left-hand operand of ==> (which starts at line 5, column 3); do you perhaps need parentheses?\nPrecedenceLinter.dfy(50,4): Warning: unusual indentation in left-hand operand of ==> (which starts at line 49, column 3); do you perhaps need parentheses?\nPrecedenceLinter.dfy(50,4): Warning: unusual indentation in right-hand operand of ==> (which ends at line 51, column 3); do you perhaps need parentheses?\nPrecedenceLinter.dfy(56,4): Warning: unusual indentation in left-hand operand of ==> (which starts at line 55, column 3); do you perhaps need parentheses?\nPrecedenceLinter.dfy(62,4): Warning: unusual indentation in left-hand operand of ==> (which starts at line 61, column 3); do you perhaps need parentheses?\nPrecedenceLinter.dfy(74,7): Warning: unusual indentation in left-hand operand of ==> (which starts at line 73, column 3); do you perhaps need parentheses?\nPrecedenceLinter.dfy(74,7): Warning: unusual indentation in right-hand operand of ==> (which ends at line 75, column 6); do you perhaps need parentheses?\nPrecedenceLinter.dfy(107,7): Warning: unusual indentation in left-hand operand of ==> (which starts at line 106, column 3); do you perhaps need parentheses?\nPrecedenceLinter.dfy(113,7): Warning: unusual indentation in left-hand operand of ==> (which starts at line 112, column 3); do you perhaps need parentheses?\nPrecedenceLinter.dfy(119,2): Warning: unusual indentation in right-hand operand of ==> (which ends at line 121, column 3); do you perhaps need parentheses?\nPrecedenceLinter.dfy(208,2): Warning: unusual indentation in body of forall (which ends at line 209, column 6); do you perhaps need parentheses?\nPrecedenceLinter.dfy(225,2): Warning: unusual indentation in body of exists (which ends at line 226, column 6); do you perhaps need parentheses?\nPrecedenceLinter.dfy(231,2): Warning: unusual indentation in body of exists (which ends at line 232, column 6); do you perhaps need parentheses?\nPrecedenceLinter.dfy(230,2): Warning: unusual indentation in body of exists (which ends at line 232, column 6); do you perhaps need parentheses?\nPrecedenceLinter.dfy(284,2): Warning: unusual indentation in else branch of if-then-else (which ends at line 285, column 13); do you perhaps need parentheses?\nPrecedenceLinter.dfy(313,28): Warning: unusual indentation in left-hand operand of <== (which starts at line 314, column 5); do you perhaps need parentheses?\nPrecedenceLinter.dfy(334,19): Warning: unusual indentation in right-hand operand of <==> (which ends at line 335, column 8); do you perhaps need parentheses?\nPrecedenceLinter.dfy(349,2): Warning: unusual indentation in else branch of if-then-else (which ends at line 353, column 5); do you perhaps need parentheses?\nPrecedenceLinter.dfy(365,2): Warning: unusual indentation in else branch of if-then-else (which ends at line 369, column 5); do you perhaps need parentheses?\nPrecedenceLinter.dfy(463,11): Warning: unusual indentation in else branch of if-then-else (which ends at line 464, column 20); do you perhaps need parentheses?\nPrecedenceLinter.dfy(478,17): Warning: unusual indentation in else branch of if-then-else (which ends at line 479, column 9); do you perhaps need parentheses?\nPrecedenceLinter.dfy(480,17): Warning: unusual indentation in else branch of if-then-else (which ends at line 481, column 13); do you perhaps need parentheses?\nPrecedenceLinter.dfy(498,11): Warning: unusual indentation in else branch of if-then-else (which ends at line 501, column 18); do you perhaps need parentheses?\nPrecedenceLinter.dfy(505,17): Warning: unusual indentation in case expression (which ends at line 506, column 7); do you perhaps need parentheses?\nPrecedenceLinter.dfy(518,4): Warning: unusual indentation in else branch of if-then-else (which ends at line 522, column 9); do you perhaps need parentheses?\n\nDafny program verifier did not attempt verification\n"
+  },
+  "PrecedenceLinter.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "PrecedenceLinter.dfy(554,4): Warning: unusual indentation in body of let-expression (which ends at line 558, column 35); do you perhaps need parentheses?\nPrecedenceLinter.dfy(6,4): Warning: unusual indentation in left-hand operand of ==> (which starts at line 5, column 3); do you perhaps need parentheses?\nPrecedenceLinter.dfy(50,4): Warning: unusual indentation in left-hand operand of ==> (which starts at line 49, column 3); do you perhaps need parentheses?\nPrecedenceLinter.dfy(50,4): Warning: unusual indentation in right-hand operand of ==> (which ends at line 51, column 3); do you perhaps need parentheses?\nPrecedenceLinter.dfy(56,4): Warning: unusual indentation in left-hand operand of ==> (which starts at line 55, column 3); do you perhaps need parentheses?\nPrecedenceLinter.dfy(62,4): Warning: unusual indentation in left-hand operand of ==> (which starts at line 61, column 3); do you perhaps need parentheses?\nPrecedenceLinter.dfy(74,7): Warning: unusual indentation in left-hand operand of ==> (which starts at line 73, column 3); do you perhaps need parentheses?\nPrecedenceLinter.dfy(74,7): Warning: unusual indentation in right-hand operand of ==> (which ends at line 75, column 6); do you perhaps need parentheses?\nPrecedenceLinter.dfy(107,7): Warning: unusual indentation in left-hand operand of ==> (which starts at line 106, column 3); do you perhaps need parentheses?\nPrecedenceLinter.dfy(113,7): Warning: unusual indentation in left-hand operand of ==> (which starts at line 112, column 3); do you perhaps need parentheses?\nPrecedenceLinter.dfy(119,2): Warning: unusual indentation in right-hand operand of ==> (which ends at line 121, column 3); do you perhaps need parentheses?\nPrecedenceLinter.dfy(208,2): Warning: unusual indentation in body of forall (which ends at line 209, column 6); do you perhaps need parentheses?\nPrecedenceLinter.dfy(225,2): Warning: unusual indentation in body of exists (which ends at line 226, column 6); do you perhaps need parentheses?\nPrecedenceLinter.dfy(231,2): Warning: unusual indentation in body of exists (which ends at line 232, column 6); do you perhaps need parentheses?\nPrecedenceLinter.dfy(230,2): Warning: unusual indentation in body of exists (which ends at line 232, column 6); do you perhaps need parentheses?\nPrecedenceLinter.dfy(284,2): Warning: unusual indentation in else branch of if-then-else (which ends at line 285, column 13); do you perhaps need parentheses?\nPrecedenceLinter.dfy(313,28): Warning: unusual indentation in left-hand operand of <== (which starts at line 314, column 5); do you perhaps need parentheses?\nPrecedenceLinter.dfy(334,19): Warning: unusual indentation in right-hand operand of <==> (which ends at line 335, column 8); do you perhaps need parentheses?\nPrecedenceLinter.dfy(349,2): Warning: unusual indentation in else branch of if-then-else (which ends at line 353, column 5); do you perhaps need parentheses?\nPrecedenceLinter.dfy(365,2): Warning: unusual indentation in else branch of if-then-else (which ends at line 369, column 5); do you perhaps need parentheses?\nPrecedenceLinter.dfy(463,11): Warning: unusual indentation in else branch of if-then-else (which ends at line 464, column 20); do you perhaps need parentheses?\nPrecedenceLinter.dfy(478,17): Warning: unusual indentation in else branch of if-then-else (which ends at line 479, column 9); do you perhaps need parentheses?\nPrecedenceLinter.dfy(480,17): Warning: unusual indentation in else branch of if-then-else (which ends at line 481, column 13); do you perhaps need parentheses?\nPrecedenceLinter.dfy(498,11): Warning: unusual indentation in else branch of if-then-else (which ends at line 501, column 18); do you perhaps need parentheses?\nPrecedenceLinter.dfy(505,17): Warning: unusual indentation in case expression (which ends at line 506, column 7); do you perhaps need parentheses?\nPrecedenceLinter.dfy(518,4): Warning: unusual indentation in else branch of if-then-else (which ends at line 522, column 9); do you perhaps need parentheses?\n\nDafny program verifier did not attempt verification\n"
+  },
+  "ReadsOnMethods_Printing.reads-false.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "ReadsOnMethods_Printing.reads-false.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "ReadsOnMethods_Printing.reads-true.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "ReadsOnMethods_Printing.reads-true.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "ScientificNotationErrors.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "ScientificNotationErrors.dfy(8,15): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(9,12): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(12,15): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(13,15): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(18,12): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(19,14): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(22,15): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(23,17): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(28,17): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(31,15): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(32,15): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(37,11): Error: invalid real literal (no whitespace allowed after leading dot)\nScientificNotationErrors.dfy(38,11): Error: invalid real literal (no whitespace allowed after leading dot)\nScientificNotationErrors.dfy(41,11): Error: invalid Rhs\nScientificNotationErrors.dfy(42,12): Error: invalid Dec\nScientificNotationErrors.dfy(42,11): Error: invalid real literal (no whitespace allowed after leading dot)\nScientificNotationErrors.dfy(42,11): Error: incorrectly formatted number\nScientificNotationErrors.dfy(47,11): Error: invalid real literal (no whitespace allowed before trailing dot)\nScientificNotationErrors.dfy(48,11): Error: invalid real literal (no whitespace allowed before trailing dot)\nScientificNotationErrors.dfy(51,11): Error: invalid real literal (no whitespace allowed after leading dot)\nScientificNotationErrors.dfy(52,11): Error: invalid real literal (no whitespace allowed after leading dot)\nScientificNotationErrors.dfy(55,11): Error: invalid real literal (no whitespace allowed before trailing dot)\nScientificNotationErrors.dfy(55,15): Error: this symbol not expected in VarDeclStatement\n23 parse errors detected in ScientificNotationErrors.dfy\n"
+  },
+  "ScientificNotationErrors.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "ScientificNotationErrors.dfy(8,15): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(9,12): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(12,15): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(13,15): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(18,12): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(19,14): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(22,15): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(23,17): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(28,17): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(31,15): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(32,15): Error: this symbol not expected in VarDeclStatement\nScientificNotationErrors.dfy(37,11): Error: invalid real literal (no whitespace allowed after leading dot)\nScientificNotationErrors.dfy(38,11): Error: invalid real literal (no whitespace allowed after leading dot)\nScientificNotationErrors.dfy(41,11): Error: invalid Rhs\nScientificNotationErrors.dfy(42,12): Error: invalid Dec\nScientificNotationErrors.dfy(42,11): Error: invalid real literal (no whitespace allowed after leading dot)\nScientificNotationErrors.dfy(42,11): Error: incorrectly formatted number\nScientificNotationErrors.dfy(47,11): Error: invalid real literal (no whitespace allowed before trailing dot)\nScientificNotationErrors.dfy(48,11): Error: invalid real literal (no whitespace allowed before trailing dot)\nScientificNotationErrors.dfy(51,11): Error: invalid real literal (no whitespace allowed after leading dot)\nScientificNotationErrors.dfy(52,11): Error: invalid real literal (no whitespace allowed after leading dot)\nScientificNotationErrors.dfy(55,11): Error: invalid real literal (no whitespace allowed before trailing dot)\nScientificNotationErrors.dfy(55,15): Error: this symbol not expected in VarDeclStatement\n23 parse errors detected in ScientificNotationErrors.dfy\n"
+  },
+  "Simple.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "Simple.dfy(98,7): Warning: the ... refinement feature in statements is deprecated\nSimple.dfy(101,7): Warning: the ... refinement feature in statements is deprecated\nSimple.dfy(14,12): Warning: Argument to 'old' does not dereference the mutable heap, so this use of 'old' has no effect\n\nDafny program verifier did not attempt verification\n"
+  },
+  "Simple.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "Simple.dfy(98,7): Warning: the ... refinement feature in statements is deprecated\nSimple.dfy(101,7): Warning: the ... refinement feature in statements is deprecated\nSimple.dfy(14,12): Warning: Argument to 'old' does not dereference the mutable heap, so this use of 'old' has no effect\n\nDafny program verifier did not attempt verification\n"
+  },
+  "git-issue-1618.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "git-issue-1618.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "git-issue-1637.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-1637.dfy(19,6): Error: incorrect argument type for predicate parameter 'f' (expected Thing -> seq<uint8>, found Thing -> Fii) (covariance for type parameter at index 1 expects seq<uint8> :> Fii)\n1 resolution/type errors detected in git-issue-1637.dfy\n"
+  },
+  "git-issue-1637.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-1637.dfy(19,6): Error: incorrect argument type for predicate parameter 'f' (expected Thing -> seq<uint8>, found Thing -> Fii) (covariant type parameter 'R' would require seq<uint8> :> Fii)\n1 resolution/type errors detected in git-issue-1637.dfy\n"
+  },
+  "git-issue-1665.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "git-issue-1665.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "git-issue-1966.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-1966.dfy(10,21): Error: modules 'P1' and 'P2' both have CompileName 'P'\n1 resolution/type errors detected in git-issue-1966.dfy\n"
+  },
+  "git-issue-1966.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-1966.dfy(10,21): Error: modules 'P1' and 'P2' both have CompileName 'P'\n1 resolution/type errors detected in git-issue-1966.dfy\n"
+  },
+  "git-issue-2200.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-2200.dfy(6,21): Error: wrong number of arguments (got 2, but function 'f' expects 1: (i: int))\n1 resolution/type errors detected in git-issue-2200.dfy\n"
+  },
+  "git-issue-2200.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-2200.dfy(6,21): Error: wrong number of arguments (function 'f' expects 1, got 2)\n1 resolution/type errors detected in git-issue-2200.dfy\n"
+  },
+  "git-issue-2507.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-2507.dfy(5,14): Error: expected either 'by' or a semicolon following the assert expression\n1 parse errors detected in git-issue-2507.dfy\n"
+  },
+  "git-issue-2507.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-2507.dfy(5,14): Error: expected either 'by' or a semicolon following the assert expression\n1 parse errors detected in git-issue-2507.dfy\n"
+  },
+  "git-issue-2550.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-2550.dfy(8,14): Error: Type or type parameter is not declared in this scope: Foo (did you forget to qualify a name or declare a module import 'opened'?) (note that names in outer modules are not visible in contained modules)\n1 resolution/type errors detected in git-issue-2550.dfy\n"
+  },
+  "git-issue-2550.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-2550.dfy(8,14): Error: Type or type parameter is not declared in this scope: Foo (did you forget to qualify a name or declare a module import 'opened'?) (note that names in outer modules are not visible in contained modules)\n1 resolution/type errors detected in git-issue-2550.dfy\n"
+  },
+  "git-issue-2830.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-2830.dfy(6,0): Error: the phrase 'function method' is not allowed when using --function-syntax:4; to declare a compiled function, use just 'function'\ngit-issue-2830.dfy(13,0): Error: the phrase 'predicate method' is not allowed when using --function-syntax:4; to declare a compiled predicate, use just 'predicate'\n2 parse errors detected in git-issue-2830.dfy\n"
+  },
+  "git-issue-2830.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-2830.dfy(6,0): Error: the phrase 'function method' is not allowed when using --function-syntax:4; to declare a compiled function, use just 'function'\ngit-issue-2830.dfy(13,0): Error: the phrase 'predicate method' is not allowed when using --function-syntax:4; to declare a compiled predicate, use just 'predicate'\n2 parse errors detected in git-issue-2830.dfy\n"
+  },
+  "git-issue-2959.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-2959.dfy(5,2): Error: nondeterministic if statement forbidden by the --enforce-determinism option\ngit-issue-2959.dfy(13,7): Error: nondeterministic assignment forbidden by the --enforce-determinism option\n2 resolution/type errors detected in git-issue-2959.dfy\n"
+  },
+  "git-issue-2959.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-2959.dfy(5,2): Error: nondeterministic if statement forbidden by the --enforce-determinism option\ngit-issue-2959.dfy(13,7): Error: nondeterministic assignment forbidden by the --enforce-determinism option\n2 resolution/type errors detected in git-issue-2959.dfy\n"
+  },
+  "git-issue-3304.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-3304.dfy(5,9): Error: the type of this expression is underspecified\n1 resolution/type errors detected in git-issue-3304.dfy\n"
+  },
+  "git-issue-3304.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-3304.dfy(5,9): Error: the type ('seq<seq<?3>>') of this expression is underspecified\n1 resolution/type errors detected in git-issue-3304.dfy\n"
+  },
+  "git-issue-3382.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "git-issue-3382.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "git-issue-3390.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-3390.dfy(6,20): Error: second argument to | must be of a bitvector type (instead got bv2)\n1 resolution/type errors detected in git-issue-3390.dfy\n"
+  },
+  "git-issue-3390.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-3390.dfy(6,20): Error: type of right argument to | (bv2) must agree with the result type (bv4)\n1 resolution/type errors detected in git-issue-3390.dfy\n"
+  },
+  "git-issue-3461.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-3461.dfy(4,0): Error: a method cannot be declared 'opaque'\ngit-issue-3461.dfy(11,0): Error: a class cannot be declared 'opaque'\ngit-issue-3461.dfy(12,0): Error: a datatype or codatatype cannot be declared 'opaque'\ngit-issue-3461.dfy(13,0): Error: a newtype cannot be declared 'opaque'\ngit-issue-3461.dfy(14,0): Error: a subset type cannot be declared 'opaque'\ngit-issue-3461.dfy(17,9): Error: lbrace expected\ngit-issue-3461.dfy(18,0): Error: this symbol not expected in VarDeclStatement\n7 parse errors detected in git-issue-3461.dfy\n"
+  },
+  "git-issue-3461.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-3461.dfy(4,0): Error: a method cannot be declared 'opaque'\ngit-issue-3461.dfy(11,0): Error: a class cannot be declared 'opaque'\ngit-issue-3461.dfy(12,0): Error: a datatype or codatatype cannot be declared 'opaque'\ngit-issue-3461.dfy(13,0): Error: a newtype cannot be declared 'opaque'\ngit-issue-3461.dfy(14,0): Error: a subset type cannot be declared 'opaque'\ngit-issue-3461.dfy(17,9): Error: lbrace expected\ngit-issue-3461.dfy(18,0): Error: this symbol not expected in VarDeclStatement\n7 parse errors detected in git-issue-3461.dfy\n"
+  },
+  "git-issue-3496.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "git-issue-3496.dfy(5,2): Warning: assume statement has no {:axiom} annotation\n\nDafny program verifier did not attempt verification\n"
+  },
+  "git-issue-3496.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "git-issue-3496.dfy(5,2): Warning: assume statement has no {:axiom} annotation\n\nDafny program verifier did not attempt verification\n"
+  },
+  "git-issue-3497.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "git-issue-3497.dfy(5,2): Warning: a forall statement with no bound variables is deprecated; use an 'assert by' statement instead\n\nDafny program verifier did not attempt verification\n"
+  },
+  "git-issue-3497.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "git-issue-3497.dfy(5,2): Warning: a forall statement with no bound variables is deprecated; use an 'assert by' statement instead\n\nDafny program verifier did not attempt verification\n"
+  },
+  "git-issue-3757.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-3757.dfy(5,0): Error: expected an identifier after 'const' and any attributes\n1 parse errors detected in git-issue-3757.dfy\n"
+  },
+  "git-issue-3757.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-3757.dfy(5,0): Error: expected an identifier after 'const' and any attributes\n1 parse errors detected in git-issue-3757.dfy\n"
+  },
+  "git-issue-3757a.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-3757a.dfy(4,6): Error: expected an identifier after 'const' and any attributes\ngit-issue-3757a.dfy(4,6): Error: this symbol not expected in Dafny\n2 parse errors detected in git-issue-3757a.dfy\n"
+  },
+  "git-issue-3757a.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "git-issue-3757a.dfy(4,6): Error: expected an identifier after 'const' and any attributes\ngit-issue-3757a.dfy(4,6): Error: this symbol not expected in Dafny\n2 parse errors detected in git-issue-3757a.dfy\n"
+  },
+  "git-issue-442.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "git-issue-442.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "github-issue-25.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "github-issue-25.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "github-issue-27-duplicates.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "github-issue-27-duplicates.dfy(3,12): Error: Duplicate member name: P\ngithub-issue-27-duplicates.dfy(7,8): Error: Duplicate member name: Lemma\n2 resolution/type errors detected in github-issue-27-duplicates.dfy\n"
+  },
+  "github-issue-27-duplicates.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "github-issue-27-duplicates.dfy(3,12): Error: Duplicate member name: P\ngithub-issue-27-duplicates.dfy(7,8): Error: Duplicate member name: Lemma\n2 resolution/type errors detected in github-issue-27-duplicates.dfy\n"
+  },
+  "github-issue-27.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "github-issue-27.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "github-issue-37.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "github-issue-37.dfy(15,22): Error: incorrect argument type for datatype constructor parameter 'f' (expected A.T -> bool, found B.T -> bool) (contravariant type parameter 0 would require A.T <: B.T)\n1 resolution/type errors detected in github-issue-37.dfy\n"
+  },
+  "github-issue-37.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "github-issue-37.dfy(15,22): Error: incorrect argument type for datatype constructor parameter 'f' (expected T -> bool, found T -> ?0) (contravariant type parameter 'T0' would require T :> T)\n1 resolution/type errors detected in github-issue-37.dfy\n"
+  },
+  "github-issue-40.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "github-issue-40.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "github-issue-41.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "github-issue-41.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "github-issue-42-errors.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "github-issue-42-errors.dfy(8,7): Error: ghost variables such as b are allowed only in specification contexts. b was inferred to be ghost based on its declaration or initialization.\ngithub-issue-42-errors.dfy(11,15): Error: a `decreases to` expression is allowed only in specification and ghost contexts\n2 resolution/type errors detected in github-issue-42-errors.dfy\n"
+  },
+  "github-issue-42-errors.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "github-issue-42-errors.dfy(8,7): Error: ghost variables such as b are allowed only in specification contexts. b was inferred to be ghost based on its declaration or initialization.\ngithub-issue-42-errors.dfy(11,15): Error: a `decreases to` expression is allowed only in specification and ghost contexts\n2 resolution/type errors detected in github-issue-42-errors.dfy\n"
+  },
+  "github-issue-42.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "github-issue-42.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "github-issue-43-valid.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "github-issue-43-valid.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "github-issue-43.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "github-issue-43.dfy(17,7): Error: unresolved identifier: undeclaredVariable\ngithub-issue-43.dfy(35,2): Error: unresolved identifier: missing\ngithub-issue-43.dfy(40,5): Error: unresolved identifier: missing\ngithub-issue-43.dfy(45,8): Error: unresolved identifier: missing\ngithub-issue-43.dfy(50,9): Error: member 'missing' does not exist in class 'Box'\ngithub-issue-43.dfy(55,9): Error: unresolved identifier: missing\ngithub-issue-43.dfy(60,2): Error: unresolved identifier: missing\ngithub-issue-43.dfy(65,5): Error: unresolved identifier: missing\ngithub-issue-43.dfy(70,8): Error: unresolved identifier: missing\ngithub-issue-43.dfy(75,9): Error: member 'missing' does not exist in class 'Box'\ngithub-issue-43.dfy(80,9): Error: unresolved identifier: missing\ngithub-issue-43.dfy(102,5): Error: unresolved identifier: missing\ngithub-issue-43.dfy(102,16): Error: unresolved identifier: Undefined\ngithub-issue-43.dfy(107,5): Error: unresolved identifier: missing\ngithub-issue-43.dfy(107,21): Error: unresolved identifier: UndefinedFirst\ngithub-issue-43.dfy(107,40): Error: unresolved identifier: UndefinedSecond\n16 resolution/type errors detected in github-issue-43.dfy\n"
+  },
+  "github-issue-43.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "github-issue-43.dfy(17,7): Error: unresolved identifier: undeclaredVariable\ngithub-issue-43.dfy(35,2): Error: unresolved identifier: missing\ngithub-issue-43.dfy(40,5): Error: unresolved identifier: missing\ngithub-issue-43.dfy(45,8): Error: unresolved identifier: missing\ngithub-issue-43.dfy(50,9): Error: member 'missing' does not exist in class 'Box'\ngithub-issue-43.dfy(55,9): Error: unresolved identifier: missing\ngithub-issue-43.dfy(60,2): Error: unresolved identifier: missing\ngithub-issue-43.dfy(65,5): Error: unresolved identifier: missing\ngithub-issue-43.dfy(70,8): Error: unresolved identifier: missing\ngithub-issue-43.dfy(75,9): Error: member 'missing' does not exist in class 'Box'\ngithub-issue-43.dfy(80,9): Error: unresolved identifier: missing\ngithub-issue-43.dfy(102,16): Error: unresolved identifier: Undefined\ngithub-issue-43.dfy(102,5): Error: unresolved identifier: missing\ngithub-issue-43.dfy(107,21): Error: unresolved identifier: UndefinedFirst\ngithub-issue-43.dfy(107,40): Error: unresolved identifier: UndefinedSecond\ngithub-issue-43.dfy(107,5): Error: unresolved identifier: missing\n16 resolution/type errors detected in github-issue-43.dfy\n"
+  },
+  "github-issue-44-acyclic.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "github-issue-44-acyclic.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "github-issue-44.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "github-issue-44.dfy(12,7): Error: type-synonym cycle: Loop -> Loop\ngithub-issue-44.dfy(18,7): Error: cycle among redirecting types (newtypes, subset types, type synonyms): A -> B -> A\ngithub-issue-44.dfy(24,7): Error: type-synonym cycle: Loop -> Loop\ngithub-issue-44.dfy(31,7): Error: type-synonym cycle: L -> L\ngithub-issue-44.dfy(36,7): Error: cycle among redirecting types (newtypes, subset types, type synonyms): S -> T -> S\ngithub-issue-44.dfy(43,7): Error: cycle among redirecting types (newtypes, subset types, type synonyms): A -> B -> A\ngithub-issue-44.dfy(51,7): Error: cycle among redirecting types (newtypes, subset types, type synonyms): A -> B -> A\n7 resolution/type errors detected in github-issue-44.dfy\n"
+  },
+  "github-issue-44.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "github-issue-44.dfy(12,7): Error: type-synonym cycle: Loop -> Loop\ngithub-issue-44.dfy(18,7): Error: cycle among redirecting types (newtypes, subset types, type synonyms): A -> B -> A\ngithub-issue-44.dfy(24,7): Error: type-synonym cycle: Loop -> Loop\ngithub-issue-44.dfy(31,7): Error: type-synonym cycle: L -> L\ngithub-issue-44.dfy(36,7): Error: cycle among redirecting types (newtypes, subset types, type synonyms): S -> T -> S\ngithub-issue-44.dfy(43,7): Error: cycle among redirecting types (newtypes, subset types, type synonyms): A -> B -> A\ngithub-issue-44.dfy(51,7): Error: cycle among redirecting types (newtypes, subset types, type synonyms): A -> B -> A\n7 resolution/type errors detected in github-issue-44.dfy\n"
+  },
+  "github-issue-45.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "github-issue-45.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "github-issue-46-range.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "github-issue-46-range.dfy(2,26): Error: literal (2) is too large for the bitvector type bv1\ngithub-issue-46-range.dfy(3,27): Error: literal (256) is too large for the bitvector type bv8\n2 resolution/type errors detected in github-issue-46-range.dfy\n"
+  },
+  "github-issue-46-range.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "github-issue-46-range.dfy(2,26): Error: literal (2) is too large for the bitvector type bv1\ngithub-issue-46-range.dfy(3,27): Error: literal (256) is too large for the bitvector type bv8\n2 resolution/type errors detected in github-issue-46-range.dfy\n"
+  },
+  "github-issue-46.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "github-issue-46.dfy(10,10): Error: newtypes must be based on some numeric type (got bv1)\ngithub-issue-46.dfy(9,7): Error: not resolving module '_module' because there were errors in resolving its nested module 'BareDeclaration'\n2 resolution/type errors detected in github-issue-46.dfy\n"
+  },
+  "github-issue-46.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "incompatibleAttributes.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "incompatibleAttributes.dfy(4,9): Error: the rlimit and resource_limit attributes cannot be used together\n1 resolution/type errors detected in incompatibleAttributes.dfy\n"
+  },
+  "incompatibleAttributes.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "incompatibleAttributes.dfy(4,9): Error: the rlimit and resource_limit attributes cannot be used together\n1 resolution/type errors detected in incompatibleAttributes.dfy\n"
+  },
+  "parse-errors.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "parse-errors.dfy(9,17): Error: ':-' can have at most one left-hand side\nparse-errors.dfy(10,26): Error: ':-' must have exactly one right-hand side\nparse-errors.dfy(11,18): Error: a variable in a let expression should be initialized using ':=', ':-', or ':|', not '='\nparse-errors.dfy(12,16): Error: LHS of let-such-that expression must be variables, not general patterns\nparse-errors.dfy(13,25): Error: a map comprehension with more than one bound variable must have a term expression of the form 'Expr := Expr'\nparse-errors.dfy(14,11): Error: binding not allowed in parenthesized expression\nparse-errors.dfy(15,14): Error: seq type expects only one type argument\nparse-errors.dfy(17,21): Error: comma expected\nparse-errors.dfy(18,18): Error: invalid UnaryExpression\n9 parse errors detected in parse-errors.dfy\n"
+  },
+  "parse-errors.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "parse-errors.dfy(9,17): Error: ':-' can have at most one left-hand side\nparse-errors.dfy(10,26): Error: ':-' must have exactly one right-hand side\nparse-errors.dfy(11,18): Error: a variable in a let expression should be initialized using ':=', ':-', or ':|', not '='\nparse-errors.dfy(12,16): Error: LHS of let-such-that expression must be variables, not general patterns\nparse-errors.dfy(13,25): Error: a map comprehension with more than one bound variable must have a term expression of the form 'Expr := Expr'\nparse-errors.dfy(14,11): Error: binding not allowed in parenthesized expression\nparse-errors.dfy(15,14): Error: seq type expects only one type argument\nparse-errors.dfy(17,21): Error: comma expected\nparse-errors.dfy(18,18): Error: invalid UnaryExpression\n9 parse errors detected in parse-errors.dfy\n"
+  },
+  "parse-errors2.legacy": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "parse-errors2.dfy(6,13): Error: invalid relational operator (perhaps you intended \"!!\" with no intervening whitespace?)\nparse-errors2.dfy(7,13): Error: invalid relational operator\nparse-errors2.dfy(11,23): Error: Ambiguous use of ==> and <==. Use parentheses to disambiguate.\nparse-errors2.dfy(12,16): Error: this operator cannot continue this chain\n4 parse errors detected in parse-errors2.dfy\n"
+  },
+  "parse-errors2.refresh": {
+    "exit": 2,
+    "outcome": "rejected",
+    "stderr": "",
+    "stdout": "parse-errors2.dfy(6,13): Error: invalid relational operator (perhaps you intended \"!!\" with no intervening whitespace?)\nparse-errors2.dfy(7,13): Error: invalid relational operator\nparse-errors2.dfy(11,23): Error: Ambiguous use of ==> and <==. Use parentheses to disambiguate.\nparse-errors2.dfy(12,16): Error: this operator cannot continue this chain\n4 parse errors detected in parse-errors2.dfy\n"
+  }
+}

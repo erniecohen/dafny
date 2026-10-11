@@ -1,0 +1,16 @@
+positive (type-system-refresh:false)
+
+Dafny program verifier finished with 4 verified, 0 errors
+negative (type-system-refresh:false)
+github-issue-108-negative.dfy(3,4): Error: possible division by zero
+github-issue-108-negative.dfy(7,4): Error: possible division by zero
+
+Dafny program verifier finished with 0 verified, 2 errors
+positive (type-system-refresh:true)
+
+Dafny program verifier finished with 4 verified, 0 errors
+negative (type-system-refresh:true)
+github-issue-108-negative.dfy(3,4): Error: possible division by zero
+github-issue-108-negative.dfy(7,4): Error: possible division by zero
+
+Dafny program verifier finished with 0 verified, 2 errors
