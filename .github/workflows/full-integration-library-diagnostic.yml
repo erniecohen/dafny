@@ -47,7 +47,7 @@ jobs:
             chmod +x out/z3-4.16/z3-4.16.0
             echo "Z3=$PWD/out/z3-4.16/z3-4.16.0" >> "$GITHUB_ENV"
           fi
-      - name: Record every actual library outcome
+      - name: Record every actual library outcome and supporting proof closure
         env:
           COMPILER_SOURCE: ${{ matrix.source }}
           REPAIR_ONLY: ${{ github.event_name == 'push' || inputs.repair-only }}

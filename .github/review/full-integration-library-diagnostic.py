@@ -12,7 +12,7 @@ current=Path('Source/DafnyStandardLibraries/src/Std/dfyconfig.toml').resolve()
 symbols=['Std.Arithmetic.DivMod.LemmaMultiplyDivideLe','Std.Arithmetic.DivMod.LemmaMultiplyDivideLt','Std.Arithmetic.Power.LemmaPowIncreases','Std.Base64.EncodeBVLengthCongruentToZeroMod4','Std.Base64.EncodeBVIsBase64','Std.Producers.ConcatenatedProducer.Invoke']
 profiles=([('before',before)] if os.environ.get('REPAIR_ONLY')!='true' else [])+([('repair',current)] if kind=='integrated' else [])
 for profile,project in profiles:
- for symbol in symbols if profile=='before' else symbols+['Std.Arithmetic.Mul.LemmaMulIsCommutative','Std.Arithmetic.DivMod.LemmaModMultiplesBasic','Std.Arithmetic.Power.Lemma1Pow','Std.Arithmetic.Power.LemmaPowStrictlyIncreases','Std.Base64.EncodeBVLengthExact']:
+ for symbol in symbols if profile=='before' else symbols+['Std.Arithmetic.Mul.LemmaMulIsCommutative','Std.Arithmetic.DivMod.LemmaModMultiplesBasic','Std.Arithmetic.Power.Lemma1Pow','Std.Arithmetic.Power.LemmaPowStrictlyIncreases','Std.Base64.EncodeBVLengthExact','Std.Base64.EncodeUnpaddedBase64','Std.Base64.Encode1PaddingIs1Padding','Std.Base64.Encode2PaddingIs2Padding','Std.Collections.Seq.PartitionedDecomposition','Std.Producers.ProducedComposition']:
   name=profile+'-'+symbol;folder=out/name;folder.mkdir(exist_ok=True)
   command=['dotnet',str(assembly),'verify',str(project),'--filter-symbol:'+symbol,'--solver-path',str(solver),'--cores','1','--verification-time-limit','300','--log-format','json;LogFileName='+str((folder/'results.json').resolve())]
   if kind!='dev-baseline':command+=['--additional-axioms:false','--consistent-obligation-checks:false']
