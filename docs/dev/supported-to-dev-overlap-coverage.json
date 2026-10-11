@@ -1,0 +1,31 @@
+{
+  "policy": "Preserve accepted main mode controls alongside upstream dev additions; before-common upstream proof adaptations are retained.",
+  "controls": [
+    {
+      "program": "git-issue-141-original.dfy",
+      "accepted_commit": "3d3c53b6f",
+      "change": "Restore explicit additional-axioms=false/true RUN pairs with type-system-refresh=true; same invalid Box<int> to Box<nat> cast, error count and resource ceiling."
+    },
+    {
+      "program": "git-issue-141-original-control.dfy",
+      "accepted_commit": "3d3c53b6f",
+      "change": "Restore explicit additional-axioms=false/true RUN pairs; same feasible false assertion and error count."
+    }
+  ],
+  "retained_upstream_proof_adaptations": [
+    {
+      "program": "dafny2/SmallestMissingNumber-functional.dfy",
+      "reason": "No difference exists between common412618 and main1256. Upstream dev b1f59b583/8bb779504 replaced older isolated proof with Elements/Cardinality/SetEquality bridge; preserve newer upstream source."
+    },
+    {
+      "program": "dafny4/gcd.dfy",
+      "reason": "No difference exists between common412618 and main1256. Preserve upstream explicit int witnesses and merged batches, which pass in native diagnostic profile."
+    },
+    {
+      "program": "dafny2/pq-intrinsic-extrinsic.dfy",
+      "reason": "Preserve pre-existing upstream assertion splitting, replacing the old larger limit; it verifies at the ordinary original gate limit."
+    }
+  ],
+  "shared_destructor_coverage": "Removed duplicate Module2 originated upstream; equivalent Kt ghost/non-ghost negatives remain at 55/57. No fork-added negative guard was removed.",
+  "unrelated_history": "Stabilization commit2870637 is not an ancestor of common412618, main1256, dev858e or the candidate. It is not an omitted applicable main commit."
+}
