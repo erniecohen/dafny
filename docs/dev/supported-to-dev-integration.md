@@ -168,9 +168,10 @@ the initial failed receipts remain available.
 
 Existing normal CI uses Z3 4.16 for upstream test/library profiles, while native
 trusted proof controls here use 5.1. Normal CI was triggered automatically by
-creation of the draft PR. Additional 4.16 submissions and PR updates that would
-retrigger it are held pending the owner's narrow solver authorization. Existing
-runs are preserved. Reading their completed logs is not a new solver run.
+creation of the draft PR. The owner has explicitly authorized additional 4.16
+runs for dev CI and library repairs and the existing 4.12.1 historical reference
+checks. Native correctness controls retain pinned 5.1. All prior failed receipts
+remain available; these solver approvals do not change proof acceptance.
 
 A concrete arithmetic repair hypothesis is available but is not yet verified:
 `LemmaModMultiplesBasic(c,b)` supplies `(c*b)%b == 0`, while the next assertion
