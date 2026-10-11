@@ -39,6 +39,16 @@ for label,symbol in [('divmod','Std.Arithmetic.DivMod.LemmaMultiplyDivideLe'),('
     '--verification-time-limit','0','--log-format','json;LogFileName='+str((folder/'results.json').resolve())]
    if kind!='dev-baseline':command += [f'--additional-axioms:{str(axioms).lower()}',f'--consistent-obligation-checks:{str(enabled).lower()}']
    phase(folder.name,command)
+for label,source in [('schorr','dafny1/SchorrWaite.dfy'),('schorr-stages','dafny1/SchorrWaite-stages.dfy'),('smallest-missing','dafny2/SmallestMissingNumber-functional.dfy')]:
+ for refresh in [False,True]:
+  folder=root/f'{label}-{refresh}';folder.mkdir(exist_ok=True)
+  command=['dotnet',str(assembly),'verify','Source/IntegrationTests/TestFiles/LitTests/LitTest/'+source,
+   '--solver-path',str(solver),'--cores','1','--resource-limit','16000000','--verification-time-limit','30',
+   '--allow-warnings','--relax-definite-assignment',f'--type-system-refresh:{str(refresh).lower()}',
+   f'--general-newtypes:{str(refresh).lower()}','--boogie','/normalizeDeclarationOrder:0',
+   '--log-format','json;LogFileName='+str((folder/'results.json').resolve())]
+  if kind!='dev-baseline':command += ['--additional-axioms:false','--consistent-obligation-checks:false']
+  phase(folder.name,command)
 if kind=='integrated':
  phase('floating-controls',['python3','Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/floating-obligations/registered.py',str(assembly),str(solver),str((root/'floating-controls').resolve())])
 receipt={'compiler_kind':kind,'compiler_source':Path('out/toolchain/source.txt').read_text().strip(),
