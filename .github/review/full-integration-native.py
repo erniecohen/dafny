@@ -28,6 +28,15 @@ for refresh in [False,True]:
    f'--general-newtypes:{str(refresh).lower()}','--additional-axioms:false','--boogie','/normalizeDeclarationOrder:0',
    '--log-format','json;LogFileName='+str((folder/'results.json').resolve())]
   if kind!='dev-baseline':command.append(f'--consistent-obligation-checks:{str(enabled).lower()}')
+  else:command.remove('--additional-axioms:false')
+  phase(folder.name,command)
+for axioms in ([False,True] if kind!='dev-baseline' else [False]):
+ for enabled in ([False,True] if kind!='dev-baseline' else [False]):
+  folder=root/f'divmod-{axioms}-{enabled}';folder.mkdir(exist_ok=True)
+  command=['dotnet',str(assembly),'verify','Source/DafnyStandardLibraries/src/Std/dfyconfig.toml',
+   '--filter-symbol:Std.Arithmetic.DivMod.LemmaMultiplyDivideLe','--solver-path',str(solver),'--cores','1',
+   '--verification-time-limit','0','--log-format','json;LogFileName='+str((folder/'results.json').resolve())]
+  if kind!='dev-baseline':command += [f'--additional-axioms:{str(axioms).lower()}',f'--consistent-obligation-checks:{str(enabled).lower()}']
   phase(folder.name,command)
 if kind=='integrated':
  phase('floating-controls',['python3','Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/floating-obligations/registered.py',str(assembly),str(solver),str((root/'floating-controls').resolve())])

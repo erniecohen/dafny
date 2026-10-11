@@ -12,7 +12,7 @@ for refresh in [False, True]:
    command = ["dotnet", str(assembly), "verify", str(Path(__file__).with_name(name + ".dfy")),
     "--solver-path", str(solver), "--cores", "1", "--resource-limit", "16000000",
     "--verification-time-limit", "30", f"--type-system-refresh:{str(refresh).lower()}",
-    "--general-newtypes:true", f"--consistent-obligation-checks:{str(enabled).lower()}",
+    f"--general-newtypes:{str(refresh).lower()}", f"--consistent-obligation-checks:{str(enabled).lower()}",
     "--additional-axioms:false", "--boogie", "/normalizeDeclarationOrder:0",
     "--log-format", "json;LogFileName=" + str(dest / "results.json")]
    (dest / "command.json").write_text(json.dumps(command))
@@ -22,6 +22,10 @@ for refresh in [False, True]:
    assert result.returncode == (0 if name == "positive" else 4), output
    declarations = json.loads((dest / "results.json").read_text())["verificationResults"]
    assert declarations, output
+   expected_correctness = {n + " (correctness)" for n in (["Inhabited32", "Inhabited64", "Preserve32", "Preserve64"] if name == "positive" else ["Invalid32", "Invalid64", "False32", "False64"])}
+   assert {d["name"] for d in declarations if d["name"].endswith(" (correctness)")} == expected_correctness, output
+   expected_wrapper_wf = {n + " (well-formedness)" for n in ["NonNaN32", "NonNaN64", "Finite32", "Finite64"]}
+   assert expected_wrapper_wf <= {d["name"] for d in declarations if d["outcome"] == "Correct"}, output
    expected_errors = {n + " (correctness)" for n in ["Invalid32", "Invalid64", "False32", "False64"]} if name == "negative" else set()
    assert {d["name"] for d in declarations if d["outcome"] == "Errors"} == expected_errors, output
    assert all(d["outcome"] in ["Correct", "Errors"] for d in declarations), output

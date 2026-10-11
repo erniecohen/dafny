@@ -54,7 +54,29 @@ are running. There are 192 registered regressions, including the union of both
 lines and native constrained float-wrapper positives, invalid NaN introductions
 and feasible-state false controls in both resolvers and both lowering modes.
 
-Independent producer capture, complete native controls, branch-specific library
+The [first complete native control receipt](https://github.com/erniecohen/dafny/actions/runs/38136538378)
+passes the strict original #100 registered oracle at its original ceilings, with
+all supporting definitions and false controls. The independent diagnostic
+interpreter records 386 verifier invocations and zero failed checks. Structural
+checks pass 118/118. Core tests pass 396/397; the sole failure is the stale
+producer registry, replaced by the independently captured 288-group inventory.
+The [producer change map](supported-to-dev-producer-changes.json) records every
+added, removed and token-changed group from the previous 280-group dev port.
+
+Most replacements route existing permission queries through the supported
+additional-axiom-aware helper, with the default permission formula preserved.
+Remaining additions are the main lambda-handle family and pure-arrow allocation
+helpers, plus datatype/default-value and element-initialization traversal.
+Existing semantic family classifications are preserved; current verifier file
+hashes are checked against the capture before importing it.
+
+The editor project-option test failed with request cancellation during initial
+document resolution, before any option-change assertions. Diagnosis and a fresh
+passing focused run are required. This is a test failure, not accepted evidence.
+The first new floating-wrapper probe rejected an incompatible resolver option
+before verification; the corrected paired test remains pending.
+
+Complete native dev interaction controls, branch-specific library
 binary reconciliation, normal exact-head CI and the complete comparison remain
 pending. No partial-port run certifies the combined tree. Enabled resource
 failures, source maintenance costs and intentional verdict changes must be
