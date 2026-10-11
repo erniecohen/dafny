@@ -1,4 +1,4 @@
-name: Full integration complete registered harness language-profile recheck
+name: Full integration complete registered harness with certified libraries and resource profiles
 on:
   push:
     branches: ['scratch/codex/full-main-to-dev-probes']
