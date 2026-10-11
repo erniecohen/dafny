@@ -4,6 +4,10 @@ on:
     branches: ['scratch/codex/full-main-to-dev-probes']
     paths: ['.github/workflows/full-integration-library-diagnostic.yml']
   workflow_dispatch:
+    inputs:
+      repair-only:
+        type: boolean
+        default: false
 permissions:
   contents: read
   actions: read
@@ -14,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        source: [dev-baseline, supported-reference, integrated]
+        source: ${{ fromJSON(inputs.repair-only && '["integrated"]' || '["dev-baseline","supported-reference","integrated"]') }}
         solver: ['5.1', '4.16']
     steps:
       - uses: actions/checkout@v4
@@ -46,6 +50,7 @@ jobs:
       - name: Record every actual library outcome
         env:
           COMPILER_SOURCE: ${{ matrix.source }}
+          REPAIR_ONLY: ${{ inputs.repair-only }}
         run: python3 .github/review/full-integration-library-diagnostic.py
       - uses: actions/upload-artifact@v4
         if: always()
