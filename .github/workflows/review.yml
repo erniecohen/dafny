@@ -375,7 +375,9 @@ jobs:
           pattern: std-verdicts-*
           path: measurements
       - name: Report enabled versus disabled resource counts
-        run: python3 .github/review/additional-axioms.py resources measurements resource-comparison
+        run: |
+          v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
+          python3 .github/review/additional-axioms.py resources measurements resource-comparison --harness-z3 "$v"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

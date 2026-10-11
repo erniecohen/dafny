@@ -272,6 +272,16 @@ all pass strict expected-failure checks: actual exit4, one Valid and one Invalid
 VC each, with the sole intended error at11 or19. Complete registered acceptance
 with the restored RUN pairs is still required.
 
+The [first final normal attempt](https://github.com/erniecohen/dafny/actions/runs/38156642539)
+at `e3c0e064e` passes all eight suite shards, both complete verdict gates, all four
+complete source-library profiles, packaging, finite-support and resolver/editor
+checks. Registered tests pass 190/192; the two failures expose seven remaining
+assertion-wording matchers in sequential maps/reads controls. The resource report
+also fails by looking for the supported 4.12.1 artifact instead of dev's 4.16
+artifact. [These final harness repairs](supported-to-dev-harness-last-controls.json)
+preserve sole-error positions/counts, negative-control meanings and strict
+missing-artifact checks. No proof verdict is changed by them.
+
 The draft integration is not ready to merge. The remaining gate is complete
 fresh normal exact-head CI, including all 192 registered entries, restored #141
 mode pairs, final explained verdict tables, complete sources and the newly

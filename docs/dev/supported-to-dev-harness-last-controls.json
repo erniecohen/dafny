@@ -1,0 +1,127 @@
+{
+  "source_before": "e3c0e064e1deed523cfc6fb1a888556b315be7a0",
+  "failed_normal_run": "https://github.com/erniecohen/dafny/actions/runs/38156642539",
+  "registered_actual": {
+    "executed": 192,
+    "passed": 190,
+    "failed": 2,
+    "skipped": 0,
+    "timed_out": 0
+  },
+  "resource_failure": "FileNotFoundError for the hardcoded std-verdicts-off-z3-4.12.1 artifact, although dev uses the exact 4.16.0 matrix. Select the version explicitly from the same DefaultZ3Version as the source-library jobs; allow only the two existing pinned harness versions and retain strict missing-input/shard errors.",
+  "assertion_matchers": [
+    {
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/git-issue-82-maps-imap-capture.check",
+      "reason": "Exact dev assertion wording; retain the sole intended location, diagnostic count and OOR/timeout exclusion guards. The final normal harness short-circuited the larger fixture at the first stale check; the complete maps/reads sequences must now run.",
+      "changes": [
+        {
+          "line": 1,
+          "before": "// CHECK-NOT: ^(?!git-issue-82-maps-imap-capture\\.dfy\\(8,[0-9]+\\): Error: assertion might not hold$).*Error:|(?i:out of resource|timed out|timeout|internal error)",
+          "after": "// CHECK-NOT: ^(?!git-issue-82-maps-imap-capture\\.dfy\\(8,[0-9]+\\): Error: assertion could not be proved$).*Error:|(?i:out of resource|timed out|timeout|internal error)"
+        },
+        {
+          "line": 2,
+          "before": "// CHECK: ^git-issue-82-maps-imap-capture\\.dfy\\(8,[0-9]+\\): Error: assertion might not hold$",
+          "after": "// CHECK: ^git-issue-82-maps-imap-capture\\.dfy\\(8,[0-9]+\\): Error: assertion could not be proved$"
+        }
+      ]
+    },
+    {
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/git-issue-82-maps-local-capture.check",
+      "reason": "Exact dev assertion wording; retain the sole intended location, diagnostic count and OOR/timeout exclusion guards. The final normal harness short-circuited the larger fixture at the first stale check; the complete maps/reads sequences must now run.",
+      "changes": [
+        {
+          "line": 1,
+          "before": "// CHECK-NOT: ^(?!git-issue-82-maps-local-capture\\.dfy\\(12,[0-9]+\\): Error: assertion might not hold$).*Error:|(?i:out of resource|timed out|timeout|internal error)",
+          "after": "// CHECK-NOT: ^(?!git-issue-82-maps-local-capture\\.dfy\\(12,[0-9]+\\): Error: assertion could not be proved$).*Error:|(?i:out of resource|timed out|timeout|internal error)"
+        },
+        {
+          "line": 2,
+          "before": "// CHECK: ^git-issue-82-maps-local-capture\\.dfy\\(12,[0-9]+\\): Error: assertion might not hold$",
+          "after": "// CHECK: ^git-issue-82-maps-local-capture\\.dfy\\(12,[0-9]+\\): Error: assertion could not be proved$"
+        }
+      ]
+    },
+    {
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/git-issue-82-reads-fresh-reference-negative.check",
+      "reason": "Exact dev assertion wording; retain the sole intended location, diagnostic count and OOR/timeout exclusion guards. The final normal harness short-circuited the larger fixture at the first stale check; the complete maps/reads sequences must now run.",
+      "changes": [
+        {
+          "line": 1,
+          "before": "// CHECK-NOT: ^(?!git-issue-82-reads-fresh-reference-negative\\.dfy\\(35,[0-9]+\\): Error: assertion might not hold$).*Error:|(?i:out of resource|timed out|timeout|inconclusive)",
+          "after": "// CHECK-NOT: ^(?!git-issue-82-reads-fresh-reference-negative\\.dfy\\(35,[0-9]+\\): Error: assertion could not be proved$).*Error:|(?i:out of resource|timed out|timeout|inconclusive)"
+        },
+        {
+          "line": 2,
+          "before": "// CHECK: ^git-issue-82-reads-fresh-reference-negative\\.dfy\\(35,[0-9]+\\): Error: assertion might not hold$",
+          "after": "// CHECK: ^git-issue-82-reads-fresh-reference-negative\\.dfy\\(35,[0-9]+\\): Error: assertion could not be proved$"
+        }
+      ]
+    },
+    {
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/git-issue-82-reads-intermediate-callback-negative.check",
+      "reason": "Exact dev assertion wording; retain the sole intended location, diagnostic count and OOR/timeout exclusion guards. The final normal harness short-circuited the larger fixture at the first stale check; the complete maps/reads sequences must now run.",
+      "changes": [
+        {
+          "line": 1,
+          "before": "// CHECK-NOT: ^(?!git-issue-82-reads-intermediate-callback-negative\\.dfy\\(18,[0-9]+\\): Error: assertion might not hold$).*Error:|(?i:out of resource|timed out|timeout|inconclusive)",
+          "after": "// CHECK-NOT: ^(?!git-issue-82-reads-intermediate-callback-negative\\.dfy\\(18,[0-9]+\\): Error: assertion could not be proved$).*Error:|(?i:out of resource|timed out|timeout|inconclusive)"
+        },
+        {
+          "line": 2,
+          "before": "// CHECK: ^git-issue-82-reads-intermediate-callback-negative\\.dfy\\(18,[0-9]+\\): Error: assertion might not hold$",
+          "after": "// CHECK: ^git-issue-82-reads-intermediate-callback-negative\\.dfy\\(18,[0-9]+\\): Error: assertion could not be proved$"
+        }
+      ]
+    },
+    {
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/git-issue-82-reads-lambda-requires-negative.check",
+      "reason": "Exact dev assertion wording; retain the sole intended location, diagnostic count and OOR/timeout exclusion guards. The final normal harness short-circuited the larger fixture at the first stale check; the complete maps/reads sequences must now run.",
+      "changes": [
+        {
+          "line": 1,
+          "before": "// CHECK-NOT: ^(?!git\\-issue\\-82\\-reads\\-lambda\\-requires\\-negative\\.dfy\\(7,[0-9]+\\): Error: assertion might not hold$).*Error:|(?i:out of resource|timed out|timeout|inconclusive)",
+          "after": "// CHECK-NOT: ^(?!git\\-issue\\-82\\-reads\\-lambda\\-requires\\-negative\\.dfy\\(7,[0-9]+\\): Error: assertion could not be proved$).*Error:|(?i:out of resource|timed out|timeout|inconclusive)"
+        },
+        {
+          "line": 2,
+          "before": "// CHECK: ^git\\-issue\\-82\\-reads\\-lambda\\-requires\\-negative\\.dfy\\(7,[0-9]+\\): Error: assertion might not hold$",
+          "after": "// CHECK: ^git\\-issue\\-82\\-reads\\-lambda\\-requires\\-negative\\.dfy\\(7,[0-9]+\\): Error: assertion could not be proved$"
+        }
+      ]
+    },
+    {
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/git-issue-82-reads-old-only-negative.check",
+      "reason": "Exact dev assertion wording; retain the sole intended location, diagnostic count and OOR/timeout exclusion guards. The final normal harness short-circuited the larger fixture at the first stale check; the complete maps/reads sequences must now run.",
+      "changes": [
+        {
+          "line": 1,
+          "before": "// CHECK-NOT: ^(?!git\\-issue\\-82\\-reads\\-old\\-only\\-negative\\.dfy\\(18,[0-9]+\\): Error: assertion might not hold$).*Error:|(?i:out of resource|timed out|timeout|inconclusive)",
+          "after": "// CHECK-NOT: ^(?!git\\-issue\\-82\\-reads\\-old\\-only\\-negative\\.dfy\\(18,[0-9]+\\): Error: assertion could not be proved$).*Error:|(?i:out of resource|timed out|timeout|inconclusive)"
+        },
+        {
+          "line": 2,
+          "before": "// CHECK: ^git\\-issue\\-82\\-reads\\-old\\-only\\-negative\\.dfy\\(18,[0-9]+\\): Error: assertion might not hold$",
+          "after": "// CHECK: ^git\\-issue\\-82\\-reads\\-old\\-only\\-negative\\.dfy\\(18,[0-9]+\\): Error: assertion could not be proved$"
+        }
+      ]
+    },
+    {
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/git-issue-82-reads-returned-callback-negative.check",
+      "reason": "Exact dev assertion wording; retain the sole intended location, diagnostic count and OOR/timeout exclusion guards. The final normal harness short-circuited the larger fixture at the first stale check; the complete maps/reads sequences must now run.",
+      "changes": [
+        {
+          "line": 1,
+          "before": "// CHECK-NOT: ^(?!git-issue-82-reads-returned-callback-negative\\.dfy\\(13,[0-9]+\\): Error: assertion might not hold$).*Error:|(?i:out of resource|timed out|timeout|inconclusive)",
+          "after": "// CHECK-NOT: ^(?!git-issue-82-reads-returned-callback-negative\\.dfy\\(13,[0-9]+\\): Error: assertion could not be proved$).*Error:|(?i:out of resource|timed out|timeout|inconclusive)"
+        },
+        {
+          "line": 2,
+          "before": "// CHECK: ^git-issue-82-reads-returned-callback-negative\\.dfy\\(13,[0-9]+\\): Error: assertion might not hold$",
+          "after": "// CHECK: ^git-issue-82-reads-returned-callback-negative\\.dfy\\(13,[0-9]+\\): Error: assertion could not be proved$"
+        }
+      ]
+    }
+  ],
+  "validation_boundary": "Expected-failure-aware scratch replay and complete maps/reads sequence validation required, then fresh full normal exact-head CI. No proof, resource ceiling, semantic verdict or archive byte changed."
+}

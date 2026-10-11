@@ -82,7 +82,7 @@ def pair(off, on):
             for key in sorted(set(off) | set(on))]
 
 
-def resources(directory, output):
+def resources(directory, output, harness_z3):
     root, out = Path(directory), Path(output)
     out.mkdir(parents=True, exist_ok=True)
     suite = {}
@@ -104,11 +104,11 @@ def resources(directory, output):
     report = {'source': os.environ.get('GITHUB_SHA', ''),
               'solver_archive_sha256': {
                   '5.1.0': os.environ.get('Z3_LINUX_X64_SHA256', ''),
-                  '4.12.1': os.environ.get('HARNESS_Z3_4_12_1_SHA256', '')},
+                  harness_z3: os.environ.get('HARNESS_Z3_' + harness_z3.replace('.', '_') + '_SHA256', '')},
               'suite_coverage': counts,
               'suite': pair(suite['off'], suite['on']), 'library': {}}
     std = runner('std')
-    for version in ['4.12.1', '5.1.0']:
+    for version in [harness_z3, '5.1.0']:
         modes = {}
         for mode in ['off', 'on']:
             rows = std.load(root / ('std-verdicts-' + mode + '-z3-' + version) / 'std-verdicts.tsv')
@@ -152,6 +152,7 @@ def main():
     inv.add_argument('directory'); inv.add_argument('output')
     res = commands.add_parser('resources')
     res.add_argument('directory'); res.add_argument('output')
+    res.add_argument('--harness-z3', choices=['4.12.1', '4.16.0'], required=True)
     check = commands.add_parser('gate')
     check.add_argument('kind', choices=['suite', 'std'])
     check.add_argument('expected'); check.add_argument('actual')
