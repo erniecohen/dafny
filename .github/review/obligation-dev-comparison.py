@@ -23,7 +23,7 @@ if a.kind!='summarize':
   runner.run('Source/DafnyStandardLibraries',str(executable),str(solver),str(root/'verdicts.tsv'),cores=4,additional_axioms=a.mode.endswith('-axioms'))
  versions={name:subprocess.check_output(command,text=True).strip() for name,command in [('dafny',[str(executable),'--version']),('solver',[str(solver),'--version'])]}
  assert '5.1.0' in versions['solver']
- (root/'receipt.json').write_text(json.dumps({'kind':a.kind,'mode':a.mode,'shard':a.shard,'verification_sources':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'compiler_source':Path('out/toolchain/source.txt').read_text().strip(),'core_sha256':hashlib.sha256(Path('out/toolchain/dafny/DafnyCore.dll').read_bytes()).hexdigest(),'versions':versions,'binary_sha256':hashlib.sha256(executable.read_bytes()).hexdigest(),'solver_sha256':hashlib.sha256(solver.read_bytes()).hexdigest(),'diagnostic':True},indent=2)+'\n')
+ (root/'receipt.json').write_text(json.dumps({'kind':a.kind,'mode':a.mode,'shard':a.shard,'verification_sources':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'compiler_source':Path('out/toolchain/source.txt').read_text().strip(),'core_sha256':hashlib.sha256(Path('out/toolchain/dafny/DafnyCore.dll').read_bytes()).hexdigest(),'versions':versions,'binary_sha256':hashlib.sha256(executable.read_bytes()).hexdigest(),'solver_sha256':hashlib.sha256(solver.read_bytes()).hexdigest(),'diagnostic':True,'comparison_input_policy':'Same combined-tree verification sources in every mode; original dev compiler may reject newly added fork options or features. Verdict sampling does not certify full lit acceptance.'},indent=2)+'\n')
 else:
  report={'diagnostic':True,'groups':{}}
  for kind in ['suite','library']:
