@@ -166,6 +166,15 @@ observed dev diagnostic wording preserving error locations, counts and exits.
 Golden resource counts and semantic verdict baselines are handled separately;
 the initial failed receipts remain available.
 
+The [fresh complete registered capture](https://github.com/erniecohen/dafny/actions/runs/38153950598)
+executes all 192 entries: 187 pass and five fail, with no skips or timeouts;
+package/build and axiom-translation phases exit0. The remaining comparisons
+are observed diagnostic wording in the #33/#1462 wrapper expectations and
+separate #82 conditional/generated sibling matchers. Their
+[exact adaptations](supported-to-dev-harness-final-diagnostics.json) preserve
+locations, counts, sole-error guards and proof meanings. This is a failed
+complete capture, not final acceptance; all five need the fresh normal gate.
+
 Existing normal CI uses Z3 4.16 for upstream test/library profiles, while native
 trusted proof controls here use 5.1. Normal CI was triggered automatically by
 creation of the draft PR. The owner has explicitly authorized additional 4.16

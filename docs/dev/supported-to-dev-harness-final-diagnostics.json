@@ -1,0 +1,288 @@
+{
+  "source_failure": "468c8dfd23bb843698288edbac4b6407d31703fb",
+  "failed_registered_receipt": "https://github.com/erniecohen/dafny/actions/runs/38153950598",
+  "executed": 192,
+  "passed": 187,
+  "failed": 5,
+  "skips": 0,
+  "timeouts": 0,
+  "native_language_controls": "https://github.com/erniecohen/dafny/actions/runs/38153522332",
+  "explanation": "All five actual failed normal comparisons preserve source locations, numbers of diagnostic errors and summary verdicts. The wrapper-specific33/1462 expectations and distinct82 conditional/generated sibling matchers still used supported wording after other sibling files were adapted. Only observed dev wording changes. Strict sole-error locations, noOOR/timeout guards, resource ceilings, theorem sources and false-control meanings are unchanged. Fresh complete normal acceptance remains required.",
+  "files": [
+    {
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/github-issue-33.dfy.expect",
+      "before_sha256": "0bb878e5a7232c83923ce524bf1ff89ad366443df9691ac2796be9c99bb214a4",
+      "after_sha256": "f8f112b7b35e7f4a2e7e85969dc40ac4df4b3a1e541a527a96909703b4e596dc",
+      "changes": [
+        {
+          "line": 8,
+          "before": "github-issue-33-negative.dfy(3,13): Error: value to be converted might not fit in bv32",
+          "actual": "github-issue-33-negative.dfy(3,13): Error: value to be converted could not be proved to fit in bv32"
+        },
+        {
+          "line": 9,
+          "before": "github-issue-33-negative.dfy(7,13): Error: value to be converted might not fit in bv32",
+          "actual": "github-issue-33-negative.dfy(7,13): Error: value to be converted could not be proved to fit in bv32"
+        },
+        {
+          "line": 10,
+          "before": "github-issue-33-negative.dfy(11,13): Error: value to be converted might not fit in bv32",
+          "actual": "github-issue-33-negative.dfy(11,13): Error: value to be converted could not be proved to fit in bv32"
+        },
+        {
+          "line": 11,
+          "before": "github-issue-33-negative.dfy(15,13): Error: value to be converted might not fit in bv32",
+          "actual": "github-issue-33-negative.dfy(15,13): Error: value to be converted could not be proved to fit in bv32"
+        },
+        {
+          "line": 12,
+          "before": "github-issue-33-negative.dfy(19,13): Error: value to be converted might not fit in bv0",
+          "actual": "github-issue-33-negative.dfy(19,13): Error: value to be converted could not be proved to fit in bv0"
+        },
+        {
+          "line": 13,
+          "before": "github-issue-33-negative.dfy(23,13): Error: value to be converted might not fit in bv32",
+          "actual": "github-issue-33-negative.dfy(23,13): Error: value to be converted could not be proved to fit in bv32"
+        },
+        {
+          "line": 15,
+          "before": "github-issue-33-negative.dfy(30,2): Error: assertion might not hold",
+          "actual": "github-issue-33-negative.dfy(30,2): Error: assertion could not be proved"
+        },
+        {
+          "line": 16,
+          "before": "github-issue-33-negative.dfy(33,2): Error: assertion might not hold",
+          "actual": "github-issue-33-negative.dfy(33,2): Error: assertion could not be proved"
+        },
+        {
+          "line": 17,
+          "before": "github-issue-33-negative.dfy(39,2): Error: assertion might not hold",
+          "actual": "github-issue-33-negative.dfy(39,2): Error: assertion could not be proved"
+        },
+        {
+          "line": 29,
+          "before": "github-issue-33-negative.dfy(3,13): Error: value to be converted might not fit in bv32",
+          "actual": "github-issue-33-negative.dfy(3,13): Error: value to be converted could not be proved to fit in bv32"
+        },
+        {
+          "line": 30,
+          "before": "github-issue-33-negative.dfy(7,13): Error: value to be converted might not fit in bv32",
+          "actual": "github-issue-33-negative.dfy(7,13): Error: value to be converted could not be proved to fit in bv32"
+        },
+        {
+          "line": 31,
+          "before": "github-issue-33-negative.dfy(11,13): Error: value to be converted might not fit in bv32",
+          "actual": "github-issue-33-negative.dfy(11,13): Error: value to be converted could not be proved to fit in bv32"
+        },
+        {
+          "line": 32,
+          "before": "github-issue-33-negative.dfy(15,13): Error: value to be converted might not fit in bv32",
+          "actual": "github-issue-33-negative.dfy(15,13): Error: value to be converted could not be proved to fit in bv32"
+        },
+        {
+          "line": 33,
+          "before": "github-issue-33-negative.dfy(19,13): Error: value to be converted might not fit in bv0",
+          "actual": "github-issue-33-negative.dfy(19,13): Error: value to be converted could not be proved to fit in bv0"
+        },
+        {
+          "line": 34,
+          "before": "github-issue-33-negative.dfy(23,13): Error: value to be converted might not fit in bv32",
+          "actual": "github-issue-33-negative.dfy(23,13): Error: value to be converted could not be proved to fit in bv32"
+        },
+        {
+          "line": 36,
+          "before": "github-issue-33-negative.dfy(30,2): Error: assertion might not hold",
+          "actual": "github-issue-33-negative.dfy(30,2): Error: assertion could not be proved"
+        },
+        {
+          "line": 37,
+          "before": "github-issue-33-negative.dfy(33,2): Error: assertion might not hold",
+          "actual": "github-issue-33-negative.dfy(33,2): Error: assertion could not be proved"
+        },
+        {
+          "line": 38,
+          "before": "github-issue-33-negative.dfy(39,2): Error: assertion might not hold",
+          "actual": "github-issue-33-negative.dfy(39,2): Error: assertion could not be proved"
+        }
+      ]
+    },
+    {
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/github-issue-33-z3-4.12.1.dfy.expect",
+      "before_sha256": "0bb878e5a7232c83923ce524bf1ff89ad366443df9691ac2796be9c99bb214a4",
+      "after_sha256": "f8f112b7b35e7f4a2e7e85969dc40ac4df4b3a1e541a527a96909703b4e596dc",
+      "changes": [
+        {
+          "line": 8,
+          "before": "github-issue-33-negative.dfy(3,13): Error: value to be converted might not fit in bv32",
+          "actual": "github-issue-33-negative.dfy(3,13): Error: value to be converted could not be proved to fit in bv32"
+        },
+        {
+          "line": 9,
+          "before": "github-issue-33-negative.dfy(7,13): Error: value to be converted might not fit in bv32",
+          "actual": "github-issue-33-negative.dfy(7,13): Error: value to be converted could not be proved to fit in bv32"
+        },
+        {
+          "line": 10,
+          "before": "github-issue-33-negative.dfy(11,13): Error: value to be converted might not fit in bv32",
+          "actual": "github-issue-33-negative.dfy(11,13): Error: value to be converted could not be proved to fit in bv32"
+        },
+        {
+          "line": 11,
+          "before": "github-issue-33-negative.dfy(15,13): Error: value to be converted might not fit in bv32",
+          "actual": "github-issue-33-negative.dfy(15,13): Error: value to be converted could not be proved to fit in bv32"
+        },
+        {
+          "line": 12,
+          "before": "github-issue-33-negative.dfy(19,13): Error: value to be converted might not fit in bv0",
+          "actual": "github-issue-33-negative.dfy(19,13): Error: value to be converted could not be proved to fit in bv0"
+        },
+        {
+          "line": 13,
+          "before": "github-issue-33-negative.dfy(23,13): Error: value to be converted might not fit in bv32",
+          "actual": "github-issue-33-negative.dfy(23,13): Error: value to be converted could not be proved to fit in bv32"
+        },
+        {
+          "line": 15,
+          "before": "github-issue-33-negative.dfy(30,2): Error: assertion might not hold",
+          "actual": "github-issue-33-negative.dfy(30,2): Error: assertion could not be proved"
+        },
+        {
+          "line": 16,
+          "before": "github-issue-33-negative.dfy(33,2): Error: assertion might not hold",
+          "actual": "github-issue-33-negative.dfy(33,2): Error: assertion could not be proved"
+        },
+        {
+          "line": 17,
+          "before": "github-issue-33-negative.dfy(39,2): Error: assertion might not hold",
+          "actual": "github-issue-33-negative.dfy(39,2): Error: assertion could not be proved"
+        },
+        {
+          "line": 29,
+          "before": "github-issue-33-negative.dfy(3,13): Error: value to be converted might not fit in bv32",
+          "actual": "github-issue-33-negative.dfy(3,13): Error: value to be converted could not be proved to fit in bv32"
+        },
+        {
+          "line": 30,
+          "before": "github-issue-33-negative.dfy(7,13): Error: value to be converted might not fit in bv32",
+          "actual": "github-issue-33-negative.dfy(7,13): Error: value to be converted could not be proved to fit in bv32"
+        },
+        {
+          "line": 31,
+          "before": "github-issue-33-negative.dfy(11,13): Error: value to be converted might not fit in bv32",
+          "actual": "github-issue-33-negative.dfy(11,13): Error: value to be converted could not be proved to fit in bv32"
+        },
+        {
+          "line": 32,
+          "before": "github-issue-33-negative.dfy(15,13): Error: value to be converted might not fit in bv32",
+          "actual": "github-issue-33-negative.dfy(15,13): Error: value to be converted could not be proved to fit in bv32"
+        },
+        {
+          "line": 33,
+          "before": "github-issue-33-negative.dfy(19,13): Error: value to be converted might not fit in bv0",
+          "actual": "github-issue-33-negative.dfy(19,13): Error: value to be converted could not be proved to fit in bv0"
+        },
+        {
+          "line": 34,
+          "before": "github-issue-33-negative.dfy(23,13): Error: value to be converted might not fit in bv32",
+          "actual": "github-issue-33-negative.dfy(23,13): Error: value to be converted could not be proved to fit in bv32"
+        },
+        {
+          "line": 36,
+          "before": "github-issue-33-negative.dfy(30,2): Error: assertion might not hold",
+          "actual": "github-issue-33-negative.dfy(30,2): Error: assertion could not be proved"
+        },
+        {
+          "line": 37,
+          "before": "github-issue-33-negative.dfy(33,2): Error: assertion might not hold",
+          "actual": "github-issue-33-negative.dfy(33,2): Error: assertion could not be proved"
+        },
+        {
+          "line": 38,
+          "before": "github-issue-33-negative.dfy(39,2): Error: assertion might not hold",
+          "actual": "github-issue-33-negative.dfy(39,2): Error: assertion could not be proved"
+        }
+      ]
+    },
+    {
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-1462.dfy.expect",
+      "before_sha256": "beb7369fe6483e77825a5228c22183a49e52df4c2f5867e3ca2bce72a514b520",
+      "after_sha256": "94198ea4fa39e9ac29519a7b3236d707fda7e3421cf40f1cd54c911fe4358847",
+      "changes": [
+        {
+          "line": 14,
+          "before": "git-issue-1462-negative.dfy(13,7): Error: decreases clause might not decrease",
+          "actual": "git-issue-1462-negative.dfy(13,7): Error: decreases clause could not be proved to decrease"
+        },
+        {
+          "line": 15,
+          "before": "git-issue-1462-negative.dfy(23,5): Error: decreases clause might not decrease",
+          "actual": "git-issue-1462-negative.dfy(23,5): Error: decreases clause could not be proved to decrease"
+        },
+        {
+          "line": 16,
+          "before": "git-issue-1462-negative.dfy(43,12): Error: decreases clause might not decrease",
+          "actual": "git-issue-1462-negative.dfy(43,12): Error: decreases clause could not be proved to decrease"
+        },
+        {
+          "line": 17,
+          "before": "git-issue-1462-negative.dfy(50,6): Error: decreases clause might not decrease",
+          "actual": "git-issue-1462-negative.dfy(50,6): Error: decreases clause could not be proved to decrease"
+        },
+        {
+          "line": 21,
+          "before": "git-issue-1462-negative.dfy(13,7): Error: decreases clause might not decrease",
+          "actual": "git-issue-1462-negative.dfy(13,7): Error: decreases clause could not be proved to decrease"
+        },
+        {
+          "line": 22,
+          "before": "git-issue-1462-negative.dfy(23,5): Error: decreases clause might not decrease",
+          "actual": "git-issue-1462-negative.dfy(23,5): Error: decreases clause could not be proved to decrease"
+        },
+        {
+          "line": 23,
+          "before": "git-issue-1462-negative.dfy(43,12): Error: decreases clause might not decrease",
+          "actual": "git-issue-1462-negative.dfy(43,12): Error: decreases clause could not be proved to decrease"
+        },
+        {
+          "line": 24,
+          "before": "git-issue-1462-negative.dfy(50,6): Error: decreases clause might not decrease",
+          "actual": "git-issue-1462-negative.dfy(50,6): Error: decreases clause could not be proved to decrease"
+        }
+      ]
+    },
+    {
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/git-issue-82-maps-conditional-capture.check",
+      "before_sha256": "1b1b2f46641ed71d685116cc567d21dfab6e3795868dfe7710af70a77295dc91",
+      "after_sha256": "c4ac11c6c4583fbaec25f5e66486d0baea019fe394894530254bafc389766e6b",
+      "changes": [
+        {
+          "line": 1,
+          "before": "// CHECK-NOT: ^(?!git-issue-82-maps-conditional-capture\\.dfy\\(8,[0-9]+\\): Error: assertion might not hold$).*Error:|(?i:out of resource|timed out|timeout|internal error)",
+          "actual": "// CHECK-NOT: ^(?!git-issue-82-maps-conditional-capture\\.dfy\\(8,[0-9]+\\): Error: assertion could not be proved$).*Error:|(?i:out of resource|timed out|timeout|internal error)"
+        },
+        {
+          "line": 2,
+          "before": "// CHECK: ^git-issue-82-maps-conditional-capture\\.dfy\\(8,[0-9]+\\): Error: assertion might not hold$",
+          "actual": "// CHECK: ^git-issue-82-maps-conditional-capture\\.dfy\\(8,[0-9]+\\): Error: assertion could not be proved$"
+        }
+      ]
+    },
+    {
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/git-issue-82-reads-generated-negative.check",
+      "before_sha256": "6878e55e2c605ed0edac5afdbb448486dc9eee9a2a2a4f722f1a87729d4c2d04",
+      "after_sha256": "cebad7c8f723a5a7e9ab70cbfd5f02afc1a5e4fc46172dce11b7c13927329e7b",
+      "changes": [
+        {
+          "line": 1,
+          "before": "// CHECK-NOT: ^(?!git\\-issue\\-82\\-reads\\-generated\\-negative\\.dfy\\(19,[0-9]+\\): Error: assertion might not hold$).*Error:|(?i:out of resource|timed out|timeout|inconclusive)",
+          "actual": "// CHECK-NOT: ^(?!git\\-issue\\-82\\-reads\\-generated\\-negative\\.dfy\\(19,[0-9]+\\): Error: assertion could not be proved$).*Error:|(?i:out of resource|timed out|timeout|inconclusive)"
+        },
+        {
+          "line": 2,
+          "before": "// CHECK: ^git\\-issue\\-82\\-reads\\-generated\\-negative\\.dfy\\(19,[0-9]+\\): Error: assertion might not hold$",
+          "actual": "// CHECK: ^git\\-issue\\-82\\-reads\\-generated\\-negative\\.dfy\\(19,[0-9]+\\): Error: assertion could not be proved$"
+        }
+      ]
+    }
+  ]
+}
