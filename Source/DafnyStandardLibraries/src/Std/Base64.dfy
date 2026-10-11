@@ -897,12 +897,12 @@ module Std.Base64 {
   lemma EncodeBVLengthCongruentToZeroMod4(b: seq<bv8>)
     ensures |EncodeBV(b)| % 4 == 0
   {
+    // Exact length is a multiple of four, with one extra block for padding.
+    EncodeBVLengthExact(b);
     if |b| % 3 == 0 {
-      EncodeUnpaddedBounds(b);
-    } else if |b| % 3 == 1 {
-      EncodeUnpaddedBounds(b[..(|b| - 1)]);
+      assert |EncodeBV(b)| == |b| / 3 * 4;
     } else {
-      EncodeUnpaddedBounds(b[..(|b| - 2)]);
+      assert |EncodeBV(b)| == |b| / 3 * 4 + 4;
     }
   }
 
