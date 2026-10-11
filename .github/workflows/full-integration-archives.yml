@@ -1,4 +1,4 @@
-name: Full integration verified library archive generation
+name: Full integration verified archive dependency closure
 on:
   push:
     branches: ['scratch/codex/full-main-to-dev-probes']
@@ -31,9 +31,16 @@ jobs:
           unzip -q z3.zip -d out/solver
           chmod +x out/solver/z3-4.16.0
           echo "Z3=$PWD/out/solver/z3-4.16.0" >> "$GITHUB_ENV"
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-verified-library-archives
+          run-id: 38152826574
+          github-token: ${{ github.token }}
+          path: out/prior
       - name: Preserve actual verified archive outcomes
         env:
           ARCHIVE_SOLVER_VERSION: '4.16.0'
+          RESUME_VERIFIED_SEVEN: 'true'
         run: python3 .github/review/full-integration-archives.py
       - uses: actions/upload-artifact@v4
         if: always()

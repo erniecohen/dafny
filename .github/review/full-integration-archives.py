@@ -1,6 +1,6 @@
 """Generate archives only after complete source verification with the authorized solver."""
 from pathlib import Path
-import os, subprocess, json, hashlib, zipfile, tomllib
+import os, subprocess, json, hashlib, zipfile, tomllib, shutil
 root=Path.cwd(); library=root/'Source/DafnyStandardLibraries';out=root/'out/archive-evidence';out.mkdir(parents=True,exist_ok=True)
 assembly=(root/'out/toolchain/dafny/Dafny.dll').resolve();solver=Path(os.environ['Z3']).resolve()
 source=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
@@ -34,13 +34,29 @@ def build(label,cwd,inputs,target,extra=()):
   receipt['archives'][target.name]={'sha256':hashlib.sha256(target.read_bytes()).hexdigest(),'program_sha256':hashlib.sha256(z.read('program')).hexdigest(),'manifest':config,'declarations':len(decls),'vc_batches':sum(len(d['vcResults']) for d in decls),'resource_units':sum(d['resourceCount'] for d in decls)}
  (out/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
 def generate():
- build('Std',library,['src/Std/dfyconfig.toml'],library/'binaries/DafnyStandardLibraries.doo')
- ts=library/'src/Std/TargetSpecific'
- for target in ['notarget','cs','java','js','go','py']:
-  files=sorted('./'+str(p.relative_to(ts)) for p in ts.rglob('*-'+target+'*.dfy'))
-  build('TargetSpecific-'+target,ts,['dfyconfig.toml',*files],library/('binaries/DafnyStandardLibraries-'+target+'.doo'))
+ if os.environ.get('RESUME_VERIFIED_SEVEN')=='true':
+  prior_root=root/'out/prior';prior=json.loads((prior_root/'out/archive-evidence/receipt.json').read_text())
+  for key in ['compiler_source','compiler_version','solver_version','solver_sha256','assemblies','library_inputs']:
+   assert prior[key]==receipt[key],('Prior verified source/toolchain mismatch',key)
+  assert len(prior['archives'])==7
+  receipt['prior_generation_source']=prior['source'];receipt['prior_phases']=prior['phases']
+  receipt['prior_failure']=prior.get('failure')
+  for name,metadata in prior['archives'].items():
+   assert name!='DafnyStandardLibraries-arithmetic.doo'
+   original=prior_root/'Source/DafnyStandardLibraries/binaries'/name
+   assert hashlib.sha256(original.read_bytes()).hexdigest()==metadata['sha256']
+   assert metadata['declarations']>0 and metadata['vc_batches']>0
+   shutil.copyfile(original,library/'binaries'/name);receipt['archives'][name]=metadata
+ else:
+  build('Std',library,['src/Std/dfyconfig.toml'],library/'binaries/DafnyStandardLibraries.doo')
+  ts=library/'src/Std/TargetSpecific'
+  for target in ['notarget','cs','java','js','go','py']:
+   files=sorted('./'+str(p.relative_to(ts)) for p in ts.rglob('*-'+target+'*.dfy'))
+   build('TargetSpecific-'+target,ts,['dfyconfig.toml',*files],library/('binaries/DafnyStandardLibraries-'+target+'.doo'))
  arithmetic=library/'src/Std/Arithmetic'
  files=sorted(str(p.relative_to(library)) for p in arithmetic.rglob('*.dfy'))
+ # LittleEndianNat depends on Seq; certify the complete standalone source closure.
+ files += ['src/Std/Collections/Seq.dfy','src/Std/Wrappers.dfy','src/Std/Relations.dfy','src/Std/Math.dfy']
  build('Arithmetic',library,files,library/'binaries/DafnyStandardLibraries-arithmetic.doo',extra=['--resource-limit','5000000','--enforce-determinism','--reads-clauses-on-methods','--track-print-effects','--type-system-refresh','--general-newtypes','--general-traits:datatype'])
 try:
  generate()
