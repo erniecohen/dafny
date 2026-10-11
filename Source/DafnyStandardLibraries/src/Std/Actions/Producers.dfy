@@ -1675,6 +1675,22 @@ module Std.Producers {
         }
       }
 
+      // One invocation appends one output. Expose that concrete suffix before
+      // proving the combined producer's remaining-count transition.
+      assert history == old(history) + [((), result)];
+      assert Outputs() == old(Outputs()) + [result];
+      Seq.PartitionedDecomposition(old(Outputs()), [result], IsSome);
+      ProducedComposition(old(Outputs()), [result]);
+      if old(Remaining()).Some? {
+        if result.Some? {
+          assert 0 < old(Remaining()).value;
+          assert Remaining() == Some(old(Remaining()).value - 1);
+        } else {
+          assert old(Remaining()).value == 0;
+          assert Remaining() == Some(0);
+        }
+      }
+
       assert old(State()).ValidChange(State());
 
       assert Ensures(t, result);
