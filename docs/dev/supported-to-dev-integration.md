@@ -45,11 +45,15 @@ changes; the flag remains experimental and off by default.
 The combined compiler source is `eac45d90832014b377a68e49444057d230123e58`,
 reporting `4.11.1+eac45d90`, built with .NET 10 and
 Boogie `3.5.5-review.37e4435d`. The [immutable native build](https://github.com/erniecohen/dafny/actions/runs/38139291400)
-records the compiler and dependency assembly hashes. Native proof receipts use
-Z3 5.1.0, binary SHA256
+records the compiler and dependency assembly hashes. Native correctness receipts
+retain Z3 5.1.0, binary SHA256
 `b4e0b3483ce37817230b20d6cad48390eb6a3aefde1d93342ad6dc763f24bc23`.
-Later metadata, fixture and documentation commits do not change this compiler
-source. Each receipt names its compiler source and verification input source.
+Additional library repair/closure receipts use the explicitly authorized Z3
+4.16 profile alongside 5.1; existing 4.12.1 historical test references are also
+authorized. Later fixture, library-proof, archive and documentation commits do
+not change the C# compiler sources. Each receipt names its compiler source and
+verification input source. The final normal gate rebuilds the exact candidate
+head rather than treating the older native assembly identity as that new build.
 
 ### Passing focused gates
 
@@ -155,6 +159,16 @@ MultiplyDivideLe error already occurs with original dev on combined sources.
 
 ### Normal CI and remaining work
 
+All four complete source-library profiles and all eight fresh verified
+archives now pass. The final normal exact-head gate remains pending. The
+[individual Std baseline catalog](supported-to-dev-stdlib-baseline-changes.json)
+records every changed/added row, actual VC/resource denominator and source
+lineage. Default OFF changes nine rows on 5.1 and two on 4.16. The older supported
+5.1 ON table gains 242 retained dev declarations and changes 27 rows, removing
+none; 4.16 ON receives its first complete independently captured table. These
+metadata updates are separate from proof edits and retain prior failed receipts.
+
+
 The [normal PR172 CI](https://github.com/erniecohen/dafny/actions/runs/38139347333)
 failed. Its eight diagnostic suite shards and build pass; registered regressions
 pass 138/192 and fail 54. The finite-support and resolver harness failures were
@@ -205,8 +219,14 @@ and 8,144 Valid batches; Arithmetic has 646 Correct declarations and 1,219 Valid
 batches at its explicit 5,000,000 ceiling. These native archive denominators
 differ from normal Std verification's split-obligation summaries. The initial
 Arithmetic missing-import failure is retained; its standalone dependency
-closure was repaired explicitly. Later proof-source changes require fresh
-archive regeneration: those historical bytes do not certify changed inputs.
+closure was repaired explicitly. Those are historical bytes; they do not certify the later proof inputs.
+The [fresh all-eight archive run](https://github.com/erniecohen/dafny/actions/runs/38155259350)
+rebuilds every archive at `f34df1a91e13b6ebda28bfc097e10cd2ae2c961f`,
+with all 134 input hashes equal to the final proof tree, all eight actual exits
+zero and every native declaration Correct and nonempty VC batch Valid. The
+[committed receipt](supported-to-dev-verified-archives.json) records those exact
+new archive/program digests, compiler/solver identities and both no-verify flags
+false. The new bytes are installed; final normal CI must validate their packaging.
 
 The [complete four-profile native library capture](https://github.com/erniecohen/dafny/actions/runs/38153950653)
 at `468c8dfd2` executes all seven original library phases, with 2,432 native
@@ -227,8 +247,15 @@ uses the existing combined-partials lemma. Their
 [fresh before/after and helper checks](https://github.com/erniecohen/dafny/actions/runs/38154816517)
 pass all 11 client/helper profiles in all four combinations: 26 Correct
 declarations and 83 Valid VC batches per profile set. The original 5.1
-failures reproduce in the before capture. Complete closure and regenerated
-archives for these final proof inputs remain required.
+failures reproduce in the before capture. The subsequent
+[complete four-profile closure](https://github.com/erniecohen/dafny/actions/runs/38155422261)
+passes both 5.1 and 4.16 with additional axioms OFF and ON. Each profile records
+all seven actual phase exits zero, 2,432 Correct declarations and 8,184 all-Valid
+VC batches, without errors, warnings or resource failures. Std reports 7,838
+verified; target phases report 132, 132, 15, 35, 16 and 16. Exact proof-source,
+compiler and solver hashes are recorded. Those source receipts used the prior
+archive bytes; the fresh archives are independently certified above. The final
+normal gate checks complete sources and packaging with the new bytes together.
 
 The [individual historical ON catalog](supported-to-dev-normal-on-baseline-changes.json)
 accounts for 80 rows: 37 same-source language-default effects, 19 preserved
@@ -245,10 +272,11 @@ all pass strict expected-failure checks: actual exit4, one Valid and one Invalid
 VC each, with the sole intended error at11 or19. Complete registered acceptance
 with the restored RUN pairs is still required.
 
-The draft integration is not ready to merge. Remaining gates are final
-explained normal regression/verdict baselines, complete fresh normal exact-head
-CI, full library closure and exact-source verified archives after the last
-proof edit. Issues #170 proof-source repairs and #171 default-on review remain
+The draft integration is not ready to merge. The remaining gate is complete
+fresh normal exact-head CI, including all 192 registered entries, restored #141
+mode pairs, final explained verdict tables, complete sources and the newly
+verified archive bytes. Focused native success and separately certified archives
+do not substitute for that combined normal gate. Issues #170 proof-source repairs and #171 default-on review remain
 separate. After a new owner review, use a GitHub merge commit so both supported
 and #169 ancestry remain in dev. Do not squash that ancestry or push dev directly.
 
@@ -280,6 +308,6 @@ wrapper records failures and exits zero; its workflow status is diagnostic.
 Commutativity, modulo multiples, base-one power, strict power increase and exact
 encoded-length helpers pass on both solvers. Later candidates expose the encoded
 prefix/padding slices and the producer's full validity/freshness/history contract.
-Their final focused success and historical archive closure are recorded above;
-new proof inputs still require fresh complete closure. No theorem contract, resource ceiling, nonlinear arithmetic setting or
+Their final focused success, fresh archive certification and complete four-profile
+source closure are recorded above. No theorem contract, resource ceiling, nonlinear arithmetic setting or
 expected semantic verdict was weakened by these proof edits.
