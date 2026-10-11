@@ -84,6 +84,21 @@ source. Each receipt names its compiler source and verification input source.
   rejected, no crashes and no timeouts. The input source is `b1ee24a09f464fecc45fc067eea0811a470d93b5`;
   the immutable compiler is the eac45 source above.
 
+The [explicit native allocation/read interaction receipt](https://github.com/erniecohen/dafny/actions/runs/38141013445)
+uses immutable eac45 and input source `ba41dd89c1c94d8d6942ab1364274a3beea3b682`
+with Z3 5.1.0. All 32 profiles have their expected actual exits. Both resolvers
+and lowering OFF/ON preserve the exact upstream diagnostic-location sequences
+for Reads (20 verified, 17 errors), ReadsOnMethods (68 verified, 35 errors), and
+Naked (19 resolver errors, zero verification declarations). Naked is resolution
+coverage, not a positive proof. The remaining 28 profiles have nonempty
+verification declarations and VC batches, containing only Valid/Invalid
+outcomes without resource failures. The paired controls retain 19 Correct
+capture-positive declarations, 1 Correct/11 Errors capture-negative,
+2 Correct/2 Errors pure-callback, 14 Correct finite-support, and
+1 Correct/1 Error lambda-allocation false control per profile. Summary errors
+count failed assertions; they need not equal the number of Errors declarations.
+The receipt is focused native evidence, separate from normal Lit acceptance.
+
 The [producer change map](supported-to-dev-producer-changes.json) accounts for
 280 to 288 groups: 39 additions, 31 removals and seven token changes, each with
 its semantic role and reason. Permission-query replacements retain the default
@@ -156,6 +171,13 @@ trusted proof controls here use 5.1. Normal CI was triggered automatically by
 creation of the draft PR. Additional 4.16 submissions and PR updates that would
 retrigger it are held pending the owner's narrow solver authorization. Existing
 runs are preserved. Reading their completed logs is not a new solver run.
+
+A concrete arithmetic repair hypothesis is available but is not yet verified:
+`LemmaModMultiplesBasic(c,b)` supplies `(c*b)%b == 0`, while the next assertion
+uses `(b*c)%b == 0`. DivMod disables nonlinear arithmetic. An explicit existing
+`LemmaMulIsCommutative(b,c)` call would bridge that reordering; the theorem is
+true, but the current proof leaves that step to solver search. This is distinct
+from treating a failed verifier result as proof of a false arithmetic statement.
 
 Both existing 4.16 library profiles (additional axioms OFF/ON) report 7617
 verified, one error and five resource failures. The error is

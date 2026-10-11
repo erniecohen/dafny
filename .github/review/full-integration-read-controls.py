@@ -27,9 +27,13 @@ for name,source,extra,limit,expected in cases:
    result=subprocess.run(command,capture_output=True,text=True,timeout=300)
    (folder/'output.txt').write_text(result.stdout+result.stderr)
    data=json.loads((folder/'results.json').read_text()) if (folder/'results.json').exists() else None
+   declarations=(data or {}).get('verificationResults',[])
+   vcs=[vc for declaration in declarations for vc in declaration.get('vcResults',[])]
    row={'name':name,'refresh':refresh,'enabled':enabled,'exit':result.returncode,
+    'declaration_count':len(declarations),'vc_count':len(vcs),
+    'has_proof_evidence':bool(declarations and vcs),
     'expected_exit':expected,'resource_limit':limit,'source_sha256':hashlib.sha256((lit/source).read_bytes()).hexdigest(),
-    'has_nonempty_json':bool(data),'error_locations':re.findall(r'([^\s]+\(\d+,\d+\)): Error:',result.stdout+result.stderr),
+    'has_json_schema':bool(data),'error_locations':re.findall(r'([^\s]+\(\d+,\d+\)): Error:',result.stdout+result.stderr),
     'summaries':re.findall(r'Dafny program verifier finished with ([^\n]+)',result.stdout+result.stderr)}
    rows.append(row);print(name,refresh,enabled,'actual',result.returncode,'expected',expected,flush=True)
 receipt={'diagnostic':True,'scope':'Exact native 5.1 outcomes on original unmodified upstream and supported fixtures; not complete Lit acceptance.',
