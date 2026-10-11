@@ -287,13 +287,20 @@ exits four, and 226 Valid/46 Invalid VC batches. Reads passes the real harness;
 maps still fails two strict checks for the old key-uniqueness wording. That final
 matcher is updated without changing the intended location or verdict. The resource
 replay reproduces the old missing-artifact exit1 and passes the corrected report
-with exit0; both complete control sequences must pass before normal CI is repeated.
+with exit0. The [complete repaired sequences](https://github.com/erniecohen/dafny/actions/runs/38158464461)
+pass every strict matcher and both real harness fixtures: all 54 intended exits,
+272 nonempty VC batches (226 Valid/46 Invalid), and no missing control. The
+resource replay also passes on both full 1,183-program/8,208-batch suite captures
+and all four 2,432-row library cost profiles; unavailable diagnostic-only logs
+remain explicitly listed.
 
-The draft integration is not ready to merge. The remaining gate is complete
+At this report snapshot, focused gates are complete and the remaining gate is
 fresh normal exact-head CI, including all 192 registered entries, restored #141
 mode pairs, final explained verdict tables, complete sources and the newly
 verified archive bytes. Focused native success and separately certified archives
-do not substitute for that combined normal gate. Issues #170 proof-source repairs and #171 default-on review remain
+do not substitute for that combined normal gate. The current PR validation report
+records the final exact-head run after dispatch; a new owner review remains
+required before merging. Issues #170 proof-source repairs and #171 default-on review remain
 separate. After a new owner review, use a GitHub merge commit so both supported
 and #169 ancestry remain in dev. Do not squash that ancestry or push dev directly.
 

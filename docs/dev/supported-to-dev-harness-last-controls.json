@@ -139,7 +139,7 @@
       ]
     }
   ],
-  "validation_boundary": "Expected-failure-aware scratch replay and complete maps/reads sequence validation required, then fresh full normal exact-head CI. No proof, resource ceiling, semantic verdict or archive byte changed.",
+  "validation_boundary": "The complete expected-failure-aware replay and both real maps/reads harness fixtures pass. Fresh complete normal exact-head CI remains required. No proof, resource ceiling, semantic verdict or archive byte changed.",
   "initial_probe_infrastructure_failure": {
     "run": "https://github.com/erniecohen/dafny/actions/runs/38157896322",
     "reason": "The default shallow checkout did not contain the exact e3c0 parent needed for git-show/git-diff reference checks; both diagnostic runners stopped before native measurements. Fetch complete history and retain actual diagnostic runner exits separately from the workflow status.",
@@ -163,5 +163,71 @@
     "resource_after_actual": 0,
     "acceptance": false,
     "reason": "The two maps-conflict checks still used the old key-uniqueness wording. Every intended native verdict is present, but failed strict checks and the real maps harness prevent acceptance."
+  },
+  "complete_sequence_after": {
+    "run": "https://github.com/erniecohen/dafny/actions/runs/38158464461",
+    "source": "8035c7c2c015dc0a7effa5addd8af0aac3322288",
+    "compiler_source": "e3c0e064e1deed523cfc6fb1a888556b315be7a0",
+    "version": "4.11.1+e3c0e064",
+    "core_sha256": "ce8ba157a67086993c9401241b6e4790d73a0d8dfceb264bbc9f38151f1055c3",
+    "solver_sha256": "b4e0b3483ce37817230b20d6cad48390eb6a3aefde1d93342ad6dc763f24bc23",
+    "native_invocations": 54,
+    "positive_exit_zero": 8,
+    "negative_exit_four": 46,
+    "declarations": 272,
+    "valid_vc_batches": 226,
+    "invalid_vc_batches": 46,
+    "old_strict_check_failures": 26,
+    "current_strict_check_failures": 0,
+    "harness_phases": [
+      {
+        "name": "harness-packages",
+        "actual": 0,
+        "expected": 0,
+        "passed": true
+      },
+      {
+        "name": "harness-build",
+        "actual": 0,
+        "expected": 0,
+        "passed": true
+      },
+      {
+        "name": "complete-harness-sequences",
+        "actual": 0,
+        "expected": 0,
+        "passed": true,
+        "tests": [
+          {
+            "name": "git-issues/git-issue-82-maps.dfy",
+            "outcome": "Passed"
+          },
+          {
+            "name": "git-issues/git-issue-82-reads.dfy",
+            "outcome": "Passed"
+          }
+        ]
+      }
+    ],
+    "resource_before_actual": 1,
+    "resource_after_actual": 0,
+    "suite_coverage": {
+      "off": {
+        "programs": 1183,
+        "batches": 8208,
+        "unavailable_logs": 38
+      },
+      "on": {
+        "programs": 1183,
+        "batches": 8208,
+        "unavailable_logs": 38
+      }
+    },
+    "library_resource_rows": {
+      "4.16.0": 2432,
+      "5.1.0": 2432
+    },
+    "acceptance": true,
+    "boundary": "Focused strict metadata/control acceptance. Complete normal exact-head CI remains required."
   }
 }
