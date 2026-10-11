@@ -1097,7 +1097,8 @@ module Std.Base64 {
     requires IsBase64String(s)
     requires |s| >= 4
     requires Is1Padding(s[(|s| - 4)..])
-    ensures    DecodeValid(s)[..(|DecodeValid(s)| - 2)] == DecodeUnpadded(s[..(|s| - 4)])
+    ensures (UnpaddedBase64Prefix(s); AboutDecodeValid(s, DecodeValid(s));
+             DecodeValid(s)[..(|DecodeValid(s)| - 2)] == DecodeUnpadded(s[..(|s| - 4)]))
   {
   }
 
@@ -1128,6 +1129,8 @@ module Std.Base64 {
     requires Is1Padding(s[(|s| - 4)..])
     ensures EncodeBV(DecodeValid(s)) == s
   {
+    UnpaddedBase64Prefix(s);
+    DecodeValidPartialsFrom1PaddedSeq(s);
     assert |DecodeValid(s)| % 3 == 2 by { DecodeValid1PaddingLengthMod3(s); }
     calc {
       EncodeBV(DecodeValid(s));
