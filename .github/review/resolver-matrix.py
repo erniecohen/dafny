@@ -81,6 +81,7 @@ def run_case(case, refresh, litdir, dafny, outdir):
     key = case["id"] + (".refresh" if refresh else ".legacy")
     command = [str(dafny), "resolve", case["file"],
                "--type-system-refresh:" + str(refresh).lower(),
+               "--general-newtypes:" + str(refresh).lower(),
                "--use-basename-for-filename", "--show-snippets:false",
                "--standard-libraries:false"] + case.get("options", [])
     if refresh:

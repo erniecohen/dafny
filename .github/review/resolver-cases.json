@@ -33,7 +33,7 @@
   },
   {
     "id": "ScientificNotationErrors",
-    "file": "dafny0/ScientificNotationErrors.dfy",
+    "file": "git-issues/Inputs/resolver/ScientificNotationErrors.dfy",
     "options": [
       "--allow-warnings"
     ],

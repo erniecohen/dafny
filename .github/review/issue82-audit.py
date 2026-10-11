@@ -70,7 +70,7 @@ def main():
         dest = out / stem
         dest.mkdir(exist_ok=True)
         cmd = [binary, 'verify', str(inputs / (stem + '.dfy')), '--solver-path', solver,
-               '--cores', '1', '--additional-axioms=false', '--type-system-refresh=false',
+               '--cores', '1', '--additional-axioms=false', '--type-system-refresh=false', '--general-newtypes=false',
                '--resource-limit', '2000000', '--verification-time-limit', '0',
                '--show-snippets=false', '--use-basename-for-filename', '--allow-warnings',
                '--boogie', '/normalizeDeclarationOrder:0', '--boogie', '/normalizeNames:0',

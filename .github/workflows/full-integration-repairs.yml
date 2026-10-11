@@ -1,0 +1,40 @@
+name: Full integration 5.1 metadata and structural repair diagnostics
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  repairs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/download-artifact@v4
+        with:
+          name: integration-build-integrated
+          run-id: 38139291400
+          github-token: ${{ github.token }}
+          path: out/download
+      - name: Install exact compiler and solver
+        run: |
+          mkdir -p out/toolchain
+          tar -C out/toolchain -xzf out/download/dafny.tar.gz
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+          unzip -q z3.zip
+          chmod +x z3-5.1.0-x64-glibc-2.39/bin/z3
+          echo "Z3=$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" >> "$GITHUB_ENV"
+      - name: Record actual diagnostic outcomes
+        run: python3 .github/review/full-integration-repairs.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-repair-evidence
+          path: out/repair-evidence
+          retention-days: 30
