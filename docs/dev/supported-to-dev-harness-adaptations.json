@@ -1,0 +1,492 @@
+{
+  "scope": "Exact observed wording changes preserve diagnostic locations, summary counts, source statements and expected exits. Legacy flag fixes remove option incompatibility before exercising the original obligation. Resource and semantic baseline updates are separate. No fresh complete registered gate claimed.",
+  "rows": [
+    {
+      "case": "dafny0/CoinductiveProofs.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true
+    },
+    {
+      "case": "dafny0/SubsetTypes.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true
+    },
+    {
+      "case": "dafny1/SchorrWaite.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true
+    },
+    {
+      "case": "dafny1/ExtensibleArrayAuto.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true
+    },
+    {
+      "case": "git-issues/git-issue-132-newtype-partial-total-universal-proof-nonvacuity.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [
+        {
+          "before": "git-issue-132-newtype-partial-total-universal-proof-nonvacuity.dfy(16,2): Error: assertion might not hold",
+          "after": "git-issue-132-newtype-partial-total-universal-proof-nonvacuity.dfy(16,2): Error: assertion could not be proved"
+        }
+      ],
+      "pending_fresh_validation": true
+    },
+    {
+      "case": "git-issues/git-issue-132-newtype-provided-inhabited-false-negative.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [
+        {
+          "before": "git-issue-132-newtype-provided-inhabited-false-negative.dfy(17,4): Error: assertion might not hold",
+          "after": "git-issue-132-newtype-provided-inhabited-false-negative.dfy(17,4): Error: assertion could not be proved"
+        }
+      ],
+      "pending_fresh_validation": true
+    },
+    {
+      "case": "git-issues/git-issue-132-newtype-sequence-allocation-negative.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [
+        {
+          "before": "git-issue-132-newtype-sequence-allocation-negative.dfy(20,2): Error: assertion might not hold",
+          "after": "git-issue-132-newtype-sequence-allocation-negative.dfy(20,2): Error: assertion could not be proved"
+        }
+      ],
+      "pending_fresh_validation": true
+    },
+    {
+      "case": "git-issues/git-issue-1416.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 5
+    },
+    {
+      "case": "git-issues/git-issue-142-negative.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [
+        {
+          "before": "git-issue-142-negative.dfy(57,2): Error: assertion might not hold",
+          "after": "git-issue-142-negative.dfy(57,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-142-negative.dfy(41,18): Error: result of operation might violate newtype constraint for 'Ascii'",
+          "after": "git-issue-142-negative.dfy(41,18): Error: result of operation could not be proved to satisfy newtype constraint for 'Ascii'"
+        },
+        {
+          "before": "git-issue-142-negative.dfy(31,13): Error: bit-vector value to be converted might not fit in CharView",
+          "after": "git-issue-142-negative.dfy(31,13): Error: bit-vector value to be converted could not be proved to fit in CharView"
+        },
+        {
+          "before": "git-issue-142-negative.dfy(50,13): Error: ORDINAL value to be converted might not fit in CharView",
+          "after": "git-issue-142-negative.dfy(50,13): Error: ORDINAL value to be converted could not be proved to fit in CharView"
+        },
+        {
+          "before": "git-issue-142-negative.dfy(36,13): Error: bit-vector value to be converted might not fit in CharView",
+          "after": "git-issue-142-negative.dfy(36,13): Error: bit-vector value to be converted could not be proved to fit in CharView"
+        },
+        {
+          "before": "git-issue-142-negative.dfy(22,30): Error: bit-vector value to be converted might not fit in char",
+          "after": "git-issue-142-negative.dfy(22,30): Error: bit-vector value to be converted could not be proved to fit in char"
+        },
+        {
+          "before": "git-issue-142-negative.dfy(14,28): Error: bit-vector value to be converted might not fit in char",
+          "after": "git-issue-142-negative.dfy(14,28): Error: bit-vector value to be converted could not be proved to fit in char"
+        },
+        {
+          "before": "git-issue-142-negative.dfy(26,33): Error: ORDINAL value to be converted might not fit in char",
+          "after": "git-issue-142-negative.dfy(26,33): Error: ORDINAL value to be converted could not be proved to fit in char"
+        },
+        {
+          "before": "git-issue-142-negative.dfy(18,31): Error: ORDINAL value to be converted might not fit in char",
+          "after": "git-issue-142-negative.dfy(18,31): Error: ORDINAL value to be converted could not be proved to fit in char"
+        },
+        {
+          "before": "git-issue-142-negative.dfy(50,13): Error: value to be converted might be bigger than every natural number",
+          "after": "git-issue-142-negative.dfy(50,13): Error: value to be converted could not be proved to be a natural number"
+        },
+        {
+          "before": "git-issue-142-negative.dfy(46,18): Error: result of operation might violate newtype constraint for 'Ascii'",
+          "after": "git-issue-142-negative.dfy(46,18): Error: result of operation could not be proved to satisfy newtype constraint for 'Ascii'"
+        },
+        {
+          "before": "git-issue-142-negative.dfy(10,28): Error: bit-vector value to be converted might not fit in char",
+          "after": "git-issue-142-negative.dfy(10,28): Error: bit-vector value to be converted could not be proved to fit in char"
+        }
+      ],
+      "pending_fresh_validation": true
+    },
+    {
+      "case": "dafny1/SchorrWaite-stages.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true
+    },
+    {
+      "case": "git-issues/git-issue-1461.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 5
+    },
+    {
+      "case": "git-issues/git-issue-1462.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 3
+    },
+    {
+      "case": "git-issues/git-issue-1962.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 8
+    },
+    {
+      "case": "git-issues/git-issue-2463.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 2
+    },
+    {
+      "case": "git-issues/git-issue-48-cast.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 1
+    },
+    {
+      "case": "git-issues/git-issue-48-contravariant.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 1
+    },
+    {
+      "case": "git-issues/git-issue-48-incompatible.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 1
+    },
+    {
+      "case": "git-issues/git-issue-48.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 1
+    },
+    {
+      "case": "git-issues/git-issue-4949.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 6
+    },
+    {
+      "case": "git-issues/git-issue-5881.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 7
+    },
+    {
+      "case": "git-issues/git-issue-6534.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [
+        {
+          "before": "git-issue-6534.dfy(63,2): Error: assertion might not hold",
+          "after": "git-issue-6534.dfy(63,2): Error: assertion could not be proved"
+        }
+      ],
+      "pending_fresh_validation": true
+    },
+    {
+      "case": "git-issues/git-issue-82-maps.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 7
+    },
+    {
+      "case": "git-issues/git-issue-82-reads.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 20
+    },
+    {
+      "case": "git-issues/git-issue-82.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 6
+    },
+    {
+      "case": "git-issues/git-issue-82-bounds.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 9
+    },
+    {
+      "case": "git-issues/github-issue-104-build-boogie.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true
+    },
+    {
+      "case": "git-issues/github-issue-108.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 2
+    },
+    {
+      "case": "git-issues/github-issue-132-pure-callback.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 6
+    },
+    {
+      "case": "git-issues/git-issue-82-newtypes.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [
+        {
+          "before": "git-issue-82-newtypes-live-negative.dfy(15,2): Error: assertion might not hold",
+          "after": "git-issue-82-newtypes-live-negative.dfy(15,2): Error: assertion could not be proved"
+        }
+      ],
+      "pending_fresh_validation": true
+    },
+    {
+      "case": "git-issues/github-issue-132-statement-binders-negative.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 2
+    },
+    {
+      "case": "git-issues/github-issue-132-statement-binders-positive.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 2
+    },
+    {
+      "case": "git-issues/github-issue-132.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 4
+    },
+    {
+      "case": "git-issues/github-issue-25.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 2
+    },
+    {
+      "case": "git-issues/github-issue-27.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 2
+    },
+    {
+      "case": "git-issues/github-issue-31.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 1
+    },
+    {
+      "case": "git-issues/github-issue-32.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 5
+    },
+    {
+      "case": "git-issues/github-issue-33-z3-4.12.1.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 3
+    },
+    {
+      "case": "git-issues/github-issue-33.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 3
+    },
+    {
+      "case": "git-issues/github-issue-36.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 13
+    },
+    {
+      "case": "git-issues/github-issue-37.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 1
+    },
+    {
+      "case": "git-issues/github-issue-38.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 12
+    },
+    {
+      "case": "git-issues/github-issue-39.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [
+        {
+          "before": "github-issue-39.dfy(110,35): Error: assertion might not hold",
+          "after": "github-issue-39.dfy(110,35): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-39.dfy(122,24): Error: assertion might not hold",
+          "after": "github-issue-39.dfy(122,24): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-39.dfy(61,30): Error: assertion might not hold",
+          "after": "github-issue-39.dfy(61,30): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-39.dfy(52,28): Error: assertion might not hold",
+          "after": "github-issue-39.dfy(52,28): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-39.dfy(114,34): Error: assertion might not hold",
+          "after": "github-issue-39.dfy(114,34): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-39.dfy(21,12): Error: assertion might not hold",
+          "after": "github-issue-39.dfy(21,12): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-39.dfy(44,22): Error: assertion might not hold",
+          "after": "github-issue-39.dfy(44,22): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-39.dfy(26,22): Error: assertion might not hold",
+          "after": "github-issue-39.dfy(26,22): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-39.dfy(105,28): Error: assertion might not hold",
+          "after": "github-issue-39.dfy(105,28): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-39.dfy(66,13): Error: assertion might not hold",
+          "after": "github-issue-39.dfy(66,13): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-39.dfy(118,34): Error: assertion might not hold",
+          "after": "github-issue-39.dfy(118,34): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-39.dfy(152,12): Error: assertion might not hold",
+          "after": "github-issue-39.dfy(152,12): Error: assertion could not be proved"
+        }
+      ],
+      "pending_fresh_validation": true
+    },
+    {
+      "case": "git-issues/github-issue-40.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 1
+    },
+    {
+      "case": "git-issues/github-issue-41.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 1
+    },
+    {
+      "case": "git-issues/github-issue-42-errors.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 1
+    },
+    {
+      "case": "git-issues/github-issue-42.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 1
+    },
+    {
+      "case": "git-issues/github-issue-43.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 2
+    },
+    {
+      "case": "git-issues/github-issue-44.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 2
+    },
+    {
+      "case": "git-issues/github-issue-28.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 10
+    },
+    {
+      "case": "git-issues/github-issue-45.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 1
+    },
+    {
+      "case": "git-issues/github-issue-74.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 6
+    },
+    {
+      "case": "git-issues/github-issue-85.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 4
+    },
+    {
+      "case": "git-issues/github-issue-99.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true,
+      "explicit_legacy_flags": 3
+    },
+    {
+      "case": "git-issues/github-issue-104.dfy",
+      "actual_failure_run": "https://github.com/erniecohen/dafny/actions/runs/38139347333",
+      "observed_diagnostic_adaptations": [],
+      "pending_fresh_validation": true
+    }
+  ]
+}
