@@ -281,6 +281,13 @@ also fails by looking for the supported 4.12.1 artifact instead of dev's 4.16
 artifact. [These final harness repairs](supported-to-dev-harness-last-controls.json)
 preserve sole-error positions/counts, negative-control meanings and strict
 missing-artifact checks. No proof verdict is changed by them.
+The [complete focused replay](https://github.com/erniecohen/dafny/actions/runs/38158017998)
+executes all 54 native invocations: eight positive exits zero, 46 expected negative
+exits four, and 226 Valid/46 Invalid VC batches. Reads passes the real harness;
+maps still fails two strict checks for the old key-uniqueness wording. That final
+matcher is updated without changing the intended location or verdict. The resource
+replay reproduces the old missing-artifact exit1 and passes the corrected report
+with exit0; both complete control sequences must pass before normal CI is repeated.
 
 The draft integration is not ready to merge. The remaining gate is complete
 fresh normal exact-head CI, including all 192 registered entries, restored #141

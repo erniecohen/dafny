@@ -121,6 +121,22 @@
           "after": "// CHECK: ^git-issue-82-reads-returned-callback-negative\\.dfy\\(13,[0-9]+\\): Error: assertion could not be proved$"
         }
       ]
+    },
+    {
+      "path": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/git-issue-82-maps-conflict.check",
+      "reason": "Both complete native maps sequences expose the exact dev key-uniqueness diagnostic. Preserve the sole line2 error, 0 verified/1 error summary, and exclusion of all other errors/resource failures. Actual JSON records one Invalid VC in each resolver mode.",
+      "changes": [
+        {
+          "line": 1,
+          "before": "// CHECK-NOT: ^(?!git-issue-82-maps-conflict\\.dfy\\(2,[0-9]+\\): Error: key expressions might be referring to the same value$).*Error:|(?i:out of resource|timed out|timeout|internal error)",
+          "after": "// CHECK-NOT: ^(?!git-issue-82-maps-conflict\\.dfy\\(2,[0-9]+\\): Error: key expressions could not be proved to refer to different values$).*Error:|(?i:out of resource|timed out|timeout|internal error)"
+        },
+        {
+          "line": 2,
+          "before": "// CHECK: ^git-issue-82-maps-conflict\\.dfy\\(2,[0-9]+\\): Error: key expressions might be referring to the same value$",
+          "after": "// CHECK: ^git-issue-82-maps-conflict\\.dfy\\(2,[0-9]+\\): Error: key expressions could not be proved to refer to different values$"
+        }
+      ]
     }
   ],
   "validation_boundary": "Expected-failure-aware scratch replay and complete maps/reads sequence validation required, then fresh full normal exact-head CI. No proof, resource ceiling, semantic verdict or archive byte changed.",
@@ -128,5 +144,24 @@
     "run": "https://github.com/erniecohen/dafny/actions/runs/38157896322",
     "reason": "The default shallow checkout did not contain the exact e3c0 parent needed for git-show/git-diff reference checks; both diagnostic runners stopped before native measurements. Fetch complete history and retain actual diagnostic runner exits separately from the workflow status.",
     "native_acceptance": false
+  },
+  "complete_sequence_before": {
+    "run": "https://github.com/erniecohen/dafny/actions/runs/38158017998",
+    "source": "6e1752e8c3e6b1f49a0b7c0123197dc605ff32b6",
+    "native_invocations": 54,
+    "positive_exit_zero": 8,
+    "negative_exit_four": 46,
+    "declarations": 272,
+    "valid_vc_batches": 226,
+    "invalid_vc_batches": 46,
+    "strict_check_failures": 2,
+    "real_harness": {
+      "maps": "Failed",
+      "reads": "Passed"
+    },
+    "resource_before_actual": 1,
+    "resource_after_actual": 0,
+    "acceptance": false,
+    "reason": "The two maps-conflict checks still used the old key-uniqueness wording. Every intended native verdict is present, but failed strict checks and the real maps harness prevent acceptance."
   }
 }

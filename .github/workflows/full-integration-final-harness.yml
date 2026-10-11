@@ -99,3 +99,5 @@ jobs:
           name: integration-final-control-repair
           path: out/final-harness
           retention-days: 30
+
+# Repeat both complete sequences after the exact key-uniqueness diagnostic repair.
