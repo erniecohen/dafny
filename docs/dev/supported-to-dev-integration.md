@@ -173,12 +173,11 @@ runs for dev CI and library repairs and the existing 4.12.1 historical reference
 checks. Native correctness controls retain pinned 5.1. All prior failed receipts
 remain available; these solver approvals do not change proof acceptance.
 
-A concrete arithmetic repair hypothesis is available but is not yet verified:
-`LemmaModMultiplesBasic(c,b)` supplies `(c*b)%b == 0`, while the next assertion
-uses `(b*c)%b == 0`. DivMod disables nonlinear arithmetic. An explicit existing
-`LemmaMulIsCommutative(b,c)` call would bridge that reordering; the theorem is
-true, but the current proof leaves that step to solver search. This is distinct
-from treating a failed verifier result as proof of a false arithmetic statement.
+The arithmetic repair now passes both authorized solvers. The remainder lemma
+supplies `(c*b)%b == 0`, while the client assertion uses `(b*c)%b == 0`.
+DivMod disables nonlinear arithmetic; the repair calls the existing
+`LemmaMulIsCommutative(b,c)` inside that assertion's proof. The theorem contracts
+and resource limits are unchanged, and both arithmetic helper bodies verify.
 
 Both existing 4.16 library profiles (additional axioms OFF/ON) report 7617
 verified, one error and five resource failures. The error is
@@ -205,3 +204,35 @@ and exact-source verified library archives. Issues #170 proof-source repairs and
 #171 default-on review remain separate. After a new owner review, use a GitHub
 merge commit for this full-history integration so both supported and #169
 ancestry remain in dev. Do not squash away that ancestry or push dev directly.
+
+### Contained library repair evidence
+
+The [three-compiler, two-solver diagnostic](https://github.com/erniecohen/dafny/actions/runs/38151543462)
+uses the exact same unmodified combined `eac45d908` Std sources for each compiler.
+With 4.16, original dev passes all six selected blocker profiles. Supported and
+integrated compilers have identical outcomes and resource counts for all six:
+one invalid DivMod assertion and four resource-failing profiles (two VCs in the
+producer). With 5.1, original dev also has arithmetic and resource failures;
+supported and integrated results again match. These comparisons attribute the
+combined defaults to the carried supported implementation; they do not certify
+the complete library.
+
+The [focused repair diagnostic](https://github.com/erniecohen/dafny/actions/runs/38151778627)
+at `877bdf9f0` verifies 11 selected client/helper profiles, 32 declarations and
+640 VCs per solver, with the immutable integrated `eac45d908` compiler. Its
+wrapper records failures and exits zero; its workflow status is diagnostic.
+
+| Proof | 5.1 actual result | 4.16 actual result | Repair |
+| --- | --- | --- | --- |
+| MultiplyDivideLe/Lt | Correct | Correct | Existing commutativity helper inside remainder assertions |
+| PowIncreases | Correct, 9,520 RU | Correct, 9,520 RU | Equal exponents, base one, or existing strict monotonicity lemma |
+| EncodeBVLengthCongruentToZeroMod4 | Correct, 6,140,037 RU across isolated VCs | Correct, 2,454,312 RU | Existing exact-length lemma |
+| ConcatenatedProducer.Invoke | 606 Valid VCs, maximum 29,408,706 RU | 605 Valid, final Ensures assertion OOR at 100,188,197 RU | Explicit singleton output and remaining-count transition |
+| EncodeBVIsBase64 | OOR at 5,061,218 RU | OOR at 5,061,218 RU | Original validity proof, before prefix/padding repair |
+
+Commutativity, modulo multiples, base-one power, strict power increase and exact
+encoded-length helpers pass on both solvers. Later candidates expose the encoded
+prefix/padding slices and the producer's full validity/freshness/history contract.
+Those remain proposals until their actual receipts and complete library closure
+pass. No theorem contract, resource ceiling, nonlinear arithmetic setting or
+expected semantic verdict was weakened by these proof edits.
