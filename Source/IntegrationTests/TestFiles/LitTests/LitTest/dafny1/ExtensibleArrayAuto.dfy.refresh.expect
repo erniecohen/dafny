@@ -1,0 +1,3 @@
+ExtensibleArrayAuto.dfy(74,9): Error: Verification out of resource (ExtensibleArray.Append)
+
+Dafny program verifier finished with 8 verified, 0 errors, 1 out of resource

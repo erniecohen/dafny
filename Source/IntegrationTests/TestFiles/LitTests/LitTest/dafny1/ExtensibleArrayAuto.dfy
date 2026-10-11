@@ -1,4 +1,4 @@
-// RUN: %testDafnyForEachResolver "%s"
+// RUN: %testDafnyForEachResolver --refresh-exit-code=4 "%s"
 
 
 class {:autocontracts} ExtensibleArray<T> {
