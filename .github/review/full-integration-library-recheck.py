@@ -10,7 +10,7 @@ std.run('Source/DafnyStandardLibraries',str(launcher),str(solver),str(actual),co
 expected=out/'expected-verdicts.tsv'
 with expected.open('w') as f:
  import contextlib
- with contextlib.redirect_stdout(f):std.expected([str(actual)])
+ with contextlib.redirect_stdout(f):std.expected(str(actual))
 rows=[l.split('\t') for l in actual.read_text().splitlines()]
 source=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
 assert not subprocess.check_output(['git','diff',Path('out/toolchain/source.txt').read_text().strip(),source,'--','Source/DafnyCore','Source/DafnyDriver','Source/Dafny','Source/DafnyLanguageServer'],text=True)
