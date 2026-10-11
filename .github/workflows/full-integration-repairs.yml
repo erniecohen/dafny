@@ -1,5 +1,8 @@
 name: Full integration 5.1 metadata and structural repair diagnostics
 on:
+  push:
+    branches: ['scratch/codex/full-main-to-dev-probes']
+    paths: ['.github/workflows/full-integration-repairs.yml']
   workflow_dispatch:
 permissions:
   contents: read
