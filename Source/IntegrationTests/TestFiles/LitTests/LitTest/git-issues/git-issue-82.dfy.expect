@@ -92,47 +92,47 @@ git-issue-82.dfy(239,2): Warning: Could not find a trigger for this quantifier. 
 Dafny program verifier finished with 14 verified, 0 errors
 git-issue-82-mixed-negative.dfy(3,13): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
 git-issue-82-mixed-negative.dfy(4,13): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
-git-issue-82-mixed-negative.dfy(7,2): Error: assertion might not hold
+git-issue-82-mixed-negative.dfy(7,2): Error: assertion could not be proved
 
 Dafny program verifier finished with 0 verified, 1 error
 git-issue-82-empty-outer-negative.dfy(5,29): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
 git-issue-82-empty-outer-negative.dfy(6,16): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
-git-issue-82-empty-outer-negative.dfy(8,2): Error: assertion might not hold
+git-issue-82-empty-outer-negative.dfy(8,2): Error: assertion could not be proved
 
 Dafny program verifier finished with 0 verified, 1 error
 git-issue-82-spec-negative.dfy(4,16): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
 git-issue-82-spec-negative.dfy(10,16): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
-git-issue-82-spec-negative.dfy(23,2): Error: assertion might not hold
+git-issue-82-spec-negative.dfy(23,2): Error: assertion could not be proved
 
 Dafny program verifier finished with 2 verified, 1 error
 git-issue-82-spec-negative.dfy(4,16): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
 git-issue-82-spec-negative.dfy(10,16): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
-git-issue-82-spec-negative.dfy(23,2): Error: assertion might not hold
+git-issue-82-spec-negative.dfy(23,2): Error: assertion could not be proved
 
 Dafny program verifier finished with 2 verified, 1 error
 git-issue-82-spec-negative.dfy(4,16): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
 git-issue-82-spec-negative.dfy(10,16): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
-git-issue-82-spec-negative.dfy(23,2): Error: assertion might not hold
+git-issue-82-spec-negative.dfy(23,2): Error: assertion could not be proved
 
 Dafny program verifier finished with 2 verified, 1 error
 git-issue-82-spec-negative.dfy(4,16): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
 git-issue-82-spec-negative.dfy(10,16): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
-git-issue-82-spec-negative.dfy(23,2): Error: assertion might not hold
+git-issue-82-spec-negative.dfy(23,2): Error: assertion could not be proved
 
 Dafny program verifier finished with 2 verified, 1 error
 git-issue-82-lambda-alloc-negative.dfy(13,2): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
-git-issue-82-lambda-alloc-negative.dfy(22,2): Error: assertion might not hold
+git-issue-82-lambda-alloc-negative.dfy(22,2): Error: assertion could not be proved
 
 Dafny program verifier finished with 1 verified, 1 error
 git-issue-82-lambda-alloc-negative.dfy(13,2): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
-git-issue-82-lambda-alloc-negative.dfy(22,2): Error: assertion might not hold
+git-issue-82-lambda-alloc-negative.dfy(22,2): Error: assertion could not be proved
 
 Dafny program verifier finished with 1 verified, 1 error
 git-issue-82-lambda-alloc-negative.dfy(13,2): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
-git-issue-82-lambda-alloc-negative.dfy(22,2): Error: assertion might not hold
+git-issue-82-lambda-alloc-negative.dfy(22,2): Error: assertion could not be proved
 
 Dafny program verifier finished with 1 verified, 1 error
 git-issue-82-lambda-alloc-negative.dfy(13,2): Warning: Could not find a trigger for this quantifier. Without a trigger, the quantifier may cause brittle verification. To silence this warning, add an explicit trigger using the {:trigger} attribute. For more information, see the section on quantifier instantiation rules in the reference manual.
-git-issue-82-lambda-alloc-negative.dfy(22,2): Error: assertion might not hold
+git-issue-82-lambda-alloc-negative.dfy(22,2): Error: assertion could not be proved
 
 Dafny program verifier finished with 1 verified, 1 error

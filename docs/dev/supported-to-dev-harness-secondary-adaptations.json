@@ -1,0 +1,436 @@
+{
+  "failure_run": "https://github.com/erniecohen/dafny/actions/runs/38151888748",
+  "scope": "Observed exact diagnostic wording and explicit original-language profiles only. Statements, contracts, resource ceilings, intended errors and summaries remain. Fresh full harness validation pending.",
+  "rows": [
+    {
+      "case": "git-issues/git-issue-132-newtype-partial-total-universal-proof-nonvacuity.dfy",
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-132-newtype-partial-total-universal-proof-nonvacuity.dfy.axioms-on.expect",
+      "observed_changes": [
+        {
+          "before": "git-issue-132-newtype-partial-total-universal-proof-nonvacuity.dfy(16,2): Error: assertion might not hold",
+          "after": "git-issue-132-newtype-partial-total-universal-proof-nonvacuity.dfy(16,2): Error: assertion could not be proved"
+        }
+      ]
+    },
+    {
+      "case": "git-issues/git-issue-82-bounds.dfy",
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-82-bounds.dfy.expect",
+      "observed_changes": [
+        {
+          "before": "git-issue-82-dependent-negative.dfy(15,2): Error: assertion might not hold",
+          "after": "git-issue-82-dependent-negative.dfy(15,2): Error: assertion could not be proved"
+        }
+      ]
+    },
+    {
+      "case": "git-issues/git-issue-4949.dfy",
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-4949.dfy.expect",
+      "observed_changes": [
+        {
+          "before": "git-issue-4949-negative.dfy(36,2): Error: assertion might not hold",
+          "after": "git-issue-4949-negative.dfy(36,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-4949-negative.dfy(7,39): Error: result of operation might violate subset type constraint for 'nat'",
+          "after": "git-issue-4949-negative.dfy(7,39): Error: result of operation could not be proved to satisfy subset type constraint for 'nat'"
+        }
+      ]
+    },
+    {
+      "case": "git-issues/github-issue-85.dfy",
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/github-issue-85.dfy.expect",
+      "observed_changes": [
+        {
+          "before": "github-issue-85-negative.dfy(16,2): Error: assertion might not hold",
+          "after": "github-issue-85-negative.dfy(16,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-85-negative.dfy(7,19): Error: assertion might not hold",
+          "after": "github-issue-85-negative.dfy(7,19): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-85-negative.dfy(8,22): Error: assertion might not hold",
+          "after": "github-issue-85-negative.dfy(8,22): Error: assertion could not be proved"
+        }
+      ]
+    },
+    {
+      "case": "git-issues/github-issue-132.dfy",
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/github-issue-132.dfy.expect",
+      "observed_changes": [
+        {
+          "before": "github-issue-132-negative.dfy(104,2): Error: assertion might not hold",
+          "after": "github-issue-132-negative.dfy(104,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-132-negative.dfy(11,2): Error: assertion might not hold",
+          "after": "github-issue-132-negative.dfy(11,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-132-negative.dfy(114,2): Error: assertion might not hold",
+          "after": "github-issue-132-negative.dfy(114,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-132-negative.dfy(21,2): Error: assertion might not hold",
+          "after": "github-issue-132-negative.dfy(21,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-132-negative.dfy(29,2): Error: assertion might not hold",
+          "after": "github-issue-132-negative.dfy(29,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-132-negative.dfy(41,2): Error: assertion might not hold",
+          "after": "github-issue-132-negative.dfy(41,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-132-negative.dfy(49,2): Error: assertion might not hold",
+          "after": "github-issue-132-negative.dfy(49,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-132-negative.dfy(61,2): Error: assertion might not hold",
+          "after": "github-issue-132-negative.dfy(61,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-132-negative.dfy(70,2): Error: assertion might not hold",
+          "after": "github-issue-132-negative.dfy(70,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-132-negative.dfy(82,2): Error: assertion might not hold",
+          "after": "github-issue-132-negative.dfy(82,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-132-negative.dfy(92,2): Error: assertion might not hold",
+          "after": "github-issue-132-negative.dfy(92,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-132-original.dfy(14,2): Error: assertion might not hold",
+          "after": "github-issue-132-original.dfy(14,2): Error: assertion could not be proved"
+        }
+      ]
+    },
+    {
+      "case": "git-issues/git-issue-1416.dfy",
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-1416.dfy.expect",
+      "observed_changes": [
+        {
+          "before": "git-issue-1416-negative.dfy(10,2): Error: assertion might not hold",
+          "after": "git-issue-1416-negative.dfy(10,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-1416-negative.dfy(15,2): Error: assertion might not hold",
+          "after": "git-issue-1416-negative.dfy(15,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-1416-negative.dfy(21,2): Error: assertion might not hold",
+          "after": "git-issue-1416-negative.dfy(21,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-1416-negative.dfy(26,2): Error: assertion might not hold",
+          "after": "git-issue-1416-negative.dfy(26,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-1416-original.dfy(6,4): Error: assertion might not hold",
+          "after": "git-issue-1416-original.dfy(6,4): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-1416-positive.dfy(16,2): Error: assertion might not hold",
+          "after": "git-issue-1416-positive.dfy(16,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-1416-positive.dfy(17,2): Error: assertion might not hold",
+          "after": "git-issue-1416-positive.dfy(17,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-1416-positive.dfy(19,2): Error: assertion might not hold",
+          "after": "git-issue-1416-positive.dfy(19,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-1416-positive.dfy(21,9): Error: assertion might not hold",
+          "after": "git-issue-1416-positive.dfy(21,9): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-1416-positive.dfy(28,2): Error: assertion might not hold",
+          "after": "git-issue-1416-positive.dfy(28,2): Error: assertion could not be proved"
+        }
+      ]
+    },
+    {
+      "case": "git-issues/git-issue-82.dfy",
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-82.dfy.expect",
+      "observed_changes": [
+        {
+          "before": "git-issue-82-empty-outer-negative.dfy(8,2): Error: assertion might not hold",
+          "after": "git-issue-82-empty-outer-negative.dfy(8,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-82-lambda-alloc-negative.dfy(22,2): Error: assertion might not hold",
+          "after": "git-issue-82-lambda-alloc-negative.dfy(22,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-82-mixed-negative.dfy(7,2): Error: assertion might not hold",
+          "after": "git-issue-82-mixed-negative.dfy(7,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-82-spec-negative.dfy(23,2): Error: assertion might not hold",
+          "after": "git-issue-82-spec-negative.dfy(23,2): Error: assertion could not be proved"
+        }
+      ]
+    },
+    {
+      "case": "git-issues/git-issue-132-newtype-provided-inhabited-false-negative.dfy",
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-132-newtype-provided-inhabited-false-negative.dfy.axioms-on.expect",
+      "observed_changes": [
+        {
+          "before": "git-issue-132-newtype-provided-inhabited-false-negative.dfy(17,4): Error: assertion might not hold",
+          "after": "git-issue-132-newtype-provided-inhabited-false-negative.dfy(17,4): Error: assertion could not be proved"
+        }
+      ]
+    },
+    {
+      "case": "git-issues/git-issue-2463.dfy",
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-2463.dfy.expect",
+      "observed_changes": [
+        {
+          "before": "git-issue-2463-negative.dfy(10,2): Error: assertion might not hold",
+          "after": "git-issue-2463-negative.dfy(10,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-2463-negative.dfy(15,2): Error: assertion might not hold",
+          "after": "git-issue-2463-negative.dfy(15,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-2463-negative.dfy(20,2): Error: assertion might not hold",
+          "after": "git-issue-2463-negative.dfy(20,2): Error: assertion could not be proved"
+        }
+      ]
+    },
+    {
+      "case": "git-issues/git-issue-132-newtype-sequence-allocation-negative.dfy",
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-132-newtype-sequence-allocation-negative.dfy.axioms-on.expect",
+      "observed_changes": [
+        {
+          "before": "git-issue-132-newtype-sequence-allocation-negative.dfy(20,2): Error: assertion might not hold",
+          "after": "git-issue-132-newtype-sequence-allocation-negative.dfy(20,2): Error: assertion could not be proved"
+        }
+      ]
+    },
+    {
+      "case": "git-issues/github-issue-74.dfy",
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/github-issue-74.dfy.expect",
+      "observed_changes": [
+        {
+          "before": "github-issue-74-negative.dfy(5,2): Error: assertion might not hold",
+          "after": "github-issue-74-negative.dfy(5,2): Error: assertion could not be proved"
+        }
+      ]
+    },
+    {
+      "case": "git-issues/github-issue-132-pure-callback.dfy",
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/github-issue-132-pure-callback.dfy.expect",
+      "observed_changes": [
+        {
+          "before": "git-issue-137-pure-callback-controls.dfy(38,2): Error: assertion might not hold",
+          "after": "git-issue-137-pure-callback-controls.dfy(38,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-137-pure-callback-controls.dfy(47,2): Error: assertion might not hold",
+          "after": "git-issue-137-pure-callback-controls.dfy(47,2): Error: assertion could not be proved"
+        }
+      ]
+    },
+    {
+      "case": "git-issues/git-issue-1461.dfy",
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-1461.dfy.expect",
+      "observed_changes": [
+        {
+          "before": "git-issue-1461-negative.dfy(10,4): Error: assertion might not hold",
+          "after": "git-issue-1461-negative.dfy(10,4): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-1461-negative.dfy(16,4): Error: assertion might not hold",
+          "after": "git-issue-1461-negative.dfy(16,4): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-1461-negative.dfy(22,22): Error: assertion might not hold",
+          "after": "git-issue-1461-negative.dfy(22,22): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-1461-negative.dfy(42,4): Error: assertion might not hold",
+          "after": "git-issue-1461-negative.dfy(42,4): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-1461-positive.dfy(23,21): Error: assertion might not hold",
+          "after": "git-issue-1461-positive.dfy(23,21): Error: assertion could not be proved"
+        }
+      ]
+    },
+    {
+      "case": "git-issues/github-issue-36.dfy",
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/github-issue-36.dfy.expect",
+      "observed_changes": [
+        {
+          "before": "github-issue-36-negative.dfy(14,2): Error: assertion might not hold",
+          "after": "github-issue-36-negative.dfy(14,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-36-negative.dfy(28,2): Error: assertion might not hold",
+          "after": "github-issue-36-negative.dfy(28,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-36-negative.dfy(33,2): Error: assertion might not hold",
+          "after": "github-issue-36-negative.dfy(33,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-36-negative.dfy(43,2): Error: assertion might not hold",
+          "after": "github-issue-36-negative.dfy(43,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-36-negative.dfy(8,2): Error: assertion might not hold",
+          "after": "github-issue-36-negative.dfy(8,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-36-original.dfy(6,2): Error: assertion might not hold",
+          "after": "github-issue-36-original.dfy(6,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-36-positive.dfy(14,11): Error: assertion might not hold",
+          "after": "github-issue-36-positive.dfy(14,11): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-36-positive.dfy(14,21): Error: assertion might not hold",
+          "after": "github-issue-36-positive.dfy(14,21): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-36-positive.dfy(21,2): Error: assertion might not hold",
+          "after": "github-issue-36-positive.dfy(21,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-36-positive.dfy(27,2): Error: assertion might not hold",
+          "after": "github-issue-36-positive.dfy(27,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-36-positive.dfy(33,2): Error: assertion might not hold",
+          "after": "github-issue-36-positive.dfy(33,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-36-positive.dfy(39,2): Error: assertion might not hold",
+          "after": "github-issue-36-positive.dfy(39,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-36-positive.dfy(57,4): Error: assertion might not hold",
+          "after": "github-issue-36-positive.dfy(57,4): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-36-positive.dfy(63,2): Error: assertion might not hold",
+          "after": "github-issue-36-positive.dfy(63,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-36-positive.dfy(71,13): Error: assertion might not hold",
+          "after": "github-issue-36-positive.dfy(71,13): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-36-positive.dfy(71,27): Error: assertion might not hold",
+          "after": "github-issue-36-positive.dfy(71,27): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-36-positive.dfy(8,2): Error: assertion might not hold",
+          "after": "github-issue-36-positive.dfy(8,2): Error: assertion could not be proved"
+        }
+      ]
+    },
+    {
+      "case": "git-issues/github-issue-32.dfy",
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/github-issue-32.dfy.expect",
+      "observed_changes": [
+        {
+          "before": "github-issue-32-membership.dfy(13,2): Error: assertion might not hold",
+          "after": "github-issue-32-membership.dfy(13,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-32-membership.dfy(21,2): Error: assertion might not hold",
+          "after": "github-issue-32-membership.dfy(21,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-32-membership.dfy(36,2): Error: assertion might not hold",
+          "after": "github-issue-32-membership.dfy(36,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-32-membership.dfy(45,2): Error: assertion might not hold",
+          "after": "github-issue-32-membership.dfy(45,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-32-membership.dfy(54,2): Error: assertion might not hold",
+          "after": "github-issue-32-membership.dfy(54,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-32-negative.dfy(13,2): Error: assertion might not hold",
+          "after": "github-issue-32-negative.dfy(13,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-32-negative.dfy(21,2): Error: assertion might not hold",
+          "after": "github-issue-32-negative.dfy(21,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-32-negative.dfy(7,2): Error: assertion might not hold",
+          "after": "github-issue-32-negative.dfy(7,2): Error: assertion could not be proved"
+        }
+      ]
+    },
+    {
+      "case": "git-issues/github-issue-132-statement-binders-negative.dfy",
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/github-issue-132-statement-binders-negative.dfy.expect",
+      "observed_changes": [
+        {
+          "before": "github-issue-132-statement-binders-negative.dfy(17,2): Error: assertion might not hold",
+          "after": "github-issue-132-statement-binders-negative.dfy(17,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "github-issue-132-statement-binders-negative.dfy(32,2): Error: assertion might not hold",
+          "after": "github-issue-132-statement-binders-negative.dfy(32,2): Error: assertion could not be proved"
+        }
+      ]
+    },
+    {
+      "case": "git-issues/git-issue-1962.dfy",
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-1962.dfy.expect",
+      "observed_changes": [
+        {
+          "before": "git-issue-1962-negative.dfy(10,2): Error: assertion might not hold",
+          "after": "git-issue-1962-negative.dfy(10,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-1962-negative.dfy(14,2): Error: assertion might not hold",
+          "after": "git-issue-1962-negative.dfy(14,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-1962-negative.dfy(3,2): Error: assertion might not hold",
+          "after": "git-issue-1962-negative.dfy(3,2): Error: assertion could not be proved"
+        },
+        {
+          "before": "git-issue-1962-original.dfy(3,2): Error: assertion might not hold",
+          "after": "git-issue-1962-original.dfy(3,2): Error: assertion could not be proved"
+        }
+      ]
+    },
+    {
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/git-issue-82-maps-capture.check",
+      "reason": "Strict exact-line sole-error matcher adopts observed dev assertion wording. Error count and no-OOR/no-timeout guards remain."
+    },
+    {
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/git-issue-82-reads-negative.check",
+      "reason": "Strict exact-line sole-error matcher adopts observed dev assertion wording. Error count and no-OOR/no-timeout guards remain."
+    },
+    {
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/github-issue-33.dfy",
+      "reason": "Original real-to-bitvector conversions use numeric newtype mode under either resolver. The dedicated generalized-bitvector-newtype profile retains --general-newtypes."
+    },
+    {
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/github-issue-33-z3-4.12.1.dfy",
+      "reason": "Original real-to-bitvector conversions use numeric newtype mode under either resolver. The dedicated generalized-bitvector-newtype profile retains --general-newtypes."
+    },
+    {
+      "file": "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-1462.dfy",
+      "reason": "The original Ob trait is a reference trait reading this. Select legacy traits explicitly under both resolvers instead of changing dev datatype-trait defaults."
+    }
+  ]
+}

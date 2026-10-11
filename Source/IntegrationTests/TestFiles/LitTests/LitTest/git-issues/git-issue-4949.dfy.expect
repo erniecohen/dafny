@@ -30,21 +30,21 @@ positive (refresh:true, contextual:true)
 Dafny program verifier finished with 2 verified, 0 errors
 negative (refresh:false, contextual:false)
 git-issue-4949-negative.dfy(4,42): Error: value does not satisfy the subset constraints of 'nat'
-git-issue-4949-negative.dfy(7,39): Error: result of operation might violate subset type constraint for 'nat'
+git-issue-4949-negative.dfy(7,39): Error: result of operation could not be proved to satisfy subset type constraint for 'nat'
 git-issue-4949-negative.dfy(10,47): Error: value does not satisfy the subset constraints of 'nat'
 git-issue-4949-negative.dfy(13,32): Error: value does not satisfy the subset constraints of 'nat -> nat' (possible cause: it may be partial or have read effects)
 git-issue-4949-negative.dfy(29,11): Error: value does not satisfy the subset constraints of 'nat'
-git-issue-4949-negative.dfy(36,2): Error: assertion might not hold
+git-issue-4949-negative.dfy(36,2): Error: assertion could not be proved
 git-issue-4949-negative.dfy(41,54): Error: value does not satisfy the subset constraints of 'Positive'
 
 Dafny program verifier finished with 2 verified, 7 errors
 negative (refresh:false, contextual:true)
 git-issue-4949-negative.dfy(4,42): Error: value does not satisfy the subset constraints of 'nat'
-git-issue-4949-negative.dfy(7,39): Error: result of operation might violate subset type constraint for 'nat'
+git-issue-4949-negative.dfy(7,39): Error: result of operation could not be proved to satisfy subset type constraint for 'nat'
 git-issue-4949-negative.dfy(10,47): Error: value does not satisfy the subset constraints of 'nat'
 git-issue-4949-negative.dfy(13,32): Error: value does not satisfy the subset constraints of 'nat -> nat' (possible cause: it may be partial or have read effects)
 git-issue-4949-negative.dfy(29,11): Error: value does not satisfy the subset constraints of 'nat'
-git-issue-4949-negative.dfy(36,2): Error: assertion might not hold
+git-issue-4949-negative.dfy(36,2): Error: assertion could not be proved
 git-issue-4949-negative.dfy(41,54): Error: value does not satisfy the subset constraints of 'Positive'
 
 Dafny program verifier finished with 2 verified, 7 errors
@@ -57,7 +57,7 @@ git-issue-4949-negative.dfy(17,19): Error: value does not satisfy the subset con
 git-issue-4949-negative.dfy(22,24): Error: value does not satisfy the subset constraints of 'nat'
 git-issue-4949-negative.dfy(26,40): Error: value does not satisfy the subset constraints of 'nat'
 git-issue-4949-negative.dfy(29,11): Error: value does not satisfy the subset constraints of 'nat'
-git-issue-4949-negative.dfy(36,2): Error: assertion might not hold
+git-issue-4949-negative.dfy(36,2): Error: assertion could not be proved
 git-issue-4949-negative.dfy(41,54): Error: value does not satisfy the subset constraints of 'Positive'
 
 Dafny program verifier finished with 1 verified, 10 errors
@@ -69,7 +69,7 @@ git-issue-4949-negative.dfy(13,32): Error: value does not satisfy the subset con
 git-issue-4949-negative.dfy(17,19): Error: value does not satisfy the subset constraints of 'nat'
 git-issue-4949-negative.dfy(22,24): Error: value does not satisfy the subset constraints of 'nat'
 git-issue-4949-negative.dfy(29,11): Error: value does not satisfy the subset constraints of 'nat'
-git-issue-4949-negative.dfy(36,2): Error: assertion might not hold
+git-issue-4949-negative.dfy(36,2): Error: assertion could not be proved
 git-issue-4949-negative.dfy(41,54): Error: value does not satisfy the subset constraints of 'Positive'
 
 Dafny program verifier finished with 1 verified, 9 errors
