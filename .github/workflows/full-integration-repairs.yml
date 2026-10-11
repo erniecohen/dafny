@@ -33,6 +33,7 @@ jobs:
           unzip -q z3.zip
           chmod +x z3-5.1.0-x64-glibc-2.39/bin/z3
           echo "Z3=$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" >> "$GITHUB_ENV"
+          echo "$PWD/z3-5.1.0-x64-glibc-2.39/bin" >> "$GITHUB_PATH"
       - name: Record actual diagnostic outcomes
         run: python3 .github/review/full-integration-repairs.py
       - uses: actions/upload-artifact@v4

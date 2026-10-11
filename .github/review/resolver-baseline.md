@@ -83,3 +83,16 @@ The separate inferred-newtype-cycle probe (`git-issue-2134.dfy`, issue 44 part b
 reproduced a 15-second legacy timeout and ordinary refreshed rejection. It is
 not in this strict baseline. The timeout is reported in the probe summary and
 artifact; it is not a passing resolver result.
+
+## Full supported-history integration
+
+The 96-execution development probe at
+[38139739442](https://github.com/erniecohen/dafny/actions/runs/38139739442)
+records 45 accepted and 51 rejected cases, with no crashes or timeouts.
+The only comparison changes are the `git-issue-3496` assume-statement warning
+in both resolver modes: upstream development replaced “assume statement has
+no {:axiom} annotation” with the explicit suppression instruction. Both
+exit codes and accepted outcomes stay unchanged. The baseline records that
+retained upstream wording. The scientific-notation negative input is retained
+under `git-issues/Inputs/resolver`, because upstream removed its old top-level
+fixture; its basename, parser diagnostics and rejected outcomes are preserved.

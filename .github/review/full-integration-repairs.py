@@ -14,7 +14,7 @@ capture=os.environ.copy();capture['OBLIGATION_INVENTORY_CAPTURE']=str((root/'cap
 phase('capture-inventory',['dotnet','test','Source/DafnyCore.Test','-c','Release','--filter','FullyQualifiedName~EveryProducerMatchesTheReviewedInventory'],capture)
 phase('core-all',['dotnet','test','Source/DafnyCore.Test','-c','Release','--no-build','--logger','trx;LogFileName=tests.trx','--results-directory',str((root/'core-all').resolve())])
 phase('finite-support',['python3','.github/review/issue82-audit.py','--dafny',str(binary),'--z3',str(solver),'--output',str((root/'finite-support').resolve())])
-phase('resolver',['python3','.github/review/resolver-matrix.py','--manifest','.github/review/resolver-cases.json','--lit-dir','Source/IntegrationTests/TestFiles/LitTests/LitTest','--dafny',str(binary),'--expected','.github/review/expected-resolver-results.json','--output',str((root/'resolver').resolve()),'--probe'])
+phase('resolver',['python3','.github/review/resolver-matrix.py','--manifest','.github/review/resolver-cases.json','--lit-dir','Source/IntegrationTests/TestFiles/LitTests/LitTest','--dafny',str(binary),'--expected','.github/review/expected-resolver-results.json','--output',str((root/'resolver').resolve())])
 receipt={'diagnostic':True,'verification_sources':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
  'compiler_source':Path('out/toolchain/source.txt').read_text().strip(),
  'compiler_version':subprocess.check_output([str(binary),'--version'],text=True).strip(),

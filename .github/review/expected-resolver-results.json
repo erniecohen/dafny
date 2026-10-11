@@ -303,13 +303,13 @@
     "exit": 0,
     "outcome": "accepted",
     "stderr": "",
-    "stdout": "git-issue-3496.dfy(5,2): Warning: assume statement has no {:axiom} annotation\n\nDafny program verifier did not attempt verification\n"
+    "stdout": "git-issue-3496.dfy(5,2): Warning: program contains an assume statement (to suppress this warning, annotate the statement with {:axiom})\n\nDafny program verifier did not attempt verification\n"
   },
   "git-issue-3496.refresh": {
     "exit": 0,
     "outcome": "accepted",
     "stderr": "",
-    "stdout": "git-issue-3496.dfy(5,2): Warning: assume statement has no {:axiom} annotation\n\nDafny program verifier did not attempt verification\n"
+    "stdout": "git-issue-3496.dfy(5,2): Warning: program contains an assume statement (to suppress this warning, annotate the statement with {:axiom})\n\nDafny program verifier did not attempt verification\n"
   },
   "git-issue-3497.legacy": {
     "exit": 0,
