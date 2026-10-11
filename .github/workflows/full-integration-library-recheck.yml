@@ -1,4 +1,4 @@
-name: Full integration complete libraries with verified archives
+name: Full integration final complete library proof closure
 on:
   push:
     branches: ['scratch/codex/full-main-to-dev-probes']
