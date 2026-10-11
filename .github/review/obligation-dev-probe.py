@@ -15,7 +15,7 @@ def phase(name,cmd,env=None):
 code=phase('build',['dotnet','publish','Source/Dafny/Dafny.csproj','-c','Release','-o','out/dafny','-p:GeneratePackageOnBuild=false','-p:SourceRevisionId='+subprocess.check_output(['git','rev-parse','--short=8','HEAD'],text=True).strip()])
 if code==0:
  env=dict(os.environ,OBLIGATION_INVENTORY_CAPTURE=str((root/'obligation-producers.json').resolve()))
- phase('structural',['dotnet','test','Source/DafnyCore.Test/DafnyCore.Test.csproj','-c','Release','--filter','FullyQualifiedName~Obligation','--logger','trx;LogFileName=tests.trx','--results-directory',str((root/'structural').resolve())],env)
+ phase('structural',['dotnet','test','Source/DafnyCore.Test/DafnyCore.Test.csproj','-c','Release','--filter','FullyQualifiedName~Obligation|FullyQualifiedName~NumericAncestry','--logger','trx;LogFileName=tests.trx','--results-directory',str((root/'structural').resolve())],env)
 if code==0:
  import hashlib, urllib.request, zipfile
  archive=root/'z3.zip'
@@ -29,7 +29,7 @@ if code==0:
  phase('inventory-gate',['dotnet','test','Source/DafnyCore.Test/DafnyCore.Test.csproj','-c','Release','--no-build','--filter','FullyQualifiedName~ObligationCoverageTests','--logger','trx;LogFileName=tests.trx','--results-directory',str((root/'inventory-gate').resolve())],env)
  phase('core-all',['dotnet','test','Source/DafnyCore.Test/DafnyCore.Test.csproj','-c','Release','--no-build','--logger','trx;LogFileName=tests.trx','--results-directory',str((root/'core-all').resolve())],env)
  phase('registered',['dotnet','test','Source/IntegrationTests','-c','Release','--filter','DisplayName~git-issue-100.dfy','--logger','trx;LogFileName=tests.trx','--results-directory',str((root/'registered').resolve())],env)
- phase('supported-controls',['dotnet','test','Source/IntegrationTests','-c','Release','--no-build','--filter','DisplayName~git-issue-82|DisplayName~github-issue-132|DisplayName~dafny0/Reads.dfy|DisplayName~ReadsOnMethods.dfy|DisplayName~hofs/Naked.dfy','--logger','trx;LogFileName=tests.trx','--results-directory',str((root/'supported-controls').resolve())],env)
+ phase('supported-controls',['dotnet','test','Source/IntegrationTests','-c','Release','--no-build','--filter','DisplayName~floating-obligation-constraints|DisplayName~git-issue-82|DisplayName~github-issue-132|DisplayName~dafny0/Reads.dfy|DisplayName~ReadsOnMethods.dfy|DisplayName~hofs/Naked.dfy','--logger','trx;LogFileName=tests.trx','--results-directory',str((root/'supported-controls').resolve())],env)
  phase('original-diagnostic',['python3','.github/review/assertion-invariance.py','out/dafny/Dafny',str(solver),str((root/'original-diagnostic').resolve()),'--all-resolvers','--cases','issue100-original,issue100-explicit,issue100-final-true'],env)
  phase('controls-diagnostic',['python3','.github/review/obligation-dev-controls.py','Binaries/net10.0/DafnyDriver.dll',str(solver),str((root/'controls-diagnostic').resolve())],env)
  phase('editor',['dotnet','test','Source/DafnyLanguageServer.Test','-c','Release','--filter','FullyQualifiedName~ConsistentObligationChecksTest','--logger','trx;LogFileName=tests.trx','--results-directory',str((root/'editor').resolve())],env)

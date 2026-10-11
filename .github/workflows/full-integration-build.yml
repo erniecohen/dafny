@@ -1,7 +1,5 @@
 name: Full integration diagnostic build identities
 on:
-  push:
-    branches: ['scratch/codex/full-main-to-dev']
   workflow_dispatch:
 permissions:
   contents: read

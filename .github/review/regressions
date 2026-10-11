@@ -276,3 +276,6 @@ git-issues/github-issue-99.dfy
 # Caller preparation uses standard post-WF support construction (#100).
 # Paired quantified caller and false controls are in the registered issue 100 gate.
 # Canonical local-exit support order and paired/negative WF fixtures are covered by git-issue-100.
+
+# Full dev integration: float-wrapper constraints and non-vacuity.
+git-issues/floating-obligation-constraints.dfy
