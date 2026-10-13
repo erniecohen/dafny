@@ -1,0 +1,26 @@
+name: issue113 review narrowing diagnostic
+on:
+  push:
+    branches: ['scratch/113-review-narrowing-1013']
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.424
+      - name: Build exact published source and retain diagnostics
+        run: python3 .github/review/issue113-narrowing/build.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue113-exact-source-compiler
+          path: |
+            observations/report.json
+            observations/*.txt
+            observations/dafny.tar.gz
+          retention-days: 14
