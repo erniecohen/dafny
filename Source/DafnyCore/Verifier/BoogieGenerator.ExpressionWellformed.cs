@@ -1032,6 +1032,21 @@ namespace Microsoft.Dafny {
                   !IsSuspendedCoDatatypeIdentityConversion(ee)) {
                 CheckSubrange(unaryExpr.Origin, etran.TrExpr(ee.E), ee.E.Type, ee.ToType,
                   ee.E, builder, ee.messagePrefix);
+              } else if (options.Get(CommonOptionBag.ExtendedNewtypeBases) &&
+                         !membershipTarget.IsRefType && !ee.E.Type.IsTraitType &&
+                         !IsSuspendedCoDatatypeIdentityConversion(ee)) {
+                var destinationView = NewtypeOperationView.Get(ee.ToType, preserveSubsetTypes: true);
+                if (destinationView.Status == NewtypeOperationView.ViewStatus.Resolved &&
+                    destinationView.Path.Any(d => d is NewtypeDecl) &&
+                    (destinationView.BaseType.IsDatatype || destinationView.BaseType.IsArrowType ||
+                     destinationView.BaseType.IsInternalTypeSynonym)) {
+                  // A nominal destination does not classify as its carrier. Check
+                  // the original candidate against the fully instantiated base
+                  // before the destination predicates or typed result supply facts.
+                  // An opaque base retains its nominal type in the scoped view.
+                  CheckSubrange(unaryExpr.Origin, etran.TrExpr(ee.E), ee.E.Type, destinationView.BaseType,
+                    ee.E, builder, ee.messagePrefix);
+                }
               }
               if (options.Get(CommonOptionBag.ExtendedNewtypeBases) && ee.IsBaseOperation &&
                   ee.Type.Equals(ee.ToType, true)) {
