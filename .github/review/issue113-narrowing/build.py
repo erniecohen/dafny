@@ -4,10 +4,10 @@ import pathlib
 import subprocess
 import tarfile
 
-SOURCE = "acf2bf00f824f6c7a68f6c6293e6ddc65f1dce2f"
+SOURCE = "5178f1d0f91377bb1f7f73c21ad5b9089fd9ba7b"
 out = pathlib.Path("observations")
 out.mkdir(exist_ok=True)
-report = {"source": SOURCE, "classification": "exact published development source build; no proof calls", "steps": [], "build_completed": False}
+report = {"source": SOURCE, "classification": "reviewed narrowing development source build; no proof calls", "steps": [], "build_completed": False}
 
 def run(label, command):
     result = subprocess.run(command, capture_output=True, text=True)
