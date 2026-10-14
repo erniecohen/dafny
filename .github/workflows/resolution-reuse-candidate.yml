@@ -20,6 +20,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Solver for the integration harness
+        run: |
+          curl -fsSLo z3h.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.16.0-x64-ubuntu-24.04-bin.zip
+          echo '87de9c9e86c877abfccb00cf24b946c4a1bda7b9cba6f363ea58311d2573c320  z3h.zip' | sha256sum -c -
+          mkdir -p Binaries/z3/bin
+          unzip -q z3h.zip -d Binaries/z3/bin
       - name: Build candidate and record compilation diagnostics
         run: |
           mkdir -p candidate-results
@@ -43,6 +49,8 @@ jobs:
           set +e
           dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~VerificationBatchTests --logger 'console;verbosity=normal' > candidate-results/api-tests.log 2>&1
           echo "api-tests=$?" >> candidate-results/status.txt
+          DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS=cs dotnet test Source/IntegrationTests -c Release --no-build --filter 'DisplayName~git-issue-173.dfy' --logger 'console;verbosity=normal' > candidate-results/lit-tests.log 2>&1
+          echo "lit-tests=$?" >> candidate-results/status.txt
           python3 .github/review/verification-batch-controls.py "$PWD/out/dafny/Dafny" "$Z3" candidate-results/controls > candidate-results/controls.log 2>&1
           echo "controls=$?" >> candidate-results/status.txt
           cat candidate-results/status.txt >> "$GITHUB_STEP_SUMMARY"

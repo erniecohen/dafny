@@ -23,7 +23,7 @@ public class VerificationBatchTests {
     Directory.CreateDirectory(directory);
     var first = Path.Combine(directory, "first.dfy");
     var second = Path.Combine(directory, "second.dfy");
-    await File.WriteAllTextAsync(first, "lemma Good(x: int) { assert x + 1 > x; }\n");
+    await File.WriteAllTextAsync(first, "lemma Good(x: int) {\n  assert x + 1 > x;\n  assert x + 2 > x;\n}\n");
     await File.WriteAllTextAsync(second, "lemma Bad() { assert false; }\n");
     try {
       var options = Options(refresh, first, second);
@@ -43,7 +43,7 @@ public class VerificationBatchTests {
       await File.WriteAllTextAsync(first, "lemma Good() { assert false; }\n");
       var original = await Request(cli, "first.dfy");
       var duplicate = await Request(cli, "first.dfy");
-      var overlap = await Request(cli, "first.dfy:1");
+      var overlap = await Request(cli, "first.dfy:2");
       var negative = await Request(cli, "second.dfy");
       var afterNegative = await Request(cli, "first.dfy");
       foreach (var result in new[] { original, duplicate, overlap, afterNegative }) {
@@ -51,6 +51,10 @@ public class VerificationBatchTests {
         Assert.All(result, part => Assert.Equal(SolverOutcome.Valid, part.Result.Outcome));
         Assert.All(result, part => Assert.True(part.Result.ResourceCount > 0));
       }
+      Assert.True(original.Count >= 2);
+      Assert.True(overlap.Count < original.Count);
+      Assert.Equal(original.Select(part => part.Result.ResourceCount), duplicate.Select(part => part.Result.ResourceCount));
+      Assert.Equal(original.Select(part => part.Result.ResourceCount), afterNegative.Select(part => part.Result.ResourceCount));
       Assert.Contains(negative, part => part.Result.Outcome == SolverOutcome.Invalid);
       Assert.NotSame(original.First().Task, duplicate.First().Task);
       Assert.NotSame(original.First().Task, overlap.First().Task);
@@ -74,6 +78,8 @@ public class VerificationBatchTests {
     options.ApplyDefaultOptionsWithoutSettingsDefault();
     options.Set(CommonOptionBag.TypeSystemRefresh, refresh);
     options.Set(CommonOptionBag.GeneralTraits, CommonOptionBag.GeneralTraitsOptions.Datatype);
+    options.Set(BoogieOptionBag.IsolateAssertions, true);
+    options.ApplyBinding(BoogieOptionBag.IsolateAssertions);
     options.VcsCores = 1;
     options.ResourceLimit = 16000000;
     options.TimeLimit = 30;

@@ -46,6 +46,13 @@ def main():
         run("isolate-" + refresh, resolver + ["--isolate-assertions",
             "--filter-position-batch", "first.dfy:1", "--filter-position-batch", "first.dfy:1"], 0, ["Correct", "Correct"])
     run("conflicting-filters", ["--filter-position", "first.dfy", "--filter-position-batch", "first.dfy"], 1, [])
+    result = run("conflicting-filters-json", ["--json-output", "--filter-position", "first.dfy", "--filter-position-batch", "first.dfy"], 1, [])
+    for line in result.stdout.splitlines():
+        if line.strip():
+            json.loads(line)
+    result = run("quiet", ["--verbosity", "quiet", "--filter-position-batch", "first.dfy"], 0, ["Correct"])
+    if result.stdout.strip():
+        failures.append("quiet-output")
     (root / "second.dfy").write_text("lemma Bad() { assert missingName; }\n")
     result = run("resolution-error", ["--filter-position-batch", "first.dfy"], 2, [])
     if "Starting verification request" in result.stdout:
@@ -73,9 +80,9 @@ def main():
     (root / "first.dfy").write_text("lemma Good() { assert Truth(); }\n")
     (root / "library.dfy").write_text("function Truth(): bool { true }\n")
     (root / "dfyconfig.toml").write_text('includes = ["first.dfy"]\n')
-    run("before-library-edit", ["--library", "library.dfy", "--filter-position-batch", ".dfy"], 0, ["Correct"])
+    run("before-library-edit", ["--allow-warnings", "--library", "library.dfy", "--filter-position-batch", ".dfy"], 0, ["Correct"])
     (root / "library.dfy").write_text("function Truth(): bool { false }\n")
-    run("after-library-edit", ["--library", "library.dfy", "--filter-position-batch", ".dfy"], 4, ["Errors"])
+    run("after-library-edit", ["--allow-warnings", "--library", "library.dfy", "--filter-position-batch", ".dfy"], 4, ["Errors"])
     (root / "summary.json").write_text(json.dumps({"failures": failures, "records": records}, indent=2) + "\n")
     (root / "summary.md").write_text("## Batch controls\n\n" + str(len(records) - len(failures)) + "/" + str(len(records)) + " controls passed.\n" + "\nFailures: " + (", ".join(failures) or "none") + "\n")
     return bool(failures)

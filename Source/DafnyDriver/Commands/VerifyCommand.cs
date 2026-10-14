@@ -69,7 +69,12 @@ public static class VerifyCommand {
   public static async Task<int> HandleVerification(DafnyOptions options) {
     var batch = options.GetOrOptionDefault(FilterPositionBatch).ToArray();
     if (batch.Length != 0 && options.Get(FilterPosition) != null) {
-      new ConsoleErrorReporter(options).Error(MessageSource.Project, Token.Cli,
+      ErrorReporter reporter = options.DiagnosticsFormat switch {
+        DafnyOptions.DiagnosticsFormats.PlainText => new ConsoleErrorReporter(options),
+        DafnyOptions.DiagnosticsFormats.JSON => new JsonConsoleErrorReporter(options),
+        _ => throw new ArgumentOutOfRangeException()
+      };
+      reporter.Error(MessageSource.Project, Token.Cli,
         "--filter-position-batch cannot be combined with --filter-position");
       return (int)ExitValue.PREPROCESSING_ERROR;
     }
@@ -116,8 +121,10 @@ public static class VerifyCommand {
 
     try {
       for (var index = 0; index < filters.Count; index++) {
-        await compilation.Options.OutputWriter.Status(
-          $"Starting verification request {index + 1}/{filters.Count}: {filters[index]}");
+        if (compilation.Options.Verbosity > CoreOptions.VerbosityLevel.Quiet) {
+          await compilation.Options.OutputWriter.Status(
+            $"Starting verification request {index + 1}/{filters.Count}: {filters[index]}");
+        }
         using Subject<CanVerifyResult> requestResults = new();
         var summarized = ReportVerificationSummary(compilation, requestResults);
         try {
