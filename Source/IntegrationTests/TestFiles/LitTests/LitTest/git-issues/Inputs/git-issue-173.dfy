@@ -1,2 +1,2 @@
-lemma Good() { assert true; }
+lemma Good(x: int) { assert x + 1 > x; }
 lemma Bad() { assert false; }

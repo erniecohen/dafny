@@ -329,8 +329,7 @@ order. Each filter uses the syntax of `--filter-position` and is also restricted
 by `--filter-symbol`, if supplied. `--filter-position-batch` cannot be combined
 with `--filter-position`. Duplicate or overlapping filters run their selected
 proofs again; they do not reuse a previous verification result. Each request has
-a separate summary, and `--log-format` collects all requests into one log in
-request order, including repeated rows for repeated proofs. The exit code is
+a separate summary, and `--log-format` collects all requests into one log, including repeated rows for repeated proofs. The exit code is
 unsuccessful if any request fails, even if later requests succeed. Parsing or
 resolution errors prevent every request from running.
 

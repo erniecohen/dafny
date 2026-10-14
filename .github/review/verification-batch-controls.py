@@ -9,7 +9,7 @@ def main():
     dafny, z3, output = sys.argv[1:]
     root = Path(output).resolve()
     root.mkdir(parents=True, exist_ok=True)
-    (root / "first.dfy").write_text("lemma Good() { assert true; }\n")
+    (root / "first.dfy").write_text("lemma Good(x: int) { assert x + 1 > x; }\n")
     (root / "second.dfy").write_text("lemma Bad() { assert false; }\n")
     (root / "dfyconfig.toml").write_text('includes = ["*.dfy"]\n')
     common = [dafny, "verify", "dfyconfig.toml", "--solver-path", z3, "--cores", "1",
@@ -34,7 +34,7 @@ def main():
         return result
 
     for refresh in ["false", "true"]:
-        resolver = ["--type-system-refresh:" + refresh]
+        resolver = ["--type-system-refresh:" + refresh, "--general-newtypes:" + refresh]
         run("off-" + refresh, resolver + ["--filter-position", "first.dfy"], 0, ["Correct"])
         run("batch-" + refresh, resolver + ["--filter-position-batch", "first.dfy",
             "--filter-position-batch", "first.dfy:1", "--filter-position-batch", "second.dfy",
@@ -62,6 +62,20 @@ def main():
     run("added-glob-input", ["--filter-position-batch", "first.dfy"], 2, [])
     (root / "dfyconfig.toml").write_text('includes = ["first.dfy"]\n')
     run("edited-project", ["--filter-position-batch", "first.dfy"], 4, ["Errors"])
+    (root / "first.dfy").write_text('include "dependency.dfy"\nlemma Good(x: int) { assert x + 1 > x; }\n')
+    (root / "dependency.dfy").write_text("lemma Dependency() { assert false; }\n")
+    (root / "dfyconfig.toml").write_text('includes = ["first.dfy"]\n[options]\nverify-included-files = false\n')
+    run("before-option-edit", ["--filter-position-batch", ".dfy"], 0, ["Correct"])
+    (root / "dfyconfig.toml").write_text('includes = ["first.dfy"]\n[options]\nverify-included-files = true\n')
+    result = run("after-option-edit", ["--filter-position-batch", ".dfy"], 4)
+    if "Errors" not in records[-1]["outcomes"] or "Correct" not in records[-1]["outcomes"]:
+        failures.append("after-option-edit-outcomes")
+    (root / "first.dfy").write_text("lemma Good() { assert Truth(); }\n")
+    (root / "library.dfy").write_text("function Truth(): bool { true }\n")
+    (root / "dfyconfig.toml").write_text('includes = ["first.dfy"]\n')
+    run("before-library-edit", ["--library", "library.dfy", "--filter-position-batch", ".dfy"], 0, ["Correct"])
+    (root / "library.dfy").write_text("function Truth(): bool { false }\n")
+    run("after-library-edit", ["--library", "library.dfy", "--filter-position-batch", ".dfy"], 4, ["Errors"])
     (root / "summary.json").write_text(json.dumps({"failures": failures, "records": records}, indent=2) + "\n")
     (root / "summary.md").write_text("## Batch controls\n\n" + str(len(records) - len(failures)) + "/" + str(len(records)) + " controls passed.\n" + "\nFailures: " + (", ".join(failures) or "none") + "\n")
     return bool(failures)

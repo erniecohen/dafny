@@ -23,7 +23,7 @@ public class VerificationBatchTests {
     Directory.CreateDirectory(directory);
     var first = Path.Combine(directory, "first.dfy");
     var second = Path.Combine(directory, "second.dfy");
-    await File.WriteAllTextAsync(first, "lemma Good() { assert true; }\n");
+    await File.WriteAllTextAsync(first, "lemma Good(x: int) { assert x + 1 > x; }\n");
     await File.WriteAllTextAsync(second, "lemma Bad() { assert false; }\n");
     try {
       var options = Options(refresh, first, second);

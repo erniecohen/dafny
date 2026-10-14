@@ -223,6 +223,36 @@ jobs:
           path: comparison
           retention-days: 90
 
+  verification-batch:
+    name: Resolve-once verification batch controls
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: dafny
+      - name: Unpack Dafny
+        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
+      - name: Pinned solver
+        run: |
+          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
+          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+          echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
+      - name: Exercise fresh requests and cold input invalidation
+        run: |
+          python3 .github/review/verification-batch-controls.py "$PWD/out/dafny/Dafny" "$Z3" verification-batch-results
+          cat verification-batch-results/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-batch-results
+          path: verification-batch-results
+          retention-days: 90
+
   resolver:
     name: Resolver matrix (both modes)
     needs: build
@@ -441,6 +471,10 @@ jobs:
           echo "$filter"
           dotnet test Source/IntegrationTests -c Release --no-build \
             --logger "console;verbosity=normal" --filter "$filter"
+      - name: Batch requests reuse resolution and create fresh proof tasks
+        env:
+          Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
+        run: dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~VerificationBatchTests --logger "console;verbosity=normal"
       - name: Literal identities are option guarded and local to each module
         run: dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~AdditionalAxiomsTranslationTests --logger "console;verbosity=normal"
       - name: Obligation lowering inventory and structural comparisons
@@ -585,7 +619,7 @@ jobs:
 
   release:
     name: GitHub release
-    needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, finite-support, axiom-resources]
+    needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, finite-support, axiom-resources, verification-batch]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
