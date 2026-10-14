@@ -21,12 +21,12 @@ def main():
         (root / "second.dfy").write_text(source)
         for selected in ["first.dfy", "second.dfy"]:
             label = name + "-" + selected[:-4]
-            command = common + ["--filter-position", selected, "--rprint", label + ".resolved.dfy"]
+            command = common + ["--filter-position", selected, "--rprint", label + ".resolved.txt"]
             try:
                 result = subprocess.run(command, cwd=root, text=True, capture_output=True, timeout=60)
                 (root / (label + ".stdout")).write_text(result.stdout)
                 (root / (label + ".stderr")).write_text(result.stderr)
-                resolved = root / (label + ".resolved.dfy")
+                resolved = root / (label + ".resolved.txt")
                 both = resolved.exists() and all(word in resolved.read_text() for word in ["First", "Second"])
                 records.append({"case": name, "selected": selected, "command": command,
                                 "exit": result.returncode, "resolved_both": both})
