@@ -152,7 +152,8 @@ public class CliCompilation {
 
   public bool VerifiedAssertions { get; private set; }
 
-  public async IAsyncEnumerable<CanVerifyResult> VerifyAllLazily(int? randomSeed = null) {
+  public async IAsyncEnumerable<CanVerifyResult> VerifyAllLazily(int? randomSeed = null,
+    string? filterPosition = null, bool repeatVerification = false) {
     if (!Options.Get(CommonOptionBag.UnicodeCharacters) && Options.Backend is not CppBackend) {
       Compilation.Reporter.Deprecated(MessageSource.Verifier, "unicodeCharDeprecated", Token.Cli,
         "the option unicode-char has been deprecated.");
@@ -241,7 +242,7 @@ public class CliCompilation {
 
     DidVerification = true;
 
-    var canVerifies = FilterCanVerifies(resolution.CanVerifies, out var filterRange);
+    var canVerifies = FilterCanVerifies(resolution.CanVerifies, out var filterRange, filterPosition);
     VerifiedAssertions = filterRange.Filters;
 
     int done = 0;
@@ -288,7 +289,7 @@ public class CliCompilation {
           results.CompletedParts.Select(c => new VerificationTaskResult(c.Task, c.Result.Result)).ToList());
 
         canVerifyResults.Remove(canVerify); // Free memory
-        Compilation.ClearCanVerifyCache(canVerify);
+        Compilation.ClearCanVerifyCache(canVerify, repeatVerification);
       }
       Compilation.ClearModuleCache(canVerifiesForModule.Key);
     }
@@ -321,10 +322,11 @@ public class CliCompilation {
     public bool Filters => Start != int.MinValue || End != int.MaxValue;
   }
 
-  private IReadOnlyList<ICanVerify> FilterCanVerifies(IDictionary<Uri, IIntervalTree<DafnyPosition, ICanVerify>> canVerifies, out LineRange range) {
+  private IReadOnlyList<ICanVerify> FilterCanVerifies(IDictionary<Uri, IIntervalTree<DafnyPosition, ICanVerify>> canVerifies, out LineRange range,
+    string? filterPosition = null) {
     int start = int.MinValue;
     int end = int.MaxValue;
-    var filterPosition = Options.Get(VerifyCommand.FilterPosition);
+    filterPosition ??= Options.Get(VerifyCommand.FilterPosition);
     IEnumerable<ICanVerify> result;
     if (filterPosition == null) {
       range = new LineRange(start, end);

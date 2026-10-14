@@ -759,7 +759,12 @@ public class Compilation : IDisposable {
     translatedModules.Remove(moduleDefinition);
   }
 
-  public void ClearCanVerifyCache(ICanVerify canVerify) {
+  public void ClearCanVerifyCache(ICanVerify canVerify, bool allowRepeat = false) {
     tasksPerVerifiable.Remove(canVerify);
+    if (allowRepeat) {
+      // Called only after this symbol's tasks have finished. A later batch request
+      // must schedule fresh tasks, including for an overlapping or duplicate filter.
+      verifyingOrVerifiedSymbols.TryRemove(canVerify, out _);
+    }
   }
 }

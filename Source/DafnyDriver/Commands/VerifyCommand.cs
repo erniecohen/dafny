@@ -23,6 +23,7 @@ public static class VerifyCommand {
     // they can't be specified when building a doo file.
     OptionRegistry.RegisterOption(FilterSymbol, OptionScope.Cli);
     OptionRegistry.RegisterOption(FilterPosition, OptionScope.Cli);
+    OptionRegistry.RegisterOption(FilterPositionBatch, OptionScope.Cli);
     OptionRegistry.RegisterOption(PerformanceStatisticsOption, OptionScope.Cli);
   }
 
@@ -36,6 +37,13 @@ public static class VerifyCommand {
 
   public static readonly Option<string> FilterPosition = new("--filter-position",
     @"Filter what gets verified based on a source location. The location is specified as a file path suffix, optionally followed by a colon and a line number or line range. For example, `dafny verify dfyconfig.toml --filter-position=source1.dfy:5-7` will only verify things that between (and including) line 5 and 7 in the file `source1.dfy`. You can also use `:5`, `:5-`, `:-5` to specify individual lines or open ranges. In combination with `--isolate-assertions`, individual assertions can be verified by filtering on the line that contains them. When processing a single file, the filename can be skipped, for example: `dafny verify MyFile.dfy --filter-position=:23`");
+
+  public static readonly Option<IList<string>> FilterPositionBatch = new("--filter-position-batch", () => new List<string>(),
+    "Resolve the program once and verify a sequence of position filters in order. Repeat this option once per filter, using the same syntax as --filter-position. Duplicate and overlapping filters are verified again with fresh proof tasks. Inputs and all other options stay fixed for this invocation; changes require a new invocation. Reports one summary per filter and a combined verification log. Cannot be combined with --filter-position.") {
+    ArgumentHelpName = "position",
+    Arity = ArgumentArity.OneOrMore,
+    AllowMultipleArgumentsPerToken = false
+  };
 
   public static Command Create() {
     var result = new Command("verify", "Verify the program.");
@@ -52,12 +60,20 @@ public static class VerifyCommand {
         PerformanceStatisticsOption,
         FilterSymbol,
         FilterPosition,
+        FilterPositionBatch,
         DafnyFile.DoNotVerifyDependencies
       }.Concat(DafnyCommands.VerificationOptions).
       Concat(DafnyCommands.ConsoleOutputOptions).
       Concat(DafnyCommands.ResolverOptions);
 
   public static async Task<int> HandleVerification(DafnyOptions options) {
+    var batch = options.GetOrOptionDefault(FilterPositionBatch).ToArray();
+    if (batch.Length != 0 && options.Get(FilterPosition) != null) {
+      new ConsoleErrorReporter(options).Error(MessageSource.Project, Token.Cli,
+        "--filter-position-batch cannot be combined with --filter-position");
+      return (int)ExitValue.PREPROCESSING_ERROR;
+    }
+
     if (options.Get(CommonOptionBag.VerificationCoverageReport) != null) {
       options.TrackVerificationCoverage = true;
     }
@@ -66,6 +82,13 @@ public static class VerifyCommand {
     compilation.Start();
 
     var resolution = await compilation.Resolution;
+
+    if (batch.Length != 0) {
+      if (resolution is { HasErrors: false, CanVerifies: not null }) {
+        await HandleBatch(compilation, resolution, batch);
+      }
+      return await compilation.GetAndReportExitCode();
+    }
 
     if (resolution != null) {
       Subject<CanVerifyResult> verificationResults = new();
@@ -82,6 +105,42 @@ public static class VerifyCommand {
     }
 
     return await compilation.GetAndReportExitCode();
+  }
+
+  private static async Task HandleBatch(CliCompilation compilation, ResolutionResult resolution,
+    IReadOnlyList<string> filters) {
+    using Subject<CanVerifyResult> allResults = new();
+    ReportVerificationDiagnostics(compilation, allResults);
+    var proofDependenciesReported = ReportProofDependencies(compilation, resolution, allResults);
+    var resultsLogged = LogVerificationResults(compilation, resolution, allResults);
+
+    try {
+      for (var index = 0; index < filters.Count; index++) {
+        await compilation.Options.OutputWriter.Status(
+          $"Starting verification request {index + 1}/{filters.Count}: {filters[index]}");
+        using Subject<CanVerifyResult> requestResults = new();
+        var summarized = ReportVerificationSummary(compilation, requestResults);
+        try {
+          await foreach (var result in compilation.VerifyAllLazily(
+                           filterPosition: filters[index], repeatVerification: true)) {
+            allResults.OnNext(result);
+            requestResults.OnNext(result);
+          }
+          requestResults.OnCompleted();
+        } catch (Exception exception) {
+          requestResults.OnError(exception);
+          await summarized; // Propagate failures rather than reporting an incomplete request as successful.
+          throw;
+        }
+        await summarized;
+      }
+      allResults.OnCompleted();
+    } catch (Exception exception) {
+      allResults.OnError(exception);
+      throw;
+    } finally {
+      await Task.WhenAll(resultsLogged, proofDependenciesReported);
+    }
   }
 
   public static async Task ReportVerificationSummary(

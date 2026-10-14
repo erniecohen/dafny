@@ -315,6 +315,31 @@ Various options control the verification process, in addition to all those descr
    - `--track-print-effects`
    - `--disable-nonlinear-arithmetic`
    - `--filter-symbol`
+   - `--filter-position`
+   - `--filter-position-batch`
+
+The opt-in `--filter-position-batch` option accepts one position filter per occurrence:
+
+```sh
+dafny verify dfyconfig.toml --filter-position-batch first.dfy --filter-position-batch second.dfy:5-7
+```
+
+Dafny parses and resolves the whole program once, then verifies these requests in
+order. Each filter uses the syntax of `--filter-position` and is also restricted
+by `--filter-symbol`, if supplied. `--filter-position-batch` cannot be combined
+with `--filter-position`. Duplicate or overlapping filters run their selected
+proofs again; they do not reuse a previous verification result. Each request has
+a separate summary, and `--log-format` collects all requests into one log in
+request order, including repeated rows for repeated proofs. The exit code is
+unsuccessful if any request fails, even if later requests succeed. Parsing or
+resolution errors prevent every request from running.
+
+All requests use the sources, project configuration, libraries, plugins and
+proof options loaded for this invocation. Files edited after they have been read
+are not reloaded between requests. To use changed inputs or options, start a new
+invocation; every invocation parses and resolves again. No cache is persisted.
+As with a single position filter, a successful batch verifies only its selected
+proofs and does not establish that the whole project is verified.
 
 - Control of the proof engine
    - `--verification-time-limit`
