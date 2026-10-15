@@ -272,6 +272,23 @@ identity['default_off_differences'] = [row['name'] for row in rows if row['mode'
 identity['default_off_equal'] = not identity['default_off_differences']
 (output / 'receipt.json').write_text(json.dumps(identity, indent=2) + '\n')
 print('Proof coverage', json.dumps(public_coverage_receipt(identity), sort_keys=True), file=sys.stderr, flush=True)
+summary = os.environ.get('GITHUB_STEP_SUMMARY')
+if os.environ.get('GITHUB_ACTIONS') == 'true' and summary:
+    # Publish only validated public identity and numeric proof-scope statistics.
+    coverage = public_coverage_receipt(identity)
+    lines = ['## Maintained obligation proofs', '',
+        'Coverage: `' + json.dumps(coverage, sort_keys=True) + '`', '',
+        '| case | exit | selected proofs correct | batches | total RU | maximum batch RU |',
+        '|---|---:|---|---:|---:|---:|']
+    for row in rows:
+        assert re.fullmatch('[A-Za-z0-9-]+', row['name'])
+        assert type(row['exit']) is int and type(row['selected_correct']) is bool
+        assert all(type(row[key]) is int and row[key] >= 0 for key in ['batches', 'total_ru', 'max_ru'])
+        lines.append('| ' + row['name'] + ' | ' + str(row['exit']) + ' | ' +
+            str(row['selected_correct']) + ' | ' + str(row['batches']) + ' | ' +
+            str(row['total_ru']) + ' | ' + str(row['max_ru']) + ' |')
+    with Path(summary).open('a') as stream:
+        stream.write('\n'.join(lines) + '\n')
 if not args.diagnostic:
     assert identity['default_off_equal'], identity['default_off_differences']
     assert identity['all_selected_correct'], json.dumps([r for r in rows if not r['selected_correct']], indent=2)
