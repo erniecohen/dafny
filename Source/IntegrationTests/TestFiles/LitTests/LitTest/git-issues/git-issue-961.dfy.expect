@@ -130,3 +130,14 @@ Dafny program verifier finished with 4 verified, 0 errors
 runtime (refreshed-on)
 
 Dafny program verifier finished with 4 verified, 0 errors
+project
+
+Dafny program verifier finished with 9 verified, 0 errors
+project-cli-off
+git-issue-961-positive.dfy(10,42): Error: type conversions are not supported to this type (got Positive)
+git-issue-961-positive.dfy(11,42): Error: type conversions are not supported to this type (got AtLeastTwo)
+git-issue-961-positive.dfy(12,36): Error: type conversions are not supported to this type (got Alias)
+git-issue-961-positive.dfy(13,48): Error: type conversions are not supported to this type (got NatBox)
+git-issue-961-positive.dfy(14,62): Error: type conversions are not supported to this type (got Nonempty<T>)
+git-issue-961-positive.dfy(15,75): Error: type conversions are not supported to this type (got NatSecond<int>)
+6 resolution/type errors detected in dfyconfig.toml
