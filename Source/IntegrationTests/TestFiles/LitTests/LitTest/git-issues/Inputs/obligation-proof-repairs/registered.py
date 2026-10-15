@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import signal
 import sys
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -52,6 +53,44 @@ for helper in ['UnpaddedPrefixWithPaddingIsBase64', 'UnpaddedStringIsBase64']:
     if 'lemma ' + helper + '(' in base64_source:
         helpers.append((helper, S + 'Base64.dfy', 'Std.Base64.' + helper, []))
 rows = []
+active_process = None
+SAFETY_SECONDS = 900
+
+def stop_child(signum, frame):
+    if active_process is not None:
+        try:
+            os.killpg(active_process.pid, signum)
+        except ProcessLookupError:
+            pass
+    raise SystemExit(128 + signum)
+
+for stop_signal in [signal.SIGTERM, signal.SIGINT, signal.SIGHUP]:
+    signal.signal(stop_signal, stop_child)
+
+def run_verifier(command):
+    global active_process
+    active_process = subprocess.Popen(command, cwd=repository, env=environment,
+        text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
+    try:
+        try:
+            stdout, stderr = active_process.communicate(timeout=SAFETY_SECONDS)
+            return stdout + stderr, active_process.returncode
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(active_process.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+            try:
+                stdout, stderr = active_process.communicate(timeout=5)
+            except subprocess.TimeoutExpired:
+                try:
+                    os.killpg(active_process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                stdout, stderr = active_process.communicate()
+            return stdout + stderr, 124
+    finally:
+        active_process = None
 
 def verify(label, source, symbol, extra, refresh, axioms, mode, full=False):
     folder = output / label
@@ -60,7 +99,7 @@ def verify(label, source, symbol, extra, refresh, axioms, mode, full=False):
         old.unlink(missing_ok=True)
     library = source.startswith(S)
     command = launch + ['verify', S + 'dfyconfig.toml' if library else source,
-        '--solver-path', str(solver), '--cores', '1', '--verification-time-limit', '0',
+        '--solver-path', str(solver), '--cores', '1', '--verification-time-limit', '0', '--progress', 'Symbol',
         '--log-format', 'json;LogFileName=' + str(folder / 'results.json'),
         '--log-format', 'csv;LogFileName=' + str(folder / 'resources.csv'),
         '--additional-axioms:' + str(axioms).lower()]
@@ -73,12 +112,7 @@ def verify(label, source, symbol, extra, refresh, axioms, mode, full=False):
     if not full:
         command += ['--filter-symbol', symbol + '.']
     (folder / 'command.json').write_text(json.dumps(command, indent=2) + '\n')
-    try:
-        result = subprocess.run(command, cwd=repository, env=environment,
-            text=True, capture_output=True, timeout=900)
-        text, code = result.stdout + result.stderr, result.returncode
-    except subprocess.TimeoutExpired as error:
-        text, code = str(error), 124
+    text, code = run_verifier(command)
     (folder / 'output.txt').write_text(text)
     (folder / 'exit.txt').write_text(str(code) + '\n')
     log = folder / 'results.json'
