@@ -6,6 +6,7 @@ reported as such, never as resource preservation.
 """
 import hashlib
 import json
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -24,33 +25,107 @@ def manifest(directory):
             for path in sorted(directory.rglob("*")) if path.is_file()}
 
 
-def vector(directory):
+PARTS = {'Std'} | {'TargetSpecific-' + target for target in ['notarget', 'cs', 'java', 'js', 'go', 'py']}
+VC_OUTCOMES = {'Valid': 'Correct', 'Bounded': 'Correct', 'Invalid': 'Errors',
+               'Undetermined': 'Inconclusive', 'OutOfMemory': 'OutOfMemory',
+               'TimeOut': 'TimedOut', 'OutOfResource': 'OutOfResource'}
+OUTCOME_ORDER = ['Correct', 'OutOfResource', 'TimedOut', 'OutOfMemory', 'Inconclusive', 'Errors']
+ERRLINE = re.compile(r'^(\S[^\n]*?\(\d+,\d+\)): (?:Error|Verification out of resource|Verification of .* timed out)', re.M)
+
+
+def require(condition, message):
+    if not condition:
+        raise ValueError('Incomplete measurement: ' + message)
+
+
+def population(declarations):
+    return {'declarations': len(declarations), 'vcs': sum(declarations.values()),
+            'scope_vc_counts_sha256': hashlib.sha256(json.dumps(
+                sorted(declarations.items()), separators=(',', ':')).encode()).hexdigest()}
+
+
+def vector(directory, inventory):
+    require(set(inventory['parts']) == PARTS, 'authoritative inventory must name the exact seven parts')
+    paths = {path.name.removesuffix('.invocation.json'): path
+             for path in (directory / 'measurements').glob('*.invocation.json')}
+    require(set(paths) == PARTS, 'expected the exact seven source-library parts')
+    rows = {}
+    for line in (directory / 'std-verdicts.tsv').read_text().splitlines():
+        row = line.split('\t')
+        require(row[0] not in rows, 'duplicate TSV row: ' + row[0])
+        require(len(row) == (5 if row[0].startswith('run ') else 6), 'malformed TSV row: ' + row[0])
+        rows[row[0]] = row
+    require({key for key in rows if key.startswith('run ')} == {'run ' + part for part in PARTS},
+            'TSV must name the exact seven run parts')
     declarations, vcs, runs = {}, {}, {}
-    for path in sorted((directory / "measurements").glob("*.invocation.json")):
-        part = path.name.removesuffix(".invocation.json")
+    for part, path in sorted(paths.items()):
         invocation = json.loads(path.read_text())
-        runs[part] = invocation["exit"]
-        if invocation["exit"] == "TIMEOUT" or not invocation["verification_log_present"]:
-            raise ValueError("Incomplete measurement: " + str(path))
-        log = path.with_name(part + ".verification.json")
-        for declaration in json.loads(log.read_text())["verificationResults"]:
-            key = part + "\t" + declaration["name"]
-            if key in declarations:
-                raise ValueError("Duplicate declaration: " + key)
-            proofs = declaration["vcResults"]
-            declarations[key] = [declaration["outcome"], declaration["resourceCount"], len(proofs)]
+        require(invocation['exit'] in ['0', '4'], part + ': non-verification process exit ' + str(invocation['exit']))
+        require(invocation['verification_log_present'], part + ': missing proof log')
+        log = path.with_name(part + '.verification.json')
+        raw = json.loads(log.read_text())['verificationResults']
+        counts, valid, outcomes_for_part = {}, 0, []
+        failed = False
+        for declaration in raw:
+            name = declaration['name']
+            key = part + ' ' + name
+            require(key not in declarations, 'duplicate declaration: ' + key)
+            proofs = declaration['vcResults']
+            require(proofs, 'no VCs: ' + key)
+            counts[name] = len(proofs)
+            outcomes = []
             for proof in proofs:
-                vc = key + "\t" + str(proof["vcNum"]) + "\t" + str(proof.get("randomSeed", 0))
-                if vc in vcs:
-                    raise ValueError("Duplicate VC: " + vc)
-                vcs[vc] = [proof["outcome"], proof["resourceCount"], proof["assertions"]]
-    if len(runs) != 7:
-        raise ValueError("Expected all seven source-library parts")
-    # Preserve the run verdict's summary/error positions as well as each exit.
-    run_verdicts = {row.split("\t")[0]: row.split("\t")[1:4]
-                    for row in (directory / "std-verdicts.tsv").read_text().splitlines()
-                    if row.startswith("run ")}
-    return {"runs": run_verdicts, "declarations": declarations, "vcs": vcs}
+                vc = key + '\t' + str(proof['vcNum']) + '\t' + str(proof.get('randomSeed', 0))
+                require(vc not in vcs, 'duplicate VC: ' + vc)
+                require(proof['outcome'] in VC_OUTCOMES, 'unrecognized VC outcome: ' + vc)
+                require(type(proof['resourceCount']) is int and proof['resourceCount'] >= 0, 'invalid VC cost: ' + vc)
+                outcome = VC_OUTCOMES[proof['outcome']]
+                outcomes.append(outcome)
+                outcomes_for_part.append(proof['outcome'])
+                valid += outcome == 'Correct'
+                failed |= outcome != 'Correct'
+                vcs[vc] = [proof['outcome'], proof['resourceCount'], proof['assertions']]
+            expected_outcome = max(outcomes, key=OUTCOME_ORDER.index)
+            resources = sum(proof['resourceCount'] for proof in proofs)
+            require(declaration['outcome'] == expected_outcome and declaration['resourceCount'] == resources,
+                    'declaration disagrees with its VCs: ' + key)
+            require(rows.get(key, [])[1:] == [expected_outcome, '', '', str(resources), str(len(proofs))],
+                    'declaration TSV disagrees with raw proof log: ' + key)
+            declarations[key] = [expected_outcome, resources, len(proofs)]
+        require(population(counts) == inventory['parts'][part], part + ': declaration/VC inventory differs from authoritative baseline')
+        require(invocation['exit'] == ('4' if failed else '0'), part + ': process exit disagrees with verification outcomes')
+        stdout = path.with_name(part + '.stdout').read_text()
+        stderr = path.with_name(part + '.stderr').read_text()
+        summaries = re.findall(r'verifier finished with ([^\n]*)', stdout + stderr)
+        summary = re.fullmatch(r'(\d+) verified, (\d+) errors?(.*)', summaries[0]) if len(summaries) == 1 else None
+        require(summary is not None and int(summary[1]) == valid, part + ': absent or inconsistent verification summary')
+        invalid = outcomes_for_part.count('Invalid')
+        require(int(summary[2]) >= invalid if invalid else int(summary[2]) == 0, part + ': inconsistent error count')
+        tail = ''
+        for outcome, label, plural in [('Undetermined', 'inconclusive', True), ('TimeOut', 'time out', True),
+                                       ('OutOfMemory', 'out of memory', False), ('OutOfResource', 'out of resource', False)]:
+            count = outcomes_for_part.count(outcome)
+            if count:
+                tail += ', ' + str(count) + ' ' + label + ('s' if plural and count != 1 else '')
+        require(summary[3] == tail, part + ': inconsistent verification failure summary')
+        verdict = [invocation['exit'], summaries[0], ' '.join(sorted(set(ERRLINE.findall(stdout + stderr))))]
+        require(rows['run ' + part][1:4] == verdict, part + ': run TSV disagrees with invocation/diagnostics')
+        runs['run ' + part] = verdict
+    require(set(rows) == set(runs) | set(declarations), 'unexpected or missing TSV inventory rows')
+    return {'runs': runs, 'declarations': declarations, 'vcs': vcs}
+
+
+def validated_vector(directory, inventory, output, solver, name, runner_exit):
+    try:
+        require(runner_exit == 0, 'source-library runner failed; see retained diagnostics')
+        result = vector(directory, inventory)
+    except Exception as error:
+        failure = {'status': 'incomplete', 'solver': solver, 'pass': name, 'error': str(error)}
+        (directory / 'validation.json').write_text(json.dumps(failure, indent=2) + '\n')
+        (output / 'comparison-status.json').write_text(json.dumps(failure, indent=2) + '\n')
+        raise
+    (directory / 'validation.json').write_text(json.dumps({'status': 'complete-inventory'}) + '\n')
+    return result
 
 
 def differences(before, after):
@@ -84,6 +159,12 @@ def main():
                  or name.endswith((".doo", ".deps.json", ".runtimeconfig.json", "DafnyPrelude.bpl"))}
     assert protected
     assert all(identities["B"]["build_files"].get(name) == digest for name, digest in protected.items()), "Proof dependencies differ"
+    inventory = json.loads(Path(__file__).with_name('default-comparison-inventory.json').read_text())
+    require(inventory['baseline_source'] == identities['A']['source'] and
+            inventory['library_tree'] == identities['A']['library_tree'], 'authoritative inventory source identity differs')
+    status = output / 'comparison-status.json'
+    require(not (output / 'summary.json').exists(), 'refusing to reuse an earlier summary')
+    status.write_text(json.dumps({'status': 'running'}) + '\n')
     results = {}
     for solver_name, solver in [("5.1.0", solver51), ("4.16.0", solver_harness)]:
         solver_version = subprocess.check_output([str(solver), "--version"], text=True).strip()
@@ -99,8 +180,7 @@ def main():
                               "--measurements", str(directory / "measurements")]
                 process = subprocess.run(invocation, stdout=stdout, stderr=stderr)
             (directory / "runner-invocation.json").write_text(json.dumps({"command": invocation, "exit": process.returncode}, indent=2) + "\n")
-            assert process.returncode == 0, "Source-library runner failed; see retained diagnostics"
-            vectors[name] = vector(directory)
+            vectors[name] = validated_vector(directory, inventory, output, solver_name, name, process.returncode)
             (directory / "vectors.json").write_text(json.dumps(vectors[name], indent=2) + "\n")
         pairs = {}
         # Inspect same-binary repetitions before the cross-build pairs.
@@ -113,7 +193,8 @@ def main():
         (output / ("comparison-z3-" + solver_name + ".json")).write_text(json.dumps(results[solver_name], indent=2) + "\n")
     summary = {solver: {"denominators": value["denominators"], "pairs": {pair: record["counts"] for pair, record in value["pairs"].items()}}
                for solver, value in results.items()}
-    (output / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
+    (output / "summary.json").write_text(json.dumps({'status': 'complete-inventory-comparison', 'solvers': summary}, indent=2) + "\n")
+    status.write_text(json.dumps({'status': 'complete-inventory-comparison'}) + '\n')
     # A probe records differences; it does not waive acceptance or update baselines.
     return 0
 

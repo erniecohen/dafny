@@ -11,58 +11,166 @@ spec.loader.exec_module(comparison)
 
 
 class ComparisonControls(unittest.TestCase):
-    def fixture(self, directory):
-        measurements = directory / 'measurements'
-        measurements.mkdir()
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.root = Path(directory.name)
+        self.measurements = self.root / 'measurements'
+        self.measurements.mkdir()
+        self.inventory = {'parts': {part: comparison.population(
+            {'Example': 2, 'Other': 1} if part == 'Std' else {'Example': 1}) for part in comparison.PARTS}}
         rows = []
-        for part in ['Std', 'notarget', 'cs', 'java', 'js', 'go', 'py']:
-            (measurements / (part + '.invocation.json')).write_text(json.dumps({
-                'exit': '4' if part == 'Std' else '0', 'verification_log_present': True}))
-            (measurements / (part + '.verification.json')).write_text(json.dumps({'verificationResults': [{
-                'name': 'Example', 'outcome': 'OutOfResource', 'resourceCount': 100, 'vcResults': [
-                    {'vcNum': 1, 'outcome': 'OutOfResource', 'resourceCount': 100, 'assertions': []}]}]}))
-            rows.append('run ' + part + '\t4\t0 verified, 1 out of resource\tfile(1,1)\t3.2')
-        (directory / 'std-verdicts.tsv').write_text('\n'.join(rows) + '\n')
-        return measurements
+        for part in sorted(comparison.PARTS):
+            failing = part == 'Std'
+            code, summary = ('4', '2 verified, 0 errors, 1 out of resource') if failing else ('0', '1 verified, 0 errors')
+            errors = 'example.dfy(1,1)' if failing else ''
+            (self.measurements / (part + '.invocation.json')).write_text(json.dumps({
+                'exit': code, 'verification_log_present': True}))
+            declarations = [{'name': 'Example', 'outcome': 'OutOfResource' if failing else 'Correct',
+                             'resourceCount': 200 if failing else 100, 'vcResults': [
+                                 {'vcNum': 1, 'outcome': 'OutOfResource' if failing else 'Valid', 'resourceCount': 100, 'assertions': []}]}]
+            if failing:
+                declarations[0]['vcResults'].append({'vcNum': 2, 'outcome': 'Valid', 'resourceCount': 100, 'assertions': []})
+                declarations.append({'name': 'Other', 'outcome': 'Correct', 'resourceCount': 100,
+                                     'vcResults': [{'vcNum': 1, 'outcome': 'Valid', 'resourceCount': 100, 'assertions': []}]})
+            (self.measurements / (part + '.verification.json')).write_text(json.dumps({'verificationResults': declarations}))
+            (self.measurements / (part + '.stdout')).write_text(
+                ('example.dfy(1,1): Verification out of resource\n' if failing else '') +
+                'Dafny program verifier finished with ' + summary + '\n')
+            (self.measurements / (part + '.stderr')).write_text('')
+            rows.append('run ' + part + '\t' + code + '\t' + summary + '\t' + errors + '\t3.2')
+            for declaration in declarations:
+                rows.append(part + ' ' + declaration['name'] + '\t' + declaration['outcome'] + '\t\t\t' +
+                            str(declaration['resourceCount']) + '\t' + str(len(declaration['vcResults'])))
+        self.tsv = self.root / 'std-verdicts.tsv'
+        self.tsv.write_text('\n'.join(rows) + '\n')
+
+    def vector(self):
+        return comparison.vector(self.root, self.inventory)
+
+    def change_log(self, change):
+        file = self.measurements / 'Std.verification.json'
+        data = json.loads(file.read_text())
+        change(data['verificationResults'])
+        file.write_text(json.dumps(data))
 
     def test_raw_cost_differences_remain_visible(self):
-        with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            measurements = self.fixture(root)
-            before = comparison.vector(root)
-            self.assertEqual({kind: len(value) for kind, value in before.items()}, {'runs': 7, 'declarations': 7, 'vcs': 7})
-            file = measurements / 'Std.verification.json'
-            log = json.loads(file.read_text())
-            log['verificationResults'][0]['resourceCount'] += 1
-            log['verificationResults'][0]['vcResults'][0]['resourceCount'] += 1
-            file.write_text(json.dumps(log))
-            after = comparison.vector(root)
-            self.assertFalse(comparison.differences(before['runs'], after['runs']))
-            self.assertEqual(len(comparison.differences(before['declarations'], after['declarations'])), 1)
-            self.assertEqual(len(comparison.differences(before['vcs'], after['vcs'])), 1)
+        before = self.vector()
+        self.assertEqual({kind: len(value) for kind, value in before.items()}, {'runs': 7, 'declarations': 8, 'vcs': 9})
+        def change(declarations):
+            declarations[0]['resourceCount'] += 1
+            declarations[0]['vcResults'][0]['resourceCount'] += 1
+        self.change_log(change)
+        self.tsv.write_text(self.tsv.read_text().replace('Std Example\tOutOfResource\t\t\t200\t2', 'Std Example\tOutOfResource\t\t\t201\t2'))
+        after = self.vector()
+        self.assertFalse(comparison.differences(before['runs'], after['runs']))
+        self.assertEqual(len(comparison.differences(before['declarations'], after['declarations'])), 1)
+        self.assertEqual(len(comparison.differences(before['vcs'], after['vcs'])), 1)
 
-    def test_timeout_or_missing_part_is_incomplete(self):
-        with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            measurements = self.fixture(root)
-            file = measurements / 'Std.invocation.json'
-            file.write_text(json.dumps({'exit': 'TIMEOUT', 'verification_log_present': False}))
-            with self.assertRaisesRegex(ValueError, 'Incomplete'):
-                comparison.vector(root)
-            file.unlink()
-            with self.assertRaisesRegex(ValueError, 'all seven'):
-                comparison.vector(root)
+    def test_complete_pass_has_explicit_validation(self):
+        comparison.validated_vector(self.root, self.inventory, self.root, 'mock', 'A1', 0)
+        self.assertEqual(json.loads((self.root / 'validation.json').read_text())['status'], 'complete-inventory')
+
+    def test_timeout_and_other_nonverification_process_exits_are_incomplete(self):
+        file = self.measurements / 'Std.invocation.json'
+        for code in ['TIMEOUT', '1', '2', '3', '5', '-9']:
+            with self.subTest(code=code):
+                file.write_text(json.dumps({'exit': code, 'verification_log_present': True}))
+                with self.assertRaisesRegex(ValueError, 'non-verification process exit'):
+                    self.vector()
+
+    def test_wrong_part_names_do_not_pass_by_count(self):
+        (self.measurements / 'TargetSpecific-py.invocation.json').rename(self.measurements / 'unexpected.invocation.json')
+        with self.assertRaisesRegex(ValueError, 'exact seven'):
+            self.vector()
+
+    def test_missing_part_is_incomplete(self):
+        (self.measurements / 'Std.invocation.json').unlink()
+        with self.assertRaisesRegex(ValueError, 'exact seven'):
+            self.vector()
+
+    def test_empty_log_is_incomplete_and_cannot_produce_comparison_summary(self):
+        self.change_log(lambda declarations: declarations.clear())
+        (self.measurements / 'Std.invocation.json').write_text(json.dumps({'exit': '0', 'verification_log_present': True}))
+        (self.measurements / 'Std.stdout').write_text('Dafny program verifier finished with 0 verified, 0 errors\n')
+        rows = [line for line in self.tsv.read_text().splitlines() if not line.startswith('Std ')]
+        rows = ['run Std\t0\t0 verified, 0 errors\t\t0.1' if line.startswith('run Std\t') else line for line in rows]
+        self.tsv.write_text('\n'.join(rows) + '\n')
+        with self.assertRaisesRegex(ValueError, 'inventory differs'):
+            comparison.validated_vector(self.root, self.inventory, self.root, 'mock', 'A1', 0)
+        self.assertEqual(json.loads((self.root / 'comparison-status.json').read_text())['status'], 'incomplete')
+        self.assertEqual(json.loads((self.root / 'validation.json').read_text())['status'], 'incomplete')
+        self.assertFalse((self.root / 'summary.json').exists())
+        self.assertFalse((self.root / 'vectors.json').exists())
+        self.assertTrue((self.measurements / 'Std.verification.json').is_file())
+        self.assertTrue((self.measurements / 'Std.stdout').is_file())
+
+    def test_truncated_declaration_inventory_is_incomplete(self):
+        self.change_log(lambda declarations: declarations.pop())
+        self.tsv.write_text('\n'.join(line for line in self.tsv.read_text().splitlines()
+                                     if not line.startswith('Std Other\t')) + '\n')
+        self.reduce_verified_summary()
+        with self.assertRaisesRegex(ValueError, 'inventory differs'):
+            self.vector()
+
+    def test_truncated_vc_inventory_is_incomplete(self):
+        def change(declarations):
+            declarations[0]['vcResults'].pop()
+            declarations[0]['resourceCount'] = 100
+        self.change_log(change)
+        self.tsv.write_text(self.tsv.read_text().replace('Std Example\tOutOfResource\t\t\t200\t2', 'Std Example\tOutOfResource\t\t\t100\t1'))
+        self.reduce_verified_summary()
+        with self.assertRaisesRegex(ValueError, 'inventory differs'):
+            self.vector()
+
+    def reduce_verified_summary(self):
+        stdout = self.measurements / 'Std.stdout'
+        stdout.write_text(stdout.read_text().replace('2 verified', '1 verified'))
+        self.tsv.write_text(self.tsv.read_text().replace('2 verified', '1 verified'))
+
+    def test_missing_proof_log_is_incomplete(self):
+        file = self.measurements / 'Std.invocation.json'
+        file.write_text(json.dumps({'exit': '4', 'verification_log_present': False}))
+        with self.assertRaisesRegex(ValueError, 'missing proof log'):
+            self.vector()
 
     def test_duplicate_vc_rejected(self):
-        with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            measurements = self.fixture(root)
-            file = measurements / 'Std.verification.json'
-            log = json.loads(file.read_text())
-            log['verificationResults'][0]['vcResults'] *= 2
-            file.write_text(json.dumps(log))
-            with self.assertRaisesRegex(ValueError, 'Duplicate VC'):
-                comparison.vector(root)
+        self.change_log(lambda declarations: declarations[0]['vcResults'].extend(declarations[0]['vcResults']))
+        with self.assertRaisesRegex(ValueError, 'duplicate VC'):
+            self.vector()
+
+    def test_invocation_exit_must_match_raw_verification_outcomes(self):
+        file = self.measurements / 'Std.invocation.json'
+        file.write_text(json.dumps({'exit': '0', 'verification_log_present': True}))
+        with self.assertRaisesRegex(ValueError, 'exit disagrees'):
+            self.vector()
+
+    def test_tsv_exit_must_match_invocation(self):
+        self.tsv.write_text(self.tsv.read_text().replace('run Std\t4\t', 'run Std\t0\t'))
+        with self.assertRaisesRegex(ValueError, 'run TSV disagrees'):
+            self.vector()
+
+    def test_tsv_declaration_must_match_raw_proof_log(self):
+        self.tsv.write_text(self.tsv.read_text().replace('Std Example\tOutOfResource\t\t\t200\t2', 'Std Example\tOutOfResource\t\t\t201\t2'))
+        with self.assertRaisesRegex(ValueError, 'declaration TSV disagrees'):
+            self.vector()
+
+    def test_duplicate_tsv_row_rejected(self):
+        self.tsv.write_text(self.tsv.read_text() + self.tsv.read_text().splitlines()[0] + '\n')
+        with self.assertRaisesRegex(ValueError, 'duplicate TSV'):
+            self.vector()
+
+    def test_failure_summary_cannot_omit_recorded_verification_failure(self):
+        file = self.measurements / 'Std.stdout'
+        file.write_text(file.read_text().replace(', 1 out of resource', ''))
+        with self.assertRaisesRegex(ValueError, 'verification failure summary'):
+            self.vector()
+
+    def test_runner_failure_is_retained_as_incomplete(self):
+        with self.assertRaisesRegex(ValueError, 'runner failed'):
+            comparison.validated_vector(self.root, self.inventory, self.root, 'mock', 'A1', 1)
+        self.assertEqual(json.loads((self.root / 'comparison-status.json').read_text())['status'], 'incomplete')
+        self.assertFalse((self.root / 'summary.json').exists())
 
 
 if __name__ == '__main__':

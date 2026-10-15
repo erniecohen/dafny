@@ -155,7 +155,15 @@ public class VerificationBatchTests {
       Assert.NotSame(first[0].Task, second[0].Task);
       Assert.Equal(text, (await cli.Resolution)!.ResolvedProgram.PreludeText);
       File.Delete(prelude);
-      Assert.All(await Request(cli, "input.dfy"), result => Assert.Equal(SolverOutcome.Valid, result.Result.Outcome));
+      var afterDeletion = await Request(cli, "input.dfy");
+      Assert.NotEmpty(afterDeletion);
+      Assert.Equal(first.Count, afterDeletion.Count);
+      Assert.All(afterDeletion, result => Assert.Equal(SolverOutcome.Valid, result.Result.Outcome));
+      Assert.Equal(first.Select(part => part.Result.ResourceCount), afterDeletion.Select(part => part.Result.ResourceCount));
+      for (var index = 0; index < afterDeletion.Count; index++) {
+        Assert.NotSame(first[index].Task, afterDeletion[index].Task);
+        Assert.NotSame(second[index].Task, afterDeletion[index].Task);
+      }
       var next = CliCompilation.Create(options);
       using var nextCompilation = next.Compilation;
       next.Start();
