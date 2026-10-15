@@ -67,6 +67,43 @@ class ComparisonControls(unittest.TestCase):
         self.assertEqual(len(comparison.differences(before['declarations'], after['declarations'])), 1)
         self.assertEqual(len(comparison.differences(before['vcs'], after['vcs'])), 1)
 
+    def test_outcome_fold_matches_every_producer_transition(self):
+        # Columns follow SolverOutcome cases in JsonVerificationLogger.MergeOutcomes.
+        columns = ['Valid', 'Invalid', 'OutOfMemory', 'TimeOut', 'OutOfResource', 'Undetermined']
+        rows = {
+            'Correct': ['Correct', 'Errors', 'OutOfMemory', 'TimedOut', 'OutOfResource', 'Inconclusive'],
+            'Errors': ['Errors', 'Errors', 'Errors', 'Errors', 'Errors', 'Errors'],
+            'Inconclusive': ['Inconclusive', 'Errors', 'Inconclusive', 'Inconclusive', 'Inconclusive', 'Inconclusive'],
+            'OutOfMemory': ['OutOfMemory', 'Errors', 'OutOfMemory', 'TimedOut', 'OutOfResource', 'Inconclusive'],
+            'TimedOut': ['TimedOut', 'Errors', 'OutOfMemory', 'TimedOut', 'OutOfResource', 'Inconclusive'],
+            'OutOfResource': ['OutOfResource', 'Errors', 'OutOfMemory', 'TimedOut', 'OutOfResource', 'Inconclusive'],
+        }
+        for current, expected in rows.items():
+            for new, outcome in zip(columns, expected):
+                with self.subTest(current=current, new=new):
+                    self.assertEqual(comparison.merge_outcomes(current, new), outcome)
+        with self.assertRaisesRegex(ValueError, 'producer outcome'):
+            comparison.merge_outcomes('Correct', 'Bounded')
+
+    def test_complete_mixed_failure_reports_follow_emitted_order(self):
+        summary = '1 verified, 0 errors, 1 out of memory, 1 out of resource'
+        for left, right, expected in [('OutOfMemory', 'OutOfResource', 'OutOfResource'),
+                                      ('OutOfResource', 'OutOfMemory', 'OutOfMemory')]:
+            with self.subTest(left=left, right=right):
+                def change(declarations):
+                    declarations[0]['outcome'] = expected
+                    declarations[0]['vcResults'][0]['outcome'] = left
+                    declarations[0]['vcResults'][1]['outcome'] = right
+                self.change_log(change)
+                rows = self.tsv.read_text().splitlines()
+                rows = ['run Std\t4\t' + summary + '\texample.dfy(1,1)\t3.2' if row.startswith('run Std\t')
+                        else 'Std Example\t' + expected + '\t\t\t200\t2' if row.startswith('Std Example\t') else row
+                        for row in rows]
+                self.tsv.write_text('\n'.join(rows) + '\n')
+                (self.measurements / 'Std.stdout').write_text('example.dfy(1,1): Verification out of resource\n'
+                    'Dafny program verifier finished with ' + summary + '\n')
+                self.assertEqual(self.vector()['declarations']['Std Example'][0], expected)
+
     def test_complete_pass_has_explicit_validation(self):
         comparison.validated_vector(self.root, self.inventory, self.root, 'mock', 'A1', 0)
         self.assertEqual(json.loads((self.root / 'validation.json').read_text())['status'], 'complete-inventory')

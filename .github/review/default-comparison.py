@@ -29,13 +29,25 @@ PARTS = {'Std'} | {'TargetSpecific-' + target for target in ['notarget', 'cs', '
 VC_OUTCOMES = {'Valid': 'Correct', 'Bounded': 'Correct', 'Invalid': 'Errors',
                'Undetermined': 'Inconclusive', 'OutOfMemory': 'OutOfMemory',
                'TimeOut': 'TimedOut', 'OutOfResource': 'OutOfResource'}
-OUTCOME_ORDER = ['Correct', 'OutOfResource', 'TimedOut', 'OutOfMemory', 'Inconclusive', 'Errors']
 ERRLINE = re.compile(r'^(\S[^\n]*?\(\d+,\d+\)): (?:Error|Verification out of resource|Verification of .* timed out)', re.M)
 
 
 def require(condition, message):
     if not condition:
         raise ValueError('Incomplete measurement: ' + message)
+
+
+def merge_outcomes(current, new):
+    # Match JsonVerificationLogger.MergeOutcomes, including emitted VC order.
+    if new == 'Valid':
+        return current
+    if new == 'Invalid':
+        return 'Errors'
+    if new in ['OutOfMemory', 'TimeOut', 'OutOfResource']:
+        return current if current in ['Errors', 'Inconclusive'] else VC_OUTCOMES[new]
+    if new == 'Undetermined':
+        return current if current == 'Errors' else 'Inconclusive'
+    raise ValueError('Unrecognized JSON producer outcome: ' + str(new))
 
 
 def population(declarations):
@@ -73,19 +85,18 @@ def vector(directory, inventory):
             proofs = declaration['vcResults']
             require(proofs, 'no VCs: ' + key)
             counts[name] = len(proofs)
-            outcomes = []
+            expected_outcome = 'Correct'
             for proof in proofs:
                 vc = key + '\t' + str(proof['vcNum']) + '\t' + str(proof.get('randomSeed', 0))
                 require(vc not in vcs, 'duplicate VC: ' + vc)
                 require(proof['outcome'] in VC_OUTCOMES, 'unrecognized VC outcome: ' + vc)
                 require(type(proof['resourceCount']) is int and proof['resourceCount'] >= 0, 'invalid VC cost: ' + vc)
                 outcome = VC_OUTCOMES[proof['outcome']]
-                outcomes.append(outcome)
+                expected_outcome = merge_outcomes(expected_outcome, proof['outcome'])
                 outcomes_for_part.append(proof['outcome'])
                 valid += outcome == 'Correct'
                 failed |= outcome != 'Correct'
                 vcs[vc] = [proof['outcome'], proof['resourceCount'], proof['assertions']]
-            expected_outcome = max(outcomes, key=OUTCOME_ORDER.index)
             resources = sum(proof['resourceCount'] for proof in proofs)
             require(declaration['outcome'] == expected_outcome and declaration['resourceCount'] == resources,
                     'declaration disagrees with its VCs: ' + key)
