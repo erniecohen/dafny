@@ -1323,19 +1323,24 @@ module Std.Arithmetic.DivMod {
     requires 0 < d
     ensures x % d == (x * (1 - d)) % d
   {
-    // Subtracting a multiple of d leaves the remainder unchanged.
-    calc {
-      x % d;
-      == { LemmaModMultiplesBasic(x, d); }
-      (x - (x * d) % d) % d;
-      == { LemmaSubModNoopRight(x, x * d, d); }
-      (x - x * d) % d;
-      == {
-        LemmaMulIsDistributiveSub(x, 1, d);
-        LemmaMulBasics(x);
+    assert (x - x * d) % d == x % d
+    by {
+      var f := i => (x - i * d) % d == x % d;
+      // Each integer multiple has remainder zero, so the induction facts
+      // follow directly from the concrete subtraction identity.
+      forall i: int
+        ensures f(i)
+      {
+        LemmaModMultiplesBasic(i, d);
+        LemmaSubModNoopRight(x, i * d, d);
       }
-      (x * (1 - d)) % d;
+      assert  MulAuto() ==> && f(0)
+                            && (forall i {:trigger IsLe(0, i)} :: IsLe(0, i) && f(i) ==> f(i + 1))
+                            && (forall i {:trigger IsLe(i, 0)} :: IsLe(i, 0) && f(i) ==> f(i - 1));
+      assert f(x);
     }
+    LemmaMulIsDistributiveSub(x, 1, d);
+    LemmaMulBasics(x);
   }
 
   /* proves the validity of the quotient and remainder */
