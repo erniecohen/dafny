@@ -735,6 +735,7 @@ module Std.Base64 {
     }
   }
 
+  @IsolateAssertions
   lemma DecodeEncode2Padding(s: seq<char>)
     requires Is2Padding(s)
     ensures Encode2Padding(Decode2Padding(s)) == s
@@ -780,6 +781,7 @@ module Std.Base64 {
       DecodeUnpadded(s)
   }
 
+  @IsolateAssertions
   lemma AboutDecodeValid(s: seq<char>, b: seq<bv8>)
     requires IsBase64String(s) && b == DecodeValid(s)
     ensures 4 <= |s| ==> var finalBlockStart := |s| - 4;
@@ -892,15 +894,22 @@ module Std.Base64 {
     ensures EncodeBV(b) == EncodeUnpadded(b[..(|b| - 2)]) + Encode1Padding(b[(|b| - 2)..])
   {  }
 
+  @IsolateAssertions
   lemma EncodeBVLengthCongruentToZeroMod4(b: seq<bv8>)
     ensures |EncodeBV(b)| % 4 == 0
   {
+    // The exact length is a multiple of four, including a possible padding block.
+    hide *;
+    EncodeBVLengthExact(b);
     if |b| % 3 == 0 {
       EncodeUnpaddedBounds(b);
+      assert |EncodeBV(b)| == |b| / 3 * 4;
     } else if |b| % 3 == 1 {
       EncodeUnpaddedBounds(b[..(|b| - 1)]);
+      assert |EncodeBV(b)| == |b| / 3 * 4 + 4;
     } else {
       EncodeUnpaddedBounds(b[..(|b| - 2)]);
+      assert |EncodeBV(b)| == |b| / 3 * 4 + 4;
     }
   }
 
@@ -1112,6 +1121,7 @@ module Std.Base64 {
   }
 
 
+  @IsolateAssertions
   lemma DecodeValidUnpaddedPartialFrom1PaddedSeq(s: seq<char>)
     requires IsBase64String(s)
     requires |s| >= 4
