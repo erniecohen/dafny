@@ -160,7 +160,10 @@ def verify(label, source, symbol, extra, refresh, axioms, mode, full=False):
     good = all(any(d['name'].startswith(name + ' (') for d in selected) for name in wanted) and bool(selected) and all(d['outcome'] == 'Correct' and d['vcResults'] and
         all(vc['outcome'] == 'Valid' for vc in d['vcResults']) for d in selected)
     good = good and all(d['outcome'] == 'Correct' for d in declarations if d['name'].endswith('(well-formedness)'))
-    good = good and (full or code == 0) and not any(word in text.lower() for word in ['unhandled exception', 'internal error', 'parse errors'])
+    # Complete scopes may retain the source files' documented negative checks.
+    # A timeout, signal, or driver failure cannot count as a completed scope.
+    good = good and (code in [0, 4] if full else code == 0) and not any(
+        word in text.lower() for word in ['unhandled exception', 'internal error', 'parse errors'])
     row = {'name': label, 'source': source, 'symbol': symbol, 'refresh': refresh,
         'additional_axioms': axioms, 'mode': mode, 'complete_scope': full,
         'exit': code, 'selected_correct': good, 'log_error': log_error, 'declarations': len(declarations),
