@@ -410,7 +410,7 @@ module Std.Base64 {
         EncodeRecursively(DecodeRecursively(s));
       ==
         EncodeRecursively(b);
-      == { reveal EncodeRecursively; assert |b[3..]| % 3 == 0; }
+      == { assert |b[3..]| % 3 == 0; reveal EncodeRecursively; }
         EncodeBlock(b[..3]) + EncodeRecursively(b[3..]);
       == { DecodeRecursivelyBlock(s); }
         s[..4] + EncodeRecursively(b[3..]);
@@ -1205,7 +1205,12 @@ module Std.Base64 {
     requires Is2Padding(s[(|s| - 4)..])
     ensures EncodeBV(DecodeValid(s)) == s
   {
+    hide *;
+    UnpaddedBase64Prefix(s);
+    assert |s[..(|s| - 4)]| % 4 == 0 by { reveal IsUnpaddedBase64String; }
+    DecodeValidPartialsFrom2PaddedSeq(s);
     assert |DecodeValid(s)| % 3 == 1 by { DecodeValid2PaddingLengthMod3(s); }
+    EncodeBVIs2Padded(DecodeValid(s));
     calc {
       EncodeBV(DecodeValid(s));
     ==

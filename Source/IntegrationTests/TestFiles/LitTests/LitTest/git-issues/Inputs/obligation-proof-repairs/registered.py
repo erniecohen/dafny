@@ -49,9 +49,12 @@ helpers = [
     ('multiply-one', S + 'Arithmetic/Mul.dfy', 'Std.Arithmetic.Mul.LemmaMulBasics', []),
     ('encode-padding-identity', S + 'Base64.dfy', 'Std.Base64.EncodeBVIs1Padded', []),
     ('unpadded-prefix', S + 'Base64.dfy', 'Std.Base64.UnpaddedBase64Prefix', []),
+    ('recursive-decoder-support', S + 'Base64.dfy', 'Std.Base64.DecodeEncodeRecursively', []),
+    ('two-padding-support', S + 'Base64.dfy', 'Std.Base64.DecodeValidEncode2Padding', []),
+    ('encode-two-padding-identity', S + 'Base64.dfy', 'Std.Base64.EncodeBVIs2Padded', []),
 ]
 base64_source = (repository / (S + 'Base64.dfy')).read_text()
-for helper in ['UnpaddedPrefixWithPaddingIsBase64', 'UnpaddedStringIsBase64', 'DecodeValid1PaddingLengthMod3']:
+for helper in ['UnpaddedPrefixWithPaddingIsBase64', 'UnpaddedStringIsBase64', 'DecodeValid1PaddingLengthMod3', 'DecodeValid2PaddingLengthMod3']:
     if 'lemma ' + helper + '(' in base64_source:
         helpers.append((helper, S + 'Base64.dfy', 'Std.Base64.' + helper, []))
 rows = []
