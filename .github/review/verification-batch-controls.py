@@ -1,5 +1,6 @@
 """Generic verification-batch controls. Returns nonzero on failed assertions."""
 import json
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -58,6 +59,33 @@ def main():
         failures.append("solver-failure-continued")
     run("coverage", ["--verification-coverage-report", "coverage", "--filter-position-batch", "first.dfy",
         "--filter-position-batch", "second.dfy", "--filter-position-batch", "first.dfy"], 4, ["Correct", "Errors", "Correct"])
+    coverage = json.loads((root / "coverage.json").read_text())["verificationResults"]
+    good = [proof for proof in coverage if proof["outcome"] == "Correct"]
+    def dependencies(proof):
+        return {"programElements": proof.get("programElements"), "vcResults": [
+            {key: vc.get(key) for key in ["coveredElements", "uncoveredElements"]}
+            for vc in proof["vcResults"]]}
+    if len(good) != 2 or not good[0].get("programElements") or dependencies(good[0]) != dependencies(good[1]):
+        failures.append("coverage-dependencies-contaminated")
+    run("coverage-earlier-result", ["--verification-coverage-report", "coverage-earlier",
+        "--filter-position-batch", "first.dfy", "--filter-position-batch", "second.dfy"], 4, ["Correct", "Errors"])
+    for report in ["coverage", "coverage-earlier"]:
+        pages = list((root / report).rglob("first.dfy_verification.html"))
+        spans = re.findall(r'class="([a-z]+)" id="([0-9:]+)"', pages[0].read_text()) if len(pages) == 1 else []
+        if ("fc", "1:22") not in spans or any(kind in ["nc", "pc"] for kind, _ in spans):
+            failures.append(report + "-stale-html")
+    (root / "warnings.dfy").write_text("lemma Needed(x: int) requires x > 0 { assert x >= 1; }\n"
+        "lemma Redundant(x: int) requires x > 0 { assert x + 1 > x; }\n")
+    warnings = ["--warn-contradictory-assumptions", "--warn-redundant-assumptions"]
+    for refresh in ["false", "true"]:
+        resolver = ["--type-system-refresh:" + refresh, "--general-newtypes:" + refresh]
+        run("dependency-warnings-" + refresh, warnings + resolver + [
+            "--filter-position-batch", "warnings.dfy:1", "--filter-position-batch", "warnings.dfy:1"], 0, ["Correct", "Correct"])
+        control = run("dependency-warning-control-" + refresh, warnings + resolver + [
+            "--filter-position-batch", "warnings.dfy:2", "--filter-position-batch", "warnings.dfy:2"], 2, ["Correct", "Correct"])
+        if control.stdout.count("unnecessary requires clause") != 2:
+            failures.append("dependency-warning-control-count-" + refresh)
+    (root / "warnings.dfy").unlink()
     run("conflicting-filters", ["--filter-position", "first.dfy", "--filter-position-batch", "first.dfy"], 1, [])
     result = run("conflicting-filters-json", ["--json-output", "--filter-position", "first.dfy", "--filter-position-batch", "first.dfy"], 1, [])
     for line in result.stdout.splitlines():

@@ -89,6 +89,7 @@ namespace Microsoft.Dafny {
       public bool InsertChecksums { get; init; }
       public string UniqueIdPrefix = null;
       public bool ReportRanges = false;
+      public string PreludeText { get; init; }
       internal Action<PropositionLowering> ObligationLowered { get; init; }
       internal Action<DeclaredPreparationSnapshot> ObligationPrepared { get; init; }
     }
@@ -750,7 +751,10 @@ namespace Microsoft.Dafny {
       if (options.Get(CommonOptionBag.UnicodeCharacters)) {
         defines.Add("UNICODE_CHAR");
       }
-      int errorCount = BplParser.Parse(preludePath, defines, out var prelude);
+      Bpl.Program prelude;
+      int errorCount = flags.PreludeText == null
+        ? BplParser.Parse(preludePath, defines, out prelude)
+        : BplParser.Parse(new System.IO.StringReader(flags.PreludeText), preludePath, defines, out prelude);
       if (prelude == null || errorCount > 0) {
         return null;
       } else {

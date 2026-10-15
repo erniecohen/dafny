@@ -47,7 +47,8 @@ namespace Microsoft.Dafny.LanguageServer.Language {
           Type.ResetScopes();
           var translatorFlags = new BoogieGenerator.TranslatorFlags(errorReporter.Options) {
             InsertChecksums = 0 < engine.Options.VerifySnapshots,
-            ReportRanges = program.Options.Get(Snippets.ShowSnippets)
+            ReportRanges = program.Options.Get(Snippets.ShowSnippets),
+            PreludeText = program.PreludeText
           };
           var translator = new BoogieGenerator(errorReporter, resolution.ResolvedProgram.ProofDependencyManager, translatorFlags);
           return translator.DoTranslation(resolution.ResolvedProgram, moduleDefinition);

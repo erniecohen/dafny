@@ -43,6 +43,7 @@ public class Compilation : IDisposable {
   private readonly CancellationTokenSource cancellationSource;
 
   public bool Started => started.Task.IsCompleted;
+  public CancellationToken CancellationToken => cancellationSource.Token;
 
   /// <summary>
   /// FilePosition is required because the default module lives in multiple files

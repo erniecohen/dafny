@@ -39,7 +39,7 @@ public static class VerifyCommand {
     @"Filter what gets verified based on a source location. The location is specified as a file path suffix, optionally followed by a colon and a line number or line range. For example, `dafny verify dfyconfig.toml --filter-position=source1.dfy:5-7` will only verify things that between (and including) line 5 and 7 in the file `source1.dfy`. You can also use `:5`, `:5-`, `:-5` to specify individual lines or open ranges. In combination with `--isolate-assertions`, individual assertions can be verified by filtering on the line that contains them. When processing a single file, the filename can be skipped, for example: `dafny verify MyFile.dfy --filter-position=:23`");
 
   public static readonly Option<IList<string>> FilterPositionBatch = new("--filter-position-batch", () => new List<string>(),
-    "Resolve the program once and verify a sequence of position filters in order. Repeat this option once per filter, using the same syntax as --filter-position. Duplicate and overlapping filters are verified again with fresh proof tasks. Inputs and all other options stay fixed for this invocation; changes require a new invocation. Reports one summary per filter and a combined verification log. Cannot be combined with --filter-position.") {
+    "Resolve the program once and verify a sequence of position filters in order. Repeat this option once per filter, using the same syntax as --filter-position. Duplicate and overlapping filters are verified again with fresh proof tasks. Inputs and all other options stay fixed for this invocation; the prelude is captured before the first request. Changes require a new invocation. Reports one summary per filter and a combined verification log. Cannot be combined with --filter-position.") {
     ArgumentHelpName = "position",
     Arity = ArgumentArity.OneOrMore,
     AllowMultipleArgumentsPerToken = false
@@ -121,6 +121,7 @@ public static class VerifyCommand {
 
     try {
       for (var index = 0; index < filters.Count; index++) {
+        compilation.Compilation.CancellationToken.ThrowIfCancellationRequested();
         if (compilation.Options.Verbosity > CoreOptions.VerbosityLevel.Quiet) {
           await compilation.Options.OutputWriter.Status(
             $"Starting verification request {index + 1}/{filters.Count}: {filters[index]}");
@@ -296,23 +297,37 @@ public static class VerifyCommand {
     ResolutionResult resolution,
     IObservable<CanVerifyResult> verificationResults) {
     var usedDependencies = new HashSet<TrackedNodeComponent>();
+    Dictionary<ProofDependencyManager, HashSet<TrackedNodeComponent>>? batchDependencies = null;
     var proofDependencyManager = resolution.ResolvedProgram.ProofDependencyManager;
 
     verificationResults.Subscribe(result => {
+      var manager = result.ProofDependencies ?? proofDependencyManager;
       ProofDependencyWarnings.ReportSuspiciousDependencies(cliCompilation.Options, result.Results,
-        resolution.ResolvedProgram.Reporter, resolution.ResolvedProgram.ProofDependencyManager);
+        resolution.ResolvedProgram.Reporter, manager);
 
+      var usedForResult = usedDependencies;
+      if (result.ProofDependencies != null) {
+        batchDependencies ??= new();
+        if (!batchDependencies.TryGetValue(manager, out usedForResult)) {
+          usedForResult = new HashSet<TrackedNodeComponent>();
+          batchDependencies.Add(manager, usedForResult);
+        }
+      }
       foreach (var used in result.Results.SelectMany(part => part.Result.CoveredElements)) {
-        usedDependencies.Add(used);
+        usedForResult.Add(used);
       }
     }, e => { }, () => { });
     await verificationResults.WaitForComplete();
     var coverageReportDir = cliCompilation.Options.Get(CommonOptionBag.VerificationCoverageReport);
     if (coverageReportDir != null) {
-      await new CoverageReporter(cliCompilation.Options).SerializeVerificationCoverageReport(
-        proofDependencyManager, resolution.ResolvedProgram,
-        usedDependencies,
-        coverageReportDir);
+      var reporter = new CoverageReporter(cliCompilation.Options);
+      if (batchDependencies is { Count: > 0 }) {
+        await reporter.SerializeBatchVerificationCoverageReport(resolution.ResolvedProgram,
+          batchDependencies.Select(pair => (pair.Key, (IEnumerable<TrackedNodeComponent>)pair.Value)), coverageReportDir);
+      } else {
+        await reporter.SerializeVerificationCoverageReport(proofDependencyManager, resolution.ResolvedProgram,
+          usedDependencies, coverageReportDir);
+      }
     }
   }
 }

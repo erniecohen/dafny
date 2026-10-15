@@ -334,7 +334,11 @@ unsuccessful if any request fails, even if later requests succeed. Parsing or
 resolution errors prevent every request from running.
 
 All requests use the sources, project configuration, libraries, plugins and
-proof options loaded for this invocation. Files edited after they have been read
+proof options loaded for this invocation. The prelude is captured before the first
+request; later edits or deletion do not change the batch. Proof dependencies and
+warnings are isolated per request, and combined coverage includes every request.
+Cancellation or a solver exception aborts the batch before a later request starts.
+Files edited after they have been read
 are not reloaded between requests. To use changed inputs or options, start a new
 invocation; every invocation parses and resolves again. No cache is persisted.
 As with a single position filter, a successful batch verifies only its selected
