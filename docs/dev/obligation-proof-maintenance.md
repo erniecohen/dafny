@@ -66,3 +66,11 @@ The library capture changes only the `run Std` verified-batch total from 7838 to
 ## Schorr-Waite compatibility follow-up
 
 The stable child/path witnesses in run 38729668334 add explicit checks and remove the reference-solver M2 resource failure. The standing Z3 5.1.0 default-OFF M2 proof has 76 batches, 5,452,202 aggregate RU, and a 469,642 maximum. The complete file has 275 batches, 45,743,586 aggregate RU, and a 16,023,935 maximum including the unchanged M0 resource failure. Both additional-axiom profiles have those same counts. Its expected summary therefore moves from 263 to 274 verified while retaining the sole M0 resource failure.
+
+## Retained modular assertions
+
+[Run 38730717076](https://github.com/erniecohen/dafny/actions/runs/38730717076) retains both original ModNeg assertions. A pointwise proof uses zero remainder for an integer multiple and the subtraction identity, then instantiates the result at `x`. All twelve selected checks and eight complete DivMod checks pass across both solvers and additional-axiom settings, including obligation checking ON/OFF and selected default checks. Default and explicit OFF have identical batch vectors.
+
+At the originally affected Z3 5.1.0/additional-axioms-ON configuration, the target has 15 batches: 286,450 aggregate RU with checking ON and 286,438 OFF, with a 41,745 maximum in each. Retaining the assertions increases OFF work from the earlier portable calculation's 51,405 RU to 286,438 RU. The maximum remains below the original ceiling. The four ordinary full-library profiles each have 7,843 verified and zero errors; their declaration verdicts are unchanged. The two additional ModNeg batches explain the summary change from 7,841.
+
+The complete DivMod source has 297 batches. With Z3 5.1.0, aggregate/maximum RU are 13,790,011/3,289,811 (axioms OFF, checking ON), 9,490,688/1,949,021 (OFF/OFF), 13,017,001/2,045,839 (ON/ON), and 9,480,369/1,949,045 (ON/OFF). Every declaration and WF check is Correct. Existing declaration-specific ceilings remain in force.
