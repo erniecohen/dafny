@@ -1,0 +1,3 @@
+Make the existing obligation-checking examples explicit about initial graph paths,
+modular arithmetic, iterator state, and proof boundaries. Keep their mathematical
+contracts and resource ceilings, and retain the Schorr-Waite feature controls.

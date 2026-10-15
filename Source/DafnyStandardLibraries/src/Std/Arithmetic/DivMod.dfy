@@ -851,6 +851,8 @@ module Std.Arithmetic.DivMod {
 
   /* a dividend y that is a positive multiple of the divisor z will always yield a greater quotient 
   than a dividend x that is less than y */
+  // Keep the induction obligations within the existing resource limit.
+  @IsolateAssertions
   lemma LemmaDivByMultipleIsStronglyOrdered(x: int, y: int, m: int, z: int)
     requires x < y
     requires y == m * z
@@ -1321,16 +1323,19 @@ module Std.Arithmetic.DivMod {
     requires 0 < d
     ensures x % d == (x * (1 - d)) % d
   {
-    assert (x - x * d) % d == x % d
-    by {
-      LemmaModAuto(d);
-      var f := i => (x - i * d) % d == x % d;
-      assert  MulAuto() ==> && f(0)
-                            && (forall i {:trigger IsLe(0, i)} :: IsLe(0, i) && f(i) ==> f(i + 1))
-                            && (forall i {:trigger IsLe(i, 0)} :: IsLe(i, 0) && f(i) ==> f(i - 1));
-      LemmaMulInductionAuto(x, f);
+    // Subtracting a multiple of d leaves the remainder unchanged.
+    calc {
+      x % d;
+      == { LemmaModMultiplesBasic(x, d); }
+      (x - (x * d) % d) % d;
+      == { LemmaSubModNoopRight(x, x * d, d); }
+      (x - x * d) % d;
+      == {
+        LemmaMulIsDistributiveSub(x, 1, d);
+        LemmaMulBasics(x);
+      }
+      (x * (1 - d)) % d;
     }
-    LemmaMulAuto();
   }
 
   /* proves the validity of the quotient and remainder */
@@ -1343,9 +1348,11 @@ module Std.Arithmetic.DivMod {
     ensures q == x / d
     ensures r == x % d
   {
-    LemmaDivAuto(d);
-    LemmaMulInductionAuto(q, u => u == (u * d + r) / d);
-    LemmaMulInductionAuto(q, u => r == (u * d + r) % d);
+    // The quotient identity for a shifted multiple determines q; the
+    // fundamental division identity then determines r.
+    LemmaMulIsCommutative(q, d);
+    LemmaDivMultiplesVanishFancy(q, r, d);
+    LemmaFundamentalDivMod(x, d);
   }
 
   @TimeLimitMultiplier(5)
