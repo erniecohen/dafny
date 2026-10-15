@@ -25,6 +25,9 @@ try:
     run("inventory", ["dotnet", "--info"])
     run("boogie", ["sh", "Scripts/fetch-boogie-packages.sh"])
     if run("build", ["dotnet", "build", "Source/Dafny.sln", "-c", "Release"]):
+        if os.environ.get("GITHUB_REF", "") == "refs/heads/scratch/codex/170-review-ordinary-harness":
+            run("ordinary-harness", [sys.executable, ".github/review/issue170-ordinary-harness.py", str(out / "ordinary-harness")], timeout=4800)
+            sys.exit(0)
         if os.environ.get("GITHUB_REF", "").startswith("refs/heads/scratch/codex/170-review"):
             # The diagnostic records actual proof exits; its wrapper stays green.
             command = [sys.executable, "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/obligation-proof-repairs/registered.py",
