@@ -1,0 +1,143 @@
+boundaries (legacy-off)
+git-issue-961-boundaries.dfy(4,26): Error: type conversions are not supported to this type (got D)
+git-issue-961-boundaries.dfy(5,41): Error: type conversions are not supported to this type (got PositiveStream)
+2 resolution/type errors detected in git-issue-961-boundaries.dfy
+boundaries (legacy-on)
+git-issue-961-boundaries.dfy(4,26): Error: type conversions are not supported to this type (got D)
+git-issue-961-boundaries.dfy(5,41): Error: type conversions are not supported to this type (got PositiveStream)
+2 resolution/type errors detected in git-issue-961-boundaries.dfy
+boundaries (refreshed-off)
+git-issue-961-boundaries.dfy(5,41): Error: value does not satisfy the subset constraints of 'PositiveStream'
+
+Dafny program verifier finished with 0 verified, 1 error
+boundaries (refreshed-on)
+git-issue-961-boundaries.dfy(5,41): Error: value does not satisfy the subset constraints of 'PositiveStream'
+
+Dafny program verifier finished with 0 verified, 1 error
+false-control (legacy-off)
+git-issue-961-false-control.dfy(4,31): Error: type conversions are not supported to this type (got Positive)
+1 resolution/type errors detected in git-issue-961-false-control.dfy
+false-control (legacy-on)
+git-issue-961-false-control.dfy(6,2): Error: assertion could not be proved
+
+Dafny program verifier finished with 1 verified, 1 error
+false-control (refreshed-off)
+git-issue-961-false-control.dfy(6,2): Error: assertion could not be proved
+
+Dafny program verifier finished with 1 verified, 1 error
+false-control (refreshed-on)
+git-issue-961-false-control.dfy(6,2): Error: assertion could not be proved
+
+Dafny program verifier finished with 1 verified, 1 error
+incompatible (legacy-off)
+git-issue-961-incompatible.dfy(4,35): Error: type conversions are not supported to this type (got Positive)
+1 resolution/type errors detected in git-issue-961-incompatible.dfy
+incompatible (legacy-on)
+git-issue-961-incompatible.dfy(4,35): Error: type cast to datatype subset 'Positive' must be from an expression assignable to it (got 'Other')
+1 resolution/type errors detected in git-issue-961-incompatible.dfy
+incompatible (refreshed-off)
+git-issue-961-incompatible.dfy(4,35): Error: type cast to type 'Positive' must be from an expression of a compatible type (got 'Other')
+1 resolution/type errors detected in git-issue-961-incompatible.dfy
+incompatible (refreshed-on)
+git-issue-961-incompatible.dfy(4,35): Error: type cast to type 'Positive' must be from an expression of a compatible type (got 'Other')
+1 resolution/type errors detected in git-issue-961-incompatible.dfy
+negative (legacy-off)
+git-issue-961-negative.dfy(6,42): Error: type conversions are not supported to this type (got Positive)
+git-issue-961-negative.dfy(7,50): Error: type conversions are not supported to this type (got AtLeastTwo)
+git-issue-961-negative.dfy(8,58): Error: type conversions are not supported to this type (got NatBox)
+3 resolution/type errors detected in git-issue-961-negative.dfy
+negative (legacy-on)
+git-issue-961-negative.dfy(6,42): Error: value does not satisfy the subset constraints of 'Positive'
+git-issue-961-negative.dfy(7,50): Error: value does not satisfy the subset constraints of 'AtLeastTwo'
+git-issue-961-negative.dfy(8,58): Error: value does not satisfy the subset constraints of 'NatBox'
+
+Dafny program verifier finished with 3 verified, 3 errors
+negative (refreshed-off)
+git-issue-961-negative.dfy(6,42): Error: value does not satisfy the subset constraints of 'Positive'
+git-issue-961-negative.dfy(7,50): Error: value does not satisfy the subset constraints of 'AtLeastTwo'
+git-issue-961-negative.dfy(8,58): Error: value does not satisfy the subset constraints of 'NatBox'
+
+Dafny program verifier finished with 3 verified, 3 errors
+negative (refreshed-on)
+git-issue-961-negative.dfy(6,42): Error: value does not satisfy the subset constraints of 'Positive'
+git-issue-961-negative.dfy(7,50): Error: value does not satisfy the subset constraints of 'AtLeastTwo'
+git-issue-961-negative.dfy(8,58): Error: value does not satisfy the subset constraints of 'NatBox'
+
+Dafny program verifier finished with 3 verified, 3 errors
+opaque (legacy-off)
+git-issue-961-opaque.dfy(9,60): Error: type conversions are not supported to this type (got Definition.Positive)
+1 resolution/type errors detected in git-issue-961-opaque.dfy
+opaque (legacy-on)
+git-issue-961-opaque.dfy(9,60): Error: type conversions are not supported to this type (got Definition.Positive)
+1 resolution/type errors detected in git-issue-961-opaque.dfy
+opaque (refreshed-off)
+
+Dafny program verifier finished with 2 verified, 0 errors
+opaque (refreshed-on)
+
+Dafny program verifier finished with 2 verified, 0 errors
+original (legacy-off)
+git-issue-961-original.dfy(3,24): Error: type conversions are not supported to this type (got T)
+1 resolution/type errors detected in git-issue-961-original.dfy
+original (legacy-on)
+
+Dafny program verifier finished with 2 verified, 0 errors
+original (refreshed-off)
+
+Dafny program verifier finished with 2 verified, 0 errors
+original (refreshed-on)
+
+Dafny program verifier finished with 2 verified, 0 errors
+positive (legacy-off)
+git-issue-961-positive.dfy(10,42): Error: type conversions are not supported to this type (got Positive)
+git-issue-961-positive.dfy(11,42): Error: type conversions are not supported to this type (got AtLeastTwo)
+git-issue-961-positive.dfy(12,36): Error: type conversions are not supported to this type (got Alias)
+git-issue-961-positive.dfy(13,48): Error: type conversions are not supported to this type (got NatBox)
+git-issue-961-positive.dfy(14,62): Error: type conversions are not supported to this type (got Nonempty<T>)
+git-issue-961-positive.dfy(15,75): Error: type conversions are not supported to this type (got NatSecond<int>)
+6 resolution/type errors detected in git-issue-961-positive.dfy
+positive (legacy-on)
+
+Dafny program verifier finished with 9 verified, 0 errors
+positive (refreshed-off)
+
+Dafny program verifier finished with 9 verified, 0 errors
+positive (refreshed-on)
+
+Dafny program verifier finished with 9 verified, 0 errors
+runtime (legacy-off)
+git-issue-961-runtime.dfy(6,22): Error: type conversions are not supported to this type (got Positive)
+git-issue-961-runtime.dfy(7,23): Error: type conversions are not supported to this type (got AtLeastTwo)
+git-issue-961-runtime.dfy(8,33): Error: type conversions are not supported to this type (got NatBox)
+git-issue-961-runtime.dfy(9,14): Error: type of the receiver is not fully determined at this program point
+git-issue-961-runtime.dfy(9,33): Error: type of the receiver is not fully determined at this program point
+git-issue-961-runtime.dfy(9,53): Error: type of the receiver is not fully determined at this program point
+6 resolution/type errors detected in git-issue-961-runtime.dfy
+runtime (legacy-on)
+
+Dafny program verifier finished with 4 verified, 0 errors
+runtime-cs (legacy-on)
+
+Dafny program verifier finished with 4 verified, 0 errors
+1 2 3
+runtime (refreshed-off)
+
+Dafny program verifier finished with 4 verified, 0 errors
+runtime-cs (refreshed-off)
+
+Dafny program verifier finished with 4 verified, 0 errors
+1 2 3
+runtime (refreshed-on)
+
+Dafny program verifier finished with 4 verified, 0 errors
+project
+
+Dafny program verifier finished with 9 verified, 0 errors
+project-cli-off
+git-issue-961-positive.dfy(10,42): Error: type conversions are not supported to this type (got Positive)
+git-issue-961-positive.dfy(11,42): Error: type conversions are not supported to this type (got AtLeastTwo)
+git-issue-961-positive.dfy(12,36): Error: type conversions are not supported to this type (got Alias)
+git-issue-961-positive.dfy(13,48): Error: type conversions are not supported to this type (got NatBox)
+git-issue-961-positive.dfy(14,62): Error: type conversions are not supported to this type (got Nonempty<T>)
+git-issue-961-positive.dfy(15,75): Error: type conversions are not supported to this type (got NatSecond<int>)
+6 resolution/type errors detected in dfyconfig.toml
