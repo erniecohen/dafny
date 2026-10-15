@@ -1,9 +1,12 @@
 """Mocked inventory/retention controls only: never build or invoke a verifier."""
 import copy
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
 import re
+import subprocess
+import sys
 import tempfile
 from types import SimpleNamespace
 import unittest
@@ -206,6 +209,59 @@ class SuiteControls(unittest.TestCase):
         self.assertEqual(summary.read_text(), 'old immutable summary')
         self.assertFalse((self.root / 'comparison-status.json').exists())
         self.assertFalse((self.root / 'raw-manifest.json').exists())
+
+    def test_escaping_child_exception_is_fully_hashed_after_exit_and_stream_closure(self):
+        packet = self.root / 'escaping-child'
+        packet.mkdir()
+        script = Path(__file__).with_name('default-comparison.py').resolve()
+        child = """
+import importlib.util
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(sys.argv[1]).parent))
+spec = importlib.util.spec_from_file_location('probe', sys.argv[1])
+probe = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(probe)
+packet = Path(sys.argv[2])
+def fail():
+    print('stdout before the top-level exception', flush=True)
+    print('stderr before the top-level exception', file=sys.stderr, flush=True)
+    (packet / 'raw-control.txt').write_text('retained incomplete observation')
+    raise ValueError('intentional escaping bookkeeping failure')
+probe.main = fail
+sys.argv = ['probe', 'A', 'B', str(packet), 'z3', 'z3h']
+sys.exit(probe.run_probe())
+"""
+        with (packet / 'probe.stdout').open('w') as stdout, (packet / 'probe.stderr').open('w') as stderr:
+            process = subprocess.run([sys.executable, '-c', child, str(script), str(packet)], stdout=stdout, stderr=stderr)
+        self.assertNotEqual(process.returncode, 0)
+        (packet / 'probe-exit.txt').write_text(str(process.returncode) + '\n')
+        self.assertFalse((packet / 'raw-manifest.json').exists())
+        self.assertIn('Traceback (most recent call last)', (packet / 'probe.stderr').read_text())
+        self.assertIn('ValueError: intentional escaping bookkeeping failure', (packet / 'probe.stderr').read_text())
+        self.assertEqual(json.loads((packet / 'comparison-status.json').read_text())['status'], 'incomplete')
+        self.assertFalse((packet / 'summary.json').exists())
+        finalized = subprocess.run([sys.executable, str(script), '--finalize-manifest', str(packet)], capture_output=True, text=True)
+        self.assertEqual(finalized.returncode, 0, finalized.stderr)
+        hashes = json.loads((packet / 'raw-manifest.json').read_text())
+        files = {path.relative_to(packet).as_posix(): path for path in packet.rglob('*')
+                 if path.is_file() and path.name != 'raw-manifest.json'}
+        self.assertEqual(set(hashes), set(files))
+        self.assertIn('probe.stderr', hashes)
+        self.assertIn('probe-exit.txt', hashes)
+        self.assertEqual((packet / 'probe-exit.txt').read_text(), str(process.returncode) + '\n')
+        for name, path in files.items():
+            with self.subTest(file=name):
+                self.assertEqual(hashes[name], hashlib.sha256(path.read_bytes()).hexdigest())
+
+    def test_finalization_cannot_overwrite_a_prior_manifest(self):
+        for name in ['probe.stdout', 'probe.stderr', 'probe-exit.txt']:
+            (self.root / name).write_text('0\n')
+        manifest = self.root / 'raw-manifest.json'
+        manifest.write_text('immutable earlier manifest')
+        with self.assertRaisesRegex(ValueError, 'refusing to overwrite'):
+            comparison.finalize_manifest(self.root)
+        self.assertEqual(manifest.read_text(), 'immutable earlier manifest')
 
     def test_launch_failure_is_recorded_and_later_passes_still_attempted(self):
         with patch.object(comparison.subprocess, 'run', side_effect=OSError('mock launch failure')) as run:

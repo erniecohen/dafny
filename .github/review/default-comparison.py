@@ -362,13 +362,23 @@ def run_probe():
             (destination / 'comparison-status.json').write_text(json.dumps(failure, indent=2) + '\n')
             (destination / 'incomplete.json').write_text(json.dumps(failure, indent=2) + '\n')
         raise
-    finally:
-        if destination.is_dir():
-            (destination / 'raw-manifest.json').write_text(json.dumps({key: value for key, value in manifest(destination).items()
-                if key != 'raw-manifest.json'}, indent=2) + '\n')
+
+
+def finalize_manifest(destination):
+    # The parent wrapper calls this only after the probe exits, its redirected
+    # streams close, and its real exit status is recorded. A traceback printed
+    # while unwinding the probe must be included in the final stderr hash.
+    require(all((destination / name).is_file() for name in ['probe.stdout', 'probe.stderr', 'probe-exit.txt']),
+            'probe streams and exit record must exist before manifest finalization')
+    require(not (destination / 'raw-manifest.json').exists(), 'refusing to overwrite an earlier manifest')
+    with (destination / 'raw-manifest.json').open('x') as output:
+        # The newly opened manifest is excluded from its own inventory.
+        output.write(json.dumps({key: value for key, value in manifest(destination).items()
+                                 if key != 'raw-manifest.json'}, indent=2) + '\n')
 
 
 if __name__ == '__main__':
-    # Bind raw evidence even if input validation fails. The workflow wrapper
-    # records the probe exit and uploads this directory always.
-    sys.exit(run_probe())
+    if len(sys.argv) == 3 and sys.argv[1] == '--finalize-manifest':
+        finalize_manifest(Path(sys.argv[2]))
+    else:
+        sys.exit(run_probe())

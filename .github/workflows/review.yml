@@ -332,10 +332,13 @@ jobs:
             > default-comparison/probe.stdout 2> default-comparison/probe.stderr
           result=$?
           echo "$result" > default-comparison/probe-exit.txt
+          python3 .github/review/default-comparison.py --finalize-manifest "$PWD/default-comparison"
+          manifest_result=$?
           {
             echo '## Repeated default comparison (probe only)'
             echo
             echo "Probe process exit: $result. Differences are recorded and do not update any expected verdict."
+            echo "Manifest finalization exit: $manifest_result."
             if [ -f default-comparison/summary.json ]; then cat default-comparison/summary.json; fi
             if [ -f default-comparison/incomplete.json ]; then cat default-comparison/incomplete.json; fi
           } >> "$GITHUB_STEP_SUMMARY"
