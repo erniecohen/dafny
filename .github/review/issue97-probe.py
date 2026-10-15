@@ -37,6 +37,9 @@ cases = {
     "local-reverse": "lemma test(x:int) { var f := (y:int) requires y > 0 => y; assert f.requires(x) ==> x > 0; }\n",
     "named-control": "function f(x:int): int requires x > 0 { x }\nlemma test(x:int) ensures f.requires(x) ==> x > 0 {}\n",
 }
+for name in ["positive", "negative"]:
+    cases["coverage-" + name] = Path("Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-97-" + name + ".dfy").read_text()
+
 try:
     compiler = Path("compiler").resolve()
     source = subprocess.check_output(["git", "-C", str(compiler), "rev-parse", "HEAD"], text=True).strip()
@@ -70,7 +73,7 @@ try:
                     "--boogie=/normalizeDeclarationOrder:0", "--allow-warnings=false", "--allow-axioms",
                     "--bprint=" + str((folder / "program.bpl").resolve()),
                     "--log-format=csv;LogFileName=" + str((folder / "resources.csv").resolve())]
-                if source == "4e98f3f592310854ca1448d517b82dcbcc0f51f4" and refresh == "false":
+                if refresh == "false":
                     command += ["--general-newtypes=false"]
                 run(label, command)
 except Exception:

@@ -9,7 +9,8 @@ out = Path("issue75-probe")
 out.mkdir(exist_ok=True)
 try:
     os.environ["Z3"] = str(Path("Binaries/z3/bin/z3-5.1.0").resolve())
-    for source in ["4e98f3f592310854ca1448d517b82dcbcc0f51f4", "1256f92b0b494e8f1bf52aaec145d36a8a862f33"]:
+    for source in ["4e98f3f592310854ca1448d517b82dcbcc0f51f4", "HEAD"]:
+        source = subprocess.check_output(["git", "rev-parse", source], text=True).strip() if source == "HEAD" else source
         subprocess.run(["git", "fetch", "--no-tags", "--depth=1", "origin", source], check=True)
         subprocess.run(["git", "worktree", "add", "--detach", "compiler", source], check=True)
         os.environ["ISSUE97_COMPILER_SOURCE"] = source

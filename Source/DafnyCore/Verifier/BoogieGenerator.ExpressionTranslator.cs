@@ -1746,15 +1746,18 @@ namespace Microsoft.Dafny {
         }
         var range = e.Range == null ? null : Substitute(e.Range, null, environment.Substitution);
         var rangeFacts = range == null ? Boogie.Expr.True : et.CanCallAssumption(range, lambdaOptions);
-        if (reads.Count == 0 && bodyFacts is Boogie.LiteralExpr { IsTrue: true } &&
+        var recoverRange = range != null && options.Get(CommonOptionBag.AdditionalAxioms);
+        if (!recoverRange && reads.Count == 0 && bodyFacts is Boogie.LiteralExpr { IsTrue: true } &&
             rangeFacts is Boogie.LiteralExpr { IsTrue: true }) {
           // The only fact is the constant empty footprint, already independent
           // of the formals and range. A guarded selector quantifier is redundant.
           return footprintFact;
         }
         Expr facts = BplAnd(readsFacts, bodyFacts);
+        Expr rangeValue = null;
         if (range != null) {
-          facts = BplAnd(rangeFacts, BplImp(et.TrExpr(range), facts));
+          rangeValue = et.TrExpr(range);
+          facts = BplAnd(rangeFacts, BplImp(rangeValue, facts));
         }
         // Lambda source well-formedness checks its formals with ISALLOC in this
         // future heap. Export child permissions only under those same premises.
@@ -1783,6 +1786,13 @@ namespace Microsoft.Dafny {
         // expanded into patterns; it names only this exact source lambda family.
         var readsSelector = FunctionCall(tok, BoogieGenerator.Reads(e.BoundVars.Count), Predef.SetType, selectorArguments);
         var requiresSelector = FunctionCall(tok, BoogieGenerator.Requires(e.BoundVars.Count), Boogie.Type.Bool, selectorArguments);
+        if (recoverRange) {
+          // The native Handle selector exports only the sufficient direction.
+          // For this exact source lambda, its declared range is also necessary.
+          // Retain the same formal type/allocation, heap, and family guards below;
+          // rangeFacts independently exports the range's checked call permissions.
+          facts = BplAnd(facts, BplImp(requiresSelector, rangeValue));
+        }
         var applySelector = FunctionCall(tok, BoogieGenerator.Apply(e.BoundVars.Count), Predef.BoxType, selectorArguments);
         var trigger = new Boogie.Trigger(tok, true, [readsSelector],
           new Boogie.Trigger(tok, true, [requiresSelector],

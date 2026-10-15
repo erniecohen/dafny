@@ -2405,6 +2405,9 @@ and what information it produces about the verification process.
   After an assign-such-that statement it also makes checked call permissions
   available for the selected values, so predicates in the constraint can unfold.
   Existing well-formedness, precondition and existence checks are preserved.
+  For a source lambda with a declared precondition, it also exposes the necessary
+  direction of that precondition under the lambda's type, allocation and heap
+  requirements. This applies to stored and returned lambda values.
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
 
 * `--manual-lemma-induction` - disables automatic induction for lemmas
