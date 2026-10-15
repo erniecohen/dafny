@@ -102,3 +102,17 @@ function Captured(c: Cell): int ~> int {
 lemma CapturedDomain(c: Cell, x: int)
   ensures Captured(c).requires(x) <==> x > c.n
 {}
+
+class Receiver {
+  var n: int
+
+  method ReceiverDomain(x: int)
+    modifies this
+  {
+    var f := (y: int) requires y > n reads this => y;
+    assert f.requires(x) <==> x > n;
+    n := x;
+    assert !f.requires(x);
+    assert f.requires(x + 1);
+  }
+}

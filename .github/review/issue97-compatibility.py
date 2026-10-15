@@ -97,9 +97,13 @@ try:
             for part, directory, inputs in parts:
                 destination = (out / (label + "-inputs") / part).resolve()
                 destination.mkdir(parents=True, exist_ok=True)
-                phase(label + "-inputs-" + part, [dafny, "build"] + inputs + ["--target=lib", "--no-verify",
+                code = phase(label + "-inputs-" + part, [dafny, "build"] + inputs + ["--target=lib", "--no-verify",
                     "--output=" + str(destination / "library"), "--bprint=" + str(destination / "program.bpl"),
                     "--additional-axioms=false", "--cores=4", "--allow-warnings"], 900, directory)
+                if code != 0:
+                    raise RuntimeError("Translation failed for " + label + ": " + part)
+                if not list(destination.rglob("*.bpl")):
+                    raise RuntimeError("Translation emitted no verification inputs for " + label + ": " + part)
         else:
             phase(label + "-stdlib", ["python3", ".github/review/std-verdicts.py", "run",
                 "Source/DafnyStandardLibraries", dafny, str(solver), str(out / (label + ".tsv")),
@@ -111,6 +115,8 @@ try:
         for label in sources:
             directory = out / (label + "-inputs")
             files = sorted(directory.rglob("*.bpl"))
+            if not files:
+                raise RuntimeError("Missing verification inputs for " + label)
             inventories[label] = {str(file.relative_to(directory)): hashlib.sha256(file.read_bytes()).hexdigest() for file in files}
         report = {"diagnostic_only": True, "translation_only": True, "identities": identities,
             "coverage": {label: len(inventory) for label, inventory in inventories.items()},

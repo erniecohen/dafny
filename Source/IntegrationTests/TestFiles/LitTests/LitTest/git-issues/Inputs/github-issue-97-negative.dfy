@@ -96,3 +96,17 @@ method CapturedLifetimeVacuity() {
   assert f.requires(c.n + 1);
   assert false;
 }
+
+class Receiver {
+  var n: int
+
+  method ReceiverVacuity()
+    modifies this
+  {
+    var f := (x: int) requires x > n reads this => x;
+    assert f.requires(n + 1);
+    n := n + 1;
+    assert f.requires(n + 1);
+    assert false;
+  }
+}

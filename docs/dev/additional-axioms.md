@@ -680,10 +680,10 @@ permissions. Consequently the existing schema cannot recover the range from a
 stored lambda's `requires`, even for a range such as `x > 0`.
 
 With the shared option, `LambdaCanCallAssumption` adds the necessary direction
-only to the existing facts for that exact source lambda:
+only to the existing facts for that source lambda family value:
 
 ```boogie
-ExactSourceFamily(F) && FormalTypes(args) && FormalAllocation(args, H)
+SourceFamilyEquality(F) && FormalTypes(args) && FormalAllocation(args, H)
   && GoodHeap(H) && FormationHeapSameOrSucceeds(H) && ValidCaptures(H)
 ==> (RequiresN(types, H, AtLayer(F, L), args) ==> Range(H, args))
 ```
@@ -710,18 +710,27 @@ from this interpretation, while the existing sufficient direction continues
 to hold. This is an additional source-semantic fact; it is not derivable from
 the current one-way backend selector equation.
 
-The exact family equality prevents applying the fact to another lambda or
-capture. Formal type and allocation guards exclude arbitrary boxed backend
-values. The new fact additionally requires every captured reference-bearing
-value and receiver to have its source type and be allocated in the selected
-heap; that heap must be or succeed each captured previous or labeled heap.
-This is needed when a heap-independent returning function uses `$OneHeap` as a
-translation placeholder. A missing captured heap disables the new fact.
-These guards retain the source interpretation of `old`. Existing frame obligations check the range's
-reads against the declared footprint, so equal permitted heaps give equal
-range booleans. Existing result-type and allocation obligations continue to
-apply only where the precondition holds. No witness for an empty formal type
-is introduced and no fact asserts the precondition itself.
+Interpret a handle as a tuple of its body, precondition map and reads map.
+For a source lambda the stored precondition map is
+`FormalTypes && (CanCall(range) ==> Range)`. Under the formal and capture guards,
+the existing source range-permission facts supply `CanCall(range)`, so this
+map equals `Range`. Both selector directions then hold. Family equality
+identifies the family value, including its captures and layer; extensionally
+coincident source families may have the same value. In the tuple interpretation
+their precondition maps agree, so the new facts remain compatible.
+
+Formal type and allocation guards exclude arbitrary boxed backend values.
+The new fact additionally requires every captured reference-bearing value and
+receiver to have its source type and be allocated in the selected heap. Each
+captured previous or labeled heap must be good, and the selected heap must be
+or succeed it. This is needed when a heap-independent returning function uses
+`$OneHeap` as a translation placeholder. A missing captured heap disables the
+new fact. These guards retain the source interpretation of `old`. Existing
+frame obligations check the range's reads against the declared footprint, so
+equal permitted heaps give equal range booleans. Existing result-type and
+allocation obligations continue to apply only where the precondition holds.
+No witness for an empty formal type is introduced and no fact asserts the
+precondition itself.
 
 The bounded bitvector round trip and closed literal identities keep their
 existing interpretation. Heap-succession reflexivity leaves every domain
@@ -737,7 +746,7 @@ the whole verifier theory.
 
 The retained issue driver must cover both resolvers, option OFF/ON, stored,
 local, returned and nested lambdas, generic and subset formals, captures,
-heap changes, previous heaps, and a declared false range. Calls outside the
+receiver captures, heap changes, previous heaps, and a declared false range. Calls outside the
 range and inhabited `assert false` controls must still fail. Acceptance also
 requires exact-source CI and complete OFF suite/library verdict and controlled
 resource equality. A diagnostic wrapper that records expected failures and
