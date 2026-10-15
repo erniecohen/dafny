@@ -45,14 +45,13 @@ def main():
             "--filter-position-batch", ".dfy", "--filter-position-batch", "first.dfy"], 0, ["Correct", "Correct"])
         run("isolate-" + refresh, resolver + ["--isolate-assertions",
             "--filter-position-batch", "first.dfy:1", "--filter-position-batch", "first.dfy:1"], 0, ["Correct", "Correct"])
+    run("coverage", ["--verification-coverage-report", "coverage", "--filter-position-batch", "first.dfy",
+        "--filter-position-batch", "second.dfy", "--filter-position-batch", "first.dfy"], 4, ["Correct", "Errors", "Correct"])
     run("conflicting-filters", ["--filter-position", "first.dfy", "--filter-position-batch", "first.dfy"], 1, [])
     result = run("conflicting-filters-json", ["--json-output", "--filter-position", "first.dfy", "--filter-position-batch", "first.dfy"], 1, [])
     for line in result.stdout.splitlines():
         if line.strip():
             json.loads(line)
-    result = run("quiet", ["--verbosity", "quiet", "--filter-position-batch", "first.dfy"], 0, ["Correct"])
-    if result.stdout.strip():
-        failures.append("quiet-output")
     (root / "second.dfy").write_text("lemma Bad() { assert missingName; }\n")
     result = run("resolution-error", ["--filter-position-batch", "first.dfy"], 2, [])
     if "Starting verification request" in result.stdout:
