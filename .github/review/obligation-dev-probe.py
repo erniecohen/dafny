@@ -29,7 +29,7 @@ if code==0:
  # Scratch proof-maintenance captures use the current compiler and retain actual verdicts.
  if os.environ.get('GITHUB_REF','').startswith('refs/heads/scratch/codex/170-'):
   import sys
-  phase('proof-source-maintenance',['python3','Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/obligation-proof-repairs/registered.py','out/dafny/Dafny.dll',str(solver),str((root/'proof-source-maintenance').resolve()),'--diagnostic','--capture-verdicts'],env)
+  phase('proof-source-maintenance',['python3','Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/obligation-proof-repairs/registered.py','out/dafny/Dafny.dll',str(solver),str((root/'proof-source-maintenance').resolve()),'--diagnostic','--full-files'],env)
   (root/'results.json').write_text(json.dumps({'diagnostic':True,'source':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'phases':results},indent=2)+'\n')
   summary='Proof-maintenance diagnostic; each actual exit is recorded.\n\n'+''.join(f"- {r['name']}: actual exit {r['exit']}\n" for r in results)
   print(summary)
