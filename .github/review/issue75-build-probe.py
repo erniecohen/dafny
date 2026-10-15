@@ -26,6 +26,7 @@ try:
     run("boogie", ["sh", "Scripts/fetch-boogie-packages.sh"])
     if run("build", ["dotnet", "build", "Source/Dafny.sln", "-c", "Release"]):
         if os.environ.get("GITHUB_REF", "") == "refs/heads/scratch/codex/170-review-ordinary-harness":
+            run("integration-build", ["dotnet", "build", "Source/IntegrationTests", "-c", "Release"])
             run("ordinary-harness", [sys.executable, ".github/review/issue170-ordinary-harness.py", str(out / "ordinary-harness")], timeout=4800)
             sys.exit(0)
         if os.environ.get("GITHUB_REF", "").startswith("refs/heads/scratch/codex/170-review"):

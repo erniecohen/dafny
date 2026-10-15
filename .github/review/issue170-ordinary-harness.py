@@ -1,6 +1,6 @@
 """Record the six affected ordinary harness tests and exact verifier outputs."""
 from pathlib import Path
-import argparse,hashlib,json,os,re,signal,subprocess,urllib.request,zipfile
+import argparse,xml.etree.ElementTree as ET,hashlib,json,os,re,signal,subprocess,urllib.request,zipfile
 p=argparse.ArgumentParser();p.add_argument('output',type=Path);a=p.parse_args();out=a.output.resolve();out.mkdir(parents=True,exist_ok=True)
 version=re.search(r'DefaultZ3Version = "([^"]+)"',Path('Source/DafnyCore/DafnyOptions.cs').read_text()).group(1)
 digests={'4.12.1':'e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b','4.16.0':'87de9c9e86c877abfccb00cf24b946c4a1bda7b9cba6f363ea58311d2573c320'}
@@ -23,7 +23,12 @@ def run(cmd,folder,cap=720):
    code=124
  (folder/'exit.txt').write_text(str(code)+'\n');return code
 code=run(['dotnet','test','Source/IntegrationTests','-c','Release','--no-build','--filter','|'.join('DisplayName~'+name for name in files),'--logger','console;verbosity=detailed','--logger','trx;LogFileName=ordinary.trx','--results-directory',str(out/'trx')],out/'ordinary-tests')
-rows=[{'case':'ordinary-tests','exit':code}]
+test_results=out/'trx/ordinary.trx'
+recorded=[]
+if test_results.exists():
+ recorded=ET.parse(test_results).getroot().findall('.//{http://microsoft.com/schemas/VisualStudio/TeamTest/2010}UnitTestResult')
+rows=[{'case':'ordinary-tests','exit':code,'test_cases':len(recorded),'completed_six_tests':len(recorded)==6}]
+
 L=Path('Source/IntegrationTests/TestFiles/LitTests/LitTest');assembly=Path('Binaries/net10.0/DafnyDriver.dll').resolve()
 for name in files:
  if name=='dafny4/UnionFind.dfy':continue
@@ -35,5 +40,10 @@ for name in files:
   else:cmd+=['--allow-axioms','--print:'+str(folder/'print.dfy'),'--rprint:'+str(folder/'rprint.dfy'),'--bprint:'+str(folder/'program.bpl')]
   if 'SchorrWaite' in name:cmd+=['--allow-deprecation']
   code=run(cmd,folder);rows.append({'case':label,'exit':code});print(label,'actual exit',code,flush=True)
+baseline='1256f92b0b494e8f1bf52aaec145d36a8a862f33' if version=='4.12.1' else '4e98f3f592310854ca1448d517b82dcbcc0f51f4'
+subprocess.run(['git','fetch','--quiet','--no-tags','--depth=1','origin',baseline],check=True)
+folder=out/'baseline-snapshot';folder.mkdir();source=folder/'SnapshotableTrees.dfy';source.write_bytes(subprocess.check_output(['git','show',baseline+':Source/IntegrationTests/TestFiles/LitTests/LitTest/dafny2/SnapshotableTrees.dfy']))
+cmd=['dotnet',str(assembly),'run',str(source),'--solver-path',str(solver),'--cores=2','--resource-limit:50e6','--verification-time-limit:300','--show-snippets:false','--use-basename-for-filename','--type-system-refresh:true','--general-traits=datatype','--general-newtypes:true','--standard-libraries:false','--solver-option','O:smt.qi.eager_threshold=80']
+code=run(cmd,folder);rows.append({'case':'baseline-snapshot','source':baseline,'source_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'exit':code})
 (out/'receipt.json').write_text(json.dumps({'diagnostic':True,'source':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'solver_version':version,'cases':rows},indent=2)+'\n')
 print('Ordinary-harness diagnostic complete; actual exits and outputs retained.',flush=True)
