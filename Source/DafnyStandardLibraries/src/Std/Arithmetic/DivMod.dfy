@@ -1384,9 +1384,11 @@ module Std.Arithmetic.DivMod {
     ensures q == x / d
     ensures r == x % d
   {
-    LemmaDivAuto(d);
-    LemmaMulInductionAuto(q, u => u == (u * d + r) / d);
-    LemmaMulInductionAuto(q, u => r == (u * d + r) % d);
+    // The quotient identity for a shifted multiple determines q; the
+    // fundamental division identity then determines r.
+    LemmaMulIsCommutative(q, d);
+    LemmaDivMultiplesVanishFancy(q, r, d);
+    LemmaFundamentalDivMod(x, d);
   }
 
   @TimeLimitMultiplier(5)

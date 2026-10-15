@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import signal
@@ -47,6 +48,10 @@ helpers = [
     ('subtract-mod', S + 'Arithmetic/DivMod.dfy', 'Std.Arithmetic.DivMod.LemmaSubModNoopRight', []),
     ('distribute', S + 'Arithmetic/Mul.dfy', 'Std.Arithmetic.Mul.LemmaMulIsDistributiveSub', []),
     ('multiply-one', S + 'Arithmetic/Mul.dfy', 'Std.Arithmetic.Mul.LemmaMulBasics', []),
+    ('quotient-remainder-converse', S + 'Arithmetic/DivMod.dfy', 'Std.Arithmetic.DivMod.LemmaFundamentalDivModConverse', []),
+    ('shifted-quotient', S + 'Arithmetic/DivMod.dfy', 'Std.Arithmetic.DivMod.LemmaDivMultiplesVanishFancy', []),
+    ('fundamental-division', S + 'Arithmetic/DivMod.dfy', 'Std.Arithmetic.DivMod.LemmaFundamentalDivMod', []),
+    ('commutation', S + 'Arithmetic/Mul.dfy', 'Std.Arithmetic.Mul.LemmaMulIsCommutative', []),
     ('encode-padding-identity', S + 'Base64.dfy', 'Std.Base64.EncodeBVIs1Padded', []),
     ('unpadded-prefix', S + 'Base64.dfy', 'Std.Base64.UnpaddedBase64Prefix', []),
     ('recursive-decoder-support', S + 'Base64.dfy', 'Std.Base64.DecodeEncodeRecursively', []),
@@ -97,6 +102,26 @@ def run_verifier(command):
     finally:
         active_process = None
 
+def public_coverage_receipt(identity):
+    # Public coverage contains only canonical digests, counts, and booleans.
+    # Keep arbitrary compiler output and execution metadata out of this summary.
+    result = {}
+    for key, width in [('source', 40), ('compiler_core_sha256', 64), ('solver_sha256', 64)]:
+        value = identity[key]
+        if value is None and key == 'source':
+            result[key] = None
+        elif isinstance(value, str) and re.fullmatch('[0-9a-f]{' + str(width) + '}', value):
+            result[key] = value
+        else:
+            raise ValueError('Public coverage requires canonical digests')
+    result['invocations'] = identity['invocations']
+    result['all_selected_correct'] = identity['all_selected_correct']
+    result['default_off_equal'] = identity['default_off_equal']
+    if type(result['invocations']) is not int or result['invocations'] < 0 or any(
+        type(result[key]) is not bool for key in ['all_selected_correct', 'default_off_equal']):
+        raise ValueError('Public coverage requires counts and booleans')
+    return result
+
 def verify(label, source, symbol, extra, refresh, axioms, mode, full=False):
     folder = output / label
     folder.mkdir(exist_ok=True)
@@ -145,7 +170,8 @@ def verify(label, source, symbol, extra, refresh, axioms, mode, full=False):
             for d in declarations for vc in d['vcResults']]}
     rows.append(row)
     (output / 'results.json').write_text(json.dumps(rows, indent=2) + '\n')
-    print(label, 'actual exit', code, 'selected proofs correct', good, file=sys.stderr, flush=True)
+    print(label, 'actual exit', code, 'selected proofs correct', good,
+        'batches', row['batches'], 'total RU', row['total_ru'], 'max RU', row['max_ru'], file=sys.stderr, flush=True)
     return row
 
 for name, source, symbol, extra in targets + helpers:
@@ -239,6 +265,7 @@ identity['default_off_differences'] = [row['name'] for row in rows if row['mode'
     row['batch_results'] != by_name[row['name'].removesuffix('default') + 'off']['batch_results']]
 identity['default_off_equal'] = not identity['default_off_differences']
 (output / 'receipt.json').write_text(json.dumps(identity, indent=2) + '\n')
+print('Proof coverage', json.dumps(public_coverage_receipt(identity), sort_keys=True), file=sys.stderr, flush=True)
 if not args.diagnostic:
     assert identity['default_off_equal'], identity['default_off_differences']
     assert identity['all_selected_correct'], json.dumps([r for r in rows if not r['selected_correct']], indent=2)
