@@ -335,6 +335,13 @@ Some of the conversions above are already implicitly allowed, without the
 must be able to be proved that the value of the given expression is a
 legal value of the given type. For example, `5 as MyType` is permitted (by the verifier) only if `5` is a legitimate value of`MyType` (which must be a numeric type).
 
+With the legacy type system (`--type-system-refresh:false`),
+`--datatype-subset-conversions` enables explicit conversions to subsets of
+inductive datatypes. The source must be assignment-compatible with the
+destination's underlying datatype, including its type arguments, and the verifier
+checks the destination's membership and every subset constraint. This option is
+disabled by default. The refreshed type system already supports these conversions.
+
 The `as` operation is like a grammatical suffix or postfix operation.
 However, note that the unary operations bind more tightly than does `as`.
 That is `- 5 as nat` is `(- 5) as nat` (which fails), whereas `a * b as nat`
