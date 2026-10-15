@@ -37,7 +37,7 @@ lemma ReturnedDomain(offset: int, x: int)
   ensures Returned(offset).requires(x) <==> x > offset
 {}
 
-function Generic<T>(value: T): T --> T {
+function Generic<T(==)>(value: T): T --> T {
   (x: T) requires x == value => x
 }
 
@@ -72,4 +72,25 @@ method HeapDomain(c: Cell, x: int)
 twostate lemma PreviousDomain(c: Cell, x: int) {
   var f := (y: int) requires y > old(c.n) => y;
   assert f.requires(x) <==> x > old(c.n);
+}
+
+method LabelledDomain(c: Cell)
+  modifies c
+{
+  var n := c.n;
+  label Here:
+  var f := (x: int) requires x > old@Here(c.n) => x;
+  c.n := n + 10;
+  assert f.requires(n + 1);
+  assert !f.requires(n);
+}
+
+predicate Partial(x: int)
+  requires x != 0
+{ true }
+
+lemma GuardedRange() {
+  var f := (x: int) requires x != 0 && Partial(x) => x;
+  assert f.requires(1);
+  assert !f.requires(0);
 }

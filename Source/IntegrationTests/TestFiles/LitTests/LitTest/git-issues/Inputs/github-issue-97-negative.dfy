@@ -39,3 +39,30 @@ twostate lemma PreviousHeap(c: Cell) {
   var f := (x: int) requires x > old(c.n) => x;
   assert f.requires(old(c.n));
 }
+
+method LabelledHeap(c: Cell)
+  modifies c
+{
+  var n := c.n;
+  label Here:
+  var f := (x: int) requires x > old@Here(c.n) => x;
+  c.n := n + 10;
+  assert f.requires(n);
+}
+
+type Empty = x: int | false witness *
+
+lemma EmptyFormalVacuity() {
+  var f := (x: Empty) requires true => 0;
+  assert false;
+}
+
+predicate Partial(x: int)
+  requires x != 0
+{ true }
+
+lemma MissingRangePermission() {
+  var f := (x: int) requires x != 0 && Partial(x) => x;
+  assert f.requires(1);
+  assert Partial(0);
+}

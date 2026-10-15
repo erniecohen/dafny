@@ -1,0 +1,114 @@
+original (additional-axioms:false, type-system-refresh:false, Z3 5.1.0)
+github-issue-97-original.dfy(3,49): Error: a postcondition could not be proved on this return path
+github-issue-97-original.dfy(3,45): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 0 verified, 1 error
+positive (additional-axioms:false, type-system-refresh:false, Z3 5.1.0)
+github-issue-97-positive.dfy(6,0): Error: a postcondition could not be proved on this return path
+github-issue-97-positive.dfy(5,34): Related location: this is the postcondition that could not be proved
+github-issue-97-positive.dfy(14,2): Error: assertion could not be proved
+github-issue-97-positive.dfy(19,2): Error: assertion could not be proved
+github-issue-97-positive.dfy(24,2): Error: assertion could not be proved
+github-issue-97-positive.dfy(29,2): Error: assertion could not be proved
+github-issue-97-positive.dfy(38,0): Error: a postcondition could not be proved on this return path
+github-issue-97-positive.dfy(37,39): Related location: this is the postcondition that could not be proved
+github-issue-97-positive.dfy(46,0): Error: a postcondition could not be proved on this return path
+github-issue-97-positive.dfy(45,37): Related location: this is the postcondition that could not be proved
+github-issue-97-positive.dfy(50,2): Error: assertion could not be proved
+github-issue-97-positive.dfy(55,2): Error: assertion could not be proved
+github-issue-97-positive.dfy(66,2): Error: assertion could not be proved
+github-issue-97-positive.dfy(68,2): Error: assertion could not be proved
+github-issue-97-positive.dfy(74,2): Error: assertion could not be proved
+github-issue-97-positive.dfy(85,2): Error: assertion could not be proved
+github-issue-97-positive.dfy(95,2): Error: assertion could not be proved
+
+Dafny program verifier finished with 1 verified, 14 errors
+negative (additional-axioms:false, type-system-refresh:false, Z3 5.1.0)
+github-issue-97-negative.dfy(3,9): Error: function precondition could not be proved
+github-issue-97-negative.dfy(8,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(14,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(21,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(35,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(40,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(50,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(57,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(67,16): Error: function precondition could not be proved
+github-issue-97-negative.dfy(61,13): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 0 verified, 9 errors
+original (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+
+Dafny program verifier finished with 1 verified, 0 errors
+positive (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+
+Dafny program verifier finished with 14 verified, 0 errors
+negative (additional-axioms:true, type-system-refresh:false, Z3 5.1.0)
+github-issue-97-negative.dfy(3,9): Error: function precondition could not be proved
+github-issue-97-negative.dfy(8,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(14,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(21,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(35,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(40,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(50,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(57,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(67,16): Error: function precondition could not be proved
+github-issue-97-negative.dfy(61,13): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 0 verified, 9 errors
+original (additional-axioms:false, type-system-refresh:true, Z3 5.1.0)
+github-issue-97-original.dfy(3,49): Error: a postcondition could not be proved on this return path
+github-issue-97-original.dfy(3,45): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 0 verified, 1 error
+positive (additional-axioms:false, type-system-refresh:true, Z3 5.1.0)
+github-issue-97-positive.dfy(6,0): Error: a postcondition could not be proved on this return path
+github-issue-97-positive.dfy(5,34): Related location: this is the postcondition that could not be proved
+github-issue-97-positive.dfy(14,2): Error: assertion could not be proved
+github-issue-97-positive.dfy(19,2): Error: assertion could not be proved
+github-issue-97-positive.dfy(24,2): Error: assertion could not be proved
+github-issue-97-positive.dfy(29,2): Error: assertion could not be proved
+github-issue-97-positive.dfy(38,0): Error: a postcondition could not be proved on this return path
+github-issue-97-positive.dfy(37,39): Related location: this is the postcondition that could not be proved
+github-issue-97-positive.dfy(46,0): Error: a postcondition could not be proved on this return path
+github-issue-97-positive.dfy(45,37): Related location: this is the postcondition that could not be proved
+github-issue-97-positive.dfy(50,2): Error: assertion could not be proved
+github-issue-97-positive.dfy(55,2): Error: assertion could not be proved
+github-issue-97-positive.dfy(66,2): Error: assertion could not be proved
+github-issue-97-positive.dfy(68,2): Error: assertion could not be proved
+github-issue-97-positive.dfy(74,2): Error: assertion could not be proved
+github-issue-97-positive.dfy(85,2): Error: assertion could not be proved
+github-issue-97-positive.dfy(95,2): Error: assertion could not be proved
+
+Dafny program verifier finished with 1 verified, 14 errors
+negative (additional-axioms:false, type-system-refresh:true, Z3 5.1.0)
+github-issue-97-negative.dfy(3,9): Error: function precondition could not be proved
+github-issue-97-negative.dfy(8,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(14,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(21,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(35,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(40,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(50,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(57,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(67,16): Error: function precondition could not be proved
+github-issue-97-negative.dfy(61,13): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 0 verified, 9 errors
+original (additional-axioms:true, type-system-refresh:true, Z3 5.1.0)
+
+Dafny program verifier finished with 1 verified, 0 errors
+positive (additional-axioms:true, type-system-refresh:true, Z3 5.1.0)
+
+Dafny program verifier finished with 14 verified, 0 errors
+negative (additional-axioms:true, type-system-refresh:true, Z3 5.1.0)
+github-issue-97-negative.dfy(3,9): Error: function precondition could not be proved
+github-issue-97-negative.dfy(8,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(14,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(21,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(35,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(40,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(50,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(57,2): Error: assertion could not be proved
+github-issue-97-negative.dfy(67,16): Error: function precondition could not be proved
+github-issue-97-negative.dfy(61,13): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 0 verified, 9 errors

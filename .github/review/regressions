@@ -279,3 +279,6 @@ git-issues/github-issue-99.dfy
 
 # Full dev integration: float-wrapper constraints and non-vacuity.
 git-issues/floating-obligation-constraints.dfy
+
+# Stored lambda necessary preconditions under the shared additional axioms option (#97).
+git-issues/git-issue-6110.dfy
