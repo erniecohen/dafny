@@ -276,9 +276,14 @@ public class CliCompilation {
           done++;
         } catch (ProverException e) {
           Compilation.Reporter.Error(MessageSource.Verifier, ResolutionErrors.ErrorId.none, canVerify.Origin, e.Message);
+          if (repeatVerification) {
+            throw; // Abort a batch before a later request can use an unhealthy solver session.
+          }
           yield break;
         } catch (OperationCanceledException) {
-
+          if (repeatVerification) {
+            throw;
+          }
         } catch (Exception e) {
           Compilation.Reporter.Error(MessageSource.Verifier, ResolutionErrors.ErrorId.none, canVerify.Origin,
             $"Internal error occurred during verification: {e.Message}\n{e.StackTrace}");

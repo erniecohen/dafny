@@ -142,8 +142,10 @@ public static class VerifyCommand {
         await summarized;
       }
       allResults.OnCompleted();
-    } catch (Exception exception) {
-      allResults.OnError(exception);
+    } catch {
+      // Finish the log of completed results, while propagating the exception as
+      // a failed invocation. Diagnostic observers must not keep log tasks waiting.
+      allResults.OnCompleted();
       throw;
     } finally {
       await Task.WhenAll(resultsLogged, proofDependenciesReported);

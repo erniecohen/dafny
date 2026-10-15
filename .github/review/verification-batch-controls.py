@@ -18,15 +18,17 @@ def main():
     records = []
     failures = []
 
-    def run(label, extra, expected, counts=None):
+    def run(label, extra, expected, counts=None, solver=None):
         command = common + extra + ["--log-format", "json;LogFileName=" + label + ".json"]
+        if solver is not None:
+            command[command.index("--solver-path") + 1] = solver
         result = subprocess.run(command, cwd=root, text=True, capture_output=True, timeout=90)
         (root / (label + ".stdout")).write_text(result.stdout)
         (root / (label + ".stderr")).write_text(result.stderr)
         log = root / (label + ".json")
         proofs = json.loads(log.read_text()).get("verificationResults", []) if log.exists() else []
         outcomes = [proof["outcome"] for proof in proofs]
-        good = result.returncode == expected and (counts is None or outcomes == counts)
+        good = (result.returncode != 0 if expected is None else result.returncode == expected) and (counts is None or outcomes == counts)
         if not good:
             failures.append(label)
         records.append({"label": label, "command": command, "exit": result.returncode,
@@ -45,6 +47,15 @@ def main():
             "--filter-position-batch", ".dfy", "--filter-position-batch", "first.dfy"], 0, ["Correct", "Correct"])
         run("isolate-" + refresh, resolver + ["--isolate-assertions",
             "--filter-position-batch", "first.dfy:1", "--filter-position-batch", "first.dfy:1"], 0, ["Correct", "Correct"])
+    broken_solver = root / "broken-solver"
+    broken_solver.write_text('#!/bin/sh\ncase "$*" in *version*) echo "Z3 version 5.1.0";; *) exit 1;; esac\n')
+    broken_solver.chmod(0o755)
+    result = run("solver-failure", ["--filter-position-batch", "first.dfy", "--filter-position-batch", "first.dfy"], None,
+                 solver=str(broken_solver))
+    if "Starting verification request 1/2" not in result.stdout:
+        failures.append("solver-failure-not-reached")
+    if "Starting verification request 2/2" in result.stdout:
+        failures.append("solver-failure-continued")
     run("coverage", ["--verification-coverage-report", "coverage", "--filter-position-batch", "first.dfy",
         "--filter-position-batch", "second.dfy", "--filter-position-batch", "first.dfy"], 4, ["Correct", "Errors", "Correct"])
     run("conflicting-filters", ["--filter-position", "first.dfy", "--filter-position-batch", "first.dfy"], 1, [])
