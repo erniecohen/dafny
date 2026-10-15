@@ -111,7 +111,7 @@ class ExtensibleArray<T> {
       Repr := Repr + {elements};
       elements[0] := t;
     }
-    // Both cases leave exactly one writable slot in the final block.
+    // The new element lies within the final block.
     assert {:split_here} M <= length < M + 256;
     length := length + 1;
     Contents := Contents + [t];

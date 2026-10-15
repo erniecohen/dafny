@@ -79,7 +79,7 @@ class PriorityQueue {
     SiftDown(1);
   }
 
-  // Keep the heap-order obligations separate from the array-update context.
+  // Verify the loop obligations separately at the existing resource limit.
   method {:isolate_assertions} SiftDown(k: int)
     requires 1 <= k
     requires MostlyValid()
