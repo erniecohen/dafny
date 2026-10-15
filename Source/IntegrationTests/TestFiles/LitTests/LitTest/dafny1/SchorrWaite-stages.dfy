@@ -246,9 +246,14 @@ abstract module M2 refines M1 {
         // advance to next child
       } else {
         // push
-        ExtendInitialPath(root, path, t, t.children[t.childrenVisited], S);
-        path := Path.Extend(path, t);
+        ghost var child := t.children[t.childrenVisited];
+        ghost var extendedPath := Path.Extend(path, t);
+        ExtendInitialPath(root, path, t, child, S);
+        path := extendedPath;
         ...;
+        // Keep the witness tied to the child across the pointer reversal.
+        assert t == child;
+        assert old(allocated(path)) && old(ReachableVia(root, path, t, S));
         t.pathFromRoot := path;
       }
     }
