@@ -265,3 +265,7 @@ git-issues/git-issue-170-part-2.dfy
 git-issues/git-issue-170-part-3.dfy
 git-issues/git-issue-170-part-4.dfy
 git-issues/git-issue-170-part-5.dfy
+dafny1/PriorityQueue.dfy
+dafny4/Primes.dfy
+dafny4/UnionFind.dfy
+dafny2/SnapshotableTrees.dfy
