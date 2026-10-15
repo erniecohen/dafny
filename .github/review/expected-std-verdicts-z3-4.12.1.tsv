@@ -762,6 +762,8 @@ Std Std.Base64.UInt8sToBVsToUInt8s (correctness)	Correct
 Std Std.Base64.UnpaddedBase64Prefix (correctness)	Correct		
 Std Std.Base64.UnpaddedBase64Prefix (well-formedness)	Correct		
 Std Std.Base64.UnpaddedBase64StringIs7Bit (correctness)	Correct		
+Std Std.Base64.UnpaddedPrefixWithPaddingIsBase64 (correctness)	Correct		
+Std Std.Base64.UnpaddedStringIsBase64 (correctness)	Correct		
 Std Std.BoundedInts.INT16_MAX (well-formedness)	Correct		
 Std Std.BoundedInts.INT16_MIN (well-formedness)	Correct		
 Std Std.BoundedInts.INT32_MAX (well-formedness)	Correct		
@@ -2188,7 +2190,7 @@ TargetSpecific-py Std.FileIO.WriteUTF8ToFile (correctness)	Correct
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (correctness)	Correct		
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (well-formedness)	Correct		
 TargetSpecific-py Std.PythonConcurrent.MutableMap.Get (well-formedness)	Correct		
-run Std	0	7612 verified, 0 errors	
+run Std	0	7746 verified, 0 errors	
 run TargetSpecific-cs	0	15 verified, 0 errors	
 run TargetSpecific-go	0	16 verified, 0 errors	
 run TargetSpecific-java	0	15 verified, 0 errors	
