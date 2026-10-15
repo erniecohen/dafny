@@ -1,60 +1,54 @@
-"""Record selected native outcomes for three immutable compiler receipts."""
-import hashlib, json, os, subprocess
+"""Scratch issue 47 probe: record outcomes without accepting them as a gate."""
+import hashlib
+import json
+import os
 from pathlib import Path
-root=Path('out/native-evidence');root.mkdir(parents=True,exist_ok=True)
-solver=Path(os.environ['Z3']).resolve();assembly=Path('out/toolchain/dafny/Dafny.dll').resolve()
-kind=os.environ['COMPILER_SOURCE'];rows=[]
-def phase(name,command):
- folder=root/name;folder.mkdir(exist_ok=True)
- (folder/'command.json').write_text(json.dumps(command,indent=2))
- with (folder/'output.txt').open('w') as output:
-  result=subprocess.run(command,stdout=output,stderr=subprocess.STDOUT,timeout=900)
- (folder/'exit.txt').write_text(str(result.returncode)+'\n')
- rows.append({'name':name,'exit':result.returncode});print(name,'actual exit',result.returncode,flush=True)
-for refresh in [False,True]:
- for name in (['issue100-original','issue100-explicit','issue100-final-true'] if kind!='dev-baseline' else []):
-  folder=root/f'{name}-{refresh}';folder.mkdir(exist_ok=True)
-  source=Path('Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/assertion-invariance')/(name+'.dfy')
-  command=['dotnet',str(assembly),'verify',str(source),'--solver-path',str(solver),'--cores','1',
-   '--resource-limit','16000000','--verification-time-limit','30',f'--type-system-refresh:{str(refresh).lower()}',
-   f'--general-newtypes:{str(refresh).lower()}','--additional-axioms:false','--consistent-obligation-checks:true',
-   '--boogie','/normalizeDeclarationOrder:0','--log-format','json;LogFileName='+str((folder/'results.json').resolve())]
-  phase(folder.name,command)
- for enabled in ([False,True] if kind!='dev-baseline' else [False]):
-  folder=root/f'good-post-{refresh}-{enabled}';folder.mkdir(exist_ok=True)
-  command=['dotnet',str(assembly),'verify','Source/IntegrationTests/TestFiles/LitTests/LitTest/dafny0/FunctionSpecifications.dfy',
-   '--filter-symbol:GoodPost','--solver-path',str(solver),'--cores','1','--resource-limit','16000000',
-   '--verification-time-limit','30',f'--type-system-refresh:{str(refresh).lower()}',
-   f'--general-newtypes:{str(refresh).lower()}','--additional-axioms:false','--boogie','/normalizeDeclarationOrder:0',
-   '--log-format','json;LogFileName='+str((folder/'results.json').resolve())]
-  if kind!='dev-baseline':command.append(f'--consistent-obligation-checks:{str(enabled).lower()}')
-  else:command.remove('--additional-axioms:false')
-  phase(folder.name,command)
-for label,symbol in [('divmod','Std.Arithmetic.DivMod.LemmaMultiplyDivideLe'),('power','Std.Arithmetic.Power.LemmaPowIncreases'),('base64','Std.Base64.DecodeValidUnpaddedPartialFrom1PaddedSeq')]:
- for axioms in ([False,True] if kind!='dev-baseline' else [False]):
-  for enabled in ([False,True] if kind!='dev-baseline' else [False]):
-   folder=root/f'{label}-{axioms}-{enabled}';folder.mkdir(exist_ok=True)
-   command=['dotnet',str(assembly),'verify','Source/DafnyStandardLibraries/src/Std/dfyconfig.toml',
-    '--filter-symbol:'+symbol,'--solver-path',str(solver),'--cores','1',
-    '--verification-time-limit','0','--log-format','json;LogFileName='+str((folder/'results.json').resolve())]
-   if kind!='dev-baseline':command += [f'--additional-axioms:{str(axioms).lower()}',f'--consistent-obligation-checks:{str(enabled).lower()}']
-   phase(folder.name,command)
-for label,source in [('schorr','dafny1/SchorrWaite.dfy'),('schorr-stages','dafny1/SchorrWaite-stages.dfy'),('smallest-missing','dafny2/SmallestMissingNumber-functional.dfy')]:
- for refresh in [False,True]:
-  folder=root/f'{label}-{refresh}';folder.mkdir(exist_ok=True)
-  command=['dotnet',str(assembly),'verify','Source/IntegrationTests/TestFiles/LitTests/LitTest/'+source,
-   '--solver-path',str(solver),'--cores','1','--resource-limit','16000000','--verification-time-limit','30',
-   '--allow-warnings','--relax-definite-assignment',f'--type-system-refresh:{str(refresh).lower()}',
-   f'--general-newtypes:{str(refresh).lower()}','--boogie','/normalizeDeclarationOrder:0',
-   '--log-format','json;LogFileName='+str((folder/'results.json').resolve())]
-  if kind!='dev-baseline':command += ['--additional-axioms:false','--consistent-obligation-checks:false']
-  phase(folder.name,command)
-if kind=='integrated':
- phase('floating-controls',['python3','Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/floating-obligations/registered.py',str(assembly),str(solver),str((root/'floating-controls').resolve())])
-receipt={'compiler_kind':kind,'compiler_source':Path('out/toolchain/source.txt').read_text().strip(),
- 'verification_sources':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
- 'version':subprocess.check_output(['dotnet',str(assembly),'--version'],text=True).strip(),
- 'solver_version':subprocess.check_output([str(solver),'--version'],text=True).strip(),
- 'core_sha256':hashlib.sha256(assembly.with_name('DafnyCore.dll').read_bytes()).hexdigest(),
- 'solver_sha256':hashlib.sha256(solver.read_bytes()).hexdigest(),'diagnostic':True,'phases':rows}
-(root/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+import subprocess
+
+root = Path('out/native-evidence')
+root.mkdir(parents=True, exist_ok=True)
+assembly = Path('out/toolchain/dafny/Dafny.dll').resolve()
+solver = Path(os.environ['Z3']).resolve()
+source = Path('.github/review/issue47/equality-runtime.dfy')
+rows = []
+for refresh in [False, True]:
+    mode = ['--type-system-refresh:' + str(refresh).lower(),
+            '--general-newtypes:' + str(refresh).lower(),
+            '--standard-libraries:false', '--show-snippets:false',
+            '--use-basename-for-filename', '--allow-warnings']
+    for phase in ['resolve', 'verify', 'run']:
+        folder = root / (phase + ('-refresh' if refresh else '-legacy'))
+        folder.mkdir(exist_ok=True)
+        command = ['dotnet', str(assembly), phase, str(source)] + mode
+        if phase == 'verify':
+            command += ['--solver-path', str(solver), '--cores:1',
+                        '--resource-limit:16000000', '--verification-time-limit:30',
+                        '--boogie:/normalizeDeclarationOrder:0',
+                        '--log-format', 'csv;LogFileName=' + str((folder/'resources.csv').resolve())]
+        if phase == 'run':
+            command += ['--no-verify', '--target:cs']
+        (folder/'command.json').write_text(json.dumps(command, indent=2) + '\n')
+        try:
+            result = subprocess.run(command, capture_output=True, text=True, timeout=240)
+            stdout, stderr, code = result.stdout, result.stderr, result.returncode
+        except subprocess.TimeoutExpired as error:
+            stdout, stderr, code = str(error.stdout), str(error.stderr), 'timeout'
+        (folder/'stdout.txt').write_text(stdout)
+        (folder/'stderr.txt').write_text(stderr)
+        rows.append({'phase': phase, 'refresh': refresh, 'exit': code,
+                     'stdout': stdout, 'stderr': stderr})
+        print(phase, refresh, 'actual exit', code, flush=True)
+receipt = {'diagnostic': True, 'acceptance': False,
+           'scope': 'Original, explicit crossed instantiations, and common static views; recorded resolver, verification and C# runtime outcomes.',
+           'compiler_source': Path('out/toolchain/source.txt').read_text().strip(),
+           'probe_source': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+           'compiler_version': subprocess.check_output(['dotnet', str(assembly), '--version'], text=True).strip(),
+           'compiler_core_sha256': hashlib.sha256(assembly.with_name('DafnyCore.dll').read_bytes()).hexdigest(),
+           'solver_version': subprocess.check_output([str(solver), '--version'], text=True).strip(),
+           'fixture_sha256': hashlib.sha256(source.read_bytes()).hexdigest(), 'rows': rows}
+(root/'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+if os.getenv('GITHUB_STEP_SUMMARY'):
+    with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as stream:
+        stream.write('## Issue 47 runtime probe\n\nDiagnostic outcomes only; this is not an acceptance gate.\n\n')
+        for row in rows:
+            stream.write(f"- {row['phase']}, refresh={row['refresh']}: actual exit {row['exit']}\n")
