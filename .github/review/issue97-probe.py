@@ -86,9 +86,13 @@ try:
         label = "base64-padding-axioms-" + axioms
         folder = (out / label).resolve()
         folder.mkdir(exist_ok=True)
-        run(label, dafny + ["verify", "src/Std/dfyconfig.toml", "--filter-symbol=Std.Base64.DecodeValidEncode1Padding|Std.Base64.DecodeValidEncode2Padding",
+        run(label, dafny + ["verify", "src/Std/dfyconfig.toml", "--filter-symbol=Std.Base64.DecodeValidEncode",
             "--solver-path=" + solver, "--cores=1", "--verification-time-limit=0", "--additional-axioms=" + axioms,
             "--log-format=json;LogFileName=" + str(folder / "resources.json")], 600, library)
+        observed = json.loads((folder / "resources.json").read_text())["verificationResults"]
+        for name in ["DecodeValidEncode1Padding", "DecodeValidEncode2Padding"]:
+            if not any(name in row["name"] and "correctness" in row["name"] for row in observed):
+                raise RuntimeError("Missing focused library proof: " + name)
 except Exception:
     (out / "exception.txt").write_text(traceback.format_exc())
 finally:
