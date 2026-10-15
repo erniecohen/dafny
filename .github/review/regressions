@@ -279,3 +279,6 @@ git-issues/github-issue-99.dfy
 
 # Full dev integration: float-wrapper constraints and non-vacuity.
 git-issues/floating-obligation-constraints.dfy
+
+# Maintained source proofs for consistent obligation checking.
+git-issues/git-issue-170.dfy

@@ -79,7 +79,8 @@ class PriorityQueue {
     SiftDown(1);
   }
 
-  method SiftDown(k: int)
+  // Keep the heap-order obligations separate from the array-update context.
+  method {:isolate_assertions} SiftDown(k: int)
     requires 1 <= k
     requires MostlyValid()
     requires forall j :: 2 <= j <= n && j/2 != k ==> a[j/2] <= a[j]

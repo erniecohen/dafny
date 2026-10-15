@@ -1129,9 +1129,13 @@ module Std.Base64 {
     requires Is1Padding(s[(|s| - 4)..])
     ensures EncodeBV(DecodeValid(s)) == s
   {
+    // Use encoding identities while keeping bitvector definitions out of the calculation.
+    hide *;
     UnpaddedBase64Prefix(s);
+    assert |s[..(|s| - 4)]| % 4 == 0 by { reveal IsUnpaddedBase64String; }
     DecodeValidPartialsFrom1PaddedSeq(s);
     assert |DecodeValid(s)| % 3 == 2 by { DecodeValid1PaddingLengthMod3(s); }
+    EncodeBVIs1Padded(DecodeValid(s));
     calc {
       EncodeBV(DecodeValid(s));
     ==

@@ -93,6 +93,8 @@ class ExtensibleArray<T> {
       elements := new T[256](_ => t);
       Repr := Repr + {elements};
     }
+    // Finish array initialization before checking the two append cases.
+    assert {:split_here} elements != null && elements.Length == 256;
     if length == 0 || length % 256 != 0 {
       // there is room in "elements"
       elements[length - M] := t;
@@ -109,6 +111,8 @@ class ExtensibleArray<T> {
       Repr := Repr + {elements};
       elements[0] := t;
     }
+    // Both cases leave exactly one writable slot in the final block.
+    assert {:split_here} M <= length < M + 256;
     length := length + 1;
     Contents := Contents + [t];
   }
