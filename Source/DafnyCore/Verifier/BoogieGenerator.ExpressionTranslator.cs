@@ -1824,15 +1824,6 @@ namespace Microsoft.Dafny {
         // expanded into patterns; it names only this exact source lambda family.
         var readsSelector = FunctionCall(tok, BoogieGenerator.Reads(e.BoundVars.Count), Predef.SetType, selectorArguments);
         var requiresSelector = FunctionCall(tok, BoogieGenerator.Requires(e.BoundVars.Count), Boogie.Type.Bool, selectorArguments);
-        if (recoverRange) {
-          // The native Handle selector exports only the sufficient direction.
-          // For this exact source lambda, its declared range is also necessary.
-          // Retain the formal type/allocation, heap, and family guards below,
-          // and require captures to be valid in this selected heap. rangeFacts
-          // independently exports the range's checked call permissions.
-          var captures = LambdaRangeCaptureGuard(e, environment.Heap);
-          facts = BplAnd(facts, BplImp(BplAnd(captures, requiresSelector), rangeValue));
-        }
         var applySelector = FunctionCall(tok, BoogieGenerator.Apply(e.BoundVars.Count), Predef.BoxType, selectorArguments);
         var trigger = new Boogie.Trigger(tok, true, [readsSelector],
           new Boogie.Trigger(tok, true, [requiresSelector],
@@ -1866,9 +1857,20 @@ namespace Microsoft.Dafny {
         }
         var actualFamily = BuildLambdaHandleFamily(e, BuildLambdaEnvironment(e));
         var familyGuard = BplAnd(Boogie.Expr.Eq(family, actualFamily), guard);
-        var guardedFacts = BplForall(Cons<Variable>(familyVar,
-          environment.LayerBinders.Concat(environment.Binders).ToList()), trigger,
-          BplImp(familyGuard, facts));
+        var binders = Cons<Variable>(familyVar,
+          environment.LayerBinders.Concat(environment.Binders).ToList());
+        var guardedFacts = BplForall(binders, trigger, BplImp(familyGuard, facts));
+        if (recoverRange) {
+          // The native Handle selector exports only the sufficient direction.
+          // For this source lambda family value, its range is also necessary.
+          // Match this consequence only at an existing requires selection;
+          // reads and apply selections still expose only the original facts.
+          var captures = LambdaRangeCaptureGuard(e, environment.Heap);
+          var necessaryRange = BplImp(BplAnd(captures, requiresSelector), rangeValue);
+          var requiresTrigger = new Boogie.Trigger(tok, true, [requiresSelector]);
+          guardedFacts = BplAnd(guardedFacts,
+            BplForall(binders, requiresTrigger, BplImp(familyGuard, necessaryRange)));
+        }
         // With no reads expressions the characteristic predicate is constant
         // false, independent of the lambda's arguments, heap, and precondition.
         // Its exact empty finite view therefore needs no formal-domain premise.

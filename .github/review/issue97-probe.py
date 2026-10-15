@@ -79,6 +79,16 @@ try:
                 if refresh == "false":
                     command += ["--general-newtypes=false"]
                 run(label, command)
+    # Recheck the two ON library declarations whose prototype costs exceeded
+    # their committed limits. Keep project limits and ordinary declaration order.
+    library = Path("Source/DafnyStandardLibraries").resolve()
+    for axioms in ["false", "true"]:
+        label = "base64-padding-axioms-" + axioms
+        folder = (out / label).resolve()
+        folder.mkdir(exist_ok=True)
+        run(label, dafny + ["verify", "src/Std/dfyconfig.toml", "--filter-symbol=Std.Base64.DecodeValidEncode1Padding|Std.Base64.DecodeValidEncode2Padding",
+            "--solver-path=" + solver, "--cores=1", "--verification-time-limit=0", "--additional-axioms=" + axioms,
+            "--log-format=json;LogFileName=" + str(folder / "resources.json")], 600, library)
 except Exception:
     (out / "exception.txt").write_text(traceback.format_exc())
 finally:

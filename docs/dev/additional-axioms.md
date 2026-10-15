@@ -692,8 +692,9 @@ This is schematic: the emitted formula retains the existing family equality,
 type substitution, captured environment, old heap, layer and actual heap
 expressions. A heap-independent definition's existing `$OneHeap` placeholder
 handling is preserved. The existing source range call-permission facts remain
-available independently of the range's truth value. Existing reads, requires
-and apply selector patterns are reused. The global `HandleN`, frame, allocation,
+available independently of the range's truth value. The new consequence matches
+only existing requires selections; the original reads, requires and apply
+selector patterns for child permissions remain unchanged. The global `HandleN`, frame, allocation,
 subtype and boxing schemas are unchanged. The option is tested before adding
 the new fact, and the original early return remains unchanged when disabled.
 
