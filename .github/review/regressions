@@ -260,3 +260,8 @@ git-issues/git-issue-100.dfy
 # Paired quantified caller and false controls are in the registered issue 100 gate.
 # Canonical local-exit support order and paired/negative WF fixtures are covered by git-issue-100.
 git-issues/git-issue-170.dfy
+git-issues/git-issue-170-part-1.dfy
+git-issues/git-issue-170-part-2.dfy
+git-issues/git-issue-170-part-3.dfy
+git-issues/git-issue-170-part-4.dfy
+git-issues/git-issue-170-part-5.dfy
