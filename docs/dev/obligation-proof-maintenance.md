@@ -12,7 +12,7 @@
 
 ## Coverage and evidence
 
-Six registered parts check every selected target/helper and WF declaration, the applicable resolvers, both additional-axiom settings, and checking ON/OFF/default. Each default/OFF pair stays in one part and must have identical named batch outcomes and RU vectors. Each matrix includes 60 complete-file scopes; library files resolve through their ordinary project. Full unfiltered library runs provide additional closure evidence.
+Twelve registered parts check every selected target/helper and WF declaration, the applicable resolvers, both additional-axiom settings, and checking ON/OFF/default. Each default/OFF pair stays in one part and must have identical named batch outcomes and RU vectors. Each matrix includes 60 complete-file scopes; library files resolve through their ordinary project. Full unfiltered library runs provide additional closure evidence.
 
 | line | completed scopes | selected proofs/WF | default/OFF | public matrix |
 |---|---:|---|---|---|
