@@ -139,7 +139,10 @@ def verify(label, source, symbol, extra, refresh, axioms, mode, full=False):
         command += ['--resource-limit', '16000000', '--boogie', '/normalizeDeclarationOrder:0',
             '--allow-warnings', '--type-system-refresh:' + str(refresh).lower(),
             '--general-newtypes:' + str(refresh).lower()] + extra
-    if not full:
+    if full and library:
+        # Resolve with the ordinary project and check every declaration in this file.
+        command += ['--filter-position', source]
+    elif not full:
         command += ['--filter-symbol', symbol + '.']
     (folder / 'command.json').write_text(json.dumps(command, indent=2) + '\n')
     text, code = run_verifier(command)
@@ -155,7 +158,7 @@ def verify(label, source, symbol, extra, refresh, axioms, mode, full=False):
     costs = [vc['resourceCount'] for vc in batches]
     wanted = [symbol]
     if full:
-        wanted = [item[2] for item in targets + helpers if (source.startswith(S) and item[1].startswith(S)) or item[1] == source]
+        wanted = [item[2] for item in targets + helpers if item[1] == source]
     selected = declarations if not full else [d for d in declarations if any(d['name'].startswith(name + ' (') for name in wanted)]
     good = all(any(d['name'].startswith(name + ' (') for d in selected) for name in wanted) and bool(selected) and all(d['outcome'] == 'Correct' and d['vcResults'] and
         all(vc['outcome'] == 'Valid' for vc in d['vcResults']) for d in selected)
@@ -189,7 +192,7 @@ if args.full_files:
         for refresh in ([True] if source.startswith(S) else [False, True]):
             for axioms in [False, True]:
                 for mode in ['on', 'off']:
-                    key = (S if source.startswith(S) else source, refresh, axioms, mode)
+                    key = (source, refresh, axioms, mode)
                     if key in seen:
                         continue
                     seen.add(key)
