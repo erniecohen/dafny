@@ -6,7 +6,7 @@ import os
 import subprocess
 import traceback
 
-out = Path("out/issue97-probe")
+out = Path("issue75-probe") / os.environ["ISSUE97_COMPILER_SOURCE"][:8]
 out.mkdir(parents=True, exist_ok=True)
 records = []
 
@@ -40,7 +40,7 @@ cases = {
 try:
     compiler = Path("compiler").resolve()
     source = subprocess.check_output(["git", "-C", str(compiler), "rev-parse", "HEAD"], text=True).strip()
-    product = Path("out/issue97-compiler").resolve()
+    product = Path("out/issue97-compiler-" + source[:8]).resolve()
     if run("boogie", ["sh", "Scripts/fetch-boogie-packages.sh"], 300, cwd=compiler) != 0:
         raise RuntimeError("Boogie package acquisition failed")
     code = run("build", ["dotnet", "publish", str(compiler / "Source/Dafny/Dafny.csproj"),
@@ -67,9 +67,11 @@ try:
                 command = dafny + ["verify", str(fixture.resolve()), "--solver-path=" + solver,
                     "--resource-limit=16000000", "--verification-time-limit=30", "--cores=1",
                     "--type-system-refresh=" + refresh, "--additional-axioms=" + axioms,
-                    "--boogie=/normalizeDeclarationOrder:0", "--allow-warnings=false",
-                    "--boogie=/print:" + str((folder / "program.bpl").resolve()),
+                    "--boogie=/normalizeDeclarationOrder:0", "--allow-warnings=false", "--allow-axioms",
+                    "--bprint=" + str((folder / "program.bpl").resolve()),
                     "--log-format=csv;LogFileName=" + str((folder / "resources.csv").resolve())]
+                if source == "4e98f3f592310854ca1448d517b82dcbcc0f51f4" and refresh == "false":
+                    command += ["--general-newtypes=false"]
                 run(label, command)
 except Exception:
     (out / "exception.txt").write_text(traceback.format_exc())

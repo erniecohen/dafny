@@ -1,44 +1,19 @@
-"""Safe exploratory migration checks; record failures and always exit zero."""
-import json
-import os
+"""Scratch-only issue 97 diagnostics through the existing diagnostic entry."""
 from pathlib import Path
+import os
+import runpy
 import subprocess
-import sys
+import traceback
 
 out = Path("issue75-probe")
 out.mkdir(exist_ok=True)
-records = []
-def run(name, command, timeout=1800):
-    try:
-        result = subprocess.run(command, text=True, capture_output=True, timeout=timeout)
-        status, text = result.returncode, result.stdout + result.stderr
-    except subprocess.TimeoutExpired as error:
-        status, text = "TIMEOUT", str(error)
-    if name == "smoke" and "Passed:" not in text:
-        status = "NO TEST RESULTS"
-    (out / (name + ".txt")).write_text(text)
-    records.append({"name": name, "status": status, "command": command})
-    print(name, status, flush=True)
-    return status == 0
-
 try:
-    run("inventory", ["dotnet", "--info"])
-    run("boogie", ["sh", "Scripts/fetch-boogie-packages.sh"])
-    if run("build", ["dotnet", "build", "Source/Dafny.sln", "-c", "Release"]):
-        if "--units-only" not in sys.argv:
-            run("integration-build", ["dotnet", "build", "Source/IntegrationTests", "-c", "Release"])
-        run("core-unit", ["dotnet", "test", "Source/DafnyCore.Test", "-c", "Release", "--no-build"])
-        run("runtime-unit", ["dotnet", "test", "Source/DafnyRuntime.Tests", "-c", "Release", "--no-build"])
-        if "--units-only" not in sys.argv:
-            run("driver-process", ["dotnet", "test", "Source/DafnyDriver.Test", "-c", "Release", "--no-build",
-                                   "--filter", "FullyQualifiedName~LanguageServerProcessTest"])
-            run("smoke", ["dotnet", "test", "Source/IntegrationTests", "-c", "Release", "--no-build",
-                          "--filter", "DisplayName~github-issue-75.dfy|DisplayName~github-issue-104.dfy"])
-except Exception as error:
-    records.append({"name": "probe exception", "status": str(error)})
-finally:
-    (out / "summary.json").write_text(json.dumps(records, indent=2))
-    summary = os.environ.get("GITHUB_STEP_SUMMARY")
-    if summary:
-        with open(summary, "a") as stream:
-            stream.write("## .NET 10 migration probe\n\n" + "\n".join(str(row) for row in records) + "\n")
+    os.environ["Z3"] = str(Path("Binaries/z3/bin/z3-5.1.0").resolve())
+    for source in ["4e98f3f592310854ca1448d517b82dcbcc0f51f4", "1256f92b0b494e8f1bf52aaec145d36a8a862f33"]:
+        subprocess.run(["git", "fetch", "--no-tags", "--depth=1", "origin", source], check=True)
+        subprocess.run(["git", "worktree", "add", "--detach", "compiler", source], check=True)
+        os.environ["ISSUE97_COMPILER_SOURCE"] = source
+        runpy.run_path(".github/review/issue97-probe.py", run_name="__main__")
+        subprocess.run(["git", "worktree", "remove", "--force", "compiler"], check=True)
+except Exception:
+    (out / "driver-exception.txt").write_text(traceback.format_exc())
