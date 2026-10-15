@@ -29,7 +29,7 @@ try:
             # The diagnostic records actual proof exits; its wrapper stays green.
             command = [sys.executable, "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/obligation-proof-repairs/registered.py",
                        "Binaries/net10.0/DafnyDriver.dll", "Binaries/z3/bin/z3-5.1.0",
-                       str(out / "proof-source-maintenance"), "--diagnostic", "--full-files", "--capture-verdicts"]
+                       str(out / "proof-source-maintenance"), "--diagnostic", "--full-files"]
             with (out / "proof-source-maintenance.txt").open("w") as stream:
                 result = subprocess.run(command, stdout=stream, stderr=subprocess.STDOUT)
             records.append({"name": "proof-source-maintenance", "status": result.returncode, "command": command})
