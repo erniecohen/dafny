@@ -670,3 +670,88 @@ Negative cases retain failures for missing preconditions, missing witnesses,
 opaque definitions, inactive disjunction/conditional branches, a wrong selected
 value, and `assert false` after the predicate has been triggered. Both resolvers
 run with the option off and on under pinned Z3 5.1.0 and 4.12.1.
+
+## Declared preconditions of source lambda values (#97)
+
+The native `HandleN` selector schema exposes only the sufficient direction:
+`r[heap, args] ==> RequiresN(types, heap, HandleN(body, r, reads), args)`.
+A source lambda's map additionally guards its range by the range's call
+permissions. Consequently the existing schema cannot recover the range from a
+stored lambda's `requires`, even for a range such as `x > 0`.
+
+With the shared option, `LambdaCanCallAssumption` adds the necessary direction
+only to the existing facts for that source lambda family value:
+
+```boogie
+SourceFamilyEquality(F) && FormalTypes(args) && FormalAllocation(args, H)
+  && GoodHeap(H) && FormationHeapSameOrSucceeds(H) && ValidCaptures(H)
+==> (RequiresN(types, H, AtLayer(F, L), args) <==> Range(H, args))
+```
+
+This is schematic: the emitted formula retains the existing family equality,
+type substitution, captured environment, old heap, layer and actual heap
+expressions. A heap-independent definition's existing `$OneHeap` placeholder
+handling is preserved. The existing source range call-permission facts remain
+available independently of the range's truth value. The new consequence matches
+only existing requires selections. Under `FormalTypes`, a true `Range` makes
+the stored map `FormalTypes && (CanCall(range) ==> Range)` true; the native
+selector already gives the sufficient direction. The equality therefore adds
+only the necessary direction. The original reads, requires and apply
+selector patterns for child permissions remain unchanged. The global `HandleN`, frame, allocation,
+subtype and boxing schemas are unchanged. The option is tested before adding
+the new fact, and the original early return remains unchanged when disabled.
+
+### Source model and combination
+
+The justification is relative to the intended typed source interpretation.
+A source lambda has its declared precondition, reads frame and body, with its
+formal arguments and captured environment substituted. For each typed,
+allocated formal tuple in a good heap at or after formation, lambda
+well-formedness checks the range before assuming it for the body check.
+The range therefore denotes a boolean at that tuple. Interpret the source
+lambda's domain selector as that declared boolean. The new implication follows
+from this interpretation, while the existing sufficient direction continues
+to hold. This is an additional source-semantic fact; it is not derivable from
+the current one-way backend selector equation.
+
+Interpret a handle as a tuple of its body, precondition map and reads map.
+For a source lambda the stored precondition map is
+`FormalTypes && (CanCall(range) ==> Range)`. Under the formal and capture guards,
+the existing source range-permission facts supply `CanCall(range)`, so this
+map equals `Range`. Both selector directions then hold. Family equality
+identifies the family value, including its captures and layer; extensionally
+coincident source families may have the same value. In the tuple interpretation
+their precondition maps agree, so the new facts remain compatible.
+
+Formal type and allocation guards exclude arbitrary boxed backend values.
+The new fact additionally requires every captured reference-bearing value and
+receiver to have its source type and be allocated in the selected heap. Each
+captured previous or labeled heap must be good, and the selected heap must be
+or succeed it. This is needed when a heap-independent returning function uses
+`$OneHeap` as a translation placeholder. A missing captured heap disables the
+new fact. These guards retain the source interpretation of `old`. Existing
+frame obligations check the range's reads against the declared footprint, so
+equal permitted heaps give equal range booleans. Existing result-type and
+allocation obligations continue to apply only where the precondition holds.
+No witness for an empty formal type is introduced and no fact asserts the
+precondition itself.
+
+The bounded bitvector round trip and closed literal identities keep their
+existing interpretation. Heap-succession reflexivity leaves every domain
+selector unchanged, and its additional reflexive frame instances compare the
+same range at the same heap. Result-allocation trigger instances add no new
+formula. Such-that permissions keep their checked source preconditions;
+recovering a necessary lambda precondition grants no new call permission.
+These observations explain the combination with the shared families relative
+to their existing intended model arguments. They do not prove consistency of
+the whole verifier theory.
+
+### Validation boundary
+
+The retained issue driver must cover both resolvers, option OFF/ON, stored,
+local, returned and nested lambdas, generic and subset formals, captures,
+receiver captures, heap changes, previous heaps, and a declared false range. Calls outside the
+range and inhabited `assert false` controls must still fail. Acceptance also
+requires exact-source CI and complete OFF suite/library verdict and controlled
+resource equality. A diagnostic wrapper that records expected failures and
+exits zero is not that acceptance gate.

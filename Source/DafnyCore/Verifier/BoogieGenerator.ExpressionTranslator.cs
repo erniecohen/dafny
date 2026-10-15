@@ -1727,6 +1727,44 @@ namespace Microsoft.Dafny {
         }
       }
 
+      private Expr LambdaRangeCaptureGuard(LambdaExpr e, Expr heap) {
+        bool usesHeap = false, usesOldHeap = false;
+        var heapAt = new HashSet<Label>();
+        Type usesThis = null;
+        var freeVariables = new HashSet<IVariable>();
+        FreeVariablesUtil.ComputeFreeVariables(BoogieGenerator.options, e, freeVariables,
+          ref usesHeap, ref usesOldHeap, heapAt, ref usesThis, true);
+        usesOldHeap |= UsesPreviousHeap(e);
+        var capturedHeaps = new List<Expr>();
+        if (usesOldHeap) {
+          capturedHeaps.Add(Old.HeapExpr);
+        }
+        foreach (var label in heapAt.OrderBy(label => label.Name)) {
+          capturedHeaps.Add(OldAt(label).HeapExpr);
+        }
+        Expr guard = Expr.True;
+        foreach (var capturedHeap in capturedHeaps) {
+          if (capturedHeap == null) {
+            return Expr.False;
+          }
+          guard = BplAnd(guard, BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, capturedHeap));
+          guard = BplAnd(guard, BoogieGenerator.HeapSameOrSucc(capturedHeap, heap));
+        }
+        foreach (var variable in freeVariables.OrderBy(variable => variable.UniqueName)) {
+          if (variable.Type.MayShowReferences) {
+            var value = BoogieGenerator.TrVar(e.Origin, variable);
+            guard = BplAnd(guard, BoogieGenerator.MkIs(value, variable.Type));
+            guard = BplAnd(guard, BoogieGenerator.MkIsAlloc(value, variable.Type, heap));
+          }
+        }
+        if (usesThis != null) {
+          var receiver = new Boogie.IdentifierExpr(e.Origin, This, BoogieGenerator.TrType(usesThis));
+          guard = BplAnd(guard, BoogieGenerator.MkIs(receiver, usesThis));
+          guard = BplAnd(guard, BoogieGenerator.MkIsAlloc(receiver, usesThis, heap));
+        }
+        return guard;
+      }
+
       private Expr LambdaCanCallAssumption(LambdaExpr e, CanCallOptions cco) {
         var environment = BuildLambdaEnvironment(e);
         var et = environment.Translator;
@@ -1746,15 +1784,18 @@ namespace Microsoft.Dafny {
         }
         var range = e.Range == null ? null : Substitute(e.Range, null, environment.Substitution);
         var rangeFacts = range == null ? Boogie.Expr.True : et.CanCallAssumption(range, lambdaOptions);
-        if (reads.Count == 0 && bodyFacts is Boogie.LiteralExpr { IsTrue: true } &&
+        var recoverRange = range != null && options.Get(CommonOptionBag.AdditionalAxioms);
+        if (!recoverRange && reads.Count == 0 && bodyFacts is Boogie.LiteralExpr { IsTrue: true } &&
             rangeFacts is Boogie.LiteralExpr { IsTrue: true }) {
           // The only fact is the constant empty footprint, already independent
           // of the formals and range. A guarded selector quantifier is redundant.
           return footprintFact;
         }
         Expr facts = BplAnd(readsFacts, bodyFacts);
+        Expr rangeValue = null;
         if (range != null) {
-          facts = BplAnd(rangeFacts, BplImp(et.TrExpr(range), facts));
+          rangeValue = et.TrExpr(range);
+          facts = BplAnd(rangeFacts, BplImp(rangeValue, facts));
         }
         // Lambda source well-formedness checks its formals with ISALLOC in this
         // future heap. Export child permissions only under those same premises.
@@ -1816,9 +1857,23 @@ namespace Microsoft.Dafny {
         }
         var actualFamily = BuildLambdaHandleFamily(e, BuildLambdaEnvironment(e));
         var familyGuard = BplAnd(Boogie.Expr.Eq(family, actualFamily), guard);
-        var guardedFacts = BplForall(Cons<Variable>(familyVar,
-          environment.LayerBinders.Concat(environment.Binders).ToList()), trigger,
-          BplImp(familyGuard, facts));
+        var binders = Cons<Variable>(familyVar,
+          environment.LayerBinders.Concat(environment.Binders).ToList());
+        var guardedFacts = BplForall(binders, trigger, BplImp(familyGuard, facts));
+        if (recoverRange) {
+          // The native Handle selector exports only the sufficient direction.
+          // For this source lambda family value, its range is also necessary.
+          // Match this consequence only at an existing requires selection;
+          // reads and apply selections still expose only the original facts.
+          var captures = LambdaRangeCaptureGuard(e, environment.Heap);
+          // Under FormalTypes, Range implies the stored map
+          // FormalTypes && (CanCall(range) ==> Range). Its native selector
+          // already supplies the sufficient direction of this equality.
+          var rangeEquality = Boogie.Expr.Iff(requiresSelector, rangeValue);
+          var requiresTrigger = new Boogie.Trigger(tok, true, [requiresSelector]);
+          guardedFacts = BplAnd(guardedFacts,
+            BplForall(binders, requiresTrigger, BplImp(BplAnd(familyGuard, captures), rangeEquality)));
+        }
         // With no reads expressions the characteristic predicate is constant
         // false, independent of the lambda's arguments, heap, and precondition.
         // Its exact empty finite view therefore needs no formal-domain premise.

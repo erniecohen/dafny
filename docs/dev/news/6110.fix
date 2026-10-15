@@ -1,0 +1,1 @@
+With `--additional-axioms`, lambda values expose the necessary direction of their declared precondition under the source lambda's type, allocation, and heap requirements. This includes values stored in constants or returned by functions. The option remains disabled by default.
