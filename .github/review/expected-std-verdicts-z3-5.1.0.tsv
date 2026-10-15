@@ -211,7 +211,7 @@ Std Std.Arithmetic.DivMod.LemmaFundamentalDivMod (correctness)	Correct
 Std Std.Arithmetic.DivMod.LemmaFundamentalDivMod (well-formedness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaFundamentalDivModAuto (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaFundamentalDivModAuto (well-formedness)	Correct		
-Std Std.Arithmetic.DivMod.LemmaFundamentalDivModConverse (correctness)	OutOfResource		
+Std Std.Arithmetic.DivMod.LemmaFundamentalDivModConverse (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaFundamentalDivModConverse (well-formedness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaFundamentalDivModConverseAuto (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaFundamentalDivModConverseAuto (well-formedness)	Correct		
@@ -269,7 +269,7 @@ Std Std.Arithmetic.DivMod.LemmaModMultiplesVanish (correctness)	Correct
 Std Std.Arithmetic.DivMod.LemmaModMultiplesVanish (well-formedness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaModMultiplesVanishAuto (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaModMultiplesVanishAuto (well-formedness)	Correct		
-Std Std.Arithmetic.DivMod.LemmaModNegNeg (correctness)	OutOfResource		
+Std Std.Arithmetic.DivMod.LemmaModNegNeg (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaModNegNeg (well-formedness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaModOrdering (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaModOrdering (well-formedness)	Correct		
@@ -599,7 +599,7 @@ Std Std.Arithmetic.Power2.LemmaPow2MaskDiv2 (well-formedness)	Correct
 Std Std.Arithmetic.Power2.LemmaPow2MaskDiv2Auto (correctness)	Correct		
 Std Std.Arithmetic.Power2.LemmaPow2MaskDiv2Auto (well-formedness)	Correct		
 Std Std.Arithmetic.Power2.Pow2 (well-formedness)	Correct		
-Std Std.Base64.AboutDecodeValid (correctness)	OutOfResource		
+Std Std.Base64.AboutDecodeValid (correctness)	Correct		
 Std Std.Base64.AboutDecodeValid (well-formedness)	Correct		
 Std Std.Base64.BV24ToIndexSeq (well-formedness)	Correct		
 Std Std.Base64.BV24ToIndexSeqToBV24 (correctness)	Correct		
@@ -626,7 +626,7 @@ Std Std.Base64.DecodeEncode (correctness)	Correct
 Std Std.Base64.DecodeEncode (well-formedness)	Correct		
 Std Std.Base64.DecodeEncode1Padding (correctness)	Correct		
 Std Std.Base64.DecodeEncode1Padding (well-formedness)	Correct		
-Std Std.Base64.DecodeEncode2Padding (correctness)	OutOfResource		
+Std Std.Base64.DecodeEncode2Padding (correctness)	Correct		
 Std Std.Base64.DecodeEncode2Padding (well-formedness)	Correct		
 Std Std.Base64.DecodeEncodeBV (correctness)	Correct		
 Std Std.Base64.DecodeEncodeBV (well-formedness)	Correct		
@@ -634,7 +634,7 @@ Std Std.Base64.DecodeEncodeBlock (correctness)	Correct
 Std Std.Base64.DecodeEncodeBlock (well-formedness)	Correct		
 Std Std.Base64.DecodeEncodeBlock2Padding (correctness)	Correct		
 Std Std.Base64.DecodeEncodeBlock2Padding (well-formedness)	Correct		
-Std Std.Base64.DecodeEncodeRecursively (correctness)	OutOfResource		
+Std Std.Base64.DecodeEncodeRecursively (correctness)	Correct		
 Std Std.Base64.DecodeEncodeRecursively (well-formedness)	Correct		
 Std Std.Base64.DecodeEncodeUnpadded (correctness)	Correct		
 Std Std.Base64.DecodeEncodeUnpadded (well-formedness)	Correct		
@@ -658,7 +658,7 @@ Std Std.Base64.DecodeValidEncode (correctness)	Correct
 Std Std.Base64.DecodeValidEncode (well-formedness)	Correct		
 Std Std.Base64.DecodeValidEncode1Padding (correctness)	Correct		
 Std Std.Base64.DecodeValidEncode1Padding (well-formedness)	Correct		
-Std Std.Base64.DecodeValidEncode2Padding (correctness)	OutOfResource		
+Std Std.Base64.DecodeValidEncode2Padding (correctness)	Correct		
 Std Std.Base64.DecodeValidEncode2Padding (well-formedness)	Correct		
 Std Std.Base64.DecodeValidEncodeEmpty (correctness)	Correct		
 Std Std.Base64.DecodeValidEncodeEmpty (well-formedness)	Correct		
@@ -669,7 +669,7 @@ Std Std.Base64.DecodeValidPartialsFrom1PaddedSeq (well-formedness)	Correct
 Std Std.Base64.DecodeValidPartialsFrom2PaddedSeq (correctness)	Correct		
 Std Std.Base64.DecodeValidPartialsFrom2PaddedSeq (well-formedness)	Correct		
 Std Std.Base64.DecodeValidUnpaddedPartialFrom1PaddedSeq (correctness)	Correct		
-Std Std.Base64.DecodeValidUnpaddedPartialFrom1PaddedSeq (well-formedness)	OutOfResource		
+Std Std.Base64.DecodeValidUnpaddedPartialFrom1PaddedSeq (well-formedness)	Correct		
 Std Std.Base64.Encode1Padding (well-formedness)	Correct		
 Std Std.Base64.Encode1PaddingIs1Padding (correctness)	Correct		
 Std Std.Base64.Encode1PaddingIs1Padding (well-formedness)	Correct		
@@ -681,12 +681,12 @@ Std Std.Base64.EncodeBVIs1Padded (correctness)	Correct
 Std Std.Base64.EncodeBVIs1Padded (well-formedness)	Correct		
 Std Std.Base64.EncodeBVIs2Padded (correctness)	Correct		
 Std Std.Base64.EncodeBVIs2Padded (well-formedness)	Correct		
-Std Std.Base64.EncodeBVIsBase64 (correctness)	OutOfResource		
+Std Std.Base64.EncodeBVIsBase64 (correctness)	Correct		
 Std Std.Base64.EncodeBVIsUnpadded (correctness)	Correct		
 Std Std.Base64.EncodeBVIsUnpadded (well-formedness)	Correct		
 Std Std.Base64.EncodeBVLengthBound (correctness)	Correct		
 Std Std.Base64.EncodeBVLengthBound (well-formedness)	Correct		
-Std Std.Base64.EncodeBVLengthCongruentToZeroMod4 (correctness)	OutOfResource		
+Std Std.Base64.EncodeBVLengthCongruentToZeroMod4 (correctness)	Correct		
 Std Std.Base64.EncodeBVLengthCongruentToZeroMod4 (well-formedness)	Correct		
 Std Std.Base64.EncodeBVLengthExact (correctness)	Correct		
 Std Std.Base64.EncodeBVLengthExact (well-formedness)	Correct		
@@ -705,7 +705,7 @@ Std Std.Base64.EncodeDecodeRecursively (correctness)	Correct
 Std Std.Base64.EncodeDecodeRecursively (well-formedness)	Correct		
 Std Std.Base64.EncodeDecodeUnpadded (correctness)	Correct		
 Std Std.Base64.EncodeDecodeUnpadded (well-formedness)	Correct		
-Std Std.Base64.EncodeDecodeValid (correctness)	OutOfResource		
+Std Std.Base64.EncodeDecodeValid (correctness)	Correct		
 Std Std.Base64.EncodeDecodeValid (well-formedness)	Correct		
 Std Std.Base64.EncodeDecodeValid1Padded (correctness)	Correct		
 Std Std.Base64.EncodeDecodeValid1Padded (well-formedness)	Correct		
@@ -762,6 +762,8 @@ Std Std.Base64.UInt8sToBVsToUInt8s (correctness)	Correct
 Std Std.Base64.UnpaddedBase64Prefix (correctness)	Correct		
 Std Std.Base64.UnpaddedBase64Prefix (well-formedness)	Correct		
 Std Std.Base64.UnpaddedBase64StringIs7Bit (correctness)	Correct		
+Std Std.Base64.UnpaddedPrefixWithPaddingIsBase64 (correctness)	Correct		
+Std Std.Base64.UnpaddedStringIsBase64 (correctness)	Correct		
 Std Std.BoundedInts.INT16_MAX (well-formedness)	Correct		
 Std Std.BoundedInts.INT16_MIN (well-formedness)	Correct		
 Std Std.BoundedInts.INT32_MAX (well-formedness)	Correct		
@@ -2188,7 +2190,7 @@ TargetSpecific-py Std.FileIO.WriteUTF8ToFile (correctness)	Correct
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (correctness)	Correct		
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (well-formedness)	Correct		
 TargetSpecific-py Std.PythonConcurrent.MutableMap.Get (well-formedness)	Correct		
-run Std	4	7584 verified, 2 errors, 26 out of resource	src/Std/Actions/BulkActions.dfy(221,18) src/Std/Actions/BulkActions.dfy(474,24) src/Std/Actions/Producers.dfy(1678,37) src/Std/Arithmetic/DivMod.dfy(1324,4) src/Std/Arithmetic/DivMod.dfy(1339,8) src/Std/Arithmetic/DivMod.dfy(877,8) src/Std/Arithmetic/DivMod.dfy(899,8) src/Std/Arithmetic/DivMod.dfy(920,8) src/Std/Arithmetic/LittleEndianNat.dfy(50,30) src/Std/Arithmetic/Mul.dfy(154,22) src/Std/Arithmetic/Power.dfy(396,8) src/Std/Arithmetic/Power2.dfy(71,8) src/Std/Base64.dfy(1080,8) src/Std/Base64.dfy(1179,8) src/Std/Base64.dfy(1234,8) src/Std/Base64.dfy(415,37) src/Std/Base64.dfy(738,8) src/Std/Base64.dfy(783,8) src/Std/Base64.dfy(895,8) src/Std/Base64.dfy(907,8) src/Std/Collections/Seq.dfy(1010,11) src/Std/Collections/Seq.dfy(1042,8) src/Std/JSON/ZeroCopy/Deserializer.dfy(998,59) src/Std/Termination.dfy(125,17) src/Std/Termination.dfy(134,17) src/Std/Unicode/UnicodeEncodingForm.dfy(133,11) src/Std/Unicode/UnicodeStringsWithUnicodeChar.dfy(30,4)
+run Std	4	7728 verified, 2 errors, 16 out of resource	src/Std/Actions/BulkActions.dfy(221,18) src/Std/Actions/BulkActions.dfy(474,24) src/Std/Actions/Producers.dfy(1678,37) src/Std/Arithmetic/DivMod.dfy(879,8) src/Std/Arithmetic/DivMod.dfy(901,8) src/Std/Arithmetic/DivMod.dfy(922,8) src/Std/Arithmetic/LittleEndianNat.dfy(50,30) src/Std/Arithmetic/Mul.dfy(154,22) src/Std/Arithmetic/Power.dfy(396,8) src/Std/Arithmetic/Power2.dfy(71,8) src/Std/Collections/Seq.dfy(1010,11) src/Std/Collections/Seq.dfy(1042,8) src/Std/JSON/ZeroCopy/Deserializer.dfy(998,59) src/Std/Termination.dfy(125,17) src/Std/Termination.dfy(134,17) src/Std/Unicode/UnicodeEncodingForm.dfy(133,11) src/Std/Unicode/UnicodeStringsWithUnicodeChar.dfy(30,4)
 run TargetSpecific-cs	0	15 verified, 0 errors	
 run TargetSpecific-go	0	16 verified, 0 errors	
 run TargetSpecific-java	0	15 verified, 0 errors	

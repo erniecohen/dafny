@@ -25,6 +25,15 @@ try:
     run("inventory", ["dotnet", "--info"])
     run("boogie", ["sh", "Scripts/fetch-boogie-packages.sh"])
     if run("build", ["dotnet", "build", "Source/Dafny.sln", "-c", "Release"]):
+        if os.environ.get("GITHUB_REF", "").startswith("refs/heads/scratch/codex/170-review"):
+            # The diagnostic records actual proof exits; its wrapper stays green.
+            command = [sys.executable, "Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/obligation-proof-repairs/registered.py",
+                       "Binaries/net10.0/DafnyDriver.dll", "Binaries/z3/bin/z3-5.1.0",
+                       str(out / "proof-source-maintenance"), "--diagnostic", "--full-files", "--capture-verdicts"]
+            with (out / "proof-source-maintenance.txt").open("w") as stream:
+                result = subprocess.run(command, stdout=stream, stderr=subprocess.STDOUT)
+            records.append({"name": "proof-source-maintenance", "status": result.returncode, "command": command})
+            sys.exit(0)
         if "--units-only" not in sys.argv:
             run("integration-build", ["dotnet", "build", "Source/IntegrationTests", "-c", "Release"])
         run("core-unit", ["dotnet", "test", "Source/DafnyCore.Test", "-c", "Release", "--no-build"])
