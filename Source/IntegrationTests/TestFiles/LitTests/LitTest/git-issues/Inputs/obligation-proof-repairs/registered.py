@@ -252,9 +252,9 @@ if args.capture_verdicts:
     with (capture / 'plan-output.txt').open('w') as stream, contextlib.redirect_stdout(stream):
         lit.plan(str(repository / L), str(complete_plan))
     selected_paths = {source.removeprefix(L) for _, source, _, _ in targets if source.startswith(L)}
-    plan = capture / 'plan.tsv'
-    plan.write_text(''.join(line + '\n' for line in complete_plan.read_text().splitlines() if line.split('\t')[0] in selected_paths))
-    assert len(plan.read_text().splitlines()) == len(selected_paths)
+    verdict_plan = capture / 'plan.tsv'
+    verdict_plan.write_text(''.join(line + '\n' for line in complete_plan.read_text().splitlines() if line.split('\t')[0] in selected_paths))
+    assert len(verdict_plan.read_text().splitlines()) == len(selected_paths)
     reference = re.search(r'DefaultZ3Version = "([^"]+)"', (repository / 'Source/DafnyCore/DafnyOptions.cs').read_text()).group(1)
     hashes = {'4.12.1': 'e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b',
         '4.16.0': '87de9c9e86c877abfccb00cf24b946c4a1bda7b9cba6f363ea58311d2573c320'}
@@ -272,7 +272,7 @@ if args.capture_verdicts:
         folder.mkdir(exist_ok=True)
         actual = folder / 'verdicts.tsv'
         with (folder / 'output.txt').open('w') as stream, contextlib.redirect_stdout(stream):
-            lit.run(str(plan), str(repository / L), str(launcher), str(solver), str(actual), jobs=1,
+            lit.run(str(verdict_plan), str(repository / L), str(launcher), str(solver), str(actual), jobs=1,
                 additional_axioms=axioms, measurements=str(folder / 'measurements'))
         with (folder / 'expected-verdicts.tsv').open('w') as stream, contextlib.redirect_stdout(stream):
             lit.expected([str(actual)])
