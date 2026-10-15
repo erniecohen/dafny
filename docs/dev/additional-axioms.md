@@ -684,7 +684,7 @@ only to the existing facts for that exact source lambda:
 
 ```boogie
 ExactSourceFamily(F) && FormalTypes(args) && FormalAllocation(args, H)
-  && GoodHeap(H) && FormationHeapSameOrSucceeds(H)
+  && GoodHeap(H) && FormationHeapSameOrSucceeds(H) && ValidCaptures(H)
 ==> (RequiresN(types, H, AtLayer(F, L), args) ==> Range(H, args))
 ```
 
@@ -712,8 +712,12 @@ the current one-way backend selector equation.
 
 The exact family equality prevents applying the fact to another lambda or
 capture. Formal type and allocation guards exclude arbitrary boxed backend
-values. The existing heap guard and captured previous/labeled heaps retain the
-source interpretation of `old`. Existing frame obligations check the range's
+values. The new fact additionally requires every captured reference-bearing
+value and receiver to have its source type and be allocated in the selected
+heap; that heap must be or succeed each captured previous or labeled heap.
+This is needed when a heap-independent returning function uses `$OneHeap` as a
+translation placeholder. A missing captured heap disables the new fact.
+These guards retain the source interpretation of `old`. Existing frame obligations check the range's
 reads against the declared footprint, so equal permitted heaps give equal
 range booleans. Existing result-type and allocation obligations continue to
 apply only where the precondition holds. No witness for an empty formal type

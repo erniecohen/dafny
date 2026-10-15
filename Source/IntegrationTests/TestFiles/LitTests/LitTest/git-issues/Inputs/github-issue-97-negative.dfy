@@ -66,3 +66,33 @@ lemma MissingRangePermission() {
   assert f.requires(1);
   assert Partial(0);
 }
+
+function Generic<T(==)>(value: T): T --> T {
+  (x: T) requires x == value => x
+}
+
+lemma GenericVacuity() {
+  var f := Generic(0);
+  assert f.requires(0);
+  assert false;
+}
+
+lemma NestedVacuity() {
+  var outer := (x: int) => (y: int) requires y > x => y;
+  var f := outer(0);
+  assert f.requires(1);
+  assert false;
+}
+
+function Captured(c: Cell): int ~> int {
+  (x: int) requires x > c.n reads c => x
+}
+
+method CapturedLifetimeVacuity() {
+  label Before:
+  var c := new Cell;
+  var f := Captured(c);
+  assert !old@Before(allocated(c));
+  assert f.requires(c.n + 1);
+  assert false;
+}

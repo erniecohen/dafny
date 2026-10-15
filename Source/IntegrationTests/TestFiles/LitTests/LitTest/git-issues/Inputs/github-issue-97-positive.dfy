@@ -94,3 +94,11 @@ lemma GuardedRange() {
   assert f.requires(1);
   assert !f.requires(0);
 }
+
+function Captured(c: Cell): int ~> int {
+  (x: int) requires x > c.n reads c => x
+}
+
+lemma CapturedDomain(c: Cell, x: int)
+  ensures Captured(c).requires(x) <==> x > c.n
+{}

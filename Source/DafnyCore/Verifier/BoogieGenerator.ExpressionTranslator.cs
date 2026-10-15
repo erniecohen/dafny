@@ -1727,6 +1727,44 @@ namespace Microsoft.Dafny {
         }
       }
 
+      private Expr LambdaRangeCaptureGuard(LambdaExpr e, Expr heap) {
+        bool usesHeap = false, usesOldHeap = false;
+        var heapAt = new HashSet<Label>();
+        Type usesThis = null;
+        var freeVariables = new HashSet<IVariable>();
+        FreeVariablesUtil.ComputeFreeVariables(BoogieGenerator.options, e, freeVariables,
+          ref usesHeap, ref usesOldHeap, heapAt, ref usesThis, true);
+        usesOldHeap |= UsesPreviousHeap(e);
+        var capturedHeaps = new List<Expr>();
+        if (usesOldHeap) {
+          capturedHeaps.Add(Old.HeapExpr);
+        }
+        foreach (var label in heapAt.OrderBy(label => label.Name)) {
+          capturedHeaps.Add(OldAt(label).HeapExpr);
+        }
+        Expr guard = Expr.True;
+        foreach (var capturedHeap in capturedHeaps) {
+          if (capturedHeap == null) {
+            return Expr.False;
+          }
+          guard = BplAnd(guard, BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, capturedHeap));
+          guard = BplAnd(guard, BoogieGenerator.HeapSameOrSucc(capturedHeap, heap));
+        }
+        foreach (var variable in freeVariables.OrderBy(variable => variable.UniqueName)) {
+          if (variable.Type.MayShowReferences) {
+            var value = BoogieGenerator.TrVar(e.Origin, variable);
+            guard = BplAnd(guard, BoogieGenerator.MkIs(value, variable.Type));
+            guard = BplAnd(guard, BoogieGenerator.MkIsAlloc(value, variable.Type, heap));
+          }
+        }
+        if (usesThis != null) {
+          var receiver = new Boogie.IdentifierExpr(e.Origin, This, BoogieGenerator.TrType(usesThis));
+          guard = BplAnd(guard, BoogieGenerator.MkIs(receiver, usesThis));
+          guard = BplAnd(guard, BoogieGenerator.MkIsAlloc(receiver, usesThis, heap));
+        }
+        return guard;
+      }
+
       private Expr LambdaCanCallAssumption(LambdaExpr e, CanCallOptions cco) {
         var environment = BuildLambdaEnvironment(e);
         var et = environment.Translator;
@@ -1789,9 +1827,11 @@ namespace Microsoft.Dafny {
         if (recoverRange) {
           // The native Handle selector exports only the sufficient direction.
           // For this exact source lambda, its declared range is also necessary.
-          // Retain the same formal type/allocation, heap, and family guards below;
-          // rangeFacts independently exports the range's checked call permissions.
-          facts = BplAnd(facts, BplImp(requiresSelector, rangeValue));
+          // Retain the formal type/allocation, heap, and family guards below,
+          // and require captures to be valid in this selected heap. rangeFacts
+          // independently exports the range's checked call permissions.
+          var captures = LambdaRangeCaptureGuard(e, environment.Heap);
+          facts = BplAnd(facts, BplImp(BplAnd(captures, requiresSelector), rangeValue));
         }
         var applySelector = FunctionCall(tok, BoogieGenerator.Apply(e.BoundVars.Count), Predef.BoxType, selectorArguments);
         var trigger = new Boogie.Trigger(tok, true, [readsSelector],
