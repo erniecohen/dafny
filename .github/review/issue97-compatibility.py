@@ -44,7 +44,7 @@ def differences(left, right):
 try:
     mode = role.split("-")[1]
     enabled = mode == "on"
-    kind = "suite" if role.startswith("suite-") else "std"
+    kind = "inputs" if role == "std-inputs" else ("suite" if role.startswith("suite-") else "std")
     solver = Path("Binaries/z3/bin/z3-5.1.0").resolve()
     solver_version = "5.1.0"
     if kind == "std" and role.endswith("4.16"):
@@ -87,12 +87,36 @@ try:
                 "--additional-axioms", str(enabled).lower(), "--measurements", str(out / (label + "-measurements"))])
             phase(label + "-inventory", ["python3", ".github/review/additional-axioms.py", "inventory",
                 str(out / (label + "-measurements")), str(out / (label + "-resources.json"))])
+        elif kind == "inputs":
+            library = Path("Source/DafnyStandardLibraries").resolve()
+            targets = library / "src/Std/TargetSpecific"
+            parts = [("Std", library, ["src/Std/dfyconfig.toml"])]
+            for target in ["notarget", "cs", "java", "js", "go", "py"]:
+                files = sorted("./" + str(file.relative_to(targets)) for file in targets.rglob("*" + "-" + target + "*.dfy"))
+                parts.append((target, targets, ["dfyconfig.toml"] + files))
+            for part, directory, inputs in parts:
+                destination = (out / (label + "-inputs") / part).resolve()
+                destination.mkdir(parents=True, exist_ok=True)
+                phase(label + "-inputs-" + part, [dafny, "build"] + inputs + ["--target=lib", "--no-verify",
+                    "--output=" + str(destination / "library"), "--bprint=" + str(destination / "program.bpl"),
+                    "--additional-axioms=false", "--cores=4", "--allow-warnings"], 900, directory)
         else:
             phase(label + "-stdlib", ["python3", ".github/review/std-verdicts.py", "run",
                 "Source/DafnyStandardLibraries", dafny, str(solver), str(out / (label + ".tsv")),
                 "--cores", "4", "--additional-axioms", str(enabled).lower()])
         subprocess.run(["git", "worktree", "remove", "--force", "compiler"], check=True)
         shutil.rmtree(product)
+    if kind == "inputs":
+        inventories = {}
+        for label in sources:
+            directory = out / (label + "-inputs")
+            files = sorted(directory.rglob("*.bpl"))
+            inventories[label] = {str(file.relative_to(directory)): hashlib.sha256(file.read_bytes()).hexdigest() for file in files}
+        report = {"diagnostic_only": True, "translation_only": True, "identities": identities,
+            "coverage": {label: len(inventory) for label, inventory in inventories.items()},
+            "generated_input_differences": differences(inventories["baseline"], inventories["candidate"])}
+        (out / "comparison.json").write_text(json.dumps(report, indent=2) + "\n")
+        raise SystemExit(0)
     tables = {label: load_table(out / (label + ".tsv")) for label in sources}
     verdict = lambda table: {key: row[:3] for key, row in table.items()}
     if kind == "suite":
