@@ -47,9 +47,11 @@ helpers = [
     ('subtract-mod', S + 'Arithmetic/DivMod.dfy', 'Std.Arithmetic.DivMod.LemmaSubModNoopRight', []),
     ('distribute', S + 'Arithmetic/Mul.dfy', 'Std.Arithmetic.Mul.LemmaMulIsDistributiveSub', []),
     ('multiply-one', S + 'Arithmetic/Mul.dfy', 'Std.Arithmetic.Mul.LemmaMulBasics', []),
+    ('encode-padding-identity', S + 'Base64.dfy', 'Std.Base64.EncodeBVIs1Padded', []),
+    ('unpadded-prefix', S + 'Base64.dfy', 'Std.Base64.UnpaddedBase64Prefix', []),
 ]
 base64_source = (repository / (S + 'Base64.dfy')).read_text()
-for helper in ['UnpaddedPrefixWithPaddingIsBase64', 'UnpaddedStringIsBase64']:
+for helper in ['UnpaddedPrefixWithPaddingIsBase64', 'UnpaddedStringIsBase64', 'DecodeValid1PaddingLengthMod3']:
     if 'lemma ' + helper + '(' in base64_source:
         helpers.append((helper, S + 'Base64.dfy', 'Std.Base64.' + helper, []))
 rows = []
@@ -116,7 +118,11 @@ def verify(label, source, symbol, extra, refresh, axioms, mode, full=False):
     (folder / 'output.txt').write_text(text)
     (folder / 'exit.txt').write_text(str(code) + '\n')
     log = folder / 'results.json'
-    declarations = json.loads(log.read_text()).get('verificationResults', []) if log.exists() and log.stat().st_size else []
+    log_error = None
+    try:
+        declarations = json.loads(log.read_text()).get('verificationResults', []) if log.exists() and log.stat().st_size else []
+    except json.JSONDecodeError as error:
+        declarations, log_error = [], str(error)
     batches = [vc for d in declarations for vc in d['vcResults']]
     costs = [vc['resourceCount'] for vc in batches]
     wanted = [symbol]
@@ -129,7 +135,7 @@ def verify(label, source, symbol, extra, refresh, axioms, mode, full=False):
     good = good and (full or code == 0) and not any(word in text.lower() for word in ['unhandled exception', 'internal error', 'parse errors'])
     row = {'name': label, 'source': source, 'symbol': symbol, 'refresh': refresh,
         'additional_axioms': axioms, 'mode': mode, 'complete_scope': full,
-        'exit': code, 'selected_correct': good, 'declarations': len(declarations),
+        'exit': code, 'selected_correct': good, 'log_error': log_error, 'declarations': len(declarations),
         'batches': len(batches), 'total_ru': sum(costs), 'max_ru': max(costs, default=0),
         'outcomes': {d['name']: d['outcome'] for d in declarations},
         'batch_results': [(d['name'], vc['vcNum'], vc['outcome'], vc['resourceCount'])
