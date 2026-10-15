@@ -12,7 +12,7 @@ Issue [#170](https://github.com/erniecohen/dafny/issues/170) repairs the eleven 
 
 ## Permanent coverage
 
-The registered regression checks each target and supporting lemma independently, including their WF declarations. It covers the applicable resolver modes, both additional-axiom settings, and obligation checking ON, explicit OFF, and default. Default and OFF must have identical named batch outcomes and resource counts.
+Six bounded registered tests partition the complete regression. Each part checks its selected targets and supporting lemmas independently, including their WF declarations. The parts keep each default/OFF comparison together and cover every planned case exactly once. A twelve-minute safety deadline stops the verifier process group and fails the part before the existing harness's fifteen-minute wait can expire. It covers the applicable resolver modes, both additional-axiom settings, and obligation checking ON, explicit OFF, and default. Default and OFF must have identical named batch outcomes and resource counts.
 
 The complete-file phase resolves library sources through their ordinary project and selects every declaration in each affected file. It preserves the source limits and options. Each invocation records the actual exit, all batch outcomes, total RU, and maximum batch RU. A completed file may retain its documented negative controls or unrelated resource failures; timeout, signal, driver, and missing-log results fail the coverage check. The ordinary suite and full-library comparisons remain part of required CI.
 
@@ -20,10 +20,12 @@ The complete-file phase resolves library sources through their ordinary project 
 
 - [Run 38714425139](https://github.com/erniecohen/dafny/actions/runs/38714425139) records 138 successful selected invocations and exact default/OFF equality.
 - [Run 38717833869](https://github.com/erniecohen/dafny/actions/runs/38717833869) records 180 successful selected invocations, the retained Base64 support repairs, exact default/OFF equality, and standing suite/library verdict captures.
+- [Run 38722326616](https://github.com/erniecohen/dafny/actions/runs/38722326616) records 204 successful selected target/support invocations with exact default/OFF equality.
+- [Run 38729668334](https://github.com/erniecohen/dafny/actions/runs/38729668334) proves the complete Schorr-Waite source in all eight reference-solver resolver/axiom/ON-OFF profiles. Stable child/path witnesses preserve reachability across pointer reversal. At the unchanged harness ceiling, default-OFF legacy/refreshed results are 270/275 verified with zero errors.
 
-These wrappers record actual phase exits and return zero for diagnostics. The proposed head must also pass the real `review.yml` gates. The CI summary from the permanent regression reports the source/compiler/solver digests and numeric resources for every selected and complete-file invocation.
+These wrappers record actual phase exits and return zero for diagnostics. The proposed head must also pass the real `review.yml` gates. Public diagnostic artifacts retain completed coverage receipts, source/compiler/solver digests, and numeric resources for every selected and complete-file invocation. The ordinary fork CI must pass all six registered parts. The earlier single-test pass at fifteen minutes is insufficient evidence because the existing lit harness ignores an expired wait ([#176](https://github.com/erniecohen/dafny/issues/176)); the bounded parts avoid that defect without changing the harness.
 
-## Dev target costs
+## Earlier dev target costs
 
 The following counts come from run 38717833869 with Z3 5.1.0, using each originally affected resolver/additional-axiom configuration. Each row includes every batch selected for that target.
 
@@ -42,7 +44,7 @@ The following counts come from run 38717833869 with Z3 5.1.0, using each origina
 | EncodeBVIsBase64 | 1 | 256,457 | 256,457 | 1 | 258,327 | 258,327 |
 
 
-## Dev complete-file costs
+## Earlier dev complete-file costs
 
 Compare the ordinary default-OFF suite commands in [baseline run 38173708929](https://github.com/erniecohen/dafny/actions/runs/38173708929) and repair run 38714425139, with additional axioms OFF. Counts include all declarations and retained failures in each file.
 
@@ -60,3 +62,7 @@ Append adds four complete-file batches and increases aggregate cost by 22.8%, fr
 The remaining recorded suite outcomes are M0 Schorr-Waite and UnionFind Main resource failures, four SnapshotableTrees Insert resource failures, and its intentional concurrent-modification error. The repaired M2, join, and iterator targets pass within those complete-file runs. These outcomes remain explicit in the standing verdict tables.
 
 The library capture changes only the `run Std` verified-batch total from 7838 to 7841 in the four active solver/axiom profiles: Power adds five batches and ModNegNeg removes two. Every declaration verdict stays unchanged. The unrelated JSON baseline resource failure observed in run 38173708929 is retained as separate baseline evidence; its expected declaration verdict is unchanged.
+
+## Schorr-Waite compatibility follow-up
+
+The stable child/path witnesses in run 38729668334 add explicit checks and remove the reference-solver M2 resource failure. The standing Z3 5.1.0 default-OFF M2 proof has 76 batches, 5,452,202 aggregate RU, and a 469,642 maximum. The complete file has 275 batches, 45,743,586 aggregate RU, and a 16,023,935 maximum including the unchanged M0 resource failure. Both additional-axiom profiles have those same counts. Its expected summary therefore moves from 263 to 274 verified while retaining the sole M0 resource failure.

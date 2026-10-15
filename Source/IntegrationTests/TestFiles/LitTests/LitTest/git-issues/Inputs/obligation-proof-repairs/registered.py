@@ -9,6 +9,7 @@ from pathlib import Path
 import subprocess
 import signal
 import sys
+import time
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('assembly', type=Path)
@@ -16,11 +17,19 @@ parser.add_argument('solver', type=Path)
 parser.add_argument('output', type=Path)
 parser.add_argument('--diagnostic', action='store_true')
 parser.add_argument('--full-files', action='store_true')
+parser.add_argument('--shard', help='Zero-based part/count; keep OFF/default cases together')
 parser.add_argument('--capture-verdicts', action='store_true')
 args = parser.parse_args()
+shard_index, shard_count = (map(int, args.shard.split('/')) if args.shard else (0, 1))
+assert shard_count > 0 and 0 <= shard_index < shard_count
+# The lit harness has a fifteen-minute wait. End each registered shard first,
+# including failure and child cleanup, so an unfinished task cannot count as green.
+deadline = time.monotonic() + 720 if args.shard else None
 repository = next(p for p in Path(__file__).resolve().parents if (p / 'Source/DafnyStandardLibraries').is_dir())
 assembly, solver, output = args.assembly.resolve(), args.solver.resolve(), args.output.resolve()
 output.mkdir(parents=True, exist_ok=True)
+for stale in ['receipt.json', 'results.json', 'plan.json']:
+    (output / stale).unlink(missing_ok=True)
 assert '5.1.0' in subprocess.check_output([str(solver), '--version'], text=True)
 launch = ['dotnet', str(assembly)]
 os.environ['DOTNET_PROCESSOR_COUNT'] = '1'
@@ -87,7 +96,8 @@ def run_verifier(command):
         text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
     try:
         try:
-            stdout, stderr = active_process.communicate(timeout=SAFETY_SECONDS)
+            remaining = SAFETY_SECONDS if deadline is None else max(0.001, deadline - time.monotonic())
+            stdout, stderr = active_process.communicate(timeout=min(SAFETY_SECONDS, remaining))
             return stdout + stderr, active_process.returncode
         except subprocess.TimeoutExpired:
             try:
@@ -118,12 +128,16 @@ def public_coverage_receipt(identity):
             result[key] = value
         else:
             raise ValueError('Public coverage requires canonical digests')
-    result['invocations'] = identity['invocations']
+    for key in ['invocations', 'expected_invocations', 'shard_index', 'shard_count']:
+        result[key] = identity[key]
+    result['complete'] = identity['complete']
     result['all_selected_correct'] = identity['all_selected_correct']
     result['default_off_equal'] = identity['default_off_equal']
-    if type(result['invocations']) is not int or result['invocations'] < 0 or any(
-        type(result[key]) is not bool for key in ['all_selected_correct', 'default_off_equal']):
+    if any(type(result[key]) is not int or result[key] < 0 for key in ['invocations', 'expected_invocations', 'shard_index', 'shard_count']) or any(
+        type(result[key]) is not bool for key in ['complete', 'all_selected_correct', 'default_off_equal']):
         raise ValueError('Public coverage requires counts and booleans')
+    if result['shard_count'] < 1 or result['shard_index'] >= result['shard_count'] or result['complete'] != (result['invocations'] == result['expected_invocations']):
+        raise ValueError('Public coverage requires a consistent completed partition')
     return result
 
 def verify(label, source, symbol, extra, refresh, axioms, mode, full=False):
@@ -184,23 +198,34 @@ def verify(label, source, symbol, extra, refresh, axioms, mode, full=False):
         'batches', row['batches'], 'total RU', row['total_ru'], 'max RU', row['max_ru'], file=sys.stderr, flush=True)
     return row
 
-for name, source, symbol, extra in targets + helpers:
-    for refresh in ([True] if source.startswith(S) else [False, True]):
-        for axioms in [False, True]:
-            for mode in ['on', 'off', 'default']:
-                verify(f'{name}-r{int(refresh)}-a{int(axioms)}-{mode}', source, symbol, extra, refresh, axioms, mode)
-
-if args.full_files:
-    seen = set()
-    for name, source, symbol, extra in targets:
+def build_plan():
+    groups = []
+    for name, source, symbol, extra in targets + helpers:
         for refresh in ([True] if source.startswith(S) else [False, True]):
             for axioms in [False, True]:
-                for mode in ['on', 'off']:
-                    key = (source, refresh, axioms, mode)
+                groups.append([(f'{name}-r{int(refresh)}-a{int(axioms)}-{mode}', source, symbol, extra,
+                    refresh, axioms, mode, False) for mode in ['on', 'off', 'default']])
+    if args.full_files:
+        seen = set()
+        for name, source, symbol, extra in targets:
+            for refresh in ([True] if source.startswith(S) else [False, True]):
+                for axioms in [False, True]:
+                    key = (source, refresh, axioms)
                     if key in seen:
                         continue
                     seen.add(key)
-                    verify(f'complete-{name}-r{int(refresh)}-a{int(axioms)}-{mode}', source, symbol, extra, refresh, axioms, mode, full=True)
+                    groups.append([(f'complete-{name}-r{int(refresh)}-a{int(axioms)}-{mode}', source, symbol, extra,
+                        refresh, axioms, mode, True) for mode in ['on', 'off']])
+    return groups
+
+plan = [case for index, group in enumerate(build_plan()) if index % shard_count == shard_index for case in group]
+assert plan
+(output / 'plan.json').write_text(json.dumps([case[0] for case in plan], indent=2) + '\n')
+for case in plan:
+    if deadline is not None and time.monotonic() >= deadline:
+        raise TimeoutError('Registered proof shard exceeded its safety cap')
+    verify(*case)
+assert len(rows) == len(plan)
 
 if args.capture_verdicts:
     # This optional diagnostic records the actual standing-gate verdict rows.
@@ -269,7 +294,8 @@ identity = {'source': source_revision,
     'compiler_core_sha256': hashlib.sha256(assembly.with_name('DafnyCore.dll').read_bytes()).hexdigest(),
     'solver_version': subprocess.check_output([str(solver), '--version'], text=True).strip(),
     'solver_sha256': hashlib.sha256(solver.read_bytes()).hexdigest(), 'diagnostic': args.diagnostic,
-    'all_selected_correct': all(row['selected_correct'] for row in rows), 'invocations': len(rows)}
+    'all_selected_correct': all(row['selected_correct'] for row in rows), 'invocations': len(rows),
+    'shard_index': shard_index, 'shard_count': shard_count, 'expected_invocations': len(plan), 'complete': len(rows) == len(plan)}
 by_name = {row['name']: row for row in rows}
 identity['default_off_differences'] = [row['name'] for row in rows if row['mode'] == 'default' and
     row['batch_results'] != by_name[row['name'].removesuffix('default') + 'off']['batch_results']]
@@ -295,7 +321,7 @@ if os.environ.get('GITHUB_ACTIONS') == 'true' and summary:
         stream.write('\n'.join(lines) + '\n')
 if not args.diagnostic:
     assert identity['default_off_equal'], identity['default_off_differences']
-    assert identity['all_selected_correct'], json.dumps([r for r in rows if not r['selected_correct']], indent=2)
-    print('PASS eleven maintained obligation proofs across both resolvers and axiom settings')
-    print('PASS independent initial-path and concrete arithmetic helpers')
+    assert identity['complete'] and identity['all_selected_correct'], json.dumps([{'name': r['name'], 'exit': r['exit']} for r in rows if not r['selected_correct']], indent=2)
+    print('PASS maintained obligation proofs in the selected partition')
+    print('PASS selected target and helper obligations in completed scopes')
     print('PASS default and explicit OFF compatibility')

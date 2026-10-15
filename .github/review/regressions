@@ -282,3 +282,8 @@ git-issues/floating-obligation-constraints.dfy
 
 # Maintained source proofs for consistent obligation checking.
 git-issues/git-issue-170.dfy
+git-issues/git-issue-170-part-1.dfy
+git-issues/git-issue-170-part-2.dfy
+git-issues/git-issue-170-part-3.dfy
+git-issues/git-issue-170-part-4.dfy
+git-issues/git-issue-170-part-5.dfy
