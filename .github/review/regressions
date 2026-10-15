@@ -279,3 +279,20 @@ git-issues/github-issue-99.dfy
 
 # Full dev integration: float-wrapper constraints and non-vacuity.
 git-issues/floating-obligation-constraints.dfy
+
+# Maintained source proofs for consistent obligation checking.
+git-issues/git-issue-170.dfy
+git-issues/git-issue-170-part-1.dfy
+git-issues/git-issue-170-part-2.dfy
+git-issues/git-issue-170-part-3.dfy
+git-issues/git-issue-170-part-4.dfy
+git-issues/git-issue-170-part-5.dfy
+git-issues/git-issue-170-part-6.dfy
+git-issues/git-issue-170-part-7.dfy
+git-issues/git-issue-170-part-8.dfy
+git-issues/git-issue-170-part-9.dfy
+git-issues/git-issue-170-part-10.dfy
+git-issues/git-issue-170-part-11.dfy
+dafny1/PriorityQueue.dfy
+dafny4/Primes.dfy
+dafny2/SnapshotableTrees.dfy

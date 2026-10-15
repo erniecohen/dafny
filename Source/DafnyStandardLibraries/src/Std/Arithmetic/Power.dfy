@@ -356,7 +356,7 @@ module Std.Arithmetic.Power {
     forall i {:trigger IsLe(0, i)} | IsLe(0, i) && f(i)
       ensures f(i + 1)
     {
-      assert 0 < i ==> Pow(b, e1) < Pow(b, e1 + i);
+      assert {:split_here} 0 < i ==> Pow(b, e1) < Pow(b, e1 + i);
       calc {
          Pow(b, e1 + i);
       <= { LemmaPowPositive(b, e1 + i);
@@ -372,10 +372,10 @@ module Std.Arithmetic.Power {
          }
          Pow(b, e1 + (i + 1));
       }
-      assert f(i+1);
+      assert {:split_here} f(i+1);
     }
     LemmaMulInductionAuto(e2 - e1, f);
-    assert Pow(b, e1) < Pow(b, e1 + (e2 - e1)) == Pow(b, e2) by {
+    assert {:split_here} Pow(b, e1) < Pow(b, e1 + (e2 - e1)) == Pow(b, e2) by {
       assert 0 < e2 - e1;
     }
   }

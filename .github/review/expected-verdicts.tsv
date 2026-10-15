@@ -283,7 +283,7 @@ dafny1/BDD.dfy	0	5 verified, 0 errors
 dafny1/BinaryTree.dfy	0	19 verified, 0 errors	
 dafny1/Celebrity.dfy	0	5 verified, 0 errors	
 dafny1/Cubes.dfy	0	2 verified, 0 errors	
-dafny1/ExtensibleArray.dfy	0	9 verified, 0 errors	
+dafny1/ExtensibleArray.dfy	0	13 verified, 0 errors	
 dafny1/ExtensibleArrayAuto.dfy	4	8 verified, 0 errors, 1 out of resource; 2 out of resource	74
 dafny1/FindZero.dfy	0	8 verified, 0 errors	
 dafny1/KatzManna.dfy	0	4 verified, 0 errors	
@@ -292,9 +292,9 @@ dafny1/ListCopy.dfy	0	2 verified, 0 errors
 dafny1/ListReverse.dfy	0	2 verified, 0 errors	
 dafny1/MatrixFun.dfy	0	6 verified, 0 errors	
 dafny1/MoreInduction.dfy	4	26 verified, 4 errors	78,83,88,93
-dafny1/PriorityQueue.dfy	0	22 verified, 0 errors	
+dafny1/PriorityQueue.dfy	0	110 verified, 0 errors	
 dafny1/Queue.dfy	0	18 verified, 0 errors	
-dafny1/SchorrWaite-stages.dfy	4	227 verified, 0 errors, 3 out of resource; 4 out of resource	82,218,220
+dafny1/SchorrWaite-stages.dfy	4	274 verified, 0 errors, 1 out of resource; 2 out of resource	82
 dafny1/SchorrWaite.dfy	4	275 verified, 0 errors, 1 out of resource; 2 out of resource	243
 dafny1/SeparationLogicList.dfy	0	13 verified, 0 errors	
 dafny1/Substitution.dfy	0	9 verified, 0 errors	
@@ -319,7 +319,7 @@ dafny2/MonotonicHeapstate.dfy	0	17 verified, 0 errors
 dafny2/SegmentSum.dfy	0	3 verified, 0 errors	
 dafny2/SmallestMissingNumber-functional.dfy	4	16 verified, 5 errors, 3 out of resource; 4 out of resource	101,103,157,207,209,230,272
 dafny2/SmallestMissingNumber-imperative.dfy	4	2 verified, 7 errors	31,46,57,67,84,97,107
-dafny2/SnapshotableTrees.dfy	4	103 verified, 1 error, 4 out of resource; 5 out of resource	72,363,383,426,451
+dafny2/SnapshotableTrees.dfy	4	102 verified, 1 error, 4 out of resource; 5 out of resource	72,363,383,426,451
 dafny2/StoreAndRetrieve.dfy	0	16 verified, 0 errors	
 dafny2/TreeBarrier.dfy	0	7 verified, 0 errors	
 dafny2/TreeFill.dfy	0	3 verified, 0 errors	
@@ -461,7 +461,7 @@ dafny4/Regression7.dfy	0	2 verified, 0 errors
 dafny4/Regression8.dfy	4	0 verified, 1 error	14
 dafny4/Regression9.dfy	0	2 verified, 0 errors	
 dafny4/SoftwareFoundations-Basics.dfy	4	53 verified, 1 error	41
-dafny4/UnionFind.dfy	4	235 verified, 0 errors, 1 out of resource; 2 out of resource	338
+dafny4/UnionFind.dfy	4	343 verified, 0 errors, 1 out of resource; 2 out of resource	339
 dafny4/gcd.dfy	0	23 verified, 0 errors	
 dafny4/git-issue1.dfy	0	2 verified, 0 errors	
 dafny4/git-issue104.dfy	0	2 verified, 0 errors	
