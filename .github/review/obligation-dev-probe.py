@@ -26,6 +26,11 @@ if code==0:
  import shutil
  target=Path('Binaries/z3/bin/z3-5.1.0');target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(solver,target)
  env=dict(os.environ,Z3=str(solver),PATH=str(solver.parent)+os.pathsep+os.environ['PATH'],DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS='cs')
+ if os.environ.get('GITHUB_REF','')=='refs/heads/scratch/codex/170-enabled-library':
+  import sys
+  phase('enabled-library',['python3','.github/review/issue170-enabled-library.py','out/dafny/Dafny.dll',str(solver),str((root/'enabled-library').resolve())],env)
+  (root/'results.json').write_text(json.dumps({'diagnostic':True,'source':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'phases':results},indent=2)+'\n')
+  sys.exit(0)
  # Scratch proof-maintenance captures use the current compiler and retain actual verdicts.
  if os.environ.get('GITHUB_REF','').startswith('refs/heads/scratch/codex/170-'):
   import sys
