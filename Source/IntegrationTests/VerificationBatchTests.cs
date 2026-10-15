@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -90,6 +91,10 @@ public class VerificationBatchTests {
       options.TrackVerificationCoverage = true;
       var cli = CliCompilation.Create(options);
       using var compilation = cli.Compilation;
+      var diagnostics = new ConcurrentQueue<DafnyDiagnostic>();
+      using var events = compilation.Updates.Subscribe(ev => {
+        if (ev is NewDiagnostic diagnostic) { diagnostics.Enqueue(diagnostic.Diagnostic); }
+      });
       cli.Start();
       var resolution = (await cli.Resolution)!;
       var requests = new List<CanVerifyResult>();
@@ -105,6 +110,7 @@ public class VerificationBatchTests {
       Assert.NotEmpty(originalDependencies);
       foreach (var request in requests) {
         var manager = request.ProofDependencies!;
+        Assert.NotEmpty(request.Results);
         Assert.All(request.Results, part => Assert.Equal(SolverOutcome.Valid, part.Result.Outcome));
         var dependencies = manager.GetPotentialDependenciesForDefinition(scope).ToList();
         Assert.Equal(originalDependencies.Select(Describe).Order(), dependencies.Select(Describe).Order());
@@ -118,13 +124,49 @@ public class VerificationBatchTests {
       }
       Assert.NotSame(first.ProofDependencies, requests[1].ProofDependencies);
       Assert.NotSame(first.ProofDependencies, requests[2].ProofDependencies);
-      Assert.Equal(ExitValue.SUCCESS, await cli.GetAndReportExitValue());
+      Assert.NotSame(first.Results[0].Task, requests[1].Results[0].Task);
+      Assert.NotSame(first.Results[0].Task, requests[2].Results[0].Task);
+      var exit = await cli.GetAndReportExitValue();
+      Assert.True(diagnostics.All(diagnostic => diagnostic.Level is not (ErrorLevel.Warning or ErrorLevel.Error)),
+        string.Join("\n", diagnostics.Select(diagnostic => diagnostic.ErrorId + ": " + diagnostic.Message)));
+      Assert.Equal(ExitValue.SUCCESS, exit);
     } finally {
       Directory.Delete(directory, true);
     }
 
     static string Describe(DafnyCore.Verifier.ProofDependency dependency) =>
       dependency.RangeString() + ":" + dependency.Description;
+  }
+
+  [Fact]
+  public async Task DeprecatedUnicodeOptionStillFailsStrictWarningHandling() {
+    var directory = Path.Combine(Path.GetTempPath(), "dafny-batch-warning-" + Guid.NewGuid());
+    Directory.CreateDirectory(directory);
+    var source = Path.Combine(directory, "input.dfy");
+    await File.WriteAllTextAsync(source, "lemma Good(x: int) { assert x + 1 > x; }\n");
+    try {
+      var options = Options(false, source);
+      options.Set(CommonOptionBag.UnicodeCharacters, false);
+      Assert.False(options.Get(CommonOptionBag.AllowWarnings));
+      var cli = CliCompilation.Create(options);
+      using var compilation = cli.Compilation;
+      var diagnostics = new ConcurrentQueue<DafnyDiagnostic>();
+      using var events = compilation.Updates.Subscribe(ev => {
+        if (ev is NewDiagnostic diagnostic) { diagnostics.Enqueue(diagnostic.Diagnostic); }
+      });
+      cli.Start();
+      var results = await Request(cli, "input.dfy");
+      Assert.NotEmpty(results);
+      Assert.All(results, result => Assert.Equal(SolverOutcome.Valid, result.Result.Outcome));
+      Assert.All(results, result => Assert.True(result.Result.ResourceCount > 0));
+      var exit = await cli.GetAndReportExitValue();
+      Assert.DoesNotContain(diagnostics, diagnostic => diagnostic.Level == ErrorLevel.Error);
+      var warning = Assert.Single(diagnostics.Where(diagnostic => diagnostic.Level == ErrorLevel.Warning));
+      Assert.Equal("unicodeCharDeprecated", warning.ErrorId);
+      Assert.Equal(ExitValue.DAFNY_ERROR, exit);
+    } finally {
+      Directory.Delete(directory, true);
+    }
   }
 
   [Theory]
@@ -234,6 +276,8 @@ public class VerificationBatchTests {
   private static DafnyOptions Options(bool refresh, params string[] files) {
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
+    // API construction does not populate the CLI option defaults.
+    options.Set(CommonOptionBag.UnicodeCharacters, true);
     options.Set(CommonOptionBag.TypeSystemRefresh, refresh);
     options.Set(CommonOptionBag.GeneralTraits, CommonOptionBag.GeneralTraitsOptions.Datatype);
     options.Set(BoogieOptionBag.IsolateAssertions, true);
