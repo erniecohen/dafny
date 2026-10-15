@@ -67,4 +67,8 @@
 // RUN: %exits-with 0 %baredafny run "%S/Inputs/git-issue-961-runtime.dfy" --general-newtypes:false --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --resource-limit:16000000 --verification-time-limit:30 --cores:1 --boogie /normalizeDeclarationOrder:0 --type-system-refresh:true --datatype-subset-conversions:false --target:cs --output "%t-refreshed-off" >> "%t"
 // RUN: echo "runtime (refreshed-on)" >> "%t"
 // RUN: %exits-with 0 %baredafny verify "%S/Inputs/git-issue-961-runtime.dfy" --general-newtypes:false --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --resource-limit:16000000 --verification-time-limit:30 --cores:1 --boogie /normalizeDeclarationOrder:0 --type-system-refresh:true --datatype-subset-conversions:true >> "%t"
+// RUN: echo "project" >> "%t"
+// RUN: %exits-with 0 %baredafny verify "%S/Inputs/git-issue-961-project/dfyconfig.toml" --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --resource-limit:16000000 --verification-time-limit:30 --cores:1 >> "%t"
+// RUN: echo "project-cli-off" >> "%t"
+// RUN: %exits-with 2 %baredafny verify "%S/Inputs/git-issue-961-project/dfyconfig.toml" --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --resource-limit:16000000 --verification-time-limit:30 --cores:1 --datatype-subset-conversions:false >> "%t"
 // RUN: %diff "%s.expect" "%t"
