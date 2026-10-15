@@ -1866,10 +1866,13 @@ namespace Microsoft.Dafny {
           // Match this consequence only at an existing requires selection;
           // reads and apply selections still expose only the original facts.
           var captures = LambdaRangeCaptureGuard(e, environment.Heap);
-          var necessaryRange = BplImp(BplAnd(captures, requiresSelector), rangeValue);
+          // Under FormalTypes, Range implies the stored map
+          // FormalTypes && (CanCall(range) ==> Range). Its native selector
+          // already supplies the sufficient direction of this equality.
+          var rangeEquality = Boogie.Expr.Iff(requiresSelector, rangeValue);
           var requiresTrigger = new Boogie.Trigger(tok, true, [requiresSelector]);
           guardedFacts = BplAnd(guardedFacts,
-            BplForall(binders, requiresTrigger, BplImp(familyGuard, necessaryRange)));
+            BplForall(binders, requiresTrigger, BplImp(BplAnd(familyGuard, captures), rangeEquality)));
         }
         // With no reads expressions the characteristic predicate is constant
         // false, independent of the lambda's arguments, heap, and precondition.

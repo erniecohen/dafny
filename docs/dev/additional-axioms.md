@@ -685,7 +685,7 @@ only to the existing facts for that source lambda family value:
 ```boogie
 SourceFamilyEquality(F) && FormalTypes(args) && FormalAllocation(args, H)
   && GoodHeap(H) && FormationHeapSameOrSucceeds(H) && ValidCaptures(H)
-==> (RequiresN(types, H, AtLayer(F, L), args) ==> Range(H, args))
+==> (RequiresN(types, H, AtLayer(F, L), args) <==> Range(H, args))
 ```
 
 This is schematic: the emitted formula retains the existing family equality,
@@ -693,7 +693,10 @@ type substitution, captured environment, old heap, layer and actual heap
 expressions. A heap-independent definition's existing `$OneHeap` placeholder
 handling is preserved. The existing source range call-permission facts remain
 available independently of the range's truth value. The new consequence matches
-only existing requires selections; the original reads, requires and apply
+only existing requires selections. Under `FormalTypes`, a true `Range` makes
+the stored map `FormalTypes && (CanCall(range) ==> Range)` true; the native
+selector already gives the sufficient direction. The equality therefore adds
+only the necessary direction. The original reads, requires and apply
 selector patterns for child permissions remain unchanged. The global `HandleN`, frame, allocation,
 subtype and boxing schemas are unchanged. The option is tested before adding
 the new fact, and the original early return remains unchanged when disabled.
