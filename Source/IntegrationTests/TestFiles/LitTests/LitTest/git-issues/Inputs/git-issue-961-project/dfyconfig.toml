@@ -1,0 +1,6 @@
+includes = ["../git-issue-961-positive.dfy"]
+
+[options]
+type-system-refresh = false
+general-newtypes = false
+datatype-subset-conversions = true
