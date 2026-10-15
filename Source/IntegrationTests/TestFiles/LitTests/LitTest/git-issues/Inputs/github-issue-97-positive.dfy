@@ -69,7 +69,7 @@ method HeapDomain(c: Cell, x: int)
   assert f.requires(x + 1);
 }
 
-twostate lemma PreviousDomain(old c: Cell, x: int) {
+twostate lemma PreviousDomain(c: Cell, x: int) {
   var f := (y: int) requires y > old(c.n) => y;
   assert f.requires(x) <==> x > old(c.n);
 }

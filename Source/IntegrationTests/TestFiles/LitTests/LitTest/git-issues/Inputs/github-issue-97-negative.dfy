@@ -35,7 +35,7 @@ method ChangedHeap(c: Cell)
   assert f.requires(1);
 }
 
-twostate lemma PreviousHeap(old c: Cell) {
+twostate lemma PreviousHeap(c: Cell) {
   var f := (x: int) requires x > old(c.n) => x;
   assert f.requires(old(c.n));
 }

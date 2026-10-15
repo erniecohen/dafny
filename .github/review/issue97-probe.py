@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import traceback
+import tarfile
 
 out = Path("issue75-probe") / os.environ["ISSUE97_COMPILER_SOURCE"][:8]
 out.mkdir(parents=True, exist_ok=True)
@@ -51,6 +52,8 @@ try:
         "-p:SourceRevisionId=" + source[:8]], 1800)
     if code != 0:
         raise RuntimeError("Compiler build failed; no proofs attempted")
+    with tarfile.open(out / "compiler.tar.gz", "w:gz") as archive:
+        archive.add(product, arcname="dafny")
     solver = str(Path(os.environ["Z3"]).resolve())
     dafny = ["dotnet", str(product / "Dafny.dll")]
     identity = {"source": source, "probe_source": os.environ.get("GITHUB_SHA"),
@@ -70,7 +73,7 @@ try:
                 command = dafny + ["verify", str(fixture.resolve()), "--solver-path=" + solver,
                     "--resource-limit=16000000", "--verification-time-limit=30", "--cores=1",
                     "--type-system-refresh=" + refresh, "--additional-axioms=" + axioms,
-                    "--boogie=/normalizeDeclarationOrder:0", "--allow-warnings=false", "--allow-axioms",
+                    "--boogie=/normalizeDeclarationOrder:0", "--allow-warnings=false", "--allow-axioms", "--show-snippets=false", "--use-basename-for-filename", "--error-limit=0",
                     "--bprint=" + str((folder / "program.bpl").resolve()),
                     "--log-format=csv;LogFileName=" + str((folder / "resources.csv").resolve())]
                 if refresh == "false":
