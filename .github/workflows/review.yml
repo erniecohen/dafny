@@ -32,7 +32,7 @@ on:
         default: false
 
       default_comparison:
-        description: Record repeated default standard-library vectors against the development baseline (scratch only)
+        description: Record only repeated default suite/library vectors for frozen products (manual scratch only)
         type: boolean
         default: false
 
@@ -61,6 +61,7 @@ env:
 
 jobs:
   build:
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/')) }}
     name: Build (Release)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -259,8 +260,8 @@ jobs:
           retention-days: 90
 
   default-comparison:
-    name: Repeated default standard-library comparison (probe)
-    if: ${{ inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/') }}
+    name: Repeated default suite and standard-library comparison (probe)
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     steps:
@@ -269,6 +270,10 @@ jobs:
         with:
           ref: 4e98f3f592310854ca1448d517b82dcbcc0f51f4
           path: comparison-baseline
+      - uses: actions/checkout@v4
+        with:
+          ref: b85e4b6f3af7eedd39bf355394a3f50c1b348646
+          path: comparison-candidate
       - uses: actions/setup-dotnet@v4
         env:
           DOTNET_INSTALL_DIR: ${{ runner.temp }}/comparison-dotnet
@@ -287,11 +292,14 @@ jobs:
           test "$(dotnet --version)" = 10.0.402
           test "$(dotnet --list-sdks | wc -l)" -eq 1
           test "$(dotnet --list-runtimes | grep 'Microsoft.NETCore.App ' | cut -d' ' -f2)" = 10.0.13
-          git rev-parse HEAD > default-comparison/candidate-source.txt
+          java -version > default-comparison/java-version.txt 2>&1
+          git rev-parse HEAD > default-comparison/harness-source.txt
+          git -C comparison-candidate rev-parse HEAD > default-comparison/candidate-source.txt
           git -C comparison-baseline rev-parse HEAD > default-comparison/baseline-source.txt
+          test "$(cat default-comparison/baseline-source.txt)" = 4e98f3f592310854ca1448d517b82dcbcc0f51f4
+          test "$(cat default-comparison/candidate-source.txt)" = b85e4b6f3af7eedd39bf355394a3f50c1b348646
           for variant in baseline candidate; do
-            source="$PWD"
-            if [ "$variant" = baseline ]; then source="$PWD/comparison-baseline"; fi
+            source="$PWD/comparison-$variant"
             output="$PWD/default-comparison/build-$variant"
             (
               cd "$source"
@@ -312,13 +320,14 @@ jobs:
           unzip -q z3h.zip -d z3h
           chmod +x z3h/z3-4.16.0
       - name: Check comparison bookkeeping
-        run: python3 -m unittest discover -s .github/review -p test_default_comparison.py
+        run: python3 -m unittest discover -s .github/review -p 'test_default*comparison.py'
       - name: Record A1 B1 B2 A2 without changing verdict baselines
         env:
           BASELINE_SOURCE: ${{ github.workspace }}/comparison-baseline
+          CANDIDATE_SOURCE: ${{ github.workspace }}/comparison-candidate
         run: |
           set +e
-          python3 .github/review/default-comparison.py "$BASELINE_SOURCE" "$PWD" \
+          python3 .github/review/default-comparison.py "$BASELINE_SOURCE" "$CANDIDATE_SOURCE" \
             "$PWD/default-comparison" "$PWD/$Z3_LINUX_X64/bin/z3" "$PWD/z3h/z3-4.16.0" \
             > default-comparison/probe.stdout 2> default-comparison/probe.stderr
           result=$?
@@ -328,6 +337,7 @@ jobs:
             echo
             echo "Probe process exit: $result. Differences are recorded and do not update any expected verdict."
             if [ -f default-comparison/summary.json ]; then cat default-comparison/summary.json; fi
+            if [ -f default-comparison/incomplete.json ]; then cat default-comparison/incomplete.json; fi
           } >> "$GITHUB_STEP_SUMMARY"
           exit 0
       - uses: actions/upload-artifact@v4
@@ -501,6 +511,7 @@ jobs:
           retention-days: 90
 
   regressions:
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/')) }}
     name: Regression tests (upstream harness)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -573,6 +584,7 @@ jobs:
 
 
   resolver-tests:
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/')) }}
     name: Resolver unit tests and language-server recovery
     runs-on: ubuntu-24.04
     timeout-minutes: 20
