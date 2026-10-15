@@ -881,6 +881,12 @@ namespace Microsoft.Dafny {
             AddAssignableConstraint(expr.Origin, e.ToType, e.E.Type, "type cast to reference type '{0}' must be from an expression assignable to it (got '{1}')");
           } else if (e.ToType.IsTraitType) {
             AddAssignableConstraint(expr.Origin, e.ToType, e.E.Type, "type cast to trait type '{0}' must be from an expression assignable to it (got '{1}')");
+          } else if (Options.Get(CommonOptionBag.DatatypeSubsetConversions) &&
+                     e.ToType.AsSubsetType != null && e.ToType.IsIndDatatype) {
+            // Use ordinary assignment compatibility, including instantiated datatype
+            // arguments. Verification still establishes the full target membership.
+            AddAssignableConstraint(expr.Origin, e.ToType, e.E.Type,
+              "type cast to datatype subset '{0}' must be from an expression assignable to it (got '{1}')");
           } else {
             reporter.Error(MessageSource.Resolver, expr, "type conversions are not supported to this type (got {0})", e.ToType);
           }

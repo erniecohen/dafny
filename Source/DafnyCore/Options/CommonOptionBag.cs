@@ -251,6 +251,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> BitvectorMapKeys = new("--bitvector-map-keys", () => false,
     "Preserve bitvector key types in map and imap lookups during verification. Disabled by default.");
 
+  public static readonly Option<bool> DatatypeSubsetConversions = new("--datatype-subset-conversions", () => false,
+    "With the legacy type system, allow explicit conversions to subsets of inductive datatypes using assignment compatibility and checked destination constraints. Disabled by default.");
+
   public static readonly Option<bool> ContextualLambdaDomains = new("--contextual-lambda-domains", () => false,
     "With the refreshed type system, infer omitted parameters of function-result lambdas from the declared arrow domain. Disabled by default.");
 
@@ -710,6 +713,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(TypeSystemRefresh, OptionScope.Cli);
     OptionRegistry.RegisterOption(BitvectorMapKeys, OptionScope.Cli);
     OptionRegistry.RegisterOption(ContextualLambdaDomains, OptionScope.Cli);
+    OptionRegistry.RegisterOption(DatatypeSubsetConversions, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationLogFormat, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerifyIncludedFiles, OptionScope.Cli);
     OptionRegistry.RegisterOption(DisableNonLinearArithmetic, OptionScope.Module);

@@ -2410,6 +2410,10 @@ and what information it produces about the verification process.
 * `--manual-lemma-induction` - disables automatic induction for lemmas
 
 * `--isolate-assertions` - verify assertions individually
+* `--datatype-subset-conversions` - allow explicit conversions to subsets of
+  inductive datatypes with the legacy type system. The source must be
+  assignment-compatible and the destination constraints must verify. Disabled by
+  default; use `datatype-subset-conversions = true` in a project file's `[options]`.
 * `--consistent-obligation-checks` - prepare and check matching implicit obligations once using the existing local assertion machinery and fuel rules (experimental, disabled by default; also a project-file option).
 
 * `--extract-counterexample` - if verification fails, report a potential
