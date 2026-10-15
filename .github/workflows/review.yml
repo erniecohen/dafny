@@ -36,6 +36,12 @@ on:
         type: boolean
         default: false
 
+      default_comparison_mode:
+        description: Frozen candidate comparison or unmodified development baseline control (manual scratch only)
+        type: choice
+        options: ['candidate', 'baseline-control']
+        default: candidate
+
 permissions:
   contents: read
 
@@ -272,7 +278,7 @@ jobs:
           path: comparison-baseline
       - uses: actions/checkout@v4
         with:
-          ref: b85e4b6f3af7eedd39bf355394a3f50c1b348646
+          ref: ${{ inputs.default_comparison_mode == 'baseline-control' && '4e98f3f592310854ca1448d517b82dcbcc0f51f4' || 'b85e4b6f3af7eedd39bf355394a3f50c1b348646' }}
           path: comparison-candidate
       - uses: actions/setup-dotnet@v4
         env:
@@ -283,7 +289,18 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Runtime for the source generator in the same isolated root
+        run: |
+          test "$DOTNET_ROOT" = "$RUNNER_TEMP/comparison-dotnet"
+          curl -fsSLo "$RUNNER_TEMP/comparison-runtime8.tar.gz" \
+            https://builds.dotnet.microsoft.com/dotnet/Runtime/8.0.32/dotnet-runtime-8.0.32-linux-x64.tar.gz
+          echo "639a17d84e4d52fecd62c7d4e528e7bc0ae3c9860de2530cb41a2ee7196b69ea18271d8795849180742770e25b4f913df292a5a236fa197cf5d3cd0ec5ba665f  $RUNNER_TEMP/comparison-runtime8.tar.gz" | sha512sum -c -
+          host_before=$(sha256sum "$DOTNET_ROOT/dotnet")
+          tar -xzf "$RUNNER_TEMP/comparison-runtime8.tar.gz" -C "$DOTNET_ROOT" --exclude=dotnet --exclude=./dotnet
+          test "$(sha256sum "$DOTNET_ROOT/dotnet")" = "$host_before"
       - name: Record fixed environment and build both source revisions
+        env:
+          COMPARISON_MODE: ${{ inputs.default_comparison_mode || 'candidate' }}
         run: |
           mkdir -p default-comparison
           dotnet --info > default-comparison/dotnet-info.txt
@@ -291,13 +308,20 @@ jobs:
           dotnet --list-runtimes > default-comparison/runtimes.txt
           test "$(dotnet --version)" = 10.0.402
           test "$(dotnet --list-sdks | wc -l)" -eq 1
-          test "$(dotnet --list-runtimes | grep 'Microsoft.NETCore.App ' | cut -d' ' -f2)" = 10.0.13
+          python3 .github/review/default-comparison.py --record-dotnet-environment "$PWD/default-comparison" "$DOTNET_ROOT"
           java -version > default-comparison/java-version.txt 2>&1
           git rev-parse HEAD > default-comparison/harness-source.txt
           git -C comparison-candidate rev-parse HEAD > default-comparison/candidate-source.txt
           git -C comparison-baseline rev-parse HEAD > default-comparison/baseline-source.txt
           test "$(cat default-comparison/baseline-source.txt)" = 4e98f3f592310854ca1448d517b82dcbcc0f51f4
-          test "$(cat default-comparison/candidate-source.txt)" = b85e4b6f3af7eedd39bf355394a3f50c1b348646
+          case "$COMPARISON_MODE" in
+            candidate) expected_candidate=b85e4b6f3af7eedd39bf355394a3f50c1b348646 ;;
+            baseline-control) expected_candidate=4e98f3f592310854ca1448d517b82dcbcc0f51f4 ;;
+            *) echo "unknown comparison mode"; exit 1 ;;
+          esac
+          test "$(cat default-comparison/candidate-source.txt)" = "$expected_candidate"
+          echo "$COMPARISON_MODE" > default-comparison/comparison-mode.txt
+          git fetch --no-tags --depth=1 origin b85e4b6f3af7eedd39bf355394a3f50c1b348646
           for variant in baseline candidate; do
             source="$PWD/comparison-$variant"
             output="$PWD/default-comparison/build-$variant"
@@ -325,10 +349,11 @@ jobs:
         env:
           BASELINE_SOURCE: ${{ github.workspace }}/comparison-baseline
           CANDIDATE_SOURCE: ${{ github.workspace }}/comparison-candidate
+          COMPARISON_MODE: ${{ inputs.default_comparison_mode || 'candidate' }}
         run: |
           set +e
           python3 .github/review/default-comparison.py "$BASELINE_SOURCE" "$CANDIDATE_SOURCE" \
-            "$PWD/default-comparison" "$PWD/$Z3_LINUX_X64/bin/z3" "$PWD/z3h/z3-4.16.0" \
+            "$PWD/default-comparison" "$PWD/$Z3_LINUX_X64/bin/z3" "$PWD/z3h/z3-4.16.0" "$COMPARISON_MODE" \
             > default-comparison/probe.stdout 2> default-comparison/probe.stderr
           result=$?
           echo "$result" > default-comparison/probe-exit.txt

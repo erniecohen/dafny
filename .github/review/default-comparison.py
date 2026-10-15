@@ -158,6 +158,46 @@ PASSES = ['A1', 'B1', 'B2', 'A2']
 PAIRS = [('A1', 'A2'), ('B1', 'B2'), ('A1', 'B1'), ('A1', 'B2'), ('A2', 'B1'), ('A2', 'B2')]
 
 
+def product_revisions(mode):
+    require(mode in ['candidate', 'baseline-control'], 'unknown comparison mode')
+    return {'A': PRODUCT_A, 'B': PRODUCT_A if mode == 'baseline-control' else PRODUCT_B}
+
+
+def validate_dotnet_inventory(sdks, runtimes, root):
+    root = root.resolve()
+    sdk = [re.fullmatch(r'(\S+) \[(.*)\]', line) for line in sdks.splitlines() if line.strip()]
+    require(len(sdk) == 1 and sdk[0] is not None and sdk[0][1] == '10.0.402' and
+            Path(sdk[0][2]).resolve() == root / 'sdk', 'expected only SDK 10.0.402 in the isolated root')
+    core = [match for line in runtimes.splitlines()
+            if (match := re.fullmatch(r'Microsoft\.NETCore\.App (\S+) \[(.*)\]', line))]
+    require(len(core) == 2 and {match[1] for match in core} == {'8.0.32', '10.0.13'} and
+            all(Path(match[2]).resolve() == root / 'shared/Microsoft.NETCore.App' for match in core),
+            'expected .NET 8.0.32 and 10.0.13 together in the isolated root')
+    return {'root': str(root), 'sdk': '10.0.402', 'core_runtimes': sorted(match[1] for match in core),
+            'all_runtimes': runtimes}
+
+
+def record_dotnet_environment(output, root):
+    inventory = validate_dotnet_inventory((output / 'sdks.txt').read_text(),
+                                         (output / 'runtimes.txt').read_text(), root)
+    (output / 'dotnet-environment.json').write_text(json.dumps(
+        {'inventory': inventory, 'files': manifest(root)}, indent=2) + '\n')
+
+
+def validate_source_identities(mode, identities, inventory):
+    products = product_revisions(mode)
+    require(all(identities[label]['source'] == revision for label, revision in products.items()),
+            'product revision differs from frozen mode-specific A/B')
+    require(identities['harness']['production_reference'] == PRODUCT_B and
+            identities['harness']['production_equals_reference'], 'harness production differs from its independent reference')
+    if mode == 'candidate':
+        require(identities['harness']['production_equals_product_B'], 'harness production differs from measured product B')
+    require(inventory['baseline_source'] == PRODUCT_A and inventory['candidate_source'] == PRODUCT_B and
+            identities['A']['lit_tree'] == inventory['baseline_lit_tree'] and
+            identities['B']['lit_tree'] == inventory['baseline_lit_tree' if mode == 'baseline-control' else 'candidate_lit_tree'],
+            'authoritative suite inventory source differs')
+
+
 def tracked_files(source, *paths):
     return {name: sha(source / name) for name in git(source, 'ls-files', *paths).splitlines()}
 
@@ -167,6 +207,13 @@ def product_files(source):
     # compiled into the shipped product.
     excluded = {'REVIEW.md', 'ROADMAP.md', 'AGENTS.md', 'CLAUDE.md'}
     return {name: digest for name, digest in tracked_files(source).items()
+            if name not in excluded and not name.startswith(('Source/IntegrationTests/', 'docs/', '.github/'))}
+
+
+def product_tree(source, revision):
+    excluded = {'REVIEW.md', 'ROADMAP.md', 'AGENTS.md', 'CLAUDE.md'}
+    entries = [line.split('\t', 1) for line in git(source, 'ls-tree', '-r', revision).splitlines()]
+    return {name: metadata for metadata, name in entries
             if name not in excluded and not name.startswith(('Source/IntegrationTests/', 'docs/', '.github/'))}
 
 
@@ -250,17 +297,26 @@ def std_repetition(before, after):
 
 
 def main():
-    baseline, candidate, output, solver51, solver_harness = [Path(arg).resolve() for arg in sys.argv[1:]]
+    require(len(sys.argv) in [6, 7], 'expected five paths and optional comparison mode')
+    mode = sys.argv[6] if len(sys.argv) == 7 else 'candidate'
+    products = product_revisions(mode)
+    baseline, candidate, output, solver51, solver_harness = [Path(arg).resolve() for arg in sys.argv[1:6]]
     harness = Path(__file__).resolve().parents[2]
     require(not (output / 'summary.json').exists(), 'refusing to reuse an earlier summary')
     status = output / 'comparison-status.json'
     status.write_text(json.dumps({'status': 'running'}) + '\n')
+    dotnet = json.loads((output / 'dotnet-environment.json').read_text())
+    runtime_root = Path(dotnet['inventory']['root'])
+    require(dotnet['inventory'] == validate_dotnet_inventory((output / 'sdks.txt').read_text(),
+            (output / 'runtimes.txt').read_text(), runtime_root) and dotnet['files'] == manifest(runtime_root),
+            'SDK/runtime inputs changed after their fixed-environment record')
     sources = {'A': baseline, 'B': candidate}
     builds = {'A': output / 'build-baseline', 'B': output / 'build-candidate'}
     require(not git(harness, 'status', '--porcelain', '--untracked-files=no'), 'modified tracked harness inputs')
     for runner in ['lit-verdicts.py', 'std-verdicts.py']:
-        require(sha(harness / '.github/review' / runner) == sha(candidate / '.github/review' / runner),
-                'native proof runner differs from frozen product B: ' + runner)
+        require(git(harness, 'hash-object', '.github/review/' + runner) ==
+                git(harness, 'rev-parse', PRODUCT_B + ':.github/review/' + runner),
+                'native proof runner differs from the independent harness reference: ' + runner)
     identities = {}
     for label, source in sources.items():
         require(not git(source, 'status', '--porcelain', '--untracked-files=no'), label + ': modified tracked product inputs')
@@ -288,13 +344,18 @@ def main():
         }
     identities['harness'] = {'source': git(harness, 'rev-parse', 'HEAD'), 'tree': git(harness, 'rev-parse', 'HEAD^{tree}'),
                              'files': tracked_files(harness, '.github/review', '.github/workflows/review.yml'),
+                             'production_reference': PRODUCT_B,
+                             'production_reference_tree': git(harness, 'rev-parse', PRODUCT_B + '^{tree}'),
+                             'production_equals_reference': product_tree(harness, 'HEAD') == product_tree(harness, PRODUCT_B),
                              'production_equals_product_B': product_files(harness) == product_files(candidate)}
+    identities['mode'] = mode
     identities['environment'] = {'system': platform.platform(), 'machine': platform.machine(),
+        'dotnet_inventory': dotnet['inventory'], 'dotnet_file_manifest_sha256': sha(output / 'dotnet-environment.json'),
         'runner': {key: os.environ.get(key) for key in ['ImageOS', 'ImageVersion', 'RUNNER_OS', 'RUNNER_ARCH', 'GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT']},
         'os_release': Path('/etc/os-release').read_text()}
     (output / 'identities.json').write_text(json.dumps(identities, indent=2) + '\n')
-    require(identities['A']['source'] == PRODUCT_A and identities['B']['source'] == PRODUCT_B, 'product revision differs from frozen A/B')
-    require(identities['harness']['production_equals_product_B'], 'harness production differs from measured product B')
+    require(all(identities[label]['source'] == revision for label, revision in products.items()),
+            'product revision differs from frozen mode-specific A/B')
     for field in ['library_tree', 'library_files', 'packages', 'boogie_packages', 'reported_version']:
         require(identities['A'][field] == identities['B'][field], 'A/B ' + field + ' differs')
     require(all(identities['B']['suite_files'].get(name) == value for name, value in identities['A']['suite_files'].items()),
@@ -307,9 +368,7 @@ def main():
     suite_inventory = json.loads(Path(__file__).with_name('default-comparison-suite-inventory.json').read_text())
     require(inventory['baseline_source'] == identities['A']['source'] and inventory['library_tree'] == identities['A']['library_tree'],
             'authoritative library inventory source differs')
-    require(suite_inventory['baseline_source'] == PRODUCT_A and suite_inventory['candidate_source'] == PRODUCT_B and
-            suite_inventory['baseline_lit_tree'] == identities['A']['lit_tree'] and suite_inventory['candidate_lit_tree'] == identities['B']['lit_tree'],
-            'authoritative suite inventory source differs')
+    validate_source_identities(mode, identities, suite_inventory)
     solver_identities = {}
     for version, solver in [('5.1.0', solver51), ('4.16.0', solver_harness)]:
         actual = subprocess.check_output([str(solver), '--version'], text=True).strip()
@@ -338,7 +397,8 @@ def main():
         results['stdlib-z3-' + version] = repeated_scope('stdlib-z3-' + version, output, std_invocation, std_vector, std_repetition)
     complete = all(result['status'] == 'complete-inventory-comparison' for result in results.values())
     final = {'status': 'complete-inventory-comparison' if complete else 'incomplete',
-             'product_sources': {'A': PRODUCT_A, 'B': PRODUCT_B}, 'harness_source': identities['harness']['source'],
+             'mode': mode, 'product_sources': products, 'harness_source': identities['harness']['source'],
+             'harness_production_reference': PRODUCT_B,
              'scopes': {scope: {key: value for key, value in result.items() if key != 'pairs'} |
                        ({'pairs': {pair: record['counts'] for pair, record in result['pairs'].items()}} if 'pairs' in result else {})
                        for scope, result in results.items()}}
@@ -380,5 +440,7 @@ def finalize_manifest(destination):
 if __name__ == '__main__':
     if len(sys.argv) == 3 and sys.argv[1] == '--finalize-manifest':
         finalize_manifest(Path(sys.argv[2]))
+    elif len(sys.argv) == 4 and sys.argv[1] == '--record-dotnet-environment':
+        record_dotnet_environment(Path(sys.argv[2]), Path(sys.argv[3]))
     else:
         sys.exit(run_probe())

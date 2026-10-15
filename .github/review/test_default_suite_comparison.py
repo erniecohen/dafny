@@ -2,12 +2,14 @@
 import copy
 import hashlib
 import importlib.util
+import io
 import json
 from pathlib import Path
 import re
 import subprocess
 import sys
 import tempfile
+import tarfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -216,6 +218,7 @@ class SuiteControls(unittest.TestCase):
         script = Path(__file__).with_name('default-comparison.py').resolve()
         child = """
 import importlib.util
+import io
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(sys.argv[1]).parent))
@@ -313,6 +316,97 @@ sys.exit(probe.run_probe())
                 comparison.std_repetition(vector, after)
 
 
+class HarnessModeControls(unittest.TestCase):
+    def identities(self, mode):
+        return {'A': {'source': comparison.PRODUCT_A, 'lit_tree': 'baseline-tree'},
+                'B': {'source': comparison.PRODUCT_A if mode == 'baseline-control' else comparison.PRODUCT_B,
+                      'lit_tree': 'baseline-tree' if mode == 'baseline-control' else 'candidate-tree'},
+                'harness': {'production_reference': comparison.PRODUCT_B, 'production_equals_reference': True,
+                            'production_equals_product_B': mode == 'candidate'}}
+
+    def inventory(self):
+        return {'baseline_source': comparison.PRODUCT_A, 'candidate_source': comparison.PRODUCT_B,
+                'baseline_lit_tree': 'baseline-tree', 'candidate_lit_tree': 'candidate-tree'}
+
+    def test_both_modes_bind_exact_immutable_products_and_separate_harness(self):
+        for mode in ['candidate', 'baseline-control']:
+            identities = self.identities(mode)
+            with self.subTest(mode=mode):
+                comparison.validate_source_identities(mode, identities, self.inventory())
+                self.assertEqual(comparison.product_revisions(mode)['A'], comparison.PRODUCT_A)
+                self.assertEqual(identities['harness']['production_equals_product_B'], mode == 'candidate')
+        self.assertEqual(comparison.product_revisions('baseline-control'), {'A': comparison.PRODUCT_A, 'B': comparison.PRODUCT_A})
+        self.assertEqual(comparison.product_revisions('candidate')['B'], comparison.PRODUCT_B)
+
+    def test_mode_cannot_substitute_another_product(self):
+        for mode in ['candidate', 'baseline-control']:
+            identities = self.identities(mode)
+            identities['B']['source'] = comparison.PRODUCT_B if mode == 'baseline-control' else comparison.PRODUCT_A
+            with self.subTest(mode=mode), self.assertRaisesRegex(ValueError, 'frozen mode-specific'):
+                comparison.validate_source_identities(mode, identities, self.inventory())
+        with self.assertRaisesRegex(ValueError, 'unknown comparison mode'):
+            comparison.product_revisions('arbitrary-source')
+
+    def test_baseline_control_retains_original_suite_population_authority(self):
+        identities = self.identities('baseline-control')
+        identities['B']['lit_tree'] = 'candidate-tree'
+        with self.assertRaisesRegex(ValueError, 'authoritative suite'):
+            comparison.validate_source_identities('baseline-control', identities, self.inventory())
+
+    def test_control_harness_must_match_its_own_production_reference(self):
+        identities = self.identities('baseline-control')
+        identities['harness']['production_equals_reference'] = False
+        identities['harness']['production_equals_product_B'] = True
+        with self.assertRaisesRegex(ValueError, 'independent reference'):
+            comparison.validate_source_identities('baseline-control', identities, self.inventory())
+
+
+class RuntimeControls(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name).resolve()
+        self.sdks = '10.0.402 [' + str(self.root / 'sdk') + ']\n'
+        self.runtimes = ''.join('Microsoft.NETCore.App ' + version + ' [' + str(self.root / 'shared/Microsoft.NETCore.App') + ']\n'
+                                for version in ['8.0.32', '10.0.13'])
+
+    def test_requires_only_sdk10_and_both_exact_runtimes_in_the_same_root(self):
+        inventory = comparison.validate_dotnet_inventory(self.sdks, self.runtimes, self.root)
+        self.assertEqual(inventory['sdk'], '10.0.402')
+        self.assertEqual(set(inventory['core_runtimes']), {'8.0.32', '10.0.13'})
+        for runtimes in [self.runtimes.splitlines()[1] + '\n', self.runtimes.replace('8.0.32', '8.0.31'),
+                         self.runtimes.replace(str(self.root), '/another-root', 1)]:
+            with self.subTest(runtimes=runtimes), self.assertRaisesRegex(ValueError, 'together in the isolated root'):
+                comparison.validate_dotnet_inventory(self.sdks, runtimes, self.root)
+
+    def test_sdk8_or_an_external_sdk_is_not_a_runtime_repair(self):
+        for sdks in [self.sdks + '8.0.414 [' + str(self.root / 'sdk') + ']\n', self.sdks.replace(str(self.root), '/another-root')]:
+            with self.subTest(sdks=sdks), self.assertRaisesRegex(ValueError, 'only SDK 10.0.402'):
+                comparison.validate_dotnet_inventory(sdks, self.runtimes, self.root)
+
+    def test_runtime_archive_extraction_preserves_the_sdk10_host(self):
+        host = self.root / 'dotnet'
+        host.write_bytes(b'existing host 10')
+        sdk = self.root / 'sdk/10.0.402/compiler-marker'
+        sdk.parent.mkdir(parents=True)
+        sdk.write_bytes(b'existing compiler')
+        archive = self.root / 'runtime8.tar.gz'
+        with tarfile.open(archive, 'w:gz') as tar:
+            for name, data in [('dotnet', b'old host'), ('./dotnet', b'old prefixed host'),
+                               ('shared/Microsoft.NETCore.App/8.0.32/runtime-marker', b'runtime 8'),
+                               ('host/fxr/8.0.32/fxr-marker', b'fxr 8')]:
+                entry = tarfile.TarInfo(name)
+                entry.size = len(data)
+                tar.addfile(entry, io.BytesIO(data))
+        result = subprocess.run(['tar', '-xzf', str(archive), '-C', str(self.root), '--exclude=dotnet', '--exclude=./dotnet'],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(host.read_bytes(), b'existing host 10')
+        self.assertEqual(sdk.read_bytes(), b'existing compiler')
+        self.assertEqual((self.root / 'shared/Microsoft.NETCore.App/8.0.32/runtime-marker').read_bytes(), b'runtime 8')
+        self.assertEqual((self.root / 'host/fxr/8.0.32/fxr-marker').read_bytes(), b'fxr 8')
+
+
 class WorkflowControls(unittest.TestCase):
     def test_comparison_only_skips_require_manual_scratch_dispatch(self):
         workflow = Path(__file__).parents[1] / 'workflows/review.yml'
@@ -329,8 +423,24 @@ class WorkflowControls(unittest.TestCase):
                         actual = eval(expression.strip(), {'__builtins__': {}, 'startsWith': lambda a, b: a.startswith(b)})
                         with self.subTest(event=event, ref=ref, flag=flag, job=name):
                             self.assertEqual(actual, wanted if name == 'default-comparison' else not wanted)
-        for revision in [comparison.PRODUCT_A, comparison.PRODUCT_B]:
-            self.assertIn('ref: ' + revision, text)
+        self.assertIn('ref: ' + comparison.PRODUCT_A, text)
+        expected_selection = "${{ inputs.default_comparison_mode == 'baseline-control' && '" + comparison.PRODUCT_A + "' || '" + comparison.PRODUCT_B + "' }}"
+        self.assertIn('ref: ' + expected_selection + '\n          path: comparison-candidate', text)
+        for guard in guards.values():
+            self.assertNotIn('default_comparison_mode', guard)
+
+    def test_runtime_repair_and_both_builds_use_the_same_isolated_root(self):
+        text = (Path(__file__).parents[1] / 'workflows/review.yml').read_text()
+        section = text[text.index('  default-comparison:'):text.index('  resolver:')]
+        self.assertIn('DOTNET_INSTALL_DIR: ${{ runner.temp }}/comparison-dotnet', section)
+        self.assertIn('test "$DOTNET_ROOT" = "$RUNNER_TEMP/comparison-dotnet"', section)
+        self.assertIn('dotnet-version: 10.0.402', section)
+        self.assertIn('/Runtime/8.0.32/dotnet-runtime-8.0.32-linux-x64.tar.gz', section)
+        self.assertIn('639a17d84e4d52fecd62c7d4e528e7bc0ae3c9860de2530cb41a2ee7196b69ea18271d8795849180742770e25b4f913df292a5a236fa197cf5d3cd0ec5ba665f', section)
+        self.assertIn('-C "$DOTNET_ROOT" --exclude=dotnet --exclude=./dotnet', section)
+        self.assertIn('--record-dotnet-environment "$PWD/default-comparison" "$DOTNET_ROOT"', section)
+        self.assertLess(section.index('--record-dotnet-environment'), section.index('for variant in baseline candidate; do'))
+        self.assertIn('test "$(sha256sum "$DOTNET_ROOT/dotnet")" = "$host_before"', section)
 
 
 if __name__ == '__main__':
