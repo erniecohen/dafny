@@ -1,0 +1,53 @@
+{
+  "baseline_source": "4e98f3f592310854ca1448d517b82dcbcc0f51f4",
+  "library_tree": "b222ac6efb493907f7ff95fd29a2e81e05ee7115",
+  "public_run": "https://github.com/erniecohen/dafny/actions/runs/38173708929",
+  "authority": "Per-declaration proof counts from the complete default source-library inventory in both public baseline solver artifacts; no verdict or resource baseline is changed. Digests encode sorted [scope name, VC count] pairs within each part.",
+  "artifacts": {
+    "std-verdicts-off-z3-5.1.0": {
+      "file": "std-verdicts.tsv",
+      "sha256": "b05c7065400785d2d4527a24e3d7cea74d14b162e7c8411be0e523bc815c1449"
+    },
+    "std-verdicts-off-z3-4.16.0": {
+      "file": "std-verdicts.tsv",
+      "sha256": "555aaa957214b64452af8d35cfaf81afc5ff74905bd708ec60e9f6e553463a61"
+    }
+  },
+  "parts": {
+    "Std": {
+      "declarations": 2116,
+      "vcs": 7838,
+      "scope_vc_counts_sha256": "1b7263a5400668402e42a6ab1d19f03b75192d99a7640dadf7a3d7b4b06043cf"
+    },
+    "TargetSpecific-notarget": {
+      "declarations": 127,
+      "vcs": 132,
+      "scope_vc_counts_sha256": "8c1233bf7e6f7abc8abda08a9c0e7a4c9096eee4b8a477e831c36264db1501f7"
+    },
+    "TargetSpecific-cs": {
+      "declarations": 127,
+      "vcs": 132,
+      "scope_vc_counts_sha256": "8c1233bf7e6f7abc8abda08a9c0e7a4c9096eee4b8a477e831c36264db1501f7"
+    },
+    "TargetSpecific-java": {
+      "declarations": 10,
+      "vcs": 15,
+      "scope_vc_counts_sha256": "daac430155537649e35e43f9295a82977f81950819c449a83ef76cb49d9b96f4"
+    },
+    "TargetSpecific-js": {
+      "declarations": 30,
+      "vcs": 35,
+      "scope_vc_counts_sha256": "8acde4b6d859bf3796215efd3eddfeee62f7b3a4b3946b9765eaedf67fd5917e"
+    },
+    "TargetSpecific-go": {
+      "declarations": 11,
+      "vcs": 16,
+      "scope_vc_counts_sha256": "cef618cebc87bb75f1aa2eb1883e4f12c3d2c856f6333a6e450a2d04206fb66e"
+    },
+    "TargetSpecific-py": {
+      "declarations": 11,
+      "vcs": 16,
+      "scope_vc_counts_sha256": "b17fc772eb44afa861d4668806616bc60176ae3c68fae6380b3fd94e38d6abc9"
+    }
+  }
+}

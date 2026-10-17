@@ -43,6 +43,7 @@ public class Compilation : IDisposable {
   private readonly CancellationTokenSource cancellationSource;
 
   public bool Started => started.Task.IsCompleted;
+  public CancellationToken CancellationToken => cancellationSource.Token;
 
   /// <summary>
   /// FilePosition is required because the default module lives in multiple files
@@ -759,7 +760,12 @@ public class Compilation : IDisposable {
     translatedModules.Remove(moduleDefinition);
   }
 
-  public void ClearCanVerifyCache(ICanVerify canVerify) {
+  public void ClearCanVerifyCache(ICanVerify canVerify, bool allowRepeat = false) {
     tasksPerVerifiable.Remove(canVerify);
+    if (allowRepeat) {
+      // Called only after this symbol's tasks have finished. A later batch request
+      // must schedule fresh tasks, including for an overlapping or duplicate filter.
+      verifyingOrVerifiedSymbols.TryRemove(canVerify, out _);
+    }
   }
 }
