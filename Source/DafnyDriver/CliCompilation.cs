@@ -246,8 +246,7 @@ public class CliCompilation {
     if (repeatVerification) {
       Compilation.CancellationToken.ThrowIfCancellationRequested();
       if (!batchInputsCaptured) {
-        var preludePath = Options.DafnyPrelude ?? Path.Combine(
-          Path.GetDirectoryName(typeof(BoogieGenerator).Assembly.Location)!, "DafnyPrelude.bpl");
+        var preludePath = BoogieGenerator.PreludePath(Options);
         resolution.ResolvedProgram.PreludeText = await File.ReadAllTextAsync(preludePath, Compilation.CancellationToken);
         batchInputsCaptured = true;
       }
