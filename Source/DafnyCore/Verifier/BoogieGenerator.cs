@@ -89,6 +89,7 @@ namespace Microsoft.Dafny {
       public bool InsertChecksums { get; init; }
       public string UniqueIdPrefix = null;
       public bool ReportRanges = false;
+      public string PreludeText { get; init; }
       internal Action<PropositionLowering> ObligationLowered { get; init; }
       internal Action<DeclaredPreparationSnapshot> ObligationPrepared { get; init; }
     }
@@ -696,13 +697,19 @@ namespace Microsoft.Dafny {
       return null;
     }
 
-    Bpl.Program ReadPrelude() {
+    // Translation and the batch prelude snapshot must read the same file.
+    public static string PreludePath(DafnyOptions options) {
       string preludePath = options.DafnyPrelude;
       if (preludePath == null) {
         //using (System.IO.Stream stream = Cce.NonNull( System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("DafnyPrelude.bpl")) // Use this once Spec#/VSIP supports designating a non-.resx project item as an embedded resource
         string codebase = Cce.NonNull(System.IO.Path.GetDirectoryName(Cce.NonNull(System.Reflection.Assembly.GetExecutingAssembly().Location)));
         preludePath = System.IO.Path.Combine(codebase, "DafnyPrelude.bpl");
       }
+      return preludePath;
+    }
+
+    Bpl.Program ReadPrelude() {
+      string preludePath = PreludePath(options);
 
       var defines = new List<string>();
       if (6 <= options.ArithMode) {
@@ -721,7 +728,10 @@ namespace Microsoft.Dafny {
       if (options.Get(CommonOptionBag.UnicodeCharacters)) {
         defines.Add("UNICODE_CHAR");
       }
-      int errorCount = BplParser.Parse(preludePath, defines, out var prelude);
+      Bpl.Program prelude;
+      int errorCount = flags.PreludeText == null
+        ? BplParser.Parse(preludePath, defines, out prelude)
+        : BplParser.Parse(new System.IO.StringReader(flags.PreludeText), preludePath, defines, out prelude);
       if (prelude == null || errorCount > 0) {
         return null;
       } else {
