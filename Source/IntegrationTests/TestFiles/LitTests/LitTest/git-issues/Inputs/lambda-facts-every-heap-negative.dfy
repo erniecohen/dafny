@@ -1,5 +1,5 @@
 // Controls for the body permissions of heap-free lambdas in every heap
-// (--additional-axioms).  Each method has exactly one obligation that must fail,
+// (--heap-free-lambda-facts).  Each method has exactly one obligation that must fail,
 // marked, with the facts in play.
 
 ghost function Idx(a: int): int { if 0 <= a < 7 then a else 0 }

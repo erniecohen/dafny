@@ -1,6 +1,6 @@
 // Facts about the calls in a heap-free lambda's body, needed where the lambda is
 // used in a heap other than the current one or at another type, or applied to a
-// formal that is not known to be allocated.  With --additional-axioms each method
+// formal that is not known to be allocated.  With --heap-free-lambda-facts each method
 // verifies; without it, each fails as the finite-support repair (#160) and the
 // allocation repair (#137) left it.
 

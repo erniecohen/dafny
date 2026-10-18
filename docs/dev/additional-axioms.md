@@ -671,7 +671,16 @@ opaque definitions, inactive disjunction/conditional branches, a wrong selected
 value, and `assert false` after the predicate has been triggered. Both resolvers
 run with the option off and on under pinned Z3 5.1.0 and 4.12.1.
 
-## Body permissions of heap-free lambdas in every heap
+## Body permissions of heap-free lambdas in every heap (own option)
+
+This member has its own default-off option, `--heap-free-lambda-facts` (also
+`heap-free-lambda-facts = true` in a project file's `[options]`), not the shared
+`--additional-axioms`. In the shared option it made the regression test of issue 100
+run out of its 16,000,000-unit limit with that option on (`wfi` in
+`issue100-original.dfy`, both resolver modes). That proof search diverged before
+#160's guards narrowed the lambda permissions that reach it. An axiom whose measured
+performance effect is a problem gets its own option (`AGENTS.md`). With the option
+off, nothing changes.
 
 The finite-support repair (#160) guarded the permissions (`F#canCall`) that a
 lambda exports for the calls in its body. They hold only for formals allocated in
@@ -690,7 +699,7 @@ that are true:
   `fam := (o: nat -> int) => Src(AtOracle(x, o))`. The permission for
   `Src(AtOracle(x, o))` needs `o` allocated, and an arbitrary function value is not.
 
-With the option, a lambda is *selected* when it has no reads clause and its
+With `--heap-free-lambda-facts`, a lambda is *selected* when it has no reads clause and its
 requires and body use nothing that observes the heap or allocation. The excluded
 constructs are:
 
@@ -713,7 +722,10 @@ For a selected lambda:
      allocation and without heap succession;
    - the patterns take their type arguments as bound variables, so they match an
      application of the family at any arrow type (a subset check at `A -> nat` of a
-     lambda typed `A -> int`) and at any heap, `$OneHeap` included.
+     lambda typed `A -> int`) and at any heap, `$OneHeap` included. #160's pattern
+     on the handle, a good heap and the formals' boxes, for a body with a total
+     datatype destructor, is omitted: Boogie requires every pattern to mention every
+     bound variable, and that pattern cannot mention the type arguments.
 
    ```boogie
    (forall fam, ly, h, x, T0, T1 ::
@@ -781,17 +793,17 @@ whatever the selection is.
   allocation from a check is a removed assumption, and a permission states nothing
   about allocation. #132's original and negative programs still fail with the
   option (`git-issues/lambda-facts-every-heap.dfy`).
-- **The other members.**
+- **The members of the shared option**, with which it may be combined.
   - The round trips, literal identities and allocation patterns mention no
     permission. The reflexive heap-succession instances do not constrain the heaps
     here, which are only assumed good.
   - #36's permissions are justified the same way, by a check.
-  - So the accounting is the same with all members enabled.
+  - So the accounting is the same with the shared option on.
 
 ### Controls
 
-`git-issues/lambda-facts-every-heap.dfy` runs in both resolver modes, with the
-option off and on.
+`git-issues/lambda-facts-every-heap.dfy` runs in both resolver modes, with
+`--heap-free-lambda-facts` off and on.
 
 - The positive program fails without the option and verifies with it. It covers
   the subset arrow, a compiled variant, `seq(n, f)` into a subset sequence, the
