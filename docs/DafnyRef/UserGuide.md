@@ -2435,6 +2435,16 @@ and what information it produces about the verification process.
   Existing well-formedness, precondition and existence checks are preserved.
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
 
+* `--heap-free-lambda-facts` - check a lambda without a reads clause, whose
+  body observes neither the heap nor allocation, in every heap and without
+  assuming its parameters allocated, and let the calls in its body unfold
+  wherever it is applied: for example when the lambda is checked against an
+  arrow type whose result is a subset type, or applied to a parameter that is a
+  function. Disabled by default; `heap-free-lambda-facts = true` in a project
+  file's `[options]` section. It has its own option, not `--additional-axioms`,
+  because it can change proof costs. See
+  [the soundness note](../dev/additional-axioms.md).
+
 * `--manual-lemma-induction` - disables automatic induction for lemmas
 
 * `--isolate-assertions` - verify assertions individually

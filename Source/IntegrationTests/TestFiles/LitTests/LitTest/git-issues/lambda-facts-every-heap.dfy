@@ -1,0 +1,30 @@
+// Body permissions of heap-free lambdas in every heap, with --heap-free-lambda-facts
+// (docs/dev/additional-axioms.md).  The positive program fails without the option and
+// verifies with it.  The controls fail with and without it: false claims, a body whose
+// precondition fails, and the allocation of a value that captures a later object.  The
+// original and negative programs of the allocation repair (#132) still fail with the option.
+// RUN: echo "positive (type-system-refresh:false, heap-free-lambda-facts:false)" > "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/lambda-facts-every-heap-positive.dfy" --type-system-refresh:false --general-newtypes:false --heap-free-lambda-facts=false --solver-path "%review-z3" --cores:1 --resource-limit:2000000 --verification-time-limit:60 --show-snippets:false --use-basename-for-filename --error-limit:0 --allow-warnings >> "%t"
+// RUN: echo "negative (type-system-refresh:false, heap-free-lambda-facts:false)" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/lambda-facts-every-heap-negative.dfy" --type-system-refresh:false --general-newtypes:false --heap-free-lambda-facts=false --solver-path "%review-z3" --cores:1 --resource-limit:2000000 --verification-time-limit:60 --show-snippets:false --use-basename-for-filename --error-limit:0 --allow-warnings >> "%t"
+// RUN: echo "positive (type-system-refresh:false, heap-free-lambda-facts:true)" >> "%t"
+// RUN: %exits-with 0 %baredafny verify "%S/Inputs/lambda-facts-every-heap-positive.dfy" --type-system-refresh:false --general-newtypes:false --heap-free-lambda-facts=true --solver-path "%review-z3" --cores:1 --resource-limit:2000000 --verification-time-limit:60 --show-snippets:false --use-basename-for-filename --error-limit:0 --allow-warnings >> "%t"
+// RUN: echo "negative (type-system-refresh:false, heap-free-lambda-facts:true)" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/lambda-facts-every-heap-negative.dfy" --type-system-refresh:false --general-newtypes:false --heap-free-lambda-facts=true --solver-path "%review-z3" --cores:1 --resource-limit:2000000 --verification-time-limit:60 --show-snippets:false --use-basename-for-filename --error-limit:0 --allow-warnings >> "%t"
+// RUN: echo "github-issue-132-original (type-system-refresh:false, heap-free-lambda-facts:true)" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/github-issue-132-original.dfy" --type-system-refresh:false --general-newtypes:false --heap-free-lambda-facts=true --allow-axioms --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --verification-time-limit:60 --cores:1 >> "%t"
+// RUN: echo "github-issue-132-negative (type-system-refresh:false, heap-free-lambda-facts:true)" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/github-issue-132-negative.dfy" --type-system-refresh:false --general-newtypes:false --heap-free-lambda-facts=true --allow-axioms --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --verification-time-limit:60 --cores:1 >> "%t"
+// RUN: echo "positive (type-system-refresh:true, heap-free-lambda-facts:false)" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/lambda-facts-every-heap-positive.dfy" --type-system-refresh:true --heap-free-lambda-facts=false --solver-path "%review-z3" --cores:1 --resource-limit:2000000 --verification-time-limit:60 --show-snippets:false --use-basename-for-filename --error-limit:0 --allow-warnings >> "%t"
+// RUN: echo "negative (type-system-refresh:true, heap-free-lambda-facts:false)" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/lambda-facts-every-heap-negative.dfy" --type-system-refresh:true --heap-free-lambda-facts=false --solver-path "%review-z3" --cores:1 --resource-limit:2000000 --verification-time-limit:60 --show-snippets:false --use-basename-for-filename --error-limit:0 --allow-warnings >> "%t"
+// RUN: echo "positive (type-system-refresh:true, heap-free-lambda-facts:true)" >> "%t"
+// RUN: %exits-with 0 %baredafny verify "%S/Inputs/lambda-facts-every-heap-positive.dfy" --type-system-refresh:true --heap-free-lambda-facts=true --solver-path "%review-z3" --cores:1 --resource-limit:2000000 --verification-time-limit:60 --show-snippets:false --use-basename-for-filename --error-limit:0 --allow-warnings >> "%t"
+// RUN: echo "negative (type-system-refresh:true, heap-free-lambda-facts:true)" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/lambda-facts-every-heap-negative.dfy" --type-system-refresh:true --heap-free-lambda-facts=true --solver-path "%review-z3" --cores:1 --resource-limit:2000000 --verification-time-limit:60 --show-snippets:false --use-basename-for-filename --error-limit:0 --allow-warnings >> "%t"
+// RUN: echo "github-issue-132-original (type-system-refresh:true, heap-free-lambda-facts:true)" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/github-issue-132-original.dfy" --type-system-refresh:true --heap-free-lambda-facts=true --allow-axioms --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --verification-time-limit:60 --cores:1 >> "%t"
+// RUN: echo "github-issue-132-negative (type-system-refresh:true, heap-free-lambda-facts:true)" >> "%t"
+// RUN: %exits-with 4 %baredafny verify "%S/Inputs/github-issue-132-negative.dfy" --type-system-refresh:true --heap-free-lambda-facts=true --allow-axioms --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --verification-time-limit:60 --cores:1 >> "%t"
+// RUN: %diff "%s.expect" "%t"

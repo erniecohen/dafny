@@ -1450,6 +1450,11 @@ namespace Microsoft.Dafny {
             // This ensures that cases like forall x :: x != null && f(x.a) do not fail to verify.
 
             builder.Add(new Bpl.CommentCmd("Begin Comprehension WF check"));
+            // With --heap-free-lambda-facts, a lambda that LambdaFactsInEveryHeap selects is checked in an
+            // arbitrary good heap, not only in the current heap and its successors, and without assuming
+            // that its formals are allocated.  This only removes assumptions from a check; the permissions
+            // exported for the lambda in every good heap (LambdaCanCallInEveryHeap) are what it checks.
+            var lambdaInEveryHeap = lam != null && LambdaFactsInEveryHeap(lam);
             BplIfIf(e.Origin, lam != null, null, builder, nextBuilder => {
               var comprehensionEtran = etran;
               if (lam != null) {
@@ -1458,10 +1463,13 @@ namespace Microsoft.Dafny {
                 comprehensionEtran = new ExpressionTranslator(comprehensionEtran, lambdaHeap);
                 nextBuilder.Add(new HavocCmd(e.Origin, Singleton((Bpl.IdentifierExpr)comprehensionEtran.HeapExpr)));
                 nextBuilder.Add(new AssumeCmd(e.Origin, FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, comprehensionEtran.HeapExpr)));
-                nextBuilder.Add(new AssumeCmd(e.Origin, HeapSameOrSucc(etran.HeapExpr, comprehensionEtran.HeapExpr)));
+                if (!lambdaInEveryHeap) {
+                  nextBuilder.Add(new AssumeCmd(e.Origin, HeapSameOrSucc(etran.HeapExpr, comprehensionEtran.HeapExpr)));
+                }
               }
 
-              var substMap = SetupBoundVarsAsLocals(e.BoundVars, out var typeAntecedents, nextBuilder, locals, comprehensionEtran);
+              var substMap = SetupBoundVarsAsLocals(e.BoundVars, out var typeAntecedents, nextBuilder, locals, comprehensionEtran,
+                alloc: lambdaInEveryHeap ? IsAllocType.NOALLOC : IsAllocType.ISALLOC);
               BplIfIf(e.Origin, true, typeAntecedents, nextBuilder, newBuilder => {
                 var s = new Substituter(null, substMap, new Dictionary<TypeParameter, Type>());
                 var body = Substitute(e.Term, null, substMap);
