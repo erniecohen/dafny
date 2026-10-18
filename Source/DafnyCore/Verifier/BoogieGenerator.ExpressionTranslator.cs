@@ -1681,12 +1681,15 @@ namespace Microsoft.Dafny {
           if (e.Range != null) {
             constructorFacts.Visit(e.Range);
           }
-          if (constructorFacts.Found) {
+          if (constructorFacts.Found && !everyHeap) {
             // Match this pattern only when the source's existing child facts
             // contain a total datatype destructor's constructor fact. Pure arrow
             // subtype checks can need that fact before any result application;
             // their selector types can also differ from the source result type.
             // The complete native guard and exact family equality are unchanged.
+            // (With every heap, these terms cannot mention the bound type arguments,
+            // which every pattern must; the type-general selector patterns match the
+            // application that such a subtype check makes.)
             var sourceTriggerTerms = new List<Expr> { handle, goodHeap };
             sourceTriggerTerms.AddRange(arguments.Zip(e.BoundVars,
               (argument, bv) => BoogieGenerator.MkIsBox(argument, bv.Type)));
