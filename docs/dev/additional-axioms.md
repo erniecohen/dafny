@@ -706,17 +706,27 @@ For a selected lambda:
    does not assume that the heap is the current heap or a successor of it. The
    formals are havocked with their type antecedents only, not their allocation
    (`NOALLOC`). This only removes assumptions from a check.
-2. In addition to #160's guarded facts, `CanCallAssumption` emits the permissions
-   of the range and body under the formals' types alone, in every good heap:
+2. The permissions that `CanCallAssumption` emits for the lambda keep #160's
+   quantifier, its family equality and its `ApplyN`/`ReadsN`/`RequiresN`
+   patterns. Two things change:
+   - the guard is only the formals' types and a good heap, without their
+     allocation and without heap succession;
+   - the patterns take their type arguments as bound variables, so they match an
+     application of the family at any arrow type (a subset check at `A -> nat` of a
+     lambda typed `A -> int`) and at any heap, `$OneHeap` included.
 
    ```boogie
-   (forall x: T, h: Heap :: $Is(x, T) && $IsGoodHeap(h) ==>
-      canCall(range)[x, h] && (range[x, h] ==> canCall(body)[x, h]))
+   (forall fam, ly, h, x, T0, T1 ::
+      { Apply1(T0, T1, h, AtLayer(fam, ly), x) } { Reads1(...) } { Requires1(...) }
+      fam == <this lambda's family> && $IsBox(x, T) && $IsGoodHeap(h)
+        ==> canCall(range)[x, h] && (range[x, h] ==> canCall(body)[x, h]))
    ```
 
-   It has no explicit pattern, so the solver chooses triggers among the
-   permission terms. That is the form these facts had before #160. Trimmed binders
-   and possibly empty types are treated as in `BplForallTrim`.
+   The facts are still reached only where the lambda's family is applied. An
+   earlier draft exported them as a separate quantifier with the solver's own
+   triggers, the form they had before #160. Then permissions for every argument of
+   a recursive callee were matched wherever such a permission term appeared, and the
+   regression test of issue 100 ran out of resource with the option.
 
 ### Derivation
 
@@ -733,7 +743,7 @@ after assign-such-that (#36).
   good heap `h` and every value `x` of the formals' types. It does so in the
   formation context: the captured values and the path condition at the lambda.
 - Step 2 is emitted by `CanCallAssumption` of the same expression, in the same
-  context, and asserts exactly those permissions. That is how the existing guarded
+  context, and asserts exactly those permissions, wherever the family is applied. That is how the existing guarded
   facts correspond to the existing check. No permission is claimed at a heap or an
   argument that the check did not cover.
 - So every instance of the new formula is a permission whose precondition holds in
