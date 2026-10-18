@@ -88,18 +88,40 @@ input under `Inputs/` and changed no product file.
 Boogie's unguarded reverse casts,
 [boogie-org/boogie#1168](https://github.com/boogie-org/boogie/issues/1168), are
 fixed in Boogie.  The public fork [erniecohen/boogie](https://github.com/erniecohen/boogie)
-carries the fix on its branch `review/3.5.5`, which is v3.5.5 with one fix commit
+carries the fix on its branch `review/3.5.5`, which is v3.5.5 with the fix commit
 (its message says what changes and why the result is sound), its tests, and CI
-that runs Boogie's own test jobs and packs Boogie's NuGet packages at the version
-`3.5.5-review.37e4435d`.  The release `v3.5.5+review.37e4435d` carries them, with
-their sha256 sums, and its `REVIEW.md` describes the fix and the version.  The
-same fix is offered to Boogie's master as
+that runs Boogie's own test jobs and packs Boogie's NuGet packages.  The same fix
+is offered to Boogie's master as
 [boogie-org/boogie#1169](https://github.com/boogie-org/boogie/pull/1169).
 
-`a48933e` makes this branch build against those packages:
+This branch builds against that fork's release `v3.5.5+review.a7d160a7`, whose
+packages have the version `3.5.5-review.a7d160a7`.  The release carries them with
+their sha256 sums, and its `REVIEW.md` says what the fork changes and how its
+version is computed.  Besides that fix, it brings:
+
+- **Printer fixes, on by default**, so that a printed program (`--bprint`, which is
+  Boogie's `/print`) parses back into the program that was printed.  The printer
+  keeps the parentheses that its parser needs
+  ([#180](https://github.com/erniecohen/dafny/issues/180)): it printed
+  `a && (b && c)` as `a && b && c`, which parses as `(a && b) && c`, and
+  `2 * (3 div 2)` as `2 * 3 div 2`, which means `(2 * 3) div 2`.  It writes
+  `hideable` before a hideable axiom, which Dafny's function and constant
+  definition axioms are
+  ([#182](https://github.com/erniecohen/dafny/issues/182)); without it, `hide`
+  pruned nothing in a printed program, which could then prove what Dafny does not.
+  And it writes the attributes of an if command and of an assignment, such as
+  `{:allow_path_isolation}` and `{:id}`
+  ([#183](https://github.com/erniecohen/dafny/issues/183)).  Only printed text
+  changes: Dafny sends the solver what it sent before.
+- **Options that are off by default**, and that Dafny does not set:
+  `/deterministicLiteralHashes:1`, `/printDefinitionAxiomsInPlace`, `/verifyAsTasks`
+  and `/structuralLiterals`.  The fork's `REVIEW.md` describes them.
+
+`a48933e` made this branch build against the fork's packages, at
+`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.a7d160a7`:
 
 - `Source/DafnyCore/DafnyCore.csproj` names `Boogie.ExecutionEngine`
-  `3.5.5-review.37e4435d`, and `dotnet-tools.json` names the `boogie` tool at the
+  `3.5.5-review.a7d160a7`, and `dotnet-tools.json` names the `boogie` tool at the
   same version;
 - `nuget.config` adds a local package source, `Binaries/boogie-packages`, and maps
   every Boogie package to it and to nothing else, so a missing package stops the
@@ -107,6 +129,13 @@ same fix is offered to Boogie's master as
 - `Scripts/fetch-boogie-packages.sh` downloads the 14 packages from the release
   into that folder and checks each against `Scripts/boogie-packages.sha256`, which
   is the release's `SHA256SUMS`.
+
+The move from `37e4435d` to `a7d160a7` is a product change, and so a new version.
+It moves no verdict of the suite or of the standard library.  Its test,
+`git-issues/github-issue-182.dfy`, prints a program that uses `hide *` and verifies
+the printed program with Boogie, which now reports the error that Dafny reports,
+where it used to verify the program.  Its release note is
+`docs/dev/news/boogie-printed-programs.fix`.
 
 **To build this branch, run `sh Scripts/fetch-boogie-packages.sh` once first.**
 CI does so in every job that builds.

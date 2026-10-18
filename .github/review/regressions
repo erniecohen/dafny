@@ -282,3 +282,6 @@ git-issues/floating-obligation-constraints.dfy
 
 # Resolve once and verify every duplicate, overlapping and failing request (#173).
 git-issues/git-issue-173.dfy
+
+# A printed Boogie program keeps hideable, so hide prunes as in process (Boogie 3.5.5-review.a7d160a7, #182).
+git-issues/github-issue-182.dfy
