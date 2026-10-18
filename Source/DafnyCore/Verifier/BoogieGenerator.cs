@@ -3661,9 +3661,54 @@ namespace Microsoft.Dafny {
       return res;
     }
 
+    /// <summary>
+    /// Whether, under the option --heap-free-lambda-facts, the lambda "e" is checked well-formed in
+    /// every good heap and without assuming its formals allocated (CheckWellformed), and so exports the
+    /// permissions of its body under its formals' types alone, in every good heap
+    /// (ExpressionTranslator.LambdaCanCallInEveryHeap).  It is the stronger check that justifies the
+    /// export.  This test only selects the lambdas for which the stronger check is expected to succeed:
+    /// those without a reads clause whose range and body use nothing that observes the heap or
+    /// allocation.  The same lambda gets the same answer in both places; a substituted copy can only
+    /// lose it, and then exports no more than before.
+    /// </summary>
+    internal bool LambdaFactsInEveryHeap(LambdaExpr e) {
+      if (!options.Get(CommonOptionBag.HeapFreeLambdaFacts) || e.Reads.Expressions.Count != 0) {
+        return false;
+      }
+      return (e.Range == null || !ObservesHeapOrAllocation(e.Range)) && !ObservesHeapOrAllocation(e.Body);
+    }
+
+    private static bool ObservesHeapOrAllocation(Expression expr) {
+      switch (expr) {
+        case null:
+          return false;
+        // Previous heaps, statements (lemma calls) and binders, whose reference-typed bound variables
+        // range over the allocated values of the heap at hand.  A nested lambda has its own rules.
+        case OldExpr or UnchangedExpr or StmtExpr or ComprehensionExpr or FieldLocation or IndexFieldLocation:
+          return true;
+        case LetExpr { Exact: false }:
+          return true;
+        case UnaryOpExpr { Op: UnaryOpExpr.Opcode.Fresh or UnaryOpExpr.Opcode.Allocated }:
+          return true;
+        case FunctionCallExpr call when call.Function == null || call.Function.ReadsHeap || call.Function is TwoStateFunction:
+          return true;
+        case MemberSelectExpr { Member: Field { IsMutable: true } or TwoStateFunction }:
+          return true;
+        case ApplyExpr apply when !apply.Function.Type.IsArrowTypeWithoutReadEffects:
+          return true;
+        case SeqSelectExpr select when select.Seq.Type.IsArrayType:
+          return true;
+        case MultiSelectExpr:
+          return true;
+        case SeqConstructionExpr construction when !construction.Initializer.Type.IsArrowTypeWithoutReadEffects:
+          return true;
+      }
+      return expr.SubExpressions.Any(ObservesHeapOrAllocation);
+    }
+
     Dictionary<IVariable, Expression> SetupBoundVarsAsLocals(List<BoundVar> boundVars, out Bpl.Expr typeAntecedent,
       BoogieStmtListBuilder builder, Variables locals, ExpressionTranslator etran,
-      string nameSuffix = null) {
+      string nameSuffix = null, IsAllocType alloc = IsAllocType.ISALLOC) {
       Contract.Requires(boundVars != null);
       Contract.Requires(builder != null);
       Contract.Requires(locals != null);
@@ -3682,7 +3727,7 @@ namespace Microsoft.Dafny {
         locals.GetOrAdd(bvar);
         var bIe = new Bpl.IdentifierExpr(bvar.tok, bvar);
         builder.Add(new Bpl.HavocCmd(bv.Origin, [bIe]));
-        Bpl.Expr wh = GetWhereClause(bv.Origin, bIe, local.Type, etran, IsAllocType.ISALLOC);
+        Bpl.Expr wh = GetWhereClause(bv.Origin, bIe, local.Type, etran, alloc);
         if (wh != null) {
           typeAntecedent = BplAnd(typeAntecedent, wh);
         }
