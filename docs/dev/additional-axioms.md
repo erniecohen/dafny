@@ -670,3 +670,130 @@ Negative cases retain failures for missing preconditions, missing witnesses,
 opaque definitions, inactive disjunction/conditional branches, a wrong selected
 value, and `assert false` after the predicate has been triggered. Both resolvers
 run with the option off and on under pinned Z3 5.1.0 and 4.12.1.
+
+## Body permissions of heap-free lambdas in every heap
+
+The finite-support repair (#160) guarded the permissions (`F#canCall`) that a
+lambda exports for the calls in its body. They hold only for formals allocated in
+a good heap that is the current heap or one of its successors, and they are
+reachable only through `ApplyN`, `ReadsN` and `RequiresN` patterns on that lambda
+family, at the lambda's own type arguments. Since the allocation repair (#137), an
+arbitrary function value is not provably allocated. Together, these lose facts
+that are true:
+
+- `rank := (a: int) => 7 - Idx(a)` into `int -> nat` fails. Membership in an arrow
+  type quantifies over every good heap, and the subset check applies the lambda at
+  `int -> nat`, while the patterns are typed `int -> int`. So `Idx` never unfolds.
+- `seq(n, i requires 0 <= i < n => F(i))` into a sequence of a subset type fails the
+  same way, and so does an existential over a function witnessed by a lambda.
+- `forall o :: fam(o).step(s, t, s') <==> ...` cannot be proved for
+  `fam := (o: nat -> int) => Src(AtOracle(x, o))`. The permission for
+  `Src(AtOracle(x, o))` needs `o` allocated, and an arbitrary function value is not.
+
+With the option, a lambda is *selected* when it has no reads clause and its
+requires and body use nothing that observes the heap or allocation. The excluded
+constructs are:
+
+- `old`, `unchanged`, `fresh` and `allocated`;
+- a mutable field, an array element, or a heap-reading or two-state function;
+- an arrow with read effects, applied, or as the initializer of `seq(n, f)`;
+- a statement expression;
+- a quantifier, a comprehension, a nested lambda, or an assign-such-that `var x :| ...`.
+
+For a selected lambda:
+
+1. `CheckWellformed` havocs the lambda's heap and assumes only that it is good. It
+   does not assume that the heap is the current heap or a successor of it. The
+   formals are havocked with their type antecedents only, not their allocation
+   (`NOALLOC`). This only removes assumptions from a check.
+2. In addition to #160's guarded facts, `CanCallAssumption` emits the permissions
+   of the range and body under the formals' types alone, in every good heap:
+
+   ```boogie
+   (forall x: T, h: Heap :: $Is(x, T) && $IsGoodHeap(h) ==>
+      canCall(range)[x, h] && (range[x, h] ==> canCall(body)[x, h]))
+   ```
+
+   It has no explicit pattern, so the solver chooses triggers among the
+   permission terms. That is the form these facts had before #160. Trimmed binders
+   and possibly empty types are treated as in `BplForallTrim`.
+
+### Derivation
+
+Every permission here is a local fact justified by a well-formedness check. This
+is the same basis as the existing lambda permissions and as the call permissions
+after assign-such-that (#36).
+
+- In the trusted encoding, a call's permission is assumed only where a check
+  proved the callee's precondition at those arguments and heap. The definition
+  axiom guarded by the permission then holds in the intended interpretation `I`,
+  because a function's definition holds wherever its precondition does.
+- For a selected lambda, step 1 proves every precondition along the evaluation
+  paths of the range, and of the body under the range. It proves them for every
+  good heap `h` and every value `x` of the formals' types. It does so in the
+  formation context: the captured values and the path condition at the lambda.
+- Step 2 is emitted by `CanCallAssumption` of the same expression, in the same
+  context, and asserts exactly those permissions. That is how the existing guarded
+  facts correspond to the existing check. No permission is claimed at a heap or an
+  argument that the check did not cover.
+- So every instance of the new formula is a permission whose precondition holds in
+  `I`. The member restricts models no further than the existing permissions do.
+
+**Selection is only for completeness.** It picks the lambdas for which the stronger
+check is expected to succeed. A body that observes the heap or allocation could need
+the assumptions that step 1 drops. Selecting it would turn a well-formedness check
+that passes today into one that fails. The soundness of step 2 rests on step 1,
+whatever the selection is.
+
+- A copy of a lambda with its free variables substituted can only lose selection.
+  Substitution adds subexpressions and removes none. Such a copy exports no more
+  than the guarded facts.
+- If a selected lambda's well-formedness really does need the dropped assumptions,
+  its check fails under the option. That is a verdict change, and the option-on
+  expectations record it.
+
+### Relation to the repairs it builds on
+
+- **#160.** Its guard exported permissions "only under the premises used during
+  source well-formedness". That is the principle used here: a selected lambda is
+  checked under fewer premises, so it exports correspondingly more. Lambdas that
+  are not selected are unchanged.
+  - The counterexamples of #82 concern finite images (`Set#FromBoogieMap`), not
+    permissions. This member changes no footprint and no set or map membership: a
+    selected lambda's constant-empty footprint is defined exactly as #160 defines
+    it.
+  - #82's lambda allocation control (`Inputs/git-issue-82-lambda-alloc-negative.dfy`)
+    has a reads clause and is not selected. `git-issue-82.dfy` runs it with the
+    option.
+- **#137.** Its counterexample made a function value allocated through its reads
+  frame. This member does not touch `$IsAlloc` at arrow types, the allocation of
+  lambda values (`LambdaAllocation`), or any heap relation. Dropping the formals'
+  allocation from a check is a removed assumption, and a permission states nothing
+  about allocation. #132's original and negative programs still fail with the
+  option (`git-issues/lambda-facts-every-heap.dfy`).
+- **The other members.**
+  - The round trips, literal identities and allocation patterns mention no
+    permission. The reflexive heap-succession instances do not constrain the heaps
+    here, which are only assumed good.
+  - #36's permissions are justified the same way, by a check.
+  - So the accounting is the same with all members enabled.
+
+### Controls
+
+`git-issues/lambda-facts-every-heap.dfy` runs in both resolver modes, with the
+option off and on.
+
+- The positive program fails without the option and verifies with it. It covers
+  the subset arrow, a compiled variant, `seq(n, f)` into a subset sequence, the
+  existential witness, and the family with an arrow-typed formal.
+- The negative program fails in all four runs. Each method has one obligation that
+  must fail, with the facts in play:
+  - `assert false`, and a wrong value of the lambda;
+  - a body whose callee's precondition fails, checked by the stronger
+    well-formedness check;
+  - a wrong `requires` claim;
+  - a family vacuity check, and a wrong step;
+  - the allocation, before its creation, of a lambda that captures an object
+    created later.
+- #132's original and negative programs are run with the option on, and still
+  fail.

@@ -2426,6 +2426,10 @@ and what information it produces about the verification process.
   applied, so that the members of its result are known to be allocated.
   After an assign-such-that statement it also makes checked call permissions
   available for the selected values, so predicates in the constraint can unfold.
+  A lambda without a reads clause, whose body does not observe the heap or
+  allocation, is checked well-formed in every heap without assuming its
+  parameters allocated, and the calls in its body may then unfold wherever it is
+  applied, for example when a lambda's result is checked against a subset type.
   Existing well-formedness, precondition and existence checks are preserved.
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
 
