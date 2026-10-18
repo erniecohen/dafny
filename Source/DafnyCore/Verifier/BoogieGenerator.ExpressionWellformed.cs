@@ -1233,7 +1233,7 @@ namespace Microsoft.Dafny {
             // This ensures that cases like forall x :: x != null && f(x.a) do not fail to verify.
 
             builder.Add(new Bpl.CommentCmd("Begin Comprehension WF check"));
-            // With --additional-axioms, a lambda that LambdaFactsInEveryHeap selects is checked in an
+            // With --heap-free-lambda-facts, a lambda that LambdaFactsInEveryHeap selects is checked in an
             // arbitrary good heap, not only in the current heap and its successors, and without assuming
             // that its formals are allocated.  This only removes assumptions from a check; the permissions
             // exported for the lambda in every good heap (LambdaCanCallInEveryHeap) are what it checks.

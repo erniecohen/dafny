@@ -1615,7 +1615,7 @@ namespace Microsoft.Dafny {
         }
         // Lambda source well-formedness checks its formals with ISALLOC in this
         // future heap. Export child permissions only under those same premises.
-        // With --additional-axioms, a lambda that LambdaFactsInEveryHeap selects is
+        // With --heap-free-lambda-facts, a lambda that LambdaFactsInEveryHeap selects is
         // checked in an arbitrary good heap without its formals' allocation
         // (CheckWellformed), so its permissions are exported under exactly those
         // premises: the formals' types and a good heap.  Its selector patterns then

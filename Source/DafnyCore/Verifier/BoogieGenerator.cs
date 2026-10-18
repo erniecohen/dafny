@@ -3662,7 +3662,7 @@ namespace Microsoft.Dafny {
     }
 
     /// <summary>
-    /// Whether, under the shared option --additional-axioms, the lambda "e" is checked well-formed in
+    /// Whether, under the option --heap-free-lambda-facts, the lambda "e" is checked well-formed in
     /// every good heap and without assuming its formals allocated (CheckWellformed), and so exports the
     /// permissions of its body under its formals' types alone, in every good heap
     /// (ExpressionTranslator.LambdaCanCallInEveryHeap).  It is the stronger check that justifies the
@@ -3672,7 +3672,7 @@ namespace Microsoft.Dafny {
     /// lose it, and then exports no more than before.
     /// </summary>
     internal bool LambdaFactsInEveryHeap(LambdaExpr e) {
-      if (!options.Get(CommonOptionBag.AdditionalAxioms) || e.Reads.Expressions.Count != 0) {
+      if (!options.Get(CommonOptionBag.HeapFreeLambdaFacts) || e.Reads.Expressions.Count != 0) {
         return false;
       }
       return (e.Range == null || !ObservesHeapOrAllocation(e.Range)) && !ObservesHeapOrAllocation(e.Body);
