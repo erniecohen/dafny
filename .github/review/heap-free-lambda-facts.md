@@ -70,9 +70,8 @@ It asserts facts, so `AGENTS.md` requires an option.
 
 ## Known limits
 
-- **Facts arrive only where the family is applied.** A permission that a proof
-  reaches only through another permission term is not supplied, for example after an
-  assign-such-that whose constraint applies the lambda's callee directly.
+- **Facts arrive only where the family is applied.** A proof that needs a
+  permission without applying the lambda does not get it, as it did before #160.
 - **Costs move.** More permissions reach the search, so some proofs get dearer and
   some cheaper.
 - **The selection is conservative.** It excludes bodies with binders, nested lambdas,
