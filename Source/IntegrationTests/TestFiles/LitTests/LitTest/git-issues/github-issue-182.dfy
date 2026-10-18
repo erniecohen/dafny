@@ -3,7 +3,7 @@
 // printed program `hide *` hid nothing, and Boogie proved the assertion in Hidden that Dafny
 // reports.  The printer now writes `hideable`, and both report the same error.
 // RUN: %exits-with 4 %baredafny verify "%s" --show-snippets:false --use-basename-for-filename --solver-path "%review-z3" --verification-time-limit:60 --cores:1 --allow-warnings --bprint "%t.bpl" > "%t"
-// RUN: dotnet tool run boogie -prune:1 -typeEncoding:a -useBaseNameForFileName '-proc:Impl$$*' -timeLimit:60 -proverOpt:PROVER_PATH=%review-z3 "%t.bpl" >> "%t"
+// RUN: dotnet tool run boogie -prune:1 -typeEncoding:a -useBaseNameForFileName '-proc:*(correctness)' -timeLimit:60 -proverOpt:PROVER_PATH=%review-z3 "%t.bpl" >> "%t"
 // RUN: %OutputCheck --file-to-check "%t" "%s"
 // CHECK: github-issue-182\.dfy\(19,\d+\): Error: assertion might not hold
 // CHECK: Dafny program verifier finished with \d+ verified, 1 error
