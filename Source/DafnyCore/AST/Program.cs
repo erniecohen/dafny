@@ -53,6 +53,10 @@ public class Program : NodeWithoutOrigin {
 
   public ProofDependencyManager ProofDependencyManager { get; set; } = new();
 
+  // CLI batches capture this before translating their first request.
+  [JsonIgnore]
+  public string? PreludeText { get; set; }
+
   /// <summary>
   /// Serializing the state of the Program passed to this backend,
   /// after resolution, can be problematic.

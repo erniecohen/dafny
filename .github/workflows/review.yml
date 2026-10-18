@@ -31,6 +31,17 @@ on:
         type: boolean
         default: false
 
+      default_comparison:
+        description: Record only repeated default suite/library vectors for frozen products (manual scratch only)
+        type: boolean
+        default: false
+
+      default_comparison_mode:
+        description: Frozen candidate comparison or unmodified development baseline control (manual scratch only)
+        type: choice
+        options: ['candidate', 'baseline-control']
+        default: candidate
+
 permissions:
   contents: read
 
@@ -56,6 +67,7 @@ env:
 
 jobs:
   build:
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/')) }}
     name: Build (Release)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -223,6 +235,147 @@ jobs:
           path: comparison
           retention-days: 90
 
+  verification-batch:
+    name: Resolve-once verification batch controls
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: dafny
+      - name: Unpack Dafny
+        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
+      - name: Pinned solver
+        run: |
+          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
+          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+          echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
+      - name: Exercise fresh requests and cold input invalidation
+        run: |
+          python3 .github/review/verification-batch-controls.py "$PWD/out/dafny/Dafny" "$Z3" verification-batch-results
+          cat verification-batch-results/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-batch-results
+          path: verification-batch-results
+          retention-days: 90
+
+  default-comparison:
+    name: Repeated default suite and standard-library comparison (probe)
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 4e98f3f592310854ca1448d517b82dcbcc0f51f4
+          path: comparison-baseline
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.default_comparison_mode == 'baseline-control' && '4e98f3f592310854ca1448d517b82dcbcc0f51f4' || 'b85e4b6f3af7eedd39bf355394a3f50c1b348646' }}
+          path: comparison-candidate
+      - uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/comparison-dotnet
+        with:
+          dotnet-version: 10.0.402
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Runtime for the source generator in the same isolated root
+        run: |
+          test "$DOTNET_ROOT" = "$RUNNER_TEMP/comparison-dotnet"
+          curl -fsSLo "$RUNNER_TEMP/comparison-runtime8.tar.gz" \
+            https://builds.dotnet.microsoft.com/dotnet/Runtime/8.0.32/dotnet-runtime-8.0.32-linux-x64.tar.gz
+          echo "639a17d84e4d52fecd62c7d4e528e7bc0ae3c9860de2530cb41a2ee7196b69ea18271d8795849180742770e25b4f913df292a5a236fa197cf5d3cd0ec5ba665f  $RUNNER_TEMP/comparison-runtime8.tar.gz" | sha512sum -c -
+          host_before=$(sha256sum "$DOTNET_ROOT/dotnet")
+          tar -xzf "$RUNNER_TEMP/comparison-runtime8.tar.gz" -C "$DOTNET_ROOT" --exclude=dotnet --exclude=./dotnet
+          test "$(sha256sum "$DOTNET_ROOT/dotnet")" = "$host_before"
+      - name: Record fixed environment and build both source revisions
+        env:
+          COMPARISON_MODE: ${{ inputs.default_comparison_mode || 'candidate' }}
+        run: |
+          mkdir -p default-comparison
+          dotnet --info > default-comparison/dotnet-info.txt
+          dotnet --list-sdks > default-comparison/sdks.txt
+          dotnet --list-runtimes > default-comparison/runtimes.txt
+          test "$(dotnet --version)" = 10.0.402
+          test "$(dotnet --list-sdks | wc -l)" -eq 1
+          python3 .github/review/default-comparison.py --record-dotnet-environment "$PWD/default-comparison" "$DOTNET_ROOT"
+          java -version > default-comparison/java-version.txt 2>&1
+          git rev-parse HEAD > default-comparison/harness-source.txt
+          git -C comparison-candidate rev-parse HEAD > default-comparison/candidate-source.txt
+          git -C comparison-baseline rev-parse HEAD > default-comparison/baseline-source.txt
+          test "$(cat default-comparison/baseline-source.txt)" = 4e98f3f592310854ca1448d517b82dcbcc0f51f4
+          case "$COMPARISON_MODE" in
+            candidate) expected_candidate=b85e4b6f3af7eedd39bf355394a3f50c1b348646 ;;
+            baseline-control) expected_candidate=4e98f3f592310854ca1448d517b82dcbcc0f51f4 ;;
+            *) echo "unknown comparison mode"; exit 1 ;;
+          esac
+          test "$(cat default-comparison/candidate-source.txt)" = "$expected_candidate"
+          echo "$COMPARISON_MODE" > default-comparison/comparison-mode.txt
+          git fetch --no-tags --depth=1 origin b85e4b6f3af7eedd39bf355394a3f50c1b348646
+          for variant in baseline candidate; do
+            source="$PWD/comparison-$variant"
+            output="$PWD/default-comparison/build-$variant"
+            (
+              cd "$source"
+              sh Scripts/fetch-boogie-packages.sh
+              dotnet publish Source/Dafny/Dafny.csproj -c Release -o "$output" \
+                -p:GeneratePackageOnBuild=false -p:SourceRevisionId=resolution-reuse-comparison \
+                -bl:"$output.binlog"
+            ) > "default-comparison/build-$variant.stdout" 2> "default-comparison/build-$variant.stderr"
+          done
+      - name: Pin both solvers
+        run: |
+          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
+          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+          curl -fsSLo z3h.zip "$HARNESS_Z3_RELEASE/z3-4.16.0-x64-ubuntu-24.04-bin.zip"
+          echo "$HARNESS_Z3_4_16_0_SHA256  z3h.zip" | sha256sum -c -
+          mkdir z3h
+          unzip -q z3h.zip -d z3h
+          chmod +x z3h/z3-4.16.0
+      - name: Check comparison bookkeeping
+        run: python3 -m unittest discover -s .github/review -p 'test_default*comparison.py'
+      - name: Record A1 B1 B2 A2 without changing verdict baselines
+        env:
+          BASELINE_SOURCE: ${{ github.workspace }}/comparison-baseline
+          CANDIDATE_SOURCE: ${{ github.workspace }}/comparison-candidate
+          COMPARISON_MODE: ${{ inputs.default_comparison_mode || 'candidate' }}
+        run: |
+          set +e
+          python3 .github/review/default-comparison.py "$BASELINE_SOURCE" "$CANDIDATE_SOURCE" \
+            "$PWD/default-comparison" "$PWD/$Z3_LINUX_X64/bin/z3" "$PWD/z3h/z3-4.16.0" "$COMPARISON_MODE" \
+            > default-comparison/probe.stdout 2> default-comparison/probe.stderr
+          result=$?
+          echo "$result" > default-comparison/probe-exit.txt
+          python3 .github/review/default-comparison.py --finalize-manifest "$PWD/default-comparison"
+          manifest_result=$?
+          {
+            echo '## Repeated default comparison (probe only)'
+            echo
+            echo "Probe process exit: $result. Differences are recorded and do not update any expected verdict."
+            echo "Manifest finalization exit: $manifest_result."
+            if [ -f default-comparison/summary.json ]; then cat default-comparison/summary.json; fi
+            if [ -f default-comparison/incomplete.json ]; then cat default-comparison/incomplete.json; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: default-comparison
+          path: default-comparison
+          compression-level: 9
+          retention-days: 90
+
   resolver:
     name: Resolver matrix (both modes)
     needs: build
@@ -384,6 +537,7 @@ jobs:
           retention-days: 90
 
   regressions:
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/')) }}
     name: Regression tests (upstream harness)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -438,6 +592,10 @@ jobs:
           echo "$filter"
           dotnet test Source/IntegrationTests -c Release --no-build \
             --logger "console;verbosity=normal" --filter "$filter"
+      - name: Batch requests reuse resolution and create fresh proof tasks
+        env:
+          Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
+        run: dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~VerificationBatchTests --logger "console;verbosity=normal"
       - name: Literal identities are option guarded and local to each module
         run: dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~AdditionalAxiomsTranslationTests --logger "console;verbosity=normal"
       - name: Obligation lowering inventory and structural comparisons
@@ -451,6 +609,7 @@ jobs:
 
 
   resolver-tests:
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/')) }}
     name: Resolver unit tests and language-server recovery
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -582,7 +741,7 @@ jobs:
 
   release:
     name: GitHub release
-    needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, finite-support, axiom-resources]
+    needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, finite-support, axiom-resources, verification-batch]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     timeout-minutes: 15

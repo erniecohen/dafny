@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The verifier's verdicts on Dafny's standard library.
 
-    std-verdicts.py run      <DafnyStandardLibraries dir> <dafny> <z3> <out.tsv> [--cores N] [--boogie ARGS]
+    std-verdicts.py run      <DafnyStandardLibraries dir> <dafny> <z3> <out.tsv> [--cores N] [--boogie ARGS] [--measurements DIR]
     std-verdicts.py summary  <verdicts.tsv>          counts, as Markdown
     std-verdicts.py expected <verdicts.tsv>          the verdicts alone, for expected-std-verdicts.tsv
     std-verdicts.py compare  <expected.tsv> <actual.tsv>   rows whose verdict differs
@@ -60,6 +60,7 @@ import glob
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -73,7 +74,7 @@ ERRLINE = re.compile(r'^(\S[^\n]*?\(\d+,\d+\)): (?:Error|Verification out of res
                      re.M)
 
 
-def part(label, cwd, args, dafny, z3, cores, fixed):
+def part(label, cwd, args, dafny, z3, cores, fixed, measurements=None):
     """Verify one part; return its run row and its declaration rows."""
     fd, log = tempfile.mkstemp(suffix='.json')
     os.close(fd)
@@ -84,11 +85,25 @@ def part(label, cwd, args, dafny, z3, cores, fixed):
     start = time.monotonic()
     try:
         p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=TIMEOUT)
-        out, rc = p.stdout + p.stderr, str(p.returncode)
+        stdout, stderr, rc = p.stdout, p.stderr, str(p.returncode)
     except subprocess.TimeoutExpired as e:
         text = lambda b: b.decode(errors='replace') if isinstance(b, bytes) else (b or '')
-        out, rc = text(e.stdout) + text(e.stderr), 'TIMEOUT'
+        stdout, stderr, rc = text(e.stdout), text(e.stderr), 'TIMEOUT'
     secs = '%.1f' % (time.monotonic() - start)
+    out = stdout + stderr
+    if measurements is not None:
+        prefix = os.path.join(measurements, label)
+        with open(prefix + '.stdout', 'w') as f:
+            f.write(stdout)
+        with open(prefix + '.stderr', 'w') as f:
+            f.write(stderr)
+        with open(prefix + '.invocation.json', 'w') as f:
+            json.dump({'cwd': os.path.abspath(cwd), 'command': cmd, 'exit': rc,
+                       'seconds': secs, 'verification_log_present': os.path.exists(log)}, f, indent=2)
+            f.write('\n')
+        # Preserve the original per-VC log before parsing or deleting it, including malformed logs.
+        if os.path.exists(log):
+            shutil.copyfile(log, prefix + '.verification.json')
     sys.stdout.write(out)
     fin = '; '.join(re.findall(r'verifier finished with ([^\n]*)', out))
     errs = sorted(set(ERRLINE.findall(out)))
@@ -103,16 +118,18 @@ def part(label, cwd, args, dafny, z3, cores, fixed):
     return rows + sorted(decls)
 
 
-def run(libdir, dafny, z3, out, cores=4, boogie=None, additional_axioms=False):
+def run(libdir, dafny, z3, out, cores=4, boogie=None, additional_axioms=False, measurements=None):
+    if measurements is not None:
+        os.makedirs(measurements, exist_ok=False)
     fixed = FIXED + (['--additional-axioms'] if additional_axioms else [])
     ts = os.path.join(libdir, 'src', 'Std', 'TargetSpecific')
     # The paths as the Makefile passes them, so that error lines read as in upstream's CI.
     extra = [a for b in (boogie or '').split() for a in ('--boogie', b)]
-    rows = part('Std', libdir, ['src/Std/dfyconfig.toml'], dafny, z3, cores, fixed + extra)
+    rows = part('Std', libdir, ['src/Std/dfyconfig.toml'], dafny, z3, cores, fixed + extra, measurements)
     for t in TARGETS:
         files = sorted('./' + os.path.relpath(f, ts)
                        for f in glob.glob(os.path.join(ts, '**', '*-%s*.dfy' % t), recursive=True))
-        rows += part('TargetSpecific-' + t, ts, ['dfyconfig.toml'] + files, dafny, z3, cores, fixed)
+        rows += part('TargetSpecific-' + t, ts, ['dfyconfig.toml'] + files, dafny, z3, cores, fixed, measurements)
     with open(out, 'w') as f:
         for r in rows:
             f.write('\t'.join(r) + '\n')
@@ -190,7 +207,8 @@ if __name__ == '__main__':
     if cmd == 'run':
         opts = dict(zip(args[4::2], args[5::2]))
         run(*args[:4], cores=int(opts.get('--cores', '4')), boogie=opts.get('--boogie'),
-            additional_axioms=opts.get('--additional-axioms', 'false') == 'true')
+            additional_axioms=opts.get('--additional-axioms', 'false') == 'true',
+            measurements=opts.get('--measurements'))
     elif cmd == 'summary':
         summary(*args)
     elif cmd == 'expected':

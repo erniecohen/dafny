@@ -79,7 +79,8 @@ public class JsonVerificationLogger : IVerificationResultFormatLogger {
     return outcome.ToString();
   }
 
-  private JsonNode SerializeVerificationResult(VerificationScope scope, IReadOnlyList<VerificationTaskResult> results) {
+  private JsonNode SerializeVerificationResult(VerificationScope scope, IReadOnlyList<VerificationTaskResult> results,
+    ProofDependencyManager dependencyManager) {
     var trackProofDependencies =
       results.All(o => o.Result.Outcome == SolverOutcome.Valid) &&
       results.Any(vcResult => vcResult.Result.CoveredElements.Any());
@@ -138,7 +139,8 @@ public class JsonVerificationLogger : IVerificationResultFormatLogger {
   }
 
   public void LogScopeResults(VerificationScopeResult scopeResult) {
-    verificationResultNode.Add(SerializeVerificationResult(scopeResult.Scope, scopeResult.Results.ToList()));
+    verificationResultNode.Add(SerializeVerificationResult(scopeResult.Scope, scopeResult.Results.ToList(),
+      scopeResult.ProofDependencies ?? dependencyManager));
   }
 
   private readonly IList<JsonNode> verificationResultNode = new List<JsonNode>();

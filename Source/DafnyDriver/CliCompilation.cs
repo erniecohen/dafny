@@ -21,7 +21,9 @@ using Token = Microsoft.Dafny.Token;
 
 namespace DafnyDriver.Commands;
 
-public record CanVerifyResult(ICanVerify CanVerify, IReadOnlyList<VerificationTaskResult> Results);
+public record CanVerifyResult(ICanVerify CanVerify, IReadOnlyList<VerificationTaskResult> Results) {
+  public ProofDependencyManager? ProofDependencies { get; init; }
+}
 
 
 public class CliCompilation {
@@ -30,6 +32,7 @@ public class CliCompilation {
   private int errorCount;
   private int warningCount;
   public bool DidVerification { get; private set; }
+  private bool batchInputsCaptured;
 
   private CliCompilation(
     CreateCompilation createCompilation,
@@ -84,7 +87,7 @@ public class CliCompilation {
 
   public Task<ResolutionResult?> Resolution => Compilation.Resolution;
 
-  public static CliCompilation Create(DafnyOptions options) {
+  public static CliCompilation Create(DafnyOptions options, IProgramVerifier? programVerifier = null) {
     var fileSystem = OnDiskFileSystem.Instance;
     ILoggerFactory factory = new LoggerFactory();
     var telemetryPublisher = new CliTelemetryPublisher(factory.CreateLogger<TelemetryPublisherBase>());
@@ -97,7 +100,7 @@ public class CliCompilation {
             factory.CreateLogger<DafnyLangParser>(),
             factory.CreateLogger<CachingParser>()),
           new DafnyLangSymbolResolver(factory.CreateLogger<DafnyLangSymbolResolver>(), factory.CreateLogger<CachingResolver>(), telemetryPublisher)),
-        new DafnyProgramVerifier(factory.CreateLogger<DafnyProgramVerifier>()), engine, input);
+        programVerifier ?? new DafnyProgramVerifier(factory.CreateLogger<DafnyProgramVerifier>()), engine, input);
   }
 
   public void Start() {
@@ -152,7 +155,8 @@ public class CliCompilation {
 
   public bool VerifiedAssertions { get; private set; }
 
-  public async IAsyncEnumerable<CanVerifyResult> VerifyAllLazily(int? randomSeed = null) {
+  public async IAsyncEnumerable<CanVerifyResult> VerifyAllLazily(int? randomSeed = null,
+    string? filterPosition = null, bool repeatVerification = false) {
     if (!Options.Get(CommonOptionBag.UnicodeCharacters) && Options.Backend is not CppBackend) {
       Compilation.Reporter.Deprecated(MessageSource.Verifier, "unicodeCharDeprecated", Token.Cli,
         "the option unicode-char has been deprecated.");
@@ -239,9 +243,22 @@ public class CliCompilation {
       yield break;
     }
 
+    if (repeatVerification) {
+      Compilation.CancellationToken.ThrowIfCancellationRequested();
+      if (!batchInputsCaptured) {
+        var preludePath = BoogieGenerator.PreludePath(Options);
+        resolution.ResolvedProgram.PreludeText = await File.ReadAllTextAsync(preludePath, Compilation.CancellationToken);
+        batchInputsCaptured = true;
+      }
+      // Earlier results retain their own manager; retranslations must not append
+      // new dependencies to the definitions used by a previous request.
+      resolution.ResolvedProgram.ProofDependencyManager = new ProofDependencyManager();
+    }
+    var requestDependencies = resolution.ResolvedProgram.ProofDependencyManager;
+
     DidVerification = true;
 
-    var canVerifies = FilterCanVerifies(resolution.CanVerifies, out var filterRange);
+    var canVerifies = FilterCanVerifies(resolution.CanVerifies, out var filterRange, filterPosition);
     VerifiedAssertions = filterRange.Filters;
 
     int done = 0;
@@ -257,6 +274,9 @@ public class CliCompilation {
           results.TaskFilter = t => KeepVerificationTask(t, filterRange);
         }
 
+        if (repeatVerification) {
+          Compilation.CancellationToken.ThrowIfCancellationRequested();
+        }
         var shouldVerify = await Compilation.VerifyCanVerify(canVerify, results.TaskFilter, randomSeed);
         if (shouldVerify) {
           toAwait.Add(canVerify);
@@ -271,13 +291,24 @@ public class CliCompilation {
               $"Verified {done}/{canVerifies.ToList().Count} symbols. Waiting for {canVerify.FullDafnyName} to verify.");
           }
 
-          await results.Finished.Task;
+          if (repeatVerification) {
+            // Preparation may be cancelled before it identifies any tasks. Do not
+            // wait for a completion event that the detached preparation cannot emit.
+            await results.Finished.Task.WaitAsync(Compilation.CancellationToken);
+          } else {
+            await results.Finished.Task;
+          }
           done++;
         } catch (ProverException e) {
           Compilation.Reporter.Error(MessageSource.Verifier, ResolutionErrors.ErrorId.none, canVerify.Origin, e.Message);
+          if (repeatVerification) {
+            throw; // Abort a batch before a later request can use an unhealthy solver session.
+          }
           yield break;
         } catch (OperationCanceledException) {
-
+          if (repeatVerification) {
+            throw;
+          }
         } catch (Exception e) {
           Compilation.Reporter.Error(MessageSource.Verifier, ResolutionErrors.ErrorId.none, canVerify.Origin,
             $"Internal error occurred during verification: {e.Message}\n{e.StackTrace}");
@@ -285,10 +316,12 @@ public class CliCompilation {
         }
 
         yield return new CanVerifyResult(canVerify,
-          results.CompletedParts.Select(c => new VerificationTaskResult(c.Task, c.Result.Result)).ToList());
+          results.CompletedParts.Select(c => new VerificationTaskResult(c.Task, c.Result.Result)).ToList()) {
+          ProofDependencies = repeatVerification ? requestDependencies : null
+        };
 
         canVerifyResults.Remove(canVerify); // Free memory
-        Compilation.ClearCanVerifyCache(canVerify);
+        Compilation.ClearCanVerifyCache(canVerify, repeatVerification);
       }
       Compilation.ClearModuleCache(canVerifiesForModule.Key);
     }
@@ -321,10 +354,11 @@ public class CliCompilation {
     public bool Filters => Start != int.MinValue || End != int.MaxValue;
   }
 
-  private IReadOnlyList<ICanVerify> FilterCanVerifies(IDictionary<Uri, IIntervalTree<DafnyPosition, ICanVerify>> canVerifies, out LineRange range) {
+  private IReadOnlyList<ICanVerify> FilterCanVerifies(IDictionary<Uri, IIntervalTree<DafnyPosition, ICanVerify>> canVerifies, out LineRange range,
+    string? filterPosition = null) {
     int start = int.MinValue;
     int end = int.MaxValue;
-    var filterPosition = Options.Get(VerifyCommand.FilterPosition);
+    filterPosition ??= Options.Get(VerifyCommand.FilterPosition);
     IEnumerable<ICanVerify> result;
     if (filterPosition == null) {
       range = new LineRange(start, end);
