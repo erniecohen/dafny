@@ -64,7 +64,7 @@ ghost function Fam(x: Ctx): (nat -> int) -> Sem { (o: nat -> int) => Src(AtOracl
 
 ghost predicate Agrees(p: int, fam: (nat -> int) -> Sem)
 {
-  forall o, s, t, s' :: fam(o).step(s, t, s') <==> s' == s + t + p
+  forall o: nat -> int, s, t, s' :: fam(o).step(s, t, s') <==> s' == s + t + p
 }
 
 lemma FamilyWithArrowFormal(x: Ctx)

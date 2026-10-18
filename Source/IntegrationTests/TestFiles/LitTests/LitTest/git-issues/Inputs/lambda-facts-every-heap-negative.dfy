@@ -37,7 +37,7 @@ ghost function AtOracle(x: Ctx, o: nat -> int): Ctx { x.(o := o) }
 ghost function Fam(x: Ctx): (nat -> int) -> Sem { (o: nat -> int) => Src(AtOracle(x, o)) }
 
 lemma FamilyVacuity(x: Ctx) {
-  assert forall o, s, t, s' :: Fam(x)(o).step(s, t, s') <==> s' == s + t + x.p;
+  assert forall o: nat -> int, s, t, s' :: Fam(x)(o).step(s, t, s') <==> s' == s + t + x.p;
   assert false; // fails
 }
 
