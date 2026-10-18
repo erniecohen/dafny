@@ -1584,6 +1584,48 @@ namespace Microsoft.Dafny {
         }
       }
 
+      /// <summary>
+      /// With --additional-axioms, for a lambda that LambdaFactsInEveryHeap selects: the permissions of its
+      /// range and body, under its formals' types alone (no allocation), in every good heap.  This is the
+      /// form these facts had before the finite-support repair guarded them (heap succession, allocated
+      /// formals, selector triggers), and the solver chooses the triggers, so that the facts also reach
+      /// applications at other type arguments, such as a subset check at A -> nat of a lambda typed
+      /// A -> int.  CheckWellformed checks such a lambda in an arbitrary good heap without assuming its
+      /// formals allocated, which is exactly what this assumes.  The guarded facts are still emitted.
+      /// </summary>
+      private Expr LambdaCanCallInEveryHeap(LambdaExpr e, CanCallOptions cco) {
+        if (!BoogieGenerator.LambdaFactsInEveryHeap(e)) {
+          return Boogie.Expr.True;
+        }
+        var varNameGen = BoogieGenerator.CurrentIdGenerator.NestedFreshIdGenerator("$lh#");
+        var hVar = BplBoundVar(varNameGen.FreshId("#heap#"), Predef.HeapType, out var heap);
+        var et = new ExpressionTranslator(this, heap);
+        if (HeapExpr != null) {
+          et = et.WithOld(Old);
+        }
+        var bvarsAndAntecedents = new List<Tuple<Variable, Expr>>();
+        var possiblyEmpty = new HashSet<Variable>();
+        var substitution = new Dictionary<IVariable, Expression>();
+        foreach (var bv in e.BoundVars) {
+          var bVar = BplBoundVar(varNameGen.FreshId($"#{bv.Name}#"), BoogieGenerator.TrType(bv.Type), out var bExpr);
+          bvarsAndAntecedents.Add(Tuple.Create<Variable, Expr>(bVar,
+            BoogieGenerator.GetWhereClause(bv.Origin, bExpr, bv.Type, et, IsAllocType.NOALLOC)));
+          if (!bv.Type.IsNonempty) {
+            possiblyEmpty.Add(bVar);
+          }
+          substitution[bv] = new BoogieWrapper(bExpr, bv.Type);
+        }
+        var facts = et.CanCallAssumption(Substitute(e.Body, null, substitution), cco);
+        if (e.Range != null) {
+          var range = Substitute(e.Range, null, substitution);
+          facts = BplAnd(et.CanCallAssumption(range, cco), BplImp(et.TrExpr(range), facts));
+        }
+        // The heap comes last: BplForallTrim processes the binders in order, and an antecedent may mention it.
+        bvarsAndAntecedents.Add(Tuple.Create<Variable, Expr>(hVar,
+          BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, heap)));
+        return BplForallTrim(bvarsAndAntecedents, null, facts, possiblyEmpty);
+      }
+
       private Expr LambdaCanCallAssumption(LambdaExpr e, CanCallOptions cco) {
         var environment = BuildLambdaEnvironment(e);
         var et = environment.Translator;
@@ -2448,7 +2490,8 @@ namespace Microsoft.Dafny {
           return LetCanCallAssumption(letExpr, cco);
 
         } else if (expr is LambdaExpr lambda) {
-          return BplAnd(LambdaCanCallAssumption(lambda, cco), LambdaAllocation(lambda));
+          return BplAnd(BplAnd(LambdaCanCallAssumption(lambda, cco), LambdaCanCallInEveryHeap(lambda, cco)),
+            LambdaAllocation(lambda));
 
         } else if (expr is ComprehensionExpr) {
           var e = (ComprehensionExpr)expr;
