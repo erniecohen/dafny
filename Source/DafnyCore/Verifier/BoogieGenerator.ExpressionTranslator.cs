@@ -1584,48 +1584,6 @@ namespace Microsoft.Dafny {
         }
       }
 
-      /// <summary>
-      /// With --additional-axioms, for a lambda that LambdaFactsInEveryHeap selects: the permissions of its
-      /// range and body, under its formals' types alone (no allocation), in every good heap.  This is the
-      /// form these facts had before the finite-support repair guarded them (heap succession, allocated
-      /// formals, selector triggers), and the solver chooses the triggers, so that the facts also reach
-      /// applications at other type arguments, such as a subset check at A -> nat of a lambda typed
-      /// A -> int.  CheckWellformed checks such a lambda in an arbitrary good heap without assuming its
-      /// formals allocated, which is exactly what this assumes.  The guarded facts are still emitted.
-      /// </summary>
-      private Expr LambdaCanCallInEveryHeap(LambdaExpr e, CanCallOptions cco) {
-        if (!BoogieGenerator.LambdaFactsInEveryHeap(e)) {
-          return Boogie.Expr.True;
-        }
-        var varNameGen = BoogieGenerator.CurrentIdGenerator.NestedFreshIdGenerator("$lh#");
-        var hVar = BplBoundVar(varNameGen.FreshId("#heap#"), Predef.HeapType, out var heap);
-        var et = new ExpressionTranslator(this, heap);
-        if (HeapExpr != null) {
-          et = et.WithOld(Old);
-        }
-        var bvarsAndAntecedents = new List<Tuple<Variable, Expr>>();
-        var possiblyEmpty = new HashSet<Variable>();
-        var substitution = new Dictionary<IVariable, Expression>();
-        foreach (var bv in e.BoundVars) {
-          var bVar = BplBoundVar(varNameGen.FreshId($"#{bv.Name}#"), BoogieGenerator.TrType(bv.Type), out var bExpr);
-          bvarsAndAntecedents.Add(Tuple.Create<Variable, Expr>(bVar,
-            BoogieGenerator.GetWhereClause(bv.Origin, bExpr, bv.Type, et, IsAllocType.NOALLOC)));
-          if (!bv.Type.IsNonempty) {
-            possiblyEmpty.Add(bVar);
-          }
-          substitution[bv] = new BoogieWrapper(bExpr, bv.Type);
-        }
-        var facts = et.CanCallAssumption(Substitute(e.Body, null, substitution), cco);
-        if (e.Range != null) {
-          var range = Substitute(e.Range, null, substitution);
-          facts = BplAnd(et.CanCallAssumption(range, cco), BplImp(et.TrExpr(range), facts));
-        }
-        // The heap comes last: BplForallTrim processes the binders in order, and an antecedent may mention it.
-        bvarsAndAntecedents.Add(Tuple.Create<Variable, Expr>(hVar,
-          BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, heap)));
-        return BplForallTrim(bvarsAndAntecedents, null, facts, possiblyEmpty);
-      }
-
       private Expr LambdaCanCallAssumption(LambdaExpr e, CanCallOptions cco) {
         var environment = BuildLambdaEnvironment(e);
         var et = environment.Translator;
@@ -1657,9 +1615,20 @@ namespace Microsoft.Dafny {
         }
         // Lambda source well-formedness checks its formals with ISALLOC in this
         // future heap. Export child permissions only under those same premises.
-        var guard = BplAnd(BplAnd(environment.ArgumentTypes, environment.ArgumentAllocation),
-          BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, environment.Heap));
-        if (HeapExpr != null && HeapExpr is not Boogie.IdentifierExpr { Name: "$OneHeap" }) {
+        // With --additional-axioms, a lambda that LambdaFactsInEveryHeap selects is
+        // checked in an arbitrary good heap without its formals' allocation
+        // (CheckWellformed), so its permissions are exported under exactly those
+        // premises: the formals' types and a good heap.  Its selector patterns then
+        // also take their type arguments as bound variables, so that they match an
+        // application of this family at any arrow type, such as a subset check at
+        // A -> nat of a lambda typed A -> int.
+        var everyHeap = BoogieGenerator.LambdaFactsInEveryHeap(e);
+        var guard = everyHeap
+          ? BplAnd(environment.ArgumentTypes,
+              BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, environment.Heap))
+          : BplAnd(BplAnd(environment.ArgumentTypes, environment.ArgumentAllocation),
+              BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, environment.Heap));
+        if (!everyHeap && HeapExpr != null && HeapExpr is not Boogie.IdentifierExpr { Name: "$OneHeap" }) {
           guard = BplAnd(guard, BoogieGenerator.HeapSameOrSucc(HeapExpr, environment.Heap));
         }
         // Heap-independent definitions use $OneHeap as a translation placeholder,
@@ -1675,8 +1644,16 @@ namespace Microsoft.Dafny {
           family, environment.Layer);
         var arguments = environment.Binders.Skip(1).Select(variable =>
           (Expr)new Boogie.IdentifierExpr(tok, variable)).ToList();
-        var selectorArguments = Concat(Map(e.Type.AsArrowType.TypeArgs, BoogieGenerator.TypeToTy),
-          Cons(environment.Heap, Cons(handle, arguments)));
+        var typeBinders = new List<Variable>();
+        var selectorTypes = everyHeap
+          ? e.Type.AsArrowType.TypeArgs.Select(_ => {
+            var typeVar = new Boogie.BoundVariable(tok, new Boogie.TypedIdent(tok,
+              BoogieGenerator.CurrentIdGenerator.FreshId("$lambdaTy#"), Predef.Ty));
+            typeBinders.Add(typeVar);
+            return (Expr)new Boogie.IdentifierExpr(tok, typeVar);
+          }).ToList()
+          : Map(e.Type.AsArrowType.TypeArgs, BoogieGenerator.TypeToTy);
+        var selectorArguments = Concat(selectorTypes, Cons(environment.Heap, Cons(handle, arguments)));
         // Selector patterns cover the family, layer, heap, and arguments. An
         // equality-guarded family alias prevents interpreted captures from being
         // expanded into patterns; it names only this exact source lambda family.
@@ -1687,15 +1664,18 @@ namespace Microsoft.Dafny {
           new Boogie.Trigger(tok, true, [requiresSelector],
             new Boogie.Trigger(tok, true, [applySelector])));
         if (reads.Count == 0) {
-          // Pure arrow applications use $OneHeap. Match that application with a
-          // good future heap while retaining the formal allocation and heap-
-          // succession premises in the body of this same quantifier.
-          var pureSelectorArguments = Concat(Map(e.Type.AsArrowType.TypeArgs, BoogieGenerator.TypeToTy),
-            Cons(BoogieGenerator.NewOneHeapExpr(tok), Cons(handle, arguments)));
-          var pureApplySelector = FunctionCall(tok, BoogieGenerator.Apply(e.BoundVars.Count), Predef.BoxType,
-            pureSelectorArguments);
           var goodHeap = BoogieGenerator.FunctionCall(tok, BuiltinFunction.IsGoodHeap, null, environment.Heap);
-          trigger = new Boogie.Trigger(tok, true, [pureApplySelector, goodHeap], trigger);
+          if (!everyHeap) {
+            // Pure arrow applications use $OneHeap. Match that application with a
+            // good future heap while retaining the formal allocation and heap-
+            // succession premises in the body of this same quantifier.  (With every
+            // heap, the selector patterns bind the heap, which can be $OneHeap.)
+            var pureSelectorArguments = Concat(Map(e.Type.AsArrowType.TypeArgs, BoogieGenerator.TypeToTy),
+              Cons(BoogieGenerator.NewOneHeapExpr(tok), Cons(handle, arguments)));
+            var pureApplySelector = FunctionCall(tok, BoogieGenerator.Apply(e.BoundVars.Count), Predef.BoxType,
+              pureSelectorArguments);
+            trigger = new Boogie.Trigger(tok, true, [pureApplySelector, goodHeap], trigger);
+          }
           var constructorFacts = new TotalDatatypeDestructorCollector();
           constructorFacts.Visit(e.Body);
           if (e.Range != null) {
@@ -1716,7 +1696,7 @@ namespace Microsoft.Dafny {
         var actualFamily = BuildLambdaHandleFamily(e, BuildLambdaEnvironment(e));
         var familyGuard = BplAnd(Boogie.Expr.Eq(family, actualFamily), guard);
         var guardedFacts = BplForall(Cons<Variable>(familyVar,
-          environment.LayerBinders.Concat(environment.Binders).ToList()), trigger,
+          environment.LayerBinders.Concat(environment.Binders).Concat(typeBinders).ToList()), trigger,
           BplImp(familyGuard, facts));
         // With no reads expressions the characteristic predicate is constant
         // false, independent of the lambda's arguments, heap, and precondition.
@@ -2490,8 +2470,7 @@ namespace Microsoft.Dafny {
           return LetCanCallAssumption(letExpr, cco);
 
         } else if (expr is LambdaExpr lambda) {
-          return BplAnd(BplAnd(LambdaCanCallAssumption(lambda, cco), LambdaCanCallInEveryHeap(lambda, cco)),
-            LambdaAllocation(lambda));
+          return BplAnd(LambdaCanCallAssumption(lambda, cco), LambdaAllocation(lambda));
 
         } else if (expr is ComprehensionExpr) {
           var e = (ComprehensionExpr)expr;
