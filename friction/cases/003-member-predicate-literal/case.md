@@ -1,6 +1,6 @@
 # 003: A recursive member predicate on a constructed term fails in a precondition
 
-- **Status:** open
+- **Status:** filed ([#198](https://github.com/erniecohen/dafny/issues/198))
 - **Seen on:** Dafny 4.11.0+fcb2042d.review.bcc0c421 (this fork's release), Z3 5.1.0
 - **Options:** `--type-system-refresh --general-traits=full --general-newtypes`,
   resource limit 5,000,000 per declaration (`dfyconfig.toml`)
