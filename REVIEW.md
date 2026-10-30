@@ -219,19 +219,29 @@ change no product file, so the version stays.  The rule on this branch:
 - any other commit keeps them.
 
 The product is everything outside `Source/IntegrationTests/`, `docs/`,
-`.github/`, this file, and the other documents at the top of the tree:
-`ROADMAP.md`, `AGENTS.md` and `CLAUDE.md`.  `.github/review/base` names the base
+`.github/`, `friction/`, this file, and the other documents at the top of the
+tree: `ROADMAP.md`, `AGENTS.md` and `CLAUDE.md`.  `.github/review/base` names the base
 and the last product commit, and CI's `.github/review/version.sh` computes the
 version from them and fails if a later commit changes a product file.  By hand,
 this prints nothing:
 
     git diff --name-only b97a6fe <commit> -- . ':!Source/IntegrationTests' ':!docs' ':!.github' \
-      ':!REVIEW.md' ':!ROADMAP.md' ':!AGENTS.md' ':!CLAUDE.md'
+      ':!friction' ':!REVIEW.md' ':!ROADMAP.md' ':!AGENTS.md' ':!CLAUDE.md'
 
 A release binary built from the tag prints the version with `dafny --version`.
 It is built with `-p:SourceRevisionId=fcb2042d.review.d2070b81`.  The version
 names the Boogie packages by their version, and `Scripts/boogie-packages.sha256`
 names their bytes.
+
+## Friction cases
+
+`friction/` holds small Dafny programs that show where a proof is much harder
+than it should be, as candidates for fixes here and as regression checks once
+fixed, and tips: workarounds for non-obvious blockers that are accepted as
+they are.  Its runner, `friction/run`, checks every case against a given
+Dafny binary.  `friction/README.md` describes the cases and how to add one.
+The directory belongs to this fork's line only; it is not product, and pull
+requests to upstream, which branch from `master`, never carry it.
 
 ## CI
 
