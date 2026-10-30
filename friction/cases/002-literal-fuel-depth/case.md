@@ -1,6 +1,6 @@
 # 002: Structural recursion on a literal term stops after two levels
 
-- **Status:** open
+- **Status:** filed ([#197](https://github.com/erniecohen/dafny/issues/197))
 - **Seen on:** Dafny 4.11.0+fcb2042d.review.bcc0c421 (this fork's release), Z3 5.1.0
 - **Options:** `--type-system-refresh --general-traits=full --general-newtypes`,
   resource limit 5,000,000 per declaration (`dfyconfig.toml`)
