@@ -1,0 +1,8 @@
+# Shared options. Each case's dfyconfig.toml names this file as its base and
+# adds the options its reproducer needs.
+includes = []
+
+[options]
+resource-limit = 5000000
+verification-time-limit = 0
+boogie = "/normalizeDeclarationOrder:0"

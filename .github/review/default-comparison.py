@@ -207,14 +207,14 @@ def product_files(source):
     # compiled into the shipped product.
     excluded = {'REVIEW.md', 'ROADMAP.md', 'AGENTS.md', 'CLAUDE.md'}
     return {name: digest for name, digest in tracked_files(source).items()
-            if name not in excluded and not name.startswith(('Source/IntegrationTests/', 'docs/', '.github/'))}
+            if name not in excluded and not name.startswith(('Source/IntegrationTests/', 'docs/', '.github/', 'friction/'))}
 
 
 def product_tree(source, revision):
     excluded = {'REVIEW.md', 'ROADMAP.md', 'AGENTS.md', 'CLAUDE.md'}
     entries = [line.split('\t', 1) for line in git(source, 'ls-tree', '-r', revision).splitlines()]
     return {name: metadata for metadata, name in entries
-            if name not in excluded and not name.startswith(('Source/IntegrationTests/', 'docs/', '.github/'))}
+            if name not in excluded and not name.startswith(('Source/IntegrationTests/', 'docs/', '.github/', 'friction/'))}
 
 
 def std_commands(directory, candidate, dafny, solver):
