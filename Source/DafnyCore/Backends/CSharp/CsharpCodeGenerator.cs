@@ -2444,93 +2444,42 @@ namespace Microsoft.Dafny.Compilers {
     protected override string IdProtect(string name) {
       return PublicIdProtect(name);
     }
+
+    // The reserved keywords of C#, all 77 of them, as the C# language reference lists them
+    // (https://learn.microsoft.com/dotnet/csharp/language-reference/keywords).  An identifier that is
+    // one of them must be written verbatim, with a leading '@'.
+    private static readonly HashSet<string> CSharpReservedKeywords = new() {
+      "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked",
+      "class", "const", "continue", "decimal", "default", "delegate", "do", "double", "else",
+      "enum", "event", "explicit", "extern", "false", "finally", "fixed", "float", "for",
+      "foreach", "goto", "if", "implicit", "in", "int", "interface", "internal", "is", "lock",
+      "long", "namespace", "new", "null", "object", "operator", "out", "override", "params",
+      "private", "protected", "public", "readonly", "ref", "return", "sbyte", "sealed", "short",
+      "sizeof", "stackalloc", "static", "string", "struct", "switch", "this", "throw", "true",
+      "try", "typeof", "uint", "ulong", "unchecked", "unsafe", "ushort", "using", "virtual",
+      "void", "volatile", "while"
+    };
+
+    // The contextual keywords of C#, all 46 that the same page lists, through C# 14.  Some of them are
+    // errors as plain identifiers in some positions (`record`, `file`, `required` and `scoped` as type
+    // names; `value` in a setter; `field` in an accessor; `await` in an async method).  A verbatim
+    // identifier `@x` names the same symbol as `x`, so escaping all of them is safe.
+    private static readonly HashSet<string> CSharpContextualKeywords = new() {
+      "add", "allows", "alias", "and", "ascending", "args", "async", "await", "by", "descending",
+      "dynamic", "equals", "extension", "field", "file", "from", "get", "global", "group", "init",
+      "into", "join", "let", "managed", "nameof", "nint", "not", "notnull", "nuint", "on", "or",
+      "orderby", "partial", "record", "remove", "required", "scoped", "select", "set", "unmanaged",
+      "value", "var", "when", "where", "with", "yield"
+    };
+
     public override string PublicIdProtect(string name) {
       if (name == "" || name.First() == '_') {
         return name;  // no need to further protect this name -- we know it's not a C# keyword
       }
+      if (CSharpReservedKeywords.Contains(name) || CSharpContextualKeywords.Contains(name)) {
+        return "@" + name;
+      }
       switch (name) {
-        // keywords
-        case "base":
-        case "byte":
-        case "catch":
-        case "checked":
-        case "continue":
-        case "decimal":
-        case "default":
-        case "delegate":
-        case "do":
-        case "double":
-        case "enum":
-        case "event":
-        case "explicit":
-        case "extern":
-        case "finally":
-        case "fixed":
-        case "float":
-        case "for":
-        case "foreach":
-        case "goto":
-        case "implicit":
-        case "interface":
-        case "internal":
-        case "is":
-        case "lock":
-        case "long":
-        case "namespace":
-        case "operator":
-        case "out":
-        case "override":
-        case "params":
-        case "private":
-        case "public":
-        case "readonly":
-        case "ref":
-        case "sbyte":
-        case "sealed":
-        case "short":
-        case "sizeof":
-        case "stackalloc":
-        case "struct":
-        case "switch":
-        case "throw":
-        case "try":
-        case "typeof":
-        case "uint":
-        case "ulong":
-        case "unchecked":
-        case "unsafe":
-        case "ushort":
-        case "using":
-        case "virtual":
-        case "void":
-        case "volatile":
-        // contextual keywords
-        case "add":
-        case "alias":
-        case "ascending":
-        case "async":
-        case "await":
-        case "descending":
-        case "dynamic":
-        case "equals":
-        case "from":
-        case "get":
-        case "global":
-        case "group":
-        case "into":
-        case "join":
-        case "let":
-        case "nameof":
-        case "on":
-        case "orderby":
-        case "partial":
-        case "remove":
-        case "select":
-        case "set":
-        case "value":
-        case "when":
-        case "where":
-          return "@" + name;
         // methods with expected names
         case "ToString":
         case "GetHashCode":

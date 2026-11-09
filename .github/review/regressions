@@ -276,5 +276,11 @@ LitHarnessTimeoutTests
 # Refining a module whose method has a :| with a member selection in its trigger (#179).
 git-issues/github-issue-179.dfy
 
+# An explicit trigger term that Boogie rejects is reported, not passed to Boogie (#191).
+git-issues/github-issue-191.dfy
+
+# The C# backend escapes every C# reserved and contextual keyword (#187).
+git-issues/github-issue-187.dfy
+
 # Bitvector keys at map and multiset lookups under --bitvector-map-keys (https://github.com/erniecohen/dafny/issues/192).
 git-issues/github-issue-192.dfy
