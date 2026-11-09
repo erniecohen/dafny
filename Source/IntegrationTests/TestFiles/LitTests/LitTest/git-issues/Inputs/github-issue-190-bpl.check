@@ -1,0 +1,2 @@
+// The printed program of github-issue-190.dfy: MustFail's implementation carries the option.
+// CHECK: implementation .*smt_option "smt.refine_inj_axioms", "false".*MustFail

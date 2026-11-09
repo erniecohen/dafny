@@ -1306,7 +1306,22 @@ namespace Microsoft.Dafny {
       if (3 <= ArithMode) {
         SetZ3Option("smt.arith.nl", "false");
       }
+
+      // Z3's preprocessing step that refines injectivity axioms is unsound for a quantifier
+      // whose antecedent repeats a bound variable that the conclusion does not mention
+      // (Z3Prover/z3#11435), which an ordinary Dafny precondition can supply.  Every
+      // Z3 that Dafny supports has the option.  BoogieGenerator gives each implementation
+      // the same value as an smt_option, so the two paths agree.
+      SetZ3Option(RefineInjAxiomsOption, "false");
     }
+
+    public const string RefineInjAxiomsOption = "smt.refine_inj_axioms";
+
+    /// The value of smt.refine_inj_axioms that Z3 is given: the last one passed with
+    /// --solver-option O:smt.refine_inj_axioms=..., and otherwise false.
+    public string RefineInjAxiomsValue =>
+      ProverOptions.LastOrDefault(o => o.StartsWith($"O:{RefineInjAxiomsOption}="))?
+        .Substring($"O:{RefineInjAxiomsOption}=".Length) ?? "false";
 
     protected override string HelpBody => DafnyHelpBody + BoogieHelpBody;
 
