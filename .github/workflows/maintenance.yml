@@ -16,6 +16,8 @@
 name: maintenance
 
 on:
+  push:  # TEMPORARY, to register the workflow for dispatch from a scratch branch
+    branches: ['scratch/maintenance/**']
   schedule:
     - cron: '17 4 * * *'
   workflow_dispatch:
