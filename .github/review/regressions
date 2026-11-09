@@ -314,5 +314,8 @@ git-issues/github-issue-92.dfy
 git-issues/github-issue-90.dfy
 git-issues/github-issue-90-cycles.dfy
 
+# Constructor type arguments under --invariant-constructor-inference (https://github.com/erniecohen/dafny/issues/101).
+git-issues/github-issue-101.dfy
+
 # Statement-expression conclusions under quantifiers, opt-in (https://github.com/erniecohen/dafny/issues/96).
 git-issues/github-issue-96.dfy
