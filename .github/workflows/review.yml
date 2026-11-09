@@ -730,7 +730,7 @@ jobs:
       matrix:
         include:
           - rid: osx-arm64
-            os: macos-14
+            os: macos-15
           - rid: linux-x64
             os: ubuntu-24.04
     steps:
