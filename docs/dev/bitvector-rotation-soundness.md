@@ -71,9 +71,10 @@ function {:inline} RightRotate_bvW(x: bvW, n: bvW) : bvW
 
 ### Kind
 
-This is a **reviewed replacement definition**.  It neither only weakens (it removes no axiom and
-guards none) nor asserts a new fact: it replaces the meaning of two function symbols at the
-affected widths with a definition, which a reviewer must check against the argument below.  It
+In the two kinds that `AGENTS.md` and `REVIEW.md` use, the fix **asserts**: at positive widths
+that are not powers of two it drops `ext_rotate_left`/`ext_rotate_right` and asserts a new
+definitional fact, the definition by shifts, as the meaning of `LeftRotate_bvW` and
+`RightRotate_bvW`.  That is the part a reviewer must check, against the argument below.  It
 needs no option: it is a soundness fix, which `AGENTS.md` allows to change the defaults, and it
 adds no quantified axiom.
 

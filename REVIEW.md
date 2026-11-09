@@ -74,13 +74,13 @@ instead of modulo `W`, which is unsound when the width `W` is not a power of two
 `a == 3`, `b == 0`, where the value is 1.  The fix, in
 `Source/DafnyCore/Verifier/BoogieGenerator.cs` (`AddBitvectorRotateFunction`), defines
 `LeftRotate_bvW` and `RightRotate_bvW` by shifts at positive widths that are not powers of
-two, and keeps the native operators at width 0 and at powers of two.  Its kind is **a reviewed
-replacement definition**: it neither only weakens nor asserts a new fact, but replaces the
-meaning of two function symbols at those widths, which a reviewer must check.  The argument,
+two, and keeps the native operators at width 0 and at powers of two.  Its kind is **asserts**: at
+those widths it drops `ext_rotate_*` and asserts the definition by shifts as the meaning of the two
+function symbols, which a reviewer must check.  The argument,
 the regression `git-issues/github-issue-147.dfy` (with `github-issue-147-emission.dfy`), the
 validation and the cost are in
 [`docs/dev/bitvector-rotation-soundness.md`](docs/dev/bitvector-rotation-soundness.md); the
-release note is `docs/dev/news/bitvector-rotation-soundness.fix`.
+release note is `docs/dev/news/147.fix`.
 
 ## Boogie
 
