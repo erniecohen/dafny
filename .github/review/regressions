@@ -290,3 +290,6 @@ git-issues/github-issue-192.dfy
 
 # Z3 smt.refine_inj_axioms=false by default, globally and per implementation (#190).
 git-issues/github-issue-190.dfy
+
+# Opt-in legacy conversions to datatype subsets under --datatype-subset-conversions (https://github.com/erniecohen/dafny/issues/92).
+git-issues/github-issue-92.dfy
