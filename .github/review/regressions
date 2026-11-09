@@ -319,3 +319,6 @@ git-issues/github-issue-101.dfy
 
 # Statement-expression conclusions under quantifiers, opt-in (https://github.com/erniecohen/dafny/issues/96).
 git-issues/github-issue-96.dfy
+
+# An explicit trigger instantiates for a closure-valued local (https://github.com/erniecohen/dafny/issues/98); verifies since #160.
+git-issues/github-issue-98.dfy
