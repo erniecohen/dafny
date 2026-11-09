@@ -79,3 +79,6 @@
 //   github-issue-147-native-true.dfy: true compositions at widths 1, 32 and 64, which keep the native operators, must verify.
 //   github-issue-147-native-false.dfy: wrong values at widths 1, 32 and 64 must each FAIL.
 //   github-issue-147-bounds.dfy: negative and over-width counts must still be reported.
+// With Z3 4.12.1, Bv64SameDirection in github-issue-147-native-true.dfy runs out of resources
+// at 2,000,000 (it needs more, before the fix as after it, at a width the fix does not change);
+// the .expect records that.
