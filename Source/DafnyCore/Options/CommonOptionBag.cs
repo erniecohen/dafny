@@ -263,6 +263,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> ConservativeMatchInference = new("--conservative-match-inference", () => false,
     "With the refreshed type system, infer the type of a match source by propagation before making default type decisions, so that an earlier literal can still take its type from the enclosing context. Disabled by default.");
 
+  public static readonly Option<bool> AncestorQualifiedModuleIds = new("--ancestor-qualified-module-ids", () => false,
+    "Let a refines clause or import whose qualified module name starts with modules that enclose it, as in 'module A.C refines A.B', depend on the module it names instead of on the enclosing module, which is otherwise reported as a cycle. Disabled by default.");
+
   public static readonly Option<bool> InvariantConstructorInference = new("--invariant-constructor-inference", () => false,
     "With the refreshed type system, let a datatype constructor argument whose formal type uses a type parameter in a non-variant position, such as the tail of a list, fix that type argument, instead of widening it to the type of another argument. Every argument is still checked against the chosen type. Disabled by default.");
 
@@ -725,6 +728,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(ContextualLambdaDomains, OptionScope.Cli);
     OptionRegistry.RegisterOption(ConservativeMatchInference, OptionScope.Cli);
     OptionRegistry.RegisterOption(DatatypeSubsetConversions, OptionScope.Cli);
+    OptionRegistry.RegisterOption(AncestorQualifiedModuleIds, OptionScope.Cli);
     OptionRegistry.RegisterOption(InvariantConstructorInference, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationLogFormat, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerifyIncludedFiles, OptionScope.Cli);

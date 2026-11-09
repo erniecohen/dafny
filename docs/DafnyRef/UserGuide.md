@@ -2262,6 +2262,18 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   overrides that setting. See the [match expression](#sec-match-expression) for
   what it does not fix.
 
+* `--ancestor-qualified-module-ids` - let a `refines` clause or `import` whose
+  qualified module name starts with modules that enclose it, as in
+  `module A.C refines A.B`, depend on the module it names instead of on the
+  enclosing module. Without it, such a name always makes a cycle, since a module
+  depends on the modules nested in it, and the program is rejected. With it, the
+  leading names of enclosing modules are skipped, and the next name is looked up
+  among the modules declared in the enclosing module, as the name alone would be
+  inside it, without consulting that module's export sets; refining or importing
+  an enclosing module itself is still a cycle. Disabled by default. Use
+  `ancestor-qualified-module-ids = true` in a project file's `[options]` section.
+  See [module ordering](#sec-module-ordering).
+
 Legacy options:
 
 * `-noIncludes` - ignore `include` directives in the program.
