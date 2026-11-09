@@ -889,7 +889,21 @@ as methods. To define global functions like this, you can put them in
 a module (called `Globals`, say) and open it into any module that needs
 its functionality. Finally, if you import via a path, such as `import A
 = B.C`, then this creates a dependency of `A` on `B`, and `B` itself
-depends on its own nested module `B.C`.
+depends on its own nested module `B.C`.  So a path whose leading
+identifier names a module that encloses the import or `refines` clause,
+as in `module A.C refines A.B`, makes a cycle: `A.C` depends on `A`, which
+depends on its nested module `A.C`.  With the option
+`--ancestor-qualified-module-ids`, the leading identifiers that name
+enclosing modules are skipped, and the dependency is on the first module
+of the path that does not enclose the clause.  Then in
+
+<!-- %check-resolve %options --ancestor-qualified-module-ids -->
+```dafny
+module A.B { }
+module A.C refines A.B { }
+```
+
+`A.C` depends on `A.B`, not on `A`, which depends on both.
 
 ## 4.8. Name Resolution {#sec-name-resolution}
 
@@ -957,6 +971,15 @@ declaration, the resolution fails. See the examples below.
    identifier in the quallified name
    is resolved as a local or imported module name within `M`.
    The resolution is restricted to the default export set of `M`.
+   With `--ancestor-qualified-module-ids`, the exception is a module `M`
+   that contains the qualified name: one
+   that encloses `Z`, or `Z` itself for an import in `Z`.  If the next
+   identifier names a submodule declared in `M`, it resolves to that
+   submodule without consulting `M`'s export sets, as the identifier
+   alone would within `M`, and this repeats while the module reached
+   contains the qualified name.  `Z` then depends on the first module
+   reached that does not contain the qualified name.  If there is none,
+   `Z` depends on `M`, which is a cycle, and an error.
 
 3b. If the resolved module name is a module alias (from an `import` statement)
    then the target of the alias is resolved as a new qualified name
