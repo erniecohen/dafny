@@ -1,10 +1,10 @@
-// KNOWN GAP of milestone M1 (https://github.com/erniecohen/dafny/issues/211): each of the three
-// programs below verifies under --modular-termination, and proves false.  In each, Y.F reaches
-// the dispatched call t.F(n) only through a helper H, and M1 compares a dispatched call only
-// with the bound of the member that makes it directly.  The helper is unbounded and in another
-// module (L), bounded but larger (L2), or in the implementing module with an ordinary decreases
-// clause (Y3).  The same-bound rule of M2 checks the helper's call at Y.F's bound, n, and must
-// reject all three; this test's expected output then changes from "verifies" to "rejected".
+// Forwarding helpers that hid a cycle through a dispatched call from milestone M1
+// (https://github.com/erniecohen/dafny/issues/211).  M1 compares a dispatched call only with the
+// bound of the member that makes it directly, so under it each of the three programs below
+// verified and proved false.  In each, Y.F reaches the dispatched call t.F(n) only through a
+// helper H: unbounded and in another module (L), bounded but larger (L2), or in the implementing
+// module with an ordinary decreases clause (Y3).  Under the same-bound rule of milestone M2, H
+// runs under Y.F's bound, n, so its own bound must not exceed n: each call of H is rejected.
 module Tr {
   trait {:termination false} T {
     function F(n: nat): nat decreases {:global} n
@@ -31,8 +31,8 @@ module Y {
   }
 }
 
-// Variant: the helper has a global bound, larger than the caller's.  M1 never compares a
-// helper's own bound with its caller's, so it launders the bound just the same.
+// Variant: the helper has a global bound, larger than the caller's.  M1 never compared a
+// helper's own bound with its caller's, so it laundered the bound just the same.
 module Tr2 {
   trait {:termination false} T {
     function F(n: nat): nat decreases {:global} n
@@ -62,7 +62,8 @@ module Y2 {
 // Variant: the helper is in the implementing module itself, and the ordinary decreases
 // clauses (1 for the trait member and its override, 0 for the helper) let the module's own
 // check pass: Y.F to H goes down from 1 to 0, and the dispatched call t.F(n) leaves the
-// module, so only the global bound is compared there, against H's, which is TOP.
+// module, so only the global bound is compared there, against H's, which is TOP.  Under M2,
+// the call of H is compared with Y.F's bound.
 module Tr3 {
   trait {:termination false} T {
     function F(n: nat): nat decreases {:global} n decreases 1

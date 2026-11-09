@@ -103,13 +103,15 @@ public partial class BoogieGenerator {
                         oldExpressions, newExpressions, endsWithWinningTopComparison, hint), builder.Context));
   }
 
-  private HashSet<TraitDecl> modularTerminationOpenTraits;
-
   /// <summary>
   /// Under --modular-termination, the global bound of "callable" (its "decreases {:global}" clause, or
   /// else that of the member it overrides, recursively), in terms of its own formals; null if it has none.
+  /// The method of a function's "by method" body has the function's bound.
   /// </summary>
   List<Expression> GlobalBound(ICallable callable) {
+    if (callable is Method { FunctionFromWhichThisIsByMethodDecl: { } function }) {
+      return GlobalBound(function);
+    }
     var declared = ModularTermination.DeclaredGlobalBound(callable);
     if (declared != null) {
       return declared;
@@ -129,11 +131,14 @@ public partial class BoogieGenerator {
   }
 
   /// <summary>
-  /// Under --modular-termination, emit to "builder" the smaller-bound check for a call from "codeContext" to
-  /// "callee" that is dispatched to implementations that other modules may provide: the callee's global
-  /// bound must be below the caller's, captured on entry.  A missing bound is TOP, above every other: so the
-  /// check holds trivially, and is not emitted, when only the caller has none, and fails when the callee has
-  /// none.  Other calls get no check here.
+  /// Under --modular-termination, emit to "builder" the check of the global bounds for a call from "codeContext"
+  /// to "callee".  The caller's bound is captured on entry, and a missing bound is TOP, above every other.
+  /// * A call dispatched to implementations that other modules may provide uses the smaller-bound rule: the
+  ///   callee's bound must be below the caller's.
+  /// * A call to a known callee that reaches such a dispatch (see <see cref="ModularTerminationAnalysis"/>) uses
+  ///   the same-bound rule: the callee runs under the caller's bound, so its own bound must not exceed it.
+  /// A call from a caller without a bound needs no check, except that a dispatched callee must have one; a call
+  /// from a caller with a bound fails when the callee has none.  Other calls get no check here: the existing termination checks order them.
   /// </summary>
   void CheckModularTermination(IOrigin tok, ICodeContext codeContext, MemberDecl callee, Expression receiverReplacement,
                                Dictionary<IVariable, Expression> substMap, Dictionary<IVariable, Expression> directSubstMap,
@@ -142,20 +147,40 @@ public partial class BoogieGenerator {
     if (!options.Get(CommonOptionBag.ModularTermination) || codeContext is not ICallable caller) {
       return;
     }
-    modularTerminationOpenTraits ??= ModularTermination.OpenTraits(program);
-    if (!ModularTermination.IsOpenDispatch(callee, modularTerminationOpenTraits)) {
+    var analysis = ModularTerminationAnalysis.Of(program);
+    var dispatched = ModularTermination.IsOpenDispatch(callee, analysis.OpenTraits);
+    if (!dispatched && !analysis.ReachesOpenDispatch(callee)) {
       return;
     }
     var calleeBound = GlobalBound((ICallable)callee);
     var callerBound = GlobalBound(caller);
-    if (calleeBound != null && callerBound == null) {
+    if (callerBound == null && (calleeBound != null || !dispatched)) {
       return;
     }
-    var hint = calleeBound == null
-      ? "the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires"
-      : "--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's";
+    string hint;
+    if (dispatched) {
+      hint = calleeBound == null
+        ? "the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires"
+        : "--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's";
+    } else {
+      hint = calleeBound == null
+        ? "the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it"
+        : "--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's";
+    }
     var oldCaller = codeContext is MethodOrConstructor and not TwoStateLemma;
-    CheckCallTermination(tok, callerBound ?? [], calleeBound ?? [], null, receiverReplacement, substMap, directSubstMap, typeMap,
+    var contextBound = callerBound ?? [];
+    var comparedBound = calleeBound ?? [];
+    if (!dispatched && calleeBound != null) {
+      // "At most" in the order in which missing components are TOP: a strict decrease of the callee's bound
+      // against the caller's components that it has, if the caller has more; otherwise no increase in the
+      // caller's components, which an extra component on the callee's side makes CheckCallTermination allow.
+      if (calleeBound.Count < callerBound.Count) {
+        contextBound = callerBound.Take(calleeBound.Count).ToList();
+      } else {
+        comparedBound = calleeBound.Append(Expression.CreateIntLiteral(tok, 0)).ToList();
+      }
+    }
+    CheckCallTermination(tok, contextBound, comparedBound, null, receiverReplacement, substMap, directSubstMap, typeMap,
       etranCurrent, oldCaller, builder, false, hint, etranCallee);
   }
 

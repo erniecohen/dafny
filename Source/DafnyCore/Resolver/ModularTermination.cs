@@ -1,6 +1,7 @@
 #nullable enable
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace Microsoft.Dafny;
 
@@ -107,6 +108,188 @@ public static class ModularTermination {
       _ => false
     };
   }
+
+  /// <summary>
+  /// Whether "member" overrides, directly or not, a member that calls dispatch across modules: such a member
+  /// inherits the global bound that its dispatched calls need.
+  /// </summary>
+  public static bool ImplementsOpenDispatch(MemberDecl member, HashSet<TraitDecl> openTraits) {
+    for (var m = member.OverriddenMember; m != null; m = m.OverriddenMember) {
+      if (IsOpenDispatch(m, openTraits)) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
+/// <summary>
+/// Which declarations may, when they run, make a call dispatched to implementations that other modules may
+/// provide (see <see cref="ModularTermination.IsOpenDispatch"/>), either themselves or through calls to code
+/// that is known statically.  Such a declaration is said to reach open dispatch.
+///
+/// A call to a known declaration that reaches open dispatch is checked by the same-bound rule: the callee runs
+/// under its caller's bound, so its own global bound, at the call's arguments, must not exceed the caller's
+/// (a missing bound is above every other).  A call to a declaration that does not reach open dispatch needs no
+/// check: no call below it is dispatched across modules, and the existing termination checks order all of them.
+///
+/// The nodes are the methods, functions and constants with initializers of every class, trait and datatype, and
+/// the iterators.  The edges are the calls in their bodies, specifications and global bounds; a reference to a
+/// function or method as a value; a reference to a constant; a call of an iterator's MoveNext, to the iterator;
+/// and from a bodyless member of a trait that is not open to each member that overrides it.  A call through a
+/// function value is not an edge: such calls are not yet checked.
+/// </summary>
+public class ModularTerminationAnalysis {
+  private static readonly ConditionalWeakTable<Program, ModularTerminationAnalysis> Cache = new();
+
+  public readonly HashSet<TraitDecl> OpenTraits;
+  private readonly HashSet<Declaration> reaching = [];
+
+  /// <summary>
+  /// The analysis of the program, computed once, the first time it is asked for.  Use it only once the
+  /// program is fully resolved.
+  /// </summary>
+  public static ModularTerminationAnalysis Of(Program program) {
+    return Cache.GetValue(program, p => new ModularTerminationAnalysis(p));
+  }
+
+  public ModularTerminationAnalysis(Program program) {
+    OpenTraits = ModularTermination.OpenTraits(program);
+    var edges = new Dictionary<Declaration, HashSet<Declaration>>();
+    var callers = new Dictionary<Declaration, List<Declaration>>();
+    var work = new Stack<Declaration>();
+    void AddNode(Declaration node, System.Action<EdgeCollector> visit) {
+      var collector = new EdgeCollector(this);
+      visit(collector);
+      if (collector.Dispatches) {
+        if (reaching.Add(node)) {
+          work.Push(node);
+        }
+      }
+      edges[node] = collector.Callees;
+    }
+    foreach (var module in program.Modules()) {
+      foreach (var decl in module.TopLevelDecls) {
+        if (decl is IteratorDecl iter) {
+          AddNode(iter, c => {
+            c.Visit(iter.Requires);
+            c.Visit(iter.Ensures);
+            c.Visit(iter.YieldRequires);
+            c.Visit(iter.YieldEnsures);
+            c.Visit(iter.Decreases.Expressions);
+            c.Visit(iter.Reads.Expressions);
+            c.Visit(iter.Modifies.Expressions);
+            if (iter.Body != null) {
+              c.Visit(iter.Body);
+            }
+          });
+        }
+        if (decl is not TopLevelDeclWithMembers cl) {
+          continue;
+        }
+        foreach (var member in cl.Members) {
+          switch (member) {
+            case Function or MethodOrConstructor:
+              AddNode(member, c => {
+                c.Visit((ICallable)member);
+                foreach (var clause in ModularTermination.GlobalClauses(((ICallable)member).Decreases.Attributes)) {
+                  c.Visit(clause.Args);
+                }
+              });
+              break;
+            case ConstantField { Rhs: { } rhs }:
+              AddNode(member, c => c.Visit(rhs));
+              break;
+          }
+        }
+      }
+    }
+    // A call to a bodyless member of a trait that is not open is dispatched to one of its overrides.
+    foreach (var module in program.Modules()) {
+      foreach (var cl in module.TopLevelDecls.OfType<TopLevelDeclWithMembers>()) {
+        foreach (var member in cl.Members) {
+          if (member.OverriddenMember is { } parent && !IsOpen(parent)) {
+            if (!edges.TryGetValue(parent, out var parentEdges)) {
+              edges[parent] = parentEdges = [];
+            }
+            parentEdges.Add(member);
+          }
+        }
+      }
+    }
+    foreach (var (node, callees) in edges) {
+      foreach (var callee in callees) {
+        if (!callers.TryGetValue(callee, out var list)) {
+          callers[callee] = list = [];
+        }
+        list.Add(node);
+      }
+    }
+    while (work.Count != 0) {
+      var node = work.Pop();
+      if (callers.TryGetValue(node, out var list)) {
+        foreach (var caller in list) {
+          if (reaching.Add(caller)) {
+            work.Push(caller);
+          }
+        }
+      }
+    }
+  }
+
+  private bool IsOpen(MemberDecl member) {
+    return ModularTermination.IsOpenDispatch(member, OpenTraits);
+  }
+
+  /// <summary>
+  /// The node that a call of, or a reference to, "member" leads to: the iterator for its MoveNext and
+  /// constructor, otherwise the member itself.
+  /// </summary>
+  private static Declaration NodeOf(MemberDecl member) {
+    return member.EnclosingClass is IteratorDecl iter ? iter : member;
+  }
+
+  /// <summary>
+  /// Whether a call of "callee" that is not itself an open dispatch may lead to one.
+  /// </summary>
+  public bool ReachesOpenDispatch(MemberDecl callee) {
+    return reaching.Contains(NodeOf(callee));
+  }
+
+  private class EdgeCollector : BottomUpVisitor {
+    private readonly ModularTerminationAnalysis analysis;
+    public readonly HashSet<Declaration> Callees = [];
+    public bool Dispatches;
+
+    public EdgeCollector(ModularTerminationAnalysis analysis) {
+      this.analysis = analysis;
+    }
+
+    private void Call(MemberDecl callee) {
+      if (analysis.IsOpen(callee)) {
+        Dispatches = true;
+      } else {
+        Callees.Add(NodeOf(callee));
+      }
+    }
+
+    protected override void VisitOneExpr(Expression expr) {
+      switch (expr) {
+        case FunctionCallExpr call when call.Function != null:
+          Call(call.Function);
+          break;
+        case MemberSelectExpr { Member: Function or MethodOrConstructor or ConstantField { Rhs: not null } } select:
+          Call(select.Member);
+          break;
+      }
+    }
+
+    protected override void VisitOneStmt(Statement stmt) {
+      if (stmt is CallStmt { Method: { } method }) {
+        Call(method);
+      }
+    }
+  }
 }
 
 /// <summary>
@@ -117,7 +300,7 @@ public class ModularTerminationRewriter : IRewriter {
   public ModularTerminationRewriter(ErrorReporter reporter) : base(reporter) { }
 
   internal override void PostResolve(Program program) {
-    var openTraits = ModularTermination.OpenTraits(program);
+    var analysis = new ModularTerminationAnalysis(program);
     foreach (var module in program.Modules()) {
       foreach (var decl in module.TopLevelDecls) {
         if (decl is not TopLevelDeclWithMembers cl) {
@@ -129,7 +312,7 @@ public class ModularTerminationRewriter : IRewriter {
           }
           var callable = (ICallable)member;
           CheckGlobalClauses(callable);
-          new CallClassifier(Reporter, callable, openTraits).Visit(callable);
+          new CallClassifier(Reporter, callable, analysis).Visit(callable);
         }
       }
     }
@@ -146,15 +329,15 @@ public class ModularTerminationRewriter : IRewriter {
   private class CallClassifier : BottomUpVisitor {
     private readonly ErrorReporter reporter;
     private readonly ICallable caller;
-    private readonly HashSet<TraitDecl> openTraits;
+    private readonly ModularTerminationAnalysis analysis;
     // A call can be reached more than once, for instance through a quantifier's triggers; it is
     // reported once, at its position.
     private readonly HashSet<(System.Uri, int, int)> reported = new();
 
-    public CallClassifier(ErrorReporter reporter, ICallable caller, HashSet<TraitDecl> openTraits) {
+    public CallClassifier(ErrorReporter reporter, ICallable caller, ModularTerminationAnalysis analysis) {
       this.reporter = reporter;
       this.caller = caller;
-      this.openTraits = openTraits;
+      this.analysis = analysis;
     }
 
     protected override void VisitOneExpr(Expression expr) {
@@ -192,22 +375,41 @@ public class ModularTerminationRewriter : IRewriter {
     }
 
     private void ReportDispatch(IOrigin origin, MemberDecl callee) {
-      if (!ModularTermination.IsOpenDispatch(callee, openTraits) || !FirstReport(origin)) {
+      var dispatched = ModularTermination.IsOpenDispatch(callee, analysis.OpenTraits);
+      if (!dispatched && !analysis.ReachesOpenDispatch(callee)) {
+        return;
+      }
+      if (!FirstReport(origin)) {
         return;
       }
       var calleeHasBound = ModularTermination.HasGlobalBound((ICallable)callee);
       var callerHasBound = ModularTermination.HasGlobalBound(caller);
-      string status;
-      if (!calleeHasBound) {
-        status = "the callee has no 'decreases {:global}' bound, so the call is rejected";
-      } else if (callerHasBound) {
-        status = "checked: the callee's global bound must be below the caller's";
+      if (dispatched) {
+        string status;
+        if (!calleeHasBound) {
+          status = "the callee has no 'decreases {:global}' bound, so the call is rejected";
+        } else if (callerHasBound) {
+          status = "checked: the callee's global bound must be below the caller's";
+        } else {
+          status = "holds: the caller has no 'decreases {:global}' bound, which is above every bound";
+        }
+        reporter.Info(MessageSource.Resolver, origin,
+          $"modular termination: in {CallerName}, dispatch of '{callee.EnclosingClass.EnclosingModuleDefinition.Name}.{callee.EnclosingClass.Name}.{callee.Name}' to implementations " +
+          $"that other modules may provide needs the smaller-bound rule; {status}");
+        return;
+      }
+      string callerPart;
+      if (callerHasBound) {
+        callerPart = calleeHasBound ? "checked: it must not exceed the caller's" : "so the call is rejected";
+      } else if (ModularTermination.ImplementsOpenDispatch((MemberDecl)caller, analysis.OpenTraits)) {
+        callerPart = "and the caller has none until the trait member it implements gets one, as its dispatched calls require";
       } else {
-        status = "holds: the caller has no 'decreases {:global}' bound, which is above every bound";
+        callerPart = "and the caller has none, which is above every bound";
       }
       reporter.Info(MessageSource.Resolver, origin,
-        $"modular termination: in {CallerName}, dispatch of '{callee.EnclosingClass.EnclosingModuleDefinition.Name}.{callee.EnclosingClass.Name}.{callee.Name}' to implementations " +
-        $"that other modules may provide needs the smaller-bound rule; {status}");
+        $"modular termination: in {CallerName}, a call of '{QualifiedName(callee)}', which can reach dispatch to implementations " +
+        $"that other modules may provide, runs under the caller's bound (same-bound rule); " +
+        $"the callee has {(calleeHasBound ? "a" : "no")} 'decreases {{:global}}' bound, {callerPart}");
     }
 
     private void ReportCallback(IOrigin origin, string what) {
@@ -218,12 +420,11 @@ public class ModularTerminationRewriter : IRewriter {
         $"modular termination: in {CallerName}, {what} needs the smaller-bound rule; not checked (calls through function values are not yet supported)");
     }
 
-    private string CallerName {
-      get {
-        var member = (MemberDecl)caller;
-        var cl = member.EnclosingClass;
-        return $"'{cl.EnclosingModuleDefinition.Name}.{(cl is DefaultClassDecl ? "" : cl.Name + ".")}{member.Name}'";
-      }
+    private string CallerName => $"'{QualifiedName((MemberDecl)caller)}'";
+
+    private static string QualifiedName(MemberDecl member) {
+      var cl = member.EnclosingClass;
+      return $"{cl.EnclosingModuleDefinition.Name}.{(cl is DefaultClassDecl ? "" : cl.Name + ".")}{member.Name}";
     }
   }
 }
