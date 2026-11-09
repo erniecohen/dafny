@@ -292,4 +292,4 @@ git-issues/github-issue-192.dfy
 git-issues/github-issue-190.dfy
 
 # Constructor type arguments under --invariant-constructor-inference (https://github.com/erniecohen/dafny/issues/101).
-git-issues/git-issue-101.dfy
+git-issues/github-issue-101.dfy
