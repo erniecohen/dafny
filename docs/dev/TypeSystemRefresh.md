@@ -24,6 +24,15 @@ The "type system refresh" is a reimplementation of Dafny's name resolution, type
     checks still verify every body application and result on that domain. It adds
     no verifier axioms or unchecked subset constraints.
 
+    The fork's opt-in `--conservative-match-inference` changes when the refreshed
+    resolver makes default type decisions while resolving a `match` whose source
+    type is not yet known: it first propagates the known constraints without
+    decisions, and makes decisions only if the source type is still unknown. It
+    adds and removes no constraint. It fixes an earlier literal being given the
+    type `int` before the enclosing context fixes it
+    ([issue 48](https://github.com/erniecohen/dafny/issues/48)), but not when the
+    match source itself needs a default decision.
+
     (This design may soon change in one place, namely when a lambda expressions is known to be used in a limited number of places. This happens in array initializers and sequence comprehensions, where it would be friendly to try to infer the bound variable to be of type `nat` rather than `int`.)
 
 The new type system also fixes a number of bugs in the previous type system. Among them are bugs having to do with cyclic dependencies among declarations, which the new type system is equipped to handle.

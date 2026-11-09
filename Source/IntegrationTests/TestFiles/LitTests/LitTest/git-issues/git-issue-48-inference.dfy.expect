@@ -1,0 +1,123 @@
+original resolve (legacy, off)
+
+Dafny program verifier did not attempt verification
+original resolve (legacy, on)
+
+Dafny program verifier did not attempt verification
+original resolve (refreshed, off)
+git-issue-48-inference-original.dfy(4,9): Error: Function body type mismatch (expected Option<int32>, got Option<?17>) (covariant type parameter 'U' would require int32 :> int)
+1 resolution/type errors detected in git-issue-48-inference-original.dfy
+original resolve (refreshed, on)
+
+Dafny program verifier did not attempt verification
+positive resolve (legacy, off)
+
+Dafny program verifier did not attempt verification
+positive resolve (legacy, on)
+
+Dafny program verifier did not attempt verification
+positive resolve (refreshed, off)
+git-issue-48-inference-positive.dfy(10,9): Error: Function body type mismatch (expected Option<int32>, got Option<?25>) (covariant type parameter 'U' would require int32 :> int)
+git-issue-48-inference-positive.dfy(24,9): Error: Function body type mismatch (expected Option<int32>, got Option<?53>) (covariant type parameter 'U' would require int32 :> int)
+git-issue-48-inference-positive.dfy(37,9): Error: Function body type mismatch (expected Option<Option<int32>>, got Option<Option<?91>>) (covariant type parameter 'U' would require Option<int32> :> Option<?91>) (covariant type parameter 'U' would require int32 :> int)
+git-issue-48-inference-positive.dfy(47,9): Error: Function body type mismatch (expected Option<int32>, got Option<?111>) (covariant type parameter 'U' would require int32 :> int)
+git-issue-48-inference-positive.dfy(48,2): Error: the two branches of an if-then-else expression must have the same type (got Option<int> and Option<int32>) (covariant type parameter 'U' would require int :> int32)
+git-issue-48-inference-positive.dfy(59,4): Error: RHS (of type Option<?134>) not assignable to LHS (of type Option<int32>) (covariant type parameter 'U' would require int32 :> int)
+6 resolution/type errors detected in git-issue-48-inference-positive.dfy
+positive resolve (refreshed, on)
+
+Dafny program verifier did not attempt verification
+positive verify (refreshed, on)
+
+Dafny program verifier finished with 11 verified, 0 errors
+positive run (refreshed, on)
+
+Dafny program verifier finished with 11 verified, 0 errors
+0 0
+nominal resolve (legacy, off)
+git-issue-48-inference-nominal.dfy(10,9): Error: Function body type mismatch (expected Option<int32>, got Option<int>) (covariant type parameter would require int <: int32)
+git-issue-48-inference-nominal.dfy(20,9): Error: Function body type mismatch (expected Option<int32>, got Option<other32>) (covariant type parameter would require other32 <: int32)
+git-issue-48-inference-nominal.dfy(29,9): Error: Function body type mismatch (expected Option<int32>, got Option<bool>) (covariant type parameter would require bool <: int32)
+git-issue-48-inference-nominal.dfy(34,23): Error: incorrect argument type for datatype constructor parameter 'val' (expected bool, found int)
+4 resolution/type errors detected in git-issue-48-inference-nominal.dfy
+nominal resolve (legacy, on)
+git-issue-48-inference-nominal.dfy(10,9): Error: Function body type mismatch (expected Option<int32>, got Option<int>) (covariant type parameter would require int <: int32)
+git-issue-48-inference-nominal.dfy(20,9): Error: Function body type mismatch (expected Option<int32>, got Option<other32>) (covariant type parameter would require other32 <: int32)
+git-issue-48-inference-nominal.dfy(29,9): Error: Function body type mismatch (expected Option<int32>, got Option<bool>) (covariant type parameter would require bool <: int32)
+git-issue-48-inference-nominal.dfy(34,23): Error: incorrect argument type for datatype constructor parameter 'val' (expected bool, found int)
+4 resolution/type errors detected in git-issue-48-inference-nominal.dfy
+nominal resolve (refreshed, off)
+git-issue-48-inference-nominal.dfy(10,9): Error: Function body type mismatch (expected Option<int32>, got Option<?25>) (covariant type parameter 'U' would require int32 :> int)
+git-issue-48-inference-nominal.dfy(20,9): Error: Function body type mismatch (expected Option<int32>, got Option<?43>) (covariant type parameter 'U' would require int32 :> other32)
+git-issue-48-inference-nominal.dfy(29,9): Error: Function body type mismatch (expected Option<int32>, got Option<?62>) (covariant type parameter 'U' would require int32 :> bool)
+git-issue-48-inference-nominal.dfy(34,23): Error: integer literal used as if it had type bool
+4 resolution/type errors detected in git-issue-48-inference-nominal.dfy
+nominal resolve (refreshed, on)
+git-issue-48-inference-nominal.dfy(10,9): Error: Function body type mismatch (expected Option<int32>, got Option<?24>) (covariant type parameter 'U' would require int32 :> int)
+git-issue-48-inference-nominal.dfy(20,9): Error: Function body type mismatch (expected Option<int32>, got Option<?41>) (covariant type parameter 'U' would require int32 :> other32)
+git-issue-48-inference-nominal.dfy(30,22): Error: boolean literal used as if it had type int32
+3 resolution/type errors detected in git-issue-48-inference-nominal.dfy
+range resolve (legacy, off)
+
+Dafny program verifier did not attempt verification
+range resolve (legacy, on)
+
+Dafny program verifier did not attempt verification
+range resolve (refreshed, off)
+git-issue-48-inference-range.dfy(10,9): Error: Function body type mismatch (expected Option<int32>, got Option<?25>) (covariant type parameter 'U' would require int32 :> int)
+git-issue-48-inference-range.dfy(18,9): Error: Function body type mismatch (expected Option<int32>, got Option<?44>) (covariant type parameter 'U' would require int32 :> int)
+git-issue-48-inference-range.dfy(26,9): Error: Function body type mismatch (expected Option<int32>, got Option<?64>) (covariant type parameter 'U' would require int32 :> int)
+git-issue-48-inference-range.dfy(34,9): Error: Function body type mismatch (expected Option<int32>, got Option<?84>) (covariant type parameter 'U' would require int32 :> int)
+git-issue-48-inference-range.dfy(43,9): Error: Function body type mismatch (expected Option<int32>, got Option<?104>) (covariant type parameter 'U' would require int32 :> int)
+5 resolution/type errors detected in git-issue-48-inference-range.dfy
+range resolve (refreshed, on)
+
+Dafny program verifier did not attempt verification
+range verify (legacy, on)
+git-issue-48-inference-range.dfy(11,22): Error: result of operation might violate newtype constraint for 'int32'
+git-issue-48-inference-range.dfy(23,23): Error: result of operation might violate newtype constraint for 'int32'
+git-issue-48-inference-range.dfy(27,22): Error: result of operation might violate newtype constraint for 'int32'
+git-issue-48-inference-range.dfy(39,23): Error: result of operation might violate newtype constraint for 'int32'
+
+Dafny program verifier finished with 3 verified, 4 errors
+range verify (refreshed, on)
+git-issue-48-inference-range.dfy(11,22): Error: result of operation might violate newtype constraint for 'int32'
+git-issue-48-inference-range.dfy(23,23): Error: result of operation might violate newtype constraint for 'int32'
+git-issue-48-inference-range.dfy(27,22): Error: result of operation might violate newtype constraint for 'int32'
+git-issue-48-inference-range.dfy(39,23): Error: result of operation might violate newtype constraint for 'int32'
+
+Dafny program verifier finished with 3 verified, 4 errors
+false verify (refreshed, on)
+git-issue-48-inference-false.dfy(18,2): Error: assertion might not hold
+
+Dafny program verifier finished with 3 verified, 1 error
+fallback resolve (legacy, off)
+
+Dafny program verifier did not attempt verification
+fallback resolve (legacy, on)
+
+Dafny program verifier did not attempt verification
+fallback resolve (refreshed, off)
+
+Dafny program verifier did not attempt verification
+fallback resolve (refreshed, on)
+
+Dafny program verifier did not attempt verification
+scope resolve (legacy, off)
+
+Dafny program verifier did not attempt verification
+scope resolve (legacy, on)
+
+Dafny program verifier did not attempt verification
+scope resolve (refreshed, off)
+git-issue-48-inference-scope.dfy(10,9): Error: Function body type mismatch (expected Option<int32>, got Option<?19>) (covariant type parameter 'U' would require int32 :> int)
+1 resolution/type errors detected in git-issue-48-inference-scope.dfy
+scope resolve (refreshed, on)
+git-issue-48-inference-scope.dfy(10,9): Error: Function body type mismatch (expected Option<int32>, got Option<?18>) (covariant type parameter 'U' would require int32 :> int)
+1 resolution/type errors detected in git-issue-48-inference-scope.dfy
+project file (option on)
+
+Dafny program verifier did not attempt verification
+project file, overridden on the command line (option off)
+git-issue-48-inference-original.dfy(4,9): Error: Function body type mismatch (expected Option<int32>, got Option<?17>) (covariant type parameter 'U' would require int32 :> int)
+1 resolution/type errors detected in dfyconfig.toml
