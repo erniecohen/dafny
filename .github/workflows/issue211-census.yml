@@ -43,12 +43,12 @@ jobs:
         run: |
           python3 .github/review/modular-termination-census.py "$PWD/out/dafny/Dafny.dll" lit \
             Source/IntegrationTests/TestFiles/LitTests/LitTest census/lit > census-lit.log 2>&1 || true
-          cat census/lit/census.md >> "$GITHUB_STEP_SUMMARY" || tail -50 census-lit.log >> "$GITHUB_STEP_SUMMARY"
+          tee -a "$GITHUB_STEP_SUMMARY" < census/lit/census.md || tail -50 census-lit.log >> "$GITHUB_STEP_SUMMARY"
       - name: Census of the standard library
         run: |
           python3 .github/review/modular-termination-census.py "$PWD/out/dafny/Dafny.dll" project \
             Source/DafnyStandardLibraries/src/Std/dfyconfig.toml census/std > census-std.log 2>&1 || true
-          cat census/std/census.md >> "$GITHUB_STEP_SUMMARY" || tail -50 census-std.log >> "$GITHUB_STEP_SUMMARY"
+          tee -a "$GITHUB_STEP_SUMMARY" < census/std/census.md || tail -50 census-std.log >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
