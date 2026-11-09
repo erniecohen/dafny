@@ -49,13 +49,21 @@ public partial class BoogieGenerator {
       }
 
       Contract.Assert(decs.Count <= allFormals.Count);
-      if (0 < decs.Count && decs.Count < allFormals.Count) {
+      var emitsDecreasesAxiom = 0 < decs.Count && decs.Count < allFormals.Count;
+      if (emitsDecreasesAxiom) {
         var decreasesAxiom = GetFunctionAxiom(f, body, decs);
         AddOtherDefinition(boogieFunction, decreasesAxiom);
       }
 
-      var formalsAxiom = GetFunctionAxiom(f, body, allFormals);
-      AddOtherDefinition(boogieFunction, formalsAxiom);
+      // The all-literals axiom is the decreases-literals axiom with more literal guards, so
+      // when the latter is emitted the former adds no instance with a different meaning.
+      // Both fire on a call whose arguments are all literals, and each produces its own copy
+      // of the recursive calls, so the instances grow as (2 * calls per unfolding)^depth.
+      // --decreases-literal-axiom-only keeps only the decreases-literals axiom then.
+      if (!(emitsDecreasesAxiom && options.Get(CommonOptionBag.DecreasesLiteralAxiomOnly))) {
+        var formalsAxiom = GetFunctionAxiom(f, body, allFormals);
+        AddOtherDefinition(boogieFunction, formalsAxiom);
+      }
     }
   }
 

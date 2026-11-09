@@ -257,6 +257,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> ContextualLambdaDomains = new("--contextual-lambda-domains", () => false,
     "With the refreshed type system, infer omitted parameters of function-result lambdas from the declared arrow domain. Disabled by default.");
 
+  public static readonly Option<bool> DecreasesLiteralAxiomOnly = new("--decreases-literal-axiom-only", () => false,
+    "When a function's decreases clause names only some of its parameters, unfold a call by its literal arguments with only the definition axiom that needs those parameters to be literals, and leave out the one that needs every argument to be a literal. Avoids a cost that grows exponentially with the depth of a literal argument. Disabled by default.");
+
   public static readonly Option<bool> ConservativeMatchInference = new("--conservative-match-inference", () => false,
     "With the refreshed type system, infer the type of a match source by propagation before making default type decisions, so that an earlier literal can still take its type from the enclosing context. Disabled by default.");
 
@@ -718,6 +721,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(BitvectorMapKeys, OptionScope.Cli);
     OptionRegistry.RegisterOption(ContextualLambdaDomains, OptionScope.Cli);
     OptionRegistry.RegisterOption(ConservativeMatchInference, OptionScope.Cli);
+    OptionRegistry.RegisterOption(DecreasesLiteralAxiomOnly, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationLogFormat, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerifyIncludedFiles, OptionScope.Cli);
     OptionRegistry.RegisterOption(DisableNonLinearArithmetic, OptionScope.Module);
