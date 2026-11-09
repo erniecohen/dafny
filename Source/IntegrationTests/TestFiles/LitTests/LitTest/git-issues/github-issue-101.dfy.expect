@@ -1,0 +1,39 @@
+positive (legacy)
+
+Dafny program verifier finished with 13 verified, 0 errors
+positive (refreshed, off)
+github-issue-101-positive.dfy(7,10): Error: value of expression (of type 'List<Pos>') is not known to be an instance of type 'List<int>'
+github-issue-101-positive.dfy(10,18): Error: value of expression (of type 'List<Pos>') is not known to be an instance of type 'List<int>'
+github-issue-101-positive.dfy(13,7): Error: value of expression (of type 'Snoc<Pos>') is not known to be an instance of type 'Snoc<int>'
+github-issue-101-positive.dfy(16,19): Error: value of expression (of type 'List<Pos>') is not known to be an instance of type 'List<int>'
+github-issue-101-positive.dfy(30,38): Error: value of expression (of type 'List<T>') is not known to be an instance of type 'List<T_>'
+github-issue-101-positive.dfy(36,15): Error: value of expression (of type 'List<Pos>') is not known to be an instance of type 'List<int>'
+github-issue-101-positive.dfy(36,19): Error: value of expression (of type 'List<List<Pos>>') is not known to be an instance of type 'List<List<int>>'
+github-issue-101-positive.dfy(39,31): Error: value of expression (of type 'List<Pos>') is not known to be an instance of type 'List<int>'
+github-issue-101-positive.dfy(42,26): Error: value of expression (of type 'List<Pos>') is not known to be an instance of type 'List<int>'
+github-issue-101-positive.dfy(42,30): Error: value of expression (of type 'List<List<Pos>>') is not known to be an instance of type 'List<List<int>>'
+
+Dafny program verifier finished with 5 verified, 10 errors
+positive (refreshed, on)
+
+Dafny program verifier finished with 13 verified, 0 errors
+negative (refreshed, off)
+github-issue-101-negative.dfy(8,2): Error: value of expression (of type 'List<int>') is not known to be an instance of type 'List<Pos>'
+github-issue-101-negative.dfy(8,10): Error: value of expression (of type 'List<Pos>') is not known to be an instance of type 'List<int>'
+github-issue-101-negative.dfy(12,22): Error: value of expression (of type 'List<int>') is not known to be an instance of type 'List<Pos>'
+github-issue-101-negative.dfy(15,19): Error: value of expression (of type 'List<Pos>') is not known to be an instance of type 'List<int>'
+github-issue-101-negative.dfy(16,2): Error: assertion might not hold
+github-issue-101-negative.dfy(22,16): Error: value of expression (of type 'Tree<Pos>') is not known to be an instance of type 'Tree<int>'
+github-issue-101-negative.dfy(25,2): Error: value of expression (of type 'List<List<int>>') is not known to be an instance of type 'List<List<Pos>>'
+github-issue-101-negative.dfy(25,15): Error: value of expression (of type 'List<Pos>') is not known to be an instance of type 'List<int>'
+github-issue-101-negative.dfy(25,19): Error: value of expression (of type 'List<List<Pos>>') is not known to be an instance of type 'List<List<int>>'
+
+Dafny program verifier finished with 1 verified, 9 errors
+negative (refreshed, on)
+github-issue-101-negative.dfy(8,7): Error: value does not satisfy the subset constraints of 'Pos'
+github-issue-101-negative.dfy(12,22): Error: value of expression (of type 'List<int>') is not known to be an instance of type 'List<Pos>'
+github-issue-101-negative.dfy(16,2): Error: assertion might not hold
+github-issue-101-negative.dfy(22,16): Error: value of expression (of type 'Tree<Pos>') is not known to be an instance of type 'Tree<int>'
+github-issue-101-negative.dfy(25,12): Error: value does not satisfy the subset constraints of 'Pos'
+
+Dafny program verifier finished with 1 verified, 5 errors

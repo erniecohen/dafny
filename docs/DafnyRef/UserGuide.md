@@ -2236,6 +2236,19 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   The legacy option was `-unicodeChar:<n>` with values 0 and 1 for
   false and true above.
 
+* `--invariant-constructor-inference` - with the refreshed type system
+  (`--type-system-refresh`), let an argument of a datatype constructor whose
+  formal type uses a type parameter in a non-variant position fix that type
+  argument. For example, with `datatype List<T> = Nil | Cons(hd: T, tl: List<T>)`,
+  `h: int` and `ts: List<Pos>`, the constructor in `Cons(h, ts)` gets the type
+  argument `Pos` from `ts`, so `h` is checked to be a `Pos`. Without it the type
+  argument is widened to `int` from `h`, and `ts` must then be proved to be a
+  `List<int>`, which the verifier cannot prove without induction. Every argument
+  is still checked against the chosen type; a type parameter declared covariant
+  (`+T`) is not affected. Disabled by default, and it has no effect on the legacy
+  resolver. Use `invariant-constructor-inference = true` in a project file's
+  `[options]` section.
+
 * `--conservative-match-inference` - with the refreshed type system
   (`--type-system-refresh`), infer the type of the source of a `match` by
   propagating the constraints already known before making any default type
@@ -2473,6 +2486,23 @@ and what information it produces about the verification process.
   file's `[options]` section. It has its own option, not `--additional-axioms`,
   because it can change proof costs. See
   [the soundness note](../dev/additional-axioms.md).
+
+* `--statement-expression-conclusions` - in the condition of an `assert`
+  statement, use the conclusion of a statement expression `S; E` (the
+  condition of an `assert`, `assume` or `expect` statement, the result of a
+  `calc`, the conclusion of an `assert ... by`) as a fact for `E` also when
+  `S; E` occurs under quantifiers and logical connectives. Without it, only a
+  statement expression at the top of the condition (or of one of its
+  conjuncts) gets the fact, so that, for example,
+  `assert forall n: nat :: assume false; false` fails. The statement is still
+  checked as before; the fact holds wherever `E` is evaluated because the
+  well-formedness check of the condition, just before, establishes it there.
+  Postconditions, invariants and preconditions are not affected, and neither
+  are statement expressions inside `old`, `unchanged`, `fresh`, lambdas, set
+  and map comprehensions, let-such-that expressions and binding-guard
+  if-then-else expressions. Disabled by default;
+  `statement-expression-conclusions = true` in a project file's `[options]`
+  section. It can change proof costs.
 
 * `--manual-lemma-induction` - disables automatic inducntion for lemmas
 

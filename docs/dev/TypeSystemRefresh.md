@@ -24,6 +24,16 @@ The "type system refresh" is a reimplementation of Dafny's name resolution, type
     checks still verify every body application and result on that domain. It adds
     no verifier axioms or unchecked subset constraints.
 
+    The fork's opt-in `--invariant-constructor-inference` changes the type
+    refinement flows into the arguments of a datatype constructor. A flow into a
+    non-variant position of a formal, such as `T` in `tl: List<T>`, sets the
+    constructor's type argument to the actual's type and pins it; covariant flows,
+    such as from `hd: T`, then do not widen a pinned type argument. A pinned type
+    argument still moves up its tower of subset types if a non-variant source does,
+    so the refinement loop terminates. It adds and removes no proof obligation
+    kind: each actual argument is checked against the formal with the chosen type
+    argument ([issue 101](https://github.com/erniecohen/dafny/issues/101)).
+
     The fork's opt-in `--conservative-match-inference` changes when the refreshed
     resolver makes default type decisions while resolving a `match` whose source
     type is not yet known: it first propagates the known constraints without

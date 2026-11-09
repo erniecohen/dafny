@@ -18,6 +18,11 @@ public class TypeRefinementWrapper : TypeProxy {
 
   public bool IsBottomType => T is BottomTypePlaceholder;
 
+  /// <summary>
+  /// Set only under --invariant-constructor-inference; see Flow.PinAndUpdate.
+  /// </summary>
+  public bool Pinned;
+
   public override string TypeName(DafnyOptions options, ModuleDefinition context, bool parseAble) {
     var baseName = base.TypeName(options, context, parseAble);
     if (options.Get(CommonOptionBag.NewTypeInferenceDebug)) {

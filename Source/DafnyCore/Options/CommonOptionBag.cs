@@ -247,6 +247,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> HeapFreeLambdaFacts = new("--heap-free-lambda-facts", () => false,
     "Check a lambda without a reads clause, whose body observes neither the heap nor allocation, in every heap and without assuming its parameters allocated, and let the calls in its body unfold wherever it is applied. May change verification performance. Disabled by default.");
 
+  public static readonly Option<bool> StatementExpressionConclusions = new("--statement-expression-conclusions", () => false,
+    "In the condition of an assert statement, use the conclusion of a statement expression (S; E), such as an assert or assume statement, as a fact for E also under quantifiers and logical connectives, and not only at the top. Not inside old, unchanged, fresh, lambdas, or set and map comprehensions. May change verification performance. Disabled by default.");
+
   public static readonly Option<bool> AllowAxioms = new("--allow-axioms", () => false,
     "Prevents a warning from being generated for axioms, such as assume statements and functions or methods without a body, that don't have an {:axiom} attribute.") {
   };
@@ -268,6 +271,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
 
   public static readonly Option<bool> ModularTermination = new("--modular-termination", () => false,
     "Experimental, first step; it does not yet establish termination. Accept 'decreases {:global}' clauses, and reject a call dispatched to a bodyless member of a trait whose implementations may lie in other modules (a trait with {:termination false}, or one extended from another module) unless the callee's 'decreases {:global}' bound is below the caller's, captured on entry. Only such calls made directly by a member with a bound are compared with it: a cycle through a helper method or function, or through a function value, is not detected, and a program can still prove false. Report as hints (with --show-hints) every call that needs the rule. See the Reference Manual. Disabled by default.");
+
+  public static readonly Option<bool> InvariantConstructorInference = new("--invariant-constructor-inference", () => false,
+    "With the refreshed type system, let a datatype constructor argument whose formal type uses a type parameter in a non-variant position, such as the tail of a list, fix that type argument, instead of widening it to the type of another argument. Every argument is still checked against the chosen type. Disabled by default.");
 
   public static readonly Option<bool> TypeSystemRefresh = new("--type-system-refresh", () => false,
     @"
@@ -703,6 +709,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(AdditionalAxioms, OptionScope.Cli);
     OptionRegistry.RegisterOption(MapComprehensionDomainTriggers, OptionScope.Cli);
     OptionRegistry.RegisterOption(HeapFreeLambdaFacts, OptionScope.Cli);
+    OptionRegistry.RegisterOption(StatementExpressionConclusions, OptionScope.Cli);
     OptionRegistry.RegisterOption(ShowHints, OptionScope.Cli);
     OptionRegistry.RegisterOption(Libraries, OptionScope.Module);
     OptionRegistry.RegisterOption(Output, OptionScope.Cli);
@@ -730,6 +737,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(DatatypeSubsetConversions, OptionScope.Cli);
     OptionRegistry.RegisterOption(AncestorQualifiedModuleIds, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
+    OptionRegistry.RegisterOption(InvariantConstructorInference, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationLogFormat, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerifyIncludedFiles, OptionScope.Cli);
     OptionRegistry.RegisterOption(DisableNonLinearArithmetic, OptionScope.Module);
