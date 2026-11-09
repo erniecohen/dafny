@@ -29,3 +29,15 @@ function f(ts: List<T>): List<T> decreases lSz(ts) {
   if ts.Nil? then Nil else if ts.hd.N? then List<T>.Cons(ts.hd, f(ts.tl))
   else Cons(ts.hd.x, Cons(ts.hd.y, ts.tl))
 }
+
+// Nested constructors: the inner type argument comes from `a`, the outer one from `b`.
+// The explicit and partly explicit (`List<List>`, whose inner argument is inferred) forms too.
+function Nested(h: int, a: List<Pos>, b: List<List<Pos>>): List<List<Pos>> requires h > 0 {
+  Cons(Cons(h, a), b)
+}
+function NestedExplicit(h: int, a: List<Pos>, b: List<List<Pos>>): List<List<Pos>> requires h > 0 {
+  List<List<Pos>>.Cons(Cons(h, a), b)
+}
+function NestedPartial(h: int, a: List<Pos>, b: List<List<Pos>>): List<List<Pos>> requires h > 0 {
+  List<List>.Cons(Cons(h, a), b)
+}

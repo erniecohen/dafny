@@ -21,3 +21,6 @@ method Covariant(h: int, ts: CoList<Pos>) {
 method Disagree(l: Tree<Pos>, v: int, r: Tree<int>) {
   var t := Node(l, v, r);  // the two non-variant arguments disagree; error as without the option
 }
+function NestedUnchecked(h: int, a: List<Pos>, b: List<List<Pos>>): List<List<Pos>> {
+  Cons(Cons(h, a), b)  // error: h may not be Pos
+}
