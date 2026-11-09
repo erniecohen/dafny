@@ -1331,10 +1331,14 @@ ModifiesClause<.ref List<FrameExpression> mod, ref Attributes attrs,
 
 /*------------------------------------------------------------------------*/
 DecreasesClause<.List<Expression> decreases, ref Attributes attrs,
-                 bool allowWildcard, bool allowLambda.>
-= "decreases"
+                 bool allowWildcard, bool allowLambda, bool allowGlobal.>
+= "decreases"                                  (. var attrsBefore = attrs; .)
   { Attribute<ref attrs> }
-  DecreasesList<decreases, allowWildcard, allowLambda>
+  (. /* Under --modular-termination, "decreases {:global} E" is a global bound, kept as the
+        arguments of its {:global} attribute and apart from the ordinary decreases list. */
+     var globalClause = allowGlobal ? GlobalDecreasesAttribute(attrs, attrsBefore) : null;
+  .)
+  DecreasesList<(globalClause == null ? decreases : globalClause.Args), allowWildcard && globalClause == null, allowLambda>
   OldSemi
   .
 
@@ -1378,7 +1382,7 @@ MethodSpec<.bool isGhost, List<AttributedExpression> req, List<FrameExpression> 
   | ModifiesClause<ref mod, ref modAttrs, false, performThisDeprecatedCheck>
   | RequiresClause<req, true>
   | EnsuresClause<ens, false>
-  | DecreasesClause<decreases, ref decAttrs, !isGhost, false>
+  | DecreasesClause<decreases, ref decAttrs, !isGhost, false, true>
   }
   .
 
@@ -1397,7 +1401,7 @@ IteratorSpec<.List<FrameExpression/*!*/>/*!*/ reads, List<FrameExpression/*!*/>/
     ( RequiresClause<(isYield?yieldReq:req), !isYield>
     | EnsuresClause<(isYield?yieldEns:ens), false>
     )
-  | DecreasesClause<decreases, ref decrAttrs, false, false>
+  | DecreasesClause<decreases, ref decrAttrs, false, false, false>
   }
   .
 
@@ -2040,7 +2044,7 @@ FunctionSpec<.List<AttributedExpression> reqs, List<FrameExpression> reads, List
          decreases = new List<Expression/*!*/>();
        }
     .)
-    DecreasesClause<decreases, ref decAttrs, false, false>
+    DecreasesClause<decreases, ref decAttrs, false, false, true>
     (. if (decreasesForbidden) {
        var erange = new SourceOrigin(decreasesToken, t);
        SemErr(ErrorId.p_no_decreases_for_extreme_predicates, erange, "'decreases' clauses are meaningless for least and greatest predicates, so they are not allowed");
@@ -2864,7 +2868,7 @@ LoopSpec<.List<AttributedExpression> invariants, List<Expression> decreases, ref
 = { SYNC
     InvariantClause<invariants>
   | SYNC
-    DecreasesClause<decreases, ref decAttrs, true, true>
+    DecreasesClause<decreases, ref decAttrs, true, true, false>
   | SYNC
     ModifiesClause<ref mod, ref modAttrs, true, false>
   }

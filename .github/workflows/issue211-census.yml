@@ -1,0 +1,59 @@
+name: Issue 211 modular-termination census
+
+# Counts, for https://github.com/erniecohen/dafny/issues/211 (milestone M1), the calls that
+# need the smaller-bound rule of --modular-termination, in the integration tests and in the
+# standard library.  Resolution only; no solver.  It records the counts in the job summary and
+# an artifact, and exits 0.
+
+on:
+  pull_request:
+    branches: ['review/**']
+    paths:
+      - '.github/review/modular-termination-census.py'
+      - '.github/workflows/issue211-census.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Boogie packages
+        run: sh Scripts/fetch-boogie-packages.sh
+      - name: Build
+        run: dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false
+      - name: Census of the integration tests
+        run: |
+          python3 .github/review/modular-termination-census.py "$PWD/out/dafny/Dafny.dll" lit \
+            Source/IntegrationTests/TestFiles/LitTests/LitTest census/lit > census-lit.log 2>&1 || true
+          tee -a "$GITHUB_STEP_SUMMARY" < census/lit/census.md || tail -50 census-lit.log >> "$GITHUB_STEP_SUMMARY"
+      - name: Census of the standard library
+        run: |
+          python3 .github/review/modular-termination-census.py "$PWD/out/dafny/Dafny.dll" project \
+            Source/DafnyStandardLibraries/src/Std/dfyconfig.toml census/std > census-std.log 2>&1 || true
+          tee -a "$GITHUB_STEP_SUMMARY" < census/std/census.md || tail -50 census-std.log >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue211-census
+          path: |
+            census
+            census-*.log
+          retention-days: 30
