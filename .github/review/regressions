@@ -294,5 +294,21 @@ git-issues/github-issue-190.dfy
 # Exact let in a self postcondition keeps the self-call allowance (#166).
 git-issues/github-issue-166.dfy
 
+# Rotations at widths that are not powers of two are defined by shifts; Z3 composed native
+# rotation counts modulo 2^W (https://github.com/erniecohen/dafny/issues/147).
+git-issues/github-issue-147.dfy
+git-issues/github-issue-147-emission.dfy
+# Existing tests with rotations, at widths of both kinds.
+dafny0/Bitvectors.dfy
+dafny0/BitvectorsMore.dfy
+dafny0/GeneralNewtypeMemberVerify.dfy
+dafny0/GeneralNewtypeVerify.dfy
+dafny4/git-issue57.dfy
+proof-obligation-desc/shift-lower-bound.dfy
+proof-obligation-desc/shift-upper-bound.dfy
+
+# Opt-in legacy conversions to datatype subsets under --datatype-subset-conversions (https://github.com/erniecohen/dafny/issues/92).
+git-issues/github-issue-92.dfy
+
 # Statement-expression conclusions under quantifiers, opt-in (https://github.com/erniecohen/dafny/issues/96).
 git-issues/github-issue-96.dfy

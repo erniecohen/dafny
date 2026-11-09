@@ -355,7 +355,7 @@ module Bitvectors {
     }
   }
   
-  method Rotate(x: BV, b: bv32, i: int, j: int32) returns (r: bool, s: BV, a: bv5) {
+  method {:isolate_assertions} Rotate(x: BV, b: bv32, i: int, j: int32) returns (r: bool, s: BV, a: bv5) {
     //  .RotateLeft .RotateRight
     if i < 5 {
       a := x.RotateLeft(i); // error: argument to RotateLeft might be negative
