@@ -1,0 +1,246 @@
+original (review-z3, type-system-refresh:false)
+github-issue-147-original.dfy(5,0): Error: a postcondition could not be proved on this return path
+github-issue-147-original.dfy(4,41): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 1 error
+good (review-z3, type-system-refresh:false)
+
+Dafny program verifier finished with 2 verified, 0 errors
+controls (review-z3, type-system-refresh:false)
+github-issue-147-controls.dfy(8,2): Error: assertion might not hold
+github-issue-147-controls.dfy(16,4): Error: assertion might not hold
+github-issue-147-controls.dfy(25,4): Error: assertion might not hold
+github-issue-147-controls.dfy(34,4): Error: assertion might not hold
+
+Dafny program verifier finished with 4 verified, 4 errors
+true (review-z3, type-system-refresh:false)
+
+Dafny program verifier finished with 24 verified, 0 errors
+false (review-z3, type-system-refresh:false)
+github-issue-147-false.dfy(9,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(8,41): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(16,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(15,41): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(23,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(22,54): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(30,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(29,68): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(37,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(36,41): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(44,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(43,41): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(51,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(50,41): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(58,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(57,41): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 8 verified, 8 errors
+native-true (review-z3, type-system-refresh:false)
+
+Dafny program verifier finished with 10 verified, 0 errors
+native-false (review-z3, type-system-refresh:false)
+github-issue-147-native-false.dfy(8,0): Error: a postcondition could not be proved on this return path
+github-issue-147-native-false.dfy(7,41): Related location: this is the postcondition that could not be proved
+github-issue-147-native-false.dfy(14,0): Error: a postcondition could not be proved on this return path
+github-issue-147-native-false.dfy(13,41): Related location: this is the postcondition that could not be proved
+github-issue-147-native-false.dfy(21,0): Error: a postcondition could not be proved on this return path
+github-issue-147-native-false.dfy(20,41): Related location: this is the postcondition that could not be proved
+github-issue-147-native-false.dfy(28,0): Error: a postcondition could not be proved on this return path
+github-issue-147-native-false.dfy(27,41): Related location: this is the postcondition that could not be proved
+github-issue-147-native-false.dfy(34,0): Error: a postcondition could not be proved on this return path
+github-issue-147-native-false.dfy(33,54): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 5 verified, 5 errors
+bounds (review-z3, type-system-refresh:false)
+github-issue-147-bounds.dfy(8,23): Error: rotate amount must be non-negative
+github-issue-147-bounds.dfy(14,24): Error: rotate amount must not exceed the width of the result (3)
+github-issue-147-bounds.dfy(20,24): Error: rotate amount must be non-negative
+github-issue-147-bounds.dfy(26,23): Error: rotate amount must not exceed the width of the result (12)
+github-issue-147-bounds.dfy(32,23): Error: rotate amount must not exceed the width of the result (32)
+
+Dafny program verifier finished with 0 verified, 5 errors
+original (review-z3, type-system-refresh:true)
+github-issue-147-original.dfy(5,0): Error: a postcondition could not be proved on this return path
+github-issue-147-original.dfy(4,41): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 1 error
+good (review-z3, type-system-refresh:true)
+
+Dafny program verifier finished with 2 verified, 0 errors
+controls (review-z3, type-system-refresh:true)
+github-issue-147-controls.dfy(8,2): Error: assertion might not hold
+github-issue-147-controls.dfy(16,4): Error: assertion might not hold
+github-issue-147-controls.dfy(25,4): Error: assertion might not hold
+github-issue-147-controls.dfy(34,4): Error: assertion might not hold
+
+Dafny program verifier finished with 4 verified, 4 errors
+true (review-z3, type-system-refresh:true)
+
+Dafny program verifier finished with 24 verified, 0 errors
+false (review-z3, type-system-refresh:true)
+github-issue-147-false.dfy(9,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(8,41): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(16,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(15,41): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(23,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(22,54): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(30,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(29,68): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(37,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(36,41): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(44,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(43,41): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(51,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(50,41): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(58,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(57,41): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 8 verified, 8 errors
+native-true (review-z3, type-system-refresh:true)
+
+Dafny program verifier finished with 10 verified, 0 errors
+native-false (review-z3, type-system-refresh:true)
+github-issue-147-native-false.dfy(8,0): Error: a postcondition could not be proved on this return path
+github-issue-147-native-false.dfy(7,41): Related location: this is the postcondition that could not be proved
+github-issue-147-native-false.dfy(14,0): Error: a postcondition could not be proved on this return path
+github-issue-147-native-false.dfy(13,41): Related location: this is the postcondition that could not be proved
+github-issue-147-native-false.dfy(21,0): Error: a postcondition could not be proved on this return path
+github-issue-147-native-false.dfy(20,41): Related location: this is the postcondition that could not be proved
+github-issue-147-native-false.dfy(28,0): Error: a postcondition could not be proved on this return path
+github-issue-147-native-false.dfy(27,41): Related location: this is the postcondition that could not be proved
+github-issue-147-native-false.dfy(34,0): Error: a postcondition could not be proved on this return path
+github-issue-147-native-false.dfy(33,54): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 5 verified, 5 errors
+bounds (review-z3, type-system-refresh:true)
+github-issue-147-bounds.dfy(8,23): Error: rotate amount must be non-negative
+github-issue-147-bounds.dfy(14,24): Error: rotate amount must not exceed the width of the result (3)
+github-issue-147-bounds.dfy(20,24): Error: rotate amount must be non-negative
+github-issue-147-bounds.dfy(26,23): Error: rotate amount must not exceed the width of the result (12)
+github-issue-147-bounds.dfy(32,23): Error: rotate amount must not exceed the width of the result (32)
+
+Dafny program verifier finished with 0 verified, 5 errors
+original (review-z3-4.12.1, type-system-refresh:false)
+github-issue-147-original.dfy(5,0): Error: a postcondition could not be proved on this return path
+github-issue-147-original.dfy(4,41): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 1 error
+good (review-z3-4.12.1, type-system-refresh:false)
+
+Dafny program verifier finished with 2 verified, 0 errors
+controls (review-z3-4.12.1, type-system-refresh:false)
+github-issue-147-controls.dfy(8,2): Error: assertion might not hold
+github-issue-147-controls.dfy(16,4): Error: assertion might not hold
+github-issue-147-controls.dfy(25,4): Error: assertion might not hold
+github-issue-147-controls.dfy(34,4): Error: assertion might not hold
+
+Dafny program verifier finished with 4 verified, 4 errors
+true (review-z3-4.12.1, type-system-refresh:false)
+
+Dafny program verifier finished with 24 verified, 0 errors
+false (review-z3-4.12.1, type-system-refresh:false)
+github-issue-147-false.dfy(9,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(8,41): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(16,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(15,41): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(23,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(22,54): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(30,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(29,68): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(37,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(36,41): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(44,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(43,41): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(51,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(50,41): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(58,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(57,41): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 8 verified, 8 errors
+native-true (review-z3-4.12.1, type-system-refresh:false)
+github-issue-147-native-true.dfy(29,7): Error: Verification out of resource (Bv64SameDirection)
+
+Dafny program verifier finished with 9 verified, 0 errors, 1 out of resource
+native-false (review-z3-4.12.1, type-system-refresh:false)
+github-issue-147-native-false.dfy(8,0): Error: a postcondition could not be proved on this return path
+github-issue-147-native-false.dfy(7,41): Related location: this is the postcondition that could not be proved
+github-issue-147-native-false.dfy(14,0): Error: a postcondition could not be proved on this return path
+github-issue-147-native-false.dfy(13,41): Related location: this is the postcondition that could not be proved
+github-issue-147-native-false.dfy(21,0): Error: a postcondition could not be proved on this return path
+github-issue-147-native-false.dfy(20,41): Related location: this is the postcondition that could not be proved
+github-issue-147-native-false.dfy(28,0): Error: a postcondition could not be proved on this return path
+github-issue-147-native-false.dfy(27,41): Related location: this is the postcondition that could not be proved
+github-issue-147-native-false.dfy(34,0): Error: a postcondition could not be proved on this return path
+github-issue-147-native-false.dfy(33,54): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 5 verified, 5 errors
+bounds (review-z3-4.12.1, type-system-refresh:false)
+github-issue-147-bounds.dfy(8,23): Error: rotate amount must be non-negative
+github-issue-147-bounds.dfy(14,24): Error: rotate amount must not exceed the width of the result (3)
+github-issue-147-bounds.dfy(20,24): Error: rotate amount must be non-negative
+github-issue-147-bounds.dfy(26,23): Error: rotate amount must not exceed the width of the result (12)
+github-issue-147-bounds.dfy(32,23): Error: rotate amount must not exceed the width of the result (32)
+
+Dafny program verifier finished with 0 verified, 5 errors
+original (review-z3-4.12.1, type-system-refresh:true)
+github-issue-147-original.dfy(5,0): Error: a postcondition could not be proved on this return path
+github-issue-147-original.dfy(4,41): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 1 error
+good (review-z3-4.12.1, type-system-refresh:true)
+
+Dafny program verifier finished with 2 verified, 0 errors
+controls (review-z3-4.12.1, type-system-refresh:true)
+github-issue-147-controls.dfy(8,2): Error: assertion might not hold
+github-issue-147-controls.dfy(16,4): Error: assertion might not hold
+github-issue-147-controls.dfy(25,4): Error: assertion might not hold
+github-issue-147-controls.dfy(34,4): Error: assertion might not hold
+
+Dafny program verifier finished with 4 verified, 4 errors
+true (review-z3-4.12.1, type-system-refresh:true)
+
+Dafny program verifier finished with 24 verified, 0 errors
+false (review-z3-4.12.1, type-system-refresh:true)
+github-issue-147-false.dfy(9,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(8,41): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(16,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(15,41): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(23,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(22,54): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(30,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(29,68): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(37,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(36,41): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(44,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(43,41): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(51,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(50,41): Related location: this is the postcondition that could not be proved
+github-issue-147-false.dfy(58,0): Error: a postcondition could not be proved on this return path
+github-issue-147-false.dfy(57,41): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 8 verified, 8 errors
+native-true (review-z3-4.12.1, type-system-refresh:true)
+github-issue-147-native-true.dfy(29,7): Error: Verification out of resource (Bv64SameDirection)
+
+Dafny program verifier finished with 9 verified, 0 errors, 1 out of resource
+native-false (review-z3-4.12.1, type-system-refresh:true)
+github-issue-147-native-false.dfy(8,0): Error: a postcondition could not be proved on this return path
+github-issue-147-native-false.dfy(7,41): Related location: this is the postcondition that could not be proved
+github-issue-147-native-false.dfy(14,0): Error: a postcondition could not be proved on this return path
+github-issue-147-native-false.dfy(13,41): Related location: this is the postcondition that could not be proved
+github-issue-147-native-false.dfy(21,0): Error: a postcondition could not be proved on this return path
+github-issue-147-native-false.dfy(20,41): Related location: this is the postcondition that could not be proved
+github-issue-147-native-false.dfy(28,0): Error: a postcondition could not be proved on this return path
+github-issue-147-native-false.dfy(27,41): Related location: this is the postcondition that could not be proved
+github-issue-147-native-false.dfy(34,0): Error: a postcondition could not be proved on this return path
+github-issue-147-native-false.dfy(33,54): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 5 verified, 5 errors
+bounds (review-z3-4.12.1, type-system-refresh:true)
+github-issue-147-bounds.dfy(8,23): Error: rotate amount must be non-negative
+github-issue-147-bounds.dfy(14,24): Error: rotate amount must not exceed the width of the result (3)
+github-issue-147-bounds.dfy(20,24): Error: rotate amount must be non-negative
+github-issue-147-bounds.dfy(26,23): Error: rotate amount must not exceed the width of the result (12)
+github-issue-147-bounds.dfy(32,23): Error: rotate amount must not exceed the width of the result (32)
+
+Dafny program verifier finished with 0 verified, 5 errors
