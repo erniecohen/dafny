@@ -280,19 +280,17 @@ git-issues/github-issue-99.dfy
 # Full dev integration: float-wrapper constraints and non-vacuity.
 git-issues/floating-obligation-constraints.dfy
 
-# Maintained source proofs for consistent obligation checking.
-git-issues/git-issue-170.dfy
-git-issues/git-issue-170-part-1.dfy
-git-issues/git-issue-170-part-2.dfy
-git-issues/git-issue-170-part-3.dfy
-git-issues/git-issue-170-part-4.dfy
-git-issues/git-issue-170-part-5.dfy
-git-issues/git-issue-170-part-6.dfy
-git-issues/git-issue-170-part-7.dfy
-git-issues/git-issue-170-part-8.dfy
-git-issues/git-issue-170-part-9.dfy
-git-issues/git-issue-170-part-10.dfy
-git-issues/git-issue-170-part-11.dfy
+# Resolve once and verify every duplicate, overlapping and failing request (#173).
+git-issues/git-issue-173.dfy
+
+# A printed Boogie program keeps hideable, so hide prunes as in process (Boogie 3.5.5-review.a7d160a7, #182).
+git-issues/github-issue-182.dfy
+
+# Body permissions of heap-free lambdas in every heap (--heap-free-lambda-facts).
+git-issues/lambda-facts-every-heap.dfy
+
+# Source proofs repaired for experimental obligation checks (#170).  The twelve bounded
+# git-issue-170 shards run in the separate workflow obligation-proofs.yml.
 dafny1/PriorityQueue.dfy
 dafny4/Primes.dfy
 dafny2/SnapshotableTrees.dfy

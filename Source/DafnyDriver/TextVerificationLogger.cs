@@ -23,7 +23,7 @@ public class TextVerificationLogger : IVerificationResultFormatLogger {
   }
 
   public void LogScopeResults(VerificationScopeResult scopeResult) {
-    LogResults(depManager, output, scopeResult);
+    LogResults(scopeResult.ProofDependencies ?? depManager, output, scopeResult);
   }
 
   public static void LogResults(ProofDependencyManager proofDependencyManager, TextWriter textWriter, VerificationScopeResult scopeResult) {

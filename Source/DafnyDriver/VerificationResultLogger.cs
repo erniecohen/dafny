@@ -20,7 +20,9 @@ using Microsoft.VisualStudio.TestPlatform.ObjectModel.Logging;
 namespace Microsoft.Dafny {
   public record VerificationScope(string Name, Boogie.IToken Token);
 
-  public record VerificationScopeResult(VerificationScope Scope, IReadOnlyList<VerificationTaskResult> Results);
+  public record VerificationScopeResult(VerificationScope Scope, IReadOnlyList<VerificationTaskResult> Results) {
+    public ProofDependencyManager? ProofDependencies { get; init; }
+  }
 
   interface IVerificationResultFormatLogger {
     void LogScopeResults(VerificationScopeResult result);
@@ -102,7 +104,9 @@ namespace Microsoft.Dafny {
       var scopeResults =
         canVerifyResult.Results
           .GroupBy(v => new VerificationScope(v.Task.ScopeId, v.Task.ScopeToken))
-          .Select(g => new VerificationScopeResult(g.Key, g.ToList())).ToList();
+          .Select(g => new VerificationScopeResult(g.Key, g.ToList()) {
+            ProofDependencies = canVerifyResult.ProofDependencies
+          }).ToList();
       foreach (var scopeResult in scopeResults) {
         foreach (var formatLogger in formatLoggers) {
           formatLogger.LogScopeResults(scopeResult);

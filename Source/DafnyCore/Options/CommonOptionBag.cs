@@ -244,6 +244,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> AdditionalAxioms = new("--additional-axioms", () => false,
     "Enable additional verifier axioms. May change verification performance and proof stability. Disabled by default.");
 
+  public static readonly Option<bool> HeapFreeLambdaFacts = new("--heap-free-lambda-facts", () => false,
+    "Check a lambda without a reads clause, whose body observes neither the heap nor allocation, in every heap and without assuming its parameters allocated, and let the calls in its body unfold wherever it is applied. May change verification performance. Disabled by default.");
+
   public static readonly Option<bool> AllowAxioms = new("--allow-axioms", () => false,
     "Prevents a warning from being generated for axioms, such as assume statements and functions or methods without a body, that don't have an {:axiom} attribute.") {
   };
@@ -687,6 +690,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(ManualTriggerOption, OptionScope.Module);
     OptionRegistry.RegisterOption(AdditionalAxioms, OptionScope.Cli);
     OptionRegistry.RegisterOption(MapComprehensionDomainTriggers, OptionScope.Cli);
+    OptionRegistry.RegisterOption(HeapFreeLambdaFacts, OptionScope.Cli);
     OptionRegistry.RegisterOption(ShowHints, OptionScope.Cli);
     OptionRegistry.RegisterOption(Libraries, OptionScope.Module);
     OptionRegistry.RegisterOption(Output, OptionScope.Cli);

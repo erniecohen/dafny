@@ -1,0 +1,117 @@
+positive (type-system-refresh:false, heap-free-lambda-facts:false)
+lambda-facts-every-heap-positive.dfy(13,10): Error: value does not satisfy the subset constraints of 'int -> nat' (possible cause: it may be partial or have read effects)
+lambda-facts-every-heap-positive.dfy(20,10): Error: value does not satisfy the subset constraints of 'int -> nat' (possible cause: it may be partial or have read effects)
+lambda-facts-every-heap-positive.dfy(30,2): Error: value of expression (of type 'seq<int>') is not known to be an instance of type 'seq<Small>'
+lambda-facts-every-heap-positive.dfy(49,0): Error: a postcondition could not be proved on this return path
+lambda-facts-every-heap-positive.dfy(48,23): Related location: this is the postcondition that could not be proved
+lambda-facts-every-heap-positive.dfy(38,2): Related location: this proposition could not be proved
+lambda-facts-every-heap-positive.dfy(72,0): Error: a postcondition could not be proved on this return path
+lambda-facts-every-heap-positive.dfy(71,16): Related location: this is the postcondition that could not be proved
+lambda-facts-every-heap-positive.dfy(67,2): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 4 verified, 5 errors
+negative (type-system-refresh:false, heap-free-lambda-facts:false)
+lambda-facts-every-heap-negative.dfy(9,26): Error: value does not satisfy the subset constraints of 'int -> nat' (possible cause: it may be partial or have read effects)
+lambda-facts-every-heap-negative.dfy(10,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(11,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(15,26): Error: value does not satisfy the subset constraints of 'int -> nat' (possible cause: it may be partial or have read effects)
+lambda-facts-every-heap-negative.dfy(16,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(21,30): Error: function precondition could not be proved
+lambda-facts-every-heap-negative.dfy(6,41): Related location: this proposition could not be proved
+lambda-facts-every-heap-negative.dfy(27,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(40,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(41,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(45,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(60,2): Error: assertion could not be proved
+
+Dafny program verifier finished with 0 verified, 11 errors
+positive (type-system-refresh:false, heap-free-lambda-facts:true)
+
+Dafny program verifier finished with 9 verified, 0 errors
+negative (type-system-refresh:false, heap-free-lambda-facts:true)
+lambda-facts-every-heap-negative.dfy(11,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(16,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(21,30): Error: function precondition could not be proved
+lambda-facts-every-heap-negative.dfy(6,41): Related location: this proposition could not be proved
+lambda-facts-every-heap-negative.dfy(27,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(41,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(45,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(60,2): Error: assertion could not be proved
+
+Dafny program verifier finished with 0 verified, 7 errors
+github-issue-132-original (type-system-refresh:false, heap-free-lambda-facts:true)
+github-issue-132-original.dfy(14,2): Error: assertion could not be proved
+
+Dafny program verifier finished with 2 verified, 1 error
+github-issue-132-negative (type-system-refresh:false, heap-free-lambda-facts:true)
+github-issue-132-negative.dfy(11,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(21,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(29,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(41,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(49,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(61,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(70,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(82,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(92,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(104,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(114,2): Error: assertion could not be proved
+
+Dafny program verifier finished with 1 verified, 11 errors
+positive (type-system-refresh:true, heap-free-lambda-facts:false)
+lambda-facts-every-heap-positive.dfy(13,10): Error: value does not satisfy the subset constraints of 'int -> nat' (possible cause: it may be partial or have read effects)
+lambda-facts-every-heap-positive.dfy(20,10): Error: value does not satisfy the subset constraints of 'int -> nat' (possible cause: it may be partial or have read effects)
+lambda-facts-every-heap-positive.dfy(49,0): Error: a postcondition could not be proved on this return path
+lambda-facts-every-heap-positive.dfy(48,23): Related location: this is the postcondition that could not be proved
+lambda-facts-every-heap-positive.dfy(38,2): Related location: this proposition could not be proved
+lambda-facts-every-heap-positive.dfy(72,0): Error: a postcondition could not be proved on this return path
+lambda-facts-every-heap-positive.dfy(71,16): Related location: this is the postcondition that could not be proved
+lambda-facts-every-heap-positive.dfy(67,2): Related location: this proposition could not be proved
+
+Dafny program verifier finished with 5 verified, 4 errors
+negative (type-system-refresh:true, heap-free-lambda-facts:false)
+lambda-facts-every-heap-negative.dfy(9,26): Error: value does not satisfy the subset constraints of 'int -> nat' (possible cause: it may be partial or have read effects)
+lambda-facts-every-heap-negative.dfy(10,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(11,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(15,26): Error: value does not satisfy the subset constraints of 'int -> nat' (possible cause: it may be partial or have read effects)
+lambda-facts-every-heap-negative.dfy(16,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(21,30): Error: function precondition could not be proved
+lambda-facts-every-heap-negative.dfy(6,41): Related location: this proposition could not be proved
+lambda-facts-every-heap-negative.dfy(27,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(40,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(41,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(45,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(60,2): Error: assertion could not be proved
+
+Dafny program verifier finished with 0 verified, 11 errors
+positive (type-system-refresh:true, heap-free-lambda-facts:true)
+
+Dafny program verifier finished with 9 verified, 0 errors
+negative (type-system-refresh:true, heap-free-lambda-facts:true)
+lambda-facts-every-heap-negative.dfy(11,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(16,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(21,30): Error: function precondition could not be proved
+lambda-facts-every-heap-negative.dfy(6,41): Related location: this proposition could not be proved
+lambda-facts-every-heap-negative.dfy(27,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(41,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(45,2): Error: assertion could not be proved
+lambda-facts-every-heap-negative.dfy(60,2): Error: assertion could not be proved
+
+Dafny program verifier finished with 0 verified, 7 errors
+github-issue-132-original (type-system-refresh:true, heap-free-lambda-facts:true)
+github-issue-132-original.dfy(14,2): Error: assertion could not be proved
+
+Dafny program verifier finished with 2 verified, 1 error
+github-issue-132-negative (type-system-refresh:true, heap-free-lambda-facts:true)
+github-issue-132-negative.dfy(11,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(21,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(29,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(41,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(49,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(61,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(70,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(82,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(92,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(104,2): Error: assertion could not be proved
+github-issue-132-negative.dfy(114,2): Error: assertion could not be proved
+
+Dafny program verifier finished with 1 verified, 11 errors
