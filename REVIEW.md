@@ -305,7 +305,13 @@ could change its verdict between runs of the same tree
 ([#186](https://github.com/erniecohen/dafny/issues/186)).  The job therefore
 verifies the library part with `--boogie /deterministicLiteralHashes:1`, the same
 normalization with deterministic literal hashes, and the expected files were
-recorded under it.  The target-specific parts cannot take Boogie options, which
+recorded under it.  It also passes `/restartProver`, which gives each proof batch a
+fresh solver process: under Z3 5.1.0 (with `--cores 4`) a batch's resource count depended on which
+batches the reused process had checked before it (one batch,
+`MulInternalsNonlinear.LemmaMulIsAssociative`, moved by up to 0.17%), so the
+resource fingerprint differed in every run
+([#30](https://github.com/erniecohen/dafny/issues/30)).  In 6 runs with it and 12 without (Z3 5.1.0,
+axioms off), that count was the only difference, and no verdict differed.  The target-specific parts cannot take Boogie options, which
 must equal those the library's binary was built with; all 82 of their declarations
 verify (`Correct`) in every expected file.  The suite already runs with
 `/normalizeDeclarationOrder:0`, on which the option has no effect.
