@@ -689,13 +689,11 @@ module Members {
     }
   }
 
-  datatype Destructors = Destructors(base: int, byte: int, catch: int, checked: int, decimal: int, default: int, delegate: int, do: int, double: int, enum: int, event: int, explicit: int, extern: int, finally: int, fixed: int, float: int, foreach: int, goto: int, implicit: int, interface: int, internal: int, lock: int, long: int, namespace: int, operator: int, out: int, override: int, params: int, private: int, protected: int, public: int, readonly: int, ref: int, sbyte: int, sealed: int, short: int, sizeof: int, stackalloc: int, struct: int, switch: int, throw: int, try: int, typeof: int, uint: int, ulong: int, unchecked: int, unsafe: int, ushort: int, using: int, virtual: int, void: int, volatile: int, add: int, allows: int, alias: int, and: int, args: int, ascending: int, async: int, await: int, descending: int, dynamic: int, equals: int, extension: int, file: int, from: int, get: int, global: int, group: int, init: int, into: int, join: int, let: int, managed: int, nameof: int, nint: int, not: int, notnull: int, nuint: int, on: int, or: int, orderby: int, partial: int, record: int, remove: int, required: int, scoped: int, select: int, unmanaged: int, value: int, when: int, where: int, with: int)
-
-  function AddAll(base: int, byte: int, catch: int, checked: int, decimal: int, default: int, delegate: int, do: int, double: int, enum: int, event: int, explicit: int, extern: int, finally: int, fixed: int, float: int, foreach: int, goto: int, implicit: int, interface: int, internal: int, lock: int, long: int, namespace: int, operator: int, out: int, override: int, params: int, private: int, protected: int, public: int, readonly: int, ref: int, sbyte: int, sealed: int, short: int, sizeof: int, stackalloc: int, struct: int, switch: int, throw: int, try: int, typeof: int, uint: int, ulong: int, unchecked: int, unsafe: int, ushort: int, using: int, virtual: int, void: int, volatile: int, add: int, allows: int, alias: int, and: int, args: int, ascending: int, async: int, await: int, descending: int, dynamic: int, equals: int, extension: int, file: int, from: int, get: int, global: int, group: int, init: int, into: int, join: int, let: int, managed: int, nameof: int, nint: int, not: int, notnull: int, nuint: int, on: int, or: int, orderby: int, partial: int, record: int, remove: int, required: int, scoped: int, select: int, unmanaged: int, value: int, when: int, where: int, with: int): int {
-    base + byte + catch + checked + decimal + default + delegate + do + double + enum + event + explicit + extern + finally + fixed + float + foreach + goto + implicit + interface + internal + lock + long + namespace + operator + out + override + params + private + protected + public + readonly + ref + sbyte + sealed + short + sizeof + stackalloc + struct + switch + throw + try + typeof + uint + ulong + unchecked + unsafe + ushort + using + virtual + void + volatile + add + allows + alias + and + args + ascending + async + await + descending + dynamic + equals + extension + file + from + get + global + group + init + into + join + let + managed + nameof + nint + not + notnull + nuint + on + or + orderby + partial + record + remove + required + scoped + select + unmanaged + value + when + where + with
+  datatype Destructors0 = Destructors0(base: int, byte: int, catch: int, checked: int, decimal: int, default: int, delegate: int, do: int, double: int, enum: int, event: int, explicit: int, extern: int, finally: int, fixed: int, float: int)
+  function AddAll0(base: int, byte: int, catch: int, checked: int, decimal: int, default: int, delegate: int, do: int, double: int, enum: int, event: int, explicit: int, extern: int, finally: int, fixed: int, float: int): int {
+    base + byte + catch + checked + decimal + default + delegate + do + double + enum + event + explicit + extern + finally + fixed + float
   }
-
-  method Outs() returns (base: int, byte: int, catch: int, checked: int, decimal: int, default: int, delegate: int, do: int, double: int, enum: int, event: int, explicit: int, extern: int, finally: int, fixed: int, float: int, foreach: int, goto: int, implicit: int, interface: int, internal: int, lock: int, long: int, namespace: int, operator: int, out: int, override: int, params: int, private: int, protected: int, public: int, readonly: int, ref: int, sbyte: int, sealed: int, short: int, sizeof: int, stackalloc: int, struct: int, switch: int, throw: int, try: int, typeof: int, uint: int, ulong: int, unchecked: int, unsafe: int, ushort: int, using: int, virtual: int, void: int, volatile: int, add: int, allows: int, alias: int, and: int, args: int, ascending: int, async: int, await: int, descending: int, dynamic: int, equals: int, extension: int, file: int, from: int, get: int, global: int, group: int, init: int, into: int, join: int, let: int, managed: int, nameof: int, nint: int, not: int, notnull: int, nuint: int, on: int, or: int, orderby: int, partial: int, record: int, remove: int, required: int, scoped: int, select: int, unmanaged: int, value: int, when: int, where: int, with: int) {
+  method Outs0() returns (base: int, byte: int, catch: int, checked: int, decimal: int, default: int, delegate: int, do: int, double: int, enum: int, event: int, explicit: int, extern: int, finally: int, fixed: int, float: int) {
     base := 1;
     byte := 2;
     catch := 3;
@@ -712,6 +710,15 @@ module Members {
     finally := 14;
     fixed := 15;
     float := 16;
+  }
+  function First0<base, byte, catch, checked, decimal, default, delegate, do, double, enum, event, explicit, extern, finally, fixed, float>(x0: base, x1: byte, x2: catch, x3: checked, x4: decimal, x5: default, x6: delegate, x7: do, x8: double, x9: enum, x10: event, x11: explicit, x12: extern, x13: finally, x14: fixed, x15: float): base {
+    x0
+  }
+  datatype Destructors1 = Destructors1(foreach: int, goto: int, implicit: int, interface: int, internal: int, lock: int, long: int, namespace: int, operator: int, out: int, override: int, params: int, private: int, protected: int, public: int, readonly: int)
+  function AddAll1(foreach: int, goto: int, implicit: int, interface: int, internal: int, lock: int, long: int, namespace: int, operator: int, out: int, override: int, params: int, private: int, protected: int, public: int, readonly: int): int {
+    foreach + goto + implicit + interface + internal + lock + long + namespace + operator + out + override + params + private + protected + public + readonly
+  }
+  method Outs1() returns (foreach: int, goto: int, implicit: int, interface: int, internal: int, lock: int, long: int, namespace: int, operator: int, out: int, override: int, params: int, private: int, protected: int, public: int, readonly: int) {
     foreach := 17;
     goto := 18;
     implicit := 19;
@@ -728,6 +735,15 @@ module Members {
     protected := 30;
     public := 31;
     readonly := 32;
+  }
+  function First1<foreach, goto, implicit, interface, internal, lock, long, namespace, operator, out, override, params, private, protected, public, readonly>(x0: foreach, x1: goto, x2: implicit, x3: interface, x4: internal, x5: lock, x6: long, x7: namespace, x8: operator, x9: out, x10: override, x11: params, x12: private, x13: protected, x14: public, x15: readonly): foreach {
+    x0
+  }
+  datatype Destructors2 = Destructors2(ref: int, sbyte: int, sealed: int, short: int, sizeof: int, stackalloc: int, struct: int, switch: int, throw: int, try: int, typeof: int, uint: int, ulong: int, unchecked: int, unsafe: int, ushort: int)
+  function AddAll2(ref: int, sbyte: int, sealed: int, short: int, sizeof: int, stackalloc: int, struct: int, switch: int, throw: int, try: int, typeof: int, uint: int, ulong: int, unchecked: int, unsafe: int, ushort: int): int {
+    ref + sbyte + sealed + short + sizeof + stackalloc + struct + switch + throw + try + typeof + uint + ulong + unchecked + unsafe + ushort
+  }
+  method Outs2() returns (ref: int, sbyte: int, sealed: int, short: int, sizeof: int, stackalloc: int, struct: int, switch: int, throw: int, try: int, typeof: int, uint: int, ulong: int, unchecked: int, unsafe: int, ushort: int) {
     ref := 33;
     sbyte := 34;
     sealed := 35;
@@ -744,6 +760,15 @@ module Members {
     unchecked := 46;
     unsafe := 47;
     ushort := 48;
+  }
+  function First2<ref, sbyte, sealed, short, sizeof, stackalloc, struct, switch, throw, try, typeof, uint, ulong, unchecked, unsafe, ushort>(x0: ref, x1: sbyte, x2: sealed, x3: short, x4: sizeof, x5: stackalloc, x6: struct, x7: switch, x8: throw, x9: try, x10: typeof, x11: uint, x12: ulong, x13: unchecked, x14: unsafe, x15: ushort): ref {
+    x0
+  }
+  datatype Destructors3 = Destructors3(using: int, virtual: int, void: int, volatile: int, add: int, allows: int, alias: int, and: int, args: int, ascending: int, async: int, await: int, descending: int, dynamic: int, equals: int, extension: int)
+  function AddAll3(using: int, virtual: int, void: int, volatile: int, add: int, allows: int, alias: int, and: int, args: int, ascending: int, async: int, await: int, descending: int, dynamic: int, equals: int, extension: int): int {
+    using + virtual + void + volatile + add + allows + alias + and + args + ascending + async + await + descending + dynamic + equals + extension
+  }
+  method Outs3() returns (using: int, virtual: int, void: int, volatile: int, add: int, allows: int, alias: int, and: int, args: int, ascending: int, async: int, await: int, descending: int, dynamic: int, equals: int, extension: int) {
     using := 49;
     virtual := 50;
     void := 51;
@@ -760,6 +785,15 @@ module Members {
     dynamic := 62;
     equals := 63;
     extension := 64;
+  }
+  function First3<using, virtual, void, volatile, add, allows, alias, and, args, ascending, async, await, descending, dynamic, equals, extension>(x0: using, x1: virtual, x2: void, x3: volatile, x4: add, x5: allows, x6: alias, x7: and, x8: args, x9: ascending, x10: async, x11: await, x12: descending, x13: dynamic, x14: equals, x15: extension): using {
+    x0
+  }
+  datatype Destructors4 = Destructors4(file: int, from: int, get: int, global: int, group: int, init: int, into: int, join: int, let: int, managed: int, nameof: int, nint: int, not: int, notnull: int, nuint: int, on: int)
+  function AddAll4(file: int, from: int, get: int, global: int, group: int, init: int, into: int, join: int, let: int, managed: int, nameof: int, nint: int, not: int, notnull: int, nuint: int, on: int): int {
+    file + from + get + global + group + init + into + join + let + managed + nameof + nint + not + notnull + nuint + on
+  }
+  method Outs4() returns (file: int, from: int, get: int, global: int, group: int, init: int, into: int, join: int, let: int, managed: int, nameof: int, nint: int, not: int, notnull: int, nuint: int, on: int) {
     file := 65;
     from := 66;
     get := 67;
@@ -776,6 +810,15 @@ module Members {
     notnull := 78;
     nuint := 79;
     on := 80;
+  }
+  function First4<file, from, get, global, group, init, into, join, let, managed, nameof, nint, not, notnull, nuint, on>(x0: file, x1: from, x2: get, x3: global, x4: group, x5: init, x6: into, x7: join, x8: let, x9: managed, x10: nameof, x11: nint, x12: not, x13: notnull, x14: nuint, x15: on): file {
+    x0
+  }
+  datatype Destructors5 = Destructors5(or: int, orderby: int, partial: int, record: int, remove: int, required: int, scoped: int, select: int, unmanaged: int, value: int, when: int, where: int, with: int)
+  function AddAll5(or: int, orderby: int, partial: int, record: int, remove: int, required: int, scoped: int, select: int, unmanaged: int, value: int, when: int, where: int, with: int): int {
+    or + orderby + partial + record + remove + required + scoped + select + unmanaged + value + when + where + with
+  }
+  method Outs5() returns (or: int, orderby: int, partial: int, record: int, remove: int, required: int, scoped: int, select: int, unmanaged: int, value: int, when: int, where: int, with: int) {
     or := 81;
     orderby := 82;
     partial := 83;
@@ -790,8 +833,7 @@ module Members {
     where := 92;
     with := 93;
   }
-
-  function First<base, byte, catch, checked, decimal, default, delegate, do, double, enum, event, explicit, extern, finally, fixed, float, foreach, goto, implicit, interface, internal, lock, long, namespace, operator, out, override, params, private, protected, public, readonly, ref, sbyte, sealed, short, sizeof, stackalloc, struct, switch, throw, try, typeof, uint, ulong, unchecked, unsafe, ushort, using, virtual, void, volatile, add, allows, alias, and, args, ascending, async, await, descending, dynamic, equals, extension, file, from, get, global, group, init, into, join, let, managed, nameof, nint, not, notnull, nuint, on, or, orderby, partial, record, remove, required, scoped, select, unmanaged, value, when, where, with>(x0: base, x1: byte, x2: catch, x3: checked, x4: decimal, x5: default, x6: delegate, x7: do, x8: double, x9: enum, x10: event, x11: explicit, x12: extern, x13: finally, x14: fixed, x15: float, x16: foreach, x17: goto, x18: implicit, x19: interface, x20: internal, x21: lock, x22: long, x23: namespace, x24: operator, x25: out, x26: override, x27: params, x28: private, x29: protected, x30: public, x31: readonly, x32: ref, x33: sbyte, x34: sealed, x35: short, x36: sizeof, x37: stackalloc, x38: struct, x39: switch, x40: throw, x41: try, x42: typeof, x43: uint, x44: ulong, x45: unchecked, x46: unsafe, x47: ushort, x48: using, x49: virtual, x50: void, x51: volatile, x52: add, x53: allows, x54: alias, x55: and, x56: args, x57: ascending, x58: async, x59: await, x60: descending, x61: dynamic, x62: equals, x63: extension, x64: file, x65: from, x66: get, x67: global, x68: group, x69: init, x70: into, x71: join, x72: let, x73: managed, x74: nameof, x75: nint, x76: not, x77: notnull, x78: nuint, x79: on, x80: or, x81: orderby, x82: partial, x83: record, x84: remove, x85: required, x86: scoped, x87: select, x88: unmanaged, x89: value, x90: when, x91: where, x92: with): base {
+  function First5<or, orderby, partial, record, remove, required, scoped, select, unmanaged, value, when, where, with>(x0: or, x1: orderby, x2: partial, x3: record, x4: remove, x5: required, x6: scoped, x7: select, x8: unmanaged, x9: value, x10: when, x11: where, x12: with): or {
     x0
   }
 }
@@ -903,8 +945,19 @@ method Main() {
   var f := new Members.Fields();
   var fsum := f.Sum();
   print "fields: ", fsum, "\n";
-  var d := Members.Destructors(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93);
-  var ds := d.base + d.byte + d.catch + d.checked + d.decimal + d.default + d.delegate + d.do + d.double + d.enum + d.event + d.explicit + d.extern + d.finally + d.fixed + d.float + d.foreach + d.goto + d.implicit + d.interface + d.internal + d.lock + d.long + d.namespace + d.operator + d.out + d.override + d.params + d.private + d.protected + d.public + d.readonly + d.ref + d.sbyte + d.sealed + d.short + d.sizeof + d.stackalloc + d.struct + d.switch + d.throw + d.try + d.typeof + d.uint + d.ulong + d.unchecked + d.unsafe + d.ushort + d.using + d.virtual + d.void + d.volatile + d.add + d.allows + d.alias + d.and + d.args + d.ascending + d.async + d.await + d.descending + d.dynamic + d.equals + d.extension + d.file + d.from + d.get + d.global + d.group + d.init + d.into + d.join + d.let + d.managed + d.nameof + d.nint + d.not + d.notnull + d.nuint + d.on + d.or + d.orderby + d.partial + d.record + d.remove + d.required + d.scoped + d.select + d.unmanaged + d.value + d.when + d.where + d.with;
+  var ds := 0;
+  var d0 := Members.Destructors0(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+  ds := ds + d0.base + d0.byte + d0.catch + d0.checked + d0.decimal + d0.default + d0.delegate + d0.do + d0.double + d0.enum + d0.event + d0.explicit + d0.extern + d0.finally + d0.fixed + d0.float;
+  var d1 := Members.Destructors1(17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
+  ds := ds + d1.foreach + d1.goto + d1.implicit + d1.interface + d1.internal + d1.lock + d1.long + d1.namespace + d1.operator + d1.out + d1.override + d1.params + d1.private + d1.protected + d1.public + d1.readonly;
+  var d2 := Members.Destructors2(33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48);
+  ds := ds + d2.ref + d2.sbyte + d2.sealed + d2.short + d2.sizeof + d2.stackalloc + d2.struct + d2.switch + d2.throw + d2.try + d2.typeof + d2.uint + d2.ulong + d2.unchecked + d2.unsafe + d2.ushort;
+  var d3 := Members.Destructors3(49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64);
+  ds := ds + d3.using + d3.virtual + d3.void + d3.volatile + d3.add + d3.allows + d3.alias + d3.and + d3.args + d3.ascending + d3.async + d3.await + d3.descending + d3.dynamic + d3.equals + d3.extension;
+  var d4 := Members.Destructors4(65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80);
+  ds := ds + d4.file + d4.from + d4.get + d4.global + d4.group + d4.init + d4.into + d4.join + d4.let + d4.managed + d4.nameof + d4.nint + d4.not + d4.notnull + d4.nuint + d4.on;
+  var d5 := Members.Destructors5(81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93);
+  ds := ds + d5.or + d5.orderby + d5.partial + d5.record + d5.remove + d5.required + d5.scoped + d5.select + d5.unmanaged + d5.value + d5.when + d5.where + d5.with;
   print "destructors: ", ds, "\n";
   var ctors := [CtorNames.Constructors.base, CtorNames.Constructors.byte, CtorNames.Constructors.catch, CtorNames.Constructors.checked, CtorNames.Constructors.decimal, CtorNames.Constructors.default, CtorNames.Constructors.delegate, CtorNames.Constructors.do, CtorNames.Constructors.double, CtorNames.Constructors.enum, CtorNames.Constructors.event, CtorNames.Constructors.explicit, CtorNames.Constructors.extern, CtorNames.Constructors.finally, CtorNames.Constructors.fixed, CtorNames.Constructors.float, CtorNames.Constructors.foreach, CtorNames.Constructors.goto, CtorNames.Constructors.implicit, CtorNames.Constructors.interface, CtorNames.Constructors.internal, CtorNames.Constructors.lock, CtorNames.Constructors.long, CtorNames.Constructors.namespace, CtorNames.Constructors.operator, CtorNames.Constructors.out, CtorNames.Constructors.override, CtorNames.Constructors.params, CtorNames.Constructors.private, CtorNames.Constructors.protected, CtorNames.Constructors.public, CtorNames.Constructors.readonly, CtorNames.Constructors.ref, CtorNames.Constructors.sbyte, CtorNames.Constructors.sealed, CtorNames.Constructors.short, CtorNames.Constructors.sizeof, CtorNames.Constructors.stackalloc, CtorNames.Constructors.struct, CtorNames.Constructors.switch, CtorNames.Constructors.throw, CtorNames.Constructors.try, CtorNames.Constructors.typeof, CtorNames.Constructors.uint, CtorNames.Constructors.ulong, CtorNames.Constructors.unchecked, CtorNames.Constructors.unsafe, CtorNames.Constructors.ushort, CtorNames.Constructors.using, CtorNames.Constructors.virtual, CtorNames.Constructors.void, CtorNames.Constructors.volatile, CtorNames.Constructors.add, CtorNames.Constructors.allows, CtorNames.Constructors.alias, CtorNames.Constructors.and, CtorNames.Constructors.args, CtorNames.Constructors.ascending, CtorNames.Constructors.async, CtorNames.Constructors.await, CtorNames.Constructors.descending, CtorNames.Constructors.dynamic, CtorNames.Constructors.equals, CtorNames.Constructors.extension, CtorNames.Constructors.file, CtorNames.Constructors.from, CtorNames.Constructors.get, CtorNames.Constructors.global, CtorNames.Constructors.group, CtorNames.Constructors.init, CtorNames.Constructors.into, CtorNames.Constructors.join, CtorNames.Constructors.let, CtorNames.Constructors.managed, CtorNames.Constructors.nameof, CtorNames.Constructors.nint, CtorNames.Constructors.not, CtorNames.Constructors.notnull, CtorNames.Constructors.nuint, CtorNames.Constructors.on, CtorNames.Constructors.or, CtorNames.Constructors.orderby, CtorNames.Constructors.partial, CtorNames.Constructors.record, CtorNames.Constructors.remove, CtorNames.Constructors.required, CtorNames.Constructors.scoped, CtorNames.Constructors.select, CtorNames.Constructors.unmanaged, CtorNames.Constructors.value, CtorNames.Constructors.when, CtorNames.Constructors.where, CtorNames.Constructors.with];
   var cc := 0;
@@ -1005,11 +1058,23 @@ method Main() {
     case with => cc := cc + 93;
   }
   print "constructors: ", cc, "\n";
-  var a := Members.AddAll(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93);
+  var a := Members.AddAll0(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16) + Members.AddAll1(17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32) + Members.AddAll2(33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48) + Members.AddAll3(49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64) + Members.AddAll4(65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80) + Members.AddAll5(81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93);
   print "in-parameters: ", a, "\n";
-  var o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15, o16, o17, o18, o19, o20, o21, o22, o23, o24, o25, o26, o27, o28, o29, o30, o31, o32, o33, o34, o35, o36, o37, o38, o39, o40, o41, o42, o43, o44, o45, o46, o47, o48, o49, o50, o51, o52, o53, o54, o55, o56, o57, o58, o59, o60, o61, o62, o63, o64, o65, o66, o67, o68, o69, o70, o71, o72, o73, o74, o75, o76, o77, o78, o79, o80, o81, o82, o83, o84, o85, o86, o87, o88, o89, o90, o91, o92, o93 := Members.Outs();
-  print "out-parameters: ", o1 + o2 + o3 + o4 + o5 + o6 + o7 + o8 + o9 + o10 + o11 + o12 + o13 + o14 + o15 + o16 + o17 + o18 + o19 + o20 + o21 + o22 + o23 + o24 + o25 + o26 + o27 + o28 + o29 + o30 + o31 + o32 + o33 + o34 + o35 + o36 + o37 + o38 + o39 + o40 + o41 + o42 + o43 + o44 + o45 + o46 + o47 + o48 + o49 + o50 + o51 + o52 + o53 + o54 + o55 + o56 + o57 + o58 + o59 + o60 + o61 + o62 + o63 + o64 + o65 + o66 + o67 + o68 + o69 + o70 + o71 + o72 + o73 + o74 + o75 + o76 + o77 + o78 + o79 + o80 + o81 + o82 + o83 + o84 + o85 + o86 + o87 + o88 + o89 + o90 + o91 + o92 + o93, "\n";
-  var t := Members.First(7, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92);
+  var os := 0;
+  var o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15, o16 := Members.Outs0();
+  os := os + o1 + o2 + o3 + o4 + o5 + o6 + o7 + o8 + o9 + o10 + o11 + o12 + o13 + o14 + o15 + o16;
+  var o17, o18, o19, o20, o21, o22, o23, o24, o25, o26, o27, o28, o29, o30, o31, o32 := Members.Outs1();
+  os := os + o17 + o18 + o19 + o20 + o21 + o22 + o23 + o24 + o25 + o26 + o27 + o28 + o29 + o30 + o31 + o32;
+  var o33, o34, o35, o36, o37, o38, o39, o40, o41, o42, o43, o44, o45, o46, o47, o48 := Members.Outs2();
+  os := os + o33 + o34 + o35 + o36 + o37 + o38 + o39 + o40 + o41 + o42 + o43 + o44 + o45 + o46 + o47 + o48;
+  var o49, o50, o51, o52, o53, o54, o55, o56, o57, o58, o59, o60, o61, o62, o63, o64 := Members.Outs3();
+  os := os + o49 + o50 + o51 + o52 + o53 + o54 + o55 + o56 + o57 + o58 + o59 + o60 + o61 + o62 + o63 + o64;
+  var o65, o66, o67, o68, o69, o70, o71, o72, o73, o74, o75, o76, o77, o78, o79, o80 := Members.Outs4();
+  os := os + o65 + o66 + o67 + o68 + o69 + o70 + o71 + o72 + o73 + o74 + o75 + o76 + o77 + o78 + o79 + o80;
+  var o81, o82, o83, o84, o85, o86, o87, o88, o89, o90, o91, o92, o93 := Members.Outs5();
+  os := os + o81 + o82 + o83 + o84 + o85 + o86 + o87 + o88 + o89 + o90 + o91 + o92 + o93;
+  print "out-parameters: ", os, "\n";
+  var t := Members.First0(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16) + Members.First1(17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32) + Members.First2(33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48) + Members.First3(49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64) + Members.First4(65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80) + Members.First5(81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93);
   print "type parameters: ", t, "\n";
   var base := 1;
   var byte := 2;
