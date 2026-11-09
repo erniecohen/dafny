@@ -290,3 +290,6 @@ git-issues/github-issue-192.dfy
 
 # Z3 smt.refine_inj_axioms=false by default, globally and per implementation (#190).
 git-issues/github-issue-190.dfy
+
+# An explicit trigger instantiates for a closure-valued local (https://github.com/erniecohen/dafny/issues/98); verifies since #160.
+git-issues/github-issue-98.dfy
