@@ -114,6 +114,7 @@ public static class DafnyCommands {
     CommonOptionBag.ContextualLambdaDomains,
     CommonOptionBag.ConservativeMatchInference,
     CommonOptionBag.DatatypeSubsetConversions,
+    CommonOptionBag.AncestorQualifiedModuleIds,
     CommonOptionBag.TypeInferenceDebug,
     CommonOptionBag.NewTypeInferenceDebug,
     Method.ReadsClausesOnMethods,
