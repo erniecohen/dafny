@@ -793,8 +793,8 @@ namespace Microsoft.Dafny {
         AddBitvectorShiftFunction(w, "LeftShift_bv", "bvshl");
         AddBitvectorShiftFunction(w, "RightShift_bv", "bvlshr");
         // rotates
-        AddBitvectorShiftFunction(w, "LeftRotate_bv", "ext_rotate_left");
-        AddBitvectorShiftFunction(w, "RightRotate_bv", "ext_rotate_right");
+        AddBitvectorRotateFunction(w, true);
+        AddBitvectorRotateFunction(w, false);
         // conversion functions
         AddBitvectorNatConversionFunction(w);
       }
@@ -1008,6 +1008,56 @@ namespace Microsoft.Dafny {
       if (w == 0) {
         func.Body = BplBvLiteralExpr(tok, BaseTypes.BigNum.ZERO, w);
       }
+      sink.AddTopLevelDeclaration(func);
+    }
+
+    /// <summary>
+    /// Declares LeftRotate_bvW (if "left") or RightRotate_bvW.
+    ///
+    /// For w == 0, and for every positive w that is a power of two, this is the declaration that
+    /// AddBitvectorShiftFunction gives: an inline zero for w == 0, and Z3's ext_rotate_left or
+    /// ext_rotate_right otherwise.
+    ///
+    /// For every other positive w, the function is an inline definition by shifts:
+    ///     LeftRotate_bvW(x, n)  == LeftShift_bvW(x, n)  | RightShift_bvW(x, W - n)
+    ///     RightRotate_bvW(x, n) == RightShift_bvW(x, n) | LeftShift_bvW(x, W - n)
+    /// Z3 5.1.0 (src/ast/rewriter/bv_rewriter.cpp) rewrites nested extended rotations by adding or subtracting their counts as
+    /// bitvectors of width W, that is, modulo 2^W, before rotating, which reduces modulo W.  That is
+    /// right only when (z mod 2^W) mod W == z mod W for every z, that is, when W divides 2^W, that is,
+    /// when W is a power of two.  At other widths it proves false facts
+    /// (https://github.com/erniecohen/dafny/issues/147).  So the native operators are kept only where
+    /// that composition is sound.
+    ///
+    /// The definition by shifts relies on the well-formedness check of RotateLeft and RotateRight,
+    /// 0 <= n <= W.  Since W < 2^W, the count n and W - n are then exact as bitvectors of width W, and
+    /// no "% W" is needed: for 0 < n < W the two shifts fill disjoint bits, and their OR is the
+    /// rotation; at n == 0 and n == W one shift is by 0 and the other by W, which gives 0, so the
+    /// result is x.  Outside that range the definition is still a total function, and no check of a
+    /// well-formed program uses it there.  docs/dev/bitvector-rotation-soundness.md gives the argument
+    /// in full.
+    /// </summary>
+    private void AddBitvectorRotateFunction(int w, bool left) {
+      Contract.Requires(0 <= w);
+      var namePrefix = left ? "LeftRotate_bv" : "RightRotate_bv";
+      var smtFunctionName = left ? "ext_rotate_left" : "ext_rotate_right";
+      var powerOfTwo = w > 0 && (w & (w - 1)) == 0;
+      if (w == 0 || powerOfTwo) {
+        AddBitvectorShiftFunction(w, namePrefix, smtFunctionName);
+        return;
+      }
+
+      var tok = Token.NoToken;
+      var t = BplBvType(w);
+      var xVar = BplFormalVar("x", t, true, out var x);
+      var nVar = BplFormalVar("n", t, true, out var n);
+      var width = BplBvLiteralExpr(tok, BaseTypes.BigNum.FromInt(w), w);
+      var rest = FunctionCall(tok, "sub_bv" + w, t, width, n);
+      var first = FunctionCall(tok, (left ? "LeftShift_bv" : "RightShift_bv") + w, t, x, n);
+      var second = FunctionCall(tok, (left ? "RightShift_bv" : "LeftShift_bv") + w, t, x, rest);
+      var func = new Bpl.Function(tok, namePrefix + w, [], [xVar, nVar], BplFormalVar(null, t, false), null,
+        InlineAttribute(tok)) {
+        Body = FunctionCall(tok, "or_bv" + w, t, first, second)
+      };
       sink.AddTopLevelDeclaration(func);
     }
 
