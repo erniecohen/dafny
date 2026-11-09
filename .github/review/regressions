@@ -278,3 +278,6 @@ git-issues/github-issue-179.dfy
 
 # An explicit trigger term that Boogie rejects is reported, not passed to Boogie (#191).
 git-issues/github-issue-191.dfy
+
+# The C# backend escapes every C# reserved and contextual keyword (#187).
+git-issues/github-issue-187.dfy
