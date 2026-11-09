@@ -1,0 +1,233 @@
+# Maintenance that used to be done by hand (issue #207).
+#
+#   release-tag      (on demand) tags a green commit of review/4.11.0 with its version,
+#                    v<version.sh's version>, and starts the release build on that tag.
+#   scratch-cleanup  (daily, and on demand) deletes stale scratch/** branches.
+#
+# A tag pushed with GITHUB_TOKEN starts no `push: tags` run, but a workflow_dispatch
+# made with it does start one, and review.yml dispatched on a tag runs the same jobs as
+# a push of the tag (its conditions test github.ref_type): build, checks, binaries and
+# `gh release create --verify-tag` with the two zips and SHA256SUMS.
+#
+# release-tag only creates a tag when the workflow runs from review/4.11.0 and dry_run
+# is off.  Anywhere else, or with dry_run on, it makes every check and writes its
+# verdict to the job summary, and a refusal does not fail the run (continue-on-error),
+# as AGENTS.md asks of probes that expect refusals.  A real refusal fails the run.
+name: maintenance
+
+on:
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+    inputs:
+      task:
+        description: What to run
+        type: choice
+        options: ['scratch-cleanup', 'release-tag']
+        default: scratch-cleanup
+      dry_run:
+        description: Only report what would be done (release-tag is always a dry run off review/4.11.0)
+        type: boolean
+        default: true
+      commit:
+        description: 'release-tag: the commit to tag (empty: the head of review/4.11.0)'
+        type: string
+        default: ''
+      message:
+        description: 'release-tag: the tag message; multi-line through the API or `gh workflow run -f`, or write \n in the form'
+        type: string
+        default: ''
+      days:
+        description: 'scratch-cleanup: delete scratch/** branches whose head commit is older than this many days'
+        type: string
+        default: '7'
+
+permissions: {}
+
+jobs:
+  release-tag:
+    name: Release tag
+    if: github.event_name == 'workflow_dispatch' && inputs.task == 'release-tag'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    concurrency:
+      group: maintenance-release-tag
+      cancel-in-progress: false
+    permissions:
+      contents: write   # push the tag
+      actions: write    # read review.yml's runs, and dispatch it on the tag
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      LINE: review/4.11.0
+      INPUT_COMMIT: ${{ inputs.commit }}
+      INPUT_MESSAGE: ${{ inputs.message }}
+      DRY_RUN: ${{ inputs.dry_run || github.ref != 'refs/heads/review/4.11.0' }}
+    steps:
+      - name: Resolve the commit
+        id: commit
+        continue-on-error: ${{ env.DRY_RUN == 'true' }}
+        run: |
+          refuse() { echo "verdict=refused: $1" >> "$GITHUB_OUTPUT"; echo "::error::$1"; exit 1; }
+          if [ -z "$INPUT_COMMIT" ]; then
+            sha=$(gh api "repos/$REPO/branches/$LINE" --jq .commit.sha)
+          else
+            printf '%s' "$INPUT_COMMIT" | grep -Eqx '[0-9a-f]{7,40}' || refuse "commit '$INPUT_COMMIT' is not a hex commit id"
+            sha=$(gh api "repos/$REPO/commits/$INPUT_COMMIT" --jq .sha) || refuse "no commit $INPUT_COMMIT here"
+          fi
+          echo "sha=$sha" | tee -a "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        if: steps.commit.outcome == 'success'
+        with:
+          ref: ${{ steps.commit.outputs.sha }}
+      - name: Check, and tag
+        id: tag
+        continue-on-error: ${{ env.DRY_RUN == 'true' }}
+        if: steps.commit.outcome == 'success'
+        env:
+          SHA: ${{ steps.commit.outputs.sha }}
+        run: |
+          refuse() { echo "verdict=refused: $1" >> "$GITHUB_OUTPUT"; echo "::error::$1"; exit 1; }
+          version=$(sh .github/review/version.sh | sed -n 's/^version=//p') || refuse "version.sh failed at $SHA"
+          tag="v$version"
+          echo "tag=$tag" | tee -a "$GITHUB_OUTPUT"
+
+          # The tag must be new: a v* tag is never moved (AGENTS.md).
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
+            refuse "tag $tag already exists"
+          fi
+
+          # The commit must be on the shipped line: the line is identical to it or ahead of it.
+          status=$(gh api "repos/$REPO/compare/$SHA...$LINE" --jq .status)
+          case "$status" in
+            identical|ahead) ;;
+            *) refuse "commit $SHA is not on $LINE (compare: $status)" ;;
+          esac
+
+          # Its latest review.yml push run must be green.
+          run=$(gh api "repos/$REPO/actions/workflows/review.yml/runs?head_sha=$SHA&event=push&per_page=1" \
+            --jq '.workflow_runs[0] // empty | "\(.status) \(.conclusion) \(.html_url)"')
+          [ -n "$run" ] || refuse "no review.yml push run for $SHA"
+          set -- $run
+          [ "$1 $2" = "completed success" ] || refuse "the latest review.yml push run for $SHA is $1/$2: $3"
+          echo "green run: $3"
+
+          # The message: verbatim, except that a one-line message from the form may write \n.
+          msg=$INPUT_MESSAGE
+          [ -n "$msg" ] || refuse "the tag message is empty"
+          if [ "$(printf '%s' "$msg" | wc -l)" -eq 0 ]; then
+            msg=$(printf '%s' "$msg" | sed 's/\\n/\n/g')
+          fi
+          printf '%s\n' "$msg" > "$RUNNER_TEMP/message"
+
+          if [ "$DRY_RUN" = true ]; then
+            echo "verdict=dry run: would tag $SHA as $tag" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -a "$tag" -F "$RUNNER_TEMP/message" "$SHA"
+          git push origin "refs/tags/$tag"
+          echo "verdict=tagged $SHA as $tag" >> "$GITHUB_OUTPUT"
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+      - name: Start the release build
+        id: release
+        if: steps.tag.outputs.pushed == 'true'
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          gh workflow run review.yml --repo "$REPO" --ref "$TAG"
+          for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            sleep 5
+            url=$(gh api "repos/$REPO/actions/workflows/review.yml/runs?event=workflow_dispatch&branch=$TAG&per_page=1" \
+              --jq '.workflow_runs[0].html_url // empty')
+            [ -n "$url" ] && break
+          done
+          echo "url=${url:-not found yet; see the review workflow's runs}" | tee -a "$GITHUB_OUTPUT"
+      - name: Summary
+        if: always()
+        env:
+          SHA: ${{ steps.commit.outputs.sha }}
+          TAG: ${{ steps.tag.outputs.tag }}
+          VERDICT: ${{ steps.tag.outputs.verdict || steps.commit.outputs.verdict }}
+          RELEASE: ${{ steps.release.outputs.url }}
+        run: |
+          {
+            echo "## Release tag"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| workflow ref | \`$GITHUB_REF_NAME\` |"
+            echo "| dry run | $DRY_RUN |"
+            echo "| commit | \`${SHA:-?}\` |"
+            echo "| tag | \`${TAG:-?}\` |"
+            echo "| verdict | ${VERDICT:-failed before a verdict; see the log} |"
+            [ -z "$RELEASE" ] || echo "| release build | $RELEASE |"
+            if [ -f "$RUNNER_TEMP/message" ]; then
+              echo; echo "Message:"; echo; echo '```'; cat "$RUNNER_TEMP/message"; echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  scratch-cleanup:
+    name: Scratch cleanup
+    if: github.event_name == 'schedule' || inputs.task == 'scratch-cleanup'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    concurrency:
+      group: maintenance-scratch-cleanup
+      cancel-in-progress: false
+    permissions:
+      contents: write        # delete branches
+      pull-requests: read    # open pull requests' heads
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      DAYS: ${{ inputs.days || '7' }}
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+    steps:
+      - name: Delete stale scratch branches
+        run: |
+          printf '%s' "$DAYS" | grep -Eqx '[0-9]+' || { echo "::error::days '$DAYS' is not a whole number"; exit 1; }
+          cutoff=$(( $(date -u +%s) - DAYS * 86400 ))
+          # Heads of open pull requests from this repository.
+          gh api --paginate "repos/$REPO/pulls?state=open&per_page=100" \
+            --jq ".[] | select(.head.repo.full_name == \"$REPO\") | .head.ref" | sort -u > open-heads
+          # Only refs under refs/heads/scratch/: no other pattern is ever touched.
+          gh api --paginate "repos/$REPO/git/matching-refs/heads/scratch/" \
+            --jq '.[] | "\(.ref) \(.object.sha)"' > scratch
+          : > table
+          while read -r ref sha; do
+            case "$ref" in refs/heads/scratch/?*) ;; *) continue ;; esac
+            branch=${ref#refs/heads/}
+            date=$(gh api "repos/$REPO/commits/$sha" --jq .commit.committer.date)
+            age=$(( ( $(date -u +%s) - $(date -u -d "$date" +%s) ) / 86400 ))
+            if grep -Fqx -- "$branch" open-heads; then
+              action="kept: head of an open pull request"
+            elif [ "$(date -u -d "$date" +%s)" -ge "$cutoff" ]; then
+              action="kept: newer than $DAYS days"
+            elif [ "$DRY_RUN" = true ]; then
+              action="would delete"
+            else
+              # Delete only if the branch has not moved since it was listed.
+              now=$(gh api "repos/$REPO/git/ref/heads/$branch" --jq .object.sha 2>/dev/null || true)
+              if [ "$now" != "$sha" ]; then
+                action="kept: moved while running"
+              elif gh api -X DELETE "repos/$REPO/git/refs/heads/$branch" > /dev/null; then
+                action="**deleted**"
+              else
+                action="delete failed"
+              fi
+            fi
+            printf '| `%s` | `%.8s` | %s | %s | %s |\n' "$branch" "$sha" "$date" "$age" "$action" | tee -a table
+          done < scratch
+          {
+            echo "## Scratch cleanup"
+            echo
+            echo "Older than $DAYS days and not the head of an open pull request; dry run: $DRY_RUN."
+            echo "$(grep -c 'deleted\*\*' table || true) deleted, $(grep -c 'would delete' table || true) would be deleted, of $(wc -l < table) scratch branches."
+            echo
+            echo "| branch | head | committed | days | action |"
+            echo "|---|---|---|---|---|"
+            sort -t'|' -k6 table
+          } >> "$GITHUB_STEP_SUMMARY"
+          if grep -q 'delete failed' table; then exit 1; fi
