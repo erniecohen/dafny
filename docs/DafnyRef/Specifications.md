@@ -441,18 +441,49 @@ With `--show-hints`, Dafny reports each call that needs this rule: each dispatch
 described above, and each call through a function value whose code is not known (an
 application `f(x)`, and the initializing function of `seq(n, f)` and `new T[n](f)`).
 
-This first version is incomplete, and does not yet make termination modular:
+**This first version does not establish termination.** It rejects only cycles whose
+dispatched calls are made directly by members with a global bound. A program that it
+accepts can still fail to terminate, and can prove `false`:
 
 * A call to a known method or function is not checked against the caller's global bound.
-  A dispatched call made through such a helper is checked against the helper's bound, so
-  a helper without a global bound, whose bound is therefore above every other, can hide a
-  cycle.
+  A dispatched call made through such a helper is checked against the helper's bound
+  instead. A helper without a bound is above every other bound, and a helper's own bound
+  is never compared with its caller's, so one forwarding helper hides a cycle. In this
+  program, which verifies under the option, `Y.F(n)` calls `L.H(this, n)`, which calls
+  `t.F(n)` on the same object, and `Bad` proves `false`:
+
+  <!-- %no-check -->
+  ```dafny
+  module Tr { trait {:termination false} T { function F(n: nat): nat decreases {:global} n } }
+  module L { import Tr  function H(t: Tr.T, n: nat): nat { t.F(n) } }
+  module Y {
+    import Tr
+    import L
+    class Y extends Tr.T { constructor() { }  function F(n: nat): nat { L.H(this, n) + 1 } }
+    method Bad() ensures false {
+      var y := new Y();
+      assert y.F(0) == L.H(y, 0) + 1;
+      var t: Tr.T := y;
+      assert L.H(y, 0) == t.F(0) == y.F(0);
+    }
+  }
+  ```
 * Calls through function values are reported but not checked.
-* A trait is open by the extensions in the program at hand, or by `{:termination false}`;
+* A trait is open because of `{:termination false}`, or because of the extensions in the
+  program being verified. A library verified on its own therefore does not see a type
+  that a later program declares with `@AssumeCrossModuleTermination` to extend one of its
+  traits. Calls through such a trait were verified without the rule.
   `{:termination false}` and `@AssumeCrossModuleTermination` keep their meaning, and only
   `dafny audit` reports them.
 * The comparison of bounds may use the definitions of functions whose termination is
   being established.
+* The C# parser is what turns `decreases {:global} E` into a global bound. A program that
+  reaches Dafny through another front end, serialized, keeps it as an ordinary decreases
+  clause with an argument-less `{:global}` attribute.
+
+Internally, the global clause is the attribute `{:global E}` on the decreases clause, and
+under the option that spelling is read the same way: `decreases {:global n} 7` declares
+the global bound `n` and the ordinary decreases clause `7`.
 
 Without the option, `decreases {:global} E` is an ordinary decreases clause with an
 unknown attribute, as before.

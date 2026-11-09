@@ -84,6 +84,13 @@ github-issue-211-hints.dfy(23,13): Info: modular termination: in 'Client.Collect
 github-issue-211-hints.dfy(25,10): Info: modular termination: in 'Client.Collections', an array allocation's calls of its initializing function needs the smaller-bound rule; not checked (calls through function values are not yet supported)
 
 Dafny program verifier did not attempt verification
+refinement, option on
+github-issue-211-refinement.dfy(16,42): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 3 verified, 1 error
+KNOWN GAP (M2 must reject): helper forwards the dispatched call, option on: verifies
+
+Dafny program verifier finished with 4 verified, 0 errors
 printed counter, option on: verifies
 
 Dafny program verifier finished with 12 verified, 0 errors

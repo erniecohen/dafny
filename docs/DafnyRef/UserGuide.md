@@ -2261,12 +2261,15 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   `ancestor-qualified-module-ids = true` in a project file's `[options]` section.
   See [module ordering](#sec-module-ordering).
 
-* `--modular-termination` - (experimental) check that a call dispatched to a bodyless
-  member of a trait whose implementations may lie in other modules goes to a smaller
-  `decreases {:global}` bound, accept `decreases {:global}` clauses, and report, as hints
-  (`--show-hints`), every call that needs this rule. Disabled by default. Use
-  `modular-termination = true` in a project file's `[options]` section. See
-  [global bounds](#sec-global-decreases) for the rule and its present limits.
+* `--modular-termination` - (experimental, a first step that does not yet establish
+  termination) accept `decreases {:global}` clauses, and reject a call dispatched to a
+  bodyless member of a trait whose implementations may lie in other modules unless it
+  goes to a smaller `decreases {:global}` bound. Only such calls made directly by a member
+  with a bound are compared with it. A cycle through a helper or a function value is not
+  detected, so a program can still prove `false`. With `--show-hints`, it reports every
+  call that needs the rule. Disabled by default. Use `modular-termination = true` in a
+  project file's `[options]` section. See [global bounds](#sec-global-decreases) for the
+  rule and its limits.
 
 Legacy options:
 

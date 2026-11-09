@@ -25,8 +25,9 @@ import subprocess
 import sys
 
 TIMEOUT = 300
-HINT = re.compile(r"^(?P<file>[^()\n]+)\((?P<line>\d+),(?P<col>\d+)\): Info: modular termination: in '(?P<caller>[^']*)', (?P<rest>.*)$")
-DISPATCH = re.compile(r"^dispatch of '(?P<callee>[^']*)' .*needs the smaller-bound rule; (?P<status>.*)$")
+# Dafny names may contain primes, so quoted names end at the text that follows them.
+HINT = re.compile(r"^(?P<file>[^()\n]+)\((?P<line>\d+),(?P<col>\d+)\): Info: modular termination: in '(?P<caller>.*?)', (?P<rest>.*)$")
+DISPATCH = re.compile(r"^dispatch of '(?P<callee>.*?)' to implementations .*needs the smaller-bound rule; (?P<status>.*)$")
 CALLBACK_KINDS = {
     "a call through a function value": "function value",
     "a sequence constructor's calls of its initializing function": "seq constructor",

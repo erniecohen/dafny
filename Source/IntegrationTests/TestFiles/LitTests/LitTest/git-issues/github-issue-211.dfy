@@ -36,6 +36,13 @@
 // RUN: %exits-with 2 %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%S/Inputs/github-issue-211-clauses.dfy" >> "%t"
 // RUN: echo "hints, option on" >> "%t"
 // RUN: %exits-with 0 %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --show-hints "%S/Inputs/github-issue-211-hints.dfy" >> "%t"
+// A refining module keeps the global bound of an abstract trait member.
+// RUN: echo "refinement, option on" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%S/Inputs/github-issue-211-refinement.dfy" >> "%t"
+// KNOWN GAP of M1, expected to verify until the same-bound rule of M2 rejects it: one
+// forwarding helper without a bound hides the cycle, and the program proves false.
+// RUN: echo "KNOWN GAP (M2 must reject): helper forwards the dispatched call, option on: verifies" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%S/Inputs/github-issue-211-gap-helper.dfy" >> "%t"
 // The printed program keeps the global clauses.
 // RUN: %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --print "%t.counter.dfy" "%S/Inputs/github-issue-211-counter.dfy" > "%t.ignore"
 // RUN: echo "printed counter, option on: verifies" >> "%t"
