@@ -267,7 +267,7 @@ true - All class instances are raw pointers and need to be manually deallocated"
     "Let a refines clause or import whose qualified module name starts with modules that enclose it, as in 'module A.C refines A.B', depend on the module it names instead of on the enclosing module, which is otherwise reported as a cycle. Disabled by default.");
 
   public static readonly Option<bool> ModularTermination = new("--modular-termination", () => false,
-    "Check termination of calls that dispatch to bodyless members of traits whose implementations may lie in other modules (a trait with {:termination false}, or one extended from another module): the callee's 'decreases {:global}' bound must be below the caller's, captured on entry. Accept 'decreases {:global}' clauses, and report as hints (with --show-hints) every call that needs this rule. Experimental and incomplete: see the Reference Manual. Disabled by default.");
+    "Experimental, first step; it does not yet establish termination. Accept 'decreases {:global}' clauses, and reject a call dispatched to a bodyless member of a trait whose implementations may lie in other modules (a trait with {:termination false}, or one extended from another module) unless the callee's 'decreases {:global}' bound is below the caller's, captured on entry. Only such calls made directly by a member with a bound are compared with it: a cycle through a helper method or function, or through a function value, is not detected, and a program can still prove false. Report as hints (with --show-hints) every call that needs the rule. See the Reference Manual. Disabled by default.");
 
   public static readonly Option<bool> TypeSystemRefresh = new("--type-system-refresh", () => false,
     @"
