@@ -2236,6 +2236,19 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   The legacy option was `-unicodeChar:<n>` with values 0 and 1 for
   false and true above.
 
+* `--invariant-constructor-inference` - with the refreshed type system
+  (`--type-system-refresh`), let an argument of a datatype constructor whose
+  formal type uses a type parameter in a non-variant position fix that type
+  argument. For example, with `datatype List<T> = Nil | Cons(hd: T, tl: List<T>)`,
+  `h: int` and `ts: List<Pos>`, the constructor in `Cons(h, ts)` gets the type
+  argument `Pos` from `ts`, so `h` is checked to be a `Pos`. Without it the type
+  argument is widened to `int` from `h`, and `ts` must then be proved to be a
+  `List<int>`, which the verifier cannot prove without induction. Every argument
+  is still checked against the chosen type; a type parameter declared covariant
+  (`+T`) is not affected. Disabled by default, and it has no effect on the legacy
+  resolver. Use `invariant-constructor-inference = true` in a project file's
+  `[options]` section.
+
 * `--conservative-match-inference` - with the refreshed type system
   (`--type-system-refresh`), infer the type of the source of a `match` by
   propagating the constraints already known before making any default type
