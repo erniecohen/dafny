@@ -189,4 +189,35 @@ do not finish within 200,000,000 resource units, on the base and the candidate a
 With Z3 4.12.1 one of those proofs, `Bv64SameDirection`, still runs out of resources at
 2,000,000, on the base and the candidate alike; its `.expect` records it.
 
-SUITE_AND_LIBRARY
+### The suite and the standard library
+
+`review.yml` ran on the candidate (scratch branch `scratch/issue147/ci-2`), and a scratch
+comparison matched its artifacts, proof batch by proof batch, against those of the push run of
+`review/4.11.0` at `0a14436`, the base.
+
+**Suite** (1,161 programs, Z3 5.1.0, resource limit 16,000,000), with `--additional-axioms`
+off and on alike: one verdict moved, that of `dafny0/GeneralNewtypeVerify.dfy` (below).  Of
+7,605 proof batches, one changed outcome and four changed only their resource count, all in
+programs with rotations; no batch changed in the programs without rotations.  The four:
+`dafny0/Bitvectors.dfy` `Rotates` 18,746 to 22,395 (+3,649), and three of under +40
+(`GeneralNewtypeMemberCompile`, `BitvectorsMore`, `GeneralNewtypeMemberVerify`).  With the
+option on, the same batches moved by the same amounts, within 2 units.
+
+**Standard library** (2,190 declarations; Z3 5.1.0 and 4.12.1; option off and on): no
+outcome changed.  The library has no rotations; its total resource count moved by +0.0005%,
+-0.0002%, -0.0002% and -0.0034% in the four configurations, within the run-to-run variation
+that `.github/review/std-verdicts.py` documents for its declaration order.
+
+**`dafny0/GeneralNewtypeVerify.dfy`**: its method `Bitvectors.Rotate` rotates a `bv5`
+newtype, which the fix moves to the definition by shifts.  Its correctness proof has four
+failing checks (lines 361, 364, 367, 371) in one verification condition.  With the fix that
+condition ran out of resources: over 16,000,000 units under Z3 5.1.0, against 64,436 before,
+and past the harness's 300 s under Z3 4.12.1.  Investigated by isolating the checks: each
+alone fails as before, with the same message, and costs at most 51,099 units with the fix
+against 39,563 before (5.1.0), or 12,206 against 11,193 (4.12.1); split into separate methods,
+the outcomes and costs are those of the base (at most 11,048 against 11,235).  So no check
+became hard; the single condition, in which the verifier goes on after each counterexample,
+did.  No proof is gained or lost: the method failed before and fails after.  The test now puts
+`{:isolate_assertions}` on `Rotate`, which keeps its four errors and every line number; its
+summary counts the isolated batches.  The expected verdicts of the suite record the change,
+with this reason, in a commit of their own.
