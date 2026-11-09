@@ -211,7 +211,7 @@ Std Std.Arithmetic.DivMod.LemmaFundamentalDivMod (correctness)	Correct
 Std Std.Arithmetic.DivMod.LemmaFundamentalDivMod (well-formedness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaFundamentalDivModAuto (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaFundamentalDivModAuto (well-formedness)	Correct		
-Std Std.Arithmetic.DivMod.LemmaFundamentalDivModConverse (correctness)	OutOfResource		
+Std Std.Arithmetic.DivMod.LemmaFundamentalDivModConverse (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaFundamentalDivModConverse (well-formedness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaFundamentalDivModConverseAuto (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaFundamentalDivModConverseAuto (well-formedness)	Correct		
@@ -2188,7 +2188,7 @@ TargetSpecific-py Std.FileIO.WriteUTF8ToFile (correctness)	Correct
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (correctness)	Correct		
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (well-formedness)	Correct		
 TargetSpecific-py Std.PythonConcurrent.MutableMap.Get (well-formedness)	Correct		
-run Std	4	7611 verified, 0 errors, 1 out of resource	src/Std/Arithmetic/DivMod.dfy(1339,8)
+run Std	0	7612 verified, 0 errors	
 run TargetSpecific-cs	0	15 verified, 0 errors	
 run TargetSpecific-go	0	16 verified, 0 errors	
 run TargetSpecific-java	0	15 verified, 0 errors	
