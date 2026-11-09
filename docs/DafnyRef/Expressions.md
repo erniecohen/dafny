@@ -341,6 +341,9 @@ inductive datatypes. The source must be assignment-compatible with the
 destination's underlying datatype, including its type arguments, and the verifier
 checks the destination's membership and every subset constraint. This option is
 disabled by default. The refreshed type system already supports these conversions.
+The option does not cover a conversion whose destination is a datatype itself
+rather than a subset of one (`D(1) as D`), or a subset of a codatatype; the legacy
+type system still rejects those.
 
 The `as` operation is like a grammatical suffix or postfix operation.
 However, note that the unary operations bind more tightly than does `as`.
