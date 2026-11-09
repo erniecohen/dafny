@@ -39,9 +39,9 @@
 // A refining module keeps the global bound of an abstract trait member.
 // RUN: echo "refinement, option on" >> "%t"
 // RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%S/Inputs/github-issue-211-refinement.dfy" >> "%t"
-// KNOWN GAP of M1, expected to verify until the same-bound rule of M2 rejects it: one
-// forwarding helper without a bound hides the cycle, and the program proves false.
-// RUN: echo "KNOWN GAP (M2 must reject): helper forwards the dispatched call, option on: verifies" >> "%t"
+// KNOWN GAP of M1, expected to verify until the same-bound rule of M2 rejects it: a
+// forwarding helper (unbounded, larger-bounded, or in the same module) hides the cycle, and each program proves false.
+// RUN: echo "KNOWN GAP (M2 must reject): three helpers forward the dispatched call, option on: verify" >> "%t"
 // RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%S/Inputs/github-issue-211-gap-helper.dfy" >> "%t"
 // The printed program keeps the global clauses.
 // RUN: %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --print "%t.counter.dfy" "%S/Inputs/github-issue-211-counter.dfy" > "%t.ignore"

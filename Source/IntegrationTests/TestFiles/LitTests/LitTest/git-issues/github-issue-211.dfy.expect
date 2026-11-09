@@ -88,9 +88,9 @@ refinement, option on
 github-issue-211-refinement.dfy(16,42): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 3 verified, 1 error
-KNOWN GAP (M2 must reject): helper forwards the dispatched call, option on: verifies
+KNOWN GAP (M2 must reject): three helpers forward the dispatched call, option on: verify
 
-Dafny program verifier finished with 4 verified, 0 errors
+Dafny program verifier finished with 12 verified, 0 errors
 printed counter, option on: verifies
 
 Dafny program verifier finished with 12 verified, 0 errors
