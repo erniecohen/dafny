@@ -68,6 +68,15 @@ namespace Microsoft.Dafny {
       Contract.Requires(splits != null);
       Contract.Requires(etran != null);
 
+      // Under --statement-expression-conclusions, the conclusions of statement expressions below the
+      // top of the split are kept (see StatementConclusionSubstituter); the top one is the case below.
+      if (options.Get(CommonOptionBag.StatementExpressionConclusions) && expr is not StmtExpr &&
+          StatementConclusionSubstituter.Applies(expr)) {
+        // Report a split, so that callers use the rewritten pieces and not a translation of the original.
+        TrSplitExpr(context, StatementConclusionSubstituter.Rewrite(expr, position), splits, position, heightLimit, applyInduction, etran);
+        return true;
+      }
+
       switch (expr) {
         case BoxingCastExpr castExpr: {
             var bce = castExpr;

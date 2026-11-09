@@ -2452,6 +2452,20 @@ and what information it produces about the verification process.
   because it can change proof costs. See
   [the soundness note](../dev/additional-axioms.md).
 
+* `--statement-expression-conclusions` - use the conclusion of a statement
+  expression `S; E` (the condition of an `assert`, `assume` or `expect`
+  statement, the result of a `calc`, the conclusion of an `assert ... by`) as
+  a fact for `E` wherever it occurs in an assertion, postcondition, invariant
+  or precondition, also under quantifiers and logical connectives. Without
+  it, only a statement expression at the top of such a formula (or of one
+  of its conjuncts) gets the fact, so that, for example,
+  `assert forall n: nat :: assume false; false` fails. The statement is still
+  checked as before; the fact holds wherever `E` is evaluated because the
+  well-formedness check establishes it there. Lambda bodies and set and map
+  comprehensions are left as they are. Disabled by default;
+  `statement-expression-conclusions = true` in a project file's `[options]`
+  section. It can change proof costs.
+
 * `--manual-lemma-induction` - disables automatic inducntion for lemmas
 
 * `--isolate-assertions` - verify assertions individually
