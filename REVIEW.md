@@ -66,6 +66,27 @@ now has its receiver checked, which adds one proved assertion batch.  No other
 fix moves a verdict of the suite or of the standard library.  #63 moved a test
 input under `Inputs/` and changed no product file.
 
+## Self calls in a function's own postcondition ([#166](https://github.com/erniecohen/dafny/issues/166))
+
+A function's own postcondition is checked under a call-permission premise that keeps the
+self-call allowance: a self call `F(i)` contributes `i == i || F#canCall(i)`, so the check
+cannot assume F's own, unproved, contract.  Two call sites dropped the caller's options under
+default options and assumed an unconditional `F#canCall(i)` instead: the body of an exact let,
+and the application of a `seq(n, init)` initializer.  So
+`ghost function F(i: int): int ensures var unused := 1; F(i) == 0 { 1 }` verified, as did
+`ensures seq(1, j => F(i))[0] == 0`, and a lemma then proved `false`.  The fixes, in
+`Source/DafnyCore/Verifier/BoogieGenerator.LetExpr.cs` (`LetCanCallAssumption`) and
+`BoogieGenerator.ExpressionTranslator.cs` (`CanCallAssumption`, the `SeqConstructionExpr`
+case), pass the caller's options at both sites, without the arrow allocation facts that those
+sites omitted before.  Their kind is **weakens only**: the assumed premise becomes the existing
+allowance, and no fact or axiom is added; `--consistent-obligation-checks` is unchanged.  The
+third site of the same shape, a constant field's right-hand side, cannot carry such a self
+call: the resolver rejects the cycle it needs.  The regression is
+`git-issues/github-issue-166.dfy`, which runs the issue's program, nested, used and pattern
+exact lets, the `seq` initializer, valid contracts and a false control under all four
+combinations of `--type-system-refresh` and `--additional-axioms`; the release note is
+`docs/dev/news/166.fix`.  No verdict of the suite or of the standard library moves.
+
 ## Bitvector rotations ([#147](https://github.com/erniecohen/dafny/issues/147))
 
 Z3 5.1.0 composes the counts of nested `ext_rotate_left`/`ext_rotate_right` modulo `2^W`
