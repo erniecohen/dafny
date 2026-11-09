@@ -1,6 +1,6 @@
 nocast (off)
-git-issue-103-nocast.dfy(14,16): Error: assertion might not hold
-git-issue-103-nocast.dfy(5,31): Related location: this proposition could not be proved
+github-issue-103-nocast.dfy(14,16): Error: assertion might not hold
+github-issue-103-nocast.dfy(5,31): Related location: this proposition could not be proved
 
 Dafny program verifier finished with 3 verified, 1 error
 nocast (additional axioms, legacy)
@@ -10,6 +10,6 @@ nocast (additional axioms, refreshed)
 
 Dafny program verifier finished with 4 verified, 0 errors
 false (additional axioms)
-git-issue-103-false.dfy(18,8): Error: assertion might not hold
+github-issue-103-false.dfy(18,8): Error: assertion might not hold
 
 Dafny program verifier finished with 3 verified, 1 error

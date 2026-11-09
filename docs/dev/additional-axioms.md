@@ -618,7 +618,7 @@ axiom is a consequence of existing axioms, so it removes no model.
 resource units (3 verified, 1 error) without it, and 27,912 (4 verified) with it
 (Z3 5.1.0).
 
-**Controls.** `git-issues/git-issue-103.dfy` runs the issue's program without the
+**Controls.** `git-issues/github-issue-103.dfy` runs the issue's program without the
 cast with the option off (1 error) and on (verifies, in both resolvers), and the
 same program with `assert false` after the proof, which must still fail.
 

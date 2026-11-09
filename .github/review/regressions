@@ -292,4 +292,4 @@ git-issues/github-issue-192.dfy
 git-issues/github-issue-190.dfy
 
 # Override axioms at the call layer under --additional-axioms (https://github.com/erniecohen/dafny/issues/103).
-git-issues/git-issue-103.dfy
+git-issues/github-issue-103.dfy
