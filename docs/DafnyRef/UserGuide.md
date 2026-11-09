@@ -315,6 +315,34 @@ Various options control the verification process, in addition to all those descr
    - `--track-print-effects`
    - `--disable-nonlinear-arithmetic`
    - `--filter-symbol`
+   - `--filter-position`
+   - `--filter-position-batch`
+
+The opt-in `--filter-position-batch` option accepts one position filter per occurrence:
+
+```sh
+dafny verify dfyconfig.toml --filter-position-batch first.dfy --filter-position-batch second.dfy:5-7
+```
+
+Dafny parses and resolves the whole program once, then verifies these requests in
+order. Each filter uses the syntax of `--filter-position` and is also restricted
+by `--filter-symbol`, if supplied. `--filter-position-batch` cannot be combined
+with `--filter-position`. Duplicate or overlapping filters run their selected
+proofs again; they do not reuse a previous verification result. Each request has
+a separate summary, and `--log-format` collects all requests into one log, including repeated rows for repeated proofs. The exit code is
+unsuccessful if any request fails, even if later requests succeed. Parsing or
+resolution errors prevent every request from running.
+
+All requests use the sources, project configuration, libraries, plugins and
+proof options loaded for this invocation. The prelude is captured before the first
+request; later edits or deletion do not change the batch. Proof dependencies and
+warnings are isolated per request, and combined coverage includes every request.
+Cancellation or a solver exception aborts the batch before a later request starts.
+Files edited after they have been read
+are not reloaded between requests. To use changed inputs or options, start a new
+invocation; every invocation parses and resolves again. No cache is persisted.
+As with a single position filter, a successful batch verifies only its selected
+proofs and does not establish that the whole project is verified.
 
 - Control of the proof engine
    - `--verification-time-limit`
@@ -2406,6 +2434,16 @@ and what information it produces about the verification process.
   available for the selected values, so predicates in the constraint can unfold.
   Existing well-formedness, precondition and existence checks are preserved.
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
+
+* `--heap-free-lambda-facts` - check a lambda without a reads clause, whose
+  body observes neither the heap nor allocation, in every heap and without
+  assuming its parameters allocated, and let the calls in its body unfold
+  wherever it is applied: for example when the lambda is checked against an
+  arrow type whose result is a subset type, or applied to a parameter that is a
+  function. Disabled by default; `heap-free-lambda-facts = true` in a project
+  file's `[options]` section. It has its own option, not `--additional-axioms`,
+  because it can change proof costs. See
+  [the soundness note](../dev/additional-axioms.md).
 
 * `--manual-lemma-induction` - disables automatic induction for lemmas
 
