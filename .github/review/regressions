@@ -291,5 +291,8 @@ git-issues/github-issue-192.dfy
 # Z3 smt.refine_inj_axioms=false by default, globally and per implementation (#190).
 git-issues/github-issue-190.dfy
 
+# Exact let in a self postcondition keeps the self-call allowance (#166).
+git-issues/github-issue-166.dfy
+
 # Statement-expression conclusions under quantifiers, opt-in (https://github.com/erniecohen/dafny/issues/96).
 git-issues/github-issue-96.dfy
