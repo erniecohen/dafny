@@ -1227,9 +1227,10 @@ namespace Microsoft.Dafny {
         Boogie.Type elType = BoogieGenerator.TrType(elmtType);
         Boogie.Type dType = BoogieGenerator.TrType(domainType);
         Boogie.Expr e0 = e.E0 == null ? null : TrExpr(e.E0);
-        // Sequence and array positions are integers; map keys retain their declared type.
+        // Sequence and array positions are integers; map keys and multiset elements retain
+        // their declared type, as in updates, displays and membership.
         if (e0 != null && e.E0.Type.IsBitVectorType &&
-            (!options.Get(CommonOptionBag.BitvectorMapKeys) || seqType is not MapType)) {
+            (!options.Get(CommonOptionBag.BitvectorMapKeys) || seqType is not (MapType or MultiSetType))) {
           e0 = BoogieGenerator.ConvertExpression(GetToken(e.E0), e0, e.E0.Type, Type.Int);
         }
         Boogie.Expr e1 = e.E1 == null ? null : TrExpr(e.E1);
@@ -2430,8 +2431,10 @@ namespace Microsoft.Dafny {
             Token.NoToken) {
             Type = e.Initializer.Type.AsArrowType.Result
           };
+          // Keep the self-call allowance (#166), without the arrow allocation facts that
+          // this site omitted before, as for the body of an exact let.
           var canCall = CanCallAssumption(dafnyInitApplication,
-            options.Get(CommonOptionBag.ConsistentObligationChecks) ? cco : null);
+            options.Get(CommonOptionBag.ConsistentObligationChecks) ? cco : cco?.WithoutArrowAllocationFacts());
 
           dafnyInitApplication = new ApplyExpr(e.Origin, new BoogieWrapper(initF, e.Initializer.Type),
             [new BoogieWrapper(index, Type.Int)],
@@ -2573,6 +2576,11 @@ namespace Microsoft.Dafny {
       public CanCallOptions WithArrowAllocationFacts() {
         return ArrowAllocationFacts ? this :
           new CanCallOptions(SkipIsA, EnclosingFunction, SelfCallAllowanceAlsoForOverride, true);
+      }
+
+      public CanCallOptions WithoutArrowAllocationFacts() {
+        return ArrowAllocationFacts ?
+          new CanCallOptions(SkipIsA, EnclosingFunction, SelfCallAllowanceAlsoForOverride) : this;
       }
 
       public CanCallOptions(bool skipIsA, Function enclosingFunction, bool selfCallAllowanceAlsoForOverride = false,
