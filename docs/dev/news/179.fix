@@ -1,0 +1,1 @@
+Refining a module no longer crashes with a `NullReferenceException` in `DetectUnderspecificationVisitor` under `--type-system-refresh` when an inherited method has a `:|` statement whose automatically chosen trigger selects a member of a receiver, such as `s.tail` or `m.Keys`.
