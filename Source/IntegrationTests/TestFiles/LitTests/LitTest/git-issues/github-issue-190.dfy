@@ -18,11 +18,11 @@
 // RUN: %OutputCheck --file-to-check "%t.bpl" "%S/Inputs/github-issue-190-bpl.check"
 // RUN: %sed 's#\{:smt_option .smt\.refine_inj_axioms., .false.\} ?##g' "%t.bpl" > "%t.global.bpl"
 // The per-implementation option alone, against a global true: rejected.
-// RUN: dotnet tool run boogie -typeEncoding:a -useBaseNameForFileName '-proc:*MustFail' -timeLimit:60 -proverOpt:PROVER_PATH=%review-z3 -proverOpt:O:auto_config=false -proverOpt:O:smt.refine_inj_axioms=true "%t.bpl" > "%t.boogie"
+// RUN: dotnet tool run boogie -typeEncoding:a -useBaseNameForFileName '-proc:*(correctness)' -timeLimit:60 -proverOpt:PROVER_PATH=%review-z3 -proverOpt:O:auto_config=false -proverOpt:O:smt.refine_inj_axioms=true "%t.bpl" > "%t.boogie"
 // The global option alone (the per-implementation one deleted): rejected when false ...
-// RUN: dotnet tool run boogie -typeEncoding:a -useBaseNameForFileName '-proc:*MustFail' -timeLimit:60 -proverOpt:PROVER_PATH=%review-z3 -proverOpt:O:auto_config=false -proverOpt:O:smt.refine_inj_axioms=false "%t.global.bpl" >> "%t.boogie"
+// RUN: dotnet tool run boogie -typeEncoding:a -useBaseNameForFileName '-proc:*(correctness)' -timeLimit:60 -proverOpt:PROVER_PATH=%review-z3 -proverOpt:O:auto_config=false -proverOpt:O:smt.refine_inj_axioms=false "%t.global.bpl" >> "%t.boogie"
 // ... and `ensures false` proved when true.
-// RUN: dotnet tool run boogie -typeEncoding:a -useBaseNameForFileName '-proc:*MustFail' -timeLimit:60 -proverOpt:PROVER_PATH=%review-z3 -proverOpt:O:auto_config=false -proverOpt:O:smt.refine_inj_axioms=true "%t.global.bpl" >> "%t.boogie"
+// RUN: dotnet tool run boogie -typeEncoding:a -useBaseNameForFileName '-proc:*(correctness)' -timeLimit:60 -proverOpt:PROVER_PATH=%review-z3 -proverOpt:O:auto_config=false -proverOpt:O:smt.refine_inj_axioms=true "%t.global.bpl" >> "%t.boogie"
 // RUN: %OutputCheck --file-to-check "%t.boogie" "%S/Inputs/github-issue-190-boogie.check"
 //
 // CHECK: github-issue-190\.dfy\(\d+,\d+\): Error: a postcondition could not be proved on this return path
