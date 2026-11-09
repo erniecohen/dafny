@@ -2,17 +2,21 @@
 // RUN: %baredafny verify --solver-path "%z3" --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true "%s" >> "%t"
 // RUN: %baredafny verify --solver-path "%review-z3" --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false "%s" >> "%t"
 // RUN: %baredafny verify --solver-path "%review-z3" --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true "%s" >> "%t"
-// Vacuity control: the same program with `assert false` after the assertion fails there, and only there.
-// RUN: %exits-with 4 %baredafny verify --solver-path "%review-z3" --use-basename-for-filename --show-snippets:false --standard-libraries:false "%S/Inputs/github-issue-98-control.dfy" >> "%t"
+// Vacuity control, with both resolvers: the same program with `assert false` after the assertion fails there, and only there.
+// RUN: %exits-with 4 %baredafny verify --solver-path "%review-z3" --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false "%S/Inputs/github-issue-98-control.dfy" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --solver-path "%review-z3" --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true "%S/Inputs/github-issue-98-control.dfy" >> "%t"
 // RUN: %OutputCheck --file-to-check "%t" "%s"
 //
 // An explicit trigger on a forall statement instantiated for a closure-valued local (#98,
 // upstream dafny-lang/dafny#6036).  The trigger term and the asserted term were the same,
 // `iChain(T, ot, c1)`, but the instantiation needs the closure's type membership,
-// `$Is(c1, TotalFunc1(nat, T))`, which 4.11.0 could not derive: its fact about the captured
-// `c` bound an int, `Requires1(.., c, $Box(i + j))`, while the closure's body applies `c` to
-// `$Box($Unbox(bx) + j)`.  The lambda source facts of #160 state it at the boxed argument,
+// `$Is(c1, TotalFunc1(nat, T))`, which this line before #160 could not derive: its fact about the
+// captured `c` bound an int, `Requires1(.., c, $Box(i + j))`, while the closure's body applies `c`
+// to `$Box($Unbox(bx) + j)`.  The lambda source facts of #160 state it at the boxed argument,
 // with triggers on the closure's Apply1 and Requires1, and the assertion verifies.
+// Every positive RUN line discriminates: at 854f5a6~1 (just before #160) each of the four
+// combinations (the harness Z3 4.12.1 and Z3 5.1.0, each with both resolvers) reports
+// `(8,4): Error: assertion might not hold` and `1 verified, 1 error`.
 //
 // CHECK-NOT: Error
 // CHECK: Dafny program verifier finished with 2 verified, 0 errors
@@ -22,6 +26,8 @@
 // CHECK: Dafny program verifier finished with 2 verified, 0 errors
 // CHECK-NOT: Error
 // CHECK: Dafny program verifier finished with 2 verified, 0 errors
+// CHECK: github-issue-98-control\.dfy\(10,4\): Error: assertion might not hold
+// CHECK: Dafny program verifier finished with 1 verified, 1 error
 // CHECK: github-issue-98-control\.dfy\(10,4\): Error: assertion might not hold
 // CHECK: Dafny program verifier finished with 1 verified, 1 error
 
