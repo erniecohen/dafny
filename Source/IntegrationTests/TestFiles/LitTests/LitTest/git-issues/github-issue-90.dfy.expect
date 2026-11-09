@@ -1,4 +1,14 @@
-github-issue-90.dfy(20,37): Error: a postcondition could not be proved on this return path
-github-issue-90.dfy(20,32): Related location: this is the postcondition that could not be proved
+github-issue-90.dfy(23,37): Error: a postcondition could not be proved on this return path
+github-issue-90.dfy(23,32): Related location: this is the postcondition that could not be proved
 
-Dafny program verifier finished with 8 verified, 1 error
+Dafny program verifier finished with 9 verified, 1 error
+without --ancestor-qualified-module-ids (the default), every case is a cycle, as before:
+github-issue-90.dfy(16,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module P -> module C -> module P
+github-issue-90.dfy(34,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module E -> module C -> import DD -> module E
+github-issue-90.dfy(43,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module R -> module U -> import T -> module R
+github-issue-90.dfy(49,16): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module Ab -> module C -> module X -> module Ab
+github-issue-90.dfy(56,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module V -> module C -> import B -> module V
+github-issue-90.dfy(65,7): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module Q -> module Base -> module N -> import B -> module Q
+(0,-1): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module A -> module C -> module A
+(0,-1): Error: module definition contains a cycle (note: parent modules implicitly depend on submodules): module X -> module Y -> module W -> import Z -> module X
+8 resolution/type errors detected in github-issue-90.dfy
