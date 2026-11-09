@@ -335,6 +335,10 @@ public partial class BoogieGenerator {
           calleeEtran ?? etran);
       }
     }
+    if (codeContext != null && !isCoCall) {
+      CheckModularTermination(tok, codeContext, callee, receiver, substMap, directSubstMap, tySubst,
+        builder.Context.CallerTerminationTranslator ?? etran, builder, etran);
+    }
 
     // Create variables to hold the output parameters of the call, so that appropriate unboxes can be introduced.
     var outs = new List<Bpl.IdentifierExpr>();

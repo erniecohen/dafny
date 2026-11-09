@@ -51,6 +51,10 @@ public static class RewriterCollection {
       result.Add(new AutoRevealFunctionDependencies(reporter));
     }
 
+    if (reporter.Options.Get(CommonOptionBag.ModularTermination)) {
+      result.Add(new ModularTerminationRewriter(reporter));
+    }
+
     foreach (var plugin in reporter.Options.Plugins) {
       result.AddRange(plugin.GetRewriters(reporter));
     }

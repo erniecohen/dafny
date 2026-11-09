@@ -370,6 +370,124 @@ termination, Dafny does not normally surface this ordering directly in
 expressions. However, it is possible to write such ordering constraints
 using [`decreases to` expressions](#sec-termination-ordering-expressions).
 
+#### 7.1.3.1. Global bounds: `decreases {:global}` (experimental) {#sec-global-decreases}
+
+The module and call-graph components that Dafny prepends to a decreases tuple order only
+the calls that some module can see.  A call to a bodyless member of a trait is dispatched
+to whichever implementation the receiver has, and an implementation may live in a module
+that the trait's module does not import.  Dafny therefore lets a type extend a trait of
+another module only if the trait is marked `{:termination false}` or the type
+`@AssumeCrossModuleTermination`; calls through such a trait are not checked for
+termination, and a program can recurse through them forever and still verify.
+
+The option `--modular-termination` (off by default) checks these calls.  A method or
+function may declare a _global bound_:
+
+<!-- %no-check -->
+```dafny
+trait {:termination false} T {
+  function F(other: T, n: nat): int
+    decreases {:global} n
+}
+```
+
+A global bound is a list of expressions, compared as a decreases tuple is, but it is kept
+apart from the ordinary decreases clause: Dafny prepends nothing to it, and the two are
+not concatenated.  A member has at most one `decreases {:global}` clause.  An override
+that declares none inherits its parent's; one that declares its own must give a bound no
+greater than its parent's, as an override's ordinary decreases clause must.
+
+Under the option, a call to a bodyless instance member of an _open_ trait (a trait marked
+`{:termination false}`, a trait that a type in another module extends, or an ancestor of
+either) must go to a smaller global bound: the callee's global bound, at the call's
+arguments, must be below the caller's, evaluated on entry to the caller.  A missing bound
+is above every other.  So a call from a member without a global bound to one with a
+global bound always passes, and a call to a member without one always fails.  This rejects
+the program below, in which no module's call graph has a cycle, but `Tie(x, y)` never
+terminates: whatever bounds `A` and `B` declare, one of the two dispatched calls goes up.
+
+<!-- %no-check -->
+```dafny
+module Tr {
+  trait {:termination false} T {
+    function A(other: T): int
+    function B(other: T): int
+  }
+}
+module X {
+  import Tr
+  class X extends Tr.T {
+    function A(other: Tr.T): int { 0 }
+    function B(other: Tr.T): int { other.A(this) }
+  }
+}
+module Y {
+  import Tr
+  class Y extends Tr.T {
+    function A(other: Tr.T): int { other.B(this) }
+    function B(other: Tr.T): int { 1 }
+  }
+}
+module L {
+  import Tr
+  function Tie(t1: Tr.T, t2: Tr.T): int { t1.B(t2) }
+}
+```
+
+With a parameter `n: nat` and `decreases {:global} n` on both members, and
+`other.A(this, n - 1)` and `other.B(this, n - 1)` under `n != 0`, the program verifies.
+
+With `--show-hints`, Dafny reports each call that needs this rule: each dispatched call
+described above, and each call through a function value whose code is not known (an
+application `f(x)`, and the initializing function of `seq(n, f)` and `new T[n](f)`).
+
+**This first version does not establish termination.** It rejects only cycles whose
+dispatched calls are made directly by members with a global bound. A program that it
+accepts can still fail to terminate, and can prove `false`:
+
+* A call to a known method or function is not checked against the caller's global bound.
+  A dispatched call made through such a helper is checked against the helper's bound
+  instead. A helper without a bound is above every other bound, and a helper's own bound
+  is never compared with its caller's, so one forwarding helper hides a cycle. In this
+  program, which verifies under the option, `Y.F(n)` calls `L.H(this, n)`, which calls
+  `t.F(n)` on the same object, and `Bad` proves `false`:
+
+  <!-- %no-check -->
+  ```dafny
+  module Tr { trait {:termination false} T { function F(n: nat): nat decreases {:global} n } }
+  module L { import Tr  function H(t: Tr.T, n: nat): nat { t.F(n) } }
+  module Y {
+    import Tr
+    import L
+    class Y extends Tr.T { constructor() { }  function F(n: nat): nat { L.H(this, n) + 1 } }
+    method Bad() ensures false {
+      var y := new Y();
+      assert y.F(0) == L.H(y, 0) + 1;
+      var t: Tr.T := y;
+      assert L.H(y, 0) == t.F(0) == y.F(0);
+    }
+  }
+  ```
+* Calls through function values are reported but not checked.
+* A trait is open because of `{:termination false}`, or because of the extensions in the
+  program being verified. A library verified on its own therefore does not see a type
+  that a later program declares with `@AssumeCrossModuleTermination` to extend one of its
+  traits. Calls through such a trait were verified without the rule.
+  `{:termination false}` and `@AssumeCrossModuleTermination` keep their meaning, and only
+  `dafny audit` reports them.
+* The comparison of bounds may use the definitions of functions whose termination is
+  being established.
+* The C# parser is what turns `decreases {:global} E` into a global bound. A program that
+  reaches Dafny through another front end, serialized, keeps it as an ordinary decreases
+  clause with an argument-less `{:global}` attribute.
+
+Internally, the global clause is the attribute `{:global E}` on the decreases clause, and
+under the option that spelling is read the same way: `decreases {:global n} 7` declares
+the global bound `n` and the ordinary decreases clause `7`.
+
+Without the option, `decreases {:global} E` is an ordinary decreases clause with an
+unknown attribute, as before.
+
 ### 7.1.4. Framing ([grammar](#g-frame-expression)) {#sec-frame-expression}
 
 Examples:
