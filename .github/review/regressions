@@ -284,3 +284,9 @@ git-issues/github-issue-187.dfy
 
 # Match-source inference under --conservative-match-inference (https://github.com/erniecohen/dafny/issues/48).
 git-issues/git-issue-48-inference.dfy
+
+# Bitvector keys at map and multiset lookups under --bitvector-map-keys (https://github.com/erniecohen/dafny/issues/192).
+git-issues/github-issue-192.dfy
+
+# Z3 smt.refine_inj_axioms=false by default, globally and per implementation (#190).
+git-issues/github-issue-190.dfy

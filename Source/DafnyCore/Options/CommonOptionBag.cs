@@ -252,7 +252,7 @@ true - All class instances are raw pointers and need to be manually deallocated"
   };
 
   public static readonly Option<bool> BitvectorMapKeys = new("--bitvector-map-keys", () => false,
-    "Preserve bitvector key types in map and imap lookups during verification. Disabled by default.");
+    "Preserve bitvector key types in map and imap lookups, and bitvector element types in multiset multiplicity lookups, during verification. Disabled by default.");
 
   public static readonly Option<bool> ContextualLambdaDomains = new("--contextual-lambda-domains", () => false,
     "With the refreshed type system, infer omitted parameters of function-result lambdas from the declared arrow domain. Disabled by default.");

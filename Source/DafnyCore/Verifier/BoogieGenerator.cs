@@ -1617,6 +1617,8 @@ namespace Microsoft.Dafny {
         }
 
         AddSmtOptionAttribute(impl, "smt.arith.solver", ArithmeticSolver.ToString());
+        // false by default, for soundness (Z3Prover/z3#11435); see DafnyOptions.SetZ3Options.
+        AddSmtOptionAttribute(impl, DafnyOptions.RefineInjAxiomsOption, options.RefineInjAxiomsValue);
       }
       sink.AddTopLevelDeclaration(impl);
       return impl;
