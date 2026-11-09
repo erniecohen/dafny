@@ -269,3 +269,9 @@ git-issues/github-issue-182.dfy
 
 # Body permissions of heap-free lambdas in every heap (--heap-free-lambda-facts).
 git-issues/lambda-facts-every-heap.dfy
+
+# A lit test that times out fails, and its commands are stopped (#176).
+LitHarnessTimeoutTests
+
+# Refining a module whose method has a :| with a member selection in its trigger (#179).
+git-issues/github-issue-179.dfy
