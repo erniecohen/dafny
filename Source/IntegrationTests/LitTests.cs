@@ -38,6 +38,7 @@ namespace IntegrationTests {
       "/proverOpt:O:smt.qi.eager_threshold=44",
       "/proverOpt:O:smt.delay_units=true",
       "/proverOpt:O:smt.arith.solver=2",
+      "/proverOpt:O:smt.refine_inj_axioms=false",
       "/proverOpt:PROVER_PATH:" + RepositoryRoot + $"../unzippedRelease/dafny/z3/bin/z3-{DafnyOptions.DefaultZ3Version}"
     ];
 
