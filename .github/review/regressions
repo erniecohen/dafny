@@ -316,3 +316,6 @@ git-issues/github-issue-90-cycles.dfy
 
 # Constructor type arguments under --invariant-constructor-inference (https://github.com/erniecohen/dafny/issues/101).
 git-issues/github-issue-101.dfy
+
+# Override axioms at the call layer under --additional-axioms (https://github.com/erniecohen/dafny/issues/103).
+git-issues/github-issue-103.dfy
