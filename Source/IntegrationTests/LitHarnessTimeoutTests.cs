@@ -36,8 +36,11 @@ public class LitHarnessTimeoutTests {
     Skip.If(OperatingSystem.IsWindows(), "The helper test case uses a POSIX shell.");
     var path = Path.Join(Inputs, "git-issue-176-hangs.lit");
     var temp = Path.Join(Path.GetFullPath(Inputs), "Output", "git-issue-176-hangs.lit.tmp");
-    File.Delete(temp + ".shell");
-    File.Delete(temp + ".child");
+    foreach (var stale in new[] { temp + ".shell", temp + ".child" }) {
+      if (File.Exists(stale)) {
+        File.Delete(stale);
+      }
+    }
 
     var watch = Stopwatch.StartNew();
     var exception = Assert.Throws<TimeoutException>(() =>
