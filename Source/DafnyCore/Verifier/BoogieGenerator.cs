@@ -89,6 +89,7 @@ namespace Microsoft.Dafny {
       public bool InsertChecksums { get; init; }
       public string UniqueIdPrefix = null;
       public bool ReportRanges = false;
+      public string PreludeText { get; init; }
       internal Action<PropositionLowering> ObligationLowered { get; init; }
       internal Action<DeclaredPreparationSnapshot> ObligationPrepared { get; init; }
     }
@@ -696,13 +697,19 @@ namespace Microsoft.Dafny {
       return null;
     }
 
-    Bpl.Program ReadPrelude() {
+    // Translation and the batch prelude snapshot must read the same file.
+    public static string PreludePath(DafnyOptions options) {
       string preludePath = options.DafnyPrelude;
       if (preludePath == null) {
         //using (System.IO.Stream stream = Cce.NonNull( System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("DafnyPrelude.bpl")) // Use this once Spec#/VSIP supports designating a non-.resx project item as an embedded resource
         string codebase = Cce.NonNull(System.IO.Path.GetDirectoryName(Cce.NonNull(System.Reflection.Assembly.GetExecutingAssembly().Location)));
         preludePath = System.IO.Path.Combine(codebase, "DafnyPrelude.bpl");
       }
+      return preludePath;
+    }
+
+    Bpl.Program ReadPrelude() {
+      string preludePath = PreludePath(options);
 
       var defines = new List<string>();
       if (6 <= options.ArithMode) {
@@ -721,7 +728,10 @@ namespace Microsoft.Dafny {
       if (options.Get(CommonOptionBag.UnicodeCharacters)) {
         defines.Add("UNICODE_CHAR");
       }
-      int errorCount = BplParser.Parse(preludePath, defines, out var prelude);
+      Bpl.Program prelude;
+      int errorCount = flags.PreludeText == null
+        ? BplParser.Parse(preludePath, defines, out prelude)
+        : BplParser.Parse(new System.IO.StringReader(flags.PreludeText), preludePath, defines, out prelude);
       if (prelude == null || errorCount > 0) {
         return null;
       } else {
@@ -880,8 +890,122 @@ namespace Microsoft.Dafny {
 
       Type.PopScope(this.currentScope);
       Type.DisableScopes();
+      new IllegalTriggerRemover(this).Visit(sink);
       return sink;
 
+    }
+
+    /// <summary>
+    /// The source positions of the trigger terms that IllegalTriggerRemover has reported, so that a term
+    /// that occurs in more than one quantifier is reported once.
+    /// </summary>
+    private readonly HashSet<(Uri, int, int)> reportedIllegalTriggerTerms = [];
+
+    /// <summary>
+    /// Boogie's resolver rejects a trigger term that is a variable by itself, or that contains a negation, an
+    /// equality, an arithmetic comparison, a boolean connective, a quantifier or a lambda expression (Boogie's
+    /// Trigger.Resolve, UnaryOperator.Resolve, BinaryOperator.Resolve and BinderExpr.Resolve), and Dafny cannot
+    /// verify a Boogie program that does not resolve.  A trigger term written in Dafny can translate into one
+    /// of these even where it contains none of them itself: "k in {A, B}" translates into "k == A || k == B",
+    /// for example.  This pass looks at every trigger of the finished Boogie program, so at exactly the
+    /// triggers Boogie would resolve.  It reports an error at each term that Boogie would reject, once, and
+    /// removes the trigger that contains it.  A program in which it finds none is left unchanged.
+    /// </summary>
+    private class IllegalTriggerRemover : Bpl.ReadOnlyVisitor {
+      private readonly BoogieGenerator generator;
+
+      public IllegalTriggerRemover(BoogieGenerator generator) {
+        this.generator = generator;
+      }
+
+      // The program is not resolved yet, and the visitor's methods for types expect resolved types
+      // (a type synonym's expansion, for one).  Triggers are not inside types, so types are skipped.
+      public override Bpl.Absy Visit(Bpl.Absy node) {
+        return node is Bpl.Type ? node : base.Visit(node);
+      }
+
+      public override Bpl.Type VisitType(Bpl.Type node) {
+        return node;
+      }
+
+      // An implementation's procedure is not linked to it until resolution; procedures are visited
+      // as declarations of their own.
+      public override Bpl.Implementation VisitImplementation(Bpl.Implementation node) {
+        VisitBlockList(node.Blocks);
+        return node;
+      }
+
+      public override Bpl.QuantifierExpr VisitQuantifierExpr(Bpl.QuantifierExpr node) {
+        Bpl.Trigger kept = null, last = null;
+        for (var tr = node.Triggers; tr != null; tr = tr.Next) {
+          if (tr.Tr.All(term => IsLegal(term, tr))) {
+            if (last == null) {
+              kept = tr;
+            } else {
+              last.Next = tr;
+            }
+            last = tr;
+          }
+        }
+        if (last != null) {
+          last.Next = null;
+        }
+        node.Triggers = kept;
+        return base.VisitQuantifierExpr(node);
+      }
+
+      private bool IsLegal(Bpl.Expr term, Bpl.Trigger trigger) {
+        string reason;
+        if (term is Bpl.IdentifierExpr) {
+          reason = "is a variable by itself";
+        } else {
+          var finder = new IllegalTriggerConstructFinder();
+          finder.Visit(term);
+          if (finder.Construct == null) {
+            return true;
+          }
+          reason = $"translates into a term that contains {finder.Construct}";
+        }
+        var origin = term.tok as IOrigin ?? trigger.tok as IOrigin ?? Token.NoToken;
+        if (generator.reportedIllegalTriggerTerms.Add((origin.Uri, origin.line, origin.col))) {
+          generator.reporter.Error(MessageSource.Translator, origin,
+            $"this trigger term {reason}, which a trigger may not contain; the trigger is ignored " +
+            "(a function that computes the term's argument can be used in the trigger instead)");
+        }
+        return false;
+      }
+    }
+
+    /// <summary>
+    /// Finds a construct that Boogie does not allow in a trigger term (see IllegalTriggerRemover).
+    /// </summary>
+    private class IllegalTriggerConstructFinder : Bpl.ReadOnlyVisitor {
+      public string Construct;
+
+      public override Bpl.Expr VisitNAryExpr(Bpl.NAryExpr node) {
+        if (Construct != null) {
+          return node;
+        }
+        Construct = node.Fun switch {
+          Bpl.UnaryOperator { Op: Bpl.UnaryOperator.Opcode.Not } => "a negation",
+          Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.Eq } => "an equality",
+          Bpl.BinaryOperator {
+            Op: Bpl.BinaryOperator.Opcode.Lt or Bpl.BinaryOperator.Opcode.Le or
+            Bpl.BinaryOperator.Opcode.Gt or Bpl.BinaryOperator.Opcode.Ge
+          } => "an arithmetic comparison",
+          Bpl.BinaryOperator {
+            Op: Bpl.BinaryOperator.Opcode.And or Bpl.BinaryOperator.Opcode.Or or
+            Bpl.BinaryOperator.Opcode.Imp or Bpl.BinaryOperator.Opcode.Iff
+          } => "a boolean operator",
+          _ => null
+        };
+        return Construct != null ? node : base.VisitNAryExpr(node);
+      }
+
+      public override Bpl.Expr VisitBinderExpr(Bpl.BinderExpr node) {
+        Construct ??= "a quantifier or a lambda expression";
+        return node;
+      }
     }
 
     private static void RequireCardinalityValidation(Program program) {
@@ -1493,6 +1617,8 @@ namespace Microsoft.Dafny {
         }
 
         AddSmtOptionAttribute(impl, "smt.arith.solver", ArithmeticSolver.ToString());
+        // false by default, for soundness (Z3Prover/z3#11435); see DafnyOptions.SetZ3Options.
+        AddSmtOptionAttribute(impl, DafnyOptions.RefineInjAxiomsOption, options.RefineInjAxiomsValue);
       }
       sink.AddTopLevelDeclaration(impl);
       return impl;
@@ -3651,9 +3777,54 @@ namespace Microsoft.Dafny {
       return res;
     }
 
+    /// <summary>
+    /// Whether, under the option --heap-free-lambda-facts, the lambda "e" is checked well-formed in
+    /// every good heap and without assuming its formals allocated (CheckWellformed), and so exports the
+    /// permissions of its body under its formals' types alone, in every good heap
+    /// (ExpressionTranslator.LambdaCanCallInEveryHeap).  It is the stronger check that justifies the
+    /// export.  This test only selects the lambdas for which the stronger check is expected to succeed:
+    /// those without a reads clause whose range and body use nothing that observes the heap or
+    /// allocation.  The same lambda gets the same answer in both places; a substituted copy can only
+    /// lose it, and then exports no more than before.
+    /// </summary>
+    internal bool LambdaFactsInEveryHeap(LambdaExpr e) {
+      if (!options.Get(CommonOptionBag.HeapFreeLambdaFacts) || e.Reads.Expressions.Count != 0) {
+        return false;
+      }
+      return (e.Range == null || !ObservesHeapOrAllocation(e.Range)) && !ObservesHeapOrAllocation(e.Body);
+    }
+
+    private static bool ObservesHeapOrAllocation(Expression expr) {
+      switch (expr) {
+        case null:
+          return false;
+        // Previous heaps, statements (lemma calls) and binders, whose reference-typed bound variables
+        // range over the allocated values of the heap at hand.  A nested lambda has its own rules.
+        case OldExpr or UnchangedExpr or StmtExpr or ComprehensionExpr or FieldLocation or IndexFieldLocation:
+          return true;
+        case LetExpr { Exact: false }:
+          return true;
+        case UnaryOpExpr { Op: UnaryOpExpr.Opcode.Fresh or UnaryOpExpr.Opcode.Allocated }:
+          return true;
+        case FunctionCallExpr call when call.Function == null || call.Function.ReadsHeap || call.Function is TwoStateFunction:
+          return true;
+        case MemberSelectExpr { Member: Field { IsMutable: true } or TwoStateFunction }:
+          return true;
+        case ApplyExpr apply when !apply.Function.Type.IsArrowTypeWithoutReadEffects:
+          return true;
+        case SeqSelectExpr select when select.Seq.Type.IsArrayType:
+          return true;
+        case MultiSelectExpr:
+          return true;
+        case SeqConstructionExpr construction when !construction.Initializer.Type.IsArrowTypeWithoutReadEffects:
+          return true;
+      }
+      return expr.SubExpressions.Any(ObservesHeapOrAllocation);
+    }
+
     Dictionary<IVariable, Expression> SetupBoundVarsAsLocals(List<BoundVar> boundVars, out Bpl.Expr typeAntecedent,
       BoogieStmtListBuilder builder, Variables locals, ExpressionTranslator etran,
-      string nameSuffix = null) {
+      string nameSuffix = null, IsAllocType alloc = IsAllocType.ISALLOC) {
       Contract.Requires(boundVars != null);
       Contract.Requires(builder != null);
       Contract.Requires(locals != null);
@@ -3672,7 +3843,7 @@ namespace Microsoft.Dafny {
         locals.GetOrAdd(bvar);
         var bIe = new Bpl.IdentifierExpr(bvar.tok, bvar);
         builder.Add(new Bpl.HavocCmd(bv.Origin, [bIe]));
-        Bpl.Expr wh = GetWhereClause(bv.Origin, bIe, local.Type, etran, IsAllocType.ISALLOC);
+        Bpl.Expr wh = GetWhereClause(bv.Origin, bIe, local.Type, etran, alloc);
         if (wh != null) {
           typeAntecedent = BplAnd(typeAntecedent, wh);
         }

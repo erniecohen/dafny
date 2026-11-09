@@ -1,0 +1,10 @@
+// Boogie on the printed program of github-issue-190.dfy (see there).
+// Per-implementation false over global true: rejected.
+// CHECK: Error: .*postcondition
+// CHECK: Boogie program verifier finished with \d+ verified, 1 error
+// Global false alone: rejected.
+// CHECK: Error: .*postcondition
+// CHECK: Boogie program verifier finished with \d+ verified, 1 error
+// Global true alone: `ensures false` proved.
+// CHECK-NOT: Error
+// CHECK: Boogie program verifier finished with \d+ verified, 0 errors

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
 
@@ -109,7 +110,17 @@ namespace XUnitExtensions.Lit {
       // artifacts directly, since `dafny run` already enforces UTF-8 output.  The Console.OutputEncoding part is still
       // needed because that is also what C# will use to decode the output of `process`.
 
+      var cancellation = LitTestCase.CurrentCancellation.Value;
+      cancellation.ThrowIfCancellationRequested();
       process.Start();
+      // A test case that times out is cancelled: stop this command and everything it started.
+      using var killOnCancellation = cancellation.Register(() => {
+        try {
+          process.Kill(entireProcessTree: true);
+        } catch (Exception) {
+          // It has already exited, or cannot be killed; the test case's timeout reports whether its commands stopped.
+        }
+      });
       string input = await inputReader.ReadToEndAsync();
       inputReader.Close();
       await process.StandardInput.WriteAsync(input);

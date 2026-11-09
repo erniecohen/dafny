@@ -52,6 +52,7 @@ public static class DafnyCommands {
     CommonOptionBag.ExtractCounterexample,
     CommonOptionBag.ManualTriggerOption,
     CommonOptionBag.MapComprehensionDomainTriggers,
+    CommonOptionBag.HeapFreeLambdaFacts,
     CommonOptionBag.ShowProofObligationExpressions
   }.ToList();
 
@@ -110,6 +111,7 @@ public static class DafnyCommands {
     CommonOptionBag.TypeSystemRefresh,
     CommonOptionBag.BitvectorMapKeys,
     CommonOptionBag.ContextualLambdaDomains,
+    CommonOptionBag.ConservativeMatchInference,
     CommonOptionBag.TypeInferenceDebug,
     CommonOptionBag.NewTypeInferenceDebug,
     Method.ReadsClausesOnMethods,

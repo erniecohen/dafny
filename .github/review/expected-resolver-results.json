@@ -359,6 +359,18 @@
     "stderr": "",
     "stdout": "\nDafny program verifier did not attempt verification\n"
   },
+  "github-issue-179.legacy": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
+  "github-issue-179.refresh": {
+    "exit": 0,
+    "outcome": "accepted",
+    "stderr": "",
+    "stdout": "\nDafny program verifier did not attempt verification\n"
+  },
   "github-issue-25.legacy": {
     "exit": 0,
     "outcome": "accepted",

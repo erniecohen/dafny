@@ -1,0 +1,106 @@
+# The bounded proof-maintenance matrix for experimental obligation checking (#170):
+# the twelve lit tests git-issues/git-issue-170.dfy and git-issue-170-part-1..11.dfy,
+# each one shard of Inputs/obligation-proof-repairs/registered.py.  They test an
+# option that is off by default and take about ten minutes each, so they run here,
+# one job per shard, and not in review.yml's required regression job.  The four
+# ordinary tests whose sources #170 repaired stay in .github/review/regressions.
+#
+# It runs on demand, weekly, and on pushes and pull requests that change the
+# obligation-checking sources, the repaired proofs, or the matrix itself.
+name: obligation-proofs
+
+on:
+  push:
+    branches: ['review/**', 'dev']
+    paths:
+      - '.github/workflows/obligation-proofs.yml'
+      - 'Source/DafnyCore/Verifier/**'
+      - 'Source/DafnyCore/Options/CommonOptionBag.cs'
+      - 'Source/DafnyStandardLibraries/src/Std/Arithmetic/**'
+      - 'Source/DafnyStandardLibraries/src/Std/Base64.dfy'
+      - 'Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-170*'
+      - 'Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/obligation-proof-repairs/**'
+      - 'Source/IntegrationTests/TestFiles/LitTests/LitTest/dafny1/ExtensibleArray.dfy'
+      - 'Source/IntegrationTests/TestFiles/LitTests/LitTest/dafny1/PriorityQueue.dfy'
+      - 'Source/IntegrationTests/TestFiles/LitTests/LitTest/dafny1/SchorrWaite-stages.dfy'
+      - 'Source/IntegrationTests/TestFiles/LitTests/LitTest/dafny2/SnapshotableTrees.dfy'
+      - 'Source/IntegrationTests/TestFiles/LitTests/LitTest/dafny4/Primes.dfy'
+      - 'Source/IntegrationTests/TestFiles/LitTests/LitTest/dafny4/UnionFind.dfy'
+  pull_request:
+    branches: ['review/**', 'dev']
+    paths:
+      - '.github/workflows/obligation-proofs.yml'
+      - 'Source/DafnyCore/Verifier/**'
+      - 'Source/DafnyCore/Options/CommonOptionBag.cs'
+      - 'Source/DafnyStandardLibraries/src/Std/Arithmetic/**'
+      - 'Source/DafnyStandardLibraries/src/Std/Base64.dfy'
+      - 'Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/git-issue-170*'
+      - 'Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/obligation-proof-repairs/**'
+      - 'Source/IntegrationTests/TestFiles/LitTests/LitTest/dafny1/ExtensibleArray.dfy'
+      - 'Source/IntegrationTests/TestFiles/LitTests/LitTest/dafny1/PriorityQueue.dfy'
+      - 'Source/IntegrationTests/TestFiles/LitTests/LitTest/dafny1/SchorrWaite-stages.dfy'
+      - 'Source/IntegrationTests/TestFiles/LitTests/LitTest/dafny2/SnapshotableTrees.dfy'
+      - 'Source/IntegrationTests/TestFiles/LitTests/LitTest/dafny4/Primes.dfy'
+      - 'Source/IntegrationTests/TestFiles/LitTests/LitTest/dafny4/UnionFind.dfy'
+  schedule:
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
+  Z3_RELEASE: https://github.com/Z3Prover/z3/releases/download/z3-5.1.0
+  Z3_LINUX_X64: z3-5.1.0-x64-glibc-2.39
+  Z3_LINUX_X64_SHA256: f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a
+
+jobs:
+  shard:
+    name: Obligation proof repairs (#170), part ${{ matrix.part }} of 12
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Z3 5.1.0
+        run: |
+          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
+          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+          mkdir -p Binaries/z3/bin
+          cp "$Z3_LINUX_X64/bin/z3" Binaries/z3/bin/z3-5.1.0
+          chmod +x Binaries/z3/bin/z3-5.1.0
+      - name: Boogie packages
+        run: sh Scripts/fetch-boogie-packages.sh
+      - name: Build the test harness
+        run: dotnet build Source/IntegrationTests -c Release
+      - name: Run the shard
+        env:
+          DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS: cs
+          PART: ${{ matrix.part }}
+        shell: bash
+        run: |
+          set -o pipefail
+          # Part 1 is git-issue-170.dfy; part n > 1 is git-issue-170-part-(n-1).dfy.
+          if [ "$PART" = 1 ]; then test=git-issues/git-issue-170.dfy
+          else test=git-issues/git-issue-170-part-$((PART - 1)).dfy; fi
+          echo "$test"
+          dotnet test Source/IntegrationTests -c Release --no-build \
+            --logger "console;verbosity=normal" --filter "DisplayName~$test" | tee test.log
+          # A filter that matches nothing passes; require exactly the one test.
+          grep -Eq 'Total( tests)?: *1([^0-9]|$)' test.log

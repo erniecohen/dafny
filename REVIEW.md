@@ -66,23 +66,66 @@ now has its receiver checked, which adds one proved assertion batch.  No other
 fix moves a verdict of the suite or of the standard library.  #63 moved a test
 input under `Inputs/` and changed no product file.
 
+## Self calls in a function's own postcondition ([#166](https://github.com/erniecohen/dafny/issues/166))
+
+A function's own postcondition is checked under a call-permission premise that keeps the
+self-call allowance: a self call `F(i)` contributes `i == i || F#canCall(i)`, so the check
+cannot assume F's own, unproved, contract.  Two call sites dropped the caller's options under
+default options and assumed an unconditional `F#canCall(i)` instead: the body of an exact let,
+and the application of a `seq(n, init)` initializer.  So
+`ghost function F(i: int): int ensures var unused := 1; F(i) == 0 { 1 }` verified, as did
+`ensures seq(1, j => F(i))[0] == 0`, and a lemma then proved `false`.  The fixes, in
+`Source/DafnyCore/Verifier/BoogieGenerator.LetExpr.cs` (`LetCanCallAssumption`) and
+`BoogieGenerator.ExpressionTranslator.cs` (`CanCallAssumption`, the `SeqConstructionExpr`
+case), pass the caller's options at both sites, without the arrow allocation facts that those
+sites omitted before.  Their kind is **weakens only**: the assumed premise becomes the existing
+allowance, and no fact or axiom is added; `--consistent-obligation-checks` is unchanged.  The
+third site of the same shape, a constant field's right-hand side, cannot carry such a self
+call: the resolver rejects the cycle it needs.  The regression is
+`git-issues/github-issue-166.dfy`, which runs the issue's program, nested, used and pattern
+exact lets, the `seq` initializer, valid contracts and a false control under all four
+combinations of `--type-system-refresh` and `--additional-axioms`; the release note is
+`docs/dev/news/166.fix`.  No verdict of the suite or of the standard library moves.
+
 ## Boogie
 
 Boogie's unguarded reverse casts,
 [boogie-org/boogie#1168](https://github.com/boogie-org/boogie/issues/1168), are
 fixed in Boogie.  The public fork [erniecohen/boogie](https://github.com/erniecohen/boogie)
-carries the fix on its branch `review/3.5.5`, which is v3.5.5 with one fix commit
+carries the fix on its branch `review/3.5.5`, which is v3.5.5 with the fix commit
 (its message says what changes and why the result is sound), its tests, and CI
-that runs Boogie's own test jobs and packs Boogie's NuGet packages at the version
-`3.5.5-review.37e4435d`.  The release `v3.5.5+review.37e4435d` carries them, with
-their sha256 sums, and its `REVIEW.md` describes the fix and the version.  The
-same fix is offered to Boogie's master as
+that runs Boogie's own test jobs and packs Boogie's NuGet packages.  The same fix
+is offered to Boogie's master as
 [boogie-org/boogie#1169](https://github.com/boogie-org/boogie/pull/1169).
 
-`a48933e` makes this branch build against those packages:
+This branch builds against that fork's release `v3.5.5+review.a7d160a7`, whose
+packages have the version `3.5.5-review.a7d160a7`.  The release carries them with
+their sha256 sums, and its `REVIEW.md` says what the fork changes and how its
+version is computed.  Besides that fix, it brings:
+
+- **Printer fixes, on by default**, so that a printed program (`--bprint`, which is
+  Boogie's `/print`) parses back into the program that was printed.  The printer
+  keeps the parentheses that its parser needs
+  ([#180](https://github.com/erniecohen/dafny/issues/180)): it printed
+  `a && (b && c)` as `a && b && c`, which parses as `(a && b) && c`, and
+  `2 * (3 div 2)` as `2 * 3 div 2`, which means `(2 * 3) div 2`.  It writes
+  `hideable` before a hideable axiom, which Dafny's function and constant
+  definition axioms are
+  ([#182](https://github.com/erniecohen/dafny/issues/182)); without it, `hide`
+  pruned nothing in a printed program, which could then prove what Dafny does not.
+  And it writes the attributes of an if command and of an assignment, such as
+  `{:allow_path_isolation}` and `{:id}`
+  ([#183](https://github.com/erniecohen/dafny/issues/183)).  Only printed text
+  changes: Dafny sends the solver what it sent before.
+- **Options that are off by default**, and that Dafny does not set:
+  `/deterministicLiteralHashes:1`, `/printDefinitionAxiomsInPlace`, `/verifyAsTasks`
+  and `/structuralLiterals`.  The fork's `REVIEW.md` describes them.
+
+`a48933e` made this branch build against the fork's packages, at
+`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.a7d160a7`:
 
 - `Source/DafnyCore/DafnyCore.csproj` names `Boogie.ExecutionEngine`
-  `3.5.5-review.37e4435d`, and `dotnet-tools.json` names the `boogie` tool at the
+  `3.5.5-review.a7d160a7`, and `dotnet-tools.json` names the `boogie` tool at the
   same version;
 - `nuget.config` adds a local package source, `Binaries/boogie-packages`, and maps
   every Boogie package to it and to nothing else, so a missing package stops the
@@ -90,6 +133,13 @@ same fix is offered to Boogie's master as
 - `Scripts/fetch-boogie-packages.sh` downloads the 14 packages from the release
   into that folder and checks each against `Scripts/boogie-packages.sha256`, which
   is the release's `SHA256SUMS`.
+
+The move from `37e4435d` to `a7d160a7` is a product change, and so a new version.
+It moves no verdict of the suite or of the standard library.  Its test,
+`git-issues/github-issue-182.dfy`, prints a program that uses `hide *` and verifies
+the printed program with Boogie, which now reports the error that Dafny reports,
+where it used to verify the program.  Its release note is
+`docs/dev/news/boogie-printed-programs.fix`.
 
 **To build this branch, run `sh Scripts/fetch-boogie-packages.sh` once first.**
 CI does so in every job that builds.
@@ -190,19 +240,29 @@ change no product file, so the version stays.  The rule on this branch:
 - any other commit keeps them.
 
 The product is everything outside `Source/IntegrationTests/`, `docs/`,
-`.github/`, this file, and the other documents at the top of the tree:
-`ROADMAP.md`, `AGENTS.md` and `CLAUDE.md`.  `.github/review/base` names the base
+`.github/`, `friction/`, this file, and the other documents at the top of the
+tree: `ROADMAP.md`, `AGENTS.md` and `CLAUDE.md`.  `.github/review/base` names the base
 and the last product commit, and CI's `.github/review/version.sh` computes the
 version from them and fails if a later commit changes a product file.  By hand,
 this prints nothing:
 
     git diff --name-only b97a6fe <commit> -- . ':!Source/IntegrationTests' ':!docs' ':!.github' \
-      ':!REVIEW.md' ':!ROADMAP.md' ':!AGENTS.md' ':!CLAUDE.md'
+      ':!friction' ':!REVIEW.md' ':!ROADMAP.md' ':!AGENTS.md' ':!CLAUDE.md'
 
 A release binary built from the tag prints the version with `dafny --version`.
 It is built with `-p:SourceRevisionId=fcb2042d.review.d2070b81`.  The version
 names the Boogie packages by their version, and `Scripts/boogie-packages.sha256`
 names their bytes.
+
+## Friction cases
+
+`friction/` holds small Dafny programs that show where a proof is much harder
+than it should be, as candidates for fixes here and as regression checks once
+fixed, and tips: workarounds for non-obvious blockers that are accepted as
+they are.  Its runner, `friction/run`, checks every case against a given
+Dafny binary.  `friction/README.md` describes the cases and how to add one.
+The directory belongs to this fork's line only; it is not product, and pull
+requests to upstream, which branch from `master`, never carry it.
 
 ## CI
 
@@ -260,10 +320,16 @@ all of them do, and most of those that do not are Z3 5.1.0's: unmodified 4.11.0
 verifies every declaration with Z3 4.12.1, and leaves 29 unverified with Z3 5.1.0,
 27 of them because a proof runs out of its resource limit.
 
-That order is not quite deterministic: the resource counts of some declarations
-move a little from one run to the next (`.github/review/std-verdicts.py` gives the
-figures).  So a proof close to its limit could change its verdict with no cause.
-If one does, run the job again before updating the file.
+Boogie's default order sorts declarations by a content hash that, for numeric
+literals, came from .NET's process-randomized hashing, so a proof close to its limit
+could change its verdict between runs of the same tree
+([#186](https://github.com/erniecohen/dafny/issues/186)).  The job therefore
+verifies the library part with `--boogie /deterministicLiteralHashes:1`, the same
+normalization with deterministic literal hashes, and the expected files were
+recorded under it.  The target-specific parts cannot take Boogie options, which
+must equal those the library's binary was built with; all 82 of their declarations
+verify (`Correct`) in every expected file.  The suite already runs with
+`/normalizeDeclarationOrder:0`, on which the option has no effect.
 
 
 ### Additional axioms enabled

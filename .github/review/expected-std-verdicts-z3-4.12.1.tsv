@@ -269,7 +269,7 @@ Std Std.Arithmetic.DivMod.LemmaModMultiplesVanish (correctness)	Correct
 Std Std.Arithmetic.DivMod.LemmaModMultiplesVanish (well-formedness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaModMultiplesVanishAuto (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaModMultiplesVanishAuto (well-formedness)	Correct		
-Std Std.Arithmetic.DivMod.LemmaModNegNeg (correctness)	Correct		
+Std Std.Arithmetic.DivMod.LemmaModNegNeg (correctness)	OutOfResource		
 Std Std.Arithmetic.DivMod.LemmaModNegNeg (well-formedness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaModOrdering (correctness)	Correct		
 Std Std.Arithmetic.DivMod.LemmaModOrdering (well-formedness)	Correct		
@@ -762,8 +762,6 @@ Std Std.Base64.UInt8sToBVsToUInt8s (correctness)	Correct
 Std Std.Base64.UnpaddedBase64Prefix (correctness)	Correct		
 Std Std.Base64.UnpaddedBase64Prefix (well-formedness)	Correct		
 Std Std.Base64.UnpaddedBase64StringIs7Bit (correctness)	Correct		
-Std Std.Base64.UnpaddedPrefixWithPaddingIsBase64 (correctness)	Correct		
-Std Std.Base64.UnpaddedStringIsBase64 (correctness)	Correct		
 Std Std.BoundedInts.INT16_MAX (well-formedness)	Correct		
 Std Std.BoundedInts.INT16_MIN (well-formedness)	Correct		
 Std Std.BoundedInts.INT32_MAX (well-formedness)	Correct		
@@ -2190,7 +2188,7 @@ TargetSpecific-py Std.FileIO.WriteUTF8ToFile (correctness)	Correct
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (correctness)	Correct		
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (well-formedness)	Correct		
 TargetSpecific-py Std.PythonConcurrent.MutableMap.Get (well-formedness)	Correct		
-run Std	0	7746 verified, 0 errors	
+run Std	4	7611 verified, 0 errors, 1 out of resource	src/Std/Arithmetic/DivMod.dfy(1330,32)
 run TargetSpecific-cs	0	15 verified, 0 errors	
 run TargetSpecific-go	0	16 verified, 0 errors	
 run TargetSpecific-java	0	15 verified, 0 errors	

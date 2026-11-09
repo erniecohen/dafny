@@ -142,6 +142,11 @@ Label its issue `needs-owner-approval` before any pull request upstream.
 - **Never rewrite history.**  GitHub rulesets forbid force-pushing and deleting on
   `review/**` and `dev`, and moving or deleting a `v*` tag.  A wrong commit gets a
   revert commit.  A wrong tag gets a new tag.
+- **Tags and scratch cleanup run in Actions,** in the workflow `maintenance.yml`.
+  Its task `release-tag`, dispatched on `review/4.11.0`, tags a commit of that line
+  whose `review.yml` push run is green with `v` and its version, and starts the
+  tag's release build.  Its task `scratch-cleanup` runs daily and deletes
+  `scratch/**` branches older than seven days that no open pull request uses.
 - **A failed run notifies the repository's owner.**  So a scratch or probe
   workflow that expects failures records them, in the job summary and an artifact,
   and exits 0.
