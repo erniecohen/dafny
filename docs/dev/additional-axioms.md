@@ -616,7 +616,12 @@ axiom is a consequence of existing axioms, so it removes no model.
 
 **Cost.** One more quantifier per such override. The issue's program costs 25,591
 resource units (3 verified, 1 error) without it, and 27,912 (4 verified) with it
-(Z3 5.1.0).
+(Z3 5.1.0). In the standard library with the option on and Z3 5.1.0,
+`Std.Producers.ConcatenatedProducer.Invoke (correctness)` goes from out of resource
+to verified, so the run goes from 7591 verified, 2 errors, 19 out of resource to
+7593, 2, 17 (2 of 2,197 rows; `Producers.dfy(1678,37)` and `(1680,20)` drop out);
+no other row of either standard-library gate, or of the suite with the option on,
+moves.
 
 **Controls.** `git-issues/github-issue-103.dfy` runs the issue's program without the
 cast with the option off (1 error) and on (verifies, in both resolvers), and the
