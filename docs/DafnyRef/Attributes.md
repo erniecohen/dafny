@@ -308,6 +308,47 @@ fewer assert statements), but it may also increase verification time,
 so use it with care.  Setting the fuel to 0,0 is similar to making the
 definition opaque, except when used with all literal arguments.
 
+Fuel limits only the unfoldings of a call whose arguments are not all
+literals.  A call whose arguments are all literals unfolds without using fuel.
+A function without a `reads` clause whose `decreases` clause names only some
+of its parameters also unfolds without using fuel when the arguments for those parameters are
+literals, whatever the other arguments are.  A function with no `decreases`
+clause gets one that names every parameter whose type is ordered (for a member
+of a datatype, `this` first), so it gets only the first kind of unfolding.  For
+example, with
+
+<!-- %check-verify -->
+```dafny
+datatype T = V | C(c: real) | Add(a: T, b: T)
+
+function Eval(t: T, x: real): real
+  decreases t
+{
+  match t
+  case V => x
+  case C(c) => c
+  case Add(a, b) => Eval(a, x) + Eval(b, x)
+}
+
+lemma Depth3(x: real)
+  ensures Eval(Add(V, Add(C(1.0), V)), x) == 2.0 * x + 1.0
+{}
+```
+
+the lemma verifies because `decreases t` lets the literal term unfold although
+`x` is not a literal.  Without that clause, fuel runs out at the third level.  A
+member predicate of a datatype uses `decreases this` the same way.
+
+Such a clause has a cost on calls whose arguments are all literals.  Both kinds
+of unfolding then apply at every level of the literal term, so the work grows
+about fourfold per level for a function like `Eval`, which makes two recursive
+calls.  Measured with Z3 5.1.0, `Eval` of an all-literal term costs 14,491
+resource units at depth 4 without the clause and 405,000 with it; at depth 6 it
+costs 20,912 without the clause and runs out of a 5,000,000 limit with it.  So
+add the clause when a literal term must unfold while another argument is not a
+literal, and leave it out of a function that is mostly evaluated on all-literal
+arguments.
+
 ### 11.2.9. `{:id <string>}`
 Assign a custom unique ID to a function or a method to be used for verification
 result caching.
