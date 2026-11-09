@@ -269,3 +269,6 @@ git-issues/github-issue-182.dfy
 
 # Body permissions of heap-free lambdas in every heap (--heap-free-lambda-facts).
 git-issues/lambda-facts-every-heap.dfy
+
+# An explicit trigger term that Boogie rejects is reported, not passed to Boogie (#191).
+git-issues/github-issue-191.dfy
