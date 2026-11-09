@@ -315,10 +315,16 @@ all of them do, and most of those that do not are Z3 5.1.0's: unmodified 4.11.0
 verifies every declaration with Z3 4.12.1, and leaves 29 unverified with Z3 5.1.0,
 27 of them because a proof runs out of its resource limit.
 
-That order is not quite deterministic: the resource counts of some declarations
-move a little from one run to the next (`.github/review/std-verdicts.py` gives the
-figures).  So a proof close to its limit could change its verdict with no cause.
-If one does, run the job again before updating the file.
+Boogie's default order sorts declarations by a content hash that, for numeric
+literals, came from .NET's process-randomized hashing, so a proof close to its limit
+could change its verdict between runs of the same tree
+([#186](https://github.com/erniecohen/dafny/issues/186)).  The job therefore
+verifies the library part with `--boogie /deterministicLiteralHashes:1`, the same
+normalization with deterministic literal hashes, and the expected files were
+recorded under it.  The target-specific parts cannot take Boogie options, which
+must equal those the library's binary was built with; all 82 of their declarations
+verify (`Correct`) in every expected file.  The suite already runs with
+`/normalizeDeclarationOrder:0`, on which the option has no effect.
 
 
 ### Additional axioms enabled

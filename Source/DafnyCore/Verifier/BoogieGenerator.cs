@@ -890,8 +890,122 @@ namespace Microsoft.Dafny {
 
       Type.PopScope(this.currentScope);
       Type.DisableScopes();
+      new IllegalTriggerRemover(this).Visit(sink);
       return sink;
 
+    }
+
+    /// <summary>
+    /// The source positions of the trigger terms that IllegalTriggerRemover has reported, so that a term
+    /// that occurs in more than one quantifier is reported once.
+    /// </summary>
+    private readonly HashSet<(Uri, int, int)> reportedIllegalTriggerTerms = [];
+
+    /// <summary>
+    /// Boogie's resolver rejects a trigger term that is a variable by itself, or that contains a negation, an
+    /// equality, an arithmetic comparison, a boolean connective, a quantifier or a lambda expression (Boogie's
+    /// Trigger.Resolve, UnaryOperator.Resolve, BinaryOperator.Resolve and BinderExpr.Resolve), and Dafny cannot
+    /// verify a Boogie program that does not resolve.  A trigger term written in Dafny can translate into one
+    /// of these even where it contains none of them itself: "k in {A, B}" translates into "k == A || k == B",
+    /// for example.  This pass looks at every trigger of the finished Boogie program, so at exactly the
+    /// triggers Boogie would resolve.  It reports an error at each term that Boogie would reject, once, and
+    /// removes the trigger that contains it.  A program in which it finds none is left unchanged.
+    /// </summary>
+    private class IllegalTriggerRemover : Bpl.ReadOnlyVisitor {
+      private readonly BoogieGenerator generator;
+
+      public IllegalTriggerRemover(BoogieGenerator generator) {
+        this.generator = generator;
+      }
+
+      // The program is not resolved yet, and the visitor's methods for types expect resolved types
+      // (a type synonym's expansion, for one).  Triggers are not inside types, so types are skipped.
+      public override Bpl.Absy Visit(Bpl.Absy node) {
+        return node is Bpl.Type ? node : base.Visit(node);
+      }
+
+      public override Bpl.Type VisitType(Bpl.Type node) {
+        return node;
+      }
+
+      // An implementation's procedure is not linked to it until resolution; procedures are visited
+      // as declarations of their own.
+      public override Bpl.Implementation VisitImplementation(Bpl.Implementation node) {
+        VisitBlockList(node.Blocks);
+        return node;
+      }
+
+      public override Bpl.QuantifierExpr VisitQuantifierExpr(Bpl.QuantifierExpr node) {
+        Bpl.Trigger kept = null, last = null;
+        for (var tr = node.Triggers; tr != null; tr = tr.Next) {
+          if (tr.Tr.All(term => IsLegal(term, tr))) {
+            if (last == null) {
+              kept = tr;
+            } else {
+              last.Next = tr;
+            }
+            last = tr;
+          }
+        }
+        if (last != null) {
+          last.Next = null;
+        }
+        node.Triggers = kept;
+        return base.VisitQuantifierExpr(node);
+      }
+
+      private bool IsLegal(Bpl.Expr term, Bpl.Trigger trigger) {
+        string reason;
+        if (term is Bpl.IdentifierExpr) {
+          reason = "is a variable by itself";
+        } else {
+          var finder = new IllegalTriggerConstructFinder();
+          finder.Visit(term);
+          if (finder.Construct == null) {
+            return true;
+          }
+          reason = $"translates into a term that contains {finder.Construct}";
+        }
+        var origin = term.tok as IOrigin ?? trigger.tok as IOrigin ?? Token.NoToken;
+        if (generator.reportedIllegalTriggerTerms.Add((origin.Uri, origin.line, origin.col))) {
+          generator.reporter.Error(MessageSource.Translator, origin,
+            $"this trigger term {reason}, which a trigger may not contain; the trigger is ignored " +
+            "(a function that computes the term's argument can be used in the trigger instead)");
+        }
+        return false;
+      }
+    }
+
+    /// <summary>
+    /// Finds a construct that Boogie does not allow in a trigger term (see IllegalTriggerRemover).
+    /// </summary>
+    private class IllegalTriggerConstructFinder : Bpl.ReadOnlyVisitor {
+      public string Construct;
+
+      public override Bpl.Expr VisitNAryExpr(Bpl.NAryExpr node) {
+        if (Construct != null) {
+          return node;
+        }
+        Construct = node.Fun switch {
+          Bpl.UnaryOperator { Op: Bpl.UnaryOperator.Opcode.Not } => "a negation",
+          Bpl.BinaryOperator { Op: Bpl.BinaryOperator.Opcode.Eq } => "an equality",
+          Bpl.BinaryOperator {
+            Op: Bpl.BinaryOperator.Opcode.Lt or Bpl.BinaryOperator.Opcode.Le or
+            Bpl.BinaryOperator.Opcode.Gt or Bpl.BinaryOperator.Opcode.Ge
+          } => "an arithmetic comparison",
+          Bpl.BinaryOperator {
+            Op: Bpl.BinaryOperator.Opcode.And or Bpl.BinaryOperator.Opcode.Or or
+            Bpl.BinaryOperator.Opcode.Imp or Bpl.BinaryOperator.Opcode.Iff
+          } => "a boolean operator",
+          _ => null
+        };
+        return Construct != null ? node : base.VisitNAryExpr(node);
+      }
+
+      public override Bpl.Expr VisitBinderExpr(Bpl.BinderExpr node) {
+        Construct ??= "a quantifier or a lambda expression";
+        return node;
+      }
     }
 
     private static void RequireCardinalityValidation(Program program) {
