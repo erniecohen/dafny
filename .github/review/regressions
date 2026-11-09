@@ -273,5 +273,8 @@ git-issues/lambda-facts-every-heap.dfy
 # A lit test that times out fails, and its commands are stopped (#176).
 LitHarnessTimeoutTests
 
+# Refining a module whose method has a :| with a member selection in its trigger (#179).
+git-issues/github-issue-179.dfy
+
 # An explicit trigger term that Boogie rejects is reported, not passed to Boogie (#191).
 git-issues/github-issue-191.dfy
