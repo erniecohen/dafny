@@ -130,16 +130,63 @@ fixture in `git-issues/Inputs/` with Z3 5.1.0 (`%review-z3`) and Z3 4.12.1
 | `github-issue-147-original.dfy`, the issue's program, alone | its postcondition fails |
 | `github-issue-147-good.dfy`, the same with `== 1` | verifies |
 | `github-issue-147-controls.dfy`: `assert false` under the same preconditions, and in branches on the correct values, at widths 3 and 6 | each `assert false` fails |
-| `github-issue-147-true.dfy`: both orders, interior counts, same-direction chains, counts 0 and `W`, widths 0, 1, 3, 6, 12, 32, 64 | verifies |
-| `github-issue-147-false.dfy`: the values the faulty rewrite gives, and wrong values at 32 and 64 | each postcondition fails |
+| `github-issue-147-true.dfy`: both orders, interior counts, same-direction chains, counts 0 and `W`, a symbolic word at width 3, widths 0, 3, 6 and 12 | verifies |
+| `github-issue-147-false.dfy`: the values the faulty rewrite gives, at widths 3, 6 and 12 | each postcondition fails |
+| `github-issue-147-native-true.dfy`: the native widths 1, 32 and 64, at a resource limit of 2,000,000 | verifies, except one proof with Z3 4.12.1 (below) |
+| `github-issue-147-native-false.dfy`: wrong values at widths 1, 32 and 64, at 2,000,000 | each postcondition fails |
 | `github-issue-147-bounds.dfy`: counts -1 and `W + 1` | each count is reported |
 
-`git-issues/github-issue-147-emission.dfy` checks what is sent to the solver: for a program with
-rotations only at widths 0, 3, 6 and 12, the SMT log is not empty, has a `check-sat`, and has
-no `ext_rotate` and no `(_ BitVec 0)`; the BPL defines the rotations at those widths by shifts.
-For a program with rotations only at widths 1, 32 and 64, the BPL keeps the `bvbuiltin`
-declarations and the SMT log has the extended rotations.
+`git-issues/github-issue-147-emission.dfy` checks what is sent to the solver.  In the BPL of a
+program with rotations at widths 0, 1, 3, 6, 12, 32 and 65, widths 3, 6, 12 and 65 have the
+definitions by shifts and no `bvbuiltin` rotation, widths 1 and 32 have the `bvbuiltin`
+declarations and no inline one, and width 0 is unchanged; one check file per width, since the
+order of the declarations is not fixed.  The SMT log of a program with rotations only at widths
+0, 3, 6 and 12 has a `bvlshr` and a `check-sat`, so an empty log fails, and no `ext_rotate` and
+no `(_ BitVec 0)`; that of a program with rotations only at widths 1, 32 and 64 has the extended
+rotations.
+
+`.github/review/regressions` names both drivers, and the existing tests with rotations:
+`dafny0/Bitvectors.dfy`, `dafny0/BitvectorsMore.dfy`, `dafny0/GeneralNewtypeMemberVerify.dfy`,
+`dafny0/GeneralNewtypeVerify.dfy`, `dafny4/git-issue57.dfy` and the two `proof-obligation-desc`
+rotation-bound tests.
 
 ## Validation
 
-VALIDATION
+Scratch probes built `review/4.11.0` (the base) and the fix (the candidate), and ran every
+fixture with Z3 5.1.0 (archive sha256 `f47be8d2...92284a`) and Z3 4.12.1 (archive sha256
+`e07d4193...cbf3b`, from dafny-lang/solver-builds), in both resolver modes; the four outputs
+of each fixture were identical.  Exit codes and summaries, resource limit 200,000:
+
+| fixture | base, Z3 5.1.0 | base, Z3 4.12.1 | candidate, either Z3 |
+|---|---|---|---|
+| original (`MixedBad`, false) | **0: 2 verified** | 4: 1 error | 4: 1 error |
+| good (`MixedGood`, true) | **4: 1 error** | 0 | 0 |
+| controls (4 `assert false`) | **4: 1 error**: the three in branches on the correct values are proved | 4: 4 errors | 4: 4 errors |
+| true (12 methods, widths 0, 3, 6, 12) | **4: 8 errors**, every method at 3, 6 and 12 but the endpoints and the inverse | 0 | 0 |
+| false (8 methods) | **0: all 8 false postconditions proved** | 4: 8 errors | 4: 8 errors |
+| bounds | 4: 5 errors | 4: 5 errors | 4: 5 errors |
+
+With Z3 5.1.0, the base proves the issue's false postcondition and seven more, and fails to prove
+eight true ones; the candidate gives the right verdict on all of them, with either solver.  With
+Z3 4.12.1 the base already gives the right verdicts on these fixtures: the composition rule
+that 5.1.0 applies is not triggered there by these programs.
+
+The definitions by shifts cost more than the native operators did, as expected.  With Z3 5.1.0
+the candidate's proofs of the true facts at widths 3, 6 and 12 cost from 4,229 resource units
+(width 3) to 27,587 (`Bv12Interior`); the largest is well under the issue's limit of 200,000.
+A symbolic word costs more: one proof of `R(L(x, c), c) == x` at widths 3, 6 and 12 together,
+with symbolic `x` and `c <= W`, cost 6,605 resource units on the base with Z3 5.1.0 (where the
+native cancellation rule applies) and 185,966 on the candidate, 28 times as much; with Z3
+4.12.1 it ran out of 200,000 on the base and cost 185,156 on the candidate.  That is the price
+of soundness at these widths, and why the native operators stay where they are sound.  At
+`MixedGood`'s size the costs are equal: its correctness proof cost 4,252 (base, where it
+failed) and 4,234 (candidate) with Z3 5.1.0.
+
+At the native widths 32 and 64 nothing changes.  With a symbolic word and a full-width count,
+some proofs there (`Bv32FullThenZero`, `Bv64SameDirection`, and `Bv32Inverse` under 4.12.1)
+do not finish within 200,000,000 resource units, on the base and the candidate alike; so
+`github-issue-147-native-true.dfy` fixes the word, and the native fixtures run at 2,000,000.
+With Z3 4.12.1 one of those proofs, `Bv64SameDirection`, still runs out of resources at
+2,000,000, on the base and the candidate alike; its `.expect` records it.
+
+SUITE_AND_LIBRARY
