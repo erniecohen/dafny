@@ -135,7 +135,7 @@ public static class ModularTermination {
 ///
 /// The nodes are the methods, functions and constants with initializers of every class, trait and datatype, and
 /// the iterators.  The edges are the calls in their bodies, specifications and global bounds; a reference to a
-/// function or method as a value; a reference to a constant; a call of an iterator's MoveNext, to the iterator;
+/// function or method as a value; a reference to a constant; from a call of an iterator's MoveNext, to the iterator;
 /// and from a bodyless member of a trait that is not open to each member that overrides it.  A call through a
 /// function value is not an edge: such calls are not yet checked.
 /// </summary>
@@ -242,11 +242,11 @@ public class ModularTerminationAnalysis {
   }
 
   /// <summary>
-  /// The node that a call of, or a reference to, "member" leads to: the iterator for its MoveNext and
-  /// constructor, otherwise the member itself.
+  /// The node that a call of, or a reference to, "member" leads to: the iterator for its MoveNext, which runs
+  /// the iterator's body, otherwise the member itself.
   /// </summary>
   private static Declaration NodeOf(MemberDecl member) {
-    return member.EnclosingClass is IteratorDecl iter ? iter : member;
+    return member.EnclosingClass is IteratorDecl iter && member == iter.Member_MoveNext ? iter : member;
   }
 
   /// <summary>
