@@ -247,6 +247,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> HeapFreeLambdaFacts = new("--heap-free-lambda-facts", () => false,
     "Check a lambda without a reads clause, whose body observes neither the heap nor allocation, in every heap and without assuming its parameters allocated, and let the calls in its body unfold wherever it is applied. May change verification performance. Disabled by default.");
 
+  public static readonly Option<bool> StatementExpressionConclusions = new("--statement-expression-conclusions", () => false,
+    "In the condition of an assert statement, use the conclusion of a statement expression (S; E), such as an assert or assume statement, as a fact for E also under quantifiers and logical connectives, and not only at the top. Not inside old, unchanged, fresh, lambdas, or set and map comprehensions. May change verification performance. Disabled by default.");
+
   public static readonly Option<bool> AllowAxioms = new("--allow-axioms", () => false,
     "Prevents a warning from being generated for axioms, such as assume statements and functions or methods without a body, that don't have an {:axiom} attribute.") {
   };
@@ -703,6 +706,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(AdditionalAxioms, OptionScope.Cli);
     OptionRegistry.RegisterOption(MapComprehensionDomainTriggers, OptionScope.Cli);
     OptionRegistry.RegisterOption(HeapFreeLambdaFacts, OptionScope.Cli);
+    OptionRegistry.RegisterOption(StatementExpressionConclusions, OptionScope.Cli);
     OptionRegistry.RegisterOption(ShowHints, OptionScope.Cli);
     OptionRegistry.RegisterOption(Libraries, OptionScope.Module);
     OptionRegistry.RegisterOption(Output, OptionScope.Cli);
