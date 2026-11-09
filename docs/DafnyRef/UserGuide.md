@@ -2249,6 +2249,13 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   overrides that setting. See the [match expression](#sec-match-expression) for
   what it does not fix.
 
+* `--modular-termination` - (experimental) check that a call dispatched to a bodyless
+  member of a trait whose implementations may lie in other modules goes to a smaller
+  `decreases {:global}` bound, accept `decreases {:global}` clauses, and report, as hints
+  (`--show-hints`), every call that needs this rule. Disabled by default. Use
+  `modular-termination = true` in a project file's `[options]` section. See
+  [global bounds](#sec-global-decreases) for the rule and its present limits.
+
 Legacy options:
 
 * `-noIncludes` - ignore `include` directives in the program.

@@ -260,6 +260,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> ConservativeMatchInference = new("--conservative-match-inference", () => false,
     "With the refreshed type system, infer the type of a match source by propagation before making default type decisions, so that an earlier literal can still take its type from the enclosing context. Disabled by default.");
 
+  public static readonly Option<bool> ModularTermination = new("--modular-termination", () => false,
+    "Check termination of calls that dispatch to bodyless members of traits whose implementations may lie in other modules (a trait with {:termination false}, or one extended from another module): the callee's 'decreases {:global}' bound must be below the caller's, captured on entry. Accept 'decreases {:global}' clauses, and report as hints (with --show-hints) every call that needs this rule. Experimental and incomplete: see the Reference Manual. Disabled by default.");
+
   public static readonly Option<bool> TypeSystemRefresh = new("--type-system-refresh", () => false,
     @"
 false - The type-inference engine and supported types are those of Dafny 4.0.
@@ -718,6 +721,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(BitvectorMapKeys, OptionScope.Cli);
     OptionRegistry.RegisterOption(ContextualLambdaDomains, OptionScope.Cli);
     OptionRegistry.RegisterOption(ConservativeMatchInference, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationLogFormat, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerifyIncludedFiles, OptionScope.Cli);
     OptionRegistry.RegisterOption(DisableNonLinearArithmetic, OptionScope.Module);

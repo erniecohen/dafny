@@ -946,6 +946,11 @@ namespace Microsoft.Dafny {
                       callerEtran, false, builder, codeContext.InferredDecreases, hint, calleeEtran ?? etran);
                   }
                 }
+                if (e.Function != wfOptions.SelfCallsAllowance) {
+                  CheckModularTermination(callExpr.Origin, codeContext, e.Function, e.Receiver, substMap, directSubstMap,
+                    e.GetTypeArgumentSubstitutions(), wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran,
+                    builder, etran);
+                }
               }
               // all is okay, so allow this function application access to the function's axiom, except if it was okay because of the self-call allowance.
               Bpl.IdentifierExpr canCallFuncID = new Bpl.IdentifierExpr(callExpr.Origin, e.Function.FullSanitizedName + "#canCall", Bpl.Type.Bool);

@@ -1159,6 +1159,10 @@ NoGhost - disable printing of functions, ghost methods, and proof
       if (printMode == PrintModes.NoGhostOrIncludes) {
         return;
       }
+      if (ModularTermination.GlobalClauses(decs.Attributes).Any()) {
+        PrintDecreasesSpecWithGlobalClauses(decs, indent);
+        return;
+      }
       if (decs.Expressions != null && decs.Expressions.Count != 0) {
         wr.WriteLine();
         Indent(indent);
@@ -1167,6 +1171,38 @@ NoGhost - disable printing of functions, ghost methods, and proof
         });
         wr.Write(" ");
         PrintExpressionList(decs.Expressions, true);
+      }
+    }
+
+    /// <summary>
+    /// Prints each global bound (--modular-termination) as its own "decreases {:global} E" clause,
+    /// then the ordinary decreases clause with the remaining attributes.
+    /// </summary>
+    private void PrintDecreasesSpecWithGlobalClauses(Specification<Expression> decs, int indent) {
+      foreach (var global in ModularTermination.GlobalClauses(decs.Attributes).Reverse()) {
+        wr.WriteLine();
+        Indent(indent);
+        wr.Write($"decreases {{:{ModularTermination.GlobalAttributeName}}} ");
+        PrintExpressionList(global.Args, true);
+      }
+      if (decs.Expressions != null && decs.Expressions.Count != 0) {
+        wr.WriteLine();
+        Indent(indent);
+        wr.Write("decreases");
+        PrintOrdinaryDecreasesAttributes(decs.Attributes);
+        wr.Write(" ");
+        PrintExpressionList(decs.Expressions, true);
+      }
+    }
+
+    private void PrintOrdinaryDecreasesAttributes(Attributes a) {
+      if (a == null) {
+        return;
+      }
+      PrintOrdinaryDecreasesAttributes(a.Prev);
+      if (!ModularTermination.IsGlobalClause(a) && a is not UserSuppliedAtAttribute) {
+        wr.Write(" ");
+        PrintOneAttribute(a);
       }
     }
 

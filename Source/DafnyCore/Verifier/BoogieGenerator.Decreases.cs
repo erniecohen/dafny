@@ -103,6 +103,62 @@ public partial class BoogieGenerator {
                         oldExpressions, newExpressions, endsWithWinningTopComparison, hint), builder.Context));
   }
 
+  private HashSet<TraitDecl> modularTerminationOpenTraits;
+
+  /// <summary>
+  /// Under --modular-termination, the global bound of "callable" (its "decreases {:global}" clause, or
+  /// else that of the member it overrides, recursively), in terms of its own formals; null if it has none.
+  /// </summary>
+  List<Expression> GlobalBound(ICallable callable) {
+    var declared = ModularTermination.DeclaredGlobalBound(callable);
+    if (declared != null) {
+      return declared;
+    }
+    if (callable is not MemberDecl { OverriddenMember: ICallable parent } member ||
+        GlobalBound(parent) is not { } parentBound) {
+      return null;
+    }
+    var substMap = new Dictionary<IVariable, Expression>();
+    for (var i = 0; i < callable.Ins.Count; i++) {
+      substMap.Add(parent.Ins[i], Expression.CreateIdentExpr(callable.Ins[i]));
+    }
+    var typeMap = GetTypeArgumentSubstitutionMap((MemberDecl)parent, member);
+    var sub = new FunctionCallSubstituter(substMap, typeMap, (TraitDecl)((MemberDecl)parent).EnclosingClass,
+      (TopLevelDeclWithMembers)member.EnclosingClass);
+    return parentBound.ConvertAll(sub.Substitute);
+  }
+
+  /// <summary>
+  /// Under --modular-termination, emit to "builder" the smaller-bound check for a call from "codeContext" to
+  /// "callee" that is dispatched to implementations that other modules may provide: the callee's global
+  /// bound must be below the caller's, captured on entry.  A missing bound is TOP, above every other: so the
+  /// check holds trivially, and is not emitted, when only the caller has none, and fails when the callee has
+  /// none.  Other calls get no check here.
+  /// </summary>
+  void CheckModularTermination(IOrigin tok, ICodeContext codeContext, MemberDecl callee, Expression receiverReplacement,
+                               Dictionary<IVariable, Expression> substMap, Dictionary<IVariable, Expression> directSubstMap,
+                               Dictionary<TypeParameter, Type> typeMap, ExpressionTranslator etranCurrent,
+                               BoogieStmtListBuilder builder, ExpressionTranslator etranCallee) {
+    if (!options.Get(CommonOptionBag.ModularTermination) || codeContext is not ICallable caller) {
+      return;
+    }
+    modularTerminationOpenTraits ??= ModularTermination.OpenTraits(program);
+    if (!ModularTermination.IsOpenDispatch(callee, modularTerminationOpenTraits)) {
+      return;
+    }
+    var calleeBound = GlobalBound((ICallable)callee);
+    var callerBound = GlobalBound(caller);
+    if (calleeBound != null && callerBound == null) {
+      return;
+    }
+    var hint = calleeBound == null
+      ? "the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires"
+      : "--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's";
+    var oldCaller = codeContext is MethodOrConstructor and not TwoStateLemma;
+    CheckCallTermination(tok, callerBound ?? [], calleeBound ?? [], null, receiverReplacement, substMap, directSubstMap, typeMap,
+      etranCurrent, oldCaller, builder, false, hint, etranCallee);
+  }
+
   /// <summary>
   /// Returns the expression that says whether or not the decreases function has gone down (if !allowNoChange)
   /// or has gone down or stayed the same (if allowNoChange).

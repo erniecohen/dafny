@@ -822,6 +822,33 @@ public class TraitDecreases : ProofObligationDescription {
   }
 }
 
+/// <summary>
+/// Under --modular-termination, an override's global bound is no greater than its parent's.
+/// </summary>
+public class TraitGlobalDecreases : ProofObligationDescription {
+  public override string SuccessDescription =>
+    $"{whatKind}'s 'decreases {{:global}}' bound is below or equal to that in the trait";
+
+  public override string FailureDescription =>
+    $"{whatKind}'s 'decreases {{:global}}' bound must be below or equal to that in the trait";
+
+  public override string ShortDescription => "trait global decreases";
+
+  public override bool ProvedOutsideUserCode => true;
+
+  private readonly string whatKind;
+  private readonly Expression expr;
+
+  public TraitGlobalDecreases(string whatKind, Expression expr) {
+    this.whatKind = whatKind;
+    this.expr = expr;
+  }
+
+  public override Expression GetAssertedExpr(DafnyOptions options) {
+    return expr;
+  }
+}
+
 public class ModifyFrameSubset : ProofObligationDescription {
   public override string SuccessDescription =>
       $"{whatKind} is allowed by context's modifies clause";
