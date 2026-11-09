@@ -309,13 +309,26 @@ so use it with care.  Setting the fuel to 0,0 is similar to making the
 definition opaque, except when used with all literal arguments.
 
 Fuel limits only the unfoldings of a call whose arguments are not all
-literals.  A call whose arguments are all literals unfolds without using fuel.
-A function without a `reads` clause whose `decreases` clause names only some
-of its parameters also unfolds without using fuel when the arguments for those parameters are
-literals, whatever the other arguments are.  A function with no `decreases`
-clause gets one that names every parameter whose type is ordered (for a member
-of a datatype, `this` first), so it gets only the first kind of unfolding.  For
-example, with
+literals.  A literal here is a literal value, a datatype value built from
+literals, or a call of a function whose arguments are literals and whose body
+is visible; `C(One())` is a literal when `One()` is a function with a body.
+These kinds of unfolding apply only to a function that is not an extreme
+predicate, is not part of a co-recursive cluster, and has no `reads` clause:
+
+* a call whose arguments are all literals unfolds without using fuel;
+* if the function's `decreases` clause names only some of its parameters (the
+  receiver `this` of a member counts as a parameter), a call whose arguments
+  for those parameters are literals also unfolds without using fuel, whatever
+  the other arguments are.
+
+A function with no `decreases` clause gets one that names every parameter
+whose type is ordered, and, for a member of a type that is not a reference
+type, `this` first.  If that is all of its parameters, including the receiver
+of a member, it gets only the first kind of unfolding.  A parameter whose type
+is not ordered (a type parameter, a function, an `iset` or `imap`, a
+codatatype, an abstract type or a trait that is not a reference type), and
+the receiver of a class or trait member, are left out of the inferred clause;
+such a function gets the second kind without any clause.  For example, with
 
 <!-- %check-verify -->
 ```dafny
@@ -337,17 +350,19 @@ lemma Depth3(x: real)
 
 the lemma verifies because `decreases t` lets the literal term unfold although
 `x` is not a literal.  Without that clause, fuel runs out at the third level.  A
-member predicate of a datatype uses `decreases this` the same way.
+member predicate of a datatype uses `decreases this` the same way when its
+receiver is a literal; when the receiver is built from a variable, as in
+`Bin(op, Var(0), Var(1)).Scoped(n)` with a parameter `op`, the clause does not
+apply, and only fuel unfolds the call.
 
 Such a clause has a cost on calls whose arguments are all literals.  Both kinds
-of unfolding then apply at every level of the literal term, so the work grows
-about fourfold per level for a function like `Eval`, which makes two recursive
-calls.  Measured with Z3 5.1.0, `Eval` of an all-literal term costs 14,491
-resource units at depth 4 without the clause and 405,000 with it; at depth 6 it
-costs 20,912 without the clause and runs out of a 5,000,000 limit with it.  So
-add the clause when a literal term must unfold while another argument is not a
-literal, and leave it out of a function that is mostly evaluated on all-literal
-arguments.
+of unfolding then apply at every level of the literal term, so for a function
+like `Eval`, which makes two recursive calls, the work grows about fourfold per
+level, where without the clause it grows about linearly; at depth 6 such a call
+can exhaust a resource limit of 5,000,000.  So add
+the clause when a literal term must unfold while another argument is not a
+literal, and leave it out of a function that is mostly evaluated on
+all-literal arguments.
 
 ### 11.2.9. `{:id <string>}`
 Assign a custom unique ID to a function or a method to be used for verification
