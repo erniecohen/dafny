@@ -150,6 +150,11 @@ public partial class BoogieGenerator {
       foreach (Expression p in f.Decreases.Expressions) {
         generator.CheckWellformed(p, new WFOptions(null, false), locals, builder, etran);
       }
+      if (generator.options.Get(CommonOptionBag.ModularTermination)) {
+        foreach (var p in ModularTermination.DeclaredGlobalBound(f) ?? []) {
+          generator.CheckWellformed(p, new WFOptions(null, false), locals, builder, etran);
+        }
+      }
 
       var implementationParameters = Bpl.Formal.StripWhereClauses(procedureParameters);
       CheckBodyAndEnsuresClauseWellformedness(f, etran, locals, implementationParameters, builderInitializationArea, builder);

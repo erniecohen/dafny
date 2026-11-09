@@ -269,6 +269,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> AncestorQualifiedModuleIds = new("--ancestor-qualified-module-ids", () => false,
     "Let a refines clause or import whose qualified module name starts with modules that enclose it, as in 'module A.C refines A.B', depend on the module it names instead of on the enclosing module, which is otherwise reported as a cycle. Disabled by default.");
 
+  public static readonly Option<bool> ModularTermination = new("--modular-termination", () => false,
+    "Experimental, first step; it does not yet establish termination. Accept 'decreases {:global}' clauses, and reject a call dispatched to a bodyless member of a trait whose implementations may lie in other modules (a trait with {:termination false}, or one extended from another module) unless the callee's 'decreases {:global}' bound is below the caller's, captured on entry. Only such calls made directly by a member with a bound are compared with it: a cycle through a helper method or function, or through a function value, is not detected, and a program can still prove false. Report as hints (with --show-hints) every call that needs the rule. See the Reference Manual. Disabled by default.");
+
   public static readonly Option<bool> InvariantConstructorInference = new("--invariant-constructor-inference", () => false,
     "With the refreshed type system, let a datatype constructor argument whose formal type uses a type parameter in a non-variant position, such as the tail of a list, fix that type argument, instead of widening it to the type of another argument. Every argument is still checked against the chosen type. Disabled by default.");
 
@@ -733,6 +736,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(ConservativeMatchInference, OptionScope.Cli);
     OptionRegistry.RegisterOption(DatatypeSubsetConversions, OptionScope.Cli);
     OptionRegistry.RegisterOption(AncestorQualifiedModuleIds, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(InvariantConstructorInference, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationLogFormat, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerifyIncludedFiles, OptionScope.Cli);
