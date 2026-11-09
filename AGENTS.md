@@ -101,7 +101,8 @@ and a project file (`dfyconfig.toml`) can set it, like any other option.
   family is the bounded integer/bitvector round trip, with local verification instances of
   existing native integer literal identities, local instances of the reflexivity of heap
   succession at two-state function values, and instances of the allocation axioms of
-  heap-independent functions at their applications, described in
+  heap-independent functions at their applications, and instances of override axioms at
+  the call layer, described in
   [`docs/dev/additional-axioms.md`](docs/dev/additional-axioms.md).
 - **Every later axiom joins that option.**  The option turns all its axioms on at
   once, so a later axiom's soundness argument covers it together with those

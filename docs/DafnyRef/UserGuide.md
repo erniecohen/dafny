@@ -2465,6 +2465,9 @@ and what information it produces about the verification process.
   After an assign-such-that statement it also makes checked call permissions
   available for the selected values, so predicates in the constraint can unfold.
   Existing well-formedness, precondition and existence checks are preserved.
+  When a function with a body overrides a trait function from another module, it
+  also states the override axiom at the layer that calls use, so that a fact about
+  the overriding function reaches the trait function without a cast to the trait.
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
 
 * `--heap-free-lambda-facts` - check a lambda without a reads clause, whose
