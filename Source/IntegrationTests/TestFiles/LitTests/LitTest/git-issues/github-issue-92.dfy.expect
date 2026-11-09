@@ -18,15 +18,15 @@ false-control (legacy-off)
 github-issue-92-false-control.dfy(4,31): Error: type conversions are not supported to this type (got Positive)
 1 resolution/type errors detected in github-issue-92-false-control.dfy
 false-control (legacy-on)
-github-issue-92-false-control.dfy(6,2): Error: assertion could not be proved
+github-issue-92-false-control.dfy(6,2): Error: assertion might not hold
 
 Dafny program verifier finished with 1 verified, 1 error
 false-control (refreshed-off)
-github-issue-92-false-control.dfy(6,2): Error: assertion could not be proved
+github-issue-92-false-control.dfy(6,2): Error: assertion might not hold
 
 Dafny program verifier finished with 1 verified, 1 error
 false-control (refreshed-on)
-github-issue-92-false-control.dfy(6,2): Error: assertion could not be proved
+github-issue-92-false-control.dfy(6,2): Error: assertion might not hold
 
 Dafny program verifier finished with 1 verified, 1 error
 incompatible (legacy-off)
