@@ -2274,6 +2274,16 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   `ancestor-qualified-module-ids = true` in a project file's `[options]` section.
   See [module ordering](#sec-module-ordering).
 
+* `--modular-termination` - (experimental, a first step that does not yet establish
+  termination) accept `decreases {:global}` clauses, and reject a call dispatched to a
+  bodyless member of a trait whose implementations may lie in other modules unless it
+  goes to a smaller `decreases {:global}` bound. Only such calls made directly by a member
+  with a bound are compared with it. A cycle through a helper or a function value is not
+  detected, so a program can still prove `false`. With `--show-hints`, it reports every
+  call that needs the rule. Disabled by default. Use `modular-termination = true` in a
+  project file's `[options]` section. See [global bounds](#sec-global-decreases) for the
+  rule and its limits.
+
 Legacy options:
 
 * `-noIncludes` - ignore `include` directives in the program.
@@ -2479,6 +2489,23 @@ and what information it produces about the verification process.
   file's `[options]` section. It has its own option, not `--additional-axioms`,
   because it can change proof costs. See
   [the soundness note](../dev/additional-axioms.md).
+
+* `--statement-expression-conclusions` - in the condition of an `assert`
+  statement, use the conclusion of a statement expression `S; E` (the
+  condition of an `assert`, `assume` or `expect` statement, the result of a
+  `calc`, the conclusion of an `assert ... by`) as a fact for `E` also when
+  `S; E` occurs under quantifiers and logical connectives. Without it, only a
+  statement expression at the top of the condition (or of one of its
+  conjuncts) gets the fact, so that, for example,
+  `assert forall n: nat :: assume false; false` fails. The statement is still
+  checked as before; the fact holds wherever `E` is evaluated because the
+  well-formedness check of the condition, just before, establishes it there.
+  Postconditions, invariants and preconditions are not affected, and neither
+  are statement expressions inside `old`, `unchanged`, `fresh`, lambdas, set
+  and map comprehensions, let-such-that expressions and binding-guard
+  if-then-else expressions. Disabled by default;
+  `statement-expression-conclusions = true` in a project file's `[options]`
+  section. It can change proof costs.
 
 * `--manual-lemma-induction` - disables automatic inducntion for lemmas
 

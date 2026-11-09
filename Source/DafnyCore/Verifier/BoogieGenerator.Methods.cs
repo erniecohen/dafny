@@ -672,6 +672,11 @@ namespace Microsoft.Dafny {
       foreach (Expression p in m.Decreases.Expressions) {
         CheckWellformed(p, wfOptions, localVariables, builder, etran);
       }
+      if (options.Get(CommonOptionBag.ModularTermination)) {
+        foreach (var p in ModularTermination.DeclaredGlobalBound(m) ?? []) {
+          CheckWellformed(p, wfOptions, localVariables, builder, etran);
+        }
+      }
 
       if (m is not TwoStateLemma) {
         var modifies = m.Mod;
@@ -1588,14 +1593,24 @@ namespace Microsoft.Dafny {
 
     private void AddOverrideTerminationChk(ICallable original, ICallable overryd, BoogieStmtListBuilder builder, ExpressionTranslator etran,
       Dictionary<IVariable, Expression> substMap, Dictionary<TypeParameter, Type> typeMap) {
+      AddOverrideTerminationChk(original, overryd, overryd.Decreases.Expressions, original.Decreases.Expressions,
+        builder, etran, substMap, typeMap);
+      // Under --modular-termination, an override's global bound may be no greater than its parent's.
+      if (options.Get(CommonOptionBag.ModularTermination) &&
+          ModularTermination.DeclaredGlobalBound(original) is { } originalBound && GlobalBound(overryd) is { } overriddenBound) {
+        AddOverrideTerminationChk(original, overryd, overriddenBound, originalBound, builder, etran, substMap, typeMap, true);
+      }
+    }
+
+    private void AddOverrideTerminationChk(ICallable original, ICallable overryd,
+      List<Expression> contextDecreases, List<Expression> calleeDecreases, BoogieStmtListBuilder builder, ExpressionTranslator etran,
+      Dictionary<IVariable, Expression> substMap, Dictionary<TypeParameter, Type> typeMap, bool globalBounds = false) {
       Contract.Requires(original != null);
       Contract.Requires(overryd != null);
       Contract.Requires(builder != null);
       Contract.Requires(etran != null);
       Contract.Requires(substMap != null);
       // Note, it is as if the trait's method is calling the class's method.
-      var contextDecreases = overryd.Decreases.Expressions;
-      var calleeDecreases = original.Decreases.Expressions;
       var T = (TraitDecl)((MemberDecl)overryd).EnclosingClass;
       var I = (TopLevelDeclWithMembers)((MemberDecl)original).EnclosingClass;
 
@@ -1661,7 +1676,9 @@ namespace Microsoft.Dafny {
         contextDecreases.Select(sub.Substitute).ToList(),
         calleeDecreases,
         true);
-      var desc = new TraitDecreases(original.WhatKind, assertedExpr);
+      ProofObligationDescription desc = globalBounds
+        ? new TraitGlobalDecreases(original.WhatKind, assertedExpr)
+        : new TraitDecreases(original.WhatKind, assertedExpr);
       builder.Add(Assert(original.Origin, decrChk, desc, builder.Context));
     }
 

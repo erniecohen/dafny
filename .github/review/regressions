@@ -252,13 +252,15 @@ git-issues/github-issue-99.dfy
 
 # Consistent obligation checks and project option precedence.
 git-issues/git-issue-100.dfy
+git-issues/git-issue-100-shard1.dfy
+git-issues/git-issue-100-shard2.dfy
 
 # Terminal method and forall hints retain legacy reveal scopes (#100).
 # Covered by the registered issue 100 gate above.
 
 # Caller preparation uses standard post-WF support construction (#100).
 # Paired quantified caller and false controls are in the registered issue 100 gate.
-# Canonical local-exit support order and paired/negative WF fixtures are covered by git-issue-100.
+# Canonical local-exit support order and paired/negative WF fixtures are covered by git-issue-100 and its shards.
 
 # Resolve once and verify every duplicate, overlapping and failing request (#173).
 git-issues/git-issue-173.dfy
@@ -316,6 +318,15 @@ git-issues/github-issue-90-cycles.dfy
 
 # Constructor type arguments under --invariant-constructor-inference (https://github.com/erniecohen/dafny/issues/101).
 git-issues/github-issue-101.dfy
+
+# Statement-expression conclusions under quantifiers, opt-in (https://github.com/erniecohen/dafny/issues/96).
+git-issues/github-issue-96.dfy
+
+# An explicit trigger instantiates for a closure-valued local (https://github.com/erniecohen/dafny/issues/98); verifies since #160.
+git-issues/github-issue-98.dfy
+
+# Opt-in --modular-termination: smaller-bound rule for calls dispatched across modules (https://github.com/erniecohen/dafny/issues/211).
+git-issues/github-issue-211.dfy
 
 # Override axioms at the call layer under --additional-axioms (https://github.com/erniecohen/dafny/issues/103).
 git-issues/github-issue-103.dfy

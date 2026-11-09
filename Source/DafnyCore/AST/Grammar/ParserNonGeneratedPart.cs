@@ -305,6 +305,24 @@ public partial class Parser {
     return false;
   }
 
+  /// <summary>
+  /// Under --modular-termination, returns the {:global} attribute, without arguments, that the
+  /// current decreases clause added in front of "before", so that the clause's expressions become
+  /// its arguments: the clause's global bound.  Returns null otherwise, and always when the option
+  /// is off, so that the clause is then parsed as it always was.
+  /// </summary>
+  Attributes GlobalDecreasesAttribute(Attributes current, Attributes before) {
+    if (!theOptions.Get(CommonOptionBag.ModularTermination)) {
+      return null;
+    }
+    for (var a = current; a != null && a != before; a = a.Prev) {
+      if (a.Name == ModularTermination.GlobalAttributeName && a.Args.Count == 0 && a is not UserSuppliedAtAttribute) {
+        return a;
+      }
+    }
+    return null;
+  }
+
   bool AcceptReferrers() {
     return theOptions.Get(CommonOptionBag.Referrers);
   }

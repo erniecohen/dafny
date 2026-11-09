@@ -687,6 +687,39 @@ jobs:
           path: finite-support-results
           retention-days: 90
 
+  statement-conclusions:
+    name: Statement-expression conclusions (opt-in, #96)
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: dafny
+      - name: Unpack Dafny
+        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
+      - name: Pinned solver
+        run: |
+          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
+          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+          echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
+      - name: Run the fixtures with --statement-expression-conclusions on and off
+        run: |
+          set +e
+          sh .github/review/statement-conclusions.sh "$PWD/out/dafny/Dafny" "$Z3" statement-conclusions-results
+          status=$?
+          cat statement-conclusions-results/summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: statement-conclusions-results
+          path: statement-conclusions-results
+          retention-days: 90
+
   binaries:
     name: Binaries (${{ matrix.rid }})
     needs: build
@@ -697,7 +730,7 @@ jobs:
       matrix:
         include:
           - rid: osx-arm64
-            os: macos-14
+            os: macos-15
           - rid: linux-x64
             os: ubuntu-24.04
     steps:
@@ -750,7 +783,7 @@ jobs:
 
   release:
     name: GitHub release
-    needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, finite-support, axiom-resources, verification-batch]
+    needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, finite-support, statement-conclusions, axiom-resources, verification-batch]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     timeout-minutes: 15

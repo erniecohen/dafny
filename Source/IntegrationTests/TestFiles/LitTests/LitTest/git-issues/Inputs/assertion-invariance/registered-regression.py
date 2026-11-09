@@ -9,10 +9,16 @@ solver=Path(sys.argv[2]).resolve()
 work=Path(sys.argv[3]).resolve()
 work.mkdir(parents=True,exist_ok=True)
 fixtures=Path(__file__).resolve().parent
-assert "5.1.0" in subprocess.check_output([str(solver),"--version"],text=True)
-help_result=subprocess.run(["dotnet",str(assembly),"verify","--help"],text=True,capture_output=True)
-assert "--consistent-obligation-checks" in help_result.stdout
-print("PASS CLI option help")
+# Optional fourth argument K/N: run only the sections whose index is K modulo N, so that the
+# registered regression can be split over several lit tests (issue #229).
+shard,shards=(int(x) for x in sys.argv[4].split("/")) if len(sys.argv)>4 else (0,1)
+
+def section_0():
+ assert "5.1.0" in subprocess.check_output([str(solver),"--version"],text=True)
+ help_result=subprocess.run(["dotnet",str(assembly),"verify","--help"],text=True,capture_output=True)
+ assert "--consistent-obligation-checks" in help_result.stdout
+ print("PASS CLI option help")
+
 
 def verify(name,refresh=False,axioms=False,enabled=True,project=False,override=None,isolate=False):
  source=work/"dfyconfig.toml" if project else fixtures/(name+".dfy")
@@ -61,141 +67,169 @@ def verify(name,refresh=False,axioms=False,enabled=True,project=False,override=N
     outcome=="Valid" for outcome in outcomes),output
  return result.returncode,output
 
-for refresh in [False,True]:
- for axioms in [False,True]:
-  for name in ["issue100-original","issue100-explicit","issue100-final-true"]:
-   code,output=verify(name,refresh,axioms)
-   assert code==0,output
-print("PASS original issue 100 at unchanged resource limit")
-for refresh in [False,True]:
- for axioms in [False,True]:
-  for name in ["subset-short","subset-recursive","subset-assignment","subset-cast","generic-subset","nested-subset"]:
-   code,output=verify(name,refresh,axioms)
-   assert code==0,output
-print("PASS implicit subset constraints")
-for refresh in [False,True]:
- for axioms in [False,True]:
-  for name in ["sequence-constraint","sequence-empty","array-initializer"]:
-   code,output=verify(name,refresh,axioms)
-   assert code==0,output
-  for name in ["negative-sequence-constraint","negative-array-initializer"]:
-   code,output=verify(name,refresh,axioms)
-   assert code==4 and "error" in output and "parse errors" not in output,output
-print("PASS range-bound collection constraints")
-for refresh in [False,True]:
- for axioms in [False,True]:
-  for enabled in [False,True]:
-   code,output=verify("terminal-reveal-scope",refresh,axioms,enabled=enabled)
-   assert code==0,output
-print("PASS legacy terminal reveal scopes")
-for refresh in [False,True]:
- for axioms in [False,True]:
-  for name in ["negative-subset","negative-guarded-constraint","negative-subset-vacuity",
-    "negative-self-postcondition","negative-self-postcondition-let","negative-allocation-vacuity",
-    "negative-old-argument","negative-forall","negative-higher-precondition","negative-ordered-contract",
-    "negative-proof-reveal","negative-hidden-after-reveal",
-    "negative-boolean-value-argument","negative-boolean-value-higher-order",
-    "negative-boolean-value-container","negative-boolean-value-let","negative-boolean-value-membership",
-    "nonvacuity-boolean-value-argument","nonvacuity-boolean-value-higher-order",
-    "nonvacuity-boolean-value-container","nonvacuity-boolean-value-let","nonvacuity-boolean-value-membership"]:
-   for isolate in [False,True]:
-    code,output=verify(name,refresh,axioms,isolate=isolate)
-    assert code==4 and "error" in output and "parse errors" not in output,output
-print("PASS false controls")
-for refresh in [False,True]:
- for axioms in [False,True]:
-  for name in ["certified-contract-domain","certified-spec-only-reads"]:
-   code,output=verify(name,refresh,axioms)
-   assert code==0,output
-  for name in ["negative-certified-contract-domain","negative-certified-first-postcondition",
-    "negative-certified-conditional-reads","negative-call-scope-publication"]:
-   for isolate in [False,True]:
-    code,output=verify(name,refresh,axioms,isolate=isolate)
-    assert code==4 and "error" in output and "parse errors" not in output,output
-print("PASS certified contract preparation and false controls")
-for refresh in [False,True]:
- for axioms in [False,True]:
-  for name in ["certified-guarded-arguments","certified-guarded-arguments-explicit"]:
-   code,output=verify(name,refresh,axioms)
-   assert code==0,output
-  for isolate in [False,True]:
-   code,output=verify("negative-certified-guarded-arguments",refresh,axioms,isolate=isolate)
-   assert code==4 and "error" in output and "parse errors" not in output,output
-print("PASS guarded private argument preparation")
-for refresh in [False,True]:
- for axioms in [False,True]:
-  for name in ["caller-quantified-wf","caller-quantified-wf-explicit"]:
-   code,output=verify(name,refresh,axioms)
-   assert code==0,output
-  code,output=verify("negative-caller-quantified-wf",refresh,axioms)
-  assert code==4 and "error" in output and "parse errors" not in output,output
-print("PASS canonical caller wellformedness preparation")
-for refresh in [False,True]:
- for axioms in [False,True]:
-  for name in ["exit-quantified-wf","exit-quantified-wf-explicit"]:
-   code,output=verify(name,refresh,axioms)
-   assert code==0,output
-  code,output=verify("negative-exit-quantified-wf",refresh,axioms)
-  assert code==4 and "error" in output and "parse errors" not in output,output
-print("PASS canonical local exit wellformedness preparation")
-# This empty-body graph lemma needs earlier proved postconditions to supply
-# the concrete initial-heap path for the final existential postcondition.
-for refresh in [False,True]:
- for axioms in [False,True]:
-  code,output=verify("schorr-initial-path",refresh,axioms)
-  assert code==0,output
-  code,output=verify("schorr-initial-path",refresh,axioms,enabled=False)
-  source=fixtures/"schorr-initial-path.dfy"
-  line=next(i for i,text in enumerate(source.read_text().splitlines(),1)
-    if text.strip()=="ensures old(Reachable(root, child, S))")
-  assert code==4 and f"schorr-initial-path.dfy({line}," in output and "1 error" in output,output
-  for enabled in [False,True]:
-   code,output=verify("schorr-initial-path-explicit",refresh,axioms,enabled=enabled)
-   assert code==0,output
-   code,output=verify("negative-schorr-initial-edge",refresh,axioms,enabled=enabled)
-   source=fixtures/"negative-schorr-initial-edge.dfy"
-   line=next(i for i,text in enumerate(source.read_text().splitlines(),1)
-     if text.strip()=="ensures old(ReachableVia(root, Path.Extend(prefix, parent), child, S))")
-   assert code==4 and f"negative-schorr-initial-edge.dfy({line}," in output,output
-   code,output=verify("schorr-initial-path-nonvacuity",refresh,axioms,enabled=enabled)
-   source=fixtures/"schorr-initial-path-nonvacuity.dfy"
-   line=next(i for i,text in enumerate(source.read_text().splitlines(),1)
-     if "assert false;" in text)
-   assert code==4 and f"schorr-initial-path-nonvacuity.dfy({line}," in output and "1 error" in output,output
-print("PASS sequential initial-heap path postconditions and false controls")
-# A second Invalid declaration must not mask unsound acceptance of the caller.
-# Check every declaration above and both independently failing source locations.
-for refresh in [False,True]:
- for axioms in [False,True]:
-  for enabled in [False,True]:
-   code,output=verify("twostate-labeled-recursive",refresh,axioms,enabled=enabled)
-   assert code==0,output
-   code,output=verify("negative-twostate-labeled-replay",refresh,axioms,enabled=enabled)
-   source=fixtures/"negative-twostate-labeled-replay.dfy"
-   lines=source.read_text().splitlines()
-   call_line=next(i for i,text in enumerate(lines,1) if "ReplayCallee@ReplayCurrent(c);" in text)
-   false_line=next(i for i,text in enumerate(lines,1) if "Independent invalid assertion" in text)
-   assert code==4 and f"negative-twostate-labeled-replay.dfy({call_line}," in output,output
-   assert f"negative-twostate-labeled-replay.dfy({false_line}," in output,output
-print("PASS labeled recursive two-state requires and independent false controls")
-for refresh in [False,True]:
- for axioms in [False,True]:
-  for enabled in [False,True]:
-   code,output=verify("twostate-nested-replay",refresh,axioms,enabled=enabled)
-   assert code==0,output
-   code,output=verify("negative-twostate-nested-replay",refresh,axioms,enabled=enabled)
-   source=fixtures/"negative-twostate-nested-replay.dfy"
-   lines=source.read_text().splitlines()
-   call_line=next(i for i,text in enumerate(lines,1) if "ReplayCallee@ReplayCurrent(c);" in text)
-   false_line=next(i for i,text in enumerate(lines,1) if "Independent invalid assertion" in text)
-   assert code==4 and f"negative-twostate-nested-replay.dfy({call_line}," in output,output
-   assert f"negative-twostate-nested-replay.dfy({false_line}," in output,output
-print("PASS nested two-state statement expressions and independent false controls")
 
-(work/"subset.dfy").write_text((fixtures/"subset-short.dfy").read_text())
-(work/"dfyconfig.toml").write_text("[options]\nconsistent-obligation-checks = true\n")
-code,output=verify("subset-short",project=True)
-assert code==0,output
-code,output=verify("subset-short",project=True,override=False)
-assert code==4 and "subset" in output,output
-print("PASS project option and CLI precedence")
+def section_1():
+ for refresh in [False,True]:
+  for axioms in [False,True]:
+   for name in ["issue100-original","issue100-explicit","issue100-final-true"]:
+    code,output=verify(name,refresh,axioms)
+    assert code==0,output
+ print("PASS original issue 100 at unchanged resource limit")
+
+def section_2():
+ for refresh in [False,True]:
+  for axioms in [False,True]:
+   for name in ["subset-short","subset-recursive","subset-assignment","subset-cast","generic-subset","nested-subset"]:
+    code,output=verify(name,refresh,axioms)
+    assert code==0,output
+ print("PASS implicit subset constraints")
+
+def section_3():
+ for refresh in [False,True]:
+  for axioms in [False,True]:
+   for name in ["sequence-constraint","sequence-empty","array-initializer"]:
+    code,output=verify(name,refresh,axioms)
+    assert code==0,output
+   for name in ["negative-sequence-constraint","negative-array-initializer"]:
+    code,output=verify(name,refresh,axioms)
+    assert code==4 and "error" in output and "parse errors" not in output,output
+ print("PASS range-bound collection constraints")
+
+def section_4():
+ for refresh in [False,True]:
+  for axioms in [False,True]:
+   for enabled in [False,True]:
+    code,output=verify("terminal-reveal-scope",refresh,axioms,enabled=enabled)
+    assert code==0,output
+ print("PASS legacy terminal reveal scopes")
+
+def section_5():
+ for refresh in [False,True]:
+  for axioms in [False,True]:
+   for name in ["negative-subset","negative-guarded-constraint","negative-subset-vacuity",
+     "negative-self-postcondition","negative-self-postcondition-let","negative-allocation-vacuity",
+     "negative-old-argument","negative-forall","negative-higher-precondition","negative-ordered-contract",
+     "negative-proof-reveal","negative-hidden-after-reveal",
+     "negative-boolean-value-argument","negative-boolean-value-higher-order",
+     "negative-boolean-value-container","negative-boolean-value-let","negative-boolean-value-membership",
+     "nonvacuity-boolean-value-argument","nonvacuity-boolean-value-higher-order",
+     "nonvacuity-boolean-value-container","nonvacuity-boolean-value-let","nonvacuity-boolean-value-membership"]:
+    for isolate in [False,True]:
+     code,output=verify(name,refresh,axioms,isolate=isolate)
+     assert code==4 and "error" in output and "parse errors" not in output,output
+ print("PASS false controls")
+
+def section_6():
+ for refresh in [False,True]:
+  for axioms in [False,True]:
+   for name in ["certified-contract-domain","certified-spec-only-reads"]:
+    code,output=verify(name,refresh,axioms)
+    assert code==0,output
+   for name in ["negative-certified-contract-domain","negative-certified-first-postcondition",
+     "negative-certified-conditional-reads","negative-call-scope-publication"]:
+    for isolate in [False,True]:
+     code,output=verify(name,refresh,axioms,isolate=isolate)
+     assert code==4 and "error" in output and "parse errors" not in output,output
+ print("PASS certified contract preparation and false controls")
+
+def section_7():
+ for refresh in [False,True]:
+  for axioms in [False,True]:
+   for name in ["certified-guarded-arguments","certified-guarded-arguments-explicit"]:
+    code,output=verify(name,refresh,axioms)
+    assert code==0,output
+   for isolate in [False,True]:
+    code,output=verify("negative-certified-guarded-arguments",refresh,axioms,isolate=isolate)
+    assert code==4 and "error" in output and "parse errors" not in output,output
+ print("PASS guarded private argument preparation")
+
+def section_8():
+ for refresh in [False,True]:
+  for axioms in [False,True]:
+   for name in ["caller-quantified-wf","caller-quantified-wf-explicit"]:
+    code,output=verify(name,refresh,axioms)
+    assert code==0,output
+   code,output=verify("negative-caller-quantified-wf",refresh,axioms)
+   assert code==4 and "error" in output and "parse errors" not in output,output
+ print("PASS canonical caller wellformedness preparation")
+
+def section_9():
+ for refresh in [False,True]:
+  for axioms in [False,True]:
+   for name in ["exit-quantified-wf","exit-quantified-wf-explicit"]:
+    code,output=verify(name,refresh,axioms)
+    assert code==0,output
+   code,output=verify("negative-exit-quantified-wf",refresh,axioms)
+   assert code==4 and "error" in output and "parse errors" not in output,output
+ print("PASS canonical local exit wellformedness preparation")
+
+def section_10():
+ # This empty-body graph lemma needs earlier proved postconditions to supply
+ # the concrete initial-heap path for the final existential postcondition.
+ for refresh in [False,True]:
+  for axioms in [False,True]:
+   code,output=verify("schorr-initial-path",refresh,axioms)
+   assert code==0,output
+   code,output=verify("schorr-initial-path",refresh,axioms,enabled=False)
+   source=fixtures/"schorr-initial-path.dfy"
+   line=next(i for i,text in enumerate(source.read_text().splitlines(),1)
+     if text.strip()=="ensures old(Reachable(root, child, S))")
+   assert code==4 and f"schorr-initial-path.dfy({line}," in output and "1 error" in output,output
+   for enabled in [False,True]:
+    code,output=verify("schorr-initial-path-explicit",refresh,axioms,enabled=enabled)
+    assert code==0,output
+    code,output=verify("negative-schorr-initial-edge",refresh,axioms,enabled=enabled)
+    source=fixtures/"negative-schorr-initial-edge.dfy"
+    line=next(i for i,text in enumerate(source.read_text().splitlines(),1)
+      if text.strip()=="ensures old(ReachableVia(root, Path.Extend(prefix, parent), child, S))")
+    assert code==4 and f"negative-schorr-initial-edge.dfy({line}," in output,output
+    code,output=verify("schorr-initial-path-nonvacuity",refresh,axioms,enabled=enabled)
+    source=fixtures/"schorr-initial-path-nonvacuity.dfy"
+    line=next(i for i,text in enumerate(source.read_text().splitlines(),1)
+      if "assert false;" in text)
+    assert code==4 and f"schorr-initial-path-nonvacuity.dfy({line}," in output and "1 error" in output,output
+ print("PASS sequential initial-heap path postconditions and false controls")
+
+def section_11():
+ # A second Invalid declaration must not mask unsound acceptance of the caller.
+ # Check every declaration above and both independently failing source locations.
+ for refresh in [False,True]:
+  for axioms in [False,True]:
+   for enabled in [False,True]:
+    code,output=verify("twostate-labeled-recursive",refresh,axioms,enabled=enabled)
+    assert code==0,output
+    code,output=verify("negative-twostate-labeled-replay",refresh,axioms,enabled=enabled)
+    source=fixtures/"negative-twostate-labeled-replay.dfy"
+    lines=source.read_text().splitlines()
+    call_line=next(i for i,text in enumerate(lines,1) if "ReplayCallee@ReplayCurrent(c);" in text)
+    false_line=next(i for i,text in enumerate(lines,1) if "Independent invalid assertion" in text)
+    assert code==4 and f"negative-twostate-labeled-replay.dfy({call_line}," in output,output
+    assert f"negative-twostate-labeled-replay.dfy({false_line}," in output,output
+ print("PASS labeled recursive two-state requires and independent false controls")
+
+def section_12():
+ for refresh in [False,True]:
+  for axioms in [False,True]:
+   for enabled in [False,True]:
+    code,output=verify("twostate-nested-replay",refresh,axioms,enabled=enabled)
+    assert code==0,output
+    code,output=verify("negative-twostate-nested-replay",refresh,axioms,enabled=enabled)
+    source=fixtures/"negative-twostate-nested-replay.dfy"
+    lines=source.read_text().splitlines()
+    call_line=next(i for i,text in enumerate(lines,1) if "ReplayCallee@ReplayCurrent(c);" in text)
+    false_line=next(i for i,text in enumerate(lines,1) if "Independent invalid assertion" in text)
+    assert code==4 and f"negative-twostate-nested-replay.dfy({call_line}," in output,output
+    assert f"negative-twostate-nested-replay.dfy({false_line}," in output,output
+ print("PASS nested two-state statement expressions and independent false controls")
+
+def section_13():
+ (work/"subset.dfy").write_text((fixtures/"subset-short.dfy").read_text())
+ (work/"dfyconfig.toml").write_text("[options]\nconsistent-obligation-checks = true\n")
+ code,output=verify("subset-short",project=True)
+ assert code==0,output
+ code,output=verify("subset-short",project=True,override=False)
+ assert code==4 and "subset" in output,output
+ print("PASS project option and CLI precedence")
+
+for k,run in enumerate([section_0, section_1, section_2, section_3, section_4, section_5, section_6, section_7, section_8, section_9, section_10, section_11, section_12, section_13]):
+ if k%shards==shard: run()
