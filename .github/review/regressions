@@ -325,3 +325,5 @@ git-issues/github-issue-98.dfy
 
 # Opt-in --modular-termination: smaller-bound rule for calls dispatched across modules (https://github.com/erniecohen/dafny/issues/211).
 git-issues/github-issue-211.dfy
+
+# Same-bound rule of --modular-termination, milestone M2 (https://github.com/erniecohen/dafny/issues/211): extends the test above.
