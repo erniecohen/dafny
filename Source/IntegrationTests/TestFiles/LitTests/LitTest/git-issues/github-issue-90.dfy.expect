@@ -1,0 +1,4 @@
+github-issue-90.dfy(20,59): Error: a postcondition could not be proved on this return path
+github-issue-90.dfy(20,26): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 12 verified, 1 error
