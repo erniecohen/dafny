@@ -2866,6 +2866,7 @@ PROVER_OPTIONS="\
   /proverOpt:O:smt.qi.eager_threshold=100 \
   /proverOpt:O:smt.delay_units=true \
   /proverOpt:O:smt.arith.solver=2 \
+  /proverOpt:O:smt.refine_inj_axioms=false \
   "
 
 "$DOTNET" "$BOOGIE" $BOOGIE_OPTIONS $PROVER_OPTIONS "$@"
