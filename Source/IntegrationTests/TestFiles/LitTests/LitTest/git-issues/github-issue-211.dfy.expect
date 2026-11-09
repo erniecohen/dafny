@@ -76,12 +76,12 @@ clauses, option on: at most one global clause
 github-issue-211-clauses.dfy(4,14): Error: method 'TwoClauses' has more than one 'decreases {:global}' clause
 1 resolution/type errors detected in github-issue-211-clauses.dfy
 hints, option on
-github-issue-211-hints.dfy(15,7): Info: modular termination: dispatch of 'T.F' to implementations that other modules may provide needs the smaller-bound rule; checked: the callee's global bound must be below the caller's
-github-issue-211-hints.dfy(16,9): Info: modular termination: dispatch of 'T.G' to implementations that other modules may provide needs the smaller-bound rule; the callee has no 'decreases {:global}' bound, so the call is rejected
-github-issue-211-hints.dfy(18,6): Info: modular termination: a call through a function value needs the smaller-bound rule; not checked (calls through function values are not yet supported)
-github-issue-211-hints.dfy(21,46): Info: modular termination: dispatch of 'T.F' to implementations that other modules may provide needs the smaller-bound rule; holds: the caller has no 'decreases {:global}' bound, which is above every bound
-github-issue-211-hints.dfy(23,13): Info: modular termination: a sequence constructor's calls of its initializing function needs the smaller-bound rule; not checked (calls through function values are not yet supported)
-github-issue-211-hints.dfy(25,10): Info: modular termination: an array allocation's calls of its initializing function needs the smaller-bound rule; not checked (calls through function values are not yet supported)
+github-issue-211-hints.dfy(15,7): Info: modular termination: in 'Client.Calls', dispatch of 'Tr.T.F' to implementations that other modules may provide needs the smaller-bound rule; checked: the callee's global bound must be below the caller's
+github-issue-211-hints.dfy(16,9): Info: modular termination: in 'Client.Calls', dispatch of 'Tr.T.G' to implementations that other modules may provide needs the smaller-bound rule; the callee has no 'decreases {:global}' bound, so the call is rejected
+github-issue-211-hints.dfy(18,6): Info: modular termination: in 'Client.Calls', a call through a function value needs the smaller-bound rule; not checked (calls through function values are not yet supported)
+github-issue-211-hints.dfy(21,46): Info: modular termination: in 'Client.NoBound', dispatch of 'Tr.T.F' to implementations that other modules may provide needs the smaller-bound rule; holds: the caller has no 'decreases {:global}' bound, which is above every bound
+github-issue-211-hints.dfy(23,13): Info: modular termination: in 'Client.Collections', a sequence constructor's calls of its initializing function needs the smaller-bound rule; not checked (calls through function values are not yet supported)
+github-issue-211-hints.dfy(25,10): Info: modular termination: in 'Client.Collections', an array allocation's calls of its initializing function needs the smaller-bound rule; not checked (calls through function values are not yet supported)
 
 Dafny program verifier did not attempt verification
 printed counter, option on: verifies
