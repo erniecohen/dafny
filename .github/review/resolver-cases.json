@@ -379,5 +379,18 @@
     "file": "git-issues/Inputs/github-issue-46-range.dfy",
     "options": [],
     "seconds": 60
+  },
+  {
+    "id": "github-issue-179",
+    "file": "git-issues/github-issue-179.dfy",
+    "options": [
+      "--allow-warnings",
+      "--allow-deprecation"
+    ],
+    "seconds": 60,
+    "refresh_options": [
+      "--general-newtypes:true",
+      "--general-traits:full"
+    ]
   }
 ]
