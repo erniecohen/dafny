@@ -218,6 +218,7 @@ against 39,563 before (5.1.0), or 12,206 against 11,193 (4.12.1); split into sep
 the outcomes and costs are those of the base (at most 11,048 against 11,235).  So no check
 became hard; the single condition, in which the verifier goes on after each counterexample,
 did.  No proof is gained or lost: the method failed before and fails after.  The test now puts
-`{:isolate_assertions}` on `Rotate`, which keeps its four errors and every line number; its
-summary counts the isolated batches.  The expected verdicts of the suite record the change,
-with this reason, in a commit of their own.
+`{:isolate_assertions}` on `Rotate`, which keeps its four errors and every line number.  Its
+`.expect` is unchanged (upstream's harness still reports 43 verified, 58 errors); the suite's
+runner counts Rotate's isolated proof batches, 56 verified, 58 errors, and the expected verdicts
+record that, with this reason, in a commit of their own.
