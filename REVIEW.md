@@ -66,6 +66,22 @@ now has its receiver checked, which adds one proved assertion batch.  No other
 fix moves a verdict of the suite or of the standard library.  #63 moved a test
 input under `Inputs/` and changed no product file.
 
+## Bitvector rotations ([#147](https://github.com/erniecohen/dafny/issues/147))
+
+Z3 5.1.0 composes the counts of nested `ext_rotate_left`/`ext_rotate_right` modulo `2^W`
+instead of modulo `W`, which is unsound when the width `W` is not a power of two: Dafny
+4.11.0 with Z3 5.1.0 proves `x.RotateRight(a).RotateLeft(b) == 4` for `x == 1 as bv3`,
+`a == 3`, `b == 0`, where the value is 1.  The fix, in
+`Source/DafnyCore/Verifier/BoogieGenerator.cs` (`AddBitvectorRotateFunction`), defines
+`LeftRotate_bvW` and `RightRotate_bvW` by shifts at positive widths that are not powers of
+two, and keeps the native operators at width 0 and at powers of two.  Its kind is **a reviewed
+replacement definition**: it neither only weakens nor asserts a new fact, but replaces the
+meaning of two function symbols at those widths, which a reviewer must check.  The argument,
+the regression `git-issues/github-issue-147.dfy` (with `github-issue-147-emission.dfy`), the
+validation and the cost are in
+[`docs/dev/bitvector-rotation-soundness.md`](docs/dev/bitvector-rotation-soundness.md); the
+release note is `docs/dev/news/bitvector-rotation-soundness.fix`.
+
 ## Boogie
 
 Boogie's unguarded reverse casts,
