@@ -2431,8 +2431,10 @@ namespace Microsoft.Dafny {
             Token.NoToken) {
             Type = e.Initializer.Type.AsArrowType.Result
           };
+          // Keep the self-call allowance (#166), without the arrow allocation facts that
+          // this site omitted before, as for the body of an exact let.
           var canCall = CanCallAssumption(dafnyInitApplication,
-            options.Get(CommonOptionBag.ConsistentObligationChecks) ? cco : null);
+            options.Get(CommonOptionBag.ConsistentObligationChecks) ? cco : cco?.WithoutArrowAllocationFacts());
 
           dafnyInitApplication = new ApplyExpr(e.Origin, new BoogieWrapper(initF, e.Initializer.Type),
             [new BoogieWrapper(index, Type.Int)],
