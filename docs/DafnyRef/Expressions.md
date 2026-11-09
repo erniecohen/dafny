@@ -1278,6 +1278,41 @@ Those braces are required if lemma or lambda expressions are used in the
 body of any match alternative; they may also be needed for disambiguation if
 there are nested match expressions.
 
+With `--type-system-refresh`, the resolver must know the type of the selector
+when it resolves the patterns. If the selector's type is not yet known, it solves
+the type constraints collected so far, and that solve also gives any pending
+literal its default type, such as `int` for an integer literal, even one in an
+earlier branch whose type the enclosing context would later fix. So in
+<!-- %no-check -->
+```dafny
+newtype int32 = x: int | -0x8000_0000 <= x <= 0x7fff_ffff
+datatype Option<+U> = None | Some(val: U)
+function foo(x: int32): Option<int32>
+function goo(x: int32): Option<int32> {
+  if x == 0 then Some(0) else
+  var d := foo(x);
+  match d
+  case None => None
+  case Some(n) => Some(0)
+}
+```
+the first `Some(0)` becomes an `Option<int>`, and the body is rejected. With
+`--conservative-match-inference`, the resolver first tries to determine the
+selector's type by propagation alone, without default decisions; here that gives
+`d` the type `Option<int32>`, and the first `0` then takes the type `int32` from
+the declared result type. Only if propagation leaves the selector's type unknown
+does the resolver make default decisions, as it does without the option. The
+option adds and removes no type constraint: a value whose type is already `int`,
+another newtype, or `bool` is still rejected, and a literal's type does not prove
+that its value satisfies the newtype's constraint, which is still checked by the
+verifier.
+
+The option does not help when the selector itself needs a default decision,
+because that decision is made for the earlier literal too: when the selector is a
+literal (`match 1`), or a constructor application whose argument type is not yet
+known (`var d := Some(0); match d`). In those cases, annotate the selector or the
+earlier literal, for example `Some(0 as int32)`.
+
 ### 9.31.4. Quantifier Expression ([grammar](#g-quantifier-expression)) {#sec-quantifier-expression}
 
 Examples:
