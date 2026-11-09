@@ -313,3 +313,6 @@ git-issues/github-issue-92.dfy
 # A qualified module id through enclosing modules depends on its target, not on the enclosing module (#90).
 git-issues/github-issue-90.dfy
 git-issues/github-issue-90-cycles.dfy
+
+# Constructor type arguments under --invariant-constructor-inference (https://github.com/erniecohen/dafny/issues/101).
+git-issues/github-issue-101.dfy
