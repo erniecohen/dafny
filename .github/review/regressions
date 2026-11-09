@@ -269,3 +269,6 @@ git-issues/github-issue-182.dfy
 
 # Body permissions of heap-free lambdas in every heap (--heap-free-lambda-facts).
 git-issues/lambda-facts-every-heap.dfy
+
+# Bitvector keys at map and multiset lookups under --bitvector-map-keys (https://github.com/erniecohen/dafny/issues/192).
+git-issues/github-issue-192.dfy
