@@ -1,0 +1,4 @@
+github-issue-191.dfy(14,26): Error: this trigger term translates into a term that contains a boolean operator, which a trigger may not contain; the trigger is ignored (a function that computes the term's argument can be used in the trigger instead)
+github-issue-191.dfy(19,37): Error: this trigger term translates into a term that contains an arithmetic comparison, which a trigger may not contain; the trigger is ignored (a function that computes the term's argument can be used in the trigger instead)
+
+Dafny program verifier finished with 3 verified, 0 errors
