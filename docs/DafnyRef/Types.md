@@ -1247,7 +1247,8 @@ like `map<T,U>`, but a map of type `imap<T,U>` is allowed to have an
 infinite domain.
 
 The default-off verifier option `--bitvector-map-keys` preserves the declared
-bitvector type of a `map` or `imap` key at a lookup. Without it, this fork's
+bitvector type of a `map` or `imap` key at a lookup, and of a `multiset`
+element at a multiplicity lookup `ms[k]`. Without it, this fork's
 legacy verification encoding converts bitvector lookup keys to integers, which
 can prevent an update followed by lookup at the same key from verifying.
 Sequence and array indices continue to be converted to integers.

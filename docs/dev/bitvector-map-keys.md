@@ -17,7 +17,16 @@ With the option enabled, lookup of map and imap values keeps the translated key
 and boxes it at its declared domain type, just as update, display and domain
 membership do. Sequence and array positions still use integer conversion.
 The existing well-formedness checks, map update/select formulas, type checks and
-boxing axioms remain unchanged. Multiset lookup is outside this change.
+boxing axioms remain unchanged.
+
+Multiset multiplicity lookup `ms[k]` had the same mismatch: the update
+`ms[k := n]`, displays, `multiset(s)` and membership `k in ms` box a bitvector
+element at its bitvector sort, while the lookup boxed `nat_from_bv(k)`.  Since
+[issue 192](https://github.com/erniecohen/dafny/issues/192), the option also
+keeps the element's bitvector type at a multiset lookup, so that
+`ms[k := 3][k] == 3` and `multiset{k}[k] == 1` verify for bitvector elements.
+It emits no new formula: the lookup reads the multiset at the same boxed
+element that every other multiset operation uses.
 
 ## Semantic argument and compatibility
 
