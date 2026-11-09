@@ -346,12 +346,21 @@ recorded under it.  It also passes `/restartProver`, which gives each proof batc
 fresh solver process: under Z3 5.1.0 (with `--cores 4`) a batch's resource count depended on which
 batches the reused process had checked before it (one batch,
 `MulInternalsNonlinear.LemmaMulIsAssociative`, moved by up to 0.17%), so the
-resource fingerprint differed in every run
+resource fingerprint took 7 distinct values in 12 runs
 ([#30](https://github.com/erniecohen/dafny/issues/30)).  In 6 runs with it and 12 without (Z3 5.1.0,
-axioms off), that count was the only difference, and no verdict differed.  The target-specific parts cannot take Boogie options, which
+axioms off), that count was the only difference, and no verdict differed.  The
+gate's resource counts are therefore measured under `/restartProver` and are not
+those of a user's run, which reuses processes; the `process-history` workflow
+(weekly, and on demand) verifies the library three times without it and reports the
+distinct count vectors and each differing declaration's spread and distance to the
+limit.  The target-specific parts cannot take Boogie options, which
 must equal those the library's binary was built with; all 82 of their declarations
-verify (`Correct`) in every expected file.  The suite already runs with
-`/normalizeDeclarationOrder:0`, on which the option has no effect.
+verify (`Correct`) in every expected file.  Their counts are in the resource
+fingerprint, and so still reuse processes, but none of them differed in the 12 runs
+without `/restartProver`.  The suite already runs with
+`/normalizeDeclarationOrder:0`, on which `/deterministicLiteralHashes:1` has no
+effect; it also reuses a process within each program (`--cores 1`), but its gate
+compares verdicts only, and its counts were not measured for this.
 
 
 ### Additional axioms enabled
