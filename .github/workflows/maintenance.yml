@@ -92,17 +92,17 @@ jobs:
           tag="v$version"
           echo "tag=$tag" | tee -a "$GITHUB_OUTPUT"
 
-          # The tag must be new: a v* tag is never moved (AGENTS.md).
-          if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
-            refuse "tag $tag already exists"
-          fi
-
           # The commit must be on the shipped line: the line is identical to it or ahead of it.
           status=$(gh api "repos/$REPO/compare/$SHA...$LINE" --jq .status)
           case "$status" in
             identical|ahead) ;;
             *) refuse "commit $SHA is not on $LINE (compare: $status)" ;;
           esac
+
+          # The tag must be new: a v* tag is never moved (AGENTS.md).
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
+            refuse "tag $tag already exists"
+          fi
 
           # Its latest review.yml push run must be green.
           run=$(gh api "repos/$REPO/actions/workflows/review.yml/runs?head_sha=$SHA&event=push&per_page=1" \
