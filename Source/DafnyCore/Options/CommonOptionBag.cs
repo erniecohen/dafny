@@ -248,7 +248,7 @@ true - All class instances are raw pointers and need to be manually deallocated"
     "Check a lambda without a reads clause, whose body observes neither the heap nor allocation, in every heap and without assuming its parameters allocated, and let the calls in its body unfold wherever it is applied. May change verification performance. Disabled by default.");
 
   public static readonly Option<bool> StatementExpressionConclusions = new("--statement-expression-conclusions", () => false,
-    "Use the conclusion of a statement expression (S; E), such as an assert or assume statement, as a fact for E wherever it occurs in an assertion, postcondition, invariant or precondition, including under quantifiers and logical connectives, and not only at the top. May change verification performance. Disabled by default.");
+    "In the condition of an assert statement, use the conclusion of a statement expression (S; E), such as an assert or assume statement, as a fact for E also under quantifiers and logical connectives, and not only at the top. Not inside old, unchanged, fresh, lambdas, or set and map comprehensions. May change verification performance. Disabled by default.");
 
   public static readonly Option<bool> AllowAxioms = new("--allow-axioms", () => false,
     "Prevents a warning from being generated for axioms, such as assume statements and functions or methods without a body, that don't have an {:axiom} attribute.") {

@@ -1552,6 +1552,11 @@ namespace Microsoft.Dafny {
       builder.Add(TrAssumeCmd(expr.Origin, MkIs(selfCall, resultType)));
     }
 
+    // The number of statement expressions whose statements are being translated.  Under
+    // --statement-expression-conclusions, TrAssertCondition leaves an assert statement inside one
+    // as it is, since such a statement may run in a heap other than the one its etran names.
+    private int statementExpressionDepth;
+
     private void CheckWellformedStmtExpr(StmtExpr stmtExpr, WFOptions wfOptions, Variables locals,
       BoogieStmtListBuilder builder, ExpressionTranslator etran, AddResultCommands addResultCommands) {
 
@@ -1566,17 +1571,23 @@ namespace Microsoft.Dafny {
       // expressions. However, here, we're also having to translate e.S, which is a
       // Statement. Since statement translation (in particular, translation of CallStmt's)
       // work directly on the global variable $Heap, we temporarily change its value here.
-      if (etran.UsesOldHeap) {
-        BuildWithHeapAs(stmtExpr.S.Origin, etran.HeapExpr, "StmtExpr#", locals, builder,
-          () => {
-            foreach (var statement in statements) {
-              TrStmt(statement, builder, locals, etran);
-            }
-          });
-      } else {
-        foreach (var statement in statements) {
-          TrStmt(statement, builder, locals, etran);
+      statementExpressionDepth++;
+      try {
+        if (etran.UsesOldHeap) {
+          BuildWithHeapAs(stmtExpr.S.Origin, etran.HeapExpr, "StmtExpr#", locals, builder,
+            () => {
+              foreach (var statement in statements) {
+                TrStmt(statement, builder, locals, etran);
+              }
+            });
+        } else {
+          foreach (var statement in statements) {
+            TrStmt(statement, builder, locals, etran);
+          }
         }
+      }
+      finally {
+        statementExpressionDepth--;
       }
 
       CheckWellformedWithResult(expression, wfOptions, locals, builder, etran, addResultCommands);

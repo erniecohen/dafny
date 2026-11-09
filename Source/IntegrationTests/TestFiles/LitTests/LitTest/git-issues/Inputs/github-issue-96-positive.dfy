@@ -12,11 +12,9 @@ lemma AssertBy() {
   assert forall x: int :: (assert P(x) by { LP(x); } P(x));
 }
 
-// Under a guard, in a postcondition.
-lemma Guarded()
-  ensures forall x: int :: x > 0 ==> (assert P(x) by { LP(x); } P(x))
-{
-  forall x: int ensures P(x) { LP(x); }
+// Under a guard.
+lemma Guarded() {
+  assert forall x: int :: x > 0 ==> (assert P(x) by { LP(x); } P(x));
 }
 
 // At negative polarity the conclusion is conjoined.

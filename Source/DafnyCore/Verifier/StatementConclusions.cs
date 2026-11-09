@@ -4,23 +4,28 @@ using System.Linq;
 namespace Microsoft.Dafny;
 
 /// <summary>
-/// Under --statement-expression-conclusions, an expression in a split position (an assertion, a
-/// postcondition, an invariant, a precondition at a call, and so on) has each boolean statement
-/// expression "S; E" that sits under a quantifier or a logical connective replaced by "C ==> E",
-/// or by "C && E" where it occurs negatively, C being the statement's conclusion
-/// (StmtExpr.GetStatementConclusion).  The translator otherwise drops S, and uses C only for a
-/// statement expression at the top of a split (TrSplitExpr's StmtExpr case).
+/// Under --statement-expression-conclusions, the condition of an assert statement has each boolean
+/// statement expression "S; E" inside it replaced by "C ==> E", or by "C && E" where it occurs
+/// negatively, C being the statement's conclusion (StmtExpr.GetStatementConclusion).  The
+/// translator otherwise drops S, and uses C only for a statement expression at the top of a split
+/// (TrSplitExpr's StmtExpr case).  The caller (TrAssertCondition) applies it only when the assert
+/// statement is translated in the current heap, right after TrAssertStmt has checked the
+/// well-formedness of the same condition with the same translator.
 ///
-/// The replacement keeps the value of the expression.  Its well-formedness check, which runs
-/// before the expression is used, asserts (or, for an assume statement, assumes) C at every point
-/// where S; E is evaluated: under the bound variables' type and allocation antecedents and the
-/// range of each enclosing quantifier, under the guards of short-circuit operators and of if-then-
-/// else, and with let and match bindings.  The translation of the quantifier, connective or binding
-/// has the same antecedents and guards, so wherever the value of S; E counts, C holds, and E,
-/// C ==> E and C && E are equal.  Where S; E is not evaluated, the enclosing operator does not
-/// depend on its value.  The rewriter does not enter a lambda, whose application is defined beyond
-/// its precondition, or a set or map comprehension, whose value is a collection compared
-/// extensionally elsewhere; a statement expression there keeps today's translation.
+/// The replacement keeps the value of the condition.  That well-formedness check asserts (or, for
+/// an assume statement, assumes) C at every point where S; E is evaluated, and the rewriter only
+/// descends through constructs whose translation has the same guards as their well-formedness
+/// check: logical connectives, if-then-else, exact let, match, and quantifiers over the current
+/// heap.  A quantifier's translation may leave out the allocation antecedent of a bound variable
+/// whose range implies allocation (freeOfAlloc), while the check assumes allocation; that
+/// implication holds in the current heap only.  So the rewriter does not enter old, unchanged or
+/// fresh, which evaluate in another heap.  It does not enter a lambda (whose application is defined
+/// beyond its precondition), a set or map comprehension (compared extensionally elsewhere), a
+/// let-such-that or a binding-guard if-then-else (whose check and translation pick the witness
+/// differently).  There a statement expression keeps today's translation.  Wherever the value of
+/// S; E counts, C holds, and E, C ==> E and C && E are equal; where S; E is not evaluated, the
+/// enclosing operator does not depend on its value.  docs/dev/statement-expression-conclusions.md
+/// has the full argument.
 /// </summary>
 internal class StatementConclusionSubstituter : Substituter {
   private bool positive;
@@ -46,13 +51,22 @@ internal class StatementConclusionSubstituter : Substituter {
   /// Whether "expr" has a boolean statement expression that Rewrite would replace.
   /// </summary>
   public static bool Applies(Expression expr) {
-    if (expr is LambdaExpr or SetComprehension or MapComprehension) {
+    if (IsOpaque(expr)) {
       return false;
     }
     if (expr is StmtExpr { E.Type.IsBoolType: true }) {
       return true;
     }
     return expr.SubExpressions.Any(Applies);
+  }
+
+  /// <summary>
+  /// The expressions the rewriter does not enter (see above).
+  /// </summary>
+  private static bool IsOpaque(Expression expr) {
+    return expr is LambdaExpr or SetComprehension or MapComprehension
+      or OldExpr or UnchangedExpr or FreshExpr
+      or LetExpr { Exact: false } or ITEExpr { IsBindingGuard: true };
   }
 
   public override Expression Substitute(Expression expr) {
@@ -63,7 +77,7 @@ internal class StatementConclusionSubstituter : Substituter {
     }
     try {
       switch (expr) {
-        case LambdaExpr or SetComprehension or MapComprehension:
+        case var _ when IsOpaque(expr):
           return expr;
         case StmtExpr { E.Type.IsBoolType: true } stmtExpr: {
             var body = Substitute(stmtExpr.E);
