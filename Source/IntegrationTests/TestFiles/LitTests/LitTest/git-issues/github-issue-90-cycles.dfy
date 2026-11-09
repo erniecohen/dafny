@@ -1,8 +1,11 @@
-// RUN: %exits-with 2 %resolve "%s" > "%t"
+// RUN: echo "with --ancestor-qualified-module-ids" > "%t"
+// RUN: %exits-with 2 %resolve --ancestor-qualified-module-ids "%s" >> "%t"
+// RUN: echo "without it (the default)" >> "%t"
+// RUN: %exits-with 2 %resolve "%s" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
-// Genuine cycles through qualified module ids are still rejected
-// (https://github.com/erniecohen/dafny/issues/90).
+// Genuine cycles through qualified module ids are still rejected, with and
+// without --ancestor-qualified-module-ids (https://github.com/erniecohen/dafny/issues/90).
 
 // A module refining its enclosing module.
 module N1 { module C refines N1 { } }

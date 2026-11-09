@@ -889,12 +889,15 @@ as methods. To define global functions like this, you can put them in
 a module (called `Globals`, say) and open it into any module that needs
 its functionality. Finally, if you import via a path, such as `import A
 = B.C`, then this creates a dependency of `A` on `B`, and `B` itself
-depends on its own nested module `B.C`.  The exception is a path whose
-leading identifiers name modules that enclose the import or `refines`
-clause: those identifiers are skipped, and the dependency is on the
-first module of the path that does not enclose it.  So in
+depends on its own nested module `B.C`.  So a path whose leading
+identifier names a module that encloses the import or `refines` clause,
+as in `module A.C refines A.B`, makes a cycle: `A.C` depends on `A`, which
+depends on its nested module `A.C`.  With the option
+`--ancestor-qualified-module-ids`, the leading identifiers that name
+enclosing modules are skipped, and the dependency is on the first module
+of the path that does not enclose the clause.  Then in
 
-<!-- %check-resolve -->
+<!-- %check-resolve %options --ancestor-qualified-module-ids -->
 ```dafny
 module A.B { }
 module A.C refines A.B { }
@@ -968,7 +971,8 @@ declaration, the resolution fails. See the examples below.
    identifier in the quallified name
    is resolved as a local or imported module name within `M`.
    The resolution is restricted to the default export set of `M`.
-   The exception is a module `M` that contains the qualified name: one
+   With `--ancestor-qualified-module-ids`, the exception is a module `M`
+   that contains the qualified name: one
    that encloses `Z`, or `Z` itself for an import in `Z`.  If the next
    identifier names a submodule declared in `M`, it resolves to that
    submodule without consulting `M`'s export sets, as the identifier

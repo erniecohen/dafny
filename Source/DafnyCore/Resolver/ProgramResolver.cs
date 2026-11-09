@@ -330,9 +330,14 @@ public class ProgramResolver {
   /// export set, or a missing name).  If it stops at an enclosing module, the dependency is a genuine
   /// cycle, and the root is left as the lexical lookup found it.  Only qualified ids that previously
   /// always gave a cycle error are affected.
+  /// Only with --ancestor-qualified-module-ids; without it, the root is returned unchanged.
   /// Sets qid.RootIndex and returns the new root.
   /// </summary>
   private ModuleDecl SkipEnclosingModules(ModuleQualifiedId qid, ModuleDecl root) {
+    if (!Options.Get(CommonOptionBag.AncestorQualifiedModuleIds)) {
+      qid.RootIndex = 0;
+      return root;
+    }
     var index = 0;
     var current = root;
     while (index + 1 < qid.Path.Count && IsEnclosingModule(current)) {

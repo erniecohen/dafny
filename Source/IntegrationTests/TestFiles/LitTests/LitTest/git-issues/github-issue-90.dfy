@@ -1,9 +1,12 @@
-// RUN: %exits-with 4 %verify "%s" > "%t"
+// RUN: %exits-with 4 %verify --ancestor-qualified-module-ids "%s" > "%t"
+// RUN: echo "without --ancestor-qualified-module-ids (the default), every case is a cycle, as before:" >> "%t"
+// RUN: %exits-with 2 %resolve "%s" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
-// A qualified module id whose leading components name modules that enclose it
-// depends on the module it reaches, not on the enclosing module, which would
-// always be a cycle (https://github.com/erniecohen/dafny/issues/90).
+// Under --ancestor-qualified-module-ids, a qualified module id whose leading
+// components name modules that enclose it depends on the module it reaches, not
+// on the enclosing module, which would always be a cycle
+// (https://github.com/erniecohen/dafny/issues/90).
 
 // The reported program: a sibling refinement through a shared name prefix.
 module A.B { function F(): int { 1 } }
@@ -55,4 +58,12 @@ module V {
   const h := 0
   module B { const b := 5 }
   module C { import V.B  lemma Vb() ensures B.b == 5 {} }
+}
+
+// An inherited submodule: Derived gets a clone of Base.N, whose import keeps the
+// root B, and the index of B in the path, that dependency processing gave it.
+module Q {
+  module B { const q := 9 }
+  module Base { module N { import Q.B  lemma QB() ensures B.q == 9 {} } }
+  module Derived refines Base { }
 }
