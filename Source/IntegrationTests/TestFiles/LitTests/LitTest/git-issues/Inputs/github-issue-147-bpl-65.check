@@ -1,0 +1,10 @@
+// BPL for width 65, not a power of two: both rotations are inline definitions by shifts.
+// CHECK-NOT: bvbuiltin "ext_rotate_(left|right)"\} (Left|Right)Rotate_bv65\(
+// CHECK: ^function \{:inline\} LeftRotate_bv65\(x: bv65, n: bv65\) : bv65
+// CHECK-NEXT: ^\{
+// CHECK-NEXT: ^  or_bv65\(LeftShift_bv65\(x, n\), RightShift_bv65\(x, sub_bv65\(65bv65, n\)\)\)
+// CHECK-NOT: bvbuiltin "ext_rotate_(left|right)"\} (Left|Right)Rotate_bv65\(
+// CHECK: ^function \{:inline\} RightRotate_bv65\(x: bv65, n: bv65\) : bv65
+// CHECK-NEXT: ^\{
+// CHECK-NEXT: ^  or_bv65\(RightShift_bv65\(x, n\), LeftShift_bv65\(x, sub_bv65\(65bv65, n\)\)\)
+// CHECK-NOT: bvbuiltin "ext_rotate_(left|right)"\} (Left|Right)Rotate_bv65\(
