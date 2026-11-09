@@ -90,6 +90,16 @@ namespace Microsoft.Dafny.Triggers {
 
       public override Expression Substitute(Expression expr) {
         var result = base.Substitute(expr);
+        // A trigger term is a resolved expression, and the substitution keeps every subterm it does not change.  A
+        // refining module clones these attributes and resolves them again, and the resolvers resolve a function call
+        // or a member selection only from its parsed form; the type-system-refresh resolver leaves a bare
+        // FunctionCallExpr or MemberSelectExpr, and its receiver, without a pre-type.  So give each one, at any depth,
+        // the parsed structure it was resolved from.
+        if (result is FunctionCallExpr functionCallExpr && functionCallExpr.Receiver.Type.NormalizeExpand() is UserDefinedType) {
+          result = Expression.WrapResolvedCall(functionCallExpr, SystemModuleManager);
+        } else if (result is MemberSelectExpr { TypeApplicationJustMember: not null } memberSelectExpr) {
+          result = Expression.WrapResolvedMemberSelect(memberSelectExpr);
+        }
         if (result is ApplySuffix { ResolvedExpression: FunctionCallExpr { AtLabel: { } label } } call) {
           // Use the declaration token: re-resolution looks up the label by name, and diagnostics point to its declaration.
           call.AtTok = label.Tok;
@@ -126,7 +136,7 @@ namespace Microsoft.Dafny.Triggers {
         };
 
         ActionsOnSelectedTriggers.Add(systemModuleManager => {
-          // Keep function calls in a form that can be cloned and resolved in a refining module.
+          // Keep function calls and member selections in a form that can be cloned and resolved in a refining module.
           var substituteFrom = new AssignSuchThatTriggerSubstituter(substBoundVarToLocal, systemModuleManager);
           var updatedAttributes = substituteFrom.SubstAttributes(existsExpr.Attributes);
           assignSuchThatStmt.Attributes = updatedAttributes;
