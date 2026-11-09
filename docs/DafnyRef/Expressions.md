@@ -1307,10 +1307,10 @@ another newtype, or `bool` is still rejected, and a literal's type does not prov
 that its value satisfies the newtype's constraint, which is still checked by the
 verifier.
 
-The option does not help when the selector itself needs a default decision,
-because that decision is made for the earlier literal too: when the selector is a
-literal (`match 1`), or a constructor application whose argument type is not yet
-known (`var d := Some(0); match d`). In those cases, annotate the selector or the
+The option does not help when the selector's type itself needs a default
+decision, because that decision is made for the earlier literal too: for example,
+when the selector is a constructor application whose argument type is not yet
+known (`var d := Some(0); match d`). In such cases, annotate the selector or the
 earlier literal, for example `Some(0 as int32)`.
 
 ### 9.31.4. Quantifier Expression ([grammar](#g-quantifier-expression)) {#sec-quantifier-expression}
