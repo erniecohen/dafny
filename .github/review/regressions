@@ -269,3 +269,6 @@ git-issues/github-issue-182.dfy
 
 # Body permissions of heap-free lambdas in every heap (--heap-free-lambda-facts).
 git-issues/lambda-facts-every-heap.dfy
+
+# Z3 smt.refine_inj_axioms=false by default, globally and per implementation (#190).
+git-issues/github-issue-190.dfy
