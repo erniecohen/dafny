@@ -12,7 +12,12 @@ using JetBrains.Annotations;
 
 namespace Microsoft.Dafny;
 
-record FlowContext(SystemModuleManager SystemModuleManager, ErrorReporter Reporter, bool DebugPrint) {
+/// <summary>
+/// "InvariantConstructorInference" is the value of --invariant-constructor-inference.  "PinNonVariant" is set only
+/// while a flow into a datatype constructor's argument is updated under that option; see "PinAndUpdate".
+/// </summary>
+record FlowContext(SystemModuleManager SystemModuleManager, ErrorReporter Reporter, bool DebugPrint,
+  bool InvariantConstructorInference = false, bool PinNonVariant = false) {
 }
 
 /// <summary>
@@ -88,6 +93,11 @@ abstract class Flow {
     if (wrapperA == null) {
       return join;
     }
+    if (wrapperA.Pinned) {
+      // A pinned type is changed only by the non-variant flow that pinned it (see "PinAndUpdate"). The verifier checks
+      // the actual argument of this flow against the pinned type.  Pinned is never set without --invariant-constructor-inference.
+      return wrapperA;
+    }
 
     if (TypeRefinementWrapper.NormalizeSansRefinementWrappers(join) is TypeRefinementWrapper wrapperJoin) {
       join = wrapperJoin.T;
@@ -99,6 +109,9 @@ abstract class Flow {
   [CanBeNull]
   public static Type CopyAndUpdate(Type a, Type b, FlowContext context) {
     var wrapperA = TypeRefinementWrapper.NormalizeSansRefinementWrappers(a) as TypeRefinementWrapper;
+    if (context.PinNonVariant && wrapperA != null && PinAndUpdate(wrapperA, b)) {
+      return wrapperA;
+    }
     // compute the "copy" of aa and b:
     Type copy;
     if (TypeRefinementWrapper.NormalizesToBottom(a)) {
@@ -121,6 +134,56 @@ abstract class Flow {
     }
     wrapperA.T = copy;
     return wrapperA;
+  }
+
+  /// <summary>
+  /// Used only under --invariant-constructor-inference, for a non-variant position of the formal type of a datatype
+  /// constructor argument, such as "T" in "tl: List<T>".  The actual argument then determines the constructor's type
+  /// argument "wrapper" exactly, so "wrapper" is set to "b" and pinned: covariant joins (for example from "hd: T") no
+  /// longer widen it.  The verifier checks every actual argument against the formal type with the chosen type argument,
+  /// so this choice adds proof obligations and assumes nothing.
+  ///
+  /// Termination: an unpinned wrapper is pinned at most once; a pinned wrapper only moves up its tower of subset
+  /// types, which is finite.
+  ///
+  /// Returns false, leaving "wrapper" unchanged, when "b" is bottom or is not in the same tower of subset types as the
+  /// current value, or when "b" is strictly below a pinned value (two non-variant arguments disagree); the caller then
+  /// proceeds as without the option.
+  /// </summary>
+  static bool PinAndUpdate(TypeRefinementWrapper wrapper, Type b) {
+    if (TypeRefinementWrapper.NormalizesToBottom(b)) {
+      return false;
+    }
+    b = TypeRefinementWrapper.NormalizeSansRefinementWrappers(b);
+    if (b is TypeRefinementWrapper wrapperB) {
+      b = wrapperB.T;
+    }
+    if (wrapper.IsBottomType) {
+      wrapper.T = b;
+      wrapper.Pinned = true;
+      return true;
+    }
+    var current = wrapper.T;
+    if (current.Equals(b, true)) {
+      wrapper.Pinned = true;
+      return true;
+    }
+    static bool InTower(Type lower, Type upper) {
+      return Type.GetTowerOfSubsetTypes(lower, true).Exists(t => t.Equals(upper, true));
+    }
+    if (InTower(current, b)) {
+      // "b" is above "current": widen, pinned or not
+      wrapper.T = b;
+      wrapper.Pinned = true;
+      return true;
+    }
+    if (!wrapper.Pinned && InTower(b, current)) {
+      // "b" is below "current", which came from covariant joins only: narrow and pin
+      wrapper.T = b;
+      wrapper.Pinned = true;
+      return true;
+    }
+    return false;
   }
 
   /// <summary>
@@ -352,14 +415,19 @@ class FlowIntoVariableFromComputedType : Flow {
 
 class FlowBetweenComputedTypes : Flow {
   private readonly System.Func<(Type, Type)> getTypes;
+  private readonly bool isConstructorArgument;
 
-  public FlowBetweenComputedTypes(System.Func<(Type, Type)> getTypes, IOrigin tok, string description)
+  public FlowBetweenComputedTypes(System.Func<(Type, Type)> getTypes, IOrigin tok, string description, bool isConstructorArgument = false)
     : base(tok, description) {
     this.getTypes = getTypes;
+    this.isConstructorArgument = isConstructorArgument;
   }
 
   public override bool Update(FlowContext context) {
     var (sink, source) = getTypes();
+    if (isConstructorArgument && context.InvariantConstructorInference) {
+      context = context with { PinNonVariant = true };
+    }
     return UpdateTypeHeldByRefinementWrapper(sink, source, context);
   }
 
