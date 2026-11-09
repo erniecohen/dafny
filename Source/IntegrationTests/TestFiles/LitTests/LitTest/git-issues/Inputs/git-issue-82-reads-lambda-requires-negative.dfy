@@ -1,8 +1,8 @@
-// A source lambda precondition is sufficient for its .requires property.
+// The declared precondition is necessary with --additional-axioms.
 lemma LambdaRequiresIsOnlySufficient(o: object?)
 {
   var one := (x: int) requires 0 < x reads o => x;
-  // The existing RequiresN encoding gives only range ==> .requires.
-  // A false source range does not establish a false .requires property.
+  // Native RequiresN alone gives only range ==> .requires.
+  // The shared option additionally recovers this false declared range.
   assert !one.requires(0);
 }
