@@ -1,0 +1,3 @@
+// Helper of IntegrationTests.LitHarnessTimeoutTests (issue 176); not a test by itself.
+// Finishes at once and succeeds, so a short timeout does not fail it.
+// RUN: sh -c 'exit 0'
