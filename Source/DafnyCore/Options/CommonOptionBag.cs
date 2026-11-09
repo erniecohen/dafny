@@ -254,11 +254,17 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> BitvectorMapKeys = new("--bitvector-map-keys", () => false,
     "Preserve bitvector key types in map and imap lookups, and bitvector element types in multiset multiplicity lookups, during verification. Disabled by default.");
 
+  public static readonly Option<bool> DatatypeSubsetConversions = new("--datatype-subset-conversions", () => false,
+    "With the legacy type system, allow explicit conversions to subsets of inductive datatypes using assignment compatibility and checked destination constraints. Disabled by default.");
+
   public static readonly Option<bool> ContextualLambdaDomains = new("--contextual-lambda-domains", () => false,
     "With the refreshed type system, infer omitted parameters of function-result lambdas from the declared arrow domain. Disabled by default.");
 
   public static readonly Option<bool> ConservativeMatchInference = new("--conservative-match-inference", () => false,
     "With the refreshed type system, infer the type of a match source by propagation before making default type decisions, so that an earlier literal can still take its type from the enclosing context. Disabled by default.");
+
+  public static readonly Option<bool> AncestorQualifiedModuleIds = new("--ancestor-qualified-module-ids", () => false,
+    "Let a refines clause or import whose qualified module name starts with modules that enclose it, as in 'module A.C refines A.B', depend on the module it names instead of on the enclosing module, which is otherwise reported as a cycle. Disabled by default.");
 
   public static readonly Option<bool> ModularTermination = new("--modular-termination", () => false,
     "Check termination of calls that dispatch to bodyless members of traits whose implementations may lie in other modules (a trait with {:termination false}, or one extended from another module): the callee's 'decreases {:global}' bound must be below the caller's, captured on entry. Accept 'decreases {:global}' clauses, and report as hints (with --show-hints) every call that needs this rule. Experimental and incomplete: see the Reference Manual. Disabled by default.");
@@ -721,6 +727,8 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(BitvectorMapKeys, OptionScope.Cli);
     OptionRegistry.RegisterOption(ContextualLambdaDomains, OptionScope.Cli);
     OptionRegistry.RegisterOption(ConservativeMatchInference, OptionScope.Cli);
+    OptionRegistry.RegisterOption(DatatypeSubsetConversions, OptionScope.Cli);
+    OptionRegistry.RegisterOption(AncestorQualifiedModuleIds, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationLogFormat, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerifyIncludedFiles, OptionScope.Cli);

@@ -2249,6 +2249,18 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   overrides that setting. See the [match expression](#sec-match-expression) for
   what it does not fix.
 
+* `--ancestor-qualified-module-ids` - let a `refines` clause or `import` whose
+  qualified module name starts with modules that enclose it, as in
+  `module A.C refines A.B`, depend on the module it names instead of on the
+  enclosing module. Without it, such a name always makes a cycle, since a module
+  depends on the modules nested in it, and the program is rejected. With it, the
+  leading names of enclosing modules are skipped, and the next name is looked up
+  among the modules declared in the enclosing module, as the name alone would be
+  inside it, without consulting that module's export sets; refining or importing
+  an enclosing module itself is still a cycle. Disabled by default. Use
+  `ancestor-qualified-module-ids = true` in a project file's `[options]` section.
+  See [module ordering](#sec-module-ordering).
+
 * `--modular-termination` - (experimental) check that a call dispatched to a bodyless
   member of a trait whose implementations may lie in other modules goes to a smaller
   `decreases {:global}` bound, accept `decreases {:global}` clauses, and report, as hints
@@ -2462,6 +2474,10 @@ and what information it produces about the verification process.
 * `--manual-lemma-induction` - disables automatic inducntion for lemmas
 
 * `--isolate-assertions` - verify assertions individually
+* `--datatype-subset-conversions` - allow explicit conversions to subsets of
+  inductive datatypes with the legacy type system. The source must be
+  assignment-compatible and the destination constraints must verify. Disabled by
+  default; use `datatype-subset-conversions = true` in a project file's `[options]`.
 * `--consistent-obligation-checks` - prepare and check matching implicit obligations once using the existing local assertion machinery and fuel rules (experimental, disabled by default; also a project-file option).
 
 * `--extract-counterexample` - if verification fails, report a potential
