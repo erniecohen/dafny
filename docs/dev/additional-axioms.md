@@ -582,6 +582,46 @@ instance) with the option off (5 of them fail) and on (they verify), and vacuity
 controls in which the instances are in play and `assert false`, a membership, an
 inclusion and a bound on a field must fail, in both resolver modes.
 
+## Override axioms at the call layer (#103)
+
+[Issue 103](https://github.com/erniecohen/dafny/issues/103) (dafny-lang/dafny#5652):
+a datatype `C` in module `Mb` extends a trait `A` of module `Ma` and overrides its
+bodyless `ghost predicate has`. Proving the inherited `p(d) == forall b :: has(d, b)`
+with `forall b ensures this.has(r, b)` failed; writing `(this as A).has(r, b)` in
+the ensures clause made it verify. In one module, it verifies without the cast.
+
+The trait's `has` is not fuel-aware there (it is bodyless, and not in a recursive
+cluster with `C.has`), while `C.has` is. The override axiom then cannot bind a
+fuel variable, and uses the literal layer `$LZ`:
+
+```boogie
+// existing axiom, unchanged
+forall this, d, b :: { A.has($Box(this), d, b), $Is(this, C) } { C.has($LZ, this, d, b) }
+  C.has#canCall(this, d, b) || (A.has#canCall($Box(this), d, b) && $Is(this, C))
+  ==> (A.has#canCall(...) ==> C.has#canCall(...)) && A.has($Box(this), d, b) == C.has($LZ, this, d, b)
+```
+
+A call with default fuel is at layer `$LS($LZ)`, and so is the fact
+`forall b :: C.has($LS($LZ), this, r, b)` that the forall statement gives, with that
+term as its trigger. From the goal `A.has($Box(this), r, b0)` the axiom yields
+`C.has($LZ, this, r, b0)`, which matches neither that trigger nor the fuel axiom's
+`{ C.has($LS($ly), ...) }`. With the option, a second instance of the same axiom is
+emitted for such a pair, with `$LS($LZ)` in place of `$LZ` in both its trigger and
+its body. In one module the trait function is fuel-aware and the existing axiom
+binds the fuel, so nothing is added there.
+
+**Derivation.** The fuel axiom of `C.has`, `C.has($LS($ly), x) == C.has($ly, x)`,
+at `$ly := $LZ` turns the existing axiom's conclusion into the new one. The new
+axiom is a consequence of existing axioms, so it removes no model.
+
+**Cost.** One more quantifier per such override. The issue's program costs 25,591
+resource units (3 verified, 1 error) without it, and 27,912 (4 verified) with it
+(Z3 5.1.0).
+
+**Controls.** `git-issues/git-issue-103.dfy` runs the issue's program without the
+cast with the option off (1 error) and on (verifies, in both resolvers), and the
+same program with `assert false` after the proof, which must still fail.
+
 ## Standing CI for the shared option (#50)
 
 The review workflow runs the existing suite plan with the shared option both
