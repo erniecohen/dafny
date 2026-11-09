@@ -282,6 +282,9 @@ git-issues/github-issue-191.dfy
 # The C# backend escapes every C# reserved and contextual keyword (#187).
 git-issues/github-issue-187.dfy
 
+# Match-source inference under --conservative-match-inference (https://github.com/erniecohen/dafny/issues/48).
+git-issues/git-issue-48-inference.dfy
+
 # Rotations at widths that are not powers of two are defined by shifts; Z3 composed native
 # rotation counts modulo 2^W (https://github.com/erniecohen/dafny/issues/147).
 git-issues/github-issue-147.dfy
