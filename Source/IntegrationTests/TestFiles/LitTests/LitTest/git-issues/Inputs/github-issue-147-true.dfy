@@ -1,6 +1,7 @@
 // True facts about rotations, with symbolic counts fixed by preconditions, as in issue 147.
 // Z3 rewrites rotations by literal counts before it composes them, so the counts stay
-// parameters.  Every method must verify.
+// parameters.  Widths 0, 3, 6 and 12; github-issue-147-native-true.dfy has widths 1, 32
+// and 64.  Every method must verify.
 
 // Width 3, not a power of two.
 method Bv3OppositeOrder(x: bv3, a: nat, b: nat)
@@ -84,45 +85,5 @@ method Bv12Interior(x: bv12, a: nat, b: nat)
 method Bv0(x: bv0, a: nat)
   requires a == 0
   ensures x.RotateLeft(a) == x && x.RotateRight(a).RotateLeft(a) == x
-{
-}
-
-// Width 1, a power of two: the native operators.
-method Bv1(x: bv1, a: nat, b: nat)
-  requires a <= 1 && b <= 1
-  ensures x.RotateRight(a).RotateLeft(b) == x
-{
-}
-
-// Widths 32 and 64, powers of two: the native operators.
-method Bv32FullThenZero(x: bv32, a: nat, b: nat)
-  requires a == 32 && b == 0
-  ensures x.RotateRight(a).RotateLeft(b) == x
-{
-}
-
-method Bv32Interior(x: bv32, a: nat, b: nat)
-  requires x == (1 as bv32)
-  requires a == 31 && b == 1
-  ensures x.RotateRight(a).RotateLeft(b) == (4 as bv32)
-{
-}
-
-method Bv32Inverse(x: bv32, a: nat)
-  requires a <= 32
-  ensures x.RotateLeft(a).RotateRight(a) == x
-{
-}
-
-method Bv64SameDirection(x: bv64, a: nat)
-  requires a == 64
-  ensures x.RotateLeft(a).RotateLeft(a).RotateLeft(a) == x
-{
-}
-
-method Bv64Interior(x: bv64, a: nat, b: nat)
-  requires x == (1 as bv64)
-  requires a == 63 && b == 1
-  ensures x.RotateRight(a).RotateLeft(b) == (4 as bv64)
 {
 }
