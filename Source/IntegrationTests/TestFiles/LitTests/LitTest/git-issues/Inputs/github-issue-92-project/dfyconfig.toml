@@ -1,4 +1,4 @@
-includes = ["../git-issue-961-positive.dfy"]
+includes = ["../github-issue-92-positive.dfy"]
 
 [options]
 type-system-refresh = false

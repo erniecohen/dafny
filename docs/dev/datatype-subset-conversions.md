@@ -26,7 +26,7 @@ runtime representation already used for assignments to these subsets.
 
 ## Regression boundary
 
-`git-issues/git-issue-961.dfy` runs the exact original and independent fixtures
+`git-issues/github-issue-92.dfy` runs the exact original and independent fixtures
 with the option off and on under each resolver. The valid cases exercise direct,
 nested and aliased constraints, generic bases, a generic subset declaration, and
 reordered generic arguments. Invalid predicates and a negative integer hidden
