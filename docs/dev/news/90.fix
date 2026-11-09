@@ -1,0 +1,1 @@
+A `refines` clause or `import` whose qualified module name starts with modules that enclose it, as in `module A.C refines A.B`, depends on the module it names instead of on the enclosing module, which was always reported as a cycle (https://github.com/erniecohen/dafny/issues/90).
