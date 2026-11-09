@@ -1,0 +1,1 @@
+An explicit `{:trigger}` whose term translates into something Boogie does not allow in a trigger, such as an equality inside a conditional expression, is reported at the term instead of aborting the translation to Boogie.
