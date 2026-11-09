@@ -87,6 +87,26 @@ exact lets, the `seq` initializer, valid contracts and a false control under all
 combinations of `--type-system-refresh` and `--additional-axioms`; the release note is
 `docs/dev/news/166.fix`.  No verdict of the suite or of the standard library moves.
 
+## Opt-in statement-expression conclusions ([#96](https://github.com/erniecohen/dafny/issues/96))
+
+`--statement-expression-conclusions` (default false; also `statement-expression-conclusions =
+true` in `dfyconfig.toml`) is a completeness option.  In the condition of an `assert` statement,
+it translates a Boolean statement expression `S; E` under quantifiers and connectives as
+`C ==> E` (`C && E` at negative polarity), `C` being the statement's conclusion.  Before, only
+`S; E` at the top of the condition got `C`, so `assert forall n: nat :: assume false; false`
+failed.  Its kind is **neither**: it adds no axiom and no assumption, and replaces the checked
+condition by one with the same value wherever the condition's well-formedness check, made just
+before in the same state, has established `C`.  It applies only in the current heap: not inside
+`old`, `old@L`, `unchanged` or `fresh`, lambdas, set and map comprehensions, let-such-that and
+binding-guard if-then-else, nor to an assert statement inside a statement expression.  The
+first version of the pull request also rewrote quantifiers under `old` and proved
+`ensures false`.  Postconditions, invariants, preconditions and inlined function bodies are not
+rewritten.  `docs/dev/statement-expression-conclusions.md` has the argument and the exclusions.
+With the option off, the Boogie program is unchanged and no verdict of the suite or of the
+standard library moves.  The regression is `git-issues/github-issue-96.dfy`; CI's job
+`Statement-expression conclusions (opt-in, #96)` runs its fixtures with the option on and off.
+The release note is `docs/dev/news/1371.feat`.
+
 ## Boogie
 
 Boogie's unguarded reverse casts,

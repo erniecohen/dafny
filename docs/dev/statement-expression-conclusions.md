@@ -116,6 +116,20 @@ The argument, for an assert statement `assert P` in the current heap:
 The choice between `C ==> E` and `C && E` affects only what can be proved, never soundness,
 since both equal `E` where `C` holds.
 
+**What the proof relies on.** It relies on the well-formedness check of the assert statement's
+own condition, made in the same procedure just before. It does not rely on the
+well-formedness of other declarations. In the first version, function bodies inlined in a split
+were rewritten too. That relied on the function's own well-formedness check, which
+`{:verify false}`, `--library` or a filtered run skips, and on `F#canCall(args)`, not on the
+precondition. Inlined bodies are no longer rewritten. What remains trusted is what the program
+states: an `assume` statement's condition is assumed, as everywhere. A method that is not
+verified (`{:verify false}`) is not checked at all, so its assert statements prove nothing for
+anyone.
+
+A statement expression whose conclusion is the literal `true` (a call, `reveal`, `hide` or
+`forall` statement) does not by itself trigger the rewrite. The rewrite would add nothing and
+would only change the shape of the emitted Boogie.
+
 ## What is excluded, and why
 
 **`old`, `old@L`, `unchanged`, `fresh`** (the counterexample in the review of #226). Inside

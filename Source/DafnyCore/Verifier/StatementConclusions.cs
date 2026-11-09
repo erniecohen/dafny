@@ -54,7 +54,9 @@ internal class StatementConclusionSubstituter : Substituter {
     if (IsOpaque(expr)) {
       return false;
     }
-    if (expr is StmtExpr { E.Type.IsBoolType: true }) {
+    // A statement whose conclusion is the literal true (a call, reveal, hide or forall statement)
+    // adds nothing, and does not by itself call for a rewrite.
+    if (expr is StmtExpr { E.Type.IsBoolType: true } stmtExpr && !LiteralExpr.IsTrue(stmtExpr.GetStatementConclusion())) {
       return true;
     }
     return expr.SubExpressions.Any(Applies);
