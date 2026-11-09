@@ -2452,6 +2452,17 @@ and what information it produces about the verification process.
   because it can change proof costs. See
   [the soundness note](../dev/additional-axioms.md).
 
+* `--decreases-literal-axiom-only` - when a function's `decreases` clause
+  names only some of its parameters, unfold a call whose decreasing arguments
+  are literals with only the definition axiom that needs those arguments to be
+  literals, and leave out the one that needs every argument to be a literal.
+  Without it, both axioms fire on a call whose arguments are all literals, and
+  the cost grows about fourfold per level of a literal term with two recursive
+  calls per level. Disabled by default; `decreases-literal-axiom-only = true` in a
+  project file's `[options]` section. It removes an axiom and adds none. See
+  [the `{:fuel}` attribute](#sec-fuel) for when a `decreases` clause helps
+  literal arguments unfold.
+
 * `--manual-lemma-induction` - disables automatic inducntion for lemmas
 
 * `--isolate-assertions` - verify assertions individually

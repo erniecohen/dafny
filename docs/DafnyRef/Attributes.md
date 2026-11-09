@@ -308,6 +308,40 @@ fewer assert statements), but it may also increase verification time,
 so use it with care.  Setting the fuel to 0,0 is similar to making the
 definition opaque, except when used with all literal arguments.
 
+Fuel limits only the unfoldings of a call whose arguments are not all
+literals.  A call whose arguments are all literals unfolds without using fuel.
+A function without a `reads` clause whose `decreases` clause names only some
+of its parameters also unfolds without using fuel when the arguments for those parameters are
+literals, whatever the other arguments are.  A function with no `decreases`
+clause gets one that names every parameter whose type is ordered (for a member
+of a datatype, `this` first), so it gets only the first kind of unfolding.  For
+example, with
+
+<!-- %check-verify -->
+```dafny
+datatype T = V | C(c: real) | Add(a: T, b: T)
+
+function Eval(t: T, x: real): real
+  decreases t
+{
+  match t
+  case V => x
+  case C(c) => c
+  case Add(a, b) => Eval(a, x) + Eval(b, x)
+}
+
+lemma Depth3(x: real)
+  ensures Eval(Add(V, Add(C(1.0), V)), x) == 2.0 * x + 1.0
+{}
+```
+
+the lemma verifies because `decreases t` lets the literal term unfold although
+`x` is not a literal.  Without that clause, fuel runs out at the third level.  A
+member predicate of a datatype uses `decreases this` the same way.  When such a
+function is also called with every argument a literal, use
+`--decreases-literal-axiom-only`: without it, the cost of such a call grows about
+fourfold per level of the literal term.
+
 ### 11.2.9. `{:id <string>}`
 Assign a custom unique ID to a function or a method to be used for verification
 result caching.
