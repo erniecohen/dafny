@@ -112,6 +112,7 @@ public static class DafnyCommands {
     CommonOptionBag.BitvectorMapKeys,
     CommonOptionBag.ContextualLambdaDomains,
     CommonOptionBag.ConservativeMatchInference,
+    CommonOptionBag.DatatypeSubsetConversions,
     CommonOptionBag.InvariantConstructorInference,
     CommonOptionBag.TypeInferenceDebug,
     CommonOptionBag.NewTypeInferenceDebug,

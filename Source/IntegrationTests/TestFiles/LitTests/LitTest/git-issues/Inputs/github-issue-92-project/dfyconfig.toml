@@ -1,0 +1,6 @@
+includes = ["../github-issue-92-positive.dfy"]
+
+[options]
+type-system-refresh = false
+general-newtypes = false
+datatype-subset-conversions = true

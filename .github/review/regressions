@@ -307,5 +307,8 @@ dafny4/git-issue57.dfy
 proof-obligation-desc/shift-lower-bound.dfy
 proof-obligation-desc/shift-upper-bound.dfy
 
+# Opt-in legacy conversions to datatype subsets under --datatype-subset-conversions (https://github.com/erniecohen/dafny/issues/92).
+git-issues/github-issue-92.dfy
+
 # Constructor type arguments under --invariant-constructor-inference (https://github.com/erniecohen/dafny/issues/101).
 git-issues/github-issue-101.dfy
