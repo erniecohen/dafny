@@ -293,3 +293,6 @@ git-issues/github-issue-190.dfy
 
 # Exact let in a self postcondition keeps the self-call allowance (#166).
 git-issues/github-issue-166.dfy
+
+# Declared lambda preconditions are necessary under --additional-axioms (#97).
+git-issues/github-issue-97.dfy
