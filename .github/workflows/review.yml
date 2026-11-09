@@ -476,6 +476,11 @@ jobs:
             std-verdicts.tsv --cores 4 --additional-axioms ${{ matrix.axioms == 'on' }} \
             --boogie /deterministicLiteralHashes:1
           python3 .github/review/std-verdicts.py expected std-verdicts.tsv > "expected-std-verdicts-z3-$Z3V.tsv"
+          # Fingerprints, to compare runs of one tree without downloading artifacts (#186):
+          # the verdict columns, and the declarations' resource and proof counts.
+          vfp=$(sha256sum < "expected-std-verdicts-z3-$Z3V.tsv" | cut -c1-16)
+          rfp=$(awk -F'\t' '$1 !~ /^run /{print $1"\t"$5"\t"$6}' std-verdicts.tsv | sha256sum | cut -c1-16)
+          echo "verdict fingerprint $vfp, resource fingerprint $rfp"
           {
             echo "## Standard library, axioms ${{ matrix.axioms }}, Z3 $Z3V: ${{ needs.build.outputs.version }}"
             echo
@@ -484,6 +489,8 @@ jobs:
             echo "Boogie's /deterministicLiteralHashes:1 (#186)."
             echo
             python3 .github/review/std-verdicts.py summary std-verdicts.tsv
+            echo
+            echo "Verdict fingerprint \`$vfp\`, resource fingerprint \`$rfp\`."
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         with:
