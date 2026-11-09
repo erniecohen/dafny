@@ -53,10 +53,22 @@ namespace Microsoft.Dafny {
     /// Try to make sure "preType" is not an unresolved proxy. If it is a proxy, then partially solve type constraints in hopes
     /// of resolving it. If that still doesn't resolve it, then report and error and return "false".
     /// Otherwise (that is, upon success), return "true".
+    ///
+    /// The solve with decisions also acts on default advice for every pending proxy, such as an integer literal elsewhere
+    /// in the enclosing expression, before the enclosing context (for example a function's declared result type) has
+    /// constrained it.  With --conservative-match-inference, a partial solve without decisions is tried first, and the
+    /// solve with decisions is used only if that leaves "preType" a proxy.  Both stages add no constraint and drop none.
     /// </summary>
     bool InsistOnKnowingPreType(IOrigin tok, PreType preType) {
       if (preType.Normalize() is PreTypeProxy) {
-        Constraints.PartiallySolveTypeConstraints(null, true);
+        if (resolver.Options.Get(CommonOptionBag.ConservativeMatchInference)) {
+          Constraints.PartiallySolveTypeConstraints();
+          if (preType.Normalize() is PreTypeProxy) {
+            Constraints.PartiallySolveTypeConstraints(null, true);
+          }
+        } else {
+          Constraints.PartiallySolveTypeConstraints(null, true);
+        }
 
         if (preType.Normalize() is PreTypeProxy) {
           ReportError(tok, "Could not resolve the type of the source of the match expression. Please provide additional typing annotations.");
