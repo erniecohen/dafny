@@ -353,7 +353,8 @@ the lemma verifies because `decreases t` lets the literal term unfold although
 member predicate of a datatype uses `decreases this` the same way when its
 receiver is a literal; when the receiver is built from a variable, as in
 `Bin(op, Var(0), Var(1)).Scoped(n)` with a parameter `op`, the clause does not
-apply, and only fuel unfolds the call.
+help: only fuel unfolds the call, and the added axiom can still change whether
+a proof near its resource or fuel limit succeeds.
 
 Such a clause has a cost on calls whose arguments are all literals.  Both kinds
 of unfolding then apply at every level of the literal term, so for a function
