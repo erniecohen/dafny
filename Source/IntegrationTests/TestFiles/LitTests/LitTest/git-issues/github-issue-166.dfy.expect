@@ -82,3 +82,23 @@ false-control (type-system-refresh:true, additional-axioms:true)
 github-issue-166-false-control.dfy(7,2): Error: assertion might not hold
 
 Dafny program verifier finished with 1 verified, 1 error
+seq-init (type-system-refresh:false, additional-axioms:false)
+github-issue-166-seq-init.dfy(5,2): Error: a postcondition could not be proved on this return path
+github-issue-166-seq-init.dfy(4,31): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 2 verified, 1 error
+seq-init (type-system-refresh:false, additional-axioms:true)
+github-issue-166-seq-init.dfy(5,2): Error: a postcondition could not be proved on this return path
+github-issue-166-seq-init.dfy(4,31): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 2 verified, 1 error
+seq-init (type-system-refresh:true, additional-axioms:false)
+github-issue-166-seq-init.dfy(5,2): Error: a postcondition could not be proved on this return path
+github-issue-166-seq-init.dfy(4,31): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 2 verified, 1 error
+seq-init (type-system-refresh:true, additional-axioms:true)
+github-issue-166-seq-init.dfy(5,2): Error: a postcondition could not be proved on this return path
+github-issue-166-seq-init.dfy(4,31): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 2 verified, 1 error
