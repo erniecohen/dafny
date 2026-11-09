@@ -1,0 +1,6 @@
+includes = ["../git-issue-48-inference-original.dfy"]
+
+[options]
+type-system-refresh = true
+conservative-match-inference = true
+allow-axioms = true

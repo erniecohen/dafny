@@ -2236,6 +2236,19 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   The legacy option was `-unicodeChar:<n>` with values 0 and 1 for
   false and true above.
 
+* `--conservative-match-inference` - with the refreshed type system
+  (`--type-system-refresh`), infer the type of the source of a `match` by
+  propagating the constraints already known before making any default type
+  decision. Without it, resolving a `match` whose source type is not yet known can
+  give an earlier integer literal its default type `int` before the enclosing
+  context, such as a function's declared result type, is seen; for example,
+  `if x == 0 then Some(0) else var d := foo(x); match d ...` in a function whose
+  result type is `Option<int32>` is then rejected. Disabled by default, and it has
+  no effect on the legacy resolver. Use `conservative-match-inference = true` in a
+  project file's `[options]` section; `--conservative-match-inference:false`
+  overrides that setting. See the [match expression](#sec-match-expression) for
+  what it does not fix.
+
 Legacy options:
 
 * `-noIncludes` - ignore `include` directives in the program.
