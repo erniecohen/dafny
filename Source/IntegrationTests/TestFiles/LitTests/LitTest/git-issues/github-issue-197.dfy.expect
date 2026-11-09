@@ -1,0 +1,9 @@
+github-issue-197.dfy(31,6): Error: Verification out of resource (All6)
+github-issue-197.dfy(38,0): Error: a postcondition could not be proved on this return path
+github-issue-197.dfy(37,32): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 5 verified, 1 error, 1 out of resource
+github-issue-197.dfy(38,0): Error: a postcondition could not be proved on this return path
+github-issue-197.dfy(37,32): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 6 verified, 1 error
