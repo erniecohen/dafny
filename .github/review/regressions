@@ -330,3 +330,5 @@ git-issues/github-issue-211.dfy
 
 # Override axioms at the call layer under --additional-axioms (https://github.com/erniecohen/dafny/issues/103).
 git-issues/github-issue-103.dfy
+
+# Same-bound rule of --modular-termination, milestone M2 (https://github.com/erniecohen/dafny/issues/211): extends git-issues/github-issue-211.dfy, listed above.

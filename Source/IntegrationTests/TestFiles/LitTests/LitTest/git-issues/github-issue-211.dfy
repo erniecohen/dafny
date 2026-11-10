@@ -1,8 +1,9 @@
 // Termination of calls dispatched across modules (https://github.com/erniecohen/dafny/issues/211,
-// upstream dafny-lang/dafny#1588), milestone M1, under the opt-in --modular-termination.
+// upstream dafny-lang/dafny#1588), milestones M1 and M2, under the opt-in --modular-termination.
 // Without the option nothing changes: fabiomadge's Tie program, which never terminates, verifies,
 // and "decreases {:global} E" is an ordinary decreases clause with an attribute.  With it, a call
-// dispatched to a bodyless member of an open trait must go to a smaller "decreases {:global}" bound.
+// dispatched to a bodyless member of an open trait must go to a smaller "decreases {:global}" bound
+// (M1), and a call to known code that can reach one must not go to a larger bound (M2).
 //
 // RUN: echo "tie, option off: verifies, as before" > "%t"
 // RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false "%S/Inputs/github-issue-211-tie.dfy" >> "%t"
@@ -39,10 +40,29 @@
 // A refining module keeps the global bound of an abstract trait member.
 // RUN: echo "refinement, option on" >> "%t"
 // RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%S/Inputs/github-issue-211-refinement.dfy" >> "%t"
-// KNOWN GAP of M1, expected to verify until the same-bound rule of M2 rejects it: a
-// forwarding helper (unbounded, larger-bounded, or in the same module) hides the cycle, and each program proves false.
-// RUN: echo "KNOWN GAP (M2 must reject): three helpers forward the dispatched call, option on: verify" >> "%t"
-// RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%S/Inputs/github-issue-211-gap-helper.dfy" >> "%t"
+// Milestone M2, the same-bound rule: a call to known code that can reach a dispatched call runs
+// under the caller's bound.  The forwarding helpers that hid a cycle from M1 (unbounded,
+// larger-bounded, or in the same module) are rejected, each at its call.
+// RUN: echo "gap helpers, option on: each forwarding call rejected" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%S/Inputs/github-issue-211-gap-helper.dfy" >> "%t"
+// RUN: echo "same bound, option on, refresh false: verifies" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false --modular-termination "%S/Inputs/github-issue-211-same-bound.dfy" >> "%t"
+// RUN: echo "same bound vacuity control, option on, refresh false: each assert false fails" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false --modular-termination "%S/Inputs/github-issue-211-same-bound-false.dfy" >> "%t"
+// RUN: echo "same-bound rules, option on, refresh false" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false --modular-termination "%S/Inputs/github-issue-211-same-bound-rules.dfy" >> "%t"
+// RUN: echo "same bound, option on, refresh true: verifies" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true --general-traits:legacy --modular-termination "%S/Inputs/github-issue-211-same-bound.dfy" >> "%t"
+// RUN: echo "same bound vacuity control, option on, refresh true: each assert false fails" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true --general-traits:legacy --modular-termination "%S/Inputs/github-issue-211-same-bound-false.dfy" >> "%t"
+// RUN: echo "same-bound rules, option on, refresh true" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true --general-traits:legacy --modular-termination "%S/Inputs/github-issue-211-same-bound-rules.dfy" >> "%t"
+// KNOWN GAP, expected to verify until it is closed: a subset type's constraint, evaluated by a type
+// test, reaches a dispatched call with no call to check.
+// RUN: echo "KNOWN GAP: a subset-type constraint reaches the dispatched call, option on: verifies" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%S/Inputs/github-issue-211-gap-constraint.dfy" >> "%t"
+// RUN: echo "same-bound hints, option on" >> "%t"
+// RUN: %exits-with 0 %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --show-hints "%S/Inputs/github-issue-211-same-bound.dfy" >> "%t"
 // The printed program keeps the global clauses.
 // RUN: %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --print "%t.counter.dfy" "%S/Inputs/github-issue-211-counter.dfy" > "%t.ignore"
 // RUN: echo "printed counter, option on: verifies" >> "%t"
