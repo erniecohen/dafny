@@ -439,7 +439,8 @@ With a parameter `n: nat` and `decreases {:global} n` on both members, and
 
 A call to code that is known statically (a function, a method, a constructor, a member of a trait
 that no other module extends, or an iterator) runs under its caller's bound. If the callee can
-reach such a dispatched call, through its own body or through the code it calls in turn, the call
+reach such a dispatched call, through its own body, the default values of its parameters, or the
+code it calls in turn, the call
 must not go to a larger global bound: the callee's global bound, at the call's arguments, must be
 at most the caller's, evaluated on entry to the caller. A callee that cannot reach a dispatched
 call needs no bound and gets no such check. So a helper that forwards a dispatched call needs a
@@ -491,6 +492,10 @@ can still fail to terminate, and can prove `false`, through what it does not che
   only `dafny audit` reports them.
 * The comparison of bounds may use the definitions of functions whose termination is
   being established.
+* The constraint and the witness of a subset type or newtype belong to no method or function. A
+  type test `x is T`, or compiled code that evaluates a witness, runs them with no call to check,
+  so a dispatched call that they make is not compared with the bound of the code that evaluates
+  them.
 * An iterator has no global bound, so a call of an iterator that reaches a dispatched call is
   rejected from a member with a bound.
 * The C# parser is what turns `decreases {:global} E` into a global bound. A program that

@@ -101,3 +101,23 @@ module Y7 {
     }
   }
 }
+
+// A parameter's default value is evaluated as part of a call that omits the argument, so it is
+// checked with the callee: it reaches the dispatched call through H.
+module L8 {
+  import Tr
+  function H(t: Tr.T, n: nat): nat { if n == 0 then 0 else t.F(n - 1) }
+  function D(t: Tr.T, n: nat, k: nat := H(t, n)): nat { k }
+  // Rejected: H has no bound, and the default value runs under E's bound.
+  function E(t: Tr.T, n: nat, k: nat := H(t, n)): nat decreases {:global} n { k }
+}
+
+module Y8 {
+  import Tr
+  import L8
+  class Y extends Tr.T {
+    // Rejected: D has no bound, and reaches the dispatched call through its default value.
+    function F(n: nat): nat { L8.D(this, n) }
+    method M(n: nat) returns (r: nat) { r := 0; }
+  }
+}

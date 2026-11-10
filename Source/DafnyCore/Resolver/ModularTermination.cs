@@ -134,7 +134,8 @@ public static class ModularTermination {
 /// check: no call below it is dispatched across modules, and the existing termination checks order all of them.
 ///
 /// The nodes are the methods, functions and constants with initializers of every class, trait and datatype, and
-/// the iterators.  The edges are the calls in their bodies, specifications and global bounds; a reference to a
+/// the iterators.  The edges are the calls in their bodies, specifications, global bounds and the default values
+/// of their parameters (evaluated as part of a call that omits the argument); a reference to a
 /// function or method as a value; a reference to a constant; from a call of an iterator's MoveNext, to the iterator;
 /// and from a bodyless member of a trait that is not open to each member that overrides it.  A call through a
 /// function value is not an edge: such calls are not yet checked.
@@ -179,6 +180,7 @@ public class ModularTerminationAnalysis {
             c.Visit(iter.Decreases.Expressions);
             c.Visit(iter.Reads.Expressions);
             c.Visit(iter.Modifies.Expressions);
+            c.Visit(iter.Ins.Where(f => f.DefaultValue != null).Select(f => f.DefaultValue));
             if (iter.Body != null) {
               c.Visit(iter.Body);
             }
@@ -195,6 +197,8 @@ public class ModularTerminationAnalysis {
                 foreach (var clause in ModularTermination.GlobalClauses(((ICallable)member).Decreases.Attributes)) {
                   c.Visit(clause.Args);
                 }
+                // A default value is evaluated as part of the call that omits the argument.
+                c.Visit(((ICallable)member).Ins.Where(f => f.DefaultValue != null).Select(f => f.DefaultValue));
               });
               break;
             case ConstantField { Rhs: { } rhs }:
@@ -312,7 +316,9 @@ public class ModularTerminationRewriter : IRewriter {
           }
           var callable = (ICallable)member;
           CheckGlobalClauses(callable);
-          new CallClassifier(Reporter, callable, analysis).Visit(callable);
+          var classifier = new CallClassifier(Reporter, callable, analysis);
+          classifier.Visit(callable);
+          classifier.Visit(callable.Ins.Where(f => f.DefaultValue != null).Select(f => f.DefaultValue));
         }
       }
     }

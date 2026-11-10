@@ -57,6 +57,10 @@
 // RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true --general-traits:legacy --modular-termination "%S/Inputs/github-issue-211-same-bound-false.dfy" >> "%t"
 // RUN: echo "same-bound rules, option on, refresh true" >> "%t"
 // RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true --general-traits:legacy --modular-termination "%S/Inputs/github-issue-211-same-bound-rules.dfy" >> "%t"
+// KNOWN GAP, expected to verify until it is closed: a subset type's constraint, evaluated by a type
+// test, reaches a dispatched call with no call to check.
+// RUN: echo "KNOWN GAP: a subset-type constraint reaches the dispatched call, option on: verifies" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%S/Inputs/github-issue-211-gap-constraint.dfy" >> "%t"
 // RUN: echo "same-bound hints, option on" >> "%t"
 // RUN: %exits-with 0 %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --show-hints "%S/Inputs/github-issue-211-same-bound.dfy" >> "%t"
 // The printed program keeps the global clauses.
