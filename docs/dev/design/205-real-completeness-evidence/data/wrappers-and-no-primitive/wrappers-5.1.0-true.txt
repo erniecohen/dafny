@@ -1,0 +1,80 @@
+
+Results for existsLub (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.1899101
+  Overall resource count: 17205
+  Maximum assertion batch time: 00:00:00.1899101
+  Maximum assertion batch resource count: 17205
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.1899101
+    Resource count: 17205
+
+    Assertions:
+      sup-wrapper.dfy(16,15): a value exists that satisfies this let-such-that expression
+      sup-wrapper.dfy(17,15): a value exists that satisfies this let-such-that expression
+      sup-wrapper.dfy(18,23): variable 'w', which is subject to definite-assignment rules, is always initialized here
+      sup-wrapper.dfy(18,25): variable 'b', which is subject to definite-assignment rules, is always initialized here
+      sup-wrapper.dfy(19,15): assertion always holds
+      sup-wrapper.dfy(19,15): assertion always holds
+      sup-wrapper.dfy(14,11): this postcondition holds
+
+Results for uniqueLub (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0867086
+  Overall resource count: 7364
+  Maximum assertion batch time: 00:00:00.0867086
+  Maximum assertion batch resource count: 7364
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0867086
+    Resource count: 7364
+
+    Assertions:
+      sup-wrapper.dfy(27,15): assertion always holds
+      sup-wrapper.dfy(28,15): assertion always holds
+      sup-wrapper.dfy(25,13): this postcondition holds
+
+Results for sup (well-formedness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0957527
+  Overall resource count: 16987
+  Maximum assertion batch time: 00:00:00.0957527
+  Maximum assertion batch resource count: 16987
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0957527
+    Resource count: 16987
+
+    Assertions:
+      sup-wrapper.dfy(32,32): this postcondition holds
+      sup-wrapper.dfy(32,32): this postcondition holds
+      sup-wrapper.dfy(33,30): this postcondition holds
+      sup-wrapper.dfy(36,15): the precondition always holds
+      sup-wrapper.dfy(36,15): the precondition always holds
+      sup-wrapper.dfy(36,20): a value exists that satisfies this let-such-that expression
+
+Results for ivtReturning (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0680301
+  Overall resource count: 14528
+  Maximum assertion batch time: 00:00:00.0680301
+  Maximum assertion batch resource count: 14528
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0680301
+    Resource count: 14528
+
+    Assertions:
+      sup-wrapper.dfy(45,16): the precondition always holds
+      sup-wrapper.dfy(45,16): the precondition always holds
+      sup-wrapper.dfy(45,16): the precondition always holds
+      sup-wrapper.dfy(46,5): a value exists that satisfies this let-such-that expression
+      sup-wrapper.dfy(47,1): out-parameter 'r', which is subject to definite-assignment rules, is always initialized at this return point
+      sup-wrapper.dfy(43,13): this postcondition holds
+      sup-wrapper.dfy(43,17): this postcondition holds
+      sup-wrapper.dfy(43,34): this postcondition holds

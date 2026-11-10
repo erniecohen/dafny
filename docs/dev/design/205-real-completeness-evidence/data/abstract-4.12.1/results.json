@@ -1,0 +1,1152 @@
+[
+  {
+    "case": "lub_upper",
+    "variant": "none",
+    "result": "unknown",
+    "ru": 936,
+    "instances": 2,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 1,
+      "upper_def": 1
+    },
+    "exit": 0
+  },
+  {
+    "case": "lub_upper",
+    "variant": "broad",
+    "result": "unsat",
+    "ru": 1646,
+    "instances": 10,
+    "completeness": 4,
+    "profiles": {
+      "upper_point": 3,
+      "sup_least": 1,
+      "completeness": 4,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "lub_upper",
+    "variant": "sup-flat",
+    "result": "unsat",
+    "ru": 1646,
+    "instances": 10,
+    "completeness": 4,
+    "profiles": {
+      "upper_point": 3,
+      "sup_least": 1,
+      "completeness": 4,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "lub_upper",
+    "variant": "nested-sup",
+    "result": "unsat",
+    "ru": 1849,
+    "instances": 12,
+    "completeness": 1,
+    "profiles": {
+      "upper_point": 3,
+      "k!24": 3,
+      "sup_least": 2,
+      "completeness": 1,
+      "upper_def": 3
+    },
+    "exit": 0
+  },
+  {
+    "case": "lub_upper",
+    "variant": "request",
+    "result": "unsat",
+    "ru": 1628,
+    "instances": 7,
+    "completeness": 1,
+    "profiles": {
+      "upper_point": 3,
+      "sup_least": 1,
+      "completeness": 1,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "lub_upper",
+    "variant": "local",
+    "result": "unsat",
+    "ru": 1393,
+    "instances": 6,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 3,
+      "sup_least": 1,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "lub_least",
+    "variant": "none",
+    "result": "unknown",
+    "ru": 996,
+    "instances": 3,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 1,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "lub_least",
+    "variant": "broad",
+    "result": "unsat",
+    "ru": 1661,
+    "instances": 9,
+    "completeness": 3,
+    "profiles": {
+      "sup_least": 2,
+      "upper_point": 1,
+      "completeness": 3,
+      "upper_def": 3
+    },
+    "exit": 0
+  },
+  {
+    "case": "lub_least",
+    "variant": "sup-flat",
+    "result": "unsat",
+    "ru": 1661,
+    "instances": 9,
+    "completeness": 3,
+    "profiles": {
+      "sup_least": 2,
+      "upper_point": 1,
+      "completeness": 3,
+      "upper_def": 3
+    },
+    "exit": 0
+  },
+  {
+    "case": "lub_least",
+    "variant": "nested-sup",
+    "result": "unsat",
+    "ru": 1789,
+    "instances": 10,
+    "completeness": 1,
+    "profiles": {
+      "k!24": 3,
+      "sup_least": 2,
+      "upper_point": 1,
+      "completeness": 1,
+      "upper_def": 3
+    },
+    "exit": 0
+  },
+  {
+    "case": "lub_least",
+    "variant": "request",
+    "result": "unsat",
+    "ru": 1649,
+    "instances": 7,
+    "completeness": 1,
+    "profiles": {
+      "sup_least": 2,
+      "upper_point": 1,
+      "completeness": 1,
+      "upper_def": 3
+    },
+    "exit": 0
+  },
+  {
+    "case": "lub_least",
+    "variant": "local",
+    "result": "unsat",
+    "ru": 1367,
+    "instances": 5,
+    "completeness": 0,
+    "profiles": {
+      "sup_least": 2,
+      "upper_def": 3
+    },
+    "exit": 0
+  },
+  {
+    "case": "sup_interval",
+    "variant": "none",
+    "result": "unknown",
+    "ru": 910,
+    "instances": 1,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 0,
+      "upper_def": 1
+    },
+    "exit": 0
+  },
+  {
+    "case": "sup_interval",
+    "variant": "broad",
+    "result": "unsat",
+    "ru": 1588,
+    "instances": 6,
+    "completeness": 2,
+    "profiles": {
+      "upper_point": 1,
+      "sup_least": 1,
+      "completeness": 2,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "sup_interval",
+    "variant": "sup-flat",
+    "result": "unsat",
+    "ru": 1695,
+    "instances": 10,
+    "completeness": 4,
+    "profiles": {
+      "upper_point": 1,
+      "sup_least": 2,
+      "completeness": 4,
+      "upper_def": 3
+    },
+    "exit": 0
+  },
+  {
+    "case": "sup_interval",
+    "variant": "nested-sup",
+    "result": "unsat",
+    "ru": 2029,
+    "instances": 15,
+    "completeness": 5,
+    "profiles": {
+      "upper_point": 1,
+      "sup_least": 3,
+      "k!22": 2,
+      "completeness": 5,
+      "upper_def": 4
+    },
+    "exit": 0
+  },
+  {
+    "case": "sup_interval",
+    "variant": "request",
+    "result": "unsat",
+    "ru": 1580,
+    "instances": 5,
+    "completeness": 1,
+    "profiles": {
+      "upper_point": 1,
+      "sup_least": 1,
+      "completeness": 1,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "sup_interval",
+    "variant": "local",
+    "result": "unsat",
+    "ru": 1352,
+    "instances": 4,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 1,
+      "sup_least": 1,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "bounded_false_control",
+    "variant": "none",
+    "result": "unknown",
+    "ru": 795,
+    "instances": 1,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 0,
+      "upper_def": 1
+    },
+    "exit": 0
+  },
+  {
+    "case": "bounded_false_control",
+    "variant": "broad",
+    "result": "unknown",
+    "ru": 1537,
+    "instances": 6,
+    "completeness": 2,
+    "profiles": {
+      "upper_point": 1,
+      "sup_least": 1,
+      "completeness": 2,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "bounded_false_control",
+    "variant": "sup-flat",
+    "result": "unknown",
+    "ru": 1537,
+    "instances": 6,
+    "completeness": 2,
+    "profiles": {
+      "upper_point": 1,
+      "sup_least": 1,
+      "completeness": 2,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "bounded_false_control",
+    "variant": "nested-sup",
+    "result": "unknown",
+    "ru": 1605,
+    "instances": 5,
+    "completeness": 1,
+    "profiles": {
+      "upper_point": 1,
+      "sup_least": 1,
+      "completeness": 1,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "bounded_false_control",
+    "variant": "request",
+    "result": "unknown",
+    "ru": 1529,
+    "instances": 5,
+    "completeness": 1,
+    "profiles": {
+      "upper_point": 1,
+      "sup_least": 1,
+      "completeness": 1,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "bounded_false_control",
+    "variant": "local",
+    "result": "unknown",
+    "ru": 1293,
+    "instances": 4,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 1,
+      "sup_least": 1,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "empty_false_control",
+    "variant": "none",
+    "result": "unknown",
+    "ru": 844,
+    "instances": 1,
+    "completeness": 0,
+    "profiles": {
+      "upper_def": 1
+    },
+    "exit": 0
+  },
+  {
+    "case": "empty_false_control",
+    "variant": "broad",
+    "result": "unknown",
+    "ru": 1345,
+    "instances": 1,
+    "completeness": 0,
+    "profiles": {
+      "upper_def": 1
+    },
+    "exit": 0
+  },
+  {
+    "case": "empty_false_control",
+    "variant": "sup-flat",
+    "result": "unknown",
+    "ru": 1345,
+    "instances": 1,
+    "completeness": 0,
+    "profiles": {
+      "upper_def": 1
+    },
+    "exit": 0
+  },
+  {
+    "case": "empty_false_control",
+    "variant": "nested-sup",
+    "result": "unknown",
+    "ru": 1718,
+    "instances": 9,
+    "completeness": 1,
+    "profiles": {
+      "k!22": 1,
+      "sup_least": 4,
+      "completeness": 1,
+      "upper_def": 3
+    },
+    "exit": 0
+  },
+  {
+    "case": "empty_false_control",
+    "variant": "request",
+    "result": "unknown",
+    "ru": 1421,
+    "instances": 2,
+    "completeness": 1,
+    "profiles": {
+      "upper_point": 0,
+      "completeness": 1,
+      "empty": 0,
+      "upper_def": 1
+    },
+    "exit": 0
+  },
+  {
+    "case": "empty_false_control",
+    "variant": "local",
+    "result": "unknown",
+    "ru": 1249,
+    "instances": 1,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 0,
+      "empty": 0,
+      "upper_def": 1
+    },
+    "exit": 0
+  },
+  {
+    "case": "unbounded_false_control",
+    "variant": "none",
+    "result": "unknown",
+    "ru": 789,
+    "instances": 0,
+    "completeness": 0,
+    "profiles": {
+      "universal": 0
+    },
+    "exit": 0
+  },
+  {
+    "case": "unbounded_false_control",
+    "variant": "broad",
+    "result": "unknown",
+    "ru": 1320,
+    "instances": 0,
+    "completeness": 0,
+    "profiles": {
+      "universal": 0
+    },
+    "exit": 0
+  },
+  {
+    "case": "unbounded_false_control",
+    "variant": "sup-flat",
+    "result": "unknown",
+    "ru": 1320,
+    "instances": 0,
+    "completeness": 0,
+    "profiles": {
+      "universal": 0
+    },
+    "exit": 0
+  },
+  {
+    "case": "unbounded_false_control",
+    "variant": "nested-sup",
+    "result": "unknown",
+    "ru": 1751,
+    "instances": 7,
+    "completeness": 1,
+    "profiles": {
+      "upper_point": 1,
+      "k!22": 0,
+      "sup_least": 2,
+      "completeness": 1,
+      "universal": 0,
+      "upper_def": 3
+    },
+    "exit": 0
+  },
+  {
+    "case": "unbounded_false_control",
+    "variant": "request",
+    "result": "unknown",
+    "ru": 1490,
+    "instances": 3,
+    "completeness": 1,
+    "profiles": {
+      "completeness": 1,
+      "universal": 1,
+      "upper_def": 1
+    },
+    "exit": 0
+  },
+  {
+    "case": "unbounded_false_control",
+    "variant": "local",
+    "result": "unknown",
+    "ru": 1355,
+    "instances": 2,
+    "completeness": 0,
+    "profiles": {
+      "universal": 1,
+      "upper_def": 1
+    },
+    "exit": 0
+  },
+  {
+    "case": "passive_bounded_sets_20",
+    "variant": "none",
+    "result": "unknown",
+    "ru": 3862,
+    "instances": 20,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 0,
+      "upper_def": 20
+    },
+    "exit": 0
+  },
+  {
+    "case": "passive_bounded_sets_20",
+    "variant": "broad",
+    "result": "unknown",
+    "ru": 9109,
+    "instances": 120,
+    "completeness": 40,
+    "profiles": {
+      "upper_point": 20,
+      "sup_least": 20,
+      "completeness": 40,
+      "upper_def": 40
+    },
+    "exit": 0
+  },
+  {
+    "case": "passive_bounded_sets_20",
+    "variant": "sup-flat",
+    "result": "unknown",
+    "ru": 4363,
+    "instances": 20,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 0,
+      "upper_def": 20
+    },
+    "exit": 0
+  },
+  {
+    "case": "passive_bounded_sets_20",
+    "variant": "nested-sup",
+    "result": "unknown",
+    "ru": 4437,
+    "instances": 20,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 0,
+      "upper_def": 20
+    },
+    "exit": 0
+  },
+  {
+    "case": "passive_bounded_sets_20",
+    "variant": "request",
+    "result": "unknown",
+    "ru": 4383,
+    "instances": 20,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 0,
+      "upper_def": 20
+    },
+    "exit": 0
+  },
+  {
+    "case": "passive_bounded_sets_20",
+    "variant": "local",
+    "result": "unknown",
+    "ru": 3862,
+    "instances": 20,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 0,
+      "upper_def": 20
+    },
+    "exit": 0
+  },
+  {
+    "case": "unrelated_arithmetic",
+    "variant": "none",
+    "result": "unsat",
+    "ru": 56,
+    "instances": 0,
+    "completeness": 0,
+    "profiles": {},
+    "exit": 0
+  },
+  {
+    "case": "unrelated_arithmetic",
+    "variant": "broad",
+    "result": "unsat",
+    "ru": 113,
+    "instances": 0,
+    "completeness": 0,
+    "profiles": {},
+    "exit": 0
+  },
+  {
+    "case": "unrelated_arithmetic",
+    "variant": "sup-flat",
+    "result": "unsat",
+    "ru": 113,
+    "instances": 0,
+    "completeness": 0,
+    "profiles": {},
+    "exit": 0
+  },
+  {
+    "case": "unrelated_arithmetic",
+    "variant": "nested-sup",
+    "result": "unsat",
+    "ru": 121,
+    "instances": 0,
+    "completeness": 0,
+    "profiles": {},
+    "exit": 0
+  },
+  {
+    "case": "unrelated_arithmetic",
+    "variant": "request",
+    "result": "unsat",
+    "ru": 115,
+    "instances": 0,
+    "completeness": 0,
+    "profiles": {},
+    "exit": 0
+  },
+  {
+    "case": "unrelated_arithmetic",
+    "variant": "local",
+    "result": "unsat",
+    "ru": 56,
+    "instances": 0,
+    "completeness": 0,
+    "profiles": {},
+    "exit": 0
+  },
+  {
+    "case": "unrelated_bounded_sets_20",
+    "variant": "none",
+    "result": "unsat",
+    "ru": 256,
+    "instances": 0,
+    "completeness": 0,
+    "profiles": {},
+    "exit": 0
+  },
+  {
+    "case": "unrelated_bounded_sets_20",
+    "variant": "broad",
+    "result": "unsat",
+    "ru": 313,
+    "instances": 0,
+    "completeness": 0,
+    "profiles": {},
+    "exit": 0
+  },
+  {
+    "case": "unrelated_bounded_sets_20",
+    "variant": "sup-flat",
+    "result": "unsat",
+    "ru": 313,
+    "instances": 0,
+    "completeness": 0,
+    "profiles": {},
+    "exit": 0
+  },
+  {
+    "case": "unrelated_bounded_sets_20",
+    "variant": "nested-sup",
+    "result": "unsat",
+    "ru": 321,
+    "instances": 0,
+    "completeness": 0,
+    "profiles": {},
+    "exit": 0
+  },
+  {
+    "case": "unrelated_bounded_sets_20",
+    "variant": "request",
+    "result": "unsat",
+    "ru": 315,
+    "instances": 0,
+    "completeness": 0,
+    "profiles": {},
+    "exit": 0
+  },
+  {
+    "case": "unrelated_bounded_sets_20",
+    "variant": "local",
+    "result": "unsat",
+    "ru": 256,
+    "instances": 0,
+    "completeness": 0,
+    "profiles": {},
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_1",
+    "variant": "none",
+    "result": "unknown",
+    "ru": 936,
+    "instances": 2,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 1,
+      "upper_def": 1
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_1",
+    "variant": "broad",
+    "result": "unsat",
+    "ru": 1646,
+    "instances": 10,
+    "completeness": 4,
+    "profiles": {
+      "upper_point": 3,
+      "sup_least": 1,
+      "completeness": 4,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_1",
+    "variant": "sup-flat",
+    "result": "unsat",
+    "ru": 1646,
+    "instances": 10,
+    "completeness": 4,
+    "profiles": {
+      "upper_point": 3,
+      "sup_least": 1,
+      "completeness": 4,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_1",
+    "variant": "nested-sup",
+    "result": "unsat",
+    "ru": 1849,
+    "instances": 12,
+    "completeness": 1,
+    "profiles": {
+      "upper_point": 3,
+      "k!24": 3,
+      "sup_least": 2,
+      "completeness": 1,
+      "upper_def": 3
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_1",
+    "variant": "request",
+    "result": "unsat",
+    "ru": 1628,
+    "instances": 7,
+    "completeness": 1,
+    "profiles": {
+      "upper_point": 3,
+      "sup_least": 1,
+      "completeness": 1,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_1",
+    "variant": "local",
+    "result": "unsat",
+    "ru": 1393,
+    "instances": 6,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 3,
+      "sup_least": 1,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_4",
+    "variant": "none",
+    "result": "unknown",
+    "ru": 1226,
+    "instances": 5,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 4,
+      "upper_def": 1
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_4",
+    "variant": "broad",
+    "result": "unsat",
+    "ru": 2082,
+    "instances": 22,
+    "completeness": 10,
+    "profiles": {
+      "upper_point": 9,
+      "sup_least": 1,
+      "completeness": 10,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_4",
+    "variant": "sup-flat",
+    "result": "unsat",
+    "ru": 2082,
+    "instances": 22,
+    "completeness": 10,
+    "profiles": {
+      "upper_point": 9,
+      "sup_least": 1,
+      "completeness": 10,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_4",
+    "variant": "nested-sup",
+    "result": "unsat",
+    "ru": 2287,
+    "instances": 21,
+    "completeness": 1,
+    "profiles": {
+      "upper_point": 9,
+      "k!30": 6,
+      "sup_least": 2,
+      "completeness": 1,
+      "upper_def": 3
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_4",
+    "variant": "request",
+    "result": "unsat",
+    "ru": 2038,
+    "instances": 13,
+    "completeness": 1,
+    "profiles": {
+      "upper_point": 9,
+      "sup_least": 1,
+      "completeness": 1,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_4",
+    "variant": "local",
+    "result": "unsat",
+    "ru": 1760,
+    "instances": 12,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 9,
+      "sup_least": 1,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_16",
+    "variant": "none",
+    "result": "unknown",
+    "ru": 2114,
+    "instances": 17,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 16,
+      "upper_def": 1
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_16",
+    "variant": "broad",
+    "result": "unsat",
+    "ru": 3282,
+    "instances": 70,
+    "completeness": 34,
+    "profiles": {
+      "upper_point": 33,
+      "sup_least": 1,
+      "completeness": 34,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_16",
+    "variant": "sup-flat",
+    "result": "unsat",
+    "ru": 3282,
+    "instances": 70,
+    "completeness": 34,
+    "profiles": {
+      "upper_point": 33,
+      "sup_least": 1,
+      "completeness": 34,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_16",
+    "variant": "nested-sup",
+    "result": "unsat",
+    "ru": 3463,
+    "instances": 57,
+    "completeness": 1,
+    "profiles": {
+      "upper_point": 33,
+      "k!54": 18,
+      "sup_least": 2,
+      "completeness": 1,
+      "upper_def": 3
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_16",
+    "variant": "request",
+    "result": "unsat",
+    "ru": 3118,
+    "instances": 37,
+    "completeness": 1,
+    "profiles": {
+      "upper_point": 33,
+      "sup_least": 1,
+      "completeness": 1,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_16",
+    "variant": "local",
+    "result": "unsat",
+    "ru": 2828,
+    "instances": 36,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 33,
+      "sup_least": 1,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_64",
+    "variant": "none",
+    "result": "unknown",
+    "ru": 5666,
+    "instances": 65,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 64,
+      "upper_def": 1
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_64",
+    "variant": "broad",
+    "result": "unsat",
+    "ru": 8084,
+    "instances": 262,
+    "completeness": 130,
+    "profiles": {
+      "upper_point": 129,
+      "sup_least": 1,
+      "completeness": 130,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_64",
+    "variant": "sup-flat",
+    "result": "unsat",
+    "ru": 8086,
+    "instances": 262,
+    "completeness": 130,
+    "profiles": {
+      "upper_point": 129,
+      "sup_least": 1,
+      "completeness": 130,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_64",
+    "variant": "nested-sup",
+    "result": "unsat",
+    "ru": 8167,
+    "instances": 201,
+    "completeness": 1,
+    "profiles": {
+      "upper_point": 129,
+      "k!150": 66,
+      "sup_least": 2,
+      "completeness": 1,
+      "upper_def": 3
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_64",
+    "variant": "request",
+    "result": "unsat",
+    "ru": 7438,
+    "instances": 133,
+    "completeness": 1,
+    "profiles": {
+      "upper_point": 129,
+      "sup_least": 1,
+      "completeness": 1,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "single_requested_members_64",
+    "variant": "local",
+    "result": "unsat",
+    "ru": 7102,
+    "instances": 132,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 129,
+      "sup_least": 1,
+      "upper_def": 2
+    },
+    "exit": 0
+  },
+  {
+    "case": "ivt_limit_sign",
+    "variant": "none",
+    "result": "unknown",
+    "ru": 1349,
+    "instances": 2,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 1,
+      "upper_def": 1
+    },
+    "exit": 0
+  },
+  {
+    "case": "ivt_limit_sign",
+    "variant": "broad",
+    "result": "unsat",
+    "ru": 2191,
+    "instances": 13,
+    "completeness": 5,
+    "profiles": {
+      "upper_point": 3,
+      "sup_least": 2,
+      "completeness": 5,
+      "upper_def": 3
+    },
+    "exit": 0
+  },
+  {
+    "case": "ivt_limit_sign",
+    "variant": "sup-flat",
+    "result": "unsat",
+    "ru": 2191,
+    "instances": 13,
+    "completeness": 5,
+    "profiles": {
+      "upper_point": 3,
+      "sup_least": 2,
+      "completeness": 5,
+      "upper_def": 3
+    },
+    "exit": 0
+  },
+  {
+    "case": "ivt_limit_sign",
+    "variant": "nested-sup",
+    "result": "unsat",
+    "ru": 2553,
+    "instances": 20,
+    "completeness": 1,
+    "profiles": {
+      "upper_point": 6,
+      "k!27": 4,
+      "sup_least": 4,
+      "completeness": 1,
+      "upper_def": 5
+    },
+    "exit": 0
+  },
+  {
+    "case": "ivt_limit_sign",
+    "variant": "request",
+    "result": "unsat",
+    "ru": 2162,
+    "instances": 9,
+    "completeness": 1,
+    "profiles": {
+      "upper_point": 3,
+      "sup_least": 2,
+      "completeness": 1,
+      "upper_def": 3
+    },
+    "exit": 0
+  },
+  {
+    "case": "ivt_limit_sign",
+    "variant": "local",
+    "result": "unsat",
+    "ru": 1954,
+    "instances": 8,
+    "completeness": 0,
+    "profiles": {
+      "upper_point": 3,
+      "sup_least": 2,
+      "upper_def": 3
+    },
+    "exit": 0
+  }
+]

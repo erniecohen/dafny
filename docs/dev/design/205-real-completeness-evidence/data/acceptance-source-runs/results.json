@@ -1,0 +1,1990 @@
+[
+  {
+    "version": "4.12.1",
+    "refresh": false,
+    "kind": "positive",
+    "exit": 0,
+    "total_ru": 1940734,
+    "source_sha256": "7e39148cdb6dd5a54d90ad5bdba958914bcb9ec5976174bb479d97e63ac00a02",
+    "cases": [
+      {
+        "name": "absBasic (correctness)",
+        "outcome": "Passed",
+        "ru": 4924
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 52)",
+        "outcome": "Passed",
+        "ru": 26290
+      },
+      {
+        "name": "lipschitz (well-formedness)",
+        "outcome": "Passed",
+        "ru": 12550
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 32)",
+        "outcome": "Passed",
+        "ru": 48976
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 4)",
+        "outcome": "Passed",
+        "ru": 18044
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 29)",
+        "outcome": "Passed",
+        "ru": 29229
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 46)",
+        "outcome": "Passed",
+        "ru": 29323
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 7)",
+        "outcome": "Passed",
+        "ru": 53573
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 13)",
+        "outcome": "Passed",
+        "ru": 30729
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 28)",
+        "outcome": "Passed",
+        "ru": 28974
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 51)",
+        "outcome": "Passed",
+        "ru": 28490
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 27)",
+        "outcome": "Passed",
+        "ru": 20022
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 10)",
+        "outcome": "Passed",
+        "ru": 65233
+      },
+      {
+        "name": "polyUnfold (correctness)",
+        "outcome": "Passed",
+        "ru": 16321
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 39)",
+        "outcome": "Passed",
+        "ru": 23261
+      },
+      {
+        "name": "polyUnfold (well-formedness)",
+        "outcome": "Passed",
+        "ru": 8918
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 11)",
+        "outcome": "Passed",
+        "ru": 29761
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 30)",
+        "outcome": "Passed",
+        "ru": 40478
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 37)",
+        "outcome": "Passed",
+        "ru": 22416
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 5)",
+        "outcome": "Passed",
+        "ru": 18180
+      },
+      {
+        "name": "magnitude (well-formedness)",
+        "outcome": "Passed",
+        "ru": 11222
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 33)",
+        "outcome": "Passed",
+        "ru": 32865
+      },
+      {
+        "name": "quadraticValue (correctness)",
+        "outcome": "Passed",
+        "ru": 27064
+      },
+      {
+        "name": "squareRootTwo (correctness)",
+        "outcome": "Passed",
+        "ru": 19649
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 15)",
+        "outcome": "Passed",
+        "ru": 26412
+      },
+      {
+        "name": "absTriangle (correctness)",
+        "outcome": "Passed",
+        "ru": 5933
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 26)",
+        "outcome": "Passed",
+        "ru": 28260
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 1)",
+        "outcome": "Passed",
+        "ru": 7512
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 24)",
+        "outcome": "Passed",
+        "ru": 32696
+      },
+      {
+        "name": "polynomialBound (correctness)",
+        "outcome": "Passed",
+        "ru": 23228
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 8)",
+        "outcome": "Passed",
+        "ru": 19197
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 2)",
+        "outcome": "Passed",
+        "ru": 20116
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 6)",
+        "outcome": "Passed",
+        "ru": 22607
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 14)",
+        "outcome": "Passed",
+        "ru": 30091
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 9)",
+        "outcome": "Passed",
+        "ru": 32975
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 42)",
+        "outcome": "Passed",
+        "ru": 18348
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 49)",
+        "outcome": "Passed",
+        "ru": 29116
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 23)",
+        "outcome": "Passed",
+        "ru": 27425
+      },
+      {
+        "name": "polynomialLipschitz (correctness)",
+        "outcome": "Passed",
+        "ru": 35274
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 13)",
+        "outcome": "Passed",
+        "ru": 10912
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 41)",
+        "outcome": "Passed",
+        "ru": 19947
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 34)",
+        "outcome": "Passed",
+        "ru": 23392
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 19)",
+        "outcome": "Passed",
+        "ru": 30359
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 43)",
+        "outcome": "Passed",
+        "ru": 23739
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 4)",
+        "outcome": "Passed",
+        "ru": 4647
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 38)",
+        "outcome": "Passed",
+        "ru": 23103
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 20)",
+        "outcome": "Passed",
+        "ru": 25632
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 12)",
+        "outcome": "Passed",
+        "ru": 32253
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 48)",
+        "outcome": "Passed",
+        "ru": 29253
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 3)",
+        "outcome": "Passed",
+        "ru": 22098
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 36)",
+        "outcome": "Passed",
+        "ru": 22329
+      },
+      {
+        "name": "magnitudeUnfold (well-formedness)",
+        "outcome": "Passed",
+        "ru": 9661
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 45)",
+        "outcome": "Passed",
+        "ru": 28264
+      },
+      {
+        "name": "stepBound (well-formedness)",
+        "outcome": "Passed",
+        "ru": 2758
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 35)",
+        "outcome": "Passed",
+        "ru": 23972
+      },
+      {
+        "name": "magnitudeUnfold (correctness)",
+        "outcome": "Passed",
+        "ru": 17010
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 7)",
+        "outcome": "Passed",
+        "ru": 22737
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 6)",
+        "outcome": "Passed",
+        "ru": 17224
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 18)",
+        "outcome": "Passed",
+        "ru": 30398
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 12)",
+        "outcome": "Passed",
+        "ru": 4935
+      },
+      {
+        "name": "absProduct (correctness)",
+        "outcome": "Passed",
+        "ru": 7413
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 8)",
+        "outcome": "Passed",
+        "ru": 4943
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 22)",
+        "outcome": "Passed",
+        "ru": 30160
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 1)",
+        "outcome": "Passed",
+        "ru": 12887
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 9)",
+        "outcome": "Passed",
+        "ru": 19199
+      },
+      {
+        "name": "stepBound (correctness)",
+        "outcome": "Passed",
+        "ru": 8206
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 11)",
+        "outcome": "Passed",
+        "ru": 10443
+      },
+      {
+        "name": "poly (well-formedness)",
+        "outcome": "Passed",
+        "ru": 10179
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 31)",
+        "outcome": "Passed",
+        "ru": 48563
+      },
+      {
+        "name": "leastUpperBound (correctness)",
+        "outcome": "Passed",
+        "ru": 7791
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 10)",
+        "outcome": "Passed",
+        "ru": 31208
+      },
+      {
+        "name": "mulLe (correctness)",
+        "outcome": "Passed",
+        "ru": 2598
+      },
+      {
+        "name": "productLe (correctness)",
+        "outcome": "Passed",
+        "ru": 3463
+      },
+      {
+        "name": "lub (correctness)",
+        "outcome": "Passed",
+        "ru": 7457
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 5)",
+        "outcome": "Passed",
+        "ru": 4666
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 17)",
+        "outcome": "Passed",
+        "ru": 26533
+      },
+      {
+        "name": "lipschitzUnfold (well-formedness)",
+        "outcome": "Passed",
+        "ru": 10206
+      },
+      {
+        "name": "lipschitzUnfold (correctness)",
+        "outcome": "Passed",
+        "ru": 17823
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 16)",
+        "outcome": "Passed",
+        "ru": 28199
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 50)",
+        "outcome": "Passed",
+        "ru": 29269
+      },
+      {
+        "name": "intervalMagnitude (correctness)",
+        "outcome": "Passed",
+        "ru": 7345
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 25)",
+        "outcome": "Passed",
+        "ru": 22607
+      },
+      {
+        "name": "hornerBound (correctness)",
+        "outcome": "Passed",
+        "ru": 7051
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 21)",
+        "outcome": "Passed",
+        "ru": 30513
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 47)",
+        "outcome": "Passed",
+        "ru": 48090
+      },
+      {
+        "name": "boundsPositive (correctness)",
+        "outcome": "Passed",
+        "ru": 17033
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 44)",
+        "outcome": "Passed",
+        "ru": 23820
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 2)",
+        "outcome": "Passed",
+        "ru": 4446
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 40)",
+        "outcome": "Passed",
+        "ru": 19945
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 3)",
+        "outcome": "Passed",
+        "ru": 8373
+      }
+    ],
+    "summary": [
+      "Dafny program verifier finished with 90 verified, 0 errors"
+    ],
+    "errors": []
+  },
+  {
+    "version": "4.12.1",
+    "refresh": false,
+    "kind": "negative",
+    "exit": 4,
+    "total_ru": 40644,
+    "source_sha256": "699acd09300cb96ba7f04c7b385d264ab32f1828be15b2c9ff59abfde5212891",
+    "cases": [
+      {
+        "name": "boundedVacuity (correctness)",
+        "outcome": "Failed",
+        "ru": 17965
+      },
+      {
+        "name": "unboundedVacuity (correctness)",
+        "outcome": "Failed",
+        "ru": 12799
+      },
+      {
+        "name": "emptyVacuity (correctness)",
+        "outcome": "Failed",
+        "ru": 9880
+      }
+    ],
+    "summary": [
+      "Dafny program verifier finished with 0 verified, 3 errors"
+    ],
+    "errors": [
+      "real-completeness-negative.dfy(12,2): Error: assertion might not hold",
+      "real-completeness-negative.dfy(21,2): Error: assertion might not hold",
+      "real-completeness-negative.dfy(32,2): Error: assertion might not hold"
+    ]
+  },
+  {
+    "version": "4.12.1",
+    "refresh": true,
+    "kind": "positive",
+    "exit": 0,
+    "total_ru": 1940734,
+    "source_sha256": "7e39148cdb6dd5a54d90ad5bdba958914bcb9ec5976174bb479d97e63ac00a02",
+    "cases": [
+      {
+        "name": "absBasic (correctness)",
+        "outcome": "Passed",
+        "ru": 4924
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 17)",
+        "outcome": "Passed",
+        "ru": 26533
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 21)",
+        "outcome": "Passed",
+        "ru": 30513
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 20)",
+        "outcome": "Passed",
+        "ru": 25632
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 14)",
+        "outcome": "Passed",
+        "ru": 30091
+      },
+      {
+        "name": "polynomialLipschitz (correctness)",
+        "outcome": "Passed",
+        "ru": 35274
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 16)",
+        "outcome": "Passed",
+        "ru": 28199
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 23)",
+        "outcome": "Passed",
+        "ru": 27425
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 19)",
+        "outcome": "Passed",
+        "ru": 30359
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 2)",
+        "outcome": "Passed",
+        "ru": 20116
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 32)",
+        "outcome": "Passed",
+        "ru": 48976
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 12)",
+        "outcome": "Passed",
+        "ru": 32253
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 25)",
+        "outcome": "Passed",
+        "ru": 22607
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 31)",
+        "outcome": "Passed",
+        "ru": 48563
+      },
+      {
+        "name": "polynomialBound (correctness)",
+        "outcome": "Passed",
+        "ru": 23228
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 24)",
+        "outcome": "Passed",
+        "ru": 32696
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 1)",
+        "outcome": "Passed",
+        "ru": 12887
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 6)",
+        "outcome": "Passed",
+        "ru": 22607
+      },
+      {
+        "name": "leastUpperBound (correctness)",
+        "outcome": "Passed",
+        "ru": 7791
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 34)",
+        "outcome": "Passed",
+        "ru": 23392
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 33)",
+        "outcome": "Passed",
+        "ru": 32865
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 5)",
+        "outcome": "Passed",
+        "ru": 4666
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 10)",
+        "outcome": "Passed",
+        "ru": 65233
+      },
+      {
+        "name": "stepBound (correctness)",
+        "outcome": "Passed",
+        "ru": 8206
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 7)",
+        "outcome": "Passed",
+        "ru": 53573
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 27)",
+        "outcome": "Passed",
+        "ru": 20022
+      },
+      {
+        "name": "quadraticValue (correctness)",
+        "outcome": "Passed",
+        "ru": 27064
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 3)",
+        "outcome": "Passed",
+        "ru": 22098
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 29)",
+        "outcome": "Passed",
+        "ru": 29229
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 6)",
+        "outcome": "Passed",
+        "ru": 17224
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 9)",
+        "outcome": "Passed",
+        "ru": 32975
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 4)",
+        "outcome": "Passed",
+        "ru": 4647
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 36)",
+        "outcome": "Passed",
+        "ru": 22329
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 8)",
+        "outcome": "Passed",
+        "ru": 4943
+      },
+      {
+        "name": "absProduct (correctness)",
+        "outcome": "Passed",
+        "ru": 7413
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 52)",
+        "outcome": "Passed",
+        "ru": 26290
+      },
+      {
+        "name": "magnitude (well-formedness)",
+        "outcome": "Passed",
+        "ru": 11222
+      },
+      {
+        "name": "magnitudeUnfold (correctness)",
+        "outcome": "Passed",
+        "ru": 17010
+      },
+      {
+        "name": "absTriangle (correctness)",
+        "outcome": "Passed",
+        "ru": 5933
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 35)",
+        "outcome": "Passed",
+        "ru": 23972
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 11)",
+        "outcome": "Passed",
+        "ru": 29761
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 10)",
+        "outcome": "Passed",
+        "ru": 31208
+      },
+      {
+        "name": "polyUnfold (well-formedness)",
+        "outcome": "Passed",
+        "ru": 8918
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 7)",
+        "outcome": "Passed",
+        "ru": 22737
+      },
+      {
+        "name": "magnitudeUnfold (well-formedness)",
+        "outcome": "Passed",
+        "ru": 9661
+      },
+      {
+        "name": "stepBound (well-formedness)",
+        "outcome": "Passed",
+        "ru": 2758
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 15)",
+        "outcome": "Passed",
+        "ru": 26412
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 3)",
+        "outcome": "Passed",
+        "ru": 8373
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 22)",
+        "outcome": "Passed",
+        "ru": 30160
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 8)",
+        "outcome": "Passed",
+        "ru": 19197
+      },
+      {
+        "name": "polyUnfold (correctness)",
+        "outcome": "Passed",
+        "ru": 16321
+      },
+      {
+        "name": "hornerBound (correctness)",
+        "outcome": "Passed",
+        "ru": 7051
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 41)",
+        "outcome": "Passed",
+        "ru": 19947
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 18)",
+        "outcome": "Passed",
+        "ru": 30398
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 5)",
+        "outcome": "Passed",
+        "ru": 18180
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 51)",
+        "outcome": "Passed",
+        "ru": 28490
+      },
+      {
+        "name": "poly (well-formedness)",
+        "outcome": "Passed",
+        "ru": 10179
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 37)",
+        "outcome": "Passed",
+        "ru": 22416
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 30)",
+        "outcome": "Passed",
+        "ru": 40478
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 26)",
+        "outcome": "Passed",
+        "ru": 28260
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 49)",
+        "outcome": "Passed",
+        "ru": 29116
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 4)",
+        "outcome": "Passed",
+        "ru": 18044
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 13)",
+        "outcome": "Passed",
+        "ru": 30729
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 46)",
+        "outcome": "Passed",
+        "ru": 29323
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 28)",
+        "outcome": "Passed",
+        "ru": 28974
+      },
+      {
+        "name": "lub (correctness)",
+        "outcome": "Passed",
+        "ru": 7457
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 40)",
+        "outcome": "Passed",
+        "ru": 19945
+      },
+      {
+        "name": "mulLe (correctness)",
+        "outcome": "Passed",
+        "ru": 2598
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 12)",
+        "outcome": "Passed",
+        "ru": 4935
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 39)",
+        "outcome": "Passed",
+        "ru": 23261
+      },
+      {
+        "name": "intervalMagnitude (correctness)",
+        "outcome": "Passed",
+        "ru": 7345
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 1)",
+        "outcome": "Passed",
+        "ru": 7512
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 9)",
+        "outcome": "Passed",
+        "ru": 19199
+      },
+      {
+        "name": "boundsPositive (correctness)",
+        "outcome": "Passed",
+        "ru": 17033
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 47)",
+        "outcome": "Passed",
+        "ru": 48090
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 43)",
+        "outcome": "Passed",
+        "ru": 23739
+      },
+      {
+        "name": "lipschitzUnfold (correctness)",
+        "outcome": "Passed",
+        "ru": 17823
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 11)",
+        "outcome": "Passed",
+        "ru": 10443
+      },
+      {
+        "name": "squareRootTwo (correctness)",
+        "outcome": "Passed",
+        "ru": 19649
+      },
+      {
+        "name": "lipschitzUnfold (well-formedness)",
+        "outcome": "Passed",
+        "ru": 10206
+      },
+      {
+        "name": "productLe (correctness)",
+        "outcome": "Passed",
+        "ru": 3463
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 13)",
+        "outcome": "Passed",
+        "ru": 10912
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 50)",
+        "outcome": "Passed",
+        "ru": 29269
+      },
+      {
+        "name": "lipschitz (well-formedness)",
+        "outcome": "Passed",
+        "ru": 12550
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 38)",
+        "outcome": "Passed",
+        "ru": 23103
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 48)",
+        "outcome": "Passed",
+        "ru": 29253
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 42)",
+        "outcome": "Passed",
+        "ru": 18348
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 2)",
+        "outcome": "Passed",
+        "ru": 4446
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 45)",
+        "outcome": "Passed",
+        "ru": 28264
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 44)",
+        "outcome": "Passed",
+        "ru": 23820
+      }
+    ],
+    "summary": [
+      "Dafny program verifier finished with 90 verified, 0 errors"
+    ],
+    "errors": []
+  },
+  {
+    "version": "4.12.1",
+    "refresh": true,
+    "kind": "negative",
+    "exit": 4,
+    "total_ru": 40644,
+    "source_sha256": "699acd09300cb96ba7f04c7b385d264ab32f1828be15b2c9ff59abfde5212891",
+    "cases": [
+      {
+        "name": "boundedVacuity (correctness)",
+        "outcome": "Failed",
+        "ru": 17965
+      },
+      {
+        "name": "unboundedVacuity (correctness)",
+        "outcome": "Failed",
+        "ru": 12799
+      },
+      {
+        "name": "emptyVacuity (correctness)",
+        "outcome": "Failed",
+        "ru": 9880
+      }
+    ],
+    "summary": [
+      "Dafny program verifier finished with 0 verified, 3 errors"
+    ],
+    "errors": [
+      "real-completeness-negative.dfy(12,2): Error: assertion might not hold",
+      "real-completeness-negative.dfy(21,2): Error: assertion might not hold",
+      "real-completeness-negative.dfy(32,2): Error: assertion might not hold"
+    ]
+  },
+  {
+    "version": "5.1.0",
+    "refresh": false,
+    "kind": "positive",
+    "exit": 0,
+    "total_ru": 2476611,
+    "source_sha256": "7e39148cdb6dd5a54d90ad5bdba958914bcb9ec5976174bb479d97e63ac00a02",
+    "cases": [
+      {
+        "name": "absBasic (correctness)",
+        "outcome": "Passed",
+        "ru": 4962
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 7)",
+        "outcome": "Passed",
+        "ru": 24693
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 32)",
+        "outcome": "Passed",
+        "ru": 223928
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 3)",
+        "outcome": "Passed",
+        "ru": 25713
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 43)",
+        "outcome": "Passed",
+        "ru": 25699
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 8)",
+        "outcome": "Passed",
+        "ru": 19208
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 6)",
+        "outcome": "Passed",
+        "ru": 24288
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 22)",
+        "outcome": "Passed",
+        "ru": 31909
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 4)",
+        "outcome": "Passed",
+        "ru": 18046
+      },
+      {
+        "name": "polynomialBound (correctness)",
+        "outcome": "Passed",
+        "ru": 23864
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 21)",
+        "outcome": "Passed",
+        "ru": 34785
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 13)",
+        "outcome": "Passed",
+        "ru": 32714
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 5)",
+        "outcome": "Passed",
+        "ru": 18180
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 9)",
+        "outcome": "Passed",
+        "ru": 23745
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 8)",
+        "outcome": "Passed",
+        "ru": 4973
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 17)",
+        "outcome": "Passed",
+        "ru": 29891
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 10)",
+        "outcome": "Passed",
+        "ru": 212826
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 50)",
+        "outcome": "Passed",
+        "ru": 39444
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 5)",
+        "outcome": "Passed",
+        "ru": 4694
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 12)",
+        "outcome": "Passed",
+        "ru": 33208
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 44)",
+        "outcome": "Passed",
+        "ru": 25830
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 15)",
+        "outcome": "Passed",
+        "ru": 25584
+      },
+      {
+        "name": "polynomialLipschitz (correctness)",
+        "outcome": "Passed",
+        "ru": 40652
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 10)",
+        "outcome": "Passed",
+        "ru": 34039
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 2)",
+        "outcome": "Passed",
+        "ru": 21745
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 24)",
+        "outcome": "Passed",
+        "ru": 38555
+      },
+      {
+        "name": "polyUnfold (correctness)",
+        "outcome": "Passed",
+        "ru": 16472
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 52)",
+        "outcome": "Passed",
+        "ru": 32068
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 23)",
+        "outcome": "Passed",
+        "ru": 29851
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 40)",
+        "outcome": "Passed",
+        "ru": 19956
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 1)",
+        "outcome": "Passed",
+        "ru": 12887
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 14)",
+        "outcome": "Passed",
+        "ru": 29860
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 9)",
+        "outcome": "Passed",
+        "ru": 19210
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 41)",
+        "outcome": "Passed",
+        "ru": 19958
+      },
+      {
+        "name": "polyUnfold (well-formedness)",
+        "outcome": "Passed",
+        "ru": 8957
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 48)",
+        "outcome": "Passed",
+        "ru": 37779
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 25)",
+        "outcome": "Passed",
+        "ru": 22618
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 18)",
+        "outcome": "Passed",
+        "ru": 31622
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 1)",
+        "outcome": "Passed",
+        "ru": 7512
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 42)",
+        "outcome": "Passed",
+        "ru": 18348
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 45)",
+        "outcome": "Passed",
+        "ru": 33223
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 51)",
+        "outcome": "Passed",
+        "ru": 34169
+      },
+      {
+        "name": "stepBound (well-formedness)",
+        "outcome": "Passed",
+        "ru": 2758
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 13)",
+        "outcome": "Passed",
+        "ru": 11069
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 33)",
+        "outcome": "Passed",
+        "ru": 38102
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 46)",
+        "outcome": "Passed",
+        "ru": 39774
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 11)",
+        "outcome": "Passed",
+        "ru": 31796
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 6)",
+        "outcome": "Passed",
+        "ru": 19959
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 19)",
+        "outcome": "Passed",
+        "ru": 32457
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 3)",
+        "outcome": "Passed",
+        "ru": 8421
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 49)",
+        "outcome": "Passed",
+        "ru": 35108
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 29)",
+        "outcome": "Passed",
+        "ru": 32827
+      },
+      {
+        "name": "poly (well-formedness)",
+        "outcome": "Passed",
+        "ru": 10204
+      },
+      {
+        "name": "boundsPositive (correctness)",
+        "outcome": "Passed",
+        "ru": 18037
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 20)",
+        "outcome": "Passed",
+        "ru": 28034
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 47)",
+        "outcome": "Passed",
+        "ru": 59202
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 38)",
+        "outcome": "Passed",
+        "ru": 26519
+      },
+      {
+        "name": "magnitudeUnfold (well-formedness)",
+        "outcome": "Passed",
+        "ru": 9700
+      },
+      {
+        "name": "mulLe (correctness)",
+        "outcome": "Passed",
+        "ru": 2622
+      },
+      {
+        "name": "hornerBound (correctness)",
+        "outcome": "Passed",
+        "ru": 7076
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 31)",
+        "outcome": "Passed",
+        "ru": 35574
+      },
+      {
+        "name": "lub (correctness)",
+        "outcome": "Passed",
+        "ru": 7319
+      },
+      {
+        "name": "stepBound (correctness)",
+        "outcome": "Passed",
+        "ru": 8242
+      },
+      {
+        "name": "productLe (correctness)",
+        "outcome": "Passed",
+        "ru": 5145
+      },
+      {
+        "name": "magnitude (well-formedness)",
+        "outcome": "Passed",
+        "ru": 11249
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 7)",
+        "outcome": "Passed",
+        "ru": 132152
+      },
+      {
+        "name": "magnitudeUnfold (correctness)",
+        "outcome": "Passed",
+        "ru": 17161
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 11)",
+        "outcome": "Passed",
+        "ru": 10507
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 37)",
+        "outcome": "Passed",
+        "ru": 24672
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 2)",
+        "outcome": "Passed",
+        "ru": 4446
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 27)",
+        "outcome": "Passed",
+        "ru": 20022
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 36)",
+        "outcome": "Passed",
+        "ru": 24515
+      },
+      {
+        "name": "squareRootTwo (correctness)",
+        "outcome": "Passed",
+        "ru": 24637
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 26)",
+        "outcome": "Passed",
+        "ru": 32251
+      },
+      {
+        "name": "lipschitzUnfold (correctness)",
+        "outcome": "Passed",
+        "ru": 18036
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 34)",
+        "outcome": "Passed",
+        "ru": 26177
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 28)",
+        "outcome": "Passed",
+        "ru": 32866
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 16)",
+        "outcome": "Passed",
+        "ru": 29642
+      },
+      {
+        "name": "lipschitzUnfold (well-formedness)",
+        "outcome": "Passed",
+        "ru": 10243
+      },
+      {
+        "name": "absProduct (correctness)",
+        "outcome": "Passed",
+        "ru": 8560
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 12)",
+        "outcome": "Passed",
+        "ru": 4965
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 35)",
+        "outcome": "Passed",
+        "ru": 23177
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 39)",
+        "outcome": "Passed",
+        "ru": 27445
+      },
+      {
+        "name": "leastUpperBound (correctness)",
+        "outcome": "Passed",
+        "ru": 7635
+      },
+      {
+        "name": "absTriangle (correctness)",
+        "outcome": "Passed",
+        "ru": 5938
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 30)",
+        "outcome": "Passed",
+        "ru": 36491
+      },
+      {
+        "name": "quadraticValue (correctness)",
+        "outcome": "Passed",
+        "ru": 31629
+      },
+      {
+        "name": "lipschitz (well-formedness)",
+        "outcome": "Passed",
+        "ru": 12565
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 4)",
+        "outcome": "Passed",
+        "ru": 4675
+      },
+      {
+        "name": "intervalMagnitude (correctness)",
+        "outcome": "Passed",
+        "ru": 7345
+      }
+    ],
+    "summary": [
+      "Dafny program verifier finished with 90 verified, 0 errors"
+    ],
+    "errors": []
+  },
+  {
+    "version": "5.1.0",
+    "refresh": false,
+    "kind": "negative",
+    "exit": 4,
+    "total_ru": 42049,
+    "source_sha256": "699acd09300cb96ba7f04c7b385d264ab32f1828be15b2c9ff59abfde5212891",
+    "cases": [
+      {
+        "name": "boundedVacuity (correctness)",
+        "outcome": "Failed",
+        "ru": 18913
+      },
+      {
+        "name": "emptyVacuity (correctness)",
+        "outcome": "Failed",
+        "ru": 9976
+      },
+      {
+        "name": "unboundedVacuity (correctness)",
+        "outcome": "Failed",
+        "ru": 13160
+      }
+    ],
+    "summary": [
+      "Dafny program verifier finished with 0 verified, 3 errors"
+    ],
+    "errors": [
+      "real-completeness-negative.dfy(12,2): Error: assertion might not hold",
+      "real-completeness-negative.dfy(21,2): Error: assertion might not hold",
+      "real-completeness-negative.dfy(32,2): Error: assertion might not hold"
+    ]
+  },
+  {
+    "version": "5.1.0",
+    "refresh": true,
+    "kind": "positive",
+    "exit": 0,
+    "total_ru": 2476611,
+    "source_sha256": "7e39148cdb6dd5a54d90ad5bdba958914bcb9ec5976174bb479d97e63ac00a02",
+    "cases": [
+      {
+        "name": "absBasic (correctness)",
+        "outcome": "Passed",
+        "ru": 4962
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 32)",
+        "outcome": "Passed",
+        "ru": 223928
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 48)",
+        "outcome": "Passed",
+        "ru": 37779
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 6)",
+        "outcome": "Passed",
+        "ru": 24288
+      },
+      {
+        "name": "polynomialLipschitz (correctness)",
+        "outcome": "Passed",
+        "ru": 40652
+      },
+      {
+        "name": "poly (well-formedness)",
+        "outcome": "Passed",
+        "ru": 10204
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 16)",
+        "outcome": "Passed",
+        "ru": 29642
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 2)",
+        "outcome": "Passed",
+        "ru": 21745
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 28)",
+        "outcome": "Passed",
+        "ru": 32866
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 25)",
+        "outcome": "Passed",
+        "ru": 22618
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 7)",
+        "outcome": "Passed",
+        "ru": 24693
+      },
+      {
+        "name": "lipschitzUnfold (correctness)",
+        "outcome": "Passed",
+        "ru": 18036
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 12)",
+        "outcome": "Passed",
+        "ru": 4965
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 26)",
+        "outcome": "Passed",
+        "ru": 32251
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 11)",
+        "outcome": "Passed",
+        "ru": 10507
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 49)",
+        "outcome": "Passed",
+        "ru": 35108
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 34)",
+        "outcome": "Passed",
+        "ru": 26177
+      },
+      {
+        "name": "polyUnfold (well-formedness)",
+        "outcome": "Passed",
+        "ru": 8957
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 24)",
+        "outcome": "Passed",
+        "ru": 38555
+      },
+      {
+        "name": "polynomialBound (correctness)",
+        "outcome": "Passed",
+        "ru": 23864
+      },
+      {
+        "name": "magnitudeUnfold (well-formedness)",
+        "outcome": "Passed",
+        "ru": 9700
+      },
+      {
+        "name": "lipschitzUnfold (well-formedness)",
+        "outcome": "Passed",
+        "ru": 10243
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 5)",
+        "outcome": "Passed",
+        "ru": 18180
+      },
+      {
+        "name": "boundsPositive (correctness)",
+        "outcome": "Passed",
+        "ru": 18037
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 10)",
+        "outcome": "Passed",
+        "ru": 212826
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 9)",
+        "outcome": "Passed",
+        "ru": 19210
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 18)",
+        "outcome": "Passed",
+        "ru": 31622
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 7)",
+        "outcome": "Passed",
+        "ru": 132152
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 19)",
+        "outcome": "Passed",
+        "ru": 32457
+      },
+      {
+        "name": "polyUnfold (correctness)",
+        "outcome": "Passed",
+        "ru": 16472
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 39)",
+        "outcome": "Passed",
+        "ru": 27445
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 40)",
+        "outcome": "Passed",
+        "ru": 19956
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 47)",
+        "outcome": "Passed",
+        "ru": 59202
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 12)",
+        "outcome": "Passed",
+        "ru": 33208
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 22)",
+        "outcome": "Passed",
+        "ru": 31909
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 15)",
+        "outcome": "Passed",
+        "ru": 25584
+      },
+      {
+        "name": "lipschitz (well-formedness)",
+        "outcome": "Passed",
+        "ru": 12565
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 3)",
+        "outcome": "Passed",
+        "ru": 25713
+      },
+      {
+        "name": "absTriangle (correctness)",
+        "outcome": "Passed",
+        "ru": 5938
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 11)",
+        "outcome": "Passed",
+        "ru": 31796
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 17)",
+        "outcome": "Passed",
+        "ru": 29891
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 14)",
+        "outcome": "Passed",
+        "ru": 29860
+      },
+      {
+        "name": "magnitudeUnfold (correctness)",
+        "outcome": "Passed",
+        "ru": 17161
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 35)",
+        "outcome": "Passed",
+        "ru": 23177
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 31)",
+        "outcome": "Passed",
+        "ru": 35574
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 20)",
+        "outcome": "Passed",
+        "ru": 28034
+      },
+      {
+        "name": "lub (correctness)",
+        "outcome": "Passed",
+        "ru": 7319
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 13)",
+        "outcome": "Passed",
+        "ru": 32714
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 10)",
+        "outcome": "Passed",
+        "ru": 34039
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 46)",
+        "outcome": "Passed",
+        "ru": 39774
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 27)",
+        "outcome": "Passed",
+        "ru": 20022
+      },
+      {
+        "name": "absProduct (correctness)",
+        "outcome": "Passed",
+        "ru": 8560
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 38)",
+        "outcome": "Passed",
+        "ru": 26519
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 52)",
+        "outcome": "Passed",
+        "ru": 32068
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 1)",
+        "outcome": "Passed",
+        "ru": 12887
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 50)",
+        "outcome": "Passed",
+        "ru": 39444
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 8)",
+        "outcome": "Passed",
+        "ru": 19208
+      },
+      {
+        "name": "productLe (correctness)",
+        "outcome": "Passed",
+        "ru": 5145
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 30)",
+        "outcome": "Passed",
+        "ru": 36491
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 21)",
+        "outcome": "Passed",
+        "ru": 34785
+      },
+      {
+        "name": "mulLe (correctness)",
+        "outcome": "Passed",
+        "ru": 2622
+      },
+      {
+        "name": "intervalMagnitude (correctness)",
+        "outcome": "Passed",
+        "ru": 7345
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 4)",
+        "outcome": "Passed",
+        "ru": 18046
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 45)",
+        "outcome": "Passed",
+        "ru": 33223
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 33)",
+        "outcome": "Passed",
+        "ru": 38102
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 29)",
+        "outcome": "Passed",
+        "ru": 32827
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 43)",
+        "outcome": "Passed",
+        "ru": 25699
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 23)",
+        "outcome": "Passed",
+        "ru": 29851
+      },
+      {
+        "name": "stepBound (correctness)",
+        "outcome": "Passed",
+        "ru": 8242
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 1)",
+        "outcome": "Passed",
+        "ru": 7512
+      },
+      {
+        "name": "magnitude (well-formedness)",
+        "outcome": "Passed",
+        "ru": 11249
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 41)",
+        "outcome": "Passed",
+        "ru": 19958
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 4)",
+        "outcome": "Passed",
+        "ru": 4675
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 51)",
+        "outcome": "Passed",
+        "ru": 34169
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 37)",
+        "outcome": "Passed",
+        "ru": 24672
+      },
+      {
+        "name": "hornerBound (correctness)",
+        "outcome": "Passed",
+        "ru": 7076
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 36)",
+        "outcome": "Passed",
+        "ru": 24515
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 44)",
+        "outcome": "Passed",
+        "ru": 25830
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 13)",
+        "outcome": "Passed",
+        "ru": 11069
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 5)",
+        "outcome": "Passed",
+        "ru": 4694
+      },
+      {
+        "name": "polynomialIvt (correctness) (assertion batch 42)",
+        "outcome": "Passed",
+        "ru": 18348
+      },
+      {
+        "name": "squareRootTwo (correctness)",
+        "outcome": "Passed",
+        "ru": 24637
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 8)",
+        "outcome": "Passed",
+        "ru": 4973
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 3)",
+        "outcome": "Passed",
+        "ru": 8421
+      },
+      {
+        "name": "quadraticValue (correctness)",
+        "outcome": "Passed",
+        "ru": 31629
+      },
+      {
+        "name": "leastUpperBound (correctness)",
+        "outcome": "Passed",
+        "ru": 7635
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 2)",
+        "outcome": "Passed",
+        "ru": 4446
+      },
+      {
+        "name": "stepBound (well-formedness)",
+        "outcome": "Passed",
+        "ru": 2758
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 6)",
+        "outcome": "Passed",
+        "ru": 19959
+      },
+      {
+        "name": "hornerLipschitz (correctness) (assertion batch 9)",
+        "outcome": "Passed",
+        "ru": 23745
+      }
+    ],
+    "summary": [
+      "Dafny program verifier finished with 90 verified, 0 errors"
+    ],
+    "errors": []
+  },
+  {
+    "version": "5.1.0",
+    "refresh": true,
+    "kind": "negative",
+    "exit": 4,
+    "total_ru": 42049,
+    "source_sha256": "699acd09300cb96ba7f04c7b385d264ab32f1828be15b2c9ff59abfde5212891",
+    "cases": [
+      {
+        "name": "boundedVacuity (correctness)",
+        "outcome": "Failed",
+        "ru": 18913
+      },
+      {
+        "name": "unboundedVacuity (correctness)",
+        "outcome": "Failed",
+        "ru": 13160
+      },
+      {
+        "name": "emptyVacuity (correctness)",
+        "outcome": "Failed",
+        "ru": 9976
+      }
+    ],
+    "summary": [
+      "Dafny program verifier finished with 0 verified, 3 errors"
+    ],
+    "errors": [
+      "real-completeness-negative.dfy(12,2): Error: assertion might not hold",
+      "real-completeness-negative.dfy(21,2): Error: assertion might not hold",
+      "real-completeness-negative.dfy(32,2): Error: assertion might not hold"
+    ]
+  }
+]

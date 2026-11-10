@@ -1,0 +1,20 @@
+{
+  "source": "sources/acceptance/real-completeness.dfy",
+  "source_sha256": "7e39148cdb6dd5a54d90ad5bdba958914bcb9ec5976174bb479d97e63ac00a02",
+  "command_template": [
+    "dafny",
+    "audit",
+    "sources/acceptance/real-completeness.dfy",
+    "--use-basename-for-filename"
+  ],
+  "exit_code": 0,
+  "findings": 1,
+  "finding": "complete: Declaration has explicit {:axiom} attribute.",
+  "source_position": "real-completeness.dfy(203,15)",
+  "verification_attempted": false,
+  "observed_output": [
+    "real-completeness.dfy(203,15): Warning: complete: Declaration has explicit `{:axiom}` attribute. Possible mitigation: Provide a proof or test.",
+    "Dafny auditor completed with 1 findings",
+    "Dafny program verifier did not attempt verification"
+  ]
+}

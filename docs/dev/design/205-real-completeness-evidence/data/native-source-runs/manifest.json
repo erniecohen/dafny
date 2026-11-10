@@ -1,0 +1,5 @@
+{
+  "dafny_version": "4.11.0+issue205-design-62bae981",
+  "source_sha256": "10148a0291e4aaa6b4a0c8560a80588e72fbbe6ace9665f1311bc4e784fd5e88",
+  "scope": "Scratch Dafny proof with one explicitly axiomatic raw guarded LUB placeholder; exact native real/ISet/Box encoding. No product implementation."
+}

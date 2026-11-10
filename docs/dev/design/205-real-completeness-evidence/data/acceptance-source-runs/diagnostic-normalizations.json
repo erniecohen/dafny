@@ -1,0 +1,50 @@
+[
+  {
+    "file": "negative-z3-4.12.1-refresh-0/output.txt",
+    "normalization": "Results File destination replaced by basename",
+    "original_sha256": "66df350b9010bded2d273589390844487a89c0d419d1293f52aed3b055665f15",
+    "shipped_sha256": "8de29ab228139c1b0777bd67908142bc21fe0b1a78e3e8723526a77fe36e1696"
+  },
+  {
+    "file": "negative-z3-4.12.1-refresh-1/output.txt",
+    "normalization": "Results File destination replaced by basename",
+    "original_sha256": "77fc68e585b90fb9c6b7dfeecaad19b45e1424c32bc044dcb565ba1aafb6455b",
+    "shipped_sha256": "8de29ab228139c1b0777bd67908142bc21fe0b1a78e3e8723526a77fe36e1696"
+  },
+  {
+    "file": "negative-z3-5.1.0-refresh-0/output.txt",
+    "normalization": "Results File destination replaced by basename",
+    "original_sha256": "51c5b6ea6ca8bbde10658b90d05d46ea34d6db5a599e97613915d243eab73005",
+    "shipped_sha256": "8de29ab228139c1b0777bd67908142bc21fe0b1a78e3e8723526a77fe36e1696"
+  },
+  {
+    "file": "negative-z3-5.1.0-refresh-1/output.txt",
+    "normalization": "Results File destination replaced by basename",
+    "original_sha256": "d5b3766bcfcd8692d59b57b589326a7b22db120d7fa3a01c11f167e62d48c6be",
+    "shipped_sha256": "8de29ab228139c1b0777bd67908142bc21fe0b1a78e3e8723526a77fe36e1696"
+  },
+  {
+    "file": "positive-z3-4.12.1-refresh-0/output.txt",
+    "normalization": "Results File destination replaced by basename",
+    "original_sha256": "96c8cb2babfa953935c817ee0552e48c358e5fdae430202e7a696a4ef72ca059",
+    "shipped_sha256": "339374674f35e61e17a1d66d5ed6bf071efb253ea019d089627eec0195a77914"
+  },
+  {
+    "file": "positive-z3-4.12.1-refresh-1/output.txt",
+    "normalization": "Results File destination replaced by basename",
+    "original_sha256": "0eb7400503a38a717d64ee5307e2a68eb4f05ee9234a622ce88c08c2b62417e5",
+    "shipped_sha256": "339374674f35e61e17a1d66d5ed6bf071efb253ea019d089627eec0195a77914"
+  },
+  {
+    "file": "positive-z3-5.1.0-refresh-0/output.txt",
+    "normalization": "Results File destination replaced by basename",
+    "original_sha256": "c732a34e32a633e25c948b9fda02af676ee11ddd9324a6ddcfeb944d6218375d",
+    "shipped_sha256": "339374674f35e61e17a1d66d5ed6bf071efb253ea019d089627eec0195a77914"
+  },
+  {
+    "file": "positive-z3-5.1.0-refresh-1/output.txt",
+    "normalization": "Results File destination replaced by basename",
+    "original_sha256": "97af7e44f89e32fa0d068d768090a95c8d911943bec45170b77f213fc1a7b981",
+    "shipped_sha256": "339374674f35e61e17a1d66d5ed6bf071efb253ea019d089627eec0195a77914"
+  }
+]

@@ -1,0 +1,47 @@
+[
+  {
+    "file": "remove-bounded/output.txt",
+    "bytes": 225,
+    "sha256": "0de48af6234fc4be05e3f05383b5b068c35587e7cdb9b0b61516eb7c67dff74f"
+  },
+  {
+    "file": "remove-bounded/real-completeness-negative.dfy",
+    "bytes": 653,
+    "sha256": "699acd09300cb96ba7f04c7b385d264ab32f1828be15b2c9ff59abfde5212891"
+  },
+  {
+    "file": "remove-bounded/real-completeness.dfy",
+    "bytes": 8412,
+    "sha256": "01141da3d484769524d37cfbc125d0bdcd293852fb799b3cd147f4aa3b17b9d4"
+  },
+  {
+    "file": "remove-bounded/results.csv",
+    "bytes": 280,
+    "sha256": "bc210fb434c73b3126a906e8a0d85103af7988abb1354d332c666b2eb20dc0f3"
+  },
+  {
+    "file": "remove-nonempty/output.txt",
+    "bytes": 225,
+    "sha256": "be8b03d0b4e6dfac5d9a26b687f004d352863de4faae9709f05b1fa0a08bc503"
+  },
+  {
+    "file": "remove-nonempty/real-completeness-negative.dfy",
+    "bytes": 653,
+    "sha256": "699acd09300cb96ba7f04c7b385d264ab32f1828be15b2c9ff59abfde5212891"
+  },
+  {
+    "file": "remove-nonempty/real-completeness.dfy",
+    "bytes": 8420,
+    "sha256": "45674fcd36979b67ef2e883094e06fc626893f4ed2c7985fc1979983363b7e19"
+  },
+  {
+    "file": "remove-nonempty/results.csv",
+    "bytes": 281,
+    "sha256": "e842afe41a246b302a6351a3bd3ba82300d3d3bdd2d526477358766b692e7ee1"
+  },
+  {
+    "file": "results.json",
+    "bytes": 1022,
+    "sha256": "d95e6098886ccf16dd087ffa791c8e378880b7c9f8ad9afbff9b8a14e1b7f84a"
+  }
+]

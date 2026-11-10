@@ -1,0 +1,1028 @@
+
+Results for absBasic (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.1722319
+  Overall resource count: 4962
+  Maximum assertion batch time: 00:00:00.1722319
+  Maximum assertion batch resource count: 4962
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.1722319
+    Resource count: 4962
+
+    Assertions:
+      real-completeness-no-primitive.dfy(13,15): this postcondition holds
+      real-completeness-no-primitive.dfy(14,19): this postcondition holds
+      real-completeness-no-primitive.dfy(14,24): this postcondition holds
+      real-completeness-no-primitive.dfy(15,19): this postcondition holds
+      real-completeness-no-primitive.dfy(16,31): this postcondition holds
+      real-completeness-no-primitive.dfy(17,30): this postcondition holds
+
+Results for absTriangle (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0630324
+  Overall resource count: 5938
+  Maximum assertion batch time: 00:00:00.0630324
+  Maximum assertion batch resource count: 5938
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0630324
+    Resource count: 5938
+
+    Assertions:
+      real-completeness-no-primitive.dfy(21,20): this postcondition holds
+
+Results for absProduct (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0723283
+  Overall resource count: 8560
+  Maximum assertion batch time: 00:00:00.0723283
+  Maximum assertion batch resource count: 8560
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0723283
+    Resource count: 8560
+
+    Assertions:
+      real-completeness-no-primitive.dfy(29,20): this postcondition holds
+
+Results for mulLe (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0425894
+  Overall resource count: 2622
+  Maximum assertion batch time: 00:00:00.0425894
+  Maximum assertion batch resource count: 2622
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0425894
+    Resource count: 2622
+
+    Assertions:
+      real-completeness-no-primitive.dfy(42,15): this postcondition holds
+
+Results for productLe (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0447631
+  Overall resource count: 5145
+  Maximum assertion batch time: 00:00:00.0447631
+  Maximum assertion batch resource count: 5145
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0447631
+    Resource count: 5145
+
+    Assertions:
+      real-completeness-no-primitive.dfy(50,8): the precondition always holds
+      real-completeness-no-primitive.dfy(50,8): the precondition always holds
+      real-completeness-no-primitive.dfy(51,8): the precondition always holds
+      real-completeness-no-primitive.dfy(51,8): the precondition always holds
+      real-completeness-no-primitive.dfy(48,15): this postcondition holds
+
+Results for poly (well-formedness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0564461
+  Overall resource count: 10204
+  Maximum assertion batch time: 00:00:00.0564461
+  Maximum assertion batch resource count: 10204
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0564461
+    Resource count: 10204
+
+    Assertions:
+      real-completeness-no-primitive.dfy(57,30): index in range
+      real-completeness-no-primitive.dfy(57,44): lower bound in range
+      real-completeness-no-primitive.dfy(57,42): decreases expression is bounded below by 0
+      real-completeness-no-primitive.dfy(57,42): loop or recursion terminates
+
+Results for magnitude (well-formedness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0759462
+  Overall resource count: 11249
+  Maximum assertion batch time: 00:00:00.0759462
+  Maximum assertion batch resource count: 11249
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0759462
+    Resource count: 11249
+
+    Assertions:
+      real-completeness-no-primitive.dfy(63,34): index in range
+      real-completeness-no-primitive.dfy(63,54): lower bound in range
+      real-completeness-no-primitive.dfy(63,52): decreases expression is bounded below by 0
+      real-completeness-no-primitive.dfy(63,52): loop or recursion terminates
+
+Results for lipschitz (well-formedness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.1591366
+  Overall resource count: 12565
+  Maximum assertion batch time: 00:00:00.1591366
+  Maximum assertion batch resource count: 12565
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.1591366
+    Resource count: 12565
+
+    Assertions:
+      real-completeness-no-primitive.dfy(69,40): lower bound in range
+      real-completeness-no-primitive.dfy(69,64): lower bound in range
+      real-completeness-no-primitive.dfy(69,62): decreases expression is bounded below by 0
+      real-completeness-no-primitive.dfy(69,62): loop or recursion terminates
+
+Results for polyUnfold (well-formedness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0884417
+  Overall resource count: 8957
+  Maximum assertion batch time: 00:00:00.0884417
+  Maximum assertion batch resource count: 8957
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0884417
+    Resource count: 8957
+
+    Assertions:
+      real-completeness-no-primitive.dfy(73,52): index in range
+      real-completeness-no-primitive.dfy(73,64): lower bound in range
+
+Results for polyUnfold (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0707460
+  Overall resource count: 16472
+  Maximum assertion batch time: 00:00:00.0707460
+  Maximum assertion batch resource count: 16472
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0707460
+    Resource count: 16472
+
+    Assertions:
+      real-completeness-no-primitive.dfy(73,21): this postcondition holds
+
+Results for magnitudeUnfold (well-formedness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0448359
+  Overall resource count: 9700
+  Maximum assertion batch time: 00:00:00.0448359
+  Maximum assertion batch resource count: 9700
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0448359
+    Resource count: 9700
+
+    Assertions:
+      real-completeness-no-primitive.dfy(77,61): index in range
+      real-completeness-no-primitive.dfy(77,79): lower bound in range
+
+Results for magnitudeUnfold (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0352882
+  Overall resource count: 17161
+  Maximum assertion batch time: 00:00:00.0352882
+  Maximum assertion batch resource count: 17161
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0352882
+    Resource count: 17161
+
+    Assertions:
+      real-completeness-no-primitive.dfy(77,26): this postcondition holds
+
+Results for lipschitzUnfold (well-formedness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0475277
+  Overall resource count: 10243
+  Maximum assertion batch time: 00:00:00.0475277
+  Maximum assertion batch resource count: 10243
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0475277
+    Resource count: 10243
+
+    Assertions:
+      real-completeness-no-primitive.dfy(81,67): lower bound in range
+      real-completeness-no-primitive.dfy(81,89): lower bound in range
+
+Results for lipschitzUnfold (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.1119893
+  Overall resource count: 18036
+  Maximum assertion batch time: 00:00:00.1119893
+  Maximum assertion batch resource count: 18036
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.1119893
+    Resource count: 18036
+
+    Assertions:
+      real-completeness-no-primitive.dfy(81,26): this postcondition holds
+
+Results for boundsPositive (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0416219
+  Overall resource count: 18037
+  Maximum assertion batch time: 00:00:00.0416219
+  Maximum assertion batch resource count: 18037
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0416219
+    Resource count: 18037
+
+    Assertions:
+      real-completeness-no-primitive.dfy(86,15): this postcondition holds
+      real-completeness-no-primitive.dfy(87,15): this postcondition holds
+      real-completeness-no-primitive.dfy(93,21): lower bound in range
+      real-completeness-no-primitive.dfy(93,19): decreases expression is bounded below by 0
+      real-completeness-no-primitive.dfy(93,19): loop or recursion terminates
+      real-completeness-no-primitive.dfy(93,19): the precondition always holds
+      real-completeness-no-primitive.dfy(94,15): index in range
+
+Results for hornerBound (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0561160
+  Overall resource count: 7076
+  Maximum assertion batch time: 00:00:00.0561160
+  Maximum assertion batch resource count: 7076
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0561160
+    Resource count: 7076
+
+    Assertions:
+      real-completeness-no-primitive.dfy(109,12): the precondition always holds
+      real-completeness-no-primitive.dfy(109,12): the precondition always holds
+      real-completeness-no-primitive.dfy(109,12): the precondition always holds
+      real-completeness-no-primitive.dfy(109,12): the precondition always holds
+      real-completeness-no-primitive.dfy(103,22): this postcondition holds
+
+Results for hornerLipschitz (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.7968685
+  Overall resource count: 449944
+  Maximum assertion batch time: 00:00:00.1321093
+  Maximum assertion batch resource count: 212826
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0842378
+    Resource count: 7512
+
+    Assertions:
+      real-completeness-no-primitive.dfy(133,8): the precondition always holds
+
+  Assertion batch 2:
+    Outcome: Valid
+    Duration: 00:00:00.0638661
+    Resource count: 4446
+
+    Assertions:
+      real-completeness-no-primitive.dfy(133,8): the precondition always holds
+
+  Assertion batch 3:
+    Outcome: Valid
+    Duration: 00:00:00.0235307
+    Resource count: 8421
+
+    Assertions:
+      real-completeness-no-primitive.dfy(134,12): the precondition always holds
+
+  Assertion batch 4:
+    Outcome: Valid
+    Duration: 00:00:00.0624939
+    Resource count: 4675
+
+    Assertions:
+      real-completeness-no-primitive.dfy(134,12): the precondition always holds
+
+  Assertion batch 5:
+    Outcome: Valid
+    Duration: 00:00:00.0425773
+    Resource count: 4694
+
+    Assertions:
+      real-completeness-no-primitive.dfy(134,12): the precondition always holds
+
+  Assertion batch 6:
+    Outcome: Valid
+    Duration: 00:00:00.0479941
+    Resource count: 19959
+
+    Assertions:
+      real-completeness-no-primitive.dfy(134,12): the precondition always holds
+
+  Assertion batch 7:
+    Outcome: Valid
+    Duration: 00:00:00.1079532
+    Resource count: 132152
+
+    Assertions:
+      real-completeness-no-primitive.dfy(135,3): assertion always holds
+
+  Assertion batch 8:
+    Outcome: Valid
+    Duration: 00:00:00.0677212
+    Resource count: 4973
+
+    Assertions:
+      real-completeness-no-primitive.dfy(120,34): this postcondition holds
+
+  Assertion batch 9:
+    Outcome: Valid
+    Duration: 00:00:00.0452086
+    Resource count: 23745
+
+    Assertions:
+      real-completeness-no-primitive.dfy(142,21): the calculation step between the previous line and this line always holds
+
+  Assertion batch 10:
+    Outcome: Valid
+    Duration: 00:00:00.1321093
+    Resource count: 212826
+
+    Assertions:
+      real-completeness-no-primitive.dfy(141,21): the calculation step between the previous line and this line always holds
+
+  Assertion batch 11:
+    Outcome: Valid
+    Duration: 00:00:00.0214261
+    Resource count: 10507
+
+    Assertions:
+      real-completeness-no-primitive.dfy(140,23): the calculation step between the previous line and this line always holds
+
+  Assertion batch 12:
+    Outcome: Valid
+    Duration: 00:00:00.0458072
+    Resource count: 4965
+
+    Assertions:
+      real-completeness-no-primitive.dfy(139,14): the calculation step between the previous line and this line always holds
+
+  Assertion batch 13:
+    Outcome: Valid
+    Duration: 00:00:00.0519430
+    Resource count: 11069
+
+    Assertions:
+      real-completeness-no-primitive.dfy(138,11): the calculation step between the previous line and this line always holds
+
+Results for polynomialBound (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0718246
+  Overall resource count: 23864
+  Maximum assertion batch time: 00:00:00.0718246
+  Maximum assertion batch resource count: 23864
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0718246
+    Resource count: 23864
+
+    Assertions:
+      real-completeness-no-primitive.dfy(149,26): this postcondition holds
+      real-completeness-no-primitive.dfy(156,15): lower bound in range
+      real-completeness-no-primitive.dfy(157,20): decreases expression is bounded below by 0
+      real-completeness-no-primitive.dfy(157,20): loop or recursion terminates
+      real-completeness-no-primitive.dfy(157,20): the precondition always holds
+      real-completeness-no-primitive.dfy(157,20): the precondition always holds
+      real-completeness-no-primitive.dfy(158,19): the precondition always holds
+      real-completeness-no-primitive.dfy(159,15): index in range
+      real-completeness-no-primitive.dfy(162,16): the precondition always holds
+      real-completeness-no-primitive.dfy(162,16): the precondition always holds
+      real-completeness-no-primitive.dfy(162,16): the precondition always holds
+      real-completeness-no-primitive.dfy(162,16): the precondition always holds
+      real-completeness-no-primitive.dfy(163,5): assertion always holds
+      real-completeness-no-primitive.dfy(164,22): assertion always holds
+      real-completeness-no-primitive.dfy(165,27): assertion always holds
+
+Results for polynomialLipschitz (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0560389
+  Overall resource count: 40652
+  Maximum assertion batch time: 00:00:00.0560389
+  Maximum assertion batch resource count: 40652
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0560389
+    Resource count: 40652
+
+    Assertions:
+      real-completeness-no-primitive.dfy(173,36): this postcondition holds
+      real-completeness-no-primitive.dfy(181,15): lower bound in range
+      real-completeness-no-primitive.dfy(182,20): the precondition always holds
+      real-completeness-no-primitive.dfy(182,20): the precondition always holds
+      real-completeness-no-primitive.dfy(183,24): decreases expression is bounded below by 0
+      real-completeness-no-primitive.dfy(183,24): loop or recursion terminates
+      real-completeness-no-primitive.dfy(183,24): the precondition always holds
+      real-completeness-no-primitive.dfy(183,24): the precondition always holds
+      real-completeness-no-primitive.dfy(183,24): the precondition always holds
+      real-completeness-no-primitive.dfy(184,19): the precondition always holds
+      real-completeness-no-primitive.dfy(185,15): index in range
+      real-completeness-no-primitive.dfy(190,20): the precondition always holds
+      real-completeness-no-primitive.dfy(190,20): the precondition always holds
+      real-completeness-no-primitive.dfy(190,20): the precondition always holds
+      real-completeness-no-primitive.dfy(190,20): the precondition always holds
+      real-completeness-no-primitive.dfy(190,20): the precondition always holds
+      real-completeness-no-primitive.dfy(190,20): the precondition always holds
+      real-completeness-no-primitive.dfy(191,5): assertion always holds
+      real-completeness-no-primitive.dfy(192,22): assertion always holds
+      real-completeness-no-primitive.dfy(193,22): assertion always holds
+      real-completeness-no-primitive.dfy(194,27): assertion always holds
+
+Results for complete (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0548378
+  Overall resource count: 4582
+  Maximum assertion batch time: 00:00:00.0548378
+  Maximum assertion batch resource count: 4582
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0548378
+    Resource count: 4582
+
+    Assertions:
+      real-completeness-no-primitive.dfy(204,13): out-parameter 'u', which is subject to definite-assignment rules, is always initialized at this return point
+
+Results for lub (correctness)
+  Overall outcome: Errors
+  Overall time: 00:00:00.2686206
+  Overall resource count: 8628
+  Maximum assertion batch time: 00:00:00.2686206
+  Maximum assertion batch resource count: 8628
+
+  Assertion batch 1:
+    Outcome: Invalid
+    Duration: 00:00:00.2686206
+    Resource count: 8628
+
+    Assertions:
+      real-completeness-no-primitive.dfy(213,1): out-parameter 'u', which is subject to definite-assignment rules, is always initialized at this return point
+      real-completeness-no-primitive.dfy(209,16): this postcondition holds
+      real-completeness-no-primitive.dfy(210,11): this postcondition holds
+
+Results for leastUpperBound (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0452984
+  Overall resource count: 7635
+  Maximum assertion batch time: 00:00:00.0452984
+  Maximum assertion batch resource count: 7635
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0452984
+    Resource count: 7635
+
+    Assertions:
+      real-completeness-no-primitive.dfy(220,15): the precondition always holds
+      real-completeness-no-primitive.dfy(220,15): the precondition always holds
+      real-completeness-no-primitive.dfy(218,11): this postcondition holds
+
+Results for intervalMagnitude (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0440715
+  Overall resource count: 7345
+  Maximum assertion batch time: 00:00:00.0440715
+  Maximum assertion batch resource count: 7345
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0440715
+    Resource count: 7345
+
+    Assertions:
+      real-completeness-no-primitive.dfy(225,18): this postcondition holds
+
+Results for stepBound (well-formedness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0595277
+  Overall resource count: 2758
+  Maximum assertion batch time: 00:00:00.0595277
+  Maximum assertion batch resource count: 2758
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0595277
+    Resource count: 2758
+
+    Assertions:
+      real-completeness-no-primitive.dfy(236,23): divisor is always non-zero.
+
+Results for stepBound (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0652144
+  Overall resource count: 8242
+  Maximum assertion batch time: 00:00:00.0652144
+  Maximum assertion batch resource count: 8242
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0652144
+    Resource count: 8242
+
+    Assertions:
+      real-completeness-no-primitive.dfy(239,13): divisor is always non-zero.
+      real-completeness-no-primitive.dfy(239,19): divisor is always non-zero.
+      real-completeness-no-primitive.dfy(240,3): assertion always holds
+      real-completeness-no-primitive.dfy(241,17): divisor is always non-zero.
+      real-completeness-no-primitive.dfy(241,3): assertion always holds
+      real-completeness-no-primitive.dfy(242,10): variable 'd', which is subject to definite-assignment rules, is always initialized here
+      real-completeness-no-primitive.dfy(242,16): divisor is always non-zero.
+      real-completeness-no-primitive.dfy(242,3): assertion always holds
+      real-completeness-no-primitive.dfy(243,26): divisor is always non-zero.
+      real-completeness-no-primitive.dfy(243,3): assertion always holds
+      real-completeness-no-primitive.dfy(244,24): variable 'd', which is subject to definite-assignment rules, is always initialized here
+      real-completeness-no-primitive.dfy(244,3): assertion always holds
+      real-completeness-no-primitive.dfy(245,1): out-parameter 'd', which is subject to definite-assignment rules, is always initialized at this return point
+      real-completeness-no-primitive.dfy(236,15): this postcondition holds
+      real-completeness-no-primitive.dfy(236,19): this postcondition holds
+      real-completeness-no-primitive.dfy(237,15): this postcondition holds
+
+Results for polynomialIvt (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:03.9429742
+  Overall resource count: 1705656
+  Maximum assertion batch time: 00:00:00.2872443
+  Maximum assertion batch resource count: 223928
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0918072
+    Resource count: 12887
+
+    Assertions:
+      real-completeness-no-primitive.dfy(256,17): the precondition always holds
+
+  Assertion batch 2:
+    Outcome: Valid
+    Duration: 00:00:00.0927343
+    Resource count: 21745
+
+    Assertions:
+      real-completeness-no-primitive.dfy(259,3): assertion always holds
+
+  Assertion batch 3:
+    Outcome: Valid
+    Duration: 00:00:00.0681277
+    Resource count: 25712
+
+    Assertions:
+      real-completeness-no-primitive.dfy(260,15): assertion always holds
+
+  Assertion batch 4:
+    Outcome: Valid
+    Duration: 00:00:00.0920180
+    Resource count: 18046
+
+    Assertions:
+      real-completeness-no-primitive.dfy(261,15): the precondition always holds
+
+  Assertion batch 5:
+    Outcome: Valid
+    Duration: 00:00:00.0579865
+    Resource count: 18180
+
+    Assertions:
+      real-completeness-no-primitive.dfy(261,15): the precondition always holds
+
+  Assertion batch 6:
+    Outcome: Valid
+    Duration: 00:00:00.0776079
+    Resource count: 24288
+
+    Assertions:
+      real-completeness-no-primitive.dfy(262,12): assertion always holds
+
+  Assertion batch 7:
+    Outcome: Valid
+    Duration: 00:00:00.0726936
+    Resource count: 24693
+
+    Assertions:
+      real-completeness-no-primitive.dfy(262,17): assertion always holds
+
+  Assertion batch 8:
+    Outcome: Valid
+    Duration: 00:00:00.0754420
+    Resource count: 19208
+
+    Assertions:
+      real-completeness-no-primitive.dfy(263,20): the precondition always holds
+
+  Assertion batch 9:
+    Outcome: Valid
+    Duration: 00:00:00.0800180
+    Resource count: 19210
+
+    Assertions:
+      real-completeness-no-primitive.dfy(263,20): the precondition always holds
+
+  Assertion batch 10:
+    Outcome: Valid
+    Duration: 00:00:00.1000665
+    Resource count: 34039
+
+    Assertions:
+      real-completeness-no-primitive.dfy(305,20): assertion always holds
+
+  Assertion batch 11:
+    Outcome: Valid
+    Duration: 00:00:00.0958255
+    Resource count: 31796
+
+    Assertions:
+      real-completeness-no-primitive.dfy(306,12): assertion always holds
+
+  Assertion batch 12:
+    Outcome: Valid
+    Duration: 00:00:00.0911705
+    Resource count: 33208
+
+    Assertions:
+      real-completeness-no-primitive.dfy(306,16): assertion always holds
+
+  Assertion batch 13:
+    Outcome: Valid
+    Duration: 00:00:00.1010263
+    Resource count: 32714
+
+    Assertions:
+      real-completeness-no-primitive.dfy(251,11): this postcondition holds
+
+  Assertion batch 14:
+    Outcome: Valid
+    Duration: 00:00:00.0881972
+    Resource count: 29860
+
+    Assertions:
+      real-completeness-no-primitive.dfy(283,5): assertion always holds
+
+  Assertion batch 15:
+    Outcome: Valid
+    Duration: 00:00:00.1118097
+    Resource count: 25584
+
+    Assertions:
+      real-completeness-no-primitive.dfy(284,23): the precondition always holds
+
+  Assertion batch 16:
+    Outcome: Valid
+    Duration: 00:00:00.1074767
+    Resource count: 29642
+
+    Assertions:
+      real-completeness-no-primitive.dfy(284,23): the precondition always holds
+
+  Assertion batch 17:
+    Outcome: Valid
+    Duration: 00:00:00.0928250
+    Resource count: 29891
+
+    Assertions:
+      real-completeness-no-primitive.dfy(284,23): the precondition always holds
+
+  Assertion batch 18:
+    Outcome: Valid
+    Duration: 00:00:00.1039521
+    Resource count: 31620
+
+    Assertions:
+      real-completeness-no-primitive.dfy(301,17): assertion always holds
+
+  Assertion batch 19:
+    Outcome: Valid
+    Duration: 00:00:00.0747282
+    Resource count: 32457
+
+    Assertions:
+      real-completeness-no-primitive.dfy(302,5): assertion always holds
+
+  Assertion batch 20:
+    Outcome: Valid
+    Duration: 00:00:00.0522592
+    Resource count: 28034
+
+    Assertions:
+      real-completeness-no-primitive.dfy(303,5): assertion always holds
+
+  Assertion batch 21:
+    Outcome: Valid
+    Duration: 00:00:00.0628741
+    Resource count: 34785
+
+    Assertions:
+      real-completeness-no-primitive.dfy(289,16): assertion always holds
+
+  Assertion batch 22:
+    Outcome: Valid
+    Duration: 00:00:00.0294333
+    Resource count: 31909
+
+    Assertions:
+      real-completeness-no-primitive.dfy(289,21): assertion always holds
+
+  Assertion batch 23:
+    Outcome: Valid
+    Duration: 00:00:00.0586480
+    Resource count: 29851
+
+    Assertions:
+      real-completeness-no-primitive.dfy(289,26): assertion always holds
+
+  Assertion batch 24:
+    Outcome: Valid
+    Duration: 00:00:00.0720307
+    Resource count: 38555
+
+    Assertions:
+      real-completeness-no-primitive.dfy(287,17): postcondition of forall statement always holds
+
+  Assertion batch 25:
+    Outcome: Valid
+    Duration: 00:00:00.0682742
+    Resource count: 22618
+
+    Assertions:
+      real-completeness-no-primitive.dfy(291,26): the precondition always holds
+
+  Assertion batch 26:
+    Outcome: Valid
+    Duration: 00:00:00.0737232
+    Resource count: 32251
+
+    Assertions:
+      real-completeness-no-primitive.dfy(291,26): the precondition always holds
+
+  Assertion batch 27:
+    Outcome: Valid
+    Duration: 00:00:00.0768036
+    Resource count: 20022
+
+    Assertions:
+      real-completeness-no-primitive.dfy(292,28): the precondition always holds
+
+  Assertion batch 28:
+    Outcome: Valid
+    Duration: 00:00:00.1027684
+    Resource count: 32866
+
+    Assertions:
+      real-completeness-no-primitive.dfy(292,28): the precondition always holds
+
+  Assertion batch 29:
+    Outcome: Valid
+    Duration: 00:00:00.0600119
+    Resource count: 32827
+
+    Assertions:
+      real-completeness-no-primitive.dfy(292,28): the precondition always holds
+
+  Assertion batch 30:
+    Outcome: Valid
+    Duration: 00:00:00.0537893
+    Resource count: 36491
+
+    Assertions:
+      real-completeness-no-primitive.dfy(295,9): assertion always holds
+
+  Assertion batch 31:
+    Outcome: Valid
+    Duration: 00:00:00.0695098
+    Resource count: 35574
+
+    Assertions:
+      real-completeness-no-primitive.dfy(296,9): assertion always holds
+
+  Assertion batch 32:
+    Outcome: Valid
+    Duration: 00:00:00.2872443
+    Resource count: 223928
+
+    Assertions:
+      real-completeness-no-primitive.dfy(297,20): assertion always holds
+
+  Assertion batch 33:
+    Outcome: Valid
+    Duration: 00:00:00.1079272
+    Resource count: 38102
+
+    Assertions:
+      real-completeness-no-primitive.dfy(298,9): assertion always holds
+
+  Assertion batch 34:
+    Outcome: Valid
+    Duration: 00:00:00.0766545
+    Resource count: 26177
+
+    Assertions:
+      real-completeness-no-primitive.dfy(265,5): assertion always holds
+
+  Assertion batch 35:
+    Outcome: Valid
+    Duration: 00:00:00.0598481
+    Resource count: 23177
+
+    Assertions:
+      real-completeness-no-primitive.dfy(266,23): the precondition always holds
+
+  Assertion batch 36:
+    Outcome: Valid
+    Duration: 00:00:00.0508669
+    Resource count: 24515
+
+    Assertions:
+      real-completeness-no-primitive.dfy(266,23): the precondition always holds
+
+  Assertion batch 37:
+    Outcome: Valid
+    Duration: 00:00:00.0339110
+    Resource count: 24672
+
+    Assertions:
+      real-completeness-no-primitive.dfy(266,23): the precondition always holds
+
+  Assertion batch 38:
+    Outcome: Valid
+    Duration: 00:00:00.0354189
+    Resource count: 26519
+
+    Assertions:
+      real-completeness-no-primitive.dfy(268,14): assertion always holds
+
+  Assertion batch 39:
+    Outcome: Valid
+    Duration: 00:00:00.0433783
+    Resource count: 27445
+
+    Assertions:
+      real-completeness-no-primitive.dfy(268,19): assertion always holds
+
+  Assertion batch 40:
+    Outcome: Valid
+    Duration: 00:00:00.0610859
+    Resource count: 19956
+
+    Assertions:
+      real-completeness-no-primitive.dfy(269,22): the precondition always holds
+
+  Assertion batch 41:
+    Outcome: Valid
+    Duration: 00:00:00.0387428
+    Resource count: 19958
+
+    Assertions:
+      real-completeness-no-primitive.dfy(269,22): the precondition always holds
+
+  Assertion batch 42:
+    Outcome: Valid
+    Duration: 00:00:00.0320363
+    Resource count: 18348
+
+    Assertions:
+      real-completeness-no-primitive.dfy(270,24): the precondition always holds
+
+  Assertion batch 43:
+    Outcome: Valid
+    Duration: 00:00:00.0444665
+    Resource count: 25699
+
+    Assertions:
+      real-completeness-no-primitive.dfy(270,24): the precondition always holds
+
+  Assertion batch 44:
+    Outcome: Valid
+    Duration: 00:00:00.0320339
+    Resource count: 25830
+
+    Assertions:
+      real-completeness-no-primitive.dfy(270,24): the precondition always holds
+
+  Assertion batch 45:
+    Outcome: Valid
+    Duration: 00:00:00.1064861
+    Resource count: 33223
+
+    Assertions:
+      real-completeness-no-primitive.dfy(273,5): assertion always holds
+
+  Assertion batch 46:
+    Outcome: Valid
+    Duration: 00:00:00.0440762
+    Resource count: 39774
+
+    Assertions:
+      real-completeness-no-primitive.dfy(274,32): assertion always holds
+
+  Assertion batch 47:
+    Outcome: Valid
+    Duration: 00:00:00.0923583
+    Resource count: 59202
+
+    Assertions:
+      real-completeness-no-primitive.dfy(275,37): assertion always holds
+
+  Assertion batch 48:
+    Outcome: Valid
+    Duration: 00:00:00.0505250
+    Resource count: 37779
+
+    Assertions:
+      real-completeness-no-primitive.dfy(276,16): assertion always holds
+
+  Assertion batch 49:
+    Outcome: Valid
+    Duration: 00:00:00.0604935
+    Resource count: 35108
+
+    Assertions:
+      real-completeness-no-primitive.dfy(277,22): assertion always holds
+
+  Assertion batch 50:
+    Outcome: Valid
+    Duration: 00:00:00.1012783
+    Resource count: 39444
+
+    Assertions:
+      real-completeness-no-primitive.dfy(278,5): assertion always holds
+
+  Assertion batch 51:
+    Outcome: Valid
+    Duration: 00:00:00.0558447
+    Resource count: 34169
+
+    Assertions:
+      real-completeness-no-primitive.dfy(279,5): assertion always holds
+
+  Assertion batch 52:
+    Outcome: Valid
+    Duration: 00:00:00.0726589
+    Resource count: 32068
+
+    Assertions:
+      real-completeness-no-primitive.dfy(280,5): assertion always holds
+
+Results for squareRootTwo (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0760668
+  Overall resource count: 24455
+  Maximum assertion batch time: 00:00:00.0760668
+  Maximum assertion batch resource count: 24455
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0760668
+    Resource count: 24455
+
+    Assertions:
+      real-completeness-no-primitive.dfy(315,22): assertion always holds
+      real-completeness-no-primitive.dfy(316,22): assertion always holds
+      real-completeness-no-primitive.dfy(317,16): the precondition always holds
+      real-completeness-no-primitive.dfy(317,16): the precondition always holds
+      real-completeness-no-primitive.dfy(317,16): the precondition always holds
+      real-completeness-no-primitive.dfy(318,15): a value exists that satisfies this let-such-that expression
+      real-completeness-no-primitive.dfy(319,18): variable 'x', which is subject to definite-assignment rules, is always initialized here
+      real-completeness-no-primitive.dfy(320,17): variable 'x', which is subject to definite-assignment rules, is always initialized here
+      real-completeness-no-primitive.dfy(320,28): variable 'x', which is subject to definite-assignment rules, is always initialized here
+      real-completeness-no-primitive.dfy(320,30): variable 'x', which is subject to definite-assignment rules, is always initialized here
+      real-completeness-no-primitive.dfy(320,20): assertion always holds
+      real-completeness-no-primitive.dfy(310,11): this postcondition holds
+
+Results for quadraticValue (correctness)
+  Overall outcome: Correct
+  Overall time: 00:00:00.0832000
+  Overall resource count: 31629
+  Maximum assertion batch time: 00:00:00.0832000
+  Maximum assertion batch resource count: 31629
+
+  Assertion batch 1:
+    Outcome: Valid
+    Duration: 00:00:00.0832000
+    Resource count: 31629
+
+    Assertions:
+      real-completeness-no-primitive.dfy(326,24): lower bound in range
+      real-completeness-no-primitive.dfy(326,3): assertion always holds
+      real-completeness-no-primitive.dfy(327,19): lower bound in range
+      real-completeness-no-primitive.dfy(327,3): assertion always holds
+      real-completeness-no-primitive.dfy(328,15): lower bound in range
+      real-completeness-no-primitive.dfy(328,3): assertion always holds
+      real-completeness-no-primitive.dfy(333,21): assertion always holds
+      real-completeness-no-primitive.dfy(334,24): assertion always holds
+      real-completeness-no-primitive.dfy(335,28): assertion always holds
+      real-completeness-no-primitive.dfy(324,34): this postcondition holds

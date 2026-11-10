@@ -1,0 +1,6 @@
+{
+  "dafny_version": "4.11.0+issue205-design-62bae981",
+  "solver_version": "Z3 version 4.12.1 - 64 bit",
+  "source_commit": "62bae981952337d312cbb3d43c39f9813cca6084",
+  "scope": "Genuine existing Dafny test VCs; added candidates are dormant abstract-kernel declarations, not a product implementation. Local candidate emits zero bytes on this corpus."
+}

@@ -1,0 +1,14 @@
+[
+  {
+    "file": "remove-bounded/output.txt",
+    "normalization": "Results File destination replaced by basename",
+    "original_sha256": "15f4de6d4f517377fde8d1575986d536a254c5c99f538750d1f1a1a461729e8b",
+    "shipped_sha256": "0de48af6234fc4be05e3f05383b5b068c35587e7cdb9b0b61516eb7c67dff74f"
+  },
+  {
+    "file": "remove-nonempty/output.txt",
+    "normalization": "Results File destination replaced by basename",
+    "original_sha256": "ae732affd8a99029f402800edf5f5f9b45cce40e5248d6ff38f6b2ce377eb4ab",
+    "shipped_sha256": "be8b03d0b4e6dfac5d9a26b687f004d352863de4faae9709f05b1fa0a08bc503"
+  }
+]

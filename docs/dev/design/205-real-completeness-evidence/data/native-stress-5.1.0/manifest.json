@@ -1,0 +1,5 @@
+{
+  "solver_version": "Z3 version 5.1.0 - 64 bit",
+  "input_sha256": "18d93adc81d94b8bd2a7156730af75ac7ddc55ab66124b01ef63e2be533349dd",
+  "scope": "Genuine pinned Dafny generated boxed-ISet VCs; only explicit quantifier patterns changed. Same formulas. Caps uniformly2,000,000RU and10seconds."
+}

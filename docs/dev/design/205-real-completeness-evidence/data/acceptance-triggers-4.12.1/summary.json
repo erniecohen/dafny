@@ -1,0 +1,26 @@
+{
+  "scoped": {
+    "contexts": 90,
+    "ru": 1940734,
+    "instances": 2043,
+    "unsat_contexts": 90,
+    "not_proved": []
+  },
+  "broad-upper": {
+    "contexts": 90,
+    "ru": 3653293,
+    "instances": 2540,
+    "unsat_contexts": 90,
+    "not_proved": []
+  },
+  "auto": {
+    "contexts": 90,
+    "ru": 3947881,
+    "instances": 2498,
+    "unsat_contexts": 88,
+    "not_proved": [
+      "Impl$$_module.__default.polynomialIvt_split31",
+      "Impl$$_module.__default.polynomialIvt_split46"
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "file": "RealCompare.dafny.out",
+    "normalization": "Results File destination replaced by basename",
+    "original_sha256": "d479e24d7f9c8e70dc23bcd209cf903480e60038e5cc3a3d6b480e0f51cf86b9",
+    "shipped_sha256": "35622ba1bb31e9a6e4af128d3e143bb11f10d47111c9014ad888551497cfb606"
+  },
+  {
+    "file": "RealTypes.dafny.out",
+    "normalization": "Results File destination replaced by basename",
+    "original_sha256": "c5944e576947c615bc71622f1f0cd72f2a4fa44c2a8a12ff6e4091cfab4ad4a1",
+    "shipped_sha256": "d58d0107499aca3628f280812ea0bba12fdc95bd19fe38b52463c1545e8ec4bb"
+  },
+  {
+    "file": "Regression3.dafny.out",
+    "normalization": "Results File destination replaced by basename",
+    "original_sha256": "fc3a0e3ff52c1d6d08832b0c60af0cd488e1ba2f7b467dffa5b6168cc2526ce4",
+    "shipped_sha256": "6a98f50af601956c16f859f9dea883fa55bbef87b3db46e6d326f5ba74ba7422"
+  },
+  {
+    "file": "TypeConversions.dafny.out",
+    "normalization": "Results File destination replaced by basename",
+    "original_sha256": "9ab240d8020d240ff126c183ca27cb2e538a54eb4c4ae266288e4288a26ec197",
+    "shipped_sha256": "98c0ddfc49f0b85853daba0816faeb7f2c75eaf71a165608cf884ef9f46cc229"
+  },
+  {
+    "file": "TypeMembers.dafny.out",
+    "normalization": "Results File destination replaced by basename",
+    "original_sha256": "88fb9754bc8c3563109a51ce2a8e05b302bda00c5506be61768785a1b1088356",
+    "shipped_sha256": "2be78bc835a99b5c51451670dbfd52b80c7aea264a8e9c2c1c3773e386969bfa"
+  }
+]

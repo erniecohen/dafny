@@ -1,0 +1,490 @@
+[
+  {
+    "version": "4.12.1",
+    "refresh": false,
+    "additional": false,
+    "exit": 4,
+    "total_ru": 81222,
+    "cases": [
+      {
+        "name": "RealCompletenessProbe.singletonFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 15432
+      },
+      {
+        "name": "RealCompletenessProbe.lub (correctness)",
+        "outcome": "Passed",
+        "ru": 7457
+      },
+      {
+        "name": "RealCompletenessProbe.universalFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 11768
+      },
+      {
+        "name": "RealCompletenessProbe.universalValue (correctness)",
+        "outcome": "Failed",
+        "ru": 8110
+      },
+      {
+        "name": "RealCompletenessProbe.emptyValue (correctness)",
+        "outcome": "Failed",
+        "ru": 6092
+      },
+      {
+        "name": "RealCompletenessProbe.emptyFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 9825
+      },
+      {
+        "name": "RealCompletenessProbe.leastUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7194
+      },
+      {
+        "name": "RealCompletenessProbe.upperUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7553
+      },
+      {
+        "name": "RealCompletenessProbe.existsUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7791
+      }
+    ],
+    "errors": [
+      "source-kernel.dfy(51,4): Error: assertion might not hold",
+      "source-kernel.dfy(59,4): Error: assertion might not hold",
+      "source-kernel.dfy(68,4): Error: assertion might not hold",
+      "source-kernel.dfy(74,4): Error: assertion might not hold",
+      "source-kernel.dfy(80,4): Error: assertion might not hold"
+    ]
+  },
+  {
+    "version": "4.12.1",
+    "refresh": false,
+    "additional": true,
+    "exit": 4,
+    "total_ru": 81222,
+    "cases": [
+      {
+        "name": "RealCompletenessProbe.lub (correctness)",
+        "outcome": "Passed",
+        "ru": 7457
+      },
+      {
+        "name": "RealCompletenessProbe.universalFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 11768
+      },
+      {
+        "name": "RealCompletenessProbe.universalValue (correctness)",
+        "outcome": "Failed",
+        "ru": 8110
+      },
+      {
+        "name": "RealCompletenessProbe.emptyValue (correctness)",
+        "outcome": "Failed",
+        "ru": 6092
+      },
+      {
+        "name": "RealCompletenessProbe.singletonFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 15432
+      },
+      {
+        "name": "RealCompletenessProbe.upperUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7553
+      },
+      {
+        "name": "RealCompletenessProbe.emptyFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 9825
+      },
+      {
+        "name": "RealCompletenessProbe.leastUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7194
+      },
+      {
+        "name": "RealCompletenessProbe.existsUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7791
+      }
+    ],
+    "errors": [
+      "source-kernel.dfy(51,4): Error: assertion might not hold",
+      "source-kernel.dfy(59,4): Error: assertion might not hold",
+      "source-kernel.dfy(68,4): Error: assertion might not hold",
+      "source-kernel.dfy(74,4): Error: assertion might not hold",
+      "source-kernel.dfy(80,4): Error: assertion might not hold"
+    ]
+  },
+  {
+    "version": "4.12.1",
+    "refresh": true,
+    "additional": false,
+    "exit": 4,
+    "total_ru": 81222,
+    "cases": [
+      {
+        "name": "RealCompletenessProbe.universalValue (correctness)",
+        "outcome": "Failed",
+        "ru": 8110
+      },
+      {
+        "name": "RealCompletenessProbe.lub (correctness)",
+        "outcome": "Passed",
+        "ru": 7457
+      },
+      {
+        "name": "RealCompletenessProbe.singletonFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 15432
+      },
+      {
+        "name": "RealCompletenessProbe.emptyValue (correctness)",
+        "outcome": "Failed",
+        "ru": 6092
+      },
+      {
+        "name": "RealCompletenessProbe.emptyFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 9825
+      },
+      {
+        "name": "RealCompletenessProbe.existsUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7791
+      },
+      {
+        "name": "RealCompletenessProbe.leastUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7194
+      },
+      {
+        "name": "RealCompletenessProbe.universalFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 11768
+      },
+      {
+        "name": "RealCompletenessProbe.upperUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7553
+      }
+    ],
+    "errors": [
+      "source-kernel.dfy(51,4): Error: assertion might not hold",
+      "source-kernel.dfy(59,4): Error: assertion might not hold",
+      "source-kernel.dfy(68,4): Error: assertion might not hold",
+      "source-kernel.dfy(74,4): Error: assertion might not hold",
+      "source-kernel.dfy(80,4): Error: assertion might not hold"
+    ]
+  },
+  {
+    "version": "4.12.1",
+    "refresh": true,
+    "additional": true,
+    "exit": 4,
+    "total_ru": 81222,
+    "cases": [
+      {
+        "name": "RealCompletenessProbe.singletonFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 15432
+      },
+      {
+        "name": "RealCompletenessProbe.lub (correctness)",
+        "outcome": "Passed",
+        "ru": 7457
+      },
+      {
+        "name": "RealCompletenessProbe.universalValue (correctness)",
+        "outcome": "Failed",
+        "ru": 8110
+      },
+      {
+        "name": "RealCompletenessProbe.emptyFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 9825
+      },
+      {
+        "name": "RealCompletenessProbe.universalFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 11768
+      },
+      {
+        "name": "RealCompletenessProbe.existsUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7791
+      },
+      {
+        "name": "RealCompletenessProbe.upperUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7553
+      },
+      {
+        "name": "RealCompletenessProbe.emptyValue (correctness)",
+        "outcome": "Failed",
+        "ru": 6092
+      },
+      {
+        "name": "RealCompletenessProbe.leastUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7194
+      }
+    ],
+    "errors": [
+      "source-kernel.dfy(51,4): Error: assertion might not hold",
+      "source-kernel.dfy(59,4): Error: assertion might not hold",
+      "source-kernel.dfy(68,4): Error: assertion might not hold",
+      "source-kernel.dfy(74,4): Error: assertion might not hold",
+      "source-kernel.dfy(80,4): Error: assertion might not hold"
+    ]
+  },
+  {
+    "version": "5.1.0",
+    "refresh": false,
+    "additional": false,
+    "exit": 4,
+    "total_ru": 81807,
+    "cases": [
+      {
+        "name": "RealCompletenessProbe.singletonFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 16187
+      },
+      {
+        "name": "RealCompletenessProbe.universalValue (correctness)",
+        "outcome": "Failed",
+        "ru": 8413
+      },
+      {
+        "name": "RealCompletenessProbe.lub (correctness)",
+        "outcome": "Passed",
+        "ru": 7319
+      },
+      {
+        "name": "RealCompletenessProbe.universalFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 11496
+      },
+      {
+        "name": "RealCompletenessProbe.emptyFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 9997
+      },
+      {
+        "name": "RealCompletenessProbe.emptyValue (correctness)",
+        "outcome": "Failed",
+        "ru": 6104
+      },
+      {
+        "name": "RealCompletenessProbe.leastUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7005
+      },
+      {
+        "name": "RealCompletenessProbe.upperUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7651
+      },
+      {
+        "name": "RealCompletenessProbe.existsUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7635
+      }
+    ],
+    "errors": [
+      "source-kernel.dfy(51,4): Error: assertion might not hold",
+      "source-kernel.dfy(59,4): Error: assertion might not hold",
+      "source-kernel.dfy(68,4): Error: assertion might not hold",
+      "source-kernel.dfy(74,4): Error: assertion might not hold",
+      "source-kernel.dfy(80,4): Error: assertion might not hold"
+    ]
+  },
+  {
+    "version": "5.1.0",
+    "refresh": false,
+    "additional": true,
+    "exit": 4,
+    "total_ru": 81807,
+    "cases": [
+      {
+        "name": "RealCompletenessProbe.lub (correctness)",
+        "outcome": "Passed",
+        "ru": 7319
+      },
+      {
+        "name": "RealCompletenessProbe.universalValue (correctness)",
+        "outcome": "Failed",
+        "ru": 8413
+      },
+      {
+        "name": "RealCompletenessProbe.emptyValue (correctness)",
+        "outcome": "Failed",
+        "ru": 6104
+      },
+      {
+        "name": "RealCompletenessProbe.universalFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 11496
+      },
+      {
+        "name": "RealCompletenessProbe.singletonFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 16187
+      },
+      {
+        "name": "RealCompletenessProbe.emptyFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 9997
+      },
+      {
+        "name": "RealCompletenessProbe.existsUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7635
+      },
+      {
+        "name": "RealCompletenessProbe.upperUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7651
+      },
+      {
+        "name": "RealCompletenessProbe.leastUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7005
+      }
+    ],
+    "errors": [
+      "source-kernel.dfy(51,4): Error: assertion might not hold",
+      "source-kernel.dfy(59,4): Error: assertion might not hold",
+      "source-kernel.dfy(68,4): Error: assertion might not hold",
+      "source-kernel.dfy(74,4): Error: assertion might not hold",
+      "source-kernel.dfy(80,4): Error: assertion might not hold"
+    ]
+  },
+  {
+    "version": "5.1.0",
+    "refresh": true,
+    "additional": false,
+    "exit": 4,
+    "total_ru": 81807,
+    "cases": [
+      {
+        "name": "RealCompletenessProbe.lub (correctness)",
+        "outcome": "Passed",
+        "ru": 7319
+      },
+      {
+        "name": "RealCompletenessProbe.singletonFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 16187
+      },
+      {
+        "name": "RealCompletenessProbe.emptyValue (correctness)",
+        "outcome": "Failed",
+        "ru": 6104
+      },
+      {
+        "name": "RealCompletenessProbe.emptyFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 9997
+      },
+      {
+        "name": "RealCompletenessProbe.universalValue (correctness)",
+        "outcome": "Failed",
+        "ru": 8413
+      },
+      {
+        "name": "RealCompletenessProbe.universalFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 11496
+      },
+      {
+        "name": "RealCompletenessProbe.existsUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7635
+      },
+      {
+        "name": "RealCompletenessProbe.upperUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7651
+      },
+      {
+        "name": "RealCompletenessProbe.leastUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7005
+      }
+    ],
+    "errors": [
+      "source-kernel.dfy(51,4): Error: assertion might not hold",
+      "source-kernel.dfy(59,4): Error: assertion might not hold",
+      "source-kernel.dfy(68,4): Error: assertion might not hold",
+      "source-kernel.dfy(74,4): Error: assertion might not hold",
+      "source-kernel.dfy(80,4): Error: assertion might not hold"
+    ]
+  },
+  {
+    "version": "5.1.0",
+    "refresh": true,
+    "additional": true,
+    "exit": 4,
+    "total_ru": 81807,
+    "cases": [
+      {
+        "name": "RealCompletenessProbe.singletonFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 16187
+      },
+      {
+        "name": "RealCompletenessProbe.lub (correctness)",
+        "outcome": "Passed",
+        "ru": 7319
+      },
+      {
+        "name": "RealCompletenessProbe.emptyValue (correctness)",
+        "outcome": "Failed",
+        "ru": 6104
+      },
+      {
+        "name": "RealCompletenessProbe.universalFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 11496
+      },
+      {
+        "name": "RealCompletenessProbe.emptyFalse (correctness)",
+        "outcome": "Failed",
+        "ru": 9997
+      },
+      {
+        "name": "RealCompletenessProbe.universalValue (correctness)",
+        "outcome": "Failed",
+        "ru": 8413
+      },
+      {
+        "name": "RealCompletenessProbe.existsUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7635
+      },
+      {
+        "name": "RealCompletenessProbe.upperUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7651
+      },
+      {
+        "name": "RealCompletenessProbe.leastUse (correctness)",
+        "outcome": "Passed",
+        "ru": 7005
+      }
+    ],
+    "errors": [
+      "source-kernel.dfy(51,4): Error: assertion might not hold",
+      "source-kernel.dfy(59,4): Error: assertion might not hold",
+      "source-kernel.dfy(68,4): Error: assertion might not hold",
+      "source-kernel.dfy(74,4): Error: assertion might not hold",
+      "source-kernel.dfy(80,4): Error: assertion might not hold"
+    ]
+  }
+]

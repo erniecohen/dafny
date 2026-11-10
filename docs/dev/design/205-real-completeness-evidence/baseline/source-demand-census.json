@@ -1,0 +1,25 @@
+{
+  "corpora": [
+    {
+      "corpus": "full LitTest source subtree",
+      "dfy_files": 2539,
+      "matching_line_count": 0,
+      "matching_lines": [],
+      "root": "Source/IntegrationTests/TestFiles/LitTests/LitTest",
+      "source_inventory_sha256": "6b85000931b5433fb69af9455ce6fd465e0e5b1ccca764ed492a6b1a59b01a2c"
+    },
+    {
+      "corpus": "full standard-library source subtree",
+      "dfy_files": 115,
+      "matching_line_count": 0,
+      "matching_lines": [],
+      "root": "Source/DafnyStandardLibraries",
+      "source_inventory_sha256": "ae586c70af12f4550d681831d890cf8c598f03d375da7f3cbe178aa86c0fd971"
+    }
+  ],
+  "limitations": "The primitive is absent from the pinned product. This zero-use census is not a test of unwritten candidate demand detection or per-VC emission isolation.",
+  "method": "Lexical scan of all .dfy files in the two named subtrees; source inventory hashes concatenate repository-relative path, NUL, content SHA-256, newline in sorted order.",
+  "scheduled_suite_roots": 1163,
+  "searched_pattern": "\\bRealCompleteness\\b|\\breal\\.Sup\\b",
+  "source_commit": "62bae981952337d312cbb3d43c39f9813cca6084"
+}

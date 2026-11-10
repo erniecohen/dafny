@@ -1,0 +1,23 @@
+{
+  "scoped": {
+    "contexts": 90,
+    "ru": 2476611,
+    "instances": 3655,
+    "unsat_contexts": 90,
+    "not_proved": []
+  },
+  "broad-upper": {
+    "contexts": 90,
+    "ru": 3891059,
+    "instances": 4729,
+    "unsat_contexts": 90,
+    "not_proved": []
+  },
+  "auto": {
+    "contexts": 90,
+    "ru": 3900951,
+    "instances": 4771,
+    "unsat_contexts": 90,
+    "not_proved": []
+  }
+}

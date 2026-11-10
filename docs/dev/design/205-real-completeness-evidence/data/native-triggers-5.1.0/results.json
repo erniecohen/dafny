@@ -1,0 +1,1407 @@
+[
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.lub_split0",
+    "variant": "scoped",
+    "ru": 7319,
+    "instances": 6,
+    "outcomes": [
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 0,
+      "least": 0
+    },
+    "profiles": {
+      "sourcekerneldfy.11": 28,
+      "sourcekerneldfy.17": 20,
+      "sourcekerneldfy.3": 25
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.lub_split0",
+    "variant": "broad-upper",
+    "ru": 7319,
+    "instances": 6,
+    "outcomes": [
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 5,
+      "least": 0
+    },
+    "profiles": {
+      "sourcekerneldfy.11": 28,
+      "sourcekerneldfy.17": 20,
+      "sourcekerneldfy.3": 25
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.lub_split0",
+    "variant": "broad-least",
+    "ru": 71003,
+    "instances": 612,
+    "outcomes": [
+      "unknown"
+    ],
+    "mutated": {
+      "upper": 0,
+      "least": 4
+    },
+    "profiles": {
+      "DafnyPreludebpl.336": 11,
+      "DafnyPreludebpl.277": 11,
+      "sourcekerneldfy.4": 48,
+      "sourcekerneldfy.11": 28,
+      "sourcekerneldfy.17": 20,
+      "sourcekerneldfy.3": 25,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "DafnyPreludebpl.261": 14,
+      "DafnyPreludebpl.249": 18,
+      "DafnyPreludebpl.246": 18,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.205": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 43
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.lub_split0",
+    "variant": "broad-both",
+    "ru": 70376,
+    "instances": 612,
+    "outcomes": [
+      "unknown"
+    ],
+    "mutated": {
+      "upper": 5,
+      "least": 4
+    },
+    "profiles": {
+      "DafnyPreludebpl.336": 11,
+      "DafnyPreludebpl.277": 11,
+      "sourcekerneldfy.4": 48,
+      "sourcekerneldfy.11": 28,
+      "sourcekerneldfy.17": 20,
+      "sourcekerneldfy.3": 25,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "DafnyPreludebpl.261": 14,
+      "DafnyPreludebpl.249": 18,
+      "DafnyPreludebpl.246": 18,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.205": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 43
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.lub_split0",
+    "variant": "auto",
+    "ru": 7179,
+    "instances": 5,
+    "outcomes": [
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 5,
+      "least": 4
+    },
+    "profiles": {
+      "sourcekerneldfy.11": 14,
+      "sourcekerneldfy.3": 25
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.upperUse_split0",
+    "variant": "scoped",
+    "ru": 7651,
+    "instances": 18,
+    "outcomes": [
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 0,
+      "least": 0
+    },
+    "profiles": {
+      "sourcekerneldfy.4": 24,
+      "sourcekerneldfy.17": 40,
+      "sourcekerneldfy.3": 25,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.275": 15,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 2
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.upperUse_split0",
+    "variant": "broad-upper",
+    "ru": 7651,
+    "instances": 18,
+    "outcomes": [
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 5,
+      "least": 0
+    },
+    "profiles": {
+      "sourcekerneldfy.4": 24,
+      "sourcekerneldfy.17": 40,
+      "sourcekerneldfy.3": 25,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.275": 15,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 2
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.upperUse_split0",
+    "variant": "broad-least",
+    "ru": 70101,
+    "instances": 623,
+    "outcomes": [
+      "unknown"
+    ],
+    "mutated": {
+      "upper": 0,
+      "least": 2
+    },
+    "profiles": {
+      "DafnyPreludebpl.336": 11,
+      "DafnyPreludebpl.277": 11,
+      "sourcekerneldfy.4": 48,
+      "sourcekerneldfy.17": 40,
+      "sourcekerneldfy.3": 25,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "DafnyPreludebpl.261": 14,
+      "DafnyPreludebpl.249": 18,
+      "DafnyPreludebpl.246": 18,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.205": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 44
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.upperUse_split0",
+    "variant": "broad-both",
+    "ru": 69459,
+    "instances": 623,
+    "outcomes": [
+      "unknown"
+    ],
+    "mutated": {
+      "upper": 5,
+      "least": 2
+    },
+    "profiles": {
+      "DafnyPreludebpl.336": 11,
+      "DafnyPreludebpl.277": 11,
+      "sourcekerneldfy.4": 48,
+      "sourcekerneldfy.17": 40,
+      "sourcekerneldfy.3": 25,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "DafnyPreludebpl.261": 14,
+      "DafnyPreludebpl.249": 18,
+      "DafnyPreludebpl.246": 18,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.205": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 44
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.upperUse_split0",
+    "variant": "auto",
+    "ru": 7559,
+    "instances": 18,
+    "outcomes": [
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 5,
+      "least": 2
+    },
+    "profiles": {
+      "sourcekerneldfy.4": 24,
+      "sourcekerneldfy.17": 40,
+      "sourcekerneldfy.3": 25,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.275": 15,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 2
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.leastUse_split0",
+    "variant": "scoped",
+    "ru": 7005,
+    "instances": 5,
+    "outcomes": [
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 0,
+      "least": 0
+    },
+    "profiles": {
+      "sourcekerneldfy.17": 40,
+      "sourcekerneldfy.3": 25
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.leastUse_split0",
+    "variant": "broad-upper",
+    "ru": 7005,
+    "instances": 5,
+    "outcomes": [
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 6,
+      "least": 0
+    },
+    "profiles": {
+      "sourcekerneldfy.17": 40,
+      "sourcekerneldfy.3": 25
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.leastUse_split0",
+    "variant": "broad-least",
+    "ru": 43923,
+    "instances": 361,
+    "outcomes": [
+      "unknown"
+    ],
+    "mutated": {
+      "upper": 0,
+      "least": 2
+    },
+    "profiles": {
+      "DafnyPreludebpl.336": 11,
+      "DafnyPreludebpl.277": 11,
+      "sourcekerneldfy.4": 72,
+      "sourcekerneldfy.17": 40,
+      "sourcekerneldfy.3": 25,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "DafnyPreludebpl.261": 14,
+      "DafnyPreludebpl.249": 18,
+      "DafnyPreludebpl.246": 18,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.205": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 22
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.leastUse_split0",
+    "variant": "broad-both",
+    "ru": 43516,
+    "instances": 361,
+    "outcomes": [
+      "unknown"
+    ],
+    "mutated": {
+      "upper": 6,
+      "least": 2
+    },
+    "profiles": {
+      "DafnyPreludebpl.336": 11,
+      "DafnyPreludebpl.277": 11,
+      "sourcekerneldfy.4": 72,
+      "sourcekerneldfy.17": 40,
+      "sourcekerneldfy.3": 25,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "DafnyPreludebpl.261": 14,
+      "DafnyPreludebpl.249": 18,
+      "DafnyPreludebpl.246": 18,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.205": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 22
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.leastUse_split0",
+    "variant": "auto",
+    "ru": 6898,
+    "instances": 5,
+    "outcomes": [
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 6,
+      "least": 2
+    },
+    "profiles": {
+      "sourcekerneldfy.17": 20,
+      "sourcekerneldfy.3": 25
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.existsUse_split0",
+    "variant": "scoped",
+    "ru": 7635,
+    "instances": 21,
+    "outcomes": [
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 0,
+      "least": 0
+    },
+    "profiles": {
+      "sourcekerneldfy.39": 93,
+      "sourcekerneldfy.4": 24,
+      "sourcekerneldfy.17": 40,
+      "sourcekerneldfy.3": 25,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.275": 15,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.existsUse_split0",
+    "variant": "broad-upper",
+    "ru": 7635,
+    "instances": 21,
+    "outcomes": [
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 5,
+      "least": 0
+    },
+    "profiles": {
+      "sourcekerneldfy.39": 93,
+      "sourcekerneldfy.4": 24,
+      "sourcekerneldfy.17": 40,
+      "sourcekerneldfy.3": 25,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.275": 15,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.existsUse_split0",
+    "variant": "broad-least",
+    "ru": 2004850,
+    "instances": 2227,
+    "outcomes": [
+      "unknown"
+    ],
+    "mutated": {
+      "upper": 0,
+      "least": 2
+    },
+    "profiles": {
+      "sourcekerneldfy.4": 1056,
+      "DafnyPreludebpl.336": 11,
+      "DafnyPreludebpl.277": 11,
+      "sourcekerneldfy.39": 93,
+      "sourcekerneldfy.17": 40,
+      "sourcekerneldfy.3": 25,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "DafnyPreludebpl.261": 14,
+      "DafnyPreludebpl.249": 18,
+      "DafnyPreludebpl.246": 18,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.205": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 20
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.existsUse_split0",
+    "variant": "broad-both",
+    "ru": 2004850,
+    "instances": 2803,
+    "outcomes": [
+      "unknown"
+    ],
+    "mutated": {
+      "upper": 5,
+      "least": 2
+    },
+    "profiles": {
+      "sourcekerneldfy.4": 1056,
+      "DafnyPreludebpl.336": 11,
+      "DafnyPreludebpl.277": 11,
+      "sourcekerneldfy.39": 93,
+      "sourcekerneldfy.17": 40,
+      "sourcekerneldfy.3": 25,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "DafnyPreludebpl.261": 14,
+      "DafnyPreludebpl.249": 18,
+      "DafnyPreludebpl.246": 18,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.205": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 20
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.existsUse_split0",
+    "variant": "auto",
+    "ru": 7580,
+    "instances": 22,
+    "outcomes": [
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 5,
+      "least": 2
+    },
+    "profiles": {
+      "sourcekerneldfy.39": 93,
+      "sourcekerneldfy.4": 24,
+      "sourcekerneldfy.17": 40,
+      "sourcekerneldfy.3": 25,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.275": 15,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.singletonFalse_split0",
+    "variant": "scoped",
+    "ru": 16009,
+    "instances": 137,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 0,
+      "least": 0
+    },
+    "profiles": {
+      "sourcekerneldfy.4": 180,
+      "DafnyPreludebpl.336": 33,
+      "sourcekerneldfy.11": 28,
+      "sourcekerneldfy.3": 75,
+      "DafnyPreludebpl.849": 15,
+      "DafnyPreludebpl.847": 15,
+      "DafnyPreludebpl.845": 15,
+      "DafnyPreludebpl.837": 15,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "DafnyPreludebpl.249": 18,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 12,
+      "typeInv:U_2_bool": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.singletonFalse_split0",
+    "variant": "broad-upper",
+    "ru": 17367,
+    "instances": 239,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 6,
+      "least": 0
+    },
+    "profiles": {
+      "sourcekerneldfy.4": 180,
+      "DafnyPreludebpl.336": 33,
+      "sourcekerneldfy.11": 28,
+      "sourcekerneldfy.3": 75,
+      "DafnyPreludebpl.849": 15,
+      "DafnyPreludebpl.847": 15,
+      "DafnyPreludebpl.845": 15,
+      "DafnyPreludebpl.837": 15,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "DafnyPreludebpl.249": 18,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 12,
+      "typeInv:U_2_bool": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.singletonFalse_split0",
+    "variant": "broad-least",
+    "ru": 16188,
+    "instances": 150,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 0,
+      "least": 2
+    },
+    "profiles": {
+      "sourcekerneldfy.4": 180,
+      "DafnyPreludebpl.336": 33,
+      "sourcekerneldfy.11": 28,
+      "sourcekerneldfy.3": 75,
+      "DafnyPreludebpl.849": 15,
+      "DafnyPreludebpl.847": 15,
+      "DafnyPreludebpl.845": 15,
+      "DafnyPreludebpl.837": 15,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "DafnyPreludebpl.249": 18,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 12,
+      "typeInv:U_2_bool": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.singletonFalse_split0",
+    "variant": "broad-both",
+    "ru": 17409,
+    "instances": 243,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 6,
+      "least": 2
+    },
+    "profiles": {
+      "sourcekerneldfy.4": 180,
+      "DafnyPreludebpl.336": 33,
+      "sourcekerneldfy.11": 28,
+      "sourcekerneldfy.3": 75,
+      "DafnyPreludebpl.849": 15,
+      "DafnyPreludebpl.847": 15,
+      "DafnyPreludebpl.845": 15,
+      "DafnyPreludebpl.837": 15,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "DafnyPreludebpl.249": 18,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 12,
+      "typeInv:U_2_bool": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.singletonFalse_split0",
+    "variant": "auto",
+    "ru": 17273,
+    "instances": 239,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 6,
+      "least": 2
+    },
+    "profiles": {
+      "sourcekerneldfy.4": 180,
+      "DafnyPreludebpl.336": 33,
+      "sourcekerneldfy.11": 28,
+      "sourcekerneldfy.3": 75,
+      "DafnyPreludebpl.849": 15,
+      "DafnyPreludebpl.847": 15,
+      "DafnyPreludebpl.845": 15,
+      "DafnyPreludebpl.837": 15,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "DafnyPreludebpl.249": 18,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 12,
+      "typeInv:U_2_bool": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.emptyFalse_split0",
+    "variant": "scoped",
+    "ru": 9910,
+    "instances": 25,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 0,
+      "least": 0
+    },
+    "profiles": {
+      "sourcekerneldfy.4": 36,
+      "DafnyPreludebpl.336": 11,
+      "sourcekerneldfy.3": 75,
+      "DafnyPreludebpl.837": 15,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 2,
+      "typeInv:U_2_bool": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.emptyFalse_split0",
+    "variant": "broad-upper",
+    "ru": 9989,
+    "instances": 31,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 5,
+      "least": 0
+    },
+    "profiles": {
+      "sourcekerneldfy.4": 36,
+      "DafnyPreludebpl.336": 11,
+      "sourcekerneldfy.3": 75,
+      "DafnyPreludebpl.837": 15,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 2,
+      "typeInv:U_2_bool": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.emptyFalse_split0",
+    "variant": "broad-least",
+    "ru": 9928,
+    "instances": 25,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 0,
+      "least": 2
+    },
+    "profiles": {
+      "sourcekerneldfy.4": 36,
+      "DafnyPreludebpl.336": 11,
+      "sourcekerneldfy.3": 75,
+      "DafnyPreludebpl.837": 15,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 2,
+      "typeInv:U_2_bool": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.emptyFalse_split0",
+    "variant": "broad-both",
+    "ru": 10007,
+    "instances": 31,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 5,
+      "least": 2
+    },
+    "profiles": {
+      "sourcekerneldfy.4": 36,
+      "DafnyPreludebpl.336": 11,
+      "sourcekerneldfy.3": 75,
+      "DafnyPreludebpl.837": 15,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 2,
+      "typeInv:U_2_bool": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.emptyFalse_split0",
+    "variant": "auto",
+    "ru": 9901,
+    "instances": 31,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 5,
+      "least": 2
+    },
+    "profiles": {
+      "sourcekerneldfy.4": 36,
+      "DafnyPreludebpl.336": 11,
+      "sourcekerneldfy.3": 75,
+      "DafnyPreludebpl.837": 15,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 2,
+      "typeInv:U_2_bool": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.universalFalse_split0",
+    "variant": "scoped",
+    "ru": 11280,
+    "instances": 62,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 0,
+      "least": 0
+    },
+    "profiles": {
+      "sourcekerneldfy.4": 36,
+      "DafnyPreludebpl.336": 11,
+      "DafnyPreludebpl.33": 1,
+      "sourcekerneldfy.3": 50,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "DafnyPreludebpl.261": 14,
+      "DafnyPreludebpl.249": 18,
+      "DafnyPreludebpl.246": 18,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.205": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 5,
+      "typeInv:U_2_bool": 2
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.universalFalse_split0",
+    "variant": "broad-upper",
+    "ru": 11362,
+    "instances": 68,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 4,
+      "least": 0
+    },
+    "profiles": {
+      "sourcekerneldfy.4": 36,
+      "DafnyPreludebpl.336": 11,
+      "DafnyPreludebpl.33": 1,
+      "sourcekerneldfy.3": 50,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "DafnyPreludebpl.261": 14,
+      "DafnyPreludebpl.249": 18,
+      "DafnyPreludebpl.246": 18,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.205": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 5,
+      "typeInv:U_2_bool": 2
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.universalFalse_split0",
+    "variant": "broad-least",
+    "ru": 11296,
+    "instances": 62,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 0,
+      "least": 2
+    },
+    "profiles": {
+      "sourcekerneldfy.4": 36,
+      "DafnyPreludebpl.336": 11,
+      "DafnyPreludebpl.33": 1,
+      "sourcekerneldfy.3": 50,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "DafnyPreludebpl.261": 14,
+      "DafnyPreludebpl.249": 18,
+      "DafnyPreludebpl.246": 18,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.205": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 5,
+      "typeInv:U_2_bool": 2
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.universalFalse_split0",
+    "variant": "broad-both",
+    "ru": 11378,
+    "instances": 68,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 4,
+      "least": 2
+    },
+    "profiles": {
+      "sourcekerneldfy.4": 36,
+      "DafnyPreludebpl.336": 11,
+      "DafnyPreludebpl.33": 1,
+      "sourcekerneldfy.3": 50,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "DafnyPreludebpl.261": 14,
+      "DafnyPreludebpl.249": 18,
+      "DafnyPreludebpl.246": 18,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.205": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 5,
+      "typeInv:U_2_bool": 2
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.universalFalse_split0",
+    "variant": "auto",
+    "ru": 11286,
+    "instances": 68,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 4,
+      "least": 2
+    },
+    "profiles": {
+      "sourcekerneldfy.4": 36,
+      "DafnyPreludebpl.336": 11,
+      "DafnyPreludebpl.33": 1,
+      "sourcekerneldfy.3": 50,
+      "DafnyPreludebpl.334": 15,
+      "DafnyPreludebpl.323": 14,
+      "DafnyPreludebpl.275": 15,
+      "DafnyPreludebpl.261": 14,
+      "DafnyPreludebpl.249": 18,
+      "DafnyPreludebpl.246": 18,
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.205": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "DafnyPreludebpl.49": 15,
+      "DafnyPreludebpl.48": 15,
+      "typeInv:U_2_real": 5,
+      "typeInv:U_2_bool": 2
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.emptyValue_split0",
+    "variant": "scoped",
+    "ru": 6031,
+    "instances": 8,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 0,
+      "least": 0
+    },
+    "profiles": {
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.837": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "typeInv:U_2_real": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.emptyValue_split0",
+    "variant": "broad-upper",
+    "ru": 6013,
+    "instances": 8,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 4,
+      "least": 0
+    },
+    "profiles": {
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.837": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "typeInv:U_2_real": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.emptyValue_split0",
+    "variant": "broad-least",
+    "ru": 6049,
+    "instances": 8,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 0,
+      "least": 2
+    },
+    "profiles": {
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.837": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "typeInv:U_2_real": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.emptyValue_split0",
+    "variant": "broad-both",
+    "ru": 6031,
+    "instances": 8,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 4,
+      "least": 2
+    },
+    "profiles": {
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.837": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "typeInv:U_2_real": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.emptyValue_split0",
+    "variant": "auto",
+    "ru": 5933,
+    "instances": 8,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 4,
+      "least": 2
+    },
+    "profiles": {
+      "typeInv:MapType0TypeInv1": 1,
+      "typeInv:MapType0TypeInv0": 1,
+      "ctor:MapType0Type": 1,
+      "DafnyPreludebpl.837": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "typeInv:U_2_real": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.universalValue_split0",
+    "variant": "scoped",
+    "ru": 8227,
+    "instances": 32,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 0,
+      "least": 0
+    },
+    "profiles": {
+      "DafnyPreludebpl.33": 1,
+      "sourcekerneldfy.3": 50,
+      "DafnyPreludebpl.261": 14,
+      "DafnyPreludebpl.246": 18,
+      "DafnyPreludebpl.205": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "typeInv:U_2_real": 4,
+      "typeInv:U_2_bool": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.universalValue_split0",
+    "variant": "broad-upper",
+    "ru": 8209,
+    "instances": 32,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 4,
+      "least": 0
+    },
+    "profiles": {
+      "DafnyPreludebpl.33": 1,
+      "sourcekerneldfy.3": 50,
+      "DafnyPreludebpl.261": 14,
+      "DafnyPreludebpl.246": 18,
+      "DafnyPreludebpl.205": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "typeInv:U_2_real": 4,
+      "typeInv:U_2_bool": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.universalValue_split0",
+    "variant": "broad-least",
+    "ru": 8243,
+    "instances": 32,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 0,
+      "least": 2
+    },
+    "profiles": {
+      "DafnyPreludebpl.33": 1,
+      "sourcekerneldfy.3": 50,
+      "DafnyPreludebpl.261": 14,
+      "DafnyPreludebpl.246": 18,
+      "DafnyPreludebpl.205": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "typeInv:U_2_real": 4,
+      "typeInv:U_2_bool": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.universalValue_split0",
+    "variant": "broad-both",
+    "ru": 8225,
+    "instances": 32,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 4,
+      "least": 2
+    },
+    "profiles": {
+      "DafnyPreludebpl.33": 1,
+      "sourcekerneldfy.3": 50,
+      "DafnyPreludebpl.261": 14,
+      "DafnyPreludebpl.246": 18,
+      "DafnyPreludebpl.205": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "typeInv:U_2_real": 4,
+      "typeInv:U_2_bool": 1
+    },
+    "exit": 0
+  },
+  {
+    "name": "Impl$$RealCompletenessProbe.__default.universalValue_split0",
+    "variant": "auto",
+    "ru": 8133,
+    "instances": 32,
+    "outcomes": [
+      "unknown",
+      "unsat"
+    ],
+    "mutated": {
+      "upper": 4,
+      "least": 2
+    },
+    "profiles": {
+      "DafnyPreludebpl.33": 1,
+      "sourcekerneldfy.3": 50,
+      "DafnyPreludebpl.261": 14,
+      "DafnyPreludebpl.246": 18,
+      "DafnyPreludebpl.205": 15,
+      "DafnyPreludebpl.190": 18,
+      "DafnyPreludebpl.116": 15,
+      "DafnyPreludebpl.115": 30,
+      "DafnyPreludebpl.106": 29,
+      "typeInv:U_2_real": 4,
+      "typeInv:U_2_bool": 1
+    },
+    "exit": 0
+  }
+]

@@ -1,0 +1,5926 @@
+[
+  {
+    "file": "dafny0/RealTypes.dfy",
+    "variant": "dafny",
+    "exit": 4,
+    "ru": 22039,
+    "proofs": 5,
+    "outcomes": [
+      "Failed",
+      "Failed",
+      "Failed",
+      "Passed",
+      "Passed"
+    ],
+    "profiles": {}
+  },
+  {
+    "file": "dafny0/RealTypes.dfy",
+    "variant": "none",
+    "ru": 21643,
+    "instances": 64,
+    "proofs": 5,
+    "outcomes": [
+      [
+        "unknown",
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!74": 4,
+      "k!71": 16,
+      "k!68": 19,
+      "k!65": 15,
+      "k!58": 2,
+      "k!67": 4,
+      "k!64": 4
+    },
+    "stats": [
+      {
+        "ru": 6526,
+        "instances": 25,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4268,
+        "instances": 8,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3511,
+        "instances": 7,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3298,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4040,
+        "instances": 24,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "0fb24b60940523dcd301dd4a5a3c07cc3ff70c44ac264011e12519d545d0f8c1"
+  },
+  {
+    "file": "dafny0/RealTypes.dfy",
+    "variant": "broad",
+    "ru": 25513,
+    "instances": 64,
+    "proofs": 5,
+    "outcomes": [
+      [
+        "unknown",
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!88": 4,
+      "k!85": 16,
+      "k!82": 19,
+      "k!79": 15,
+      "k!72": 2,
+      "k!81": 4,
+      "k!78": 4
+    },
+    "stats": [
+      {
+        "ru": 7300,
+        "instances": 25,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5042,
+        "instances": 8,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4285,
+        "instances": 7,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4072,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4814,
+        "instances": 24,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "bf3f98a3797c96af078fa0d517d61f0d2537e6d5275b9fa0c7dc94fbe4f268d7"
+  },
+  {
+    "file": "dafny0/RealTypes.dfy",
+    "variant": "sup-flat",
+    "ru": 25513,
+    "instances": 64,
+    "proofs": 5,
+    "outcomes": [
+      [
+        "unknown",
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!88": 4,
+      "k!85": 16,
+      "k!82": 19,
+      "k!79": 15,
+      "k!72": 2,
+      "k!81": 4,
+      "k!78": 4
+    },
+    "stats": [
+      {
+        "ru": 7300,
+        "instances": 25,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5042,
+        "instances": 8,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4285,
+        "instances": 7,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4072,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4814,
+        "instances": 24,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "d8b280158c94d4b0176130dd70ab7b65f5d3381bb9deeb6d76387be5afa60895"
+  },
+  {
+    "file": "dafny0/RealTypes.dfy",
+    "variant": "nested-sup",
+    "ru": 25803,
+    "instances": 64,
+    "proofs": 5,
+    "outcomes": [
+      [
+        "unknown",
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!88": 4,
+      "k!85": 16,
+      "k!82": 19,
+      "k!79": 15,
+      "k!72": 2,
+      "k!81": 4,
+      "k!78": 4
+    },
+    "stats": [
+      {
+        "ru": 7358,
+        "instances": 25,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5100,
+        "instances": 8,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4343,
+        "instances": 7,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4130,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4872,
+        "instances": 24,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "d845325861e5606e60deaf5e3e94acd73495cbf469c388703bb5e8133e367051"
+  },
+  {
+    "file": "dafny0/RealTypes.dfy",
+    "variant": "request",
+    "ru": 25603,
+    "instances": 64,
+    "proofs": 5,
+    "outcomes": [
+      [
+        "unknown",
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!88": 4,
+      "k!85": 16,
+      "k!82": 19,
+      "k!79": 15,
+      "k!72": 2,
+      "k!81": 4,
+      "k!78": 4
+    },
+    "stats": [
+      {
+        "ru": 7318,
+        "instances": 25,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5060,
+        "instances": 8,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4303,
+        "instances": 7,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4090,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4832,
+        "instances": 24,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "9ccac8d37133292cba67827ce8be82fa1c7a59f4d865150b652d80dda687667f"
+  },
+  {
+    "file": "dafny0/RealTypes.dfy",
+    "variant": "local",
+    "ru": 21643,
+    "instances": 64,
+    "proofs": 5,
+    "outcomes": [
+      [
+        "unknown",
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!74": 4,
+      "k!71": 16,
+      "k!68": 19,
+      "k!65": 15,
+      "k!58": 2,
+      "k!67": 4,
+      "k!64": 4
+    },
+    "stats": [
+      {
+        "ru": 6526,
+        "instances": 25,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4268,
+        "instances": 8,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3511,
+        "instances": 7,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3298,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4040,
+        "instances": 24,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "0fb24b60940523dcd301dd4a5a3c07cc3ff70c44ac264011e12519d545d0f8c1"
+  },
+  {
+    "file": "dafny0/RealCompare.dfy",
+    "variant": "dafny",
+    "exit": 4,
+    "ru": 89821,
+    "proofs": 14,
+    "outcomes": [
+      "Passed",
+      "Failed",
+      "Failed",
+      "Passed",
+      "Passed",
+      "Failed",
+      "Failed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed"
+    ],
+    "profiles": {}
+  },
+  {
+    "file": "dafny0/RealCompare.dfy",
+    "variant": "none",
+    "ru": 89422,
+    "instances": 45,
+    "proofs": 14,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!65": 11,
+      "k!82": 0,
+      "k!68": 0,
+      "k!90": 0,
+      "k!76": 0,
+      "k!73": 12,
+      "k!70": 11,
+      "k!67": 11,
+      "k!93": 0,
+      "k!79": 0
+    },
+    "stats": [
+      {
+        "ru": 3181,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4309,
+        "instances": 3,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4309,
+        "instances": 3,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3322,
+        "instances": 1,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3260,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2949,
+        "instances": 0,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3965,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3965,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5189,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5189,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 7197,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 7242,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 6603,
+        "instances": 12,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 28742,
+        "instances": 22,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "88075aff40140bb516644a38d75e25686e5bb3453a8aee22a3d7d7cf1fb79959"
+  },
+  {
+    "file": "dafny0/RealCompare.dfy",
+    "variant": "broad",
+    "ru": 100747,
+    "instances": 45,
+    "proofs": 14,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!79": 11,
+      "k!96": 0,
+      "k!82": 0,
+      "k!104": 0,
+      "k!90": 0,
+      "k!87": 12,
+      "k!84": 11,
+      "k!81": 11,
+      "k!107": 0,
+      "k!93": 0
+    },
+    "stats": [
+      {
+        "ru": 3955,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5083,
+        "instances": 3,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5083,
+        "instances": 3,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4096,
+        "instances": 1,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4034,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3723,
+        "instances": 0,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4739,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4739,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 6198,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 6198,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 8092,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 7914,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 7377,
+        "instances": 12,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 29516,
+        "instances": 22,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "39ac271067a9666808b749fc80ad07cfb4bdbe8c3d3f0eb578d78e72923fd785"
+  },
+  {
+    "file": "dafny0/RealCompare.dfy",
+    "variant": "sup-flat",
+    "ru": 100747,
+    "instances": 45,
+    "proofs": 14,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!79": 11,
+      "k!96": 0,
+      "k!82": 0,
+      "k!104": 0,
+      "k!90": 0,
+      "k!87": 12,
+      "k!84": 11,
+      "k!81": 11,
+      "k!107": 0,
+      "k!93": 0
+    },
+    "stats": [
+      {
+        "ru": 3955,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5083,
+        "instances": 3,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5083,
+        "instances": 3,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4096,
+        "instances": 1,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4034,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3723,
+        "instances": 0,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4739,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4739,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 6198,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 6198,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 8092,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 7914,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 7377,
+        "instances": 12,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 29516,
+        "instances": 22,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "83fac3938cc4970348397b74f217c42b22bbfb1adbde26e57f06c9d06f68044d"
+  },
+  {
+    "file": "dafny0/RealCompare.dfy",
+    "variant": "nested-sup",
+    "ru": 101559,
+    "instances": 45,
+    "proofs": 14,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!79": 11,
+      "k!96": 0,
+      "k!82": 0,
+      "k!104": 0,
+      "k!90": 0,
+      "k!87": 12,
+      "k!84": 11,
+      "k!81": 11,
+      "k!107": 0,
+      "k!93": 0
+    },
+    "stats": [
+      {
+        "ru": 4013,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5141,
+        "instances": 3,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5141,
+        "instances": 3,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4154,
+        "instances": 1,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4092,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3781,
+        "instances": 0,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4797,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4797,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 6256,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 6256,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 8150,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 7972,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 7435,
+        "instances": 12,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 29574,
+        "instances": 22,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "e293dc8db195e0a07d50ee7acc8809182a13acaf77d801f05b2b488593356e12"
+  },
+  {
+    "file": "dafny0/RealCompare.dfy",
+    "variant": "request",
+    "ru": 100999,
+    "instances": 45,
+    "proofs": 14,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!79": 11,
+      "k!96": 0,
+      "k!82": 0,
+      "k!104": 0,
+      "k!90": 0,
+      "k!87": 12,
+      "k!84": 11,
+      "k!81": 11,
+      "k!107": 0,
+      "k!93": 0
+    },
+    "stats": [
+      {
+        "ru": 3973,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5101,
+        "instances": 3,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5101,
+        "instances": 3,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4114,
+        "instances": 1,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4052,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3741,
+        "instances": 0,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4757,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4757,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 6216,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 6216,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 8110,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 7932,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 7395,
+        "instances": 12,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 29534,
+        "instances": 22,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "de3eb137f74cc89df5d121df936057a06b140cc3b71c6512bfbacc9903ab5a2e"
+  },
+  {
+    "file": "dafny0/RealCompare.dfy",
+    "variant": "local",
+    "ru": 89422,
+    "instances": 45,
+    "proofs": 14,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!65": 11,
+      "k!82": 0,
+      "k!68": 0,
+      "k!90": 0,
+      "k!76": 0,
+      "k!73": 12,
+      "k!70": 11,
+      "k!67": 11,
+      "k!93": 0,
+      "k!79": 0
+    },
+    "stats": [
+      {
+        "ru": 3181,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4309,
+        "instances": 3,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4309,
+        "instances": 3,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3322,
+        "instances": 1,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3260,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2949,
+        "instances": 0,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3965,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3965,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5189,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5189,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 7197,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 7242,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 6603,
+        "instances": 12,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 28742,
+        "instances": 22,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "88075aff40140bb516644a38d75e25686e5bb3453a8aee22a3d7d7cf1fb79959"
+  },
+  {
+    "file": "dafny0/TypeConversions.dfy",
+    "variant": "dafny",
+    "exit": 4,
+    "ru": 317884,
+    "proofs": 10,
+    "outcomes": [
+      "Failed",
+      "Failed",
+      "Failed",
+      "Passed",
+      "Failed",
+      "Failed",
+      "Failed",
+      "Failed",
+      "Passed",
+      "Failed"
+    ],
+    "profiles": {}
+  },
+  {
+    "file": "dafny0/TypeConversions.dfy",
+    "variant": "none",
+    "ru": 314553,
+    "instances": 92,
+    "proofs": 10,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!67": 6,
+      "k!64": 7,
+      "k!57": 1,
+      "k!111": 4,
+      "k!106": 1,
+      "k!91": 5,
+      "k!81": 4,
+      "k!116": 4,
+      "k!113": 1,
+      "k!95": 4,
+      "k!80": 3,
+      "k!96": 4,
+      "k!93": 2,
+      "k!90": 8,
+      "k!87": 6,
+      "k!84": 7,
+      "k!101": 2,
+      "k!98": 5,
+      "k!83": 6,
+      "k!97": 2,
+      "k!85": 1,
+      "k!82": 7,
+      "k!88": 0,
+      "k!76": 2
+    },
+    "stats": [
+      {
+        "ru": 2960,
+        "instances": 8,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2786,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 13778,
+        "instances": 14,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 25064,
+        "instances": 9,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 18429,
+        "instances": 2,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 8226,
+        "instances": 1,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 19353,
+        "instances": 27,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 81437,
+        "instances": 13,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 139298,
+        "instances": 10,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3222,
+        "instances": 4,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "f4b21ca5b2f9f466fbf8a318dfc059962df3e4eccfd127cd8d7f2a67255f10d1"
+  },
+  {
+    "file": "dafny0/TypeConversions.dfy",
+    "variant": "broad",
+    "ru": 370891,
+    "instances": 83,
+    "proofs": 10,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!81": 6,
+      "k!78": 7,
+      "k!71": 1,
+      "k!125": 4,
+      "k!120": 1,
+      "k!105": 5,
+      "k!95": 4,
+      "k!130": 4,
+      "k!127": 1,
+      "k!109": 4,
+      "k!94": 3,
+      "k!110": 4,
+      "k!107": 2,
+      "k!104": 9,
+      "k!101": 8,
+      "k!98": 8,
+      "k!111": 2,
+      "k!99": 1,
+      "k!96": 7,
+      "k!102": 0,
+      "k!90": 2
+    },
+    "stats": [
+      {
+        "ru": 3734,
+        "instances": 8,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3560,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 14554,
+        "instances": 14,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 25822,
+        "instances": 9,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 19201,
+        "instances": 2,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 9000,
+        "instances": 1,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 22062,
+        "instances": 31,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 14891,
+        "instances": 0,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 254071,
+        "instances": 10,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3996,
+        "instances": 4,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "cc1c4289d8768d16227947907b34fcfc19a3bbab80a3dac58dad0e60e14a0bff"
+  },
+  {
+    "file": "dafny0/TypeConversions.dfy",
+    "variant": "sup-flat",
+    "ru": 370891,
+    "instances": 83,
+    "proofs": 10,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!81": 6,
+      "k!78": 7,
+      "k!71": 1,
+      "k!125": 4,
+      "k!120": 1,
+      "k!105": 5,
+      "k!95": 4,
+      "k!130": 4,
+      "k!127": 1,
+      "k!109": 4,
+      "k!94": 3,
+      "k!110": 4,
+      "k!107": 2,
+      "k!104": 9,
+      "k!101": 8,
+      "k!98": 8,
+      "k!111": 2,
+      "k!99": 1,
+      "k!96": 7,
+      "k!102": 0,
+      "k!90": 2
+    },
+    "stats": [
+      {
+        "ru": 3734,
+        "instances": 8,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3560,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 14554,
+        "instances": 14,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 25822,
+        "instances": 9,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 19201,
+        "instances": 2,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 9000,
+        "instances": 1,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 22062,
+        "instances": 31,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 14891,
+        "instances": 0,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 254071,
+        "instances": 10,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3996,
+        "instances": 4,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "8d45ec660517345b06567814b1401149b56acca9f0e7e859e622b76f47edb175"
+  },
+  {
+    "file": "dafny0/TypeConversions.dfy",
+    "variant": "nested-sup",
+    "ru": 371471,
+    "instances": 83,
+    "proofs": 10,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!81": 6,
+      "k!78": 7,
+      "k!71": 1,
+      "k!125": 4,
+      "k!120": 1,
+      "k!105": 5,
+      "k!95": 4,
+      "k!130": 4,
+      "k!127": 1,
+      "k!109": 4,
+      "k!94": 3,
+      "k!110": 4,
+      "k!107": 2,
+      "k!104": 9,
+      "k!101": 8,
+      "k!98": 8,
+      "k!111": 2,
+      "k!99": 1,
+      "k!96": 7,
+      "k!102": 0,
+      "k!90": 2
+    },
+    "stats": [
+      {
+        "ru": 3792,
+        "instances": 8,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3618,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 14612,
+        "instances": 14,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 25880,
+        "instances": 9,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 19259,
+        "instances": 2,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 9058,
+        "instances": 1,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 22120,
+        "instances": 31,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 14949,
+        "instances": 0,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 254129,
+        "instances": 10,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4054,
+        "instances": 4,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "037d4d3fa23f9472a2560ed66b579fb5c894f3cf977de2b528f87dc9b83772cd"
+  },
+  {
+    "file": "dafny0/TypeConversions.dfy",
+    "variant": "request",
+    "ru": 371071,
+    "instances": 83,
+    "proofs": 10,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!81": 6,
+      "k!78": 7,
+      "k!71": 1,
+      "k!125": 4,
+      "k!120": 1,
+      "k!105": 5,
+      "k!95": 4,
+      "k!130": 4,
+      "k!127": 1,
+      "k!109": 4,
+      "k!94": 3,
+      "k!110": 4,
+      "k!107": 2,
+      "k!104": 9,
+      "k!101": 8,
+      "k!98": 8,
+      "k!111": 2,
+      "k!99": 1,
+      "k!96": 7,
+      "k!102": 0,
+      "k!90": 2
+    },
+    "stats": [
+      {
+        "ru": 3752,
+        "instances": 8,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3578,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 14572,
+        "instances": 14,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 25840,
+        "instances": 9,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 19219,
+        "instances": 2,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 9018,
+        "instances": 1,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 22080,
+        "instances": 31,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 14909,
+        "instances": 0,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 254089,
+        "instances": 10,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4014,
+        "instances": 4,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "5964c67e44823d15098199813e23f132ad541b9e322d5cd5a86c7ec04b96c4ae"
+  },
+  {
+    "file": "dafny0/TypeConversions.dfy",
+    "variant": "local",
+    "ru": 314553,
+    "instances": 92,
+    "proofs": 10,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown",
+        "unknown"
+      ],
+      [
+        "unknown",
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!67": 6,
+      "k!64": 7,
+      "k!57": 1,
+      "k!111": 4,
+      "k!106": 1,
+      "k!91": 5,
+      "k!81": 4,
+      "k!116": 4,
+      "k!113": 1,
+      "k!95": 4,
+      "k!80": 3,
+      "k!96": 4,
+      "k!93": 2,
+      "k!90": 8,
+      "k!87": 6,
+      "k!84": 7,
+      "k!101": 2,
+      "k!98": 5,
+      "k!83": 6,
+      "k!97": 2,
+      "k!85": 1,
+      "k!82": 7,
+      "k!88": 0,
+      "k!76": 2
+    },
+    "stats": [
+      {
+        "ru": 2960,
+        "instances": 8,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2786,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 13778,
+        "instances": 14,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 25064,
+        "instances": 9,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 18429,
+        "instances": 2,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 8226,
+        "instances": 1,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 19353,
+        "instances": 27,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 81437,
+        "instances": 13,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 139298,
+        "instances": 10,
+        "outcomes": [
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown",
+          "unknown"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3222,
+        "instances": 4,
+        "outcomes": [
+          "unknown",
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "f4b21ca5b2f9f466fbf8a318dfc059962df3e4eccfd127cd8d7f2a67255f10d1"
+  },
+  {
+    "file": "dafny0/TypeMembers.dfy",
+    "variant": "dafny",
+    "exit": 2,
+    "ru": 161471,
+    "proofs": 30,
+    "outcomes": [
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed",
+      "Passed"
+    ],
+    "profiles": {}
+  },
+  {
+    "file": "dafny0/TypeMembers.dfy",
+    "variant": "none",
+    "ru": 161471,
+    "instances": 363,
+    "proofs": 30,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!173": 2,
+      "k!169": 1,
+      "k!166": 1,
+      "k!162": 1,
+      "k!159": 5,
+      "k!151": 1,
+      "k!147": 1,
+      "k!144": 1,
+      "k!133": 2,
+      "k!119": 1,
+      "k!116": 4,
+      "k!113": 6,
+      "k!110": 5,
+      "k!107": 2,
+      "k!103": 1,
+      "k!100": 6,
+      "k!97": 3,
+      "k!93": 0,
+      "k!86": 1,
+      "k!63": 5,
+      "k!56": 1,
+      "k!73": 2,
+      "k!82": 2,
+      "k!65": 11,
+      "k!347": 0,
+      "k!341": 1,
+      "k!334": 2,
+      "k!330": 2,
+      "k!322": 1,
+      "k!319": 2,
+      "k!316": 1,
+      "k!313": 0,
+      "k!305": 8,
+      "k!293": 1,
+      "k!240": 2,
+      "k!237": 2,
+      "k!230": 2,
+      "k!227": 2,
+      "k!212": 1,
+      "k!209": 5,
+      "k!206": 9,
+      "k!192": 18,
+      "k!189": 28,
+      "k!186": 137,
+      "k!180": 0,
+      "k!174": 0,
+      "k!141": 4,
+      "k!137": 2,
+      "k!134": 14,
+      "k!131": 2,
+      "k!127": 3,
+      "k!124": 1,
+      "k!114": 7,
+      "k!112": 1,
+      "k!104": 0,
+      "k!275": 2,
+      "k!272": 0,
+      "k!268": 0,
+      "k!264": 0,
+      "k!260": 1,
+      "k!255": 1,
+      "k!252": 1,
+      "k!249": 1,
+      "k!243": 0,
+      "k!235": 3,
+      "k!232": 1,
+      "k!229": 0,
+      "k!226": 1,
+      "k!223": 1,
+      "k!220": 2,
+      "k!203": 0,
+      "k!200": 1,
+      "k!197": 2,
+      "k!193": 0,
+      "k!190": 0,
+      "k!187": 0,
+      "k!184": 0,
+      "k!176": 1,
+      "k!170": 2,
+      "k!156": 1,
+      "k!153": 0,
+      "k!150": 2,
+      "k!138": 0,
+      "k!96": 1,
+      "k!92": 2,
+      "k!74": 4,
+      "k!64": 5,
+      "k!67": 1,
+      "k!66": 3,
+      "k!57": 1
+    },
+    "stats": [
+      {
+        "ru": 2410,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 9683,
+        "instances": 30,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2408,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3252,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3252,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3555,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2685,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3555,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2685,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 35223,
+        "instances": 260,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 8907,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 15370,
+        "instances": 34,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2409,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4611,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3951,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 10471,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2456,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4611,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3951,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3739,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2804,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2726,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4460,
+        "instances": 3,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3951,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2539,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2446,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2627,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2726,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4057,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3951,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "48c9895ff470c40b50ec3486b29a54ebd32d661f64bc6b1aa37c7db9fe456914"
+  },
+  {
+    "file": "dafny0/TypeMembers.dfy",
+    "variant": "broad",
+    "ru": 184941,
+    "instances": 366,
+    "proofs": 30,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!187": 2,
+      "k!183": 1,
+      "k!180": 1,
+      "k!176": 1,
+      "k!173": 5,
+      "k!165": 1,
+      "k!161": 1,
+      "k!158": 2,
+      "k!147": 2,
+      "k!133": 1,
+      "k!130": 4,
+      "k!127": 6,
+      "k!124": 5,
+      "k!121": 2,
+      "k!117": 1,
+      "k!114": 6,
+      "k!111": 3,
+      "k!107": 0,
+      "k!100": 1,
+      "k!77": 5,
+      "k!70": 1,
+      "k!87": 2,
+      "k!96": 2,
+      "k!79": 11,
+      "k!361": 0,
+      "k!355": 1,
+      "k!348": 2,
+      "k!344": 2,
+      "k!336": 1,
+      "k!333": 2,
+      "k!330": 1,
+      "k!327": 0,
+      "k!319": 8,
+      "k!307": 1,
+      "k!254": 2,
+      "k!251": 2,
+      "k!244": 2,
+      "k!241": 2,
+      "k!226": 1,
+      "k!223": 5,
+      "k!220": 9,
+      "k!206": 18,
+      "k!203": 28,
+      "k!200": 137,
+      "k!194": 0,
+      "k!188": 0,
+      "k!155": 4,
+      "k!151": 2,
+      "k!148": 14,
+      "k!145": 2,
+      "k!141": 3,
+      "k!138": 1,
+      "k!128": 7,
+      "k!126": 1,
+      "k!118": 0,
+      "k!289": 2,
+      "k!286": 0,
+      "k!282": 0,
+      "k!278": 0,
+      "k!274": 1,
+      "k!269": 1,
+      "k!266": 1,
+      "k!263": 1,
+      "k!257": 0,
+      "k!249": 3,
+      "k!246": 1,
+      "k!243": 0,
+      "k!240": 1,
+      "k!237": 1,
+      "k!234": 2,
+      "k!228": 0,
+      "k!217": 0,
+      "k!214": 1,
+      "k!211": 2,
+      "k!207": 0,
+      "k!204": 0,
+      "k!201": 0,
+      "k!198": 0,
+      "k!190": 1,
+      "k!184": 2,
+      "k!170": 1,
+      "k!167": 0,
+      "k!164": 4,
+      "k!152": 0,
+      "k!110": 1,
+      "k!106": 2,
+      "k!88": 4,
+      "k!78": 5,
+      "k!81": 1,
+      "k!80": 3,
+      "k!71": 1
+    },
+    "stats": [
+      {
+        "ru": 3184,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 10520,
+        "instances": 30,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3182,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4026,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4026,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4329,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3459,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4329,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3459,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 35997,
+        "instances": 260,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 9681,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 16260,
+        "instances": 37,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3183,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5385,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4725,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 11245,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3230,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5385,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4725,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4581,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3578,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3500,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5234,
+        "instances": 3,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4725,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3313,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3220,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3401,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3500,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4834,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4725,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "6682599012c57b3de612d5df1b5eecad31d5ff215ea945396d0c665e894fb6f7"
+  },
+  {
+    "file": "dafny0/TypeMembers.dfy",
+    "variant": "sup-flat",
+    "ru": 184941,
+    "instances": 366,
+    "proofs": 30,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!187": 2,
+      "k!183": 1,
+      "k!180": 1,
+      "k!176": 1,
+      "k!173": 5,
+      "k!165": 1,
+      "k!161": 1,
+      "k!158": 2,
+      "k!147": 2,
+      "k!133": 1,
+      "k!130": 4,
+      "k!127": 6,
+      "k!124": 5,
+      "k!121": 2,
+      "k!117": 1,
+      "k!114": 6,
+      "k!111": 3,
+      "k!107": 0,
+      "k!100": 1,
+      "k!77": 5,
+      "k!70": 1,
+      "k!87": 2,
+      "k!96": 2,
+      "k!79": 11,
+      "k!361": 0,
+      "k!355": 1,
+      "k!348": 2,
+      "k!344": 2,
+      "k!336": 1,
+      "k!333": 2,
+      "k!330": 1,
+      "k!327": 0,
+      "k!319": 8,
+      "k!307": 1,
+      "k!254": 2,
+      "k!251": 2,
+      "k!244": 2,
+      "k!241": 2,
+      "k!226": 1,
+      "k!223": 5,
+      "k!220": 9,
+      "k!206": 18,
+      "k!203": 28,
+      "k!200": 137,
+      "k!194": 0,
+      "k!188": 0,
+      "k!155": 4,
+      "k!151": 2,
+      "k!148": 14,
+      "k!145": 2,
+      "k!141": 3,
+      "k!138": 1,
+      "k!128": 7,
+      "k!126": 1,
+      "k!118": 0,
+      "k!289": 2,
+      "k!286": 0,
+      "k!282": 0,
+      "k!278": 0,
+      "k!274": 1,
+      "k!269": 1,
+      "k!266": 1,
+      "k!263": 1,
+      "k!257": 0,
+      "k!249": 3,
+      "k!246": 1,
+      "k!243": 0,
+      "k!240": 1,
+      "k!237": 1,
+      "k!234": 2,
+      "k!228": 0,
+      "k!217": 0,
+      "k!214": 1,
+      "k!211": 2,
+      "k!207": 0,
+      "k!204": 0,
+      "k!201": 0,
+      "k!198": 0,
+      "k!190": 1,
+      "k!184": 2,
+      "k!170": 1,
+      "k!167": 0,
+      "k!164": 4,
+      "k!152": 0,
+      "k!110": 1,
+      "k!106": 2,
+      "k!88": 4,
+      "k!78": 5,
+      "k!81": 1,
+      "k!80": 3,
+      "k!71": 1
+    },
+    "stats": [
+      {
+        "ru": 3184,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 10520,
+        "instances": 30,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3182,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4026,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4026,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4329,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3459,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4329,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3459,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 35997,
+        "instances": 260,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 9681,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 16260,
+        "instances": 37,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3183,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5385,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4725,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 11245,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3230,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5385,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4725,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4581,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3578,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3500,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5234,
+        "instances": 3,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4725,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3313,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3220,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3401,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3500,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4834,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4725,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "f19f83c2ba35bdd875b300c696bac057942798afdfaac082dee7c53e95743608"
+  },
+  {
+    "file": "dafny0/TypeMembers.dfy",
+    "variant": "nested-sup",
+    "ru": 186685,
+    "instances": 366,
+    "proofs": 30,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!187": 2,
+      "k!183": 1,
+      "k!180": 1,
+      "k!176": 1,
+      "k!173": 5,
+      "k!165": 1,
+      "k!161": 1,
+      "k!158": 2,
+      "k!147": 2,
+      "k!133": 1,
+      "k!130": 4,
+      "k!127": 6,
+      "k!124": 5,
+      "k!121": 2,
+      "k!117": 1,
+      "k!114": 6,
+      "k!111": 3,
+      "k!107": 0,
+      "k!100": 1,
+      "k!77": 5,
+      "k!70": 1,
+      "k!87": 2,
+      "k!96": 2,
+      "k!79": 11,
+      "k!361": 0,
+      "k!355": 1,
+      "k!348": 2,
+      "k!344": 2,
+      "k!336": 1,
+      "k!333": 2,
+      "k!330": 1,
+      "k!327": 0,
+      "k!319": 8,
+      "k!307": 1,
+      "k!254": 2,
+      "k!251": 2,
+      "k!244": 2,
+      "k!241": 2,
+      "k!226": 1,
+      "k!223": 5,
+      "k!220": 9,
+      "k!206": 18,
+      "k!203": 28,
+      "k!200": 137,
+      "k!194": 0,
+      "k!188": 0,
+      "k!155": 4,
+      "k!151": 2,
+      "k!148": 14,
+      "k!145": 2,
+      "k!141": 3,
+      "k!138": 1,
+      "k!128": 7,
+      "k!126": 1,
+      "k!118": 0,
+      "k!289": 2,
+      "k!286": 0,
+      "k!282": 0,
+      "k!278": 0,
+      "k!274": 1,
+      "k!269": 1,
+      "k!266": 1,
+      "k!263": 1,
+      "k!257": 0,
+      "k!249": 3,
+      "k!246": 1,
+      "k!243": 0,
+      "k!240": 1,
+      "k!237": 1,
+      "k!234": 2,
+      "k!228": 0,
+      "k!217": 0,
+      "k!214": 1,
+      "k!211": 2,
+      "k!207": 0,
+      "k!204": 0,
+      "k!201": 0,
+      "k!198": 0,
+      "k!190": 1,
+      "k!184": 2,
+      "k!170": 1,
+      "k!167": 0,
+      "k!164": 4,
+      "k!152": 0,
+      "k!110": 1,
+      "k!106": 2,
+      "k!88": 4,
+      "k!78": 5,
+      "k!81": 1,
+      "k!80": 3,
+      "k!71": 1
+    },
+    "stats": [
+      {
+        "ru": 3242,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 10582,
+        "instances": 30,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3240,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4084,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4084,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4387,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3517,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4387,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3517,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 36055,
+        "instances": 260,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 9739,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 16318,
+        "instances": 37,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3241,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5443,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4783,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 11303,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3288,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5443,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4783,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4639,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3636,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3558,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5292,
+        "instances": 3,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4783,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3371,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3278,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3459,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3558,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4892,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4783,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "e3609a7115c28ca9197f56aff0234b89378ef52566a14c316d1cb3e7732b1983"
+  },
+  {
+    "file": "dafny0/TypeMembers.dfy",
+    "variant": "request",
+    "ru": 185483,
+    "instances": 366,
+    "proofs": 30,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!187": 2,
+      "k!183": 1,
+      "k!180": 1,
+      "k!176": 1,
+      "k!173": 5,
+      "k!165": 1,
+      "k!161": 1,
+      "k!158": 2,
+      "k!147": 2,
+      "k!133": 1,
+      "k!130": 4,
+      "k!127": 6,
+      "k!124": 5,
+      "k!121": 2,
+      "k!117": 1,
+      "k!114": 6,
+      "k!111": 3,
+      "k!107": 0,
+      "k!100": 1,
+      "k!77": 5,
+      "k!70": 1,
+      "k!87": 2,
+      "k!96": 2,
+      "k!79": 11,
+      "k!361": 0,
+      "k!355": 1,
+      "k!348": 2,
+      "k!344": 2,
+      "k!336": 1,
+      "k!333": 2,
+      "k!330": 1,
+      "k!327": 0,
+      "k!319": 8,
+      "k!307": 1,
+      "k!254": 2,
+      "k!251": 2,
+      "k!244": 2,
+      "k!241": 2,
+      "k!226": 1,
+      "k!223": 5,
+      "k!220": 9,
+      "k!206": 18,
+      "k!203": 28,
+      "k!200": 137,
+      "k!194": 0,
+      "k!188": 0,
+      "k!155": 4,
+      "k!151": 2,
+      "k!148": 14,
+      "k!145": 2,
+      "k!141": 3,
+      "k!138": 1,
+      "k!128": 7,
+      "k!126": 1,
+      "k!118": 0,
+      "k!289": 2,
+      "k!286": 0,
+      "k!282": 0,
+      "k!278": 0,
+      "k!274": 1,
+      "k!269": 1,
+      "k!266": 1,
+      "k!263": 1,
+      "k!257": 0,
+      "k!249": 3,
+      "k!246": 1,
+      "k!243": 0,
+      "k!240": 1,
+      "k!237": 1,
+      "k!234": 2,
+      "k!228": 0,
+      "k!217": 0,
+      "k!214": 1,
+      "k!211": 2,
+      "k!207": 0,
+      "k!204": 0,
+      "k!201": 0,
+      "k!198": 0,
+      "k!190": 1,
+      "k!184": 2,
+      "k!170": 1,
+      "k!167": 0,
+      "k!164": 4,
+      "k!152": 0,
+      "k!110": 1,
+      "k!106": 2,
+      "k!88": 4,
+      "k!78": 5,
+      "k!81": 1,
+      "k!80": 3,
+      "k!71": 1
+    },
+    "stats": [
+      {
+        "ru": 3202,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 10541,
+        "instances": 30,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3200,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4044,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4044,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4347,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3477,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4347,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3477,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 36015,
+        "instances": 260,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 9699,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 16277,
+        "instances": 37,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3201,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5403,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4743,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 11263,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3248,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5403,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4743,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4599,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3596,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3518,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 5252,
+        "instances": 3,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4743,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3331,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3238,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3419,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3518,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4852,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4743,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "3426f73b04412556409b8ab774ab61834ae6c69d98a42ce20696a94ea05ad2aa"
+  },
+  {
+    "file": "dafny0/TypeMembers.dfy",
+    "variant": "local",
+    "ru": 161471,
+    "instances": 363,
+    "proofs": 30,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!173": 2,
+      "k!169": 1,
+      "k!166": 1,
+      "k!162": 1,
+      "k!159": 5,
+      "k!151": 1,
+      "k!147": 1,
+      "k!144": 1,
+      "k!133": 2,
+      "k!119": 1,
+      "k!116": 4,
+      "k!113": 6,
+      "k!110": 5,
+      "k!107": 2,
+      "k!103": 1,
+      "k!100": 6,
+      "k!97": 3,
+      "k!93": 0,
+      "k!86": 1,
+      "k!63": 5,
+      "k!56": 1,
+      "k!73": 2,
+      "k!82": 2,
+      "k!65": 11,
+      "k!347": 0,
+      "k!341": 1,
+      "k!334": 2,
+      "k!330": 2,
+      "k!322": 1,
+      "k!319": 2,
+      "k!316": 1,
+      "k!313": 0,
+      "k!305": 8,
+      "k!293": 1,
+      "k!240": 2,
+      "k!237": 2,
+      "k!230": 2,
+      "k!227": 2,
+      "k!212": 1,
+      "k!209": 5,
+      "k!206": 9,
+      "k!192": 18,
+      "k!189": 28,
+      "k!186": 137,
+      "k!180": 0,
+      "k!174": 0,
+      "k!141": 4,
+      "k!137": 2,
+      "k!134": 14,
+      "k!131": 2,
+      "k!127": 3,
+      "k!124": 1,
+      "k!114": 7,
+      "k!112": 1,
+      "k!104": 0,
+      "k!275": 2,
+      "k!272": 0,
+      "k!268": 0,
+      "k!264": 0,
+      "k!260": 1,
+      "k!255": 1,
+      "k!252": 1,
+      "k!249": 1,
+      "k!243": 0,
+      "k!235": 3,
+      "k!232": 1,
+      "k!229": 0,
+      "k!226": 1,
+      "k!223": 1,
+      "k!220": 2,
+      "k!203": 0,
+      "k!200": 1,
+      "k!197": 2,
+      "k!193": 0,
+      "k!190": 0,
+      "k!187": 0,
+      "k!184": 0,
+      "k!176": 1,
+      "k!170": 2,
+      "k!156": 1,
+      "k!153": 0,
+      "k!150": 2,
+      "k!138": 0,
+      "k!96": 1,
+      "k!92": 2,
+      "k!74": 4,
+      "k!64": 5,
+      "k!67": 1,
+      "k!66": 3,
+      "k!57": 1
+    },
+    "stats": [
+      {
+        "ru": 2410,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 9683,
+        "instances": 30,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2408,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3252,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3252,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3555,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2685,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3555,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2685,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 35223,
+        "instances": 260,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 8907,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 15370,
+        "instances": 34,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2409,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4611,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3951,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 10471,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2456,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4611,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3951,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3739,
+        "instances": 4,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2804,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2726,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4460,
+        "instances": 3,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3951,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2539,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2446,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2627,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 2726,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4057,
+        "instances": 1,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3951,
+        "instances": 2,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "48c9895ff470c40b50ec3486b29a54ebd32d661f64bc6b1aa37c7db9fe456914"
+  },
+  {
+    "file": "dafny4/Regression3.dfy",
+    "variant": "dafny",
+    "exit": 0,
+    "ru": 16070,
+    "proofs": 3,
+    "outcomes": [
+      "Passed",
+      "Passed",
+      "Passed"
+    ],
+    "profiles": {}
+  },
+  {
+    "file": "dafny4/Regression3.dfy",
+    "variant": "none",
+    "ru": 16070,
+    "instances": 54,
+    "proofs": 3,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!87": 1,
+      "k!83": 1,
+      "k!80": 0,
+      "k!77": 0,
+      "k!74": 3,
+      "k!66": 2,
+      "k!90": 8,
+      "k!76": 7,
+      "k!73": 18,
+      "k!70": 9,
+      "k!67": 5
+    },
+    "stats": [
+      {
+        "ru": 2410,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3588,
+        "instances": 7,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 10072,
+        "instances": 47,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "e9290cdc9c5bfea97fb97b7b90f7a82cdb038f38db9d2a0b760c1124a5b7929d"
+  },
+  {
+    "file": "dafny4/Regression3.dfy",
+    "variant": "broad",
+    "ru": 18392,
+    "instances": 54,
+    "proofs": 3,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!101": 1,
+      "k!97": 1,
+      "k!94": 0,
+      "k!91": 0,
+      "k!88": 3,
+      "k!80": 2,
+      "k!104": 8,
+      "k!90": 7,
+      "k!87": 18,
+      "k!84": 9,
+      "k!81": 5
+    },
+    "stats": [
+      {
+        "ru": 3184,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4362,
+        "instances": 7,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 10846,
+        "instances": 47,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "b95ce80885eaf98135e0703604368bbc03bc0a28918f383f553dd6d5f14962c5"
+  },
+  {
+    "file": "dafny4/Regression3.dfy",
+    "variant": "sup-flat",
+    "ru": 18392,
+    "instances": 54,
+    "proofs": 3,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!101": 1,
+      "k!97": 1,
+      "k!94": 0,
+      "k!91": 0,
+      "k!88": 3,
+      "k!80": 2,
+      "k!104": 8,
+      "k!90": 7,
+      "k!87": 18,
+      "k!84": 9,
+      "k!81": 5
+    },
+    "stats": [
+      {
+        "ru": 3184,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4362,
+        "instances": 7,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 10846,
+        "instances": 47,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "0c30a0744d1d09fab88e80090fd9e1aa9d61a39730decc32a3b1ed294332b2ea"
+  },
+  {
+    "file": "dafny4/Regression3.dfy",
+    "variant": "nested-sup",
+    "ru": 18566,
+    "instances": 54,
+    "proofs": 3,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!101": 1,
+      "k!97": 1,
+      "k!94": 0,
+      "k!91": 0,
+      "k!88": 3,
+      "k!80": 2,
+      "k!104": 8,
+      "k!90": 7,
+      "k!87": 18,
+      "k!84": 9,
+      "k!81": 5
+    },
+    "stats": [
+      {
+        "ru": 3242,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4420,
+        "instances": 7,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 10904,
+        "instances": 47,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "ab39ca794ac717b4b38139797ef6a76f2cff917c60c66c43c62ae32097ac95f0"
+  },
+  {
+    "file": "dafny4/Regression3.dfy",
+    "variant": "request",
+    "ru": 18446,
+    "instances": 54,
+    "proofs": 3,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!101": 1,
+      "k!97": 1,
+      "k!94": 0,
+      "k!91": 0,
+      "k!88": 3,
+      "k!80": 2,
+      "k!104": 8,
+      "k!90": 7,
+      "k!87": 18,
+      "k!84": 9,
+      "k!81": 5
+    },
+    "stats": [
+      {
+        "ru": 3202,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 4380,
+        "instances": 7,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 10864,
+        "instances": 47,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "47ccd76a95e6ba5580b5a0ad0c7bc32ec1c396179a66e1c67b2f47949c3627ba"
+  },
+  {
+    "file": "dafny4/Regression3.dfy",
+    "variant": "local",
+    "ru": 16070,
+    "instances": 54,
+    "proofs": 3,
+    "outcomes": [
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ],
+      [
+        "unsat"
+      ]
+    ],
+    "profiles": {
+      "k!87": 1,
+      "k!83": 1,
+      "k!80": 0,
+      "k!77": 0,
+      "k!74": 3,
+      "k!66": 2,
+      "k!90": 8,
+      "k!76": 7,
+      "k!73": 18,
+      "k!70": 9,
+      "k!67": 5
+    },
+    "stats": [
+      {
+        "ru": 2410,
+        "instances": 0,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 3588,
+        "instances": 7,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      },
+      {
+        "ru": 10072,
+        "instances": 47,
+        "outcomes": [
+          "unsat"
+        ],
+        "exit": 0
+      }
+    ],
+    "smt_sha256": "e9290cdc9c5bfea97fb97b7b90f7a82cdb038f38db9d2a0b760c1124a5b7929d"
+  }
+]

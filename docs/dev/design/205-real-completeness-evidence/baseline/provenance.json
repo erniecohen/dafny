@@ -1,0 +1,135 @@
+{
+  "build": {
+    "configuration": "Release",
+    "files": {
+      "Boogie.ExecutionEngine.dll": "e2de9008a6038f7076bce074968bbd67a5368541a965ff22421a7cff7266331b",
+      "Boogie.Provers.SMTLib.dll": "c0517a8ab5e801d6dc73d3a0ef0bcb71a875bd4ff053c9eb6fc55139cfe8b429",
+      "Dafny.dll": "0e2f6cd7b4833beb241fad1927885395ae388bab4aaca82225e440719ccb4117",
+      "DafnyCore.dll": "08292621adcef9907c18ef1d9c0dabca49f7877b3bbe759b9ab139503d5afcb1",
+      "DafnyDriver.dll": "5408d26e60f634465f6863e073ce617065c87e51e7cc6a190186c93ed51af4b5",
+      "DafnyPrelude.bpl": "9d45fc321e96329c4239f91868475bc4bc4591301772deee3de7be3e3d0df0d4"
+    },
+    "sdk": "10.0.100",
+    "source_commit": "62bae981952337d312cbb3d43c39f9813cca6084"
+  },
+  "build_note": "Product source was unchanged. Documentation/evidence additions were not compiled. MSBuild used -m:1 and -p:UseSharedCompilation=false; published Release with SourceRevisionId=issue205-design-62bae981. Build artifact hashes identify this observation; normal rebuilds need not produce identical managed binary hashes.",
+  "commands": {
+    "plan": [
+      "python3",
+      ".github/review/lit-verdicts.py",
+      "plan",
+      "Source/IntegrationTests/TestFiles/LitTests/LitTest",
+      "${OUT}/suite-plan.tsv"
+    ],
+    "std_each_version": [
+      "python3",
+      ".github/review/std-verdicts.py",
+      "run",
+      "Source/DafnyStandardLibraries",
+      "${DAFNY}",
+      "${Z3_VERSION}",
+      "${OUT}/std-${VERSION}-on.tsv",
+      "--cores",
+      "4",
+      "--boogie",
+      "/deterministicLiteralHashes:1 /restartProver",
+      "--additional-axioms",
+      "true",
+      "--measurements",
+      "${OUT}/std-${VERSION}-on"
+    ],
+    "suite": [
+      "python3",
+      ".github/review/lit-verdicts.py",
+      "run",
+      "${OUT}/suite-plan.tsv",
+      "Source/IntegrationTests/TestFiles/LitTests/LitTest",
+      "${DAFNY}",
+      "${Z3_5_1_0}",
+      "${OUT}/suite-on.tsv",
+      "--jobs",
+      "8",
+      "--additional-axioms",
+      "true",
+      "--measurements",
+      "${OUT}/suite-on"
+    ]
+  },
+  "interpretation": [
+    "Resource counts are sums of reported solver RU, not elapsed time or quantifier-instantiation counts.",
+    "Negative fixtures and known baseline resource failures are retained.",
+    "No candidate code was measured; full product OFF/ON no-use identity remains an implementation acceptance gate."
+  ],
+  "measurement_kind": "pristine pinned baseline",
+  "schema_version": 1,
+  "schemas": {
+    "*-declarations.csv": "Every available JSON verificationResults row, preserving exact names, outcomes, RU and VC count.",
+    "*-vcs.csv": "Every available vcResults row, preserving exact declaration, VC number, outcome and RU.",
+    "std-*-on.tsv": "Run rows: part, exit code, verifier summary, error locations. Declaration rows: part/name, outcome, two empty columns, resource_count, batch_count. Run wall time removed.",
+    "suite-on.tsv": "Original verdict columns only: program, exit code, verifier summary, error lines. Wall time removed.",
+    "suite-programs.csv": "All planned programs including early diagnostics, with available logged totals; unavailable RU is blank, not zero."
+  },
+  "solvers": {
+    "4.12.1": {
+      "binary_sha256": "b14068b578fe6f2ad90d46183ba73b1c4ee071de8caccc455b9fcc6d3eb1d320",
+      "distribution": "PyPI z3-solver==4.12.1.0",
+      "platform": "Linux x86_64",
+      "version": "4.12.1"
+    },
+    "5.1.0": {
+      "binary_sha256": "54bae839dd54e262edac6f755fc99659ce2a121301faff20a3e3b94478dcead0",
+      "distribution": "PyPI z3-solver==5.1.0.0",
+      "platform": "Linux x86_64",
+      "version": "5.1.0"
+    }
+  },
+  "source_branch_at_measurement": "review/4.11.0",
+  "source_commit": "62bae981952337d312cbb3d43c39f9813cca6084",
+  "standard_library": {
+    "additional_axioms": true,
+    "cores": 4,
+    "expected_files": [
+      ".github/review/expected-std-verdicts-z3-4.12.1-additional-axioms.tsv",
+      ".github/review/expected-std-verdicts-z3-5.1.0-additional-axioms.tsv"
+    ],
+    "flags": [
+      "--verification-time-limit",
+      "0"
+    ],
+    "harness": ".github/review/std-verdicts.py",
+    "main_extra_boogie_flags": [
+      "/deterministicLiteralHashes:1",
+      "/restartProver"
+    ],
+    "resource_limits": "Unchanged project/declaration limits; main project default 1000000 RU.",
+    "safety_timeout_seconds_per_part": 5400,
+    "solvers": [
+      "4.12.1",
+      "5.1.0"
+    ],
+    "target_specific_extra_boogie_flags": [],
+    "target_specific_reason": "The six target-specific parts retain their committed .doo-compatible options, exactly as the existing harness requires."
+  },
+  "suite": {
+    "additional_axioms_harness": true,
+    "default_flags": [
+      "--resource-limit",
+      "16000000",
+      "--verification-time-limit",
+      "0",
+      "--boogie",
+      "/normalizeDeclarationOrder:0",
+      "--cores",
+      "1",
+      "--allow-warnings"
+    ],
+    "expected_file": ".github/review/expected-verdicts-additional-axioms.tsv",
+    "flag_policy": "Original first RUN-line options are retained and take precedence over common defaults; ON and observation options precede original options.",
+    "harness": ".github/review/lit-verdicts.py",
+    "jobs": 8,
+    "original_explicit_off_overrides": 18,
+    "planned_programs": 1163,
+    "safety_timeout_seconds_per_program": 900,
+    "solver": "5.1.0"
+  }
+}

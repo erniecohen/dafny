@@ -1,0 +1,7 @@
+solver,variant,contexts,ru,instances,unsat_contexts
+4.12.1,scoped,90,1940734,2043,90
+4.12.1,broad-upper,90,3653293,2540,90
+4.12.1,auto,90,3947881,2498,88
+5.1.0,scoped,90,2476611,3655,90
+5.1.0,broad-upper,90,3891059,4729,90
+5.1.0,auto,90,3900951,4771,90

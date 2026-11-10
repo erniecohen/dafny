@@ -1,0 +1,4 @@
+{
+  "dafny_version": "4.11.0+issue205-design-62bae981",
+  "scope": "Full arbitrary coefficient-sequence IVT and LUB proof with exactly one experimental trusted complete placeholder; exact native real/ISet/Box encoding. No product implementation. Negatives are three live assertfalse controls."
+}

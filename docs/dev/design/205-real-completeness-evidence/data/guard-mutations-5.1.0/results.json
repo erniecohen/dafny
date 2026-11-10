@@ -1,0 +1,50 @@
+[
+  {
+    "mutation": "remove-nonempty",
+    "exit": 4,
+    "summary": [
+      "Dafny program verifier finished with 1 verified, 2 errors"
+    ],
+    "cases": [
+      {
+        "name": "boundedVacuity (correctness)",
+        "outcome": "Failed",
+        "ru": 18069
+      },
+      {
+        "name": "unboundedVacuity (correctness)",
+        "outcome": "Failed",
+        "ru": 13055
+      },
+      {
+        "name": "emptyVacuity (correctness)",
+        "outcome": "Passed",
+        "ru": 11141
+      }
+    ]
+  },
+  {
+    "mutation": "remove-bounded",
+    "exit": 4,
+    "summary": [
+      "Dafny program verifier finished with 1 verified, 2 errors"
+    ],
+    "cases": [
+      {
+        "name": "boundedVacuity (correctness)",
+        "outcome": "Failed",
+        "ru": 18724
+      },
+      {
+        "name": "emptyVacuity (correctness)",
+        "outcome": "Failed",
+        "ru": 9975
+      },
+      {
+        "name": "unboundedVacuity (correctness)",
+        "outcome": "Passed",
+        "ru": 11213
+      }
+    ]
+  }
+]

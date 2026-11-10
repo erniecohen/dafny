@@ -1,0 +1,301 @@
+{
+  "wrappers": [
+    {
+      "solver": "4.12.1",
+      "refreshed_resolver": false,
+      "verified": 4,
+      "errors": 0,
+      "total_ru": 55141,
+      "cases": [
+        {
+          "name": "existsLub (correctness)",
+          "outcome": "Correct",
+          "ru": 17172
+        },
+        {
+          "name": "uniqueLub (correctness)",
+          "outcome": "Correct",
+          "ru": 7284
+        },
+        {
+          "name": "sup (well-formedness)",
+          "outcome": "Correct",
+          "ru": 16869
+        },
+        {
+          "name": "ivtReturning (correctness)",
+          "outcome": "Correct",
+          "ru": 13816
+        }
+      ],
+      "report_sha256": "a08a6c96a14dbc15b9973b4b6d887fb665c8953141a29e741d333e923252e6cd"
+    },
+    {
+      "solver": "4.12.1",
+      "refreshed_resolver": true,
+      "verified": 4,
+      "errors": 0,
+      "total_ru": 55141,
+      "cases": [
+        {
+          "name": "existsLub (correctness)",
+          "outcome": "Correct",
+          "ru": 17172
+        },
+        {
+          "name": "uniqueLub (correctness)",
+          "outcome": "Correct",
+          "ru": 7284
+        },
+        {
+          "name": "sup (well-formedness)",
+          "outcome": "Correct",
+          "ru": 16869
+        },
+        {
+          "name": "ivtReturning (correctness)",
+          "outcome": "Correct",
+          "ru": 13816
+        }
+      ],
+      "report_sha256": "8a0dc45c64b05024e18d2909b7caca5fe6c285c530fb752605164e53f3016c15"
+    },
+    {
+      "solver": "5.1.0",
+      "refreshed_resolver": false,
+      "verified": 4,
+      "errors": 0,
+      "total_ru": 56084,
+      "cases": [
+        {
+          "name": "existsLub (correctness)",
+          "outcome": "Correct",
+          "ru": 17205
+        },
+        {
+          "name": "uniqueLub (correctness)",
+          "outcome": "Correct",
+          "ru": 7364
+        },
+        {
+          "name": "sup (well-formedness)",
+          "outcome": "Correct",
+          "ru": 16987
+        },
+        {
+          "name": "ivtReturning (correctness)",
+          "outcome": "Correct",
+          "ru": 14528
+        }
+      ],
+      "report_sha256": "57790e71f67331fc99f90437b925ffe994edb8655e40f4d6091c7e83155b50a2"
+    },
+    {
+      "solver": "5.1.0",
+      "refreshed_resolver": true,
+      "verified": 4,
+      "errors": 0,
+      "total_ru": 56084,
+      "cases": [
+        {
+          "name": "existsLub (correctness)",
+          "outcome": "Correct",
+          "ru": 17205
+        },
+        {
+          "name": "uniqueLub (correctness)",
+          "outcome": "Correct",
+          "ru": 7364
+        },
+        {
+          "name": "sup (well-formedness)",
+          "outcome": "Correct",
+          "ru": 16987
+        },
+        {
+          "name": "ivtReturning (correctness)",
+          "outcome": "Correct",
+          "ru": 14528
+        }
+      ],
+      "report_sha256": "8bd593181515905f78e3a6eb13fec9ae77e661d23d748a61c6a87fe1e75db613"
+    }
+  ],
+  "no_primitive": {
+    "solver": "5.1.0",
+    "refreshed_resolver": false,
+    "additional_axioms": false,
+    "observed_cli_summary": "90 verified, 2 errors",
+    "failed_declaration": "lub (correctness)",
+    "failed_obligations": [
+      "upper(s,u) postcondition",
+      "leastness postcondition"
+    ],
+    "cases": [
+      {
+        "name": "absBasic (correctness)",
+        "outcome": "Correct",
+        "ru": 4962
+      },
+      {
+        "name": "absTriangle (correctness)",
+        "outcome": "Correct",
+        "ru": 5938
+      },
+      {
+        "name": "absProduct (correctness)",
+        "outcome": "Correct",
+        "ru": 8560
+      },
+      {
+        "name": "mulLe (correctness)",
+        "outcome": "Correct",
+        "ru": 2622
+      },
+      {
+        "name": "productLe (correctness)",
+        "outcome": "Correct",
+        "ru": 5145
+      },
+      {
+        "name": "poly (well-formedness)",
+        "outcome": "Correct",
+        "ru": 10204
+      },
+      {
+        "name": "magnitude (well-formedness)",
+        "outcome": "Correct",
+        "ru": 11249
+      },
+      {
+        "name": "lipschitz (well-formedness)",
+        "outcome": "Correct",
+        "ru": 12565
+      },
+      {
+        "name": "polyUnfold (well-formedness)",
+        "outcome": "Correct",
+        "ru": 8957
+      },
+      {
+        "name": "polyUnfold (correctness)",
+        "outcome": "Correct",
+        "ru": 16472
+      },
+      {
+        "name": "magnitudeUnfold (well-formedness)",
+        "outcome": "Correct",
+        "ru": 9700
+      },
+      {
+        "name": "magnitudeUnfold (correctness)",
+        "outcome": "Correct",
+        "ru": 17161
+      },
+      {
+        "name": "lipschitzUnfold (well-formedness)",
+        "outcome": "Correct",
+        "ru": 10243
+      },
+      {
+        "name": "lipschitzUnfold (correctness)",
+        "outcome": "Correct",
+        "ru": 18036
+      },
+      {
+        "name": "boundsPositive (correctness)",
+        "outcome": "Correct",
+        "ru": 18037
+      },
+      {
+        "name": "hornerBound (correctness)",
+        "outcome": "Correct",
+        "ru": 7076
+      },
+      {
+        "name": "hornerLipschitz (correctness)",
+        "outcome": "Correct",
+        "ru": 449944
+      },
+      {
+        "name": "polynomialBound (correctness)",
+        "outcome": "Correct",
+        "ru": 23864
+      },
+      {
+        "name": "polynomialLipschitz (correctness)",
+        "outcome": "Correct",
+        "ru": 40652
+      },
+      {
+        "name": "complete (correctness)",
+        "outcome": "Correct",
+        "ru": 4582
+      },
+      {
+        "name": "lub (correctness)",
+        "outcome": "Errors",
+        "ru": 8628
+      },
+      {
+        "name": "leastUpperBound (correctness)",
+        "outcome": "Correct",
+        "ru": 7635
+      },
+      {
+        "name": "intervalMagnitude (correctness)",
+        "outcome": "Correct",
+        "ru": 7345
+      },
+      {
+        "name": "stepBound (well-formedness)",
+        "outcome": "Correct",
+        "ru": 2758
+      },
+      {
+        "name": "stepBound (correctness)",
+        "outcome": "Correct",
+        "ru": 8242
+      },
+      {
+        "name": "polynomialIvt (correctness)",
+        "outcome": "Correct",
+        "ru": 1705656
+      },
+      {
+        "name": "squareRootTwo (correctness)",
+        "outcome": "Correct",
+        "ru": 24455
+      },
+      {
+        "name": "quadraticValue (correctness)",
+        "outcome": "Correct",
+        "ru": 31629
+      }
+    ]
+  },
+  "source_sha256": {
+    "sup-wrapper.dfy": "ebf2de243d0b25bce5797951bf08b2e0aabe69b6be30ccf7a9505a16e978dbef",
+    "real-completeness-no-primitive.dfy": "033179adca19dda18ea6e343e6b27ef3df82efcda98fb51660588bdbf6592e5f"
+  },
+  "common_flags": [
+    "--cores",
+    "1",
+    "--resource-limit",
+    "2000000",
+    "--verification-time-limit",
+    "30",
+    "--boogie",
+    "/normalizeDeclarationOrder:0",
+    "--log-format",
+    "text;LogFileName=<report>"
+  ],
+  "wrapper_flags": [
+    "--additional-axioms:true",
+    "--type-system-refresh:<false|true>"
+  ],
+  "solver_reuse": true,
+  "restart_prover": false,
+  "live_profiling": false,
+  "scope": "Ordinary wrappers and a no-primitive control. Do not combine reuse-protocol RU totals with the separate restartProver experiment."
+}

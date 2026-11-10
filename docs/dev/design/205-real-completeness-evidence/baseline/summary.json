@@ -1,0 +1,179 @@
+{
+  "additional_axioms": "ON harness; original per-test overrides retained",
+  "commit": "62bae981952337d312cbb3d43c39f9813cca6084",
+  "kind": "pristine pinned baseline, not candidate production validation",
+  "provenance": "provenance.json",
+  "scope_note": "These are pristine pinned baseline measurements, not candidate implementation validation. No candidate translator exists in this design-only work. Negative tests and expected failures are retained. Resource totals cover every available verification-result row; 41 early-diagnostic cases have no JSON, and the existing invalid logger-option case has an empty JSON file and reports zero verified.",
+  "stdlib_z3_4.12.1": {
+    "batch_outcomes": {
+      "Valid": 7724
+    },
+    "batch_total_ru": 1018791320,
+    "batches": 7724,
+    "complete_flags": "provenance.json",
+    "declaration_outcomes": {
+      "Correct": 2190
+    },
+    "declaration_total_ru": 1018791320,
+    "declarations": 2190,
+    "empty_logs_count": 0,
+    "malformed_logs_count": 0,
+    "missing_logs_count": 0,
+    "mode": "additional-axioms ON; main deterministic hashes and restart; target-specific original flags",
+    "readable_json_logs": 7,
+    "run_summaries": {
+      "run Std": [
+        "0",
+        "7612 verified, 0 errors",
+        ""
+      ],
+      "run TargetSpecific-cs": [
+        "0",
+        "15 verified, 0 errors",
+        ""
+      ],
+      "run TargetSpecific-go": [
+        "0",
+        "16 verified, 0 errors",
+        ""
+      ],
+      "run TargetSpecific-java": [
+        "0",
+        "15 verified, 0 errors",
+        ""
+      ],
+      "run TargetSpecific-js": [
+        "0",
+        "35 verified, 0 errors",
+        ""
+      ],
+      "run TargetSpecific-notarget": [
+        "0",
+        "15 verified, 0 errors",
+        ""
+      ],
+      "run TargetSpecific-py": [
+        "0",
+        "16 verified, 0 errors",
+        ""
+      ]
+    },
+    "solver_binary_sha256": "b14068b578fe6f2ad90d46183ba73b1c4ee071de8caccc455b9fcc6d3eb1d320",
+    "solver_version": "4.12.1",
+    "source_commit": "62bae981952337d312cbb3d43c39f9813cca6084",
+    "unreadable_logs_count": 0,
+    "verdict_comparison": {
+      "differences": 0,
+      "report": "std-4.12.1-on-comparison.txt"
+    },
+    "verdict_rows": 2197
+  },
+  "stdlib_z3_5.1.0": {
+    "batch_outcomes": {
+      "Invalid": 2,
+      "OutOfResource": 17,
+      "Valid": 7705
+    },
+    "batch_total_ru": 1185435799,
+    "batches": 7724,
+    "complete_flags": "provenance.json",
+    "declaration_outcomes": {
+      "Correct": 2171,
+      "Errors": 2,
+      "OutOfResource": 17
+    },
+    "declaration_total_ru": 1185435799,
+    "declarations": 2190,
+    "empty_logs_count": 0,
+    "malformed_logs_count": 0,
+    "missing_logs_count": 0,
+    "mode": "additional-axioms ON; main deterministic hashes and restart; target-specific original flags",
+    "readable_json_logs": 7,
+    "run_summaries": {
+      "run Std": [
+        "4",
+        "7593 verified, 2 errors, 17 out of resource",
+        "src/Std/Arithmetic/DivMod.dfy(1339,8) src/Std/Arithmetic/DivMod.dfy(877,8) src/Std/Arithmetic/DivMod.dfy(920,8) src/Std/Arithmetic/LittleEndianNat.dfy(50,30) src/Std/Arithmetic/Mul.dfy(154,22) src/Std/Base64.dfy(1080,8) src/Std/Base64.dfy(1109,8) src/Std/Base64.dfy(1133,8) src/Std/Base64.dfy(1234,8) src/Std/Base64.dfy(738,8) src/Std/Base64.dfy(895,8) src/Std/Base64.dfy(907,8) src/Std/Collections/Seq.dfy(1010,11) src/Std/Collections/Seq.dfy(1042,8) src/Std/JSON/ZeroCopy/Deserializer.dfy(998,59) src/Std/Termination.dfy(125,17) src/Std/Termination.dfy(134,17) src/Std/Unicode/UnicodeEncodingForm.dfy(133,11) src/Std/Unicode/UnicodeStringsWithUnicodeChar.dfy(30,4)"
+      ],
+      "run TargetSpecific-cs": [
+        "0",
+        "15 verified, 0 errors",
+        ""
+      ],
+      "run TargetSpecific-go": [
+        "0",
+        "16 verified, 0 errors",
+        ""
+      ],
+      "run TargetSpecific-java": [
+        "0",
+        "15 verified, 0 errors",
+        ""
+      ],
+      "run TargetSpecific-js": [
+        "0",
+        "35 verified, 0 errors",
+        ""
+      ],
+      "run TargetSpecific-notarget": [
+        "0",
+        "15 verified, 0 errors",
+        ""
+      ],
+      "run TargetSpecific-py": [
+        "0",
+        "16 verified, 0 errors",
+        ""
+      ]
+    },
+    "solver_binary_sha256": "54bae839dd54e262edac6f755fc99659ce2a121301faff20a3e3b94478dcead0",
+    "solver_version": "5.1.0",
+    "source_commit": "62bae981952337d312cbb3d43c39f9813cca6084",
+    "unreadable_logs_count": 0,
+    "verdict_comparison": {
+      "differences": 0,
+      "report": "std-5.1.0-on-comparison.txt"
+    },
+    "verdict_rows": 2197
+  },
+  "suite_z3_5.1.0": {
+    "batch_outcomes": {
+      "Invalid": 1734,
+      "OutOfResource": 22,
+      "Valid": 5878
+    },
+    "batch_total_ru": 1555572761,
+    "batches": 7634,
+    "command_files": 1163,
+    "complete_flags": "provenance.json",
+    "declaration_outcomes": {
+      "Correct": 5173,
+      "Errors": 1731,
+      "OutOfResource": 18
+    },
+    "declaration_total_ru": 1555572761,
+    "declarations": 6922,
+    "empty_logs_count": 1,
+    "existing_expected": ".github/review/expected-verdicts-additional-axioms.tsv",
+    "exit_codes": {
+      "0": 546,
+      "1": 16,
+      "2": 263,
+      "4": 338
+    },
+    "explicit_off_overrides": 18,
+    "malformed_logs_count": 0,
+    "missing_logs_count": 41,
+    "mode": "existing ON harness; 18 original explicit OFF overrides retained",
+    "program_verdict_rows": 1163,
+    "readable_json_logs": 1121,
+    "solver_binary_sha256": "54bae839dd54e262edac6f755fc99659ce2a121301faff20a3e3b94478dcead0",
+    "solver_version": "5.1.0",
+    "source_commit": "62bae981952337d312cbb3d43c39f9813cca6084",
+    "unreadable_logs_count": 42,
+    "verdict_comparison": {
+      "differences": 0,
+      "report": "suite-on-comparison.txt"
+    }
+  }
+}

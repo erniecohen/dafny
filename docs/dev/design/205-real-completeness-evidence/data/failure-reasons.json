@@ -1,0 +1,152 @@
+[
+  {
+    "group": "native-kernel",
+    "solver": "4.12.1",
+    "case": 0,
+    "outcomes": [
+      "unknown"
+    ],
+    "reasons": [
+      "(incomplete quantifiers)"
+    ],
+    "setup_ru": 4848,
+    "total_ru": 70297,
+    "query_ru": 65449,
+    "resource_cap": 2000000
+  },
+  {
+    "group": "native-kernel",
+    "solver": "4.12.1",
+    "case": 1,
+    "outcomes": [
+      "unknown"
+    ],
+    "reasons": [
+      "(incomplete quantifiers)"
+    ],
+    "setup_ru": 4884,
+    "total_ru": 69297,
+    "query_ru": 64413,
+    "resource_cap": 2000000
+  },
+  {
+    "group": "native-kernel",
+    "solver": "4.12.1",
+    "case": 2,
+    "outcomes": [
+      "unknown"
+    ],
+    "reasons": [
+      "(incomplete quantifiers)"
+    ],
+    "setup_ru": 4840,
+    "total_ru": 43472,
+    "query_ru": 38632,
+    "resource_cap": 2000000
+  },
+  {
+    "group": "native-kernel",
+    "solver": "4.12.1",
+    "case": 3,
+    "outcomes": [
+      "unknown"
+    ],
+    "reasons": [
+      "canceled"
+    ],
+    "setup_ru": 4850,
+    "total_ru": 2004850,
+    "query_ru": 2000000,
+    "resource_cap": 2000000
+  },
+  {
+    "group": "full-proof",
+    "solver": "4.12.1",
+    "case": "polynomialIvt_split31",
+    "outcomes": [
+      "unknown"
+    ],
+    "reasons": [
+      "(incomplete (theory arithmetic))"
+    ],
+    "setup_ru": 17598,
+    "total_ru": 53169,
+    "query_ru": 35571,
+    "resource_cap": 2000000
+  },
+  {
+    "group": "full-proof",
+    "solver": "4.12.1",
+    "case": "polynomialIvt_split46",
+    "outcomes": [
+      "unknown"
+    ],
+    "reasons": [
+      "(incomplete (theory arithmetic))"
+    ],
+    "setup_ru": 16932,
+    "total_ru": 2016932,
+    "query_ru": 2000000,
+    "resource_cap": 2000000
+  },
+  {
+    "group": "native-kernel",
+    "solver": "5.1.0",
+    "case": 0,
+    "outcomes": [
+      "unknown"
+    ],
+    "reasons": [
+      "(incomplete quantifiers)"
+    ],
+    "setup_ru": 4848,
+    "total_ru": 71003,
+    "query_ru": 66155,
+    "resource_cap": 2000000
+  },
+  {
+    "group": "native-kernel",
+    "solver": "5.1.0",
+    "case": 1,
+    "outcomes": [
+      "unknown"
+    ],
+    "reasons": [
+      "(incomplete quantifiers)"
+    ],
+    "setup_ru": 4884,
+    "total_ru": 70101,
+    "query_ru": 65217,
+    "resource_cap": 2000000
+  },
+  {
+    "group": "native-kernel",
+    "solver": "5.1.0",
+    "case": 2,
+    "outcomes": [
+      "unknown"
+    ],
+    "reasons": [
+      "(incomplete quantifiers)"
+    ],
+    "setup_ru": 4840,
+    "total_ru": 43923,
+    "query_ru": 39083,
+    "resource_cap": 2000000
+  },
+  {
+    "group": "native-kernel",
+    "solver": "5.1.0",
+    "case": 3,
+    "outcomes": [
+      "unknown"
+    ],
+    "reasons": [
+      "canceled"
+    ],
+    "setup_ru": 4850,
+    "total_ru": 2004850,
+    "query_ru": 2000000,
+    "resource_cap": 2000000
+  }
+]

@@ -1,0 +1,97 @@
+{
+  "source_commit": "62bae981952337d312cbb3d43c39f9813cca6084",
+  "source_branch": "review/4.11.0",
+  "dafny_version": "4.11.0+issue205-design-62bae981",
+  "dotnet_sdk": "10.0.100",
+  "runtime_sha256": {
+    "Dafny.dll": "0e2f6cd7b4833beb241fad1927885395ae388bab4aaca82225e440719ccb4117",
+    "DafnyCore.dll": "08292621adcef9907c18ef1d9c0dabca49f7877b3bbe759b9ab139503d5afcb1",
+    "DafnyPipeline.dll": "713c9637c17c2ca5d6881a33e39f9b31d3657ea30fd33067c5499a255cc90c43",
+    "Boogie.ExecutionEngine.dll": "e2de9008a6038f7076bce074968bbd67a5368541a965ff22421a7cff7266331b"
+  },
+  "z3_executable_sha256": {
+    "4.12.1": "b14068b578fe6f2ad90d46183ba73b1c4ee071de8caccc455b9fcc6d3eb1d320",
+    "5.1.0": "54bae839dd54e262edac6f755fc99659ce2a121301faff20a3e3b94478dcead0"
+  },
+  "solver_builds": "PyPI z3-solver 4.12.1.0 and 5.1.0.0 wheels; not the distinct GitHub-release executables pinned by fork CI",
+  "positive_source_sha256": "7e39148cdb6dd5a54d90ad5bdba958914bcb9ec5976174bb479d97e63ac00a02",
+  "negative_source_sha256": "699acd09300cb96ba7f04c7b385d264ab32f1828be15b2c9ff59abfde5212891",
+  "hash_notes": "All archive-member hashes are exact shipped bytes. Pattern-replay input_sha256 values were computed from Python read_text() newline-normalized logical SMT; corresponding unmodified original byte hashes are in archive-members.json. Formula hashes are SHA256 of parsed SMT after removing only pattern annotations.",
+  "diagnostic_normalization": "Only Results File destination paths in human diagnostic outputs are reduced to basenames. Original and shipped hashes are recorded. SMT/source bytes are unchanged.",
+  "datasets": [
+    {
+      "dataset": "abstract-4.12.1",
+      "mode": "abstract kernel; no Dafny flags",
+      "files": 171,
+      "raw_archive_sha256": "8a9426530b78c84941f6ea1ef42ef8ebea58abb0da45ebc1ce3b95b3ffff378b"
+    },
+    {
+      "dataset": "abstract-5.1.0",
+      "mode": "abstract kernel; no Dafny flags",
+      "files": 171,
+      "raw_archive_sha256": "9ef7152a9878e35bf62c629b904dbf38282e3c1d6d49da25f025d209cda2f334"
+    },
+    {
+      "dataset": "native-source-runs",
+      "mode": "existing additional-axioms OFF/ON, both resolvers, both solvers",
+      "files": 34,
+      "raw_archive_sha256": "7099a7ab764d9b00eb47c3d762968907e68ea066d6adb272b28448d950b07241"
+    },
+    {
+      "dataset": "native-triggers-4.12.1",
+      "mode": "existing additional-axioms ON; legacy resolver; exact formula-only pattern replay",
+      "files": 100,
+      "raw_archive_sha256": "c27071e6a10d0f376ee3a337ca683414808e6e1de96bc1f73cb36a59c04f9b87"
+    },
+    {
+      "dataset": "native-triggers-5.1.0",
+      "mode": "existing additional-axioms ON; legacy resolver; exact formula-only pattern replay",
+      "files": 100,
+      "raw_archive_sha256": "0a727293a6c5da40b002e810c0c3ae673d9046933945f98b78832747dc219300"
+    },
+    {
+      "dataset": "native-stress-5.1.0",
+      "mode": "existing additional-axioms OFF; legacy resolver; exact formula-only pattern replay",
+      "files": 22,
+      "raw_archive_sha256": "979d1a0912590e3cf86aeee0848b58d80d169fad0599d6f8f02b1a9c151f8368"
+    },
+    {
+      "dataset": "acceptance-source-runs",
+      "mode": "existing additional-axioms ON; both resolvers, both solvers; no live profiling",
+      "files": 34,
+      "raw_archive_sha256": "5b24ce29c7b1625521dbb3c99a40dbd1293765013628c356b6d1c6775b149532"
+    },
+    {
+      "dataset": "acceptance-triggers-4.12.1",
+      "mode": "existing additional-axioms ON; legacy resolver; exact formula-only pattern replay",
+      "files": 547,
+      "raw_archive_sha256": "7d64684af7a8fe08e3ac09a27477a99fbb44e103dd8684156f94a39d9eb443d6"
+    },
+    {
+      "dataset": "acceptance-triggers-5.1.0",
+      "mode": "existing additional-axioms ON; legacy resolver; exact formula-only pattern replay",
+      "files": 543,
+      "raw_archive_sha256": "628a98b3db3fef303a0e4c8ee46ccd62a6a066b35988a779fa60d4dde8e2e6ae"
+    },
+    {
+      "dataset": "existing-real-4.12.1",
+      "mode": "existing additional-axioms OFF; legacy resolver; dormant abstract candidate injection",
+      "files": 77,
+      "raw_archive_sha256": "fdadf59b884520b494d2fdc7ff7d7364c9b3ec49d6f7eda3a0a5d1e38315f65b"
+    },
+    {
+      "dataset": "existing-real-5.1.0",
+      "mode": "existing additional-axioms OFF; legacy resolver; dormant abstract candidate injection",
+      "files": 77,
+      "raw_archive_sha256": "039529a5cb66b8945f7dcc4db430e2bd169789f866795d5a17a7c5e62f89c1bb"
+    },
+    {
+      "dataset": "guard-mutations-5.1.0",
+      "mode": "existing additional-axioms ON; legacy resolver; intentional UNSOUND guard mutations",
+      "files": 9,
+      "raw_archive_sha256": "08c1c4cfb9c23f0aa63acddf2f37c532a2fbe9485e966d5635d6100081b209ef"
+    }
+  ],
+  "wrapper_and_removal_evidence": "data/wrappers-and-no-primitive/results.json",
+  "audit_evidence": "data/audit.json"
+}

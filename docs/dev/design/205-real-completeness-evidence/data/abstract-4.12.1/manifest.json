@@ -1,0 +1,6 @@
+{
+  "solver_version": "Z3 version 4.12.1 - 64 bit",
+  "solver_sha256": "b14068b578fe6f2ad90d46183ba73b1c4ee071de8caccc455b9fcc6d3eb1d320",
+  "method": "fresh solver process per generated SMT input; mbqi=false, auto_config=false, eager_threshold=44, case_split=3; 2,000,000 RU, 10s cap; exact remaining flags are in each SMT file",
+  "scope": "abstract real/set kernel only; IVT case is final sign contradiction conditional on analytic lemmas, not complete arbitrary-degree IVT"
+}
