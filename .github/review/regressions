@@ -336,4 +336,7 @@ git-issues/github-issue-103.dfy
 # Opt-in --synonym-refines-abstract-type: a type synonym refines an abstract type with members (https://github.com/erniecohen/dafny/issues/91).
 git-issues/github-issue-91.dfy
 
+# Opt-in --contextual-quantifier-domains: quantifier bound variables typed from argument positions (https://github.com/erniecohen/dafny/issues/200).
+git-issues/github-issue-200.dfy
+
 # Constraints, witnesses and function values under --modular-termination, milestone M3 (https://github.com/erniecohen/dafny/issues/211): extends git-issues/github-issue-211.dfy, listed above.
