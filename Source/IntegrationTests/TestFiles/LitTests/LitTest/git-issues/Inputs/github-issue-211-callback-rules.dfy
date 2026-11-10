@@ -47,4 +47,9 @@ module Y {
   }
   // Rejected: the lambda's body runs under the callback bound even where the caller has no bound.
   function Free(t: Tr.T, n: nat): nat { L.Apply(_ => t.F(n), n) }
+  // An escaped lambda: a lambda that a function returns is checked under the bound of the function that creates
+  // it, wherever it is applied later.  Rejected: t.F(n) is not below the creator's bound n.
+  function Escape(t: Tr.T, n: nat): nat -> nat decreases {:global} n { x => t.F(n) }
+  // Holds: n is below the creator's bound n + 1.
+  function EscapeOk(t: Tr.T, n: nat): nat -> nat decreases {:global} n + 1 { x => t.F(n) }
 }

@@ -1159,7 +1159,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
       if (printMode == PrintModes.NoGhostOrIncludes) {
         return;
       }
-      if (ModularTermination.GlobalClauses(decs.Attributes).Any() || ModularTermination.CallbackClauses(decs.Attributes).Any()) {
+      if (ModularTermination.GlobalClauses(decs.Attributes).Any() || PrintsCallbackClauses(decs.Attributes)) {
         PrintDecreasesSpecWithGlobalClauses(decs, indent);
         return;
       }
@@ -1185,7 +1185,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
         wr.Write($"decreases {{:{ModularTermination.GlobalAttributeName}}} ");
         PrintExpressionList(global.Args, true);
       }
-      foreach (var callback in ModularTermination.CallbackClauses(decs.Attributes).Reverse()) {
+      foreach (var callback in PrintsCallbackClauses(decs.Attributes) ? ModularTermination.CallbackClauses(decs.Attributes).Reverse() : []) {
         wr.WriteLine();
         Indent(indent);
         wr.Write($"decreases {{:{ModularTermination.CallbackAttributeName} ");
@@ -1203,12 +1203,23 @@ NoGhost - disable printing of functions, ghost methods, and proof
       }
     }
 
+    /// <summary>
+    /// Whether the printer writes callback clauses (--modular-termination, milestone M3b) as
+    /// "decreases {:callback g} E".  Only under the option, which is the only case in which the parser reads
+    /// that form back; otherwise a {:callback} attribute is printed as any other attribute, as before.
+    /// </summary>
+    private bool PrintsCallbackClauses(Attributes attrs) {
+      return options.Get(CommonOptionBag.ModularTermination) && ModularTermination.CallbackClauses(attrs).Any();
+    }
+
     private void PrintOrdinaryDecreasesAttributes(Attributes a) {
       if (a == null) {
         return;
       }
       PrintOrdinaryDecreasesAttributes(a.Prev);
-      if (!ModularTermination.IsModularTerminationClause(a) && a is not UserSuppliedAtAttribute) {
+      if (!ModularTermination.IsGlobalClause(a) &&
+          !(options.Get(CommonOptionBag.ModularTermination) && ModularTermination.IsCallbackClause(a)) &&
+          a is not UserSuppliedAtAttribute) {
         wr.Write(" ");
         PrintOneAttribute(a);
       }

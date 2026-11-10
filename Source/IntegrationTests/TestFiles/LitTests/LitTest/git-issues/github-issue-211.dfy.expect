@@ -231,8 +231,9 @@ github-issue-211-callback-rules.dfy(29,9): Error: decreases clause might not dec
 github-issue-211-callback-rules.dfy(43,22): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 github-issue-211-callback-rules.dfy(45,17): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 github-issue-211-callback-rules.dfy(49,56): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-callback-rules.dfy(52,79): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
-Dafny program verifier finished with 2 verified, 5 errors
+Dafny program verifier finished with 3 verified, 6 errors
 callback, option on, refresh true: verifies
 
 Dafny program verifier finished with 10 verified, 0 errors
@@ -254,8 +255,9 @@ github-issue-211-callback-rules.dfy(29,9): Error: decreases clause might not dec
 github-issue-211-callback-rules.dfy(43,22): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 github-issue-211-callback-rules.dfy(45,17): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 github-issue-211-callback-rules.dfy(49,56): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-callback-rules.dfy(52,79): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
-Dafny program verifier finished with 2 verified, 5 errors
+Dafny program verifier finished with 3 verified, 6 errors
 callback resolution rules, option on, refresh true: each marked use rejected
 github-issue-211-callback-resolve.dfy(7,71): Error: the first argument of a 'decreases {:callback f}' clause must be an in-parameter of the method or function, of an arrow type
 github-issue-211-callback-resolve.dfy(24,55): Error: an overriding member cannot declare a 'decreases {:callback}' clause: it has the callback bounds of the member it overrides
@@ -288,6 +290,11 @@ Dafny program verifier did not attempt verification
 printed counter, option on: verifies
 
 Dafny program verifier finished with 12 verified, 0 errors
+printed callback clauses, option off: attributes as written
+    decreases {:global} {:callback g} n, 1, n, 0
+    decreases {:global} {:callback g} n, 1, n, 0
+    decreases {:global} {:callback g} n, 2, n, 0
+    decreases {:global} {:callback g} n, 1, n, 0
 printed callback, option on: verifies
 
 Dafny program verifier finished with 10 verified, 0 errors

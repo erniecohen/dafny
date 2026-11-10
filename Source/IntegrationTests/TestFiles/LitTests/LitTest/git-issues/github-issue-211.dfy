@@ -104,6 +104,10 @@
 // RUN: %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --print "%t.counter.dfy" "%S/Inputs/github-issue-211-counter.dfy" > "%t.ignore"
 // RUN: echo "printed counter, option on: verifies" >> "%t"
 // RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%t.counter.dfy" >> "%t"
+// Without the option, a {:callback} attribute is printed as written, as before.
+// RUN: echo "printed callback clauses, option off: attributes as written" >> "%t"
+// RUN: %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --print "%t.callback-off.dfy" "%S/Inputs/github-issue-211-callback.dfy" > "%t.ignore"
+// RUN: grep "{:callback" "%t.callback-off.dfy" >> "%t"
 // RUN: %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --print "%t.callback.dfy" "%S/Inputs/github-issue-211-callback.dfy" > "%t.ignore"
 // RUN: echo "printed callback, option on: verifies" >> "%t"
 // RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%t.callback.dfy" >> "%t"
