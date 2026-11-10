@@ -2521,6 +2521,9 @@ and what information it produces about the verification process.
   When a function with a body overrides a trait function from another module, it
   also states the override axiom at the layer that calls use, so that a fact about
   the overriding function reaches the trait function without a cast to the trait.
+  For a source lambda with a declared precondition, it also exposes the necessary
+  direction of that precondition under the lambda's type, allocation and heap
+  requirements. This applies to stored and returned lambda values.
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
 
 * `--heap-free-lambda-facts` - check a lambda without a reads clause, whose
