@@ -263,6 +263,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> ContextualLambdaDomains = new("--contextual-lambda-domains", () => false,
     "With the refreshed type system, infer omitted parameters of function-result lambdas from the declared arrow domain. Disabled by default.");
 
+  public static readonly Option<bool> ContextualQuantifierDomains = new("--contextual-quantifier-domains", () => false,
+    "With the refreshed type system, infer an omitted bound variable type of a forall or exists expression from the declared type of the function parameters it is passed to, when every use of the variable is such an argument and all those parameters have the same type. Disabled by default.");
+
   public static readonly Option<bool> ConservativeMatchInference = new("--conservative-match-inference", () => false,
     "With the refreshed type system, infer the type of a match source by propagation before making default type decisions, so that an earlier literal can still take its type from the enclosing context. Disabled by default.");
 
@@ -733,6 +736,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(TypeSystemRefresh, OptionScope.Cli);
     OptionRegistry.RegisterOption(BitvectorMapKeys, OptionScope.Cli);
     OptionRegistry.RegisterOption(ContextualLambdaDomains, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ContextualQuantifierDomains, OptionScope.Cli);
     OptionRegistry.RegisterOption(ConservativeMatchInference, OptionScope.Cli);
     OptionRegistry.RegisterOption(DatatypeSubsetConversions, OptionScope.Cli);
     OptionRegistry.RegisterOption(AncestorQualifiedModuleIds, OptionScope.Cli);

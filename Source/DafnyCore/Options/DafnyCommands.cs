@@ -112,6 +112,7 @@ public static class DafnyCommands {
     CommonOptionBag.TypeSystemRefresh,
     CommonOptionBag.BitvectorMapKeys,
     CommonOptionBag.ContextualLambdaDomains,
+    CommonOptionBag.ContextualQuantifierDomains,
     CommonOptionBag.ConservativeMatchInference,
     CommonOptionBag.DatatypeSubsetConversions,
     CommonOptionBag.AncestorQualifiedModuleIds,
