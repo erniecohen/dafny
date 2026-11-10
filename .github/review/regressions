@@ -332,3 +332,5 @@ git-issues/github-issue-211.dfy
 git-issues/github-issue-103.dfy
 
 # Same-bound rule of --modular-termination, milestone M2 (https://github.com/erniecohen/dafny/issues/211): extends git-issues/github-issue-211.dfy, listed above.
+
+# Constraints, witnesses and function values under --modular-termination, milestone M3 (https://github.com/erniecohen/dafny/issues/211): extends git-issues/github-issue-211.dfy, listed above.
