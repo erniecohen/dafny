@@ -318,6 +318,21 @@ namespace Microsoft.Dafny {
 
           if (nw is TopLevelDeclWithMembers) {
             nwPointer.Set(MergeClass((TopLevelDeclWithMembers)nw, od));
+          } else if (od.Members.Count != 0 && nw is ConcreteTypeSynonymDecl synonym &&
+                     Reporter.Options.Get(CommonOptionBag.SynonymRefinesAbstractType)) {
+            // With --synonym-refines-abstract-type, "type O<Xs> = T<Xs>" refines an abstract type O with members
+            // as "T" would if it were named "O": the members of O are merged into T, under the same checks.
+            var target = SynonymRefinementTarget(m, synonym);
+            if (target == null) {
+              Error(ErrorId.ref_mismatched_type_with_members, nw,
+                "a {0} ({1}) refines an abstract type with members only as 'type {1}<Xs> = T<Xs>', where T is a new class, trait, " +
+                "datatype, newtype or abstract type of this module, used by no other such synonym",
+                nw.WhatKind, nw.Name);
+            } else {
+              CheckAgreement_TypeParameters(nw.Origin, d.TypeArgs, nw.TypeArgs, nw.Name, "type");
+              synonymRefinementTargets.Add(target);
+              MergeClass(target, od);
+            }
           } else if (od.Members.Count != 0) {
             Error(ErrorId.ref_mismatched_type_with_members, nw,
               "a {0} ({1}) cannot declare members, so it cannot refine an abstract type with members",
@@ -614,6 +629,34 @@ namespace Microsoft.Dafny {
         CardinalityParentObligations = nw.CardinalityParentObligations
           .AddRange(prev.Traits.Concat(prev.CardinalityParentObligations).Select(refinementCloner.CloneType))
       };
+    }
+
+    private readonly HashSet<TopLevelDeclWithMembers> synonymRefinementTargets = new();
+
+    /// <summary>
+    /// For "type O<X1, ..., Xn> = T<X1, ..., Xn>" in refining module "m", returns the declaration of T, provided T is
+    /// a class, trait, datatype, newtype or abstract type declared in "m" with exactly n type parameters, T is not
+    /// declared in the module "m" refines, and T is not the target of another such synonym.  Otherwise returns null.
+    /// </summary>
+    private TopLevelDeclWithMembers SynonymRefinementTarget(ModuleDefinition m, ConcreteTypeSynonymDecl synonym) {
+      if (synonym.Rhs is not UserDefinedType { NamePath: NameSegment } rhs ||
+          rhs.TypeArgs.Count != synonym.TypeArgs.Count || RefinedSig.TopLevels.ContainsKey(rhs.Name)) {
+        return null;
+      }
+      for (var i = 0; i < rhs.TypeArgs.Count; i++) {
+        if (rhs.TypeArgs[i] is not UserDefinedType { NamePath: NameSegment { OptTypeArguments: null } } arg ||
+            arg.Name != synonym.TypeArgs[i].Name) {
+          return null;
+        }
+      }
+      var candidates = m.SourceDecls.Where(decl => decl.Name == rhs.Name).ToList();
+      if (candidates.Count != 1 || candidates[0] is not TopLevelDeclWithMembers target ||
+          target is not (ClassLikeDecl or DatatypeDecl or NewtypeDecl or AbstractTypeDecl) || target is IteratorDecl ||
+          target is DefaultClassDecl || target.TypeArgs.Count != synonym.TypeArgs.Count ||
+          synonymRefinementTargets.Contains(target)) {
+        return null;
+      }
+      return target;
     }
 
     TopLevelDeclWithMembers MergeClass(TopLevelDeclWithMembers nw, TopLevelDeclWithMembers prev) {
