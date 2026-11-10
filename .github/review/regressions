@@ -342,3 +342,6 @@ git-issues/github-issue-200.dfy
 # Constraints, witnesses and function values under --modular-termination, milestone M3 (https://github.com/erniecohen/dafny/issues/211): extends git-issues/github-issue-211.dfy, listed above.
 
 # Bounds may not reach open dispatch under --modular-termination, milestone M4a (https://github.com/erniecohen/dafny/issues/211): extends git-issues/github-issue-211.dfy, listed above.
+
+# Declared lambda preconditions are necessary under --additional-axioms (#97).
+git-issues/github-issue-97.dfy
