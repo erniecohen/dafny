@@ -325,9 +325,8 @@ namespace Microsoft.Dafny {
             var target = SynonymRefinementTarget(m, synonym);
             if (target == null) {
               Error(ErrorId.ref_mismatched_type_with_members, nw,
-                "a {0} ({1}) can refine an abstract type with members only if its right-hand side is a type T, applied to the " +
-                "synonym's type parameters in order, where T is a class, trait, datatype, newtype or abstract type declared in this module, " +
-                "not in the module it refines, and is the right-hand side of no other such synonym",
+                "a {0} ({1}) refines an abstract type with members only as 'type {1}<Xs> = T<Xs>', where T is a new class, trait, " +
+                "datatype, newtype or abstract type of this module, used by no other such synonym",
                 nw.WhatKind, nw.Name);
             } else {
               CheckAgreement_TypeParameters(nw.Origin, d.TypeArgs, nw.TypeArgs, nw.Name, "type");
