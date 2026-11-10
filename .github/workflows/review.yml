@@ -474,7 +474,7 @@ jobs:
           "$Z3" --version
           python3 .github/review/std-verdicts.py run Source/DafnyStandardLibraries "$PWD/out/dafny/Dafny" "$Z3" \
             std-verdicts.tsv --cores 4 --additional-axioms ${{ matrix.axioms == 'on' }} \
-            --boogie /deterministicLiteralHashes:1
+            --boogie "/deterministicLiteralHashes:1 /restartProver"
           python3 .github/review/std-verdicts.py expected std-verdicts.tsv > "expected-std-verdicts-z3-$Z3V.tsv"
           # Fingerprints, to compare runs of one tree without downloading artifacts (#186):
           # the verdict columns, and the declarations' resource and proof counts.
@@ -486,7 +486,7 @@ jobs:
             echo
             echo "Source/DafnyStandardLibraries, verified as its Makefile's verify target does, with"
             echo "the library's own resource limits and no time limit, the library part with"
-            echo "Boogie's /deterministicLiteralHashes:1 (#186)."
+            echo "Boogie's /deterministicLiteralHashes:1 /restartProver (#186, #30)."
             echo
             python3 .github/review/std-verdicts.py summary std-verdicts.tsv
             echo
@@ -730,7 +730,7 @@ jobs:
       matrix:
         include:
           - rid: osx-arm64
-            os: macos-14
+            os: macos-15
           - rid: linux-x64
             os: ubuntu-24.04
     steps:

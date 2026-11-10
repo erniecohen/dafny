@@ -532,6 +532,10 @@ namespace Microsoft.Dafny {
       // for a function in a class C that overrides a function in a trait J, add an axiom that connects J.F and C.F
       if (f.OverriddenFunction != null) {
         sink.AddTopLevelDeclaration(FunctionOverrideAxiom(f.OverriddenFunction, f));
+        if (options.Get(CommonOptionBag.AdditionalAxioms) && !f.OverriddenFunction.IsFuelAware() && f.IsFuelAware()) {
+          // An instance of the override axiom at the layer that calls use, $LS($LZ); see FunctionOverrideAxiom.
+          sink.AddTopLevelDeclaration(FunctionOverrideAxiom(f.OverriddenFunction, f, callLayer: true));
+        }
       }
 
       // supply the connection between least/greatest predicates and prefix predicates
@@ -1299,7 +1303,7 @@ namespace Microsoft.Dafny {
     /// parameter to FunctionAxiom, which will add 'dtype(this) == class.C' as an additional antecedent) for a
     /// body of 'C.F(this, x#0)'.
     /// </summary>
-    private Boogie.Axiom FunctionOverrideAxiom(Function f, Function overridingFunction) {
+    private Boogie.Axiom FunctionOverrideAxiom(Function f, Function overridingFunction, bool callLayer = false) {
       Contract.Requires(f != null);
       Contract.Requires(overridingFunction != null);
       Contract.Requires(Predef != null);
@@ -1360,6 +1364,13 @@ namespace Microsoft.Dafny {
         // We can't use a bound variable $fuel, because then one of the triggers won't be mentioning this $fuel.
         // Instead, we do the next best thing: use the literal $LZ.
         layer = new Boogie.IdentifierExpr(f.Origin, "$LZ", Predef.LayerType); // $LZ
+        if (callLayer) {
+          // Under --additional-axioms, a second instance uses $LS($LZ), the layer of a call with default fuel, so that a
+          // fact about such a call of the overriding function reaches the overridden function
+          // (https://github.com/erniecohen/dafny/issues/103).  It follows from the $LZ instance and the fuel axiom
+          // F($LS(ly), ...) == F(ly, ...) at ly := $LZ.
+          layer = FunctionCall(f.Origin, BuiltinFunction.LayerSucc, null, layer); // $LS($LZ)
+        }
       }
 
       if (f.IsOpaque || f.IsMadeImplicitlyOpaque(options)) {
@@ -1472,7 +1483,8 @@ namespace Microsoft.Dafny {
       // The axiom
       Boogie.Expr ax = BplForall(f.Origin, [], forallFormals, null, tr,
         BplImp(ante, BplAnd(canCallImp, synonyms)));
-      var comment = $"override axiom for {f.FullSanitizedName} in {overridingFunction.EnclosingClass.WhatKind} {overridingFunction.EnclosingClass.FullSanitizedName}";
+      var comment = $"override axiom for {f.FullSanitizedName} in {overridingFunction.EnclosingClass.WhatKind} {overridingFunction.EnclosingClass.FullSanitizedName}" +
+                    (callLayer ? ", at the call layer $LS($LZ) (additional axioms)" : "");
       return new Boogie.Axiom(f.Origin, ax, comment);
     }
 

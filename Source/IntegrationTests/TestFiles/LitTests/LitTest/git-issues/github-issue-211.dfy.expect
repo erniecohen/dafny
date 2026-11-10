@@ -117,8 +117,10 @@ github-issue-211-same-bound-rules.dfy(43,74): Error: decreases clause might not 
 github-issue-211-same-bound-rules.dfy(54,18): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 github-issue-211-same-bound-rules.dfy(80,33): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 github-issue-211-same-bound-rules.dfy(99,29): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-same-bound-rules.dfy(112,41): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-same-bound-rules.dfy(120,34): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
-Dafny program verifier finished with 24 verified, 7 errors
+Dafny program verifier finished with 28 verified, 9 errors
 same bound, option on, refresh true: verifies
 
 Dafny program verifier finished with 16 verified, 0 errors
@@ -142,8 +144,13 @@ github-issue-211-same-bound-rules.dfy(43,74): Error: decreases clause might not 
 github-issue-211-same-bound-rules.dfy(54,18): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 github-issue-211-same-bound-rules.dfy(80,33): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 github-issue-211-same-bound-rules.dfy(99,29): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-same-bound-rules.dfy(112,41): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-same-bound-rules.dfy(120,34): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
-Dafny program verifier finished with 24 verified, 7 errors
+Dafny program verifier finished with 28 verified, 9 errors
+KNOWN GAP: a subset-type constraint reaches the dispatched call, option on: verifies
+
+Dafny program verifier finished with 4 verified, 0 errors
 same-bound hints, option on
 github-issue-211-same-bound.dfy(27,11): Info: tail recursive
 github-issue-211-same-bound.dfy(17,29): Info: modular termination: in 'L.H', dispatch of 'Tr.T.F' to implementations that other modules may provide needs the smaller-bound rule; checked: the callee's global bound must be below the caller's
