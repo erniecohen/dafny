@@ -116,6 +116,7 @@ public static class DafnyCommands {
     CommonOptionBag.ConservativeMatchInference,
     CommonOptionBag.DatatypeSubsetConversions,
     CommonOptionBag.AncestorQualifiedModuleIds,
+    CommonOptionBag.SynonymRefinesAbstractType,
     CommonOptionBag.ModularTermination,
     CommonOptionBag.InvariantConstructorInference,
     CommonOptionBag.TypeInferenceDebug,

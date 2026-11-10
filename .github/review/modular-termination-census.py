@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 """Census of the calls that need the smaller-bound rule of --modular-termination
-(https://github.com/erniecohen/dafny/issues/211, milestone M1).
+(https://github.com/erniecohen/dafny/issues/211, milestones M1 and M2).
 
 Resolves every program of a corpus with `--modular-termination --show-hints` and counts
 the classifier's hints ("modular termination: in 'C', ..."): calls dispatched into
-implementations that other modules may provide, and calls through function values.  The
+implementations that other modules may provide (smaller-bound rule, M1), calls to known code
+that can reach such a dispatch (same-bound rule, M2), and calls through function values.  The
 counts are static, one per call site; they need no solver.
+
+The same-bound counts include a projection: if every dispatched trait member gets the bound that
+M1 requires, its overrides inherit it, and then each unbounded helper that such a member, or a
+helper that itself needs a bound, calls under the same-bound rule needs a bound of its own.  The
+projection iterates that to a fixed point, per program.
 
   modular-termination-census.py DAFNY lit DIR OUT       every .dfy file under DIR
   modular-termination-census.py DAFNY project TOML OUT  one project file (the standard library)
@@ -28,6 +34,13 @@ TIMEOUT = 300
 # Dafny names may contain primes, so quoted names end at the text that follows them.
 HINT = re.compile(r"^(?P<file>[^()\n]+)\((?P<line>\d+),(?P<col>\d+)\): Info: modular termination: in '(?P<caller>.*?)', (?P<rest>.*)$")
 DISPATCH = re.compile(r"^dispatch of '(?P<callee>.*?)' to implementations .*needs the smaller-bound rule; (?P<status>.*)$")
+SAME = re.compile(r"^a call of '(?P<callee>.*?)', which can reach dispatch .*\(same-bound rule\); the callee has (?P<cb>a|no) 'decreases \{:global\}' bound, (?P<caller>.*)$")
+CALLER_STATUS = [
+    ("checked:", "bounded"),
+    ("so the call is rejected", "bounded"),
+    ("and the caller has none until", "inherits"),
+    ("and the caller has none,", "none"),
+]
 CALLBACK_KINDS = {
     "a call through a function value": "function value",
     "a sequence constructor's calls of its initializing function": "seq constructor",
@@ -58,7 +71,12 @@ def hints(output, only_file=None):
             continue
         hint = {"file": m.group("file"), "line": int(m.group("line")), "col": int(m.group("col")), "caller": m.group("caller")}
         d = DISPATCH.match(m.group("rest"))
-        if d:
+        sb = SAME.match(m.group("rest"))
+        if sb:
+            status = next((v for k, v in CALLER_STATUS if sb.group("caller").startswith(k)), "none")
+            hint.update(kind="same-bound", callee=sb.group("callee"), callee_bound=sb.group("cb") == "a",
+                        caller_status=status)
+        elif d:
             status = d.group("status")
             hint.update(kind="dispatch", callee=d.group("callee"),
                         callee_bound=not status.startswith("the callee has no"))
@@ -91,7 +109,18 @@ def summarize(programs):
     modes = collections.Counter(p["mode"] for p in programs)
     key = lambda h, f: (h["file"], h[f])
     site = lambda h: (h["file"], h["line"], h["col"])
+    same = [h for h in all_hints if h["kind"] == "same-bound"]
+    rejected = [h for h in same if h["caller_status"] == "bounded" and not h["callee_bound"]]
+    need = projected_needs(same)
     return {
+        "same_sites": len({site(h) for h in same}),
+        "same_programs": len({h["file"] for h in same}),
+        "same_callees": len({key(h, "callee") for h in same}),
+        "same_rejected_sites": len({site(h) for h in rejected}),
+        "same_rejected_callees": len({key(h, "callee") for h in rejected}),
+        "same_rejected_programs": len({h["file"] for h in rejected}),
+        "projected_helpers": len(need),
+        "projected_programs": len({f for f, _ in need}),
         "programs": len(programs),
         "resolved_default": modes["default"],
         "resolved_refresh": modes["refresh"],
@@ -110,6 +139,22 @@ def summarize(programs):
     }
 
 
+def projected_needs(same):
+    """The helpers that need a bound once every dispatched trait member has one (see the module doc)."""
+    bounded = {(h["file"], h["caller"]) for h in same if h["caller_status"] in ("bounded", "inherits")}
+    bounded |= {(h["file"], h["callee"]) for h in same if h["callee_bound"]}
+    need = set()
+    changed = True
+    while changed:
+        changed = False
+        for h in same:
+            callee = (h["file"], h["callee"])
+            if (h["file"], h["caller"]) in bounded | need and not h["callee_bound"] and callee not in need:
+                need.add(callee)
+                changed = True
+    return need
+
+
 def markdown(title, totals, programs):
     rows = [f"### {title}", "", "| measure | count |", "|---|---|"]
     labels = [
@@ -123,7 +168,15 @@ def markdown(title, totals, programs):
         ("dispatch_callees", "distinct trait members so called, by qualified name: each needs `decreases {:global}`"),
         ("dispatch_callers", "distinct callers of them"),
         ("dispatch_sites_with_callee_bound", "of the call sites, those whose callee has a global bound"),
-        ("callback_sites", "calls through function values (source positions; not checked in M1)"),
+        ("same_sites", "calls to known code that can reach such a dispatch (same-bound rule, M2; source positions)"),
+        ("same_programs", "files with such a call"),
+        ("same_callees", "distinct callees so called"),
+        ("same_rejected_sites", "of those calls, ones rejected now: the caller has a bound and the callee none"),
+        ("same_rejected_callees", "distinct callees in them, each needing a bound"),
+        ("same_rejected_programs", "files with such a rejected call"),
+        ("projected_helpers", "projected: helpers needing a bound once every dispatched trait member has one"),
+        ("projected_programs", "projected: files with such a helper"),
+        ("callback_sites", "calls through function values (source positions; not checked)"),
         ("callback_hints", "the same, counting each copy that module refinement makes"),
         ("callback_programs", "files with such a call"),
         ("callback_callers", "distinct callers with such a call"),

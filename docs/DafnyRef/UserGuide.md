@@ -2290,15 +2290,24 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   `ancestor-qualified-module-ids = true` in a project file's `[options]` section.
   See [module ordering](#sec-module-ordering).
 
-* `--modular-termination` - (experimental, a first step that does not yet establish
-  termination) accept `decreases {:global}` clauses, and reject a call dispatched to a
+* `--synonym-refines-abstract-type` - let a type synonym `type T<Xs> = U<Xs>` in a
+  refining module refine an abstract type `T` that has members, where `U` is a class,
+  trait, datatype, newtype or abstract type declared in the refining module. The members
+  of `T` are merged into `U`, under the checks of any other refinement of `T`. Without it,
+  the synonym is rejected because it cannot declare members. Disabled by default. Use
+  `synonym-refines-abstract-type = true` in a project file's `[options]` section. See
+  [type refinement](#sec-module-refinement).
+
+* `--modular-termination` - (experimental; it does not yet establish termination in every
+  program) accept `decreases {:global}` clauses, and reject a call dispatched to a
   bodyless member of a trait whose implementations may lie in other modules unless it
-  goes to a smaller `decreases {:global}` bound. Only such calls made directly by a member
-  with a bound are compared with it. A cycle through a helper or a function value is not
-  detected, so a program can still prove `false`. With `--show-hints`, it reports every
-  call that needs the rule. Disabled by default. Use `modular-termination = true` in a
-  project file's `[options]` section. See [global bounds](#sec-global-decreases) for the
-  rule and its limits.
+  goes to a smaller `decreases {:global}` bound, and a call to known code that can reach
+  such a dispatched call unless it goes to a bound that is not larger. A helper that
+  forwards a dispatched call therefore needs a bound of its own. Calls through function
+  values are not checked, so a program can still prove `false`. With `--show-hints`, it
+  reports every call that needs one of the rules. Disabled by default. Use
+  `modular-termination = true` in a project file's `[options]` section. See
+  [global bounds](#sec-global-decreases) for the rules and their limits.
 
 Legacy options:
 

@@ -1,0 +1,178 @@
+original (type-system-refresh:false, synonym-refines-abstract-type:false)
+github-issue-91-original.dfy(6,9): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+1 resolution/type errors detected in github-issue-91-original.dfy
+original (type-system-refresh:false, synonym-refines-abstract-type:true)
+
+Dafny program verifier finished with 0 verified, 0 errors
+original (type-system-refresh:true, synonym-refines-abstract-type:false)
+github-issue-91-original.dfy(6,9): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+1 resolution/type errors detected in github-issue-91-original.dfy
+original (type-system-refresh:true, synonym-refines-abstract-type:true)
+
+Dafny program verifier finished with 0 verified, 0 errors
+positive (type-system-refresh:false, synonym-refines-abstract-type:false)
+github-issue-91-positive.dfy(7,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-positive.dfy(14,34): Warning: This ensures clause is part of a bodyless function. Add the {:axiom} attribute to it or the enclosing function to suppress this warning
+github-issue-91-positive.dfy(24,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-positive.dfy(30,52): Warning: This ensures clause is part of a bodyless method. Add the {:axiom} attribute to it or the enclosing method to suppress this warning
+github-issue-91-positive.dfy(37,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-positive.dfy(46,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-positive.dfy(55,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-positive.dfy(65,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-positive.dfy(66,29): Error: member 'G' does not exist in class 'K'
+github-issue-91-positive.dfy(61,26): Error: member 'G' does not exist in class 'K'
+github-issue-91-positive.dfy(63,7): Related location: refining module
+8 resolution/type errors detected in github-issue-91-positive.dfy
+positive (type-system-refresh:false, synonym-refines-abstract-type:true)
+github-issue-91-positive.dfy(14,34): Warning: This ensures clause is part of a bodyless function. Add the {:axiom} attribute to it or the enclosing function to suppress this warning
+github-issue-91-positive.dfy(30,52): Warning: This ensures clause is part of a bodyless method. Add the {:axiom} attribute to it or the enclosing method to suppress this warning
+
+Dafny program verifier finished with 10 verified, 0 errors
+positive (type-system-refresh:true, synonym-refines-abstract-type:false)
+github-issue-91-positive.dfy(7,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-positive.dfy(14,34): Warning: This ensures clause is part of a bodyless function. Add the {:axiom} attribute to it or the enclosing function to suppress this warning
+github-issue-91-positive.dfy(24,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-positive.dfy(30,52): Warning: This ensures clause is part of a bodyless method. Add the {:axiom} attribute to it or the enclosing method to suppress this warning
+github-issue-91-positive.dfy(37,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-positive.dfy(46,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-positive.dfy(55,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-positive.dfy(65,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-positive.dfy(66,29): Error: member 'G' does not exist in class 'K'
+github-issue-91-positive.dfy(61,26): Error: member 'G' does not exist in class 'K'
+github-issue-91-positive.dfy(63,7): Related location: refining module
+8 resolution/type errors detected in github-issue-91-positive.dfy
+positive (type-system-refresh:true, synonym-refines-abstract-type:true)
+github-issue-91-positive.dfy(14,34): Warning: This ensures clause is part of a bodyless function. Add the {:axiom} attribute to it or the enclosing function to suppress this warning
+github-issue-91-positive.dfy(30,52): Warning: This ensures clause is part of a bodyless method. Add the {:axiom} attribute to it or the enclosing method to suppress this warning
+
+Dafny program verifier finished with 10 verified, 0 errors
+contract (type-system-refresh:false, synonym-refines-abstract-type:false)
+github-issue-91-contract.dfy(3,41): Warning: This ensures clause is part of a bodyless function. Add the {:axiom} attribute to it or the enclosing function to suppress this warning
+github-issue-91-contract.dfy(7,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+1 resolution/type errors detected in github-issue-91-contract.dfy
+contract (type-system-refresh:false, synonym-refines-abstract-type:true)
+github-issue-91-contract.dfy(3,41): Warning: This ensures clause is part of a bodyless function. Add the {:axiom} attribute to it or the enclosing function to suppress this warning
+github-issue-91-contract.dfy(6,39): Error: a postcondition could not be proved on this return path
+github-issue-91-contract.dfy(3,41): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 1 error
+contract (type-system-refresh:true, synonym-refines-abstract-type:false)
+github-issue-91-contract.dfy(3,41): Warning: This ensures clause is part of a bodyless function. Add the {:axiom} attribute to it or the enclosing function to suppress this warning
+github-issue-91-contract.dfy(7,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+1 resolution/type errors detected in github-issue-91-contract.dfy
+contract (type-system-refresh:true, synonym-refines-abstract-type:true)
+github-issue-91-contract.dfy(3,41): Warning: This ensures clause is part of a bodyless function. Add the {:axiom} attribute to it or the enclosing function to suppress this warning
+github-issue-91-contract.dfy(6,39): Error: a postcondition could not be proved on this return path
+github-issue-91-contract.dfy(3,41): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 1 verified, 1 error
+false-control (type-system-refresh:false, synonym-refines-abstract-type:false)
+github-issue-91-false-control.dfy(3,41): Warning: This ensures clause is part of a bodyless function. Add the {:axiom} attribute to it or the enclosing function to suppress this warning
+github-issue-91-false-control.dfy(8,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+1 resolution/type errors detected in github-issue-91-false-control.dfy
+false-control (type-system-refresh:false, synonym-refines-abstract-type:true)
+github-issue-91-false-control.dfy(3,41): Warning: This ensures clause is part of a bodyless function. Add the {:axiom} attribute to it or the enclosing function to suppress this warning
+github-issue-91-false-control.dfy(9,36): Error: a postcondition could not be proved on this return path
+github-issue-91-false-control.dfy(9,30): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 3 verified, 1 error
+false-control (type-system-refresh:true, synonym-refines-abstract-type:false)
+github-issue-91-false-control.dfy(3,41): Warning: This ensures clause is part of a bodyless function. Add the {:axiom} attribute to it or the enclosing function to suppress this warning
+github-issue-91-false-control.dfy(8,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+1 resolution/type errors detected in github-issue-91-false-control.dfy
+false-control (type-system-refresh:true, synonym-refines-abstract-type:true)
+github-issue-91-false-control.dfy(3,41): Warning: This ensures clause is part of a bodyless function. Add the {:axiom} attribute to it or the enclosing function to suppress this warning
+github-issue-91-false-control.dfy(9,36): Error: a postcondition could not be proved on this return path
+github-issue-91-false-control.dfy(9,30): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 3 verified, 1 error
+characteristics (type-system-refresh:false, synonym-refines-abstract-type:false)
+github-issue-91-characteristics.dfy(5,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-characteristics.dfy(5,7): Error: to be a refinement of abstract type 'AEq.O' declared with (==), type synonym 'BEq.O' must support equality
+github-issue-91-characteristics.dfy(11,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-characteristics.dfy(11,7): Error: to be a refinement of abstract type 'AInit.O' declared with (0), type synonym 'BInit.O' must support auto-initialization
+github-issue-91-characteristics.dfy(17,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-characteristics.dfy(17,7): Error: to be a refinement of abstract type 'ANonempty.O' declared with (00), type synonym 'BNonempty.O' must be nonempty
+github-issue-91-characteristics.dfy(23,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-characteristics.dfy(23,7): Error: to be a refinement of abstract type 'ANoNew.O' declared with (!new), type synonym 'BNoNew.O' must contain no references
+8 resolution/type errors detected in github-issue-91-characteristics.dfy
+characteristics (type-system-refresh:false, synonym-refines-abstract-type:true)
+github-issue-91-characteristics.dfy(5,7): Error: to be a refinement of abstract type 'AEq.O' declared with (==), type synonym 'BEq.O' must support equality
+github-issue-91-characteristics.dfy(11,7): Error: to be a refinement of abstract type 'AInit.O' declared with (0), type synonym 'BInit.O' must support auto-initialization
+github-issue-91-characteristics.dfy(17,7): Error: to be a refinement of abstract type 'ANonempty.O' declared with (00), type synonym 'BNonempty.O' must be nonempty
+github-issue-91-characteristics.dfy(23,7): Error: to be a refinement of abstract type 'ANoNew.O' declared with (!new), type synonym 'BNoNew.O' must contain no references
+4 resolution/type errors detected in github-issue-91-characteristics.dfy
+characteristics (type-system-refresh:true, synonym-refines-abstract-type:false)
+github-issue-91-characteristics.dfy(5,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-characteristics.dfy(5,7): Error: to be a refinement of abstract type 'AEq.O' declared with (==), type synonym 'BEq.O' must support equality
+github-issue-91-characteristics.dfy(11,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-characteristics.dfy(11,7): Error: to be a refinement of abstract type 'AInit.O' declared with (0), type synonym 'BInit.O' must support auto-initialization
+github-issue-91-characteristics.dfy(17,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-characteristics.dfy(17,7): Error: to be a refinement of abstract type 'ANonempty.O' declared with (00), type synonym 'BNonempty.O' must be nonempty
+github-issue-91-characteristics.dfy(23,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-characteristics.dfy(23,7): Error: to be a refinement of abstract type 'ANoNew.O' declared with (!new), type synonym 'BNoNew.O' must contain no references
+8 resolution/type errors detected in github-issue-91-characteristics.dfy
+characteristics (type-system-refresh:true, synonym-refines-abstract-type:true)
+github-issue-91-characteristics.dfy(5,7): Error: to be a refinement of abstract type 'AEq.O' declared with (==), type synonym 'BEq.O' must support equality
+github-issue-91-characteristics.dfy(11,7): Error: to be a refinement of abstract type 'AInit.O' declared with (0), type synonym 'BInit.O' must support auto-initialization
+github-issue-91-characteristics.dfy(17,7): Error: to be a refinement of abstract type 'ANonempty.O' declared with (00), type synonym 'BNonempty.O' must be nonempty
+github-issue-91-characteristics.dfy(23,7): Error: to be a refinement of abstract type 'ANoNew.O' declared with (!new), type synonym 'BNoNew.O' must contain no references
+4 resolution/type errors detected in github-issue-91-characteristics.dfy
+variance (type-system-refresh:false, synonym-refines-abstract-type:false)
+github-issue-91-variance.dfy(5,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-variance.dfy(5,17): Error: formal type parameter 'X' is not used according to its variance specification
+github-issue-91-variance.dfy(10,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+3 resolution/type errors detected in github-issue-91-variance.dfy
+variance (type-system-refresh:false, synonym-refines-abstract-type:true)
+github-issue-91-variance.dfy(4,14): Error: type parameter 'X' is not allowed to change variance (here, from '+' to '-')
+github-issue-91-variance.dfy(4,14): Error: type parameter 'X' is not allowed to weaken its strict cardinality contract in a refinement
+github-issue-91-variance.dfy(5,17): Error: formal type parameter 'X' is not used according to its variance specification
+github-issue-91-variance.dfy(10,10): Error: type parameter 'X' is not allowed to change variance (here, from '+' to '-')
+github-issue-91-variance.dfy(10,10): Error: type parameter 'X' is not allowed to weaken its strict cardinality contract in a refinement
+github-issue-91-variance.dfy(9,14): Error: type parameter 'X' is not allowed to change variance (here, from '+' to '-')
+github-issue-91-variance.dfy(9,14): Error: type parameter 'X' is not allowed to weaken its strict cardinality contract in a refinement
+7 resolution/type errors detected in github-issue-91-variance.dfy
+variance (type-system-refresh:true, synonym-refines-abstract-type:false)
+github-issue-91-variance.dfy(5,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-variance.dfy(5,17): Error: formal type parameter 'X' is not used according to its variance specification
+github-issue-91-variance.dfy(10,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+3 resolution/type errors detected in github-issue-91-variance.dfy
+variance (type-system-refresh:true, synonym-refines-abstract-type:true)
+github-issue-91-variance.dfy(4,14): Error: type parameter 'X' is not allowed to change variance (here, from '+' to '-')
+github-issue-91-variance.dfy(4,14): Error: type parameter 'X' is not allowed to weaken its strict cardinality contract in a refinement
+github-issue-91-variance.dfy(5,17): Error: formal type parameter 'X' is not used according to its variance specification
+github-issue-91-variance.dfy(10,10): Error: type parameter 'X' is not allowed to change variance (here, from '+' to '-')
+github-issue-91-variance.dfy(10,10): Error: type parameter 'X' is not allowed to weaken its strict cardinality contract in a refinement
+github-issue-91-variance.dfy(9,14): Error: type parameter 'X' is not allowed to change variance (here, from '+' to '-')
+github-issue-91-variance.dfy(9,14): Error: type parameter 'X' is not allowed to weaken its strict cardinality contract in a refinement
+7 resolution/type errors detected in github-issue-91-variance.dfy
+shapes (type-system-refresh:false, synonym-refines-abstract-type:false)
+github-issue-91-shapes.dfy(4,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-shapes.dfy(8,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-shapes.dfy(12,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-shapes.dfy(17,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-shapes.dfy(18,7): Error: a type synonym (P) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-shapes.dfy(22,7): Error: a subset type (O) cannot declare members, so it cannot refine an abstract type with members
+6 resolution/type errors detected in github-issue-91-shapes.dfy
+shapes (type-system-refresh:false, synonym-refines-abstract-type:true)
+github-issue-91-shapes.dfy(4,7): Error: a type synonym (O) refines an abstract type with members only as 'type O<Xs> = T<Xs>', where T is a new class, trait, datatype, newtype or abstract type of this module, used by no other such synonym
+github-issue-91-shapes.dfy(8,7): Error: a type synonym (O) refines an abstract type with members only as 'type O<Xs> = T<Xs>', where T is a new class, trait, datatype, newtype or abstract type of this module, used by no other such synonym
+github-issue-91-shapes.dfy(12,7): Error: a type synonym (O) refines an abstract type with members only as 'type O<Xs> = T<Xs>', where T is a new class, trait, datatype, newtype or abstract type of this module, used by no other such synonym
+github-issue-91-shapes.dfy(18,7): Error: a type synonym (P) refines an abstract type with members only as 'type P<Xs> = T<Xs>', where T is a new class, trait, datatype, newtype or abstract type of this module, used by no other such synonym
+github-issue-91-shapes.dfy(22,7): Error: a subset type (O) cannot declare members, so it cannot refine an abstract type with members
+5 resolution/type errors detected in github-issue-91-shapes.dfy
+shapes (type-system-refresh:true, synonym-refines-abstract-type:false)
+github-issue-91-shapes.dfy(4,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-shapes.dfy(8,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-shapes.dfy(12,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-shapes.dfy(17,7): Error: a type synonym (O) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-shapes.dfy(18,7): Error: a type synonym (P) cannot declare members, so it cannot refine an abstract type with members
+github-issue-91-shapes.dfy(22,7): Error: a subset type (O) cannot declare members, so it cannot refine an abstract type with members
+6 resolution/type errors detected in github-issue-91-shapes.dfy
+shapes (type-system-refresh:true, synonym-refines-abstract-type:true)
+github-issue-91-shapes.dfy(4,7): Error: a type synonym (O) refines an abstract type with members only as 'type O<Xs> = T<Xs>', where T is a new class, trait, datatype, newtype or abstract type of this module, used by no other such synonym
+github-issue-91-shapes.dfy(8,7): Error: a type synonym (O) refines an abstract type with members only as 'type O<Xs> = T<Xs>', where T is a new class, trait, datatype, newtype or abstract type of this module, used by no other such synonym
+github-issue-91-shapes.dfy(12,7): Error: a type synonym (O) refines an abstract type with members only as 'type O<Xs> = T<Xs>', where T is a new class, trait, datatype, newtype or abstract type of this module, used by no other such synonym
+github-issue-91-shapes.dfy(18,7): Error: a type synonym (P) refines an abstract type with members only as 'type P<Xs> = T<Xs>', where T is a new class, trait, datatype, newtype or abstract type of this module, used by no other such synonym
+github-issue-91-shapes.dfy(22,7): Error: a subset type (O) cannot declare members, so it cannot refine an abstract type with members
+5 resolution/type errors detected in github-issue-91-shapes.dfy

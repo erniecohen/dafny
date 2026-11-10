@@ -437,49 +437,74 @@ module L {
 With a parameter `n: nat` and `decreases {:global} n` on both members, and
 `other.A(this, n - 1)` and `other.B(this, n - 1)` under `n != 0`, the program verifies.
 
-With `--show-hints`, Dafny reports each call that needs this rule: each dispatched call
-described above, and each call through a function value whose code is not known (an
-application `f(x)`, and the initializing function of `seq(n, f)` and `new T[n](f)`).
+A call to code that is known statically (a function, a method, a constructor, a member of a trait
+that no other module extends, or an iterator) runs under its caller's bound. If the callee can
+reach such a dispatched call, through its own body, the default values of its parameters, or the
+code it calls in turn, the call
+must not go to a larger global bound: the callee's global bound, at the call's arguments, must be
+at most the caller's, evaluated on entry to the caller. A callee that cannot reach a dispatched
+call needs no bound and gets no such check. So a helper that forwards a dispatched call needs a
+global bound of its own:
 
-**This first version does not establish termination.** It rejects only cycles whose
-dispatched calls are made directly by members with a global bound. A program that it
-accepts can still fail to terminate, and can prove `false`:
+<!-- %no-check -->
+```dafny
+module Tr { trait {:termination false} T { function F(n: nat): nat decreases {:global} n } }
+module L {
+  import Tr
+  function H(t: Tr.T, n: nat): nat decreases {:global} n { if n == 0 then 0 else t.F(n - 1) }
+}
+module Y {
+  import Tr
+  import L
+  class Y extends Tr.T { function F(n: nat): nat { L.H(this, n) } }
+}
+```
 
-* A call to a known method or function is not checked against the caller's global bound.
-  A dispatched call made through such a helper is checked against the helper's bound
-  instead. A helper without a bound is above every other bound, and a helper's own bound
-  is never compared with its caller's, so one forwarding helper hides a cycle. In this
-  program, which verifies under the option, `Y.F(n)` calls `L.H(this, n)`, which calls
-  `t.F(n)` on the same object, and `Bad` proves `false`:
+Here `Y.F` inherits the bound `n` and calls `L.H(this, n)`, whose bound `n` is not larger;
+`L.H` makes the dispatched call at the smaller bound `n - 1`. Without the bound on `H`, or with
+`t.F(n)` in place of `t.F(n - 1)`, or with a larger bound such as `n + 1` on `H`, the program is
+rejected. Calls with the same bound may recurse: the ordinary decreases clause orders them, as
+before. Bounds of different lengths are compared as decreases tuples are, with missing components
+above every value: a bound `n, 7` is at most `n`, but `n` is not at most `n, 0`. The method of a
+function's `by method` body has the function's bound.
 
-  <!-- %no-check -->
-  ```dafny
-  module Tr { trait {:termination false} T { function F(n: nat): nat decreases {:global} n } }
-  module L { import Tr  function H(t: Tr.T, n: nat): nat { t.F(n) } }
-  module Y {
-    import Tr
-    import L
-    class Y extends Tr.T { constructor() { }  function F(n: nat): nat { L.H(this, n) + 1 } }
-    method Bad() ensures false {
-      var y := new Y();
-      assert y.F(0) == L.H(y, 0) + 1;
-      var t: Tr.T := y;
-      assert L.H(y, 0) == t.F(0) == y.F(0);
-    }
-  }
-  ```
-* Calls through function values are reported but not checked.
+Together the two rules order every chain of calls: along it, the global bound never goes up and
+goes down at each dispatched call, and once no dispatched call can follow, the existing
+termination checks apply.
+
+With `--show-hints`, Dafny reports each call that needs one of the two rules: each dispatched call
+described above, each call to known code that can reach one, and each call through a function value
+whose code is not known (an application `f(x)`, and the initializing function of `seq(n, f)` and
+`new T[n](f)`).
+
+**This version does not yet establish termination in every program.** A program that it accepts
+can still fail to terminate, and can prove `false`, through what it does not check:
+
+* Calls through function values are reported but not checked, and code that a function value
+  calls is not part of what a callee can reach.
+* A helper that forwards a dispatched call needs a global bound of its own; Dafny does not infer
+  one from its callers.
 * A trait is open because of `{:termination false}`, or because of the extensions in the
   program being verified. A library verified on its own therefore does not see a type
   that a later program declares with `@AssumeCrossModuleTermination` to extend one of its
-  traits. Calls through such a trait were verified without the rule.
-  `{:termination false}` and `@AssumeCrossModuleTermination` keep their meaning, and only
-  `dafny audit` reports them.
+  traits. Calls through such a trait, and to the code that reaches them, were verified without
+  the rules. `{:termination false}` and `@AssumeCrossModuleTermination` keep their meaning, and
+  only `dafny audit` reports them.
 * The comparison of bounds may use the definitions of functions whose termination is
   being established.
+* The constraint and the witness of a subset type or newtype belong to no method or function. A
+  type test `x is T`, or compiled code that evaluates a witness, runs them with no call to check,
+  so a dispatched call that they make is not compared with the bound of the code that evaluates
+  them.
+* An iterator has no global bound, so a call of an iterator that reaches a dispatched call is
+  rejected from a member with a bound.
 * The C# parser is what turns `decreases {:global} E` into a global bound. A program that
   reaches Dafny through another front end, serialized, keeps it as an ordinary decreases
   clause with an argument-less `{:global}` attribute.
+
+The first version of the option compared a dispatched call only with the bound of the member
+that made it directly, so a helper without a bound, or with a larger one, could forward a
+dispatched call and hide a cycle; the rule for calls to known code rejects such a helper.
 
 Internally, the global clause is the attribute `{:global E}` on the decreases clause, and
 under the option that spelling is read the same way: `decreases {:global n} 7` declares
