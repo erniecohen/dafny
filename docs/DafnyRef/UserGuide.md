@@ -2274,6 +2274,14 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   `ancestor-qualified-module-ids = true` in a project file's `[options]` section.
   See [module ordering](#sec-module-ordering).
 
+* `--synonym-refines-abstract-type` - let a type synonym `type T<Xs> = U<Xs>` in a
+  refining module refine an abstract type `T` that has members, where `U` is a class,
+  trait, datatype, newtype or abstract type declared in the refining module. The members
+  of `T` are merged into `U`, under the checks of any other refinement of `T`. Without it,
+  the synonym is rejected because it cannot declare members. Disabled by default. Use
+  `synonym-refines-abstract-type = true` in a project file's `[options]` section. See
+  [type refinement](#sec-module-refinement).
+
 * `--modular-termination` - (experimental; it does not yet establish termination in every
   program) accept `decreases {:global}` clauses, and reject a call dispatched to a
   bodyless member of a trait whose implementations may lie in other modules unless it

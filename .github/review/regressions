@@ -332,3 +332,6 @@ git-issues/github-issue-211.dfy
 git-issues/github-issue-103.dfy
 
 # Same-bound rule of --modular-termination, milestone M2 (https://github.com/erniecohen/dafny/issues/211): extends git-issues/github-issue-211.dfy, listed above.
+
+# Opt-in --synonym-refines-abstract-type: a type synonym refines an abstract type with members (https://github.com/erniecohen/dafny/issues/91).
+git-issues/github-issue-91.dfy
