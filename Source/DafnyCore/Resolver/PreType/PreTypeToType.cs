@@ -108,7 +108,60 @@ class PreTypeToTypeVisitor : ASTVisitor<IASTVisitorContext> {
     }
   }
 
+  /// <summary>
+  /// Under --contextual-quantifier-domains, give a bound variable of a forall or exists expression whose type is
+  /// omitted the declared type S of the formals it is passed to, as if it were written "x: S". This applies only if
+  /// every occurrence of the variable is a direct argument of a call to a function without type parameters, all
+  /// those formals are declared with the same type S, and S has the variable's inferred base type. Any other use of
+  /// the variable, such as "x.f" or "x == e", keeps the base type.
+  /// </summary>
+  private static void InferQuantifierDomains(QuantifierExpr quantifierExpr) {
+    foreach (var boundVar in quantifierExpr.BoundVars) {
+      if (boundVar.IsTypeExplicit || boundVar.UnnormalizedType is not InferredTypeProxy { T: null } proxy) {
+        continue;
+      }
+      var occurrences = new HashSet<IdentifierExpr>();
+      var argumentOccurrences = new HashSet<IdentifierExpr>();
+      Type domain = null;
+      var consistent = true;
+      void Collect(Expression e) {
+        if (e is IdentifierExpr { Var: var v } identifierExpr && v == boundVar) {
+          occurrences.Add(identifierExpr);
+        } else if (e is FunctionCallExpr { Function: { } function } call &&
+                   function.TypeArgs.Count == 0 && function.EnclosingClass.TypeArgs.Count == 0 &&
+                   call.Args.Count == function.Ins.Count) {
+          for (var i = 0; i < call.Args.Count; i++) {
+            if (call.Args[i].Resolved is IdentifierExpr { Var: var w } arg && w == boundVar) {
+              argumentOccurrences.Add(arg);
+              var formalType = function.Ins[i].Type;
+              if (domain == null) {
+                domain = formalType;
+              } else if (!domain.Equals(formalType)) {
+                consistent = false;
+              }
+            }
+          }
+        }
+        foreach (var sub in e.SubExpressions) {
+          Collect(sub);
+        }
+      }
+      if (quantifierExpr.Range != null) {
+        Collect(quantifierExpr.Range);
+      }
+      Collect(quantifierExpr.Term);
+      if (consistent && domain != null && occurrences.SetEquals(argumentOccurrences) &&
+          domain.NormalizeToAncestorType().Equals(
+            PreType2TypeUtil.PreType2FixedType(boundVar.PreType).NormalizeToAncestorType())) {
+        proxy.T = domain;
+      }
+    }
+  }
+
   protected override bool VisitOneExpression(Expression expr, IASTVisitorContext context) {
+    if (expr is QuantifierExpr quantifierExpr && systemModuleManager.Options.Get(CommonOptionBag.ContextualQuantifierDomains)) {
+      InferQuantifierDomains(quantifierExpr);
+    }
     if (expr is DatatypeUpdateExpr datatypeUpdateExpr) {
       // How a DatatypeUpdateExpr desugars depends on whether or not the expression is ghost, which hasn't been determined
       // yet. So, if there is a difference between the two, then pre-type resolution prepares two different resolved expressions.

@@ -1,0 +1,24 @@
+positive (legacy)
+
+Dafny program verifier finished with 2 verified, 0 errors
+positive (refreshed, off)
+github-issue-200-positive.dfy(7,58): Error: value does not satisfy the subset constraints of 'T'
+github-issue-200-positive.dfy(8,58): Error: value does not satisfy the subset constraints of 'T'
+
+Dafny program verifier finished with 2 verified, 2 errors
+positive (refreshed, on)
+
+Dafny program verifier finished with 2 verified, 0 errors
+control (legacy)
+github-issue-200-control.dfy(17,4): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 1 error
+control (refreshed, off)
+github-issue-200-control.dfy(15,30): Error: value does not satisfy the subset constraints of 'T'
+github-issue-200-control.dfy(17,4): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 2 errors
+control (refreshed, on)
+github-issue-200-control.dfy(17,4): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 1 error
