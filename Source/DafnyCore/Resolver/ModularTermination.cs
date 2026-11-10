@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -93,6 +94,11 @@ public static class ModularTermination {
   /// <summary>
   /// Whether "function" is the "requires" or "reads" member of an arrow type, which a call applies to the receiver.
   /// </summary>
+  public static string QualifiedName(MemberDecl member) {
+    var cl = member.EnclosingClass;
+    return $"{cl.EnclosingModuleDefinition.Name}.{(cl is DefaultClassDecl ? "" : cl.Name + ".")}{member.Name}";
+  }
+
   public static bool IsArrowMember(MemberDecl function) {
     return function is Function && function.EnclosingClass is ArrowTypeDecl;
   }
@@ -216,6 +222,9 @@ public class ModularTerminationAnalysis {
 
   public readonly HashSet<TraitDecl> OpenTraits;
   private readonly HashSet<Declaration> reaching = [];
+  // The callees of each node, and, for a node that makes an open dispatch itself, a description of the first one.
+  private readonly Dictionary<Declaration, HashSet<Declaration>> edges = new();
+  private readonly Dictionary<Declaration, string> directDispatch = new();
 
   /// <summary>
   /// The analysis of the program, computed once, the first time it is asked for.  Use it only once the
@@ -227,13 +236,13 @@ public class ModularTerminationAnalysis {
 
   public ModularTerminationAnalysis(Program program) {
     OpenTraits = ModularTermination.OpenTraits(program);
-    var edges = new Dictionary<Declaration, HashSet<Declaration>>();
     var callers = new Dictionary<Declaration, List<Declaration>>();
     var work = new Stack<Declaration>();
     void AddNode(Declaration node, System.Action<EdgeCollector> visit) {
       var collector = new EdgeCollector(this);
       visit(collector);
       if (collector.Dispatches) {
+        directDispatch[node] = collector.DispatchDescription!;
         if (reaching.Add(node)) {
           work.Push(node);
         }
@@ -417,10 +426,63 @@ public class ModularTerminationAnalysis {
     return types.SelectMany(TypeMentions.Declarations).FirstOrDefault(d => reaching.Contains(d));
   }
 
+  /// <summary>
+  /// M4a: if the expressions "exprs" (a global or callback bound) can reach open dispatch, the shortest chain of
+  /// code by which they do, ending in the dispatch itself, for instance "'Z.R' -> dispatch of 'Tr.T.F'"; else null.
+  /// </summary>
+  public string? ReachingChain(IEnumerable<Expression> exprs) {
+    var collector = new EdgeCollector(this);
+    collector.Visit(exprs);
+    if (collector.Dispatches) {
+      return collector.DispatchDescription;
+    }
+    // Breadth-first search, through nodes that reach open dispatch, to one that makes it itself.
+    var parent = new Dictionary<Declaration, Declaration?>();
+    var queue = new Queue<Declaration>();
+    foreach (var start in collector.Callees.Where(reaching.Contains).OrderBy(NodeName, StringComparer.Ordinal)) {
+      parent[start] = null;
+      queue.Enqueue(start);
+    }
+    while (queue.Count != 0) {
+      var node = queue.Dequeue();
+      if (directDispatch.TryGetValue(node, out var dispatch)) {
+        var chain = new List<string> { dispatch };
+        for (Declaration? n = node; n != null; n = parent[n]) {
+          chain.Add(NodeName(n));
+        }
+        chain.Reverse();
+        return string.Join(" -> ", chain);
+      }
+      foreach (var next in edges.GetValueOrDefault(node, []).Where(reaching.Contains).OrderBy(NodeName, StringComparer.Ordinal)) {
+        if (parent.TryAdd(next, node)) {
+          queue.Enqueue(next);
+        }
+      }
+    }
+    return null;
+  }
+
+  private static string NodeName(Declaration node) {
+    return node switch {
+      MemberDecl member => $"'{ModularTermination.QualifiedName(member)}'",
+      IteratorDecl iter => $"iterator '{iter.EnclosingModuleDefinition.Name}.{iter.Name}'",
+      TopLevelDecl type => $"type '{type.EnclosingModuleDefinition.Name}.{type.Name}'",
+      _ => $"'{node.Name}'"
+    };
+  }
+
   private class EdgeCollector : BottomUpVisitor {
     private readonly ModularTerminationAnalysis analysis;
     public readonly HashSet<Declaration> Callees = [];
     public bool Dispatches;
+    public string? DispatchDescription;
+
+    private void Dispatch(string description) {
+      if (!Dispatches) {
+        Dispatches = true;
+        DispatchDescription = description;
+      }
+    }
 
     public EdgeCollector(ModularTerminationAnalysis analysis) {
       this.analysis = analysis;
@@ -440,7 +502,7 @@ public class ModularTerminationAnalysis {
 
     private void Call(MemberDecl callee) {
       if (analysis.IsOpen(callee)) {
-        Dispatches = true;
+        Dispatch($"dispatch of '{ModularTermination.QualifiedName(callee)}'");
       } else {
         Callees.Add(NodeOf(callee));
       }
@@ -482,7 +544,7 @@ public class ModularTerminationAnalysis {
       if (value.Resolved is MemberSelectExpr { Member: Function g } && !ModularTermination.IsArrowMember(g)) {
         return;
       }
-      Dispatches = true;
+      Dispatch("a call through a function value whose code is not known");
     }
 
     protected override void VisitOneStmt(Statement stmt) {
@@ -614,6 +676,7 @@ public class ModularTerminationRewriter : IRewriter {
 
   internal override void PostResolve(Program program) {
     var analysis = new ModularTerminationAnalysis(program);
+    var checkedClauses = new HashSet<Attributes>(ReferenceEqualityComparer.Instance);
     foreach (var module in program.Modules()) {
       foreach (var decl in module.TopLevelDecls) {
         if (decl is not TopLevelDeclWithMembers cl) {
@@ -626,6 +689,7 @@ public class ModularTerminationRewriter : IRewriter {
           var callable = (ICallable)member;
           CheckGlobalClauses(callable);
           CheckCallbackClauses(callable);
+          CheckBoundsAreClosed(callable, analysis, checkedClauses);
           var classifier = new CallClassifier(Reporter, callable, analysis);
           classifier.Prepare(CallableExpressions(callable), CallableStatements(callable));
           classifier.VisitSignature();
@@ -670,6 +734,38 @@ public class ModularTerminationRewriter : IRewriter {
       MethodOrConstructor { Body: { } body } => [body],
       _ => []
     };
+  }
+
+  /// <summary>
+  /// M4a: a global or callback bound may not reach open dispatch.  Its value is the measure by which the bound
+  /// obligations establish the termination of the code that reaches open dispatch, so it must not be computed by
+  /// that code: otherwise an obligation can be proved from the definition of the very function whose termination it
+  /// establishes.  The bounds checked are those that "callable" declares and those that it inherits, which the
+  /// verifier evaluates in its own proof obligations even when the member that declares them is not verified.
+  /// </summary>
+  private void CheckBoundsAreClosed(ICallable callable, ModularTerminationAnalysis analysis, HashSet<Attributes> checkedClauses) {
+    for (ICallable? c = callable; c != null; c = (c as MemberDecl)?.OverriddenMember as ICallable) {
+      if (c is not (MethodOrConstructor or Function)) {
+        break;
+      }
+      foreach (var clause in ModularTermination.GlobalClauses(c.Decreases.Attributes)) {
+        CheckBoundIsClosed(c, clause, clause.Args, "'decreases {:global}' bound", analysis, checkedClauses);
+      }
+      foreach (var clause in ModularTermination.CallbackClauses(c.Decreases.Attributes)) {
+        CheckBoundIsClosed(c, clause, clause.Args.Skip(1), "'decreases {:callback}' bound", analysis, checkedClauses);
+      }
+    }
+  }
+
+  private void CheckBoundIsClosed(ICallable declarer, Attributes clause, IEnumerable<Expression> bound, string what,
+                                  ModularTerminationAnalysis analysis, HashSet<Attributes> checkedClauses) {
+    if (!checkedClauses.Add(clause) || analysis.ReachingChain(bound) is not { } chain) {
+      return;
+    }
+    Reporter.Error(MessageSource.Resolver, clause.Origin,
+      $"modular termination: the {what} of '{ModularTermination.QualifiedName((MemberDecl)declarer)}' can reach dispatch to " +
+      $"implementations that other modules may provide (bound -> {chain}); a bound may only use code that cannot reach one, " +
+      "since its value must not depend on the termination that the bounds establish");
   }
 
   private void CheckGlobalClauses(ICallable callable) {
@@ -992,9 +1088,6 @@ public class ModularTerminationRewriter : IRewriter {
 
     private string CallerName => $"'{QualifiedName((MemberDecl)caller)}'";
 
-    private static string QualifiedName(MemberDecl member) {
-      var cl = member.EnclosingClass;
-      return $"{cl.EnclosingModuleDefinition.Name}.{(cl is DefaultClassDecl ? "" : cl.Name + ".")}{member.Name}";
-    }
+    private static string QualifiedName(MemberDecl member) => ModularTermination.QualifiedName(member);
   }
 }

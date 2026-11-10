@@ -564,6 +564,35 @@ Together the two rules order every chain of calls: along it, the global bound ne
 goes down at each dispatched call, and once no dispatched call can follow, the existing
 termination checks apply.
 
+A global bound, and a callback bound, may only use code that cannot reach a dispatched call: the
+functions and methods it calls, the constants it reads, the types it mentions (their constraints,
+witnesses and component defaults) and the function values it applies must reach none, directly or
+through the code they call in turn, and a function value whose code is not known counts as reaching
+one.  The value of a bound is the measure that these rules decrease, so it must not be computed by the
+code whose termination they establish.  Before this rule, the program below verified, `assert false`
+included, and when run it overflowed the stack:
+
+<!-- %no-check -->
+```dafny
+module Tr { trait {:termination false} T { function F(n: nat): nat decreases {:global} 7 } }
+module Z { import Tr function R(x: Tr.T): nat decreases {:global} 8 { x.F(0) } }
+module X {
+  import Tr
+  import Z
+  class C extends Tr.T {
+    function F(n: nat): nat decreases {:global} Z.R(this) { var me: Tr.T := this; me.F(n) + 1 }
+  }
+}
+```
+
+(with `{:fuel 3,4}` on the three functions, so that the solver unfolds them).  The override's bound
+`Z.R(this)` is `this.F(0)`, that is, `C.F(this, 0)`, which is `C.F(this, 0) + 1`; the checks of `C.F`'s
+calls used that definition, of the very function whose termination they establish, and proved anything
+from it.  Now the bound is rejected, and the error names the route by which it reaches a dispatched call,
+here `'Z.R' -> dispatch of 'Tr.T.F'`.  Such a function may still be called elsewhere, in a
+specification or an ordinary decreases clause, under the two rules above: there its call is checked
+like any other, against a bound that it cannot compute.
+
 With `--show-hints`, Dafny reports each call that needs one of the two rules: each dispatched call
 described above, each call to known code that can reach one, each use of code without a bound that
 can reach one, and each call through a function value that is not a lambda expression (an application
@@ -579,13 +608,14 @@ can still fail to terminate, and can prove `false`, through what it does not che
   traits. Calls through such a trait, and to the code that reaches them, were verified without
   the rules. `{:termination false}` and `@AssumeCrossModuleTermination` keep their meaning, and
   only `dafny audit` reports them.
-* The comparison of bounds may use the definitions of functions whose termination is
-  being established: there is no separate, rank-scoped verification of those comparisons.
 
 It also rejects some programs that terminate:
 
 * A helper that forwards a dispatched call needs a global bound of its own; Dafny does not infer
   one from its callers.
+* A bound cannot be a rank computed through dispatch, such as `decreases {:global} t.Size()`
+  for a trait member `Size` (see the rule for bounds above).  A later version may admit such
+  ranks at a level of their own, below the bound they compute.
 * Dafny takes every type that a member mentions as evaluated there, and so it may reject a member
   that only passes values of a type whose constraint reaches a dispatched call. A type or constant
   cannot declare a bound of its own.
@@ -598,6 +628,9 @@ It also rejects some programs that terminate:
 * The C# parser is what turns `decreases {:global} E` and `decreases {:callback g} E` into bounds. A
   program that reaches Dafny through another front end, serialized, keeps them as ordinary decreases
   clauses with argument-less `{:global}` attributes or one-argument `{:callback g}` attributes.
+
+Before milestone M4a, a bound could call code that reaches a dispatched call, and a program could
+prove `false` through it, as in the example above; the rule for bounds closes that.
 
 Before milestone M3, a type test, a conversion or a witness could evaluate a constraint that made a
 dispatched call with nothing to check, and a program could prove `false` through it; the rule for

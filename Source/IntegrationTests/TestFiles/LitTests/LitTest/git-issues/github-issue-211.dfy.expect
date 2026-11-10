@@ -287,6 +287,80 @@ github-issue-211-callback.dfy(60,30): Info: modular termination: in 'Y.Y.M', dis
 github-issue-211-callback.dfy(60,21): Info: modular termination: in 'Y.Y.M', a call of 'L.ApplyM', which can reach dispatch to implementations that other modules may provide, runs under the caller's bound (same-bound rule); the callee has a 'decreases {:global}' bound, checked: it must not exceed the caller's
 
 Dafny program verifier did not attempt verification
+rank gap, option off: verifies, as before
+
+Dafny program verifier finished with 4 verified, 0 errors
+rank gap, option on, refresh false: the bound rejected
+github-issue-211-rank-gap.dfy(27,18): Error: modular termination: the 'decreases {:global}' bound of 'X.C.F' can reach dispatch to implementations that other modules may provide (bound -> 'Z.R' -> dispatch of 'Tr.T.F'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+1 resolution/type errors detected in github-issue-211-rank-gap.dfy
+rank gap, option on, refresh true: the bound rejected
+github-issue-211-rank-gap.dfy(27,18): Error: modular termination: the 'decreases {:global}' bound of 'X.C.F' can reach dispatch to implementations that other modules may provide (bound -> 'Z.R' -> dispatch of 'Tr.T.F'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+1 resolution/type errors detected in github-issue-211-rank-gap.dfy
+rank gap in the implementation's module, option on: the bound rejected
+github-issue-211-rank-gap-local.dfy(23,18): Error: modular termination: the 'decreases {:global}' bound of 'X.C.F' can reach dispatch to implementations that other modules may provide (bound -> 'X.R' -> dispatch of 'Tr.T.F'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+1 resolution/type errors detected in github-issue-211-rank-gap-local.dfy
+rank rules, option on, refresh false: each marked bound rejected
+github-issue-211-rank-rules.dfy(40,16): Error: modular termination: the 'decreases {:global}' bound of 'Routes.ByHelper' can reach dispatch to implementations that other modules may provide (bound -> 'Routes.Q' -> 'Tr.R' -> dispatch of 'Tr.T.F'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+github-issue-211-rank-rules.dfy(46,16): Error: modular termination: the 'decreases {:global}' bound of 'Routes.ByConstant' can reach dispatch to implementations that other modules may provide (bound -> 'Routes.K.viaDispatch' -> dispatch of 'Tr.T.F'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+github-issue-211-rank-rules.dfy(52,16): Error: modular termination: the 'decreases {:global}' bound of 'Routes.ByTypeTest' can reach dispatch to implementations that other modules may provide (bound -> type 'Routes.Good' -> dispatch of 'Tr.T.F'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+github-issue-211-rank-rules.dfy(58,16): Error: modular termination: the 'decreases {:global}' bound of 'Routes.ByLambda' can reach dispatch to implementations that other modules may provide (bound -> dispatch of 'Tr.T.F'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+github-issue-211-rank-rules.dfy(64,16): Error: modular termination: the 'decreases {:global}' bound of 'Routes.ByValue' can reach dispatch to implementations that other modules may provide (bound -> a call through a function value whose code is not known); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+github-issue-211-rank-rules.dfy(71,16): Error: modular termination: the 'decreases {:callback}' bound of 'Routes.ByCallback' can reach dispatch to implementations that other modules may provide (bound -> 'Tr.R' -> dispatch of 'Tr.T.F'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+github-issue-211-rank-rules.dfy(88,18): Error: modular termination: the 'decreases {:global}' bound of 'TraitBound.U.G' can reach dispatch to implementations that other modules may provide (bound -> 'TraitBound.Rank' -> dispatch of 'TraitBound.U.G'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+7 resolution/type errors detected in github-issue-211-rank-rules.dfy
+rank rules, option on, refresh true: each marked bound rejected
+github-issue-211-rank-rules.dfy(40,16): Error: modular termination: the 'decreases {:global}' bound of 'Routes.ByHelper' can reach dispatch to implementations that other modules may provide (bound -> 'Routes.Q' -> 'Tr.R' -> dispatch of 'Tr.T.F'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+github-issue-211-rank-rules.dfy(46,16): Error: modular termination: the 'decreases {:global}' bound of 'Routes.ByConstant' can reach dispatch to implementations that other modules may provide (bound -> 'Routes.K.viaDispatch' -> dispatch of 'Tr.T.F'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+github-issue-211-rank-rules.dfy(52,16): Error: modular termination: the 'decreases {:global}' bound of 'Routes.ByTypeTest' can reach dispatch to implementations that other modules may provide (bound -> type 'Routes.Good' -> dispatch of 'Tr.T.F'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+github-issue-211-rank-rules.dfy(58,16): Error: modular termination: the 'decreases {:global}' bound of 'Routes.ByLambda' can reach dispatch to implementations that other modules may provide (bound -> dispatch of 'Tr.T.F'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+github-issue-211-rank-rules.dfy(64,16): Error: modular termination: the 'decreases {:global}' bound of 'Routes.ByValue' can reach dispatch to implementations that other modules may provide (bound -> a call through a function value whose code is not known); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+github-issue-211-rank-rules.dfy(71,16): Error: modular termination: the 'decreases {:callback}' bound of 'Routes.ByCallback' can reach dispatch to implementations that other modules may provide (bound -> 'Tr.R' -> dispatch of 'Tr.T.F'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+github-issue-211-rank-rules.dfy(88,18): Error: modular termination: the 'decreases {:global}' bound of 'TraitBound.U.G' can reach dispatch to implementations that other modules may provide (bound -> 'TraitBound.Rank' -> dispatch of 'TraitBound.U.G'); a bound may only use code that cannot reach one, since its value must not depend on the termination that the bounds establish
+7 resolution/type errors detected in github-issue-211-rank-rules.dfy
+rank, option on, refresh false: verifies
+
+Dafny program verifier finished with 14 verified, 0 errors
+rank vacuity control, option on, refresh false: each assert false fails
+github-issue-211-rank-false.dfy(8,4): Error: assertion might not hold
+github-issue-211-rank-false.dfy(29,40): Error: assertion might not hold
+github-issue-211-rank-false.dfy(35,4): Error: assertion might not hold
+github-issue-211-rank-false.dfy(41,4): Error: assertion might not hold
+github-issue-211-rank-false.dfy(49,4): Error: assertion might not hold
+github-issue-211-rank-false.dfy(56,4): Error: assertion might not hold
+github-issue-211-rank-false.dfy(63,4): Error: assertion might not hold
+github-issue-211-rank-false.dfy(72,4): Error: assertion might not hold
+github-issue-211-rank-false.dfy(80,4): Error: assertion might not hold
+github-issue-211-rank-false.dfy(92,6): Error: assertion might not hold
+
+Dafny program verifier finished with 4 verified, 10 errors
+rank, option on, refresh true: verifies
+
+Dafny program verifier finished with 14 verified, 0 errors
+rank vacuity control, option on, refresh true: each assert false fails
+github-issue-211-rank-false.dfy(8,4): Error: assertion might not hold
+github-issue-211-rank-false.dfy(29,40): Error: assertion might not hold
+github-issue-211-rank-false.dfy(35,4): Error: assertion might not hold
+github-issue-211-rank-false.dfy(41,4): Error: assertion might not hold
+github-issue-211-rank-false.dfy(49,4): Error: assertion might not hold
+github-issue-211-rank-false.dfy(56,4): Error: assertion might not hold
+github-issue-211-rank-false.dfy(63,4): Error: assertion might not hold
+github-issue-211-rank-false.dfy(72,4): Error: assertion might not hold
+github-issue-211-rank-false.dfy(80,4): Error: assertion might not hold
+github-issue-211-rank-false.dfy(92,6): Error: assertion might not hold
+
+Dafny program verifier finished with 4 verified, 10 errors
+rank through specifications, option on: each call of the rank rejected by the same-bound rule
+github-issue-211-rank-spec.dfy(31,18): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-211-rank-spec.dfy(46,17): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-211-rank-spec.dfy(49,10): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-rank-spec.dfy(60,25): Error: function's (possibly automatically generated) decreases clause must be below or equal to that in the trait
+github-issue-211-rank-spec.dfy(61,18): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-211-rank-spec.dfy(77,18): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-211-rank-spec.dfy(80,15): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-rank-spec.dfy(92,17): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+github-issue-211-rank-spec.dfy(95,15): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 15 verified, 9 errors
 printed counter, option on: verifies
 
 Dafny program verifier finished with 12 verified, 0 errors
