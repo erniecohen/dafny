@@ -2408,6 +2408,18 @@ warnings as errors.
 
 * `--warn-missing-constructor-parentheses` - warn if a constructor name in a pattern might be misinterpreted
 
+* `--warn-unchecked-termination` - warn about each trait with `{:termination false}` and each
+  class or trait with `@AssumeCrossModuleTermination`. Calls dispatched through such a trait are
+  not checked for termination (see [global bounds](#sec-global-decreases)), so they can recurse
+  forever and still verify, and a program can prove `false` through them; `dafny audit` reports
+  the same declarations. The warning works as the one for an `assume` statement without
+  `{:axiom}` does: like any warning, it fails the command unless `--allow-warnings` is given;
+  `{:axiom}` on the declaration, as in `trait {:termination false} {:axiom} T`, acknowledges the
+  assumption and suppresses the warning, and so does `--allow-axioms`. Under
+  `--modular-termination` the warning stays, since that option checks these calls only in the
+  code verified with it. Disabled by default. Use `warn-unchecked-termination = true` in a
+  project file's `[options]` section.
+
 Legacy options
 
 * `-deprecation:<n>` - control warnings about deprecated features. The

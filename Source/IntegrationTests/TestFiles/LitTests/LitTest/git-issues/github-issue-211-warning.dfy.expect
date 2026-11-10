@@ -1,0 +1,55 @@
+trait, option off: no warning, verifies
+
+Dafny program verifier finished with 2 verified, 0 errors
+trait, option on: warning, fails without --allow-warnings
+github-issue-211-warning-trait.dfy(4,29): Warning: trait 'T' has {:termination false} and no {:axiom} annotation: calls dispatched through it are not checked for termination
+
+Dafny program verifier finished with 2 verified, 0 errors
+Compilation failed because warnings were found and --allow-warnings is false
+trait, option on, --allow-warnings: warning, verifies
+github-issue-211-warning-trait.dfy(4,29): Warning: trait 'T' has {:termination false} and no {:axiom} annotation: calls dispatched through it are not checked for termination
+
+Dafny program verifier finished with 2 verified, 0 errors
+trait, option on, --allow-axioms: no warning, verifies
+
+Dafny program verifier finished with 2 verified, 0 errors
+class, option off: no warning, verifies
+
+Dafny program verifier finished with 4 verified, 0 errors
+class, option on: warnings, fails without --allow-warnings
+github-issue-211-warning-class.dfy(13,8): Warning: class 'C' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
+github-issue-211-warning-class.dfy(33,8): Warning: trait 'U' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
+
+Dafny program verifier finished with 4 verified, 0 errors
+Compilation failed because warnings were found and --allow-warnings is false
+class, option on, --allow-warnings: warnings, verifies
+github-issue-211-warning-class.dfy(13,8): Warning: class 'C' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
+github-issue-211-warning-class.dfy(33,8): Warning: trait 'U' has @AssumeCrossModuleTermination and no {:axiom} annotation: calls dispatched to it through traits of other modules are not checked for termination
+
+Dafny program verifier finished with 4 verified, 0 errors
+class, option on, --allow-axioms: no warning, verifies
+
+Dafny program verifier finished with 4 verified, 0 errors
+trait, --modular-termination: the unbounded dispatched call is rejected; the warning stays
+github-issue-211-warning-trait.dfy(4,29): Warning: trait 'T' has {:termination false} and no {:axiom} annotation: --modular-termination checks the calls dispatched through it only in code verified with that option
+github-issue-211-warning-trait.dfy(21,20): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires)
+
+Dafny program verifier finished with 1 verified, 1 error
+bounded trait, --modular-termination without the warning option: verifies
+
+Dafny program verifier finished with 3 verified, 0 errors
+bounded trait, --modular-termination: warning, fails without --allow-warnings
+github-issue-211-warning-bounded.dfy(5,29): Warning: trait 'T' has {:termination false} and no {:axiom} annotation: --modular-termination checks the calls dispatched through it only in code verified with that option
+
+Dafny program verifier finished with 3 verified, 0 errors
+Compilation failed because warnings were found and --allow-warnings is false
+bounded trait, --modular-termination, --allow-warnings: warning, verifies
+github-issue-211-warning-bounded.dfy(5,29): Warning: trait 'T' has {:termination false} and no {:axiom} annotation: --modular-termination checks the calls dispatched through it only in code verified with that option
+
+Dafny program verifier finished with 3 verified, 0 errors
+class, --modular-termination, --allow-warnings: the unbounded dispatched call is rejected; the warnings stay
+github-issue-211-warning-class.dfy(13,8): Warning: class 'C' has @AssumeCrossModuleTermination and no {:axiom} annotation: code verified without it, such as the module of a trait it extends, did not check the calls dispatched to it for termination
+github-issue-211-warning-class.dfy(33,8): Warning: trait 'U' has @AssumeCrossModuleTermination and no {:axiom} annotation: code verified without it, such as the module of a trait it extends, did not check the calls dispatched to it for termination
+github-issue-211-warning-class.dfy(18,20): Error: decreases clause might not decrease (the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires)
+
+Dafny program verifier finished with 3 verified, 1 error
