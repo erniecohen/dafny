@@ -1,0 +1,52 @@
+# Scratch only (#205): regenerate the standard library's embedded binaries with the
+# library's Makefile, check them with its check-binary target, and upload them.
+# Failures are recorded in the summary and the artifact; the job exits 0.
+name: scratch-205-std-binary
+
+on:
+  push:
+    branches: ['scratch/205-std-binary']
+
+permissions:
+  contents: read
+
+jobs:
+  binary:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Boogie packages
+        run: sh Scripts/fetch-boogie-packages.sh
+      - name: Build Dafny
+        run: dotnet build Source/Dafny/Dafny.csproj
+      - name: Z3 the library is built with
+        run: |
+          curl -fsSLo z3h.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.12.1-x64-ubuntu-24.04-bin.zip
+          echo "e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b  z3h.zip" | sha256sum -c -
+          mkdir -p Binaries/z3/bin && unzip -q z3h.zip -d z3h && cp z3h/z3-4.12.1 Binaries/z3/bin/ && chmod +x Binaries/z3/bin/z3-4.12.1
+      - name: update-binary, then check-binary
+        run: |
+          set +e
+          mkdir -p result
+          cd Source/DafnyStandardLibraries
+          make build-binary > ../../result/build-binary.log 2>&1; echo "build-binary $?" >> ../../result/exits.txt
+          cp build/DafnyStandardLibraries.doo binaries/DafnyStandardLibraries.doo
+          make -C src/Std/TargetSpecific update-binary-all > ../../result/target-update.log 2>&1; echo "target update-binary-all $?" >> ../../result/exits.txt
+          rm -rf build/current build/previous
+          make check-binary > ../../result/check-binary.log 2>&1; echo "check-binary $?" >> ../../result/exits.txt
+          cp -r binaries ../../result/binaries
+          git status --short binaries > ../../result/changed-binaries.txt
+          { echo '## Std binaries (#205)'; echo; cat ../../result/exits.txt; echo; cat ../../result/changed-binaries.txt;
+            grep -h 'verifier finished\|Error\|out of resource\|time out' ../../result/*.log; } >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: std-binaries
+          path: result
+          retention-days: 14
