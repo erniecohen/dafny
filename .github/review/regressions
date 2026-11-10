@@ -327,3 +327,6 @@ git-issues/github-issue-98.dfy
 
 # Opt-in --modular-termination: smaller-bound rule for calls dispatched across modules (https://github.com/erniecohen/dafny/issues/211).
 git-issues/github-issue-211.dfy
+
+# Override axioms at the call layer under --additional-axioms (https://github.com/erniecohen/dafny/issues/103).
+git-issues/github-issue-103.dfy

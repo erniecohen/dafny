@@ -1,0 +1,1 @@
+Under --additional-axioms, the override axiom of a function that overrides a trait function from another module is also stated at the layer of a call with default fuel, so a fact about the overriding function proves the trait's inherited predicate without a cast to the trait (https://github.com/erniecohen/dafny/issues/103).
