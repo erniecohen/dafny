@@ -330,3 +330,6 @@ git-issues/github-issue-211.dfy
 
 # Override axioms at the call layer under --additional-axioms (https://github.com/erniecohen/dafny/issues/103).
 git-issues/github-issue-103.dfy
+
+# Opt-in --contextual-quantifier-domains: quantifier bound variables typed from argument positions (https://github.com/erniecohen/dafny/issues/200).
+git-issues/github-issue-200.dfy

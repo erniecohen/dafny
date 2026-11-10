@@ -2249,6 +2249,22 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   resolver. Use `invariant-constructor-inference = true` in a project file's
   `[options]` section.
 
+* `--contextual-quantifier-domains` - with the refreshed type system
+  (`--type-system-refresh`), infer the omitted type of a bound variable of a
+  `forall` or `exists` expression from the function parameters it is passed to.
+  If every use of the variable is as a direct argument of a call to a function
+  without type parameters, and all those parameters are declared with the same
+  type `S`, which has the variable's inferred base type, the variable gets type
+  `S`, as if it were written `x: S`. For example, with
+  `type T = d: D | d.s != iset{}` and `predicate Q(F: iset<T>, b: T)`,
+  `exists b :: Q(F, b)` ranges over `T`. Without it the variable gets the base
+  type `D`, and the call must then prove that `b` is a `T`. Any other use of the
+  variable, such as `b.s`, keeps the base type. This changes what the quantifier
+  ranges over, and so it can change the verdict of a program. Disabled by
+  default, and it has no effect on the legacy resolver. Use
+  `contextual-quantifier-domains = true` in a project file's `[options]`
+  section.
+
 * `--conservative-match-inference` - with the refreshed type system
   (`--type-system-refresh`), infer the type of the source of a `match` by
   propagating the constraints already known before making any default type

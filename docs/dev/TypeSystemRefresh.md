@@ -24,6 +24,15 @@ The "type system refresh" is a reimplementation of Dafny's name resolution, type
     checks still verify every body application and result on that domain. It adds
     no verifier axioms or unchecked subset constraints.
 
+    The fork's opt-in `--contextual-quantifier-domains` gives an omitted bound
+    variable of a `forall` or `exists` expression the declared type `S` of the
+    function parameters it is passed to, when every occurrence of the variable is
+    such a direct argument of a function without type parameters, all those
+    parameters have type `S`, and `S` has the variable's base type. The result is
+    the program with `x: S` written; it adds no verifier axiom or assumption, but
+    it changes the quantifier's domain, which is why it is opt-in
+    ([issue 200](https://github.com/erniecohen/dafny/issues/200)).
+
     The fork's opt-in `--invariant-constructor-inference` changes the type
     refinement flows into the arguments of a datatype constructor. A flow into a
     non-variant position of a formal, such as `T` in `tl: List<T>`, sets the
