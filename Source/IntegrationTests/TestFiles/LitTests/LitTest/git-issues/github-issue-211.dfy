@@ -1,11 +1,12 @@
 // Termination of calls dispatched across modules (https://github.com/erniecohen/dafny/issues/211,
-// upstream dafny-lang/dafny#1588), milestones M1 to M3, under the opt-in --modular-termination.
+// upstream dafny-lang/dafny#1588), milestones M1 to M4a, under the opt-in --modular-termination.
 // Without the option nothing changes: fabiomadge's Tie program, which never terminates, verifies,
 // and "decreases {:global} E" is an ordinary decreases clause with an attribute.  With it, a call
 // dispatched to a bodyless member of an open trait must go to a smaller "decreases {:global}" bound
 // (M1), and a call to known code that can reach one must not go to a larger bound (M2).  Code without a bound
 // that can reach one (a constraint, a witness, a constant's initializer, a function value whose code is not
 // known) may not run under a bound, and "decreases {:callback g} E" bounds a parameter's function value (M3).
+// A global or callback bound may only use code that cannot reach a dispatched call (M4a).
 //
 // RUN: echo "tie, option off: verifies, as before" > "%t"
 // RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false "%S/Inputs/github-issue-211-tie.dfy" >> "%t"
@@ -100,6 +101,33 @@
 // RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true --general-traits:datatype --modular-termination "%S/Inputs/github-issue-211-callback-resolve.dfy" >> "%t"
 // RUN: echo "callback hints, option on" >> "%t"
 // RUN: %exits-with 0 %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --show-hints "%S/Inputs/github-issue-211-callback.dfy" >> "%t"
+// Milestone M4a: a global or callback bound may only use code that cannot reach a dispatched call.  Before, a
+// bound computed through dispatch let a bound obligation unfold the definition of the very function whose
+// termination it establishes: github-issue-211-rank-gap.dfy proved false and, run, overflowed the stack
+// (github-issue-211-rank-witness.dfy, not run here).  Without the option it verifies, as before: that is
+// the {:termination false} gap that the option closes.
+// RUN: echo "rank gap, option off: verifies, as before" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false "%S/Inputs/github-issue-211-rank-gap.dfy" >> "%t"
+// RUN: echo "rank gap, option on, refresh false: the bound rejected" >> "%t"
+// RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false --modular-termination "%S/Inputs/github-issue-211-rank-gap.dfy" >> "%t"
+// RUN: echo "rank gap, option on, refresh true: the bound rejected" >> "%t"
+// RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true --general-traits:legacy --modular-termination "%S/Inputs/github-issue-211-rank-gap.dfy" >> "%t"
+// RUN: echo "rank gap in the implementation's module, option on: the bound rejected" >> "%t"
+// RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%S/Inputs/github-issue-211-rank-gap-local.dfy" >> "%t"
+// RUN: echo "rank rules, option on, refresh false: each marked bound rejected" >> "%t"
+// RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false --modular-termination "%S/Inputs/github-issue-211-rank-rules.dfy" >> "%t"
+// RUN: echo "rank rules, option on, refresh true: each marked bound rejected" >> "%t"
+// RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true --general-traits:legacy --modular-termination "%S/Inputs/github-issue-211-rank-rules.dfy" >> "%t"
+// RUN: echo "rank, option on, refresh false: verifies" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false --modular-termination "%S/Inputs/github-issue-211-rank.dfy" >> "%t"
+// RUN: echo "rank vacuity control, option on, refresh false: each assert false fails" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false --modular-termination "%S/Inputs/github-issue-211-rank-false.dfy" >> "%t"
+// RUN: echo "rank, option on, refresh true: verifies" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true --general-traits:legacy --modular-termination "%S/Inputs/github-issue-211-rank.dfy" >> "%t"
+// RUN: echo "rank vacuity control, option on, refresh true: each assert false fails" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true --general-traits:legacy --modular-termination "%S/Inputs/github-issue-211-rank-false.dfy" >> "%t"
+// RUN: echo "rank through specifications, option on: each call of the rank rejected by the same-bound rule" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%S/Inputs/github-issue-211-rank-spec.dfy" >> "%t"
 // The printed program keeps the global clauses.
 // RUN: %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --print "%t.counter.dfy" "%S/Inputs/github-issue-211-counter.dfy" > "%t.ignore"
 // RUN: echo "printed counter, option on: verifies" >> "%t"

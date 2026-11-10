@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Census of the calls that need the smaller-bound rule of --modular-termination
-(https://github.com/erniecohen/dafny/issues/211, milestones M1 to M3).
+(https://github.com/erniecohen/dafny/issues/211, milestones M1 to M4a).
 
 Resolves every program of a corpus with `--modular-termination --show-hints` and counts
 the classifier's hints ("modular termination: in 'C', ..."): calls dispatched into
@@ -71,9 +71,18 @@ def resolve(dafny, target, extra, cwd=None):
         return "timeout", ""
 
 
+# M4a: a global or callback bound that can reach open dispatch, rejected by the resolver.
+BOUND = re.compile(r"^(?P<file>[^()\n]+)\((?P<line>\d+),(?P<col>\d+)\): Error: modular termination: the 'decreases \{:(?P<kind>global|callback)\}' bound of '(?P<member>.*?)' can reach dispatch")
+
+
 def hints(output, only_file=None):
     found = []
     for line in output.splitlines():
+        b = BOUND.match(line.strip())
+        if b and (only_file is None or b.group("file") == only_file):
+            found.append({"file": b.group("file"), "line": int(b.group("line")), "col": int(b.group("col")),
+                          "caller": b.group("member"), "kind": "bound", "bound": b.group("kind")})
+            continue
         m = HINT.match(line.strip())
         if not m or (only_file is not None and m.group("file") != only_file):
             continue
@@ -148,7 +157,10 @@ def summarize(programs):
     inherits = {(h["file"], h["caller"]) for h in all_hints if h.get("caller_status") == "inherits" or h.get("value") == "unknown, caller inherits"}
     projected = bounded_now | inherits | need
     callback_rejected_projected = [h for h in unknown if h["value"] == "unknown, rejected" or (h["file"], h["caller"]) in projected]
+    bound = [h for h in all_hints if h["kind"] == "bound"]
     return {
+        "bound_rejected_sites": len({site(h) for h in bound}),
+        "bound_rejected_programs": len({h["file"] for h in bound}),
         "top_sites": len({site(h) for h in top}),
         "top_rejected_sites": len({site(h) for h in top if h["rejected"]}),
         "top_programs": len({h["file"] for h in top}),
@@ -222,6 +234,8 @@ def markdown(title, totals, programs):
         ("same_rejected_programs", "files with such a rejected call"),
         ("projected_helpers", "projected: helpers needing a bound once every dispatched trait member has one"),
         ("projected_programs", "projected: files with such a helper"),
+        ("bound_rejected_sites", "global or callback bounds that can reach such a dispatch, rejected (M4a)"),
+        ("bound_rejected_programs", "files with such a bound"),
         ("top_sites", "uses of code without a bound that reaches such a dispatch: constraints, witnesses, component defaults, constant initializers (M3a; source lines)"),
         ("top_rejected_sites", "of those, ones rejected now: the member has a bound"),
         ("top_programs", "files with such a use"),

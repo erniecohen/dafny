@@ -2309,7 +2309,8 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   constant, so a member with a bound may not do so. A call through a function value whose
   code is not known (not a lambda expression, nor a function that reaches no dispatched call)
   has no bound either; `decreases {:callback g} E` gives an in-parameter `g` the bound `E`,
-  which an application of `g` must be below and the value passed for `g` must run under. With `--show-hints`, it
+  which an application of `g` must be below and the value passed for `g` must run under. A
+  global or callback bound may only use code that cannot reach such a dispatched call. With `--show-hints`, it
   reports every call that needs one of the rules. Disabled by default. Use
   `modular-termination = true` in a project file's `[options]` section. See
   [global bounds](#sec-global-decreases) for the rules and their limits.
