@@ -183,6 +183,9 @@ public partial class BoogieGenerator {
     // Create a local variable for each formal parameter, and assign each actual parameter to the corresponding local
     var substMap = new Dictionary<IVariable, Expression>();
     var directSubstMap = new Dictionary<IVariable, Expression>();
+    if (callee.Ins.Count == Args.Count) {
+      RegisterCallbackLambdas(callee, receiver, Args, tySubst, etran);
+    }
     for (int i = 0; i < callee.Ins.Count; i++) {
       var formal = callee.Ins[i];
       var local = new LocalVariable(formal.Origin, formal.Name + "#", formal.Type.Subst(tySubst), formal.IsGhost);
@@ -338,6 +341,10 @@ public partial class BoogieGenerator {
     if (codeContext != null && !isCoCall) {
       CheckModularTermination(tok, codeContext, callee, receiver, substMap, directSubstMap, tySubst,
         builder.Context.CallerTerminationTranslator ?? etran, builder, etran);
+      if (callee.Ins.Count == Args.Count) {
+        CheckCallbackArguments(tok, codeContext, callee, Args, receiver, substMap, tySubst,
+          builder.Context.CallerTerminationTranslator ?? etran, builder);
+      }
     }
 
     // Create variables to hold the output parameters of the call, so that appropriate unboxes can be introduced.

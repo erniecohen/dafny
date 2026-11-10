@@ -11,17 +11,18 @@ module Client {
   import Tr
   function Calls(t: Tr.T, f: nat -> nat, n: nat): nat
     decreases {:global} n + 1
+    decreases {:callback f} n
   {
     t.F(n)          // dispatched, checked
     + t.G(n)        // dispatched, rejected: G has no global bound
     + t.H(n)        // not dispatched
-    + f(n)          // through a function value
+    + f(n)          // through a function value with a callback bound (M3b), checked
     + (x => x)(n)   // a lambda literal: known code
   }
   function NoBound(t: Tr.T, n: nat): nat { t.F(n) }  // holds: no caller bound
   method Collections(f: nat -> nat, n: nat) {
-    var s := seq(n, f);                   // through a function value
+    var s := seq(n, f);                   // through a function value; holds: no caller bound
     var s' := seq(n, i => i);             // known code
-    var a := new nat[n](f);               // through a function value
+    var a := new nat[n](f);               // through a function value; holds: no caller bound
   }
 }

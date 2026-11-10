@@ -308,7 +308,8 @@ public partial class Parser {
   /// <summary>
   /// Under --modular-termination, returns the {:global} attribute, without arguments, that the
   /// current decreases clause added in front of "before", so that the clause's expressions become
-  /// its arguments: the clause's global bound.  Returns null otherwise, and always when the option
+  /// its arguments: the clause's global bound.  The same for a {:callback f} attribute with its one
+  /// argument, whose expressions become the callback bound of f.  Returns null otherwise, and always when the option
   /// is off, so that the clause is then parsed as it always was.
   /// </summary>
   Attributes GlobalDecreasesAttribute(Attributes current, Attributes before) {
@@ -317,6 +318,10 @@ public partial class Parser {
     }
     for (var a = current; a != null && a != before; a = a.Prev) {
       if (a.Name == ModularTermination.GlobalAttributeName && a.Args.Count == 0 && a is not UserSuppliedAtAttribute) {
+        return a;
+      }
+      // "decreases {:callback f} E" (milestone M3b): the clause's expressions follow the parameter.
+      if (a.Name == ModularTermination.CallbackAttributeName && a.Args.Count == 1 && a is not UserSuppliedAtAttribute) {
         return a;
       }
     }

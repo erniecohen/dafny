@@ -676,6 +676,9 @@ namespace Microsoft.Dafny {
         foreach (var p in ModularTermination.DeclaredGlobalBound(m) ?? []) {
           CheckWellformed(p, wfOptions, localVariables, builder, etran);
         }
+        foreach (var p in ModularTermination.CallbackClauses(m.Decreases.Attributes).SelectMany(a => a.Args.Skip(1))) {
+          CheckWellformed(p, wfOptions, localVariables, builder, etran);
+        }
       }
 
       if (m is not TwoStateLemma) {

@@ -557,6 +557,8 @@ namespace Microsoft.Dafny {
             foreach (Expression arg in e.Args) {
               CheckWellformed(arg, wfOptions, locals, builder, etran);
             }
+            CheckCallbackApplication(applyExpr.Origin, codeContext, e.Function,
+              wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran, builder);
 
             // check subranges of arguments
             for (int i = 0; i < arity; ++i) {
@@ -707,6 +709,11 @@ namespace Microsoft.Dafny {
                 builder.Add(new Bpl.CommentCmd("assume allocatedness for receiver argument to function"));
                 builder.Add(TrAssumeCmd(e.Receiver.Origin, MkIsAllocBox(BoxIfNecessary(e.Receiver.Origin, etran.TrExpr(e.Receiver), e.Receiver.Type), et, etran.HeapExpr)));
               }
+              if (ModularTermination.IsArrowMember(e.Function)) {
+                CheckCallbackApplication(callExpr.Origin, codeContext, e.Receiver,
+                  wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran, builder);
+              }
+              RegisterCallbackLambdas(e.Function, e.Receiver, e.Args, e.GetTypeArgumentSubstitutions(), etran);
               // create a local variable for each formal parameter, and assign each actual parameter to the corresponding local
               Dictionary<IVariable, Expression> substMap = new Dictionary<IVariable, Expression>();
               Dictionary<IVariable, Expression> directSubstMap = new Dictionary<IVariable, Expression>();
@@ -887,6 +894,8 @@ namespace Microsoft.Dafny {
               }
               Expression allowance = null;
               if (codeContext != null && e.CoCall != FunctionCallExpr.CoCallResolution.Yes && !(e.Function is ExtremePredicate)) {
+                CheckCallbackArguments(callExpr.Origin, codeContext, e.Function, e.Args, e.Receiver, substMap, e.GetTypeArgumentSubstitutions(),
+                  wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran, builder);
                 // check that the decreases measure goes down
                 var calleeSCCLookup = e.IsByMethodCall ? (ICallable)e.Function.ByMethodDecl : e.Function;
                 Contract.Assert(calleeSCCLookup != null);
@@ -1243,6 +1252,9 @@ namespace Microsoft.Dafny {
             // that its formals are allocated.  This only removes assumptions from a check; the permissions
             // exported for the lambda in every good heap (LambdaCanCallInEveryHeap) are what it checks.
             var lambdaInEveryHeap = lam != null && LambdaFactsInEveryHeap(lam);
+            if (lam != null) {
+              EnterLambda(lam, codeContext, wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran);
+            }
             BplIfIf(e.Origin, lam != null, null, builder, nextBuilder => {
               var comprehensionEtran = etran;
               if (lam != null) {
@@ -1354,6 +1366,9 @@ namespace Microsoft.Dafny {
                 nextBuilder.Add(new AssumeCmd(e.Origin, Bpl.Expr.False));
               }
             });
+            if (lam != null) {
+              ExitLambda();
+            }
 
             // The source domain, child definedness, and map collision checks above
             // justify the own-site finite image before its result type is checked.

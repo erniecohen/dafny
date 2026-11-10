@@ -2279,8 +2279,13 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   bodyless member of a trait whose implementations may lie in other modules unless it
   goes to a smaller `decreases {:global}` bound, and a call to known code that can reach
   such a dispatched call unless it goes to a bound that is not larger. A helper that
-  forwards a dispatched call therefore needs a bound of its own. Calls through function
-  values are not checked, so a program can still prove `false`. With `--show-hints`, it
+  forwards a dispatched call therefore needs a bound of its own. Code without a bound that
+  can reach such a dispatched call (a type's constraint, witness or component defaults, or a
+  constant's initializer) counts as called wherever a member mentions the type or reads the
+  constant, so a member with a bound may not do so. A call through a function value whose
+  code is not known (not a lambda expression, nor a function that reaches no dispatched call)
+  has no bound either; `decreases {:callback g} E` gives an in-parameter `g` the bound `E`,
+  which an application of `g` must be below and the value passed for `g` must run under. With `--show-hints`, it
   reports every call that needs one of the rules. Disabled by default. Use
   `modular-termination = true` in a project file's `[options]` section. See
   [global bounds](#sec-global-decreases) for the rules and their limits.

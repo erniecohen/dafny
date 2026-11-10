@@ -1159,7 +1159,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
       if (printMode == PrintModes.NoGhostOrIncludes) {
         return;
       }
-      if (ModularTermination.GlobalClauses(decs.Attributes).Any()) {
+      if (ModularTermination.GlobalClauses(decs.Attributes).Any() || ModularTermination.CallbackClauses(decs.Attributes).Any()) {
         PrintDecreasesSpecWithGlobalClauses(decs, indent);
         return;
       }
@@ -1185,6 +1185,14 @@ NoGhost - disable printing of functions, ghost methods, and proof
         wr.Write($"decreases {{:{ModularTermination.GlobalAttributeName}}} ");
         PrintExpressionList(global.Args, true);
       }
+      foreach (var callback in ModularTermination.CallbackClauses(decs.Attributes).Reverse()) {
+        wr.WriteLine();
+        Indent(indent);
+        wr.Write($"decreases {{:{ModularTermination.CallbackAttributeName} ");
+        PrintExpression(callback.Args[0], false);
+        wr.Write("} ");
+        PrintExpressionList(callback.Args.Skip(1).ToList(), true);
+      }
       if (decs.Expressions != null && decs.Expressions.Count != 0) {
         wr.WriteLine();
         Indent(indent);
@@ -1200,7 +1208,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
         return;
       }
       PrintOrdinaryDecreasesAttributes(a.Prev);
-      if (!ModularTermination.IsGlobalClause(a) && a is not UserSuppliedAtAttribute) {
+      if (!ModularTermination.IsModularTerminationClause(a) && a is not UserSuppliedAtAttribute) {
         wr.Write(" ");
         PrintOneAttribute(a);
       }
