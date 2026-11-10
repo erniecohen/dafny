@@ -53,6 +53,7 @@ public static class DafnyCommands {
     CommonOptionBag.ManualTriggerOption,
     CommonOptionBag.MapComprehensionDomainTriggers,
     CommonOptionBag.HeapFreeLambdaFacts,
+    CommonOptionBag.StatementExpressionConclusions,
     CommonOptionBag.ShowProofObligationExpressions
   }.ToList();
 
@@ -111,7 +112,13 @@ public static class DafnyCommands {
     CommonOptionBag.TypeSystemRefresh,
     CommonOptionBag.BitvectorMapKeys,
     CommonOptionBag.ContextualLambdaDomains,
+    CommonOptionBag.ContextualQuantifierDomains,
     CommonOptionBag.ConservativeMatchInference,
+    CommonOptionBag.DatatypeSubsetConversions,
+    CommonOptionBag.AncestorQualifiedModuleIds,
+    CommonOptionBag.SynonymRefinesAbstractType,
+    CommonOptionBag.ModularTermination,
+    CommonOptionBag.InvariantConstructorInference,
     CommonOptionBag.TypeInferenceDebug,
     CommonOptionBag.NewTypeInferenceDebug,
     Method.ReadsClausesOnMethods,

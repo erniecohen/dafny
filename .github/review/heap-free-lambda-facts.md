@@ -56,7 +56,7 @@ It asserts facts, so `AGENTS.md` requires an option.
   green.
   - All the registered regression tests pass, including
     `git-issues/lambda-facts-every-heap.dfy`, `git-issue-82*.dfy`,
-    `github-issue-132*.dfy` and `git-issue-100.dfy`.
+    `github-issue-132*.dfy` and `git-issue-100*.dfy`.
   - Every suite and standard-library comparison, with the shared option off and on,
     has 0 differences.
 - The suite and standard library do not run with `--heap-free-lambda-facts` on. An

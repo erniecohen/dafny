@@ -2236,6 +2236,35 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   The legacy option was `-unicodeChar:<n>` with values 0 and 1 for
   false and true above.
 
+* `--invariant-constructor-inference` - with the refreshed type system
+  (`--type-system-refresh`), let an argument of a datatype constructor whose
+  formal type uses a type parameter in a non-variant position fix that type
+  argument. For example, with `datatype List<T> = Nil | Cons(hd: T, tl: List<T>)`,
+  `h: int` and `ts: List<Pos>`, the constructor in `Cons(h, ts)` gets the type
+  argument `Pos` from `ts`, so `h` is checked to be a `Pos`. Without it the type
+  argument is widened to `int` from `h`, and `ts` must then be proved to be a
+  `List<int>`, which the verifier cannot prove without induction. Every argument
+  is still checked against the chosen type; a type parameter declared covariant
+  (`+T`) is not affected. Disabled by default, and it has no effect on the legacy
+  resolver. Use `invariant-constructor-inference = true` in a project file's
+  `[options]` section.
+
+* `--contextual-quantifier-domains` - with the refreshed type system
+  (`--type-system-refresh`), infer the omitted type of a bound variable of a
+  `forall` or `exists` expression from the function parameters it is passed to.
+  If every use of the variable is as a direct argument of a call to a function
+  without type parameters, and all those parameters are declared with the same
+  type `S`, which has the variable's inferred base type, the variable gets type
+  `S`, as if it were written `x: S`. For example, with
+  `type T = d: D | d.s != iset{}` and `predicate Q(F: iset<T>, b: T)`,
+  `exists b :: Q(F, b)` ranges over `T`. Without it the variable gets the base
+  type `D`, and the call must then prove that `b` is a `T`. Any other use of the
+  variable, such as `b.s`, keeps the base type. This changes what the quantifier
+  ranges over, and so it can change the verdict of a program. Disabled by
+  default, and it has no effect on the legacy resolver. Use
+  `contextual-quantifier-domains = true` in a project file's `[options]`
+  section.
+
 * `--conservative-match-inference` - with the refreshed type system
   (`--type-system-refresh`), infer the type of the source of a `match` by
   propagating the constraints already known before making any default type
@@ -2248,6 +2277,43 @@ or the Dafny 4 syntax (`ghost function` and `function`)
   project file's `[options]` section; `--conservative-match-inference:false`
   overrides that setting. See the [match expression](#sec-match-expression) for
   what it does not fix.
+
+* `--ancestor-qualified-module-ids` - let a `refines` clause or `import` whose
+  qualified module name starts with modules that enclose it, as in
+  `module A.C refines A.B`, depend on the module it names instead of on the
+  enclosing module. Without it, such a name always makes a cycle, since a module
+  depends on the modules nested in it, and the program is rejected. With it, the
+  leading names of enclosing modules are skipped, and the next name is looked up
+  among the modules declared in the enclosing module, as the name alone would be
+  inside it, without consulting that module's export sets; refining or importing
+  an enclosing module itself is still a cycle. Disabled by default. Use
+  `ancestor-qualified-module-ids = true` in a project file's `[options]` section.
+  See [module ordering](#sec-module-ordering).
+
+* `--synonym-refines-abstract-type` - let a type synonym `type T<Xs> = U<Xs>` in a
+  refining module refine an abstract type `T` that has members, where `U` is a class,
+  trait, datatype, newtype or abstract type declared in the refining module. The members
+  of `T` are merged into `U`, under the checks of any other refinement of `T`. Without it,
+  the synonym is rejected because it cannot declare members. Disabled by default. Use
+  `synonym-refines-abstract-type = true` in a project file's `[options]` section. See
+  [type refinement](#sec-module-refinement).
+
+* `--modular-termination` - (experimental; it does not yet establish termination in every
+  program) accept `decreases {:global}` clauses, and reject a call dispatched to a
+  bodyless member of a trait whose implementations may lie in other modules unless it
+  goes to a smaller `decreases {:global}` bound, and a call to known code that can reach
+  such a dispatched call unless it goes to a bound that is not larger. A helper that
+  forwards a dispatched call therefore needs a bound of its own. Code without a bound that
+  can reach such a dispatched call (a type's constraint, witness or component defaults, or a
+  constant's initializer) counts as called wherever a member mentions the type or reads the
+  constant, so a member with a bound may not do so. A call through a function value whose
+  code is not known (not a lambda expression, nor a function that reaches no dispatched call)
+  has no bound either; `decreases {:callback g} E` gives an in-parameter `g` the bound `E`,
+  which an application of `g` must be below and the value passed for `g` must run under. A
+  global or callback bound may only use code that cannot reach such a dispatched call. With `--show-hints`, it
+  reports every call that needs one of the rules. Disabled by default. Use
+  `modular-termination = true` in a project file's `[options]` section. See
+  [global bounds](#sec-global-decreases) for the rules and their limits.
 
 Legacy options:
 
@@ -2440,6 +2506,9 @@ and what information it produces about the verification process.
   After an assign-such-that statement it also makes checked call permissions
   available for the selected values, so predicates in the constraint can unfold.
   Existing well-formedness, precondition and existence checks are preserved.
+  When a function with a body overrides a trait function from another module, it
+  also states the override axiom at the layer that calls use, so that a fact about
+  the overriding function reaches the trait function without a cast to the trait.
   For a source lambda with a declared precondition, it also exposes the necessary
   direction of that precondition under the lambda's type, allocation and heap
   requirements. This applies to stored and returned lambda values.
@@ -2455,9 +2524,30 @@ and what information it produces about the verification process.
   because it can change proof costs. See
   [the soundness note](../dev/additional-axioms.md).
 
+* `--statement-expression-conclusions` - in the condition of an `assert`
+  statement, use the conclusion of a statement expression `S; E` (the
+  condition of an `assert`, `assume` or `expect` statement, the result of a
+  `calc`, the conclusion of an `assert ... by`) as a fact for `E` also when
+  `S; E` occurs under quantifiers and logical connectives. Without it, only a
+  statement expression at the top of the condition (or of one of its
+  conjuncts) gets the fact, so that, for example,
+  `assert forall n: nat :: assume false; false` fails. The statement is still
+  checked as before; the fact holds wherever `E` is evaluated because the
+  well-formedness check of the condition, just before, establishes it there.
+  Postconditions, invariants and preconditions are not affected, and neither
+  are statement expressions inside `old`, `unchanged`, `fresh`, lambdas, set
+  and map comprehensions, let-such-that expressions and binding-guard
+  if-then-else expressions. Disabled by default;
+  `statement-expression-conclusions = true` in a project file's `[options]`
+  section. It can change proof costs.
+
 * `--manual-lemma-induction` - disables automatic inducntion for lemmas
 
 * `--isolate-assertions` - verify assertions individually
+* `--datatype-subset-conversions` - allow explicit conversions to subsets of
+  inductive datatypes with the legacy type system. The source must be
+  assignment-compatible and the destination constraints must verify. Disabled by
+  default; use `datatype-subset-conversions = true` in a project file's `[options]`.
 * `--consistent-obligation-checks` - prepare and check matching implicit obligations once using the existing local assertion machinery and fuel rules (experimental, disabled by default; also a project-file option).
 
 * `--extract-counterexample` - if verification fails, report a potential

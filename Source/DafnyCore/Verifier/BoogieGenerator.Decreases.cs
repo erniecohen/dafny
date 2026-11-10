@@ -104,6 +104,256 @@ public partial class BoogieGenerator {
   }
 
   /// <summary>
+  /// Under --modular-termination, the global bound of "callable" (its "decreases {:global}" clause, or
+  /// else that of the member it overrides, recursively), in terms of its own formals; null if it has none.
+  /// The method of a function's "by method" body has the function's bound.
+  /// </summary>
+  List<Expression> GlobalBound(ICallable callable) {
+    if (callable is Method { FunctionFromWhichThisIsByMethodDecl: { } function }) {
+      return GlobalBound(function);
+    }
+    var declared = ModularTermination.DeclaredGlobalBound(callable);
+    if (declared != null) {
+      return declared;
+    }
+    if (callable is not MemberDecl { OverriddenMember: ICallable parent } member ||
+        GlobalBound(parent) is not { } parentBound) {
+      return null;
+    }
+    var substMap = new Dictionary<IVariable, Expression>();
+    for (var i = 0; i < callable.Ins.Count; i++) {
+      substMap.Add(parent.Ins[i], Expression.CreateIdentExpr(callable.Ins[i]));
+    }
+    var typeMap = GetTypeArgumentSubstitutionMap((MemberDecl)parent, member);
+    var sub = new FunctionCallSubstituter(substMap, typeMap, (TraitDecl)((MemberDecl)parent).EnclosingClass,
+      (TopLevelDeclWithMembers)member.EnclosingClass);
+    return parentBound.ConvertAll(sub.Substitute);
+  }
+
+  /// <summary>
+  /// Under --modular-termination, emit to "builder" the check of the global bounds for a call from "codeContext"
+  /// to "callee".  The caller's bound is captured on entry, and a missing bound is TOP, above every other.
+  /// * A call dispatched to implementations that other modules may provide uses the smaller-bound rule: the
+  ///   callee's bound must be below the caller's.
+  /// * A call to a known callee that reaches such a dispatch (see <see cref="ModularTerminationAnalysis"/>) uses
+  ///   the same-bound rule: the callee runs under the caller's bound, so its own bound must not exceed it.
+  /// A call from a caller without a bound needs no check, except that a dispatched callee must have one; a call
+  /// from a caller with a bound fails when the callee has none.  Other calls get no check here: the existing termination checks order them.
+  /// </summary>
+  void CheckModularTermination(IOrigin tok, ICodeContext codeContext, MemberDecl callee, Expression receiverReplacement,
+                               Dictionary<IVariable, Expression> substMap, Dictionary<IVariable, Expression> directSubstMap,
+                               Dictionary<TypeParameter, Type> typeMap, ExpressionTranslator etranCurrent,
+                               BoogieStmtListBuilder builder, ExpressionTranslator etranCallee) {
+    if (!options.Get(CommonOptionBag.ModularTermination) || codeContext is not ICallable caller) {
+      return;
+    }
+    var analysis = ModularTerminationAnalysis.Of(program);
+    var dispatched = ModularTermination.IsOpenDispatch(callee, analysis.OpenTraits);
+    if (!dispatched && !analysis.ReachesOpenDispatch(callee)) {
+      return;
+    }
+    var calleeBound = GlobalBound((ICallable)callee);
+    // Inside a lambda passed for a parameter with a callback bound (M3b), the caller's bound is that callback bound,
+    // a value fixed where the lambda is created.
+    var lambdaBound = CurrentLambdaBound;
+    var callerBound = lambdaBound ?? GlobalBound(caller);
+    if (callerBound == null && (calleeBound != null || !dispatched)) {
+      return;
+    }
+    string hint;
+    if (dispatched) {
+      hint = calleeBound == null
+        ? "the dispatched callee has no 'decreases {:global}' bound, which --modular-termination requires"
+        : "--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's";
+    } else {
+      hint = calleeBound == null
+        ? "the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it"
+        : "--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's";
+    }
+    var oldCaller = lambdaBound == null && codeContext is MethodOrConstructor and not TwoStateLemma;
+    var contextBound = callerBound ?? [];
+    var comparedBound = calleeBound ?? [];
+    if (!dispatched && calleeBound != null) {
+      AtMost(tok, callerBound, calleeBound, out contextBound, out comparedBound);
+    }
+    CheckCallTermination(tok, contextBound, comparedBound, null, receiverReplacement, substMap, directSubstMap, typeMap,
+      etranCurrent, oldCaller, builder, false, hint, etranCallee);
+  }
+
+  /// <summary>
+  /// The bounds to give CheckCallTermination, which checks "below", to check that "lower" is at most "upper" in the
+  /// order in which missing components are TOP: a strict decrease of "lower" against the components of "upper"
+  /// that it has, if "upper" has more; otherwise no increase in the components of "upper", which an extra
+  /// component on the lower side makes CheckCallTermination allow.
+  /// </summary>
+  static void AtMost(IOrigin tok, List<Expression> upper, List<Expression> lower,
+                     out List<Expression> contextBound, out List<Expression> comparedBound) {
+    if (lower.Count < upper.Count) {
+      contextBound = upper.Take(lower.Count).ToList();
+      comparedBound = lower;
+    } else {
+      contextBound = upper;
+      comparedBound = lower.Append(Expression.CreateIntLiteral(tok, 0)).ToList();
+    }
+  }
+
+  // M3b: the callback bounds of the lambda expressions passed for parameters that have one, snapshotted where the
+  // call evaluates its arguments, and the bounds under which the lambda bodies being checked run.
+  private readonly Dictionary<LambdaExpr, List<Expression>> modularTerminationLambdaBounds = new(ReferenceEqualityComparer.Instance);
+  private readonly List<List<Expression>> modularTerminationLambdaStack = [];
+
+  /// <summary>
+  /// The bound under which the code being checked runs, if it is inside a lambda passed for a parameter with a
+  /// callback bound (or inside a lambda inside one); null otherwise, when it is the enclosing callable's.
+  /// </summary>
+  List<Expression> CurrentLambdaBound => modularTerminationLambdaStack.Count == 0 ? null : modularTerminationLambdaStack[^1];
+
+  bool InsideLambda => modularTerminationLambdaStack.Count != 0;
+
+  /// <summary>
+  /// Enter the body of "lambda": it runs under its registered callback bound, or else under the current bound.
+  /// Outside any lambda, the current bound is the enclosing callable's global bound, which is translated here, by
+  /// the translator of the code around the lambda, on entry: the lambda's body is checked in a heap of its own.
+  /// </summary>
+  void EnterLambda(LambdaExpr lambda, ICodeContext codeContext, ExpressionTranslator etran) {
+    if (!options.Get(CommonOptionBag.ModularTermination)) {
+      return;
+    }
+    var bound = modularTerminationLambdaBounds.GetValueOrDefault(lambda) ?? CurrentLambdaBound;
+    if (bound == null && !InsideLambda && codeContext is ICallable caller && GlobalBound(caller) is { } callerBound) {
+      var oldCaller = codeContext is MethodOrConstructor and not TwoStateLemma;
+      bound = callerBound.ConvertAll(e => {
+        var onEntry = oldCaller ? new OldExpr(e.Origin, e) { Type = e.Type } : e;
+        return (Expression)new BoogieWrapper(etran.TrExpr(onEntry), e.Type);
+      });
+    }
+    modularTerminationLambdaStack.Add(bound);
+  }
+
+  void ExitLambda() {
+    if (!options.Get(CommonOptionBag.ModularTermination)) {
+      return;
+    }
+    modularTerminationLambdaStack.RemoveAt(modularTerminationLambdaStack.Count - 1);
+  }
+
+  /// <summary>
+  /// Under --modular-termination, the callback bound of the in-parameter at "index" of "callable" (its
+  /// "decreases {:callback f} E" clause, or else that of the member it overrides), in terms of its own formals;
+  /// null if it has none.  The method of a function's "by method" body has the function's.
+  /// </summary>
+  List<Expression> CallbackBound(ICallable callable, int index) {
+    if (callable is Method { FunctionFromWhichThisIsByMethodDecl: { } function }) {
+      return CallbackBound(function, index);
+    }
+    if (index >= callable.Ins.Count) {
+      return null;
+    }
+    var declared = ModularTermination.DeclaredCallbackBound(callable, callable.Ins[index]);
+    if (declared != null) {
+      return declared;
+    }
+    if (callable is not MemberDecl { OverriddenMember: ICallable parent } member ||
+        CallbackBound(parent, index) is not { } parentBound) {
+      return null;
+    }
+    var substMap = new Dictionary<IVariable, Expression>();
+    for (var i = 0; i < callable.Ins.Count; i++) {
+      substMap.Add(parent.Ins[i], Expression.CreateIdentExpr(callable.Ins[i]));
+    }
+    var typeMap = GetTypeArgumentSubstitutionMap((MemberDecl)parent, member);
+    var sub = new FunctionCallSubstituter(substMap, typeMap, (TraitDecl)((MemberDecl)parent).EnclosingClass,
+      (TopLevelDeclWithMembers)member.EnclosingClass);
+    return parentBound.ConvertAll(sub.Substitute);
+  }
+
+  /// <summary>
+  /// Under --modular-termination, before a call of "callee" evaluates its arguments: each lambda expression passed
+  /// for a parameter with a callback bound gets that bound, at the call's arguments, as the bound under which its
+  /// body is checked.  The bound is translated here, in the caller's state, so that the body, checked in a heap of
+  /// its own, compares with the value at the call.
+  /// </summary>
+  void RegisterCallbackLambdas(MemberDecl callee, Expression receiver, List<Expression> args,
+                               Dictionary<TypeParameter, Type> typeMap, ExpressionTranslator etran) {
+    if (!options.Get(CommonOptionBag.ModularTermination) || callee is not ICallable callable) {
+      return;
+    }
+    Dictionary<IVariable, Expression> directSubstMap = null;
+    for (var i = 0; i < args.Count && i < callable.Ins.Count; i++) {
+      if (args[i].Resolved is not LambdaExpr lambda || CallbackBound(callable, i) is not { } bound) {
+        continue;
+      }
+      if (directSubstMap == null) {
+        directSubstMap = new Dictionary<IVariable, Expression>();
+        for (var j = 0; j < args.Count && j < callable.Ins.Count; j++) {
+          directSubstMap.Add(callable.Ins[j], args[j]);
+        }
+      }
+      modularTerminationLambdaBounds[lambda] = bound.ConvertAll(e => {
+        var actual = Substitute(e, receiver, directSubstMap, typeMap);
+        return (Expression)new BoogieWrapper(etran.TrExpr(actual), actual.Type);
+      });
+    }
+  }
+
+  /// <summary>
+  /// Under --modular-termination, at a call of "callee": an in-parameter of the caller with a callback bound, passed
+  /// for a parameter of the callee with one, must not go to a larger bound (outside a lambda; the resolver rejects
+  /// the other arguments that are neither lambdas nor known code): the caller's callback bound, evaluated on entry,
+  /// must be at most the callee's, at the call's arguments.
+  /// </summary>
+  void CheckCallbackArguments(IOrigin tok, ICodeContext codeContext, MemberDecl callee, List<Expression> args,
+                              Expression receiverReplacement, Dictionary<IVariable, Expression> substMap,
+                              Dictionary<TypeParameter, Type> typeMap, ExpressionTranslator etranCurrent,
+                              BoogieStmtListBuilder builder) {
+    if (!options.Get(CommonOptionBag.ModularTermination) || codeContext is not ICallable caller ||
+        callee is not ICallable callable || InsideLambda) {
+      return;
+    }
+    for (var i = 0; i < args.Count && i < callable.Ins.Count; i++) {
+      if (CallbackBound(callable, i) is not { } calleeBound || args[i].Resolved is not IdentifierExpr { Var: Formal formal }) {
+        continue;
+      }
+      var k = caller.Ins.IndexOf(formal);
+      if (k < 0 || CallbackBound(caller, k) is not { } callerBound) {
+        continue;
+      }
+      // Both sides in the caller's terms: the callee's bound at the call's arguments, in the current state; the
+      // caller's on entry.
+      var upper = calleeBound.ConvertAll(e => Substitute(e, receiverReplacement, substMap, typeMap));
+      var oldCaller = codeContext is MethodOrConstructor and not TwoStateLemma;
+      var lower = oldCaller ? callerBound.ConvertAll(e => (Expression)new OldExpr(e.Origin, e) { Type = e.Type }) : callerBound;
+      AtMost(tok, upper, lower, out var contextBound, out var comparedBound);
+      CheckCallTermination(tok, contextBound, comparedBound, null, null, new Dictionary<IVariable, Expression>(),
+        new Dictionary<IVariable, Expression>(), new Dictionary<TypeParameter, Type>(), etranCurrent, false, builder, false,
+        $"--modular-termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must not exceed that of the parameter it is passed for");
+    }
+  }
+
+  /// <summary>
+  /// Under --modular-termination, at an application of "value" (or a call of its "requires" or "reads"): if it is
+  /// an in-parameter of the caller with a callback bound, and the application is not inside a lambda, the callback
+  /// bound must be below the caller's global bound, both evaluated on entry (smaller-bound rule).  A caller without
+  /// a bound is above every bound.  Other applications are checked by the resolver.
+  /// </summary>
+  void CheckCallbackApplication(IOrigin tok, ICodeContext codeContext, Expression value, ExpressionTranslator etranCurrent,
+                                BoogieStmtListBuilder builder) {
+    if (!options.Get(CommonOptionBag.ModularTermination) || codeContext is not ICallable caller || InsideLambda ||
+        value.Resolved is not IdentifierExpr { Var: Formal formal }) {
+      return;
+    }
+    var k = caller.Ins.IndexOf(formal);
+    if (k < 0 || CallbackBound(caller, k) is not { } callbackBound || GlobalBound(caller) is not { } callerBound) {
+      return;
+    }
+    var oldCaller = codeContext is MethodOrConstructor and not TwoStateLemma;
+    var compared = oldCaller ? callbackBound.ConvertAll(e => (Expression)new OldExpr(e.Origin, e) { Type = e.Type }) : callbackBound;
+    CheckCallTermination(tok, callerBound, compared, null, null, new Dictionary<IVariable, Expression>(),
+      new Dictionary<IVariable, Expression>(), new Dictionary<TypeParameter, Type>(), etranCurrent, oldCaller, builder, false,
+      $"--modular-termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must be below the caller's 'decreases {{:global}}' bound");
+  }
+
+  /// <summary>
   /// Returns the expression that says whether or not the decreases function has gone down (if !allowNoChange)
   /// or has gone down or stayed the same (if allowNoChange).
   /// ee0 represents the new values and ee1 represents old values.

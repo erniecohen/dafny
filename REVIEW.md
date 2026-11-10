@@ -87,6 +87,42 @@ exact lets, the `seq` initializer, valid contracts and a false control under all
 combinations of `--type-system-refresh` and `--additional-axioms`; the release note is
 `docs/dev/news/166.fix`.  No verdict of the suite or of the standard library moves.
 
+## Bitvector rotations ([#147](https://github.com/erniecohen/dafny/issues/147))
+
+Z3 5.1.0 composes the counts of nested `ext_rotate_left`/`ext_rotate_right` modulo `2^W`
+instead of modulo `W`, which is unsound when the width `W` is not a power of two: Dafny
+4.11.0 with Z3 5.1.0 proves `x.RotateRight(a).RotateLeft(b) == 4` for `x == 1 as bv3`,
+`a == 3`, `b == 0`, where the value is 1.  The fix, in
+`Source/DafnyCore/Verifier/BoogieGenerator.cs` (`AddBitvectorRotateFunction`), defines
+`LeftRotate_bvW` and `RightRotate_bvW` by shifts at positive widths that are not powers of
+two, and keeps the native operators at width 0 and at powers of two.  Its kind is **asserts**: at
+those widths it drops `ext_rotate_*` and asserts the definition by shifts as the meaning of the two
+function symbols, which a reviewer must check.  The argument,
+the regression `git-issues/github-issue-147.dfy` (with `github-issue-147-emission.dfy`), the
+validation and the cost are in
+[`docs/dev/bitvector-rotation-soundness.md`](docs/dev/bitvector-rotation-soundness.md); the
+release note is `docs/dev/news/147.fix`.
+
+## Opt-in statement-expression conclusions ([#96](https://github.com/erniecohen/dafny/issues/96))
+
+`--statement-expression-conclusions` (default false; also `statement-expression-conclusions =
+true` in `dfyconfig.toml`) is a completeness option.  In the condition of an `assert` statement,
+it translates a Boolean statement expression `S; E` under quantifiers and connectives as
+`C ==> E` (`C && E` at negative polarity), `C` being the statement's conclusion.  Before, only
+`S; E` at the top of the condition got `C`, so `assert forall n: nat :: assume false; false`
+failed.  Its kind is **neither**: it adds no axiom and no assumption, and replaces the checked
+condition by one with the same value wherever the condition's well-formedness check, made just
+before in the same state, has established `C`.  It applies only in the current heap: not inside
+`old`, `old@L`, `unchanged` or `fresh`, lambdas, set and map comprehensions, let-such-that and
+binding-guard if-then-else, nor to an assert statement inside a statement expression.  The
+first version of the pull request also rewrote quantifiers under `old` and proved
+`ensures false`.  Postconditions, invariants, preconditions and inlined function bodies are not
+rewritten.  `docs/dev/statement-expression-conclusions.md` has the argument and the exclusions.
+With the option off, the Boogie program is unchanged and no verdict of the suite or of the
+standard library moves.  The regression is `git-issues/github-issue-96.dfy`; CI's job
+`Statement-expression conclusions (opt-in, #96)` runs its fixtures with the option on and off.
+The release note is `docs/dev/news/1371.feat`.
+
 ## Declared lambda preconditions under `--additional-axioms` ([#97](https://github.com/erniecohen/dafny/issues/97))
 
 Dafny's `RequiresN` schema for a lambda value gives only the sufficient direction of its declared
@@ -349,10 +385,25 @@ could change its verdict between runs of the same tree
 ([#186](https://github.com/erniecohen/dafny/issues/186)).  The job therefore
 verifies the library part with `--boogie /deterministicLiteralHashes:1`, the same
 normalization with deterministic literal hashes, and the expected files were
-recorded under it.  The target-specific parts cannot take Boogie options, which
+recorded under it.  It also passes `/restartProver`, which gives each proof batch a
+fresh solver process: under Z3 5.1.0 (with `--cores 4`) a batch's resource count depended on which
+batches the reused process had checked before it (one batch,
+`MulInternalsNonlinear.LemmaMulIsAssociative`, moved by up to 0.17%), so the
+resource fingerprint took 7 distinct values in 12 runs
+([#30](https://github.com/erniecohen/dafny/issues/30)).  In 6 runs with it and 12 without (Z3 5.1.0,
+axioms off), that count was the only difference, and no verdict differed.  The
+gate's resource counts are therefore measured under `/restartProver` and are not
+those of a user's run, which reuses processes; the `process-history` workflow
+(weekly, and on demand) verifies the library three times without it and reports the
+distinct count vectors and each differing declaration's spread and distance to the
+limit.  The target-specific parts cannot take Boogie options, which
 must equal those the library's binary was built with; all 82 of their declarations
-verify (`Correct`) in every expected file.  The suite already runs with
-`/normalizeDeclarationOrder:0`, on which the option has no effect.
+verify (`Correct`) in every expected file.  Their counts are in the resource
+fingerprint, and so still reuse processes, but none of them differed in the 12 runs
+without `/restartProver`.  The suite already runs with
+`/normalizeDeclarationOrder:0`, on which `/deterministicLiteralHashes:1` has no
+effect; it also reuses a process within each program (`--cores 1`), but its gate
+compares verdicts only, and its counts were not measured for this.
 
 
 ### Additional axioms enabled

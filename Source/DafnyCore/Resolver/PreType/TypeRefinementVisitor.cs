@@ -142,7 +142,7 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
         flows.Add(new FlowBetweenComputedTypes(() => {
           var typeMap = TypeParameter.SubstitutionMap(datatypeDecl.TypeArgs, datatypeValue.InferredTypeArgs);
           return (TypeRefinementWrapper.NormalizeSansBottom(formal).Subst(typeMap), TypeRefinementWrapper.NormalizeSansBottom(actual));
-        }, datatypeValue.Origin, $"{ctor.Name}({formal.Name} := ...)"));
+        }, datatypeValue.Origin, $"{ctor.Name}({formal.Name} := ...)", isConstructorArgument: true));
       }
       flows.Add(new FlowFromComputedType(expr,
         () => new UserDefinedType(expr.Origin, datatypeDecl.Name, datatypeDecl, datatypeValue.InferredTypeArgs),
@@ -431,7 +431,8 @@ public class TypeRefinementVisitor : ASTVisitor<IASTVisitorContext> {
   }
 
   public void Solve(ErrorReporter reporter, bool debugPrint) {
-    var context = new FlowContext(systemModuleManager, reporter, debugPrint);
+    var context = new FlowContext(systemModuleManager, reporter, debugPrint,
+      InvariantConstructorInference: systemModuleManager.Options.Get(CommonOptionBag.InvariantConstructorInference));
     bool anythingChanged;
     do {
       anythingChanged = false;

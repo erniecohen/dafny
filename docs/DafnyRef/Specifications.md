@@ -370,6 +370,284 @@ termination, Dafny does not normally surface this ordering directly in
 expressions. However, it is possible to write such ordering constraints
 using [`decreases to` expressions](#sec-termination-ordering-expressions).
 
+#### 7.1.3.1. Global bounds: `decreases {:global}` (experimental) {#sec-global-decreases}
+
+The module and call-graph components that Dafny prepends to a decreases tuple order only
+the calls that some module can see.  A call to a bodyless member of a trait is dispatched
+to whichever implementation the receiver has, and an implementation may live in a module
+that the trait's module does not import.  Dafny therefore lets a type extend a trait of
+another module only if the trait is marked `{:termination false}` or the type
+`@AssumeCrossModuleTermination`; calls through such a trait are not checked for
+termination, and a program can recurse through them forever and still verify.
+
+The option `--modular-termination` (off by default) checks these calls.  A method or
+function may declare a _global bound_:
+
+<!-- %no-check -->
+```dafny
+trait {:termination false} T {
+  function F(other: T, n: nat): int
+    decreases {:global} n
+}
+```
+
+A global bound is a list of expressions, compared as a decreases tuple is, but it is kept
+apart from the ordinary decreases clause: Dafny prepends nothing to it, and the two are
+not concatenated.  A member has at most one `decreases {:global}` clause.  An override
+that declares none inherits its parent's; one that declares its own must give a bound no
+greater than its parent's, as an override's ordinary decreases clause must.
+
+Under the option, a call to a bodyless instance member of an _open_ trait (a trait marked
+`{:termination false}`, a trait that a type in another module extends, or an ancestor of
+either) must go to a smaller global bound: the callee's global bound, at the call's
+arguments, must be below the caller's, evaluated on entry to the caller.  A missing bound
+is above every other.  So a call from a member without a global bound to one with a
+global bound always passes, and a call to a member without one always fails.  This rejects
+the program below, in which no module's call graph has a cycle, but `Tie(x, y)` never
+terminates: whatever bounds `A` and `B` declare, one of the two dispatched calls goes up.
+
+<!-- %no-check -->
+```dafny
+module Tr {
+  trait {:termination false} T {
+    function A(other: T): int
+    function B(other: T): int
+  }
+}
+module X {
+  import Tr
+  class X extends Tr.T {
+    function A(other: Tr.T): int { 0 }
+    function B(other: Tr.T): int { other.A(this) }
+  }
+}
+module Y {
+  import Tr
+  class Y extends Tr.T {
+    function A(other: Tr.T): int { other.B(this) }
+    function B(other: Tr.T): int { 1 }
+  }
+}
+module L {
+  import Tr
+  function Tie(t1: Tr.T, t2: Tr.T): int { t1.B(t2) }
+}
+```
+
+With a parameter `n: nat` and `decreases {:global} n` on both members, and
+`other.A(this, n - 1)` and `other.B(this, n - 1)` under `n != 0`, the program verifies.
+
+A call to code that is known statically (a function, a method, a constructor, a member of a trait
+that no other module extends, or an iterator) runs under its caller's bound. If the callee can
+reach such a dispatched call, through its own body, the default values of its parameters, or the
+code it calls in turn, the call
+must not go to a larger global bound: the callee's global bound, at the call's arguments, must be
+at most the caller's, evaluated on entry to the caller. A callee that cannot reach a dispatched
+call needs no bound and gets no such check. So a helper that forwards a dispatched call needs a
+global bound of its own:
+
+<!-- %no-check -->
+```dafny
+module Tr { trait {:termination false} T { function F(n: nat): nat decreases {:global} n } }
+module L {
+  import Tr
+  function H(t: Tr.T, n: nat): nat decreases {:global} n { if n == 0 then 0 else t.F(n - 1) }
+}
+module Y {
+  import Tr
+  import L
+  class Y extends Tr.T { function F(n: nat): nat { L.H(this, n) } }
+}
+```
+
+Here `Y.F` inherits the bound `n` and calls `L.H(this, n)`, whose bound `n` is not larger;
+`L.H` makes the dispatched call at the smaller bound `n - 1`. Without the bound on `H`, or with
+`t.F(n)` in place of `t.F(n - 1)`, or with a larger bound such as `n + 1` on `H`, the program is
+rejected. Calls with the same bound may recurse: the ordinary decreases clause orders them, as
+before. Bounds of different lengths are compared as decreases tuples are, with missing components
+above every value: a bound `n, 7` is at most `n`, but `n` is not at most `n, 0`. The method of a
+function's `by method` body has the function's bound.
+
+Some code belongs to no method or function: the constraint and the witness of a subset type or
+newtype, the default values of a datatype's or class's components (which a witness or an allocation
+may evaluate), and the initializer of a constant. Such code has no global bound, so it is TOP.
+It runs where a type test `x is T`, a conversion `x as T`, a subset check (when a value is assigned,
+passed or returned at type `T`), or the creation of a default value evaluates it, and where a
+constant is read. Under the option this counts as a call from the member in which it happens, under the
+same-bound rule: if that code can reach a dispatched call, a member with a global bound may not
+evaluate it, and a member without one reaches the dispatched call too, so that a member with a bound
+may not call it either. Dafny does not track which of these evaluations happen at run time, so it
+takes every type that a member mentions (the type of any of its expressions, variables, parameters
+and results, and any type it names) as evaluated there. For example, in
+
+<!-- %no-check -->
+```dafny
+module Tr { trait {:termination false} T { function F(n: nat): nat decreases {:global} n } }
+module S { import Tr type Good = t: Tr.T | t.F(0) == 0 witness * }
+module Y {
+  import Tr
+  import S
+  class Y extends Tr.T {
+    function F(n: nat): nat { var me: Tr.T := this; if me is S.Good then 1 else 0 }
+  }
+}
+```
+
+the type test runs `Good`'s constraint, which calls `t.F(0)`, in `Y.F`, whose inherited bound is
+`n`; the program is rejected. Without the check it verifies, and `F(0) == 1 <==> F(0) == 0` proves
+`false`. A type whose constraint, witness and components reach no dispatched call, such as `nat`,
+needs nothing.
+
+A call through a function value runs code that the call does not name. Under the option, an application
+`f(x)` (and a call of `f.requires` or `f.reads`, and the initializing function of `seq(n, f)` and
+`new T[n](f)`) counts as follows:
+
+* If the value is a lambda expression, written at the application, its body is part of the code around
+  it and is checked there, under the same rules.
+* If the value is a function named as a value that can reach no dispatched call, nothing needs to be
+  checked.
+* If the value is an in-parameter with a _callback bound_ (below), outside a lambda, the application is a
+  call to code whose bound is that callback bound: the callback bound must be below the caller's global
+  bound, both evaluated on entry (the smaller-bound rule).
+* Any other value runs code that is not known, which has no bound (TOP), like a dispatched call to a
+  member without a bound. A member with a global bound may not apply it; a member without one may, and
+  then it can reach a dispatched call, so that a member with a bound may not call it in turn.
+
+A method or function gives one of its in-parameters `g`, of an arrow type, a callback bound with the
+clause `decreases {:callback g} E`, where `E` is a list of expressions in its in-parameters:
+
+<!-- %no-check -->
+```dafny
+function Apply(g: nat -> nat, n: nat): nat
+  decreases {:global} n, 1
+  decreases {:callback g} n, 0
+{
+  g(n)
+}
+```
+
+The callback bound is an obligation where the value is passed, never an assumption. A call of `Apply` must
+pass for `g` a lambda expression, whose body (with its `requires` and `reads` clauses) is then checked under
+the callback bound at the call's arguments, as if that were the bound of the member it belongs to, also
+when the caller has no bound; an in-parameter of the caller that has a callback bound of its own, which must
+be at most the callee's, at the call's arguments (outside a lambda); or a function named as a value that
+reaches no dispatched call. Any other value is rejected. So in
+
+<!-- %no-check -->
+```dafny
+module Tr { trait {:termination false} T { function F(n: nat): nat decreases {:global} n } }
+module Y {
+  import Tr
+  import L  // the module of Apply, above
+  class Y extends Tr.T {
+    function F(n: nat): nat {
+      if n == 0 then 0 else var t: Tr.T := this; L.Apply(_ => t.F(n - 1), n)
+    }
+  }
+}
+```
+
+`Y.F`, whose inherited bound is `n`, calls `Apply` at the bound `(n, 1)`, which is at most `n`; the lambda's
+body runs under the callback bound `(n, 0)` and makes the dispatched call `t.F(n - 1)` at the bound
+`n - 1`, below it; and `Apply` applies `g` at `(n, 0)`, below its own `(n, 1)`. With `t.F(n)` in the lambda,
+the program is rejected. A member has at most one callback clause per parameter. An override has the
+callback bounds of the member it overrides and cannot declare its own, and a member with a callback bound
+cannot be used as a function value, since an application of that value would pass no checked argument.
+
+Function values that are stored in the heap, in a datatype value or in a collection, or returned by a
+function, have no bound in this version: a member with a global bound cannot apply them.
+
+Inside a lambda expression, the bound of the member it belongs to is the value on entry to that member,
+also where the lambda's body is checked in a heap of its own.
+
+Together the two rules order every chain of calls: along it, the global bound never goes up and
+goes down at each dispatched call, and once no dispatched call can follow, the existing
+termination checks apply.
+
+A global bound, and a callback bound, may only use code that cannot reach a dispatched call: the
+functions and methods it calls, the constants it reads, the types it mentions (their constraints,
+witnesses and component defaults) and the function values it applies must reach none, directly or
+through the code they call in turn, and a function value whose code is not known counts as reaching
+one.  The value of a bound is the measure that these rules decrease, so it must not be computed by the
+code whose termination they establish.  Before this rule, the program below verified, `assert false`
+included, and when run it overflowed the stack:
+
+<!-- %no-check -->
+```dafny
+module Tr { trait {:termination false} T { function F(n: nat): nat decreases {:global} 7 } }
+module Z { import Tr function R(x: Tr.T): nat decreases {:global} 8 { x.F(0) } }
+module X {
+  import Tr
+  import Z
+  class C extends Tr.T {
+    function F(n: nat): nat decreases {:global} Z.R(this) { var me: Tr.T := this; me.F(n) + 1 }
+  }
+}
+```
+
+(with `{:fuel 3,4}` on the three functions, so that the solver unfolds them).  The override's bound
+`Z.R(this)` is `this.F(0)`, that is, `C.F(this, 0)`, which is `C.F(this, 0) + 1`; the checks of `C.F`'s
+calls used that definition, of the very function whose termination they establish, and proved anything
+from it.  Now the bound is rejected, and the error names the route by which it reaches a dispatched call,
+here `'Z.R' -> dispatch of 'Tr.T.F'`.  Such a function may still be called elsewhere, in a
+specification or an ordinary decreases clause, under the two rules above: there its call is checked
+like any other, against a bound that it cannot compute.
+
+With `--show-hints`, Dafny reports each call that needs one of the two rules: each dispatched call
+described above, each call to known code that can reach one, each use of code without a bound that
+can reach one, and each call through a function value that is not a lambda expression (an application
+`f(x)`, a call of `f.requires` or `f.reads`, and the initializing function of `seq(n, f)` and
+`new T[n](f)`). Where such a use or call is rejected, it is an error instead.
+
+**This version does not yet establish termination in every program.** A program that it accepts
+can still fail to terminate, and can prove `false`, through what it does not check:
+
+* A trait is open because of `{:termination false}`, or because of the extensions in the
+  program being verified. A library verified on its own therefore does not see a type
+  that a later program declares with `@AssumeCrossModuleTermination` to extend one of its
+  traits. Calls through such a trait, and to the code that reaches them, were verified without
+  the rules. `{:termination false}` and `@AssumeCrossModuleTermination` keep their meaning, and
+  only `dafny audit` reports them.
+
+It also rejects some programs that terminate:
+
+* A helper that forwards a dispatched call needs a global bound of its own; Dafny does not infer
+  one from its callers.
+* A bound cannot be a rank computed through dispatch, such as `decreases {:global} t.Size()`
+  for a trait member `Size` (see the rule for bounds above).  A later version may admit such
+  ranks at a level of their own, below the bound they compute.
+* Dafny takes every type that a member mentions as evaluated there, and so it may reject a member
+  that only passes values of a type whose constraint reaches a dispatched call. A type or constant
+  cannot declare a bound of its own.
+* Inside a lambda expression, an in-parameter with a callback bound counts as a function value whose
+  code is not known, and it cannot be passed on for another parameter with a callback bound; nor can
+  the initializing function of `seq(n, f)` or `new T[n](f)` be one. A function value stored in the
+  heap, in a datatype value or in a collection, or returned by a function, has no bound.
+* An iterator has no global bound, so a call of an iterator that reaches a dispatched call is
+  rejected from a member with a bound.
+* The C# parser is what turns `decreases {:global} E` and `decreases {:callback g} E` into bounds. A
+  program that reaches Dafny through another front end, serialized, keeps them as ordinary decreases
+  clauses with argument-less `{:global}` attributes or one-argument `{:callback g}` attributes.
+
+Before milestone M4a, a bound could call code that reaches a dispatched call, and a program could
+prove `false` through it, as in the example above; the rule for bounds closes that.
+
+Before milestone M3, a type test, a conversion or a witness could evaluate a constraint that made a
+dispatched call with nothing to check, and a program could prove `false` through it; the rule for
+code without a bound above closes that. Calls through function values were reported but not checked,
+and code that a function value calls was not part of what a callee can reach.
+
+The first version of the option compared a dispatched call only with the bound of the member
+that made it directly, so a helper without a bound, or with a larger one, could forward a
+dispatched call and hide a cycle; the rule for calls to known code rejects such a helper.
+
+Internally, the global clause is the attribute `{:global E}` on the decreases clause, and
+under the option that spelling is read the same way: `decreases {:global n} 7` declares
+the global bound `n` and the ordinary decreases clause `7`.
+
+Without the option, `decreases {:global} E` is an ordinary decreases clause with an
+unknown attribute, as before.
+
 ### 7.1.4. Framing ([grammar](#g-frame-expression)) {#sec-frame-expression}
 
 Examples:

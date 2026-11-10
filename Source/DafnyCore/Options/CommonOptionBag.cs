@@ -247,6 +247,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> HeapFreeLambdaFacts = new("--heap-free-lambda-facts", () => false,
     "Check a lambda without a reads clause, whose body observes neither the heap nor allocation, in every heap and without assuming its parameters allocated, and let the calls in its body unfold wherever it is applied. May change verification performance. Disabled by default.");
 
+  public static readonly Option<bool> StatementExpressionConclusions = new("--statement-expression-conclusions", () => false,
+    "In the condition of an assert statement, use the conclusion of a statement expression (S; E), such as an assert or assume statement, as a fact for E also under quantifiers and logical connectives, and not only at the top. Not inside old, unchanged, fresh, lambdas, or set and map comprehensions. May change verification performance. Disabled by default.");
+
   public static readonly Option<bool> AllowAxioms = new("--allow-axioms", () => false,
     "Prevents a warning from being generated for axioms, such as assume statements and functions or methods without a body, that don't have an {:axiom} attribute.") {
   };
@@ -254,11 +257,29 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> BitvectorMapKeys = new("--bitvector-map-keys", () => false,
     "Preserve bitvector key types in map and imap lookups, and bitvector element types in multiset multiplicity lookups, during verification. Disabled by default.");
 
+  public static readonly Option<bool> DatatypeSubsetConversions = new("--datatype-subset-conversions", () => false,
+    "With the legacy type system, allow explicit conversions to subsets of inductive datatypes using assignment compatibility and checked destination constraints. Disabled by default.");
+
   public static readonly Option<bool> ContextualLambdaDomains = new("--contextual-lambda-domains", () => false,
     "With the refreshed type system, infer omitted parameters of function-result lambdas from the declared arrow domain. Disabled by default.");
 
+  public static readonly Option<bool> ContextualQuantifierDomains = new("--contextual-quantifier-domains", () => false,
+    "With the refreshed type system, infer an omitted bound variable type of a forall or exists expression from the declared type of the function parameters it is passed to, when every use of the variable is such an argument and all those parameters have the same type. Disabled by default.");
+
   public static readonly Option<bool> ConservativeMatchInference = new("--conservative-match-inference", () => false,
     "With the refreshed type system, infer the type of a match source by propagation before making default type decisions, so that an earlier literal can still take its type from the enclosing context. Disabled by default.");
+
+  public static readonly Option<bool> AncestorQualifiedModuleIds = new("--ancestor-qualified-module-ids", () => false,
+    "Let a refines clause or import whose qualified module name starts with modules that enclose it, as in 'module A.C refines A.B', depend on the module it names instead of on the enclosing module, which is otherwise reported as a cycle. Disabled by default.");
+
+  public static readonly Option<bool> SynonymRefinesAbstractType = new("--synonym-refines-abstract-type", () => false,
+    "In a refining module, let a type synonym 'type O<Xs> = T<Xs>' refine an abstract type O that has members, where T is a class, trait, datatype, newtype or abstract type declared in the refining module: the members of O are merged into T, as they would be into a declaration of O itself. Disabled by default.");
+
+  public static readonly Option<bool> ModularTermination = new("--modular-termination", () => false,
+    "Experimental; it does not yet establish termination in every program. Accept 'decreases {:global}' clauses, and reject a call dispatched to a bodyless member of a trait whose implementations may lie in other modules (a trait with {:termination false}, or one extended from another module) unless the callee's 'decreases {:global}' bound is below the caller's, captured on entry. Reject a call to known code that can reach such a dispatched call unless the callee's bound is at most the caller's; a helper that forwards one therefore needs a bound of its own. Code without a bound that can reach such a dispatched call (a type's constraint, witness or component defaults, or a constant's initializer) counts as called wherever a member mentions the type or reads the constant, so a member with a bound may not do so. A call through a function value whose code is not known (not a lambda expression, nor a function that reaches no dispatched call) has no bound either; 'decreases {:callback g} E' gives an in-parameter g the bound E, which an application of g must be below and the value passed for g must run under. A global or callback bound may only use code that cannot reach such a dispatched call. The option does not yet establish termination in every program (see the Reference Manual). Report as hints (with --show-hints) every call that needs one of the rules. See the Reference Manual. Disabled by default.");
+
+  public static readonly Option<bool> InvariantConstructorInference = new("--invariant-constructor-inference", () => false,
+    "With the refreshed type system, let a datatype constructor argument whose formal type uses a type parameter in a non-variant position, such as the tail of a list, fix that type argument, instead of widening it to the type of another argument. Every argument is still checked against the chosen type. Disabled by default.");
 
   public static readonly Option<bool> TypeSystemRefresh = new("--type-system-refresh", () => false,
     @"
@@ -694,6 +715,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(AdditionalAxioms, OptionScope.Cli);
     OptionRegistry.RegisterOption(MapComprehensionDomainTriggers, OptionScope.Cli);
     OptionRegistry.RegisterOption(HeapFreeLambdaFacts, OptionScope.Cli);
+    OptionRegistry.RegisterOption(StatementExpressionConclusions, OptionScope.Cli);
     OptionRegistry.RegisterOption(ShowHints, OptionScope.Cli);
     OptionRegistry.RegisterOption(Libraries, OptionScope.Module);
     OptionRegistry.RegisterOption(Output, OptionScope.Cli);
@@ -717,7 +739,13 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(TypeSystemRefresh, OptionScope.Cli);
     OptionRegistry.RegisterOption(BitvectorMapKeys, OptionScope.Cli);
     OptionRegistry.RegisterOption(ContextualLambdaDomains, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ContextualQuantifierDomains, OptionScope.Cli);
     OptionRegistry.RegisterOption(ConservativeMatchInference, OptionScope.Cli);
+    OptionRegistry.RegisterOption(DatatypeSubsetConversions, OptionScope.Cli);
+    OptionRegistry.RegisterOption(AncestorQualifiedModuleIds, OptionScope.Cli);
+    OptionRegistry.RegisterOption(SynonymRefinesAbstractType, OptionScope.Cli);
+    OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
+    OptionRegistry.RegisterOption(InvariantConstructorInference, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationLogFormat, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerifyIncludedFiles, OptionScope.Cli);
     OptionRegistry.RegisterOption(DisableNonLinearArithmetic, OptionScope.Module);

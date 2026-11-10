@@ -557,6 +557,8 @@ namespace Microsoft.Dafny {
             foreach (Expression arg in e.Args) {
               CheckWellformed(arg, wfOptions, locals, builder, etran);
             }
+            CheckCallbackApplication(applyExpr.Origin, codeContext, e.Function,
+              wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran, builder);
 
             // check subranges of arguments
             for (int i = 0; i < arity; ++i) {
@@ -707,6 +709,11 @@ namespace Microsoft.Dafny {
                 builder.Add(new Bpl.CommentCmd("assume allocatedness for receiver argument to function"));
                 builder.Add(TrAssumeCmd(e.Receiver.Origin, MkIsAllocBox(BoxIfNecessary(e.Receiver.Origin, etran.TrExpr(e.Receiver), e.Receiver.Type), et, etran.HeapExpr)));
               }
+              if (ModularTermination.IsArrowMember(e.Function)) {
+                CheckCallbackApplication(callExpr.Origin, codeContext, e.Receiver,
+                  wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran, builder);
+              }
+              RegisterCallbackLambdas(e.Function, e.Receiver, e.Args, e.GetTypeArgumentSubstitutions(), etran);
               // create a local variable for each formal parameter, and assign each actual parameter to the corresponding local
               Dictionary<IVariable, Expression> substMap = new Dictionary<IVariable, Expression>();
               Dictionary<IVariable, Expression> directSubstMap = new Dictionary<IVariable, Expression>();
@@ -887,6 +894,8 @@ namespace Microsoft.Dafny {
               }
               Expression allowance = null;
               if (codeContext != null && e.CoCall != FunctionCallExpr.CoCallResolution.Yes && !(e.Function is ExtremePredicate)) {
+                CheckCallbackArguments(callExpr.Origin, codeContext, e.Function, e.Args, e.Receiver, substMap, e.GetTypeArgumentSubstitutions(),
+                  wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran, builder);
                 // check that the decreases measure goes down
                 var calleeSCCLookup = e.IsByMethodCall ? (ICallable)e.Function.ByMethodDecl : e.Function;
                 Contract.Assert(calleeSCCLookup != null);
@@ -945,6 +954,11 @@ namespace Microsoft.Dafny {
                     CheckCallTermination(callExpr.Origin, contextDecreases, calleeDecreases, allowance, e.Receiver, substMap, directSubstMap, e.GetTypeArgumentSubstitutions(),
                       callerEtran, false, builder, codeContext.InferredDecreases, hint, calleeEtran ?? etran);
                   }
+                }
+                if (e.Function != wfOptions.SelfCallsAllowance) {
+                  CheckModularTermination(callExpr.Origin, codeContext, e.Function, e.Receiver, substMap, directSubstMap,
+                    e.GetTypeArgumentSubstitutions(), wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran,
+                    builder, etran);
                 }
               }
               // all is okay, so allow this function application access to the function's axiom, except if it was okay because of the self-call allowance.
@@ -1238,6 +1252,9 @@ namespace Microsoft.Dafny {
             // that its formals are allocated.  This only removes assumptions from a check; the permissions
             // exported for the lambda in every good heap (LambdaCanCallInEveryHeap) are what it checks.
             var lambdaInEveryHeap = lam != null && LambdaFactsInEveryHeap(lam);
+            if (lam != null) {
+              EnterLambda(lam, codeContext, wfOptions.CallerTerminationTranslator ?? builder.Context.CallerTerminationTranslator ?? etran);
+            }
             BplIfIf(e.Origin, lam != null, null, builder, nextBuilder => {
               var comprehensionEtran = etran;
               if (lam != null) {
@@ -1349,6 +1366,9 @@ namespace Microsoft.Dafny {
                 nextBuilder.Add(new AssumeCmd(e.Origin, Bpl.Expr.False));
               }
             });
+            if (lam != null) {
+              ExitLambda();
+            }
 
             // The source domain, child definedness, and map collision checks above
             // justify the own-site finite image before its result type is checked.
@@ -1552,6 +1572,11 @@ namespace Microsoft.Dafny {
       builder.Add(TrAssumeCmd(expr.Origin, MkIs(selfCall, resultType)));
     }
 
+    // The number of statement expressions whose statements are being translated.  Under
+    // --statement-expression-conclusions, TrAssertCondition leaves an assert statement inside one
+    // as it is, since such a statement may run in a heap other than the one its etran names.
+    private int statementExpressionDepth;
+
     private void CheckWellformedStmtExpr(StmtExpr stmtExpr, WFOptions wfOptions, Variables locals,
       BoogieStmtListBuilder builder, ExpressionTranslator etran, AddResultCommands addResultCommands) {
 
@@ -1566,17 +1591,23 @@ namespace Microsoft.Dafny {
       // expressions. However, here, we're also having to translate e.S, which is a
       // Statement. Since statement translation (in particular, translation of CallStmt's)
       // work directly on the global variable $Heap, we temporarily change its value here.
-      if (etran.UsesOldHeap) {
-        BuildWithHeapAs(stmtExpr.S.Origin, etran.HeapExpr, "StmtExpr#", locals, builder,
-          () => {
-            foreach (var statement in statements) {
-              TrStmt(statement, builder, locals, etran);
-            }
-          });
-      } else {
-        foreach (var statement in statements) {
-          TrStmt(statement, builder, locals, etran);
+      statementExpressionDepth++;
+      try {
+        if (etran.UsesOldHeap) {
+          BuildWithHeapAs(stmtExpr.S.Origin, etran.HeapExpr, "StmtExpr#", locals, builder,
+            () => {
+              foreach (var statement in statements) {
+                TrStmt(statement, builder, locals, etran);
+              }
+            });
+        } else {
+          foreach (var statement in statements) {
+            TrStmt(statement, builder, locals, etran);
+          }
         }
+      }
+      finally {
+        statementExpressionDepth--;
       }
 
       CheckWellformedWithResult(expression, wfOptions, locals, builder, etran, addResultCommands);
