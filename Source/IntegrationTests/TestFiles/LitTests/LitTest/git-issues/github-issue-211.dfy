@@ -1,9 +1,11 @@
 // Termination of calls dispatched across modules (https://github.com/erniecohen/dafny/issues/211,
-// upstream dafny-lang/dafny#1588), milestones M1 and M2, under the opt-in --modular-termination.
+// upstream dafny-lang/dafny#1588), milestones M1 to M3, under the opt-in --modular-termination.
 // Without the option nothing changes: fabiomadge's Tie program, which never terminates, verifies,
 // and "decreases {:global} E" is an ordinary decreases clause with an attribute.  With it, a call
 // dispatched to a bodyless member of an open trait must go to a smaller "decreases {:global}" bound
-// (M1), and a call to known code that can reach one must not go to a larger bound (M2).
+// (M1), and a call to known code that can reach one must not go to a larger bound (M2).  Code without a bound
+// that can reach one (a constraint, a witness, a constant's initializer, a function value whose code is not
+// known) may not run under a bound, and "decreases {:callback g} E" bounds a parameter's function value (M3).
 //
 // RUN: echo "tie, option off: verifies, as before" > "%t"
 // RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false "%S/Inputs/github-issue-211-tie.dfy" >> "%t"
@@ -57,16 +59,58 @@
 // RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true --general-traits:legacy --modular-termination "%S/Inputs/github-issue-211-same-bound-false.dfy" >> "%t"
 // RUN: echo "same-bound rules, option on, refresh true" >> "%t"
 // RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true --general-traits:legacy --modular-termination "%S/Inputs/github-issue-211-same-bound-rules.dfy" >> "%t"
-// KNOWN GAP, expected to verify until it is closed: a subset type's constraint, evaluated by a type
-// test, reaches a dispatched call with no call to check.
-// RUN: echo "KNOWN GAP: a subset-type constraint reaches the dispatched call, option on: verifies" >> "%t"
-// RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%S/Inputs/github-issue-211-gap-constraint.dfy" >> "%t"
+// Milestone M3a: a subset type's constraint, evaluated by a type test, reaches a dispatched call.  It was a
+// known gap (the program verified and proved false); the type test is now rejected.
+// RUN: echo "gap constraint, option on: the type test rejected" >> "%t"
+// RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%S/Inputs/github-issue-211-gap-constraint.dfy" >> "%t"
+// RUN: echo "constraint, option on, refresh false: verifies" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false --modular-termination "%S/Inputs/github-issue-211-constraint.dfy" >> "%t"
+// RUN: echo "constraint vacuity control, option on, refresh false: each assert false fails" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false --modular-termination "%S/Inputs/github-issue-211-constraint-false.dfy" >> "%t"
+// RUN: echo "constraint reach, option on, refresh false" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false --modular-termination "%S/Inputs/github-issue-211-constraint-reach.dfy" >> "%t"
+// RUN: echo "constraint, option on, refresh true: verifies" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true --general-traits:datatype --modular-termination "%S/Inputs/github-issue-211-constraint.dfy" >> "%t"
+// RUN: echo "constraint vacuity control, option on, refresh true: each assert false fails" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true --general-traits:datatype --modular-termination "%S/Inputs/github-issue-211-constraint-false.dfy" >> "%t"
+// RUN: echo "constraint reach, option on, refresh true" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true --general-traits:datatype --modular-termination "%S/Inputs/github-issue-211-constraint-reach.dfy" >> "%t"
+// RUN: echo "constraint rules, option on, refresh true: each marked use rejected" >> "%t"
+// RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true --general-traits:datatype --modular-termination "%S/Inputs/github-issue-211-constraint-rules.dfy" >> "%t"
+// RUN: echo "constraint hints, option on" >> "%t"
+// RUN: %exits-with 0 %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --show-hints "%S/Inputs/github-issue-211-constraint.dfy" >> "%t"
 // RUN: echo "same-bound hints, option on" >> "%t"
 // RUN: %exits-with 0 %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --show-hints "%S/Inputs/github-issue-211-same-bound.dfy" >> "%t"
+// Milestone M3b: calls through function values.  Under a bound, an application of a value whose code is not
+// known is rejected; "decreases {:callback g} E" gives a parameter a bound, checked where the value is applied
+// and where it is passed.
+// RUN: echo "callback, option on, refresh false: verifies" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false --modular-termination "%S/Inputs/github-issue-211-callback.dfy" >> "%t"
+// RUN: echo "callback vacuity control, option on, refresh false: each assert false fails" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false --modular-termination "%S/Inputs/github-issue-211-callback-false.dfy" >> "%t"
+// RUN: echo "callback rules, option on, refresh false" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:false --modular-termination "%S/Inputs/github-issue-211-callback-rules.dfy" >> "%t"
+// RUN: echo "callback, option on, refresh true: verifies" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true --general-traits:legacy --modular-termination "%S/Inputs/github-issue-211-callback.dfy" >> "%t"
+// RUN: echo "callback vacuity control, option on, refresh true: each assert false fails" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true --general-traits:legacy --modular-termination "%S/Inputs/github-issue-211-callback-false.dfy" >> "%t"
+// RUN: echo "callback rules, option on, refresh true" >> "%t"
+// RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true --general-traits:legacy --modular-termination "%S/Inputs/github-issue-211-callback-rules.dfy" >> "%t"
+// RUN: echo "callback resolution rules, option on, refresh true: each marked use rejected" >> "%t"
+// RUN: %exits-with 2 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --type-system-refresh:true --general-traits:datatype --modular-termination "%S/Inputs/github-issue-211-callback-resolve.dfy" >> "%t"
+// RUN: echo "callback hints, option on" >> "%t"
+// RUN: %exits-with 0 %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --show-hints "%S/Inputs/github-issue-211-callback.dfy" >> "%t"
 // The printed program keeps the global clauses.
 // RUN: %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --print "%t.counter.dfy" "%S/Inputs/github-issue-211-counter.dfy" > "%t.ignore"
 // RUN: echo "printed counter, option on: verifies" >> "%t"
 // RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%t.counter.dfy" >> "%t"
+// Without the option, a {:callback} attribute is printed as written, as before.
+// RUN: echo "printed callback clauses, option off: attributes as written" >> "%t"
+// RUN: %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --print "%t.callback-off.dfy" "%S/Inputs/github-issue-211-callback.dfy" > "%t.ignore"
+// RUN: grep "{:callback" "%t.callback-off.dfy" >> "%t"
+// RUN: %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --print "%t.callback.dfy" "%S/Inputs/github-issue-211-callback.dfy" > "%t.ignore"
+// RUN: echo "printed callback, option on: verifies" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%t.callback.dfy" >> "%t"
 // RUN: %baredafny resolve --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination --print "%t.tie-bounds.dfy" "%S/Inputs/github-issue-211-tie-bounds.dfy" > "%t.ignore"
 // RUN: echo "printed tie with constant bounds, option on: rejected" >> "%t"
 // RUN: %exits-with 4 %baredafny verify --use-basename-for-filename --show-snippets:false --standard-libraries:false --modular-termination "%t.tie-bounds.dfy" >> "%t"

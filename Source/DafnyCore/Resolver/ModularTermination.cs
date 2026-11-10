@@ -27,6 +27,77 @@ public static class ModularTermination {
   }
 
   /// <summary>
+  /// "decreases {:callback f} E" (milestone M3b): the function value that the in-parameter f holds runs under the
+  /// global bound E, a list of expressions in the callable's in-parameters, evaluated on entry.  The parser keeps it
+  /// as the attribute {:callback f, E}, as it keeps "decreases {:global} E" as {:global E}.
+  /// </summary>
+  public const string CallbackAttributeName = "callback";
+
+  public static bool IsCallbackClause(Attributes a) {
+    return a.Name == CallbackAttributeName && a.Args is { Count: > 1 } && a is not UserSuppliedAtAttribute;
+  }
+
+  /// <summary>
+  /// Whether "a" is a global clause or a callback clause: a clause of --modular-termination, kept apart from the
+  /// ordinary decreases clause.
+  /// </summary>
+  public static bool IsModularTerminationClause(Attributes a) {
+    return IsGlobalClause(a) || IsCallbackClause(a);
+  }
+
+  public static IEnumerable<Attributes> CallbackClauses(Attributes? attrs) {
+    for (var a = attrs; a != null; a = a.Prev) {
+      if (IsCallbackClause(a)) {
+        yield return a;
+      }
+    }
+  }
+
+  /// <summary>
+  /// The in-parameter that a callback clause names, or null if its first argument names none of "callable"'s.
+  /// </summary>
+  public static Formal? CallbackParameter(ICallable callable, Attributes clause) {
+    return clause.Args[0].Resolved is IdentifierExpr { Var: Formal f } && callable.Ins.Contains(f) ? f : null;
+  }
+
+  /// <summary>
+  /// The callback bound that "callable" declares itself for its in-parameter "formal", or null.
+  /// </summary>
+  public static List<Expression>? DeclaredCallbackBound(ICallable callable, Formal formal) {
+    if (callable is not (MethodOrConstructor or Function)) {
+      return null;
+    }
+    return CallbackClauses(callable.Decreases.Attributes).LastOrDefault(a => CallbackParameter(callable, a) == formal)?.Args.Skip(1).ToList();
+  }
+
+  /// <summary>
+  /// Whether the in-parameter at "index" of "callable" has a callback bound, declared or inherited.  The method of a
+  /// function's "by method" body has the function's callback bounds.
+  /// </summary>
+  public static bool HasCallbackBound(ICallable callable, int index) {
+    if (callable is Method { FunctionFromWhichThisIsByMethodDecl: { } function }) {
+      return HasCallbackBound(function, index);
+    }
+    for (ICallable? c = callable; c != null; c = (c as MemberDecl)?.OverriddenMember as ICallable) {
+      if (index < c.Ins.Count && DeclaredCallbackBound(c, c.Ins[index]) != null) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public static bool HasCallbackBounds(ICallable callable) {
+    return Enumerable.Range(0, callable.Ins.Count).Any(i => HasCallbackBound(callable, i));
+  }
+
+  /// <summary>
+  /// Whether "function" is the "requires" or "reads" member of an arrow type, which a call applies to the receiver.
+  /// </summary>
+  public static bool IsArrowMember(MemberDecl function) {
+    return function is Function && function.EnclosingClass is ArrowTypeDecl;
+  }
+
+  /// <summary>
   /// The global decreases clauses among the given attributes, last-written first.
   /// </summary>
   public static IEnumerable<Attributes> GlobalClauses(Attributes? attrs) {
@@ -186,6 +257,51 @@ public class ModularTerminationAnalysis {
             }
           });
         }
+        // A type is a node too: its constraint and witness, and the default values of its components, are
+        // evaluated by code that mentions it (see TypeMentions).
+        switch (decl) {
+          case NonNullTypeDecl:
+            break;
+          case SubsetTypeDecl subset:
+            AddNode(subset, c => {
+              c.Mention(subset.Var?.Type);
+              if (subset.Constraint != null) {
+                c.Visit(subset.Constraint);
+              }
+              if (subset.Witness != null) {
+                c.Visit(subset.Witness);
+              }
+            });
+            break;
+          case NewtypeDecl newtype:
+            AddNode(newtype, c => {
+              c.Mention(newtype.BaseType);
+              if (newtype.Constraint != null) {
+                c.Visit(newtype.Constraint);
+              }
+              if (newtype.Witness != null) {
+                c.Visit(newtype.Witness);
+              }
+            });
+            break;
+          case DatatypeDecl datatype:
+            AddNode(datatype, c => {
+              foreach (var formal in datatype.Ctors.SelectMany(ctor => ctor.Formals)) {
+                c.Mention(formal.Type);
+                if (formal.DefaultValue != null) {
+                  c.Visit(formal.DefaultValue);
+                }
+              }
+            });
+            break;
+          case ClassLikeDecl classLike when classLike is not IteratorDecl:
+            AddNode(classLike, c => {
+              foreach (var field in classLike.Members.OfType<Field>()) {
+                c.Mention(field.Type);
+              }
+            });
+            break;
+        }
         if (decl is not TopLevelDeclWithMembers cl) {
           continue;
         }
@@ -193,6 +309,7 @@ public class ModularTerminationAnalysis {
           switch (member) {
             case Function or MethodOrConstructor:
               AddNode(member, c => {
+                c.MentionSignature((ICallable)member);
                 c.Visit((ICallable)member);
                 foreach (var clause in ModularTermination.GlobalClauses(((ICallable)member).Decreases.Attributes)) {
                   c.Visit(clause.Args);
@@ -201,8 +318,11 @@ public class ModularTerminationAnalysis {
                 c.Visit(((ICallable)member).Ins.Where(f => f.DefaultValue != null).Select(f => f.DefaultValue));
               });
               break;
-            case ConstantField { Rhs: { } rhs }:
-              AddNode(member, c => c.Visit(rhs));
+            case ConstantField { Rhs: { } rhs } constant:
+              AddNode(member, c => {
+                c.Mention(constant.Type);
+                c.Visit(rhs);
+              });
               break;
           }
         }
@@ -260,6 +380,43 @@ public class ModularTerminationAnalysis {
     return reaching.Contains(NodeOf(callee));
   }
 
+  public enum FunctionValueKind {
+    /// <summary>A lambda expression: its body is part of the code that creates it, and is checked there.</summary>
+    Lambda,
+    /// <summary>A function or method named as a value that reaches no open dispatch.</summary>
+    KnownCode,
+    /// <summary>An in-parameter of the enclosing callable that has a callback bound (M3b).</summary>
+    CallbackParameter,
+    /// <summary>Any other value: its code is not known, so it has no bound (TOP).</summary>
+    Unknown
+  }
+
+  /// <summary>
+  /// What runs when the function value "value" is applied in "enclosing" (M3b).
+  /// </summary>
+  public FunctionValueKind Classify(Expression value, ICallable? enclosing) {
+    switch (value.Resolved) {
+      case LambdaExpr:
+        return FunctionValueKind.Lambda;
+      case IdentifierExpr { Var: Formal f } when enclosing != null && enclosing.Ins.IndexOf(f) is var i and >= 0 &&
+                                                  ModularTermination.HasCallbackBound(enclosing, i):
+        return FunctionValueKind.CallbackParameter;
+      case MemberSelectExpr { Member: Function g } when !ModularTermination.IsArrowMember(g) && !IsOpen(g) &&
+                                                         !ReachesOpenDispatch(g) && !ModularTermination.HasCallbackBounds(g):
+        return FunctionValueKind.KnownCode;
+      default:
+        return FunctionValueKind.Unknown;
+    }
+  }
+
+  /// <summary>
+  /// The first type declaration among "types" whose constraint, witness or components' default values may lead to
+  /// open dispatch, or null.
+  /// </summary>
+  public TopLevelDecl? ReachingType(IEnumerable<Type> types) {
+    return types.SelectMany(TypeMentions.Declarations).FirstOrDefault(d => reaching.Contains(d));
+  }
+
   private class EdgeCollector : BottomUpVisitor {
     private readonly ModularTerminationAnalysis analysis;
     public readonly HashSet<Declaration> Callees = [];
@@ -267,6 +424,18 @@ public class ModularTerminationAnalysis {
 
     public EdgeCollector(ModularTerminationAnalysis analysis) {
       this.analysis = analysis;
+    }
+
+    public void Mention(Type? type) {
+      foreach (var decl in TypeMentions.Declarations(type)) {
+        Callees.Add(decl);
+      }
+    }
+
+    public void MentionSignature(ICallable callable) {
+      foreach (var type in TypeMentions.OfSignature(callable)) {
+        Mention(type);
+      }
     }
 
     private void Call(MemberDecl callee) {
@@ -278,19 +447,159 @@ public class ModularTerminationAnalysis {
     }
 
     protected override void VisitOneExpr(Expression expr) {
+      foreach (var type in TypeMentions.Of(expr)) {
+        Mention(type);
+      }
       switch (expr) {
         case FunctionCallExpr call when call.Function != null:
-          Call(call.Function);
+          if (ModularTermination.IsArrowMember(call.Function)) {
+            Apply(call.Receiver);
+          } else {
+            Call(call.Function);
+          }
           break;
         case MemberSelectExpr { Member: Function or MethodOrConstructor or ConstantField { Rhs: not null } } select:
           Call(select.Member);
           break;
+        case ApplyExpr apply:
+          Apply(apply.Function);
+          break;
+        case SeqConstructionExpr seq:
+          Apply(seq.Initializer);
+          break;
       }
     }
 
+    /// <summary>
+    /// An application of a function value (M3b).  A lambda's body is visited as part of the enclosing code, and a
+    /// function named as a value is an edge already (a reference); any other value, including a parameter with a
+    /// callback bound, runs code that is not known, which counts as open dispatch.
+    /// </summary>
+    private void Apply(Expression value) {
+      if (value.Resolved is LambdaExpr) {
+        return;
+      }
+      if (value.Resolved is MemberSelectExpr { Member: Function g } && !ModularTermination.IsArrowMember(g)) {
+        return;
+      }
+      Dispatches = true;
+    }
+
     protected override void VisitOneStmt(Statement stmt) {
+      foreach (var type in TypeMentions.Of(stmt)) {
+        Mention(type);
+      }
       if (stmt is CallStmt { Method: { } method }) {
         Call(method);
+      }
+      if (stmt is SingleAssignStmt { Rhs: AllocateArray { ElementInit: { } init } }) {
+        Apply(init);
+      }
+    }
+  }
+}
+
+/// <summary>
+/// The types that a piece of code mentions, for --modular-termination: a value of such a type may be checked
+/// against the type's constraint (a type test, a conversion, a subset check where a value is assigned, passed or
+/// returned) or created from its witness or from the default values of its components.  The list is an
+/// over-approximation of those places: it holds the type of every expression, the types that an expression or
+/// statement names (bound variables, locals, type arguments, conversion and test targets, allocated types), and
+/// the formal types of a datatype constructor that an expression applies.
+/// </summary>
+public static class TypeMentions {
+  public static IEnumerable<Type> Of(Expression expr) {
+    if (expr.Type != null) {
+      yield return expr.Type;
+    }
+    foreach (var type in expr.ComponentTypes) {
+      yield return type;
+    }
+    switch (expr) {
+      case TypeUnaryExpr unary:
+        yield return unary.ToType;
+        break;
+      case DatatypeValue { Ctor: { } ctor }:
+        foreach (var formal in ctor.Formals) {
+          yield return formal.Type;
+        }
+        break;
+    }
+  }
+
+  public static IEnumerable<Type> Of(Statement stmt) {
+    switch (stmt) {
+      case VarDeclStmt varDecl:
+        foreach (var local in varDecl.Locals) {
+          yield return local.Type;
+        }
+        break;
+      case VarDeclPattern pattern:
+        foreach (var local in pattern.LocalVars) {
+          yield return local.Type;
+        }
+        break;
+      case ForallStmt forall:
+        foreach (var bv in forall.BoundVars) {
+          yield return bv.Type;
+        }
+        break;
+      case ForLoopStmt forLoop:
+        yield return forLoop.LoopIndex.Type;
+        break;
+      case SingleAssignStmt { Rhs: TypeRhs typeRhs }:
+        yield return typeRhs.Type;
+        if (typeRhs is AllocateArray array) {
+          yield return array.ElementType;
+        }
+        break;
+      case CallStmt call:
+        foreach (var type in call.MethodSelect.ComponentTypes) {
+          yield return type;
+        }
+        break;
+    }
+  }
+
+  public static IEnumerable<Type> OfSignature(ICallable callable) {
+    foreach (var formal in callable.Ins) {
+      yield return formal.Type;
+    }
+    switch (callable) {
+      case MethodOrConstructor method:
+        foreach (var formal in method.Outs) {
+          yield return formal.Type;
+        }
+        break;
+      case Function function:
+        yield return function.ResultType;
+        break;
+    }
+  }
+
+  /// <summary>
+  /// The declarations of the subset types, newtypes, datatypes, classes and traits that "type" is built from.
+  /// </summary>
+  public static IEnumerable<TopLevelDecl> Declarations(Type? type) {
+    if (type == null) {
+      yield break;
+    }
+    var normalized = type.NormalizeExpandKeepConstraints();
+    if (normalized is UserDefinedType { ResolvedClass: { } decl }) {
+      switch (decl) {
+        case NonNullTypeDecl { Class: not IteratorDecl } nonNull:
+          yield return nonNull.Class;
+          break;
+        case NonNullTypeDecl:
+          break;
+        case SubsetTypeDecl or NewtypeDecl or DatatypeDecl or ClassLikeDecl and not IteratorDecl:
+          yield return decl;
+          break;
+      }
+    }
+    foreach (var argument in normalized.TypeArgs) {
+      foreach (var d in Declarations(argument)) {
+        yield return d;
       }
     }
   }
@@ -316,12 +625,51 @@ public class ModularTerminationRewriter : IRewriter {
           }
           var callable = (ICallable)member;
           CheckGlobalClauses(callable);
+          CheckCallbackClauses(callable);
           var classifier = new CallClassifier(Reporter, callable, analysis);
+          classifier.Prepare(CallableExpressions(callable), CallableStatements(callable));
+          classifier.VisitSignature();
           classifier.Visit(callable);
           classifier.Visit(callable.Ins.Where(f => f.DefaultValue != null).Select(f => f.DefaultValue));
         }
       }
     }
+  }
+
+  /// <summary>
+  /// The expressions and statements that <see cref="BottomUpVisitor.Visit(ICallable)"/> visits, and the default
+  /// values of the in-parameters.
+  /// </summary>
+  private static IEnumerable<Expression> CallableExpressions(ICallable callable) {
+    var exprs = new List<Expression>();
+    switch (callable) {
+      case Function f:
+        exprs.AddRange(f.Req.Select(e => e.E));
+        exprs.AddRange(f.Reads.Expressions.Select(e => e.E));
+        exprs.AddRange(f.Ens.Select(e => e.E));
+        exprs.AddRange(f.Decreases.Expressions);
+        if (f.Body != null) {
+          exprs.Add(f.Body);
+        }
+        break;
+      case MethodOrConstructor m:
+        exprs.AddRange(m.Req.Select(e => e.E));
+        exprs.AddRange(m.Reads.Expressions.Select(e => e.E));
+        exprs.AddRange(m.Mod.Expressions.Select(e => e.E));
+        exprs.AddRange(m.Ens.Select(e => e.E));
+        exprs.AddRange(m.Decreases.Expressions);
+        break;
+    }
+    exprs.AddRange(callable.Ins.Where(f => f.DefaultValue != null).Select(f => f.DefaultValue));
+    return exprs;
+  }
+
+  private static IEnumerable<Statement> CallableStatements(ICallable callable) {
+    return callable switch {
+      Function { ByMethodBody: { } body } => [body],
+      MethodOrConstructor { Body: { } body } => [body],
+      _ => []
+    };
   }
 
   private void CheckGlobalClauses(ICallable callable) {
@@ -332,13 +680,43 @@ public class ModularTerminationRewriter : IRewriter {
     }
   }
 
+  /// <summary>
+  /// A callback clause names an in-parameter of the callable, of an arrow type, at most once, and is declared by a
+  /// member that overrides nothing: an override has the callback bounds of the member it overrides.
+  /// </summary>
+  private void CheckCallbackClauses(ICallable callable) {
+    var named = new HashSet<Formal>();
+    foreach (var clause in ModularTermination.CallbackClauses(callable.Decreases.Attributes)) {
+      var formal = ModularTermination.CallbackParameter(callable, clause);
+      if (formal == null || !formal.Type.IsArrowType) {
+        Reporter.Error(MessageSource.Resolver, clause.Args[0].Origin,
+          "the first argument of a 'decreases {:callback f}' clause must be an in-parameter of the method or function, of an arrow type");
+      } else if (!named.Add(formal)) {
+        Reporter.Error(MessageSource.Resolver, clause.Origin,
+          $"in-parameter '{formal.Name}' has more than one 'decreases {{:callback}}' clause");
+      } else if (callable is MemberDecl { OverriddenMember: not null }) {
+        Reporter.Error(MessageSource.Resolver, clause.Origin,
+          "an overriding member cannot declare a 'decreases {:callback}' clause: it has the callback bounds of the member it overrides");
+      }
+    }
+  }
+
   private class CallClassifier : BottomUpVisitor {
     private readonly ErrorReporter reporter;
     private readonly ICallable caller;
     private readonly ModularTerminationAnalysis analysis;
     // A call can be reached more than once, for instance through a quantifier's triggers; it is
     // reported once, at its position.
-    private readonly HashSet<(System.Uri, int, int)> reported = new();
+    private readonly HashSet<(System.Uri, int, int, bool)> reported = new();
+    // A type is reported once per line: a declaration, its expressions and their subexpressions mention the same type.
+    private readonly HashSet<(System.Uri, int, TopLevelDecl)> reportedTypes = new();
+
+    // The code inside a lambda expression, and inside a lambda expression passed for a parameter with a callback
+    // bound (a bounded lambda, M3b), whose body runs under that bound, and so does every lambda inside it.
+    private readonly HashSet<object> insideLambda = new(ReferenceEqualityComparer.Instance);
+    private readonly HashSet<object> insideBoundedLambda = new(ReferenceEqualityComparer.Instance);
+    // The member selections that a call statement names its method by.
+    private readonly HashSet<object> calledSelections = new(ReferenceEqualityComparer.Instance);
 
     public CallClassifier(ErrorReporter reporter, ICallable caller, ModularTerminationAnalysis analysis) {
       this.reporter = reporter;
@@ -346,38 +724,198 @@ public class ModularTerminationRewriter : IRewriter {
       this.analysis = analysis;
     }
 
+    public void VisitSignature() {
+      ReportTypes(((MemberDecl)caller).Origin, TypeMentions.OfSignature(caller), ModularTermination.HasGlobalBound(caller));
+    }
+
+    /// <summary>
+    /// Records which code lies inside lambda expressions, before the visit.
+    /// </summary>
+    public void Prepare(IEnumerable<Expression> exprs, IEnumerable<Statement> stmts) {
+      foreach (var e in exprs) {
+        Walk(e, false, false);
+      }
+      foreach (var st in stmts) {
+        Walk(st, false, false);
+      }
+    }
+
+    private void Walk(object node, bool inLambda, bool inBounded) {
+      if (inLambda) {
+        insideLambda.Add(node);
+      }
+      if (inBounded) {
+        insideBoundedLambda.Add(node);
+      }
+      var bounded = new HashSet<object>(ReferenceEqualityComparer.Instance);
+      switch (node) {
+        case FunctionCallExpr { Function: { } f } call:
+          foreach (var arg in BoundedArguments(f, call.Args)) {
+            bounded.Add(arg);
+          }
+          break;
+        case CallStmt { Method: { } m } callStmt:
+          calledSelections.Add(callStmt.MethodSelect);
+          foreach (var arg in BoundedArguments(m, callStmt.Args)) {
+            bounded.Add(arg);
+          }
+          break;
+      }
+      switch (node) {
+        case Expression expr:
+          foreach (var sub in expr.SubExpressions) {
+            var isLambda = sub.Resolved is LambdaExpr;
+            Walk(sub, inLambda || isLambda, inBounded || (isLambda && bounded.Contains(sub)));
+          }
+          if (expr is StmtExpr stmtExpr) {
+            Walk(stmtExpr.S, inLambda, inBounded);
+          }
+          break;
+        case Statement stmt:
+          foreach (var sub in stmt.SubExpressions) {
+            var isLambda = sub.Resolved is LambdaExpr;
+            Walk(sub, inLambda || isLambda, inBounded || (isLambda && bounded.Contains(sub)));
+          }
+          foreach (var sub in stmt.SubStatements) {
+            Walk(sub, inLambda, inBounded);
+          }
+          break;
+      }
+    }
+
+    /// <summary>
+    /// The arguments that a call of "callee" passes for in-parameters that have a callback bound.
+    /// </summary>
+    private static IEnumerable<Expression> BoundedArguments(MemberDecl callee, List<Expression> args) {
+      if (callee is not ICallable callable) {
+        yield break;
+      }
+      for (var i = 0; i < args.Count && i < callable.Ins.Count; i++) {
+        if (ModularTermination.HasCallbackBound(callable, i)) {
+          yield return args[i];
+        }
+      }
+    }
+
+    /// <summary>
+    /// Whether the code at "node" runs under a global bound: the caller's, or that of a bounded lambda around it.
+    /// </summary>
+    private bool Bounded(object node) {
+      return ModularTermination.HasGlobalBound(caller) || insideBoundedLambda.Contains(node);
+    }
+
     protected override void VisitOneExpr(Expression expr) {
+      ReportTypes(expr.Origin, TypeMentions.Of(expr), Bounded(expr));
       switch (expr) {
+        case MemberSelectExpr { Member: ConstantField { Rhs: not null } constant } select
+          when analysis.ReachesOpenDispatch(constant):
+          ReportTop(select.Origin, $"the initializer of constant '{QualifiedName(constant)}'", Bounded(expr));
+          break;
+        case MemberSelectExpr { Member: Function f } select when !calledSelections.Contains(select) &&
+                                                               ModularTermination.HasCallbackBounds(f):
+          reporter.Error(MessageSource.Resolver, select.Origin,
+            $"modular termination: '{QualifiedName(f)}' has a parameter with a 'decreases {{:callback}}' bound, so it cannot be used as a function value");
+          break;
+        case FunctionCallExpr { Function: { } f } call when ModularTermination.IsArrowMember(f):
+          ReportApplication(call.Origin, call.Receiver, expr, $"a call of '{f.Name}' of a function value", false);
+          break;
         case FunctionCallExpr call:
           ReportDispatch(call.Origin, call.Function);
+          ReportBoundedArguments(call.Function, call.Args, expr);
           break;
-        case ApplyExpr apply when !IsKnownCode(apply.Function):
-          ReportCallback(apply.Origin, "a call through a function value");
+        case ApplyExpr apply:
+          ReportApplication(apply.Origin, apply.Function, expr, "a call through a function value", false);
           break;
-        case SeqConstructionExpr seq when !IsKnownCode(seq.Initializer):
-          ReportCallback(seq.Origin, "a sequence constructor's calls of its initializing function");
+        case SeqConstructionExpr seq:
+          ReportApplication(seq.Origin, seq.Initializer, expr, "a sequence constructor's calls of its initializing function", true);
           break;
       }
     }
 
     protected override void VisitOneStmt(Statement stmt) {
+      ReportTypes(stmt.Origin, TypeMentions.Of(stmt), Bounded(stmt));
       switch (stmt) {
         case CallStmt call:
           ReportDispatch(call.Origin, call.Method);
+          ReportBoundedArguments(call.Method, call.Args, stmt);
           break;
-        case SingleAssignStmt { Rhs: AllocateArray { ElementInit: { } init } } assign when !IsKnownCode(init):
-          ReportCallback(assign.Origin, "an array allocation's calls of its initializing function");
+        case SingleAssignStmt { Rhs: AllocateArray { ElementInit: { } init } } assign:
+          ReportApplication(assign.Origin, init, stmt, "an array allocation's calls of its initializing function", true);
           break;
       }
     }
 
-    private static bool IsKnownCode(Expression function) {
-      return function.Resolved is LambdaExpr;
+    /// <summary>
+    /// An application of a function value (M3b).  A lambda's body is checked where it appears, and a function
+    /// named as a value that reaches no dispatched call needs no check.  A parameter with a callback bound runs
+    /// under that bound, which the verifier checks to be below the caller's (smaller-bound rule), except inside a
+    /// lambda and as the initializer of a sequence or an array, where it counts as unknown.  Any other value runs
+    /// code that is not known, which has no bound (TOP): an error where the code runs under a bound.
+    /// </summary>
+    private void ReportApplication(IOrigin origin, Expression value, object site, string what, bool initializer) {
+      var kind = analysis.Classify(value, caller);
+      if (kind == ModularTerminationAnalysis.FunctionValueKind.CallbackParameter && (initializer || insideLambda.Contains(site))) {
+        kind = ModularTerminationAnalysis.FunctionValueKind.Unknown;
+      }
+      if (kind == ModularTerminationAnalysis.FunctionValueKind.Lambda || !FirstReport(origin)) {
+        return;
+      }
+      var bounded = Bounded(site);
+      switch (kind) {
+        case ModularTerminationAnalysis.FunctionValueKind.KnownCode:
+          reporter.Info(MessageSource.Resolver, origin,
+            $"modular termination: in {CallerName}, {what} needs the smaller-bound rule; holds: the value is known code that reaches no dispatched call");
+          break;
+        case ModularTerminationAnalysis.FunctionValueKind.CallbackParameter:
+          reporter.Info(MessageSource.Resolver, origin,
+            $"modular termination: in {CallerName}, {what} needs the smaller-bound rule; " +
+            (bounded ? "checked: the parameter's 'decreases {:callback}' bound must be below the caller's" : "holds: the caller has no 'decreases {:global}' bound, which is above every bound"));
+          break;
+        default:
+          if (bounded) {
+            reporter.Error(MessageSource.Resolver, origin,
+              $"modular termination: in {CallerName}, {what} needs the smaller-bound rule; rejected: the value's code is not known, so it has no bound, " +
+              "and the caller has one (pass the value for a parameter with a 'decreases {:callback}' bound)");
+          } else if (ModularTermination.ImplementsOpenDispatch((MemberDecl)caller, analysis.OpenTraits)) {
+            reporter.Info(MessageSource.Resolver, origin,
+              $"modular termination: in {CallerName}, {what} needs the smaller-bound rule; holds until the trait member that the caller implements gets a 'decreases {{:global}}' bound, as its dispatched calls require; the value's code is not known");
+          } else {
+            reporter.Info(MessageSource.Resolver, origin,
+              $"modular termination: in {CallerName}, {what} needs the smaller-bound rule; holds: the caller has no 'decreases {{:global}}' bound, which is above every bound; the value's code is not known");
+          }
+          break;
+      }
     }
 
-    private bool FirstReport(IOrigin origin) {
+    /// <summary>
+    /// A value passed for a parameter with a callback bound must run under that bound: a lambda expression, whose
+    /// body the verifier checks under it; a parameter of the caller with a callback bound, which the verifier checks
+    /// to be at most the callee's (outside a lambda); or a function named as a value that reaches no dispatched call.
+    /// </summary>
+    private void ReportBoundedArguments(MemberDecl callee, List<Expression> args, object site) {
+      if (callee is not ICallable callable) {
+        return;
+      }
+      for (var i = 0; i < args.Count && i < callable.Ins.Count; i++) {
+        if (!ModularTermination.HasCallbackBound(callable, i)) {
+          continue;
+        }
+        var kind = analysis.Classify(args[i], caller);
+        if (kind == ModularTerminationAnalysis.FunctionValueKind.CallbackParameter && insideLambda.Contains(site)) {
+          kind = ModularTerminationAnalysis.FunctionValueKind.Unknown;
+        }
+        if (kind == ModularTerminationAnalysis.FunctionValueKind.Unknown) {
+          reporter.Error(MessageSource.Resolver, args[i].Origin,
+            $"modular termination: in {CallerName}, the value passed for parameter '{callable.Ins[i].Name}' of '{QualifiedName(callee)}', " +
+            "which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound (outside a lambda), " +
+            "or a function that reaches no dispatched call");
+        }
+      }
+    }
+
+    private bool FirstReport(IOrigin origin, bool top = false) {
       var center = origin.Center;
-      return reported.Add((center.Uri, center.line, center.col));
+      return reported.Add((center.Uri, center.line, center.col, top));
     }
 
     private void ReportDispatch(IOrigin origin, MemberDecl callee) {
@@ -418,12 +956,38 @@ public class ModularTerminationRewriter : IRewriter {
         $"the callee has {(calleeHasBound ? "a" : "no")} 'decreases {{:global}}' bound, {callerPart}");
     }
 
-    private void ReportCallback(IOrigin origin, string what) {
-      if (!FirstReport(origin)) {
+    /// <summary>
+    /// A type that the code mentions may have its constraint, its witness, or the default values of its components
+    /// evaluated there.  They belong to no method or function and have no global bound, so they are code without a
+    /// bound (TOP): under the same-bound rule, they cannot run under the bound of a caller that has one if they
+    /// can reach open dispatch.
+    /// </summary>
+    private void ReportTypes(IOrigin origin, IEnumerable<Type> types, bool bounded) {
+      if (analysis.ReachingType(types) is { } decl && reportedTypes.Add((origin.Center.Uri, origin.Center.line, decl))) {
+        var what = decl is SubsetTypeDecl or NewtypeDecl
+          ? $"the constraint or witness of type '{decl.EnclosingModuleDefinition.Name}.{decl.Name}'"
+          : $"the default values of the components of type '{decl.EnclosingModuleDefinition.Name}.{decl.Name}'";
+        ReportTop(origin, what, bounded);
+      }
+    }
+
+    /// <summary>
+    /// Code without a global bound that can reach open dispatch, and that "origin" may evaluate, runs under the
+    /// caller's bound: an error if the caller has a bound, which TOP exceeds, and a hint otherwise.
+    /// </summary>
+    private void ReportTop(IOrigin origin, string what, bool bounded) {
+      if (!FirstReport(origin, true)) {
         return;
       }
-      reporter.Info(MessageSource.Resolver, origin,
-        $"modular termination: in {CallerName}, {what} needs the smaller-bound rule; not checked (calls through function values are not yet supported)");
+      if (bounded) {
+        reporter.Error(MessageSource.Resolver, origin,
+          $"modular termination: in {CallerName}, this may evaluate {what}, which can reach dispatch to implementations " +
+          $"that other modules may provide and has no 'decreases {{:global}}' bound, so it cannot run under the caller's bound (same-bound rule)");
+      } else {
+        reporter.Info(MessageSource.Resolver, origin,
+          $"modular termination: in {CallerName}, this may evaluate {what}, which can reach dispatch to implementations " +
+          $"that other modules may provide and has no 'decreases {{:global}}' bound; holds: the caller has none, which is above every bound");
+      }
     }
 
     private string CallerName => $"'{QualifiedName((MemberDecl)caller)}'";

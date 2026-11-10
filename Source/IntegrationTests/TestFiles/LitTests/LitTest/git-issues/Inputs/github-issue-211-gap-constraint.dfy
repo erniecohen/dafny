@@ -1,8 +1,9 @@
-// KNOWN GAP of --modular-termination (https://github.com/erniecohen/dafny/issues/211): the constraint
-// of a subset type (or newtype) belongs to no method or function, and a type test evaluates it at
-// run time with no call to check.  Here S.Good's constraint makes the dispatched call t.F(0), and
-// Y.F, whose bound is n, reaches it through "me is S.Good": nothing compares the two, and the
-// program verifies and proves false.  The same holds for a witness, which compiled code may evaluate.
+// Formerly a KNOWN GAP of --modular-termination (https://github.com/erniecohen/dafny/issues/211), closed in
+// milestone M3a: the constraint of a subset type (or newtype) belongs to no method or function, and a type
+// test evaluates it at run time.  Here S.Good's constraint makes the dispatched call t.F(0), and Y.F, whose
+// bound is n, reaches it through "me is S.Good".  Without a check the program verifies and proves false.
+// Now the constraint counts as code without a bound (TOP) that Y.F runs: since it reaches the dispatched
+// call, the same-bound rule rejects the type test.
 module Tr {
   trait {:termination false} T {
     function F(n: nat): nat decreases {:global} n

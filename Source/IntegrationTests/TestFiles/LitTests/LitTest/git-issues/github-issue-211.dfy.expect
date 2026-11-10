@@ -76,12 +76,12 @@ clauses, option on: at most one global clause
 github-issue-211-clauses.dfy(4,14): Error: method 'TwoClauses' has more than one 'decreases {:global}' clause
 1 resolution/type errors detected in github-issue-211-clauses.dfy
 hints, option on
-github-issue-211-hints.dfy(15,7): Info: modular termination: in 'Client.Calls', dispatch of 'Tr.T.F' to implementations that other modules may provide needs the smaller-bound rule; checked: the callee's global bound must be below the caller's
-github-issue-211-hints.dfy(16,9): Info: modular termination: in 'Client.Calls', dispatch of 'Tr.T.G' to implementations that other modules may provide needs the smaller-bound rule; the callee has no 'decreases {:global}' bound, so the call is rejected
-github-issue-211-hints.dfy(18,6): Info: modular termination: in 'Client.Calls', a call through a function value needs the smaller-bound rule; not checked (calls through function values are not yet supported)
-github-issue-211-hints.dfy(21,46): Info: modular termination: in 'Client.NoBound', dispatch of 'Tr.T.F' to implementations that other modules may provide needs the smaller-bound rule; holds: the caller has no 'decreases {:global}' bound, which is above every bound
-github-issue-211-hints.dfy(23,13): Info: modular termination: in 'Client.Collections', a sequence constructor's calls of its initializing function needs the smaller-bound rule; not checked (calls through function values are not yet supported)
-github-issue-211-hints.dfy(25,10): Info: modular termination: in 'Client.Collections', an array allocation's calls of its initializing function needs the smaller-bound rule; not checked (calls through function values are not yet supported)
+github-issue-211-hints.dfy(16,7): Info: modular termination: in 'Client.Calls', dispatch of 'Tr.T.F' to implementations that other modules may provide needs the smaller-bound rule; checked: the callee's global bound must be below the caller's
+github-issue-211-hints.dfy(17,9): Info: modular termination: in 'Client.Calls', dispatch of 'Tr.T.G' to implementations that other modules may provide needs the smaller-bound rule; the callee has no 'decreases {:global}' bound, so the call is rejected
+github-issue-211-hints.dfy(19,6): Info: modular termination: in 'Client.Calls', a call through a function value needs the smaller-bound rule; checked: the parameter's 'decreases {:callback}' bound must be below the caller's
+github-issue-211-hints.dfy(22,46): Info: modular termination: in 'Client.NoBound', dispatch of 'Tr.T.F' to implementations that other modules may provide needs the smaller-bound rule; holds: the caller has no 'decreases {:global}' bound, which is above every bound
+github-issue-211-hints.dfy(24,13): Info: modular termination: in 'Client.Collections', a sequence constructor's calls of its initializing function needs the smaller-bound rule; holds: the caller has no 'decreases {:global}' bound, which is above every bound; the value's code is not known
+github-issue-211-hints.dfy(26,10): Info: modular termination: in 'Client.Collections', an array allocation's calls of its initializing function needs the smaller-bound rule; holds: the caller has no 'decreases {:global}' bound, which is above every bound; the value's code is not known
 
 Dafny program verifier did not attempt verification
 refinement, option on
@@ -148,9 +148,51 @@ github-issue-211-same-bound-rules.dfy(112,41): Error: decreases clause might not
 github-issue-211-same-bound-rules.dfy(120,34): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
 
 Dafny program verifier finished with 28 verified, 9 errors
-KNOWN GAP: a subset-type constraint reaches the dispatched call, option on: verifies
+gap constraint, option on: the type test rejected
+github-issue-211-gap-constraint.dfy(23,58): Error: modular termination: in 'Y.Y.F', this may evaluate the constraint or witness of type 'S.Good', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+1 resolution/type errors detected in github-issue-211-gap-constraint.dfy
+constraint, option on, refresh false: verifies
 
-Dafny program verifier finished with 4 verified, 0 errors
+Dafny program verifier finished with 6 verified, 0 errors
+constraint vacuity control, option on, refresh false: each assert false fails
+github-issue-211-constraint-false.dfy(27,6): Error: assertion might not hold
+github-issue-211-constraint-false.dfy(31,56): Error: assertion might not hold
+github-issue-211-constraint-false.dfy(35,6): Error: assertion might not hold
+github-issue-211-constraint-false.dfy(40,6): Error: assertion might not hold
+
+Dafny program verifier finished with 4 verified, 4 errors
+constraint reach, option on, refresh false
+github-issue-211-constraint-reach.dfy(25,63): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+
+Dafny program verifier finished with 2 verified, 1 error
+constraint, option on, refresh true: verifies
+
+Dafny program verifier finished with 6 verified, 0 errors
+constraint vacuity control, option on, refresh true: each assert false fails
+github-issue-211-constraint-false.dfy(27,6): Error: assertion might not hold
+github-issue-211-constraint-false.dfy(31,56): Error: assertion might not hold
+github-issue-211-constraint-false.dfy(35,6): Error: assertion might not hold
+github-issue-211-constraint-false.dfy(40,6): Error: assertion might not hold
+
+Dafny program verifier finished with 4 verified, 4 errors
+constraint reach, option on, refresh true
+github-issue-211-constraint-reach.dfy(25,63): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+
+Dafny program verifier finished with 2 verified, 1 error
+constraint rules, option on, refresh true: each marked use rejected
+github-issue-211-constraint-rules.dfy(47,11): Error: modular termination: in 'Y.Res', this may evaluate the constraint or witness of type 'S.Good2', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+github-issue-211-constraint-rules.dfy(34,58): Error: modular termination: in 'Y.Y.F', this may evaluate the constraint or witness of type 'S.Good', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+github-issue-211-constraint-rules.dfy(37,10): Error: modular termination: in 'Y.Y.M', this may evaluate the constraint or witness of type 'S.N', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+github-issue-211-constraint-rules.dfy(38,17): Error: modular termination: in 'Y.Y.M', this may evaluate the initializer of constant 'S.K', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+github-issue-211-constraint-rules.dfy(40,10): Error: modular termination: in 'Y.Y.M', this may evaluate the constraint or witness of type 'S.Good2', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+github-issue-211-constraint-rules.dfy(42,10): Error: modular termination: in 'Y.Y.M', this may evaluate the default values of the components of type 'S.Holder', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+github-issue-211-constraint-rules.dfy(42,24): Error: modular termination: in 'Y.Y.M', this may evaluate the constraint or witness of type 'S.Good2', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound, so it cannot run under the caller's bound (same-bound rule)
+7 resolution/type errors detected in github-issue-211-constraint-rules.dfy
+constraint hints, option on
+github-issue-211-constraint.dfy(16,10): Info: newtype Byte resolves as target-complete {:nativeType "byte"} (detected range: 0 .. 256)
+github-issue-211-constraint.dfy(36,36): Info: modular termination: in 'Y.Probe', this may evaluate the constraint or witness of type 'S.Good', which can reach dispatch to implementations that other modules may provide and has no 'decreases {:global}' bound; holds: the caller has none, which is above every bound
+
+Dafny program verifier did not attempt verification
 same-bound hints, option on
 github-issue-211-same-bound.dfy(27,11): Info: tail recursive
 github-issue-211-same-bound.dfy(17,29): Info: modular termination: in 'L.H', dispatch of 'Tr.T.F' to implementations that other modules may provide needs the smaller-bound rule; checked: the callee's global bound must be below the caller's
@@ -168,9 +210,94 @@ github-issue-211-same-bound.dfy(75,65): Info: modular termination: in 'C4.K.G', 
 github-issue-211-same-bound.dfy(85,33): Info: modular termination: in 'Y4.Y.F', a call of 'C4.C.G', which can reach dispatch to implementations that other modules may provide, runs under the caller's bound (same-bound rule); the callee has a 'decreases {:global}' bound, checked: it must not exceed the caller's
 
 Dafny program verifier did not attempt verification
+callback, option on, refresh false: verifies
+
+Dafny program verifier finished with 10 verified, 0 errors
+callback vacuity control, option on, refresh false: each assert false fails
+github-issue-211-callback-false.dfy(16,19): Error: assertion might not hold
+github-issue-211-callback-false.dfy(23,4): Error: assertion might not hold
+github-issue-211-callback-false.dfy(30,33): Error: assertion might not hold
+github-issue-211-callback-false.dfy(38,19): Error: assertion might not hold
+github-issue-211-callback-false.dfy(53,21): Error: assertion might not hold
+github-issue-211-callback-false.dfy(53,107): Error: assertion might not hold
+github-issue-211-callback-false.dfy(60,8): Error: assertion might not hold
+github-issue-211-callback-false.dfy(65,95): Error: assertion might not hold
+github-issue-211-callback-false.dfy(67,53): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 9 errors
+callback rules, option on, refresh false
+github-issue-211-callback-rules.dfy(22,4): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'g' must be below the caller's 'decreases {:global}' bound)
+github-issue-211-callback-rules.dfy(29,9): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'g' must not exceed that of the parameter it is passed for)
+github-issue-211-callback-rules.dfy(43,22): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-callback-rules.dfy(45,17): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-callback-rules.dfy(49,56): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-callback-rules.dfy(52,79): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 3 verified, 6 errors
+callback, option on, refresh true: verifies
+
+Dafny program verifier finished with 10 verified, 0 errors
+callback vacuity control, option on, refresh true: each assert false fails
+github-issue-211-callback-false.dfy(16,19): Error: assertion might not hold
+github-issue-211-callback-false.dfy(23,4): Error: assertion might not hold
+github-issue-211-callback-false.dfy(30,33): Error: assertion might not hold
+github-issue-211-callback-false.dfy(38,19): Error: assertion might not hold
+github-issue-211-callback-false.dfy(53,21): Error: assertion might not hold
+github-issue-211-callback-false.dfy(53,107): Error: assertion might not hold
+github-issue-211-callback-false.dfy(60,8): Error: assertion might not hold
+github-issue-211-callback-false.dfy(65,95): Error: assertion might not hold
+github-issue-211-callback-false.dfy(67,53): Error: assertion might not hold
+
+Dafny program verifier finished with 2 verified, 9 errors
+callback rules, option on, refresh true
+github-issue-211-callback-rules.dfy(22,4): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'g' must be below the caller's 'decreases {:global}' bound)
+github-issue-211-callback-rules.dfy(29,9): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'g' must not exceed that of the parameter it is passed for)
+github-issue-211-callback-rules.dfy(43,22): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-callback-rules.dfy(45,17): Error: decreases clause might not decrease (the callee can reach a call dispatched to implementations that other modules may provide, so under --modular-termination it runs under the caller's 'decreases {:global}' bound and needs a bound of its own that does not exceed it)
+github-issue-211-callback-rules.dfy(49,56): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+github-issue-211-callback-rules.dfy(52,79): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
+
+Dafny program verifier finished with 3 verified, 6 errors
+callback resolution rules, option on, refresh true: each marked use rejected
+github-issue-211-callback-resolve.dfy(7,71): Error: the first argument of a 'decreases {:callback f}' clause must be an in-parameter of the method or function, of an arrow type
+github-issue-211-callback-resolve.dfy(24,55): Error: an overriding member cannot declare a 'decreases {:callback}' clause: it has the callback bounds of the member it overrides
+github-issue-211-callback-resolve.dfy(45,87): Error: modular termination: in 'Y.Pre', a call of 'requires' of a function value needs the smaller-bound rule; rejected: the value's code is not known, so it has no bound, and the caller has one (pass the value for a parameter with a 'decreases {:callback}' bound)
+github-issue-211-callback-resolve.dfy(47,49): Error: modular termination: 'L.Apply' has a parameter with a 'decreases {:callback}' bound, so it cannot be used as a function value
+github-issue-211-callback-resolve.dfy(50,6): Error: modular termination: in 'Y.Arr', an array allocation's calls of its initializing function needs the smaller-bound rule; rejected: the value's code is not known, so it has no bound, and the caller has one (pass the value for a parameter with a 'decreases {:callback}' bound)
+github-issue-211-callback-resolve.dfy(34,6): Error: modular termination: in 'Y.Y.F', a call through a function value needs the smaller-bound rule; rejected: the value's code is not known, so it has no bound, and the caller has one (pass the value for a parameter with a 'decreases {:callback}' bound)
+github-issue-211-callback-resolve.dfy(36,7): Error: modular termination: in 'Y.Y.F', a sequence constructor's calls of its initializing function needs the smaller-bound rule; rejected: the value's code is not known, so it has no bound, and the caller has one (pass the value for a parameter with a 'decreases {:callback}' bound)
+github-issue-211-callback-resolve.dfy(39,14): Error: modular termination: in 'Y.Y.F', the value passed for parameter 'g' of 'L.Apply', which has a 'decreases {:callback}' bound, must be a lambda expression, a parameter with such a bound (outside a lambda), or a function that reaches no dispatched call
+8 resolution/type errors detected in github-issue-211-callback-resolve.dfy
+callback hints, option on
+github-issue-211-callback.dfy(51,13): Info: decreases n
+github-issue-211-callback.dfy(18,4): Info: modular termination: in 'L.Apply', a call through a function value needs the smaller-bound rule; checked: the parameter's 'decreases {:callback}' bound must be below the caller's
+github-issue-211-callback.dfy(24,9): Info: modular termination: in 'L.ApplyM', a call through a function value needs the smaller-bound rule; checked: the parameter's 'decreases {:callback}' bound must be below the caller's
+github-issue-211-callback.dfy(31,9): Info: modular termination: in 'L.Twice', a call of 'L.Apply', which can reach dispatch to implementations that other modules may provide, runs under the caller's bound (same-bound rule); the callee has a 'decreases {:global}' bound, checked: it must not exceed the caller's
+github-issue-211-callback.dfy(31,18): Info: modular termination: in 'L.Twice', a call through a function value needs the smaller-bound rule; checked: the parameter's 'decreases {:callback}' bound must be below the caller's
+github-issue-211-callback.dfy(35,23): Info: modular termination: in 'L.ApplyPartial', a call of 'requires' of a function value needs the smaller-bound rule; checked: the parameter's 'decreases {:callback}' bound must be below the caller's
+github-issue-211-callback.dfy(39,4): Info: modular termination: in 'L.ApplyPartial', a call through a function value needs the smaller-bound rule; checked: the parameter's 'decreases {:callback}' bound must be below the caller's
+github-issue-211-callback.dfy(65,98): Info: modular termination: in 'Y.Here', dispatch of 'Tr.T.F' to implementations that other modules may provide needs the smaller-bound rule; checked: the callee's global bound must be below the caller's
+github-issue-211-callback.dfy(67,38): Info: modular termination: in 'Y.Free', a call through a function value needs the smaller-bound rule; holds: the caller has no 'decreases {:global}' bound, which is above every bound; the value's code is not known
+github-issue-211-callback.dfy(54,24): Info: modular termination: in 'Y.Y.F', dispatch of 'Tr.T.F' to implementations that other modules may provide needs the smaller-bound rule; checked: the callee's global bound must be below the caller's
+github-issue-211-callback.dfy(54,15): Info: modular termination: in 'Y.Y.F', a call of 'L.Apply', which can reach dispatch to implementations that other modules may provide, runs under the caller's bound (same-bound rule); the callee has a 'decreases {:global}' bound, checked: it must not exceed the caller's
+github-issue-211-callback.dfy(54,45): Info: modular termination: in 'Y.Y.F', a call of 'L.Twice', which can reach dispatch to implementations that other modules may provide, runs under the caller's bound (same-bound rule); the callee has a 'decreases {:global}' bound, checked: it must not exceed the caller's
+github-issue-211-callback.dfy(54,96): Info: modular termination: in 'Y.Y.F', dispatch of 'Tr.T.F' to implementations that other modules may provide needs the smaller-bound rule; checked: the callee's global bound must be below the caller's
+github-issue-211-callback.dfy(54,71): Info: modular termination: in 'Y.Y.F', a call of 'L.ApplyPartial', which can reach dispatch to implementations that other modules may provide, runs under the caller's bound (same-bound rule); the callee has a 'decreases {:global}' bound, checked: it must not exceed the caller's
+github-issue-211-callback.dfy(60,30): Info: modular termination: in 'Y.Y.M', dispatch of 'Tr.T.F' to implementations that other modules may provide needs the smaller-bound rule; checked: the callee's global bound must be below the caller's
+github-issue-211-callback.dfy(60,21): Info: modular termination: in 'Y.Y.M', a call of 'L.ApplyM', which can reach dispatch to implementations that other modules may provide, runs under the caller's bound (same-bound rule); the callee has a 'decreases {:global}' bound, checked: it must not exceed the caller's
+
+Dafny program verifier did not attempt verification
 printed counter, option on: verifies
 
 Dafny program verifier finished with 12 verified, 0 errors
+printed callback clauses, option off: attributes as written
+    decreases {:global} {:callback g} n, 1, n, 0
+    decreases {:global} {:callback g} n, 1, n, 0
+    decreases {:global} {:callback g} n, 2, n, 0
+    decreases {:global} {:callback g} n, 1, n, 0
+printed callback, option on: verifies
+
+Dafny program verifier finished with 10 verified, 0 errors
 printed tie with constant bounds, option on: rejected
 github-issue-211.dfy.tmp.tie-bounds.dfy(36,13): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
