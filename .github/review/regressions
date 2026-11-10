@@ -330,3 +330,6 @@ git-issues/github-issue-211.dfy
 
 # Override axioms at the call layer under --additional-axioms (https://github.com/erniecohen/dafny/issues/103).
 git-issues/github-issue-103.dfy
+
+# Opt-in --synonym-refines-abstract-type: a type synonym refines an abstract type with members (https://github.com/erniecohen/dafny/issues/91).
+git-issues/github-issue-91.dfy
