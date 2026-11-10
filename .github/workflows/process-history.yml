@@ -1,0 +1,106 @@
+# A standing record of the resource-count variation the stdlib gate cannot see (#30).
+#
+# review.yml verifies the standard library with /restartProver, a fresh solver process
+# per proof batch, so that its resource fingerprint is the same in every run.  A user's
+# run reuses solver processes, and under Z3 5.1.0 a batch's count can then depend on
+# the batches that process checked before it.  This workflow verifies the library as a
+# user would (Z3 5.1.0, --cores 4, no /restartProver), three times in parallel, and
+# reports the number of distinct count vectors and each declaration that differs, with
+# its spread and its distance to the limit (.github/review/process-history.py).
+#
+# It records only: no expected file, no gate, and it never fails on a difference.
+name: process-history
+
+on:
+  schedule:
+    - cron: '41 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
+  # As in review.yml.
+  Z3_RELEASE: https://github.com/Z3Prover/z3/releases/download/z3-5.1.0
+  Z3_LINUX_X64: z3-5.1.0-x64-glibc-2.39
+  Z3_LINUX_X64_SHA256: f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a
+
+jobs:
+  build:
+    name: Build (Release)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - name: Boogie packages
+        run: sh Scripts/fetch-boogie-packages.sh
+      - name: Build
+        run: |
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny \
+            -p:GeneratePackageOnBuild=false -p:SourceRevisionId=$(git rev-parse --short=8 HEAD)
+          tar -C out -czf dafny.tar.gz dafny
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dafny
+          path: dafny.tar.gz
+          retention-days: 7
+
+  verify:
+    name: Standard library without /restartProver (run ${{ matrix.run }})
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        run: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: dafny
+      - name: Unpack Dafny and Z3
+        run: |
+          mkdir -p out && tar -C out -xzf dafny.tar.gz
+          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
+          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
+          unzip -q z3.zip && chmod +x "$Z3_LINUX_X64/bin/z3"
+      - name: Verify
+        run: |
+          python3 .github/review/std-verdicts.py run Source/DafnyStandardLibraries "$PWD/out/dafny/Dafny" \
+            "$PWD/$Z3_LINUX_X64/bin/z3" std-verdicts.tsv --cores 4 --additional-axioms false \
+            --boogie "/deterministicLiteralHashes:1"
+          rfp=$(awk -F'\t' '$1 !~ /^run /{print $1"\t"$5"\t"$6}' std-verdicts.tsv | sha256sum | cut -c1-16)
+          echo "resource fingerprint $rfp"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: std-verdicts-${{ matrix.run }}
+          path: std-verdicts.tsv
+          retention-days: 90
+
+  compare:
+    name: Compare the runs
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: std-verdicts-*
+      - name: Report
+        run: |
+          {
+            echo "## Standard library, Z3 5.1.0, axioms off, without /restartProver"
+            echo
+            python3 .github/review/process-history.py std-verdicts-*/std-verdicts.tsv
+          } | tee -a "$GITHUB_STEP_SUMMARY"

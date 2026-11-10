@@ -27,7 +27,12 @@ declarations, up to 251 resource counts moved between two runs under Z3 5.1.0 an
 up to 97 under Z3 4.12.1, and a proof near its limit could change its verdict
 (#30, #186).  CI therefore passes `--boogie /deterministicLiteralHashes:1` (Boogie
 v3.5.5+review.a7d160a7), which keeps the same normalization but hashes those
-literals deterministically.  Boogie's /normalizeDeclarationOrder:0 is no remedy:
+literals deterministically, and /restartProver: Boogie otherwise reuses each
+solver process across proof batches, and under Z3 5.1.0 a batch's count depended
+on the batches checked before it in that process, so with --cores 4 one count
+(MulInternalsNonlinear.LemmaMulIsAssociative, 20,554 to 20,588) moved from run to
+run; with a fresh process per batch it is the same in every run (#30).  Boogie's
+/normalizeDeclarationOrder:0 is no remedy:
 under Z3 5.1.0 the library did not finish in that order within an hour (with a
 30-second limit, one proof times out there:
 Producers.ProducerState.ValidChangeTransitive).
