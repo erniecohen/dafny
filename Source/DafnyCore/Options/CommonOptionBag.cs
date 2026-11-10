@@ -255,7 +255,7 @@ true - All class instances are raw pointers and need to be manually deallocated"
   };
 
   public static readonly Option<bool> WarnUncheckedTermination = new("--warn-unchecked-termination", () => false,
-    "Warn about each trait with {:termination false} and each class or trait with @AssumeCrossModuleTermination: calls dispatched through such a trait are not checked for termination. Like an assume statement, the declaration is not reported if it has an {:axiom} attribute or if --allow-axioms is set. Disabled by default.");
+    "Warn about each trait with {:termination false} and each class or trait with @AssumeCrossModuleTermination: calls dispatched through such a trait are not checked for termination. Like an assume statement, the declaration is not reported if it has an {:axiom} attribute or if --allow-axioms is set. Only declarations that the run verifies are reported, not those of libraries or included files. Disabled by default.");
 
   public static readonly Option<bool> BitvectorMapKeys = new("--bitvector-map-keys", () => false,
     "Preserve bitvector key types in map and imap lookups, and bitvector element types in multiset multiplicity lookups, during verification. Disabled by default.");

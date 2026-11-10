@@ -23,3 +23,9 @@ module Tie {
     }
   }
 }
+
+// A refining module inherits the attribute; it is reported once, where it is written.
+abstract module Abstract {
+  trait {:termination false} V { }
+}
+module Refined refines Abstract { }

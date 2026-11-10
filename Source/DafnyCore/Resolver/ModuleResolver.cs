@@ -1082,6 +1082,7 @@ namespace Microsoft.Dafny {
     /// class or trait with @AssumeCrossModuleTermination, the declarations that "dafny audit" reports
     /// as unchecked termination assumptions.  As for an assume statement, an {:axiom} attribute on the
     /// declaration, or --allow-axioms, acknowledges the assumption and suppresses the warning.
+    /// Declarations that this run does not verify are not reported.
     /// </summary>
     private void WarnUncheckedTermination(IEnumerable<TopLevelDecl> declarations) {
       if (!Options.Get(CommonOptionBag.WarnUncheckedTermination) || Options.Get(CommonOptionBag.AllowAxioms)) {
@@ -1091,7 +1092,12 @@ namespace Microsoft.Dafny {
       // code verified separately (see "global bounds" in the Reference Manual), so the warning stays.
       var modular = Options.Get(CommonOptionBag.ModularTermination);
       foreach (var d in declarations) {
-        if (d is not TopLevelDeclWithMembers cl || cl.HasAxiomAttribute) {
+        // Only declarations verified in this run are reported: a declaration from a library
+        // (--library, --standard-libraries or a .doo file) or an included file is not, since the
+        // user cannot acknowledge it with {:axiom} there.  Nor is the copy of a declaration that a
+        // refining module inherits: the attribute is reported where it is written.
+        if (d is not TopLevelDeclWithMembers cl || cl.HasAxiomAttribute || cl.Origin is RefinementOrigin ||
+            !cl.ShouldVerify(ProgramResolver.Program.Compilation)) {
           continue;
         }
         bool termination = true;
