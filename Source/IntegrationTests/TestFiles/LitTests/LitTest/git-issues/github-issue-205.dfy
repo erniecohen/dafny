@@ -1,6 +1,6 @@
-// RUN: %verify --standard-libraries "%s" > "%t"
-// RUN: %exits-with 4 %verify --standard-libraries "%S/Inputs/github-issue-205-negative.dfy" >> "%t"
-// RUN: %audit --standard-libraries "%s" >> "%t"
+// RUN: %verify --standard-libraries:true "%s" > "%t"
+// RUN: %exits-with 4 %verify --standard-libraries:true "%S/Inputs/github-issue-205-negative.dfy" >> "%t"
+// RUN: %audit --standard-libraries:true "%s" >> "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // Std.RealCompleteness (#205): least upper bounds of sets of reals, from one
