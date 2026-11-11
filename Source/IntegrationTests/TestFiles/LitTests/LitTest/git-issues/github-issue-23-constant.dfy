@@ -1,4 +1,4 @@
-// RUN: %verify --solver-path %review-z3 --type-system-refresh:false "%s" > "%t"
+// RUN: %verify --solver-path %review-z3 --type-system-refresh:false --general-newtypes:false --general-traits:legacy "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 // RUN: %verify --solver-path %review-z3 --type-system-refresh "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"

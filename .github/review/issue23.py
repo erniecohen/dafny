@@ -65,7 +65,8 @@ elif scope == 'focused':
     for fixture in fixtures:
         for refresh in ['false', 'true']:
             cmd = [binary, 'verify', fixture.name, '--solver-path', z3,
-                   '--type-system-refresh:' + refresh, '--general-traits=datatype', '--general-newtypes',
+                   '--type-system-refresh:' + refresh, '--general-traits:' + ('datatype' if refresh == 'true' else 'legacy'),
+                   '--general-newtypes:' + refresh,
                    '--use-basename-for-filename', '--show-snippets:false', '--standard-libraries:false',
                    '--cores:2', '--verification-time-limit:300', '--resource-limit:50e6']
             r = call(cmd, fixture.parent)
