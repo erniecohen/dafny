@@ -97,6 +97,19 @@ elif scope == 'focused':
             for generated in printed:
                 suffix = generated.name[len('sample'):]
                 generated.rename(OUT / (sample.replace('/', '_') + '.' + refresh + suffix))
+    # Exact suffix filters: a trailing dot requests EndsWith, avoiding JoinMaintains*.
+    # Keep the same baseline binary and switch only the two prelude guards.
+    for sample, symbol in [('dafny0/Maps.dfy', 'GeneralMaps4.'),
+                           ('dafny4/UnionFind.dfy', 'M3.UnionFind.Join.')]:
+        for refresh in ['false', 'true']:
+            log = OUT / (symbol + refresh + '.json')
+            r = call([ROOT / 'out/before/Dafny', 'verify', sample, '--solver-path', z3,
+                      '--prelude', prelude_path, '--filter-symbol', symbol,
+                      '--type-system-refresh:' + refresh, '--allow-warnings',
+                      '--boogie', '/normalizeDeclarationOrder:0', '--boogie', '/restartProver',
+                      '--resource-limit', '100000000', '--verification-time-limit', '0', '--cores', '1',
+                      '--log-format', 'json;LogFileName=' + str(log)], LIT)
+            results.append(r)
     for sample in ['dafny0/Maps.dfy', 'dafny0/Datatypes.dfy',
                    'git-issues/github-issue-23-box-bad.dfy',
                    'git-issues/github-issue-23-lambda-cost.dfy']:
