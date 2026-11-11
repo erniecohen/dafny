@@ -21,6 +21,20 @@ public class ModuleTranslationCacheTests {
     """;
 
   [Fact]
+  public async Task GlobalTranslationFactsWithoutAFinalizedKeyAlwaysRecompute() {
+    var program = await Resolve(Source, modularTermination: true);
+    var module = program.RawModules().Single(m => m.Name == "M");
+    Assert.NotNull(module.ResolutionKey);
+    var cache = new ModuleTranslationCache();
+    cache.Translate(program, module, new(program.Options), default);
+    cache.Translate(program, module, new(program.Options), default);
+    Assert.Equal(0, cache.Hits);
+    Assert.Equal(0, cache.EntryCount);
+    Assert.Equal(2, cache.Translations);
+    Assert.Equal(2, cache.Bypasses);
+  }
+
+  [Fact]
   public async Task ProofMapsBelongToOneModuleAndWarmConsumersAreIndependent() {
     var program = await Resolve(Source, "module Other { lemma Unrelated() { assert true; } }");
     var cache = new ModuleTranslationCache();
@@ -244,10 +258,11 @@ public class ModuleTranslationCacheTests {
     Assert.Throws<InvalidOperationException>(() => cache.Translate(program, module, new(program.Options), default));
   }
 
-  internal static async Task<Microsoft.Dafny.Program> Resolve(string source, string? unrelated = null, bool refresh = false) {
+  internal static async Task<Microsoft.Dafny.Program> Resolve(string source, string? unrelated = null, bool refresh = false, bool modularTermination = false) {
     DafnyType.ResetScopes();
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
+    options.Set(CommonOptionBag.ModularTermination, modularTermination);
     options.Set(CommonOptionBag.ResolutionThreads, 1);
     options.Set(CommonOptionBag.TranslationCache, true);
     options.Set(CommonOptionBag.TypeSystemRefresh, refresh);

@@ -466,7 +466,9 @@ current observable post-global-analysis projection (including negative answers),
 and R finalizes translation identity. Builtin identity is taken after the catalog
 is complete, including tuple arities and bitwidths. This branch consumes the
 resolution worker's keys and naming; it does not independently invent those keys.
-Until that finalized interface is published, the process-local descriptor retains
+Until that finalized interface is published, `--modular-termination` always
+bypasses the translation table: its downstream open-trait/dispatch facts are not
+in the current L key. The process-local descriptor retains
 its conservative source/environment checks and makes no persistent-resolution or
 early-cutoff claim.
 
