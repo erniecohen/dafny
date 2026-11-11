@@ -46,8 +46,9 @@ module Std.Arithmetic.IntegerBitwiseDigits {
   lemma {:induction false} BaseTwoAdapter(n: nat, a: int)
     ensures (PowerAgreement(n); toDigits(B.bitsNat(n,a)) == D.FromNatWithLen(B.norm(n,a),n))
   {
-    PowerAgreement(n); B.BitsValue(n,a);
-    DigitsValue(B.bitsNat(n,a)); B.ValueBound(B.bitsNat(n,a));
-    D.LemmaSeqNatSeq(toDigits(B.bitsNat(n,a)));
+    PowerAgreement(n);
+    var digits := D.FromNatWithLen(B.norm(n,a),n);
+    DigitInverses([],digits); DigitsValue(fromDigits(digits));
+    B.ValueBits(fromDigits(digits)); B.NormalizeBits(n,a);
   }
 }

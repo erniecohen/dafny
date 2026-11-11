@@ -16,58 +16,7 @@ on:
     branches: ['review/**', 'dev']
   workflow_dispatch:
     inputs:
-      integer-bitwise-reference:
-    name: Integer bitwise reference (Z3 ${{ matrix.z3 }}, ${{ matrix.resolver }})
-    needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        z3: ['5.1.0', 'of the tests']
-        resolver: ['legacy', 'refreshed']
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
-        with:
-          name: dafny
-      - name: Unpack Dafny
-        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
-      - name: Check unchanged existing product inputs
-        run: |
-          git fetch --no-tags --depth=1 origin "$(cat .github/review/issue193-base)"
-          python3 .github/review/issue193-identity.py reference-results/identity
-      - name: Pinned solver
-        run: |
-          if [ '${{ matrix.z3 }}' = 5.1.0 ]; then
-            curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
-            echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
-            unzip -q z3.zip
-            chmod +x "$Z3_LINUX_X64/bin/z3"
-            echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
-          else
-            v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
-            test "$v" = 4.12.1
-            curl -fsSLo z3h.zip "$HARNESS_Z3_RELEASE/z3-$v-x64-ubuntu-24.04-bin.zip"
-            echo "$HARNESS_Z3_4_12_1_SHA256  z3h.zip" | sha256sum -c -
-            mkdir -p z3h && unzip -q z3h.zip -d z3h
-            chmod +x "z3h/z3-$v"
-            echo "Z3=$PWD/z3h/z3-$v" >> "$GITHUB_ENV"
-          fi
-      - name: Prove bodies, measure width clients and reject live false controls
-        run: |
-          python3 .github/review/issue193-reference.py --dafny "$PWD/out/dafny/Dafny" \
-            --z3 "$Z3" --resolver '${{ matrix.resolver }}' --output reference-results/proofs
-          cat reference-results/proofs/summary.md >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: integer-bitwise-reference-${{ matrix.z3 }}-${{ matrix.resolver }}
-          path: reference-results
-          retention-days: 90
-
-  binaries:
+      binaries:
         description: Also build the self-contained binaries (a release is made only for a tag)
         type: boolean
         default: false
@@ -816,6 +765,58 @@ jobs:
           name: statement-conclusions-results
           path: statement-conclusions-results
           retention-days: 90
+
+  integer-bitwise-reference:
+    name: Integer bitwise reference (Z3 ${{ matrix.z3 }}, ${{ matrix.resolver }})
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        z3: ['5.1.0', 'of the tests']
+        resolver: ['legacy', 'refreshed']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: dafny
+      - name: Unpack Dafny
+        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
+      - name: Check unchanged existing product inputs
+        run: |
+          git fetch --no-tags --depth=1 origin "$(cat .github/review/issue193-base)"
+          python3 .github/review/issue193-identity.py reference-results/identity
+      - name: Pinned solver
+        run: |
+          if [ '${{ matrix.z3 }}' = 5.1.0 ]; then
+            curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
+            echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
+            unzip -q z3.zip
+            chmod +x "$Z3_LINUX_X64/bin/z3"
+            echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
+          else
+            v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
+            test "$v" = 4.12.1
+            curl -fsSLo z3h.zip "$HARNESS_Z3_RELEASE/z3-$v-x64-ubuntu-24.04-bin.zip"
+            echo "$HARNESS_Z3_4_12_1_SHA256  z3h.zip" | sha256sum -c -
+            mkdir -p z3h && unzip -q z3h.zip -d z3h
+            chmod +x "z3h/z3-$v"
+            echo "Z3=$PWD/z3h/z3-$v" >> "$GITHUB_ENV"
+          fi
+      - name: Prove bodies, measure width clients and reject live false controls
+        run: |
+          python3 .github/review/issue193-reference.py --dafny "$PWD/out/dafny/Dafny" \
+            --z3 "$Z3" --resolver '${{ matrix.resolver }}' --output reference-results/proofs
+          cat reference-results/proofs/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integer-bitwise-reference-${{ matrix.z3 }}-${{ matrix.resolver }}
+          path: reference-results
+          retention-days: 90
+
 
   binaries:
     name: Binaries (${{ matrix.rid }})

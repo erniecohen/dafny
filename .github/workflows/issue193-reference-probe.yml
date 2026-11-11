@@ -2,6 +2,8 @@
 # recorded as data and do not notify the owner as workflow failures.
 name: integer-bitwise-reference-probe
 on:
+  push:
+    branches: ['scratch/193-reference-model/probe']
   workflow_dispatch:
 permissions:
   contents: read
