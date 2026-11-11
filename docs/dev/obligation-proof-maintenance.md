@@ -2,6 +2,36 @@
 
 [#170](https://github.com/erniecohen/dafny/issues/170) stabilizes the eleven documented proof cases for experimental obligation checking. The changes retain their mathematical contracts, assertions, reveals, existing resource attributes, and intentional controls. The verifier and axiom implementation are unchanged.
 
+## Refresh onto the current supported compiler
+
+The supported adaptation is refreshed in [PR 178](https://github.com/erniecohen/dafny/pull/178)
+by merging `review/4.11.0` at `b8c98287`, retaining both lines' regressions and the
+shipped producer inventory. The target and complete-file cost tables below are
+historical measurements on the earlier compiler; the PR description links the
+current exact-head gates and records their verdict, RU and completion results.
+
+The fresh compiler exposed two Base64 decoder-call precondition resource failures.
+`DecodeValidUnpaddedPartialFrom1PaddedSeq` now uses the existing
+`UnpaddedBase64Prefix` lemma as a statement-expression proof hint for its original
+postcondition. `AboutDecodeValid` calls that same lemma before its decoder calls.
+Their logical contracts, original assertions and reveals, and resource attributes
+are retained. The matrix also checks `AboutDecodeValid` independently in all six
+library profiles; it now plans 306 scopes, including the same 60 complete-file
+scopes. Each part retains its receipts and per-invocation resource logs as artifacts.
+
+The [focused contract-WF diagnostic](https://github.com/erniecohen/dafny/actions/runs/42989416257)
+checks all six target profiles with the prefix hint. With added axioms and
+obligation checking ON, it uses 13 batches, 511,743 total RU and 76,927 maximum RU,
+versus 10 batches, 1,450,979 total RU and a failed 1,060,526-RU batch before the
+hint. Paired default/OFF vectors remain identical. The
+[ordinary decoder-shape diagnostic](https://github.com/erniecohen/dafny/actions/runs/42990102073)
+reproduces the Z3 4.12.1 added-axioms failure and checks the prefix call under both
+solvers and both axiom settings. In the failing profile it changes 63 batches,
+5,397,420 total RU and a failed 1,060,579-RU maximum to 66 batches, 4,296,908 total
+RU and an 86,538-RU maximum. These focused checks precede the complete exact-head
+gates; diagnostic wrapper success alone is not acceptance.
+
+
 ## Proof changes
 
 - SiftDown and UnionFind join use method-scoped isolation. Append uses two local boundaries, and the power induction marks three existing assertions. The supported line also isolates RemoveFactor and division-order induction.

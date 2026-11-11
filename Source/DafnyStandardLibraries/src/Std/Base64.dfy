@@ -794,6 +794,7 @@ module Std.Base64 {
     if 4 <= |s| {
       var finalBlockStart := |s| - 4;
       var prefix, suffix := s[..finalBlockStart], s[finalBlockStart..];
+      UnpaddedBase64Prefix(s);
 
       if s == [] {
       } else if Is1Padding(suffix) {
@@ -1126,7 +1127,8 @@ module Std.Base64 {
     requires IsBase64String(s)
     requires |s| >= 4
     requires Is1Padding(s[(|s| - 4)..])
-    ensures    DecodeValid(s)[..(|DecodeValid(s)| - 2)] == DecodeUnpadded(s[..(|s| - 4)])
+    ensures (UnpaddedBase64Prefix(s);
+             DecodeValid(s)[..(|DecodeValid(s)| - 2)] == DecodeUnpadded(s[..(|s| - 4)]))
   {
   }
 
