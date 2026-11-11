@@ -84,6 +84,11 @@ jobs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+      - name: CI event guards, regression partition and parity bookkeeping
+        run: |
+          python3 -m unittest discover -s .github/review -p test_ci_routing.py
+          python3 -m unittest discover -s .github/review -p test_regression_filter.py
+          python3 -m unittest discover -s .github/review -p test_platform_parity.py
       - name: Version
         id: version
         run: sh .github/review/version.sh | tee -a "$GITHUB_OUTPUT"
