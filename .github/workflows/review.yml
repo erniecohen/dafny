@@ -235,9 +235,38 @@ jobs:
           path: comparison
           retention-days: 90
 
+  resolution-baseline:
+    name: Build pre-resolution-option control
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: b98637c6677560944b2498002ecd32ec987a90af
+          path: resolution-baseline-source
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build fixed control with the same toolchain and dependencies
+        working-directory: resolution-baseline-source
+        run: |
+          sh Scripts/fetch-boogie-packages.sh
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false
+          git rev-parse HEAD > out/dafny/resolution-control-source.txt
+          tar -C out -czf resolution-baseline.tar.gz dafny
+      - uses: actions/upload-artifact@v4
+        with:
+          name: resolution-baseline
+          path: resolution-baseline-source/resolution-baseline.tar.gz
+          retention-days: 14
+
   parallel-resolution:
     name: Parallel resolution (${{ matrix.part }})
-    needs: build
+    needs: [build, resolution-baseline]
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     strategy:
@@ -250,35 +279,34 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: dafny
-      - name: Unpack Dafny
-        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
+      - uses: actions/download-artifact@v4
+        with:
+          name: resolution-baseline
+      - name: Unpack both builds
+        run: |
+          mkdir -p out resolution-control
+          tar -C out -xzf dafny.tar.gz
+          tar -C resolution-control -xzf resolution-baseline.tar.gz
       - name: Pinned solver
         run: |
           curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
           echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
           unzip -q z3.zip
           echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
-      - name: Verify and compare with default verdicts
+      - name: Capture fixed control, option off, and N=1,2,4,8
         run: |
-          mkdir parallel-results
-          if [ '${{ matrix.part }}' = stdlib ]; then
-            python3 .github/review/std-verdicts.py run Source/DafnyStandardLibraries "$PWD/out/dafny/Dafny" "$Z3" parallel-results/verdicts.tsv \
-              --resolution-threads 8 --measurements parallel-results/measurements
-            python3 .github/review/std-verdicts.py compare .github/review/expected-std-verdicts-z3-5.1.0.tsv parallel-results/verdicts.tsv
-          else
-            L=Source/IntegrationTests/TestFiles/LitTests/LitTest
-            python3 .github/review/lit-verdicts.py plan "$L" parallel-results/plan.tsv
-            python3 .github/review/lit-verdicts.py run parallel-results/plan.tsv "$L" "$PWD/out/dafny/Dafny" "$Z3" parallel-results/verdicts.tsv \
-              --shard '${{ matrix.part }}/4' --jobs 4 --resolution-threads 8 --measurements parallel-results/measurements
-            python3 - '${{ matrix.part }}' <<'PY'
-          import sys
-          from pathlib import Path
-          plan = [line.split('\t')[0] for line in Path('parallel-results/plan.tsv').read_text().splitlines()]
-          selected = set(plan[int(sys.argv[1])::4])
-          rows = Path('.github/review/expected-verdicts.tsv').read_text().splitlines()
-          Path('parallel-results/expected.tsv').write_text(''.join(row + '\n' for row in rows if row.split('\t')[0] in selected))
-          PY
-            python3 .github/review/lit-verdicts.py compare parallel-results/expected.tsv parallel-results/verdicts.tsv
+          python3 .github/review/resolution-comparison.py capture --part '${{ matrix.part }}' \
+            --baseline "$PWD/resolution-control/dafny/Dafny" --dafny "$PWD/out/dafny/Dafny" --z3 "$Z3" --output parallel-results
+      - name: Check default preservation, worker invariance, and reviewed opt-in baseline
+        run: |
+          expected=.github/review/expected-resolution-suite.tsv
+          if [ '${{ matrix.part }}' = stdlib ]; then expected=.github/review/expected-std-resolution-z3-5.1.0.tsv; fi
+          python3 .github/review/resolution-comparison.py compare --part '${{ matrix.part }}' --output parallel-results --expected "$expected"
+      - name: Measure three seeds for scopes with changed outcomes
+        if: always()
+        run: |
+          if [ -f parallel-results/report.json ]; then
+            python3 .github/review/resolution-comparison.py variance --part '${{ matrix.part }}' --dafny "$PWD/out/dafny/Dafny" --output parallel-results
           fi
       - uses: actions/upload-artifact@v4
         if: always()
@@ -286,6 +314,7 @@ jobs:
           name: parallel-resolution-${{ matrix.part }}
           path: parallel-results
           retention-days: 90
+          compression-level: 9
 
   verification-batch:
     name: Resolve-once verification batch controls
@@ -445,6 +474,8 @@ jobs:
         run: python3 -m unittest discover -s .github/review -p test_additional_axioms.py
       - name: Test matrix runner
         run: python3 -m unittest discover -s .github/review -p test_resolver_matrix.py
+      - name: Test fail-closed resolution comparison controls
+        run: python3 -m unittest discover -s .github/review -p test_resolution_comparison.py
       - name: Resolve manifest in both modes
         env:
           PROBE: ${{ inputs.resolver_probe }}
@@ -597,6 +628,43 @@ jobs:
           path: resource-comparison
           retention-days: 90
 
+  javascript-runtime:
+    name: JavaScript runtime (Node ${{ matrix.node }})
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        node: ['16.0.0', '22']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Runtime dependency
+        run: npm install --no-save --package-lock=false bignumber.js@9.1.2
+      - name: Boundary, identity, differential and related-helper checks
+        run: node .github/review/246-js-bitwise.cjs Source/DafnyRuntime/DafnyRuntimeJs/DafnyRuntime.js
+      - name: Before and after helper costs
+        if: matrix.node == '22'
+        run: |
+          git fetch --depth=1 origin 428e348b0b125cb67505f03a0026b3f497f98e48
+          git show 428e348b0b125cb67505f03a0026b3f497f98e48:Source/DafnyRuntime/DafnyRuntimeJs/DafnyRuntime.js > before.js
+          if node .github/review/246-js-bitwise.cjs before.js > before-control.txt 2>&1; then
+            echo "The original runtime unexpectedly passed the regression"
+            exit 1
+          fi
+          grep -q ERR_ASSERTION before-control.txt
+          node .github/review/246-js-bitwise.cjs before.js --bench > before.md
+          node .github/review/246-js-bitwise.cjs Source/DafnyRuntime/DafnyRuntimeJs/DafnyRuntime.js --bench > after.md
+          cat before.md after.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: matrix.node == '22'
+        with:
+          name: javascript-bitwise-costs
+          path: |
+            before.md
+            after.md
+            before-control.txt
+
   regressions:
     if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/')) }}
     name: Regression tests (upstream harness)
@@ -644,6 +712,11 @@ jobs:
           dotnet test Source/DafnyCore.Test -c Release --filter 'FullyQualifiedName~Cardinality|FullyQualifiedName~NewtypeReferenceCharacteristicTests'
           dotnet test Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~Cardinality
           dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~CardinalityEmissionTests
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '16.0.0'
+      - name: JavaScript runtime dependency
+        run: npm install --no-save --package-lock=false bignumber.js@9.1.2
       - name: Run the tests named in .github/review/regressions
         env:
           DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS: cs
@@ -720,6 +793,11 @@ jobs:
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~IncrementalBitvectorMembersTest" \
             --blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none
+      - name: Test current counterexample positions with module-local state labels
+        run: |
+          DAFNY_TEST_Z3="$Z3" dotnet test Source/DafnyLanguageServer.Test -c Release --no-build \
+            --filter "FullyQualifiedName~ParallelResolutionCounterexamplesUseCurrentPositions" \
+            --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none
 
   finite-support:
     name: Finite-support encoding and boundary controls
@@ -852,7 +930,7 @@ jobs:
 
   release:
     name: GitHub release
-    needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, finite-support, statement-conclusions, axiom-resources, verification-batch, parallel-resolution]
+    needs: [build, binaries, verdicts, stdlib, javascript-runtime, regressions, resolver, resolver-tests, finite-support, statement-conclusions, axiom-resources, verification-batch, parallel-resolution]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     timeout-minutes: 15

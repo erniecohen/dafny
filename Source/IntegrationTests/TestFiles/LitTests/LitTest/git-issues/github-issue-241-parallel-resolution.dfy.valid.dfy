@@ -10,6 +10,7 @@ module M {
   function F(x: int): int { var t := (x, true, 3); B.Value()(t.0) }
   function Match(d: B.D): int { match d case X => 0 case Y(_) => 1 }
   lemma Good(x: int) ensures F(x) == x + 1 { }
+  method Work(x: int) returns (y: int) { var z := x; y := z; assert y == x; }
 }
 module W {
   import B = Base

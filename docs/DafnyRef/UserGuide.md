@@ -264,6 +264,9 @@ The options relevant to this command are
   workers (`N >= 1`). Without this option, the existing resolver path is used.
   Diagnostics are emitted in the usual module order. Generated identifiers are
   qualified by module, including identifiers used during verification translation.
+  Boogie state labels use stable module identities; counterexamples in the current
+  invocation retain their current source coordinates. Reading raw saved models
+  separately requires that invocation's state-to-source map.
   Resolution keys cover the module's source, fully qualified identity, options,
   Dafny version, and prerequisites from the semantic resolution graph (including
   refinement bases, nesting, imports and export views).

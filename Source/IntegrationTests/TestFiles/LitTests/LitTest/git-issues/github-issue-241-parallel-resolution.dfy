@@ -34,3 +34,11 @@ module Join { import A = W0 import B = W5 import C = W11 }
 module ErrorA { function F(): int { false } }
 module ErrorB { function F(): bool { 0 } }
 module ErrorC { import A = W1 function F(): int { A.F(true) } }
+
+// RUN: ! %baredafny resolve --use-basename-for-filename --show-snippets:false --resolution-threads 4 %s > "%t.n4"
+// RUN: %diff "%t.n1" "%t.n4"
+// RUN: %baredafny verify --verify-included-files --cores 1 --resolution-threads 4 --bprint "%t.n4.bpl" "%s.valid.dfy" > "%t.v4"
+// RUN: %diff "%t.n1_M.bpl" "%t.n4_M.bpl"
+// RUN: %diff "%t.v1" "%t.v4"
+// RUN: %baredafny verify --verify-included-files --cores 1 --resolution-threads 4 --bprint "%t.shifted.bpl" "%s.shifted.dfy" > "%t.shifted"
+// RUN: %diff "%t.n1_M.bpl" "%t.shifted_M.bpl"

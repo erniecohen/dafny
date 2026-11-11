@@ -46,6 +46,17 @@ namespace Microsoft.Dafny {
 
   public partial class BoogieGenerator {
     private DafnyOptions options;
+    private int capturedStateCount;
+    private int sourceCommentCount;
+
+    internal string CaptureStateName(string description) {
+      if (options.Get(CommonOptionBag.ResolutionThreads) == 0) {
+        return description;
+      }
+      var name = $"module:{forModule.FullName}:state:{capturedStateCount++}";
+      options.RecordCapturedStateDescription(name, description);
+      return name;
+    }
     public DafnyOptions Options => options;
     public const string NameSeparator = "$$";
     public const string CallPrefix = "Call";
@@ -2284,7 +2295,8 @@ namespace Microsoft.Dafny {
 
     public void InsertUniqueIdForImplementation(Bpl.Declaration decl) {
       var impl = decl as Bpl.Implementation;
-      var prefix = UniqueIdPrefix ?? (decl.tok.filename == null ? "" : System.Text.RegularExpressions.Regex.Replace(decl.tok.filename, @".v\d+.dfy", ".dfy"));
+      var prefix = options.Get(CommonOptionBag.ResolutionThreads) > 0 ? "module:" + forModule.ResolutionKey :
+        UniqueIdPrefix ?? (decl.tok.filename == null ? "" : System.Text.RegularExpressions.Regex.Replace(decl.tok.filename, @".v\d+.dfy", ".dfy"));
       if (impl != null && !string.IsNullOrEmpty(prefix)) {
         decl.AddAttribute("id", prefix + ":" + impl.Name + ":0");
       }
@@ -3991,7 +4003,10 @@ namespace Microsoft.Dafny {
       Contract.Requires(builder != null);
       Contract.Requires(stmt != null);
       Contract.Requires(comment != null);
-      builder.Add(new Bpl.CommentCmd(string.Format("----- {0} ----- {1}({2},{3})", comment, stmt.Origin.Filepath, stmt.Origin.line, stmt.Origin.col)));
+      var location = builder.Options.Get(CommonOptionBag.ResolutionThreads) > 0
+        ? $"module:{builder.tran.forModule.FullName}:statement:{builder.tran.sourceCommentCount++}"
+        : string.Format("{0}({1},{2})", stmt.Origin.Filepath, stmt.Origin.line, stmt.Origin.col);
+      builder.Add(new Bpl.CommentCmd(string.Format("----- {0} ----- {1}", comment, location)));
     }
 
     /// <summary>

@@ -452,6 +452,16 @@ namespace Microsoft.Dafny {
     [CanBeNull] private TestGenerationOptions testGenOptions = null;
     public bool ExtractCounterexample = false;
 
+    // Reporting data for this compilation, never a resolution input. A stable
+    // Boogie state name is rebound to its current source coordinates here.
+    private readonly ConcurrentDictionary<string, string> capturedStateDescriptions = new();
+
+    internal void RecordCapturedStateDescription(string name, string description) {
+      capturedStateDescriptions[name] = description;
+    }
+
+    public string CapturedStateDescription(string name) => capturedStateDescriptions.GetValueOrDefault(name, name);
+
     public bool ShowProofObligationExpressions = false;
 
     public bool AuditProgram = false;
