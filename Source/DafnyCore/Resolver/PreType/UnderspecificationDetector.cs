@@ -6,6 +6,7 @@
 //-----------------------------------------------------------------------------
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Numerics;
 using System.Diagnostics.Contracts;
@@ -275,6 +276,35 @@ namespace Microsoft.Dafny {
     }
 
     protected override void VisitOneExpr(Expression expr) {
+      if (expr is OperatorSyntaxExpr op) {
+        if (op.ResolvedExpression == null) {
+          cus.ReportError(op.Origin, "operator receiver type is not determined; annotate it or use a named call");
+          return;
+        }
+        try {
+          var operands = op.Operands.ToList();
+          var saved = op.ReplaySelection();
+          OperatorSelection selection;
+          if (op.ResolvedExpression is FunctionCallExpr call) {
+            selection = new MemberOperatorSelection(call.Function, OperatorTypeView.Freeze(operands[0].PreType));
+          } else {
+            var opcode = op.Syntax is BinaryExpr b ? ResolveOp(b.Op, b.E0.PreType, b.E1.PreType) : (BinaryExpr.ResolvedOpcode?)null;
+            var family = op.Syntax is NegationExpression ? PreTypeResolver.AncestorName(operands[0].PreType) : null;
+            var views = operands.Select(e => OperatorTypeView.Freeze(e.PreType)).ToImmutableArray();
+            if (saved is IntrinsicOperatorSelection old &&
+                (old.Opcode != opcode || old.UnaryFamily != family ||
+                 !old.Operands.Zip(operands).All(p => p.First.Matches(p.Second.PreType)))) {
+              cus.ReportError(op.Origin, "operator selection cannot be transported into this intrinsic view");
+              return;
+            }
+            selection = new IntrinsicOperatorSelection(opcode, family, views);
+          }
+          op.FreezeSelection(selection);
+        } catch (System.InvalidOperationException exception) {
+          cus.ReportError(op.Origin, exception.Message);
+        }
+        return;
+      }
       if (expr is DefaultValueExpression) {
         // skip this during underspecification detection, since it has yet to be filled in
         return;

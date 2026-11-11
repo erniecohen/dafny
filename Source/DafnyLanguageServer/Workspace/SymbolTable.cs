@@ -39,6 +39,7 @@ public class SymbolTable {
   }
 
   private SymbolTable() {
+    NonTextualReferences = ImmutableHashSet<TokenRange>.Empty;
     NodeToReferences = ImmutableDictionary<TokenRange, ISet<TokenRange>>.Empty;
     ReferenceToNode = ImmutableDictionary<TokenRange, IHasNavigationToken>.Empty;
     Symbols = ImmutableList<ISymbol>.Empty;
@@ -48,6 +49,7 @@ public class SymbolTable {
   private SymbolTable(IReadOnlyList<Reference> references, IReadOnlyList<IHasNavigationToken> hasNavigationTokens) {
     var safeReferences = references.Where(k => k.Referer.Uri != null).ToImmutableList();
 
+    NonTextualReferences = safeReferences.Where(r => !r.IsTextual).Select(r => r.Referer).ToImmutableHashSet();
     var referencesAsKeyValuePairs = safeReferences.Select(k => KeyValuePair.Create(k.Referer, k.Referred));
     ReferenceToNode = referencesAsKeyValuePairs.DistinctBy(pair => pair.Key).ToImmutableDictionary();
 
@@ -104,6 +106,7 @@ public class SymbolTable {
   /// <summary>
   /// Maps each symbol declaration to itself, and each symbol usage to the symbol's declaration.
   /// </summary>
+  public ImmutableHashSet<TokenRange> NonTextualReferences { get; }
   public ImmutableDictionary<TokenRange, IHasNavigationToken> ReferenceToNode { get; }
   public ImmutableDictionary<TokenRange, ISymbol> Declarations { get; }
 

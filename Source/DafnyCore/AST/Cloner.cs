@@ -14,6 +14,7 @@ namespace Microsoft.Dafny {
   }
 
   public class Cloner {
+    public OperatorCloneContext OperatorClones { get; } = new();
     public bool CloneResolvedFields { get; }
     private readonly Dictionary<Statement, Statement> statementClones = new();
     private readonly Dictionary<IVariable, IVariable> clones = new();
@@ -74,6 +75,7 @@ namespace Microsoft.Dafny {
       clone.CardinalityParentObligations = parentObligations.Select(CloneType).ToImmutableArray();
       // A generic clone may create a distinct refinement specialization. Only
       // a pure view cloner is allowed to identify it with the source declaration.
+      OperatorClones.Register(d, clone);
       return clone;
     }
 
@@ -207,13 +209,15 @@ namespace Microsoft.Dafny {
     }
 
     public TypeParameter CloneTypeParam(TypeParameter tp) {
-      return (TypeParameter)typeParameterClones.GetOrCreate(tp,
+      var result = (TypeParameter)typeParameterClones.GetOrCreate(tp,
         () => new TypeParameter(Origin(tp.Origin), tp.NameNode.Clone(this), tp.VarianceSyntax,
           CloneTPChar(tp.Characteristics), tp.TypeBounds.ConvertAll(CloneType), tp.Attributes));
+      OperatorClones.Register(tp, result);
+      return result;
     }
 
     public virtual MemberDecl CloneMember(MemberDecl member, bool isReference) {
-      return memberClones.GetOrCreate(member, () => {
+      var result = memberClones.GetOrCreate(member, () => {
         if (isReference) {
           return member;
         }
@@ -227,6 +231,10 @@ namespace Microsoft.Dafny {
           return CloneMethod(m);
         }
       });
+      if (!isReference && !ReferenceEquals(member, result)) {
+        OperatorClones.Register(member, result);
+      }
+      return result;
     }
 
     public virtual Type CloneType(Type t) {

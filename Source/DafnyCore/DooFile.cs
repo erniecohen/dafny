@@ -163,6 +163,11 @@ public class DooFile {
   /// Returns the options as specified by the DooFile
   /// </summary>
   public DafnyOptions? Validate(ErrorReporter reporter, Uri file, DafnyOptions options, IOrigin origin) {
+    if (options.Get(CommonOptionBag.UserDefinedOperators)) {
+      reporter.Error(MessageSource.Project, "operator_input", origin,
+        "--user-defined-operators does not support .doo input in this milestone");
+      return null;
+    }
     if (!options.UsingNewCli) {
       reporter.Error(MessageSource.Project, origin,
         $"cannot load {options.GetPrintPath(file.LocalPath)}: .doo files cannot be used with the legacy CLI");

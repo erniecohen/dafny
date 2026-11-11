@@ -937,6 +937,10 @@ namespace Microsoft.Dafny {
       Contract.Requires(origin != null);
       Contract.Requires(name != null);
       Contract.Requires(moduleSignatures != null);
+      if (Options.Get(CommonOptionBag.UserDefinedOperators) && OperatorResolution.FeatureBearing(origin.ModuleDef)) {
+        reporter.Error(MessageSource.Resolver, "operator_abstract_import", origin.ModuleDef.Origin,
+          "user-defined operators do not support feature-bearing abstract-signature imports in this milestone");
+      }
       var errCount = reporter.Count(ErrorLevel.Error);
 
       var module = new ModuleDefinition(SourceOrigin.NoToken, new Name(name + ".Abs"), [], ModuleKindEnum.Abstract, true, null, null, null);

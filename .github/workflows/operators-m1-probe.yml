@@ -1,0 +1,39 @@
+name: Operators M1 probe
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build and focused checks (record expected development failures)
+        shell: bash
+        run: |
+          mkdir -p out/operators
+          set +e
+          sh Scripts/fetch-boogie-packages.sh > out/operators/packages.log 2>&1
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false > out/operators/build.log 2>&1
+          result=$?
+          echo "$result" > out/operators/build.exit
+          tail -60 out/operators/build.log
+          if [ "$result" = 0 ] && [ -f .github/review/operators-m1.py ]; then
+            python3 .github/review/operators-m1.py "$PWD/out/dafny/Dafny" "$PWD/out/operators" > out/operators/checks.log 2>&1
+            echo "$?" > out/operators/checks.exit
+            tail -60 out/operators/checks.log
+          fi
+          echo 'Development probe: retained exit files and logs are authoritative; this workflow records failures without notifying the owner.' >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: operators-m1-probe
+          path: out/operators
+          retention-days: 14

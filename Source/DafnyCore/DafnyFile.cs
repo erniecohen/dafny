@@ -55,6 +55,13 @@ public class DafnyFile {
     DafnyOptions options, Uri uri, IOrigin? uriOrigin,
     bool asLibrary = false, string? errorOnNotRecognized = null) {
 
+    if (options.Get(CommonOptionBag.UserDefinedOperators) &&
+        (asLibrary || Path.GetExtension(uri.LocalPath).Equals(DooFile.Extension, StringComparison.OrdinalIgnoreCase) ||
+         Path.GetExtension(uri.LocalPath).Equals(DafnyBinaryExtension, StringComparison.OrdinalIgnoreCase))) {
+      reporter.Error(MessageSource.Project, "operator_input", uriOrigin ?? Token.Cli,
+        "--user-defined-operators does not support library/precompiled input reuse in this milestone");
+      yield break;
+    }
     var embeddedFile = ExternallyVisibleEmbeddedFiles.GetValueOrDefault(uri);
     if (embeddedFile != null) {
       var embeddedResults = CreateAndValidate(fileSystem, reporter, options, embeddedFile, uriOrigin, asLibrary, errorOnNotRecognized);
@@ -208,6 +215,11 @@ public class DafnyFile {
     ErrorReporter reporter,
     DafnyOptions options,
     Uri uri, IOrigin origin, bool asLibrary) {
+    if (options.Get(CommonOptionBag.UserDefinedOperators)) {
+      reporter.Error(MessageSource.Project, "operator_input", origin,
+        "--user-defined-operators does not support .doo input in this milestone");
+      yield break;
+    }
     DooFile dooFile;
     var filePath = uri.LocalPath;
 

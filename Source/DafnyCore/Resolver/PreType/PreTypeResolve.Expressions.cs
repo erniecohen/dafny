@@ -28,6 +28,9 @@ namespace Microsoft.Dafny {
       }
 
       switch (expr) {
+        case OperatorSyntaxExpr op:
+          ResolveOperator(op, resolutionContext);
+          break;
         case ParensExpression expression: {
             var e = expression;
             ResolveExpression(e.E, resolutionContext);
@@ -2012,6 +2015,34 @@ namespace Microsoft.Dafny {
       }
     }
 
+    private FunctionCallExpr ResolveSelectedFunctionCall(IOrigin origin, Token closeParen, ActualBindings bindings,
+      MemberSelectExpr mse, ResolutionContext resolutionContext, Label atLabel = null) {
+      var errorCount = ErrorCount;
+      var callee = (Function)mse.Member;
+      var rr = new FunctionCallExpr(origin, mse.MemberNameNode, mse.Obj, origin, closeParen, bindings, atLabel) {
+        Function = callee,
+        PreTypeApplication_AtEnclosingClass = mse.PreTypeApplicationAtEnclosingClass,
+        PreTypeApplication_JustFunction = mse.PreTypeApplicationJustMember,
+        TypeApplication_AtEnclosingClass = mse.TypeApplicationAtEnclosingClass,
+        TypeApplication_JustFunction = mse.TypeApplicationJustMember
+      };
+      var typeMap = mse.PreTypeArgumentSubstitutionsAtMemberDeclaration();
+      var preTypeMap = BuildPreTypeArgumentSubstitute(
+          typeMap.Keys.ToDictionary(tp => tp, tp => typeMap[tp]));
+      ResolveActualParameters(rr.Bindings, callee.Ins, origin, callee, resolutionContext, preTypeMap, callee.IsStatic ? null : mse.Obj);
+      rr.PreType = Type2PreType(callee.ResultType).Substitute(preTypeMap);
+      if (errorCount == ErrorCount) {
+        Contract.Assert(!(mse.Obj is StaticReceiverExpr) || callee.IsStatic);  // this should have been checked already
+        Contract.Assert(callee.Ins.Count == rr.Args.Count);  // this should have been checked already
+      }
+      // further bookkeeping
+      if (callee is ExtremePredicate extremePredicateCallee) {
+        extremePredicateCallee.Uses.Add(rr);
+      }
+      ResolveExpression(rr, resolutionContext);
+      return rr;
+    }
+
     public MethodCallInformation ResolveApplySuffix(ApplySuffix e, ResolutionContext resolutionContext, bool allowMethodCall) {
       Contract.Requires(e != null);
       Contract.Requires(resolutionContext != null);
@@ -2057,29 +2088,7 @@ namespace Microsoft.Dafny {
             atLabel = null;
           }
           if (callee != null) {
-            // resolve as a FunctionCallExpr instead of as an ApplyExpr(MemberSelectExpr)
-            var rr = new FunctionCallExpr(e.Origin, mse.MemberNameNode, mse.Obj, e.Origin, e.CloseParen, e.Bindings, atLabel) {
-              Function = callee,
-              PreTypeApplication_AtEnclosingClass = mse.PreTypeApplicationAtEnclosingClass,
-              PreTypeApplication_JustFunction = mse.PreTypeApplicationJustMember,
-              TypeApplication_AtEnclosingClass = mse.TypeApplicationAtEnclosingClass,
-              TypeApplication_JustFunction = mse.TypeApplicationJustMember
-            };
-            var typeMap = mse.PreTypeArgumentSubstitutionsAtMemberDeclaration();
-            var preTypeMap = BuildPreTypeArgumentSubstitute(
-                typeMap.Keys.ToDictionary(tp => tp, tp => typeMap[tp]));
-            ResolveActualParameters(rr.Bindings, callee.Ins, e.Origin, callee, resolutionContext, preTypeMap, callee.IsStatic ? null : mse.Obj);
-            rr.PreType = Type2PreType(callee.ResultType).Substitute(preTypeMap);
-            if (errorCount == ErrorCount) {
-              Contract.Assert(!(mse.Obj is StaticReceiverExpr) || callee.IsStatic);  // this should have been checked already
-              Contract.Assert(callee.Ins.Count == rr.Args.Count);  // this should have been checked already
-            }
-            // further bookkeeping
-            if (callee is ExtremePredicate extremePredicateCallee) {
-              extremePredicateCallee.Uses.Add(rr);
-            }
-            r = rr;
-            ResolveExpression(r, resolutionContext);
+            r = ResolveSelectedFunctionCall(e.Origin, e.CloseParen, e.Bindings, mse, resolutionContext, atLabel);
           } else {
             // resolve as an ApplyExpr
             var formals = new List<Formal>();

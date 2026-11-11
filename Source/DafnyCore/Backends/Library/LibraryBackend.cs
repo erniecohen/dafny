@@ -55,6 +55,11 @@ public class LibraryBackend : ExecutableBackend {
   }
 
   public override void Compile(Program dafnyProgram, string dafnyProgramName, ConcreteSyntaxTree output) {
+    if (Options.Get(CommonOptionBag.UserDefinedOperators)) {
+      dafnyProgram.Reporter.Error(MessageSource.Compiler, "operator_input", Token.Cli,
+        "--user-defined-operators does not support .doo output in this milestone");
+      return;
+    }
     if (!Options.UsingNewCli) {
       throw new UnsupportedFeatureException(dafnyProgram.GetStartOfFirstFileToken(), Feature.LegacyCLI);
     }
