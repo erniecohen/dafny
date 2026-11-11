@@ -48,10 +48,13 @@ reveal/fuel information, system declarations and generated names remain inputs.
 The translator contract is:
 
 ```text
-Translate(ModuleKey, admitted resolved module) -> TranslationSnapshot
+Translate(ModuleKey, qualified signature selector, admitted resolved module,
+          compiler environment, source/report bindings) -> TranslationSnapshot
 ```
 
-The snapshot must be a deterministic function of that key. Whole-program name,
+The snapshot must be a deterministic function of this complete descriptor.
+The owner key alone does not distinguish every generated abstract signature in
+the current interface. Whole-program name,
 replacement and cardinality admission run on every transaction before a snapshot
 can authorize verification. A receipt from a previous program is never accepted.
 
@@ -377,7 +380,7 @@ these invariants and must not race in-flight writers by deleting their objects.
 
 Assume collision resistance, trusted record producers and a deterministic
 resource-bounded solver protocol. Whole-program admission precedes either table.
-The module key covers every translation-observable prerequisite; history-free
+The translation descriptor covers every translation-observable prerequisite; history-free
 translation and the faithful snapshot loader establish the same fresh Boogie
 artifact and report state on a hit as on translation. No assertion or axiom is
 added by reuse. The result key describes the exact pruned task and execution
