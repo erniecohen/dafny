@@ -1,6 +1,6 @@
 # M1 measured patch size
 
-Measured against shipped base `b98637c6677560944b2498002ecd32ec987a90af` using `git diff --numstat`. The last product revision is `b579b3a51e81f6e4b5d3b6c158f0f1c8f7ec1457`; the accompanying metadata/report commit changes no product source. Each count is added plus deleted lines. Generated parser/scanner output is excluded.
+Measured against shipped base `b98637c6677560944b2498002ecd32ec987a90af` using `git diff --numstat`. The last product revision is `45c743c4d97f461afbc51e43dc58b31eb3bf7d4d`; the accompanying metadata/report commit changes no product source. Each count is added plus deleted lines. Generated parser/scanner output is excluded.
 
 The design estimated **1,091–2,023 product lines**. This revision changes **709 product lines** under the design's product scope. Existing call finalization, concrete-syntax traversal and Cloner inheritance account for the smaller implementation; line counts are not correctness evidence.
 
@@ -58,7 +58,7 @@ The input-validation estimate is shared by `ProgramParser.cs` and `DafnyFile.cs`
 | `.github/workflows/review.yml` | 9 | 0 | 9 |
 | `Source/DafnyCore.Test/OperatorSelectionTests.cs` | 199 | 0 | 199 |
 | `Source/DafnyLanguageServer.Test/Lookup/HoverTest.cs` | 20 | 0 | 20 |
-| `Source/DafnyLanguageServer.Test/Refactoring/RenameTest.cs` | 23 | 1 | 24 |
+| `Source/DafnyLanguageServer.Test/Refactoring/RenameTest.cs` | 25 | 1 | 26 |
 | `Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-194-abstract-import.dfy` | 8 | 0 | 8 |
 | `Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-194-arity.dfy` | 1 | 0 | 1 |
 | `Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-194-bitwise-0.dfy` | 1 | 0 | 1 |
@@ -142,4 +142,4 @@ The input-validation estimate is shared by `ProgramParser.cs` and `DafnyFile.cs`
 | `docs/dev/operators-m1-size.md` | 145 | 0 | 145 |
 | `docs/dev/operators-m1.md` | 96 | 0 | 96 |
 
-Other changes total **1787 lines**, including tests, CI, documentation and review metadata. The table includes this report. The complete patch has **2496 changed lines**.
+Other changes total **1789 lines**, including tests, CI, documentation and review metadata. The table includes this report. The complete patch has **2498 changed lines**.
