@@ -25,6 +25,20 @@ const i := 0
     }
 
     [Fact]
+    public async Task OperatorSymbolsAreReferencesButAreNeverRenamed() {
+      var tempDir = GetFreshTempPath();
+      CreateAndOpenTestDocument("[options]\nuser-defined-operators = true\ntype-system-refresh = true\n",
+        Path.Combine(tempDir, DafnyProject.FileName));
+      await AssertRangesRenamed("""
+        datatype D = D(n: int) {
+          function {:operator "*"} [>><times<](b: D): D { D(n * b.n) }
+        }
+        function f(x: D, y: D): D { x * y }
+        function g(x: D, y: D): D { x.[>times<](y) }
+        """, tempDir, "multiply");
+    }
+
+    [Fact]
     public async Task EmptyModules() {
       var source = @"
 module [>><C<] {}

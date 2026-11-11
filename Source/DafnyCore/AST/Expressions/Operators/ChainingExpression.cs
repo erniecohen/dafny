@@ -25,7 +25,7 @@ public class ChainingExpression : ConcreteSyntaxExpression, ICloneable<ChainingE
     OperatorLocs = original.OperatorLocs.Select(cloner.Origin).ToList();
     PrefixLimits = original.PrefixLimits.Select(cloner.CloneExpr).ToList();
     UseUserOperators = original.UseUserOperators;
-    E = cloner.CloneExpr(original.E);
+    E = UseUserOperators ? cloner.CloneExpr(original.E) : ComputeDesugaring(Operands, Operators, OperatorLocs, PrefixLimits);
   }
 
   [SyntaxConstructor]

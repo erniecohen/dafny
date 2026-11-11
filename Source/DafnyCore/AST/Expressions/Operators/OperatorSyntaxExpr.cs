@@ -18,6 +18,7 @@ public class OperatorSyntaxExpr : ConcreteSyntaxExpression, ICloneable<OperatorS
   }
 
   public OperatorSyntaxExpr(Cloner cloner, OperatorSyntaxExpr original) : base(cloner, original) {
+    cloner.OperatorClones.HasSelections = true;
     Syntax = cloner.CloneExpr(original.Syntax);
     Selection = original.Selection;
     ResolutionStarted = original.ResolutionStarted;
@@ -50,5 +51,6 @@ public class OperatorSyntaxExpr : ConcreteSyntaxExpression, ICloneable<OperatorS
       BinaryExpr.Opcode.Gt or BinaryExpr.Opcode.Ge ? new OperatorSyntaxExpr(origin, intrinsic) : intrinsic;
   }
 
-  public bool SetIndent(int indentBefore, TokenNewIndentCollector formatter) => true;
+  public bool SetIndent(int indentBefore, TokenNewIndentCollector formatter) =>
+    Syntax is not ICanFormat formattable || formattable.SetIndent(indentBefore, formatter);
 }

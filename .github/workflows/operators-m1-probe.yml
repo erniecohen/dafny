@@ -20,6 +20,11 @@ jobs:
         shell: bash
         run: |
           mkdir -p out/operators
+          curl -fsSLo out/operators/z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  out/operators/z3.zip' | sha256sum -c -
+          unzip -q out/operators/z3.zip -d out/operators
+          export DAFNY_OPERATORS_Z3="$PWD/out/operators/z3-5.1.0-x64-glibc-2.39/bin/z3"
+          chmod +x "$DAFNY_OPERATORS_Z3"
           set +e
           sh Scripts/fetch-boogie-packages.sh > out/operators/packages.log 2>&1
           dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false > out/operators/build.log 2>&1
@@ -30,6 +35,12 @@ jobs:
             python3 .github/review/operators-m1.py "$PWD/out/dafny/Dafny" "$PWD/out/operators" > out/operators/checks.log 2>&1
             echo "$?" > out/operators/checks.exit
             tail -60 out/operators/checks.log
+            dotnet test Source/DafnyCore.Test/DafnyCore.Test.csproj -c Release --filter FullyQualifiedName~OperatorSelectionTests --logger "trx;LogFileName=operators.trx" --results-directory "$PWD/out/operators/core-tests" > out/operators/core-tests.log 2>&1
+            echo "$?" > out/operators/core-tests.exit
+            tail -40 out/operators/core-tests.log
+            dotnet test Source/DafnyLanguageServer.Test/DafnyLanguageServer.Test.csproj -c Release --filter FullyQualifiedName~OperatorSymbolsAreReferencesButAreNeverRenamed --logger "trx;LogFileName=operators.trx" --results-directory "$PWD/out/operators/rename-tests" > out/operators/rename-tests.log 2>&1
+            echo "$?" > out/operators/rename-tests.exit
+            tail -40 out/operators/rename-tests.log
           fi
           echo 'Development probe: retained exit files and logs are authoritative; this workflow records failures without notifying the owner.' >> "$GITHUB_STEP_SUMMARY"
           exit 0
@@ -37,5 +48,13 @@ jobs:
         if: always()
         with:
           name: operators-m1-probe
-          path: out/operators
+          path: |
+            out/operators/*.log
+            out/operators/*.exit
+            out/operators/results.json
+            out/operators/*/stdout.txt
+            out/operators/*/stderr.txt
+            out/operators/*/command.json
+            out/operators/core-tests
+            out/operators/rename-tests
           retention-days: 14

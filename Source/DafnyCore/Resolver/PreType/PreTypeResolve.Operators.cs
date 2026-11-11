@@ -56,6 +56,10 @@ public partial class PreTypeResolver {
         }
         ResolvePreTypeSignature(left.Decl);
         var owner = (TopLevelDeclWithMembers)left.Decl;
+        foreach (var member in owner.Members) {
+          ResolvePreTypeSignature(member);
+        }
+        OperatorResolution.Validate(new[] { owner }, resolver);
         var candidates = owner.Members.OfType<Function>().Where(f =>
           ReferenceEquals(f.EnclosingClass, owner) && resolver.VisibleInScope(f) &&
           f.Operator == new OperatorDescriptor(op.Symbol, operands.Count)).ToList();

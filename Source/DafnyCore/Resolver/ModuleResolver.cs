@@ -42,6 +42,8 @@ namespace Microsoft.Dafny {
     public ModuleSignature moduleInfo = null;
 
     public ErrorReporter Reporter => reporter;
+    private HashSet<TopLevelDecl> operatorOwnersValidated;
+    internal HashSet<TopLevelDecl> OperatorOwnersValidated => operatorOwnersValidated ??= new();
     public Scope<IVariable> Scope => scope;
 
     public List<TypeConstraint.ErrorMsg> TypeConstraintErrorsToBeReported { get; } = [];

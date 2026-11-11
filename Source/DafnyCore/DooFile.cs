@@ -141,6 +141,9 @@ public class DooFile {
   }
 
   public DooFile(Program dafnyProgram) {
+    if (dafnyProgram.Options.Get(CommonOptionBag.UserDefinedOperators)) {
+      throw new InvalidOperationException("--user-defined-operators does not support .doo output in this milestone");
+    }
     var tw = new StringWriter {
       NewLine = "\n"
     };

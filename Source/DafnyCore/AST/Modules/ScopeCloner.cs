@@ -17,8 +17,10 @@ class ScopeCloner : DeepModuleSignatureCloner {
 
   public ScopeCloner(VisibilityScope scope) {
     this.scope = scope;
-    OperatorClones.ExportScope = scope;
+
   }
+
+  protected override OperatorCloneContext CreateOperatorCloneContext() => new() { ExportScope = scope };
 
   private bool RevealedInScope(Declaration d) {
     return d.IsRevealedInScope(scope);
@@ -29,7 +31,8 @@ class ScopeCloner : DeepModuleSignatureCloner {
   }
 
   public override ModuleDefinition CloneModuleDefinition(ModuleDefinition m, ModuleDefinition newParent, Name name) {
-    foreach (var owner in m.TopLevelDecls) {
+    EnsureOperatorClones(m);
+    foreach (var owner in ExistingOperatorClones == null ? Enumerable.Empty<TopLevelDecl>() : m.TopLevelDecls) {
       OperatorClones.Require(owner);
       if (owner is TopLevelDeclWithMembers members) {
         foreach (var member in members.Members) {
@@ -109,7 +112,7 @@ class ScopeCloner : DeepModuleSignatureCloner {
         members, CloneAttributes(d.Attributes), d.IsRefining);
       otd.CardinalityParentObligations = based.CardinalityParentObligations;
       based = otd;
-      OperatorClones.Register(d, based);
+      ExistingOperatorClones?.Register(d, based);
       based.CardinalityViewOf = d;
       if (d is ClassLikeDecl { IsReferenceTypeDecl: true } cl) {
         reverseMap.Add(based, cl.NonNullTypeDecl);

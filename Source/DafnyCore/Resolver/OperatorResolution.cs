@@ -10,6 +10,9 @@ public static class OperatorResolution {
 
   public static void Validate(IEnumerable<TopLevelDecl> declarations, ModuleResolver resolver) {
     foreach (var owner in declarations) {
+      if (!resolver.OperatorOwnersValidated.Add(owner)) {
+        continue;
+      }
       var slots = new HashSet<OperatorDescriptor>();
       var hosts = new List<Declaration> { owner };
       if (owner is TopLevelDeclWithMembers members) {

@@ -8,6 +8,7 @@ namespace Microsoft.Dafny;
 public sealed class OperatorCloneContext {
   private readonly Dictionary<Declaration, Declaration> finalDeclarations = new();
   private readonly HashSet<Declaration> required = new();
+  public bool HasSelections { get; set; }
   public VisibilityScope ExportScope { get; set; }
 
   public void Register(Declaration source, Declaration target) {
