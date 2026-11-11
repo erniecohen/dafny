@@ -369,3 +369,4 @@ git-issues/github-issue-241-split-setup.dfy
 
 # Compatible component and tuple decreases orders (https://github.com/erniecohen/dafny/issues/264).
 git-issues/git-issue-264.dfy
+git-issues/git-issue-264-refreshed.dfy

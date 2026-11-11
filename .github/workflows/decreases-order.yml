@@ -25,6 +25,8 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Check comparison bookkeeping
+        run: python3 -m unittest discover -s .github/review -p test_decreases_order.py
       - name: Build candidate and pre-fix product with identical version metadata
         run: |
           sh Scripts/fetch-boogie-packages.sh
