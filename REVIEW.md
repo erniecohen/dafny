@@ -154,7 +154,8 @@ sequence/datatype rank cannot discard an increasing suffix. Numeric lower
 bounds are inside the component relations, retaining negative terminal values.
 Calls, loops, overrides, termination-ordering expressions, and the experimental
 modular global/callback checks share the construction. No new primitive axiom
-is added; the loop's assumed weak summary follows from the component laws.
+is added; the loop's assumed weak summary follows from the component laws, and
+the changed induction hypotheses follow from the well-founded strict lift.
 The [soundness argument](docs/dev/decreases-order.md) covers each component
 family and the lift.
 

@@ -6,8 +6,9 @@ The corrected comparison is the default, by explicit owner decision for this
 soundness repair. The hidden `--legacy-decreases-order` switch restores the old,
 unsound translation, including modular checks, for migration and measurement.
 `--modular-termination` remains a separate, experimental opt-in feature.
-No primitive axiom is added. The fix changes generated assertions and the loop
-summary assumption; the latter uses the compatible weak tuple relation.
+No primitive axiom is added. The fix changes generated assertions, the loop
+summary assumption, and the relation restricting induction hypotheses. The loop
+summary uses the compatible weak tuple relation.
 
 ## Component relations
 
@@ -82,6 +83,14 @@ application/forwarding all use this helper. M2 and forwarding request weak
 comparison directly; they no longer simulate it by appending a dummy component.
 The old `AtMost` adapter and equality-controlled implementation are reachable
 only under the hidden legacy switch.
+
+The induction callers use the same well-founded strict relation. In particular,
+a nonnegative numeric argument can admit a negative terminal induction argument;
+the old induction-only lower bound on the new value excluded that case. These
+additional hypotheses follow by well-founded induction on the component/tuple
+rankings just described. A negative old numeric component cannot itself justify
+further numeric descent. Thus the repair changes assumptions as well as checks;
+its soundness claim relies on these order arguments, not just on removing facts.
 
 For transitivity and absorption, choose the earlier decisive strict coordinate
 of the two comparisons. Every preceding coordinate composes weakly, and the
