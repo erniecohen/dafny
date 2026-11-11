@@ -13,6 +13,7 @@ env:
   DOTNET_NOLOGO: 'true'
   DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
+  COPYFILE_DISABLE: '1'
 jobs:
   build:
     if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && (inputs.platform == 'macos' || inputs.platform == 'linux') }}
@@ -38,7 +39,7 @@ jobs:
       - name: Build
         run: |
           dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny \
-            -p:GeneratePackageOnBuild=false -p:SourceRevisionId=${{ steps.version.outputs.revision }}
+            -p:GeneratePackageOnBuild=false -p:ContinuousIntegrationBuild=true -p:SourceRevisionId=${{ steps.version.outputs.revision }}
       - name: Check the version it reports
         run: |
           v=$(dotnet out/dafny/Dafny.dll --version | head -1)
@@ -66,6 +67,7 @@ jobs:
         run: |
           sh .github/review/portable-dafny.sh out/dafny
           tar -C out -czf dafny.tar.gz dafny
+          python3 .github/review/check-distribution.py out/dafny --archive dafny.tar.gz
       - uses: actions/upload-artifact@v4
         with:
           name: parity-${{ inputs.platform }}-dafny

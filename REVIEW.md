@@ -396,6 +396,8 @@ archives for both platforms and harness versions 4.12.1 and 4.16.0 are pinned
 in `.github/review/setup-z3.sh`. CI installs Java explicitly, and the shared
 framework-dependent artifact launches its managed assembly through `dotnet`
 on either operating system. No product source or verdict baseline changes.
+Published builds normalize source paths, and archives omit Apple metadata and
+extended ZIP attributes.
 See https://github.com/erniecohen/dafny/issues/256.
 `.github/review/release-macos.sh` remains as a manual fallback.
 

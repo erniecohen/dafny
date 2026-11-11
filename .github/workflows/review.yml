@@ -61,6 +61,7 @@ env:
   DOTNET_NOLOGO: 'true'
   DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
+  COPYFILE_DISABLE: '1'
   # Z3 5.1.0, from Z3's public GitHub release, checked by sha256.
   Z3_RELEASE: https://github.com/Z3Prover/z3/releases/download/z3-5.1.0
   Z3_LINUX_X64: z3-5.1.0-x64-glibc-2.39
@@ -89,6 +90,7 @@ jobs:
           python3 -m unittest discover -s .github/review -p test_ci_routing.py
           python3 -m unittest discover -s .github/review -p test_regression_filter.py
           python3 -m unittest discover -s .github/review -p test_platform_parity.py
+          python3 -m unittest discover -s .github/review -p test_check_distribution.py
       - name: Version
         id: version
         run: sh .github/review/version.sh | tee -a "$GITHUB_OUTPUT"
@@ -102,7 +104,7 @@ jobs:
       - name: Build
         run: |
           dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny \
-            -p:GeneratePackageOnBuild=false -p:SourceRevisionId=${{ steps.version.outputs.revision }}
+            -p:GeneratePackageOnBuild=false -p:ContinuousIntegrationBuild=true -p:SourceRevisionId=${{ steps.version.outputs.revision }}
       - name: Check the version it reports
         run: |
           v=$(dotnet out/dafny/Dafny.dll --version | head -1)
@@ -130,6 +132,7 @@ jobs:
         run: |
           sh .github/review/portable-dafny.sh out/dafny
           tar -C out -czf dafny.tar.gz dafny
+          python3 .github/review/check-distribution.py out/dafny --archive dafny.tar.gz
       - uses: actions/upload-artifact@v4
         with:
           name: dafny
@@ -813,7 +816,7 @@ jobs:
           RUNTIME_IDENTIFIER: ${{ matrix.rid }}
         run: |
           dotnet publish Source/Dafny/Dafny.csproj -c Release -r ${{ matrix.rid }} --self-contained \
-            -o out/dafny -p:GeneratePackageOnBuild=false -p:SourceRevisionId=${{ needs.build.outputs.revision }}
+            -o out/dafny -p:GeneratePackageOnBuild=false -p:ContinuousIntegrationBuild=true -p:SourceRevisionId=${{ needs.build.outputs.revision }}
           rm -f out/dafny/*.pdb
           mv out/dafny/Dafny out/dafny/dafny
           for f in LICENSE.txt NOTICES.txt REVIEW.md; do if [ -f "$f" ]; then cp "$f" out/dafny/; fi; done
@@ -834,7 +837,8 @@ jobs:
       - name: Zip
         run: |
           name=dafny-${{ needs.build.outputs.version }}-${{ matrix.rid }}.zip
-          (cd out && zip -qr "../$name" dafny)
+          (cd out && zip -Xqr "../$name" dafny)
+          python3 .github/review/check-distribution.py out/dafny --archive "$name"
           shasum -a 256 "$name"
       - uses: actions/upload-artifact@v4
         with:
