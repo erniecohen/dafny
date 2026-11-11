@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
-          ref: ${{ matrix.product == 'base' && '428e348b0b125cb67505f03a0026b3f497f98e48' || github.sha }}
+          ref: ${{ matrix.product == 'base' && 'b98637c6677560944b2498002ecd32ec987a90af' || github.sha }}
           path: product
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4

@@ -1,0 +1,1 @@
+JavaScript bitwise AND, OR and XOR now preserve all bits of wide bitvector operands, including the sign bit of 32-bit chunks and unequal-length operands.
