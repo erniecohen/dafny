@@ -307,4 +307,3 @@ jobs:
           name: parity-${{ inputs.platform }}-resolver-tests
           path: parity-results
           retention-days: 90
-

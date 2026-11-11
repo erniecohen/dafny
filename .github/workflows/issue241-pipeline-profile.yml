@@ -72,6 +72,10 @@ jobs:
           REPEAT: ${{ inputs.repeat || '2' }}
           DOTNET_gcServer: ${{ inputs.server_gc || '0' }}
         run: |
+          case "$CORES" in
+            1|2|3|4) ;;
+            *) echo 'The shared CI pool permits --cores 1 through 4'; exit 1 ;;
+          esac
           python3 .github/review/pipeline-profile.py run --dafny "$PWD/out/dafny/Dafny" --out profile \
             --repeat "$REPEAT" -- --solver-path "$Z3" --cores "$CORES" --verification-time-limit 0 \
             --boogie /deterministicLiteralHashes:1 --boogie /restartProver "$PROJECT"
@@ -79,7 +83,7 @@ jobs:
         if: always()
         run: |
           {
-            echo "Runner: $(nproc) processors, $(free -g | awk '/Mem:/{print $2}') GB memory."
+            echo "Runner: $(python3 -c 'import os; print(os.cpu_count())') processors; .NET cap: $DOTNET_PROCESSOR_COUNT."
             echo
             cat profile/summary.md || echo "no summary"
           } >> "$GITHUB_STEP_SUMMARY"
@@ -116,6 +120,10 @@ jobs:
           REPEAT: ${{ inputs.repeat || '2' }}
           DOTNET_gcServer: ${{ inputs.server_gc || '0' }}
         run: |
+          case "$CORES" in
+            1|2|3|4) ;;
+            *) echo 'The shared CI pool permits --cores 1 through 4'; exit 1 ;;
+          esac
           python3 .github/review/pipeline-profile.py run --dafny "$PWD/out/dafny/Dafny" --out profile \
             --repeat "$REPEAT" -- --solver-path "$Z3" --cores "$CORES" --verification-time-limit 0 \
             --boogie /deterministicLiteralHashes:1 --boogie /restartProver "$PROJECT"
@@ -123,7 +131,7 @@ jobs:
         if: always()
         run: |
           {
-            echo "Runner: $(nproc) processors, $(free -g | awk '/Mem:/{print $2}') GB memory."
+            echo "Runner: $(python3 -c 'import os; print(os.cpu_count())') processors; .NET cap: $DOTNET_PROCESSOR_COUNT."
             echo
             cat profile/summary.md || echo "no summary"
           } >> "$GITHUB_STEP_SUMMARY"
