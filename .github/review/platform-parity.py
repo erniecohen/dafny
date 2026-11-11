@@ -77,7 +77,8 @@ def test_results(root, platform, name, expected_files):
         if not rows:
             raise ValueError('Empty test result file: ' + str(path))
         for row in rows:
-            key = path.name + '\t' + row.attrib['testName']
+            # xUnit truncates parameter display strings; the stable test ID distinguishes those cases.
+            key = path.name + '\t' + row.attrib['testName'] + '\t' + row.attrib['testId']
             if key in result:
                 raise ValueError('Duplicate test result: ' + key)
             result[key] = row.attrib['outcome']
@@ -98,6 +99,8 @@ def resource_report(left, right):
 def compare(root, run):
     report = {'source': run['headSha'], 'run': run['url'], 'complete': False,
               'suite': {}, 'library': {}, 'tests': {}, 'job_seconds': {}, 'job_failures': []}
+    # Reusable workflow jobs carry their caller's prefix in the Actions API.
+    run = {**run, 'jobs': [{**job, 'name': job['name'].split(' / ')[-1]} for job in run['jobs']]}
     for job in run['jobs']:
         if not job['name'].startswith('Parity '):
             continue

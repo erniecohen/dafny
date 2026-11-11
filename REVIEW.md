@@ -384,7 +384,9 @@ also stay on Linux for their execution smoke test.
 
 Jobs in the shared pool set `DOTNET_PROCESSOR_COUNT=4`; suite shards use four
 single-core verifier processes and library jobs use `--cores 4`. This bounds
-ordinary build and test scheduling to about four cores per runner. Solver
+ordinary .NET scheduling to four processors per runner. The test runsettings
+limit xUnit to two concurrent tests, since each lit test normally uses two
+verifier cores. Solver
 archives for both platforms and harness versions 4.12.1 and 4.16.0 are pinned
 in `.github/review/setup-z3.sh`. CI installs Java explicitly, and the shared
 framework-dependent artifact launches its managed assembly through `dotnet`
