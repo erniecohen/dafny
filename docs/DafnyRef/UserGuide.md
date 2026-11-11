@@ -344,6 +344,39 @@ proofs and does not establish that the whole project is verified.
    - `--solver-path`
    - `--arithmetic-solver`
 
+- Scheduling
+   - `--verification-module-window`
+   - `--verification-module-window-memory`
+
+By default `dafny verify` verifies one module at a time: it starts every symbol of a
+module, waits until all of them have finished, and only then translates and starts
+the next module, so cores can sit idle while the last proofs of a module finish.
+The opt-in `--verification-module-window K`, for K greater than 1, keeps up to K
+modules in verification at once: a later module is translated and its proofs are
+started while earlier modules are still being verified, and another module is
+admitted whenever one finishes. The number of proofs that run at once is still set
+by `--cores`. Modules are translated and their proofs are started in the same order
+as with K = 1, and results, diagnostics (including those raised while translating a
+module), the "Verified n/m symbols" status lines, logs and the exit code are reported
+in the same order, as K = 1 reports them: a module's results wait until every earlier
+module's results have been reported. The per-batch lines of `--progress Batch` are
+printed as batches finish, so with K > 1 they can interleave across modules. At most
+2K modules are admitted but not yet reported, at most K of them still in verification.
+
+Memory is the cost: a module's translation and results are kept until it has been
+reported. `--verification-module-window-memory N` admits another module only while
+the managed heap, including garbage not yet collected, is below N MiB (by default,
+half of the memory available to the process), or when no other module is waiting
+to be reported. If verification stops early, because of a solver failure, an
+internal error or cancellation, the proofs of modules admitted ahead of their turn
+are cancelled and their results and diagnostics are not reported, as with K = 1,
+which never starts them.
+
+A proof's verdict and resource count do not depend on K: each proof sends the solver
+the same commands. A proof limited by `--verification-time-limit`, though, can
+finish just before or just after its limit depending on how busy the machine is, as
+it can with a different `--cores`.
+
 
 #### 13.6.1.4. `dafny translate <language>` {#sec-dafny-translate}
 
