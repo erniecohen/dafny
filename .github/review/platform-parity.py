@@ -41,6 +41,10 @@ def suite(root, platform, mode):
         data = json.loads((folder / f'resources-{mode}-{shard}.json').read_text())
         if set(data['programs']) != set(rows) or batches.keys() & data['batches'].keys():
             raise ValueError('Resource coverage differs from verdict coverage')
+        if any(key.split('\t')[0] not in rows for key in data['batches']):
+            raise ValueError('Proof batch outside the shard program set')
+        if any(rows[key][2] and rows[key][2] != '0 verified, 0 errors' for key in data['unavailable']):
+            raise ValueError('A verifier result has no resource log')
         batches.update(data['batches'])
         missing.update(data['unavailable'])
         totals = defaultdict(int)
@@ -100,23 +104,30 @@ def compare(root, run):
         failed = [step['name'] for step in job['steps'] if step['conclusion'] in ['failure', 'cancelled']]
         if job['conclusion'] != 'success' or failed:
             report['job_failures'].append({'job': job['name'], 'conclusion': job['conclusion'], 'steps': failed})
-        if job.get('startedAt') and job.get('completedAt'):
+        if job.get('status') == 'completed' and job.get('startedAt') and job.get('completedAt'):
             from datetime import datetime
             report['job_seconds'][job['name']] = (datetime.fromisoformat(job['completedAt'].replace('Z', '+00:00')) -
                                                       datetime.fromisoformat(job['startedAt'].replace('Z', '+00:00'))).total_seconds()
     for mode in ['off', 'on']:
-        a, ar, ac = suite(root, 'linux', mode)
-        b, br, bc = suite(root, 'macos', mode)
-        if ac['plan'] != bc['plan']:
-            raise ValueError('Platform plans differ')
-        report['suite'][mode] = {'verdict_differences': compare_rows(a, b), 'resources': resource_report(ar, br),
-                                'batch_differences': compare_rows(ac['batches'], bc['batches']),
-                                'unavailable_differences': compare_rows(ac['unavailable'], bc['unavailable'])}
+        try:
+            a, ar, ac = suite(root, 'linux', mode)
+            b, br, bc = suite(root, 'macos', mode)
+            if ac['plan'] != bc['plan']:
+                raise ValueError('Platform plans differ')
+            report['suite'][mode] = {'verdict_differences': compare_rows(a, b), 'resources': resource_report(ar, br),
+                                    'batch_differences': compare_rows(ac['batches'], bc['batches']),
+                                    'unavailable_differences': compare_rows(ac['unavailable'], bc['unavailable'])}
+        except (OSError, ValueError, KeyError) as error:
+            report['suite'][mode] = {'incomplete': str(error)}
         for version in ['5.1.0', '4.12.1']:
-            a, ar = library(root, 'linux', mode, version)
-            b, br = library(root, 'macos', mode, version)
-            report['library'][mode + '-z3-' + version] = {
-                'verdict_differences': compare_rows(a, b), 'resources': resource_report(ar, br)}
+            label = mode + '-z3-' + version
+            try:
+                a, ar = library(root, 'linux', mode, version)
+                b, br = library(root, 'macos', mode, version)
+                report['library'][label] = {
+                    'verdict_differences': compare_rows(a, b), 'resources': resource_report(ar, br)}
+            except (OSError, ValueError, KeyError) as error:
+                report['library'][label] = {'incomplete': str(error)}
     for name, count in [('regressions', 10), ('resolver-tests', 3)]:
         try:
             a = test_results(root, 'linux', name, count)
@@ -129,8 +140,12 @@ def compare(root, run):
     # They independently prevent moving those control jobs.
     proof_failures = [item for item in report['job_failures'] if any(
         label in item['job'] for label in ['Build (Release)', 'Verifier suite', 'Standard library'])]
-    report['complete'] = not proof_failures
     sections = list(report['suite'].values()) + list(report['library'].values())
+    proof_job_count = sum(job['name'].startswith('Parity ') and any(
+        label in job['name'] for label in ['Build (Release)', 'Verifier suite', 'Standard library'])
+        for job in run['jobs'])
+    report['proof_job_count'] = proof_job_count
+    report['complete'] = proof_job_count == 26 and not proof_failures and not any('incomplete' in item for item in sections)
     if not report['complete']:
         report['decision'] = 'incomplete: keep gates on Linux'
     elif any(item['verdict_differences'] for item in sections):
@@ -160,10 +175,19 @@ def main():
         lines += [report['error']]
     for kind in ['suite', 'library']:
         for label, item in report.get(kind, {}).items():
+            if 'incomplete' in item:
+                lines += [f"{kind} {label}: INCOMPLETE ({item['incomplete']})"]
+                continue
             r = item['resources']
             lines += [f"{kind} {label}: {len(item['verdict_differences'])} verdict differences; "
                       f"{r['differing']} resource differences among {r['entries']} entries; "
                       f"maximum absolute difference {r['max_absolute_difference']} RU."]
+    for name, item in report.get('tests', {}).items():
+        if 'incomplete' in item:
+            lines += [f"{name}: INCOMPLETE ({item['incomplete']})"]
+        else:
+            lines += [f"{name}: {item['linux']} Linux and {item['macos']} macOS tests; "
+                      f"{len(item['differences'])} differences, {len(item['nonpassing'])} nonpassing macOS tests."]
     lines += ['', '| Job | Wall seconds |', '|---|---:|']
     for name, seconds in sorted(report.get('job_seconds', {}).items()):
         lines.append(f'| {name} | {seconds:.0f} |')

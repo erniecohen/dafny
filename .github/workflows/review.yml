@@ -1365,12 +1365,13 @@ jobs:
             });
             require('fs').writeFileSync('parity-run.json', JSON.stringify({
               headSha: run.data.head_sha, url: run.data.html_url,
-              jobs: jobs.map(job => ({name: job.name, conclusion: job.conclusion,
+              jobs: jobs.map(job => ({name: job.name, status: job.status, conclusion: job.conclusion,
                 startedAt: job.started_at, completedAt: job.completed_at, steps: job.steps}))
             }));
       - name: Record verdicts, resources, completeness and job wall times
         run: |
           python3 -m unittest discover -s .github/review -p test_platform_parity.py
+          python3 -m unittest discover -s .github/review -p test_ci_routing.py
           status=0
           python3 .github/review/platform-parity.py parity-artifacts parity-run.json platform-parity || status=$?
           echo "Comparison process exit: $status (probe only)" >> "$GITHUB_STEP_SUMMARY"

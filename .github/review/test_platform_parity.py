@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
 
 spec = importlib.util.spec_from_file_location('parity', Path(__file__).with_name('platform-parity.py'))
 parity = importlib.util.module_from_spec(spec)
@@ -61,6 +62,43 @@ class ParityTests(unittest.TestCase):
             (root / 'parity-linux-verdicts-off-3' / 'verdicts-off-3.tsv').write_text('')
             with self.assertRaises(ValueError):
                 parity.suite(root, 'linux', 'off')
+
+    def acceptance_fixture(self, verdict_change=False, resource_change=False):
+        def suite(root, platform, mode):
+            verdict = ['p', '4' if verdict_change and platform == 'macos' else '0', 'summary', '']
+            cost = 18 if resource_change and platform == 'macos' else 17
+            return {'p': verdict}, {'p': cost}, {'plan': {'p': []}, 'batches': {'p\tmethod\t1': ['Valid', cost]}, 'unavailable': {}}
+        jobs = [{'name': f'Parity linux: Verifier suite {i}', 'status': 'completed',
+                 'conclusion': 'success', 'steps': []} for i in range(26)]
+        run = {'headSha': 'source', 'url': 'run', 'jobs': jobs}
+        with mock.patch.object(parity, 'suite', side_effect=suite), mock.patch.object(
+                parity, 'library', return_value=({'d': ['d', 'Correct', '', '']}, {'d': 7})), mock.patch.object(
+                parity, 'test_results', return_value={'test': 'Passed'}):
+            return parity.compare(Path('.'), run)
+
+    def test_equal_verdicts_and_costs_are_eligible(self):
+        report = self.acceptance_fixture()
+        self.assertTrue(report['complete'])
+        self.assertIn('eligible', report['decision'])
+
+    def test_cost_change_stops_routing(self):
+        report = self.acceptance_fixture(resource_change=True)
+        self.assertIn('STOP', report['decision'])
+
+    def test_verdict_change_keeps_linux(self):
+        report = self.acceptance_fixture(verdict_change=True)
+        self.assertIn('verdicts differ', report['decision'])
+
+    def test_queued_job_has_no_wall_time(self):
+        run = {'headSha': 'source', 'url': 'run', 'jobs': [{
+            'name': 'Parity linux: Build (Release)', 'status': 'queued',
+            'conclusion': '', 'steps': [], 'startedAt': '2026-11-11T00:00:00Z',
+            'completedAt': '0001-01-01T00:00:00Z'}]}
+        with tempfile.TemporaryDirectory() as tmp:
+            report = parity.compare(Path(tmp), run)
+        self.assertEqual(report['job_seconds'], {})
+        self.assertFalse(report['complete'])
+        self.assertIn('incomplete', report['decision'])
 
     def test_missing_test_results_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
