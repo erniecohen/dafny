@@ -21,6 +21,29 @@ public class ModuleTranslationCacheTests {
     """;
 
   [Fact]
+  public async Task ProofMapsBelongToOneModuleAndWarmConsumersAreIndependent() {
+    var program = await Resolve(Source, "module Other { lemma Unrelated() { assert true; } }");
+    var cache = new ModuleTranslationCache();
+    var module = program.RawModules().Single(m => m.Name == "M");
+    var other = program.RawModules().Single(m => m.Name == "Other");
+    var first = cache.TranslateModule(program, module, new(program.Options), default, out var reused);
+    Assert.False(reused);
+    Assert.NotEmpty(first.ProofDependencies.ProofDependenciesById);
+    var keys = first.ProofDependencies.idsByMemberName.Keys.Order().ToArray();
+    var unrelated = cache.TranslateModule(program, other, new(program.Options), default, out _);
+    Assert.NotSame(first.ProofDependencies, unrelated.ProofDependencies);
+    Assert.Equal(keys, first.ProofDependencies.idsByMemberName.Keys.Order());
+    Assert.DoesNotContain(keys, k => k.Contains("Unrelated"));
+    var warm = cache.TranslateModule(program, module, new(program.Options), default, out reused);
+    Assert.True(reused);
+    Assert.NotSame(first.ProofDependencies, warm.ProofDependencies);
+    Assert.Equal(keys, warm.ProofDependencies.idsByMemberName.Keys.Order());
+    warm.ProofDependencies.ProofDependenciesById.Clear();
+    Assert.NotEmpty(first.ProofDependencies.ProofDependenciesById);
+    Assert.Empty(program.ProofDependencyManager.ProofDependenciesById);
+  }
+
+  [Fact]
   public async Task WarmGraphsAreIndependentAndTextIsExact() {
     var program = await Resolve(Source);
     var cache = new ModuleTranslationCache();
@@ -58,7 +81,7 @@ public class ModuleTranslationCacheTests {
     var second = cache.Translate(after, next, new BoogieGenerator.TranslatorFlags(after.Options), default);
     Assert.Equal(1, cache.Hits);
     Assert.Equal(text, ModuleTranslationCache.Emit(second, after.Options));
-    Assert.NotEmpty(after.ProofDependencyManager.ProofDependenciesById);
+    Assert.Empty(after.ProofDependencyManager.ProofDependenciesById);
     var unrelated = await Resolve(Source, "module Unrelated { function H(x: bv77): bv77 { x + 1 } }");
     cache.Translate(unrelated, unrelated.RawModules().Single(m => m.Name == "M"), new(unrelated.Options), default);
     Assert.Equal(2, cache.Hits);
@@ -189,7 +212,7 @@ public class ModuleTranslationCacheTests {
     var next = await Resolve(Source);
     cache.Translate(next, next.RawModules().Single(m => m.Name == "M"), new(next.Options), default);
     Assert.Equal(1, cache.Hits);
-    Assert.NotEmpty(next.ProofDependencyManager.ProofDependenciesById);
+    Assert.Empty(next.ProofDependencyManager.ProofDependenciesById);
   }
 
   [Theory]

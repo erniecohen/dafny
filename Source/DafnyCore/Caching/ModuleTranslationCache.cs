@@ -53,7 +53,15 @@ public sealed class ModuleTranslationCache {
 
   public Bpl.Program Translate(Program program, ModuleDefinition module, BoogieGenerator.TranslatorFlags flags,
     CancellationToken cancellationToken, out bool reused) {
+    return TranslateModule(program, module, flags, cancellationToken, out reused).Program;
+  }
+
+  public sealed record ModuleTranslation(Bpl.Program Program, ProofDependencyManager ProofDependencies);
+
+  public ModuleTranslation TranslateModule(Program program, ModuleDefinition module, BoogieGenerator.TranslatorFlags flags,
+    CancellationToken cancellationToken, out bool reused) {
     reused = false;
+    var manager = CreateProofDependencies(program);
     // Even a hit must not bypass the current transaction's global soundness admission.
     BoogieGenerator.RequireCardinalityValidation(program);
     if (!program.ModuleSigs.ContainsKey(module)) {
@@ -66,7 +74,7 @@ public sealed class ModuleTranslationCache {
         options.AdditionalPlugins.Count != 0 || options.AdditionalPluginArguments.Count != 0 ||
         flags.ObligationLowered != null || flags.ObligationPrepared != null) {
       lock (gate) { Bypasses++; LastBypassReason = "missing module key, nonlocal names, debug identities or external callbacks"; }
-      return Fresh(program, module, flags, program.Reporter);
+      return new ModuleTranslation(Fresh(program, module, flags, program.Reporter, manager), manager);
     }
     var key = Descriptor(program, module, flags);
     lock (gate) {
@@ -78,38 +86,33 @@ public sealed class ModuleTranslationCache {
           Remove(node);
         } else {
           cancellationToken.ThrowIfCancellationRequested();
-          Replay(program, node.Value.Value);
+          Replay(program, manager, node.Value.Value);
           lru.Remove(node);
           lru.AddFirst(node);
           Hits++;
           reused = true;
-          return graph!;
+          return new ModuleTranslation(graph!, manager);
         }
       }
       var reporter = new BatchErrorReporter(options);
-      var manager = program.ProofDependencyManager;
-      var previous = manager.ProofDependenciesById.ToDictionary();
-      var previousSets = manager.idsByMemberName.ToDictionary(p => p.Key, p => p.Value.Deps.ToHashSet(), StringComparer.Ordinal);
-      var translated = Fresh(program, module, flags, reporter);
+      var translated = Fresh(program, module, flags, reporter, manager);
       foreach (var diagnostic in reporter.AllMessages) { program.Reporter.MessageCore(diagnostic); }
       cancellationToken.ThrowIfCancellationRequested();
       string? reason = null;
       Bpl.Program? template = null;
       if (reporter.HasErrors || !BoogieSnapshotCloner.TryClone(translated, out template, out reason)) {
         Bypasses++; LastBypassReason = reporter.HasErrors ? "translation diagnostics" : reason;
-        return translated;
+        return new ModuleTranslation(translated, manager);
       }
       var text = Emit(translated, options);
       var snapshot = new Snapshot(module.ResolutionKey, null, Hash(text), text, template!,
-        manager.ProofDependenciesById.Where(p => !previous.TryGetValue(p.Key, out var old) || !ReferenceEquals(old, p.Value)).ToDictionary(),
-        manager.idsByMemberName.Where(p => p.Value.Deps.Any(d => !previousSets.TryGetValue(p.Key, out var old) || !old.Contains(d)))
-          .ToDictionary(p => p.Key, p => (p.Value.Decl,
-            p.Value.Deps.Where(d => !previousSets.TryGetValue(p.Key, out var old) || !old.Contains(d)).ToHashSet())),
+        manager.ProofDependenciesById.ToDictionary(),
+        manager.idsByMemberName.ToDictionary(p => p.Key, p => (p.Value.Decl, p.Value.Deps.ToHashSet())),
         reporter.AllMessages.ToArray());
       // Cold and warm consumers receive graph copies with the same topology and literal identities.
       if (!BoogieSnapshotCloner.TryClone(template!, out var consumer, out reason)) {
         Bypasses++; LastBypassReason = reason;
-        return translated;
+        return new ModuleTranslation(translated, manager);
       }
       if (Encoding.UTF8.GetByteCount(text) <= maximumTextBytes) {
         var added = lru.AddFirst((key, snapshot));
@@ -118,13 +121,17 @@ public sealed class ModuleTranslationCache {
         textBytes += Encoding.UTF8.GetByteCount(text);
         while (textBytes > maximumTextBytes || entries.Count > maximumEntries) { Remove(lru.Last!); }
       }
-      return consumer!;
+      return new ModuleTranslation(consumer!, manager);
     }
   }
 
-  private Bpl.Program Fresh(Program program, ModuleDefinition module, BoogieGenerator.TranslatorFlags flags, ErrorReporter reporter) {
+  private static ProofDependencyManager CreateProofDependencies(Program program) =>
+    program.Options.Get(CommonOptionBag.ResolutionThreads) > 0 ? new ProofDependencyManager() : program.ProofDependencyManager;
+
+  private Bpl.Program Fresh(Program program, ModuleDefinition module, BoogieGenerator.TranslatorFlags flags, ErrorReporter reporter,
+    ProofDependencyManager manager) {
     lock (gate) { Translations++; }
-    return new BoogieGenerator(reporter, program.ProofDependencyManager, flags).DoTranslation(program, module);
+    return new BoogieGenerator(reporter, manager, flags).DoTranslation(program, module);
   }
 
   public bool TryGetBoogieText(string hash, out string? text) {
@@ -142,8 +149,7 @@ public sealed class ModuleTranslationCache {
     if (!entries.Values.Any(n => n.Value.Value.BoogieHash == node.Value.Value.BoogieHash)) { texts.Remove(node.Value.Value.BoogieHash); }
   }
 
-  private static void Replay(Program program, Snapshot snapshot) {
-    var manager = program.ProofDependencyManager;
+  private static void Replay(Program program, ProofDependencyManager manager, Snapshot snapshot) {
     lock (manager.SyncRoot) {
       foreach (var dependency in snapshot.Dependencies) { manager.ProofDependenciesById[dependency.Key] = dependency.Value; }
       foreach (var member in snapshot.Members) {

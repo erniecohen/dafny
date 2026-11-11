@@ -13,8 +13,11 @@ when no worker count was selected, thereby using its module-qualified names and
 `ModuleDefinition.ResolutionKey` (called `ModuleKey` below). Repeated batch
 requests in one invocation can hit; separate CLI processes cannot. The table
 does not cache verification results or skip current whole-program admission.
-No on-disk cache is enabled. Persistent caching awaits the external design review
-requested by the coordinator; the file protocol below is a future design only.
+No on-disk cache is enabled. The accepted design of record is
+https://github.com/erniecohen/dafny/pull/272, with the binding decisions at
+https://github.com/erniecohen/dafny/issues/261#issuecomment-6808221963.
+Its order is module ownership, persistent task results, then persistent resolution;
+on-disk Boogie reuse still requires the materializer differential test.
 An eventual `--verification-cache DIR` is proposed for PR B, not exposed by PR A.
 Without the translation option the existing translation, preparation,
 solver lifecycle and reporting paths execute without constructing a cache,
@@ -116,7 +119,10 @@ On a warm resolution and translation hit an unchanged module is neither
 re-resolved nor re-translated. With only translation caching enabled, resolution
 still runs. A failed/unsupported resolved-snapshot load also resolves normally;
 its fresh `ModuleKey` can still authorize a translation hit. A translation hit
-must restore report mappings into the current `ProofDependencyManager`. The
+returns a distinct module-owned `ProofDependencyManager` together with its graph.
+`ModuleVerificationTasks` carries that manager through preparation, `Compilation`,
+`BoogieUpdate` and `CanVerifyResult`; loggers and coverage use this module owner.
+Neither cold translation nor a hit unions module maps into the program manager. The
 in-process version retains reporting-only source anchors under exact bindings;
 verification task attribution must reference current symbols. A missing or ambiguous
 current-symbol binding discards the candidate before tasks or diagnostics escape.
@@ -166,9 +172,10 @@ repeat its own digest, and lookup compares those bytes with the current descript
 Both cache-enabled cold and warm executions use a fresh independent solver
 history for each task. Skipping a hit must not change a miss's solver history.
 This opt-in protocol, including restart behavior, is part of the key. Default
-execution is unchanged. Effective elapsed-time limits, including declaration and
-solver-option overrides, must be zero for reusable records. Require an explicit
-positive RU limit. Enforce eligibility at the task boundary, after overrides.
+execution is unchanged. A completed `Valid` result is reusable even under a
+nonzero time limit. Errors and out-of-resource results require a positive effective
+RU limit and zero effective elapsed-time limit, including declaration and prover
+overrides. Enforce eligibility after overrides and normal report completion.
 
 Cache `Correct`, `Errors` and RU-bounded `OutOfResource`. Never reuse wall-clock
 timeouts, memory exhaustion, cancellation, crashes, protocol errors or unknown
@@ -183,7 +190,7 @@ outcome; exact RU; original RU limit and seed
 counterexample models, error/path information and related source locations
 coverage, warnings and diagnostics needed by all supported report modes
 payload digests and producer provenance
-historical timings, identified as historical and separate from current timings
+historical timings, identified as replayed and separate from current timings
 ```
 
 Reconstruct errors and coverage through the same current reporting code as fresh
@@ -235,7 +242,9 @@ namespace Microsoft.Boogie;
 
 public sealed record PreparedTaskDescriptor(
   int FormatVersion,
-  System.Collections.Immutable.ImmutableArray<byte> CanonicalSolverInput,
+  System.Collections.Immutable.ImmutableArray<byte> InitialSolverCommands,
+  System.Collections.Immutable.ImmutableArray<byte> AdaptiveResponseProgram,
+  System.Collections.Immutable.ImmutableArray<byte> OrderedUsedTypesInputs,
   System.Collections.Immutable.ImmutableArray<byte> EffectiveOptions,
   System.Collections.Immutable.ImmutableArray<byte> SolverIdentity,
   System.Collections.Immutable.ImmutableArray<byte> BindingInventory,
@@ -265,7 +274,7 @@ public interface IPreparedVerificationTask : System.IAsyncDisposable {
     System.Threading.CancellationToken cancellationToken);
   System.Threading.Tasks.ValueTask<VC.VerificationRunResult> RunAsync(
     System.Threading.CancellationToken cancellationToken);
-  // Null for any elapsed-time decision, crash, cancellation or incomplete report.
+  // Null for timed failures, crash, cancellation or incomplete report. Valid may be timed.
   PreparedTaskResult? EncodeCompletedResult(VC.VerificationRunResult result);
 }
 
@@ -449,3 +458,29 @@ process; warm/edit samples first populate that process's table, outside the time
 interval, then resolve a new current program and translate it. The edit changes
 one function in a separate unrelated module alongside Std. This distinguishes
 translation savings from resolution or solver savings, neither claimed by PR A.
+
+## Accepted-review implementation boundaries
+
+Resolution owns the L/G/R split: L is the local semantic DAG key, G is the
+current observable post-global-analysis projection (including negative answers),
+and R finalizes translation identity. Builtin identity is taken after the catalog
+is complete, including tuple arities and bitwidths. This branch consumes the
+resolution worker's keys and naming; it does not independently invent those keys.
+Until that finalized interface is published, the process-local descriptor retains
+its conservative source/environment checks and makes no persistent-resolution or
+early-cutoff claim.
+
+The complete task key must freeze the finite adaptive response policy **before**
+the first solver request. A recorded response-dependent transcript alone is not
+that policy. The exact initialization commands include the consequences of the
+ordered declarations read by Boogie's `UsedTypes`; record those inputs explicitly
+as well. Model/error/coverage decoding must use current task bindings. Unknown
+factories, option values, protocol branches or unsupported side effects force a
+fresh execution. Publication occurs only after normal task completion and full
+report reconstruction. No module-level success summary can authorize a hit.
+
+The warm reference is cache-enabled cold execution. CSV/JSON timing fields are
+excluded from equality and must identify replayed observations. Verdicts,
+diagnostics, exact per-task RU and solver input remain equal. Separately audit
+legacy default-off versus option-on costs; do not hide naming-related cost or
+verdict changes by calling them cache hits.
