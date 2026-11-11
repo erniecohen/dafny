@@ -17,7 +17,7 @@ class DecreasesOrderComparisonTests(unittest.TestCase):
     def test_outcomes_and_resources_are_independent(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            for group in ['suite-off', 'suite-on', 'std-off-5.1.0', 'std-on-5.1.0', 'std-off-4.16.0', 'std-on-4.16.0']:
+            for group in ['suite-off', 'suite-on', 'std-off-5.1.0', 'std-on-5.1.0', 'std-off-4.12.1', 'std-on-4.12.1']:
                 for mode, outcome, ru in [('legacy', 'Correct', 40), ('default', 'Errors', 25)]:
                     part = root / (group + '-' + mode)
                     part.mkdir()

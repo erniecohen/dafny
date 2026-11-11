@@ -114,7 +114,7 @@ jobs:
       matrix:
         mode: [default, legacy]
         axioms: ['off', 'on']
-        solver: ['5.1.0', '4.16.0']
+        solver: ['5.1.0', '4.12.1']
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
@@ -130,11 +130,11 @@ jobs:
             unzip -q z3.zip
             echo "Z3=$PWD/$Z3_ARCHIVE/bin/z3" >> "$GITHUB_ENV"
           else
-            curl -fsSLo z3.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.16.0-x64-ubuntu-24.04-bin.zip
-            echo '87de9c9e86c877abfccb00cf24b946c4a1bda7b9cba6f363ea58311d2573c320  z3.zip' | sha256sum -c -
+            curl -fsSLo z3.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.12.1-x64-ubuntu-24.04-bin.zip
+            echo 'e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b  z3.zip' | sha256sum -c -
             mkdir z3h && unzip -q z3.zip -d z3h
-            chmod +x z3h/z3-4.16.0
-            echo "Z3=$PWD/z3h/z3-4.16.0" >> "$GITHUB_ENV"
+            chmod +x z3h/z3-4.12.1
+            echo "Z3=$PWD/z3h/z3-4.12.1" >> "$GITHUB_ENV"
           fi
       - name: Record standard-library verdicts and resources
         run: |

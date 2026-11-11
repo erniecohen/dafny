@@ -67,7 +67,7 @@ def compare(args):
     inp, out = Path(args.input), Path(args.output)
     out.mkdir(parents=True, exist_ok=True)
     report, text = {}, ['# Decreases-order comparison', '', 'All differences are default minus legacy; measurements are Z3 resource units.', '']
-    for group in ['suite-off', 'suite-on', 'std-off-5.1.0', 'std-on-5.1.0', 'std-off-4.16.0', 'std-on-4.16.0']:
+    for group in ['suite-off', 'suite-on', 'std-off-5.1.0', 'std-on-5.1.0', 'std-off-4.12.1', 'std-on-4.12.1']:
         data = {}
         for mode in ['legacy', 'default']:
             dirs = sorted(inp.glob(group + '-' + mode + '*'))
