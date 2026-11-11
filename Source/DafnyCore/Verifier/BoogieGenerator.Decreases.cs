@@ -529,6 +529,9 @@ public partial class BoogieGenerator {
         ComputeLessEq(toks[i], ty0, ty1, ee0[i], ee1[i], out strict, out weak, out _, false);
       }
       result = BplOr(strict, BplAnd(weak, result));
+      // Boolean simplification can return a fresh literal (notably for an
+      // equality-only component). Keep the ordering expression's source origin.
+      result.tok = toks[i];
     }
     return result;
   }
