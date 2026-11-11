@@ -1,6 +1,8 @@
 """Fresh-process result replay, exact changed-key invalidation, and negative controls."""
 import collections
 import csv
+import base64
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -28,7 +30,7 @@ def without_timing(value):
     return value
 
 
-def run(name, directory=cache, extra=(), time_limit="0", resource_limit="16000000", enabled=True):
+def run(name, directory=cache, extra=(), time_limit="0", resource_limit="16000000", enabled=True, expect_keyed=True):
     profile = destination / "current.jsonl"
     log = destination / "current.json"
     csv_log = destination / "current.csv"
@@ -63,7 +65,7 @@ def run(name, directory=cache, extra=(), time_limit="0", resource_limit="1600000
         "stats": stats[0] if stats else {}, "tasks": tasks,
     }
     if enabled:
-        assert len(stats) == 1 and tasks and None not in observation["keys"], (stats, tasks)
+        assert len(stats) == 1 and tasks and (not expect_keyed or None not in observation["keys"]), (stats, tasks)
     else:
         assert not stats and not tasks
     return observation
@@ -83,6 +85,33 @@ assert warm["stats"]["hits"] == 3 and warm["stats"]["solverStarts"] == 0, warm["
 assert warm["stats"]["solverVersionProbes"] == 0
 assert all(t["replayed"] for t in warm["tasks"])
 assert all(vc["timingReplayed"] for r in json.loads((destination / "warm.json").read_text())["verificationResults"] for vc in r["vcResults"])
+
+# A well-formed candidate can still diverge after lookup. Rehash the intentionally
+# changed exchange so the lifecycle retry, rather than the checksum check, is tested.
+for index in (cache / "v1/results").glob("*/*/data"):
+    entry = json.loads(index.read_text())
+    blob = cache / "v1/blobs/sha256" / entry["Blob"][:2] / entry["Blob"] / "data"
+    record = json.loads(blob.read_text())
+    if record["Outcome"] != 1:  # Errors
+        continue
+    exchange = json.loads(base64.b64decode(record["ReportData"]))
+    assert exchange["Steps"][-1]["Kind"] == 2  # final idle Ping
+    exchange["Steps"][-1]["Command"] = "intentional replay divergence"
+    record["ReportData"] = base64.b64encode(json.dumps(exchange).encode()).decode()
+    payload = json.dumps(record).encode()
+    digest = hashlib.sha256(payload).hexdigest()
+    replacement = cache / "v1/blobs/sha256" / digest[:2] / digest / "data"
+    replacement.parent.mkdir(parents=True)
+    replacement.write_bytes(payload)
+    entry.update(Blob=digest, Length=len(payload))
+    index.write_text(json.dumps(entry))
+    break
+else:
+    raise AssertionError("an actual counterexample record is required")
+divergent = run("divergent", expect_keyed=False)
+same_report(cold, divergent)
+assert divergent["stats"]["fallbacks"] == 1 and divergent["stats"]["solverStarts"] == 1, divergent["stats"]
+assert divergent["stats"]["hits"] == 2
 
 # The independent edited cold run supplies the exact current-key oracle.
 assert original.count("int { x + 1 }") == 1

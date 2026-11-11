@@ -549,6 +549,16 @@ inventory and report contents remain the differential obligations. The default
 CSV schema and ordering are unchanged. The opt-in CSV sorts by task name so
 replay latency cannot reorder rows.
 
+The total modern CLI and inherited prover/solver input inventory is recorded in
+[241-option-audit.tsv](241-option-audit.tsv). The driver unit drift gate compares
+all names, aliases and runtime types and rejects unclassified additions/removals.
+Input-stage options have already run before the frozen SMT boundary; residual
+execution parameters are additionally encoded through the complete interfaces.
+Report/selection/setup stages execute against the current compilation rather than
+a stored rendered report. Legacy `--boogie` settings either flow into those
+interfaces/actual commands or select a bypassed external profile; the opt-in
+transport is available only on the modern verify command.
+
 The implementation remains draft until the complete local suite/Std comparison,
 negative controls, option-classification drift gate and five-run measurements are
 recorded. The inherited module naming/materialization comparison currently has a

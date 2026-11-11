@@ -101,7 +101,12 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
     RequireOpen();
     var step = new Step(Kind.Ping, "");
     if (mode == Mode.Replay) {
-      Expect(step);
+      try { Expect(step); }
+      catch (CacheReplayMismatchException error) {
+        // Pinned Checker.GoBackToIdle retires a failed checker only on TimeoutException.
+        // Preserve the mismatch flag for our task retry, while releasing its pool slot.
+        throw new TimeoutException("Cached transport cannot return to the checker pool.", error);
+      }
       if (terminalComment) { sealedExchange = true; }
       return;
     }
@@ -204,14 +209,14 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
   public CachePublication CompleteNormally(CacheTaskOutcome outcome, long resourceCount) {
     if (completed) { return CachePublication.Unavailable; }
     completed = true;
-    if (mode == Mode.Replay) {
-      if (replayPosition != replay!.Steps.Length || replay!.Outcome != outcome || replay!.ResourceCount != resourceCount) {
+    if (replay != null) {
+      if (!sealedExchange || replayPosition != replay.Steps.Length || replay.Outcome != outcome || replay.ResourceCount != resourceCount) {
         cacheable = false;
         throw Mismatch();
       }
       return CachePublication.AlreadyPresent;
     }
-    if (!cacheable || descriptor == null || mode != Mode.Live) {
+    if (!cacheable || !sealedExchange || descriptor == null || mode != Mode.Live) {
       return CachePublication.Unavailable;
     }
     try {

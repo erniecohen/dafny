@@ -1,0 +1,114 @@
+using System.Text;
+using System.Text.Json;
+using Microsoft.Boogie;
+using Microsoft.Boogie.SMTLib;
+using Microsoft.Dafny.Caching;
+using Xunit;
+using BplType = Microsoft.Boogie.Type;
+
+namespace Microsoft.Dafny.Test;
+
+public class CachedTaskSolverTests : IDisposable {
+  private readonly string directory = Path.Combine(Path.GetTempPath(), "dafny-exchanges-" + Guid.NewGuid().ToString("N"));
+  private int starts;
+  private static SExpr S(string name, params SExpr[] children) => new(name, children);
+  private CachedTaskSolver Transport(string reason = "unknown") => new(new TaskResultCache(new ContentAddressedCache(directory)),
+    () => Encoding.UTF8.GetBytes("frozen adaptive execution program"), () => {
+      starts++;
+      return new Solver(reason);
+    });
+
+  private static void Setup(CachedTaskSolver transport) {
+    transport.NewProblem("current split");
+    transport.Send("(set-option :timeout 0)");
+    transport.Send("(set-option :rlimit 100)");
+    transport.Send("(assert true)");
+  }
+
+  private static async Task Finish(CachedTaskSolver transport) {
+    transport.Send("; Valid");
+    await transport.PingPong();
+  }
+
+  [Fact]
+  public async Task CompleteExchangeReplaysWithoutStartingAnotherSolver() {
+    var cold = Transport();
+    Setup(cold);
+    Assert.Equal("unsat", (await cold.SendRequest("(check-sat)")).Name);
+    await Finish(cold);
+    Assert.Equal(CachePublication.Stored, cold.CompleteNormally(CacheTaskOutcome.Correct, 17));
+    cold.Close();
+    var warm = Transport();
+    Setup(warm);
+    Assert.Equal("unsat", (await warm.SendRequest("(check-sat)")).Name);
+    await Finish(warm);
+    warm.Close();
+    // Cleanup may have retired a checker before its completion is observed.
+    Assert.Equal(CachePublication.AlreadyPresent, warm.CompleteNormally(CacheTaskOutcome.Correct, 17));
+    Assert.True(warm.Replayed);
+    Assert.Equal(1, starts);
+  }
+
+  [Fact]
+  public async Task DivergenceRetiresTheCheckerBeforeAnOwnerRetriesTheTask() {
+    var cold = Transport();
+    Setup(cold);
+    await cold.SendRequest("(check-sat)");
+    await Finish(cold);
+    cold.CompleteNormally(CacheTaskOutcome.Correct, 17);
+    cold.Close();
+    var warm = Transport();
+    Setup(warm);
+    await warm.SendRequest("(check-sat)");
+    await Assert.ThrowsAsync<CacheReplayMismatchException>(() => warm.SendRequest("(unexpected-command)"));
+    // Pinned Checker.GoBackToIdle catches TimeoutException to free the pool slot.
+    await Assert.ThrowsAsync<TimeoutException>(warm.PingPong);
+    Assert.True(warm.ReplayMismatch);
+    warm.Close();
+    Assert.Equal(1, starts);
+  }
+
+  [Theory]
+  [InlineData("memout")]
+  [InlineData("timeout")]
+  [InlineData("unknown")]
+  public async Task AnEarlierCounterexampleDoesNotHideANonreproducibleLaterQuery(string reason) {
+    var task = Transport(reason);
+    Setup(task);
+    await task.SendRequest("(check-sat)");
+    await task.SendRequest("(get-info :reason-unknown)");
+    await Finish(task);
+    Assert.Equal(CachePublication.Unavailable, task.CompleteNormally(CacheTaskOutcome.Errors, 17));
+    Assert.False(Directory.Exists(Path.Combine(directory, "v1", "results")));
+    task.Close();
+  }
+
+  [Fact]
+  public void UsedTypesOutsideTheInitialInputAndTheirOrderChangeTheTaskKey() {
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    var a = new TypeCtorDecl(Token.NoToken, "UnprunedA", 0);
+    var b = new TypeCtorDecl(Token.NoToken, "UnprunedB", 0);
+    var ta = new CtorType(Token.NoToken, a, new List<BplType>());
+    var tb = new CtorType(Token.NoToken, b, new List<BplType>());
+    byte[] Types(params BplType[] types) => JsonSerializer.SerializeToUtf8Bytes(TaskExecutionEnvironment.EncodeUsedTypes(types, options));
+    var input = Encoding.UTF8.GetBytes("identical initial pruned commands");
+    var first = new TaskCacheDescriptor(input, Types(ta, tb), 100, 0);
+    Assert.NotEqual(first.Key, new TaskCacheDescriptor(input, Types(tb, ta), 100, 0).Key);
+    Assert.NotEqual(first.Key, new TaskCacheDescriptor(input, Types(ta), 100, 0).Key);
+  }
+
+  private sealed class Solver(string reason) : SMTLibSolver {
+    public override event Action<string>? ErrorHandler { add { } remove { } }
+    public override void Close() { }
+    public override void Send(string command) { }
+    public override void NewProblem(string name) { }
+    public override Task PingPong() => Task.CompletedTask;
+    public override void AddErrorHandler(Action<string> handler) { }
+    public override Task<SExpr> SendRequest(string request, CancellationToken cancellationToken = default) =>
+      Task.FromResult(request == "(check-sat)" ? S("unsat") : S(":reason-unknown", S(reason)));
+    public override Task<IReadOnlyList<SExpr>> SendRequestsAndCloseInput(IReadOnlyList<string> requests,
+      CancellationToken cancellationToken = default) => throw new NotSupportedException();
+  }
+
+  public void Dispose() { if (Directory.Exists(directory)) { Directory.Delete(directory, true); } }
+}

@@ -63,12 +63,7 @@ internal sealed class TaskExecutionEnvironment(DafnyOptions options) {
       }
       // UsedTypes inspects all nonimplementation declarations plus this implementation. Preserve
       // the resulting order explicitly, even when a type does not occur in the pruned VC text.
-      manifest["solver.OrderedUsedTypes"] = solver.UsedTypes.Select(type => {
-        if (type.GetType().Assembly != typeof(BplType).Assembly) { throw new NotSupportedException("external Boogie type"); }
-        using var text = new StringWriter(CultureInfo.InvariantCulture);
-        using (var writer = new TokenTextWriter("cache-type", text, false, false, options)) { type.Emit(writer); }
-        return new[] { type.GetType().FullName, text.ToString() };
-      }).ToArray();
+      manifest["solver.OrderedUsedTypes"] = EncodeUsedTypes(solver.UsedTypes, options);
       reason = null;
       return JsonSerializer.SerializeToUtf8Bytes(manifest);
     } catch (Exception e) when (e is NotSupportedException or IOException or UnauthorizedAccessException or
@@ -77,6 +72,14 @@ internal sealed class TaskExecutionEnvironment(DafnyOptions options) {
       return null;
     }
   }
+
+  internal static string?[][] EncodeUsedTypes(IEnumerable<BplType> usedTypes, PrintOptions options) =>
+    usedTypes.Select(type => {
+      if (type.GetType().Assembly != typeof(BplType).Assembly) { throw new NotSupportedException("external Boogie type"); }
+      using var text = new StringWriter(CultureInfo.InvariantCulture);
+      using (var writer = new TokenTextWriter("cache-type", text, false, false, options)) { type.Emit(writer); }
+      return new[] { type.GetType().FullName, text.ToString() };
+    }).ToArray();
 
   private static object? Encode(object? value) {
     if (value == null) { return null; }
