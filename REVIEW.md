@@ -157,8 +157,8 @@ that runs Boogie's own test jobs and packs Boogie's NuGet packages.  The same fi
 is offered to Boogie's master as
 [boogie-org/boogie#1169](https://github.com/boogie-org/boogie/pull/1169).
 
-This branch builds against that fork's release `v3.5.5+review.a7d160a7`, whose
-packages have the version `3.5.5-review.a7d160a7`.  The release carries them with
+This branch builds against that fork's release `v3.5.5+review.c5a9f2ef`, whose
+packages have the version `3.5.5-review.c5a9f2ef`.  The release carries them with
 their sha256 sums, and its `REVIEW.md` says what the fork changes and how its
 version is computed.  Besides that fix, it brings:
 
@@ -179,12 +179,25 @@ version is computed.  Besides that fix, it brings:
 - **Options that are off by default**, and that Dafny does not set:
   `/deterministicLiteralHashes:1`, `/printDefinitionAxiomsInPlace`, `/verifyAsTasks`
   and `/structuralLiterals`.  The fork's `REVIEW.md` describes them.
+- **A fix to a prover's cached background**
+  ([#241](https://github.com/erniecohen/dafny/issues/241)): a `Reset` after a
+  `FullReset` sent the first context's background instead of the current one's.
+  Dafny's task pipeline targets the prover for every split and never reaches that
+  path, so its queries do not change.
+- **Two more options that are off by default**, `/cacheUsedTypes` and
+  `/lockFreeExpansion` ([#241](https://github.com/erniecohen/dafny/issues/241)),
+  which take work out of setting up a prover for each split and change no byte
+  that the solver gets.  On Std with 4 cores they cut CPU by 13.7 to 16.4% with
+  a no-op solver and wall time by 8.6 to 9.4% with Z3 4.12.1, with the same
+  verdicts.  Pass them with `--boogie "/cacheUsedTypes /lockFreeExpansion"`; a
+  program that loads the standard library cannot yet, because its `.doo` records
+  the `--boogie` options it was built with and refuses others.
 
 `a48933e` made this branch build against the fork's packages, at
-`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.a7d160a7`:
+`3.5.5-review.37e4435d`.  It now builds against `3.5.5-review.c5a9f2ef`:
 
 - `Source/DafnyCore/DafnyCore.csproj` names `Boogie.ExecutionEngine`
-  `3.5.5-review.a7d160a7`, and `dotnet-tools.json` names the `boogie` tool at the
+  `3.5.5-review.c5a9f2ef`, and `dotnet-tools.json` names the `boogie` tool at the
   same version;
 - `nuget.config` adds a local package source, `Binaries/boogie-packages`, and maps
   every Boogie package to it and to nothing else, so a missing package stops the
@@ -199,6 +212,12 @@ It moves no verdict of the suite or of the standard library.  Its test,
 the printed program with Boogie, which now reports the error that Dafny reports,
 where it used to verify the program.  Its release note is
 `docs/dev/news/boogie-printed-programs.fix`.
+
+The move from `a7d160a7` to `c5a9f2ef` is also a product change.  Its test,
+`git-issues/github-issue-241-split-setup.dfy`, verifies a program with every
+assertion its own split, with and without both new options, and requires the same
+report and the same SMT-Lib text sent to the solver.  Its release note is
+`docs/dev/news/241-boogie-split-setup.feat`.
 
 **To build this branch, run `sh Scripts/fetch-boogie-packages.sh` once first.**
 CI does so in every job that builds.
