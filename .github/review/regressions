@@ -369,3 +369,6 @@ git-issues/github-issue-241-split-setup.dfy
 
 # Wide JavaScript runtime bitwise results (https://github.com/erniecohen/dafny/issues/246).
 git-issues/git-issue-246.dfy
+
+# Source-only opt-in function operators, clone preservation and negative controls (https://github.com/erniecohen/dafny/issues/194).
+git-issues/github-issue-194.dfy

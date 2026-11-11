@@ -33,6 +33,10 @@ def sha(path):
 def resources(path):
     if not path.exists():
         return None
+    # Existing invalid-logger tests create an empty log before rejecting their
+    # configuration. Retain that exact state rather than inventing a VC vector.
+    if not path.read_bytes():
+        return {'empty_log_sha256': sha(path)}
     data = json.loads(path.read_text())
     return sorted([[d['name'], v['vcNum'], v['outcome'], v['resourceCount']]
                    for d in data.get('verificationResults', []) for v in d.get('vcResults', [])])
