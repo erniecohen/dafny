@@ -831,7 +831,9 @@ fully qualified module identity, original source, Dafny version, effective optio
 and sorted `(dependency role, qualified identity, key)` prerequisite records. It
 does not use `CloneId`, execution order, worker count or the whole-program builtin
 shape. Execution/report destinations are excluded; other option values are
-conservatively included. The key is available on each module output and in the
+conservatively included. Effective legacy fields and backend native-type support
+are also included, since legacy parsing can bypass the modern option dictionary.
+The key is available on each module output and in the
 requested `resolve.module` profile events. `--pipeline-profile` also works with
 `resolve`, allowing resolve-only measurements without solver startup.
 
@@ -839,8 +841,12 @@ Each worker owns its reporter, signature map, class-member tables and builtin
 publication view. A per-resolution catalog interns intrinsic tuple, arrow, array,
 bitvector and pretype definitions under a lock; workers record their own usage.
 First-touch pretype/member initialization finishes before another worker receives
-the definition. The published view and translator input are restricted to the
-module's resolved prerequisite closure. Refinement export signatures are copied:
+the definition. Translation input discovery includes resolved node fields that
+structural `Children` omits, such as conversion targets, original frame lambdas
+and lowered array initializers. Function subset types retain their underlying
+arrow family; resolution-requested bitvector widths are recorded per worker.
+The published view and translator input are restricted to the module's resolved
+prerequisite closure. Refinement export signatures are copied:
 their resolved `Decl` fields cannot be shared with the base or sibling refinements.
 Re-publishing an unchanged declaration does not write its parent's list while
 dependents are reading it.

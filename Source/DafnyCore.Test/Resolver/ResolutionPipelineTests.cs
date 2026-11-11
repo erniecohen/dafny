@@ -69,6 +69,29 @@ public class ResolutionPipelineTests {
     }
   }
 
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task TranslationIncludesLoweredArrayAndConstraintBuiltins(bool refresh) {
+    var (program, reporter) = await Resolve("""
+      module Signatures {
+        predicate P(f: (int, int, int, int) -> int) { true }
+        predicate Q(f: (int, int, int) --> int) { true }
+      }
+      module M {
+        predicate Reads(f: (int, int) -> int) reads {}
+        newtype Octet = x: int | 0 <= x && x < 256
+        newtype Converted = x: int | 0 <= x && x <= (255 as bv8) as int
+        method Arrays() {
+          var a := new int[2, 3]((i, j) => i + j);
+          assert a[0, 0] == 0;
+        }
+      }
+      """, 8, refresh);
+    Assert.Empty(Errors(reporter));
+    Translate(program);
+  }
+
   [Fact]
   public async Task SiblingRefinementsOwnTheirExportSignatures() {
     var (program, reporter) = await Resolve("""
@@ -115,6 +138,24 @@ public class ResolutionPipelineTests {
   }
 
   [Fact]
+  public void EffectiveLegacyOptionsParticipateInTheKey() {
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    options.ApplyDefaultOptionsWithoutSettingsDefault();
+    string Key() => ModuleResolutionKey.Compute("M", "source", "version",
+      ModuleResolutionKey.Options(options), []);
+    var original = Key();
+    options.WarnShadowing = true;
+    Assert.NotEqual(original, Key());
+    options.WarnShadowing = false;
+    options.ForbidNondeterminism = true;
+    Assert.NotEqual(original, Key());
+    options.ForbidNondeterminism = false;
+    Assert.Equal(original, Key());
+    options.Set(CommonOptionBag.ResolutionThreads, 8);
+    Assert.Equal(original, Key());
+  }
+
+  [Fact]
   public void KeyEncodingIsOrderIndependentAndUnambiguous() {
     var options = new[] { KeyValuePair.Create("a", "bc"), KeyValuePair.Create("d", "e") };
     var prerequisites = new[] {
@@ -144,6 +185,8 @@ public class ResolutionPipelineTests {
   private static Dictionary<string, string> Translate(Program program) {
     var result = new Dictionary<string, string>();
     foreach (var module in BoogieGenerator.Translate(program, program.Reporter)) {
+      Assert.Equal(0, module.Item2.Resolve(program.Options));
+      Assert.Equal(0, module.Item2.Typecheck(program.Options));
       var text = new StringWriter();
       using (var writer = new TokenTextWriter(text, program.Options)) {
         module.Item2.Emit(writer);
