@@ -276,7 +276,7 @@ jobs:
 
   default-comparison:
     name: Repeated default suite and standard-library comparison (probe)
-    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.default_comparison || inputs.decreases_order_comparison) && startsWith(github.ref, 'refs/heads/scratch/') }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     steps:
