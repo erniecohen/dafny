@@ -1434,7 +1434,7 @@ axiom (forall m: Map, v: Box :: { Set#IsMember(Map#Values(m), v) }
 // function Map#Items.  Again, we need to define Set#IsMember and Set#Card for this
 // set. Function Map#Items returns a set of pairs, and the axiomatization of pairs is Dafny specific.
 // Therefore, the definition of Map#Items here is to be considered Dafny specific.  Also, note
-// that it relies on the two destructors for 2-tuples.
+// that it relies on the constructor and two destructors for 2-tuples.
 
 function Map#Items(Map) : Set;
 
@@ -1578,7 +1578,7 @@ axiom (forall m: IMap, v: Box :: { IMap#Values(m)[v] }
 // function IMap#Items. Function IMap#Items returns a set of
 // pairs, and the axiomatization of pairs is Dafny specific.  Therefore, the
 // definition of IMap#Items here is to be considered Dafny specific.  Also, note
-// that it relies on the two destructors for 2-tuples.
+// that it relies on the constructor and two destructors for 2-tuples.
 
 function IMap#Items(IMap) : ISet;
 

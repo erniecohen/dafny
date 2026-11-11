@@ -2389,8 +2389,7 @@ namespace Microsoft.Dafny {
             }
           } else if (e.Member is ConstantField { Rhs: { } rhs } && BoogieGenerator.RevealedInScope(e.Member)) {
             // The type arguments are substituted too: the right-hand side is stated in terms of the enclosing
-            // type's type parameters, which are not in scope here (and BplForallTrim may keep a bound
-            // variable's type antecedent, which mentions them).
+            // type's type parameters, which are not in scope here.
             r = CanCallAssumption(Substitute(rhs, e.Obj, new Dictionary<IVariable, Expression>(), e.TypeArgumentSubstitutionsWithParents()),
               options.Get(CommonOptionBag.ConsistentObligationChecks) ? cco : null);
           }
