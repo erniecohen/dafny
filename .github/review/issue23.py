@@ -106,6 +106,7 @@ elif scope == 'focused':
             r = call([ROOT / 'out/before/Dafny', 'verify', sample, '--solver-path', z3,
                       '--prelude', prelude_path, '--filter-symbol', symbol,
                       '--type-system-refresh:' + refresh, '--allow-warnings',
+                      '--relax-definite-assignment', '--allow-deprecation',
                       '--boogie', '/normalizeDeclarationOrder:0', '--boogie', '/restartProver',
                       '--resource-limit', '100000000', '--verification-time-limit', '0', '--cores', '1',
                       '--log-format', 'json;LogFileName=' + str(log)], LIT)
@@ -116,6 +117,7 @@ elif scope == 'focused':
         for encoding in ['a', 'm']:
             log = OUT / (sample.replace('/', '_') + '.' + encoding + '.json')
             r = call([binary, 'verify', sample, '--solver-path', z3,
+                      '--relax-definite-assignment', '--allow-deprecation', '--allow-warnings',
                       '--boogie', '/typeEncoding:' + encoding, '--boogie', '/deterministicLiteralHashes:1',
                       '--boogie', '/restartProver', '--resource-limit', '16000000',
                       '--verification-time-limit', '60', '--cores', '1',
