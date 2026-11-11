@@ -88,9 +88,11 @@ assert all(vc["timingReplayed"] for r in json.loads((destination / "warm.json").
 
 # A well-formed candidate can still diverge after lookup. Rehash the intentionally
 # changed exchange so the lifecycle retry, rather than the checksum check, is tested.
-for index in (cache / "v1/results").glob("*/*/data"):
+divergent_cache = destination / "divergent-cache"
+shutil.copytree(cache, divergent_cache)
+for index in (divergent_cache / "v1/results").glob("*/*/data"):
     entry = json.loads(index.read_text())
-    blob = cache / "v1/blobs/sha256" / entry["Blob"][:2] / entry["Blob"] / "data"
+    blob = divergent_cache / "v1/blobs/sha256" / entry["Blob"][:2] / entry["Blob"] / "data"
     record = json.loads(blob.read_text())
     if record["Outcome"] != 1:  # Errors
         continue
@@ -100,7 +102,7 @@ for index in (cache / "v1/results").glob("*/*/data"):
     record["ReportData"] = base64.b64encode(json.dumps(exchange).encode()).decode()
     payload = json.dumps(record).encode()
     digest = hashlib.sha256(payload).hexdigest()
-    replacement = cache / "v1/blobs/sha256" / digest[:2] / digest / "data"
+    replacement = divergent_cache / "v1/blobs/sha256" / digest[:2] / digest / "data"
     replacement.parent.mkdir(parents=True)
     replacement.write_bytes(payload)
     entry.update(Blob=digest, Length=len(payload))
@@ -108,10 +110,14 @@ for index in (cache / "v1/results").glob("*/*/data"):
     break
 else:
     raise AssertionError("an actual counterexample record is required")
-divergent = run("divergent", expect_keyed=False)
+divergent = run("divergent", divergent_cache, expect_keyed=False)
 same_report(cold, divergent)
 assert divergent["stats"]["fallbacks"] == 1 and divergent["stats"]["solverStarts"] == 1, divergent["stats"]
 assert divergent["stats"]["hits"] == 2
+quarantined = run("quarantined", divergent_cache)
+same_report(cold, quarantined)
+assert quarantined["stats"]["fallbacks"] == 0 and quarantined["stats"]["solverStarts"] == 1
+assert quarantined["stats"]["hits"] == 2
 
 # The independent edited cold run supplies the exact current-key oracle.
 assert original.count("int { x + 1 }") == 1

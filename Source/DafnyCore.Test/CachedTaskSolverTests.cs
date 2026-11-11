@@ -64,8 +64,15 @@ public class CachedTaskSolverTests : IDisposable {
     // Pinned Checker.GoBackToIdle catches TimeoutException to free the pool slot.
     await Assert.ThrowsAsync<TimeoutException>(warm.PingPong);
     Assert.True(warm.ReplayMismatch);
+    warm.Abort();
     warm.Close();
     Assert.Equal(1, starts);
+    var next = Transport();
+    Setup(next);
+    await next.SendRequest("(check-sat)");
+    Assert.False(next.Replayed);
+    Assert.Equal(2, starts);
+    next.Close();
   }
 
   [Theory]

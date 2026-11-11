@@ -229,6 +229,7 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
 
   public void Abort() {
     cacheable = false;
+    if (replay != null && ReplayMismatch && descriptor != null) { cache.Reject(descriptor); }
   }
 
   public override async Task<IReadOnlyList<SExpr>> SendRequestsAndCloseInput(IReadOnlyList<string> requests,

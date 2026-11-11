@@ -29,10 +29,12 @@ public sealed class TaskCacheSession {
   private long hits;
   private long publications;
   private long fallbacks;
+  private long conflicts;
   public long SolverStarts => Interlocked.Read(ref starts);
   public long Hits => Interlocked.Read(ref hits);
   public long Publications => Interlocked.Read(ref publications);
   public long Fallbacks => Interlocked.Read(ref fallbacks);
+  public long Conflicts => Interlocked.Read(ref conflicts);
   public string? LastBypassReason { get; internal set; }
   private readonly TaskExecutionEnvironment environment;
 
@@ -128,6 +130,7 @@ public sealed class TaskCacheSession {
               ExecutionKey = solver.ExecutionKey;
               if (IsReplayed) { Interlocked.Increment(ref session.hits); }
               if (publication == CachePublication.Stored) { Interlocked.Increment(ref session.publications); }
+              if (publication == CachePublication.Conflict) { Interlocked.Increment(ref session.conflicts); }
             } else {
               foreach (var solver in context.Solvers) { solver.Abort(); }
             }

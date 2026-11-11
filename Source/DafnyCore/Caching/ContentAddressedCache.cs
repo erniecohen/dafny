@@ -130,6 +130,12 @@ internal sealed class ContentAddressedCache {
     PublishFile(DisabledPath(table, key), []);
   }
 
+  internal void Quarantine(CacheTable table, string key) {
+    ValidateKey(key);
+    try { Disable(table, key); }
+    catch (Exception exception) when (IsStorageFailure(exception)) { unavailable = true; }
+  }
+
   private static byte[] ReadBounded(string path, int maximumBytes) {
     using var stream = new FileStream(Path.Combine(path, "data"), FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
     var length = stream.Length;

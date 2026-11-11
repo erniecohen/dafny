@@ -526,7 +526,12 @@ checks each current command against that exchange, while pinned Boogie builds
 counterexamples, assertion bindings and coverage using the current task. The
 wrapper withholds `Completed` until the task observable closes, including final
 idle synchronization. Divergence discards all buffered completion data and retries
-`FromSeed` with persistent reads disabled and a fresh solver. A result is published
+`FromSeed` with persistent reads disabled and a fresh solver. Divergent keys are
+quarantined persistently, so a later invocation recomputes without replaying the
+same rejected candidate. The pinned checker's idle cleanup retires failed slots
+through its `TimeoutException` path; the cache wrapper retains a separate mismatch
+flag and retries the entire task, rather than reporting that cleanup as a proof
+timeout. A result is published
 only after normal completion and exact outcome/RU agreement. The terminal comment
 and subsequent idle handshake seal the exchange before a checker can be reused.
 

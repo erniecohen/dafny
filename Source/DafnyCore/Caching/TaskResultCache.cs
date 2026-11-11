@@ -59,6 +59,8 @@ internal sealed class TaskResultCache {
     this.store = store;
   }
 
+  internal void Reject(TaskCacheDescriptor descriptor) => store.Quarantine(CacheTable.VerificationResult, descriptor.Key);
+
   private static bool Reusable(CacheTaskOutcome outcome) =>
     outcome is CacheTaskOutcome.Correct or CacheTaskOutcome.Errors or CacheTaskOutcome.OutOfResource;
 

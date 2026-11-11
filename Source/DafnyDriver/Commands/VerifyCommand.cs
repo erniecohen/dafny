@@ -133,7 +133,7 @@ public static class VerifyCommand {
     if (Caching.TaskCacheSession.TryFor(options) is { } cache) {
       PipelineProfile.For(options)?.Point("result-cache", new Dictionary<string, object?> {
         ["solverStarts"] = cache.SolverStarts, ["solverVersionProbes"] = options.VerificationCacheVersionProbes, ["hits"] = cache.Hits,
-        ["publications"] = cache.Publications, ["fallbacks"] = cache.Fallbacks,
+        ["publications"] = cache.Publications, ["fallbacks"] = cache.Fallbacks, ["conflicts"] = cache.Conflicts,
         ["bypassReason"] = cache.LastBypassReason
       });
     }
