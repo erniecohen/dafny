@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.Dafny.LanguageServer.IntegrationTest.Util;
+using Microsoft.Dafny.LanguageServer.Workspace.Notifications;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using Xunit;
@@ -189,11 +190,12 @@ abstract module B { import [>><A<] }
 
     private async Task<WorkspaceEdit> RequestRename(
       TextDocumentItem documentItem, Position position, string newName) {
-      var resolved = await WaitUntilResolutionFinished(documentItem, CancellationToken);
-      if (!resolved) {
-        var state = await Projects.GetResolvedDocumentAsyncNormalizeUri(documentItem);
-        Assert.Fail(string.Join("\n", state.GetAllDiagnostics().Select(d => $"{d.Uri}: {d.Diagnostic.Message}")));
-      }
+      // Opening a project before its first source can publish an empty-project
+      // status. Check the current state used by the rename handler itself.
+      var state = await Projects.GetResolvedDocumentAsyncNormalizeUri(documentItem);
+      Assert.NotNull(state);
+      Assert.True(state.Status == CompilationStatus.ResolutionSucceeded,
+        string.Join("\n", state.GetAllDiagnostics().Select(d => $"{d.Uri}: {d.Diagnostic.Message}")));
       return await client.RequestRename(
         new RenameParams {
           TextDocument = documentItem.Uri,
