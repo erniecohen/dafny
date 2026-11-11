@@ -75,9 +75,9 @@ env:
 
 jobs:
   build:
-    if: ${{ !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/'))) }}
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/'))) }}
     name: Build (Release)
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 60
     outputs:
       revision: ${{ steps.version.outputs.revision }}
@@ -1329,4 +1329,57 @@ jobs:
         with:
           name: parity-${{ matrix.platform }}-resolver-tests
           path: parity-results
+          retention-days: 90
+
+  parity-report:
+    name: Platform parity report (probe)
+    needs: [parity-build-linux, parity-build-macos, parity-suite-linux, parity-suite-macos, parity-stdlib-linux, parity-stdlib-macos, parity-regressions, parity-resolver-tests]
+    if: ${{ !cancelled() && github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform_parity }}
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: parity-*-verdicts-*
+          path: parity-artifacts
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: parity-*-regressions
+          path: parity-artifacts
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: parity-*-resolver-tests
+          path: parity-artifacts
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const run = await github.rest.actions.getWorkflowRun({
+              ...context.repo, run_id: context.runId
+            });
+            const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+              ...context.repo, run_id: context.runId, per_page: 100
+            });
+            require('fs').writeFileSync('parity-run.json', JSON.stringify({
+              headSha: run.data.head_sha, url: run.data.html_url,
+              jobs: jobs.map(job => ({name: job.name, conclusion: job.conclusion,
+                startedAt: job.started_at, completedAt: job.completed_at, steps: job.steps}))
+            }));
+      - name: Record verdicts, resources, completeness and job wall times
+        run: |
+          python3 -m unittest discover -s .github/review -p test_platform_parity.py
+          status=0
+          python3 .github/review/platform-parity.py parity-artifacts parity-run.json platform-parity || status=$?
+          echo "Comparison process exit: $status (probe only)" >> "$GITHUB_STEP_SUMMARY"
+          cat platform-parity/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: platform-parity-report
+          path: |
+            platform-parity
+            parity-run.json
           retention-days: 90

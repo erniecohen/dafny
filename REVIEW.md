@@ -355,10 +355,42 @@ once with Z3 5.1.0 and once with the Z3 that the tree's own tests expect (4.12.1
 this branch), and reports each declaration's verdict.  It also runs the tests named in `.github/review/regressions` in
 upstream's own harness.  On a tag it attaches self-contained binaries for `linux-x64` and `osx-arm64`
 to a GitHub release, with their sha256 sums.  The `osx-arm64` binary and the release
-itself are built on the owner's self-hosted Mac runner (label `mac-studio`), which only
-runs tag and manually dispatched jobs of this repository
-(https://github.com/erniecohen/dafny/issues/256).  `.github/review/release-macos.sh`
-remains as a manual fallback.
+itself are built on the self-hosted Apple-silicon pool (label `mac-studio`).
+The framework-dependent build and artifact reports also use this pool. Every
+self-hosted job has an explicit repository/event guard: only pushes, manual
+runs, or pull requests whose head repository is `erniecohen/dafny` are admitted.
+Fork pull requests skip these jobs. The obligation-proof matrix, resolution-only
+census and pipeline probe have separate hosted fallbacks for other events,
+including the obligation matrix's weekly schedule.
+
+The suite and standard-library verdict gates remain on hosted Linux pending
+platform parity. A manual `review.yml` run with `platform_parity: true` builds
+both platforms at the dispatch's exact commit, runs every suite shard with
+additional axioms off and on, and verifies the library under both solvers in
+both modes. It also records regression-harness and resolver-unit-test results.
+The `platform-parity-report` artifact compares verdict columns, per-program
+sums of suite resource counts, individual proof batches, and library declaration
+resource counts. It includes the number of differing entries, the maximum
+absolute difference in resource units, detailed differences and job wall times.
+Missing observations are reported as incomplete evidence. The probe records
+expected failures without changing any baseline or failing the workflow.
+
+Only identical verdicts **and** resource counts permit moving proof gates.
+Equal verdicts with different resource counts require an owner decision before
+routing changes; different verdicts keep the gates on Linux. The frozen
+repeated-default-comparison experiment stays on Linux because it pins a Linux
+runtime and measures that environment. Self-contained `linux-x64` binaries
+also stay on Linux for their execution smoke test.
+
+Jobs in the shared pool set `DOTNET_PROCESSOR_COUNT=4`; suite shards use four
+single-core verifier processes and library jobs use `--cores 4`. This bounds
+ordinary build and test scheduling to about four cores per runner. Solver
+archives for both platforms and harness versions 4.12.1 and 4.16.0 are pinned
+in `.github/review/setup-z3.sh`. CI installs Java explicitly, and the shared
+framework-dependent artifact launches its managed assembly through `dotnet`
+on either operating system. No product source or verdict baseline changes.
+See https://github.com/erniecohen/dafny/issues/256.
+`.github/review/release-macos.sh` remains as a manual fallback.
 
 ### Expected verdicts
 

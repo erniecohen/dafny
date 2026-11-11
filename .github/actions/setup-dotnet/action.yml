@@ -1,8 +1,12 @@
 name: Set up fork build SDK
-description: Install an isolated .NET 10 SDK and only the .NET 8 runtime for generated C# programs
+description: Install the isolated .NET build SDK, generated-program runtime and Java build dependency
 runs:
   using: composite
   steps:
+    - uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '17'
     - uses: actions/setup-dotnet@v4
       env:
         DOTNET_INSTALL_DIR: ${{ runner.temp }}/dafny-dotnet

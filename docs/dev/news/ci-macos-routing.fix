@@ -1,0 +1,1 @@
+CI can use guarded self-hosted Apple-silicon runners for trusted repository events, with checksum-pinned solvers and an explicit Linux/macOS verdict and resource parity probe before moving proof gates.
