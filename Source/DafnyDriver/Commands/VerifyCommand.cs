@@ -24,6 +24,8 @@ public static class VerifyCommand {
     OptionRegistry.RegisterOption(FilterSymbol, OptionScope.Cli);
     OptionRegistry.RegisterOption(FilterPosition, OptionScope.Cli);
     OptionRegistry.RegisterOption(FilterPositionBatch, OptionScope.Cli);
+    OptionRegistry.RegisterOption(VerificationModuleWindow, OptionScope.Cli);
+    OptionRegistry.RegisterOption(VerificationModuleWindowMemory, OptionScope.Cli);
     OptionRegistry.RegisterOption(PerformanceStatisticsOption, OptionScope.Cli);
   }
 
@@ -45,6 +47,16 @@ public static class VerifyCommand {
     AllowMultipleArgumentsPerToken = false
   };
 
+  public static readonly Option<uint> VerificationModuleWindow = new("--verification-module-window", () => 1,
+    "Keep up to the given number of modules in verification at once. With 1, the default, a module's symbols all finish before the next module's are started. A larger value lets the translation and verification of later modules overlap with earlier ones; results, diagnostics and progress are still reported in the same order, and solver capacity is still set by --cores. A module is admitted only while the managed heap is below --verification-module-window-memory.") {
+    ArgumentHelpName = "count"
+  };
+
+  public static readonly Option<uint> VerificationModuleWindowMemory = new("--verification-module-window-memory", () => 0,
+    "With --verification-module-window greater than 1, admit another module only while the managed heap, including garbage not yet collected, is below this many MiB, or when no module is in verification. 0, the default, means half of the memory available to the process.") {
+    ArgumentHelpName = "MiB"
+  };
+
   public static Command Create() {
     var result = new Command("verify", "Verify the program.");
     result.AddArgument(DafnyCommands.FilesArgument);
@@ -61,6 +73,8 @@ public static class VerifyCommand {
         FilterSymbol,
         FilterPosition,
         FilterPositionBatch,
+        VerificationModuleWindow,
+        VerificationModuleWindowMemory,
         DafnyFile.DoNotVerifyDependencies
       }.Concat(DafnyCommands.VerificationOptions).
       Concat(DafnyCommands.ConsoleOutputOptions).
