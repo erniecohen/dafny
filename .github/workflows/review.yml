@@ -235,9 +235,38 @@ jobs:
           path: comparison
           retention-days: 90
 
+  resolution-baseline:
+    name: Build pre-resolution-option control
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 428e348b0b125cb67505f03a0026b3f497f98e48
+          path: resolution-baseline-source
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build fixed control with the same toolchain and dependencies
+        working-directory: resolution-baseline-source
+        run: |
+          sh Scripts/fetch-boogie-packages.sh
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false
+          git rev-parse HEAD > out/dafny/resolution-control-source.txt
+          tar -C out -czf resolution-baseline.tar.gz dafny
+      - uses: actions/upload-artifact@v4
+        with:
+          name: resolution-baseline
+          path: resolution-baseline-source/resolution-baseline.tar.gz
+          retention-days: 14
+
   parallel-resolution:
     name: Parallel resolution (${{ matrix.part }})
-    needs: build
+    needs: [build, resolution-baseline]
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     strategy:
@@ -250,35 +279,34 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: dafny
-      - name: Unpack Dafny
-        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
+      - uses: actions/download-artifact@v4
+        with:
+          name: resolution-baseline
+      - name: Unpack both builds
+        run: |
+          mkdir -p out resolution-control
+          tar -C out -xzf dafny.tar.gz
+          tar -C resolution-control -xzf resolution-baseline.tar.gz
       - name: Pinned solver
         run: |
           curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
           echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
           unzip -q z3.zip
           echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
-      - name: Verify and compare with default verdicts
+      - name: Capture fixed control, option off, and N=1,2,4,8
         run: |
-          mkdir parallel-results
-          if [ '${{ matrix.part }}' = stdlib ]; then
-            python3 .github/review/std-verdicts.py run Source/DafnyStandardLibraries "$PWD/out/dafny/Dafny" "$Z3" parallel-results/verdicts.tsv \
-              --resolution-threads 8 --measurements parallel-results/measurements
-            python3 .github/review/std-verdicts.py compare .github/review/expected-std-verdicts-z3-5.1.0.tsv parallel-results/verdicts.tsv
-          else
-            L=Source/IntegrationTests/TestFiles/LitTests/LitTest
-            python3 .github/review/lit-verdicts.py plan "$L" parallel-results/plan.tsv
-            python3 .github/review/lit-verdicts.py run parallel-results/plan.tsv "$L" "$PWD/out/dafny/Dafny" "$Z3" parallel-results/verdicts.tsv \
-              --shard '${{ matrix.part }}/4' --jobs 4 --resolution-threads 8 --measurements parallel-results/measurements
-            python3 - '${{ matrix.part }}' <<'PY'
-          import sys
-          from pathlib import Path
-          plan = [line.split('\t')[0] for line in Path('parallel-results/plan.tsv').read_text().splitlines()]
-          selected = set(plan[int(sys.argv[1])::4])
-          rows = Path('.github/review/expected-verdicts.tsv').read_text().splitlines()
-          Path('parallel-results/expected.tsv').write_text(''.join(row + '\n' for row in rows if row.split('\t')[0] in selected))
-          PY
-            python3 .github/review/lit-verdicts.py compare parallel-results/expected.tsv parallel-results/verdicts.tsv
+          python3 .github/review/resolution-comparison.py capture --part '${{ matrix.part }}' \
+            --baseline "$PWD/resolution-control/dafny/Dafny" --dafny "$PWD/out/dafny/Dafny" --z3 "$Z3" --output parallel-results
+      - name: Check default preservation, worker invariance, and reviewed opt-in baseline
+        run: |
+          expected=.github/review/expected-resolution-suite.tsv
+          if [ '${{ matrix.part }}' = stdlib ]; then expected=.github/review/expected-std-resolution-z3-5.1.0.tsv; fi
+          python3 .github/review/resolution-comparison.py compare --part '${{ matrix.part }}' --output parallel-results --expected "$expected"
+      - name: Measure three seeds for scopes with changed outcomes
+        if: always()
+        run: |
+          if [ -f parallel-results/report.json ]; then
+            python3 .github/review/resolution-comparison.py variance --part '${{ matrix.part }}' --dafny "$PWD/out/dafny/Dafny" --output parallel-results
           fi
       - uses: actions/upload-artifact@v4
         if: always()
@@ -286,6 +314,7 @@ jobs:
           name: parallel-resolution-${{ matrix.part }}
           path: parallel-results
           retention-days: 90
+          compression-level: 9
 
   verification-batch:
     name: Resolve-once verification batch controls
@@ -445,6 +474,8 @@ jobs:
         run: python3 -m unittest discover -s .github/review -p test_additional_axioms.py
       - name: Test matrix runner
         run: python3 -m unittest discover -s .github/review -p test_resolver_matrix.py
+      - name: Test fail-closed resolution comparison controls
+        run: python3 -m unittest discover -s .github/review -p test_resolution_comparison.py
       - name: Resolve manifest in both modes
         env:
           PROBE: ${{ inputs.resolver_probe }}

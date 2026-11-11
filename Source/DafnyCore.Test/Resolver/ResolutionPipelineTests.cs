@@ -33,7 +33,7 @@ public class ResolutionPipelineTests {
     Assert.Empty(Errors(reporter));
     var expected = Translate(baseline);
     var keys = Keys(baseline);
-    foreach (var count in new[] { 2, 8, 8 }) {
+    foreach (var count in new[] { 2, 4, 8, 8 }) {
       var (program, actualReporter) = await Resolve(Source, count, refresh);
       Assert.Empty(Errors(actualReporter));
       Assert.Equal(keys, Keys(program));
@@ -52,6 +52,14 @@ public class ResolutionPipelineTests {
     Assert.Empty(Errors(reporter));
     Assert.Equal(Keys(before)["_module.M"], Keys(after)["_module.M"]);
     Assert.Equal(expected, Translate(after).Single(p => p.Key == "M").Value);
+    var (alone, aloneReporter) = await Resolve(Source[..Source.IndexOf("module W", StringComparison.Ordinal)], 4, refresh);
+    Assert.Empty(Errors(aloneReporter));
+    Assert.Equal(Keys(before)["_module.M"], Keys(alone)["_module.M"]);
+    Assert.Equal(expected, Translate(alone).Single(p => p.Key == "M").Value);
+    var (changed, changedReporter) = await Resolve(Source.Replace("bv13", "bv29"), 2, refresh);
+    Assert.Empty(Errors(changedReporter));
+    Assert.Equal(Keys(before)["_module.M"], Keys(changed)["_module.M"]);
+    Assert.Equal(expected, Translate(changed).Single(p => p.Key == "M").Value);
   }
 
   [Theory]
@@ -62,7 +70,7 @@ public class ResolutionPipelineTests {
     var (baseline, baselineReporter) = await Resolve(source, 0, refresh);
     var expected = Errors(baselineReporter);
     Assert.NotEmpty(expected);
-    foreach (var count in new[] { 1, 2, 8 }) {
+    foreach (var count in new[] { 1, 2, 4, 8 }) {
       var (program, reporter) = await Resolve(source, count, refresh);
       Assert.Equal(expected, Errors(reporter));
       Assert.Null(program.CardinalityValidationReceipt);
