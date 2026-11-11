@@ -177,6 +177,7 @@ public class ProgramResolver {
           try {
             using var names = new ModuleNamingScope(declarations[index].FullName);
             var builtins = new SystemModuleManager(initialBuiltins, catalog);
+            builtins.Bitwidths.Clear();
             var workerProgram = new Program(Program.FullName, Program.DefaultModule, builtins,
               new BatchErrorReporter(Options), Program.Compilation) { ModuleSigs = new() };
             foreach (var file in Program.Files) { workerProgram.Files.Add(file); }
@@ -202,6 +203,7 @@ public class ProgramResolver {
             var resolved = worker.ResolveModuleDeclaration(Program.Compilation, declarations[index]);
             var translationInputs = new ModuleTranslationInputs(resolved.ErrorReporter.HasErrors ? null : declarations[index],
               closure.Select(i => results[i].TranslationInputs));
+            translationInputs.Bitwidths.UnionWith(builtins.Bitwidths);
             builtins.RestrictResolutionOutput(translationInputs);
             foreach (var definition in resolved.Signatures.Keys) {
               translationInputs.ModuleNames.Add(definition.FullName);
