@@ -259,6 +259,9 @@ public class ProgramResolver {
     if (module.Implements != null) {
       var refinementTarget = module.Implements.Target;
       bool res = bindings.ResolveQualifiedModuleIdRootRefines(literalDecl.ModuleDef, refinementTarget, out var other);
+      if (res) {
+        other = SkipEnclosingModules(refinementTarget, other);
+      }
       refinementTarget.Root = other;
       if (!res) {
         Reporter.Error(MessageSource.Resolver, refinementTarget.RootToken(),
@@ -287,6 +290,7 @@ public class ProgramResolver {
       }
     }
 
+    enclosingModules.Add(literalDecl);
     foreach (var toplevel in module.TopLevelDecls) {
       if (toplevel is not ModuleDecl moduleDecl) {
         continue;
@@ -306,6 +310,57 @@ public class ProgramResolver {
           moduleDecl.Name);
       }
     }
+    enclosingModules.RemoveAt(enclosingModules.Count - 1);
+  }
+
+  /// <summary>
+  /// The literal modules that enclose the module declaration being processed, outermost first.
+  /// </summary>
+  private readonly List<LiteralModuleDecl> enclosingModules = new();
+
+  /// <summary>
+  /// The root of a qualified module id, as found by the lexical lookup, may be a module that encloses
+  /// the qualified id, as A does in "module A.C refines A.B" and in "module A { module C { import A.B } }".
+  /// Every enclosing module depends on the modules nested in it, so a dependency on the root would always
+  /// be a cycle.  Instead, the components that name enclosing modules are skipped: the next component is
+  /// looked up among the literal modules declared in the enclosing module, which is the lookup that the
+  /// same name gets lexically from inside that module, and the dependency is on the module found.
+  /// The skipping stops at the first component that does not name an enclosing module, at the last
+  /// component, and at a component that is not a literal module of the enclosing one (an import, an
+  /// export set, or a missing name).  If it stops at an enclosing module, the dependency is a genuine
+  /// cycle, and the root is left as the lexical lookup found it.  Only qualified ids that previously
+  /// always gave a cycle error are affected.
+  /// Only with --ancestor-qualified-module-ids; without it, the root is returned unchanged.
+  /// Sets qid.RootIndex and returns the new root.
+  /// </summary>
+  private ModuleDecl SkipEnclosingModules(ModuleQualifiedId qid, ModuleDecl root) {
+    if (!Options.Get(CommonOptionBag.AncestorQualifiedModuleIds)) {
+      qid.RootIndex = 0;
+      return root;
+    }
+    var index = 0;
+    var current = root;
+    while (index + 1 < qid.Path.Count && IsEnclosingModule(current)) {
+      var nextName = qid.Path[index + 1].Value;
+      var next = ((LiteralModuleDecl)current).ModuleDef.TopLevelDecls.OfType<LiteralModuleDecl>()
+        .FirstOrDefault(d => d.Name == nextName);
+      if (next == null) {
+        break;
+      }
+      current = next;
+      index++;
+    }
+    if (IsEnclosingModule(current)) {
+      // still a genuine cycle: keep the root, and so the error message, that the lexical lookup gave
+      qid.RootIndex = 0;
+      return root;
+    }
+    qid.RootIndex = index;
+    return current;
+  }
+
+  private bool IsEnclosingModule(ModuleDecl decl) {
+    return decl is LiteralModuleDecl literal && enclosingModules.Any(m => ReferenceEquals(m, literal));
   }
 
   private void ProcessDependencies(ModuleDecl moduleDecl, ModuleBindings bindings,
@@ -320,6 +375,7 @@ public class ProgramResolver {
         //        if (!bindings.TryLookupFilter(alias.TargetQId.rootToken(), out root, m => alias != m)
         Reporter.Error(MessageSource.Resolver, aliasDecl.TargetQId.Origin, ModuleNotFoundErrorMessage(0, aliasDecl.TargetQId.Path));
       } else {
+        root = SkipEnclosingModules(aliasDecl.TargetQId, root);
         aliasDecl.TargetQId.Root = root;
         declarationPointers.AddOrUpdate(root, v => aliasDecl.TargetQId.Root = v, Util.Concat);
         dependencies.AddEdge(aliasDecl, root);
@@ -330,6 +386,7 @@ public class ProgramResolver {
         //  m => abs != m && (((abs.EnclosingModuleDefinition == m.EnclosingModuleDefinition) && (abs.Exports.Count == 0)) || m is LiteralModuleDecl)))
         Reporter.Error(MessageSource.Resolver, abstractDecl.Origin, ModuleNotFoundErrorMessage(0, abstractDecl.QId.Path));
       } else {
+        root = SkipEnclosingModules(abstractDecl.QId, root);
         abstractDecl.QId.Root = root;
         declarationPointers.AddOrUpdate(root, v => abstractDecl.QId.Root = v, Util.Concat);
         dependencies.AddEdge(abstractDecl, root);

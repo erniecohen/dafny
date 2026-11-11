@@ -667,7 +667,7 @@ Std Std.Base64.DecodeValidEncodeUnpadded (well-formedness)	Correct
 Std Std.Base64.DecodeValidPartialsFrom1PaddedSeq (correctness)	Correct		
 Std Std.Base64.DecodeValidPartialsFrom1PaddedSeq (well-formedness)	Correct		
 Std Std.Base64.DecodeValidPartialsFrom2PaddedSeq (correctness)	Correct		
-Std Std.Base64.DecodeValidPartialsFrom2PaddedSeq (well-formedness)	OutOfResource		
+Std Std.Base64.DecodeValidPartialsFrom2PaddedSeq (well-formedness)	Correct		
 Std Std.Base64.DecodeValidUnpaddedPartialFrom1PaddedSeq (correctness)	Correct		
 Std Std.Base64.DecodeValidUnpaddedPartialFrom1PaddedSeq (well-formedness)	OutOfResource		
 Std Std.Base64.Encode1Padding (well-formedness)	Correct		
@@ -1475,7 +1475,7 @@ Std Std.JSON.ZeroCopy.Deserializer.Sequences.Bracketed (well-formedness)	Correct
 Std Std.JSON.ZeroCopy.Deserializer.Sequences.BracketedFromParts (well-formedness)	Correct		
 Std Std.JSON.ZeroCopy.Deserializer.Sequences.BracketedSpec (well-formedness)	Correct		
 Std Std.JSON.ZeroCopy.Deserializer.Sequences.Close (well-formedness)	Correct		
-Std Std.JSON.ZeroCopy.Deserializer.Sequences.Elements (well-formedness)	Correct		
+Std Std.JSON.ZeroCopy.Deserializer.Sequences.Elements (well-formedness)	OutOfResource		
 Std Std.JSON.ZeroCopy.Deserializer.Sequences.Open (well-formedness)	Correct		
 Std Std.JSON.ZeroCopy.Deserializer.Sequences.SEPARATOR (well-formedness)	Correct		
 Std Std.JSON.ZeroCopy.Deserializer.Sequences.SuffixedElementsSpec (well-formedness)	Correct		
@@ -1658,7 +1658,7 @@ Std Std.Producers.ConcatenatedProducer.Fill (well-formedness)	Correct
 Std Std.Producers.ConcatenatedProducer.ForEach (correctness)	Correct		
 Std Std.Producers.ConcatenatedProducer.ForEach (override check)	Correct		
 Std Std.Producers.ConcatenatedProducer.ForEach (well-formedness)	Correct		
-Std Std.Producers.ConcatenatedProducer.Invoke (correctness)	OutOfResource		
+Std Std.Producers.ConcatenatedProducer.Invoke (correctness)	Correct		
 Std Std.Producers.ConcatenatedProducer.Invoke (override check)	Correct		
 Std Std.Producers.ConcatenatedProducer.Invoke (well-formedness)	Correct		
 Std Std.Producers.ConcatenatedProducer.ProducedCount (override check)	Correct		
@@ -2190,7 +2190,7 @@ TargetSpecific-py Std.FileIO.WriteUTF8ToFile (correctness)	Correct
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (correctness)	Correct		
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (well-formedness)	Correct		
 TargetSpecific-py Std.PythonConcurrent.MutableMap.Get (well-formedness)	Correct		
-run Std	4	7731 verified, 2 errors, 13 out of resource	src/Std/Actions/Producers.dfy(1678,37) src/Std/Actions/Producers.dfy(1680,20) src/Std/Arithmetic/DivMod.dfy(879,8) src/Std/Arithmetic/DivMod.dfy(922,8) src/Std/Arithmetic/LittleEndianNat.dfy(50,30) src/Std/Arithmetic/Mul.dfy(154,22) src/Std/Base64.dfy(1129,73) src/Std/Base64.dfy(1184,8) src/Std/Collections/Seq.dfy(1010,11) src/Std/Collections/Seq.dfy(1042,8) src/Std/JSON/ZeroCopy/Deserializer.dfy(998,59) src/Std/Termination.dfy(125,17) src/Std/Termination.dfy(134,17) src/Std/Unicode/UnicodeEncodingForm.dfy(133,11) src/Std/Unicode/UnicodeStringsWithUnicodeChar.dfy(30,4)
+run Std	4	7733 verified, 2 errors, 11 out of resource	src/Std/Arithmetic/DivMod.dfy(879,8) src/Std/Arithmetic/DivMod.dfy(922,8) src/Std/Arithmetic/LittleEndianNat.dfy(50,30) src/Std/Arithmetic/Mul.dfy(154,22) src/Std/Base64.dfy(1129,73) src/Std/Collections/Seq.dfy(1010,11) src/Std/Collections/Seq.dfy(1042,8) src/Std/JSON/ZeroCopy/Deserializer.dfy(387,16) src/Std/JSON/ZeroCopy/Deserializer.dfy(998,59) src/Std/Termination.dfy(125,17) src/Std/Termination.dfy(134,17) src/Std/Unicode/UnicodeEncodingForm.dfy(133,11) src/Std/Unicode/UnicodeStringsWithUnicodeChar.dfy(30,4)
 run TargetSpecific-cs	0	15 verified, 0 errors	
 run TargetSpecific-go	0	16 verified, 0 errors	
 run TargetSpecific-java	0	15 verified, 0 errors	

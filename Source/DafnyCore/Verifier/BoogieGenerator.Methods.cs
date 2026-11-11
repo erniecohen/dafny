@@ -532,6 +532,10 @@ namespace Microsoft.Dafny {
       // for a function in a class C that overrides a function in a trait J, add an axiom that connects J.F and C.F
       if (f.OverriddenFunction != null) {
         sink.AddTopLevelDeclaration(FunctionOverrideAxiom(f.OverriddenFunction, f));
+        if (options.Get(CommonOptionBag.AdditionalAxioms) && !f.OverriddenFunction.IsFuelAware() && f.IsFuelAware()) {
+          // An instance of the override axiom at the layer that calls use, $LS($LZ); see FunctionOverrideAxiom.
+          sink.AddTopLevelDeclaration(FunctionOverrideAxiom(f.OverriddenFunction, f, callLayer: true));
+        }
       }
 
       // supply the connection between least/greatest predicates and prefix predicates
@@ -667,6 +671,14 @@ namespace Microsoft.Dafny {
       var wfOptions = new WFOptions();
       foreach (Expression p in m.Decreases.Expressions) {
         CheckWellformed(p, wfOptions, localVariables, builder, etran);
+      }
+      if (options.Get(CommonOptionBag.ModularTermination)) {
+        foreach (var p in ModularTermination.DeclaredGlobalBound(m) ?? []) {
+          CheckWellformed(p, wfOptions, localVariables, builder, etran);
+        }
+        foreach (var p in ModularTermination.CallbackClauses(m.Decreases.Attributes).SelectMany(a => a.Args.Skip(1))) {
+          CheckWellformed(p, wfOptions, localVariables, builder, etran);
+        }
       }
 
       if (m is not TwoStateLemma) {
@@ -1294,7 +1306,7 @@ namespace Microsoft.Dafny {
     /// parameter to FunctionAxiom, which will add 'dtype(this) == class.C' as an additional antecedent) for a
     /// body of 'C.F(this, x#0)'.
     /// </summary>
-    private Boogie.Axiom FunctionOverrideAxiom(Function f, Function overridingFunction) {
+    private Boogie.Axiom FunctionOverrideAxiom(Function f, Function overridingFunction, bool callLayer = false) {
       Contract.Requires(f != null);
       Contract.Requires(overridingFunction != null);
       Contract.Requires(Predef != null);
@@ -1355,6 +1367,13 @@ namespace Microsoft.Dafny {
         // We can't use a bound variable $fuel, because then one of the triggers won't be mentioning this $fuel.
         // Instead, we do the next best thing: use the literal $LZ.
         layer = new Boogie.IdentifierExpr(f.Origin, "$LZ", Predef.LayerType); // $LZ
+        if (callLayer) {
+          // Under --additional-axioms, a second instance uses $LS($LZ), the layer of a call with default fuel, so that a
+          // fact about such a call of the overriding function reaches the overridden function
+          // (https://github.com/erniecohen/dafny/issues/103).  It follows from the $LZ instance and the fuel axiom
+          // F($LS(ly), ...) == F(ly, ...) at ly := $LZ.
+          layer = FunctionCall(f.Origin, BuiltinFunction.LayerSucc, null, layer); // $LS($LZ)
+        }
       }
 
       if (f.IsOpaque || f.IsMadeImplicitlyOpaque(options)) {
@@ -1467,7 +1486,8 @@ namespace Microsoft.Dafny {
       // The axiom
       Boogie.Expr ax = BplForall(f.Origin, [], forallFormals, null, tr,
         BplImp(ante, BplAnd(canCallImp, synonyms)));
-      var comment = $"override axiom for {f.FullSanitizedName} in {overridingFunction.EnclosingClass.WhatKind} {overridingFunction.EnclosingClass.FullSanitizedName}";
+      var comment = $"override axiom for {f.FullSanitizedName} in {overridingFunction.EnclosingClass.WhatKind} {overridingFunction.EnclosingClass.FullSanitizedName}" +
+                    (callLayer ? ", at the call layer $LS($LZ) (additional axioms)" : "");
       return new Boogie.Axiom(f.Origin, ax, comment);
     }
 
@@ -1576,14 +1596,24 @@ namespace Microsoft.Dafny {
 
     private void AddOverrideTerminationChk(ICallable original, ICallable overryd, BoogieStmtListBuilder builder, ExpressionTranslator etran,
       Dictionary<IVariable, Expression> substMap, Dictionary<TypeParameter, Type> typeMap) {
+      AddOverrideTerminationChk(original, overryd, overryd.Decreases.Expressions, original.Decreases.Expressions,
+        builder, etran, substMap, typeMap);
+      // Under --modular-termination, an override's global bound may be no greater than its parent's.
+      if (options.Get(CommonOptionBag.ModularTermination) &&
+          ModularTermination.DeclaredGlobalBound(original) is { } originalBound && GlobalBound(overryd) is { } overriddenBound) {
+        AddOverrideTerminationChk(original, overryd, overriddenBound, originalBound, builder, etran, substMap, typeMap, true);
+      }
+    }
+
+    private void AddOverrideTerminationChk(ICallable original, ICallable overryd,
+      List<Expression> contextDecreases, List<Expression> calleeDecreases, BoogieStmtListBuilder builder, ExpressionTranslator etran,
+      Dictionary<IVariable, Expression> substMap, Dictionary<TypeParameter, Type> typeMap, bool globalBounds = false) {
       Contract.Requires(original != null);
       Contract.Requires(overryd != null);
       Contract.Requires(builder != null);
       Contract.Requires(etran != null);
       Contract.Requires(substMap != null);
       // Note, it is as if the trait's method is calling the class's method.
-      var contextDecreases = overryd.Decreases.Expressions;
-      var calleeDecreases = original.Decreases.Expressions;
       var T = (TraitDecl)((MemberDecl)overryd).EnclosingClass;
       var I = (TopLevelDeclWithMembers)((MemberDecl)original).EnclosingClass;
 
@@ -1649,7 +1679,9 @@ namespace Microsoft.Dafny {
         contextDecreases.Select(sub.Substitute).ToList(),
         calleeDecreases,
         true);
-      var desc = new TraitDecreases(original.WhatKind, assertedExpr);
+      ProofObligationDescription desc = globalBounds
+        ? new TraitGlobalDecreases(original.WhatKind, assertedExpr)
+        : new TraitDecreases(original.WhatKind, assertedExpr);
       builder.Add(Assert(original.Origin, decrChk, desc, builder.Context));
     }
 

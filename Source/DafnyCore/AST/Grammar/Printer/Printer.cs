@@ -1159,6 +1159,10 @@ NoGhost - disable printing of functions, ghost methods, and proof
       if (printMode == PrintModes.NoGhostOrIncludes) {
         return;
       }
+      if (ModularTermination.GlobalClauses(decs.Attributes).Any() || PrintsCallbackClauses(decs.Attributes)) {
+        PrintDecreasesSpecWithGlobalClauses(decs, indent);
+        return;
+      }
       if (decs.Expressions != null && decs.Expressions.Count != 0) {
         wr.WriteLine();
         Indent(indent);
@@ -1167,6 +1171,57 @@ NoGhost - disable printing of functions, ghost methods, and proof
         });
         wr.Write(" ");
         PrintExpressionList(decs.Expressions, true);
+      }
+    }
+
+    /// <summary>
+    /// Prints each global bound (--modular-termination) as its own "decreases {:global} E" clause,
+    /// then the ordinary decreases clause with the remaining attributes.
+    /// </summary>
+    private void PrintDecreasesSpecWithGlobalClauses(Specification<Expression> decs, int indent) {
+      foreach (var global in ModularTermination.GlobalClauses(decs.Attributes).Reverse()) {
+        wr.WriteLine();
+        Indent(indent);
+        wr.Write($"decreases {{:{ModularTermination.GlobalAttributeName}}} ");
+        PrintExpressionList(global.Args, true);
+      }
+      foreach (var callback in PrintsCallbackClauses(decs.Attributes) ? ModularTermination.CallbackClauses(decs.Attributes).Reverse() : []) {
+        wr.WriteLine();
+        Indent(indent);
+        wr.Write($"decreases {{:{ModularTermination.CallbackAttributeName} ");
+        PrintExpression(callback.Args[0], false);
+        wr.Write("} ");
+        PrintExpressionList(callback.Args.Skip(1).ToList(), true);
+      }
+      if (decs.Expressions != null && decs.Expressions.Count != 0) {
+        wr.WriteLine();
+        Indent(indent);
+        wr.Write("decreases");
+        PrintOrdinaryDecreasesAttributes(decs.Attributes);
+        wr.Write(" ");
+        PrintExpressionList(decs.Expressions, true);
+      }
+    }
+
+    /// <summary>
+    /// Whether the printer writes callback clauses (--modular-termination, milestone M3b) as
+    /// "decreases {:callback g} E".  Only under the option, which is the only case in which the parser reads
+    /// that form back; otherwise a {:callback} attribute is printed as any other attribute, as before.
+    /// </summary>
+    private bool PrintsCallbackClauses(Attributes attrs) {
+      return options.Get(CommonOptionBag.ModularTermination) && ModularTermination.CallbackClauses(attrs).Any();
+    }
+
+    private void PrintOrdinaryDecreasesAttributes(Attributes a) {
+      if (a == null) {
+        return;
+      }
+      PrintOrdinaryDecreasesAttributes(a.Prev);
+      if (!ModularTermination.IsGlobalClause(a) &&
+          !(options.Get(CommonOptionBag.ModularTermination) && ModularTermination.IsCallbackClause(a)) &&
+          a is not UserSuppliedAtAttribute) {
+        wr.Write(" ");
+        PrintOneAttribute(a);
       }
     }
 
