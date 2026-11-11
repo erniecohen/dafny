@@ -29,6 +29,9 @@ proof descriptions and proof-dependency reporting anchors, guarded by exact sour
 bindings; task attribution is separately rebound to current `ICanVerify` objects.
 Text is emitted with token rewriting disabled. Any future persisted representation
 needs an explicit source/report codec instead of these process-local references.
+Printing process-specific AST identities (`PrintWithUniqueASTIds`) bypasses the
+table: fresh graph copies necessarily have different identities, so their debug
+text cannot share a stable content hash.
 
 The resolution worker on
 https://github.com/erniecohen/dafny/tree/codex/241-parallel-resolution owns the

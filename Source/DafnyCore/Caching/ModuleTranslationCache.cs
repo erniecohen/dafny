@@ -62,9 +62,10 @@ public sealed class ModuleTranslationCache {
     cancellationToken.ThrowIfCancellationRequested();
     var options = program.Options;
     if (module.ResolutionKey == null || module.TranslationInputs == null || options.Get(CommonOptionBag.ResolutionThreads) <= 0 ||
+        options.PrintWithUniqueASTIds ||
         options.AdditionalPlugins.Count != 0 || options.AdditionalPluginArguments.Count != 0 ||
         flags.ObligationLowered != null || flags.ObligationPrepared != null) {
-      lock (gate) { Bypasses++; LastBypassReason = "missing module key, nonlocal names or external callbacks"; }
+      lock (gate) { Bypasses++; LastBypassReason = "missing module key, nonlocal names, debug identities or external callbacks"; }
       return Fresh(program, module, flags, program.Reporter);
     }
     var key = Descriptor(program, module, flags);

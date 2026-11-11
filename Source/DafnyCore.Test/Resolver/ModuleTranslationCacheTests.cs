@@ -147,6 +147,20 @@ public class ModuleTranslationCacheTests {
   }
 
   [Fact]
+  public async Task DebugPrintingOfProcessSpecificNodeIdentitiesBypassesReuse() {
+    var program = await Resolve(Source);
+    program.Options.PrintWithUniqueASTIds = true;
+    var module = program.RawModules().Single(m => m.Name == "M");
+    var cache = new ModuleTranslationCache();
+    cache.Translate(program, module, new(program.Options), default);
+    cache.Translate(program, module, new(program.Options), default);
+    Assert.Equal(2, cache.Translations);
+    Assert.Equal(2, cache.Bypasses);
+    Assert.Equal(0, cache.Hits);
+    Assert.Equal(0, cache.EntryCount);
+  }
+
+  [Fact]
   public async Task NullAndEmptyChecksumPrefixesAreDifferentInputs() {
     var program = await Resolve(Source);
     var module = program.RawModules().Single(m => m.Name == "M");
