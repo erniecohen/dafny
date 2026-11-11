@@ -132,7 +132,7 @@ jobs:
           retention-days: 14
 
   suite:
-    if: ${{ !inputs.platform_parity && (true) }}
+    if: ${{ !inputs.platform_parity }}
     name: Verifier suite (axioms ${{ matrix.axioms }}, shard ${{ matrix.shard }} of 4)
     needs: build
     runs-on: ubuntu-24.04
@@ -239,10 +239,10 @@ jobs:
           retention-days: 90
 
   verification-batch:
-    if: ${{ !inputs.platform_parity && (true) }}
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity }}
     name: Resolve-once verification batch controls
     needs: build
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -381,10 +381,10 @@ jobs:
           retention-days: 90
 
   resolver:
-    if: ${{ !inputs.platform_parity && (true) }}
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity }}
     name: Resolver matrix (both modes)
     needs: build
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -436,7 +436,7 @@ jobs:
           retention-days: 90
 
   stdlib:
-    if: ${{ !inputs.platform_parity && (true) }}
+    if: ${{ !inputs.platform_parity }}
     name: Standard library (Z3 ${{ matrix.z3 }}, axioms ${{ matrix.axioms }})
     needs: build
     runs-on: ubuntu-24.04
@@ -544,9 +544,9 @@ jobs:
           retention-days: 90
 
   javascript-runtime:
-    if: ${{ !inputs.platform_parity && (true) }}
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity }}
     name: JavaScript runtime (Node ${{ matrix.node }})
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
     strategy:
       matrix:
         node: ['16.0.0', '22']
@@ -672,9 +672,9 @@ jobs:
           grep -Eq 'Total( tests)?: *1([^0-9]|$)' test.log
 
   resolver-tests:
-    if: ${{ !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/'))) }}
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/'))) }}
     name: Resolver unit tests and language-server recovery
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -710,10 +710,10 @@ jobs:
             --blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none
 
   finite-support:
-    if: ${{ !inputs.platform_parity && (true) }}
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity }}
     name: Finite-support encoding and boundary controls
     needs: build
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -741,10 +741,10 @@ jobs:
           retention-days: 90
 
   statement-conclusions:
-    if: ${{ !inputs.platform_parity && (true) }}
-    name: Statement-expression conclusions (opt-in, #96)
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity }}
+    name: Statement-expression conclusions (opt-in)
     needs: build
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
