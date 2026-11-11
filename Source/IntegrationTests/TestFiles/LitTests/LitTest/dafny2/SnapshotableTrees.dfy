@@ -628,14 +628,17 @@ module SnapTree {
           // lemmas:
           reveal p.NodeValid();
 
-          stack, N := rest, N+1;
-
+          // Compute the next stack in the current heap, where R describes
+          // the current root, before updating the iterator bookkeeping.
+          var nextStack := rest;
+          ghost var nextIndex := N + 1;
           if p.right != null {
             reveal R();
             reveal p.right.NodeValid();
-            assert p.right.Contents <= Contents[N..];
-            stack := Push(stack, N, p.right, Contents, T.Repr);
+            assert p.right.Contents <= Contents[nextIndex..];
+            nextStack := Push(nextStack, nextIndex, p.right, Contents, T.Repr);
           }
+          stack, N := nextStack, nextIndex;
           hasCurrent := stack != Nil;
       }
       reveal R();
