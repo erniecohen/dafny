@@ -1,5 +1,7 @@
 name: Operators M1 probe
 on:
+  push:
+    branches: ['codex/194-operators-m1']
   workflow_dispatch:
 permissions:
   contents: read
