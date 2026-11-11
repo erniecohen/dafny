@@ -1,0 +1,180 @@
+# Evidence for --verification-module-window (issue 241, cause 1), recorded, not gated:
+# every job writes its measurements and comparisons to its summary and artifacts and
+# exits 0, as AGENTS.md asks of probe workflows.  .github/review/issue241-module-window.py
+# says what is measured and compared.
+#
+# - time:   the standard library (src/Std/dfyconfig.toml) and its examples, at K and at
+#           K = 1 on the same runner, for K in 1, 2, 4, 8, 16, under DOTNET_gcServer 0 and 1;
+# - smt:    the standard library at K = 1, 2, 4, 8 with each task's SMT stream hashed;
+# - corpus: the programs of the verifier suite that declare two or more modules, at
+#           K = 1, 4, 16, each with its SMT streams hashed;
+# - report: each run against K = 1, and the timing tables.
+name: Issue 241 module window evidence
+on:
+  push:
+    branches: ['scratch/issue241/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  Z3_ZIP: https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+  Z3_SHA256: f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a
+  Z3_DIR: z3-5.1.0-x64-glibc-2.39
+  SCRIPT: .github/review/issue241-module-window.py
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - name: Build
+        run: |
+          sh Scripts/fetch-boogie-packages.sh
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false
+          tar -C out -czf dafny.tar.gz dafny
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue241-dafny
+          path: dafny.tar.gz
+          retention-days: 14
+
+  time:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        k: [1, 2, 4, 8, 16]
+        gc: [0, 1]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue241-dafny
+      - name: Dafny and Z3
+        run: |
+          mkdir -p out && tar -C out -xzf dafny.tar.gz
+          curl -fsSLo z3.zip "$Z3_ZIP" && echo "$Z3_SHA256  z3.zip" | sha256sum -c - && unzip -q z3.zip
+          echo "Z3=$PWD/$Z3_DIR/bin/z3" >> "$GITHUB_ENV"
+          echo "DAFNY=$PWD/out/dafny/Dafny" >> "$GITHUB_ENV"
+          nproc; free -m
+      # K = 1 and K on the same runner, so that their ratio is not a difference between machines.
+      - name: Standard library and examples, at K = 1 and at K
+        run: |
+          L=Source/DafnyStandardLibraries
+          for project in std examples; do
+            if [ $project = std ]; then cwd=$L; arg=src/Std/dfyconfig.toml; else cwd=$L/examples; arg=dfyconfig.toml; fi
+            for k in 1 ${{ matrix.k }}; do
+              d=runs/$project-gc${{ matrix.gc }}-k$k
+              [ -e "$d" ] && d=$d-again
+              python3 "$SCRIPT" run "$d" "$DAFNY" "$Z3" "$cwd" $k --gc ${{ matrix.gc }} -- $arg || true
+            done
+          done
+          python3 "$SCRIPT" table runs/* | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue241-time-k${{ matrix.k }}-gc${{ matrix.gc }}
+          path: runs
+          retention-days: 90
+
+  smt:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        k: [1, 2, 4, 8]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue241-dafny
+      - name: Dafny and Z3
+        run: |
+          mkdir -p out && tar -C out -xzf dafny.tar.gz
+          curl -fsSLo z3.zip "$Z3_ZIP" && echo "$Z3_SHA256  z3.zip" | sha256sum -c - && unzip -q z3.zip
+          echo "Z3=$PWD/$Z3_DIR/bin/z3" >> "$GITHUB_ENV"
+          echo "DAFNY=$PWD/out/dafny/Dafny" >> "$GITHUB_ENV"
+          # The SMT streams of the whole library go to the larger disk.
+          sudo mkdir -p /mnt/issue241 && sudo chown "$(id -u)" /mnt/issue241
+          df -h / /mnt
+      - name: Standard library with SMT streams
+        run: |
+          python3 "$SCRIPT" run /mnt/issue241/std-smt-k${{ matrix.k }} "$DAFNY" "$Z3" \
+            Source/DafnyStandardLibraries ${{ matrix.k }} --smt -- src/Std/dfyconfig.toml || true
+          mkdir -p runs && cp -r /mnt/issue241/std-smt-k${{ matrix.k }} runs/
+          df -h /mnt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue241-smt-k${{ matrix.k }}
+          path: runs
+          retention-days: 90
+
+  corpus:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue241-dafny
+      - name: Dafny and Z3
+        run: |
+          mkdir -p out && tar -C out -xzf dafny.tar.gz
+          curl -fsSLo z3.zip "$Z3_ZIP" && echo "$Z3_SHA256  z3.zip" | sha256sum -c - && unzip -q z3.zip
+          echo "Z3=$PWD/$Z3_DIR/bin/z3" >> "$GITHUB_ENV"
+          echo "DAFNY=$PWD/out/dafny/Dafny" >> "$GITHUB_ENV"
+      - name: Multi-module programs of the verifier suite at K = 1, 4, 16
+        run: |
+          L=Source/IntegrationTests/TestFiles/LitTests/LitTest
+          python3 .github/review/lit-verdicts.py plan "$L" plan.tsv
+          python3 "$SCRIPT" corpus plan.tsv "$L" "$DAFNY" "$Z3" "$PWD/corpus" --ks 1,4,16 \
+            --shard ${{ matrix.shard }}/4 || true
+          find corpus -name smt -type d -prune -exec rm -rf {} +
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue241-corpus-${{ matrix.shard }}
+          path: corpus
+          retention-days: 90
+
+  report:
+    needs: [time, smt, corpus]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: issue241-*-*
+          path: artifacts
+      - name: Compare and tabulate
+        run: |
+          python3 "$SCRIPT" report artifacts report.md || true
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue241-report
+          path: report.md
+          retention-days: 90

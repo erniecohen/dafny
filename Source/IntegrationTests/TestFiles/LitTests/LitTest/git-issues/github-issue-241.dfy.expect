@@ -1,0 +1,7 @@
+github-issue-241.dfy(24,101): Error: a postcondition could not be proved on this return path
+github-issue-241.dfy(24,97): Related location: this is the postcondition that could not be proved
+github-issue-241.dfy(36,43): Error: Fuel can only increase within a given scope.
+github-issue-241.dfy(40,34): Error: a postcondition could not be proved on this return path
+github-issue-241.dfy(40,30): Related location: this is the postcondition that could not be proved
+
+Dafny program verifier finished with 7 verified, 2 errors
