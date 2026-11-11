@@ -159,7 +159,9 @@ The `github-issue-23-*` regressions cover the reviewer-supplied Box/Unbox
 contradiction, ORDINAL subset inverse, undefined ORDINAL subtraction, empty-type
 lambda, generic constant initializer and simplified glue example, in both
 resolver modes. They also retain the exact `Pos`/`F` lambda cost example.
-Unlike the older reviewed implementation, this fork's `LambdaCanCallAssumption`
+Unlike the older reviewed implementation, the finite-support repair
+(https://github.com/erniecohen/dafny/commit/854f5a65a50658c8c415629d67d0b1bd34860fed)
+uses `LambdaCanCallAssumption`, which
 exports source lambda facts under the formal type and allocation guards and
 matches them at the source family's selectors. At `f(5)` the actual argument
 satisfies `Pos`; it need not have a declared witness to instantiate those facts.
