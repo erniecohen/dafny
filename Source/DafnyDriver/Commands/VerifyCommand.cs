@@ -298,7 +298,12 @@ public static class VerifyCommand {
       cliCompilation.Compilation.Reporter.Error(MessageSource.Verifier, cliCompilation.Compilation.Project.StartingToken, e.Message);
     }
 
-    verificationResults.Subscribe(result => verificationResultLogger?.Report(result),
+    verificationResults.Subscribe(result => {
+      // A later module may be being translated meanwhile (--verification-module-window).
+      lock ((result.ProofDependencies ?? proofDependencyManager).SyncRoot) {
+        verificationResultLogger?.Report(result);
+      }
+    },
       e => { },
       () => {
       });
@@ -318,8 +323,11 @@ public static class VerifyCommand {
 
     verificationResults.Subscribe(result => {
       var manager = result.ProofDependencies ?? proofDependencyManager;
-      ProofDependencyWarnings.ReportSuspiciousDependencies(cliCompilation.Options, result.Results,
-        resolution.ResolvedProgram.Reporter, manager);
+      // A later module may be being translated meanwhile (--verification-module-window).
+      lock (manager.SyncRoot) {
+        ProofDependencyWarnings.ReportSuspiciousDependencies(cliCompilation.Options, result.Results,
+          resolution.ResolvedProgram.Reporter, manager);
+      }
 
       var usedForResult = usedDependencies;
       if (result.ProofDependencies != null) {
