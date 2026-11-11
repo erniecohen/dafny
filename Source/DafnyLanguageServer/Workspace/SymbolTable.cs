@@ -31,14 +31,28 @@ public class SymbolTable {
 
     var definitions = visited.OfType<IHasNavigationToken>();
 
-    return new SymbolTable(references, definitions.ToList());
+    var meanings = program.Options.Get(CommonOptionBag.UserDefinedOperators)
+      ? visited.OfType<OperatorSyntaxExpr>().Where(op => op.Selection != null && op.Origin.Uri != null)
+        .DistinctBy(op => op.Origin.ReportingRange)
+        .ToImmutableDictionary(op => op.Origin.ReportingRange, OperatorMeaning)
+      : ImmutableDictionary<TokenRange, string>.Empty;
+    return new SymbolTable(references, definitions.ToList(), meanings);
   }
+
+  private static string OperatorMeaning(OperatorSyntaxExpr op) => op.Selection switch {
+    MemberOperatorSelection member => $"User-defined `{op.Symbol}`: ordinary fallback call to `{member.Member.FullDafnyName}`.",
+    IntrinsicOperatorSelection { Opcode: BinaryExpr.ResolvedOpcode.RankLt or BinaryExpr.ResolvedOpcode.RankGt } =>
+      $"Intrinsic datatype rank comparison (`{op.Symbol}`). Fallback annotations do not override rank comparison.",
+    IntrinsicOperatorSelection intrinsic => $"Intrinsic `{op.Symbol}` (`{intrinsic.Opcode?.ToString() ?? intrinsic.UnaryFamily}`).",
+    _ => throw new InvalidOperationException("missing operator hover selection")
+  };
 
   public static SymbolTable Empty() {
     return new SymbolTable();
   }
 
   private SymbolTable() {
+    OperatorMeanings = ImmutableDictionary<TokenRange, string>.Empty;
     NonTextualReferences = ImmutableHashSet<TokenRange>.Empty;
     NodeToReferences = ImmutableDictionary<TokenRange, ISet<TokenRange>>.Empty;
     ReferenceToNode = ImmutableDictionary<TokenRange, IHasNavigationToken>.Empty;
@@ -46,7 +60,9 @@ public class SymbolTable {
     Declarations = ImmutableDictionary<TokenRange, ISymbol>.Empty;
   }
 
-  private SymbolTable(IReadOnlyList<Reference> references, IReadOnlyList<IHasNavigationToken> hasNavigationTokens) {
+  private SymbolTable(IReadOnlyList<Reference> references, IReadOnlyList<IHasNavigationToken> hasNavigationTokens,
+    ImmutableDictionary<TokenRange, string> operatorMeanings) {
+    OperatorMeanings = operatorMeanings;
     var safeReferences = references.Where(k => k.Referer.Uri != null).ToImmutableList();
 
     NonTextualReferences = safeReferences.Where(r => !r.IsTextual).Select(r => r.Referer).ToImmutableHashSet();
@@ -106,6 +122,7 @@ public class SymbolTable {
   /// <summary>
   /// Maps each symbol declaration to itself, and each symbol usage to the symbol's declaration.
   /// </summary>
+  public ImmutableDictionary<TokenRange, string> OperatorMeanings { get; }
   public ImmutableHashSet<TokenRange> NonTextualReferences { get; }
   public ImmutableDictionary<TokenRange, IHasNavigationToken> ReferenceToNode { get; }
   public ImmutableDictionary<TokenRange, ISymbol> Declarations { get; }

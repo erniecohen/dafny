@@ -49,8 +49,44 @@ public class OperatorSelectionTests {
     Assert.Single(symbolic.Args);
     Assert.IsType<IdentifierExpr>(symbolic.Args[0].Resolved);
     Assert.DoesNotContain(symbolic.SubExpressions, e => e.Resolved is BinaryExpr);
+    Assert.Same(symbolic, Assert.Single(Function(program, "f").AllCalls));
+    Assert.Same(named, Assert.Single(Function(program, "named").AllCalls));
     Assert.Single(symbolic.GetReferences());
     Assert.False(symbolic.GetReferences().Single().IsTextual);
+  }
+
+  [Fact]
+  public async Task OrdinaryCallExpansionHasIdenticalBoogieAndTriggers() {
+    const string template = """
+      datatype D = D(v: int) {
+        function {:operator "+"} plus(b: D): D { D(v + b.v) }
+      }
+      function f(x: D, y: D): D { BODY }
+      lemma check(x: D, y: D) ensures f(x, y).v == x.v + y.v { }
+      """;
+    async Task<string> Emit(string body) {
+      var (program, reporter) = await Parse(template.Replace("BODY", body));
+      Assert.False(reporter.HasErrors, string.Join("\n", reporter.AllMessages.Select(m => m.Message)));
+      var boogie = BoogieGenerator.Translate(program, reporter,
+        new BoogieGenerator.TranslatorFlags(reporter.Options) { InsertChecksums = false }).Select(p => p.Item2);
+      return Verification.ObligationFingerprint.Emit(boogie);
+    }
+    // Keep following source coordinates fixed. Tokens are nonsemantic printer metadata;
+    // no declarations, names, axioms, triggers or expressions are normalized away.
+    Assert.Equal(await Emit("x.plus(y)"), await Emit("x + y    "));
+  }
+
+  [Fact]
+  public async Task SourcePrinterRoundTripRetainsSymbolicNotationAndSelection() {
+    var (program, reporter) = await Parse(Source);
+    Assert.False(reporter.HasErrors);
+    var printed = Printer.ExprToString(reporter.Options, Function(program, "f").Body);
+    Assert.Contains("+", printed);
+    Assert.DoesNotContain("plus", printed);
+    var (roundTrip, errors) = await Parse(Source.Replace("{ x + x }", "{ " + printed + " }"));
+    Assert.False(errors.HasErrors);
+    var selected = Assert.IsType<MemberOperatorSelection>(Assert.IsType<OperatorSyntaxExpr>(Function(roundTrip, "f").Body).Selection);
+    Assert.Equal("plus", selected.Member.Name);
   }
 
   [Theory]
@@ -107,8 +143,7 @@ public class OperatorSelectionTests {
     var op = Assert.IsType<OperatorSyntaxExpr>(Function(program, "f").Body);
     op.Selection = null;
     op.ResolutionStarted = false; // stale phase flag must not turn it back into parsed source
-    var clone = Assert.IsType<OperatorSyntaxExpr>(new Cloner(false, resolved).CloneExpr(op));
-    Assert.Throws<InvalidOperationException>(() => clone.ReplaySelection());
+    Assert.Throws<InvalidOperationException>(() => new Cloner(false, resolved).CloneExpr(op));
   }
 
   [Fact]

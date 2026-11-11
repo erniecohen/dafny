@@ -41,7 +41,7 @@ jobs:
             dotnet test Source/DafnyCore.Test/DafnyCore.Test.csproj -c Release --filter FullyQualifiedName~OperatorSelectionTests --logger "trx;LogFileName=operators.trx" --results-directory "$PWD/out/operators/core-tests" > out/operators/core-tests.log 2>&1
             echo "$?" > out/operators/core-tests.exit
             tail -40 out/operators/core-tests.log
-            dotnet test Source/DafnyLanguageServer.Test/DafnyLanguageServer.Test.csproj -c Release --filter FullyQualifiedName~OperatorSymbolsAreReferencesButAreNeverRenamed --logger "trx;LogFileName=operators.trx" --results-directory "$PWD/out/operators/rename-tests" > out/operators/rename-tests.log 2>&1
+            dotnet test Source/DafnyLanguageServer.Test/DafnyLanguageServer.Test.csproj -c Release --filter 'FullyQualifiedName~OperatorSymbolsAreReferencesButAreNeverRenamed|FullyQualifiedName~OperatorHoverDistinguishesRankFromAnOrdinaryFallbackCall' --logger "trx;LogFileName=operators.trx" --results-directory "$PWD/out/operators/rename-tests" > out/operators/rename-tests.log 2>&1
             echo "$?" > out/operators/rename-tests.exit
             tail -40 out/operators/rename-tests.log
           fi
@@ -55,9 +55,11 @@ jobs:
             out/operators/*.log
             out/operators/*.exit
             out/operators/results.json
-            out/operators/*/stdout.txt
-            out/operators/*/stderr.txt
-            out/operators/*/command.json
+            out/operators/**/stdout.txt
+            out/operators/**/stderr.txt
+            out/operators/**/command.json
+            out/operators/**/*.bpl
+            out/operators/**/verification.json
             out/operators/core-tests
             out/operators/rename-tests
           retention-days: 14

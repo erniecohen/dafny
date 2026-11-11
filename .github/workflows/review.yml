@@ -609,7 +609,7 @@ jobs:
       - name: Operator selection cloning and safe symbolic rename
         run: |
           dotnet test Source/DafnyCore.Test -c Release --filter FullyQualifiedName~OperatorSelectionTests --logger "console;verbosity=normal"
-          dotnet test Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~OperatorSymbolsAreReferencesButAreNeverRenamed --logger "console;verbosity=normal"
+          dotnet test Source/DafnyLanguageServer.Test -c Release --filter 'FullyQualifiedName~OperatorSymbolsAreReferencesButAreNeverRenamed|FullyQualifiedName~OperatorHoverDistinguishesRankFromAnOrdinaryFallbackCall' --logger "console;verbosity=normal"
       - name: Batch requests reuse resolution and create fresh proof tasks
         env:
           Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0

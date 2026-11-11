@@ -19,6 +19,9 @@ public class OperatorSyntaxExpr : ConcreteSyntaxExpression, ICloneable<OperatorS
   }
 
   public OperatorSyntaxExpr(Cloner cloner, OperatorSyntaxExpr original) : base(cloner, original) {
+    if ((original.ResolutionStarted || original.ResolvedExpression != null) && original.Selection == null) {
+      throw new System.InvalidOperationException("resolved operator selection is missing; lookup cannot be restarted");
+    }
     cloner.OperatorClones.HasSelections = true;
     // The root is printable source notation, not a semantic opcode. Rebuild it
     // directly so specialized semantic cloners never inspect its unresolved opcode.

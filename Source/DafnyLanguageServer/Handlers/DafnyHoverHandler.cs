@@ -70,6 +70,13 @@ namespace Microsoft.Dafny.LanguageServer.Handlers {
       }
 
       var symbolHoverContent = symbol != null ? CreateSymbolMarkdown(state.Input.Options, symbol) : null;
+      if (state.SymbolTable.OperatorMeanings.Count != 0) {
+        var meaning = state.SymbolTable.OperatorMeanings.FirstOrDefault(pair =>
+          pair.Key.Uri == request.TextDocument.Uri.ToUri() && pair.Key.ToLspRange().Contains(request.Position)).Value;
+        if (meaning != null) {
+          symbolHoverContent = meaning + (symbolHoverContent == null ? "" : "\n\n" + symbolHoverContent);
+        }
+      }
       return (symbol, symbolHoverContent);
     }
 

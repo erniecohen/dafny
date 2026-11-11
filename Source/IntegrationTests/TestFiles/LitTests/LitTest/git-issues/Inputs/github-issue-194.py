@@ -23,13 +23,16 @@ def main():
     enabled = ['--user-defined-operators', '--type-system-refresh']
 
     def check(name, filename='positive', args=(), kind='success', diagnostic=None, command='verify',
-              feature=True, runtime=None):
+              feature=True, runtime=None, source_text=None):
         folder = output / name
         folder.mkdir(exist_ok=True)
         source = sources / ('github-issue-194-' + filename + '.dfy')
         local = folder / 'test.dfy'
-        shutil.copyfile(source, local)
-        options = common if command == 'verify' else ['--use-basename-for-filename', '--show-snippets:false']
+        if source_text is None:
+            shutil.copyfile(source, local)
+        else:
+            local.write_text(source_text)
+        options = common if command == 'verify' else ['--use-basename-for-filename'] + ([] if command == 'format' else ['--show-snippets:false'])
         cmd = launcher + command.split() + [str(local)] + options + (enabled if feature else []) + list(args)
         try:
             process = subprocess.run(cmd, cwd=folder, capture_output=True, text=True, timeout=180)
@@ -68,7 +71,7 @@ def main():
 
     for filename in ['positive', 'named', 'revealed', 'intrinsic-refinement', 'module-attributes', 'module-attribute-named', 'opaque', 'by-method']:
         check(filename, filename)
-    for filename in ['static-unary', 'trait-named-body']:
+    for filename in ['static-unary', 'trait-named-body', 'calc']:
         check(filename, filename)
     for filename in ['traversal', 'ghost-formal', 'chain', 'inference']:
         check(filename, filename)
@@ -76,8 +79,11 @@ def main():
     for filename, kind in [('reads', 'verify-failure'), ('null', 'verify-failure'), ('ghost', 'reject')]:
         check(filename, filename, kind=kind)
         check(filename + '-named', filename + '-named', kind=kind)
-    check('unresolved', 'unresolved', kind='reject')
+    check('unresolved', 'unresolved', kind='reject', diagnostic='operator receiver type is not determined')
+    check('calc-negative', 'calc-negative', kind='reject')
     check('chain-false', 'chain-false', kind='verify-failure')
+    check('format', command='format')
+    check('format-roundtrip', source_text=(output / 'format' / 'test.dfy').read_text())
     check('false', 'false', kind='verify-failure', diagnostic='assertion might not hold')
     check('precondition', 'contracts', kind='verify-failure', diagnostic='precondition')
     check('termination', 'termination', kind='verify-failure', diagnostic='decreases')
@@ -115,6 +121,37 @@ def main():
         check('run-' + target, command='run', args=['--target', target, '--no-verify'], runtime='ok')
         check('run-named-' + target, 'named', command='run', args=['--target', target, '--no-verify'], runtime='ok')
         check('by-method-' + target, 'by-method', command='run', args=['--target', target, '--no-verify'], runtime='3')
+    # Same source path and following token positions for notation versus ordinary expansion.
+    parity = output / 'expansion-parity'
+    parity.mkdir(exist_ok=True)
+    local = parity / 'test.dfy'
+    template = (sources / 'github-issue-194-expansion.dfy').read_text()
+    snapshots = {}
+    for mode, body in [('named', 'x.plus(y)'), ('notation', 'x + y    ')]:
+        local.write_text(template.replace('BODY', body))
+        observation = parity / 'observation'
+        observation.mkdir(exist_ok=True)
+        cmd = launcher + ['verify', str(local)] + common + enabled + [
+            '--boogie', '/normalizeDeclarationOrder:0', '--boogie', '/restartProver',
+            '--bprint', str(observation / 'program.bpl'),
+            '--log-format', 'json;LogFileName=' + str(observation / 'verification.json')]
+        process = subprocess.run(cmd, cwd=parity, capture_output=True, text=True, timeout=180)
+        (observation / 'stdout.txt').write_text(process.stdout)
+        (observation / 'stderr.txt').write_text(process.stderr)
+        (observation / 'command.json').write_text(json.dumps(cmd, indent=2))
+        log = observation / 'verification.json'
+        bpl = observation / 'program.bpl'
+        resources = None
+        if log.exists():
+            data = json.loads(log.read_text())
+            resources = sorted([[d['name'], v['vcNum'], v['outcome'], v['resourceCount']]
+                for d in data.get('verificationResults', []) for v in d.get('vcResults', [])])
+        snapshots[mode] = {'exit': process.returncode, 'resources': resources,
+                           'boogie': bpl.read_bytes() if bpl.exists() else None}
+        shutil.move(str(observation), str(parity / mode))
+    records.append({'name': 'expansion-parity', 'resources': snapshots['notation']['resources']})
+    if snapshots['named'] != snapshots['notation'] or snapshots['notation']['exit'] != 0 or not snapshots['notation']['resources'] or not snapshots['notation']['boogie']:
+        failures.append({'name': 'expansion-parity', 'errors': ['ordinary-call Boogie or resource parity failed']})
     # CLI false must override a project setting, including inert malformed attributes.
     project = output / 'project'
     project.mkdir(exist_ok=True)
