@@ -470,6 +470,8 @@ namespace Microsoft.Dafny {
     // Not directly user-configurable, only recorded once we discover it
     public string SolverIdentifier { get; private set; }
     public Version SolverVersion { get; set; }
+    public int VerificationCacheVersionProbes { get; private set; }
+    public bool VerificationCacheBatchMode { get; set; }
 
     public static readonly ReadOnlyCollection<Plugin> DefaultPlugins =
       new(new[] { SinglePassCodeGenerator.Plugin, InternalDocstringRewritersPluginConfiguration.Plugin });
@@ -1237,7 +1239,9 @@ namespace Microsoft.Dafny {
 
       if (confirmedProverPath is not null) {
         ProverOptions.Add($"{pp}{confirmedProverPath}");
-        return z3VersionPerPath.GetOrAdd(confirmedProverPath, GetZ3Version);
+        return string.IsNullOrEmpty(Get(CommonOptionBag.VerificationCache)) || VerificationCacheBatchMode
+          ? z3VersionPerPath.GetOrAdd(confirmedProverPath, GetZ3Version)
+          : Caching.SolverVersionCache.ReadOrProbe(Get(CommonOptionBag.VerificationCache), confirmedProverPath, path => { VerificationCacheVersionProbes++; return GetZ3Version(path); });
       }
 
       errorReporter.Error(MessageSource.Verifier, DafnyProject.StartingToken, "Z3 is not found. " + nextStepsMessage);

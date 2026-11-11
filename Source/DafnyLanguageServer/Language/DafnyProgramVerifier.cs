@@ -105,7 +105,9 @@ namespace Microsoft.Dafny.LanguageServer.Language {
         }
 
         profileStart = profile?.Begin();
+        var resultCache = Caching.TaskCacheSession.For(program.Options);
         var tasks = await engine.GetVerificationTasks(boogieProgram, cancellationToken);
+        if (resultCache != null) { tasks = tasks.Select(resultCache.Wrap).ToList(); }
         if (profile != null) {
           // Boogie's preparation: type checking, inlining, preprocessing, passification and splitting.
           profile.Span("prepare", profileStart!.Value, new Dictionary<string, object?> {

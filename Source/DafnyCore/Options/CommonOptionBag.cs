@@ -41,6 +41,10 @@ public class CommonOptionBag {
       IsHidden = true
     };
 
+  public static readonly Option<string> VerificationCache = new("--verification-cache",
+    "Reuse complete verification-task solver exchanges in DIR. Opt-in; uses fresh solver histories and module-scoped names. " +
+    "Replayed timing fields are identified in CSV/JSON logs. Unsupported tasks run normally.") { ArgumentHelpName = "DIR" };
+
   public static readonly Option<bool> TranslationCache = new("--translation-cache",
     "Reuse module translations in this process using semantic resolution keys and module-scoped names. " +
     "Enables --resolution-threads 1 when no worker count is selected. Stores no files and no verification results.");
@@ -735,6 +739,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     });
     OptionRegistry.RegisterOption(ResolutionThreads, OptionScope.Cli);
     OptionRegistry.RegisterOption(TranslationCache, OptionScope.Cli);
+    OptionRegistry.RegisterOption(VerificationCache, OptionScope.Cli);
     OptionRegistry.RegisterOption(PipelineProfile, OptionScope.Cli);
     OptionRegistry.RegisterOption(LogLevelOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(ManualTriggerOption, OptionScope.Module);

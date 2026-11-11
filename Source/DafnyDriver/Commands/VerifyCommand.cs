@@ -74,6 +74,7 @@ public static class VerifyCommand {
         FilterPosition,
         FilterPositionBatch,
         CommonOptionBag.TranslationCache,
+        CommonOptionBag.VerificationCache,
         VerificationModuleWindow,
         VerificationModuleWindowMemory,
         DafnyFile.DoNotVerifyDependencies
@@ -82,10 +83,11 @@ public static class VerifyCommand {
       Concat(DafnyCommands.ResolverOptions);
 
   public static async Task<int> HandleVerification(DafnyOptions options) {
-    if (options.Get(CommonOptionBag.TranslationCache) && options.Get(CommonOptionBag.ResolutionThreads) == 0) {
+    if ((options.Get(CommonOptionBag.TranslationCache) || !string.IsNullOrEmpty(options.Get(CommonOptionBag.VerificationCache))) && options.Get(CommonOptionBag.ResolutionThreads) == 0) {
       options.Set(CommonOptionBag.ResolutionThreads, 1);
     }
     var batch = options.GetOrOptionDefault(FilterPositionBatch).ToArray();
+    options.VerificationCacheBatchMode = batch.Length != 0;
     if (batch.Length != 0 && options.Get(FilterPosition) != null) {
       ErrorReporter reporter = options.DiagnosticsFormat switch {
         DafnyOptions.DiagnosticsFormats.PlainText => new ConsoleErrorReporter(options),
@@ -128,6 +130,13 @@ public static class VerifyCommand {
     }
 
     var exitCode = await compilation.GetAndReportExitCode();
+    if (Caching.TaskCacheSession.TryFor(options) is { } cache) {
+      PipelineProfile.For(options)?.Point("result-cache", new Dictionary<string, object?> {
+        ["solverStarts"] = cache.SolverStarts, ["solverVersionProbes"] = options.VerificationCacheVersionProbes, ["hits"] = cache.Hits,
+        ["publications"] = cache.Publications, ["fallbacks"] = cache.Fallbacks,
+        ["bypassReason"] = cache.LastBypassReason
+      });
+    }
     PipelineProfile.For(options)?.Finish("verify");
     return exitCode;
   }

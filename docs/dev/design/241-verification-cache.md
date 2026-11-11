@@ -13,12 +13,13 @@ when no worker count was selected, thereby using its module-qualified names and
 `ModuleDefinition.ResolutionKey` (called `ModuleKey` below). Repeated batch
 requests in one invocation can hit; separate CLI processes cannot. The table
 does not cache verification results or skip current whole-program admission.
-No on-disk cache is enabled. The accepted design of record is
+PR A enables no on-disk cache. The accepted design of record is
 https://github.com/erniecohen/dafny/pull/272, with the binding decisions at
 https://github.com/erniecohen/dafny/issues/261#issuecomment-6808221963.
 Its order is module ownership, persistent task results, then persistent resolution;
 on-disk Boogie reuse still requires the materializer differential test.
-An eventual `--verification-cache DIR` is proposed for PR B, not exposed by PR A.
+PR B exposes `--verification-cache DIR` for persistent per-task solver exchanges.
+It does not enable the process-local translation table automatically.
 Without the translation option the existing translation, preparation,
 solver lifecycle and reporting paths execute without constructing a cache,
 hashing inputs, changing names, or opening cache files.
@@ -190,7 +191,7 @@ outcome; exact RU; original RU limit and seed
 counterexample models, error/path information and related source locations
 coverage, warnings and diagnostics needed by all supported report modes
 payload digests and producer provenance
-historical timings, identified as replayed and separate from current timings
+replay provenance, kept separate from current invocation timing observations
 ```
 
 Reconstruct errors and coverage through the same current reporting code as fresh
@@ -306,11 +307,10 @@ errors are misses; cancellation propagates. Existing consumers need not adopt th
 new entry point. The patch also needs zero-process-start, replay-negative-control
 and lifecycle tests in Boogie before Dafny PR B can depend on it.
 
-This API is a prerequisite in the Boogie dependency rather than a change to the
-sibling worker's resolution/naming sites. A Dafny-only transport alternative
-needs an equally explicit lifecycle/retry proof and remains unaccepted until it
-passes the same gates. The implementation scope of that dependency prerequisite
-is proposed here only; no Boogie implementation is part of PR A.
+This API remains a proposed Boogie patch; neither PR implements it in Boogie.
+PR B instead uses the existing `CommandLineOptions.CreateSolver` transport hook
+and the explicit lifecycle/retry boundary described below. It must pass the same
+completeness and differential gates; publishing a draft is not acceptance.
 
 CLI filters select today's task inventory. Each task independently hits or runs;
 all selected tasks contribute to the current aggregate exit code. Initially bypass
@@ -321,7 +321,7 @@ and RU are identical on cold and warm runs; actual execution timestamps and
 durations describe the current invocation. Default stdout, stderr and exit code
 must be byte-identical between cache-enabled cold and warm runs.
 
-## Future file layout, atomic publication and concurrency
+## File layout, atomic publication and concurrency
 
 PR A publishes a complete snapshot into its process-local table under one lock;
 concurrent callers cannot observe a partial record. Processes share no table or
@@ -329,7 +329,8 @@ files. A failed copy or hash mismatch evicts the entry and translates normally.
 It uses LRU eviction, bounded by 256 entries and 512 MiB of retained text. This
 is not a strict managed-heap bound: graph and source/report anchors also consume
 memory. `Clear` discards the table. No persistent-format claim follows from this
-in-process implementation. The remaining section specifies the deferred disk store.
+in-process implementation. PR B implements the disk store for results and solver
+version observations; the translation namespace remains reserved.
 
 All paths below are relative to the user-selected directory:
 
@@ -338,6 +339,7 @@ v1/
   blobs/sha256/ab/abcdef.../data      # immutable payload bytes
   translations/ab/abcdef.../data    # JSON: lookup key -> payload hash, length, codec
   results/ab/abcdef.../data         # JSON: lookup key -> payload hash, length, codec
+  solver-identities/ab/abcdef.../data # validated version, keyed by image/environment
   disabled/translations/ab/abcdef.../data # persistent conflicting-key marker
   disabled/results/ab/abcdef.../data # persistent conflicting-key marker
 ```
@@ -486,3 +488,69 @@ excluded from equality and must identify replayed observations. Verdicts,
 diagnostics, exact per-task RU and solver input remain equal. Separately audit
 legacy default-off versus option-on costs; do not hide naming-related cost or
 verdict changes by calling them cache hits.
+
+
+## PR B transport implementation and acceptance boundary
+
+`TaskCacheSession` installs a solver factory only under `--verification-cache`.
+It forces `/restartProver`, so every manual split/seed iteration has an independent
+physical solver history. `CachedTaskSolver` buffers setup without creating Z3.
+Immediately before the first `(check-sat)` it freezes the exact setup stream and
+the complete pinned `SMTLibOptions`, inherited `CoreOptions`/`PrintOptions`, and
+`SMTLibSolverOptions` values. Interface properties and public solver fields are
+enumerated, with unsupported runtime values causing a miss. `UsedTypes` is not
+inferred from pruned declarations: its ordered lowered type inputs are encoded
+separately. Output writers bind to the current report; only the pinned factory
+and installed transport are admitted. Solver logs, external preambles, plugins,
+inspectors, batch transport, repeated filter batches, adaptive timeout diagnostics,
+keep-going subdivisions and unsupported loader environments bypass.
+
+The environment descriptor includes an ABI identifier and actual bytes of all
+application/runtime managed assemblies, the native solver and host, hostfxr,
+runtime native libraries and resolved native dependencies. The macOS profile
+also hashes the actual OS dyld shared-cache files; Linux resolves dependencies
+with `ldd`. Native launcher scripts and Windows are unsupported. All environment
+variable values are represented by digests. Image digests are memoized only within
+an invocation that treats code files as immutable; file length/mtime changes
+disable reuse for that invocation rather than certifying new files against old
+loaded code. The initial native dependency enumeration is conservative and can
+add appreciable cold and warm startup cost. A validated solver-version record
+avoids even a version-probe process on a supported warm run. Unknown dependency
+resolution runs normally instead of accepting a version string as identity.
+
+The fixed response program is identified by these implementation bytes and its
+complete option state before the first query. The stored exchange includes all
+subsequent sends, requests, parsed S-expressions and synchronization operations.
+It is never used as a response-dependent substitute for the descriptor. Replay
+checks each current command against that exchange, while pinned Boogie builds
+counterexamples, assertion bindings and coverage using the current task. The
+wrapper withholds `Completed` until the task observable closes, including final
+idle synchronization. Divergence discards all buffered completion data and retries
+`FromSeed` with persistent reads disabled and a fresh solver. A result is published
+only after normal completion and exact outcome/RU agreement. The terminal comment
+and subsequent idle handshake seal the exchange before a checker can be reused.
+
+`SmtExecutionLimits` lexes the actual initial command stream, respecting comments,
+strings and quoted symbols. Last effective `:timeout` and `:rlimit` commands win,
+including raw prover-option overrides. Unknown deadline/thread controls bypass.
+Completed Valid is eligible under any limit; Errors/OutOfResource additionally
+require positive RU and zero timeout. Timeout, memory failure, cancellation,
+protocol error and unknown outcomes are never reused. Retention is bounded by
+100,000 steps/nodes, response depth 128 and 32 MiB of retained command/response
+characters; oversized setup is flushed to a real solver and caching stops.
+Payload and record limits are 64 MiB and 4 KiB. No automatic disk eviction is
+implemented: delete the namespace, or stop writers before selective collection.
+
+JSON marks replayed task/scope timing with `timingReplayed: true`; the opt-in CSV
+schema adds `TimingReplayed`. These durations measure current replay/reporting
+work, not fresh solver execution. Cold/warm equality excludes timing fields and
+these provenance markers. Stdout, stderr, exit code, task outcomes, RU, assertion
+inventory and report contents remain the differential obligations. The default
+CSV schema and ordering are unchanged. The opt-in CSV sorts by task name so
+replay latency cannot reorder rows.
+
+The implementation remains draft until the complete local suite/Std comparison,
+negative controls, option-classification drift gate and five-run measurements are
+recorded. The inherited module naming/materialization comparison currently has a
+strict on/off RU/verdict discrepancy; cache-enabled cold/warm agreement alone
+cannot establish the stronger default-on/off acceptance gate.
