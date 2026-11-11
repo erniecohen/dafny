@@ -136,6 +136,7 @@ public static class DafnyCommands {
     CommonOptionBag.WarnMissingConstructorParenthesis,
     PrintStmt.TrackPrintEffectsOption,
     CommonOptionBag.AllowAxioms,
+    CommonOptionBag.WarnUncheckedTermination,
     CommonOptionBag.EnforceDeterminism,
     MethodOrFunction.AllowExternalContracts,
     DafnyProject.FindProjectOption,

@@ -606,8 +606,8 @@ can still fail to terminate, and can prove `false`, through what it does not che
   program being verified. A library verified on its own therefore does not see a type
   that a later program declares with `@AssumeCrossModuleTermination` to extend one of its
   traits. Calls through such a trait, and to the code that reaches them, were verified without
-  the rules. `{:termination false}` and `@AssumeCrossModuleTermination` keep their meaning, and
-  only `dafny audit` reports them.
+  the rules. `{:termination false}` and `@AssumeCrossModuleTermination` keep their meaning;
+  `dafny audit` reports them, and so does `dafny verify` under `--warn-unchecked-termination`.
 
 It also rejects some programs that terminate:
 
