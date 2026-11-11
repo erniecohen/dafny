@@ -345,3 +345,6 @@ git-issues/github-issue-200.dfy
 
 # Declared lambda preconditions are necessary under --additional-axioms (#97).
 git-issues/github-issue-97.dfy
+
+# Overlapping module verification behind --verification-module-window (https://github.com/erniecohen/dafny/issues/241).
+git-issues/github-issue-241.dfy
