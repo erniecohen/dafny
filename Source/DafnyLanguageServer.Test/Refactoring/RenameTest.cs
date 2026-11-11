@@ -28,6 +28,7 @@ const i := 0
     [Fact]
     public async Task OperatorSymbolsAreReferencesButAreNeverRenamed() {
       await SetUp(options => {
+        options.ProverOptions.Add("SOLVER=noop");
         options.Set(CommonOptionBag.UserDefinedOperators, true);
         options.Set(CommonOptionBag.TypeSystemRefresh, true);
       });
@@ -190,8 +191,8 @@ abstract module B { import [>><A<] }
 
     private async Task<WorkspaceEdit> RequestRename(
       TextDocumentItem documentItem, Position position, string newName) {
-      // Opening a project before its first source can publish an empty-project
-      // status. Check the current state used by the rename handler itself.
+      // Configuration failures can be attached to the project file, so include
+      // all retained diagnostics rather than only those published for this source.
       var state = await Projects.GetResolvedDocumentAsyncNormalizeUri(documentItem);
       Assert.NotNull(state);
       Assert.True(state.Status == CompilationStatus.ResolutionSucceeded,
