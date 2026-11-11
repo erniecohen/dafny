@@ -661,7 +661,7 @@ namespace Microsoft.Dafny {
         }
 
         var scope = exportDecl.Signature.VisibilityScope;
-        Cloner cloner = new ScopeCloner(scope);
+        Cloner cloner = new ScopeCloner(scope, SystemModuleManager.SystemModule);
         var exportView = cloner.CloneModuleDefinition(m, m.EnclosingModule, m.NameNode);
         if (Options.DafnyPrintExportedViews.Contains(exportDecl.FullName)) {
           var wr = new StringWriter();
@@ -1006,7 +1006,7 @@ namespace Microsoft.Dafny {
         };
         return result;
       } else {
-        return new AbstractSignatureCloner(scope).CloneDeclaration(d, newParent);
+        return new AbstractSignatureCloner(scope, SystemModuleManager.SystemModule).CloneDeclaration(d, newParent);
       }
     }
 

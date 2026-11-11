@@ -85,6 +85,15 @@ def stdlib(args, output):
     def fixed_log(*_args, **_kwargs):
         return os.open(log, os.O_CREAT | os.O_RDWR | os.O_TRUNC, 0o600), str(log)
     std.tempfile.mkstemp = fixed_log
+    shared_text = output / 'shared-text'
+    original_part = std.part
+    def observe_part(label, cwd, source_args, dafny, z3, cores, fixed, measurements=None):
+        folder = shared_text / label
+        folder.mkdir(parents=True)
+        fixed = fixed + ['--print', str(folder / 'parsed.dfy'), '--rprint', str(folder / 'resolved.dfy'),
+                         '--bprint', str(folder / 'program.bpl')]
+        return original_part(label, cwd, source_args, dafny, z3, cores, fixed, measurements)
+    std.part = observe_part
     results = {}
     for mode, binary in [('baseline', args.baseline), ('candidate', args.candidate)]:
         folder = output / mode
@@ -98,9 +107,13 @@ def stdlib(args, output):
             'resources': {key: row[4:] for key, row in rows.items() if not key.startswith('run ')},
             'literal_output': {p.name: sha(p) for p in measurements.glob('*') if p.suffix in ['.stdout', '.stderr']},
             'batch_resources': {p.name: resources(p) for p in measurements.glob('*.verification.json')},
+            'literal_text': files(shared_text),
         }
+        shutil.move(str(shared_text), str(folder / 'text'))
     return {'scope': 'source standard library and all six target-specific parts', 'results': results,
-            'passed': bool(results['baseline']['resources']) and results['baseline'] == results['candidate'] and
+            'passed': bool(results['baseline']['resources']) and
+            any(name.endswith('.bpl') for name in results['baseline']['literal_text']) and
+            results['baseline'] == results['candidate'] and
             all(value[0] != 'TIMEOUT' for value in results['baseline']['verdicts'].values())}
 
 
@@ -138,25 +151,28 @@ def text_corpus(args, output):
             shutil.move(str(observations), str(output / (str(index) + '-' + mode)))
         results.append({'case': index, 'source': text, 'snapshots': snapshots,
                         'passed': snapshots['baseline'] == snapshots['candidate'] == snapshots['explicit-false']})
-    # Full source-library Boogie output, without a second proof run.
-    snapshots = {}
-    for mode, binary in [('baseline', args.baseline), ('candidate', args.candidate)]:
-        observations = input_dir / 'library'
-        observations.mkdir()
-        command = [binary, 'build', '-t:lib', '--no-verify',
-                   str(Path('Source/DafnyStandardLibraries/src/Std/dfyconfig.toml').resolve()),
-                   '--output', str(observations / 'Std'), '--bprint', str(observations / 'Std.bpl')]
-        process = subprocess.run(command, cwd=input_dir, capture_output=True, timeout=1200)
-        (observations / 'stdout').write_bytes(process.stdout)
-        (observations / 'stderr').write_bytes(process.stderr)
-        snapshots[mode] = {'exit': process.returncode,
-            'boogie': {p.name: sha(p) for p in observations.glob('*.bpl')},
-            'stdout': sha(observations / 'stdout'), 'stderr': sha(observations / 'stderr')}
-        shutil.move(str(observations), str(output / ('library-' + mode)))
-    return {'scope': 'literal parsed/resolved/Boogie output, malformed input diagnostics, full source-library Boogie',
-            'corpus': results, 'library': snapshots,
-            'passed': all(row['passed'] for row in results) and snapshots['baseline'] == snapshots['candidate'] and
-                      snapshots['baseline']['exit'] == 0 and bool(snapshots['baseline']['boogie'])}
+    # Disabled artifact output and invalid-record error paths must also stay literal.
+    source.write_text('method Main() { print 1 + 2; }\n')
+    invalid_record = input_dir / 'invalid.dtr'
+    invalid_record.write_text('invalid translation record\n')
+    for scenario in ['automatic-record', 'missing-record', 'invalid-record']:
+        snapshots = {}
+        for mode, binary in [('baseline', args.baseline), ('candidate', args.candidate)]:
+            observations = input_dir / 'artifacts'
+            observations.mkdir()
+            command = [binary, 'translate', 'py', str(source), '--no-verify', '--output', str(observations / 'test')]
+            if scenario != 'automatic-record':
+                command += ['--translation-record', str(invalid_record if scenario == 'invalid-record' else input_dir / 'missing.dtr')]
+            process = subprocess.run(command, cwd=input_dir, capture_output=True, timeout=120)
+            (observations / 'stdout').write_bytes(process.stdout)
+            (observations / 'stderr').write_bytes(process.stderr)
+            snapshots[mode] = {'exit': process.returncode, 'bytes': files(observations)}
+            shutil.move(str(observations), str(output / (scenario + '-' + mode)))
+        expected = snapshots['baseline']['exit'] == 0 if scenario == 'automatic-record' else snapshots['baseline']['exit'] != 0
+        results.append({'case': scenario, 'snapshots': snapshots,
+                        'passed': snapshots['baseline'] == snapshots['candidate'] and expected})
+    return {'scope': 'literal parsed/resolved/Boogie output and malformed input diagnostics',
+            'corpus': results, 'passed': all(row['passed'] for row in results)}
 
 
 def main():

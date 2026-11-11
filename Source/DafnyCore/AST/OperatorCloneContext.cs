@@ -10,6 +10,7 @@ public sealed class OperatorCloneContext {
   private readonly HashSet<Declaration> required = new();
   public bool HasSelections { get; set; }
   public VisibilityScope ExportScope { get; set; }
+  public ModuleDefinition SystemModule { get; set; }
 
   public void Register(Declaration source, Declaration target) {
     finalDeclarations[source] = target;
@@ -24,7 +25,10 @@ public sealed class OperatorCloneContext {
     if (target == null && required.Contains(source)) {
       throw new InvalidOperationException("operator selection has no final declaration correspondence");
     }
-    if (ExportScope != null) {
+    // Type parameters are binders, not exported declarations. Compiler-owned type
+    // heads keep their shared identities rather than passing through an export facade.
+    if (ExportScope != null && source is not TypeParameter &&
+        !(source is TopLevelDecl top && ReferenceEquals(top.EnclosingModuleDefinition, SystemModule))) {
       if (!source.IsVisibleInScope(ExportScope) ||
           source is TopLevelDeclWithMembers and not DefaultClassDecl && !source.IsRevealedInScope(ExportScope)) {
         throw new InvalidOperationException("operator selection cannot be transported into this export view");

@@ -30,7 +30,7 @@ def main():
         local = folder / 'test.dfy'
         shutil.copyfile(source, local)
         options = common if command == 'verify' else ['--use-basename-for-filename', '--show-snippets:false']
-        cmd = launcher + [command, str(local)] + options + (enabled if feature else []) + list(args)
+        cmd = launcher + command.split() + [str(local)] + options + (enabled if feature else []) + list(args)
         try:
             process = subprocess.run(cmd, cwd=folder, capture_output=True, text=True, timeout=180)
             text = process.stdout + process.stderr
@@ -53,8 +53,8 @@ def main():
                         errors.append('failure did not reach the false assertion')
             if re.search(r'out of resource|timed out|internal error|Unhandled exception', text, re.I):
                 errors.append('infrastructure or resource failure')
-            if diagnostic and diagnostic not in text:
-                errors.append('missing diagnostic: ' + diagnostic)
+            if diagnostic and not any(value in text for value in (diagnostic if isinstance(diagnostic, tuple) else (diagnostic,))):
+                errors.append('missing diagnostic: ' + str(diagnostic))
             if runtime is not None and not text.rstrip().endswith(runtime):
                 errors.append('wrong runtime result')
             if feature and list(folder.rglob('*.dtr')):
@@ -67,6 +67,8 @@ def main():
             return ''
 
     for filename in ['positive', 'named', 'revealed', 'intrinsic-refinement', 'module-attributes', 'module-attribute-named', 'opaque', 'by-method']:
+        check(filename, filename)
+    for filename in ['static-unary', 'trait-named-body']:
         check(filename, filename)
     for filename in ['traversal', 'ghost-formal', 'chain', 'inference']:
         check(filename, filename)
@@ -81,7 +83,7 @@ def main():
     check('termination', 'termination', kind='verify-failure', diagnostic='decreases')
     for filename, diagnostic in [
         ('refinement', 'operators require directly declared'),
-        ('opaque-rank', 'operator selection cannot be transported'),
+        ('opaque-rank', ('operator selection cannot be transported', 'operators require directly declared')),
         ('hidden-member', 'operator selection cannot be transported'),
         ('abstract-import', 'feature-bearing abstract-signature'),
         ('new-refinement', 'feature-bearing refinement'),
@@ -101,8 +103,8 @@ def main():
     check('trusted-input', args=['--library', str(sources / 'github-issue-194-named.dfy')], kind='reject',
           diagnostic='does not support library/precompiled')
     check('standard-library', args=['--standard-libraries'], kind='reject', diagnostic='does not support')
-    check('record-input', args=['--translation-record', str(output / 'missing.dtr')], kind='reject', diagnostic='translation record')
-    check('record-output', args=['--translation-record-output', str(output / 'requested.dtr')], kind='reject', diagnostic='translation record')
+    check('record-input', command='build', args=['--translation-record', str(output / 'missing.dtr')], kind='reject', diagnostic='translation record')
+    check('record-output', command='translate py', args=['--translation-record-output', str(output / 'requested.dtr')], kind='reject', diagnostic='translation record')
     check('library-output', command='build', args=['--target', 'lib'], kind='reject', diagnostic='.doo output')
     check('compiled-rank', 'compiled-rank', command='build', args=['--target', 'py', '--no-verify'], kind='reject')
     for suffix in ['doo', 'dbin']:

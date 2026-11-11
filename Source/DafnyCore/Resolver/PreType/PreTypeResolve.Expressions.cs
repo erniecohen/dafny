@@ -2016,8 +2016,8 @@ namespace Microsoft.Dafny {
     }
 
     private FunctionCallExpr ResolveSelectedFunctionCall(IOrigin origin, Token closeParen, ActualBindings bindings,
-      MemberSelectExpr mse, ResolutionContext resolutionContext, Label atLabel = null) {
-      var errorCount = ErrorCount;
+      MemberSelectExpr mse, ResolutionContext resolutionContext, Label atLabel = null, int? priorErrorCount = null) {
+      var errorCount = priorErrorCount ?? ErrorCount;
       var callee = (Function)mse.Member;
       var rr = new FunctionCallExpr(origin, mse.MemberNameNode, mse.Obj, origin, closeParen, bindings, atLabel) {
         Function = callee,
@@ -2088,7 +2088,7 @@ namespace Microsoft.Dafny {
             atLabel = null;
           }
           if (callee != null) {
-            r = ResolveSelectedFunctionCall(e.Origin, e.CloseParen, e.Bindings, mse, resolutionContext, atLabel);
+            r = ResolveSelectedFunctionCall(e.Origin, e.CloseParen, e.Bindings, mse, resolutionContext, atLabel, errorCount);
           } else {
             // resolve as an ApplyExpr
             var formals = new List<Formal>();

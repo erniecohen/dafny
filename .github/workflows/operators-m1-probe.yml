@@ -3,6 +3,9 @@ on:
   push:
     branches: ['codex/194-operators-m1']
   workflow_dispatch:
+concurrency:
+  group: operators-m1-probe-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:

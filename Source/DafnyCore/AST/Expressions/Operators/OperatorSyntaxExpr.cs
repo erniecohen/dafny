@@ -20,7 +20,11 @@ public class OperatorSyntaxExpr : ConcreteSyntaxExpression, ICloneable<OperatorS
 
   public OperatorSyntaxExpr(Cloner cloner, OperatorSyntaxExpr original) : base(cloner, original) {
     cloner.OperatorClones.HasSelections = true;
-    Syntax = cloner.CloneExpr(original.Syntax);
+    // The root is printable source notation, not a semantic opcode. Rebuild it
+    // directly so specialized semantic cloners never inspect its unresolved opcode.
+    Syntax = original.Syntax is BinaryExpr binary
+      ? new BinaryExpr(cloner.Origin(binary.Origin), binary.Op, cloner.CloneExpr(binary.E0), cloner.CloneExpr(binary.E1))
+      : new NegationExpression(cloner.Origin(original.Syntax.Origin), cloner.CloneExpr(((NegationExpression)original.Syntax).E));
     Selection = original.Selection;
     ResolutionStarted = original.ResolutionStarted;
     ReplayRequired = original.ReplayRequired || original.ResolutionStarted || original.ResolvedExpression != null;
