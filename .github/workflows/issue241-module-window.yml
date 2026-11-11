@@ -172,6 +172,7 @@ jobs:
         run: |
           python3 "$SCRIPT" report artifacts report.md || true
           cat report.md >> "$GITHUB_STEP_SUMMARY"
+          cat report.md
       - uses: actions/upload-artifact@v4
         if: always()
         with:
