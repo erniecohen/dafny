@@ -21,3 +21,10 @@ method FalseControl() {
 method ConjunctionLocation() {
   assert (1 decreases to 0) && (0 decreases to 1);
 }
+lemma OpaqueLocation<T>(x: T) {
+  assert (x nonincreases to x) && (x decreases to x);
+}
+codatatype Stream = More(head: int, tail: Stream)
+lemma CoLocation(s: Stream) {
+  assert (s nonincreases to s) && (s decreases to s);
+}
