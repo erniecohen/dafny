@@ -1462,11 +1462,11 @@ function Map#Glue(Set, [Box]Box, Ty): Map;
 axiom (forall a: Set, b: [Box]Box, t: Ty ::
   { Map#Domain(Map#Glue(a, b, t)) }
   Map#Domain(Map#Glue(a, b, t)) == a);
-// Only within the domain: map equality ignores the elements outside it, so Map#Elements(Map#Glue(a, b, t)) == b
-// would make b and b' equal whenever they agree on a.
+// Inside the domain only: Map#Equal ignores elements outside it.
+// The domain of the glued map equals a; using it here improves matching costs.
 axiom (forall a: Set, b: [Box]Box, t: Ty, bx: Box ::
   { Map#Elements(Map#Glue(a, b, t))[bx] }
-  Set#IsMember(a, bx) ==> Map#Elements(Map#Glue(a, b, t))[bx] == b[bx]);
+  Map#Domain(Map#Glue(a, b, t))[bx] ==> Map#Elements(Map#Glue(a, b, t))[bx] == b[bx]);
 axiom (forall a: Set, b: [Box]Box, t0, t1: Ty ::
   { Map#Glue(a, b, TMap(t0, t1)) }
   // In the following line, no trigger needed, since the quantifier only gets used in negative contexts
@@ -1602,7 +1602,7 @@ axiom (forall a: [Box]bool, b: [Box]Box, t: Ty ::
 // Only within the domain, as for Map#Glue.
 axiom (forall a: [Box]bool, b: [Box]Box, t: Ty, bx: Box ::
   { IMap#Elements(IMap#Glue(a, b, t))[bx] }
-  a[bx] ==> IMap#Elements(IMap#Glue(a, b, t))[bx] == b[bx]);
+  IMap#Domain(IMap#Glue(a, b, t))[bx] ==> IMap#Elements(IMap#Glue(a, b, t))[bx] == b[bx]);
 axiom (forall a: [Box]bool, b: [Box]Box, t0, t1: Ty ::
   { IMap#Glue(a, b, TIMap(t0, t1)) }
   // In the following line, no trigger needed, since the quantifier only gets used in negative contexts
