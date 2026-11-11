@@ -1,0 +1,66 @@
+name: Issue 23 focused evidence
+on:
+  push:
+    branches: ['scratch/23-review-focused']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  focused:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue23-builds
+          run-id: 43107027172
+          github-token: ${{ github.token }}
+      - name: Unpack and pin Z3
+        run: |
+          tar -xzf builds.tar.gz
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+          unzip -q z3.zip
+      - name: Check fixtures and compare all printed modules
+        run: |
+          mkdir evidence
+          set +e
+          for variant in before after; do
+            mkdir -p evidence
+            python3 .github/review/issue23.py "$variant" focused "$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" > "focused-$variant.log" 2>&1
+            echo "$?" > evidence/probe-exit.txt
+            mv evidence "focused-$variant"
+          done
+          python3 - <<'PYCODE'
+          import hashlib, json
+          from pathlib import Path
+          a, b = Path('focused-before'), Path('focused-after')
+          assert (a / 'probe-exit.txt').read_text().strip() == '0'
+          assert (b / 'probe-exit.txt').read_text().strip() == '0'
+          files = {p.name for p in a.glob('*.bpl')} - {'prelude.bpl'}
+          assert len(files) == 30
+          assert files == {p.name for p in b.glob('*.bpl')} - {'prelude.bpl'}
+          rows = []
+          for name in sorted(files):
+              x, y = (p / name for p in [a, b])
+              assert x.read_bytes() == y.read_bytes(), name
+              rows.append({'file': name, 'sha256': hashlib.sha256(x.read_bytes()).hexdigest()})
+          Path('boogie-comparison.json').write_text(json.dumps(rows, indent=2))
+          print('30 printed module files byte-identical; all fixtures matched in both resolvers')
+          PYCODE
+          echo "$?" > comparison-exit.txt
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue23-focused-comparison
+          path: |
+            focused-before
+            focused-after
+            focused-*.log
+            boogie-comparison.json
+            comparison-exit.txt
+          compression-level: 9
+          retention-days: 90

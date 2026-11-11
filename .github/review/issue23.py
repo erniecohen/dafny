@@ -71,6 +71,10 @@ elif scope == 'focused':
                    '--cores:2', '--verification-time-limit:300', '--resource-limit:50e6']
             r = call(cmd, fixture.parent)
             results.append(r)
+            expected = fixture.with_suffix('.dfy.expect').read_text()
+            expected_exit = 4 if '%exits-with 4' in fixture.read_text().splitlines()[0] else 0
+            if r['exit'] != expected_exit or r['stdout'] + r['stderr'] != expected:
+                raise RuntimeError('Fixture differs: ' + json.dumps(r))
             (OUT / (fixture.name + '.' + refresh + '.expect')).write_text(r['stdout'] + r['stderr'])
     # Exact bprint comparison, with identical paths/options/prelude in both builds.
     # The only generating-code difference is the datatype if/else refactor.
@@ -82,9 +86,10 @@ elif scope == 'focused':
             continue
         for refresh in ['false', 'true']:
             dest = OUT / 'sample.bpl'
-            r = call([binary, 'verify', sample, '--solver-path', z3, '--no-verify',
-                      '--type-system-refresh:' + refresh, '--prelude', ROOT / 'Source/DafnyCore/DafnyPrelude.bpl',
-                      '--boogie', '/env:0', '--bprint', dest], LIT)
+            r = call([binary, sample, '/compile:0', '/noVerify',
+                      '/typeSystemRefresh:' + ('1' if refresh == 'true' else '0'),
+                      '/dprelude:' + str(ROOT / 'Source/DafnyCore/DafnyPrelude.bpl'),
+                      '/env:0', '/print:' + str(dest)], LIT)
             results.append(r)
             printed = sorted(OUT.glob('sample*.bpl'))
             if r['exit'] != 0 or not printed:
@@ -98,7 +103,8 @@ elif scope == 'focused':
         for encoding in ['a', 'm']:
             log = OUT / (sample.replace('/', '_') + '.' + encoding + '.json')
             r = call([binary, 'verify', sample, '--solver-path', z3,
-                      '--boogie', '/typeEncoding:' + encoding, '--resource-limit', '16000000',
+                      '--boogie', '/typeEncoding:' + encoding, '--boogie', '/deterministicLiteralHashes:1',
+                      '--boogie', '/restartProver', '--resource-limit', '16000000',
                       '--verification-time-limit', '60', '--cores', '1',
                       '--log-format', 'json;LogFileName=' + str(log)], LIT)
             results.append(r)
