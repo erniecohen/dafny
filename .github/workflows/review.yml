@@ -646,8 +646,8 @@ jobs:
       - name: Before and after helper costs
         if: matrix.node == '22'
         run: |
-          git fetch --depth=1 origin b98637c6677560944b2498002ecd32ec987a90af
-          git show b98637c6677560944b2498002ecd32ec987a90af:Source/DafnyRuntime/DafnyRuntimeJs/DafnyRuntime.js > before.js
+          git fetch --depth=1 origin 428e348b0b125cb67505f03a0026b3f497f98e48
+          git show 428e348b0b125cb67505f03a0026b3f497f98e48:Source/DafnyRuntime/DafnyRuntimeJs/DafnyRuntime.js > before.js
           if node .github/review/246-js-bitwise.cjs before.js > before-control.txt 2>&1; then
             echo "The original runtime unexpectedly passed the regression"
             exit 1
@@ -787,6 +787,11 @@ jobs:
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~IncrementalBitvectorMembersTest" \
             --blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none
+      - name: Test current counterexample positions with module-local state labels
+        run: |
+          DAFNY_TEST_Z3="$Z3" dotnet test Source/DafnyLanguageServer.Test -c Release --no-build \
+            --filter "FullyQualifiedName~ParallelResolutionCounterexamplesUseCurrentPositions" \
+            --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none
 
   finite-support:
     name: Finite-support encoding and boundary controls

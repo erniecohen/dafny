@@ -859,6 +859,14 @@ not carry translation history between modules. Translation uses the prerequisite
 closure for builtin declarations, bitvector axioms, function fuel and trait-parent
 axioms. Proof-dependency IDs are module-qualified as well.
 
+Capture-state labels use the module identity, and snapshot implementation IDs use
+the full module key. State and source-comment ordinals restart in each translator. Physical paths and line
+numbers do not enter those Boogie annotations. A compilation-local reporting map
+rebinds captured states to current source locations for counterexamples and test
+generation. The IDE uses the resolved program's map, including after an unrelated
+module shifts source lines. Raw saved model files contain the stable state IDs;
+their physical source descriptions require that invocation's reporting map.
+
 Remaining process state is deliberately outside the content key: visibility
 tokens are atomic opaque set identities and their memo tables are synchronized;
 they are not emitted as generated identifiers. Quantifier construction still
