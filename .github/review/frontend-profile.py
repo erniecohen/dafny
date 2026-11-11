@@ -388,21 +388,30 @@ def cmd_heap(a):
     return 0
 
 
-def gcdump_report(path):
-    """(type, count, bytes) of `dotnet-gcdump report`, largest first: a type's rows (the report splits
-    large objects into "(Bytes > 10K)" and "(Bytes > 1K)" rows) are summed, and assemblies dropped."""
-    text = subprocess.run(['dotnet-gcdump', 'report', str(path)], capture_output=True, text=True).stdout
+def parse_gcdump_text(text):
+    """(type, count, bytes) rows and the heap total of a `dotnet-gcdump report`, largest first.
+
+    The report's "Object Bytes" column is the size of one object of the row (its average), so a
+    row's bytes are that times its count; a type's rows (the report splits large objects into
+    "(Bytes > 10K)" and "(Bytes > 1K)" rows) are summed, and assemblies dropped."""
     agg = defaultdict(lambda: [0, 0])
     for line in text.splitlines():
         m = re.match(r'\s*([\d,]+)\s+([\d,]+)\s+(.+?)\s*$', line)
         if m:
             typ = re.sub(r'\s*\[[^\]]*\]$', '', m.group(3))
             typ = re.sub(r'\s*\(Bytes > [^)]*\)', '', typ)
-            agg[typ][0] += int(m.group(2).replace(',', ''))
-            agg[typ][1] += int(m.group(1).replace(',', ''))
+            count = int(m.group(2).replace(',', ''))
+            agg[typ][0] += count
+            agg[typ][1] += int(m.group(1).replace(',', '')) * count
     rows = sorted(((t, c, b) for t, (c, b) in agg.items()), key=lambda r: -r[2])
     m = re.search(r'^\s*([\d,]+)\s+GC Heap bytes', text, re.M)
     total = int(m.group(1).replace(',', '')) if m else sum(r[2] for r in rows)
+    return rows, total
+
+
+def gcdump_report(path):
+    text = subprocess.run(['dotnet-gcdump', 'report', str(path)], capture_output=True, text=True).stdout
+    rows, total = parse_gcdump_text(text)
     return text, rows, total
 
 
@@ -513,7 +522,7 @@ def cmd_analyze(a):
     modules = read_csv(dirs, 'modules')
     gcs = read_csv(dirs, 'gc')
     heap = read_csv(dirs, 'heap')
-    dumps = read_csv(dirs, 'gcdump')
+    dumps = gcdump_rows(dirs) or read_csv(dirs, 'gcdump')
     machines = {str(p.parent.name): json.loads(p.read_text()) for d in dirs for p in Path(d).rglob('machine.json')}
     L = []
     p = L.append
@@ -608,6 +617,23 @@ def cmd_analyze(a):
     Path(a.out).write_text('\n'.join(L) + '\n')
     print('\n'.join(L))
     return 0
+
+
+def gcdump_rows(dirs, top=25):
+    """The type tables of the saved `dotnet-gcdump report` texts (gcdumps/<corpus>__k<K>__<point>.txt)."""
+    rows = []
+    for d in dirs:
+        for p in sorted(Path(d).rglob('gcdumps/*.txt')):
+            m = re.match(r'(.+)__k(\d+)__(.+)\.txt$', p.name)
+            if not m:
+                continue
+            types, total = parse_gcdump_text(p.read_text())
+            covered = sum(t[2] for t in types)
+            for rank, (typ, count, size) in enumerate(types[:top], 1):
+                rows.append({'corpus': m.group(1), 'window': m.group(2), 'point': m.group(3), 'rank': rank,
+                             'type': typ, 'count': count, 'bytes': size, 'dump_total_bytes': total,
+                             'covered_bytes': covered})
+    return rows
 
 
 def paired_interest(x, y):
@@ -808,7 +834,9 @@ def analyze_heap(heap, dumps, p, rng):
                           key=lambda t: (t[0], int(t[1]), t[2])):
             rows = [d for d in dumps if (d['corpus'], d['window'], d['point']) == key]
             total = float(rows[0]['dump_total_bytes'])
-            p(f"**{key[0]}, K={key[1]}, at {key[2]}** ({total / 1e6:,.0f} MB in all): " + '; '.join(
+            cov = num(rows[0].get('covered_bytes'))
+            note = f', the rows cover {cov / total:.0%}' if cov and total else ''
+            p(f"**{key[0]}, K={key[1]}, at {key[2]}** ({total / 1e6:,.0f} MB in all{note}): " + '; '.join(
                 f"`{d['type']}` {float(d['bytes']) / 1e6:,.1f} MB ({int(d['count']):,})" for d in rows[:10]) + '.\n')
 
 
