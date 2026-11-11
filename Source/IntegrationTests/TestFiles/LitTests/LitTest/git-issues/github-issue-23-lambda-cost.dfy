@@ -1,6 +1,6 @@
-// RUN: %verify --type-system-refresh:false "%s" > "%t"
+// RUN: %verify --solver-path %review-z3 --type-system-refresh:false "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
-// RUN: %verify --type-system-refresh "%s" > "%t"
+// RUN: %verify --solver-path %review-z3 --type-system-refresh "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // This fork keeps source lambda permissions under the formal type guard, instantiated

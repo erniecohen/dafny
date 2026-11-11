@@ -64,7 +64,7 @@ elif scope == 'focused':
     # Exact bprint comparison, with identical paths/options/prelude in both builds.
     # The only generating-code difference is the datatype if/else refactor.
     for sample in ['dafny0/Maps.dfy', 'dafny0/Datatypes.dfy', 'dafny0/Tuples.dfy',
-                   'dafny2/UnionFind.dfy', 'git-issues/git-issue-6531.dfy',
+                   'dafny4/UnionFind.dfy', 'git-issues/git-issue-6531.dfy',
                    'git-issues/github-issue-23-lambda-cost.dfy']:
         if not (LIT / sample).exists():
             results.append({'missing_sample': sample})
@@ -77,4 +77,14 @@ elif scope == 'focused':
             results.append(r)
             if dest.exists():
                 dest.rename(OUT / (sample.replace('/', '_') + '.' + refresh + '.bpl'))
+    for sample in ['dafny0/Maps.dfy', 'dafny0/Datatypes.dfy',
+                   'git-issues/github-issue-23-box-bad.dfy',
+                   'git-issues/github-issue-23-lambda-cost.dfy']:
+        for encoding in ['a', 'm']:
+            log = OUT / (sample.replace('/', '_') + '.' + encoding + '.json')
+            r = call([binary, 'verify', sample, '--solver-path', z3,
+                      '--boogie', '/typeEncoding:' + encoding, '--resource-limit', '16000000',
+                      '--verification-time-limit', '60', '--cores', '1',
+                      '--log-format', 'json;LogFileName=' + str(log)], LIT)
+            results.append(r)
     (OUT / 'results.json').write_text(json.dumps(results, indent=2))

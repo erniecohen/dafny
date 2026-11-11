@@ -1,6 +1,6 @@
-// RUN: %exits-with 4 %verify --type-system-refresh:false "%s" > "%t"
+// RUN: %exits-with 4 %verify --solver-path %review-z3 --type-system-refresh:false "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
-// RUN: %exits-with 4 %verify --type-system-refresh "%s" > "%t"
+// RUN: %exits-with 4 %verify --solver-path %review-z3 --type-system-refresh "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // No call permission may escape a lambda whose formal type is empty.
