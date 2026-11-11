@@ -1,8 +1,8 @@
-# #211 M4b: declared openness and reusable modular termination contracts
+# M4b for https://github.com/erniecohen/dafny/issues/211: declared openness and reusable modular termination contracts
 
-**Status:** revised design for review; this PR changes no product code. It replaces the A2 recommendation in [PR #244][pr244] in response to [the latest request][request].
+**Status:** design incorporating the [accepted review](https://github.com/erniecohen/dafny/issues/211#issuecomment-6806579143) and [coordinator note](https://github.com/erniecohen/dafny/issues/211#issuecomment-6806619222); this PR changes no product code. It replaces the A2 recommendation in [https://github.com/erniecohen/dafny/pull/244][pr244] in response to [the latest request][request].
 
-**Target:** `review/4.11.0`, inspected at `5f8855a4d9314e37f87d9900682ad71cc8434a55`. This revision incorporates M1–M4a, the review of the previous design, and the separate work in [#241][cache] and [#245][orders].
+**Target:** `review/4.11.0`, inspected at `428e348b0b125cb67505f03a0026b3f497f98e48`. This revision incorporates M1–M4a, the review of the previous design, and the separate work in [https://github.com/erniecohen/dafny/issues/241][cache] and [https://github.com/erniecohen/dafny/issues/245][orders].
 
 **Decision:** declare openness in the defining module, verify a producer against stable imported contracts, and admit its checked `.doo` without replaying its proofs. Reject off-produced, incomplete, outdated or incompatible artifacts under the option. In addition to trait openness, make the termination effect of imported operations a specification: a client must never discover a new obligation by inspecting a changed private body.
 
@@ -16,11 +16,11 @@ Add one optional checked specification attribute, `{:termination_closed}`, for c
 
 Store a versioned on-only verification record in `.doo`, bound to the producer's source snapshot, exact semantic build, contracts, options and completed proof obligations. Dependencies are matched by **public contract fingerprints**, not implementation hashes. A library's own body change requires a fresh record for that library; an unchanged public contract leaves dependent records applicable.
 
-Global and callback bounds remain ordinary, duplicable specifications. No permission consumption, linearity or separation logic is introduced. M4b uses the existing tuple order through an abstract comparison interface. #245 may supply other verified orders without changing the extension, call, substitution or artifact rules.
+Global and callback bounds remain ordinary, duplicable specifications. No permission consumption, linearity or separation logic is introduced. M4b uses the corrected tuple comparison through an abstract comparison interface. https://github.com/erniecohen/dafny/issues/245 may supply other verified orders without changing the extension, call, substitution or artifact rules.
 
 This design does not claim to make all of `Std/Actions` checkable by adding openness markers. Section 9 identifies M4a rank-computation and M3 stored-arrow limitations. A fully certified standard-library distribution is an acceptance gate, not an exemption.
 
-The relevant lesson from Jacobs, Bosnacki and Kuiper is that dynamic-call levels belong in interfaces and implementations satisfy them modularly. The ECOOP 2015 paper develops call permissions; the 2018 treatment presents sequential object levels before its separation-logic and concurrency extensions. This design uses the sequential specification principle and leaves richer order instances to #245. [ECOOP 2015][ecoop]; [TOPLAS 2018][toplas].
+The relevant lesson from Jacobs, Bosnacki and Kuiper is that dynamic-call levels belong in interfaces and implementations satisfy them modularly. The ECOOP 2015 paper develops call permissions; the 2018 treatment presents sequential object levels before its separation-logic and concurrency extensions. This design uses the sequential specification principle and leaves richer order instances to https://github.com/erniecohen/dafny/issues/245. [ECOOP 2015][ecoop]; [TOPLAS 2018][toplas].
 
 ## 2. Evidence and two different defects
 
@@ -264,7 +264,7 @@ Do not hash generated checked Std certificates into the identity those certifica
 
 Retain existing `DooFile.Validate` language/option checks. Additionally require the same interpretation profile for retained source: modular mode, resolver engine, language/type-system options, enabled semantic axioms and contract/order schema. Initially require exact effective equality of options that can change parsing, resolution, generated obligations or admitted assumptions; relaxation needs a reviewed compatibility relation. Do not treat a permissive old `NoOpOptionCheck` as proof compatibility.
 
-A consumer may select a different supported solver or resource budget for **its own** obligations. It is reusing an established library theorem, not reproducing a library run. Record producer solver provenance and reject unsupported known-unsound profiles, but do not require the consumer's solver binary to equal it. A verifier/Boogie/prelude/semantic-build mismatch requires rebuilding. #241's exact-result cache has a different solver/seed/limit equality requirement.
+A consumer may select a different supported solver or resource budget for **its own** obligations. It is reusing an established library theorem, not reproducing a library run. Record producer solver provenance and reject unsupported known-unsound profiles, but do not require the consumer's solver binary to equal it. A verifier/Boogie/prelude/semantic-build mismatch requires rebuilding. https://github.com/erniecohen/dafny/issues/241's exact-result cache has a different solver/seed/limit equality requirement.
 
 ### 5.4 Issuance requires complete verification
 
@@ -282,6 +282,29 @@ An explicitly assumed extern/bodyless contract is a recorded premise outside the
 
 Concrete refinements must check changed/inherited implementation obligations against actual bindings. Existing inherited-assertion elision, `$_reverifyPost` guards, or reused source origins cannot substitute for a completion covering this realization. Force the relevant checks when they are not justified by an admitted parametric theorem. Avoid duplicating obligations for a pure export-view clone.
 
+Derive expected obligation coverage from owned resolved source roles
+before filtering or scheduling. Reconcile every expected role with
+emitted/completed proof parts or a reviewed static discharge.
+Successfully completing all scheduled tasks does not establish
+coverage; an unexpectedly absent task mapping is an error.
+
+A proof part completes only on SolverOutcome.Valid, or applicable
+reuse of an equally conclusive result. UI Correct, command success,
+and SolverOutcome.Bounded are insufficient.
+
+Aggregate by immutable producer, resolution generation and
+obligation identity across sequential and concurrent module paths.
+Do not publish completion while required work remains pending,
+failed, cancelled, stale or unaccounted for.
+
+Completion seals retained program bytes, contracts, semantic profile,
+imports and implementation generation. PostVerification rewriting,
+instrumentation or later mutations must preserve that sealed
+semantic snapshot by construction, or invalidate completion.
+Emission must not attach an earlier proof to changed serialized
+source. Native-only transformations retain the ordinary compiler
+correctness premise.
+
 ### 5.5 Consumer admission lifecycle
 
 1. **Load immutable inputs.** Recognize the on-only schema; validate mode, supported exact build, complete status, program and metadata digests, and source interpretation options. Unknown schemas fail closed. Hold libraries in a pending-admission state rather than immediately exempting them through `AlreadyVerifiedRoots`.
@@ -292,7 +315,7 @@ Concrete refinements must check changed/inherited implementation obligations aga
 
 Reset admission before each semantic resolution generation, including IDE/module-cache paths. Do not clone or serialize live admission objects. Cancellation, AST-changing postpasses, changed bindings or semantic options invalidate pending state. Construct one immutable final analysis after supported postpasses for both resolver engines; avoid a `PostResolve` analysis disagreeing with the program-keyed lazy `Of` cache.
 
-The `.doo` source still needs parsing/resolution in this design. Zero producer **proof replay** is not zero front-end work. #241 can later cache appropriate resolved interfaces.
+The `.doo` source still needs parsing/resolution in this design. Zero producer **proof replay** is not zero front-end work. https://github.com/erniecohen/dafny/issues/241 can later cache appropriate resolved interfaces.
 
 ### 5.6 Abstract imports, exports and refinement
 
@@ -312,7 +335,7 @@ Use a separate certified Std artifact set selected only under the option in **bo
 
 An unchanged self-contained `.doo` remains a checked **old source snapshot** if unrelated original `.dfy` files are edited later. It cannot know those files should replace it. Project freshness checks should rebuild selected outdated outputs; explicit artifact input selects its retained snapshot. A changed `program` entry or changed interpretation options with an old record is rejected. Never mix a proof of old retained source with newly read implementation bytes. Native code/source correspondence retains the normal compiler/linker/extern premise.
 
-## 6. Requirements on bound orders and the #245 interface
+## 6. Requirements on bound orders and the https://github.com/erniecohen/dafny/issues/245 interface
 
 ### 6.1 Algebraic requirements
 
@@ -327,13 +350,65 @@ A transitive well-founded strict order with `<=o` defined as equality-or-strict 
 
 Add a fresh greatest TOP for missing bounds; TOP is not strictly below itself. Compare distinct order IDs only through an explicitly checked common order/embedding that preserves the relations and carrier conditions. An implementation cannot choose an unrelated private order for an inherited bound. Order identity, parameters and embeddings belong to the public specification.
 
-Provide an internal adapter with operations conceptually named `CheckCarrier`, `CheckStrict`, `CheckNonIncrease`, `Substitute`, `Snapshot` and `CanonicalContractId`. The current implementation dispatches to existing tuple/decreases code, including lower-bound checks. Replace M2's appended-component `AtMost` trick by the adapter's nonincrease operation at its callers; a future order must not be forced to simulate tuple syntax. #245 owns user syntax, order declarations, well-foundedness witnesses and library instances.
+Provide an internal adapter with operations conceptually named `CheckCarrier`, `CheckStrict`, `CheckNonIncrease`, `Substitute`, `Snapshot` and `CanonicalContractId`. The built-in tuple implementation must satisfy the construction in §6.2. Replace M2's appended-component `AtMost` trick by the adapter's nonincrease operation at its callers; a future order must not be forced to simulate tuple syntax. https://github.com/erniecohen/dafny/issues/245 owns user syntax, order declarations, well-foundedness witnesses and library instances.
 
-### 6.2 The tuple argument has a finite-arity premise
+### 6.2 A compatible tuple comparison
 
-Arbitrary-length TOP-padded tuples are not one well-founded order: `(0) > (0,0) > (0,0,0) > ...`. For the current language, any fixed finite composition has finitely many syntactic clauses and a finite maximum tuple arity. Padding to that maximum yields the finite lexicographic construction used by the proof. Type compatibility and existing component lower-bound premises remain necessary.
+Each component order supplies a strict relation s and a nonincrease
+relation w. The strict relation is well-founded; w is a preorder
+containing s; and both absorption laws hold:
+a s b w c implies a s c, and a w b s c implies a s c.
 
-Thus the current adapter is sound per finite accepted composition; do not claim its proof covers an unrestricted first-class variable-length tuple datatype. #245 must prove well-foundedness for the actual carrier it exposes.
+Lift these pairs lexicographically. Tuple strict decrease holds when
+some coordinate is strictly smaller and every preceding coordinate
+is weakly smaller. Tuple nonincrease holds when either tuple strict
+decrease holds or every coordinate is weakly smaller.
+
+Generate the comparisons right to left:
+L_i = s_i || (w_i && L_{i+1})
+N_i = s_i || (w_i && N_{i+1})
+with L_end = false and N_end = true.
+
+A suffix can therefore increase only after an actual strict decrease.
+A fractional real decrease can remain useful when the suffix does
+not increase. Do not use equality-controlled suffix discarding.
+
+For integer components, one compatible pair retaining terminal
+negative values is:
+s(x,y) = 0 <= y && x < y
+w(x,y) = x == y || (0 <= y && x <= y).
+
+For real components, use the same w and:
+s(x,y) = 0 <= y && x <= y - 1.
+
+Put these lower-bound conditions inside the component relations;
+an earlier weak comparison does not discharge them.
+
+Compare distinct component families only through a checked common
+embedding. In particular, sequence and inductive-datatype ranks may
+use a common natural-rank pair, with consistent strict and weak
+comparisons. Otherwise they are incomparable.
+
+Conceptually pad tuples with TOP. Every proper component is strictly
+below TOP; TOP is weakly below only itself. Apply the same recurrence
+to the padded tuples, without a special allowNoChange shortcut.
+
+For each finite linked composition, tuple arities have a finite
+maximum. That maximum is used only in the metatheory and is not
+consumer-dependent contract metadata. An unrestricted first-class
+variable-length tuple order needs its own well-foundedness proof.
+
+The lifted relations satisfy the required laws. For transitivity
+and absorption, use the earlier decisive coordinate. For
+well-foundedness, choose the least coordinate decisive infinitely
+often in a hypothetical infinite chain; after finitely many earlier
+decisions, it has only weak steps and infinitely many strict steps,
+contradicting its component laws.
+
+Under --modular-termination, use these comparisons for global calls,
+callback application/forwarding, overrides, and the ordinary
+termination checks on which the composition theorem depends.
+Preserve the existing option-off path.
 
 ### 6.3 When richer orders help
 
@@ -341,7 +416,7 @@ Unknown clients do not by themselves require multisets. A numeric callback bound
 
 A library cannot choose one fixed finite natural bound that dominates all natural bounds future clients might choose. It must expose a bound parameter, restrict clients, or use an order with a suitable larger element. Changing orders does not eliminate this specification requirement. Numeric heights with explicit composition contracts often cover finite immutable wrapper structures.
 
-Richer orders help when composition replaces one component by an arbitrary finite collection of smaller components while preserving an unknown common context. A Dershowitz–Manna multiset extension can justify replacing `{m} + L` by `{l1,...,lk} + L` when all li are below m, independently of k and the common L. Built-in strict-submultiset decrease cannot introduce those new smaller elements. A verified #245 instance could justify this without changing any M4b rule.
+Richer orders help when composition replaces one component by an arbitrary finite collection of smaller components while preserving an unknown common context. A Dershowitz–Manna multiset extension can justify replacing `{m} + L` by `{l1,...,lk} + L` when all li are below m, independently of k and the common L. Built-in strict-submultiset decrease cannot introduce those new smaller elements. A verified https://github.com/erniecohen/dafny/issues/245 instance could justify this without changing any M4b rule.
 
 This is an expressiveness/convenience distinction, not a claim that tuples containing ORDINAL cannot encode the same argument. An appropriate ordinal encoding can work, with its own proofs and annotation cost. Existing `Std.Termination.TerminationMetric` proves submultiset properties for its encoding; do not advertise it as an already implemented arbitrary DM replacement order. [Existing metric implementation][metric].
 
@@ -371,19 +446,56 @@ For callbacks, producer evidence establishes actual callback bound a at most the
 
 A later extension cannot change the producer's obligations: either its trait was extensible and already checked abstractly, or extension is rejected in the client. A new concrete refinement must establish its own realization invariant. Abstract bindings discharge the recorded acyclic static order and contract simulation before completion. Artifact validation prevents applying a theorem to changed contents/options or incompatible interfaces.
 
-### 7.3 Excluding infinite executions
+### 7.3 Termination of an accepted composition
 
-Assume an infinite execution in a complete accepted composition. Ordinary loop/local-termination checking rules out an infinite execution with only finitely many relevant nested calls; equivalently, use the usual call/loop expansion and finite-branching argument to obtain an infinite nested activation chain.
+The theorem applies to a complete total-correctness composition,
+conditional on valid recorded assumptions, sound underlying
+verification rules, and ordinary compiler/runtime correspondence.
+All ordinary comparisons used below employ the corrected adapter.
 
-An infinite chain cannot enter independently terminating Closed code. Once a General chain enters a proper bound, it cannot reset to TOP. If it contains infinitely many open dispatch/certified callback steps, weak steps do not undo strict progress. Absorption extracts an infinite descending `<o` sequence, contradicting well-foundedness.
+First establish the Closed stratum. Its computations cannot reach
+open dispatch or unknown applications, including through contracts,
+rank computations and implicit evaluations. Ordinary local
+termination and the acyclic static dependency discipline establish
+their termination independently of General computations.
 
-If only finitely many such steps occur, the remaining tail is covered by the ordinary termination discipline: statically ordered imports descend a finite acyclic order, local recursive SCCs descend their local measures, and ordinary higher-order calls use Dafny's existing formation/termination argument. This last clause is essential for the preserved TOP-only arrow fragment; **SCC reasoning alone is not a proof about arbitrary unknown function values**.
+Next establish termination at proper outer bounds by well-founded
+induction, combined with the ordinary module/SCC/local termination
+discipline. Exact General calls satisfy outer nonincrease and the
+ordinary discipline. Open calls strictly decrease the outer bound.
+Dispatch implementation selection and callback forwarding preserve
+that strict decrease by absorption. Thus infinitely many dynamic
+steps contradict outer well-foundedness; a tail of exact calls
+contradicts ordinary termination.
 
-This is a relative soundness argument for the new composition rules, not a mechanized proof of all of Dafny, Boogie or M1–M4a. Before a release claims to close #211, review the baseline higher-order tail lemma and the implementation coverage of implicit evaluations against this invariant. If a route lacks that justification, reject that route or supply its proof; do not assert that the abstract argument covers missing implementation obligations. No new counterexample to the existing TOP-only fragment was found in this source review.
+A bounded callback is justified by its formation proof under its
+captured allowance, for every legal invocation state and argument.
+Application, forwarding, .requires and .reads preserve that evidence.
+Stored or returned ordinary arrows do not acquire bounded evidence,
+and extensional equality does not establish implementation evidence.
+
+Finally establish the TOP-only higher-order fragment using the
+ordinary higher-order fundamental lemma: admitted function values
+map admissible arguments to terminating computations satisfying their
+contracts. Proper-bound and Closed computations are now established
+total callees. Lambda formation checks, recursive-function-reference
+restrictions and the local termination discipline establish this
+lemma; unknown applications are not fictitious static graph edges.
+
+Foreign implementations satisfy the previously published slot
+contracts. Export projection changes visibility, not slot identity.
+Concrete refinements establish fresh realization proofs. Abstract
+bindings discharge their contract simulations and static-predecessor
+requirements before admission. Consequently these boundaries
+preserve the induction hypotheses.
+
+The implementation must account for every explicit and implicit
+evaluation route. A missing formation, binding, rank-independence or
+coverage argument is an admission failure, not an assumed lemma.
 
 ### 7.4 Why circular logical ranks remain excluded
 
-The proof assumes actual well-founded values before using their decrease. M4a's closed stratum supplies this independence, including specification evaluation and `canCall` paths. A library cannot certify a rank by assuming the equations of the open computation that the rank is supposed to justify. Admitted imported rank helpers supply stable Closed contracts; changed private bodies must re-establish those contracts producer-side. Order well-foundedness witnesses from #245 must obey the same noncircularity requirement.
+The proof assumes actual well-founded values before using their decrease. M4a's closed stratum supplies this independence, including specification evaluation and `canCall` paths. A library cannot certify a rank by assuming the equations of the open computation that the rank is supposed to justify. Admitted imported rank helpers supply stable Closed contracts; changed private bodies must re-establish those contracts producer-side. Order well-foundedness witnesses from https://github.com/erniecohen/dafny/issues/245 must obey the same noncircularity requirement.
 
 ## 8. Modularity theorem and exact meaning of specification
 
@@ -406,7 +518,17 @@ Proof: interface resolution and artifact dependency matching use I alone. Each i
 
 The theorem intentionally includes revealed equations. If a client can unfold `function H` and its equation changes, its verification specification changed, even if `requires`, `ensures` and bounds did not. Methods and opaque/provided function bodies are the appropriate body-only substitution tests. Independently, the termination **effect** must remain declaration-based even when a body happens to be visible; do not infer extra termination permissions from that visibility.
 
-The theorem is about proof preservation. A wall-clock-limited SMT run can vary with scheduling and solver history. To approach literal operational acceptance preservation, isolate client translation from private declarations, artifact hashes and private numbering, and require normalized client-VC equality for the body-only regression. With the same deterministic solver context/limits, the same query is the strongest practical gate; do not promise identical wall time. #241 must not invalidate a dependent theorem merely because a dependency's private contents changed.
+The theorem preserves proof-system acceptance. Operational
+replacement tests additionally require stable contract-derived
+identifiers and declaration order, and identical semantic Boogie/SMT
+task input under a fixed profile. Alpha-equivalence or normalization
+alone is insufficient: renaming and declaration order can affect
+resource-limited SMT success.
+
+An admitted dependent theorem is reused without solver replay.
+Fresh runs remain subject to environmental variation, particularly
+wall-clock limits. Private implementation hashes must neither enter
+dependent theorem compatibility nor perturb client task identities.
 
 ## 9. Completeness and annotation burden
 
@@ -459,6 +581,19 @@ The seven mandatory-open traits contain 26 textual bodyless declarations, or **2
 
 This is a minimum **contract-review inventory**, not a verified total of required global clauses. The canonical-slot audit can add overridable bodyful methods, and concrete helpers and specification calls also need contracts. The pinned Std has **zero global or callback decreases clauses**. The earlier issue comment projected 185 helpers after adding dispatch bounds; that was an earlier classifier projection, not a measured migration count under this design. [Prior census/status][status-m3]; [Std Actions sources][actions].
 
+Review all 26 concrete Actions classes, including those without an
+existing extension marker: inherited bounds, specification effects,
+constructor rank initialization and mutable-rank invariants.
+
+The migration inventory is seven openness edits, or fourteen under
+the public-protocol policy; contracts for 21 introduced abstract
+slots and their supporting call/specification closure; 26 concrete
+implementation reviews; and five stored-arrow evidence/API changes.
+These inventories are not additive annotation counts. Exact clause,
+field, invariant and lemma totals require the candidate migration.
+
+The concrete classes divide as Actions 4, Consumers 7, Producers 10, and BulkActions 5. The five stored-arrow fields comprise four runtime fields and one ghost field; section 9.4 lists them.
+
 ### 9.3 M4a prevents mechanically promoting existing decreases
 
 `GenericAction.Invoke` currently uses ordinary `decreases Decreases(i), 0`. Decreases(i) is itself a virtual ghost function. Making it a global bound would violate M4a after GenericAction becomes open. Producer/consumer metrics also pass through `DecreasesMetric().Ordinal()`. A richer bound carrier does not make that rank computation independent.
@@ -479,7 +614,7 @@ The source has five explicitly arrow-typed fields in the relevant families:
 | FilteredProducer.filter | Runtime and specification applications |
 | FoldingConsumer.f | Runtime and Seq.FoldLeft reasoning |
 
-The four runtime families cannot receive persistent evidence merely by adding a constructor callback clause: M3 classifies later field selection as unknown/TOP. Full migration needs a separately reviewed persistent bounded-callable design or an explicit bounded-object representation/API change. Wrapping an arbitrary unknown arrow in an object does not manufacture the missing evidence. #245's richer orders solve neither this problem nor virtual rank acquisition.
+The four runtime families cannot receive persistent evidence merely by adding a constructor callback clause: M3 classifies later field selection as unknown/TOP. Full migration needs a separately reviewed persistent bounded-callable design or an explicit bounded-object representation/API change. Wrapping an arbitrary unknown arrow in an object does not manufacture the missing evidence. https://github.com/erniecohen/dafny/issues/245's richer orders solve neither this problem nor virtual rank acquisition.
 
 Until those obligations are resolved, do not advertise a fully checked Std bundle or issue a fake complete record. A core M4b implementation can reject unsupported Std use with a clear diagnostic while separately checked modules migrate. The eventual full Std milestone is blocked on this work, not silently waived. Supporting APIs such as Seq also need appropriate Closed or global/callback contracts; count this transitive work rather than only the 21 slots.
 
@@ -579,7 +714,7 @@ The new effect is not a free SMT axiom. Closed promises are checked by the produ
 
 Both invocation pipelines must exercise the same admission and completion policy. A fix only in modern `verify`, with library `build` still able to serialize an unchecked parse clone, does not close the boundary.
 
-### 11.3 Std, audit, documentation and #241
+### 11.3 Std, audit, documentation and https://github.com/erniecohen/dafny/issues/241
 
 Add the reviewed on-only Std source overlay under proposed `Source/DafnyStandardLibraries/modular-termination/`, with a README, pinned patch applicability and explicit build recipe. Update the common/target-specific Makefiles, `Source/DafnyPipeline/DafnyPipeline.csproj` resources and `Source/DafnyCore/DafnyMain.cs` resource catalog for a distinct checked artifact set. Update selection in both `Compilation.DetermineRootFiles` and `SynchronousCliCompilation`. Certification must verify all required parts; the current hidden-no-verify production route cannot be reused for it.
 
@@ -596,11 +731,11 @@ Update `docs/DafnyRef/Specifications.md` section 7.1.3.1, attribute/trait/export
 
 Remove the present library-openness warning only when implementation/admission gates pass. Keep the old warning during partial milestones; a documentation-only design PR does not fix the released verifier. Add an implementation release fragment describing the opt-in compatibility changes, not a claim of an already shipped fix.
 
-#241's persistent exact-result cache and M4b's library theorem records remain separate. Exact task-cache lookup occurs after current producer admission and required inventory construction. Its key must cover actual task context, solver/options/seed/limits as that study requires; it can discharge producer parts only with matching coverage. A result hit cannot exemption contract checking, M4a, binding, cardinality admission or completeness. Conversely, stable module theorem reuse must not key dependency implementations into the public contract. Skipping library proof work intentionally changes on-mode work/RU; do not confuse this with #241's same-task equivalence requirement.
+https://github.com/erniecohen/dafny/issues/241's persistent exact-result cache and M4b's library theorem records remain separate. Exact task-cache lookup occurs after current producer admission and required inventory construction. Its key must cover actual task context, solver/options/seed/limits as that study requires; it can discharge producer parts only with matching coverage. A result hit cannot exemption contract checking, M4a, binding, cardinality admission or completeness. Conversely, stable module theorem reuse must not key dependency implementations into the public contract. Skipping library proof work intentionally changes on-mode work/RU; do not confuse this with https://github.com/erniecohen/dafny/issues/241's same-task equivalence requirement.
 
 ## 12. Regression and measurement plan
 
-All tests below are required implementation evidence, not executed results in this design PR. Add a driver such as `git-issues/github-issue-211-m4b.dfy` and small `Inputs/` sources/artifact-building commands alongside existing #211 tests. Add focused unit tests for schema, canonicalization and admission lifecycle in `DafnyCore.Test`, including `DooFileTest.cs`. Test meaningful boundaries rather than duplicating internal implementation expressions.
+All tests below are required implementation evidence, not executed results in this design PR. Add a driver such as `git-issues/github-issue-211-m4b.dfy` and small `Inputs/` sources/artifact-building commands alongside existing https://github.com/erniecohen/dafny/issues/211 tests. Add focused unit tests for schema, canonicalization and admission lifecycle in `DafnyCore.Test`, including `DooFileTest.cs`. Test meaningful boundaries rather than duplicating internal implementation expressions.
 
 For **every rejection family**, include a reachable `assert false` companion and check the intended diagnostic/category. An unrelated parse error, timeout or a later false-assertion failure is not evidence that the intended admission check happened. For every accepted execution/proof family, add a valid-input companion where `assert false` must fail, without `assume`, contradictory preconditions or unreachable branches. Instrument proof-task ownership to establish zero library replay, not just elapsed time.
 
@@ -616,7 +751,7 @@ For **every rejection family**, include a reachable `assert false` companion and
 | L06 | Sealed descendant of open ancestor: accepts; ancestor-view dispatch remains strict. |
 | L07 | Method H changes from closed-looking body to open-reaching body but keeps General bound: client VCs/classification identical. Sufficient-bound client accepts both; insufficient-bound client fails both. |
 | L08 | Explicit Closed H changes among valid closed implementations: clients and dependent artifacts remain accepted; changing it to dispatch fails producer-side. |
-| L09 | Opaque/provided function body replacement: unchanged client contract and normalized VCs. Revealed-equation replacement changes the contract and invalidates dependents explicitly. |
+| L09 | Opaque/provided function body replacement: unchanged client contract and identical semantic task input. Revealed-equation replacement changes the contract and invalidates dependents explicitly. |
 | L10 | Named function value and rank helper replacement: public Closed eligibility remains unchanged; no hidden-body rediscovery. |
 | L11 | Multiple inheritance and grandparent inherited bounds: implementation satisfies every effective contract; wrong variance fails. |
 | L12 | Bodyful overridable trait method and provided/revealed views: identical canonical dispatch classification. Fixed-target method/body erasure does not create false dispatch. |
@@ -634,7 +769,7 @@ For **every rejection family**, include a reachable `assert false` companion and
 | E07 | M4a original counterexample, rank through private helper, and spec canCall/fuel variants: reject without vacuity; imported Closed rank helper accepts only after its own proof. |
 | E08 | Mutable rank and callback fields/arguments: use saved entry/capture bounds, not a larger post-mutation caller value. |
 | E09 | Equal, smaller and greater bounds; missing TOP; incompatible component types; lower-bound premises; differing fixed arities: expected comparisons preserved. |
-| E10 | #245 integration contract: unrelated order IDs rejected; a future proved embedding/DM instance works through the adapter with no M4b admission changes. Until #245 exists, unit-test adapter separation without pretending user syntax exists. |
+| E10 | https://github.com/erniecohen/dafny/issues/245 integration contract: unrelated order IDs rejected; a future proved embedding/DM instance works through the adapter with no M4b admission changes. Until https://github.com/erniecohen/dafny/issues/245 exists, unit-test adapter separation without pretending user syntax exists. |
 | E11 | Abstract import plus legal realization: checks conditional producer once and binding separately. Unbound executable implementation and cyclic static bindings fail in client. |
 | E12 | Concrete refinement changes inherited code/bindings: its necessary inherited obligations run; a facade does not create duplicate body proofs. |
 | E13 | A local implementation newly added to a sealed realization must satisfy its public slot effects; no mutation of an old admitted realization. |
@@ -669,20 +804,41 @@ For `.doo`, compare exact `manifest.toml` and `program` bytes, entry list/order,
 
 Measure producer parse/serialization/resolve/proof/packaging separately; measure consumer load/hash/interface resolution/admission/client proof separately. Record library-owned proof-task counts, interface/hash sizes and peak memory. Reuse is established by ownership counts plus interfaces, not a warm wall-time improvement. Hashing and ordinary graph analysis should be linear in their serialized input/edge sizes; quantify any repeated per-view canonicalization before optimizing it.
 
+### 12.5 Additional focused cases from the accepted review
+
+| ID | Case and intended obligation |
+| --- | --- |
+| R01 | Fixed-arity real M1/M2 suffix reset: reject the weak step that loses strict progress. |
+| R02 | Ordinary varying-arity real recursion: reject the nonterminating comparison. |
+| R03 | Equal-rank sequence/datatype suffix reset: reject inconsistent mixed-family comparison. |
+| R04 | Accept fractional decrease with a nonincreasing suffix, genuine early strict decrease and legitimate TOP padding. |
+| R05 | Accept terminal negative numeric values; reject repeated negative descent. |
+| R06 | Callback-forwarding and override versions of the absorption failures: reject the invalid nonincrease obligation. |
+| R07 | Missing independently expected proof part despite all scheduled tasks succeeding: no completion. |
+| R08 | `SolverOutcome.Bounded`: cannot produce completion. |
+| R09 | Concurrent success plus failure, cancellation or stale notification: no record publication. |
+| R10 | Post-verification semantic mutation: invalidate completion. |
+| R11 | Private-body/private-helper replacement: identical client semantic Boogie/SMT task input and dependent theorem reuse without replay. |
+| R12 | All five stored-arrow families, including ghost use, and all 26 implementation/constructor obligations. |
+
+Each negative must fail for its intended obligation; accepted families need reachable `assert false` controls. Preserve exact legacy diagnostics, Boogie output, resource counts and artifact bytes under controlled metadata when the option is off; do not normalize differences away.
+
 ## 13. One-PR milestones
 
-| Milestone | One focused PR | Acceptance evidence |
-| --- | --- | --- |
-| M4b-0 | This revised design, replacing the A2 recommendation | Source/requirement review, consistent theorem/protocol, explicit counts and unexecuted gates. No product change or released-soundness claim. |
-| M4b-1 | Declared openness, canonical slots/views, stable General/Closed contracts and source call rules | L01–L12 and source E cases in both resolvers; private-body client-VC equality; declared ancestor diagnostics; initial on-census; off byte identity. Keep imported-library gap warning until admission ships. |
-| M4b-2 | Producer contents/coverage completion, semantic build identity, on-only schema and strict loader admission | A01–A13, actual build/verify pipelines, raw `.doo` off identity, dependency body-only reuse without replay. Include refinement/abstract binding completeness before enabling records. |
-| M4b-3 | Audit, user documentation, source/project/DLL route integration and cache-lifecycle hardening | No source-bearing admission exemption; partial/assumed results accurately described; #241 boundary; all regression categories intended rather than incidental errors. |
-| M4b-4 | Reviewed Std overlay and certified bundle packaging | Seven/14 policy decided and counted, real bounds/effect migration, all targets available only after actual verification; legacy resources byte-identical. Block full Actions certification until stored callable/rank obligations are solved in separately reviewed work. |
-| M4b-5 | Composition-aware census, release acceptance and final manual status | Publish four-way base/candidate results, migration patches/counts, source and artifact tests, ordinary higher-order tail/implicit-evaluation proof review and no unaccounted proof gaps. Remove the shipped library-openness warning only at this gate. |
+The comparison repair is independent of M4b and comes first. The accepted review orders the product work as follows; this document remains a design-only PR.
 
-M4b-2 may conservatively reject unsupported dependency forms until M4b-3 admits them; it must not leave an unsound skip path enabled. Core modular libraries can ship with unsupported Std features explicitly rejected, but that is a documented partial rollout, not completion of the full Std milestone. #245 supplies orders independently; bounded stored-function evidence is separate from both.
+| One-PR milestone | Main locations and acceptance requirement |
+| --- | --- |
+| 1. Correct comparisons | `BoogieGenerator.Decreases.cs`, ordinary call/loop paths, `BoogieGenerator.Methods.cs`, callback comparisons; repair the shared semantics on-mode. Owned by https://github.com/erniecohen/dafny/issues/264. |
+| 2. Stable source contracts | `ModularTermination.cs`, `ModuleResolver.cs`, slot metadata, scope/abstract cloners, `RefinementTransformer.cs`; declared openness and interface-only effects in both resolvers. L01–L12 and applicable source E cases; private-body client semantic-input identity; option-off byte identity. |
+| 3. Complete producer evidence | `Pipeline/Compilation.cs`, driver `CliCompilation.cs`, synchronous build path, proposed completion object; independent expected inventory, conclusive results, concurrent aggregation, immutable emission. |
+| 4. Artifact admission | `DooFile.cs`, `DafnyFile.cs`, `LibraryBackend.cs`, project/Std/IDE paths; compatible records, binding checks, no unearned verification exemptions; A01–A14, body-only dependency replacement without replay. |
+| 5. Std migration | Reviewed on-only overlay, independent rank data/contracts, persistent-callable solution or explicit unsupported cases; certify only completed modules. Review seven/fourteen openness declarations, 21 abstract slots, 26 concrete classes and five stored arrows. |
+| 6. Release gates | Four-way census, both resolvers, artifact replacement tests, audit/manual/help/release notes, option-off byte identity and resource-count gates. Close the higher-order and implicit-evaluation coverage arguments before removing the warning. |
 
-Each product PR follows `AGENTS.md`/`REVIEW.md`: release fragment, regression driver/expectations, appropriate manual/help updates, updated product/regression/obligation-producer records and the normal CI/verdict gates. Intentional verdict changes receive individual reasons; do not replace expected results wholesale. This design-only PR needs none of the product release bookkeeping.
+Until milestone 4 closes library admission, on-mode must reject uncertified library inputs before claiming complete composition checking; a warning alone cannot support that claim. Partial milestones retain the shipped library-openness warning and do not advertise completion. Unsupported dependency forms must be rejected rather than retain an unchecked admission path. Core modular libraries may precede full Std support, with that limitation explicit. User-extensible orders and persistent bounded-callable evidence remain separate work.
+
+Each product PR follows `AGENTS.md`/`REVIEW.md`: release fragment, regression driver/expectations, appropriate manual/help updates, updated product/regression/obligation-producer records and the normal CI/verdict gates. Intentional verdict changes receive individual reasons. This design-only PR needs none of the product release bookkeeping.
 
 ## 14. Limitations, proof gates and validation of this revision
 
@@ -692,7 +848,7 @@ Each product PR follows `AGENTS.md`/`REVIEW.md`: release fragment, regression dr
 
 **Upstream maintenance costs:** the largest changes are stable slot/view metadata through cloning/refinement, interface-only client translation, complete proof inventories across two pipelines, and on-only Std source/resources. The tuple adapter, schema handling and explicit producer evidence should be kept isolated. Avoid a fork-wide redesign of all function values or all cached ASTs inside M4b. Exact-build matching initially trades reuse across upgrades for a simple compatibility policy; later relaxation requires evidence, not a version-string heuristic.
 
-**Executed for this revision:** read the latest issue request/review, inspected the pinned implementation and prior design, checked the Std source counts, and obtained independent reviews of the soundness/modularity rules, artifact boundary and Std migration. Before publication, check the Markdown diff, reference/path validity, internal test/section identifiers and that the PR changes only this document relative to its target. No candidate implementation, Dafny/Z3 run, solver census, runtime experiment, certified Std build or off-mode binary comparison was performed. Prior executed reproducer results are explicitly attributed to the earlier PR revision.
+**Executed for this revision:** read and applied the accepted review and coordinator note, and inspected the target source and prior design. The accepted review supplies the inventory counts and relative arguments; its Dafny examples were not executed by that reviewer. Before publication, check the Markdown diff, reference/path validity, internal test/section identifiers and that the PR changes only this document relative to its target. No candidate implementation, Dafny/Z3 run, solver census, runtime experiment, certified Std build or off-mode binary comparison was performed. Prior executed reproducer results are explicitly attributed to the earlier PR revision.
 
 **Recommendation:** replace A2 with declared openness **and stable termination-effect contracts**, reusable producer records, and strict artifact compatibility. These additional interface rules are necessary to make the requested body-only replacement theorem true. Implement the core boundary first, measure the actual migration, and keep incomplete Std/callback support explicit.
 
@@ -713,21 +869,21 @@ The request, prior experiment and decisions are in the linked issue/PR comments.
 [status-m3]: https://github.com/erniecohen/dafny/issues/211#issuecomment-6761674143
 [ecoop]: https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ECOOP.2015.664
 [toplas]: https://doi.org/10.1145/3210258
-[mt]: https://github.com/erniecohen/dafny/blob/5f8855a4d9314e37f87d9900682ad71cc8434a55/Source/DafnyCore/Resolver/ModularTermination.cs
-[decreases]: https://github.com/erniecohen/dafny/blob/5f8855a4d9314e37f87d9900682ad71cc8434a55/Source/DafnyCore/Verifier/BoogieGenerator.Decreases.cs
-[resolver]: https://github.com/erniecohen/dafny/blob/5f8855a4d9314e37f87d9900682ad71cc8434a55/Source/DafnyCore/Resolver/ModuleResolver.cs
-[scope-cloner]: https://github.com/erniecohen/dafny/blob/5f8855a4d9314e37f87d9900682ad71cc8434a55/Source/DafnyCore/AST/Modules/ScopeCloner.cs
-[doo]: https://github.com/erniecohen/dafny/blob/5f8855a4d9314e37f87d9900682ad71cc8434a55/Source/DafnyCore/DooFile.cs
-[dafny-file]: https://github.com/erniecohen/dafny/blob/5f8855a4d9314e37f87d9900682ad71cc8434a55/Source/DafnyCore/DafnyFile.cs
-[library-backend]: https://github.com/erniecohen/dafny/blob/5f8855a4d9314e37f87d9900682ad71cc8434a55/Source/DafnyCore/Backends/Library/LibraryBackend.cs
-[build-command]: https://github.com/erniecohen/dafny/blob/5f8855a4d9314e37f87d9900682ad71cc8434a55/Source/DafnyDriver/Commands/BuildCommand.cs
-[sync]: https://github.com/erniecohen/dafny/blob/5f8855a4d9314e37f87d9900682ad71cc8434a55/Source/DafnyDriver/Legacy/SynchronousCliCompilation.cs
-[compilation]: https://github.com/erniecohen/dafny/blob/5f8855a4d9314e37f87d9900682ad71cc8434a55/Source/DafnyCore/Pipeline/Compilation.cs
-[spec]: https://github.com/erniecohen/dafny/blob/5f8855a4d9314e37f87d9900682ad71cc8434a55/docs/DafnyRef/Specifications.md
-[census]: https://github.com/erniecohen/dafny/blob/5f8855a4d9314e37f87d9900682ad71cc8434a55/.github/review/modular-termination-census.py
-[census-workflow]: https://github.com/erniecohen/dafny/blob/5f8855a4d9314e37f87d9900682ad71cc8434a55/.github/workflows/issue211-census.yml
-[rules]: https://github.com/erniecohen/dafny/blob/5f8855a4d9314e37f87d9900682ad71cc8434a55/AGENTS.md
-[actions]: https://github.com/erniecohen/dafny/tree/5f8855a4d9314e37f87d9900682ad71cc8434a55/Source/DafnyStandardLibraries/src/Std/Actions
-[generic-action]: https://github.com/erniecohen/dafny/blob/5f8855a4d9314e37f87d9900682ad71cc8434a55/Source/DafnyStandardLibraries/src/Std/Actions/GenericAction.dfy
-[frames]: https://github.com/erniecohen/dafny/blob/5f8855a4d9314e37f87d9900682ad71cc8434a55/Source/DafnyStandardLibraries/src/Std/Frames.dfy
-[metric]: https://github.com/erniecohen/dafny/blob/5f8855a4d9314e37f87d9900682ad71cc8434a55/Source/DafnyStandardLibraries/src/Std/Termination.dfy
+[mt]: https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/Resolver/ModularTermination.cs
+[decreases]: https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/Verifier/BoogieGenerator.Decreases.cs
+[resolver]: https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/Resolver/ModuleResolver.cs
+[scope-cloner]: https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/AST/Modules/ScopeCloner.cs
+[doo]: https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/DooFile.cs
+[dafny-file]: https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/DafnyFile.cs
+[library-backend]: https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/Backends/Library/LibraryBackend.cs
+[build-command]: https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyDriver/Commands/BuildCommand.cs
+[sync]: https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyDriver/Legacy/SynchronousCliCompilation.cs
+[compilation]: https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/Pipeline/Compilation.cs
+[spec]: https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/docs/DafnyRef/Specifications.md
+[census]: https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/.github/review/modular-termination-census.py
+[census-workflow]: https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/.github/workflows/issue211-census.yml
+[rules]: https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/AGENTS.md
+[actions]: https://github.com/erniecohen/dafny/tree/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyStandardLibraries/src/Std/Actions
+[generic-action]: https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyStandardLibraries/src/Std/Actions/GenericAction.dfy
+[frames]: https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyStandardLibraries/src/Std/Frames.dfy
+[metric]: https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyStandardLibraries/src/Std/Termination.dfy
