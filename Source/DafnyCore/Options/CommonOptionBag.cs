@@ -284,6 +284,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> SynonymRefinesAbstractType = new("--synonym-refines-abstract-type", () => false,
     "In a refining module, let a type synonym 'type O<Xs> = T<Xs>' refine an abstract type O that has members, where T is a class, trait, datatype, newtype or abstract type declared in the refining module: the members of O are merged into T, as they would be into a declaration of O itself. Disabled by default.");
 
+  public static readonly Option<bool> LegacyDecreasesOrder = new("--legacy-decreases-order", () => false,
+    "Use the legacy, unsound decreases-tuple comparison for migration and comparison only.") { IsHidden = true };
+
   public static readonly Option<bool> ModularTermination = new("--modular-termination", () => false,
     "Experimental; it does not yet establish termination in every program. Accept 'decreases {:global}' clauses, and reject a call dispatched to a bodyless member of a trait whose implementations may lie in other modules (a trait with {:termination false}, or one extended from another module) unless the callee's 'decreases {:global}' bound is below the caller's, captured on entry. Reject a call to known code that can reach such a dispatched call unless the callee's bound is at most the caller's; a helper that forwards one therefore needs a bound of its own. Code without a bound that can reach such a dispatched call (a type's constraint, witness or component defaults, or a constant's initializer) counts as called wherever a member mentions the type or reads the constant, so a member with a bound may not do so. A call through a function value whose code is not known (not a lambda expression, nor a function that reaches no dispatched call) has no bound either; 'decreases {:callback g} E' gives an in-parameter g the bound E, which an application of g must be below and the value passed for g must run under. A global or callback bound may only use code that cannot reach such a dispatched call. The option does not yet establish termination in every program (see the Reference Manual). Report as hints (with --show-hints) every call that needs one of the rules. See the Reference Manual. Disabled by default.");
 
@@ -754,6 +757,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(DatatypeSubsetConversions, OptionScope.Cli);
     OptionRegistry.RegisterOption(AncestorQualifiedModuleIds, OptionScope.Cli);
     OptionRegistry.RegisterOption(SynonymRefinesAbstractType, OptionScope.Cli);
+    OptionRegistry.RegisterOption(LegacyDecreasesOrder, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(WarnUncheckedTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(InvariantConstructorInference, OptionScope.Cli);

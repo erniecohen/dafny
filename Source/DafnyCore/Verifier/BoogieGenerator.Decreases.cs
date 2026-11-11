@@ -26,6 +26,23 @@ namespace Microsoft.Dafny;
 
 public partial class BoogieGenerator {
 
+  bool UseConsistentDecreasesOrder => !options.Get(CommonOptionBag.LegacyDecreasesOrder);
+
+  bool CompatibleDecreasesTypesForComparison(Type t, Type u) {
+    if (!CompatibleDecreasesTypes(t, u)) {
+      return false;
+    }
+    if (!UseConsistentDecreasesOrder) {
+      return true;
+    }
+    t = t.NormalizeToAncestorType();
+    u = u.NormalizeToAncestorType();
+    // These representations have no shared component order. In particular, do not
+    // apply a bitvector operator of one width to an operand of another width.
+    return (t is not BitvectorType a || u is not BitvectorType b || a.Width == b.Width) &&
+      (t is not SetType c || u is not SetType d || c.Finite == d.Finite) &&
+      (!t.IsCoDatatype && !u.IsCoDatatype || t.IsCoDatatype && u.IsCoDatatype);
+  }
 
   /// <summary>
   /// Emit to "builder" a check that calleeDecreases is less than contextDecreases.  More precisely,
@@ -40,7 +57,7 @@ public partial class BoogieGenerator {
                             Dictionary<IVariable, Expression> directSubstMap,
                             Dictionary<TypeParameter, Type> typeMap,
                             ExpressionTranslator etranCurrent, bool oldCaller, BoogieStmtListBuilder builder, bool inferredDecreases, string hint,
-                            ExpressionTranslator etranCallee = null) {
+                            ExpressionTranslator etranCallee = null, bool nonincrease = false) {
     Contract.Requires(tok != null);
     Contract.Requires(Cce.NonNullElements(contextDecreases));
     Contract.Requires(Cce.NonNullElements(calleeDecreases));
@@ -80,7 +97,7 @@ public partial class BoogieGenerator {
           Type = e1.Type // To ensure that e1 stays resolved
         };
       }
-      if (!CompatibleDecreasesTypes(e0.Type, e1.Type)) {
+      if (!CompatibleDecreasesTypesForComparison(e0.Type, e1.Type)) {
         N = i;
         break;
       }
@@ -94,13 +111,26 @@ public partial class BoogieGenerator {
     }
     bool endsWithWinningTopComparison = N == contextDecreases.Count && N < calleeDecreases.Count;
     builder.Add(TrAssumeCmd(tok, canCalls));
-    Bpl.Expr decrExpr = DecreasesCheck(toks, null, newExpressions, oldExpressions, callee, caller, builder, "", endsWithWinningTopComparison, false);
+    // At the first unpaired coordinate, proper < TOP; TOP is weakly below only TOP.
+    // An incompatible pair instead stops the comparison with false. This terminal
+    // value is lifted with the same strict/weak recurrence as every other component.
+    bool tailComparison = N == contextDecreases.Count &&
+      (N < calleeDecreases.Count || nonincrease && N == calleeDecreases.Count);
+    Bpl.Expr decrExpr = DecreasesCheck(toks, null, newExpressions, oldExpressions, callee, caller, builder, "",
+      endsWithWinningTopComparison, false, tailComparison);
     if (allowance != null) {
       decrExpr = BplOr(etranCurrent.TrExpr(allowance), decrExpr);
     }
+    if (UseConsistentDecreasesOrder) {
+      // Report the actual padded-tuple comparison, rather than the truncated
+      // prefix used by the legacy diagnostic adapter.
+      oldExpressions = contextDecreases.ConvertAll(e => oldCaller
+        ? (Expression)new OldExpr(e.Origin, e) { Type = e.Type } : e);
+      newExpressions = calleeDecreases.ConvertAll(e => Substitute(e, receiverReplacement, directSubstMap, typeMap));
+    }
     builder.Add(Assert(tok, decrExpr, new
       Terminates(inferredDecreases, null, allowance,
-                        oldExpressions, newExpressions, endsWithWinningTopComparison, hint), builder.Context));
+        oldExpressions, newExpressions, UseConsistentDecreasesOrder ? nonincrease : endsWithWinningTopComparison, hint), builder.Context));
   }
 
   /// <summary>
@@ -173,11 +203,12 @@ public partial class BoogieGenerator {
     var oldCaller = lambdaBound == null && codeContext is MethodOrConstructor and not TwoStateLemma;
     var contextBound = callerBound ?? [];
     var comparedBound = calleeBound ?? [];
-    if (!dispatched && calleeBound != null) {
+    var nonincrease = !dispatched && calleeBound != null;
+    if (!UseConsistentDecreasesOrder && nonincrease) {
       AtMost(tok, callerBound, calleeBound, out contextBound, out comparedBound);
     }
     CheckCallTermination(tok, contextBound, comparedBound, null, receiverReplacement, substMap, directSubstMap, typeMap,
-      etranCurrent, oldCaller, builder, false, hint, etranCallee);
+      etranCurrent, oldCaller, builder, false, hint, etranCallee, nonincrease);
   }
 
   /// <summary>
@@ -323,10 +354,15 @@ public partial class BoogieGenerator {
       var upper = calleeBound.ConvertAll(e => Substitute(e, receiverReplacement, substMap, typeMap));
       var oldCaller = codeContext is MethodOrConstructor and not TwoStateLemma;
       var lower = oldCaller ? callerBound.ConvertAll(e => (Expression)new OldExpr(e.Origin, e) { Type = e.Type }) : callerBound;
-      AtMost(tok, upper, lower, out var contextBound, out var comparedBound);
+      var contextBound = upper;
+      var comparedBound = lower;
+      if (!UseConsistentDecreasesOrder) {
+        AtMost(tok, upper, lower, out contextBound, out comparedBound);
+      }
       CheckCallTermination(tok, contextBound, comparedBound, null, null, new Dictionary<IVariable, Expression>(),
         new Dictionary<IVariable, Expression>(), new Dictionary<TypeParameter, Type>(), etranCurrent, false, builder, false,
-        $"--modular-termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must not exceed that of the parameter it is passed for");
+        $"--modular-termination: the 'decreases {{:callback}}' bound of '{formal.Name}' must not exceed that of the parameter it is passed for",
+        nonincrease: true);
     }
   }
 
@@ -362,7 +398,7 @@ public partial class BoogieGenerator {
   /// </summary>
   Bpl.Expr DecreasesCheck(List<IOrigin> toks, List<VarDeclStmt> prevGhostLocals,
                           List<Expression> dafny0, List<Expression> dafny1, List<Bpl.Expr> ee0, List<Bpl.Expr> ee1,
-                          BoogieStmtListBuilder builder, string suffixMsg, bool allowNoChange, bool includeLowerBound) {
+                          BoogieStmtListBuilder builder, string suffixMsg, bool allowNoChange, bool includeLowerBound, bool? tailComparison = null) {
     Contract.Requires(Cce.NonNullElements(toks));
     Contract.Requires(Cce.NonNullElements(dafny0));
     Contract.Requires(Cce.NonNullElements(dafny1));
@@ -372,6 +408,10 @@ public partial class BoogieGenerator {
     Contract.Requires(dafny0.Count == dafny1.Count && dafny0.Count == ee0.Count && ee0.Count == ee1.Count);
     Contract.Requires(builder == null || suffixMsg != null);
     Contract.Ensures(Contract.Result<Bpl.Expr>() != null);
+
+    if (UseConsistentDecreasesOrder) {
+      return ConsistentDecreasesCheck(toks, dafny0, dafny1, ee0, ee1, tailComparison ?? allowNoChange);
+    }
 
     int N = dafny0.Count;
 
@@ -445,6 +485,45 @@ public partial class BoogieGenerator {
       }
     }
     return decrCheck;
+  }
+
+  /// <summary>
+  /// Lift compatible component pairs (s,w) from right to left. The terminal value
+  /// is false for strict comparison, true for nonincrease, or the result of the
+  /// first TOP/incompatible comparison after a shared prefix. Lower bounds belong
+  /// to the component relations, never to an equality-controlled side condition.
+  /// See docs/dev/decreases-order.md for the component and lifting arguments.
+  /// </summary>
+  Bpl.Expr ConsistentDecreasesCheck(List<IOrigin> toks, List<Expression> dafny0, List<Expression> dafny1,
+    List<Bpl.Expr> ee0, List<Bpl.Expr> ee1, bool tailComparison) {
+    Bpl.Expr result = tailComparison ? Bpl.Expr.True : Bpl.Expr.False;
+    for (var i = dafny0.Count; 0 <= --i;) {
+      var ty0 = dafny0[i].Type.NormalizeToAncestorType();
+      var ty1 = dafny1[i].Type.NormalizeToAncestorType();
+      Bpl.Expr strict, weak;
+      if (!CompatibleDecreasesTypesForComparison(ty0, ty1)) {
+        strict = weak = Bpl.Expr.False;
+      } else if (ty0.IsNumericBased(Type.NumericPersuasion.Int) || ty0.IsNumericBased(Type.NumericPersuasion.Real)) {
+        var real = ty0.IsNumericBased(Type.NumericPersuasion.Real);
+        var zero = real ? Bpl.Expr.Literal(BigDec.ZERO) : Bpl.Expr.Literal(0);
+        var oldNonnegative = Bpl.Expr.Le(zero, ee1[i]);
+        strict = BplAnd(oldNonnegative, real
+          ? Bpl.Expr.Le(ee0[i], Bpl.Expr.Sub(ee1[i], Bpl.Expr.Literal(BigDec.FromInt(1))))
+          : Bpl.Expr.Lt(ee0[i], ee1[i]));
+        weak = BplOr(Bpl.Expr.Eq(ee0[i], ee1[i]), BplAnd(oldNonnegative, Bpl.Expr.Le(ee0[i], ee1[i])));
+      } else if (ty0.IsCoDatatype) {
+        // Coinductive values have no well-founded structural rank.
+        strict = Bpl.Expr.False;
+        weak = Bpl.Expr.Eq(ee0[i], ee1[i]);
+      } else {
+        // All inductive datatypes and sequences embed in the same natural-rank
+        // order, including pairs with different representations. Use its <= even
+        // when the legacy comparison's "eq" deliberately returns false.
+        ComputeLessEq(toks[i], ty0, ty1, ee0[i], ee1[i], out strict, out weak, out _, false);
+      }
+      result = BplOr(strict, BplAnd(weak, result));
+    }
+    return result;
   }
 
   static bool CompatibleDecreasesTypes(Type t, Type u) {
