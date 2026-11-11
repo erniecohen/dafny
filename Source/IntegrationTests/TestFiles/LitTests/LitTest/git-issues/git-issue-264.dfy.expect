@@ -30,6 +30,9 @@ callback, default
 git-issue-264-callback.dfy(10,7): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'g' must not exceed that of the parameter it is passed for)
 
 Dafny program verifier finished with 2 verified, 1 error
+laws, default
+
+Dafny program verifier finished with 6 verified, 0 errors
 real, legacy
 
 Dafny program verifier finished with 2 verified, 0 errors

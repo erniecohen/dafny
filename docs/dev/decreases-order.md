@@ -103,7 +103,10 @@ variable-length tuples.
 proof of `false`, the equal-rank mixed override, the fixed-arity M2 reset, and
 M3 callback forwarding. Positive controls cover fractional weak progress,
 negative terminal values, TOP padding and an early strict step with an increasing
-suffix; negative controls include a reachable `assert false`.
+suffix; negative controls include a reachable `assert false`. The `laws` fixture
+also verifies arbitrary real-tuple and alternating sequence/datatype-rank
+absorption/transitivity, and natural-valued ranking functions for the numeric
+strict relations. These focused algebraic checks do not prove translator coverage.
 
 The Actions comparison records default versus legacy suite program verdicts,
 individual declaration outcomes, proof-batch resource units, and standard-library

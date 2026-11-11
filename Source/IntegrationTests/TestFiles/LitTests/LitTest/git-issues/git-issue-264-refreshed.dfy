@@ -13,6 +13,8 @@
 // RUN: %exits-with 4 %baredafny verify --type-system-refresh --general-traits:legacy --use-basename-for-filename --show-snippets:false --solver-path "%review-z3" --cores:1  "%S/Inputs/git-issue-264-negative.dfy" >> "%t"
 // RUN: echo "callback, default" >> "%t"
 // RUN: %exits-with 4 %baredafny verify --type-system-refresh --general-traits:legacy --use-basename-for-filename --show-snippets:false --solver-path "%review-z3" --cores:1 --modular-termination "%S/Inputs/git-issue-264-callback.dfy" >> "%t"
+// RUN: echo "laws, default" >> "%t"
+// RUN: %exits-with 0 %baredafny verify --type-system-refresh --general-traits:legacy --use-basename-for-filename --show-snippets:false --solver-path "%review-z3" --cores:1 "%S/Inputs/git-issue-264-laws.dfy" >> "%t"
 // RUN: echo "real, legacy" >> "%t"
 // RUN: %exits-with 0 %baredafny verify --type-system-refresh --general-traits:legacy --use-basename-for-filename --show-snippets:false --solver-path "%review-z3" --cores:1 --legacy-decreases-order  "%S/Inputs/git-issue-264-real.dfy" >> "%t"
 // RUN: echo "false, legacy" >> "%t"
