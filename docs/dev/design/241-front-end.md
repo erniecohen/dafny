@@ -103,13 +103,11 @@ says yes, through at least four channels:
 The probe workflow `issue241-front-end-probe.yml` on branch `scratch/issue-241-front-end-probe` measures
 these channels. It runs a three-module program, and eight standard-library files each verified in
 isolation against the full run. It prints every module's Boogie program twice: once in the full run,
-and once with only that file selected (`--filter-position`). It counts the lines that differ raw, after
-proof-dependency ids are renumbered, and after `$fh$` prefixes are renumbered as well. The results are
-in §10. They give the size of the problem in three parts:
-
-- the channels that a counter offset fixes;
-- the channels that need replaying the names;
-- whatever residue remains.
+and once with only that file selected (`--filter-position`). It counts the lines that differ raw, and again after
+each successive normalization. The results are in §10. In short: **0 of 20** module programs are the
+same as in the full run, and 25% of their lines differ. After renumbering ids, `$fh$` and `#N`
+suffixes, 0.10% differ, and those differences are only line wrapping. Two full runs are byte-identical
+(86/86).
 
 **Consequence for every cache.** "The Boogie program of module m" is a function of m **and the set and
 order of modules translated before it in the process**. A key for a cached translation or a prepared
@@ -828,4 +826,67 @@ output. The routes by which that could fail, and the guard for each:
 
 Filled from the run of `issue241-front-end-probe.yml` on `scratch/issue-241-front-end-probe` (see §1).
 
-PROBE_RESULTS
+Runs: [43070165163](https://github.com/erniecohen/dafny/actions/runs/43070165163),
+[43072254277](https://github.com/erniecohen/dafny/actions/runs/43072254277),
+[43074308572](https://github.com/erniecohen/dafny/actions/runs/43074308572) (the last has every column). They used:
+
+- Linux x64, Z3 5.1.0, `review/4.11.0` at `10dbccf`;
+- `--resource-limit 1 --verification-time-limit 5 --cores 4 --boogie /deterministicLiteralHashes:1`.
+
+Only the printed Boogie programs (`--bprint`) are compared; the verdicts are irrelevant here. The script
+is `.github/review/probe-241-front-end.py` on the scratch branch.
+
+**Three-module program** (A defines `F`, `G`; B uses `A.F` as a value; C uses `A.F` and `A.G`). In one
+process the programs came out as follows:
+
+| Module | Proof-dependency ids | `$fh$` prefixes |
+|---|---|---|
+| A | `id0..id4` | none |
+| B | `id6..id11` | `$fh$0` (for F) |
+| C | `id12..id19` | `$fh$1` for F, because B used F's counter first, and `$fh$0` for G |
+
+This confirms channels 2 and 3 directly. The isolated variant (`--filter-symbol C.N`) still translated
+all three modules, so it isolated nothing. The Std rows below are the real isolation test.
+
+**Standard library, full run** (86 module programs):
+
+- A second full run was byte-identical in 86/86 programs. Translation is deterministic given the history.
+- In 85/86 programs the first proof-dependency id is greater than 0 (channel 3).
+- In 26/86 programs a `$fh$` prefix is greater than 0 (channel 2, handles only).
+
+**Standard library, eight files each verified alone (`--filter-position`), against the same modules in
+the full run:**
+
+| Isolated file | Programs | Lines (full) | Identical | Differing lines: raw | ids renumbered | + `$fh$` renumbered | + every `#N` suffix renumbered | all digits, compared as line multisets |
+|---|---|---|---|---|---|---|---|---|
+| Actions/Actions.dfy | 1 | 60,561 | 0 | 8,717 | 5,763 | 5,763 | 33 | 33 |
+| Arithmetic/Internal/GeneralInternals.dfy | 1 | 7,710 | 0 | 40 | 0 | 0 | 0 | 0 |
+| Arithmetic/Power.dfy | 1 | 19,490 | 0 | 2,178 | 544 | 544 | 0 | 0 |
+| Collections/Map.dfy | 1 | 14,161 | 0 | 528 | 138 | 138 | 24 | 24 |
+| JSON/API.dfy | 1 | 88,859 | 0 | 20,979 | 18,665 | 18,197 | 297 | 151 |
+| JSON/Spec.dfy | 1 | 45,456 | 0 | 6,433 | 4,805 | 4,805 | 53 | 53 |
+| JSON/ZeroCopy/Deserializer.dfy | 12 | 762,576 | 0 | 203,274 | 179,032 | 173,824 | 1,564 | 676 |
+| Parsers/String/StringParsers.dfy | 2 | 90,855 | 0 | 30,258 | 27,274 | 27,274 | 150 | 150 |
+| **total** | **20** | **1,089,668** | **0** | **272,407 (25.0%)** | **236,221 (21.7%)** | **230,545 (21.2%)** | **2,121 (0.19%)** | **1,087 (0.10%)** |
+
+**What this shows:**
+
+1. None of the 20 module programs is the same when its module is translated without the modules the
+   full run translated before it. 25.0% of lines differ.
+2. Proof-dependency ids (channel 3) account for 36,186 of the differing lines, 13.3%. The `$fh$`
+   prefixes account for 5,676 more.
+3. Most of the rest, 228,424 lines, are **counter suffixes** `#N`. The sample diff shows
+   `$finiteMap#6`, `$reads#31`, `$l#31#heap#0` in the full run against `#0`, `#1`, `$l#1#heap#0` alone.
+   These are the imported-function `codeContext` counters added to channel 2 above, plus memoized names
+   (channel 1).
+4. The last residue, 1,087 lines (0.10%) after every digit is normalized, consists of the **same
+   expressions with different line breaks**. The sample from `Std_mJSON_mAPI.bpl` shows lines like
+   `else (var v#0 := …; #Std.Wrappers.Result.Success(v#0))));` printed on one line in one run and
+   wrapped in the other. The Boogie printer breaks lines by width, and the widths changed with the
+   numbers. No difference in content was found.
+
+So, on this sample, every observed history dependence is numbering. F1's journal and replay (E1) and
+relocation (E2, E3) are aimed at exactly that, and nothing else needs to be handled for exactness.
+
+The sample is 20 of 86 programs, and the probe does not compare SMT input. F1-2's dry run must repeat
+this on all modules and add SMT logs.
