@@ -356,7 +356,11 @@ this branch), and reports each declaration's verdict.  It also runs the tests na
 upstream's own harness.  On a tag it attaches self-contained binaries for `linux-x64` and `osx-arm64`
 to a GitHub release, with their sha256 sums.  The `osx-arm64` binary and the release
 itself are built on the self-hosted Apple-silicon pool (label `mac-studio`).
-The framework-dependent build and artifact reports also use this pool. Every
+The framework-dependent build, artifact reports and portable regression tests
+also use this pool. The test `dafny0/CoinductiveProofs.dfy` declares macOS
+unsupported because its expected resource counts differ, so it stays in a
+separate hosted Linux job. `.github/review/regression-filter.py` partitions the
+standing manifest without dropping or duplicating entries. Every
 self-hosted job has an explicit repository/event guard: only pushes, manual
 runs, or pull requests whose head repository is `erniecohen/dafny` are admitted.
 Fork pull requests skip these jobs. The obligation-proof matrix, resolution-only

@@ -582,9 +582,9 @@ jobs:
             before-control.txt
 
   regressions:
-    if: ${{ !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/'))) }}
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/'))) }}
     name: Regression tests (upstream harness)
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
@@ -619,7 +619,7 @@ jobs:
         env:
           DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS: cs
         run: |
-          filter=$(grep -v '^#' .github/review/regressions | grep . | sed 's|^|DisplayName~|' | paste -sd'|' -)
+          filter=$(python3 .github/review/regression-filter.py portable)
           if [ -z "$filter" ]; then echo "no tests named"; exit 0; fi
           echo "$filter"
           dotnet test --settings .github/review/ci.runsettings Source/IntegrationTests -c Release --no-build \
@@ -643,6 +643,33 @@ jobs:
       - name: Editor option changes invalidate verification results
         run: dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~AdditionalAxiomsTest --logger "console;verbosity=normal"
 
+
+  regressions-linux:
+    name: Regression tests with Linux resource expectations
+    if: ${{ !inputs.platform_parity && !(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/')) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - name: Harness solver and Boogie packages
+        run: |
+          v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
+          solver=$(sh .github/review/setup-z3.sh "$v")
+          mkdir -p Binaries/z3/bin
+          cp "$solver" "Binaries/z3/bin/z3-$v"
+          sh Scripts/fetch-boogie-packages.sh
+      - name: Build the harness
+        run: dotnet build Source/IntegrationTests -c Release
+      - name: Check the regression partition and run Linux-specific tests
+        env:
+          DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS: cs
+        run: |
+          python3 -m unittest discover -s .github/review -p test_regression_filter.py
+          filter=$(python3 .github/review/regression-filter.py linux)
+          dotnet test --settings .github/review/ci.runsettings Source/IntegrationTests -c Release --no-build \
+            --logger "console;verbosity=normal" --filter "$filter" | tee test.log
+          grep -Eq 'Total( tests)?: *1([^0-9]|$)' test.log
 
   resolver-tests:
     if: ${{ !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/'))) }}
@@ -813,7 +840,7 @@ jobs:
   release:
     if: ${{ !inputs.platform_parity && (github.repository == 'erniecohen/dafny' && github.event_name == 'push' && github.ref_type == 'tag') }}
     name: GitHub release
-    needs: [build, binaries, verdicts, stdlib, javascript-runtime, regressions, resolver, resolver-tests, finite-support, statement-conclusions, axiom-resources, verification-batch]
+    needs: [build, binaries, verdicts, stdlib, javascript-runtime, regressions, regressions-linux, resolver, resolver-tests, finite-support, statement-conclusions, axiom-resources, verification-batch]
     runs-on: mac-studio
     timeout-minutes: 15
     permissions:
