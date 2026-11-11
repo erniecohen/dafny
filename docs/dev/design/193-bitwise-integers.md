@@ -1,25 +1,29 @@
 # Bounded integer bitwise operations and the bitvector/sequence bridge
 
 Design and critical review for [issue 193](https://github.com/erniecohen/dafny/issues/193),
-answering [the design request](https://github.com/erniecohen/dafny/issues/193#issuecomment-6757568251).
-This is a design deliverable, not a production implementation.
+revised for the [round-2 request](https://github.com/erniecohen/dafny/issues/193#issuecomment-6806298004).
+This is a design deliverable and executable evidence, not a production implementation.
 
 **Source reviewed:** `review/4.11.0` at
-[`62bae981952337d312cbb3d43c39f9813cca6084`](https://github.com/erniecohen/dafny/tree/62bae981952337d312cbb3d43c39f9813cca6084).
+[`428e348b0b125cb67505f03a0026b3f497f98e48`](https://github.com/erniecohen/dafny/tree/428e348b0b125cb67505f03a0026b3f497f98e48).
 Paths and symbols below refer to that immutable tree. The binding policies are
-`AGENTS.md`, `REVIEW.md`, and `docs/dev/additional-axioms.md` at that revision.
+`AGENTS.md`, `REVIEW.md`, and `docs/dev/additional-axioms.md` there. The preceding
+design is [PR 247 at a61b06c7](https://github.com/erniecohen/dafny/tree/a61b06c71d742ff19b280592d26d1a0e2ce9c87c).
 
-**Publication update:** drift through
-[`5f8855a4d9314e37f87d9900682ad71cc8434a55`](https://github.com/erniecohen/dafny/compare/62bae981952337d312cbb3d43c39f9813cca6084...5f8855a4d9314e37f87d9900682ad71cc8434a55)
-was also reviewed. The backend, runtime, width-analysis and separate-compilation
-findings remain applicable. That revision adds issue 97's lambda-precondition
-family to the shared additional-axioms mode; implementation validation must
-include it. All measurements below remain tied to the earlier source pin.
+**Evidence pins are distinct.** The original public measurements in sections 9.1,
+9.2 and 9.4 use `62bae981952337d312cbb3d43c39f9813cca6084`; they are historical
+calibration, not measurements of the new pin or the ten-fact implementation.
+The source delta adds #97's guarded lambda-precondition equivalence at
+[`5f8855a4`](https://github.com/erniecohen/dafny/commit/5f8855a4d9314e37f87d9900682ad71cc8434a55)
+and repins Boogie to `3.5.5-review.c5a9f2ef` at `428e348b`. No native BV wrapper or
+prelude change occurs in this interval. Round-2 controls explicitly exercise
+#97; an enabled flag alone would not instantiate a missing lambda family.
 
 ## 1. Recommendation and scope
 
 Give bounded integer newtypes **integer semantics directly**. Verify their bitwise
-expressions against ordinary, terminating integer reference functions, and compile
+expressions against fixed compiler-owned integer reference functions, prove
+their properties in an ordinary Dafny companion, and compile
 them to operations on their existing integer representation. Do not insert a
 bitvector conversion in either path. Treat interoperability with existing `bvN`
 expressions as a separate problem: expose a small collection of true native-BV
@@ -258,7 +262,7 @@ derived operations once.
 | Single-bit access | Right shift, AND with one, and the verified low-bit theorem |
 | Equality | `I(U(x))=x` gives injectivity; equality congruence gives the other direction |
 | `< > >=` | Native Boolean/order identities plus ≤ and equality |
-| Rotations | Shift/OR decomposition with the source count bounds, using the repaired native path |
+| Rotations | Proved native shift/sum decomposition, L/R/+, power-product and quotient/remainder lemmas, with the source count bounds |
 | Popcount | Verified fold over the reference bits; compiler optimization is a separate refinement obligation |
 | Sequence bijections and pointwise equations | Ordinary Dafny induction, no new trusted sequence fact |
 
@@ -269,10 +273,11 @@ by a program, but it must run their proof or use a separately reviewed native
 identity, not mark generated adapters verified by fiat.
 
 A direct OR/XOR/rotation value fact is a redundant accelerator, not part of the
-initial trusted basis. The measurements include broader direct-contract
-projections to study client cost. A later PR may add such an accelerator only
-with the derivation from this basis, actual integration measurements, and its
-own live controls. Do not silently promote all benchmark contracts to axioms.
+initial trusted basis. The historical measurements include broader direct-contract
+projections; section 9 distinguishes those from the round-2 checked derivations.
+A later PR may add an accelerator only with its derivation from this basis,
+actual integration measurements, and its own live controls. Do not silently
+promote benchmark contracts to axioms.
 
 ### 3.3 Combining a bridge with range-checked source casts
 
@@ -291,6 +296,55 @@ cast axiom or permission to ignore a source fit check. The design probes compare
 the separate BV-argument contract with this directly composed source contract.
 The difference matters: a solver can spend substantial resources discovering
 the round trips even after it has the operation equation.
+
+### 3.4 Exact derived adapters from this basis
+
+The [Boolean proof sources](193-evidence/derived-boolean/) contain the exact
+OR, XOR and ANDNOT lemmas at widths 8, 16, 32 and 64. The deterministic
+[bit/rotation generator](193-evidence/derived-rotation/generate.py) emits the
+corresponding exact Dafny lemmas, native helper proofs, clients and controls at
+all four widths; its [pure mathematics](193-evidence/derived-rotation/pure-math.dfy)
+is independently verified with additional axioms OFF. Run the common generator
+in section 9.5 to materialize every file. Generation is textual specialization,
+not an assumption that generated code is correct: every generated lemma body
+is a separate verification obligation, including the native helpers.
+
+| Derived adapter | Exact basis instances after expanding dependencies | Independently proved support |
+|---|---|---|
+| OR | 3 C + 1 A | Native `x|y = !(!x & !y)`; reference normalization and range |
+| XOR | 4 C + 3 A, including the OR adapter | Native `x^y = (x|y) & !(x&y)`; exact reference expansion |
+| ANDNOT | 1 C + 1 A | Existing bounded round trip for its left operand; reference expansion |
+| Single-bit value | 1 R + 1 A | `andNat(N,z,1)=z%2` for N>0 |
+| Rotate left | 1 L + 1 R + 1 modular + | Native rotation equals the sum of its two disjoint shifts; power product and no-overflow bound |
+| Rotate right | 1 R + 1 L + 1 modular + | The analogous native decomposition and arithmetic bound |
+
+All reference equations match section 2. All explicit `assume {:axiom}` lines
+are identified local projections of these basic facts; no derived-operation
+contract, native identity, reference range or arithmetic theorem is assumed.
+They stand in for a future emitter and are the only new trusted hypotheses in
+the derivations. The production emitter has not been implemented or tested.
+
+For rotation, put `a=U(x)`, `p=P(k)`, `q=P(N-k)`, so `M=p*q`. Euclidean division
+writes `a=q*h+r`, with `r<q` and `h<p`. Therefore `(a*p)%M=p*r`, and
+`p*r+h<M`; the modular-addition bridge loses its final modulus. This is the
+left reference formula. Swap p and q for right rotation. The checked
+`legalCount` lemma handles `k=N` separately from `k<N`, so both endpoints agree
+with the reference's integer `k%N` normalization. There is no wrapped native
+addition of rotation counts in this derivation.
+
+The native rotation helper uses a finite balanced case split on the legal
+count, with a genuine native proof for each literal count 0..N. This is a
+measured proof construction choice, not a new rotation axiom. Its size and
+one-time verification cost grow with N; section 9 reports that cost separately
+from subsequent scalar lemma calls. Helpers using assertion isolation retain
+all verification conditions; a scope's aggregate RU can exceed its largest VC
+substantially. Included helper bodies must also be verified as standalone inputs.
+
+The bridge controls and derived-summary controls serve different purposes.
+The former retain the basic local hypotheses themselves. The latter call the
+checked adapter and a checked witness certificate before rejecting false,
+thereby checking that the exported summary remains live. Neither turns a
+solver `unknown` into a SAT certificate (section 9.3).
 
 ## 4. Instantiation, triggers, and matching-loop analysis
 
@@ -358,7 +412,7 @@ bound expression into a free assumption is unacceptable.
 | Existing native conversion wrapper | Keep `{U(x)}`. Its body exposes the native interpretation and range, not a deeper wrapper application. This proposal does not alter it. |
 | Existing bounded round trip | Keep `{U(I(a))}`. It introduces no deeper conversion term. Retain issue 33/74 stress and interaction controls. |
 | New bridge schemata | No quantified emission; only finite local instances. No E-matching loop can originate from a new bridge trigger because none is installed. |
-| Ordinary recursive reference definitions | Use normal Dafny function/fuel translation, unchanged. Recursive expansion is governed by the existing fuel/layer mechanism; no unbounded hand-written recurrence axiom is added. Audit the actual emitted definition triggers in the implementation. |
+| Fixed integer reference definitions | Opaque private UFs plus explicit finite definition-unfold calls (section 6.4); no new global recurrence trigger. The pure Dafny model used to validate the equations has ordinary fuel/reveal translation. |
 | Scalar library theorems | Ordinary verified lemma calls. No new `...Auto` theorem or globally quantified postcondition is required. |
 | Pointwise/extensional proof bodies | Prove a scalar index theorem or use the ordinary `forall` statement translation. If an optional quantified convenience theorem is later exported, list and measure its actual emitted patterns separately. |
 
@@ -391,76 +445,157 @@ The comparison alternative `{U(x),U(y)}` also creates a Cartesian product of
 observations. Explicit local comparison instances avoid that cost.
 
 **A globally recursive arithmetic/bit theory.** This is compact to write but
-duplicates Dafny's verified recursion and introduces its own fuel/induction and
-matching problems. Keep the arithmetic reference functions as ordinary Dafny
-definitions and prove the useful facts once.
+introduces additional matching/model-search problems. Use fixed opaque
+reference symbols with explicitly requested local definition steps, validate
+those equations against the pure Dafny model, and prove useful scalar facts
+once. A fixed prelude is not permission to add an unbounded recurrence axiom.
 
 ## 5. Soundness argument and solver boundary
 
-Interpret a positive-width bitvector as a Boolean vector indexed by `[0,N)`.
-Interpret `U` as its little-endian weighted sum and `I(a)` as the vector of
-`a mod 2^N`. Interpret the reference functions by their terminating definitions.
-The native fixed-size bitvector theory specifies exactly these operations; its
-unsigned conversion is the one Dafny wraps, despite historical differences in
-SMT operator naming. See the primary
-[SMT-LIB fixed-size bitvector specification](https://smt-lib.org/theories-FixedSizeBitVectors.shtml).
+Fix a positive width N and M=2^N. Interpret a word as a Boolean vector indexed
+by `[0,N)`, U as its little-endian weighted sum, and I(a) as the vector of the
+Euclidean residue `a % M`. Interpret the integer references by section 2's
+terminating recurrences. Interpret native operations by the
+[SMT-LIB fixed-size bitvector semantics](https://smt-lib.org/theories-FixedSizeBitVectors.shtml).
+This supplies one simultaneous interpretation, not an unrelated model per fact.
 
-For A, split both operands into their low Boolean bit and quotient by two and
-induct on N. For C, complement changes each weight's coefficient from `b` to
-`1-b`, whose sum is `2^N-1-U(x)`. Native addition, subtraction, and multiplication
-are integer arithmetic modulo `2^N`. Unsigned division and remainder agree with
-integer division/remainder when the divisor is nonzero. Order compares the
-weighted sums. Multiplication/division by powers of two gives L/R, including
-zero result at count N. These arguments establish each basic bridge in the same
-model; they are not separate ad hoc assumptions about unrelated functions.
+**A (AND).** Write each unsigned operand as its parity plus twice its integer quotient by two. Native AND's low output bit is the conjunction of the two parities, and its remaining bits are AND of the remaining operand bits. The specified `andNat` recurrence says exactly this; induction on N, with the empty-width result zero, gives the equality. The recurrence also shows that `andNat(N,a,b)` depends only on a and b modulo M, including negative integers under Euclidean division.
 
-The reference library adds definitions and proved theorems. The ten facts and
-their composed cast instances are consequences of native semantics plus those
-definitions. Therefore, relative to that trusted theory T and any compatible
-existing additional-fact families S,
+**C (complement).** Each input bit coefficient is either zero or one. Complement replaces it by one minus that coefficient, so the weighted sum becomes the sum of all weights minus U(x), namely M−1−U(x).
 
-```text
-Models(T union S union newFacts) = Models(T union S).
+**Addition.** Native addition discards carries beyond bit N−1. The unsigned result is therefore the unique residue in [0,M) of U(x)+U(y), equal to Euclidean `(U(x)+U(y)) % M`.
+
+**Subtraction.** Native subtraction is addition of the two's-complement negation and discards the final borrow. Its unique unsigned residue is `(U(x)−U(y)) % M`; Euclidean remainder is essential when the integer difference is negative.
+
+**Multiplication.** Native multiplication keeps exactly the low N bits of the product. The unsigned result is `(U(x)*U(y)) % M`. The model uses mathematical integers, not a host multiplication that could overflow before the remainder.
+
+**Division.** When U(y)>0, the unique quotient q in U(x)=q*U(y)+r with 0<=r<U(y) is nonnegative and less than M. Native unsigned division returns precisely q, the integer Euclidean quotient. Native division by zero has a separate total-theory meaning and is outside this argument.
+
+**Remainder.** Under the same nonzero-divisor guard, native unsigned remainder is the unique r from the Euclidean quotient/remainder decomposition; r is also in [0,M). The zero-divisor native totalization must not be identified with an unguarded source integer remainder.
+
+**L (left shift).** For 0<=k<=N, the count conversion is exact because N<2^N for every positive N (including N=1). Shifting moves each surviving weight from 2^i to 2^(i+k); weights at or above M are discarded. The result is `(U(x)*2^k) % M`. At k=N every weight is discarded, giving zero.
+
+**R (logical right shift).** The exact nonnegative count drops the k least significant coefficients. Their removed value is U(x)%2^k, leaving integer quotient U(x)/2^k. At k=N, U(x)<2^N makes this quotient zero.
+
+**Unsigned <=.** Both native operands are interpreted in [0,M). Native unsigned order is the usual order on those weighted sums. No signed comparison or two's-complement ordering is involved.
+
+**Composed-cast form.** For every source operand satisfying 0<=a<M, native conversion I(a) has U(I(a))=a. Substitute these equalities into the relevant native schema, preserving the divisor and source-count guards and exact static widths. This proves the specified composed formula. It justifies a local shortcut at those original operands; it does not turn a source cast into a wrapping cast or authorize discovering a source argument by textual matching.
+
+### What the model claim means
+
+With **complete mathematical reference definitions**, each bridge is a theorem:
+adding it leaves the mathematical model set unchanged. Do not make that claim
+about every model of the actual opaque or fuel-limited backend encoding.
+Hidden reference applications can be underconstrained there, and a bridge can
+exclude some of those spurious interpretations. That is useful strengthening,
+not evidence of inconsistency.
+
+The required relative argument is this: take an intended model of the existing
+source/native semantics and enabled shared-option families. Extend it with the
+exact total integer references, and interpret every fuel layer by that same
+mathematical value. Each permitted definition instance, bridge instance and
+proved library theorem then holds. Existing integers, words, heaps, allocations,
+function permissions and old symbols retain their interpretation. Fresh reference
+symbols admit this extension of the old, reference-free signature. The argument
+is not a proof of the consistency of the entire Dafny prelude or the correctness
+of Z3's implementation.
+
+At the new pin, the shared-family inventory is: bounded round trips, closed
+integer literal identities, reflexive heap-succession instances, result-allocation
+application instances, override call-layer instances, assign-such-that call
+permissions, and **#97's guarded source-lambda precondition equivalence**.
+The latter has a compatible source-closure interpretation: a handle contains its
+body, precondition and reads maps; under its type, allocation, capture, family
+and heap guards, `RequiresN` agrees with the declared range. The bridge changes
+none of those maps or guards. Test their actual interaction, including the
+separate `--heap-free-lambda-facts` option, as well as retaining #97's own
+negative/capture/old-heap fixtures. A bit-only test with the shared switch on
+cannot demonstrate an interaction with an uninstantiated lambda fact.
+
+### Executable checks and guard counterexamples
+
+Run all standard-library-only Python models from the repository root:
+
+```sh
+python3 docs/dev/design/193-evidence/models/run_all.py
 ```
 
-Inventory S in the implementation review. The reviewed source pin includes the bounded round trip,
-closed integer literal identities, heap-succession instances, allocation
-application patterns, override call-layer instances, and assign-such-that call
-permissions. The newer publication revision also includes issue 97's guarded
-source-lambda precondition equivalence. Test the proposed facts together with
-that family and any further families present at implementation time. This
-argument is relative to their soundness;
-it does not establish consistency of the whole verifier or correctness of Z3's
-implementation. A vacuity test is a diagnostic, not a substitute for the model.
+[Model arguments and guard details](193-evidence/models/model-arguments.md),
+[executable definitions](193-evidence/models/model.py), and
+[retained results](193-evidence/models/results.json) are part of this revision.
+The Boolean-digit side independently uses ripple-carry addition/subtraction,
+shift-and-add multiplication, restoring long division, index shifts and weighted
+sums. The native side uses explicitly masked Python operators. Reference AND
+uses quotient/remainder, and the derived references use the exact compositions
+in section 2; the comparison is not two aliases of one implementation.
 
-Never drop the following distinctions:
+The run exhausts **87,380 binary pairs** at widths 1–8 and **4,606 word/count
+combinations** with counts 0..N+1. It also checks 100,000 uniformly sampled pairs
+at **each** of widths 16, 32 and 64, with a sampled legal count plus 0, N and N+1
+for each word. Binary schemata have no count argument; shift schemata have no
+second word operand, so irrelevant variables are factored out. With boundary
+cases, the totals are 387,455 pairs and 1,184,145 word/count cases, 4,778,877 active
+raw-schema and 4,785,849 active composed-schema equation checks, and 37,931,258
+additional independent/derived equalities. False-guard implications are counted
+separately. These finite checks detect mistakes; the mathematical arguments
+above justify arbitrary widths.
 
-- `a as bvN` requires fit even though native `I(a)` is total modulo conversion.
-- Native BV division/remainder at zero have total SMT meanings; source division
-  remains illegal there. The proposed integer bridge is guarded.
-- Width zero has one value and the empty bit view. Test it before a `%N` rotation
-  expression and emit no positive-width native family for it.
-- The original predicate of an integer newtype is not implied merely by a masked
-  result. It must be checked at every operation, including synthetic members.
+The request's phrase “each guard is necessary” needs precision. Source legality
+can be stricter than the weakest mathematical premise of a particular formula.
+The executable counterexamples deliberately distinguish those cases:
 
-### 5.1 Issue 147 has already been repaired
+| Guard or boundary | Concrete example | What it establishes |
+|---|---|---|
+| Nonzero divisor | Native `bv1(0)/0=1` and `bv2(0)/0=3` | Dropping the quotient guard at both widths would equate the same integer `div(0,0)` to 1 and 3. Source integer division is undefined there. |
+| Nonzero remainder divisor | Python `1 % 0` raises `ZeroDivisionError`; native `bv3(1)%0=1` | A definedness requirement. Do not invent a numeric integer remainder at zero; some backend totalizations could match the native one. |
+| Count bound | N=3, x=1, k=8: I(k)=0, native L/R return 1, arithmetic L/R return 0 | Some bound preventing wrapped counts is essential. The equations actually hold for all 0<=k<2^N; k<=N is the retained source rule, not their minimal mathematical bound. |
+| Count lower bound | P(-1) is outside P's natural domain | The total references branch before P(k); the scalar L/R formulas require nonnegative k. |
+| Cast upper bound | N=3,a=8: native C is 7, `M-1-a` is -1; native `8<=1` after casts is true, integer order is false | Original-value complement/order cannot ignore wrapping. |
+| Cast lower bound | N=3,a=-1: native C is 0, `M-1-a` is 8 | Negative source values cannot be substituted for their unsigned observations. |
+| Width zero | `k % 0` raises `ZeroDivisionError`; no SMT `BitVec 0` sort exists | Use the separate singleton before count normalization/native-sort creation. A correctly defined singleton satisfies the extended scalar formulas; it is not a counterexample to those formulas. |
 
-At this pin, `BoogieGenerator.cs::AddBitvectorRotateFunction` keeps native
-extended rotations at positive powers of two, and uses shift/OR definitions at
-other positive widths. `docs/dev/bitvector-rotation-soundness.md` records the
-proof and regression controls.
+All source fit checks remain mandatory. Mathematically, composed A, modular
++/−/× and L's value operand are periodic and do not individually need cast-range
+premises; C written without normalization, R, division/remainder and unsigned
+order generally do. A range-check optimization must preserve the source rule
+regardless of that distinction. Never infer an arbitrary newtype predicate from
+a masked value: every result still has to satisfy the original predicate.
 
-The faulty rewrite composes counts modulo `2^N` before reducing modulo N.
-Reduction is preserved for every count exactly when `N` divides `2^N`, i.e. at
-positive powers of two. Thus the known unsound composition is absent from the
-non-power-of-two translation. The shift/OR helper's intended rotation meaning
-still depends on the source check `0<=k<=N`; do not assert it for arbitrary
-out-of-range helper arguments.
+### 5.1 Issue 147: exact repair and remaining native reachability
 
-New integer rotations use the integer reference formulas and do not generate
-native rotation symbols. The compatibility proofs for existing `bvN` preserve
-the shipped repair. This rules out the identified rewrite failure in those
-paths; it cannot guarantee that every other native-solver rewrite is correct.
+The fix is commit
+[`05a067c860ced91e2e0086ddf180c1ccdf544cff`](https://github.com/erniecohen/dafny/commit/05a067c860ced91e2e0086ddf180c1ccdf544cff)
+(PR 218), already present at the reviewed pin. In
+[`AddBitvectorRotateFunction`](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/Verifier/BoogieGenerator.cs#L1153),
+positive non-power-of-two widths use explicit shift/OR definitions; positive
+power-of-two widths retain Z3 `ext_rotate_left/right`. Width zero follows the
+existing singleton path and never constructs an SMT `BitVec 0`.
+
+The pinned regressions are
+[`github-issue-147.dfy`](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/github-issue-147.dfy),
+which runs original, true, false, inhabited-control and count-bound fixtures on
+both solvers/resolvers, and
+[`github-issue-147-emission.dfy`](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/github-issue-147-emission.dfy),
+which checks the actual Boogie/SMT paths at widths 0, 1, 3, 6, 12, 32 and 65.
+The exact false controls are in
+[`Inputs/github-issue-147-controls.dfy`](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-147-controls.dfy).
+
+**Can the proposed adapters reach the affected rewrite on Z3 5.1.0? Yes.**
+The BV-facing adapters at 8/16/32/64 use the retained native extended rotations.
+A nested caller can therefore reach the same native composition rewrite. Its
+known defect, combining counts modulo `2^N` before modulo N, cannot change the
+answer at these widths: N divides `2^N`, so reducing modulo `2^N` preserves the
+residue modulo N. Positive non-power-of-two adapters go through the repaired
+shift/OR wrappers and do not emit that native rotation operator. Integer-only
+reference rotations never call it. Do not claim that the native rewrite is
+unreachable; distinguish reachability from the removed unsound case.
+
+The repair is not a promise of cheap composition proofs. The pinned driver
+explicitly records `Bv64SameDirection` as out of resource on Z3 4.12.1 at
+2,000,000 RU. That inherited observation is not a passing vacuity control and
+is not silently replaced by the cheaper scalar-summary controls in this design.
+Preserve #147's value, negative, bound and emitted-operator regressions in every
+rotation milestone.
 
 ## 6. Surface, resolution, and separate compilation
 
@@ -568,93 +703,127 @@ location once; this proposal adds no second assignment grammar.
 
 ### 6.4 Canonical reference functions and packaging
 
-Add an **embedded ordinary Dafny source module**, provisionally `DafnyBitMath`,
-with the exact reference definitions. Load it through the ordinary parse,
-resolution, and translation pipeline before resolving clients whenever either
-option is enabled. Start with this simple deterministic loading rule; optimize
-demand loading only after the full enabled-mode measurements. With both options
-off, do not construct or register the support module.
+**Recommendation: fixed compiler-owned reference symbols, with explicit local
+definition unfolding, and an ordinary proved Dafny companion.** Replace the
+privileged embedded source-module loader. This removes the need to authenticate
+a user-spelled reference function as the meaning of a language operator. It
+moves the defining equations into the compiler's trusted semantic surface; it
+does not make those equations untrusted or automatically reduce every part of
+the trusted computing base.
 
-The existing standard-library loading paths provide the pattern:
-`Pipeline/Compilation.cs`, `DafnyDriver/Legacy/SynchronousCliCompilation.cs`,
-`DafnyFile.cs`, and `AST/Grammar/ProgramParser.cs`. Merely inserting unverified
-recursive special-function contracts into `_System` is not acceptable: the
-system module has a different resolution lifecycle.
+Two facts at the pin constrain the implementation. The
+[BoogieGenerator constructor](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/Verifier/BoogieGenerator.cs#L109)
+marks every loaded prelude function `AlwaysRevealed`. Meanwhile
+[OpaqueMemberRewriter](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/Rewriters/OpaqueMemberRewriter.cs#L79)
+skips functions whose body is null. Merely placing recursive bodies in the
+prelude and calling a bodyless facade “opaque” would not implement this plan.
 
-In consumer verification, treat only that trusted bundled input as a preverified
-library, using the existing library-input skip policy; do not reverify its
-definitions and add new proof counts on every invocation. Its exact bytes are
-verified independently before release as described below. This privilege comes
-only from the trusted bundle loader, not a user source attribute or DOO claim.
-Keep dedicated operation nodes through resolution and bind their model callees
-after full program resolution, or explicitly add the support-module dependency
-before resolving them. Injecting a sibling module alone does not establish
-resolution order for a client that uses operators without importing the model.
+**Concrete encoding.** Keep one canonical definition description for section 2's integer-valued
+operator references (powers, normalization, Boolean operations, shifts, rotations
+and population count). The sequence view `bitsNat`, its inverse `value`, and
+indexed view `bit` remain ordinary Dafny companion definitions with checked
+bodies; there is no new trusted sequence theory. Generate a conditionally loaded
+prelude fragment of
+private uninterpreted function declarations, such as `IB#And(n,a,b):int`.
+Do not install recursive BPL bodies or globally quantified, unfuelled recurrence
+axioms. Construct public ghost signatures from installed compiler data, with
+private intrinsic IDs and completely resolved types/contracts. `_System`
+members are not a place to insert arbitrary unresolved recursive source.
+User names, attributes, source paths, export clones and `.doo` metadata cannot
+create that intrinsic identity.
 
-The trusted loader retains a private map from operation kind to the resolved
-declaration objects parsed from the known embedded bytes. Intrinsic lowering
-and bridge RHS references use that map. Names, attributes, source URIs, and
-untrusted DOO metadata cannot establish canonical identity. Aliases to the real
-declaration are fine; a new declaration with the same spelling gets no special
-meaning. Diagnose a source-name collision with the injected module when it is
-enabled. A user refinement must not replace the original identity used internally.
+Add a narrowly specified **definition-unfold intrinsic**, illustrated by these
+compiler-produced signatures (not trusted user declarations):
 
-The public ordinary form is:
-
-```dafny
-import Math = DafnyBitMath
-// Canonical view, with explicit width:
-// Math.bitsNat(64, x as int)
-// Reverse after proving the bound:
-// Math.value(s) as bv64
+```text
+andNat(n:nat,a:int,b:int):int
+unfoldAnd(n:nat,a:int,b:int)
+  ensures andNat(n,a,b) ==
+    (if n==0 then 0 else
+       (if a%2==1 && b%2==1 then 1 else 0)
+         + 2*andNat(n-1,a/2,b/2))
 ```
 
-The initial proof companion is a separate optional source/binary distribution,
-not an unconditional dependency of the default `Std` project. It contains the
-LittleEndianNat refinement, bool adapter, and scalar native-BV helpers. Build
-that companion with `--integer-bitwise` so its dependency on the support module
-is recorded. An output library that exposes an injected model dependency must
-carry that requirement; reject building such a library without the language
-option rather than silently creating an unloadable artifact. Internal bridge
-use under `--additional-axioms` alone does not change an existing library's
-semantic interface.
+A resolved `unfoldAnd(n,a,b)` call emits exactly this one local instance after
+ordinary argument well-formedness checks. It does not recursively unfold newly
+introduced applications or grant permissions to user functions in its arguments. The recursive application is guarded
+by the nonzero branch. Corresponding unfold operations expose the other exact
+definitions, including the zero-width and negative-count branches before any
+partial source expression. This is a **new trusted definitional rule**, justified
+by section 5's model, not an existing `reveal` facility and not a new BV bridge.
+No globally quantified recurrence is needed. Ordinary library lemmas call these
+operations explicitly and prove induction steps; no library lemma is accepted
+merely because it has a desired contract or a verification-skipping attribute.
 
-The canonical reference definitions and initial bit-view API are **ghost**.
-Runtime integer-bitwise expressions retain dedicated resolved operation nodes;
-only verifier lowering calls the ghost reference functions. This avoids compiling
-an unused arbitrary-integer/sequence module on a target such as C++ that cannot
-compile its general representation. Executable rotate/popcount expressions must
-likewise retain runtime operation identity; do not source-desugar them into
-ghost function calls. Ghost `.Bits()` sugar can desugar completely.
+The raw compiler-owned integer-reference signatures return integers without using the range theorem
+being proved. Establish power positivity before unfolding definitions that
+display division or remainder by a power; preserve their source-definedness
+obligations rather than silently assuming the candidate positivity contract. Prove positivity, result range and useful algebra in the companion
+from the unfold equations. If consumer signatures later expose proved range
+contracts to make full-interval result checks automatic, their proof target
+must omit those same contracts. Keep this bootstrap dependency explicit; a
+function's assumed range contract cannot serve as its own proof. Other algebra
+remains ordinary scalar lemma calls. This finite definition mechanism needs its
+own emission tests, witness controls and cost measurements in M2.
 
-Register `IntegerBitwise` as a global language option with
-`OptionCompatibility.OptionLibraryImpliesLocalError`, following the existing
-standard-library precedent in `Options/CommonOptionBag.cs`. An old/off-built
-library loads into an enabled client; an enabled library requires an enabled
-client. `--additional-axioms` remains the existing verification option, not a
-new semantic-compatibility requirement for ordinary BV proofs.
+| Concern | Embedded ordinary Dafny reference source | Fixed prelude plus local unfold rule |
+|---|---|---|
+| Semantic trust | Normal function translation plus independently checked source bodies/contracts | Reviewed fixed defining equations, intrinsic-call translation, and independently checked companion theorems |
+| Canonical identity | Privileged source loader, declaration provenance map, injection order and bundle integrity | Private compiler IDs and reserved backend symbols; no source body supplies operator meaning |
+| Proof interface | Existing fuel/reveal machinery | Explicit one-step unfold calls; opaque UFs otherwise |
+| Separate compilation | Injected module dependency and canonical bundle reconstruction | Compiler-owned signatures reconstructed by the installed version; ordinary proof dependencies |
+| `.doo` | Must not accept source/header metadata as authority for canonical functions | Same rule; no library can manufacture an intrinsic identity |
+| Opaque newtype export | Requires a separate visibility/capability check | Still requires exactly that check |
+| Both options OFF | Must avoid loading or registering injected support | Must avoid constructing signatures, loading the fragment or changing declaration order |
 
-Capability recognition uses the declaration/module's recorded language mode,
-not just the root invocation's mode. DOO reload restores those module options;
-an off-built library loaded by an enabled client must keep its formerly inert
-attributes inert. Global support-module availability does not alter that rule.
+The export P0 is **independent** of reference ownership: copying `bitWidth`
+metadata onto an opaque exported type can disclose or recreate representation
+capability even with perfectly fixed prelude functions. Eligibility must still
+require the revealed integer-newtype definition and a descriptor validated in
+that declaration's recorded language mode. Retain the section 6.1/6.3 export,
+refinement, cloning and language-server tests. A fixed prelude solves the
+reference-body substitution problem, not this frontend boundary.
 
-DOO persists pre-resolution **source**, not the width descriptor. Preserve the
-attribute, recompute the descriptor on reload, and reload the canonical model
-from the installed trusted resource. Do not deserialize a private intrinsic tag
-from arbitrary source or a library. The model dependency must name the support
-ABI/version; a mismatch is an error. The serializer should not duplicate the
-injected module as a second user-owned declaration. `DooFile.cs` and
-`Backends/Library/LibraryBackend.cs` are therefore part of the change.
+**Options and identity.** The public ghost-reference API and proof companion
+require `--integer-bitwise`; native bridge use under `--additional-axioms` alone
+can use private reference symbols without adding a public semantic dependency.
+Register IntegerBitwise as a Global option with
+`OptionLibraryImpliesLocalError`. An enabled library requires an enabled client;
+an old/off-built library loaded into an enabled client keeps its formerly inert
+attributes inert. Recognize capability using module/declaration options, not
+only the root invocation.
 
-Split the companion's verification targets. Verify the exact support source and
-the pure integer/sequence proofs as explicit ordinary source inputs with **both
-feature options disabled** in CI. Verify native-BV adapters separately with the
-additional facts enabled; prove the pure native OR/XOR identities without the
-new bridges. Check termination,
-preconditions, and every written contract. Audit for `assume`, `{:axiom}`,
-bodyless unproved lemmas, and verification-skipping attributes. The pure-model proof run
-must not use the accelerators whose meanings it helps justify.
+At the pin, [AdditionalAxioms is a CLI option](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/Options/CommonOptionBag.cs#L725),
+while [DooFile](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/DooFile.cs)
+serializes/checks Global and Module options and already requires exact
+`DafnyVersion`. Preserve this distinction. DOO stores pre-resolution source;
+recompute width descriptors and canonical bindings on load. Because these fixed
+definitions are product code, the existing exact version check suffices as the
+initial reference ABI. Add a separate ABI/hash only if proof packages or model
+semantics can vary within a product version. Neither a version string nor
+“already verified” status is authority to create compiler identities.
+
+Load the compiler-owned fragment independently of any custom base `--prelude`,
+rejecting duplicate private declarations rather than adopting user-provided
+ones. A custom prelude remains an existing explicit trust boundary and is not
+covered by the default-prelude model/control claim. With both options OFF,
+retain the old parsing, resolution and Boogie-output path byte for byte on old
+inputs; do not unconditionally append even unused declarations to the prelude.
+
+**Proof and runtime separation.** M1 checks the pure ordinary Dafny model with
+both options OFF. After the fixed mechanism exists, check the canonical companion
+with integer-bitwise ON and additional axioms OFF; check native adapters
+separately with the bridge option ON. Keep candidate derived/range contracts unavailable
+while proving them; the exact defining unfold equations remain available. Ghost references never become runtime calls: executable
+operators/rotate/popcount retain dedicated resolved identities and semantic N,
+and backends implement their mathematical meanings directly. Ghost views may
+be ordinary source calls.
+
+If the local unfold mechanism is deferred, the coherent fallback is real opaque
+Dafny bodies with the complete existing fuel/reveal/can-call translation. Do not
+alias a bodyless source name to an unfuelled private function and claim ordinary
+Dafny unfolding still works.
+
 
 ## 7. Compilation on every backend
 
@@ -736,8 +905,8 @@ meaning of `Type.IsBitVectorType` throughout the compiler.
 | Area / paths relative to `Source/DafnyCore/` unless otherwise stated | Required change |
 |---|---|
 | `Options/CommonOptionBag.cs`, `Options/OptionRegistry.cs`, `Options/OptionCompatibility.cs` | Register/help/document the language option, global library compatibility, project configuration, and legacy spelling. Keep shared axiom option semantics intact. |
-| `Pipeline/Compilation.cs`; `Source/DafnyDriver/Legacy/SynchronousCliCompilation.cs`; `DafnyFile.cs`; `AST/Grammar/ProgramParser.cs` | Load the fixed ordinary reference source before resolution under either option; retain provenance; preserve both-off path exactly. |
-| New embedded `DafnyBitMath.dfy` and optional proof companion | Total reference definitions, independently verified contracts, bool/digit correspondence, scalar native adapters. Include packaging/source-hash tests. |
+| `AST/SystemModuleManager.cs`, compilation/option setup and `Verifier/BoogieGenerator.cs` | Construct resolved compiler-owned ghost signatures only in language-enabled mode; load the private reference fragment when needed by either option; preserve the both-off path exactly. |
+| Canonical reference-definition description and ordinary proof companion | Generate fixed UF signatures/local unfold equations and a pure model from the reviewed definitions; verify typing/range without assuming the target contracts; prove bool/digit correspondence and scalar adapters. |
 | `AST/TypeDeclarations/NewtypeDecl.cs`, `AST/Cloner.cs`, `AST/Modules/ScopeCloner.cs` | Width descriptor, unresolved/resolved clone policy, provenance preservation, and opaque-export behavior. `ScopeCloner` copies attributes while hiding a newtype; do not recover capability from that attribute alone. |
 | `Resolver/NativeTypeAnalysis.cs`, `Resolver/ModuleResolver.cs` | Extract backend-independent interval validation; establish metadata before operator inference; keep native selection separate and later. |
 | Legacy and refreshed resolver files listed in section 6.3 | New gated bit-capability constraints and same-type rules, diagnostics, result type and count handling. Do not globally broaden old constraints. |
@@ -746,12 +915,12 @@ meaning of `Type.IsBitVectorType` throughout the compiler.
 | `Verifier/Expressions/TranslateBinaryExpr.cs`; `Verifier/BoogieGenerator.ExpressionTranslator.cs` | Direct integer reference calls for new operations; canonical resolved identities; local BV bridge collection at integer observations, preserving literal/boxing behavior. |
 | `Verifier/BoogieGenerator.ExpressionWellformed.cs`; `Verifier/Statements/BoogieGenerator.TrForallStmt.cs` and other audited can-call callers | Original predicate/count checks; explicit scalar emission context; no unbound or exported facts; preserve can-call options. |
 | `Verifier/BoogieGenerator.cs` | Keep existing native BV declarations, conversion axioms and rotation repair. Add only the required canonical-symbol plumbing/local formula builders; no unconditional width-family changes. |
-| `DafnyPrelude.bpl` | No new trusted sequence theory and no unconditional extra declarations. Any eventual helper signature change must be gated and justified by actual implementation needs. |
+| `DafnyPrelude.bpl` or a separately loaded fixed fragment | Conditionally add private UF signatures; no recursive BPL bodies or global unfuelled recurrence. Audit explicit local unfold translation and custom-prelude collisions. |
 | `Backends/SinglePassCodeGenerator/SinglePassCodeGenerator.Expression.cs` | Pass N past runtime-type simplification; emit direct integer operations, truncation, counts and single evaluation. Do not apply modular truncation to ordinary integer arithmetic. |
 | `Backends/CSharp/CsharpCodeGenerator.cs`; `Backends/Java/JavaCodeGenerator.cs`; `Backends/GoLang/GoCodeGenerator.cs`; `Backends/Python/PythonCodeGenerator.cs`; `Backends/JavaScript/JavaScriptCodeGenerator.cs`; `Backends/Cplusplus/CppCodeGenerator.cs` | Each operation/width/carrier path in section 7, generated-code tests and runtime reference tests. |
 | `Backends/Dafny/DafnyCodeGenerator.cs`, `Backends/Dafny/AST.dfy`, `Backends/Rust/Dafny-compiler-rust-definitions.dfy`, `Backends/Rust/Dafny-compiler-rust.dfy` | Width-bearing DAST operations, Rust native rotations/popcount, integer result adaptation and explicit unsupported cases. Regenerate checked-in generated artifacts through the normal pipeline. |
 | `Source/DafnyRuntime/` C#, Java, Go/gomod, JS and other affected runtimes | Correct masks/count helpers and any popcount fallback; JavaScript wide integer repair or new correct helpers. |
-| `DooFile.cs`; `Backends/Library/LibraryBackend.cs` | Persist source annotation and support dependency, rebuild descriptors, never accept a forged intrinsic identity. |
+| `DooFile.cs`; `Backends/Library/LibraryBackend.cs` | Persist source annotation and language mode, rebuild descriptors/canonical bindings, retain exact-version compatibility; never accept a forged intrinsic identity. |
 | `Source/DafnyLanguageServer.Test/Synchronization/IncrementalBitvectorMembersTest.cs` and related option invalidation tests | Rebuild/cancel cached member and type information when widths, constraints or options change. Test both resolver modes. |
 | `docs/DafnyRef/`, `docs/dev/additional-axioms.md`, `docs/dev/news/193.feat`, `.github/review/regressions` | User semantics/options, every bridge model/control, release note and permanent regression registration. Product milestones update `.github/review/base` under the normal policy. |
 
@@ -768,105 +937,44 @@ through every export/refinement clone.
 
 ## 9. Measured cost and what the measurements establish
 
-All reported measurements in this section come from public repository CI, using
-the unchanged compiler at the source pin, reporting
-`4.11.0+fcb2042d.review.2d6fd450`. The
-[complete tables and qualifications](193-evidence/public-measurements.md),
-machine-readable scope/VC records, source hashes, and
-[reproduction instructions](193-evidence/README.md) are retained alongside this
-document. The accompanying scripts and Dafny files are design probes, not a
-production feature implementation.
+Reported RU in this document comes from public repository CI. Keep the pins
+separate: historical calibration uses `62bae981` / version `.2d6fd450`;
+round-2 controls and checked derivations use the requested `428e348b` / version
+`.8e189a3e`. The old [complete measurements](193-evidence/public-measurements.md)
+remain available. Round-2 sources, outcomes, costs, hashes and commands are in
+[the new report](193-evidence/round2/public-results.md). These are design probes,
+not a production emitter or integer-bitwise implementation.
 
-### 9.1 Comparative native and bridge probes
+### 9.1 Historical calibration: broader contracts, not the ten-fact basis
 
 [Run 42754841657](https://github.com/erniecohen/dafny/actions/runs/42754841657)
-uses benchmark commit `79d20aa13e8584e1f4113d79a8d20c699e90e6ab`, Z3 5.1.0 and
-4.12.1, both resolvers, 200,000 RU per batch, and a 15-second safety timeout.
-All comparative modes use `--additional-axioms`, one prover core per invocation,
-`/normalizeDeclarationOrder:0`, and `/restartProver`. The corpus covers 17
-operations at widths 8, 16, 32 and 64. Every well-formedness scope passed.
+uses benchmark commit `79d20aa13e8584e1f4113d79a8d20c699e90e6ab`, both solvers
+and resolvers, a 200,000-RU per-batch cap, and the old compiler pin. It covers
+17 operations at widths 8, 16, 32 and 64. Its complete per-width tables remain
+in the historical report; repeating them here would obscure the distinction
+between trusted derived contracts and checked derivations.
 
-Each solver/resolver configuration produced 32 files and 1,272 verification
-scopes. All 128 invocations have complete results and matching input hashes.
-For each solver the two resolvers have identical outcomes, resource counts and
-per-VC results across all 1,272 scopes. There were no parser failures, missing
-logs or wall-time timeouts.
-
-| Mode | What is being measured | Correctness results, 5.1.0 / 4.12.1 |
+| Mode | Correctness results, Z3 5.1.0 / 4.12.1 | Meaning |
 |---|---|---|
-| Reconstructed `assume false` baseline | Same per-operation contracts, discharged vacuously; the downstream original files were not supplied | 68/68 / 68/68 proved, vacuously |
-| Current native attempt | Empty-body attempt at the same true contracts with the unmodified encoding | 0/68 / 0/68 proved |
-| Separate BV-argument bridge contract | A deliberately trusted contract over BV arguments, then called with cast integers | 15/68 / 5/68 proved; remaining cases out of resource |
-| Composed source-argument bridge contract | A deliberately trusted operation-and-round-trip contract at original integer operands | 68/68 / 68/68 proved |
-| Pure native reduction identities | Actual proofs of the OR/XOR/ANDNOT reductions, with no new contract axiom | 12/12 / 12/12 proved |
-| Integer reference wrappers | Actual definitional checks of reference-function APIs; not the sequence theorem | 68/68 / 68/68 proved |
+| Reconstructed `assume false` baseline | 68/68 / 68/68 | Vacuous; not a sound cost baseline |
+| Empty-body native attempt | 0/68 / 0/68 | This proof attempt fails, not a falsification of the equations |
+| Trusted separate BV-argument contract | 15/68 / 5/68 | Conversion proof search still dominates many clients |
+| Trusted composed integer-argument contract | 68/68 / 68/68 | Broad direct contracts, including derived operations |
+| Actual native Boolean reduction identities | 12/12 / 12/12 | Genuine native proofs |
+| Integer reference wrappers | 68/68 / 68/68 | Definitional interface checks, not all useful algebraic laws |
 
-The current native mode has 65 resource failures and 3 ordinary proof errors on
-5.1.0; 63 resource failures and 5 errors on 4.12.1. These results show that this
-empty-body attempt failed, not that the semantic equations are false or that no
-assumption-free native proof is possible. The separate-contract results are
-particularly poor: supplying an operation equation does not by itself solve
-conversion proof search.
-
-Here is the full requested width table for 5.1.0. Each cell is
-**reconstructed assume-false baseline / composed-contract client**, in RU. Every
-listed pair is Correct, including all associated well-formedness checks. The
-parallel 4.12.1 table and all failed raw/native observations are in the linked
-complete report, rather than being omitted or averaged together.
-
-| Operation | 8 | 16 | 32 | 64 |
-|---|---:|---:|---:|---:|
-| AND | 7,826 / 6,773 | 9,497 / 7,779 | 12,866 / 9,797 | 19,613 / 13,835 |
-| OR | 7,924 / 6,961 | 9,556 / 7,969 | 12,820 / 9,985 | 19,348 / 14,017 |
-| XOR | 7,740 / 6,775 | 9,379 / 7,781 | 12,684 / 9,799 | 19,303 / 13,837 |
-| ANDNOT | 8,064 / 7,019 | 9,719 / 8,025 | 13,056 / 10,043 | 19,739 / 14,081 |
-| Complement | 4,143 / 3,744 | 4,990 / 4,270 | 6,711 / 5,328 | 10,153 / 7,444 |
-| Left shift | 6,601 / 5,814 | 7,653 / 6,403 | 9,689 / 7,520 | 13,725 / 9,693 |
-| Right shift | 6,524 / 5,766 | 7,576 / 6,355 | 9,612 / 7,472 | 13,648 / 9,645 |
-| Addition | 5,256 / 4,436 | 6,968 / 5,444 | 10,392 / 7,460 | 17,240 / 11,492 |
-| Subtraction | 5,376 / 4,460 | 7,152 / 5,468 | 10,704 / 7,484 | 17,808 / 11,516 |
-| Multiplication | 5,767 / 4,578 | 9,062 / 5,592 | 19,519 / 7,626 | 55,802 / 11,696 |
-| Unsigned division | 6,055 / 4,459 | 10,593 / 5,479 | 25,831 / 7,523 | 80,865 / 11,607 |
-| Unsigned remainder | 6,117 / 4,459 | 10,701 / 5,475 | 26,013 / 7,507 | 81,213 / 11,571 |
-| Single-bit access | 6,301 / 5,529 | 7,205 / 6,118 | 8,917 / 7,235 | 12,245 / 9,408 |
-| Equality | 4,358 / 4,521 | 5,926 / 6,121 | 9,062 / 9,321 | 15,334 / 15,721 |
-| Unsigned `<=` | 4,398 / 4,535 | 5,966 / 6,135 | 9,102 / 9,335 | 15,374 / 15,735 |
-| Rotate left | 7,441 / 6,231 | 9,123 / 7,239 | 12,517 / 9,255 | 19,367 / 13,287 |
-| Rotate right | 7,443 / 6,239 | 9,125 / 7,247 | 12,519 / 9,263 | 19,369 / 13,295 |
-
-Across the 68 correctness scopes the baseline/composed totals are
-919,685 / 551,032 RU on 5.1.0 and 949,863 / 551,516 RU on 4.12.1. This is not a
-speedup claim over a sound baseline: `assume false` is vacuous, and the composed
-client deliberately trusts a contract. The nonzero baseline work includes
-checks that precede the false assumption. The useful finding is that the shape
-of the local contract matters, and that a conversion-heavy API can be expensive
-even after its meaning is granted.
-
-The pure native helper proofs have identical outcomes/counts on both solvers
-and resolvers:
-
-| Actual proved native identity | 8 | 16 | 32 | 64 |
-|---|---:|---:|---:|---:|
-| OR by De Morgan | 1,950 | 1,950 | 1,950 | 1,950 |
-| XOR by OR/AND/complement | 4,234 | 8,938 | 26,921 | 97,268 |
-| ANDNOT by OR/XOR | 3,846 | 7,914 | 23,538 | 84,686 |
-
-The integer reference wrapper checks cost 2,994–7,511 RU per correctness scope
-on 5.1.0 and 3,002–7,519 on 4.12.1, independent of width in this corpus. These
-are definitional checks of the proposed verification interface, not evidence
-that all algebraic properties prove themselves automatically.
-
-The composed-contract corpus trusts one direct fact per operation, including
-derived operations. It is broader than the proposed ten-formula basis. Therefore
-these costs are a **projection of client cost**, not measurements of the final
-local emitter or the complete minimal-basis proof library. Actual native-adapter
-and compiler integration costs remain a milestone gate. The main acceptance
-list is measured above; popcount was not in that list and its implementation
-and reference theorem remain a separate milestone with its own cost rows.
+The broad composed-contract clients cost 3,744–15,735 RU on 5.1.0; the total
+across 68 correctness scopes is 551,032/551,516 RU on the two solvers. Every
+well-formedness scope passed, and both resolvers produced identical outcomes
+and RU. There were no missing logs or wall-time failures. These observations
+motivated composing the source casts locally. They do **not** measure deriving
+OR/XOR/bit/rotation from the ten basic facts, and do not justify treating those
+broader contracts as additional axioms. Section 9.6 supplies the checked
+minimal-basis costs, including support construction and well-formedness.
 
 ### 9.2 A substantive sequence theorem, proved without the new facts
 
-The independent
+The historical, independently checked
 [sequence proof run](https://github.com/erniecohen/dafny/actions/runs/42755593223)
 uses benchmark commit `e046a64c1ce1f2c49127a2e281d3eda68c01b0d0` and
 `--additional-axioms=false`. Its
@@ -895,33 +1003,202 @@ adapter library. The probe's OR/XOR/ANDNOT references use their direct recursive
 Boolean definitions; the production library must additionally prove their
 equivalence to the smaller AND/complement basis in section 2.
 
-### 9.3 Vacuity results: the remaining gate is real
+### 9.3 Effective vacuity controls and their exact scope
 
-No `assert false` control verified. Some controls returned genuine proof errors;
-others exhausted resources and are **inconclusive**, not satisfactory vacuity
-controls:
+The old 68-case rows rejected 52/50 false controls in separate form and 44/42 in
+composed form on Z3 5.1.0/4.12.1. The remainder exhausted resources. In particular,
+all AND/OR/XOR/ANDNOT controls were inconclusive, already at width 8. Those are
+failed controls, not passes and not evidence of inconsistency.
 
-| Controls, 68 per row | Rejected / inconclusive, 5.1.0 | Rejected / inconclusive, 4.12.1 |
+**Diagnosis by ablation and SMT trace.** Remove every BV operation and leave
+only a call of transparent recursive `andNat` followed by `assert false`: the
+failure still occurs at widths 8 and 64. Making the reference opaque changes
+that resource failure to Dafny `Errors`/Boogie `Invalid`. Width-64 bit-blasting
+therefore is not required to reproduce the failure. The captured queries set `smt.mbqi=false`:
+MBQI is not the explanation either. Quantifier profiles show deeper and more
+numerous instantiations in the transparent recursive/fuel/literal/arithmetic
+encoding. Symbolic opaque width-64 mixed BV/integer contexts can still exhaust,
+so mixed-theory search is a second cost. The trace supports this localization;
+it does not prove that a single trigger is solely responsible.
+
+**A necessary qualification:** a Dafny `Errors`/Boogie `Invalid` result is not
+necessarily a solver `sat` result. The captured opaque A64 query returns
+`unknown` with reason `incomplete quantifiers`, after which Boogie reports an
+ordinary assertion rejection using a candidate model. It terminates without
+resource exhaustion, but that candidate is not a checked model of the whole
+prelude. Report these three outcomes separately: operational rejection of
+`assert false`; actual SAT for the finite new-fact slice; and the mathematical
+model-extension argument. None may be relabelled as either of the others.
+
+**Method selected for production regression design:**
+
+1. Keep reference functions opaque in the control context. Independently verify
+   their exact witness values with the bridge disabled. For example,
+   `and53(n)` proves `andNat(n,5,3)==1` for every n>=3 by induction through the
+   original recurrence, and `powers()` proves P(0), P(1) and P(64).
+2. In an inhabited witness context, retain every basic and composed local
+   bridge equation the emitter would supply for the observed terms. Preserve
+   source guards, native operations, conversions, existing shared-option machinery
+   and full result/type checks; explicitly activate #97 in the combined fixture. Do not replace the actual bridge result by
+   a numeral or assume the reference certificate.
+3. Assert false. Require `Errors` with an `Invalid` VC at that assertion, with no
+   failed precondition, certificate, positive check, timeout or exhausted VC.
+   A diagnostic exit code or green workflow alone is insufficient.
+4. Include a source lambda and a requires observation for #97's necessary
+   direction. The combined control first proves that direction for symbolic t,
+   then takes the inhabited t=0 branch and retains all ten raw/composed bridge
+   families. A split immediately at the final false assertion separates the
+   preceding positive checks without removing bridge premises.
+5. Retain a sensitivity mutation: changing both A right-hand sides by +1 must
+   make false provable at the certified witness. This checks that the reference
+   value and bridge equation can actually conflict in the test.
+
+The [standalone control file](193-evidence/round2/controls64.dfy) includes all ten
+schemata; [the combined file](193-evidence/round2/lambda-controls64.dfy) exercises
+#97 and the separate heap-free option; [the pure certificates](193-evidence/round2/pure-certificates64.dfy)
+verify with additional axioms OFF and contain no `assume` or axiom-marked lemma.
+In these design-only projections, each `assume {:axiom}` below is exactly an
+identified prospective local emitter equation. It is not a proof of that equation.
+Production tests replace these harness assumptions with the actual emitter and
+retain structural checks that every expected guarded equation is present.
+
+The [first round-2 public run](https://github.com/erniecohen/dafny/actions/runs/43100427111)
+uses the exact requested compiler and both solvers/resolvers. Every listed
+control rejects false with no other failure; each number below is the complete
+control correctness-scope RU, including both batches in the combined case.
+Both resolvers give identical numbers. Heap-free ON/OFF is the separate existing
+lambda option; additional axioms are ON throughout this table.
+
+| Control | Z3 5.1.0 | Z3 4.12.1 |
 |---|---:|---:|
-| Separate BV-argument bridge | 52 / 16 | 50 / 18 |
-| Composed source-argument bridge | 44 / 24 | 42 / 26 |
+| A | 13,347 | 12,522 |
+| C | 4,673 | 4,659 |
+| L, including count N | 17,300 | 17,305 |
+| R, including count N | 15,190 | 15,225 |
+| + | 8,151 | 8,670 |
+| − | 8,129 | 8,726 |
+| × | 8,834 | 9,243 |
+| / | 8,410 | 8,497 |
+| % | 8,323 | 8,424 |
+| ≤ | 6,469 | 6,569 |
+| All ten plus #97, heap-free OFF | 136,296 | 175,461 |
+| All ten plus #97, heap-free ON | 124,948 | 163,279 |
 
-The AND/OR/XOR/ANDNOT controls are inconclusive at every measured width in both
-forms. The complete report identifies the remaining arithmetic and rotation
-cases individually. All recursive reference definitions remain in those
-contexts; they were not hidden to turn a weaker query into a claimed success.
+Here is the exact A/C/L/R text at width 64. The functions and checked certificates
+are those in the linked standalone file; L/R exercise both count 1 and count N:
 
-Complementary finite ground checks evaluate the recursive reference at concrete
-arguments and assert the actual native operation equation. All 100 cases are
-SAT in each solver/resolver configuration, including boundary counts and widths
-1 and 3. They take 16–40 RU each. These are witnesses for those instances, not
-consistency of the entire quantified context. The production axiom PR must
-deliver effective full-context controls for every emitted basic fact and cast
-composition; this design does not waive that rule.
+```dafny
+lemma {:induction false} control_A64()
+{
+  and53(64);
+  // A, composed at checked integer literals (its range guard is true).
+  assume {:axiom} 0 <= 5 < 18446744073709551616 && 0 <= 3 < 18446744073709551616
+    ==> (((5 as bv64) & (3 as bv64)) as int) == andNat(64,5,3);
+  // The raw A instance is retained as well.
+  assume {:axiom} (((5 as bv64) & (3 as bv64)) as int) ==
+    andNat(64,(5 as bv64) as int,(3 as bv64) as int);
+  assert false;
+}
+
+lemma {:induction false} control_C64()
+{
+  assume {:axiom} 0 <= 5 < 18446744073709551616
+    ==> ((!(5 as bv64)) as int) == 18446744073709551615-5;
+  assume {:axiom} ((!(5 as bv64)) as int) ==
+    18446744073709551615-((5 as bv64) as int);
+  assert false;
+}
+
+lemma {:induction false} control_L64()
+{
+  powers();
+  assume {:axiom} 0 <= 5 < 18446744073709551616 && 0 <= 1 <= 64
+    ==> (((5 as bv64)<<1) as int) == (5*p(1))%18446744073709551616;
+  assume {:axiom} 0 <= 1 <= 64
+    ==> (((5 as bv64)<<1) as int) ==
+    (((5 as bv64) as int)*p(1))%18446744073709551616;
+  assume {:axiom} 0 <= 5 < 18446744073709551616 && 0 <= 64 <= 64
+    ==> (((5 as bv64)<<64) as int) == (5*p(64))%18446744073709551616;
+  assume {:axiom} 0 <= 64 <= 64
+    ==> (((5 as bv64)<<64) as int) ==
+    (((5 as bv64) as int)*p(64))%18446744073709551616;
+  assert false;
+}
+
+lemma {:induction false} control_R64()
+{
+  powers();
+  assume {:axiom} 0 <= 5 < 18446744073709551616 && 0 <= 1 <= 64
+    ==> (((5 as bv64)>>1) as int) == 5/p(1);
+  assume {:axiom} 0 <= 1 <= 64
+    ==> (((5 as bv64)>>1) as int) == ((5 as bv64) as int)/p(1);
+  assume {:axiom} 0 <= 5 < 18446744073709551616 && 0 <= 64 <= 64
+    ==> (((5 as bv64)>>64) as int) == 5/p(64);
+  assume {:axiom} 0 <= 64 <= 64
+    ==> (((5 as bv64)>>64) as int) == ((5 as bv64) as int)/p(64);
+  assert false;
+}
+```
+
+**What a successful control establishes.** The Dafny fixture shows that the
+verifier rejects `assert false` in the exposed, inhabited context, with the
+bridge equations live and reference witness values certified independently.
+It rules out an immediately exploitable contradiction found by that run. It
+does **not**, by itself, prove a countermodel: the underlying result can be
+`unknown (incomplete quantifiers)`. The separate quantifier-free consistency
+witness keeps every raw/composed local equation and guard at the same ground
+inputs, uses the actual native operators, and supplies the reference values
+from the mathematical model. A real `sat` answer for that slice establishes
+joint satisfiability of those new facts; the A+1 mutation must be `unsat`.
+
+The [ground-witness generator](193-evidence/round2/ground_witness.py) reads the
+actual `assume {:axiom}` clauses from both control sources and checks that the
+combined fixture retains the exact ordered union: **24 raw/composed instances**,
+including both counts in L and R. It preserves guards and emits native SMT BV
+operators/conversions. It does not compute away their results in Python. The
+only supplied reference values are the independently checked `and53` and power
+certificates. Their source hashes must match the verified Dafny artifacts;
+the small source-expression parser is not a proof checker. The corruption test
+changes both A forms by +1; its unsatisfiability must involve the correct
+reference certificate, not merely disagreement between the two bridge forms.
+
+An explicit extension of those ground reference observations is
+`P(n)=2^n` and `andNat(n,a,b)=sum(2^i*d_i(a)*d_i(b), i=0..n-1)`, where
+`d_i(a)=(a / 2^i) % 2` uses Euclidean division. Splitting off digit zero proves
+the original recurrence even for negative integer a,b; the empty sum is zero.
+At the witness, AND is 1, complement is M−6, addition is 8, subtraction 5−9 is
+M−4, product is 15, quotient/remainder are 1/2, shifts at count 1 are 10/2,
+and both shifts at count 64 are zero. All guards are true. Thus satisfiability
+cannot be obtained by making a guard false, and the finite reference values
+extend to the intended total functions rather than arbitrary UF values.
+
+The [query-profile script](193-evidence/round2/profile_queries.py) captures the
+actual Dafny query and replays its intact first-check prefix, adding only
+observational quantifier profiling and requests for reason/statistics. It also
+attributes shared source-location quantifiers by their existing skolemid and
+checks that this qid relabelling preserves the result and summary statistics.
+It never removes a prelude axiom, bridge premise, trigger or fuel layer.
+
+Neither test proves all schema instances, arbitrary transparent recursive
+contexts, the future emitter, or the complete existing Dafny prelude consistent.
+Opacity suppresses recursive-definition search. Section 5's model extension
+and separately checked reference proofs justify those hidden definitions; the
+finite tests supplement that argument. #97 is exercised operationally in the
+full Dafny fixture and included in the general model argument, not silently
+replaced by a quantifier-free lambda abstraction and called fully checked.
+A production change still must replace every harness assumption by an actual
+emitted fact and rerun these controls; no production fact is approved here.
+
+The round-2 public report records exact pin, source hashes, per-VC outcomes and
+RU, both resolvers and both solvers. Keep 200,000 RU as the acceptance ceiling
+for each of these concrete controls. Resource exhaustion remains a failure of
+the gate, even when the mathematical model is known. The old broad-contract
+projection's inconclusive controls are superseded by these precise finite
+contexts; they are not retroactively marked passing.
 
 ### 9.4 Suite and standard-library evidence
 
-The unchanged pin already has a successful
+The historical pin `62bae981952337d312cbb3d43c39f9813cca6084` has a successful
 [full review run](https://github.com/erniecohen/dafny/actions/runs/42748364832).
 Its retained `additional-axiom-resources` artifact reports the following pinned
 OFF/ON observations. These are **the existing shared option**, not the cost of
@@ -942,8 +1219,8 @@ artifact's generic caveat about old library ordering should be read with the
 newer pinned `REVIEW.md`: the controlled source-library runner now uses
 `/deterministicLiteralHashes:1` and `/restartProver`.
 
-These totals are historical measurements of the stated pin, not measurements of
-the newer publication revision. In particular, the later issue 97 change records
+These totals measure `62bae981`, not the round-2 comparison pin `428e348b`.
+In particular, the intervening issue 97 change records
 two different ON-mode standard-library outcomes under Z3 5.1.0; use the actual
 implementation predecessor's vectors for its eventual comparison.
 
@@ -959,20 +1236,110 @@ standard-library binary.
 
 ### 9.5 Experiment provenance and reproducibility
 
-The first probe run failed its infrastructure check because a shallow checkout
-did not contain the source pin. No proof results from that failed setup are used.
-The corrected run fetched the pin explicitly and checked product-source identity
-before using its published compiler artifact. An early probe shape also cast
-shift counts to BV explicitly, causing separate wide-count well-formedness
-failures; the authoritative corpus uses the existing natural-count syntax.
+The [first round-2 attempt](https://github.com/erniecohen/dafny/actions/runs/43099852372)
+failed during solver setup: a variable written for the next Actions step was
+used in the current step. It produced no proof evidence. The
+[corrected controls/models run](https://github.com/erniecohen/dafny/actions/runs/43100427111)
+completed all four solver/resolver configurations with zero unexpected
+acceptance outcomes. The [complete round-2 run](https://github.com/erniecohen/dafny/actions/runs/43103815404)
+also checks every derived helper, caller and control, the finite SAT witnesses,
+and actual-query profiles. Its immutable input commit is
+`d81f1379d5ae346cdcaad051519feb50c482dffb`.
 
-The retained evidence includes the authoritative generator, runner, ground
-checks, proof source, every client/control row, every scope/VC row, and receipts
-with compiler/solver/source hashes. The public Actions artifacts additionally
-contain full solver inputs and diagnostics. Re-running the runner exits zero
-after recording expected diagnostic failures; acceptance is determined from
-the result fields, not the workflow's green status. No failed or absent result
-is relabeled a successful proof.
+The workflow consumes the public compiler artifact built from `428e348b`, checks
+its version and unchanged product sources, and downloads checksum-pinned solver
+releases. The report retains compiler/solver hashes, generated-source hashes,
+per-scope and per-VC distinctions, and actual outcomes. Generated Dafny and full
+SMT inputs/logs are in the public CI artifacts. No private-machine RU is used in
+this document. Historical infrastructure failures and superseded probe shapes
+remain described in the original report, with their original pins.
+
+From the repository root, using the requested compiler and either solver:
+
+```sh
+python3 docs/dev/design/193-evidence/models/run_all.py
+python3 docs/dev/design/193-evidence/round2/generate.py cases
+python3 docs/dev/design/193-evidence/round2/run.py \
+  --dafny "$DAFNY" --z3 "$Z3" --sources cases --output results \
+  --source-commit 428e348b0b125cb67505f03a0026b3f497f98e48 \
+  --resource-limit 200000 --wall-timeout 600
+python3 docs/dev/design/193-evidence/round2/ground_witness.py \
+  --controls cases/controls64.dfy --lambda-controls cases/lambda-controls64.dfy \
+  --z3 "$Z3" --out ground
+python3 docs/dev/design/193-evidence/round2/profile_queries.py \
+  --dafny "$DAFNY" --z3 "$Z3" --controls cases/controls64.dfy --out profiles
+```
+
+For a DLL, add `--dotnet "$DOTNET"` to the Dafny runner and profile commands.
+Repeat the runner with `--refresh`, and with each solver. The runner itself
+checks both settings of the separate heap-free option on lambda fixtures. Pure
+support files are explicit inputs verified with additional axioms OFF; including
+them in a caller is not sufficient. Clients and controls keep 200,000 RU;
+visibly annotated library helpers have their separate larger budgets.
+
+The diagnostic runner exits zero after recording failures. Read its unexpected
+scope, setup/log and unmapped-failure counts, not merely workflow status.
+Ablation files preserve resource failures as observations and never count as
+verified adapters. The ground checker requires real SAT/UNSAT answers. The
+profile result records actual `unknown` reasons independently of Dafny's verdict.
+
+### 9.6 Minimal-basis cost and accelerator policy
+
+The exact conditional derivations are in section 3.4. Their source-level
+assumptions are precisely the proposed basic instances, so these measurements
+replace the old broader-contract projection for this question. They remain
+predictions for a future production emitter and the selected fixed-UF/unfold
+mechanism: the current fixtures use ordinary Dafny reference definitions.
+Changes in surrounding translation can change solver cost even when the
+mathematical fact is identical.
+
+The report separates three costs: proving reference/native support once,
+constructing the checked adapter once, and a subsequent caller including its
+well-formedness scopes. Assertion isolation preserves every obligation; report
+both summed RU and the largest VC. The integer-input bit/rotation callers use
+that annotation explicitly, and unsplit counterparts remain as diagnostics.
+
+The [full public run](https://github.com/erniecohen/dafny/actions/runs/43103815404) verifies every selected helper body and caller in
+all four solver/resolver configurations. The following measured values include
+**well-formedness plus correctness**. Each cell is **Z3 5.1.0 / 4.12.1**; both
+resolvers give identical client counts. All inputs are integers in range; bit
+and rotation clients use explicit assertion isolation.
+
+| Integer-input client | 8 | 16 | 32 | 64 |
+|---|---:|---:|---:|---:|
+| OR | 19,705 / 19,693 | 20,713 / 20,701 | 22,729 / 22,717 | 26,761 / 26,749 |
+| XOR | 21,671 / 21,659 | 22,677 / 22,665 | 24,695 / 24,683 | 28,733 / 28,721 |
+| ANDNOT | 19,367 / 19,355 | 20,373 / 20,361 | 22,391 / 22,379 | 26,429 / 26,417 |
+| Bit value | 39,593 / 39,472 | 43,618 / 43,305 | 50,587 / 49,890 | 66,537 / 65,216 |
+| Rotate left | 27,770 / 27,786 | 29,958 / 29,990 | 34,342 / 34,406 | 43,110 / 43,238 |
+| Rotate right | 27,770 / 27,786 | 29,958 / 29,990 | 34,342 / 34,406 | 43,110 / 43,238 |
+
+The twelve corresponding unsplit bit/rotation callers exhaust in both solvers
+at all four widths; they remain visible ablations. Ordinary native-word bit
+callers cost 14,996–37,720 RU and native-word rotation callers 13,509–17,321 RU.
+Thus a cheap checked contract does not imply that every unshaped mixed-theory
+call is cheap.
+
+Construction is separate: at width 64, OR/XOR/ANDNOT adapter totals are
+779,276/775,993, 716,094/716,153 and 575,306/575,738 RU, respectively. Each native
+variable-count rotation helper costs 16,503,535/16,733,258 RU across isolated
+VCs, plus its checked literal-count dependencies. The 64-bit rotate-left adapter
+itself costs 1,323,785/2,759,806 RU; rotate-right costs 1,307,541/1,951,203.
+Every obligation verifies within its explicit helper cap. The report gives all
+widths, support totals, largest VCs, and the sole pure-certificate cost variation
+between resolver runs. These are real once-only costs, not hidden axioms or
+costs silently charged to every caller.
+
+**Proposed accelerator threshold.** First supply the checked scalar adapter.
+Consider a redundant direct fact if a representative client still exhausts or
+exceeds 200,000 RU after those calls, and a paired candidate at least halves
+its cost and brings it below 100,000 RU on both solvers. Alternatively, require
+at least 5% reduction in total verification RU on representative complete client
+projects. In either case require the model/derivation, the operational and finite-slice
+controls of section 9.3, actual-emitter correspondence, both-off identity, and full suite/Std comparisons;
+report regressions as well as gains. These are engineering decision thresholds,
+not a theorem or an already adopted fork policy. A large once-only helper proof
+by itself is not grounds to enlarge the trusted basis.
 
 ## 10. Alternatives and decisions
 
@@ -980,7 +1347,7 @@ is relabeled a successful proof.
 |---|---|---|---|
 | Bit view representation | New `bit` type makes numeric digit notation natural | Adds type/boxing/conversion machinery with little benefit over Boolean values | `seq<bool>` plus a proved bool/digit adapter |
 | Newtype verification | Lower every operation through `bvN` | Reuses existing machinery but imports mixed-theory conversion costs into every integer program | Direct integer reference semantics |
-| Trusted theory | Add a complete sequence/bit axiom system | Concise specification; large consistency and trigger surface | Ordinary definitions and verified library; only native bridges are additional facts |
+| Trusted theory | Add a complete sequence/bit axiom system | Concise specification; large consistency and trigger surface | Fixed integer definitions with explicit unfold rules, ordinary sequence definitions and proved laws; native interoperability facts use `--additional-axioms` |
 | Native bridge basis | One direct axiom per required operation | Simple clients and promising projected costs | Begin with the ten basic facts and prove derived operations; add a redundant accelerator only with evidence |
 | Proof strategy | Ask the solver to bit-blast every client | No added bridge fact; poor observed mixed-theory scaling | Small pure-BV identity proofs once, then integer/library reasoning for clients |
 | Trigger strategy | Global operation or selection quantifiers | Automatic coverage of deeply nested expressions | Finite local scalar instances; selection-trigger loops are a concrete counterexample |
@@ -988,10 +1355,73 @@ is relabeled a successful proof.
 | Width syntax | Infer from any provable bounded predicate | Fewer annotations | Explicit attribute first; exact-interval inference later, never target-dependent inference |
 | Operator API | Only library functions | Lowest frontend complexity and a useful first proof milestone | Library reference/proof foundation plus requested builtin operator syntax in staged PRs |
 | Signed/unbounded integers | Infinite two's-complement semantics immediately | Natural for some bitwise laws and some host runtimes | Defer: width-dependent complement, shift interpretation and result domains need separate user decisions |
-| Canonical support | Privileged user-spelled `andNat` or an axiom-marked special function | Easy wiring | Fixed embedded ordinary ghost source, independently verified and referenced by private provenance |
+| Canonical support | Embedded trusted ordinary Dafny source | Reuses existing fuel/reveal but requires privileged source provenance and injection | Fixed compiler-owned UFs plus explicit local unfold rules and an ordinary proved companion |
 | Bit-view spelling | Synthetic `x.Bits()` only | Convenient and infers width | Generic `bitsNat(N,x as int)` first; `.Bits()` as optional checked sugar |
-| Shared-option loading | Late demand-loaded model injection | Could reduce enabled-mode cost | Deterministic pre-resolution loading first, measured on the full suite; demand loading is a later optimization |
+| Shared-option loading | Unconditional reference prelude declarations | Easy wiring but can alter old output and RU | Conditional fixed fragment; public ghost signatures only in language-enabled mode; measure all four option combinations |
 | Nonnative compilation | Reject every nonnative width | Small compiler patch | Integer runtime fallback where supported; honest C++/Rust target exclusions until their missing representations exist |
+
+### 10.1 Client annotation burden
+
+These are **interface predictions**, not verification results for an implemented
+integer-bitwise translator. Assume a fixed positive N, `M=2^N`, full-interval
+unsigned newtypes (`0<=x,y,a,b,m<M`), legal shift/rotation counts `0<=k<=N`, and
+bit indices `0<=i<N`. The recommended references are opaque to ordinary clients,
+with proved range facts and a scalar proof library. Every lemma name below is a
+proposed library obligation, not a claim that such an API already exists.
+
+“Call” means one scalar lemma call after its preconditions are available.
+“Manual” means a client needs an explicit mixed-theory proof if that adapter has
+not been supplied; it does not assert that no small empty-body example could
+happen to verify. The alternative keeps the same integer-valued newtypes and
+integer comparisons but lowers bitwise operations through BV casts, with the
+existing round-trip facts. Pure word identities do not automatically establish
+the corresponding mixed integer statement.
+
+| Client fact | Integer references and proved library | Internal BV and round trips |
+|---|---|---|
+| `x & (2^k-1) == x % 2^k` | Call `AndMaskLow(N,x,k)` | Call proved `BvAndMaskLow_N`; round trips alone leave a manual mask/division proof |
+| `x & y <= x` | Call `AndBound(N,x,y)` | Call `BvAndBound_N`; the native unsigned word inequality is easy, but transferring it to the stated integer comparison still needs a justified adapter |
+| `x | y >= x` | Call `OrBound(N,x,y)` | Call `BvOrBound_N`; same native-order/integer-order distinction |
+| `(x >> k) << k == x - x % 2^k` | Call `ShiftRoundDown(N,x,k)` | Call `BvShiftRoundDown_N`; round trips alone supply neither shift/division equation |
+| `x ^ x == 0` | Call `XorSelf(N,x)` | Expected automatic: native self-XOR becomes zero and the literal observation becomes integer zero |
+| Bit test via `(x >> i) & 1` | Call `BitTest(N,x,i)` to connect the expression with `bitsNat(N,x)[i]` | Call `BvBitTest_N`; the R/A derivation supplies the arithmetic part, then the same proved view theorem |
+| Mask merge `(a & m) | (b & !m)` | Its result fits automatically; its pointwise meaning needs `MaskMergeBit(N,a,b,m,i)` | Result fits automatically; pointwise meaning needs `BvMaskMergeBit_N` or a manual selection/distribution proof |
+| Popcount of `2^i` | Call `PopPower(N,i)`, with `i<N` | Call `BvPopPower_N`; round trips alone say nothing about popcount or a bit-sequence fold |
+| `x << k < 2^N`, given `x < 2^(N-k)` | Automatic from the full-interval result type once ordinary well-formedness is checked | Automatic from the unsigned result observation and range |
+| Rotate by 0 and by N | Call `RotateEndpoints(N,x)` for left/right endpoints | Expected automatic after native constant-count simplification and the input round trip |
+
+For mask merge the actual proposition is
+`bit(N,result,i) == (if bit(N,m,i) then bit(N,a,i) else bit(N,b,i))`; merely writing the
+expression is not a theorem. The left-shift row as requested is only a range
+claim. Its stronger, often intended claim `x << k == x*2^k` uses the stated
+no-overflow premise and needs `ShiftFits(N,x,k)` or `BvShiftFits_N`.
+At k=N that premise forces x=0. Powers in this table are mathematical powers
+`P(k)`; Dafny's `^` is XOR. Construct `P(k)-1` in integer arithmetic and cast
+the complete mask: `P(N)` itself does not fit in the N-bit newtype. A whole
+sequence equality for mask merge additionally needs extensionality unless the
+library exports that complete theorem. Extra newtype predicates are outside this table:
+masking into `[0,M)` does not establish an arbitrary additional predicate.
+
+With equally equipped proved libraries this conservative table gives nine
+one-call rows and one automatic row for opaque integer references, versus
+seven one-call rows and three expected-automatic rows for internal BV lowering.
+Some one-call BV adapters require proof shaping: the measured composed bit and
+rotation clients use assertion isolation. With **round trips only**, the BV
+alternative has substantial manual mixed-theory work in the seven nontrivial
+rows. Providing the missing adapters honestly converts that into library work,
+not unavoidable repeated client work.
+
+Keep the accepted integer-reference architecture, but do not justify it by a
+claim of uniformly fewer annotations. The table gives internal BV a small
+convenience advantage for self-XOR and constant rotations. Integer references
+make the seven arithmetic/view-oriented obligations ordinary integer/sequence
+library theorems and keep mixed BV/integer construction confined to explicit
+interoperability. The measured adapter-construction costs make that separation
+valuable. Supply the named scalar lemmas in M1 and expose the two simple
+identity lemmas conveniently; do not add trusted automatic facts merely to
+save those calls. Actual newtype-client measurements remain an implementation
+gate, and could refine these automatic classifications.
+
 
 ## 11. Permanent tests and acceptance gates
 
@@ -1000,9 +1430,15 @@ is relabeled a successful proof.
 Create a regression driver under
 `Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/` with separate
 positive, negative, and vacuity inputs. Test both resolvers and both pinned Z3
-versions. The model/proof files must contain no assumptions, axiom declarations,
-bodyless lemmas or skipped verification; trusted *translator* instances must
-be inventoried separately.
+versions. Pure reference and native-helper proof bodies contain no assumptions, axiom
+declarations, bodyless unproved lemmas or skipped verification. Design-only
+adapter projections may contain only the separately inventoried basic-fact
+stand-ins. Production adapters must use the actual compiler mechanism; fixed
+definition rules and native bridge emissions remain inventoried trusted
+components. Boolean native identities and pure mathematics are independently
+checked with additional axioms OFF. Rotation native helpers are checked in the
+enabled generated files; their bodies contain no projected assumptions, but
+may use the already existing enabled verifier theory.
 
 The positive matrix proves every operation's integer meaning at 8, 16, 32 and
 64, including ANDNOT, single-bit access, equality and order. It also proves
@@ -1023,11 +1459,18 @@ For each basic fact and any composed instance, provide:
    index N. Illegal source casts/counts must fail even when their parent bridge
    is eligible during well-formedness checking.
 
-Do not count timeout, unknown, out of resource, parser error or an earlier failed
-precondition as the intended vacuity rejection. If a control is difficult because
-of recursive reference unfolding, repair the actual production proof interface
-or use additional well-justified controls, and report the remaining cases.
-Do not hide conflicting definitions and claim the original context was checked.
+Do not count timeout, out of resource, parser error or an earlier failed
+precondition as the intended vacuity rejection. Record the underlying solver
+status as well: `unknown (incomplete quantifiers)` can lead to Dafny
+`Errors`/Boogie `Invalid`, but is not a SAT result. Require the two distinct
+checks of section 9.3: an operational live false rejection and genuine SAT for
+the complete finite emitted-fact slice, with independently checked certificate
+values and the mathematical extension argument. A resource-exhausted control
+still fails; the ground witness never retroactively passes the old context.
+If the acceptance requirement is SAT for the entire unsliced Dafny VC, that
+stronger requirement remains unestablished by this evidence. Do not silently
+claim it was met. Actual-emitter controls and source-to-emission correspondence
+are mandatory before any production fact can ship.
 
 ### 11.2 Frontend, binding, and compatibility tests
 
@@ -1104,63 +1547,120 @@ per-operation switches preemptively.
 
 ## 12. Milestones small enough for separate PRs
 
-| Milestone | Deliverable | Gate before moving on |
-|---|---|---|
-| M0 — design/evidence | This document, independent review and reproducible public probes | Owner/coordinator accepts the architecture and explicit unresolved release gates; no product change |
-| M1 — reference model | Fixed ghost source, exact definitions, pure integer/sequence proofs, base-two adapter and independent proof runner | Both-off proof/audit; full bijections and core pointwise laws; no trusted BV bridge yet |
-| M2 — support loading and ABI | Gated ordinary-source loading, private identity map, preverified-input policy, optional companion packaging and DOO dependency handling | Both-off identity; enabled full-suite cost; spoofing, clone/export, option and load-order tests |
-| M3a — BV arithmetic observations | Local +/−/×/division/remainder/order facts, explicit scalar contexts, guarded composed casts | Each formula's model and effective controls; both resolvers; OFF/ON full-suite and source-library comparison |
-| M3b — BV Boolean/shift observations | AND, complement and L/R; verified OR/XOR/ANDNOT/bit/rotation adapters | Same gates; actual minimal-basis acceptance table; preserve #147 and pure-BV queries |
-| M4 — integer operator frontend/verifier | Width descriptor/validation, both resolvers, constants, `& \| ^ ! << >>`, direct integer reference lowering | Extra-predicate and opaque-export negatives; language-off identity; semantic source tests |
-| M5a — first native compilation | Common generator plus C# and its arbitrary-integer fallback | Generated-code and exhaustive/boundary execution tests; same verified integer semantics |
-| M5b — Java/Go | Their direct carriers, arbitrary integers and count rules | Target-specific generated/executed tests and runtime changes |
-| M5c — Python/JavaScript | Compatible popcount fallback, correct wide JS helpers, direct integer paths | Reproduce and repair/bypass the observed JS defects; minimum-version tests |
-| M5d — C++/Rust | Supported native carriers, descriptor propagation and explicit nonnative diagnostics | Sanitizer/debug boundary tests; generated artifact rebuild for the Dafny-written pipeline |
-| M6a — rotation/bit queries | Descriptor-aware synthetic operations with final predicate checks | Both resolver member paths, clones, count endpoints, #147 nested controls |
-| M6b — popcount | Reference theorem plus target intrinsics/fallbacks | No new axiom unless separately justified; proof-cost and runtime rows at all four widths |
-| M7 — convenience and release | Optional `.Bits()` sugar, exact-interval width inference if desired, manual/examples, full acceptance report | All promised targets/operations complete, no open vacuity gate, full cost report and reviewed verdict changes |
+The fixture names below are proposed permanent regression identities. Put source
+regression drivers under the normal `git-issues/` test directory, with separate
+positive, negative and control inputs. No production milestone is completed by
+this design PR.
 
-M3a and M3b may run independently of frontend work after the support ABI is
-stable. Backend work can proceed in parallel after M4's operation representation
-is fixed. Split a listed milestone further if its target-specific work would
-not fit a focused review. Each product PR carries its own regression driver,
-release-note fragment and required `.github/review/base`/regression updates;
-do not accumulate a large unreviewed axiom/backend change for the final PR.
+**B0 (both options OFF identity):** compare the pre-existing input corpus against
+a build without the feature: byte-identical Boogie, unchanged verdicts and
+controlled RU, and unchanged relevant parsing/resolution diagnostics. Construct
+no new reference declarations, descriptors or facts on that path. New optional
+proof files have their own rows; do not mix their construction cost into the
+old-corpus identity claim.
+
+**S4 (suite and source-library comparison):** compare the full regression suite
+and source Std library in all four language/axiom flag combinations, on both
+pinned solvers and both resolver paths where applicable. Use the standing limits
+and ordering controls (`normalizeDeclarationOrder:0` for the suite;
+`deterministicLiteralHashes:1` and `restartProver` for source Std). Retain
+matched/unmatched rows, verdict changes and RU, including resource failures.
+M0/M1 cannot run language-enabled modes before the option exists: record those
+modes as unavailable, and require M2 to close the complete S4 matrix.
+
+**V2–V4** below means the named live definition, bridge and source-operator
+controls introduced in M2–M4, with their facts actually active. They include
+wrong-result as well as false assertions, real #97 lambda/Requires observations,
+and the section 9.3 finite-slice SAT/mutation checks when trusted facts are added.
+An exhausted control fails. Operational Dafny rejection and raw solver SAT remain
+separate reported outcomes. Runtime comparisons supplement these logical controls.
+
+| Milestone and named regression | Vacuity/control requirement | Both-OFF identity | Suite/Std comparison |
+|---|---|---|---|
+| **M0: design/evidence.** `193-design-evidence`: reproduce the models, exact proof inventory, query profiles and ground witnesses; review the fixed definitions and ten-fact inventory. | Current concrete controls, all-ten/#97 context and A+1 sensitivity; preserve historical failures and unknown reasons. Production-emitter correspondence remains pending. | Capture B0 baseline; documentation-only product-tree identity. | Capture available S4 baselines; no claim of an implemented-feature delta. |
+| **M1: pure mathematical library.** `193-reference-laws`: ordinary definitions, full sequence/value bijections, pointwise laws, base-two adapter, and the ten client lemmas in section 10.1. Verify every body independently. | `193-reference-live-false`: inhabited calls to proved laws followed by false and wrong-value assertions; include zero width and leading zeros. No new axioms or skipped proofs. | B0 on old inputs; new pure proofs run with both features OFF. | S4 for available modes; record unavailable language modes for M2, and report new library construction costs separately. |
+| **M2: fixed references/unfolding.** `193-reference-emission` and `193-bootstrap`: conditional UF signatures, exact finite unfold rules, proper builtin construction, raw-signature range proofs, then consumer contracts; options and DOO reload. | `193-unfold-live-false` plus actual definition-slice SAT and mutations. Test source/DOO spoofing, duplicate custom-prelude symbols, branch guards and noncircular range proofs. | B0 including no new declarations/bindings on the old path. | Complete S4 before accepting this product change; measure reference availability and unfolding separately from BV bridges. |
+| **M3a: arithmetic observation emitter.** `193-arithmetic-emission`: +/−/×/division/remainder/order, raw/composed forms, guards, scalar context and excluded operands. | `193-arithmetic-live-false`: each actual emitted fact, cumulative conjunction, wrong results, nonzero guards, complete emitted-slice SAT and mutations; real #97 interaction. | B0; retain pure-BV emission identity where no integer observation is eligible. | S4 against the predecessor with all older shared families active; list every moved row. |
+| **M3b: Boolean/shift emitter and adapters.** `193-boolean-shift-emission`: A/C/L/R and checked OR/XOR/ANDNOT/bit/rotation adapters; every pure/native helper is an explicit proof input. | `193-boolean-shift-live-false`: raw/composed and derived summaries, all-ten/#97 conjunction, actual emitted-slice SAT; counts 0/N and invalid counts. Retain #147 value, bound and emission controls. | B0; pure native helpers receive no unsolicited mixed facts. | S4; redo the complete minimal-basis client/support table with actual emission and cumulative M3a facts. |
+| **M4: integer frontend/verifier.** `193-newtype-operators`: semantic width, both resolvers, constant folding and direct reference lowering; full/strict predicates, aliases, exports, refinements, caches and recorded library modes. | `193-source-live-false`: actual source operators and unfold/library facts active; reject false subtype membership, bad casts/counts and wrong values. Retain V2–V3. | B0 including formerly inert attributes, diagnostics and incremental invalidation. | S4 including the newtype client corpus; no reference-only proxy for actual source syntax. |
+| **M5a: common generator/C#.** `193-runtime-csharp`: native and BigInteger execution, small-width exhaustive and boundary inputs, exact semantic masks, count endpoints and single evaluation; inspect generated code. | Retain V2–V4; execute an independent reference oracle. No runtime BV/sequence detour. | B0 for old generated code and verifier output. | S4; separate verifier cost from target build/execution results. |
+| **M5b: Java.** `193-runtime-java`: promoted byte/short signs, logical right shift, host count masking, native and BigInteger paths. | Retain V2–V4; generated and executed reference comparisons, especially counts 0/N. | B0, including old Java output. | S4 plus Java target comparisons. |
+| **M5c: Go.** `193-runtime-go`: native `&^`, semantic masks/counts, arbitrary integers and both maintained runtime copies. | Retain V2–V4; independent executed reference oracle and single-evaluation cases. | B0, including old Go output. | S4 plus Go target comparisons. |
+| **M5d: Python.** `193-runtime-python`: arbitrary integers, complement/shift masks, endpoints and the supported minimum version. | Retain V2–V4; independent reference execution and compatible helper/fallback tests. | B0, including old Python output. | S4 plus Python minimum-version and target comparisons. |
+| **M5e: JavaScript.** `193-runtime-javascript`: repair or bypass #246; bits 31/32/53/63, widths 33–53 and wider values, unsigned normalization and high limbs. | Retain V2–V4; keep #246 reproductions and execute compiled source against the reference, not only direct runtime calls. | B0, including old JS output; separately review any unavoidable bug-fix delta. | S4 plus JS runtime/target comparisons; no unrepaired helper in a promised path. |
+| **M5f: C++.** `193-runtime-cpp`: unsigned carriers, semantic masks, full-width shifts, C++17 constraints and explicit unsupported nonnative diagnostics. | Retain V2–V4; reference execution and sanitizer/debug boundary cases. | B0, including old C++ output. | S4 plus supported/unsupported target rows. |
+| **M5g: Rust.** `193-runtime-rust`: semantic width through DAST, supported carriers, generated-artifact rebuild and explicit nonnative exclusions. | Retain V2–V4; reference execution, debug-mode count boundaries and semantic/carrier-width mismatches. | B0, including old DAST/Rust output. | S4 plus Rust target and regenerated-artifact comparisons. |
+| **M6a: rotation/bit surface.** `193-rotation-bit-source`: both member-resolution paths, clones, final predicates, legal indices, nested rotations, non-power-of-two widths and #147. | `193-rotation-bit-live-false`: actual source operations/adapters, wrong results and invalid membership; retain V2–V4 and #147. Add end-to-end cases to every supported backend fixture. | B0 including member resolution and old BV wrappers. | S4 plus all backend rotation/bit execution rows and current client RU. |
+| **M6b: population count.** `193-popcount-source`: generic reference theorem, zero/all ones/high bit/power-of-two laws, result bounds and target intrinsics/fallbacks. | `193-popcount-live-false`: active correspondence with false and wrong-count assertions; retain V2–V4. Independent execution on every supported target. | B0 including minimum-version/fallback behavior. | S4 plus popcount proof/runtime rows; any proposed accelerator needs its own model/control gate. |
+| **M7: convenience/release.** `193-convenience`: optional `.Bits()`, exact-interval inference, manual/examples and cache behavior. | Retain the complete live-false, emitted-slice SAT/mutation and runtime inventories; inference cannot bypass visibility, predicates or module mode. | Final B0; no unresolved required identity check. | Final S4 with every supported operation/target accounted for and exclusions tested. |
+
+M3a/M3b may proceed independently after M2's identity and definition interface is
+stable, but each must rerun the cumulative shared-option controls. Backend PRs
+may proceed in parallel after M4 fixes the resolved operation representation.
+Testing a runtime rotate/popcount helper in M5 does not count as end-to-end
+source-feature acceptance before M6 supplies the source operation.
+
+Every product PR carries its regression driver, release-note fragment and
+required `.github/review/base`/regression updates. Any intended verdict change
+follows the existing policy: first expose it in CI, then update the expected
+artifact in a separate explained commit. Do not defer these gates to M7.
+
+
+### 12.1 Next question, answered: may a fitting carrier supply rotation semantics?
+
+**Question:** if the operands and the verified result fit the selected native
+carrier, may the backend use that carrier's rotate operation directly?
+
+**Answer: no, unless its rotation width matches the semantic width or the
+backend separately establishes an equivalent lowering.** Consider semantic
+N=12 and a stricter unsigned newtype whose values are below 256, implemented
+in an 8-bit carrier. The legal source input x=16, k=8 has
+`rolNat(12,16,8)=1`: bit 4 moves to bit 0 modulo 12. An 8-bit carrier rotation
+by 8 instead returns 16. Both input and both possible outputs fit the carrier
+and the newtype, so result-membership checking alone cannot catch the wrong
+lowering. This is a counterexample to a proposed optimization, not a claim of
+an already implemented integer-newtype bug.
+
+The per-backend refinement obligation is
+`decode(C_N,W(encode(a),k)) == rolNat(N,a,k)` for every source-legal argument
+whose result satisfies the original newtype predicate. The implementation must
+retain N even when W is smaller or larger. It may use a native rotate directly
+when N=W; otherwise use correctly masked/widened shifts or another proved
+implementation at N. Counts 0/N and intermediate truncation require explicit
+attention. Add `(N,W,x,k)=(12,8,16,8)` to `193-rotation-bit-source` and each
+supported backend's execution fixture, alongside the full-width count cases.
+The same obligation explains why complement masks at N and why a host's
+modulo-carrier-width shift rule cannot silently replace the source count rule.
 
 ## 13. Critical review, ranked by severity
 
-**P0 means potential false verification or a wrong executable result for a
-verified program. P1 blocks shipping or acceptance. P2 is an API/scope or
-maintainability issue.** These are design/implementation obligations, not claims
-that this documentation change introduces a product defect.
+P0 denotes potential false verification or wrong executable results. P1 blocks
+implementation acceptance or shipping; P2 concerns cost, usability or scope.
+These findings review a proposal, not an implemented language feature.
 
 | Severity | Finding | Disposition |
 |---|---|---|
-| P0 | A user-spoofable reference function makes a bridge assert an arbitrary meaning | Fixed-source provenance and independent verification are mandatory; no name/attribute/DOO privilege |
-| P0 | Omitting width, divisor, count or cast guards can state a false equation | Exact guards and width-zero branch specified; retain negative controls |
-| P0 | An arbitrary newtype is not closed under the operations; current special-function WF omits its result check | Check the complete predicate for every result, including rotations and from-bits |
-| P0 | A copied attribute on an opaque type could expose hidden representation facts | Require a revealed integer newtype; never recover capability from an abstract export's attribute |
-| P0 | Lost binders, heap context or user-call permissions can turn a local fact into an invalid assumption | Audited scalar context, excluded operand subtrees, no new user-call permissions, no global can-call modifications |
-| P1 | Triggering on bit selections can loop through equal operands/results and changing symbolic indices | Rejected; finite full-value instances and scalar library proofs selected |
-| P1 | Current prototype vacuity controls have resource failures | **Open release gate.** No false assertion proved, but the inconclusive controls must be replaced or resolved in the actual implementation |
-| P1 | Projected client costs do not measure the actual emitter, minimal-basis adapters or full-suite impact | **Open implementation gate.** Retain the projections as evidence and repeat with production code and full corpus |
-| P1 | Native carrier width changes with backend and is sometimes zero in metadata | Separate semantic descriptor; never infer meaning from NativeType.Bitwidth |
-| P1 | Existing JavaScript helpers produce wrong wide results | Reproduced publicly; repair or bypass before use by the feature |
-| P1 | Host promotions, full-width shifts, Python minimum version, C++/Rust unsupported paths | Per-backend lowering contract, fallback/diagnostics, and execution gates specified |
-| P1 | Executable injected model code would add unsupported BigInt/sequence compilation to native-only clients | Ghost model; dedicated runtime operation nodes; only verifier calls the reference |
-| P1 | Cloning, DOO mode restoration, provenance and module order can lose or invent capability | Explicit loader/ABI milestone and source/DOO/incremental tests |
-| P1 | Both-off AST construction or model injection can perturb default output and proof cost | Early gates plus byte/verdict/RU comparison; documentation-only change does not establish future identity |
-| P2 | Direct facts for every derived operation enlarge the trusted review surface | Start with the practical basis; add redundant facts only with a derivation and actual cost evidence |
-| P2 | Mandatory width annotation and scalar lemmas add some user work | Deliberate initial tradeoff; exact-interval inference and binder-aware automation may be added separately |
-| P2 | A generic bit view does not by itself provide signed or infinite-two's-complement source semantics | Explicitly deferred; the total model is an extension point, not an implicit signed API commitment |
+| P0 | A reference body chosen by user name/attribute could give an arbitrary meaning to a trusted bridge. | Replace source authority with fixed compiler identities and exact local unfold rules. The new rule is itself a trusted definitional mechanism, with M2 proof/emission/control gates. |
+| P0 | A range proof can be circular if its own consumer contract is already assumed. | Raw integer signatures for foundation checking; candidate derived/range contracts and equivalent automatic facts excluded until independently proved. |
+| P0 | An opaque export's copied width attribute can recreate hidden representation capability. | Independent of prelude ownership. Require revealed integer-newtype structure and a descriptor validated in the declaration's recorded mode; test both resolvers, clones and reloads. |
+| P0 | Incorrect divisor/count/cast handling, binder escape, heap mismatch or invented call permission can make a local fact false. | Exact schemata, guarded composition, explicit scalar context and actual-emission correspondence. The Python model documents which guards concern truth, source definedness or nonminimal policy. |
+| P0 | Full-interval closure does not imply an arbitrary newtype predicate, and carrier fit does not establish rotation meaning. | Preserve every result-membership obligation, including special operations. Section 12.1 gives a fitting-input/fitting-result counterexample to rotating at the carrier width. |
+| P1 | The old reference-transparent false controls exhaust; ordinary Errors/Invalid can still conceal raw solver unknown. | Diagnosis and the two-part control method are concrete: operational rejection plus genuine finite-slice SAT and mathematical extension. Full unsliced-prelude SAT is not established. Production controls must use actual emitted instances. |
+| P1 | Minimal-basis library construction is much dearer than calling its checked contracts. | Measured, not hidden: integer-input clients cost at most 66,537 RU, but native variable-count rotation support exceeds 16 million RU per width-64 helper. All selected bodies verify; unsplit caller failures remain explicit. |
+| P1 | The new fixed-reference mechanism and the real collector have not been implemented or measured. | Current projections establish conditional derivations and costs. M2/M3 still need their own live controls, identity and complete S4 comparisons. No prototype result waives these gates. |
+| P1 | Existing wide JavaScript helpers have publicly reproduced wrong results (#246). | Repair or bypass before using them; test compiled source as well as direct helpers. Other backends retain promotion, count, minimum-version and unsupported-target gates. |
+| P1 | Conditional declarations, public intrinsic bindings or metadata reconstruction can alter the default path. | Every milestone names B0/S4; no new reference construction on the both-OFF path. Exact product-version compatibility is an ABI check, not authority supplied by a library. |
+| P2 | Native simplification can save two client annotations compared with strictly opaque integer references. | State the advantage honestly; provide the nine scalar integer lemmas and keep mixed conversion construction in the interoperability library. Actual source-language automation remains to be measured. |
+| P2 | Direct facts for derived operations enlarge the trusted interface. | No demonstrated accelerator need in the shaped clients. Apply the explicit client/project thresholds and all soundness/compatibility gates before adding one. |
+| P2 | Signed/unbounded semantics, arbitrary width inference and automatic binder harvesting would expand the design substantially. | Deferred; total reference functions and explicit scalar lemmas do not silently enable those language features. |
 
-The strongest evidence for the recommendation is the combination of a genuine
-generic sequence proof, cheap native reductions, the poor separate-conversion
-projection, and the successful composed projection. The main residual risk is
-not the bit-sequence mathematics; it is faithful integration with scope,
-reference identity, result predicates, solver search and target integer rules.
-Accepting this design should authorize the focused milestones, not waive any
-axiom or compiler acceptance gate.
+The definitions, models, exact conditional derivations and reference-ownership
+decision are settled enough to start M1. That frees pure mathematical library
+work from frontend/backend implementation and from adding solver facts. The
+remaining release risks are concrete integration obligations: definition
+unfolding, scope and visibility, emitted facts, proof costs and target arithmetic.
+The accepted architecture permits the focused milestones; it does not certify
+unimplemented gates or turn historical exhausted controls into passes.
 
 ## 14. Required outward documentation
 
