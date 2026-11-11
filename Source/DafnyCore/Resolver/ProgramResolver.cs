@@ -36,6 +36,8 @@ public class ProgramResolver {
     Type.ResetScopes();
 
     Type.EnableScopes();
+    var profile = PipelineProfile.For(Options);
+    var profileStart = profile?.BeginThread();
     // For the formatter, we ensure we take snapshots of the PrefixNamedModules and topleveldecls
     Program.DefaultModuleDef.PreResolveSnapshotForFormatter();
 
@@ -44,6 +46,10 @@ public class ProgramResolver {
     Program.DefaultModuleDef.ProcessPrefixNamedModules();
 
     var startingErrorCount = Reporter.ErrorCount;
+    if (profile != null) {
+      profile.FrontEnd("resolve.prefixNamed", profileStart!.Value);
+      profileStart = profile.BeginThread();
+    }
     ComputeModuleDependencyGraph(Program, out var moduleDeclarationPointers);
 
     if (Reporter.ErrorCount != startingErrorCount) {
@@ -54,6 +60,11 @@ public class ProgramResolver {
     Program.ModuleSigs = new();
 
     SetHeights(sortedDecls);
+    if (profile != null) {
+      profile.FrontEnd("resolve.bind", profileStart!.Value, new Dictionary<string, object> { ["moduleDecls"] = sortedDecls.Count });
+      EmitModuleGraph(profile, sortedDecls);
+      profileStart = profile.BeginThread();
+    }
 
     var systemClassMembers = ResolveSystemModule(Program);
     foreach (var moduleClassMembers in systemClassMembers) {
@@ -61,40 +72,121 @@ public class ProgramResolver {
     }
 
     var rewriters = RewriterCollection.GetRewriters(Reporter, Program);
+    if (profile != null) {
+      profile.FrontEnd("resolve.system", profileStart!.Value);
+    }
 
     var compilation = Program.Compilation;
     foreach (var rewriter in rewriters) {
       cancellationToken.ThrowIfCancellationRequested();
+      profileStart = profile?.BeginThread();
       rewriter.PreResolve(Program);
+      profile?.FrontEnd("resolve.global.preResolve", profileStart!.Value, new Dictionary<string, object> { ["rewriter"] = rewriter.GetType().Name });
     }
 
-    foreach (var decl in sortedDecls) {
+    for (var index = 0; index < sortedDecls.Count; index++) {
+      var decl = sortedDecls[index];
       cancellationToken.ThrowIfCancellationRequested();
+      profileStart = profile?.BeginThread();
+      profile?.ModulePhasesStart();
       var moduleResolutionResult = ResolveModuleDeclaration(compilation, decl);
       ProcessDeclarationResolutionResult(moduleDeclarationPointers, decl, moduleResolutionResult);
+      if (profile != null) {
+        profile.FrontEnd("resolve.module", profileStart!.Value, new Dictionary<string, object> {
+          ["id"] = index,
+          ["module"] = ProfileModuleName(decl),
+          ["kind"] = ProfileModuleKind(decl),
+          ["typeSystemRefresh"] = decl.Options.Get(CommonOptionBag.TypeSystemRefresh),
+          ["topLevelDecls"] = (decl as LiteralModuleDecl)?.ModuleDef.TopLevelDecls.Count(),
+          ["errors"] = moduleResolutionResult.ErrorReporter.ErrorCount,
+          ["phases"] = profile.ModulePhasesTake()
+        });
+      }
     }
 
     if (Reporter.ErrorCount != startingErrorCount) {
       return Task.CompletedTask;
     }
 
+    profileStart = profile?.BeginThread();
     Type.DisableScopes();
 
     InstantiateReplaceableModules(Program);
     CheckDuplicateModuleNames(Program);
+    profile?.FrontEnd("resolve.global.replaceable", profileStart!.Value);
 
     foreach (var rewriter in rewriters) {
       cancellationToken.ThrowIfCancellationRequested();
+      profileStart = profile?.BeginThread();
       rewriter.PostResolve(Program);
+      profile?.FrontEnd("resolve.global.postResolve", profileStart!.Value, new Dictionary<string, object> { ["rewriter"] = rewriter.GetType().Name });
     }
 
     // Module cache hits still reach this phase. A downstream implementation can
     // introduce a cardinality cycle without changing any imported module.
     if (Reporter.ErrorCount == 0) {
       cancellationToken.ThrowIfCancellationRequested();
+      profileStart = profile?.BeginThread();
       CardinalityValidator.Validate(Program, cancellationToken);
+      profile?.FrontEnd("resolve.global.cardinality", profileStart!.Value);
     }
     return Task.CompletedTask;
+  }
+
+  private static string ProfileModuleName(ModuleDecl decl) {
+    if (decl is LiteralModuleDecl literal) {
+      return PipelineProfile.ModuleName(literal.ModuleDef);
+    }
+    var enclosing = decl.EnclosingModuleDefinition;
+    var prefix = enclosing == null ? "" : PipelineProfile.ModuleName(enclosing) + ".";
+    return prefix + decl.Name;
+  }
+
+  private static string ProfileModuleKind(ModuleDecl decl) {
+    return decl switch {
+      LiteralModuleDecl => "module",
+      AliasModuleDecl => "import",
+      AbstractModuleDecl => "abstractImport",
+      ModuleExportDecl => "export",
+      _ => decl.GetType().Name
+    };
+  }
+
+  /// <summary>
+  /// The module dependency graph as resolution sees it (imports, refinement, nesting: a parent
+  /// depends on its submodules), with the ids of the "resolve.module" events: edge [a, b] means
+  /// that a is resolved after, and depends on, b.
+  /// </summary>
+  private void EmitModuleGraph(PipelineProfile profile, List<ModuleDecl> sortedDecls) {
+    var ids = new Dictionary<ModuleDecl, int>();
+    for (var i = 0; i < sortedDecls.Count; i++) {
+      ids[sortedDecls[i]] = i;
+    }
+    var edges = new List<int[]>();
+    foreach (var vertex in dependencies.GetVertices()) {
+      if (!ids.TryGetValue(vertex.N, out var from)) {
+        continue;
+      }
+      foreach (var successor in vertex.Successors) {
+        if (ids.TryGetValue(successor.N, out var to)) {
+          edges.Add([from, to]);
+        }
+      }
+    }
+    edges.Sort((x, y) => x[0] != y[0] ? x[0].CompareTo(y[0]) : x[1].CompareTo(y[1]));
+    profile.Point("moduleGraph", new Dictionary<string, object> {
+      ["nodes"] = sortedDecls.Select((d, i) => new Dictionary<string, object> {
+        ["id"] = i,
+        ["module"] = ProfileModuleName(d),
+        ["kind"] = ProfileModuleKind(d),
+        // A library module (from a .doo file or --library) is not verified; an import or export
+        // belongs to the library of the module that declares it.
+        ["library"] = d is LiteralModuleDecl l
+          ? !l.ModuleDef.ShouldVerify(Program.Compilation)
+          : d.EnclosingModuleDefinition is { } enclosing && !enclosing.ShouldVerify(Program.Compilation)
+      }).ToList(),
+      ["edges"] = edges
+    });
   }
 
   public virtual void AddSystemClass(TopLevelDeclWithMembers topLevelDeclWithMembers, Dictionary<string, MemberDecl> memberDictionary) {

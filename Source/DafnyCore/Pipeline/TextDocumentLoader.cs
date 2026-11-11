@@ -55,6 +55,8 @@ namespace Microsoft.Dafny {
 
       await symbolResolver.ResolveSymbols(compilation, program, cancellationToken);
 
+      var profile = PipelineProfile.For(compilation.Options);
+      var profileStart = profile?.BeginThread();
       if (compilation.ShouldProcessSolverOptions) {
         compilation.Options.ProcessSolverOptions(compilation.Reporter, compilation.Options.DafnyProject.StartingToken);
       }
@@ -81,6 +83,9 @@ namespace Microsoft.Dafny {
         }
       }
 
+      profile?.FrontEnd("resolve.verifiables", profileStart!.Value, new Dictionary<string, object?> {
+        ["verifiableSymbols"] = verifiables?.Values.Sum(t => t.Count())
+      });
       return new ResolutionResult(
         compilation.HasErrors,
         program,

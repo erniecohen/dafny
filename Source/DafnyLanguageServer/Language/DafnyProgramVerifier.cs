@@ -68,8 +68,12 @@ namespace Microsoft.Dafny.LanguageServer.Language {
             profileStart = profile.Begin();
             threadAllocated = GC.GetAllocatedBytesForCurrentThread();
           }
+          var threadStart = profile?.BeginThread();
           var translated = translator.DoTranslation(resolution.ResolvedProgram, moduleDefinition);
           if (profile != null) {
+            profile.FrontEnd("translate.module", threadStart!.Value, new Dictionary<string, object?> {
+              ["module"] = moduleName
+            });
             profile.Span("translate", profileStart!.Value, new Dictionary<string, object?> {
               ["module"] = moduleName,
               ["threadAllocBytes"] = GC.GetAllocatedBytesForCurrentThread() - threadAllocated,

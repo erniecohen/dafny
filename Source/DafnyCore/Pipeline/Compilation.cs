@@ -263,6 +263,7 @@ public class Compilation : IDisposable {
     programAfterParsing = new Program(cloner, transformedProgram);
     if (profile != null) {
       profile.Span("parse.clone", profileStart!.Value, new Dictionary<string, object?> { ["version"] = Input.Version });
+      profile.HeapPoint("parsed");
     }
 
     updates.OnNext(new FinishedParsing(parseResult with { Program = programAfterParsing }));
@@ -305,6 +306,7 @@ public class Compilation : IDisposable {
         ["hasErrors"] = resolution?.HasErrors,
         ["verifiableSymbols"] = resolution?.CanVerifies?.Values.Sum(t => t.Count())
       });
+      profile.HeapPoint("resolved");
     }
     if (resolution == null) {
       return null;

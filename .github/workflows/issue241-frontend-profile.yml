@@ -1,0 +1,173 @@
+name: Issue 241 front-end profile
+
+# For https://github.com/erniecohen/dafny/issues/241, milestone D1: front-end measurements with the
+# front-end events of --pipeline-profile, driven by .github/review/frontend-profile.py.  Each
+# measurement job runs its whole protocol on one runner (a warm-up round, discarded, then REPS
+# rounds of every configuration in a shuffled order), so comparisons between configurations are
+# paired.  Front-end quantities come from `dafny resolve`, or from `dafny verify` with Boogie's
+# no-op solver: no solver time enters them.  The analysis job writes the tables to the job
+# summary and uploads them with every CSV and raw profile.  The driver exits 1 only when a
+# profiled run's output differs from the unprofiled run's.  .github/review/frontend-profile-local.sh
+# runs the same protocol on one machine (for core-count scaling).
+
+on:
+  # A workflow that is not yet on the default branch cannot be dispatched; pushing a branch
+  # named like this runs it.
+  push:
+    branches: ['scratch/issue-241-frontend-run*']
+  workflow_dispatch:
+    inputs:
+      reps:
+        description: 'Measured rounds per configuration (after one warm-up round)'
+        default: '10'
+      seed:
+        description: 'Seed of the per-round order'
+        default: '1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  REPS: ${{ inputs.reps || '10' }}
+  SEED: ${{ inputs.seed || '1' }}
+  SCRIPT: .github/review/frontend-profile.py
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - name: Boogie packages
+        run: sh Scripts/fetch-boogie-packages.sh
+      - name: Build
+        run: dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dafny
+          path: out/dafny
+          retention-days: 3
+
+  measure:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Std, resolution only, both GC modes; profile off, on, and on with GC events.
+          - name: std-resolve
+            run: >-
+              run --corpus std-resolve --command resolve --project Source/DafnyStandardLibraries/src/Std/dfyconfig.toml
+              --configs ws-default-off,ws-default-on,ws-default-gcev,srv-default-off,srv-default-on,srv-default-gcev
+          # DafnyCore's Dafny project (the Dafny and Rust back ends, on the Std .doo).
+          - name: core-resolve
+            run: >-
+              run --corpus core-resolve --command resolve --project Source/DafnyCore/dfyconfig.toml
+              --configs ws-default-off,ws-default-on,ws-default-gcev,srv-default-off,srv-default-on,srv-default-gcev
+          # Std's examples, a project on the Std .doo.
+          - name: examples-resolve
+            run: >-
+              run --corpus examples-resolve --command resolve --project Source/DafnyStandardLibraries/examples/dfyconfig.toml
+              --configs ws-default-off,ws-default-on,ws-default-gcev,srv-default-off,srv-default-on,srv-default-gcev
+          # Std through translation and Boogie's preparation, no-op solver.
+          - name: std-translate
+            run: >-
+              run --corpus std-translate --command verify --cores 4 --project Source/DafnyStandardLibraries/src/Std/dfyconfig.toml
+              --configs ws-default-off,ws-default-on,srv-default-on
+          # The suite's multi-module programs under both resolvers, no-op solver, in three shards.
+          - name: suite-0
+            suite: '0/3'
+          - name: suite-1
+            suite: '1/3'
+          - name: suite-2
+            suite: '2/3'
+          # Retention at module windows 1 and 4, and heap dumps at fixed points.
+          - name: std-heap
+            heap: Source/DafnyStandardLibraries/src/Std/dfyconfig.toml
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: dafny
+          path: out/dafny
+      - name: Measure
+        env:
+          RUN: ${{ matrix.run }}
+          SUITE: ${{ matrix.suite }}
+          HEAP: ${{ matrix.heap }}
+          NAME: ${{ matrix.name }}
+        run: |
+          chmod +x out/dafny/Dafny
+          D="$PWD/out/dafny/Dafny"
+          if [ -n "$RUN" ]; then
+            # shellcheck disable=SC2086
+            python3 "$SCRIPT" $RUN --dafny "$D" --out "results/$NAME" --reps "$REPS" --seed "$SEED"
+          elif [ -n "$SUITE" ]; then
+            L=Source/IntegrationTests/TestFiles/LitTests/LitTest
+            python3 .github/review/lit-verdicts.py plan "$L" plan.tsv
+            python3 "$SCRIPT" run --corpus "suite-${SUITE%/*}" --command verify --cores 4 --plan plan.tsv --litdir "$L" \
+              --shard "$SUITE" --configs ws-legacy-off,ws-legacy-on,ws-refresh-on \
+              --dafny "$D" --out "results/$NAME" --reps "$REPS" --seed "$SEED"
+          else
+            dotnet tool install --global dotnet-gcdump --version 10.0.750501
+            export PATH="$PATH:$HOME/.dotnet/tools"
+            python3 "$SCRIPT" heap --corpus std --project "$HEAP" --windows 1,4 --reps 3 --cores 4 \
+              --dafny "$D" --out "results/$NAME"
+            python3 "$SCRIPT" gcdump --corpus std --project "$HEAP" --windows 1,4 --cores 4 \
+              --points parsed,resolved,1,20,43,80 --dafny "$D" --out "results/$NAME"
+            rm -f results/"$NAME"/gcdumps/*.gcdump.tmp
+          fi
+      - name: Job summary
+        if: always()
+        env:
+          NAME: ${{ matrix.name }}
+        run: |
+          {
+            echo "Runner: $(nproc) processors, $(free -g | awk '/Mem:/{print $2}') GB memory, $(uname -sr)."
+            cat results/"$NAME"/identity-*.txt 2>/dev/null || true
+            python3 "$SCRIPT" analyze "results/$NAME" --out "results/$NAME/report.md" > /dev/null && cat "results/$NAME/report.md"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-${{ matrix.name }}
+          path: results
+          retention-days: 30
+
+  analyze:
+    needs: measure
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: frontend-*
+          path: all
+      - name: Analyze
+        run: |
+          python3 "$SCRIPT" analyze all --out report.md > /dev/null
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+          mkdir -p csv
+          for f in runs stages modules gc heap gcdump; do
+            first=1
+            find all -name "$f.csv" | sort | while read -r p; do
+              if [ $first = 1 ]; then cat "$p"; first=0; else tail -n +2 "$p"; fi
+            done > "csv/$f.csv"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-report
+          path: |
+            report.md
+            csv
+          retention-days: 30

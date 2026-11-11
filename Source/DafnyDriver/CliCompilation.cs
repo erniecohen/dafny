@@ -374,6 +374,7 @@ public class CliCompilation {
         ["completed"] = moduleCompleted,
         ["released"] = profile.Now
       });
+      profile?.HeapPoint("module", new Dictionary<string, object?> { ["module"] = moduleName });
     }
   }
 
@@ -403,6 +404,7 @@ public class CliCompilation {
       ? memoryMiB * 1024L * 1024L
       : GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / 2;
     var cancellationToken = Compilation.CancellationToken;
+    var windowProfile = PipelineProfile.For(Options);
     var admitted = 0;
     var head = 0;
     var done = 0;
@@ -522,6 +524,11 @@ public class CliCompilation {
           Compilation.ClearCanVerifyCache(canVerify, repeatVerification);
         }
         Compilation.ClearModuleCache(slot.Module);
+        // The live heap once this module is reported and released, with later modules in flight.
+        windowProfile?.HeapPoint("module", new Dictionary<string, object?> {
+          ["module"] = PipelineProfile.ModuleName(slot.Module),
+          ["window"] = window
+        });
       }
     }
     finally {
