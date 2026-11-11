@@ -8,6 +8,7 @@
 // field's type, so the inverse can reconstruct the value just stored in each field.
 // The constructor postconditions below check that preservation, and Vacuity checks
 // that the facts in play still cannot prove false.
+// The source counterexample and the preservation checks exercise distinct obligations.
 
 class Node {
   var next: Node?
