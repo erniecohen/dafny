@@ -234,6 +234,7 @@ public class CliCompilation {
       }
     });
 
+    var profile = PipelineProfile.For(Options);
     var resolution = await Compilation.Resolution;
     if (resolution == null || resolution.HasErrors) {
       yield break;
@@ -266,6 +267,8 @@ public class CliCompilation {
     var canVerifiesPerModule = canVerifies.GroupBy(c => c.ContainingModule);
     foreach (var canVerifiesForModule in canVerifiesPerModule.
                OrderBy(v => v.Key.Origin.pos)) {
+      var moduleName = profile != null ? PipelineProfile.ModuleName(canVerifiesForModule.Key) : null;
+      var moduleAdmitted = profile?.Now;
       var toAwait = new List<ICanVerify>();
       foreach (var canVerify in canVerifiesForModule.OrderBy(v => v.Origin.pos)) {
         var results = new CliCanVerifyState();
@@ -282,6 +285,7 @@ public class CliCompilation {
           toAwait.Add(canVerify);
         }
       }
+      var moduleScheduled = profile?.Now;
 
       foreach (var canVerify in toAwait) {
         var results = canVerifyResults[canVerify];
@@ -299,6 +303,11 @@ public class CliCompilation {
             await results.Finished.Task;
           }
           done++;
+          profile?.Point("symbol", new Dictionary<string, object?> {
+            ["module"] = moduleName,
+            ["symbol"] = canVerify.FullDafnyName,
+            ["tasks"] = results.TaskCount
+          });
         } catch (ProverException e) {
           Compilation.Reporter.Error(MessageSource.Verifier, ResolutionErrors.ErrorId.none, canVerify.Origin, e.Message);
           if (repeatVerification) {
@@ -323,7 +332,19 @@ public class CliCompilation {
         canVerifyResults.Remove(canVerify); // Free memory
         Compilation.ClearCanVerifyCache(canVerify, repeatVerification);
       }
+      var moduleCompleted = profile?.Now;
       Compilation.ClearModuleCache(canVerifiesForModule.Key);
+      // admitted: the CLI started this module's symbols; scheduled: all of them were handed to the
+      // compilation; completed: the last of them finished; released: its cache was cleared and
+      // the next module may start (the per-module barrier).
+      profile?.Point("module", new Dictionary<string, object?> {
+        ["module"] = moduleName,
+        ["symbols"] = toAwait.Count,
+        ["admitted"] = moduleAdmitted,
+        ["scheduled"] = moduleScheduled,
+        ["completed"] = moduleCompleted,
+        ["released"] = profile.Now
+      });
     }
   }
 

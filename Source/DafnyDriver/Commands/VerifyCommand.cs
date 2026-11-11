@@ -109,7 +109,9 @@ public static class VerifyCommand {
       await proofDependenciesReported;
     }
 
-    return await compilation.GetAndReportExitCode();
+    var exitCode = await compilation.GetAndReportExitCode();
+    PipelineProfile.For(options)?.Finish("verify");
+    return exitCode;
   }
 
   private static async Task HandleBatch(CliCompilation compilation, ResolutionResult resolution,

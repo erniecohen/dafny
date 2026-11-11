@@ -354,3 +354,6 @@ git-issues/github-issue-97.dfy
 
 # Opt-in --warn-unchecked-termination: {:termination false} and @AssumeCrossModuleTermination reported by verify (https://github.com/erniecohen/dafny/issues/211, item 1).
 git-issues/github-issue-211-warning.dfy
+
+# Opt-in --pipeline-profile writes a timing sidecar and leaves the output unchanged (#241).
+git-issues/github-issue-241.dfy
