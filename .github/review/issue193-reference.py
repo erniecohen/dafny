@@ -123,6 +123,28 @@ def symbolic_clients(path, source, n, digits=False):
     path.write_text('\n'.join(lines)+'\n')
 
 
+def boundary_controls(path):
+    """Keep endpoint witnesses and concrete wrong results live in the model."""
+    lines = [f'include "{os.path.relpath(MODEL,path.parent)}"',
+             'import B = Std.Arithmetic.IntegerBitwise']
+    bad = []
+    for name, calls, assertion in (
+        ('ZeroWidth', ['B.ReferenceEndpoints(0,-1,-1);', 'B.BitsValue(0,-1);'],
+         'false'),
+        ('LeadingZeros', ['B.ValueBits([true,false,false]);', 'B.BitsValue(3,1);'],
+         'B.bitsNat(3,1) == [true]'),
+        ('CarrierRotation', ['B.CarrierRotationCounterexample();'],
+         'B.rolNat(12,16,8) == 16'),
+    ):
+        lines += [f'lemma {{:induction false}} {name}()', '{']
+        lines += ['  '+call for call in calls]
+        lines += [f'  assert {assertion};']
+        bad.append(len(lines))
+        lines += ['}', '']
+    path.write_text('\n'.join(lines)+'\n')
+    return bad
+
+
 def run(dafny, solver, path, out, negative_lines=(), libraries=False, resolver=False,
         included=False):
     out.mkdir(parents=True, exist_ok=True)
@@ -226,6 +248,9 @@ def main():
     path = out/'regression-false.dfy'
     lines = materialize(path,FIXTURE_CALLS,8,True,fixture=True)
     check(path,'regression-false',negative_lines=lines)
+    path = out/'boundary-wrong-results.dfy'
+    lines = boundary_controls(path)
+    check(path,'boundary-wrong-results',negative_lines=lines)
     with (out/'costs.tsv').open('w',newline='') as stream:
         writer=csv.writer(stream,delimiter='\t')
         writer.writerow(['family','width','proof_scope','resource_units'])
