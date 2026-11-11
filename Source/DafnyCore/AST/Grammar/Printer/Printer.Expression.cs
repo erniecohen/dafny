@@ -477,8 +477,8 @@ namespace Microsoft.Dafny {
       }
       */
 
-      if (expr is OperatorSyntaxExpr op) {
-        PrintExpr(options.DafnyPrintResolvedFile != null && op.ResolvedExpression != null ? op.ResolvedExpression : op.Syntax,
+      if (expr is OperatorSyntaxExpr operatorSyntax) {
+        PrintExpr(options.DafnyPrintResolvedFile != null && operatorSyntax.ResolvedExpression != null ? operatorSyntax.ResolvedExpression : operatorSyntax.Syntax,
           contextBindingStrength, fragileContext, isRightmost, isFollowedBySemicolon, indent, keyword, resolv_count);
       } else if (expr is StaticReceiverExpr) {
         StaticReceiverExpr e = (StaticReceiverExpr)expr;
