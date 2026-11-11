@@ -1466,7 +1466,7 @@ axiom (forall a: Set, b: [Box]Box, t: Ty ::
 // The domain of the glued map equals a; using it here improves matching costs.
 axiom (forall a: Set, b: [Box]Box, t: Ty, bx: Box ::
   { Map#Elements(Map#Glue(a, b, t))[bx] }
-  Map#Domain(Map#Glue(a, b, t))[bx] ==> Map#Elements(Map#Glue(a, b, t))[bx] == b[bx]);
+  Set#IsMember(Map#Domain(Map#Glue(a, b, t)), bx) ==> Map#Elements(Map#Glue(a, b, t))[bx] == b[bx]);
 axiom (forall a: Set, b: [Box]Box, t0, t1: Ty ::
   { Map#Glue(a, b, TMap(t0, t1)) }
   // In the following line, no trigger needed, since the quantifier only gets used in negative contexts
