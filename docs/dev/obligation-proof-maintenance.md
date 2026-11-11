@@ -15,9 +15,10 @@ The fresh compiler exposed two Base64 decoder-call precondition resource failure
 `UnpaddedBase64Prefix` lemma as a statement-expression proof hint for its original
 postcondition. `AboutDecodeValid` calls that same lemma before its decoder calls.
 Their logical contracts, original assertions and reveals, and resource attributes
-are retained. The matrix also checks `AboutDecodeValid` independently in all six
-library profiles; it now plans 306 scopes, including the same 60 complete-file
-scopes. Each part retains its receipts and per-invocation resource logs as artifacts.
+are retained. The existing `decode-valid-decomposition` matrix entry checks
+`AboutDecodeValid` independently in all six library profiles. The matrix retains
+300 scopes, including 60 complete-file scopes. Each part retains its receipts and
+per-invocation resource logs as artifacts.
 
 The [focused contract-WF diagnostic](https://github.com/erniecohen/dafny/actions/runs/42989416257)
 checks all six target profiles with the prefix hint. With added axioms and

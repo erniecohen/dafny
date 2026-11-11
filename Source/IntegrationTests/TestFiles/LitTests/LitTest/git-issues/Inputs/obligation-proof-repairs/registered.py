@@ -70,7 +70,6 @@ helpers = [
     ('decode-valid-decomposition', S + 'Base64.dfy', 'Std.Base64.AboutDecodeValid', []),
     ('encode-length-multiple', S + 'Base64.dfy', 'Std.Base64.EncodeBVLengthCongruentToZeroMod4', []),
     ('decode-one-padding-prefix', S + 'Base64.dfy', 'Std.Base64.DecodeValidUnpaddedPartialFrom1PaddedSeq', []),
-    ('decoder-shape', S + 'Base64.dfy', 'Std.Base64.AboutDecodeValid', []),
 ]
 base64_source = (repository / (S + 'Base64.dfy')).read_text()
 for helper in ['UnpaddedPrefixWithPaddingIsBase64', 'UnpaddedStringIsBase64', 'DecodeValid1PaddingLengthMod3', 'DecodeValid2PaddingLengthMod3']:
