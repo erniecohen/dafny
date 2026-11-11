@@ -259,6 +259,17 @@ and specification from
 implementation.
 
 The options relevant to this command are
+- `--resolution-threads N` opts into dependency-ready resolution with up to `N`
+  workers (`N >= 1`). Without this option, the existing resolver path is used.
+  Diagnostics are emitted in the usual module order. Generated identifiers are
+  qualified by module, including identifiers used during verification translation.
+  Resolution keys cover the module's source, fully qualified identity, options,
+  Dafny version, and prerequisites from the semantic resolution graph (including
+  refinement bases, nesting, imports and export views).
+  Whole-program rewriters, replaceable-module instantiation, duplicate module-name
+  checks and cardinality validation still run on every invocation. External plugins
+  currently limit this mode to one worker because their callbacks have no
+  concurrent-resolution contract.
 - those relevant to the command-line itself
    - `--allow-warnings` --- return a success [exit code](#sec-exit-codes), even when there are warnings 
 

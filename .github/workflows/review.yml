@@ -235,6 +235,58 @@ jobs:
           path: comparison
           retention-days: 90
 
+  parallel-resolution:
+    name: Parallel resolution (${{ matrix.part }})
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        part: ['0', '1', '2', '3', 'stdlib']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: dafny
+      - name: Unpack Dafny
+        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
+      - name: Pinned solver
+        run: |
+          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
+          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+          echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
+      - name: Verify and compare with default verdicts
+        run: |
+          mkdir parallel-results
+          if [ '${{ matrix.part }}' = stdlib ]; then
+            python3 .github/review/std-verdicts.py run Source/DafnyStandardLibraries "$PWD/out/dafny/Dafny" "$Z3" parallel-results/verdicts.tsv \
+              --resolution-threads 8 --measurements parallel-results/measurements
+            python3 .github/review/std-verdicts.py compare .github/review/expected-std-verdicts-z3-5.1.0.tsv parallel-results/verdicts.tsv
+          else
+            L=Source/IntegrationTests/TestFiles/LitTests/LitTest
+            python3 .github/review/lit-verdicts.py plan "$L" parallel-results/plan.tsv
+            python3 .github/review/lit-verdicts.py run parallel-results/plan.tsv "$L" "$PWD/out/dafny/Dafny" "$Z3" parallel-results/verdicts.tsv \
+              --shard '${{ matrix.part }}/4' --jobs 4 --resolution-threads 8 --measurements parallel-results/measurements
+            python3 - '${{ matrix.part }}' <<'PY'
+          import sys
+          from pathlib import Path
+          plan = [line.split('\t')[0] for line in Path('parallel-results/plan.tsv').read_text().splitlines()]
+          selected = set(plan[int(sys.argv[1])::4])
+          rows = Path('.github/review/expected-verdicts.tsv').read_text().splitlines()
+          Path('parallel-results/expected.tsv').write_text(''.join(row + '\n' for row in rows if row.split('\t')[0] in selected))
+          PY
+            python3 .github/review/lit-verdicts.py compare parallel-results/expected.tsv parallel-results/verdicts.tsv
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parallel-resolution-${{ matrix.part }}
+          path: parallel-results
+          retention-days: 90
+
   verification-batch:
     name: Resolve-once verification batch controls
     needs: build
@@ -641,6 +693,8 @@ jobs:
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~DafnyCore.Test.RedirectingTypeDependencyTrackerTests|FullyQualifiedName~DafnyCore.Test.NumericAncestryTests|FullyQualifiedName~DafnyCore.Test.NumericAncestryAllocationTests|FullyQualifiedName~DafnyCore.Test.ScopeCheckpointTest|FullyQualifiedName~MapComprehensionSubstitutionTests" \
             --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none
+      - name: Test isolated parallel resolution and module keys
+        run: dotnet test Source/DafnyCore.Test -c Release --no-build --filter FullyQualifiedName~ResolutionPipelineTests --logger "console;verbosity=normal"
       - name: Test newtype-cycle edits in both resolver modes
         run: |
           dotnet test Source/DafnyLanguageServer.Test -c Release --no-build \
@@ -792,7 +846,7 @@ jobs:
 
   release:
     name: GitHub release
-    needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, finite-support, statement-conclusions, axiom-resources, verification-batch]
+    needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, finite-support, statement-conclusions, axiom-resources, verification-batch, parallel-resolution]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     timeout-minutes: 15

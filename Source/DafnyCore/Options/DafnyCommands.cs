@@ -23,7 +23,6 @@ public static class DafnyCommands {
   public static readonly IReadOnlyList<Option> VerificationOptions = new Option[] {
     CommonOptionBag.AdditionalAxioms,
     CommonOptionBag.ProgressOption,
-    CommonOptionBag.PipelineProfile,
     CommonOptionBag.RelaxDefiniteAssignment,
     BoogieOptionBag.VerificationTimeLimit,
     CommonOptionBag.VerifyIncludedFiles,
@@ -111,6 +110,7 @@ public static class DafnyCommands {
     CommonOptionBag.GeneralTraits,
     CommonOptionBag.GeneralNewtypes,
     CommonOptionBag.TypeSystemRefresh,
+    CommonOptionBag.ResolutionThreads,
     CommonOptionBag.BitvectorMapKeys,
     CommonOptionBag.ContextualLambdaDomains,
     CommonOptionBag.ContextualQuantifierDomains,
@@ -131,6 +131,7 @@ public static class DafnyCommands {
   });
 
   public static IReadOnlyList<Option> ResolverOptions = new List<Option>(new Option[] {
+    CommonOptionBag.PipelineProfile,
     CommonOptionBag.ShowHints,
     CommonOptionBag.WarnShadowing,
     CommonOptionBag.WarnMissingConstructorParenthesis,

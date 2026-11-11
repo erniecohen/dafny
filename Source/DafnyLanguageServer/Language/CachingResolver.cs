@@ -45,6 +45,11 @@ public class CachingResolver : ProgramResolver {
   }
 
   protected override Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> ResolveSystemModule(Program program) {
+    if (Options.Get(CommonOptionBag.ResolutionThreads) > 0) {
+      // The old cache's CloneId/system-shape key does not describe module-local
+      // results. Keep it entirely separate from the opt-in pipeline.
+      return base.ResolveSystemModule(program);
+    }
     if (cache.Builtins == null || !new HashEquality().Equals(cache.Builtins.MyHash, program.SystemModuleManager.MyHash)) {
       var systemClassMembers = base.ResolveSystemModule(program);
       cache.Builtins = program.SystemModuleManager;

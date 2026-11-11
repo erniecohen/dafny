@@ -61,6 +61,20 @@ namespace Microsoft.Dafny {
     public readonly PreTypeConstraints Constraints;
 
     TopLevelDecl BuiltInTypeDecl(string name) {
+      if (resolver.SystemModuleManager.ResolutionCatalog is { } catalog) {
+        var declaration = catalog.Pretype(name, () => BuiltInTypeDeclCore(name));
+        preTypeInferenceModuleState.PreTypeBuiltins[name] = declaration;
+        if (IsBitvectorName(name, out _)) {
+          resolver.SystemModuleManager.RecordBuiltin(declaration);
+          resolver.ProgramResolver.AddSystemClass((TopLevelDeclWithMembers)declaration,
+            ((TopLevelDeclWithMembers)declaration).Members.ToDictionary(m => m.Name));
+        }
+        return declaration;
+      }
+      return BuiltInTypeDeclCore(name);
+    }
+
+    private TopLevelDecl BuiltInTypeDeclCore(string name) {
       Contract.Requires(name != null);
       if (preTypeInferenceModuleState.PreTypeBuiltins.TryGetValue(name, out var decl)) {
         return decl;

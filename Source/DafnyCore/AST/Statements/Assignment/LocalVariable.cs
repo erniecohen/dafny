@@ -60,9 +60,12 @@ public class LocalVariable : NodeWithOrigin, IVariable, IAttributeBearingDeclara
     get { return DisplayNameHelper(this); }
   }
   private string? uniqueName;
-  public string? UniqueName => uniqueName;
-  public bool HasBeenAssignedUniqueName => uniqueName != null;
+  public string? UniqueName => ModuleNamingScope.Current is { } scope ? scope.Name(this) : uniqueName;
+  public bool HasBeenAssignedUniqueName => UniqueName != null;
   public string AssignUniqueName(VerificationIdGenerator generator) {
+    if (ModuleNamingScope.Current is { } scope) {
+      return scope.Name(this, () => generator.FreshId(Name + "#"));
+    }
     return uniqueName ??= generator.FreshId(Name + "#");
   }
 
@@ -74,6 +77,9 @@ public class LocalVariable : NodeWithOrigin, IVariable, IAttributeBearingDeclara
   string? compileName;
 
   public string GetOrCreateCompileName(CodeGenIdGenerator generator) {
+    if (ModuleNamingScope.Current is { } scope) {
+      return scope.CompileName(this, () => $"_{scope.Prefix}{generator.FreshNumericId()}_{CompileNameShadowable}");
+    }
     return compileName ??= $"_{generator.FreshNumericId()}_{CompileNameShadowable}";
   }
 

@@ -817,6 +817,66 @@ case. Adding a lock around `id++` prevents duplication but permits different SMT
 names on every schedule. Apply the same reasoning to type/visibility IDs, builtin
 enumeration and declaration-order ties.
 
+### 6.2.1 Opt-in implementation boundary
+
+`--resolution-threads N` selects a separate path in `ProgramResolver`; omission
+retains the original loop. The graph is the existing resolution graph, including
+refinement bases, nested prerequisites, imports, abstract imports and export views.
+A ready queue publishes completed prerequisites immediately, independently of the
+later diagnostic merge in `sortedDecls` order. Heights in this mode are dependency
+depths, so adding an unrelated module does not renumber an existing module.
+
+`ModuleResolutionKey` hashes a domain-separated, length-delimited encoding of the
+fully qualified module identity, original source, Dafny version, effective options
+and sorted `(dependency role, qualified identity, key)` prerequisite records. It
+does not use `CloneId`, execution order, worker count or the whole-program builtin
+shape. Execution/report destinations are excluded; other option values are
+conservatively included. The key is available on each module output and in the
+requested `resolve.module` profile events. `--pipeline-profile` also works with
+`resolve`, allowing resolve-only measurements without solver startup.
+
+Each worker owns its reporter, signature map, class-member tables and builtin
+publication view. A per-resolution catalog interns intrinsic tuple, arrow, array,
+bitvector and pretype definitions under a lock; workers record their own usage.
+First-touch pretype/member initialization finishes before another worker receives
+the definition. The published view and translator input are restricted to the
+module's resolved prerequisite closure. Refinement export signatures are copied:
+their resolved `Decl` fields cannot be shared with the base or sibling refinements.
+Re-publishing an unchanged declaration does not write its parent's list while
+dependents are reading it.
+
+`ModuleNamingScope` gives each resolver and translator a private name-generator
+state, variable/label name map and counters, qualified by the module identity.
+It preserves semantic fresh-name prefixes such as match wildcards. Imported
+declarations' generators, including generators reached through `codeContext`, do
+not carry translation history between modules. Translation uses the prerequisite
+closure for builtin declarations, bitvector axioms, function fuel and trait-parent
+axioms. Proof-dependency IDs are module-qualified as well.
+
+Remaining process state is deliberately outside the content key: visibility
+tokens are atomic opaque set identities and their memo tables are synchronized;
+they are not emitted as generated identifiers. Quantifier construction still
+allocates a transient process identity, but its externally used `FullName` is
+module-scoped in this mode. Debug type-proxy and refinement-wrapper IDs created
+during resolution use module counters. Pure string caches on imported declarations
+remain derived from their declarations; backend compilation and solver preparation
+are later boundaries. Source locations remain attached to diagnostics; any snapshot
+loader must rebind them to the current source map. This PR does not introduce a
+cache, freeze resolved ASTs for reuse, or remove the language server's outer lock.
+External plugin callbacks have no concurrency contract, so their presence limits
+the opt-in path to one worker. Whole-program admission and global rewrites always
+run outside the module scheduler.
+
+The reproducible resolve-only benchmark is
+[`.github/review/resolution-threads.py`](../../../.github/review/resolution-threads.py).
+It measures five fresh processes per N on the standard library, the three public
+lit inputs with the most module declarations, and a generated wide DAG. The
+integration regression compares actual `--bprint` files at N = 1, 2, 8 and after
+unrelated builtin growth. Unit tests cover key boundaries, diagnostic order, both
+inference engines, refinement invalidation, export ownership and immediate ready
+queue progress. CI also compares the opt-in suite and standard-library verdicts
+with the default baselines.
+
 ### 6.3 Improve the existing resolution cache
 
 Under proposed `--resolution-cache-content`:

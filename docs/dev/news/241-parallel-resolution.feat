@@ -1,0 +1,3 @@
+Adds opt-in `--resolution-threads N` for dependency-ready parallel module resolution,
+deterministically ordered diagnostics, semantic module keys and module-qualified
+generated names. The default resolution path is unchanged.
