@@ -5,7 +5,8 @@
 # regression tests of this line's fixes in upstream's test harness, and on a tag
 # publishes self-contained binaries.  Every job that builds first fetches the Boogie
 # packages this line builds against (Scripts/fetch-boogie-packages.sh, checked by sha256).
-# Standard GitHub-hosted runners only.
+# Trusted repository events can use the self-hosted macOS pool; verdict gates stay
+# on Linux until the explicit platform-parity probe has established parity.
 name: review
 
 on:
@@ -18,6 +19,11 @@ on:
     inputs:
       binaries:
         description: Also build the self-contained binaries (a release is made only for a tag)
+        type: boolean
+        default: false
+
+      platform_parity:
+        description: Measure Linux/macOS parity at this exact source without changing baselines
         type: boolean
         default: false
 
@@ -50,6 +56,8 @@ concurrency:
   cancel-in-progress: ${{ github.ref_type != 'tag' }}
 
 env:
+  # Four jobs can share the self-hosted pool without using more than four cores each.
+  DOTNET_PROCESSOR_COUNT: '4'
   DOTNET_NOLOGO: 'true'
   DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
@@ -67,7 +75,7 @@ env:
 
 jobs:
   build:
-    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/')) }}
+    if: ${{ !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/'))) }}
     name: Build (Release)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -98,16 +106,8 @@ jobs:
       - name: Check the packaged standard libraries
         run: |
           v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
-          case "$v" in
-            4.12.1) sha=$HARNESS_Z3_4_12_1_SHA256 ;;
-            4.16.0) sha=$HARNESS_Z3_4_16_0_SHA256 ;;
-            *) echo "no checksum here for Z3 $v"; exit 1 ;;
-          esac
-          curl -fsSLo z3h.zip "$HARNESS_Z3_RELEASE/z3-$v-x64-ubuntu-24.04-bin.zip"
-          echo "$sha  z3h.zip" | sha256sum -c -
-          mkdir -p z3h && unzip -q z3h.zip -d z3h && chmod +x "z3h/z3-$v"
-          "z3h/z3-$v" --version
-          python3 .github/review/packaged-libraries.py "$PWD/out/dafny/Dafny" "$PWD/z3h/z3-$v" \
+          z3h=$(sh .github/review/setup-z3.sh "$v" z3h)
+          python3 .github/review/packaged-libraries.py "$PWD/out/dafny/Dafny" "$z3h" \
             out/packaged-libraries
       - uses: actions/upload-artifact@v4
         if: always()
@@ -122,7 +122,9 @@ jobs:
             out/packaged-libraries/*/package-smoke.bin
           retention-days: 14
       - name: Pack
-        run: tar -C out -czf dafny.tar.gz dafny
+        run: |
+          sh .github/review/portable-dafny.sh out/dafny
+          tar -C out -czf dafny.tar.gz dafny
       - uses: actions/upload-artifact@v4
         with:
           name: dafny
@@ -130,6 +132,7 @@ jobs:
           retention-days: 14
 
   suite:
+    if: ${{ !inputs.platform_parity && (true) }}
     name: Verifier suite (axioms ${{ matrix.axioms }}, shard ${{ matrix.shard }} of 4)
     needs: build
     runs-on: ubuntu-24.04
@@ -146,14 +149,12 @@ jobs:
         with:
           name: dafny
       - name: Unpack Dafny
-        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
+        run: |
+          mkdir -p out && tar -C out -xzf dafny.tar.gz
+          sh .github/review/portable-dafny.sh out/dafny
       - name: Z3
         run: |
-          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
-          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
-          unzip -q z3.zip && chmod +x "$Z3_LINUX_X64/bin/z3"
-          echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
-          "$Z3_LINUX_X64/bin/z3" --version
+          echo "Z3=$(sh .github/review/setup-z3.sh)" >> "$GITHUB_ENV"
       - name: Verify
         run: |
           L=Source/IntegrationTests/TestFiles/LitTests/LitTest
@@ -181,9 +182,10 @@ jobs:
           retention-days: 90
 
   verdicts:
+    if: ${{ !inputs.platform_parity && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && (true)) }}
     name: Verdicts (axioms ${{ matrix.axioms }})
     needs: [build, suite]
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -236,6 +238,7 @@ jobs:
           retention-days: 90
 
   verification-batch:
+    if: ${{ !inputs.platform_parity && (true) }}
     name: Resolve-once verification batch controls
     needs: build
     runs-on: ubuntu-24.04
@@ -247,13 +250,12 @@ jobs:
         with:
           name: dafny
       - name: Unpack Dafny
-        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
+        run: |
+          mkdir -p out && tar -C out -xzf dafny.tar.gz
+          sh .github/review/portable-dafny.sh out/dafny
       - name: Pinned solver
         run: |
-          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
-          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
-          unzip -q z3.zip
-          echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
+          echo "Z3=$(sh .github/review/setup-z3.sh)" >> "$GITHUB_ENV"
       - name: Exercise fresh requests and cold input invalidation
         run: |
           python3 .github/review/verification-batch-controls.py "$PWD/out/dafny/Dafny" "$Z3" verification-batch-results
@@ -266,8 +268,8 @@ jobs:
           retention-days: 90
 
   default-comparison:
+    if: ${{ !inputs.platform_parity && (github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/')) }}
     name: Repeated default suite and standard-library comparison (probe)
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     steps:
@@ -295,9 +297,9 @@ jobs:
           curl -fsSLo "$RUNNER_TEMP/comparison-runtime8.tar.gz" \
             https://builds.dotnet.microsoft.com/dotnet/Runtime/8.0.32/dotnet-runtime-8.0.32-linux-x64.tar.gz
           echo "639a17d84e4d52fecd62c7d4e528e7bc0ae3c9860de2530cb41a2ee7196b69ea18271d8795849180742770e25b4f913df292a5a236fa197cf5d3cd0ec5ba665f  $RUNNER_TEMP/comparison-runtime8.tar.gz" | sha512sum -c -
-          host_before=$(sha256sum "$DOTNET_ROOT/dotnet")
+          host_before=$(shasum -a 256 "$DOTNET_ROOT/dotnet")
           tar -xzf "$RUNNER_TEMP/comparison-runtime8.tar.gz" -C "$DOTNET_ROOT" --exclude=dotnet --exclude=./dotnet
-          test "$(sha256sum "$DOTNET_ROOT/dotnet")" = "$host_before"
+          test "$(shasum -a 256 "$DOTNET_ROOT/dotnet")" = "$host_before"
       - name: Record fixed environment and build both source revisions
         env:
           COMPARISON_MODE: ${{ inputs.default_comparison_mode || 'candidate' }}
@@ -336,10 +338,10 @@ jobs:
       - name: Pin both solvers
         run: |
           curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
-          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
+          echo "$Z3_LINUX_X64_SHA256  z3.zip" | shasum -a 256 -c -
           unzip -q z3.zip
           curl -fsSLo z3h.zip "$HARNESS_Z3_RELEASE/z3-4.16.0-x64-ubuntu-24.04-bin.zip"
-          echo "$HARNESS_Z3_4_16_0_SHA256  z3h.zip" | sha256sum -c -
+          echo "$HARNESS_Z3_4_16_0_SHA256  z3h.zip" | shasum -a 256 -c -
           mkdir z3h
           unzip -q z3h.zip -d z3h
           chmod +x z3h/z3-4.16.0
@@ -377,6 +379,7 @@ jobs:
           retention-days: 90
 
   resolver:
+    if: ${{ !inputs.platform_parity && (true) }}
     name: Resolver matrix (both modes)
     needs: build
     runs-on: ubuntu-24.04
@@ -388,7 +391,9 @@ jobs:
         with:
           name: dafny
       - name: Unpack Dafny
-        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
+        run: |
+          mkdir -p out && tar -C out -xzf dafny.tar.gz
+          sh .github/review/portable-dafny.sh out/dafny
       - name: Test axiom gate and resource reporting
         run: python3 -m unittest discover -s .github/review -p test_additional_axioms.py
       - name: Test matrix runner
@@ -429,6 +434,7 @@ jobs:
           retention-days: 90
 
   stdlib:
+    if: ${{ !inputs.platform_parity && (true) }}
     name: Standard library (Z3 ${{ matrix.z3 }}, axioms ${{ matrix.axioms }})
     needs: build
     runs-on: ubuntu-24.04
@@ -447,28 +453,17 @@ jobs:
         with:
           name: dafny
       - name: Unpack Dafny
-        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
+        run: |
+          mkdir -p out && tar -C out -xzf dafny.tar.gz
+          sh .github/review/portable-dafny.sh out/dafny
       - name: Z3
         run: |
-          if [ "${{ matrix.z3 }}" = 5.1.0 ]; then
-            curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
-            echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
-            unzip -q z3.zip && chmod +x "$Z3_LINUX_X64/bin/z3"
-            echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
-            echo "Z3V=5.1.0" >> "$GITHUB_ENV"
-          else
+          v='${{ matrix.z3 }}'
+          if [ "$v" = 'of the tests' ]; then
             v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
-            case "$v" in
-              4.12.1) sha=$HARNESS_Z3_4_12_1_SHA256 ;;
-              4.16.0) sha=$HARNESS_Z3_4_16_0_SHA256 ;;
-              *) echo "no checksum here for Z3 $v"; exit 1 ;;
-            esac
-            curl -fsSLo z3h.zip "$HARNESS_Z3_RELEASE/z3-$v-x64-ubuntu-24.04-bin.zip"
-            echo "$sha  z3h.zip" | sha256sum -c -
-            mkdir -p z3h && unzip -q z3h.zip -d z3h && chmod +x "z3h/z3-$v"
-            echo "Z3=$PWD/z3h/z3-$v" >> "$GITHUB_ENV"
-            echo "Z3V=$v" >> "$GITHUB_ENV"
           fi
+          echo "Z3=$(sh .github/review/setup-z3.sh "$v")" >> "$GITHUB_ENV"
+          echo "Z3V=$v" >> "$GITHUB_ENV"
       - name: Verify
         run: |
           "$Z3" --version
@@ -478,8 +473,8 @@ jobs:
           python3 .github/review/std-verdicts.py expected std-verdicts.tsv > "expected-std-verdicts-z3-$Z3V.tsv"
           # Fingerprints, to compare runs of one tree without downloading artifacts (#186):
           # the verdict columns, and the declarations' resource and proof counts.
-          vfp=$(sha256sum < "expected-std-verdicts-z3-$Z3V.tsv" | cut -c1-16)
-          rfp=$(awk -F'\t' '$1 !~ /^run /{print $1"\t"$5"\t"$6}' std-verdicts.tsv | sha256sum | cut -c1-16)
+          vfp=$(shasum -a 256 < "expected-std-verdicts-z3-$Z3V.tsv" | cut -c1-16)
+          rfp=$(awk -F'\t' '$1 !~ /^run /{print $1"\t"$5"\t"$6}' std-verdicts.tsv | shasum -a 256 | cut -c1-16)
           echo "verdict fingerprint $vfp, resource fingerprint $rfp"
           {
             echo "## Standard library, axioms ${{ matrix.axioms }}, Z3 $Z3V: ${{ needs.build.outputs.version }}"
@@ -519,12 +514,12 @@ jobs:
           retention-days: 90
 
   axiom-resources:
+    if: ${{ !inputs.platform_parity && ((github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && (!cancelled() && needs.suite.result == 'success')) }}
     name: Additional-axiom resource comparisons
     needs: [suite, stdlib]
     # Also after a failed standard-library job, but not after a cancellation, which can leave its
     # artifacts missing (#133).
-    if: ${{ !cancelled() && needs.suite.result == 'success' }}
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -546,6 +541,7 @@ jobs:
           retention-days: 90
 
   javascript-runtime:
+    if: ${{ !inputs.platform_parity && (true) }}
     name: JavaScript runtime (Node ${{ matrix.node }})
     runs-on: ubuntu-24.04
     strategy:
@@ -583,7 +579,7 @@ jobs:
             before-control.txt
 
   regressions:
-    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/')) }}
+    if: ${{ !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/'))) }}
     name: Regression tests (upstream harness)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -594,32 +590,14 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: The Z3 the tests expect
+      - name: The solvers the tests expect
         run: |
           v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
-          case "$v" in
-            4.12.1) sha=$HARNESS_Z3_4_12_1_SHA256 ;;
-            4.16.0) sha=$HARNESS_Z3_4_16_0_SHA256 ;;
-            *) echo "no checksum here for Z3 $v"; exit 1 ;;
-          esac
-          curl -fsSLo z3h.zip "$HARNESS_Z3_RELEASE/z3-$v-x64-ubuntu-24.04-bin.zip"
-          echo "$sha  z3h.zip" | sha256sum -c -
           mkdir -p Binaries/z3/bin
-          unzip -q z3h.zip -d Binaries/z3/bin
-          chmod +x "Binaries/z3/bin/z3-$v"
-          "Binaries/z3/bin/z3-$v" --version
-      - name: The pinned solver for additional-axiom regressions
-        run: |
-          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
-          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
-          unzip -q z3.zip
-          cp "$Z3_LINUX_X64/bin/z3" Binaries/z3/bin/z3-5.1.0
-          if [ ! -f Binaries/z3/bin/z3-4.12.1 ]; then
-            curl -fsSLo z3-4.12.1.zip "$HARNESS_Z3_RELEASE/z3-4.12.1-x64-ubuntu-24.04-bin.zip"
-            echo "$HARNESS_Z3_4_12_1_SHA256  z3-4.12.1.zip" | sha256sum -c -
-            unzip -q z3-4.12.1.zip -d Binaries/z3/bin
-            chmod +x Binaries/z3/bin/z3-4.12.1
-          fi
+          for version in "$v" 4.12.1 5.1.0; do
+            solver=$(sh .github/review/setup-z3.sh "$version" "ci-z3-$version")
+            cp "$solver" "Binaries/z3/bin/z3-$version"
+          done
       - name: Boogie packages
         run: sh Scripts/fetch-boogie-packages.sh
       - name: Build the test harness
@@ -664,7 +642,7 @@ jobs:
 
 
   resolver-tests:
-    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/')) }}
+    if: ${{ !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/'))) }}
     name: Resolver unit tests and language-server recovery
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -692,10 +670,7 @@ jobs:
 
       - name: Z3 for incremental bitvector verification
         run: |
-          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
-          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
-          unzip -q z3.zip
-          echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
+          echo "Z3=$(sh .github/review/setup-z3.sh)" >> "$GITHUB_ENV"
       - name: Test cached inherited members and rotations after edits
         run: |
           dotnet test Source/DafnyLanguageServer.Test -c Release --no-build \
@@ -704,6 +679,7 @@ jobs:
             --blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none
 
   finite-support:
+    if: ${{ !inputs.platform_parity && (true) }}
     name: Finite-support encoding and boundary controls
     needs: build
     runs-on: ubuntu-24.04
@@ -715,13 +691,12 @@ jobs:
         with:
           name: dafny
       - name: Unpack Dafny
-        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
+        run: |
+          mkdir -p out && tar -C out -xzf dafny.tar.gz
+          sh .github/review/portable-dafny.sh out/dafny
       - name: Pinned solver
         run: |
-          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
-          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
-          unzip -q z3.zip
-          echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
+          echo "Z3=$(sh .github/review/setup-z3.sh)" >> "$GITHUB_ENV"
       - name: Check packaged translation and conditional boundary
         run: |
           python3 .github/review/issue82-audit.py --dafny "$PWD/out/dafny/Dafny" \
@@ -734,6 +709,7 @@ jobs:
           retention-days: 90
 
   statement-conclusions:
+    if: ${{ !inputs.platform_parity && (true) }}
     name: Statement-expression conclusions (opt-in, #96)
     needs: build
     runs-on: ubuntu-24.04
@@ -745,13 +721,12 @@ jobs:
         with:
           name: dafny
       - name: Unpack Dafny
-        run: mkdir -p out && tar -C out -xzf dafny.tar.gz
+        run: |
+          mkdir -p out && tar -C out -xzf dafny.tar.gz
+          sh .github/review/portable-dafny.sh out/dafny
       - name: Pinned solver
         run: |
-          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
-          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
-          unzip -q z3.zip
-          echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
+          echo "Z3=$(sh .github/review/setup-z3.sh)" >> "$GITHUB_ENV"
       - name: Run the fixtures with --statement-expression-conclusions on and off
         run: |
           set +e
@@ -767,11 +742,11 @@ jobs:
           retention-days: 90
 
   binaries:
+    if: ${{ !inputs.platform_parity && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' && github.ref_type == 'tag' || github.event_name == 'workflow_dispatch' && inputs.binaries)) }}
     name: Binaries (${{ matrix.rid }})
     needs: build
     # The osx-arm64 build runs on the owner's self-hosted Mac (label mac-studio);
     # this job only runs for tags and manual dispatches, never for pull requests.
-    if: github.repository == 'erniecohen/dafny' && (github.ref_type == 'tag' || inputs.binaries)
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
@@ -830,9 +805,9 @@ jobs:
           retention-days: 14
 
   release:
+    if: ${{ !inputs.platform_parity && (github.repository == 'erniecohen/dafny' && github.event_name == 'push' && github.ref_type == 'tag') }}
     name: GitHub release
     needs: [build, binaries, verdicts, stdlib, javascript-runtime, regressions, resolver, resolver-tests, finite-support, statement-conclusions, axiom-resources, verification-batch]
-    if: github.repository == 'erniecohen/dafny' && github.ref_type == 'tag'
     runs-on: mac-studio
     timeout-minutes: 15
     permissions:
@@ -868,3 +843,307 @@ jobs:
           } > notes.md
           gh release create "$TAG" dafny-*.zip SHA256SUMS --repo "$GITHUB_REPOSITORY" \
             --verify-tag --title "$VERSION" --notes-file notes.md
+
+  parity-build:
+    if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform_parity }}
+    name: "Parity ${{ matrix.platform }}: Build (Release)"
+    runs-on: ${{ matrix.platform == 'macos' && 'mac-studio' || 'ubuntu-24.04' }}
+    continue-on-error: true
+    timeout-minutes: 60
+    outputs:
+      revision: ${{ steps.version.outputs.revision }}
+      version: ${{ steps.version.outputs.version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [linux, macos]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version
+        id: version
+        run: sh .github/review/version.sh | tee -a "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Boogie packages
+        run: sh Scripts/fetch-boogie-packages.sh
+      - name: Build
+        run: |
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny \
+            -p:GeneratePackageOnBuild=false -p:SourceRevisionId=${{ steps.version.outputs.revision }}
+      - name: Check the version it reports
+        run: |
+          v=$(dotnet out/dafny/Dafny.dll --version | head -1)
+          echo "dafny --version: $v"
+          test "$v" = "${{ steps.version.outputs.version }}"
+      - name: Check the packaged standard libraries
+        run: |
+          v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
+          z3h=$(sh .github/review/setup-z3.sh "$v" z3h)
+          python3 .github/review/packaged-libraries.py "$PWD/out/dafny/Dafny" "$z3h" \
+            out/packaged-libraries
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parity-${{ matrix.platform }}-packaged-libraries
+          path: |
+            out/packaged-libraries/summary.json
+            out/packaged-libraries/*/result.json
+            out/packaged-libraries/*/stdout.txt
+            out/packaged-libraries/*/stderr.txt
+            out/packaged-libraries/*/resources.csv
+            out/packaged-libraries/*/package-smoke.bin
+          retention-days: 14
+      - name: Pack
+        run: |
+          sh .github/review/portable-dafny.sh out/dafny
+          tar -C out -czf dafny.tar.gz dafny
+      - uses: actions/upload-artifact@v4
+        with:
+          name: parity-${{ matrix.platform }}-dafny
+          path: dafny.tar.gz
+          retention-days: 14
+
+
+  parity-suite:
+    if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform_parity }}
+    name: "Parity ${{ matrix.platform }}: Verifier suite (axioms ${{ matrix.axioms }}, shard ${{ matrix.shard }} of 4)"
+    needs: parity-build
+    runs-on: ${{ matrix.platform == 'macos' && 'mac-studio' || 'ubuntu-24.04' }}
+    continue-on-error: true
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [linux, macos]
+        shard: [0, 1, 2, 3]
+        axioms: ['off', 'on']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: parity-${{ matrix.platform }}-dafny
+      - name: Unpack Dafny
+        run: |
+          mkdir -p out && tar -C out -xzf dafny.tar.gz
+          sh .github/review/portable-dafny.sh out/dafny
+      - name: Z3
+        run: |
+          echo "Z3=$(sh .github/review/setup-z3.sh)" >> "$GITHUB_ENV"
+      - name: Verify
+        run: |
+          L=Source/IntegrationTests/TestFiles/LitTests/LitTest
+          python3 .github/review/lit-verdicts.py plan "$L" plan.tsv
+          python3 .github/review/lit-verdicts.py run plan.tsv "$L" "$PWD/out/dafny/Dafny" "$Z3" \
+            verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv --shard ${{ matrix.shard }}/4 --jobs 4 \
+            --additional-axioms ${{ matrix.axioms == 'on' }} --measurements measurements/${{ matrix.axioms }}
+          python3 .github/review/additional-axioms.py inventory measurements/${{ matrix.axioms }} \
+            resources-${{ matrix.axioms }}-${{ matrix.shard }}.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parity-${{ matrix.platform }}-verdicts-${{ matrix.axioms }}-${{ matrix.shard }}
+          path: |
+            verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv
+            resources-${{ matrix.axioms }}-${{ matrix.shard }}.json
+            plan.tsv
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parity-${{ matrix.platform }}-suite-measurements-${{ matrix.axioms }}-${{ matrix.shard }}
+          path: measurements
+          compression-level: 9
+          retention-days: 90
+
+
+  parity-stdlib:
+    if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform_parity }}
+    name: "Parity ${{ matrix.platform }}: Standard library (Z3 ${{ matrix.z3 }}, axioms ${{ matrix.axioms }})"
+    needs: parity-build
+    runs-on: ${{ matrix.platform == 'macos' && 'mac-studio' || 'ubuntu-24.04' }}
+    continue-on-error: true
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [linux, macos]
+        # This line's Z3, and the Z3 that the tree's own tests expect (its
+        # DefaultZ3Version), with which upstream builds the library.
+        z3: ['5.1.0', 'of the tests']
+        axioms: ['off', 'on']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: parity-${{ matrix.platform }}-dafny
+      - name: Unpack Dafny
+        run: |
+          mkdir -p out && tar -C out -xzf dafny.tar.gz
+          sh .github/review/portable-dafny.sh out/dafny
+      - name: Z3
+        run: |
+          v='${{ matrix.z3 }}'
+          if [ "$v" = 'of the tests' ]; then
+            v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
+          fi
+          echo "Z3=$(sh .github/review/setup-z3.sh "$v")" >> "$GITHUB_ENV"
+          echo "Z3V=$v" >> "$GITHUB_ENV"
+      - name: Verify
+        run: |
+          "$Z3" --version
+          python3 .github/review/std-verdicts.py run Source/DafnyStandardLibraries "$PWD/out/dafny/Dafny" "$Z3" \
+            std-verdicts.tsv --cores 4 --additional-axioms ${{ matrix.axioms == 'on' }} \
+            --boogie "/deterministicLiteralHashes:1 /restartProver"
+          python3 .github/review/std-verdicts.py expected std-verdicts.tsv > "expected-std-verdicts-z3-$Z3V.tsv"
+          # Fingerprints, to compare runs of one tree without downloading artifacts (#186):
+          # the verdict columns, and the declarations' resource and proof counts.
+          vfp=$(shasum -a 256 < "expected-std-verdicts-z3-$Z3V.tsv" | cut -c1-16)
+          rfp=$(awk -F'\t' '$1 !~ /^run /{print $1"\t"$5"\t"$6}' std-verdicts.tsv | shasum -a 256 | cut -c1-16)
+          echo "verdict fingerprint $vfp, resource fingerprint $rfp"
+          {
+            echo "## Standard library, axioms ${{ matrix.axioms }}, Z3 $Z3V: ${{ github.sha }}"
+            echo
+            echo "Source/DafnyStandardLibraries, verified as its Makefile's verify target does, with"
+            echo "the library's own resource limits and no time limit, the library part with"
+            echo "Boogie's /deterministicLiteralHashes:1 /restartProver (#186, #30)."
+            echo
+            python3 .github/review/std-verdicts.py summary std-verdicts.tsv
+            echo
+            echo "Verdict fingerprint \`$vfp\`, resource fingerprint \`$rfp\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: parity-${{ matrix.platform }}-std-verdicts-${{ matrix.axioms }}-z3-${{ env.Z3V }}
+          path: |
+            std-verdicts.tsv
+            expected-std-verdicts-z3-${{ env.Z3V }}.tsv
+          retention-days: 90
+
+  parity-regressions:
+    if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform_parity }}
+    name: "Parity ${{ matrix.platform }}: Regression tests (upstream harness)"
+    runs-on: ${{ matrix.platform == 'macos' && 'mac-studio' || 'ubuntu-24.04' }}
+    continue-on-error: true
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [linux, macos]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: The solvers the tests expect
+        run: |
+          v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
+          mkdir -p Binaries/z3/bin
+          for version in "$v" 4.12.1 5.1.0; do
+            solver=$(sh .github/review/setup-z3.sh "$version" "ci-z3-$version")
+            cp "$solver" "Binaries/z3/bin/z3-$version"
+          done
+      - name: Boogie packages
+        run: sh Scripts/fetch-boogie-packages.sh
+      - name: Build the test harness
+        run: dotnet build Source/IntegrationTests -c Release
+      - name: Cardinality resolver and translation admission tests
+        run: |
+          dotnet test --logger "trx;LogFileName=test-1.trx" --results-directory parity-results Source/DafnyCore.Test -c Release --filter 'FullyQualifiedName~Cardinality|FullyQualifiedName~NewtypeReferenceCharacteristicTests'
+          dotnet test --logger "trx;LogFileName=test-2.trx" --results-directory parity-results Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~Cardinality
+          dotnet test --logger "trx;LogFileName=test-3.trx" --results-directory parity-results Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~CardinalityEmissionTests
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '16.0.0'
+      - name: JavaScript runtime dependency
+        run: npm install --no-save --package-lock=false bignumber.js@9.1.2
+      - name: Run the tests named in .github/review/regressions
+        env:
+          DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS: cs
+        run: |
+          filter=$(grep -v '^#' .github/review/regressions | grep . | sed 's|^|DisplayName~|' | paste -sd'|' -)
+          if [ -z "$filter" ]; then echo "no tests named"; exit 0; fi
+          echo "$filter"
+          dotnet test --logger "trx;LogFileName=test-4.trx" --results-directory parity-results Source/IntegrationTests -c Release --no-build \
+            --logger "console;verbosity=normal" --filter "$filter"
+      - name: Batch requests reuse resolution and create fresh proof tasks
+        env:
+          Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
+        run: dotnet test --logger "trx;LogFileName=test-5.trx" --results-directory parity-results Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~VerificationBatchTests --logger "console;verbosity=normal"
+      - name: A module window reports what one module at a time reports (#241)
+        env:
+          Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
+        run: dotnet test --logger "trx;LogFileName=test-6.trx" --results-directory parity-results Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~ModuleWindowTests --logger "console;verbosity=normal"
+      - name: Literal identities are option guarded and local to each module
+        run: dotnet test --logger "trx;LogFileName=test-7.trx" --results-directory parity-results Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~AdditionalAxiomsTranslationTests --logger "console;verbosity=normal"
+      - name: Obligation lowering inventory and structural comparisons
+        run: dotnet test --logger "trx;LogFileName=test-8.trx" --results-directory parity-results Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation --logger "console;verbosity=normal"
+      - name: Editor obligation option changes invalidate verification results
+        env:
+          Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
+        run: dotnet test --logger "trx;LogFileName=test-9.trx" --results-directory parity-results Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~ConsistentObligationChecksTest --logger "console;verbosity=normal"
+      - name: Editor option changes invalidate verification results
+        run: dotnet test --logger "trx;LogFileName=test-10.trx" --results-directory parity-results Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~AdditionalAxiomsTest --logger "console;verbosity=normal"
+
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parity-${{ matrix.platform }}-regressions
+          path: parity-results
+          retention-days: 90
+
+  parity-resolver-tests:
+    if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform_parity }}
+    name: "Parity ${{ matrix.platform }}: Resolver unit tests and language-server recovery"
+    runs-on: ${{ matrix.platform == 'macos' && 'mac-studio' || 'ubuntu-24.04' }}
+    continue-on-error: true
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [linux, macos]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - name: Boogie packages
+        run: sh Scripts/fetch-boogie-packages.sh
+      - name: Build resolver and language-server tests
+        run: dotnet build Source/DafnyLanguageServer.Test -c Release
+      # These tests exercise type resolution only. The language-server tests
+      # explicitly disable automatic verification, so this job starts no solver.
+      - name: Test redirecting dependencies, numeric ancestry and recovery scopes
+        run: |
+          dotnet test --logger "trx;LogFileName=test-11.trx" --results-directory parity-results Source/DafnyCore.Test -c Release --no-build \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~DafnyCore.Test.RedirectingTypeDependencyTrackerTests|FullyQualifiedName~DafnyCore.Test.NumericAncestryTests|FullyQualifiedName~DafnyCore.Test.NumericAncestryAllocationTests|FullyQualifiedName~DafnyCore.Test.ScopeCheckpointTest|FullyQualifiedName~MapComprehensionSubstitutionTests" \
+            --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none
+      - name: Test newtype-cycle edits in both resolver modes
+        run: |
+          dotnet test --logger "trx;LogFileName=test-12.trx" --results-directory parity-results Source/DafnyLanguageServer.Test -c Release --no-build \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~InferredNewtypeCycleTest" \
+            --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none
+
+      - name: Z3 for incremental bitvector verification
+        run: |
+          echo "Z3=$(sh .github/review/setup-z3.sh)" >> "$GITHUB_ENV"
+      - name: Test cached inherited members and rotations after edits
+        run: |
+          dotnet test --logger "trx;LogFileName=test-13.trx" --results-directory parity-results Source/DafnyLanguageServer.Test -c Release --no-build \
+            --logger "console;verbosity=normal" \
+            --filter "FullyQualifiedName~IncrementalBitvectorMembersTest" \
+            --blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parity-${{ matrix.platform }}-resolver-tests
+          path: parity-results
+          retention-days: 90
