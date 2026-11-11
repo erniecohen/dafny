@@ -146,6 +146,34 @@ Z3 5.1.0 (`Sequences.Elements` well-formedness to out of resource, `DecodeValidP
 well-formedness to correct); the commit that updates their expected verdicts gives the counts.
 With the option off, no verdict of the suite or of the standard library moves.
 
+## Review follow-up (https://github.com/erniecohen/dafny/issues/23)
+
+The glued-map elements guard now uses the glued map's domain. The domain axiom
+makes this equivalent to the old guard on the input domain; no new fact is
+asserted. Both the core and generated preludes use it. The datatype-equality
+refactor selects the existing trigger and body in one conditional, preserving
+the asymmetric guard. Its equivalence is checked by comparing the generated
+Boogie on suite samples with one fixed prelude.
+
+The `github-issue-23-*` regressions cover the reviewer-supplied Box/Unbox
+contradiction, ORDINAL subset inverse, undefined ORDINAL subtraction, empty-type
+lambda, generic constant initializer and simplified glue example, in both
+resolver modes. They also retain the exact `Pos`/`F` lambda cost example.
+Unlike the older reviewed implementation, this fork's `LambdaCanCallAssumption`
+exports source lambda facts under the formal type and allocation guards and
+matches them at the source family's selectors. At `f(5)` the actual argument
+satisfies `Pos`; it need not have a declared witness to instantiate those facts.
+This is a difference between encodings, not evidence that a `witness *` type is
+always inhabited. The `ViaLambda` negative control keeps the empty-domain case.
+
+`.github/workflows/issue23.yml` records a CI-only A/B probe: one fixed baseline
+binary and the same source inputs with only the two prelude guards changed,
+Z3 5.1.0, the suite's normal 16M limit and the library's own limits with
+`/deterministicLiteralHashes:1 /restartProver`. Full source, per-VC logs and
+verdicts are retained. Probe completion alone is not an acceptance gate: its
+recorded exits, verdict differences, resource counts and exact Boogie comparison
+must be inspected alongside the normal review gates.
+
 ## Boogie
 
 Boogie's unguarded reverse casts,
