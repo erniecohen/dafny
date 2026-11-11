@@ -691,15 +691,36 @@ Relevant legacy paths are
 `AST/Expressions/Operators/UnaryOpExpr.cs`, `BinaryExpr.cs`, and
 `Resolver/ConstantFolder.cs` also require explicit new cases.
 
-For [issue 194](https://github.com/erniecohen/dafny/issues/194), this capability is
-an applicable builtin operator. Keep that design's builtin-first resolution;
-otherwise its ordinary user-operator call resolution may apply. A bridge
-collector recognizes the resolved builtin native-BV operation identity, never
-the source token `&` or a user operator with the same spelling. User-defined
-operators do not inherit these axioms or compiler intrinsics. Equality of these
-integer newtypes remains the existing builtin equality. Compound assignment, if
-enabled by issue 194, reuses the same checked operation and evaluates the target
-location once; this proposal adds no second assignment grammar.
+The intrinsic surface is independent of [issue 194](https://github.com/erniecohen/dafny/issues/194).
+Let U be `--user-defined-operators` and I be `--integer-bitwise`:
+
+| U | I | Supported ordinary user arithmetic | Width-qualified revealed integer-newtype `a & b` | Existing `bvN` bitwise / Boolean `!p` |
+|---:|---:|---|---|---|
+| off | off | Existing behavior, attributes inert | Existing rejection | Existing intrinsics |
+| on | off | User-operator fallback selection | Existing rejection | Existing intrinsics |
+| off | on | Existing behavior, attributes inert | Integer-bitwise intrinsic | Existing intrinsics |
+| on | on | User-operator fallback selection | Same integer-bitwise intrinsic | Existing intrinsics |
+
+Static intrinsic eligibility depends on the operator, operand types, visible
+capability/semantic width and recorded language options. It does not depend on
+proving a particular count or result obligation. An eligible intrinsic whose
+count or whole result predicate cannot be proved fails; it never retries a user
+member. An invalid enabled width declaration is a declaration error. Opaque
+exports do not expose capability through copied attributes.
+
+Preserve frozen selections across views, clones and artifact reload: a chosen
+member stays that ordinary call even if a later view admits an intrinsic, and a
+chosen intrinsic stays intrinsic. Both features require their own recorded-mode
+and provenance checks; neither option enables the other. User bitwise override
+is outside both first milestones. If later user bitwise slots are approved,
+existing bool/BV and eligible enabled integer operations remain intrinsic-first;
+only static inapplicability permits fallback.
+
+The bridge collector uses resolved native-BV operation identity and genuine
+integer observations, never source tokens, arbitrary function names or public
+attributes. User operators acquire neither bridge facts nor compiler intrinsics
+from their notation. Equality remains builtin. Later compound assignment reuses
+the checked operation and evaluates the target location once.
 
 ### 6.4 Canonical reference functions and packaging
 
@@ -819,6 +840,15 @@ operators/rotate/popcount retain dedicated resolved identities and semantic N,
 and backends implement their mathematical meanings directly. Ghost views may
 be ordinary source calls.
 
+An alternative operator library must supply executable or by-method bodies, or
+receive exact canonical native specialization from the compiler. Ghost reference
+functions plus operator attributes alone cannot supply runtime code. Arbitrary
+member names or attributes confer no specialization or model privilege. Preserve
+the fixed-reference identity and authenticated-support provenance checks in either
+route. A user-operator milestone's ban on trusted/precompiled user inputs does
+not ban independently enabled compiler-owned model support; only authenticated
+provenance, never a filename or attribute, distinguishes it.
+
 If the local unfold mechanism is deferred, the coherent fallback is real opaque
 Dafny bodies with the complete existing fuel/reveal/can-call translation. Do not
 alias a bodyless source name to an unfuelled private function and claim ordinary
@@ -829,7 +859,11 @@ Dafny unfolding still works.
 
 The contract is direct target integer code, with no runtime conversion through
 `bvN` and no materialized bit sequence. Native carriers use native operations
-where available. Arbitrary-precision targets use their integer runtime. Python
+where available. If canonical-library specialization replaces this intrinsic
+route later, require generated-code parity: no reference recursion, materialized
+bit sequence or avoidable arbitrary-integer conversion on a native carrier.
+All semantic masks, endpoint-count rules and target limitations below still apply.
+Arbitrary-precision targets use their integer runtime. Python
 and wide JavaScript values cannot honestly be promised one fixed-width hardware
 instruction per source operation.
 
@@ -900,7 +934,9 @@ unsigned value, and preserve every high limb; test it end to end as well.
 
 This inventory is for later workers; none of these product changes is in the
 design PR. Prefer explicit integer-bitwise nodes/metadata over changing the
-meaning of `Type.IsBitVectorType` throughout the compiler.
+meaning of `Type.IsBitVectorType` throughout the compiler. Do not depend on
+user-operator parser or resolver support. A shared intrinsic-applicability and
+semantic-width descriptor is permitted; the I-off path remains unchanged.
 
 | Area / paths relative to `Source/DafnyCore/` unless otherwise stated | Required change |
 |---|---|
@@ -1353,7 +1389,9 @@ by itself is not grounds to enlarge the trusted basis.
 | Trigger strategy | Global operation or selection quantifiers | Automatic coverage of deeply nested expressions | Finite local scalar instances; selection-trigger loops are a concrete counterexample |
 | Width discovery | Use selected native carrier width | Little frontend work | Explicit semantic width, because carrier selection is backend dependent and can include extra constraints |
 | Width syntax | Infer from any provable bounded predicate | Fewer annotations | Explicit attribute first; exact-interval inference later, never target-dependent inference |
-| Operator API | Only library functions | Lowest frontend complexity and a useful first proof milestone | Library reference/proof foundation plus requested builtin operator syntax in staged PRs |
+| Operator API: ordinary executable library | Named or user-operator calls with executable/by-method bodies | Lowest compiler privilege; ghost references alone cannot implement it; native code is not guaranteed | Retain named library APIs and the pure proof foundation |
+| Operator API: canonical library with specialization | Exact authenticated library identity mapped to native lowering | Can produce direct integer code, but still needs backend, identity, semantic-width and generated-code parity gates | Viable later compiler alternative, not a library-only implementation |
+| Operator API: independent intrinsics | Dedicated integer-bitwise surface and resolved identities | Requires its own frontend/backend work without a user-operator dependency | Recommended staged implementation now |
 | Signed/unbounded integers | Infinite two's-complement semantics immediately | Natural for some bitwise laws and some host runtimes | Defer: width-dependent complement, shift interpretation and result domains need separate user decisions |
 | Canonical support | Embedded trusted ordinary Dafny source | Reuses existing fuel/reveal but requires privileged source provenance and injection | Fixed compiler-owned UFs plus explicit local unfold rules and an ordinary proved companion |
 | Bit-view spelling | Synthetic `x.Bits()` only | Convenient and infers width | Generic `bitsNat(N,x as int)` first; `.Bits()` as optional checked sugar |
@@ -1496,6 +1534,13 @@ must work without accidentally exporting free variables or granting function
 permissions. Pure BV programs with no integer observation must receive no new
 mixed-theory local facts.
 
+Test every U/I combination in section 6.3, including opaque capability exports,
+failed count and whole-result checks with no fallback, frozen selections across
+views/reload, and a user function with a misleading native-looking name that
+receives neither native privileges nor bridge facts. Completion of
+[issue 194](https://github.com/erniecohen/dafny/issues/194) discharges none of this
+design's model, vacuity, backend or compatibility gates.
+
 ### 11.3 Compilation tests
 
 For every supported target and carrier, inspect generated code to confirm that
@@ -1565,6 +1610,10 @@ pinned solvers and both resolver paths where applicable. Use the standing limits
 and ordering controls (`normalizeDeclarationOrder:0` for the suite;
 `deterministicLiteralHashes:1` and `restartProver` for source Std). Retain
 matched/unmatched rows, verdict changes and RU, including resource failures.
+The U/I matrix in section 6.3 is an additional independent gate once those
+options exist; opaque capabilities, failed count/result controls and misleading
+user-function names must be included. No user-operator milestone discharges
+this design's model, vacuity or backend gates.
 M0/M1 cannot run language-enabled modes before the option exists: record those
 modes as unavailable, and require M2 to close the complete S4 matrix.
 
