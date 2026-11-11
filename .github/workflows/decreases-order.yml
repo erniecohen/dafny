@@ -69,9 +69,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: [default, legacy]
         axioms: ['off', 'on']
-        shard: [0, 1, 2, 3]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
@@ -86,35 +84,35 @@ jobs:
           unzip -q z3.zip
       - name: Record suite verdicts, proof outcomes and resources
         run: |
-          python3 .github/review/decreases-order.py record suite --mode '${{ matrix.mode }}' --axioms '${{ matrix.axioms }}' \
-            --shard '${{ matrix.shard }}/4' --dafny out/candidate/Dafny --z3 "$Z3_ARCHIVE/bin/z3" --output results
+          # Each invocation is unchanged; grouping reduces hosted-runner requests.
+          for comparison_mode in default legacy; do
+            for comparison_shard in 0 1 2 3; do
+              python3 .github/review/decreases-order.py record suite --mode "$comparison_mode" --axioms '${{ matrix.axioms }}' \
+                --shard "$comparison_shard/4" --dafny out/candidate/Dafny --z3 "$Z3_ARCHIVE/bin/z3" \
+                --output "results/suite-${{ matrix.axioms }}-$comparison_mode-$comparison_shard"
+            done
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: suite-${{ matrix.axioms }}-${{ matrix.mode }}-${{ matrix.shard }}
+          name: suite-${{ matrix.axioms }}-compact
           path: |
-            results/verdicts.tsv
-            results/proofs.json
-            results/plan.tsv
-            results/source.json
+            results/*/verdicts.tsv
+            results/*/proofs.json
+            results/*/plan.tsv
+            results/*/source.json
           retention-days: 90
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: raw-suite-${{ matrix.axioms }}-${{ matrix.mode }}-${{ matrix.shard }}
-          path: results/measurements
+          name: raw-suite-${{ matrix.axioms }}
+          path: results/*/measurements
           compression-level: 9
           retention-days: 90
   std:
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 180
-    strategy:
-      fail-fast: false
-      matrix:
-        mode: [default, legacy]
-        axioms: ['off', 'on']
-        solver: ['5.1.0', '4.12.1']
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
@@ -122,28 +120,35 @@ jobs:
         with:
           name: decreases-candidate
       - run: mkdir -p out && tar -C out -xzf candidate.tar.gz
-      - name: Pin solver
+      - name: Pin both solvers
         run: |
-          if [ '${{ matrix.solver }}' = 5.1.0 ]; then
-            curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_ARCHIVE.zip"
-            echo "$Z3_SHA256  z3.zip" | sha256sum -c -
-            unzip -q z3.zip
-            echo "Z3=$PWD/$Z3_ARCHIVE/bin/z3" >> "$GITHUB_ENV"
-          else
-            curl -fsSLo z3.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.12.1-x64-ubuntu-24.04-bin.zip
-            echo 'e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b  z3.zip' | sha256sum -c -
-            mkdir z3h && unzip -q z3.zip -d z3h
-            chmod +x z3h/z3-4.12.1
-            echo "Z3=$PWD/z3h/z3-4.12.1" >> "$GITHUB_ENV"
-          fi
+          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_ARCHIVE.zip"
+          echo "$Z3_SHA256  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+          curl -fsSLo z3h.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.12.1-x64-ubuntu-24.04-bin.zip
+          echo 'e07d4193d8e1851114fe4d507332a43576639f4aeaa33c7df15c36426d3cbf3b  z3h.zip' | sha256sum -c -
+          mkdir z3h && unzip -q z3h.zip -d z3h
+          chmod +x z3h/z3-4.12.1
       - name: Record standard-library verdicts and resources
         run: |
-          python3 .github/review/decreases-order.py record std --mode '${{ matrix.mode }}' --axioms '${{ matrix.axioms }}' \
-            --dafny out/candidate/Dafny --z3 "$Z3" --output results
+          for comparison_solver in 5.1.0 4.12.1; do
+            if [ "$comparison_solver" = 5.1.0 ]; then
+              comparison_z3="$PWD/$Z3_ARCHIVE/bin/z3"
+            else
+              comparison_z3="$PWD/z3h/z3-4.12.1"
+            fi
+            for comparison_axioms in off on; do
+              for comparison_mode in default legacy; do
+                python3 .github/review/decreases-order.py record std --mode "$comparison_mode" --axioms "$comparison_axioms" \
+                  --dafny out/candidate/Dafny --z3 "$comparison_z3" \
+                  --output "results/std-$comparison_axioms-$comparison_solver-$comparison_mode"
+              done
+            done
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: std-${{ matrix.axioms }}-${{ matrix.solver }}-${{ matrix.mode }}
+          name: std-all
           path: results
           compression-level: 9
           retention-days: 90
@@ -157,10 +162,12 @@ jobs:
         with:
           pattern: suite-*
           path: measurements
+          merge-multiple: true
       - uses: actions/download-artifact@v4
         with:
           pattern: std-*
           path: measurements
+          merge-multiple: true
       - name: List every changed verdict and resource totals
         run: |
           python3 .github/review/decreases-order.py compare --input measurements --output comparison
