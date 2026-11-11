@@ -159,6 +159,32 @@ It must also expose task completion, outcome, RU and cancellation to publication
 A cache of independent `check-sat` responses is not the per-task table.
 Do not use the legacy implementation-result cache as a shortcut.
 
+The recommended prerequisite is a narrow modern Boogie API, default null:
+
+1. `PrepareTask` freezes the ordered pruned command plan, assertion/report map,
+   derived options and solver protocol **without starting a physical solver**.
+   Today `VerificationTask.StartRun` obtains a checker before `Split.BeginCheck`
+   builds the VC, and the interactive prover constructor starts its process.
+   Merely wrapping `IVerificationTask.TryRun` cannot meet zero solver calls.
+2. The store compares the complete current descriptor and supplies only bounded
+   immutable data. A Boogie-owned loader binds it into the current split's
+   assertions, reporter and model view. There is no arbitrary object-graph
+   deserialization or stale AST token reuse.
+3. A miss executes the frozen plan with a fresh solver. A completion callback
+   runs after model/coverage extraction and successful finalization, associates
+   the outcome and RU with that same descriptor, and then authorizes publication.
+   Cancellation or failure before this boundary cannot publish.
+4. Binding or protocol divergence discards the candidate and restarts the entire
+   task with fresh task/report state and no persistent reads, before forwarding
+   a completed status or partial cached diagnostics. This retry belongs at the
+   modern task lifecycle boundary, not in an independent `check-sat` memoizer.
+
+This API is a prerequisite in the Boogie dependency rather than a change to the
+sibling worker's resolution/naming sites. A Dafny-only transport alternative
+needs an equally explicit lifecycle/retry proof and remains unaccepted until it
+passes the same gates. The implementation scope of that dependency prerequisite
+must be settled before result reuse is enabled.
+
 CLI filters select today's task inventory. Each task independently hits or runs;
 all selected tasks contribute to the current aggregate exit code. Initially bypass
 persistent reads for `--filter-position-batch` and unsupported side effects or
