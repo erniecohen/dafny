@@ -5,8 +5,9 @@
 ## Refresh onto the current supported compiler
 
 The supported adaptation is refreshed in [PR 178](https://github.com/erniecohen/dafny/pull/178)
-by merging `review/4.11.0` at `b8c98287`, retaining both lines' regressions and the
-shipped producer inventory. The target and complete-file cost tables below are
+by merging `review/4.11.0` first at `b8c98287`, then at `368c2318` after the
+opt-in pipeline profiler shipped during validation. Both lines' regressions and
+the shipped producer inventory are retained. The target and complete-file cost tables below are
 historical measurements on the earlier compiler; the PR description links the
 current exact-head gates and records their verdict, RU and completion results.
 
