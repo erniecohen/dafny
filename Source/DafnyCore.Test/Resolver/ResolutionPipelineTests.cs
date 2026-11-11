@@ -138,6 +138,24 @@ public class ResolutionPipelineTests {
   }
 
   [Fact]
+  public void EffectiveLegacyOptionsParticipateInTheKey() {
+    var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+    options.ApplyDefaultOptionsWithoutSettingsDefault();
+    string Key() => ModuleResolutionKey.Compute("M", "source", "version",
+      ModuleResolutionKey.Options(options), []);
+    var original = Key();
+    options.WarnShadowing = true;
+    Assert.NotEqual(original, Key());
+    options.WarnShadowing = false;
+    options.ForbidNondeterminism = true;
+    Assert.NotEqual(original, Key());
+    options.ForbidNondeterminism = false;
+    Assert.Equal(original, Key());
+    options.Set(CommonOptionBag.ResolutionThreads, 8);
+    Assert.Equal(original, Key());
+  }
+
+  [Fact]
   public void KeyEncodingIsOrderIndependentAndUnambiguous() {
     var options = new[] { KeyValuePair.Create("a", "bc"), KeyValuePair.Create("d", "e") };
     var prerequisites = new[] {

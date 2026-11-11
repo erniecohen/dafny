@@ -47,8 +47,38 @@ public static class ModuleResolutionKey {
       "log-level", "log-location", "show-snippets", "use-basename-for-filename", "cores", "library",
       "log-format", "verification-coverage-report", "solver-log", "output", "progress"
     };
-    return options.Options.OptionArguments.Where(p => !ignored.Contains(p.Key.Name))
+    var current = options.Options.OptionArguments.Where(p => !ignored.Contains(p.Key.Name))
       .Select(p => new KeyValuePair<string, string>(p.Key.Name, Value(p.Value)));
+    // Legacy parsing and module-local {:options} can write effective fields
+    // without updating OptionArguments. Those fields still affect resolution,
+    // diagnostics and generated declarations, so include their actual values.
+    var legacy = new Dictionary<string, object?> {
+      [nameof(options.DisallowSoundnessCheating)] = options.DisallowSoundnessCheating,
+      [nameof(options.EnforcePrintEffects)] = options.EnforcePrintEffects,
+      [nameof(options.ForbidNondeterminism)] = options.ForbidNondeterminism,
+      [nameof(options.DefiniteAssignmentLevel)] = options.DefiniteAssignmentLevel,
+      [nameof(options.WarnShadowing)] = options.WarnShadowing,
+      [nameof(options.FunctionSyntax)] = options.FunctionSyntax,
+      [nameof(options.QuantifierSyntax)] = options.QuantifierSyntax,
+      [nameof(options.DisallowExterns)] = options.DisallowExterns,
+      [nameof(options.DisallowConstructorCaseWithoutParentheses)] = options.DisallowConstructorCaseWithoutParentheses,
+      [nameof(options.DeprecationNoise)] = options.DeprecationNoise,
+      [nameof(options.DisableScopes)] = options.DisableScopes,
+      [nameof(options.UseJavadocLikeDocstringRewriter)] = options.UseJavadocLikeDocstringRewriter,
+      [nameof(options.OptimizeResolution)] = options.OptimizeResolution,
+      [nameof(options.Induction)] = options.Induction,
+      [nameof(options.InductionHeuristic)] = options.InductionHeuristic,
+      [nameof(options.AutoTriggers)] = options.AutoTriggers,
+      [nameof(options.RewriteFocalPredicates)] = options.RewriteFocalPredicates,
+      [nameof(options.ignoreAutoReq)] = options.ignoreAutoReq,
+      [nameof(options.TestContracts)] = options.TestContracts,
+      [nameof(options.ArithMode)] = options.ArithMode,
+      [nameof(options.DisableNLarith)] = options.DisableNLarith,
+      [nameof(options.VerifyAllModules)] = options.VerifyAllModules,
+      [nameof(options.Backend)] = options.Backend?.TargetId,
+      ["SupportedNativeTypes"] = options.Backend?.SupportedNativeTypes.Order(StringComparer.Ordinal).ToArray(),
+    };
+    return current.Concat(legacy.Select(p => new KeyValuePair<string, string>("effective:" + p.Key, Value(p.Value))));
   }
 
   private static string Value(object? value) {

@@ -831,7 +831,9 @@ fully qualified module identity, original source, Dafny version, effective optio
 and sorted `(dependency role, qualified identity, key)` prerequisite records. It
 does not use `CloneId`, execution order, worker count or the whole-program builtin
 shape. Execution/report destinations are excluded; other option values are
-conservatively included. The key is available on each module output and in the
+conservatively included. Effective legacy fields and backend native-type support
+are also included, since legacy parsing can bypass the modern option dictionary.
+The key is available on each module output and in the
 requested `resolve.module` profile events. `--pipeline-profile` also works with
 `resolve`, allowing resolve-only measurements without solver startup.
 
