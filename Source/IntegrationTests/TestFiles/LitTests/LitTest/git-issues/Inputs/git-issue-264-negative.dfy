@@ -28,3 +28,7 @@ codatatype Stream = More(head: int, tail: Stream)
 lemma CoLocation(s: Stream) {
   assert (s nonincreases to s) && (s decreases to s);
 }
+datatype Finite = Leaf
+lemma MixedCoLocation(s: Stream) {
+  assert (s nonincreases to s) && (s decreases to Leaf);
+}
