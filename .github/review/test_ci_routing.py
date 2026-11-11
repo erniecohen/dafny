@@ -51,6 +51,15 @@ class RoutingTests(unittest.TestCase):
                 self.assertTrue(any(enabled(guard, event, 'erniecohen/dafny', 'erniecohen/dafny', flags, ref_type)
                                     for event, flags, ref_type in cases))
 
+    def test_maintenance_tag_dispatch_keeps_the_release_path(self):
+        jobs = dict(mac_jobs())
+        for name in ['review.yml/binaries', 'review.yml/release']:
+            with self.subTest(job=name):
+                self.assertTrue(enabled(jobs[name], 'workflow_dispatch', 'erniecohen/dafny',
+                                        'erniecohen/dafny', False, 'tag'))
+        self.assertFalse(enabled(jobs['review.yml/release'], 'workflow_dispatch', 'erniecohen/dafny',
+                                 'erniecohen/dafny', {'binaries': True}, 'branch'))
+
     def test_fork_pull_requests_never_reach_mac_pool(self):
         for name, guard in mac_jobs():
             for flags in [False, True]:

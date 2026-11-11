@@ -775,7 +775,7 @@ jobs:
           retention-days: 90
 
   binaries:
-    if: ${{ !inputs.platform_parity && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' && github.ref_type == 'tag' || github.event_name == 'workflow_dispatch' && inputs.binaries)) }}
+    if: ${{ !inputs.platform_parity && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref_type == 'tag' || inputs.binaries)) }}
     name: Binaries (${{ matrix.rid }})
     needs: build
     # The osx-arm64 build runs on the owner's self-hosted Mac (label mac-studio);
@@ -838,7 +838,7 @@ jobs:
           retention-days: 14
 
   release:
-    if: ${{ !inputs.platform_parity && (github.repository == 'erniecohen/dafny' && github.event_name == 'push' && github.ref_type == 'tag') }}
+    if: ${{ !inputs.platform_parity && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref_type == 'tag') }}
     name: GitHub release
     needs: [build, binaries, verdicts, stdlib, javascript-runtime, regressions, regressions-linux, resolver, resolver-tests, finite-support, statement-conclusions, axiom-resources, verification-batch]
     runs-on: mac-studio
