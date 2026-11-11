@@ -259,6 +259,7 @@ and specification from
 implementation.
 
 The options relevant to this command are
+
 - `--resolution-threads N` opts into dependency-ready resolution with up to `N`
   workers (`N >= 1`). Without this option, the existing resolver path is used.
   Diagnostics are emitted in the usual module order. Generated identifiers are
@@ -312,6 +313,17 @@ It is also permitted to verify completely disjoint files or
 programs together in a single run of `dafny`.
 
 Various options control the verification process, in addition to all those described for [`dafny resolve`](#sec-dafny-resolve).
+
+- `--translation-cache` opts into a process-local, content-addressed module
+  translation table. It enables `--resolution-threads 1` if no worker count was
+  selected, using that mode's semantic module keys and module-qualified names.
+  Repeated `--filter-position-batch` requests can reuse unchanged translations;
+  every request still prepares fresh tasks and runs the solver. Reuse checks the
+  prelude, effective options and exact source bindings, and current whole-program
+  validation still runs. Unsupported snapshots are translated normally. The LRU
+  table retains at most 256 entries and 512 MiB of text; graphs and source metadata
+  also use memory. It stores no files and is discarded when the process exits.
+  This option defaults to false and can also be set in `dfyconfig.toml`.
 
 - What is verified
    - `--verify-included-files` (when enabled, all included files are verified, except library files, otherwise just those files on the command-line)

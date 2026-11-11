@@ -1,0 +1,4 @@
+Add opt-in `--translation-cache`, a bounded process-local translation table over
+semantic module keys and module-qualified names. Repeated batch requests reuse
+unchanged translations while preparing and verifying fresh tasks. No disk or
+verification-result cache is enabled; the default translation path is unchanged.

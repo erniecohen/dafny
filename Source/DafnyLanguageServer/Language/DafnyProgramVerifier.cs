@@ -57,6 +57,17 @@ namespace Microsoft.Dafny.LanguageServer.Language {
             ReportRanges = program.Options.Get(Snippets.ShowSnippets),
             PreludeText = program.PreludeText
           };
+          if (program.Options.Get(CommonOptionBag.TranslationCache)) {
+            var cache = ModuleTranslationCache.ProcessCache;
+            var cached = cache.Translate(program, moduleDefinition, translatorFlags, cancellationToken, out var reused);
+            if (profile != null) {
+              profile.Span("translate", profileStart!.Value, new Dictionary<string, object?> {
+                ["module"] = moduleName, ["cached"] = reused,
+                ["declarations"] = cached.TopLevelDeclarations.Count(), ["implementations"] = cached.Implementations.Count()
+              });
+            }
+            return cached;
+          }
           var threadAllocated = profile != null ? GC.GetAllocatedBytesForCurrentThread() : 0;
           var translator = new BoogieGenerator(errorReporter, resolution.ResolvedProgram.ProofDependencyManager, translatorFlags);
           if (profile != null) {

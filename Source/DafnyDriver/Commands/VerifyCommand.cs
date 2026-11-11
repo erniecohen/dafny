@@ -73,6 +73,7 @@ public static class VerifyCommand {
         FilterSymbol,
         FilterPosition,
         FilterPositionBatch,
+        CommonOptionBag.TranslationCache,
         VerificationModuleWindow,
         VerificationModuleWindowMemory,
         DafnyFile.DoNotVerifyDependencies
@@ -81,6 +82,9 @@ public static class VerifyCommand {
       Concat(DafnyCommands.ResolverOptions);
 
   public static async Task<int> HandleVerification(DafnyOptions options) {
+    if (options.Get(CommonOptionBag.TranslationCache) && options.Get(CommonOptionBag.ResolutionThreads) == 0) {
+      options.Set(CommonOptionBag.ResolutionThreads, 1);
+    }
     var batch = options.GetOrOptionDefault(FilterPositionBatch).ToArray();
     if (batch.Length != 0 && options.Get(FilterPosition) != null) {
       ErrorReporter reporter = options.DiagnosticsFormat switch {

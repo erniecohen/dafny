@@ -7,18 +7,28 @@ front-end design in https://github.com/erniecohen/dafny/pull/258.
 
 ## Scope and prerequisites
 
-Use two independent opt-in options: `--translation-cache DIR` for the translation
-table, and `--verification-cache DIR` for the result table. Each uses the same
-storage format but a distinct table. Neither option implies the other or
-`--resolution-cache`. Without either option the existing translation, preparation,
+PR A exposes **`--translation-cache`**, a Boolean opt-in for a bounded,
+process-local translation table. It enables the sibling's `--resolution-threads 1`
+when no worker count was selected, thereby using its module-qualified names and
+`ModuleDefinition.ResolutionKey` (called `ModuleKey` below). Repeated batch
+requests in one invocation can hit; separate CLI processes cannot. The table
+does not cache verification results or skip current whole-program admission.
+No on-disk cache is enabled. Persistent caching awaits the external design review
+requested by the coordinator; the file protocol below is a future design only.
+An eventual `--verification-cache DIR` is proposed for PR B, not exposed by PR A.
+Without the translation option the existing translation, preparation,
 solver lifecycle and reporting paths execute without constructing a cache,
 hashing inputs, changing names, or opening cache files.
 
-**Implementation status:** this document specifies the integration contract.
-The storage primitive can be developed and tested independently. A storage test
-is not evidence that either command-line cache works. Neither option may be
-exposed as a working cache until its prerequisites and acceptance gates below
-are complete.
+**Implementation boundary:** the process-local table owns full pre-preparation
+Boogie graph snapshots and exact emitted text, addressed by SHA-256. A graph
+copy preserves reference topology, definition-axiom owners and Boolean literal
+aliases; it allocates fresh Boogie node IDs. Unsupported runtime types cause a
+miss. This is not an executable deserializer. The snapshot retains source tokens,
+proof descriptions and proof-dependency reporting anchors, guarded by exact source
+bindings; task attribution is separately rebound to current `ICanVerify` objects.
+Text is emitted with token rewriting disabled. Any future persisted representation
+needs an explicit source/report codec instead of these process-local references.
 
 The resolution worker on
 https://github.com/erniecohen/dafny/tree/codex/241-parallel-resolution owns the
@@ -56,11 +66,27 @@ bumps its format domain and namespace; unknown versions are misses.
 ### Translation table
 
 The lookup descriptor contains the semantic `ModuleKey`, the translation ABI,
-the loaded translator and Boogie assembly digests, the exact captured prelude,
+the loaded translator and Boogie module identities, the exact captured prelude,
 and effective translation options, including ordered pass-through options.
 These are the compiler-environment component of the module key, not a substitute
 for its semantic dependencies. The value identifies the exact Boogie bytes by
 hash and a versioned metadata sidecar by hash.
+
+In-process namespace version `translation-in-process-v1` length-delimits its
+UTF-8 strings with `BinaryWriter` (the future disk codec uses the framing above).
+It uses the loaded assemblies' MVIDs; no assembly can change within that table's
+lifetime. Source filenames, coordinates and the original text of files in the
+translation closure are additional binding inputs: the sibling's semantic key
+deliberately excludes trivia and source locations, whereas BPL `captureState`
+strings and reporting retain them. This is conservative: an edit to a shared
+source file can invalidate several otherwise unchanged modules. Reporting-only
+invocation timestamps and print destinations are excluded.
+
+Every snapshot header reserves nullable `ObservableInterfaceHash`. PR A leaves
+it null: the current sibling interface supplies a full resolution key, not an
+observable-interface key. It never treats that full key as an interface hash.
+Later resolution early cutoff can fill this slot without changing translation or
+result-table ownership. PR B's task key remains independent of both header hashes.
 
 The snapshot includes all state needed to load an equivalent fresh Boogie graph:
 source origins and ranges, assertion and proof-dependency mappings, definition
@@ -76,8 +102,11 @@ On a warm resolution and translation hit an unchanged module is neither
 re-resolved nor re-translated. With only translation caching enabled, resolution
 still runs. A failed/unsupported resolved-snapshot load also resolves normally;
 its fresh `ModuleKey` can still authorize a translation hit. A translation hit
-must restore report mappings into the current `ProofDependencyManager` without
-reusing references to an older compilation.
+must restore report mappings into the current `ProofDependencyManager`. The
+in-process version retains reporting-only source anchors under exact bindings;
+verification task attribution must reference current symbols. A missing or ambiguous
+current-symbol binding discards the candidate before tasks or diagnostics escape.
+The disk version must reconstruct all source/report bindings explicitly.
 
 History-free naming is required in both resolvers and in translation. In the
 current source, inspect `BoogieGenerator.CurrentIdGenerator`, imported function
@@ -179,11 +208,86 @@ The recommended prerequisite is a narrow modern Boogie API, default null:
    a completed status or partial cached diagnostics. This retry belongs at the
    modern task lifecycle boundary, not in an independent `check-sat` memoizer.
 
+### Exact proposed Boogie patch (not implemented)
+
+Against Boogie tag `v3.5.5+review.c5a9f2ef`, add the following public API in
+`Source/ExecutionEngine/PreparedTaskCache.cs` and the nullable engine property
+shown below. `ImmutableArray<byte>` values are defensive copies made by Boogie;
+the external store never receives a mutable Boogie graph. `VC.VerificationRunResult`
+and the existing `SolverOutcome` remain the reporting types.
+
+```csharp
+namespace Microsoft.Boogie;
+
+public sealed record PreparedTaskDescriptor(
+  int FormatVersion,
+  System.Collections.Immutable.ImmutableArray<byte> CanonicalSolverInput,
+  System.Collections.Immutable.ImmutableArray<byte> EffectiveOptions,
+  System.Collections.Immutable.ImmutableArray<byte> SolverIdentity,
+  System.Collections.Immutable.ImmutableArray<byte> BindingInventory,
+  bool Reusable,
+  string? BypassReason);
+
+public sealed record PreparedTaskResult(
+  int FormatVersion,
+  System.Collections.Immutable.ImmutableArray<byte> Descriptor,
+  System.Collections.Immutable.ImmutableArray<byte> ReportPayload);
+
+public interface IPreparedTaskCache {
+  System.Threading.Tasks.ValueTask<PreparedTaskResult?> LookupAsync(
+    PreparedTaskDescriptor descriptor,
+    System.Threading.CancellationToken cancellationToken);
+  System.Threading.Tasks.ValueTask PublishAsync(
+    PreparedTaskDescriptor descriptor,
+    PreparedTaskResult result,
+    System.Threading.CancellationToken cancellationToken);
+}
+
+public interface IPreparedVerificationTask : System.IAsyncDisposable {
+  PreparedTaskDescriptor Descriptor { get; }
+  // Null rejects the entire candidate without emitting partial status/report data.
+  System.Threading.Tasks.ValueTask<VC.VerificationRunResult?> TryReplayAsync(
+    PreparedTaskResult result,
+    System.Threading.CancellationToken cancellationToken);
+  System.Threading.Tasks.ValueTask<VC.VerificationRunResult> RunAsync(
+    System.Threading.CancellationToken cancellationToken);
+  // Null for any elapsed-time decision, crash, cancellation or incomplete report.
+  PreparedTaskResult? EncodeCompletedResult(VC.VerificationRunResult result);
+}
+
+// Add to IVerificationTask; implement in VerificationTask, after FromSeed:
+// ValueTask<IPreparedVerificationTask> PrepareAsync(CancellationToken token);
+// Add to ExecutionEngine, default null:
+// public IPreparedTaskCache? PreparedTaskCache { get; set; }
+```
+
+`PrepareAsync` freezes one manual split and seed iteration before obtaining a
+checker or constructing a process-backed prover. The descriptor's solver input is
+the exact initial ordered command stream after pruning, normalization, VC generation
+and all effective settings; options include adaptive counterexample-query policy.
+`SolverIdentity` contains executable SHA-256, validated version, arguments, dialect
+and execution dependencies. Capture these bytes before lookup, with bounded buffers.
+The binding inventory identifies current assertions, coverage labels, path/model
+variables and source/report ABI. Descriptor serialization is versioned and canonical.
+
+`TryReplayAsync` validates the **entire** descriptor and bounded Boogie-owned report
+codec, then binds counterexamples, models and coverage to this task's graph. It
+reconstructs `VerificationRunResult` using current assertions and current execution
+timestamps, retaining stored outcome/RU. It returns null on any mismatch, with no
+observable partial replay. `RunAsync` then executes the frozen plan with a fresh
+physical solver; replay divergence must never continue a partially replayed run.
+Only completed reproducible outcomes can be encoded, after report extraction.
+The modern `TryRun` lifecycle calls these methods when the engine property is
+non-null; with null it follows the existing path exactly. Lookup/publication I/O
+errors are misses; cancellation propagates. Existing consumers need not adopt the
+new entry point. The patch also needs zero-process-start, replay-negative-control
+and lifecycle tests in Boogie before Dafny PR B can depend on it.
+
 This API is a prerequisite in the Boogie dependency rather than a change to the
 sibling worker's resolution/naming sites. A Dafny-only transport alternative
 needs an equally explicit lifecycle/retry proof and remains unaccepted until it
 passes the same gates. The implementation scope of that dependency prerequisite
-must be settled before result reuse is enabled.
+is proposed here only; no Boogie implementation is part of PR A.
 
 CLI filters select today's task inventory. Each task independently hits or runs;
 all selected tasks contribute to the current aggregate exit code. Initially bypass
@@ -194,7 +298,15 @@ and RU are identical on cold and warm runs; actual execution timestamps and
 durations describe the current invocation. Default stdout, stderr and exit code
 must be byte-identical between cache-enabled cold and warm runs.
 
-## File layout, atomic publication and concurrency
+## Future file layout, atomic publication and concurrency
+
+PR A publishes a complete snapshot into its process-local table under one lock;
+concurrent callers cannot observe a partial record. Processes share no table or
+files. A failed copy or hash mismatch evicts the entry and translates normally.
+It uses LRU eviction, bounded by 256 entries and 512 MiB of retained text. This
+is not a strict managed-heap bound: graph and source/report anchors also consume
+memory. `Clear` discards the table. No persistent-format claim follows from this
+in-process implementation. The remaining section specifies the deferred disk store.
 
 All paths below are relative to the user-selected directory:
 
@@ -316,4 +428,10 @@ Required gates, with exact source identities and complete outputs retained:
    outcomes/RU alongside timing data.
    Unsupported/bypassed work and solver version probes are counted separately.
 
-No performance numbers or feature acceptance are claimed by this design.
+The translation-only benchmark in `.github/measure/TranslationCache` reports
+front-end wall/CPU time, translation/hit/bypass counts and zero solver calls (it
+does not invoke preparation or solving). Each cold/warm/edit sample starts a fresh
+process; warm/edit samples first populate that process's table, outside the timed
+interval, then resolve a new current program and translate it. The edit changes
+one function in a separate unrelated module alongside Std. This distinguishes
+translation savings from resolution or solver savings, neither claimed by PR A.

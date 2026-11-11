@@ -1022,7 +1022,7 @@ namespace Microsoft.Dafny {
       }
     }
 
-    private static void RequireCardinalityValidation(Program program) {
+    internal static void RequireCardinalityValidation(Program program) {
       if (program.CardinalityValidationReceipt is not { Succeeded: true } || program.Reporter.CountExceptTranslatorVerifierAndCompiler(ErrorLevel.Error) != 0) {
         throw new InvalidOperationException("Boogie translation requires a resolved program that passed cardinality validation");
       }
