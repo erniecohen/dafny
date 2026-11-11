@@ -32,8 +32,11 @@ file of the task it last checked, and those depend on when the process exits
     exit code          equal
     obligations        the set of (symbol, batch number, assertions) of the JSON log
     outcomes, RU       per obligation, equal
-    log order          the order of the JSON log, equal; the CSV log's rows (durations
-                       dropped) as a set, since the CSV logger orders them by duration
+    logs               the rows of the JSON and CSV logs, as sets.  Their order is not
+                       compared: the JSON log lists a symbol's results in the order its
+                       batches finish, and the CSV log orders rows by duration, so both
+                       differ between two runs at K = 1.  The reported order is that of
+                       stdout, compared byte for byte.
     SMT                per task, the hash of its stream, when both runs have smt.tsv
 
 and exits 1 when any of them differs.
@@ -190,8 +193,9 @@ def compare_one(base, other):
         diffs.append('%d outcomes differ, e.g. %s' % (len(moved), moved[0][:2]))
     if ru:
         diffs.append('%d resource counts differ, e.g. %s' % (len(ru), ru[0][:2]))
-    if [k for k, _ in oa] != [k for k, _ in ob]:
-        diffs.append('JSON log order differs')
+    # The JSON log lists a symbol's results in the order in which its batches finish (the
+    # CompletedParts queue), so its order differs between two runs at K = 1 as well; the order
+    # in which results are reported is that of stdout, compared byte for byte above.
     # The CSV logger orders its rows by duration, so only its rows are compared, not their order.
     if sorted(csv_rows(base)) != sorted(csv_rows(other)):
         diffs.append('CSV log rows differ (durations dropped)')
@@ -300,8 +304,8 @@ def report(artifacts, out):
     lines += ['## Identity with K = 1', '',
               'Every run against the K = 1 run of the same project and GC mode on the same runner, and the '
               'gcServer=1 runs against the gcServer=0 K = 1 run of the K = 1 job.  Compared: stdout and stderr '
-              'byte for byte, exit code, the obligation set, each obligation\'s outcome and resource count, the '
-              'order of the JSON log, and the rows of the CSV log.', '',
+              'byte for byte, exit code, the obligation set, each obligation\'s outcome and resource count, and '
+              'the rows of the CSV log.', '',
               '| run | against | obligations | identical |', '|---|---|---|---|']
     for project in ['std', 'examples']:
         ref0 = art / 'issue241-time-k1-gc0' / ('%s-gc0-k1' % project)
