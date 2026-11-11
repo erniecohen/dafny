@@ -1,0 +1,63 @@
+name: Issue 23 review evidence
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-dotnet
+      - name: Build the fixed baseline and candidate
+        run: |
+          git worktree add --detach baseline 428e348b0b125cb67505f03a0026b3f497f98e48
+          for variant in before after; do
+            source="$PWD"
+            if [ "$variant" = before ]; then source="$PWD/baseline"; fi
+            (cd "$source" && sh Scripts/fetch-boogie-packages.sh && dotnet publish Source/Dafny/Dafny.csproj -c Release -o "$GITHUB_WORKSPACE/out/$variant" -p:GeneratePackageOnBuild=false -p:SourceRevisionId=review-followup)
+          done
+          tar -czf builds.tar.gz out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue23-builds
+          path: builds.tar.gz
+  measure:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [before, after]
+        scope: [suite0, suite1, suite2, suite3, std, focused]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: issue23-builds
+      - name: Unpack and pin Z3
+        run: |
+          tar -xzf builds.tar.gz
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+          unzip -q z3.zip
+      - name: Record evidence (probe, outcomes retained)
+        run: |
+          mkdir evidence
+          set +e
+          python3 .github/review/issue23.py '${{ matrix.variant }}' '${{ matrix.scope }}' "$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" > evidence/probe.log 2>&1
+          echo "$?" > evidence/probe-exit.txt
+          cat evidence/probe.log
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue23-${{ matrix.variant }}-${{ matrix.scope }}
+          path: evidence
+          compression-level: 9
+          retention-days: 90
