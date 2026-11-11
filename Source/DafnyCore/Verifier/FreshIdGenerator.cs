@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
+using System.Globalization;
 
 namespace Microsoft.Dafny {
   public abstract class FreshIdGenerator {
@@ -46,8 +47,11 @@ namespace Microsoft.Dafny {
     }
 
     string ComputeTipString() {
-      return Tip.Any() ? string.Join('_', Tip.Reverse().Select(t => t.ToString())) : null;
+      return Tip.Any() ? string.Join('_', Tip.Reverse().Select(FormatNumber)) : null;
     }
+
+    private string FormatNumber(int value) => moduleLocal
+      ? value.ToString(CultureInfo.InvariantCulture) : value.ToString();
 
     readonly string commonPrefix = "";
 
@@ -94,7 +98,7 @@ namespace Microsoft.Dafny {
           old = 0;
         }
         prefixToCount[prefix] = old + 1;
-        return tipString == null ? old.ToString() : tipString + "_" + old.ToString();
+        return tipString == null ? FormatNumber(old) : tipString + "_" + FormatNumber(old);
       }
     }
 

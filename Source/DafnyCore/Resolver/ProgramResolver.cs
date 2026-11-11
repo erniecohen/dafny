@@ -141,7 +141,7 @@ public class ProgramResolver {
       if (declaration is LiteralModuleDecl literal) {
         _ = literal.ModuleDef.VisibilityScope;
       }
-      var key = ModuleResolutionKey.Compute(declaration.FullName, ModuleSource(declaration), Options.VersionNumber,
+      var key = ModuleResolutionKey.Compute(declaration.FullName, ModuleSource(declaration), ModuleResolutionKey.DafnyVersion,
         ModuleResolutionKey.Options(declaration.Options), prerequisites[i].Select(j =>
           new ModuleResolutionKey.Prerequisite(DependencyRole(declaration, declarations[j]),
             declarations[j].FullName, Program.ResolutionKeys[declarations[j]])));
