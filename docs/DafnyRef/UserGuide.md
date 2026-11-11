@@ -2084,6 +2084,21 @@ in the neighborhood of the error; the error location (file, line, column) is alw
 
 * `--solver-log <file>` - [verification only] the file in which to place the SMT text sent to the solver
 
+* `--pipeline-profile <file>` - [verification only] (experimental) write timing
+  events of the verification pipeline to `<file>`, one JSON object per line: a
+  manifest of the run (version, arguments, runtime, GC mode, core count); spans for
+  finding the root files, parsing, cloning the parsed program and resolution; per
+  module, the wait for the translator lock, reading the prelude, translation to
+  Boogie and Boogie's preparation of the module's tasks; per verification task, the
+  times it was submitted, started by a solver and completed, with its outcome and
+  resource count; for the command-line verifier, when each module's symbols were
+  started and finished and its cache released; and a final summary. Each span also
+  records the process-wide change in allocated bytes, garbage collections, GC pause
+  time and process CPU time over its interval. Times are milliseconds on a
+  monotonic clock. The option only adds the file: Dafny's other output, and what it
+  sends to the solver, are the same with and without it. The driver
+  `.github/review/pipeline-profile.py` in Dafny's repository summarizes a profile.
+
 * `--log-format <configuration>` - [verification only] (was `-verificationLogger:<configuration string>`)
   log verification
   results to the given test result logger. The currently supported
