@@ -286,7 +286,8 @@ namespace Microsoft.Dafny {
           var saved = op.ReplaySelection();
           OperatorSelection selection;
           if (op.ResolvedExpression is FunctionCallExpr call) {
-            selection = new MemberOperatorSelection(call.Function, OperatorTypeView.Freeze(operands[0].PreType));
+            selection = new MemberOperatorSelection(call.Function, OperatorTypeView.Freeze(operands[0].PreType),
+              new OperatorDescriptor(op.Symbol, operands.Count));
           } else {
             var opcode = op.Syntax is BinaryExpr b ? ResolveOp(b.Op, b.E0.PreType, b.E1.PreType) : (BinaryExpr.ResolvedOpcode?)null;
             var family = op.Syntax is NegationExpression ? PreTypeResolver.AncestorName(operands[0].PreType) : null;

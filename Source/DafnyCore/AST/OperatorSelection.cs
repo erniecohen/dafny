@@ -32,7 +32,7 @@ public sealed record IntrinsicOperatorSelection(BinaryExpr.ResolvedOpcode? Opcod
     this with { Operands = Operands.Select(t => t.Transport(context)).ToImmutableArray() };
 }
 
-public sealed record MemberOperatorSelection(Function Member, OperatorTypeView Receiver) : OperatorSelection {
+public sealed record MemberOperatorSelection(Function Member, OperatorTypeView Receiver, OperatorDescriptor Descriptor) : OperatorSelection {
   public override OperatorSelection Transport(OperatorCloneContext context) =>
-    new MemberOperatorSelection(context.Map(Member), Receiver.Transport(context));
+    this with { Member = context.Map(Member), Receiver = Receiver.Transport(context) };
 }

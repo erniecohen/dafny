@@ -66,8 +66,16 @@ def main():
             failures.append({'name': name, 'errors': ['wall-clock safety cap']})
             return ''
 
-    for filename in ['positive', 'named', 'revealed', 'intrinsic-refinement', 'module-attributes', 'opaque', 'by-method']:
+    for filename in ['positive', 'named', 'revealed', 'intrinsic-refinement', 'module-attributes', 'module-attribute-named', 'opaque', 'by-method']:
         check(filename, filename)
+    for filename in ['traversal', 'ghost-formal', 'chain', 'inference']:
+        check(filename, filename)
+        check(filename + '-named', filename + '-named')
+    for filename, kind in [('reads', 'verify-failure'), ('null', 'verify-failure'), ('ghost', 'reject')]:
+        check(filename, filename, kind=kind)
+        check(filename + '-named', filename + '-named', kind=kind)
+    check('unresolved', 'unresolved', kind='reject')
+    check('chain-false', 'chain-false', kind='verify-failure')
     check('false', 'false', kind='verify-failure', diagnostic='assertion might not hold')
     check('precondition', 'contracts', kind='verify-failure', diagnostic='precondition')
     check('termination', 'termination', kind='verify-failure', diagnostic='decreases')
@@ -97,8 +105,13 @@ def main():
     check('record-output', args=['--translation-record-output', str(output / 'requested.dtr')], kind='reject', diagnostic='translation record')
     check('library-output', command='build', args=['--target', 'lib'], kind='reject', diagnostic='.doo output')
     check('compiled-rank', 'compiled-rank', command='build', args=['--target', 'py', '--no-verify'], kind='reject')
+    for suffix in ['doo', 'dbin']:
+        artifact = output / ('untrusted.' + suffix)
+        artifact.write_bytes(b'not a trusted operator artifact')
+        check('precompiled-' + suffix, args=[str(artifact)], kind='reject', diagnostic='does not support')
     for target in ['py', 'cs']:
         check('run-' + target, command='run', args=['--target', target, '--no-verify'], runtime='ok')
+        check('run-named-' + target, 'named', command='run', args=['--target', target, '--no-verify'], runtime='ok')
         check('by-method-' + target, 'by-method', command='run', args=['--target', target, '--no-verify'], runtime='3')
     # CLI false must override a project setting, including inert malformed attributes.
     project = output / 'project'

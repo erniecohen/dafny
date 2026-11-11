@@ -32,6 +32,27 @@ public class OperatorSelectionTests {
   private static Function Function(Program program, string name) =>
     program.DefaultModuleDef.DefaultClass.Members.OfType<Function>().Single(f => f.Name == name);
 
+  [Fact]
+  public async Task SymbolicAndNamedFormsHaveTheSameSemanticCall() {
+    var (program, reporter) = await Parse(Source + "function named(x: D<int>): D<int> { x.plus(x) }");
+    Assert.False(reporter.HasErrors);
+    var symbolic = Assert.IsType<FunctionCallExpr>(Function(program, "f").Body.Resolved);
+    var named = Assert.IsType<FunctionCallExpr>(Function(program, "named").Body.Resolved);
+    Assert.True(symbolic.IsOperatorCall);
+    Assert.False(named.IsOperatorCall);
+    Assert.Same(named.Function, symbolic.Function);
+    Assert.Equal(named.TypeApplication_AtEnclosingClass.Count, symbolic.TypeApplication_AtEnclosingClass.Count);
+    Assert.True(named.TypeApplication_AtEnclosingClass.Zip(symbolic.TypeApplication_AtEnclosingClass)
+      .All(p => p.First.Equals(p.Second)));
+    Assert.True(named.Type.Equals(symbolic.Type));
+    Assert.IsType<IdentifierExpr>(symbolic.Receiver.Resolved);
+    Assert.Single(symbolic.Args);
+    Assert.IsType<IdentifierExpr>(symbolic.Args[0].Resolved);
+    Assert.DoesNotContain(symbolic.SubExpressions, e => e.Resolved is BinaryExpr);
+    Assert.Single(symbolic.GetReferences());
+    Assert.False(symbolic.GetReferences().Single().IsTextual);
+  }
+
   [Theory]
   [InlineData(false)]
   [InlineData(true)]
@@ -75,6 +96,19 @@ public class OperatorSelectionTests {
     op.ResolutionStarted = true; // unit-injected stale resolved occurrence
     await new ProgramResolver(program).Resolve(CancellationToken.None);
     Assert.Contains(reporter.AllMessages, m => m.Message.Contains("selection is missing"));
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task AResolvedChildCannotHideAMissingRecord(bool resolved) {
+    var (program, reporter) = await Parse(Source);
+    Assert.False(reporter.HasErrors);
+    var op = Assert.IsType<OperatorSyntaxExpr>(Function(program, "f").Body);
+    op.Selection = null;
+    op.ResolutionStarted = false; // stale phase flag must not turn it back into parsed source
+    var clone = Assert.IsType<OperatorSyntaxExpr>(new Cloner(false, resolved).CloneExpr(op));
+    Assert.Throws<InvalidOperationException>(() => clone.ReplaySelection());
   }
 
   [Fact]

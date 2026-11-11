@@ -38,7 +38,8 @@ public partial class PreTypeResolver {
       Function function = null;
       if (saved is MemberOperatorSelection member) {
         function = member.Member;
-        if (!member.Receiver.Matches(left) || !resolver.VisibleInScope(function) ||
+        if (member.Descriptor != new OperatorDescriptor(op.Symbol, operands.Count) ||
+            !member.Receiver.Matches(left) || !resolver.VisibleInScope(function) ||
             !ReferenceEquals(function.EnclosingClass, left.Decl) || !OperatorResolution.SupportedOwner(left.Decl)) {
           ReportError(op, "operator selection cannot be transported into this owner/member view");
           return true;

@@ -9,6 +9,7 @@ public class OperatorSyntaxExpr : ConcreteSyntaxExpression, ICloneable<OperatorS
   public Expression Syntax { get; }
   public OperatorSelection Selection { get; set; }
   public bool ResolutionStarted { get; set; }
+  public bool ReplayRequired { get; private set; }
   public ImmutableList<OperatorCloneContext> CloneContexts { get; private set; } = ImmutableList<OperatorCloneContext>.Empty;
   public IEnumerable<Expression> Operands => Syntax is BinaryExpr b ? new[] { b.E0, b.E1 } : new[] { ((NegationExpression)Syntax).E };
   public string Symbol => Syntax is BinaryExpr b ? BinaryExpr.OpcodeString(b.Op) : "-";
@@ -22,6 +23,7 @@ public class OperatorSyntaxExpr : ConcreteSyntaxExpression, ICloneable<OperatorS
     Syntax = cloner.CloneExpr(original.Syntax);
     Selection = original.Selection;
     ResolutionStarted = original.ResolutionStarted;
+    ReplayRequired = original.ReplayRequired || original.ResolutionStarted || original.ResolvedExpression != null;
     CloneContexts = original.CloneContexts.Add(cloner.OperatorClones);
   }
 
@@ -30,6 +32,9 @@ public class OperatorSyntaxExpr : ConcreteSyntaxExpression, ICloneable<OperatorS
   public override IEnumerable<Expression> SubExpressions => ResolvedExpression == null ? Operands : base.SubExpressions;
 
   public OperatorSelection ReplaySelection() {
+    if (ReplayRequired && Selection == null) {
+      throw new System.InvalidOperationException("resolved operator selection is missing; lookup cannot be restarted");
+    }
     var result = Selection;
     if (result != null) {
       foreach (var context in CloneContexts) {
@@ -41,6 +46,7 @@ public class OperatorSyntaxExpr : ConcreteSyntaxExpression, ICloneable<OperatorS
 
   public void FreezeSelection(OperatorSelection selection) {
     Selection = selection;
+    ReplayRequired = false;
     CloneContexts = ImmutableList<OperatorCloneContext>.Empty;
   }
 

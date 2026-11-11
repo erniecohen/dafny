@@ -1,0 +1,113 @@
+name: Operators M1 disabled compatibility
+on:
+  workflow_call:
+    inputs:
+      probe:
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  binaries:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    outputs:
+      built: ${{ steps.build.outputs.built }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build the pinned starting product and candidate with identical version metadata
+        id: build
+        shell: bash
+        run: |
+          mkdir -p out/evidence
+          git worktree add --detach out/baseline-source 428e348b0b125cb67505f03a0026b3f497f98e48
+          git rev-parse HEAD > out/evidence/candidate-revision
+          git -C out/baseline-source rev-parse HEAD > out/evidence/baseline-revision
+          # Only assembly build metadata is controlled. Semantic output is not normalized.
+          set +e
+          (cd out/baseline-source && sh Scripts/fetch-boogie-packages.sh && dotnet publish Source/Dafny/Dafny.csproj -c Release -o ../baseline -p:GeneratePackageOnBuild=false -p:SourceRevisionId=operators-m1-comparison) > out/evidence/baseline-build.log 2>&1
+          baseline=$?
+          (sh Scripts/fetch-boogie-packages.sh && dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/candidate -p:GeneratePackageOnBuild=false -p:SourceRevisionId=operators-m1-comparison) > out/evidence/candidate-build.log 2>&1
+          candidate=$?
+          echo "$baseline" > out/evidence/baseline-build.exit
+          echo "$candidate" > out/evidence/candidate-build.exit
+          tail -40 out/evidence/baseline-build.log
+          tail -40 out/evidence/candidate-build.log
+          if [ "$baseline" = 0 ] && [ "$candidate" = 0 ]; then
+            python3 .github/review/operators-m1-parser.py out/baseline-source . out/evidence/parser.json > out/evidence/parser.log 2>&1
+            parser=$?
+            cat out/evidence/parser.log
+            echo "$parser" > out/evidence/parser.exit
+            if [ "$parser" != 0 ] && [ '${{ inputs.probe }}' != true ]; then exit 1; fi
+            echo 'built=true' >> "$GITHUB_OUTPUT"
+            tar -C out -czf operators-off-binaries.tar.gz baseline candidate
+          else
+            echo 'built=false' >> "$GITHUB_OUTPUT"
+            echo "Builds: baseline=$baseline candidate=$candidate" >> "$GITHUB_STEP_SUMMARY"
+            if [ '${{ inputs.probe }}' != true ]; then exit 1; fi
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: operators-off-builds
+          path: out/evidence
+      - uses: actions/upload-artifact@v4
+        if: steps.build.outputs.built == 'true'
+        with:
+          name: operators-off-binaries
+          path: operators-off-binaries.tar.gz
+  compare:
+    if: needs.binaries.outputs.built == 'true'
+    needs: binaries
+    name: OFF literal comparison (${{ matrix.scope }}, ${{ matrix.shard }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { scope: suite, shard: '0/4', label: suite-0 }
+          - { scope: suite, shard: '1/4', label: suite-1 }
+          - { scope: suite, shard: '2/4', label: suite-2 }
+          - { scope: suite, shard: '3/4', label: suite-3 }
+          - { scope: stdlib, shard: '0/1', label: stdlib }
+          - { scope: text, shard: '0/1', label: text }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: operators-off-binaries
+      - name: Unpack binaries and checksum-pinned solver
+        run: |
+          mkdir -p out
+          tar -C out -xzf operators-off-binaries.tar.gz
+          curl -fsSLo z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  z3.zip' | sha256sum -c -
+          unzip -q z3.zip
+          chmod +x z3-5.1.0-x64-glibc-2.39/bin/z3
+      - name: Compare literal bytes, verdicts and resource vectors
+        run: |
+          set +e
+          python3 .github/review/operators-m1-off.py --baseline "$PWD/out/baseline/Dafny" --candidate "$PWD/out/candidate/Dafny" --z3 "$PWD/z3-5.1.0-x64-glibc-2.39/bin/z3" --output out/comparison --scope '${{ matrix.scope }}' --shard '${{ matrix.shard }}' > out/comparison.log 2>&1
+          result=$?
+          echo "$result" > out/comparison.exit
+          tail -60 out/comparison.log
+          echo "Comparison ${{ matrix.label }} exit: $result. Reports and literal outputs are retained." >> "$GITHUB_STEP_SUMMARY"
+          if [ '${{ inputs.probe }}' != true ]; then exit "$result"; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: operators-off-${{ matrix.label }}
+          path: |
+            out/comparison
+            out/comparison.log
+            out/comparison.exit
+          retention-days: 30
