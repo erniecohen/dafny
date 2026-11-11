@@ -1,0 +1,1 @@
+With `--verification-module-window K` for K > 1, `--warn-redundant-assumptions`, `--warn-contradictory-assumptions`, `--suggest-proof-refactoring`, `--log-format` and `--coverage-report` no longer read the proof-dependency table while a later module's translation is adding to it.
