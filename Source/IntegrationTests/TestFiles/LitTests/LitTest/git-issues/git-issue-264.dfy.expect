@@ -24,8 +24,9 @@ git-issue-264-negative.dfy(8,2): Error: assertion might not hold
 git-issue-264-negative.dfy(11,2): Error: assertion might not hold
 git-issue-264-negative.dfy(16,19): Error: decreases clause might not decrease
 git-issue-264-negative.dfy(19,2): Error: assertion might not hold
+git-issue-264-negative.dfy(22,34): Error: assertion might not hold
 
-Dafny program verifier finished with 0 verified, 6 errors
+Dafny program verifier finished with 0 verified, 7 errors
 callback, default
 git-issue-264-callback.dfy(10,7): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'g' must not exceed that of the parameter it is passed for)
 

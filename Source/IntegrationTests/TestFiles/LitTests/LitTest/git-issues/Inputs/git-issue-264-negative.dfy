@@ -18,3 +18,6 @@ method FalseControl() {
   assert (1.0, 1 decreases to 0.5, 0);
   assert false;
 }
+method ConjunctionLocation() {
+  assert (1 decreases to 0) && (0 decreases to 1);
+}
