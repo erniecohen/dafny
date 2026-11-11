@@ -1,4 +1,4 @@
-// RUN: %verify "%s" > "%t"
+// RUN: %verify --type-system-refresh:false "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"
 // RUN: %verify --type-system-refresh "%s" > "%t"
 // RUN: %diff "%s.expect" "%t"

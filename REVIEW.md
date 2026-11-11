@@ -237,18 +237,20 @@ For boogie-org/boogie#1168, `3ff7e36` adds the test
 `docs/dev/news/boogie-1168.fix`, named by description, since the issue number is
 Boogie's.
 
-For #6531, #6532, #6533 and #6535 the test is the issue's program, which proves
-`false` under 4.11.0 and is refused now.  For #6534, #6536 and #6537 no program
-is known to prove `false`: each issue shows that the axioms themselves have no
-model.  Their tests check what the fix changes that a program can see: for
-#6537 and #6536, facts that 4.11.0 does not prove and that now verify; for
-#6534, proofs about the values of fields that the deleted axiom used to carry
-and that the fix keeps, and a vacuity control: a method in which the facts the
-fix asserts are in play, and whose `assert false` must still fail.  For
-boogie-org/boogie#1168 no Dafny program is known to prove `false` either, and the
-test checks proofs about values read from arrays, sequences, maps, fields and
-sets, which relied on the reverse casts: they verify under 4.11.0 and with the
-fix, and fail when the reverse casts are dropped without the fix's casts.
+For #6531, #6532, #6533, #6534 and #6535 the regression tests include source
+programs that prove `false` under the old encoding and are refused now. In
+`github-issue-23-box-bad.dfy`, `Opt<int>` and `Opt<bool>` share the datatype sort;
+three distinct integer payloads are unboxed as booleans, and the unguarded
+Box/Unbox inverse identifies two of their boxes. The guarded inverse also has
+preservation tests for field values and `set<ORDINAL>` subset membership, and a
+vacuity control. For #6536, the undefined constant expression `((0 as ORDINAL) - 1) + 1`
+reaches the solver: the old axiom proved its postcondition despite its
+well-formedness error, whereas the corrected guard rejects both. The existing
+defined-arithmetic tests still verify. For #6537 the test checks facts about
+items that 4.11.0 did not prove. For boogie-org/boogie#1168 the test checks proofs
+about values read from arrays, sequences, maps, fields and sets, which relied on
+the reverse casts: they verify under 4.11.0 and with the fix, and fail when the
+reverse casts are dropped without the fix's casts.
 Boogie's own tests for the fix, on its branch `review/3.5.5`, include the issue's
 program, on which Boogie 3.5.5 proves `assert false`.
 
