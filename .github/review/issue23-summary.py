@@ -50,7 +50,8 @@ a, b = (report['library'][v]['verdicts'] for v in ['before', 'after'])
 report['library']['verdict_differences'] = {k: [a.get(k), b.get(k)] for k in a.keys() | b.keys() if a.get(k) != b.get(k)}
 a = root / 'issue23-before-focused'
 b = root / 'issue23-after-focused'
-assert list(a.glob('*.bpl')), 'No printed Boogie evidence'
+assert len(list(a.glob('*.bpl'))) >= 13, 'Missing printed Boogie samples'
+assert {p.name for p in a.glob('*.bpl')} == {p.name for p in b.glob('*.bpl')}, 'Different Boogie sample sets'
 for p in sorted(a.glob('*.bpl')):
     if p.name == 'prelude.bpl':
         continue

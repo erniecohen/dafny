@@ -6,6 +6,8 @@ The separately built candidate checks the C# refactor and regression fixtures.
 Probe exit codes are evidence, never a substitute for the normal review gate.
 """
 import importlib.util
+import hashlib
+import os
 import json
 from pathlib import Path
 import subprocess
@@ -34,6 +36,14 @@ if variant == 'before':
     prelude = prelude.replace('IMap#Domain(IMap#Glue(a, b, t))[bx] ==>', 'a[bx] ==>')
 prelude_path = OUT / 'prelude.bpl'
 prelude_path.write_text(prelude)
+(OUT / 'manifest.json').write_text(json.dumps({
+    'candidate_source': os.environ.get('GITHUB_SHA'),
+    'baseline_source': '428e348b0b125cb67505f03a0026b3f497f98e48',
+    'variant': variant, 'scope': scope,
+    'prelude_sha256': hashlib.sha256(prelude_path.read_bytes()).hexdigest(),
+    'z3_sha256': hashlib.sha256(Path(z3).read_bytes()).hexdigest(),
+    'binaries': {v: hashlib.sha256((ROOT / 'out' / v / 'DafnyCore.dll').read_bytes()).hexdigest()
+                 for v in ['before', 'after']}}, indent=2))
 wrapper = OUT / 'dafny'
 wrapper.write_text('#!/bin/sh\nexec "' + str(ROOT / 'out/before/Dafny') + '" "$@" --prelude "' + str(prelude_path) + '"\n')
 wrapper.chmod(0o755)
@@ -73,10 +83,14 @@ elif scope == 'focused':
             dest = OUT / 'sample.bpl'
             r = call([binary, 'verify', sample, '--solver-path', z3, '--no-verify',
                       '--type-system-refresh:' + refresh, '--prelude', ROOT / 'Source/DafnyCore/DafnyPrelude.bpl',
-                      '--bprint', dest], LIT)
+                      '--boogie', '/env:0', '--bprint', dest], LIT)
             results.append(r)
-            if dest.exists():
-                dest.rename(OUT / (sample.replace('/', '_') + '.' + refresh + '.bpl'))
+            printed = sorted(OUT.glob('sample*.bpl'))
+            if r['exit'] != 0 or not printed:
+                raise RuntimeError('Boogie translation failed: ' + json.dumps(r))
+            for generated in printed:
+                suffix = generated.name[len('sample'):]
+                generated.rename(OUT / (sample.replace('/', '_') + '.' + refresh + suffix))
     for sample in ['dafny0/Maps.dfy', 'dafny0/Datatypes.dfy',
                    'git-issues/github-issue-23-box-bad.dfy',
                    'git-issues/github-issue-23-lambda-cost.dfy']:
