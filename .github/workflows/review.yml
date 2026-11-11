@@ -844,7 +844,7 @@ jobs:
           gh release create "$TAG" dafny-*.zip SHA256SUMS --repo "$GITHUB_REPOSITORY" \
             --verify-tag --title "$VERSION" --notes-file notes.md
 
-  parity-build:
+  parity-build-linux:
     if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform_parity }}
     name: "Parity ${{ matrix.platform }}: Build (Release)"
     runs-on: ${{ matrix.platform == 'macos' && 'mac-studio' || 'ubuntu-24.04' }}
@@ -856,7 +856,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [linux, macos]
+        platform: [linux]
     steps:
       - uses: actions/checkout@v4
       - name: Version
@@ -907,17 +907,81 @@ jobs:
           retention-days: 14
 
 
-  parity-suite:
+
+  parity-build-macos:
+    if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform_parity }}
+    name: "Parity ${{ matrix.platform }}: Build (Release)"
+    runs-on: ${{ matrix.platform == 'macos' && 'mac-studio' || 'ubuntu-24.04' }}
+    continue-on-error: true
+    timeout-minutes: 60
+    outputs:
+      revision: ${{ steps.version.outputs.revision }}
+      version: ${{ steps.version.outputs.version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [macos]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version
+        id: version
+        run: sh .github/review/version.sh | tee -a "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Boogie packages
+        run: sh Scripts/fetch-boogie-packages.sh
+      - name: Build
+        run: |
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny \
+            -p:GeneratePackageOnBuild=false -p:SourceRevisionId=${{ steps.version.outputs.revision }}
+      - name: Check the version it reports
+        run: |
+          v=$(dotnet out/dafny/Dafny.dll --version | head -1)
+          echo "dafny --version: $v"
+          test "$v" = "${{ steps.version.outputs.version }}"
+      - name: Check the packaged standard libraries
+        run: |
+          v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
+          z3h=$(sh .github/review/setup-z3.sh "$v" z3h)
+          python3 .github/review/packaged-libraries.py "$PWD/out/dafny/Dafny" "$z3h" \
+            out/packaged-libraries
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parity-${{ matrix.platform }}-packaged-libraries
+          path: |
+            out/packaged-libraries/summary.json
+            out/packaged-libraries/*/result.json
+            out/packaged-libraries/*/stdout.txt
+            out/packaged-libraries/*/stderr.txt
+            out/packaged-libraries/*/resources.csv
+            out/packaged-libraries/*/package-smoke.bin
+          retention-days: 14
+      - name: Pack
+        run: |
+          sh .github/review/portable-dafny.sh out/dafny
+          tar -C out -czf dafny.tar.gz dafny
+      - uses: actions/upload-artifact@v4
+        with:
+          name: parity-${{ matrix.platform }}-dafny
+          path: dafny.tar.gz
+          retention-days: 14
+
+
+  parity-suite-linux:
     if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform_parity }}
     name: "Parity ${{ matrix.platform }}: Verifier suite (axioms ${{ matrix.axioms }}, shard ${{ matrix.shard }} of 4)"
-    needs: parity-build
+    needs: parity-build-linux
     runs-on: ${{ matrix.platform == 'macos' && 'mac-studio' || 'ubuntu-24.04' }}
     continue-on-error: true
     timeout-minutes: 240
     strategy:
       fail-fast: false
       matrix:
-        platform: [linux, macos]
+        platform: [linux]
         shard: [0, 1, 2, 3]
         axioms: ['off', 'on']
     steps:
@@ -960,17 +1024,136 @@ jobs:
           retention-days: 90
 
 
-  parity-stdlib:
+
+  parity-suite-macos:
+    if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform_parity }}
+    name: "Parity ${{ matrix.platform }}: Verifier suite (axioms ${{ matrix.axioms }}, shard ${{ matrix.shard }} of 4)"
+    needs: parity-build-macos
+    runs-on: ${{ matrix.platform == 'macos' && 'mac-studio' || 'ubuntu-24.04' }}
+    continue-on-error: true
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [macos]
+        shard: [0, 1, 2, 3]
+        axioms: ['off', 'on']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: parity-${{ matrix.platform }}-dafny
+      - name: Unpack Dafny
+        run: |
+          mkdir -p out && tar -C out -xzf dafny.tar.gz
+          sh .github/review/portable-dafny.sh out/dafny
+      - name: Z3
+        run: |
+          echo "Z3=$(sh .github/review/setup-z3.sh)" >> "$GITHUB_ENV"
+      - name: Verify
+        run: |
+          L=Source/IntegrationTests/TestFiles/LitTests/LitTest
+          python3 .github/review/lit-verdicts.py plan "$L" plan.tsv
+          python3 .github/review/lit-verdicts.py run plan.tsv "$L" "$PWD/out/dafny/Dafny" "$Z3" \
+            verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv --shard ${{ matrix.shard }}/4 --jobs 4 \
+            --additional-axioms ${{ matrix.axioms == 'on' }} --measurements measurements/${{ matrix.axioms }}
+          python3 .github/review/additional-axioms.py inventory measurements/${{ matrix.axioms }} \
+            resources-${{ matrix.axioms }}-${{ matrix.shard }}.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parity-${{ matrix.platform }}-verdicts-${{ matrix.axioms }}-${{ matrix.shard }}
+          path: |
+            verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv
+            resources-${{ matrix.axioms }}-${{ matrix.shard }}.json
+            plan.tsv
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parity-${{ matrix.platform }}-suite-measurements-${{ matrix.axioms }}-${{ matrix.shard }}
+          path: measurements
+          compression-level: 9
+          retention-days: 90
+
+
+  parity-stdlib-linux:
     if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform_parity }}
     name: "Parity ${{ matrix.platform }}: Standard library (Z3 ${{ matrix.z3 }}, axioms ${{ matrix.axioms }})"
-    needs: parity-build
+    needs: parity-build-linux
     runs-on: ${{ matrix.platform == 'macos' && 'mac-studio' || 'ubuntu-24.04' }}
     continue-on-error: true
     timeout-minutes: 180
     strategy:
       fail-fast: false
       matrix:
-        platform: [linux, macos]
+        platform: [linux]
+        # This line's Z3, and the Z3 that the tree's own tests expect (its
+        # DefaultZ3Version), with which upstream builds the library.
+        z3: ['5.1.0', 'of the tests']
+        axioms: ['off', 'on']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: parity-${{ matrix.platform }}-dafny
+      - name: Unpack Dafny
+        run: |
+          mkdir -p out && tar -C out -xzf dafny.tar.gz
+          sh .github/review/portable-dafny.sh out/dafny
+      - name: Z3
+        run: |
+          v='${{ matrix.z3 }}'
+          if [ "$v" = 'of the tests' ]; then
+            v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
+          fi
+          echo "Z3=$(sh .github/review/setup-z3.sh "$v")" >> "$GITHUB_ENV"
+          echo "Z3V=$v" >> "$GITHUB_ENV"
+      - name: Verify
+        run: |
+          "$Z3" --version
+          python3 .github/review/std-verdicts.py run Source/DafnyStandardLibraries "$PWD/out/dafny/Dafny" "$Z3" \
+            std-verdicts.tsv --cores 4 --additional-axioms ${{ matrix.axioms == 'on' }} \
+            --boogie "/deterministicLiteralHashes:1 /restartProver"
+          python3 .github/review/std-verdicts.py expected std-verdicts.tsv > "expected-std-verdicts-z3-$Z3V.tsv"
+          # Fingerprints, to compare runs of one tree without downloading artifacts (#186):
+          # the verdict columns, and the declarations' resource and proof counts.
+          vfp=$(shasum -a 256 < "expected-std-verdicts-z3-$Z3V.tsv" | cut -c1-16)
+          rfp=$(awk -F'\t' '$1 !~ /^run /{print $1"\t"$5"\t"$6}' std-verdicts.tsv | shasum -a 256 | cut -c1-16)
+          echo "verdict fingerprint $vfp, resource fingerprint $rfp"
+          {
+            echo "## Standard library, axioms ${{ matrix.axioms }}, Z3 $Z3V: ${{ github.sha }}"
+            echo
+            echo "Source/DafnyStandardLibraries, verified as its Makefile's verify target does, with"
+            echo "the library's own resource limits and no time limit, the library part with"
+            echo "Boogie's /deterministicLiteralHashes:1 /restartProver (#186, #30)."
+            echo
+            python3 .github/review/std-verdicts.py summary std-verdicts.tsv
+            echo
+            echo "Verdict fingerprint \`$vfp\`, resource fingerprint \`$rfp\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: parity-${{ matrix.platform }}-std-verdicts-${{ matrix.axioms }}-z3-${{ env.Z3V }}
+          path: |
+            std-verdicts.tsv
+            expected-std-verdicts-z3-${{ env.Z3V }}.tsv
+          retention-days: 90
+
+
+  parity-stdlib-macos:
+    if: ${{ github.repository == 'erniecohen/dafny' && github.event_name == 'workflow_dispatch' && inputs.platform_parity }}
+    name: "Parity ${{ matrix.platform }}: Standard library (Z3 ${{ matrix.z3 }}, axioms ${{ matrix.axioms }})"
+    needs: parity-build-macos
+    runs-on: ${{ matrix.platform == 'macos' && 'mac-studio' || 'ubuntu-24.04' }}
+    continue-on-error: true
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [macos]
         # This line's Z3, and the Z3 that the tree's own tests expect (its
         # DefaultZ3Version), with which upstream builds the library.
         z3: ['5.1.0', 'of the tests']
