@@ -667,9 +667,9 @@ git-issues/git-issue-146.dfy	0	5 verified, 0 errors
 git-issues/git-issue-1479.dfy	4	1 verified, 2 errors	16,33
 git-issues/git-issue-148.dfy	0	2 verified, 0 errors	
 git-issues/git-issue-151.dfy	2		37,39,40,42
-git-issues/git-issue-1514.dfy	1		
-git-issues/git-issue-1514b.dfy	1		
-git-issues/git-issue-1514c.dfy	1		
+git-issues/git-issue-1514.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-1514b.dfy	0	3 verified, 0 errors	
+git-issues/git-issue-1514c.dfy	0	3 verified, 0 errors	
 git-issues/git-issue-151b.dfy	2		24,26
 git-issues/git-issue-1545.dfy	2		5,15,17,19,21,35,44,46,50,56,58,60,62
 git-issues/git-issue-1553.dfy	0	0 verified, 0 errors	
@@ -1130,11 +1130,11 @@ git-issues/git-issue-Main.dfy	0	0 verified, 0 errors
 git-issues/git-issue-Main1.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-Main2.dfy	0	0 verified, 0 errors	
 git-issues/git-issue-Main3.dfy	0	0 verified, 0 errors	
-git-issues/git-issue1495.dfy	1		
+git-issues/git-issue1495.dfy	0	8 verified, 0 errors	
 git-issues/git-issue5822.dfy	4	1 verified, 1 error	7
 git-issues/github-issue-1267.dfy	0	1 verified, 0 errors	
 git-issues/github-issue-191.dfy	2	3 verified, 0 errors	14,19
-git-issues/github-issue-205.dfy	1		
+git-issues/github-issue-205.dfy	0	89 verified, 0 errors	
 git-issues/github-issue-2174.dfy	0	17 verified, 0 errors	
 git-issues/github-issue-2230.dfy	0	2 verified, 0 errors	
 git-issues/github-issue-2563.dfy	4	0 verified, 0 errors	
