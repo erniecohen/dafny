@@ -170,7 +170,9 @@ public sealed class ModuleTranslationCache {
   }
 
   internal static List<string> DescriptorParts(Program program, ModuleDefinition module, BoogieGenerator.TranslatorFlags flags) {
-    var parts = new List<string> { "translation-in-process-v1", module.ResolutionKey!,
+    // A resolution result can contain several generated abstract signatures. They
+    // share the owner's resolution key but have distinct translated declarations.
+    var parts = new List<string> { "translation-in-process-v2", module.ResolutionKey!, module.FullName,
       typeof(BoogieGenerator).Module.ModuleVersionId.ToString(), typeof(Bpl.Program).Module.ModuleVersionId.ToString(),
       flags.PreludeText ?? File.ReadAllText(BoogieGenerator.PreludePath(program.Options)),
       flags.InsertChecksums.ToString(), flags.ReportRanges.ToString(), flags.UniqueIdPrefix == null ? "null" : "string:" + flags.UniqueIdPrefix };

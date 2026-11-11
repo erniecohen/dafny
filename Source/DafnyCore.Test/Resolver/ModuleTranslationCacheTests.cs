@@ -68,6 +68,36 @@ public class ModuleTranslationCacheTests {
   }
 
   [Fact]
+  public async Task GeneratedAbstractSignaturesWithOneOwnerKeyHaveDistinctTranslations() {
+    var program = await Resolve("""
+      abstract module Input { type T }
+      abstract module Core { import A: Input type U = A.T }
+      abstract module Builder { import P: Core }
+      """);
+    var modules = BoogieGenerator.VerifiableModules(program).ToArray();
+    var siblings = modules.GroupBy(m => m.ResolutionKey)
+      .Where(g => g.Count() > 1).SelectMany(g => g).ToArray();
+    Assert.NotEmpty(siblings);
+    var cache = new ModuleTranslationCache();
+    var texts = new Dictionary<string, string>();
+    foreach (var module in siblings) {
+      var flags = new BoogieGenerator.TranslatorFlags(program.Options);
+      var expected = new BoogieGenerator(program.Reporter, program.ProofDependencyManager, flags).DoTranslation(program, module);
+      var actual = cache.Translate(program, module, flags, default);
+      texts[module.FullName] = ModuleTranslationCache.Emit(expected, program.Options);
+      Assert.Equal(texts[module.FullName], ModuleTranslationCache.Emit(actual, program.Options));
+    }
+    Assert.Equal(0, cache.Hits);
+    Assert.Equal(siblings.Length, cache.Translations);
+    Assert.True(texts.Values.Distinct().Count() > 1);
+    foreach (var module in siblings) {
+      var actual = cache.Translate(program, module, new(program.Options), default);
+      Assert.Equal(texts[module.FullName], ModuleTranslationCache.Emit(actual, program.Options));
+    }
+    Assert.Equal(siblings.Length, cache.Hits);
+  }
+
+  [Fact]
   public async Task SourceLocationAndPreludeChangesCannotReuseARecord() {
     var cache = new ModuleTranslationCache();
     var before = await Resolve(Source);

@@ -65,14 +65,22 @@ bumps its format domain and namespace; unknown versions are misses.
 
 ### Translation table
 
-The lookup descriptor contains the semantic `ModuleKey`, the translation ABI,
+The lookup descriptor contains the semantic `ModuleKey`, the selected resolved
+module's fully qualified name, the translation ABI,
 the loaded translator and Boogie module identities, the exact captured prelude,
 and effective translation options, including ordered pass-through options.
 These are the compiler-environment component of the module key, not a substitute
 for its semantic dependencies. The value identifies the exact Boogie bytes by
 hash and a versioned metadata sidecar by hash.
 
-In-process namespace version `translation-in-process-v1` length-delimits its
+One resolution result can contain several generated abstract signatures. The
+sibling currently gives those signatures their owner's key. Their qualified
+names distinguish the selected translation within that keyed result; otherwise
+the nested abstract imports in Std's parser builders collide despite emitting
+different declarations. This is a translation selector, not another semantic
+resolution key.
+
+In-process namespace version `translation-in-process-v2` length-delimits its
 UTF-8 strings with `BinaryWriter` (the future disk codec uses the framing above).
 It uses the loaded assemblies' MVIDs; no assembly can change within that table's
 lifetime. Source filenames, coordinates and the original text of files in the
