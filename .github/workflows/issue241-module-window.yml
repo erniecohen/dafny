@@ -71,8 +71,14 @@ jobs:
       - name: Standard library and examples, at K = 1 and at K
         run: |
           L=Source/DafnyStandardLibraries
+          # The examples load the library's prebuilt binary, which refuses --boogie options; so
+          # they are verified against the library's sources as libraries (not verified), with
+          # its target-independent (notarget) externs.
+          libs=$(cd $L/examples && { find ../src/Std -name '*.dfy' -not -path '*TargetSpecific*';
+            ls ../src/Std/TargetSpecific/*notarget*.dfy; } | sort | sed 's/^/--library /' | tr '\n' ' ')
           for project in std examples; do
-            if [ $project = std ]; then cwd=$L; arg=src/Std/dfyconfig.toml; else cwd=$L/examples; arg=dfyconfig.toml; fi
+            if [ $project = std ]; then cwd=$L; arg=src/Std/dfyconfig.toml
+            else cwd=$L/examples; arg="dfyconfig.toml --standard-libraries:false $libs"; fi
             for k in 1 ${{ matrix.k }}; do
               d=runs/$project-gc${{ matrix.gc }}-k$k
               [ -e "$d" ] && d=$d-again

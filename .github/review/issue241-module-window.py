@@ -76,7 +76,7 @@ def stream_hash(path):
     return hashlib.sha256(b'\n'.join(lines)).hexdigest(), len(lines)
 
 
-def run(out, dafny, z3, cwd, k, args, gc='0', cores=None, smt=False):
+def run(out, dafny, z3, cwd, k, args, gc='0', cores=None, smt=False, timeout=5400):
     out = Path(out).resolve()
     out.mkdir(parents=True, exist_ok=False)
     cores = cores or os.cpu_count()
@@ -98,15 +98,18 @@ def run(out, dafny, z3, cwd, k, args, gc='0', cores=None, smt=False):
     (out / 'command.json').write_text(json.dumps({'cmd': cmd, 'cwd': str(cwd), 'gcServer': gc, 'k': k,
                                                   'out': str(out)}))
     with open(out / 'stdout.txt', 'wb') as so, open(out / 'stderr.txt', 'wb') as se:
-        p = subprocess.run([TIME, '-v', '-o', str(out / 'time.txt')] + cmd, cwd=cwd, stdout=so, stderr=se, env=env)
-    (out / 'exit.txt').write_text(str(p.returncode) + '\n')
+        # timeout(1) stops Dafny and its solvers with it; exit 124 means it ran out of time.
+        p = subprocess.run(['timeout', '-k', '30', str(timeout), TIME, '-v', '-o', str(out / 'time.txt')] + cmd,
+                           cwd=cwd, stdout=so, stderr=se, env=env)
+        code = 'TIMEOUT' if p.returncode == 124 else str(p.returncode)
+    (out / 'exit.txt').write_text(code + '\n')
     if smt:
         with open(out / 'smt.tsv', 'w') as f:
             for path in sorted((out / 'smt').iterdir()):
                 digest, n = stream_hash(path)
                 f.write('%s\t%s\t%d\n' % (path.name, digest, n))
         shutil.rmtree(out / 'smt')
-    return p.returncode
+    return code
 
 
 def measures(d):
@@ -244,7 +247,7 @@ def corpus(planf, litdir, dafny, z3, out, ks, shard='0/1', cores=None):
             names = {t.split('=')[0].split(':')[0] for t in own if t.startswith('--')}
             extra = [] if '--resource-limit' in names else ['--resource-limit', '16000000']
             extra += [] if '--allow-warnings' in names else ['--allow-warnings']
-            run(d, dafny, z3, litdir, k, [path] + extra + own, cores=cores, smt=True)
+            run(d, dafny, z3, litdir, k, [path] + extra + own, cores=cores, smt=True, timeout=900)
             dirs.append(d)
         nob = len(obligations(dirs[0])) if (dirs[0] / 'log.json').exists() else 0
         line = [path, str(nob)]
