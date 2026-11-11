@@ -549,6 +549,43 @@ jobs:
           path: resource-comparison
           retention-days: 90
 
+  javascript-runtime:
+    name: JavaScript runtime (Node ${{ matrix.node }})
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        node: ['16.0.0', '22']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Runtime dependency
+        run: npm install --no-save --package-lock=false bignumber.js@9.1.2
+      - name: Boundary, identity, differential and related-helper checks
+        run: node .github/review/246-js-bitwise.cjs Source/DafnyRuntime/DafnyRuntimeJs/DafnyRuntime.js
+      - name: Before and after helper costs
+        if: matrix.node == '22'
+        run: |
+          git fetch --depth=1 origin 428e348b0b125cb67505f03a0026b3f497f98e48
+          git show 428e348b0b125cb67505f03a0026b3f497f98e48:Source/DafnyRuntime/DafnyRuntimeJs/DafnyRuntime.js > before.js
+          if node .github/review/246-js-bitwise.cjs before.js > before-control.txt 2>&1; then
+            echo "The original runtime unexpectedly passed the regression"
+            exit 1
+          fi
+          grep -q ERR_ASSERTION before-control.txt
+          node .github/review/246-js-bitwise.cjs before.js --bench > before.md
+          node .github/review/246-js-bitwise.cjs Source/DafnyRuntime/DafnyRuntimeJs/DafnyRuntime.js --bench > after.md
+          cat before.md after.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: matrix.node == '22'
+        with:
+          name: javascript-bitwise-costs
+          path: |
+            before.md
+            after.md
+            before-control.txt
+
   regressions:
     if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/')) }}
     name: Regression tests (upstream harness)
@@ -596,6 +633,11 @@ jobs:
           dotnet test Source/DafnyCore.Test -c Release --filter 'FullyQualifiedName~Cardinality|FullyQualifiedName~NewtypeReferenceCharacteristicTests'
           dotnet test Source/DafnyLanguageServer.Test -c Release --filter FullyQualifiedName~Cardinality
           dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~CardinalityEmissionTests
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '16.0.0'
+      - name: JavaScript runtime dependency
+        run: npm install --no-save --package-lock=false bignumber.js@9.1.2
       - name: Run the tests named in .github/review/regressions
         env:
           DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS: cs
@@ -801,7 +843,7 @@ jobs:
 
   release:
     name: GitHub release
-    needs: [build, binaries, verdicts, stdlib, regressions, resolver, resolver-tests, finite-support, statement-conclusions, axiom-resources, verification-batch]
+    needs: [build, binaries, verdicts, stdlib, javascript-runtime, regressions, resolver, resolver-tests, finite-support, statement-conclusions, axiom-resources, verification-batch]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
