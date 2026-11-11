@@ -1,5 +1,7 @@
 using Microsoft.Boogie;
 using Microsoft.Dafny;
+using Microsoft.Extensions.Logging.Abstractions;
+using System.Collections.Immutable;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using DafnyType = Microsoft.Dafny.Type;
@@ -247,6 +249,37 @@ public class ResolutionPipelineTests {
     Assert.Contains(rootReporter.AllMessages, d => d.Message.Contains("termination false"));
     Assert.DoesNotContain(libraryReporter.AllMessages, d => d.Message.Contains("termination false"));
     Assert.NotEqual(Keys(root)["_module.M"], Keys(library)["_module.M"]);
+  }
+
+  [Theory]
+  [InlineData(false, false)]
+  [InlineData(false, true)]
+  [InlineData(true, false)]
+  [InlineData(true, true)]
+  public async Task DefaultModuleSourceMembersParticipateInKeys(bool refresh, bool multipleFiles) {
+    async Task<Program> Run(int body) {
+      const string first = "function F(): int { 1 }";
+      var second = $"function G(): int {{ {body} }}";
+      if (!multipleFiles) {
+        return (await Resolve(first + "\n" + second, 4, refresh)).Item1;
+      }
+      var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+      options.ApplyDefaultOptionsWithoutSettingsDefault();
+      options.Set(CommonOptionBag.ResolutionThreads, 4);
+      options.Set(CommonOptionBag.TypeSystemRefresh, refresh);
+      var reporter = new BatchErrorReporter(options);
+      var uris = new[] { new Uri("untitled:first.dfy"), new Uri("untitled:second.dfy") };
+      var fs = new InMemoryFileSystem(ImmutableDictionary<Uri, string>.Empty.Add(uris[0], first).Add(uris[1], second));
+      var files = uris.Select(uri => DafnyFile.HandleDafnyFile(fs, reporter, options, uri, Microsoft.Dafny.Token.NoToken, false)).ToArray();
+      var parser = new ProgramParser(NullLogger<ProgramParser>.Instance, fs);
+      var parsed = await parser.ParseFiles("default-module", files, reporter, CancellationToken.None);
+      await new ProgramResolver(parsed.Program).Resolve(CancellationToken.None);
+      Assert.Empty(Errors(reporter));
+      return parsed.Program;
+    }
+    var before = await Run(2);
+    var after = await Run(3);
+    Assert.NotEqual(Keys(before)[before.DefaultModule.FullName], Keys(after)[after.DefaultModule.FullName]);
   }
 
   [Fact]

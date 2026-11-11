@@ -830,7 +830,10 @@ depths, so adding an unrelated module does not renumber an existing module.
 fully qualified module identity, original source, Dafny version, effective options
 and sorted `(dependency role, qualified identity, key)` prerequisite records. It
 does not use `CloneId`, execution order, worker count or the whole-program builtin
-shape. Execution/report destinations are excluded; other option values are
+shape. The implicit default module hashes its individual source declarations and
+members, including members contributed by different files; its synthetic default
+class has no source span and cannot stand in for those members.
+Execution/report destinations are excluded; other option values are
 conservatively included. Effective legacy fields and backend native-type support
 are also included, since legacy parsing can bypass the modern option dictionary.
 Effective per-declaration verification membership is included without source URIs:
@@ -907,8 +910,9 @@ within the owning resolution result: several signatures can share one owner key.
 
 The reproducible resolve-only benchmark is
 [`.github/review/resolution-threads.py`](../../../.github/review/resolution-threads.py).
-It measures five fresh processes per N on the standard library, the three public
-lit inputs with the most module declarations, and a generated wide DAG. The
+It measures five fresh processes per N on the standard library, its examples,
+the DafnyCore project, the three public lit inputs with the most module
+declarations, and a generated wide DAG. The
 integration regression compares actual `--bprint` files at N = 1, 2, 4, 8 and after
 unrelated builtin growth. Unit tests cover key boundaries, diagnostic order, both
 inference engines, refinement invalidation, export ownership and immediate ready

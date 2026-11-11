@@ -273,7 +273,11 @@ public class ProgramResolver {
 
   private static string ModuleSource(ModuleDecl declaration) {
     if (declaration is LiteralModuleDecl { ModuleDef.IsDefaultModule: true } literal) {
-      return string.Join("\n", literal.ModuleDef.TopLevelDecls.Select(d => d.EntireRange.PrintOriginal()));
+      // The synthetic default class has no token range, and its members can
+      // span several files. Hash each source member rather than its wrapper.
+      return string.Join("\n", literal.ModuleDef.TopLevelDecls.SelectMany(d =>
+        d is DefaultClassDecl defaults ? defaults.Members.Cast<INode>() : new INode[] { d })
+        .Select(d => d.EntireRange.PrintOriginal()));
     }
     return declaration.EntireRange.PrintOriginal();
   }
