@@ -69,6 +69,8 @@ def main():
             failures.append({'name': name, 'errors': ['wall-clock safety cap']})
             return ''
 
+    check('operator-help', feature=False, args=['--help-internal'],
+          diagnostic='Datatype < and > retain intrinsic rank comparison')
     for filename in ['positive', 'named', 'revealed', 'intrinsic-refinement', 'module-attributes', 'module-attribute-named', 'opaque', 'by-method']:
         check(filename, filename)
     for filename in ['static-unary', 'trait-named-body', 'calc']:

@@ -5,7 +5,9 @@ This implements the source-only first milestone of the
 following its [review](https://github.com/erniecohen/dafny/issues/194#issuecomment-6807326113).
 The option is `--user-defined-operators`, default false. It requires
 `--type-system-refresh`; its accepted surface and exclusions are documented in
-the Reference Manual. The modular-newtype example belongs to the later override
+the Reference Manual. Its experimental help is listed by `dafny verify --help-internal`;
+ordinary automatic usage must remain byte-identical on existing CLI errors.
+The modular-newtype example belongs to the later override
 milestone, so M1 includes the rational and matrix examples.
 
 ## Semantic boundary

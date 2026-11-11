@@ -181,20 +181,21 @@ def text_corpus(args, output):
     source.write_text('method Main() { print 1 + 2; }\n')
     invalid_record = input_dir / 'invalid.dtr'
     invalid_record.write_text('invalid translation record\n')
-    for scenario in ['automatic-record', 'missing-record', 'invalid-record']:
+    for scenario in ['ordinary-help', 'automatic-record', 'missing-record', 'invalid-record']:
         snapshots = {}
         for mode, binary in [('baseline', args.baseline), ('candidate', args.candidate)]:
             observations = input_dir / 'artifacts'
             observations.mkdir()
-            command = [binary, 'translate', 'py', str(source), '--no-verify', '--output', str(observations / 'test')]
-            if scenario != 'automatic-record':
+            command = ([binary, 'verify', '--help'] if scenario == 'ordinary-help' else
+                       [binary, 'translate', 'py', str(source), '--no-verify', '--output', str(observations / 'test')])
+            if scenario in ['missing-record', 'invalid-record']:
                 command += ['--translation-record', str(invalid_record if scenario == 'invalid-record' else input_dir / 'missing.dtr')]
             process = subprocess.run(command, cwd=input_dir, capture_output=True, timeout=120)
             (observations / 'stdout').write_bytes(process.stdout)
             (observations / 'stderr').write_bytes(process.stderr)
             snapshots[mode] = {'exit': process.returncode, 'bytes': files(observations)}
             shutil.move(str(observations), str(output / (scenario + '-' + mode)))
-        expected = snapshots['baseline']['exit'] == 0 if scenario == 'automatic-record' else snapshots['baseline']['exit'] != 0
+        expected = snapshots['baseline']['exit'] == 0 if scenario in ['ordinary-help', 'automatic-record'] else snapshots['baseline']['exit'] != 0
         results.append({'case': scenario, 'snapshots': snapshots,
                         'passed': snapshots['baseline'] == snapshots['candidate'] and expected})
     return {'scope': 'literal parsed/resolved/Boogie output and malformed input diagnostics',

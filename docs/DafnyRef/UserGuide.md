@@ -3054,7 +3054,7 @@ A detailed description of how to do this is given in
 ### Experimental source operator option
 
 `--user-defined-operators` is disabled by default and requires
-`--type-system-refresh`. It enables the initial
+`--type-system-refresh`. It is listed by `dafny verify --help-internal` and enables the initial
 [user-defined function operator milestone](#sec-user-defined-operators).
 A project can select it in `dfyconfig.toml`:
 
