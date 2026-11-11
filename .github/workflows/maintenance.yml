@@ -7,7 +7,8 @@
 # A tag pushed with GITHUB_TOKEN starts no `push: tags` run, but a workflow_dispatch
 # made with it does start one, and review.yml dispatched on a tag runs the same jobs as
 # a push of the tag (its conditions test github.ref_type): build, checks, binaries and
-# `gh release create --verify-tag` with the two zips and SHA256SUMS.
+# `gh release create --verify-tag` with the linux-x64 zip and SHA256SUMS.  The osx-arm64
+# zip is added afterwards from a Mac by .github/review/release-macos.sh.
 #
 # release-tag only creates a tag when the workflow runs from review/4.11.0 and dry_run
 # is off.  Anywhere else, or with dry_run on, it makes every check and writes its
