@@ -1,0 +1,544 @@
+diff --git a/Source/DafnyCore/AST/Expressions/Variables/LetExpr.cs b/Source/DafnyCore/AST/Expressions/Variables/LetExpr.cs
+--- a/Source/DafnyCore/AST/Expressions/Variables/LetExpr.cs
++++ b/Source/DafnyCore/AST/Expressions/Variables/LetExpr.cs
+@@ -26,11 +26,18 @@
+   private BoogieGenerator? lastBoogieGeneratorUsed; // avoid clashing desugaring between translators
+ 
+   public void SetTranslationDesugaring(BoogieGenerator trans, Expression expr) {
++    if (TranslationLocalState.Current is { } local) {
++      local.SetLet(this, expr);
++      return;
++    }
+     lastBoogieGeneratorUsed = trans;
+     translationDesugaring = expr;
+   }
+ 
+   public Expression? GetTranslationDesugaring(BoogieGenerator trans) {
++    if (TranslationLocalState.Current is { } local) {
++      return local.GetLet(this);
++    }
+     return lastBoogieGeneratorUsed == trans ? translationDesugaring : null;
+   }
+ 
+diff --git a/Source/DafnyCore/AST/Expressions/Variables/NonglobalVariable.cs b/Source/DafnyCore/AST/Expressions/Variables/NonglobalVariable.cs
+--- a/Source/DafnyCore/AST/Expressions/Variables/NonglobalVariable.cs
++++ b/Source/DafnyCore/AST/Expressions/Variables/NonglobalVariable.cs
+@@ -33,9 +33,12 @@
+     LocalVariable.DisplayNameHelper(this);
+ 
+   private string? uniqueName;
+-  public string? UniqueName => uniqueName;
+-  public bool HasBeenAssignedUniqueName => uniqueName != null;
++  public string? UniqueName => TranslationLocalState.Current is { } local ? local.NameOf(this) : uniqueName;
++  public bool HasBeenAssignedUniqueName => UniqueName != null;
+   public string AssignUniqueName(VerificationIdGenerator generator) {
++    if (TranslationLocalState.Current is { } local) {
++      return local.AssignName(this, generator);
++    }
+     return uniqueName ??= generator.FreshId(Name + "#");
+   }
+ 
+diff --git a/Source/DafnyCore/AST/Statements/Assignment/LocalVariable.cs b/Source/DafnyCore/AST/Statements/Assignment/LocalVariable.cs
+--- a/Source/DafnyCore/AST/Statements/Assignment/LocalVariable.cs
++++ b/Source/DafnyCore/AST/Statements/Assignment/LocalVariable.cs
+@@ -60,9 +60,12 @@
+     get { return DisplayNameHelper(this); }
+   }
+   private string? uniqueName;
+-  public string? UniqueName => uniqueName;
+-  public bool HasBeenAssignedUniqueName => uniqueName != null;
++  public string? UniqueName => TranslationLocalState.Current is { } local ? local.NameOf(this) : uniqueName;
++  public bool HasBeenAssignedUniqueName => UniqueName != null;
+   public string AssignUniqueName(VerificationIdGenerator generator) {
++    if (TranslationLocalState.Current is { } local) {
++      return local.AssignName(this, generator);
++    }
+     return uniqueName ??= generator.FreshId(Name + "#");
+   }
+ 
+diff --git a/Source/DafnyCore/AST/Statements/ControlFlow/Label.cs b/Source/DafnyCore/AST/Statements/ControlFlow/Label.cs
+--- a/Source/DafnyCore/AST/Statements/ControlFlow/Label.cs
++++ b/Source/DafnyCore/AST/Statements/ControlFlow/Label.cs
+@@ -8,6 +8,9 @@
+   string uniqueId = null;
+ 
+   public string AssignUniqueId(FreshIdGenerator idGen) {
++    if (TranslationLocalState.Current is { } local) {
++      return local.AssignLabel(this, idGen);
++    }
+     if (uniqueId == null) {
+       uniqueId = idGen.FreshNumericId("label");
+     }
+diff --git a/Source/DafnyCore/AST/Statements/Verification/AssertLabel.cs b/Source/DafnyCore/AST/Statements/Verification/AssertLabel.cs
+--- a/Source/DafnyCore/AST/Statements/Verification/AssertLabel.cs
++++ b/Source/DafnyCore/AST/Statements/Verification/AssertLabel.cs
+@@ -4,8 +4,18 @@
+ 
+ public class AssertLabel : Label {
+ 
++  private Boogie.Expr legacyExpression;
+   [FilledInDuringTranslation]
+-  public Boogie.Expr E;
++  public Boogie.Expr E {
++    get => TranslationLocalState.Current is { } local ? local.GetAssertion(this) : legacyExpression;
++    set {
++      if (TranslationLocalState.Current is { } local) {
++        local.SetAssertion(this, value);
++      } else {
++        legacyExpression = value;
++      }
++    }
++  }
+ 
+   public AssertLabel(IOrigin tok, string name)
+     : base(tok, name) {
+diff --git a/Source/DafnyCore/AST/TypeDeclarations/Declaration.cs b/Source/DafnyCore/AST/TypeDeclarations/Declaration.cs
+--- a/Source/DafnyCore/AST/TypeDeclarations/Declaration.cs
++++ b/Source/DafnyCore/AST/TypeDeclarations/Declaration.cs
+@@ -170,7 +170,9 @@
+   }
+ 
+   // For Boogie
+-  internal VerificationIdGenerator IdGenerator = new();
++  private readonly VerificationIdGenerator legacyIdGenerator = new();
++  internal VerificationIdGenerator IdGenerator =>
++    TranslationLocalState.Current?.Generator(this) ?? legacyIdGenerator;
+   public override IEnumerable<INode> Children => []; // Attributes should be enumerated by the parent, as they could be placed in different places
+   public override IEnumerable<INode> PreResolveChildren => Children;
+   public abstract SymbolKind? Kind { get; }
+diff --git a/Source/DafnyCore/AST/VisibilityScope.cs b/Source/DafnyCore/AST/VisibilityScope.cs
+--- a/Source/DafnyCore/AST/VisibilityScope.cs
++++ b/Source/DafnyCore/AST/VisibilityScope.cs
+@@ -30,6 +30,11 @@
+     // By convention, the "null" scope sees all
+     public bool VisibleInScope(VisibilityScope other) {
+       if (other != null) {
++        // The resolution manifest freezes declaration/export scopes. Avoid
++        // concurrent writes to their shared memo dictionaries in this mode.
++        if (TranslationLocalState.Current != null) {
++          return Overlaps(other.scopeTokens, scopeTokens);
++        }
+         if (cached.TryGetValue(other, out var result)) {
+           if (result.Item1 == other.scopeTokens.Count) {
+             // If the second scope did not change, then we can use the cached result.
+diff --git a/Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs b/Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs
+--- a/Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs
++++ b/Source/DafnyCore/Verifier/BoogieGenerator.ExpressionTranslator.cs
+@@ -1597,7 +1597,7 @@
+         if (usesOldHeap) {
+           capturedHeaps.Add(Old.HeapExpr);
+         }
+-        foreach (var label in heapAt.OrderBy(label => label.Name)) {
++        foreach (var label in BoogieGenerator.TranslationOrder(heapAt, label => label.Name)) {
+           capturedHeaps.Add(OldAt(label).HeapExpr);
+         }
+         Expr guard = Expr.True;
+@@ -1608,7 +1608,7 @@
+           guard = BplAnd(guard, BoogieGenerator.FunctionCall(e.Origin, BuiltinFunction.IsGoodHeap, null, capturedHeap));
+           guard = BplAnd(guard, BoogieGenerator.HeapSameOrSucc(capturedHeap, heap));
+         }
+-        foreach (var variable in freeVariables.OrderBy(variable => variable.UniqueName)) {
++        foreach (var variable in BoogieGenerator.TranslationOrder(freeVariables, variable => variable.UniqueName)) {
+           if (variable.Type.MayShowReferences) {
+             var value = BoogieGenerator.TrVar(e.Origin, variable);
+             guard = BplAnd(guard, BoogieGenerator.MkIs(value, variable.Type));
+@@ -1831,7 +1831,7 @@
+         if (usesOldHeap) {
+           capturedHeaps.Add(Old.HeapExpr);
+         }
+-        foreach (var label in heapAt.OrderBy(label => label.Name)) {
++        foreach (var label in BoogieGenerator.TranslationOrder(heapAt, label => label.Name)) {
+           capturedHeaps.Add(OldAt(label).HeapExpr);
+         }
+         foreach (var capturedHeap in capturedHeaps) {
+@@ -1840,7 +1840,7 @@
+           }
+           guard = BplAnd(guard, BoogieGenerator.HeapSameOrSucc(capturedHeap, heap));
+         }
+-        foreach (var v in fvs.OrderBy(v => v.UniqueName)) {
++        foreach (var v in BoogieGenerator.TranslationOrder(fvs, v => v.UniqueName)) {
+           if (v.Type.MayShowReferences) {
+             guard = BplAnd(guard, BoogieGenerator.MkIsAlloc(BoogieGenerator.TrVar(e.Origin, v), v.Type, heap));
+           }
+@@ -1875,7 +1875,7 @@
+         if (usesOldHeap) {
+           capturedHeaps.Add(Old.HeapExpr);
+         }
+-        foreach (var label in heapAt.OrderBy(l => l.Name)) {
++        foreach (var label in BoogieGenerator.TranslationOrder(heapAt, l => l.Name)) {
+           capturedHeaps.Add(OldAt(label).HeapExpr);
+         }
+         foreach (var heap in capturedHeaps) {
+@@ -1884,7 +1884,7 @@
+           }
+           captured = BplAnd(captured, BplOr(Bpl.Expr.Eq(heap, h), BoogieGenerator.HeapSucc(heap, h)));
+         }
+-        foreach (var v in fvs.OrderBy(v => v.UniqueName)) {
++        foreach (var v in BoogieGenerator.TranslationOrder(fvs, v => v.UniqueName)) {
+           if (v.Type.MayShowReferences) {
+             captured = BplAnd(captured, BoogieGenerator.MkIsAlloc(BoogieGenerator.TrVar(e.Origin, v), v.Type, h));
+           }
+diff --git a/Source/DafnyCore/Verifier/BoogieGenerator.cs b/Source/DafnyCore/Verifier/BoogieGenerator.cs
+--- a/Source/DafnyCore/Verifier/BoogieGenerator.cs
++++ b/Source/DafnyCore/Verifier/BoogieGenerator.cs
+@@ -90,6 +90,9 @@
+       public string UniqueIdPrefix = null;
+       public bool ReportRanges = false;
+       public string PreludeText { get; init; }
++      // null preserves the entire legacy path. The cache driver supplies this
++      // only after validating the complete resolution/translation manifest.
++      public HistoryFreeTranslationInput HistoryFreeInput { get; init; }
+       internal Action<PropositionLowering> ObligationLowered { get; init; }
+       internal Action<DeclaredPreparationSnapshot> ObligationPrepared { get; init; }
+     }
+@@ -149,6 +152,9 @@
+     readonly Dictionary<string, Bpl.Constant> tytagConstants = new Dictionary<string, Constant>();
+ 
+     private ProofDependencyManager proofDependencies;
++    // The future module-task/result carrier owns this completed local manager.
++    // Never union it into the program manager for task/JSON/coverage reporting.
++    public ProofDependencyManager CompletedModuleProofDependencies { get; private set; }
+ 
+     /**
+      * The behavior around this field assumes that usages are visited before declarations
+@@ -209,7 +215,9 @@
+     [System.Diagnostics.Contracts.Pure]
+     bool InVerificationScope(Declaration d) {
+       Contract.Requires(d != null);
+-      if (!d.ShouldVerify(program.Compilation)) {
++      if (!(flags.HistoryFreeInput is { } input
++            ? input.VerificationDeclarations.Contains(d)
++            : d.ShouldVerify(program.Compilation))) {
+         return false;
+       }
+ 
+@@ -746,7 +754,22 @@
+       return new Bpl.IdentifierExpr(tok, var.AssignUniqueName(CurrentDeclaration.IdGenerator), TrType(var.Type));
+     }
+ 
++    private IEnumerable<ModuleDefinition> TranslationModules =>
++      flags.HistoryFreeInput?.Modules ?? program.RawModules();
++
++    private IOrderedEnumerable<T> TranslationOrder<T>(IEnumerable<T> values, Func<T, string> key) =>
++      flags.HistoryFreeInput == null ? values.OrderBy(key) : values.OrderBy(key, StringComparer.Ordinal);
++
+     public Bpl.Program DoTranslation(Program p, ModuleDefinition forModule) {
++      if (flags.HistoryFreeInput is { } input &&
++          (!ReferenceEquals(input.Module, forModule) ||
++           !p.Options.Plugins.SequenceEqual(DafnyOptions.DefaultPlugins))) {
++        throw new InvalidOperationException("History-free translation requires its checked module view and only pinned built-in plugins");
++      }
++      using var localState = TranslationLocalState.Enter(flags.HistoryFreeInput);
++      if (flags.HistoryFreeInput is { } namingInput) {
++        proofDependencies = proofDependencies.ForModule(namingInput.ModuleIdentity);
++      }
+       RequireCardinalityValidation(p);
+       if (sink == null) {
+         return new Bpl.Program();
+@@ -770,7 +793,7 @@
+       EstablishModuleScope(p.SystemModuleManager.SystemModule, forModule);
+       Type.PushScope(this.currentScope);
+ 
+-      foreach (var w in program.SystemModuleManager.Bitwidths) {
++      foreach (var w in (IEnumerable<int>)flags.HistoryFreeInput?.Bitwidths ?? program.SystemModuleManager.Bitwidths) {
+         // type axioms
+         AddBitvectorTypeAxioms(w);
+         // bitwise operations
+@@ -799,7 +822,7 @@
+         AddBitvectorNatConversionFunction(w);
+       }
+ 
+-      foreach (TopLevelDecl d in program.SystemModuleManager.SystemModule.TopLevelDecls) {
++      foreach (TopLevelDecl d in flags.HistoryFreeInput?.SystemDeclarations ?? program.SystemModuleManager.SystemModule.TopLevelDecls) {
+         CurrentDeclaration = d;
+         if (d is AbstractTypeDecl abstractType) {
+           GetOrCreateTypeConstructor(abstractType);
+@@ -834,7 +857,7 @@
+       ComputeFunctionFuel(); // compute which function needs fuel constants.
+ 
+       //translate us first
+-      List<ModuleDefinition> mods = program.RawModules().ToList();
++      List<ModuleDefinition> mods = TranslationModules.ToList();
+       mods.Remove(forModule);
+       mods.Insert(0, forModule);
+ 
+@@ -891,6 +914,9 @@
+       Type.PopScope(this.currentScope);
+       Type.DisableScopes();
+       new IllegalTriggerRemover(this).Visit(sink);
++      if (flags.HistoryFreeInput != null) {
++        CompletedModuleProofDependencies = proofDependencies;
++      }
+       return sink;
+ 
+     }
+@@ -1257,7 +1283,7 @@
+     }
+ 
+     private void ComputeFunctionFuel() {
+-      foreach (ModuleDefinition m in program.RawModules()) {
++      foreach (ModuleDefinition m in TranslationModules) {
+         foreach (TopLevelDecl d in m.TopLevelDecls) {
+           if (d is TopLevelDeclWithMembers) {
+             var c = (TopLevelDeclWithMembers)d;
+@@ -1328,7 +1354,7 @@
+     ///   embellished.
+     /// </summary>
+     private void AddTraitParentAxioms() {
+-      foreach (ModuleDefinition m in program.RawModules()) {
++      foreach (ModuleDefinition m in TranslationModules) {
+         foreach (var c in m.TopLevelDecls.OfType<TopLevelDeclWithMembers>().Where(RevealedInScope)) {
+           foreach (var parentTypeInExtendsClause in c.Traits) {
+             var childType = UserDefinedType.FromTopLevelDecl(c.Origin, c);
+@@ -4788,6 +4814,9 @@
+       }
+ 
+       private static Stack<FuelContext> GetSavedContexts() {
++        if (TranslationLocalState.Current is { } local) {
++          return local.FuelContexts;
++        }
+         var result = SavedContexts.Value;
+         if (result == null) {
+           SavedContexts.Value = result = new();
+diff --git a/Source/DafnyCore/Verifier/FreshIdGenerator.cs b/Source/DafnyCore/Verifier/FreshIdGenerator.cs
+--- a/Source/DafnyCore/Verifier/FreshIdGenerator.cs
++++ b/Source/DafnyCore/Verifier/FreshIdGenerator.cs
+@@ -2,6 +2,7 @@
+ using System.Collections.Generic;
+ using System.Diagnostics.Contracts;
+ using System.Linq;
++using System.Globalization;
+ 
+ namespace Microsoft.Dafny {
+   public abstract class FreshIdGenerator {
+@@ -27,8 +28,11 @@
+     }
+ 
+     string ComputeTipString() {
+-      return Tip.Any() ? string.Join('_', Tip.Reverse().Select(t => t.ToString())) : null;
++      return Tip.Any() ? string.Join('_', Tip.Reverse().Select(FormatNumber)) : null;
+     }
++
++    private static string FormatNumber(int value) => TranslationLocalState.Current == null
++      ? value.ToString() : value.ToString(CultureInfo.InvariantCulture);
+ 
+     readonly string commonPrefix = "";
+ 
+@@ -58,7 +62,7 @@
+           old = 0;
+         }
+         prefixToCount[prefix] = old + 1;
+-        return tipString == null ? old.ToString() : tipString + "_" + old.ToString();
++        return tipString == null ? FormatNumber(old) : tipString + "_" + FormatNumber(old);
+       }
+     }
+ 
+diff --git a/Source/DafnyCore/Verifier/ProofDependencyManager.cs b/Source/DafnyCore/Verifier/ProofDependencyManager.cs
+--- a/Source/DafnyCore/Verifier/ProofDependencyManager.cs
++++ b/Source/DafnyCore/Verifier/ProofDependencyManager.cs
+@@ -8,6 +8,8 @@
+ using System;
+ using System.Collections.Generic;
+ using System.Linq;
++using System.Globalization;
++using System.Text;
+ using Microsoft.Boogie;
+ using DafnyCore.Verifier;
+ 
+@@ -17,6 +19,17 @@
+     public Dictionary<string, ProofDependency> ProofDependenciesById { get; } = new();
+     public readonly Dictionary<string, (Declaration Decl, HashSet<ProofDependency> Deps)> idsByMemberName = new();
+     private UInt64 proofDependencyIdCount = 0;
++    private readonly string idPrefix = "id";
++
++    public ProofDependencyManager() { }
++
++    private ProofDependencyManager(string logicalModuleIdentity) {
++      // Escape injectively, with no '$': Boogie's tracked-component encoding
++      // reserves '$'. Use logical identity, never the dependency-sensitive key.
++      idPrefix = "id" + Convert.ToHexString(Encoding.UTF8.GetBytes(logicalModuleIdentity)) + "_";
++    }
++
++    public ProofDependencyManager ForModule(string logicalModuleIdentity) => new(logicalModuleIdentity);
+ 
+     /// <summary>
+     /// Guards the two maps above.  With --verification-module-window K > 1 a later module is
+@@ -30,7 +43,11 @@
+ 
+     public string GetProofDependencyId(ProofDependency dep) {
+       lock (SyncRoot) {
+-        var idString = $"id{proofDependencyIdCount}";
++        if (idPrefix != "id" && currentDeclarationString == null) {
++          throw new InvalidOperationException("Set a dependency owner before emitting a module-local ID");
++        }
++        var idString = idPrefix == "id" ? $"id{proofDependencyIdCount}"
++          : idPrefix + proofDependencyIdCount.ToString(CultureInfo.InvariantCulture);
+         ProofDependenciesById[idString] = dep;
+         proofDependencyIdCount++;
+         var (_, currentSet) = idsByMemberName.GetOrCreate(currentDeclarationString, () => (currentDeclaration, new HashSet<ProofDependency>()));
+diff --git a/Source/DafnyCore/Verifier/Statements/MatchVerifier.cs b/Source/DafnyCore/Verifier/Statements/MatchVerifier.cs
+--- a/Source/DafnyCore/Verifier/Statements/MatchVerifier.cs
++++ b/Source/DafnyCore/Verifier/Statements/MatchVerifier.cs
+@@ -17,7 +17,7 @@
+     Contract.Requires(locals != null);
+     Contract.Requires(etran != null);
+ 
+-    FillMissingCases(stmt);
++    var missingCases = GetMissingCases(stmt);
+ 
+     generator.TrStmt_CheckWellformed(stmt.Source, builder, locals, etran, true);
+     // Pattern locals assume their declared field types. A suspended source
+@@ -28,7 +28,7 @@
+     b.Add(BoogieGenerator.TrAssumeCmd(stmt.Origin, Expr.False));
+     StmtList els = b.Collect(stmt.Origin);
+     IfCmd ifCmd = null;
+-    foreach (var missingCtor in stmt.MissingCases) {
++    foreach (var missingCtor in missingCases) {
+       // havoc all bound variables
+       b = new BoogieStmtListBuilder(generator, generator.Options, builder.Context);
+       var newLocals = new Variables();
+@@ -84,10 +84,11 @@
+     }
+   }
+ 
+-  private static void FillMissingCases(IMatch match) {
++  private static List<DatatypeCtor> GetMissingCases(IMatch match) {
+     Contract.Requires(match != null);
+-    if (match.MissingCases.Any()) {
+-      return;
++    var result = TranslationLocalState.Current == null ? match.MissingCases : new List<DatatypeCtor>(match.MissingCases);
++    if (result.Any()) {
++      return result;
+     }
+ 
+     var dtd = match.Source.Type.AsDatatype;
+@@ -116,11 +117,12 @@
+       // So, for now, record the missing constructors:
+       foreach (var ctr in dtd.Ctors) {
+         if (!memberNamesUsed.Contains(ctr.Name)) {
+-          match.MissingCases.Add(ctr);
+-        }
+-      }
+-      Contract.Assert(memberNamesUsed.Count + match.MissingCases.Count == dtd.Ctors.Count);
+-    }
++          result.Add(ctr);
++        }
++      }
++      Contract.Assert(memberNamesUsed.Count + result.Count == dtd.Ctors.Count);
++    }
++    return result;
+   }
+ 
+   /// <summary>
+@@ -171,7 +173,7 @@
+ 
+   public static void TrMatchExpr(BoogieGenerator boogieGenerator, MatchExpr me, WFOptions wfOptions, Variables locals,
+     BoogieStmtListBuilder builder, BoogieGenerator.ExpressionTranslator etran, BoogieGenerator.AddResultCommands addResultCommands) {
+-    FillMissingCases(me);
++    var missingCases = GetMissingCases(me);
+ 
+     boogieGenerator.CheckWellformed(me.Source, wfOptions, locals, builder, etran);
+     // Establish the source's type before assuming the pattern variables' types.
+@@ -181,7 +183,7 @@
+     BoogieStmtListBuilder elsBldr = new BoogieStmtListBuilder(boogieGenerator, boogieGenerator.Options, builder.Context);
+     elsBldr.Add(BoogieGenerator.TrAssumeCmd(me.Origin, Expr.False));
+     StmtList els = elsBldr.Collect(me.Origin);
+-    foreach (var missingCtor in me.MissingCases) {
++    foreach (var missingCtor in missingCases) {
+       // havoc all bound variables
+       var b = new BoogieStmtListBuilder(boogieGenerator, boogieGenerator.Options, builder.Context);
+       var newLocals = new Variables();
+diff --git a/Source/DafnyCore/Verifier/TranslationLocalState.cs b/Source/DafnyCore/Verifier/TranslationLocalState.cs
+new file mode 100644
+--- /dev/null
++++ b/Source/DafnyCore/Verifier/TranslationLocalState.cs
+@@ -0,0 +1,89 @@
++#nullable enable
++using System;
++using System.Collections.Generic;
++using System.Linq;
++
++namespace Microsoft.Dafny;
++
++/// <summary>
++/// Proposal seam for the checked immutable resolution manifest. This is supplied
++/// by the cache driver only after its closure/options/provenance are validated.
++/// Collections are snapshots in the manifest's canonical order. The reader must
++/// rebind every declaration to this compilation, never a previous AST instance.
++/// ResolutionKey is FINAL: R_m = H(L_m, G_m), after global passes. In particular
++/// G_m must cover modular-termination classifications read during translation.
++/// Computing/validating G_m is a caller obligation, not implemented here.
++/// </summary>
++public sealed record HistoryFreeTranslationInput(
++  string ResolutionKey,
++  string ModuleIdentity,
++  ModuleDefinition Module,
++  IReadOnlyList<ModuleDefinition> Modules,
++  IReadOnlyList<int> Bitwidths,
++  IReadOnlyList<TopLevelDecl> SystemDeclarations,
++  IReadOnlySet<Declaration> VerificationDeclarations);
++
++/// <summary>
++/// Dynamic scope for synchronous DoTranslation only; no await may occur inside
++/// it. All reference-keyed dictionaries are local and are never serialized.
++/// This indirection covers existing direct Declaration.IdGenerator/UniqueName
++/// reads without missing an expression translator or a nested visitor.
++/// </summary>
++internal sealed class TranslationLocalState : IDisposable {
++  [ThreadStatic] private static TranslationLocalState? current;
++  public static TranslationLocalState? Current => current;
++  private readonly Dictionary<Declaration, VerificationIdGenerator> generators = new(ReferenceEqualityComparer.Instance);
++  private readonly Dictionary<IVariable, string> names = new(ReferenceEqualityComparer.Instance);
++  private readonly Dictionary<Label, string> labels = new(ReferenceEqualityComparer.Instance);
++  private readonly Dictionary<LetExpr, Expression> lets = new(ReferenceEqualityComparer.Instance);
++  private readonly Dictionary<AssertLabel, Boogie.Expr> assertions = new(ReferenceEqualityComparer.Instance);
++  internal readonly Stack<BoogieGenerator.FuelContext> FuelContexts = new();
++
++  private TranslationLocalState() {
++    if (current != null) {
++      throw new InvalidOperationException("A translation scope must not be nested");
++    }
++    Type.ResetScopes();
++    current = this;
++  }
++
++  public static TranslationLocalState? Enter(HistoryFreeTranslationInput? input) =>
++    input == null ? null : new TranslationLocalState();
++
++  public VerificationIdGenerator Generator(Declaration declaration) {
++    if (!generators.TryGetValue(declaration, out var result)) {
++      generators.Add(declaration, result = new VerificationIdGenerator());
++    }
++    return result;
++  }
++
++  public string? NameOf(IVariable variable) => names.GetValueOrDefault(variable);
++  public string AssignName(IVariable variable, VerificationIdGenerator generator) {
++    if (!names.TryGetValue(variable, out var result)) {
++      names.Add(variable, result = generator.FreshId(variable.Name + "#"));
++    }
++    return result;
++  }
++
++  public string AssignLabel(Label label, FreshIdGenerator generator) {
++    if (!labels.TryGetValue(label, out var result)) {
++      labels.Add(label, result = generator.FreshNumericId("label"));
++    }
++    return result;
++  }
++
++  public Expression? GetLet(LetExpr expression) => lets.GetValueOrDefault(expression);
++  public void SetLet(LetExpr expression, Expression value) => lets[expression] = value;
++  public Boogie.Expr? GetAssertion(AssertLabel label) => assertions.GetValueOrDefault(label);
++  public void SetAssertion(AssertLabel label, Boogie.Expr value) => assertions[label] = value;
++
++  public void Dispose() {
++    if (!ReferenceEquals(current, this)) {
++      throw new InvalidOperationException("Mismatched translation scope");
++    }
++    current = null;
++    // Also runs on translation failure: no scopes or fuel stacks leak to the
++    // next job on the same large-stack worker thread.
++    Type.ResetScopes();
++  }
++}
