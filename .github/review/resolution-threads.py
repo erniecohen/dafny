@@ -6,6 +6,8 @@ Run from the repository root, for example:
 
 Each sample is a fresh process. The sidecar's outer resolve span includes global
 admission, builtin publication, worker startup/join and deterministic output merge.
+The real projects include Std, its examples and DafnyCore's Dafny backends, with
+their ordinary source/library configuration. --inputs selects a subset.
 The three integration inputs have the most module declarations in the public lit
 suite at the time of introduction (98, 57, 47); the last two intentionally report
 resolution errors. This benchmark runs no solver.
@@ -23,6 +25,8 @@ def main():
     parser.add_argument('--dafny', required=True)
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--runs', type=int, default=5)
+    parser.add_argument('--inputs', nargs='+', choices=[
+        'stdlib', 'stdlib-examples', 'dafny-core', 'modules-98', 'modules-57', 'modules-47', 'wide'])
     args = parser.parse_args()
     if args.runs < 5:
         parser.error('at least five runs are required')
@@ -35,6 +39,8 @@ def main():
     lit = Path('Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues')
     inputs = {
         'stdlib': (['Source/DafnyStandardLibraries/src/Std/dfyconfig.toml'], 0),
+        'stdlib-examples': (['Source/DafnyStandardLibraries/examples/dfyconfig.toml'], 0),
+        'dafny-core': (['Source/DafnyCore/dfyconfig.toml'], 0),
         'modules-98': ([str(lit / 'github-issue-187.dfy')], 0),
         'modules-57': ([str(lit / 'git-issue-1180a.dfy')], 2),
         'modules-47': ([str(lit / 'git-issue-1996.dfy'), '--type-system-refresh=false', '--general-newtypes=false'], 2),
@@ -42,6 +48,8 @@ def main():
     }
     summary = []
     for name, (files, expected_exit) in inputs.items():
+        if args.inputs and name not in args.inputs:
+            continue
         for threads in (1, 2, 4, 8):
             samples = []
             for run in range(args.runs):
