@@ -190,7 +190,10 @@ abstract module B { import [>><A<] }
     private async Task<WorkspaceEdit> RequestRename(
       TextDocumentItem documentItem, Position position, string newName) {
       var resolved = await WaitUntilResolutionFinished(documentItem, CancellationToken);
-      Assert.True(resolved, resolved ? null : PrintDiagnostics(await GetLastDiagnostics(documentItem)));
+      if (!resolved) {
+        var state = await Projects.GetResolvedDocumentAsyncNormalizeUri(documentItem);
+        Assert.Fail(string.Join("\n", state.GetAllDiagnostics().Select(d => $"{d.Uri}: {d.Diagnostic.Message}")));
+      }
       return await client.RequestRename(
         new RenameParams {
           TextDocument = documentItem.Uri,
