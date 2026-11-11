@@ -95,6 +95,28 @@ public class ModuleTranslationCacheTests {
   }
 
   [Fact]
+  public void TypeCopiesPreserveRuntimeTypeAndImmutableExpressionHashes() {
+    var proxy = new Bpl.TypeProxy(Bpl.Token.NoToken, "p");
+    Assert.True(proxy.Unify(Bpl.Type.Int));
+    var variable = new Bpl.Constant(Bpl.Token.NoToken, new Bpl.TypedIdent(Bpl.Token.NoToken, "x", proxy), false);
+    var identifier = new Bpl.IdentifierExpr(Bpl.Token.NoToken, variable, immutable: true);
+    var graph = new Bpl.Program();
+    graph.AddTopLevelDeclaration(variable);
+    graph.AddTopLevelDeclaration(new Bpl.Axiom(Bpl.Token.NoToken, identifier));
+    graph.AddTopLevelDeclaration(new Bpl.Constant(Bpl.Token.NoToken,
+      new Bpl.TypedIdent(Bpl.Token.NoToken, "float", new Bpl.FloatType(24, 8)), false));
+    Assert.True(BoogieSnapshotCloner.TryClone(graph, out var copy, out var reason), reason);
+    var clonedVariable = copy!.Constants.Single(v => v.Name == "x");
+    Assert.NotSame(proxy, Assert.IsType<Bpl.TypeProxy>(clonedVariable.TypedIdent.Type));
+    Assert.Same(Bpl.Type.Int, ((Bpl.TypeProxy)clonedVariable.TypedIdent.Type).ProxyFor);
+    var clonedIdentifier = Assert.IsType<Bpl.IdentifierExpr>(copy.Axioms.Single().Expr);
+    Assert.Same(clonedVariable, clonedIdentifier.Decl);
+    Assert.Equal(clonedIdentifier.ComputeHashCode(), clonedIdentifier.GetHashCode());
+    Assert.NotSame(graph.Constants.Single(v => v.Name == "float").TypedIdent.Type,
+      copy.Constants.Single(v => v.Name == "float").TypedIdent.Type);
+  }
+
+  [Fact]
   public async Task NullAndEmptyChecksumPrefixesAreDifferentInputs() {
     var program = await Resolve(Source);
     var module = program.RawModules().Single(m => m.Name == "M");
@@ -117,7 +139,7 @@ public class ModuleTranslationCacheTests {
     Assert.Equal(3, cache.Translations);
     Assert.Equal(0, cache.Hits);
     using var cancellation = new CancellationTokenSource();
-    cancellation.Cancel();
+    await cancellation.CancelAsync();
     Assert.Throws<OperationCanceledException>(() => cache.Translate(first, module, new(first.Options), cancellation.Token));
     Assert.Equal(0, cache.Hits);
     var next = await Resolve(Source);
@@ -149,6 +171,8 @@ public class ModuleTranslationCacheTests {
     var cache = new ModuleTranslationCache();
     var module = program.RawModules().Single(m => m.Name == "M");
     cache.Translate(program, module, new(program.Options), default);
+    var other = await Resolve(Source);
+    Assert.Throws<InvalidOperationException>(() => cache.Translate(other, module, new(other.Options), default));
     program.CardinalityValidationReceipt = null;
     Assert.Throws<InvalidOperationException>(() => cache.Translate(program, module, new(program.Options), default));
   }

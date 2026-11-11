@@ -56,9 +56,12 @@ public sealed class ModuleTranslationCache {
     reused = false;
     // Even a hit must not bypass the current transaction's global soundness admission.
     BoogieGenerator.RequireCardinalityValidation(program);
+    if (!program.ModuleSigs.ContainsKey(module)) {
+      throw new InvalidOperationException("Translation requires a module from the current admitted program");
+    }
     cancellationToken.ThrowIfCancellationRequested();
     var options = program.Options;
-    if (module.ResolutionKey == null || options.Get(CommonOptionBag.ResolutionThreads) <= 0 ||
+    if (module.ResolutionKey == null || module.TranslationInputs == null || options.Get(CommonOptionBag.ResolutionThreads) <= 0 ||
         options.AdditionalPlugins.Count != 0 || options.AdditionalPluginArguments.Count != 0 ||
         flags.ObligationLowered != null || flags.ObligationPrepared != null) {
       lock (gate) { Bypasses++; LastBypassReason = "missing module key, nonlocal names or external callbacks"; }
@@ -173,7 +176,7 @@ public sealed class ModuleTranslationCache {
       flags.InsertChecksums.ToString(), flags.ReportRanges.ToString(), flags.UniqueIdPrefix == null ? "null" : "string:" + flags.UniqueIdPrefix };
     // Source coordinates and captureState strings are observable in BPL/reporting but deliberately
     // absent from a semantic resolution key. Bind source files from this module's closure only.
-    var names = module.TranslationInputs?.ModuleNames ?? new HashSet<string> { module.FullName };
+    var names = module.TranslationInputs!.ModuleNames;
     var closure = program.RawModules().Where(m => names.Contains(m.FullName) || ReferenceEquals(m, module))
       .OrderBy(m => m.FullName, StringComparer.Ordinal).ToArray();
     var uris = closure.Select(m => m.Origin.Uri).Where(u => u != null).ToHashSet();

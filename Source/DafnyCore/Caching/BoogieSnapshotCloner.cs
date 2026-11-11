@@ -18,6 +18,8 @@ internal sealed class BoogieSnapshotCloner {
   internal readonly record struct SymbolBindingKey(System.Type Type, string Name, Uri? Uri, int StartLine, int StartColumn, int EndLine, int EndColumn);
   private readonly IReadOnlyDictionary<SymbolBindingKey, ICanVerify>? currentSymbols;
   private static readonly MethodInfo Memberwise = typeof(object).GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic)!;
+  private static readonly FieldInfo? UniqueId = typeof(Bpl.Absy).GetField("<UniqueId>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+  private static readonly FieldInfo? ExpressionHash = typeof(Bpl.Expr).GetField("CachedHashCode", BindingFlags.Instance | BindingFlags.NonPublic);
   private static readonly ConcurrentDictionary<System.Type, FieldInfo[]> Fields = new();
 
   private BoogieSnapshotCloner(IReadOnlyDictionary<SymbolBindingKey, ICanVerify>? currentSymbols) {
@@ -106,11 +108,21 @@ internal sealed class BoogieSnapshotCloner {
     }
     // Memberwise copying followed by field-wise traversal preserves fields that a syntax
     // visitor omits (definition-axiom owners, attributes, type links and literal aliases).
-    // Boogie's Clone allocates a fresh Absy UniqueId, required by its functional maps.
-    var clone = value is Bpl.Absy absy ? absy.Clone() : Memberwise.Invoke(value, null)!;
+    // Do not invoke virtual Clone: Type.Clone can return this or erase a resolved
+    // proxy, neither of which is a graph copy. Allocate IDs through Absy's public
+    // constructor, then install them in this pinned ABI's private copy.
+    var clone = Memberwise.Invoke(value, null)!;
+    if (clone is Bpl.Absy) {
+      if (UniqueId == null) { throw new UnsupportedSnapshotException("Boogie node identity ABI"); }
+      UniqueId.SetValue(clone, new IdentityTicket().UniqueId);
+    }
     copies.Add(value, clone);
     foreach (var field in Fields.GetOrAdd(type, CollectFields)) {
       field.SetValue(clone, Copy(field.GetValue(value)));
+    }
+    if (clone is Bpl.Expr { Immutable: true } expression) {
+      if (ExpressionHash == null) { throw new UnsupportedSnapshotException("Boogie expression hash ABI"); }
+      ExpressionHash.SetValue(expression, expression.ComputeHashCode());
     }
     return clone;
   }
@@ -138,4 +150,8 @@ internal sealed class BoogieSnapshotCloner {
   internal static SymbolBindingKey SymbolKey(ICanVerify symbol) => new(symbol.GetType(), symbol.FullDafnyName, symbol.Origin.Uri,
     symbol.StartToken.line, symbol.StartToken.col, symbol.EndToken.line, symbol.EndToken.col);
   private sealed class UnsupportedSnapshotException(string message) : Exception(message);
+  private sealed class IdentityTicket() : Bpl.Absy(Bpl.Token.NoToken) {
+    public override void Resolve(Bpl.ResolutionContext context) => throw new NotSupportedException();
+    public override void Typecheck(Bpl.TypecheckingContext context) => throw new NotSupportedException();
+  }
 }
