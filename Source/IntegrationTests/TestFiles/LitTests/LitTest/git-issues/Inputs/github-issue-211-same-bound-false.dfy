@@ -31,8 +31,8 @@ module L {
   function Longer(t: Tr.T, n: nat): nat decreases {:global} n, 7 {
     if n == 0 then 0 else var r := t.F(n - 1); assert false; r
   }
-  // A helper that reaches no dispatched call needs no bound.
-  function Plus(a: nat, b: nat): nat { a + b }
+  // An imported closed helper publishes its checked closed promise instead of a bound.
+  function {:termination_closed} Plus(a: nat, b: nat): nat { a + b }
 }
 
 module Y {
