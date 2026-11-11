@@ -446,6 +446,7 @@ module Std.Arithmetic.IntegerBitwise {
     ensures shlNat(n,a,k) < P(n)
   {
     PowerZero(); PowerSum(k,n-k);
+    ProductBounds(0,P(k),a,P(n-k));
     assert 0 <= a*P(k) < P(n);
     assert a < P(n);
     NormId(n,a);
