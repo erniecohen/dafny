@@ -357,3 +357,6 @@ git-issues/github-issue-211-warning.dfy
 
 # Opt-in --pipeline-profile writes a timing sidecar and leaves the output unchanged (#241).
 git-issues/github-issue-241.dfy
+
+# Opt-in --verification-module-window K reports what K = 1 reports (#241).
+git-issues/github-issue-241-module-window.dfy

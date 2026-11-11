@@ -605,6 +605,10 @@ jobs:
         env:
           Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
         run: dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~VerificationBatchTests --logger "console;verbosity=normal"
+      - name: A module window reports what one module at a time reports (#241)
+        env:
+          Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
+        run: dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~ModuleWindowTests --logger "console;verbosity=normal"
       - name: Literal identities are option guarded and local to each module
         run: dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~AdditionalAxiomsTranslationTests --logger "console;verbosity=normal"
       - name: Obligation lowering inventory and structural comparisons
