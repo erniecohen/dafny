@@ -254,6 +254,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
     "Prevents a warning from being generated for axioms, such as assume statements and functions or methods without a body, that don't have an {:axiom} attribute.") {
   };
 
+  public static readonly Option<bool> WarnUncheckedTermination = new("--warn-unchecked-termination", () => false,
+    "Warn about each trait with {:termination false} and each class or trait with @AssumeCrossModuleTermination: calls dispatched through such a trait are not checked for termination. Like an assume statement, the declaration is not reported if it has an {:axiom} attribute or if --allow-axioms is set. Only declarations that the run verifies are reported, not those of libraries or included files. Disabled by default.");
+
   public static readonly Option<bool> BitvectorMapKeys = new("--bitvector-map-keys", () => false,
     "Preserve bitvector key types in map and imap lookups, and bitvector element types in multiset multiplicity lookups, during verification. Disabled by default.");
 
@@ -745,6 +748,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(AncestorQualifiedModuleIds, OptionScope.Cli);
     OptionRegistry.RegisterOption(SynonymRefinesAbstractType, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
+    OptionRegistry.RegisterOption(WarnUncheckedTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(InvariantConstructorInference, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationLogFormat, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerifyIncludedFiles, OptionScope.Cli);
