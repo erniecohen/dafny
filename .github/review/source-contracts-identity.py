@@ -84,7 +84,8 @@ def pair(args, name, cwd, options):
                     'resources': vector}
         if result.returncode not in [0, 1, 2, 3, 4] or b'Unhandled exception' in result.stdout + result.stderr:
             raise ValueError(name + ': abnormal verifier exit')
-        if b'verified' in result.stdout and vector is None:
+        summaries = re.findall(rb'verifier finished with (\d+) verified, (\d+) errors?', result.stdout)
+        if any(int(valid) + int(errors) > 0 for valid, errors in summaries) and vector is None:
             raise ValueError(name + ': missing verification log')
         observed.append(snapshot)
         shutil.copytree(observation, directory / variant)
@@ -101,6 +102,27 @@ def pair(args, name, cwd, options):
     return report
 
 
+def source_arguments(options, source, first_run):
+    """Restore input-option values removed by the standing population planner.
+
+    That planner discards source placeholders, including values of --library
+    and --input. Keep the same population and proof profile, but execute those
+    input options with their RUN-line arguments rather than a missing argument.
+    """
+    tokens = shlex.split(first_run.split('>')[0])
+    result = list(options)
+    for name in ['--library', '--input']:
+        for index, option in enumerate(result):
+            if option != name or (index + 1 < len(result) and not result[index + 1].startswith('--')):
+                continue
+            original = tokens.index(name)
+            value = tokens[original + 1].replace('%S', str(Path(source).parent)).replace('%s', source)
+            if '%' in value:
+                raise ValueError(source + ': unsupported input placeholder ' + value)
+            result.insert(index + 1, value)
+    return result
+
+
 def suite(args):
     runner = load('lit-verdicts')
     plan = args.output / 'plan.tsv'
@@ -111,7 +133,8 @@ def suite(args):
     for index, (source, own) in enumerate(rows):
         if index % count != shard:
             continue
-        options = semantic_options(shlex.split(own))
+        first_run = (args.sources / source).read_text(errors='replace').splitlines()[0]
+        options = source_arguments(semantic_options(shlex.split(own)), source, first_run)
         names = {option.split(':')[0].split('=')[0] for option in options if option.startswith('--')}
         fixed = ['--allow-warnings']
         if '--resource-limit' not in names:
