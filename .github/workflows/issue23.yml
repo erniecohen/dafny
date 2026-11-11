@@ -1,5 +1,7 @@
 name: Issue 23 review evidence
 on:
+  push:
+    branches: ['scratch/23-review-evidence/**']
   workflow_dispatch:
 permissions:
   contents: read
