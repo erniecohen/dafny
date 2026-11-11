@@ -23,6 +23,7 @@ public static class DafnyCommands {
   public static readonly IReadOnlyList<Option> VerificationOptions = new Option[] {
     CommonOptionBag.AdditionalAxioms,
     CommonOptionBag.ProgressOption,
+    CommonOptionBag.PipelineProfile,
     CommonOptionBag.RelaxDefiniteAssignment,
     BoogieOptionBag.VerificationTimeLimit,
     CommonOptionBag.VerifyIncludedFiles,
@@ -135,6 +136,7 @@ public static class DafnyCommands {
     CommonOptionBag.WarnMissingConstructorParenthesis,
     PrintStmt.TrackPrintEffectsOption,
     CommonOptionBag.AllowAxioms,
+    CommonOptionBag.WarnUncheckedTermination,
     CommonOptionBag.EnforceDeterminism,
     MethodOrFunction.AllowExternalContracts,
     DafnyProject.FindProjectOption,

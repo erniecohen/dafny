@@ -79,7 +79,8 @@ class PriorityQueue {
     SiftDown(1);
   }
 
-  method SiftDown(k: int)
+  // Verify the loop obligations separately at the existing resource limit.
+  method {:isolate_assertions} SiftDown(k: int)
     requires 1 <= k
     requires MostlyValid()
     requires forall j :: 2 <= j <= n && j/2 != k ==> a[j/2] <= a[j]

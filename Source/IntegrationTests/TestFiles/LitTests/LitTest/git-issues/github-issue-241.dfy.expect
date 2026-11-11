@@ -1,0 +1,18 @@
+first event: manifest
+last event: summary
+kinds: manifest, module, span, summary, symbol, task
+roots: 1
+parse: 1
+parse.clone: 1
+resolve: 1
+translate.wait: 2
+translate.prelude: 2
+translate: 2
+prepare: 2
+spans well-formed: True
+task times ordered: True
+module A: 2 tasks, Valid 2
+module B: 2 tasks, Invalid 1, Valid 1
+module event A: 2 symbols, ordered True
+module event B: 2 symbols, ordered True
+summary: reason verify, 4 completed, 0 unfinished, events counted True

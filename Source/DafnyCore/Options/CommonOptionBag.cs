@@ -41,6 +41,12 @@ public class CommonOptionBag {
       IsHidden = true
     };
 
+  public static readonly Option<string> PipelineProfile =
+    new("--pipeline-profile", @"
+(experimental) Write timing events of the verification pipeline to the given file, one JSON object per line: parsing, resolution, translation to Boogie, Boogie's preparation of each module, and each verification task's queue wait and solver time, with process-wide allocation, garbage-collection and CPU deltas. Only the file is added; Dafny's other output and its solver input are unchanged.".TrimStart()) {
+      ArgumentHelpName = "file"
+    };
+
   public static readonly Option<string> LogLocation =
     new("--log-location", "Sets the directory where to store log files") {
       IsHidden = true
@@ -253,6 +259,9 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> AllowAxioms = new("--allow-axioms", () => false,
     "Prevents a warning from being generated for axioms, such as assume statements and functions or methods without a body, that don't have an {:axiom} attribute.") {
   };
+
+  public static readonly Option<bool> WarnUncheckedTermination = new("--warn-unchecked-termination", () => false,
+    "Warn about each trait with {:termination false} and each class or trait with @AssumeCrossModuleTermination: calls dispatched through such a trait are not checked for termination. Like an assume statement, the declaration is not reported if it has an {:axiom} attribute or if --allow-axioms is set. Only declarations that the run verifies are reported, not those of libraries or included files. Disabled by default.");
 
   public static readonly Option<bool> BitvectorMapKeys = new("--bitvector-map-keys", () => false,
     "Preserve bitvector key types in map and imap lookups, and bitvector element types in multiset multiplicity lookups, during verification. Disabled by default.");
@@ -710,6 +719,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(WarnAsErrors, OptionScope.Cli);
     OptionRegistry.RegisterOption(ProgressOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(LogLocation, OptionScope.Cli);
+    OptionRegistry.RegisterOption(PipelineProfile, OptionScope.Cli);
     OptionRegistry.RegisterOption(LogLevelOption, OptionScope.Cli);
     OptionRegistry.RegisterOption(ManualTriggerOption, OptionScope.Module);
     OptionRegistry.RegisterOption(AdditionalAxioms, OptionScope.Cli);
@@ -745,6 +755,7 @@ NoGhost - disable printing of functions, ghost methods, and proof
     OptionRegistry.RegisterOption(AncestorQualifiedModuleIds, OptionScope.Cli);
     OptionRegistry.RegisterOption(SynonymRefinesAbstractType, OptionScope.Cli);
     OptionRegistry.RegisterOption(ModularTermination, OptionScope.Cli);
+    OptionRegistry.RegisterOption(WarnUncheckedTermination, OptionScope.Cli);
     OptionRegistry.RegisterOption(InvariantConstructorInference, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerificationLogFormat, OptionScope.Cli);
     OptionRegistry.RegisterOption(VerifyIncludedFiles, OptionScope.Cli);

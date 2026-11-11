@@ -1077,12 +1077,52 @@ namespace Microsoft.Dafny {
       }
     }
 
+    /// <summary>
+    /// Under --warn-unchecked-termination, reports each trait with {:termination false} and each
+    /// class or trait with @AssumeCrossModuleTermination, the declarations that "dafny audit" reports
+    /// as unchecked termination assumptions.  As for an assume statement, an {:axiom} attribute on the
+    /// declaration, or --allow-axioms, acknowledges the assumption and suppresses the warning.
+    /// Declarations that this run does not verify are not reported.
+    /// </summary>
+    private void WarnUncheckedTermination(IEnumerable<TopLevelDecl> declarations) {
+      if (!Options.Get(CommonOptionBag.WarnUncheckedTermination) || Options.Get(CommonOptionBag.AllowAxioms)) {
+        return;
+      }
+      // Under --modular-termination, the calls are checked in the program being verified, but not in
+      // code verified separately (see "global bounds" in the Reference Manual), so the warning stays.
+      var modular = Options.Get(CommonOptionBag.ModularTermination);
+      foreach (var d in declarations) {
+        // Only declarations verified in this run are reported: a declaration from a library
+        // (--library, --standard-libraries or a .doo file) or an included file is not, since the
+        // user cannot acknowledge it with {:axiom} there.  Nor is the copy of a declaration that a
+        // refining module inherits: the attribute is reported where it is written.
+        if (d is not TopLevelDeclWithMembers cl || cl.HasAxiomAttribute || cl.Origin is RefinementOrigin ||
+            !cl.ShouldVerify(ProgramResolver.Program.Compilation)) {
+          continue;
+        }
+        bool termination = true;
+        if (cl is TraitDecl && Attributes.ContainsBool(cl.Attributes, "termination", ref termination) && !termination) {
+          reporter.Warning(MessageSource.Verifier, ResolutionErrors.ErrorId.r_termination_false_without_axiom, cl.NameNode.Origin,
+            $"trait '{cl.Name}' has {{:termination false}} and no {{:axiom}} annotation: " + (modular
+              ? "--modular-termination checks the calls dispatched through it only in code verified with that option"
+              : "calls dispatched through it are not checked for termination"));
+        }
+        if (Attributes.Contains(cl.Attributes, "AssumeCrossModuleTermination")) {
+          reporter.Warning(MessageSource.Verifier, ResolutionErrors.ErrorId.r_assume_cross_module_termination_without_axiom, cl.NameNode.Origin,
+            $"{cl.WhatKind} '{cl.Name}' has @AssumeCrossModuleTermination and no {{:axiom}} annotation: " + (modular
+              ? "code verified without it, such as the module of a trait it extends, did not check the calls dispatched to it for termination"
+              : "calls dispatched to it through traits of other modules are not checked for termination"));
+        }
+      }
+    }
+
     public void ResolveTopLevelDecls_Signatures(ModuleDefinition def, ModuleSignature sig, List<TopLevelDecl> declarations,
       Graph<IndDatatypeDecl> datatypeDependencies, Graph<CoDatatypeDecl> codatatypeDependencies) {
       Contract.Requires(declarations != null);
       Contract.Requires(datatypeDependencies != null);
       Contract.Requires(codatatypeDependencies != null);
       RevealAllInScope(declarations, def.VisibilityScope);
+      WarnUncheckedTermination(declarations);
 
       /* Augment the scoping environment for the current module*/
       foreach (TopLevelDecl d in declarations) {

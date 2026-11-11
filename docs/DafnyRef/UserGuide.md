@@ -344,6 +344,39 @@ proofs and does not establish that the whole project is verified.
    - `--solver-path`
    - `--arithmetic-solver`
 
+- Scheduling
+   - `--verification-module-window`
+   - `--verification-module-window-memory`
+
+By default `dafny verify` verifies one module at a time: it starts every symbol of a
+module, waits until all of them have finished, and only then translates and starts
+the next module, so cores can sit idle while the last proofs of a module finish.
+The opt-in `--verification-module-window K`, for K greater than 1, keeps up to K
+modules in verification at once: a later module is translated and its proofs are
+started while earlier modules are still being verified, and another module is
+admitted whenever one finishes. The number of proofs that run at once is still set
+by `--cores`. Modules are translated and their proofs are started in the same order
+as with K = 1, and results, diagnostics (including those raised while translating a
+module), the "Verified n/m symbols" status lines, logs and the exit code are reported
+in the same order, as K = 1 reports them: a module's results wait until every earlier
+module's results have been reported. The per-batch lines of `--progress Batch` are
+printed as batches finish, so with K > 1 they can interleave across modules. At most
+2K modules are admitted but not yet reported, at most K of them still in verification.
+
+Memory is the cost: a module's translation and results are kept until it has been
+reported. `--verification-module-window-memory N` admits another module only while
+the managed heap, including garbage not yet collected, is below N MiB (by default,
+half of the memory available to the process), or when no other module is waiting
+to be reported. If verification stops early, because of a solver failure, an
+internal error or cancellation, the proofs of modules admitted ahead of their turn
+are cancelled and their results and diagnostics are not reported, as with K = 1,
+which never starts them.
+
+A proof's verdict and resource count do not depend on K: each proof sends the solver
+the same commands. A proof limited by `--verification-time-limit`, though, can
+finish just before or just after its limit depending on how busy the machine is, as
+it can with a different `--cores`.
+
 
 #### 13.6.1.4. `dafny translate <language>` {#sec-dafny-translate}
 
@@ -2084,6 +2117,21 @@ in the neighborhood of the error; the error location (file, line, column) is alw
 
 * `--solver-log <file>` - [verification only] the file in which to place the SMT text sent to the solver
 
+* `--pipeline-profile <file>` - [verification only] (experimental) write timing
+  events of the verification pipeline to `<file>`, one JSON object per line: a
+  manifest of the run (version, arguments, runtime, GC mode, core count); spans for
+  finding the root files, parsing, cloning the parsed program and resolution; per
+  module, the wait for the translator lock, reading the prelude, translation to
+  Boogie and Boogie's preparation of the module's tasks; per verification task, the
+  times it was submitted, started by a solver and completed, with its outcome and
+  resource count; for the command-line verifier, when each module's symbols were
+  started and finished and its cache released; and a final summary. Each span also
+  records the process-wide change in allocated bytes, garbage collections, GC pause
+  time and process CPU time over its interval. Times are milliseconds on a
+  monotonic clock. The option only adds the file: Dafny's other output, and what it
+  sends to the solver, are the same with and without it. The driver
+  `.github/review/pipeline-profile.py` in Dafny's repository summarizes a profile.
+
 * `--log-format <configuration>` - [verification only] (was `-verificationLogger:<configuration string>`)
   log verification
   results to the given test result logger. The currently supported
@@ -2408,6 +2456,22 @@ warnings as errors.
 
 * `--warn-missing-constructor-parentheses` - warn if a constructor name in a pattern might be misinterpreted
 
+* `--warn-unchecked-termination` - warn about each trait with `{:termination false}` and each
+  class or trait with `@AssumeCrossModuleTermination`. Calls dispatched through such a trait are
+  not checked for termination (see [global bounds](#sec-global-decreases)), so they can recurse
+  forever and still verify, and a program can prove `false` through them; `dafny audit` reports
+  the same declarations. The warning works as the one for an `assume` statement without
+  `{:axiom}` does: like any warning, it fails the command unless `--allow-warnings` is given;
+  `{:axiom}` on the declaration, as in `trait {:termination false} {:axiom} T`, acknowledges the
+  assumption and suppresses the warning, and so does `--allow-axioms`. Only declarations that
+  the run verifies are reported: not those of a library (`--library`, `--standard-libraries` or a
+  `.doo` file) or of an included file (unless `--verify-included-files`), which the user cannot
+  annotate, and a declaration that a refining module inherits is reported once, where it is
+  written. Under
+  `--modular-termination` the warning stays, since that option checks these calls only in the
+  code verified with it. Disabled by default. Use `warn-unchecked-termination = true` in a
+  project file's `[options]` section.
+
 Legacy options
 
 * `-deprecation:<n>` - control warnings about deprecated features. The
@@ -2509,6 +2573,9 @@ and what information it produces about the verification process.
   When a function with a body overrides a trait function from another module, it
   also states the override axiom at the layer that calls use, so that a fact about
   the overriding function reaches the trait function without a cast to the trait.
+  For a source lambda with a declared precondition, it also exposes the necessary
+  direction of that precondition under the lambda's type, allocation and heap
+  requirements. This applies to stored and returned lambda values.
   See [the soundness, trigger and solver-limit note](../dev/additional-axioms.md).
 
 * `--heap-free-lambda-facts` - check a lambda without a reads clause, whose

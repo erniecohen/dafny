@@ -68,6 +68,7 @@ public class Compilation : IDisposable {
 
   private bool disposed;
   private readonly ObservableErrorReporter errorReporter;
+  private readonly PipelineProfile? profile;
 
   public Task<Program?> ParsedProgram { get; }
   public Task<ResolutionResult?> Resolution { get; }
@@ -88,6 +89,7 @@ public class Compilation : IDisposable {
     ) {
     Input = input;
     this.boogieEngine = boogieEngine;
+    profile = PipelineProfile.For(input.Options);
 
     this.documentLoader = documentLoader;
     this.logger = logger;
@@ -142,6 +144,7 @@ public class Compilation : IDisposable {
 
   private async Task<IReadOnlyList<DafnyFile>> DetermineRootFiles() {
     await started.Task;
+    var profileStart = profile?.Begin();
 
     var result = new List<DafnyFile>();
 
@@ -222,6 +225,17 @@ public class Compilation : IDisposable {
     // Allow specifying the same file twice on the CLI
     var distinctResults = result.DistinctBy(d => d.Uri).ToList();
 
+    if (profile != null) {
+      profile.Span("roots", profileStart!.Value, new Dictionary<string, object?> {
+        ["version"] = Input.Version,
+        ["files"] = distinctResults.Select(f => new Dictionary<string, object?> {
+          ["uri"] = f.Uri.ToString(),
+          ["notVerified"] = f.ShouldNotVerify,
+          ["bytes"] = f.Uri.IsFile && File.Exists(f.Uri.LocalPath) ? new FileInfo(f.Uri.LocalPath).Length : null
+        }).ToList()
+      });
+    }
+
     updates.OnNext(new DeterminedRootFiles(Project, distinctResults));
     return distinctResults;
   }
@@ -232,7 +246,12 @@ public class Compilation : IDisposable {
       return null;
     }
 
+    var profileStart = profile?.Begin();
     var parseResult = await documentLoader.ParseAsync(this, cancellationSource.Token);
+    if (profile != null) {
+      profile.Span("parse", profileStart!.Value, new Dictionary<string, object?> { ["version"] = Input.Version });
+      profileStart = profile.Begin();
+    }
     if (Options.Get(CommonOptionBag.CheckSourceLocationConsistency)) {
       CheckSourceLocationConsistency(null, parseResult.Program);
     }
@@ -242,6 +261,9 @@ public class Compilation : IDisposable {
 
     var cloner = new Cloner(true);
     programAfterParsing = new Program(cloner, transformedProgram);
+    if (profile != null) {
+      profile.Span("parse.clone", profileStart!.Value, new Dictionary<string, object?> { ["version"] = Input.Version });
+    }
 
     updates.OnNext(new FinishedParsing(parseResult with { Program = programAfterParsing }));
     logger.LogDebug(
@@ -274,7 +296,16 @@ public class Compilation : IDisposable {
     if (transformedProgram == null) {
       return null;
     }
+    var profileStart = profile?.Begin();
     var resolution = await documentLoader.ResolveAsync(this, transformedProgram!, cancellationSource.Token);
+    if (profile != null) {
+      profile.Span("resolve", profileStart!.Value, new Dictionary<string, object?> {
+        ["version"] = Input.Version,
+        ["typeSystemRefresh"] = Options.Get(CommonOptionBag.TypeSystemRefresh),
+        ["hasErrors"] = resolution?.HasErrors,
+        ["verifiableSymbols"] = resolution?.CanVerifies?.Values.Sum(t => t.Count())
+      });
+    }
     if (resolution == null) {
       return null;
     }
@@ -464,9 +495,11 @@ public class Compilation : IDisposable {
   }
 
   private void VerifyTask(ICanVerify canVerify, IVerificationTask task) {
+    profile?.TaskSubmitted(task);
     var statusUpdates = task.TryRun();
     if (statusUpdates == null) {
       if (task.CacheStatus is Completed completedCache) {
+        profile?.TaskStatus(PipelineProfile.ModuleName(canVerify.ContainingModule), canVerify.FullDafnyName, task, completedCache, true);
         HandleStatusUpdate(canVerify, task, completedCache);
       }
 
@@ -476,6 +509,7 @@ public class Compilation : IDisposable {
     statusUpdates.Subscribe(
       update => {
         try {
+          profile?.TaskStatus(PipelineProfile.ModuleName(canVerify.ContainingModule), canVerify.FullDafnyName, task, update, false);
           HandleStatusUpdate(canVerify, task, update);
         } catch (Exception e) {
           logger.LogError(e, "Caught exception in statusUpdates OnNext.");
@@ -753,6 +787,15 @@ public class Compilation : IDisposable {
         return VcOutcome.Correct;
       default:
         throw new ArgumentOutOfRangeException(nameof(outcome), outcome, null);
+    }
+  }
+
+  /// <summary>Cancels the verification tasks scheduled for one symbol.</summary>
+  public void CancelCanVerify(ICanVerify canVerify) {
+    if (tasksPerVerifiable.TryGetValue(canVerify, out var tasks)) {
+      foreach (var task in tasks) {
+        task.Cancel();
+      }
     }
   }
 

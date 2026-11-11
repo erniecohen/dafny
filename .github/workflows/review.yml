@@ -605,6 +605,10 @@ jobs:
         env:
           Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
         run: dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~VerificationBatchTests --logger "console;verbosity=normal"
+      - name: A module window reports what one module at a time reports (#241)
+        env:
+          Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
+        run: dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~ModuleWindowTests --logger "console;verbosity=normal"
       - name: Literal identities are option guarded and local to each module
         run: dotnet test Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~AdditionalAxiomsTranslationTests --logger "console;verbosity=normal"
       - name: Obligation lowering inventory and structural comparisons
@@ -728,9 +732,14 @@ jobs:
     timeout-minutes: 60
     strategy:
       matrix:
+        # TEMPORARY (https://github.com/erniecohen/dafny/issues/256): hosted macOS
+        # runners were not assigned (three release runs on 2026-11-11 waited 15
+        # minutes and were cancelled), so osx-arm64 is built on a Mac and added to the
+        # release by .github/review/release-macos.sh.  To restore, uncomment the
+        # osx-arm64 entry and revert the notes text and docs of that change.
         include:
-          - rid: osx-arm64
-            os: macos-15
+          # - rid: osx-arm64
+          #   os: macos-15
           - rid: linux-x64
             os: ubuntu-24.04
     steps:
@@ -806,7 +815,8 @@ jobs:
             echo "Dafny \`$VERSION\`, built from this tag by the workflow \`review\`."
             echo "What it contains is described in the tag's \`REVIEW.md\`, where there is one."
             echo
-            echo "Self-contained binaries for macOS on Apple silicon and Linux on x64: they need no .NET."
+            echo "Self-contained binaries for Linux on x64, and for macOS on Apple silicon (added from a"
+            echo "Mac by \`.github/review/release-macos.sh\`, with SHA256SUMS updated): they need no .NET."
             echo "\`dafny --version\` prints \`$VERSION\`."
             echo
             echo "Z3 is not included.  CI here verifies with Z3 5.1.0, from Z3's public GitHub release;"

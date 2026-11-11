@@ -123,6 +123,29 @@ standard library moves.  The regression is `git-issues/github-issue-96.dfy`; CI'
 `Statement-expression conclusions (opt-in, #96)` runs its fixtures with the option on and off.
 The release note is `docs/dev/news/1371.feat`.
 
+## Declared lambda preconditions under `--additional-axioms` ([#97](https://github.com/erniecohen/dafny/issues/97))
+
+Dafny's `RequiresN` schema for a lambda value gives only the sufficient direction of its declared
+precondition, `r[heap, args] ==> RequiresN(..., HandleN(h, r, rd), args)`, so
+`const f := (x: int) requires p(x) => x` could not prove `f.requires(x) ==> p(x)`.  With
+`--additional-axioms`, `LambdaCanCallAssumption` (`BoogieGenerator.ExpressionTranslator.cs`) adds,
+beside a source lambda's existing guarded facts and under the same family, formal type and
+allocation, good-heap and formation-heap guards, plus guards on its captured values and heaps,
+`RequiresN(...) <==> Range`, triggered only on the requires selector.  It binds the same variables
+as the existing quantifier, including the selector type variables that `--heap-free-lambda-facts`
+introduces.  Its kind is **asserts**: the necessary direction is a new fact.  It holds in the model
+that interprets `RequiresN` of a handle as exactly its stored precondition map, which satisfies
+the native schema and its frame and arrow-type schemas, and in which the stored map
+`FormalTypes && (CanCall(range) ==> Range)` equals `Range` under the guards
+([`docs/dev/additional-axioms.md`](docs/dev/additional-axioms.md#declared-preconditions-of-source-lambda-values-97)).
+With the option off the translation is unchanged.  The regression is
+`git-issues/github-issue-97.dfy`: the issue's program, positive, negative and `assert false`
+fixtures under both resolvers and both settings of the option, and with `--heap-free-lambda-facts`;
+the release note is `docs/dev/news/97.fix`.  With the option on, two standard-library rows move under
+Z3 5.1.0 (`Sequences.Elements` well-formedness to out of resource, `DecodeValidPartialsFrom2PaddedSeq`
+well-formedness to correct); the commit that updates their expected verdicts gives the counts.
+With the option off, no verdict of the suite or of the standard library moves.
+
 ## Boogie
 
 Boogie's unguarded reverse casts,
@@ -311,8 +334,10 @@ and reports each program's verdict.  It verifies Dafny's standard library,
 `Source/DafnyStandardLibraries`, as the library's Makefile's `verify` target does,
 once with Z3 5.1.0 and once with the Z3 that the tree's own tests expect (4.12.1 on
 this branch), and reports each declaration's verdict.  It also runs the tests named in `.github/review/regressions` in
-upstream's own harness.  On a tag it attaches self-contained binaries for `osx-arm64`
-and `linux-x64` to a GitHub release, with their sha256 sums.
+upstream's own harness.  On a tag it attaches a self-contained binary for `linux-x64`
+to a GitHub release, with its sha256 sum; for now (https://github.com/erniecohen/dafny/issues/256) the `osx-arm64` binary is built on a Mac
+and added to that release by `.github/review/release-macos.sh`, which also updates
+`SHA256SUMS` and the release notes.
 
 ### Expected verdicts
 
