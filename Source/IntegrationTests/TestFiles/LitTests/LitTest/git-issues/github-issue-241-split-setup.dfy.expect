@@ -1,4 +1,4 @@
-github-issue-241-split-setup.dfy(49,0): Error: a postcondition could not be proved on this return path
-github-issue-241-split-setup.dfy(48,12): Related location: this is the postcondition that could not be proved
+github-issue-241-split-setup.dfy(47,2): Error: a postcondition could not be proved on this return path
+github-issue-241-split-setup.dfy(46,19): Related location: this is the postcondition that could not be proved
 
-Dafny program verifier finished with 7 verified, 1 error
+Dafny program verifier finished with 13 verified, 1 error
