@@ -863,6 +863,11 @@ declarations' generators, including generators reached through `codeContext`, do
 not carry translation history between modules. Translation uses the prerequisite
 closure for builtin declarations, bitvector axioms, function fuel and trait-parent
 axioms. Proof-dependency IDs are module-qualified as well.
+Let desugarings, assertion-label Boogie expressions and the saved fuel-context
+stack are translation-local under the option. Computing missing match cases does
+not add metadata to the resolved match. Captured-variable and heap-label ordering
+is ordinal, fresh counters use invariant formatting, and translation cleans up its
+type scope even on failure.
 
 Capture-state labels use the module identity, and snapshot implementation IDs use
 the full module key. State and source-comment ordinals restart in each translator. Physical paths and line
@@ -886,15 +891,28 @@ External plugin callbacks have no concurrency contract, so their presence limits
 the opt-in path to one worker. Whole-program admission and global rewrites always
 run outside the module scheduler.
 
+The key is the local, pre-global resolution identity. Global postpasses are not
+implicitly certified by it: modular termination reads downstream implementation
+facts during translation, and test-runner generation can replace a generated body
+after module resolution. Before any translation-cache lookup supports those
+profiles, it must incorporate the current translation-observable global projection
+or bypass reuse. The proposed local/global/final key split is reviewed separately
+in https://github.com/erniecohen/dafny/pull/272; this PR does not implement it or
+claim that the local key alone covers those global translation inputs. A generated
+abstract signature also needs its stable `ModuleDefinition.FullName` as a selector
+within the owning resolution result: several signatures can share one owner key.
+
 The reproducible resolve-only benchmark is
 [`.github/review/resolution-threads.py`](../../../.github/review/resolution-threads.py).
 It measures five fresh processes per N on the standard library, the three public
 lit inputs with the most module declarations, and a generated wide DAG. The
-integration regression compares actual `--bprint` files at N = 1, 2, 8 and after
+integration regression compares actual `--bprint` files at N = 1, 2, 4, 8 and after
 unrelated builtin growth. Unit tests cover key boundaries, diagnostic order, both
 inference engines, refinement invalidation, export ownership and immediate ready
-queue progress. CI also compares the opt-in suite and standard-library verdicts
-with the default baselines.
+queue progress. CI checks exact default bytes, verdicts and RU against the shipped
+control, then exact worker-count invariance. Opt-in verdicts have their own
+separately reviewed baselines; default-to-opt-in movements and three-seed cost
+observations are reported explicitly.
 
 ### 6.3 Improve the existing resolution cache
 

@@ -121,6 +121,59 @@ public class ResolutionPipelineTests {
     Translate(program);
   }
 
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task TranslationDoesNotLeaveMutableAstState(bool refresh) {
+    var (program, reporter) = await Resolve("""
+      module Base {
+        datatype D = X | Y
+        ghost function Pick(n: int): int { var x: int :| x == n; x }
+        ghost function Captured(I: int, i: int): int -> int { x => I + i + x }
+        function Partial(d: D): int { match d case X => 0 }
+        method Work() { assert L: true; reveal L; }
+      }
+      module M { import B = Base ghost function F(n: int): int { B.Pick(n) } }
+      """, 4, refresh);
+    Assert.Empty(Errors(reporter));
+    var module = program.Modules().Single(m => m.Name == "Base");
+    var nodes = new HashSet<INode>();
+    void Visit(INode node) {
+      if (nodes.Add(node)) {
+        foreach (var child in node.Children) { Visit(child); }
+        if (node is NestedMatchExpr expression) { Visit(expression.Flattened); }
+        if (node is NestedMatchStmt statement) { Visit(statement.Flattened); }
+      }
+    }
+    Visit(module);
+    var lets = nodes.OfType<Microsoft.Dafny.LetExpr>().Where(e => !e.Exact).ToArray();
+    var labels = nodes.OfType<AssertStmt>().Select(s => s.Label).Where(l => l != null).ToArray();
+    Assert.NotEmpty(lets);
+    Assert.NotEmpty(labels);
+    var matches = nodes.OfType<IMatch>().ToDictionary(m => m, m => m.MissingCases.ToArray());
+    Assert.NotEmpty(matches);
+    // The caller's async context may already contain a fuel stack. Translation
+    // must not borrow or initialize it, even when it translates nested scopes.
+    var inherited = BoogieGenerator.FuelSetting.SavedContexts.Value;
+    var translator = new BoogieGenerator(reporter, new ProofDependencyManager());
+    var first = translator.DoTranslation(program, module);
+    Assert.Equal(0, first.Resolve(program.Options));
+    Assert.Equal(0, first.Typecheck(program.Options));
+    foreach (var let in lets) { Assert.Null(let.GetTranslationDesugaring(translator)); }
+    foreach (var label in labels) { Assert.Null(label!.E); }
+    foreach (var match in matches) { Assert.Equal(match.Value, match.Key.MissingCases); }
+    Assert.Same(inherited, BoogieGenerator.FuelSetting.SavedContexts.Value);
+    var expected = Translate(program);
+    Assert.Equal(expected, Translate(program));
+    var culture = System.Globalization.CultureInfo.CurrentCulture;
+    try {
+      System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo("tr-TR");
+      Assert.Equal(expected, Translate(program));
+    } finally {
+      System.Globalization.CultureInfo.CurrentCulture = culture;
+    }
+  }
+
   [Fact]
   public async Task SiblingRefinementsOwnTheirExportSignatures() {
     var (program, reporter) = await Resolve("""

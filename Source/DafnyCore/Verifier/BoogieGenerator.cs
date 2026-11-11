@@ -761,9 +761,19 @@ namespace Microsoft.Dafny {
       RequireCardinalityValidation(p);
       using var moduleNames = Options.Get(CommonOptionBag.ResolutionThreads) > 0
         ? new ModuleNamingScope(forModule.FullName) : null;
-      if (moduleNames != null) {
-        proofDependencies.SetCurrentDefinition(forModule.FullName, forModule.EnclosingLiteralModuleDecl);
+      if (moduleNames == null) {
+        return DoTranslationCore(p, forModule);
       }
+      Type.ResetScopes();
+      try {
+        proofDependencies.SetCurrentDefinition(forModule.FullName, forModule.EnclosingLiteralModuleDecl);
+        return DoTranslationCore(p, forModule);
+      } finally {
+        Type.ResetScopes();
+      }
+    }
+
+    private Bpl.Program DoTranslationCore(Program p, ModuleDefinition forModule) {
       if (sink == null) {
         return new Bpl.Program();
       }
@@ -786,7 +796,7 @@ namespace Microsoft.Dafny {
       EstablishModuleScope(p.SystemModuleManager.SystemModule, forModule);
       Type.PushScope(this.currentScope);
 
-      var moduleInputs = moduleNames != null ? forModule.TranslationInputs : null;
+      var moduleInputs = ModuleNamingScope.Current != null ? forModule.TranslationInputs : null;
       foreach (var w in moduleInputs != null ? moduleInputs.Bitwidths : program.SystemModuleManager.Bitwidths) {
         // type axioms
         AddBitvectorTypeAxioms(w);
@@ -4825,6 +4835,9 @@ namespace Microsoft.Dafny {
       }
 
       private static Stack<FuelContext> GetSavedContexts() {
+        if (ModuleNamingScope.Current is { } scope) {
+          return scope.Value(typeof(FuelSetting), "fuel-contexts", () => new Stack<FuelContext>());
+        }
         var result = SavedContexts.Value;
         if (result == null) {
           SavedContexts.Value = result = new();
