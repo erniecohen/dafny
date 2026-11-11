@@ -836,6 +836,11 @@ are also included, since legacy parsing can bypass the modern option dictionary.
 The key is available on each module output and in the
 requested `resolve.module` profile events. `--pipeline-profile` also works with
 `resolve`, allowing resolve-only measurements without solver startup.
+`ModuleResolutionKey.DafnyVersion` binds the informational version (including the
+fork revision) and resolver assembly MVID. The latter rejects differently built
+or uncommitted resolver binaries even when revision metadata is absent or stale.
+This conservatively permits reuse only across matching resolver builds, rather
+than relying on the legacy fixed `4.11.0.0` file version.
 
 Each worker owns its reporter, signature map, class-member tables and builtin
 publication view. A per-resolution catalog interns intrinsic tuple, arrow, array,

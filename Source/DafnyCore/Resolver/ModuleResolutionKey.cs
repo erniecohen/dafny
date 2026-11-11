@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -13,6 +14,13 @@ namespace Microsoft.Dafny;
 /// <summary>A versioned, length-delimited identity for a module's resolution inputs.</summary>
 public static class ModuleResolutionKey {
   public readonly record struct Prerequisite(string Role, string Name, string Key);
+
+  // FileVersion is only 4.11.0.0 on this line. InformationalVersion includes
+  // the fork revision; MVID also distinguishes local builds of uncommitted code
+  // or builds that omit revision metadata. Both are fixed assembly metadata.
+  public static string DafnyVersion { get; } =
+    typeof(ModuleResolutionKey).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion +
+    ";resolver-mvid:" + typeof(ModuleResolutionKey).Module.ModuleVersionId.ToString("D");
 
   public static string Compute(string qualifiedName, string source, string version,
     IEnumerable<KeyValuePair<string, string>> options, IEnumerable<Prerequisite> prerequisites) {

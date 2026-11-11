@@ -1,5 +1,6 @@
 using Microsoft.Boogie;
 using Microsoft.Dafny;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using DafnyType = Microsoft.Dafny.Type;
 using Program = Microsoft.Dafny.Program;
@@ -163,6 +164,14 @@ public class ResolutionPipelineTests {
     Assert.Empty(Errors(reporter));
     var (after, _) = await Resolve("module Base { const N: bool := true } " + module, 2, true);
     Assert.NotEqual(Keys(before)["_module.M"], Keys(after)["_module.M"]);
+  }
+
+  [Fact]
+  public void KeyVersionBindsTheResolverBuild() {
+    var assembly = typeof(ProgramResolver).Assembly;
+    Assert.Contains(assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion,
+      ModuleResolutionKey.DafnyVersion);
+    Assert.Contains(typeof(ProgramResolver).Module.ModuleVersionId.ToString("D"), ModuleResolutionKey.DafnyVersion);
   }
 
   [Fact]
