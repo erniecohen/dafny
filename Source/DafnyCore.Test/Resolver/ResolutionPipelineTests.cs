@@ -227,6 +227,28 @@ public class ResolutionPipelineTests {
     Assert.Contains(typeof(ProgramResolver).Module.ModuleVersionId.ToString("D"), ModuleResolutionKey.DafnyVersion);
   }
 
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task VerificationMembershipKeysResolutionDiagnostics(bool refresh) {
+    const string source = "module M { trait {:termination false} T {} }";
+    var uri = new Uri("untitled:resolution.dfy");
+    void Configure(Program program) {
+      if (!program.Compilation.RootSourceUris.Contains(uri)) { program.Compilation.RootSourceUris.Add(uri); }
+      program.Compilation.UrisToVerify = null;
+    }
+    var (root, rootReporter) = await Resolve(source, 2, refresh, configure: Configure, warnUncheckedTermination: true);
+    var (library, libraryReporter) = await Resolve(source, 4, refresh, configure: program => {
+      Configure(program);
+      program.Compilation.AlreadyVerifiedRoots.Add(uri);
+    }, warnUncheckedTermination: true);
+    Assert.Empty(Errors(rootReporter));
+    Assert.Empty(Errors(libraryReporter));
+    Assert.Contains(rootReporter.AllMessages, d => d.Message.Contains("termination false"));
+    Assert.DoesNotContain(libraryReporter.AllMessages, d => d.Message.Contains("termination false"));
+    Assert.NotEqual(Keys(root)["_module.M"], Keys(library)["_module.M"]);
+  }
+
   [Fact]
   public void EffectiveLegacyOptionsParticipateInTheKey() {
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
@@ -288,16 +310,19 @@ public class ResolutionPipelineTests {
   }
 
   private static async Task<(Program, BatchErrorReporter)> Resolve(string source, int threads, bool refresh,
-    Action<ModuleDecl>? starting = null, Uri? uri = null) {
+    Action<ModuleDecl>? starting = null, Uri? uri = null, Action<Program>? configure = null,
+    bool warnUncheckedTermination = false) {
     DafnyType.ResetScopes();
     var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
     options.ApplyDefaultOptionsWithoutSettingsDefault();
     options.Set(CommonOptionBag.ResolutionThreads, threads);
     options.Set(CommonOptionBag.TypeSystemRefresh, refresh);
+    options.Set(CommonOptionBag.WarnUncheckedTermination, warnUncheckedTermination);
     options.ModelViewFile = "-";
     var reporter = new BatchErrorReporter(options);
     var parsed = await ProgramParser.Parse(source, uri ?? new Uri("untitled:resolution.dfy"), reporter);
     Assert.Empty(Errors(reporter));
+    configure?.Invoke(parsed.Program);
     await new ProgramResolver(parsed.Program) { ResolutionWorkerStarting = starting }.Resolve(CancellationToken.None);
     return (parsed.Program, reporter);
   }
