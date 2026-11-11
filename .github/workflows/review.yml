@@ -154,7 +154,8 @@ jobs:
           sh .github/review/portable-dafny.sh out/dafny
       - name: Z3
         run: |
-          echo "Z3=$(sh .github/review/setup-z3.sh)" >> "$GITHUB_ENV"
+          solver=$(sh .github/review/setup-z3.sh)
+          echo "Z3=$solver" >> "$GITHUB_ENV"
       - name: Verify
         run: |
           L=Source/IntegrationTests/TestFiles/LitTests/LitTest
@@ -255,7 +256,8 @@ jobs:
           sh .github/review/portable-dafny.sh out/dafny
       - name: Pinned solver
         run: |
-          echo "Z3=$(sh .github/review/setup-z3.sh)" >> "$GITHUB_ENV"
+          solver=$(sh .github/review/setup-z3.sh)
+          echo "Z3=$solver" >> "$GITHUB_ENV"
       - name: Exercise fresh requests and cold input invalidation
         run: |
           python3 .github/review/verification-batch-controls.py "$PWD/out/dafny/Dafny" "$Z3" verification-batch-results
@@ -462,7 +464,8 @@ jobs:
           if [ "$v" = 'of the tests' ]; then
             v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
           fi
-          echo "Z3=$(sh .github/review/setup-z3.sh "$v")" >> "$GITHUB_ENV"
+          solver=$(sh .github/review/setup-z3.sh "$v")
+          echo "Z3=$solver" >> "$GITHUB_ENV"
           echo "Z3V=$v" >> "$GITHUB_ENV"
       - name: Verify
         run: |
@@ -670,7 +673,8 @@ jobs:
 
       - name: Z3 for incremental bitvector verification
         run: |
-          echo "Z3=$(sh .github/review/setup-z3.sh)" >> "$GITHUB_ENV"
+          solver=$(sh .github/review/setup-z3.sh)
+          echo "Z3=$solver" >> "$GITHUB_ENV"
       - name: Test cached inherited members and rotations after edits
         run: |
           dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --no-build \
@@ -696,7 +700,8 @@ jobs:
           sh .github/review/portable-dafny.sh out/dafny
       - name: Pinned solver
         run: |
-          echo "Z3=$(sh .github/review/setup-z3.sh)" >> "$GITHUB_ENV"
+          solver=$(sh .github/review/setup-z3.sh)
+          echo "Z3=$solver" >> "$GITHUB_ENV"
       - name: Check packaged translation and conditional boundary
         run: |
           python3 .github/review/issue82-audit.py --dafny "$PWD/out/dafny/Dafny" \
@@ -726,7 +731,8 @@ jobs:
           sh .github/review/portable-dafny.sh out/dafny
       - name: Pinned solver
         run: |
-          echo "Z3=$(sh .github/review/setup-z3.sh)" >> "$GITHUB_ENV"
+          solver=$(sh .github/review/setup-z3.sh)
+          echo "Z3=$solver" >> "$GITHUB_ENV"
       - name: Run the fixtures with --statement-expression-conclusions on and off
         run: |
           set +e

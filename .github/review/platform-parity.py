@@ -8,6 +8,7 @@ artifact directories. Missing jobs, rows, proof batches or test results fail clo
 import argparse
 from collections import defaultdict
 import json
+import re
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
@@ -111,6 +112,12 @@ def compare(root, run):
             from datetime import datetime
             report['job_seconds'][job['name']] = (datetime.fromisoformat(job['completedAt'].replace('Z', '+00:00')) -
                                                       datetime.fromisoformat(job['startedAt'].replace('Z', '+00:00'))).total_seconds()
+    source_root = Path(__file__).resolve().parents[2]
+    harness_version = re.search(r'DefaultZ3Version = "([^"]+)"',
+                                (source_root / 'Source/DafnyCore/DafnyOptions.cs').read_text()).group(1)
+    if harness_version not in ['4.12.1', '4.16.0']:
+        raise ValueError('Unsupported harness solver: ' + harness_version)
+    report['harness_z3'] = harness_version
     for mode in ['off', 'on']:
         try:
             a, ar, ac = suite(root, 'linux', mode)
@@ -122,7 +129,7 @@ def compare(root, run):
                                     'unavailable_differences': compare_rows(ac['unavailable'], bc['unavailable'])}
         except (OSError, ValueError, KeyError) as error:
             report['suite'][mode] = {'incomplete': str(error)}
-        for version in ['5.1.0', '4.12.1']:
+        for version in ['5.1.0', harness_version]:
             label = mode + '-z3-' + version
             try:
                 a, ar = library(root, 'linux', mode, version)

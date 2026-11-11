@@ -98,7 +98,8 @@ jobs:
           sh .github/review/portable-dafny.sh out/dafny
       - name: Z3
         run: |
-          echo "Z3=$(sh .github/review/setup-z3.sh)" >> "$GITHUB_ENV"
+          solver=$(sh .github/review/setup-z3.sh)
+          echo "Z3=$solver" >> "$GITHUB_ENV"
       - name: Verify
         run: |
           L=Source/IntegrationTests/TestFiles/LitTests/LitTest
@@ -157,7 +158,8 @@ jobs:
           if [ "$v" = 'of the tests' ]; then
             v=$(sed -n 's/.*DefaultZ3Version = "\(.*\)";.*/\1/p' Source/DafnyCore/DafnyOptions.cs)
           fi
-          echo "Z3=$(sh .github/review/setup-z3.sh "$v")" >> "$GITHUB_ENV"
+          solver=$(sh .github/review/setup-z3.sh "$v")
+          echo "Z3=$solver" >> "$GITHUB_ENV"
           echo "Z3V=$v" >> "$GITHUB_ENV"
       - name: Verify
         run: |
@@ -293,7 +295,8 @@ jobs:
 
       - name: Z3 for incremental bitvector verification
         run: |
-          echo "Z3=$(sh .github/review/setup-z3.sh)" >> "$GITHUB_ENV"
+          solver=$(sh .github/review/setup-z3.sh)
+          echo "Z3=$solver" >> "$GITHUB_ENV"
       - name: Test cached inherited members and rotations after edits
         run: |
           dotnet test --settings .github/review/ci.runsettings --logger "trx;LogFileName=test-13.trx" --results-directory parity-results Source/DafnyLanguageServer.Test -c Release --no-build \
