@@ -13,7 +13,7 @@ summary uses the compatible weak tuple relation.
 ## Component relations
 
 Write `s(x,y)` for new `x` strictly below old `y`, and `w(x,y)` for weak
-nonincrease. Every pair has well-founded `s`, reflexive/transitive `w`,
+nonincrease. Every ordinary component pair below has well-founded `s`, reflexive/transitive `w`,
 `s` contained in `w`, and both absorption laws `s;w` and `w;s` contained in `s`.
 The following are semantic arguments relative to the existing encodings, not
 new axioms or a mechanized proof of the translator.
