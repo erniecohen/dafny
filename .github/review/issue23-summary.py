@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Summarize the downloaded issue23-* artifacts; fail on missing/inconsistent evidence."""
+"""Summarize the downloaded issue23-* artifacts [and a separate focused artifact]; fail on missing/inconsistent evidence."""
 import hashlib
 import json
 from pathlib import Path
 import sys
 
 root = Path(sys.argv[1])
+focused_root = Path(sys.argv[2]) if len(sys.argv) > 2 else None
 report = {'suite': {}, 'library': {}, 'focused': {}, 'boogie': []}
 verdicts, resources = {}, {}
 for variant in ['before', 'after']:
@@ -40,7 +41,7 @@ for variant in ['before', 'after']:
     lib = [line.split('\t') for line in (path / 'verdicts.tsv').read_text().splitlines()]
     report['library'][variant] = {'verdicts': {row[0]: row[1:4] for row in lib},
         'total_RU': sum(int(row[4]) for row in lib if not row[0].startswith('run '))}
-    focused = root / f'issue23-{variant}-focused'
+    focused = focused_root / f'focused-{variant}' if focused_root else root / f'issue23-{variant}-focused'
     assert (focused / 'probe-exit.txt').read_text().strip() == '0', focused
     report['focused'][variant] = json.loads((focused / 'results.json').read_text())
 report['suite']['verdict_differences'] = {k: [verdicts['before'].get(k), verdicts['after'].get(k)]
@@ -48,8 +49,8 @@ report['suite']['verdict_differences'] = {k: [verdicts['before'].get(k), verdict
     if verdicts['before'].get(k) != verdicts['after'].get(k)}
 a, b = (report['library'][v]['verdicts'] for v in ['before', 'after'])
 report['library']['verdict_differences'] = {k: [a.get(k), b.get(k)] for k in a.keys() | b.keys() if a.get(k) != b.get(k)}
-a = root / 'issue23-before-focused'
-b = root / 'issue23-after-focused'
+a = focused_root / 'focused-before' if focused_root else root / 'issue23-before-focused'
+b = focused_root / 'focused-after' if focused_root else root / 'issue23-after-focused'
 assert len(list(a.glob('*.bpl'))) >= 13, 'Missing printed Boogie samples'
 assert {p.name for p in a.glob('*.bpl')} == {p.name for p in b.glob('*.bpl')}, 'Different Boogie sample sets'
 for p in sorted(a.glob('*.bpl')):
