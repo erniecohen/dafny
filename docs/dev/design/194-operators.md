@@ -1,98 +1,109 @@
-# User-defined operators: design and critical review (#194)
+# User-defined operators: revised design and critical review (#194)
 
-**Status:** design proposal, ready for owner review; no implementation in this PR.
+**Status:** round-2 design recommendation; no product implementation.
 **Target:** `review/4.11.0`.
-**Source audited:** `62bae981952337d312cbb3d43c39f9813cca6084`.
-**Publication-time delta checked:** `a5a664d969e07856a0bb83b38a694c2cf3e827c7`
-adds #236's synonym/abstract-type refinement option; its operator interaction is
-covered in 5.6 without changing the pinned source references below.
-**Brief:** [issue #194, requested work](https://github.com/erniecohen/dafny/issues/194#issuecomment-6757455420).
-**Authorship:** AI-assisted, Astra Pro; separate parser, resolver, and soundness reviews were reconciled into this document.
+**Source audited:** `428e348b0b125cb67505f03a0026b3f497f98e48`.
+**Prior design reviewed:** PR #239 at `5339faad320aab58b16f2a35ebae623f81c3413d`.
+**Interacting design:** PR #247 at `a61b06c71d742ff19b280592d26d1a0e2ce9c87c`.
+**Brief:** [round-2 request](https://github.com/erniecohen/dafny/issues/194#issuecomment-6806811006).
+**Authorship:** AI-assisted, Astra Pro, with independent cloning, bitwise,
+first-milestone and example reviews reconciled here.
 
-This document specifies the surface language, resolution, AST, implementation
-boundaries, tests, and PR sequence. The critical review is in section 13, with
-alternatives also evaluated at their decision points. Paths refer to the audited
-commit, not to a presumed future state of the branch. `AGENTS.md` and `REVIEW.md`
-govern later implementation; this documentation-only change changes no language,
-verifier, compiler, test baseline, or shipped product version.
+This document replaces the affected design sections in place. All source paths
+refer to the exact audit pin unless explicitly labelled otherwise. `AGENTS.md`
+and `REVIEW.md` at that pin govern later implementation. It answers the requested
+equality, bitwise, clone-transport, smallest-milestone and usability questions,
+and answers the next inference-design question in 13.3. The complete design is
+separated from the deliberately smaller first PR. Checked existing-syntax
+examples are distinguished from unimplemented operator examples and from line/
+performance estimates.
 
-## 1. Recommendation and one necessary qualification of the brief
+## 1. Recommendation and implementation boundary
 
-Implement operators as **notation for existing calls**, behind
-`--user-defined-operators`, default false. Declare them with attributes on ordinary
-named members. Preserve the source notation in a concrete-syntax AST wrapper and
-resolve that wrapper to an ordinary function call, an ordinary permitted method
-call, or an intrinsic operator. Do not introduce an overloaded opcode into the
-semantic `BinaryExpr` representation. All contracts, frames, ghost restrictions,
-termination checks, compilation behavior, and proof costs come from the selected
-ordinary call.
+Implement user operators as **notation for ordinary calls**, behind
+`--user-defined-operators`, default false. Use attributes on ordinary named
+members and a source-syntax wrapper whose semantic expression is an ordinary
+call. Complete this lowering during resolution, before any analysis that uses
+primitive opcodes, call edges, termination, bounds, ghostness, or triggers. Do not
+teach the verifier algebraic laws about an operator attribute.
 
-There is a real inconsistency in the requested requirements. Unqualified
-"built-in first whenever applicable" makes user `==` unreachable. It also hides
-user arithmetic on numeric newtypes and user `<`/`>` on inductive datatypes,
-where Dafny already supplies rank comparison. An equality-only exception does
-not solve the whole problem. The existing cases are in
-`Source/DafnyCore/Resolver/NameResolutionAndTypeInference/NameResolutionAndTypeInference.cs`,
-`ResolveExpression`, and `Source/DafnyCore/Resolver/ModuleResolver.cs`, `ResolveOp`.
+**Keep `==` and `!=` intrinsic everywhere.** A library's mathematical equality
+is a named predicate such as `eq`; equivalence and order laws are ordinary
+proved lemmas. This replaces the proposed equality-override policy, rather than
+adding a ghost/executable exception to it. The exact equality-site matrix and
+counterexample are in section 6. There is no equality-override milestone.
 
-**Recommended qualification:** keep built-in-first for ordinary operator
-declarations, and let a declaration explicitly request priority over a built-in:
+**Start with one useful refreshed-resolver PR:** concrete classes and inductive
+datatypes, directly declared function/predicate operators, deterministic
+built-in-first selection, and ordinary-call verification/compilation. No
+`"override"` mode, compound assignment, trait slots, bounded-type lookup, or
+legacy resolver implementation in that PR. It must nevertheless include the
+small binding-preservation and export checks described in 5.6; postponing those
+would make even the restricted feature unsafe. Section 12 specifies the accepted
+subset, every deliberate rejection, per-file size estimates, and tests.
 
-```dafny
-function {:operator "+"} plus(other: Rat): Rat
-predicate {:operator "==", "override"} eq(other: Rat)
-predicate {:operator "<", "override"} less(other: Rat)
-```
+The pinned resolver gives datatype rank meaning to **`<` and `>` only**. It does
+not supply datatype `<=` or `>=`. Thus a direct rational datatype can already
+support `a * b + c <= d` in the no-override milestone. Numeric-newtype `+` and `*`
+remain intrinsic, so modular arithmetic with those spellings needs a later
+non-equality override milestone or a distinct datatype wrapper. Do not describe
+all four datatype comparisons as rank operators. See
+`Resolver/PreType/PreTypeResolve.Expressions.cs::ResolveBinaryExpr` and
+`Resolver/ModuleResolver.cs::ResolveOp`.
 
-The second string is a lookup-priority instruction, not a new semantic assumption
-and not Dafny's member-override mechanism. It may also be used on a trait whose
-current type has no corresponding intrinsic operator, so implementers inherit a
-stable policy. This is an explicit amendment to the absolute built-in-first
-wording, proposed here for design approval, not an unnoticed reinterpretation of
-that wording.
+**Keep issue #193's bounded-integer bitwise operations as independently enabled
+intrinsics.** A library surface over the integer reference functions is
+semantically possible. Native execution still needs a verified executable
+implementation or a canonical compiler specialization, and the ghost reference
+functions are not an executable implementation by themselves. Section 6.4
+compares the three concrete routes and specifies coordinated document changes.
+#193 must not wait for #194; #194's first PR does not add user bitwise symbols.
 
-The main decisions are:
+| Decision | Recommended complete design | First useful PR |
+|---|---|---|
+| Declaration | `{:operator "symbol"}` on a named callable; a later `"override"` mode only for non-equality symbols | One literal symbol argument; functions/predicates only |
+| Ownership | Static left-operand/unary-operand nominal view; no imported extension-operator search | Direct class/datatype members, including enclosing type parameters |
+| Instance/static | Both; instance slots can later inherit; static symbolic slots belong to their owner | Both directly declared forms |
+| Equality | All explicit and implicit equality remains intrinsic; named `eq` for a different relation | Same rule |
+| Comparisons | `< <= > >=` individually declared; no implicit reversal or law | Fallback only; intrinsic datatype `<`/`>` still win when applicable |
+| Intrinsic escape | Contextual `builtin.<op>(...)`, before non-equality override support | Deferred; existing intrinsic spellings/casts suffice |
+| Chains | Existing grammar and short-circuit conjunction of adjacent edges | Supported for supported function comparisons |
+| Compound assignment | Capture location and old value once; ordinary call/store expansion | Rejected |
+| Methods | Later arithmetic whole-RHS calls only; no nested effects | Annotated methods rejected; function-by-method remains an ordinary function |
+| Traits | Ordinary dispatch and proved library lemmas, with recorded slot identity | Deferred; no inferred operator capability from a trait bound |
+| Integer bitwise | #193's independent intrinsic capability and integer semantics | No dependency; all six user bitwise symbols rejected |
+| Semantic representation | Ordinary primitive expression or ordinary call, never an overloaded semantic opcode | Same invariant |
 
-| Question | Recommendation |
-|---|---|
-| Declaration | `{:operator "symbol"}` or `{:operator "symbol", "override"}` on a named member |
-| Scope | Operators owned by the static left-operand type, or unary operand type; no imported extension-operator search |
-| Instance/static | Both; instance slots inherit, static symbolic slots belong to their declaring owner |
-| Equality | User `==` on all eligible nominal user types; it means an ordinary Boolean call |
-| Derived symbols | `!=` is negation of the selected `==`; `>` and `>=` are separately declared |
-| Built-in escape | Contextual `builtin.==(a, b)`, `builtin.+(a, b)`, `builtin.-(a)`, etc. |
-| Chains | Existing syntax and conjunction of adjacent comparisons; no transitivity inference |
-| Compound assignment | `+= -= *= /= %=`; capture the lvalue location and old value once |
-| Methods | Arithmetic operators only, in existing whole-RHS method-call contexts; comparisons are functions/predicates |
-| AST | Source wrapper with an ordinary resolved call; generated intrinsic operations never perform overload lookup |
-| Laws | Ordinary library traits and verified lemmas, with no compiler recognition of names such as `Ordered` |
+The complete design remains deliberately smaller than general overload
+resolution: one slot per symbol/effective arity in a nominal view; no
+result-directed search, user conversions, literal conversions, right-operand
+search, or method type parameters. Its selection rule is specified separately
+from milestone availability. Accepting an unsupported attribute and quietly
+ignoring its requested mode is never the enabled-mode behavior.
 
-This design is intentionally smaller than general overload resolution: one
-operator slot per symbol and effective arity in a nominal view, no result-type
-overloading, no user conversions, no new literal conversions, and no generic
-operator methods beyond the type parameters of their owner. These restrictions
-make lookup predictable and leave ordinary named functions available for more
-specialized operations.
+The changes here are confined to this design document. Existing explicit-call
+example files in PR #239 remain unchanged. No product source, expected-verdict
+file, release version, or proof assumption changes in this revision.
 
 ## 2. Declaration syntax and eligibility
 
-### 2.1 Attribute grammar
+### 2.1 Attribute grammar and disabled behavior
 
-The following describes accepted attribute values, not new Coco/R terminals:
+The declaration form uses existing attribute syntax, with no new Coco/R token:
 
 ```ebnf
 OperatorAttribute = "{:" identifier("operator") StringLiteral
                     [ "," StringLiteral("override") ] "}" ;
 ```
 
-The enabled resolver requires one literal symbol string, optionally followed by
-the literal string `"override"`. Nonliteral arguments, extra arguments, repeated
-operator attributes on a member, and unknown symbols/modes are errors. In
-disabled mode the attribute remains an ordinary previously unknown attribute:
-do not validate, consume, rewrite, suppress, or warn about it specially. Rejecting
-it when disabled would itself violate the compatibility requirement.
-
-Examples:
+The bracketed mode is reserved for the later non-equality override milestone;
+the first PR rejects it. With the feature enabled, validate literal arguments,
+arity, callable kind, owner, symbol, and duplicate attributes. Reject unknown
+modes, repeated operator attributes on one member, and member type parameters.
+With the option **off**, `operator` remains an ordinary unknown attribute:
+perform no new validation, suppression, warning, lookup, or serialization change.
+Even malformed operator-looking attributes follow the old path. This distinction
+is required for byte-identical disabled output, including errors.
 
 ```dafny
 datatype Vec = Vec(x: int, y: int) {
@@ -100,161 +111,160 @@ datatype Vec = Vec(x: int, y: int) {
   function {:operator "-"} neg(): Vec { Vec(-x, -y) }
   function {:operator "*"} scale(k: int): Vec { Vec(x * k, y * k) }
 }
-
-newtype Word = int {
-  static function {:operator "+", "override"} add(a: Word, b: Word): Word {
-    ((a as int) + (b as int)) as Word
-  }
-}
 ```
 
-The examples are surface-language examples, not claims that this feature already
-exists. Existing conversions retain their usual checks; a bounded newtype would
-need an appropriate contract, computation, or proof before the final conversion.
+These are proposed declarations, not syntax claimed to work in the pinned
+compiler. Today the attributes are inert; named calls remain usable.
 
-### 2.2 Members and arity
+### 2.2 Owners, members, and arity
 
-Operators can be declared in classes, inductive datatypes, codatatypes, newtypes,
-and traits wherever the corresponding ordinary member is legal. They cannot be
-declared on built-in types or as unowned module-level extension operators.
-Subset types and ordinary type synonyms have no member bodies and introduce no
-operator slots; see section 5.
+The eventual owners are classes, inductive datatypes, codatatypes, newtypes, and
+traits where the ordinary member is legal. The first PR supports only direct
+members of classes and inductive datatypes; section 12 gives the further view
+restrictions. Subset types and transparent type synonyms introduce no slots.
+A visible subset uses its underlying nominal owner's slots and retains ordinary
+result-subtype obligations. Built-in types and module-level extension functions
+cannot acquire operators.
 
-Do not confuse that source-declaration restriction with internal opaque views:
-`AST/Modules/ScopeCloner.cs` represents unrevealed supported owners as
-`AbstractTypeDecl` with their exposed members. Those views must retain operator
-lookup through the exposed signature. This increment does not add operator
-declarations directly to source-written standalone abstract types; ordinary
-trait-provided/view-carried slots remain available where their named members are.
+Internally, an unrevealed owner may be represented by an `AbstractTypeDecl`
+constructed by `AST/Modules/ScopeCloner.cs`. That is an export view, not permission
+to discover hidden members. Later trait support permits a source abstract type
+to inherit and implement a trait's operator-bearing member; this does not add a
+new independently annotated standalone abstract-type owner. Full view transport
+is required before accepting such uses.
 
-| Source member | Unary `-` | Binary operator |
+| Member | Unary `-` | Binary symbol |
 |---|---:|---:|
-| Instance function/predicate/method | 0 explicit operands | 1 explicit operand |
-| Static function/predicate/method | 1 explicit operand | 2 explicit operands |
+| Instance function/predicate | No explicit operand | One explicit operand |
+| Static function/predicate | One explicit operand | Two explicit operands |
+| Later single-result arithmetic method | Same effective arity | Same effective arity |
 
-An instance receiver is the first operand. A static operator's first formal must
-be its declaring nominal owner with the owner's type parameters, after expanding
-transparent synonyms/subsets. For a reference owner it may be the nullable owner
-type. The other operand and arithmetic result need not have the owner's type;
-`Vec * int -> Vec` and `Vec * Vec -> int` are individually expressible, but both
-cannot occupy the same owner's binary `*` slot. Use a named function for the other
-operation. Enclosing-type parameters are substituted by ordinary member lookup.
+The instance receiver is the first operand. A static member's first formal must
+have its declaring owner's instantiated nominal type, after expanding
+transparent synonyms/subsets; for reference owners it may be nullable. Static
+slots are not inherited symbolically. The other operand and arithmetic result
+may have different types: `Vec * int -> Vec` is useful. Two different `*` slots
+on `Vec` are still an ambiguity, even if their other operand/result types differ.
+Ordinary enclosing-owner type parameters are allowed. No overload search uses
+the expected result type.
 
-Require positional operand formals without default values or `nameonly` formals.
-For this increment, reject operator-member type parameters: supporting them later
-requires a deliberate inference design, not a search over return types. Ordinary
-ghost formals are legal where the existing callable rules allow them; they do not
-make an operator usable in a compiled context that rejects its explicit-call
-form. Ordinary functions, predicates, opaque functions, ghost functions, and
-function-by-method declarations are eligible. Arithmetic methods must have
-exactly one result and otherwise obey the ordinary method-call rules. Constructors,
-lemmas, iterators, extreme predicates/lemmas, and two-state declarations use their
-named syntax in this increment.
+Use positional operands, no default or `nameonly` operands, and no member-level
+type parameters. Ghost functions/formals remain subject to ordinary ghost-use
+checks. Ordinary predicates, opaque functions, and functions with a by-method
+implementation are eligible. A by-method function is not an effectful expression:
+its existing function contract and implementation checks still apply.
+Constructors, lemmas, iterators, extreme predicates/lemmas, and two-state members
+retain named syntax. Later method operators must have exactly one result;
+comparisons are always functions/predicates returning `bool`.
 
-### 2.3 Symbol set and derived operations
+### 2.3 Symbols and collision policy
 
-| Symbol | Declared operation | Restrictions |
+| Symbol | User declaration | Intrinsic/collision policy |
 |---|---|---|
-| `+ - * / %` | Binary arithmetic | Function or single-result method |
-| `-` | Unary negation | Distinguished from subtraction by effective arity |
-| `< <= > >=` | Binary comparison | Function/predicate returning `bool` |
-| `==` | Binary relation | Function/predicate returning `bool`; require `"override"` |
-| `!=` | `!(selected equality call)` | No separate declaration |
-| `+= -= *= /= %=` | Corresponding binary operator followed by assignment | No separate declaration |
+| Binary `+ - * / %` | Function; later single-result method | Built-in first; later explicit non-equality override may take priority |
+| Unary `-` | Function; later single-result method | Separate arity; preserve intrinsic negative-literal handling |
+| `< <= > >=` | Function/predicate returning `bool` | Each has its own slot; no generated order laws or operand reversal |
+| `== !=` | **Forbidden in enabled mode, with or without `"override"`** | Existing equality/inequality everywhere; use a named relation |
+| `+= -= *= /= %=` | No declaration | Later syntax for the selected binary operation followed by assignment |
+| `& \| ^ ! << >>` | Deferred, including in the first PR | Existing bool/BV intrinsics, and independently enabled #193 integer intrinsics |
+| Other symbols | Forbidden | No new membership, indexing, conversion, cardinality, short-circuit, or prefix-equality overloading |
 
-Neither order duality nor consistency among separately declared comparisons is a
-language law. A library may implement `greater(b)` as `b.less(this)` and prove the
-desired relationship. This explicit delegation retains ordinary argument order,
-preconditions, dispatch, and left-operand ownership. Automatic reversal would
-require a second lookup rule on the right operand and careful evaluation-order
-handling; it is not necessary for the requested feature.
+`!=` remains the existing complement of intrinsic equality. It is not derived
+from a user `eq`. Separately declared `>` and `>=` avoid right-operand lookup and
+evaluation-order changes. A library may implement `greater(b)` as an ordinary
+call to `b.less(this)` and prove their relationship.
 
-Deriving `!=` is useful because it needs only Boolean negation, not an equality
-law, and keeps a familiar pair of symbols coherent. Select `==` once, then negate
-its result; do not independently look up `!=` or expand into intrinsic equality.
-An equality declaration without `"override"` is diagnosed because logical
-intrinsic equality would always take precedence. For other operators a fallback
-declaration may legitimately be useful through a trait view even when shadowed
-by an intrinsic at a concrete type, so do not reject it merely for that reason.
+A fallback declaration does not hide an applicable primitive. For a datatype,
+`a < b` may therefore mean rank even if `less` has a fallback attribute; `a <= b`
+can call `le` because datatype `<=` has no intrinsic interpretation. A failed
+compiled-rank restriction does not trigger fallback. In a numeric newtype,
+ordinary same-type `+` continues to mean the existing arithmetic, not modular
+addition. Hover should identify the selected intrinsic; named calls always give
+an explicit way to request the member. The first PR rejects **the override
+request**, not an otherwise valid fallback declaration merely because a
+particular use selects an intrinsic.
 
-Logical connectives, implication, membership, disjointness, indexing, shifts,
-bitwise operations, cardinality, type tests/casts, and prefix equality `==#[k]`
-remain intrinsic. This feature adds no literal, indexing, conversion, or
-short-circuit operator overloading.
+Later non-equality override is deliberately stronger: once a unique visible
+slot requests it, ordinary call errors are errors and never cause fallback. The
+attribute must be inherited and preserved as signature metadata, not as an
+accidental property of whichever implementation body is visible.
 
-### 2.4 Why an attribute rather than dedicated syntax
+### 2.4 Alternatives
 
-**Attribute advantages:** no declaration grammar or token changes; the existing
-member has a stable callable name for proofs, exports, documentation, explicit
-calls, and disambiguation; ordinary function/method distinctions remain visible.
-`Dafny.atg` already parses attributes in `FunctionDecl` and `MethodDecl`, and
-`ClassMemberDecl`/`TypeMembers` already handle the requested owners.
+**Attributes versus dedicated syntax.** A dedicated `operator *(...)` declaration
+is prominent and could encode arity directly. It also needs callable names,
+export rules, parser productions, and contextual-keyword/error-recovery design.
+The attribute preserves an ordinary name for explicit calls, proofs, visibility,
+refinement, and tools. It introduces no scanner reservation or declaration
+ambiguity. Its disadvantages are strings and less visible intent; enabled
+validation and hover address them without altering disabled behavior. Prefer the
+attribute. Reserved names such as `op_Addition` offer no additional capability
+and unnecessarily constrain naming.
 
-**Attribute disadvantages:** string-valued metadata is less prominent than an
-`operator` declaration, typos require dedicated diagnostics, and old compilers
-ignore the metadata. The last behavior is required in disabled mode, not a reason
-to change it. Feature-aware IDE hovers and declaration checks make enabled use
-clear.
+**Static versus instance.** Instance-only is enough for algebraic traits, but
+nullable reference operands and some heterogeneous operations are awkward.
+Static-only avoids a receiver check but does not express existing trait-member
+implementation obligations. Both are small extensions of ordinary call lookup;
+keep both for direct owners, and reserve polymorphic slots for instance members.
+Do not invent a static typeclass/dictionary mechanism.
 
-**Dedicated `operator *(...)` syntax:** more immediately recognizable, but it
-needs a declaration production, a decision about callable names and visibility,
-and potentially a new reserved word. Coco/R reserves alphabetic literal strings
-in the grammar regardless of an option guarding their later use; `Dafny.atg`
-documents this near its token declarations. A contextual implementation is
-possible, but gives no necessary capability beyond the attribute. Prefer the
-attribute for this syntax-first increment.
+**Functions versus methods.** Functions give the useful nested arithmetic syntax
+with ordinary purity/reads semantics, and by-method supplies verified efficient
+execution. Whole-RHS method sugar is possible but adds statement resolution and
+evaluation obligations. Defer it with compounds; do not make it a prerequisite
+for rational/matrix arithmetic. Never lift arbitrary method effects out of an
+expression tree.
 
 ## 3. Uses, precedence, chains, and method contexts
 
 ### 3.1 Existing expression grammar
 
-Retain the existing precedence and associativity of `RelationalExpression`,
-`ShiftTerm`, `Term`/`AddOp`, `Factor`/`MulOp`, and `UnaryExpression` in
-`Source/DafnyCore/Dafny.atg`. Thus:
+Keep `RelationalExpression`, `ShiftTerm`, `Term`/`AddOp`, `Factor`/`MulOp`, and
+`UnaryExpression` precedence and associativity in `Source/DafnyCore/Dafny.atg`.
+For direct rational members, the first milestone can resolve:
 
 ```dafny
 a * b + c <= d
+// a.times(b).plus(c).le(d)
 ```
 
-has the same parse tree shape as today, and for the rational declarations below
-resolves to:
+The comparison is fallback `<=`, not datatype rank and not an override. Unary
+`-a` selects a unary slot; do not first invent `0 - a`. Preserve existing negative
+numeric literal behavior on the intrinsic path (`LiteralExpr.cs`,
+`NegationExpression`, and inference completion).
+
+Every source `==`/`!=` follows the ordinary intrinsic path, including one whose
+operands contain operator calls: `(a + b) == c` compares the returned values
+intrinsically. There is no special ghost or executable selection rule.
+
+### 3.2 Chaining
+
+Retain today's ascending/descending chain restrictions, at most one inequality,
+and prefix-equality/disjointness rules. Expand adjacent comparisons using the
+current short-circuit conjunction semantics:
 
 ```dafny
-a.times(b).plus(c).le(d)
+a <= b <= c
+// a.le(b) && b.le(c), when both fallback slots are selected
 ```
 
-Unary `-a` resolves as a unary slot; do not first rewrite it to `0 - a`. Preserve
-the existing special handling of negative numeric literals on the intrinsic
-path. `AST/Expressions/LiteralExpr.cs`, `NegationExpression`, and both inference
-completion visitors currently participate in that handling.
-
-### 3.2 Chaining is conjunction, not calculation
-
-Preserve today's chain grammar, including its ascending/descending restrictions,
-at most one `!=`, and rules for prefix equality and disjointness. Resolve each
-ordinary eligible edge separately:
-
-```dafny
-a < b <= c   // a.less(b) && b.le(c), if these slots are selected
-```
-
-Keep the existing short-circuit conjunction semantics. The second edge's call
-precondition may use the fact established by the first edge. There is no new
-guarantee to evaluate the middle expression only once: the reference expansion
-is the same conjunction of adjacent comparisons as the current chain expansion.
-Do not reorder operands or infer a relation between the endpoints. Methods are
-not eligible comparison operators, so chains introduce no method effects.
+Resolve each eligible edge independently; an equality edge is intrinsic. No law
+relates the endpoints. The second call's precondition may use the first edge's
+truth. The current expansion does not promise to evaluate the middle source
+expression only once; this proposal keeps that behavior. Comparisons cannot be
+methods, so it adds no method-effect sequencing to a chain.
 
 `AST/Expressions/Operators/ChainingExpression.cs::ComputeDesugaring` constructs
-its own `BinaryExpr` nodes. Enabled source-chain edges must use the new source
-operator factory; wrapping only operators constructed directly in `Dafny.atg`
-would miss them. The conjunctions and disjoint-chain helper unions are still
-generated intrinsics. Preserve the source/generated distinction in clones.
+edges itself. Its enabled source edges must use the source-operator factory;
+wrapping only `BinaryExpr` nodes created in `Dafny.atg` would miss them. Conjunctions
+and disjoint-chain helper unions stay generated intrinsics. Preserve a selection
+record **on the source chain for each edge**, not only on disposable desugaring
+nodes. `calc` connectors are a separate construct and remain intrinsic (6.3).
 
-### 3.3 Ordinary method-call restrictions remain
+### 3.3 Later arithmetic methods
 
-For a unique selected arithmetic method, these are permitted only where an
-explicit single-result method call is currently permitted:
+Only where today's single-result method call is permitted may a later method
+operator supply the whole RHS:
 
 ```dafny
 z := a * b;
@@ -262,405 +272,808 @@ var z := a * b;
 a *= b;
 ```
 
-These are rejected when `*` is a method:
+When `*` names a method, nested `a * b + c`, assertions, predicates, and return
+expressions requiring a function remain errors. Selection precedes the check of
+call kind: the resolver must not choose a different callable merely because the
+context rejects a method. Function-by-method can already support ordinary nested
+function uses.
+
+The legacy whole-RHS route recognizes `ApplySuffix` and `MethodCallInformation`
+in `AST/Statements/Assignment/AssignStatement.cs::Resolve`; the refreshed route
+is in `Resolver/PreType/PreTypeResolve.Statements.cs`. Extend those routes later.
+Do not manufacture a `FunctionCallExpr` pointing to a method. The first PR rejects
+all operator-annotated methods, even where their named calls are legal.
+
+### 3.4 First-milestone module-attribute restriction
+
+At the pin, module attributes still use the **legacy expression resolver even
+with refresh enabled** (`ModuleDefinition.Resolve` calls
+`ModuleResolver.ResolveModuleAttributes`). M1 therefore keeps operators in module
+attribute arguments intrinsic-only. Ordinary named calls remain available there;
+member bodies elsewhere still use the normal operator rules. This is a temporary
+context restriction, not a new ghost/executable distinction.
+
+Immediately before `Dafny.atg` constructs a `ModuleDefinition`, both leading `@` attributes and
+post-keyword attributes are already collected in `dmod.Attributes`. On the enabled
+path, a parser helper recursively converts source operator wrappers in those
+attribute argument trees back to their intrinsic `BinaryExpr`/negation syntax,
+and rebuilds chains with an intrinsic-only edge-factory policy retained by their
+clones. Keep origins, grouping, argument order, nested named calls and attribute
+text. Traverse full pre-resolution syntax, including nested lambda/comprehension
+attributes/triggers and statement-expression statements, not only resolved-child
+`SubExpressions`. If normalization is placed after module construction, assign the
+new attributes to `module.Attributes`; updating only `dmod.Attributes` is too late.
+Do this after the declaration context is known, not by globally disabling
+operators in all attributes (function triggers are a different context).
+
+Thus `module {:foo 1 + 2} M {}` still reaches the legacy resolver as ordinary
+intrinsic syntax. A module-attribute expression that would require a user `+`
+is rejected by intrinsic resolution; its named-call form can be used instead.
+No unknown `OperatorSyntaxExpr` may reach that legacy phase. Add nested primitive,
+chain, leading-attribute and user-operator negative tests. A later shared-policy
+legacy integration may remove this restriction.
+
+## 4. Naming the intrinsic operation
+
+### 4.1 Deferred, uniform escape
+
+Before introducing non-equality override, add an option-gated contextual form:
 
 ```dafny
-z := a * b + c;
-assert a * b == c;
-predicate p() { a * b == c }
-```
-
-There is no automatic lifting of effects out of an expression tree. A function
-with a by-method implementation supports the full expression syntax using the
-existing verification/compilation rules. Method-backed comparisons are excluded
-because chains, derived `!=`, and ordinary Boolean use would otherwise require
-additional state/evaluation rules. Select the operator slot before checking its
-call kind; do not choose a different slot because one context permits methods
-and another does not.
-
-In the legacy resolver, `AST/Statements/Assignment/AssignStatement.cs::Resolve`
-currently recognizes method RHSs specifically through `ApplySuffix` and
-`MethodCallInformation`. The refreshed equivalents are in
-`Resolver/PreType/PreTypeResolve.Statements.cs`. Extend this existing route for a
-whole-RHS operator wrapper; do not construct a `FunctionCallExpr` naming a method.
-
-## 4. Naming the intrinsic operator
-
-### 4.1 Syntax and meaning
-
-Use an option-gated contextual form:
-
-```dafny
-builtin.==(a, b)
-builtin.!=(a, b)
 builtin.+(a, b)
 builtin.-(a)
 builtin.-(a, b)
 builtin.<(a, b)
 builtin.<=(a, b)
+builtin.==(a, b)  // redundant but uniform: == is always intrinsic
+builtin.!=(a, b)
 ```
 
-The same form covers the remaining supported arithmetic/comparison symbols. It
-selects the **existing intrinsic interpretation for the supplied operand types**.
-It is not module or member lookup, cannot be shadowed, and is not a first-class
-operator value. A lambda can name it as a value when needed. `builtin.f` and an
-identifier named `builtin` retain their ordinary meaning. Only the exact
-previously invalid `builtin . operator (` form is special when enabled.
+It selects the existing intrinsic for the supplied static types. It is not
+module/member lookup, cannot be shadowed, and is not a first-class operator value.
+`builtin.f` and an identifier named `builtin` retain ordinary meanings. Only the
+exact previously invalid `builtin . operator (` pattern is contextual when
+enabled. Arguments resolve normally; only the outer operation is forced.
 
-The outer operation is forced intrinsic; arguments resolve normally. The escape
-does not unwrap an opaque type, waive equality-support restrictions, reveal a
-body, check a different heap, or remove a newtype/subset obligation. For arithmetic
-on an accessible underlying numeric type, write the existing conversions:
+The escape does not unwrap an opaque type, waive compiled-equality support,
+reveal a function, change the heap, or waive subset/newtype constraints. For an
+accessible numeric representation, existing explicit conversions remain useful:
 
 ```dafny
 (a as int) + (b as int)
 builtin.+(a as int, b as int)
 ```
 
-`builtin.+(a, b)` with `a,b:N` retains the existing intrinsic operation on `N`,
-including its result typing and restrictions; it does not promise an `int`
-result. Class null checks can use `builtin.==(c, null)`. An instance user equality
-has an ordinary non-null receiver obligation. To define a null-tolerant user
-relation, declare a static equality on `C` whose operands are `C?` and implement
-its null behavior explicitly with the escape.
+`builtin.+(a,b)` with `a,b:N` keeps the intrinsic result type and obligations for
+`N`; it does not promise an `int` result. Since equality stays intrinsic,
+`c == null` already means reference identity and requires no special escape.
+Named null-tolerant relations may use ordinary static predicates on `C?`.
+
+The first PR defers this entire syntax. No intrinsic is hidden by its fallback
+operators, so that deferral leaves every intrinsic reachable. Any future addition
+of escape forms for #193 symbols must use #193's ordinary capability checks;
+it must not activate integer-bitwise implicitly.
 
 ### 4.2 Alternatives
 
-| Alternative | For | Against |
+| Form | Benefit | Cost or limitation |
 |---|---|---|
-| `===` / `!==` | Short and familiar identity notation | Solves only equality; new tokens can change disabled lexing; needs new precedence/chaining decisions |
-| `builtin.==(a,b)` | One uniform facility, ordinary argument grouping, uses existing tokens | Verbose; requires a clearly documented contextual parser hook |
-| `a ==@builtin b` | Preserves infix appearance | Interacts with `@` labels, precedence, chaining, and error recovery; harder to extend uniformly |
-| Casts alone | Already available for accessible newtype representations | Cannot select intrinsic class/datatype equality or preserve opaque interfaces by themselves |
-| Expression attribute | Potentially reuses attribute vocabulary | Dafny has no general attribute-on-arbitrary-expression form; placement and scope need another language design |
+| `===` / `!==` | Short identity notation | Unnecessary when `==` is intrinsic; new scanner tokens and no arithmetic escape |
+| `builtin.<op>(...)` | Uniform, explicit, existing tokens, ordinary argument grouping | Verbose and needs a contextual parser hook |
+| `a ==@builtin b` | Retains infix shape | New interactions with labels, chaining, precedence, and recovery |
+| Casts alone | Already work for accessible numeric representations | Cannot choose rank rather than a later datatype comparison override at the same static type |
+| Expression attribute | Might reuse the attribute vocabulary | Dafny lacks a general attribute-on-expression form; placement and scope would be new design work |
 
-The qualified-looking contextual form wins on coverage and compatibility. It is
-introduced before any override support, so there is never a feature stage that
-can hide the only spelling of an intrinsic operation.
+Prefer the contextual call for the complete design. Equality's permanent
+intrinsic rule lets the first PR omit it altogether. This is a reduction in the
+initial parser work, not an argument to leave arithmetic intrinsics inaccessible
+once arithmetic overrides are implemented.
 
-## 5. Resolution, ownership, inheritance, and type views
+## 5. Resolution, ownership, and stable choices across views
 
 ### 5.1 Operator slots
 
-Create a shared validated descriptor for each annotated callable:
+Use one shared declaration descriptor/index, not separate policy in each
+resolver:
 
 ```text
-OperatorKey       = (symbol, unary-or-binary)
-OperatorDecl      = (key, priority, declaring member, original override slot,
-                    instance/static, function/method)
-OperatorBinding   = (descriptor, selected member, receiver view,
-                    enclosing-type substitution, source origin)
+OperatorKey = (symbol, unary-or-binary)
+OperatorDecl = (key, priority, declaring member, original override slot,
+                instance/static, function/method)
 ```
 
-Build effective instance slots from the ordinary resolved member table, after
-member signatures and inheritance are available. Reuse
+Validate attributes after signatures are available. For later trait support,
+build effective instance slots from the ordinary inherited member table, using
 `ModuleResolver.RegisterInheritedMembers`, `AddToInheritedMembers`, and
-`ProcessInheritedTraitMembers`; a scan only of the declaration's own member list
-is insufficient. Deduplicate an identical slot inherited through a diamond and
-substitute inherited generic arguments exactly as named member calls do.
+`ProcessInheritedTraitMembers`. Deduplicate the same original slot in a diamond;
+substitute parent arguments as named member resolution does. A normal member
+override inherits the operator symbol/arity/priority. Repeating an attribute must
+agree. Two unrelated visible slots with the same key are ambiguous; their names,
+other-operand types, result types, or function/method kinds do not break the tie.
 
-An ordinary override inherits the parent's operator symbol, arity, and priority
-even if it does not repeat the attribute. An explicit repeated attribute must
-agree. Two unrelated slots with the same key are an ambiguity, even if they have
-different names, argument types, or one is a function and one a method. An
-unrelated new declaration does not hide a slot just by choosing the same symbol.
-Existing restrictions on overriding defined or static members remain.
+Static operators are helpers owned by the declaring nominal type, not abstract
+static implementation obligations. Ordinary static names may be inherited, but
+symbolic slots are not: inheriting a name must not silently change its first
+formal's owner. Instance slots supply the later trait interface.
 
-Static operators are ordinary helpers, not abstract operations that implementers
-must override. For symbolic lookup, index a static slot only at its declaring
-nominal owner. Its named member may remain accessible through ordinary static
-inheritance, but symbolic inheritance must not silently rebind its first formal
-from a base type to a newtype or an implementing type. A trait's static operator
-can be used when the left operand has that trait view. Instance operators are
-the mechanism for proof-carrying trait interfaces.
+Metadata belongs to the visible member signature, not its body. Filter the
+ordinary export/member view before considering candidates. Do not scan hidden
+members or unwrap opaque representations. Cache raw descriptors separately from
+instantiated lookup; the latter must include receiver substitution, visibility
+view, and feature mode. The first PR indexes only directly declared slots on
+supported concrete owners.
 
-Operator metadata is part of the callable's visible signature, not its body.
-An opaque/provided callable can expose it without revealing implementation.
-Ordinary exports still control whether the type and member are nameable. Filter
-by the current export/visibility view before reporting ambiguity. Do not scan
-hidden declarations or unwrap hidden representations. Cache raw descriptors;
-cache instantiated lookup only with its type substitution, visibility scope,
-and feature setting. Preserve selected bindings in resolved refinement/import
-clones and serialized artifacts, just as for named calls.
+### 5.2 Selection, intrinsic applicability, and call checking
 
-### 5.2 Selection rule
+Every explicit `==`/`!=` goes directly to existing equality resolution. Every
+generated primitive, including calc connectors, bypasses this machinery.
+For an eligible enabled source unary/binary operator:
 
-For enabled source `a op b` (or unary `op a`):
+1. If the occurrence already has a saved selection, **replay it** as specified
+   in 5.6. Do not run candidate discovery again.
+2. Otherwise resolve operands once in their source lexical/heap-label context.
+   Preserve nominal newtype identity; expand only visible transparent aliases
+   and subsets. Use the static left/unary operand's nominal view, mapping a
+   non-null class view to its owner. Never search right-operand declarations.
+3. Find its unique visible slot, if any. A later bounded type obtains instance
+   slots from its declared instantiated trait bounds. Multiple unrelated slots
+   are an error, not a list on which to perform expected-result inference.
+4. In the later non-equality override milestone, a slot explicitly marked
+   `"override"` wins. All ordinary call checks then apply. An argument, ghost,
+   receiver, precondition, result or method-context failure is an error.
+5. Otherwise, if the existing intrinsic is type-applicable, use that existing
+   resolution path. Applicability is determined from static types/capability,
+   not successful verification or compilability. Division by zero, ghost rank
+   comparison in runtime code, and a failed #193 result/count check do not
+   cause fallback.
+6. Otherwise choose the visible fallback slot, or report a missing operator.
+   Resolve it as the corresponding ordinary named call, with identical
+   receiver/argument/type-view checks. Record its selection and emit the
+   ordinary call before semantic consumers run.
 
-1. Resolve operand expressions without prematurely imposing intrinsic numeric,
-   equality, or rank constraints. Determine the nominal owner from the static
-   left operand, or the unary operand. Expand transparent aliases/subsets,
-   preserve newtype identity, and map a class's non-null view to its declaration.
-2. Obtain the unique visible slot, if any, at that view. A type parameter obtains
-   instance slots from its explicit instantiated trait bounds; see 5.4.
-3. If that slot has `"override"`, select it. Then perform ordinary call checking.
-   A bad argument, wrong result context, missing precondition, inaccessible
-   receiver, ghost use, or forbidden method context is an error, never a reason
-   to fall back to an intrinsic.
-4. Otherwise, if the existing intrinsic operation is type-applicable, take the
-   existing intrinsic resolution path.
-5. Otherwise select the fallback slot, if present, and perform ordinary call
-   checking. If absent, report the missing operator.
-6. Record the binding and resolved call before all analyses that consume semantic
-   operator kinds or call edges. Never redo selection during code generation or
-   generic specialization.
+No user conversion, numeric-literal conversion, solver proof, expected-result
+search, or global imported-function search participates. Ordinary declared
+upcasts and subset inclusion are ordinary call compatibility. A selected result
+is checked against its context; it does not select a different slot. `0 + a`
+does not invent an embedding of integer zero into a rational datatype.
 
-Normalize `!=` to the equality key for this decision, then negate the chosen
-Boolean result. Do not define `>`/`>=` by swapping operands. No module imports,
-right-operand members, solver proofs, expected result types, or arbitrary implicit
-conversions participate in candidate discovery. Ordinary subset inclusion and
-declared trait upcasts are ordinary call compatibility, not a new conversion
-overload system. Numeric literals keep existing Dafny inference; `0 + a` does not
-invent a conversion from `0` to a user numeric type.
+Some type constraints are necessarily delayed. Retain one pending operator
+obligation, not speculative whole-expression reruns. Capture the existing
+call-resolution context and already resolved operands before the lexical scope
+is popped; later finalization must not synthesize an unresolved name and call
+`ResolveApplySuffix` under the wrong scope. Finalize only once its receiver head
+is determined by ordinary evidence. If it remains underdetermined, require a
+receiver annotation or named call. Section 13.3 gives the scheduling rule and
+its non-heuristic failure boundary.
 
-Intrinsic applicability is a type question, not a test of whether its verification
-obligations happen to be provable. Division by zero does not trigger fallback.
-Logical equality's existence is also distinct from support for compiled equality:
-a codatatype or non-reference trait does not select a fallback equality merely
-because its intrinsic equality cannot be compiled. Require the explicit equality
-override uniformly in ghost and compiled contexts.
+For #193, a validated semantic-width capability supplies an intrinsic family;
+#194 does not infer that family from a public operator attribute. The selection
+record distinguishes its semantic width from a native storage carrier. The
+four option combinations and failure rules are in 6.5.
 
-Deferred inference must not guess a nominal owner. Resolve pending operator
-constraints to a fixed point using ordinary independent type evidence. Primitive
-expressions and numeric-literal defaults can use the existing intrinsic solver
-when no nominal choice is pending. If a nominal receiver remains underdetermined,
-ask for an operand type annotation or explicit named call; do not search right-hand
-operator declarations or choose by solver iteration order. An untyped left-hand
-`null` needs sufficient ordinary type evidence or a cast such as `null as C?` to
-select a nullable static user slot. `builtin.==(null, c)` is always an unambiguous
-request for the existing null comparison. Tests must exercise late type evidence
-and ensure a committed intrinsic is not silently rebound to a user slot.
+### 5.3 Newtypes, subsets, and visibility
 
-### 5.3 Newtypes and subsets
+`AST/TypeDeclarations/NewtypeDecl.cs` is member-bearing and nominal.
+`SubsetTypeDecl.cs` is a constrained synonym. A visible subset of `T` uses T's
+operator view; a subset of `N` stops at nominal newtype N. The selected function
+returns its declared result type. There is no automatic lift back into a subset
+or newtype and no inferred preservation of its predicate.
 
-`AST/TypeDeclarations/NewtypeDecl.cs` is a member-bearing nominal declaration.
-`SubsetTypeDecl.cs` is a type synonym with a constraint, not a new member owner.
-Therefore a visible subset `S = x:T | p(x)` uses `T`'s operator view; a subset of
-`N` stops at nominal newtype `N`. An operator result keeps the declared result
-type. It does not automatically become `S` or acquire `p`.
+Find the nominal owner before `NormalizeToAncestorType`/`UrAncestor` erase it.
+For intrinsic selection, retain the existing numeric-newtype semantics; for
+member calls, retain the ordinary receiver conversions and result type. Respect
+`Types.cs::NormalizeExpand` and `NewtypeDecl.RhsWithArgument` visibility checks.
+An escape or an attribute cannot reveal a hidden representation.
 
-General newtypes keep their nominal head during selection. Do not call
-`NormalizeToAncestorType` or `UrAncestor` before finding the owner. Inherited
-instance members use the existing general-newtype member machinery and retain
-their original substituted argument/result types. There is no automatic lifting
-of a base result into the newtype. An explicit conversion back to a constrained
-newtype must prove its constraint; assignment to a subset result does likewise.
+Ordinary `--general-newtypes`, `--general-traits`, and backend restrictions
+remain. This feature does not enable those flags or finish incomplete general
+trait support. The first PR defers all newtype-owned slots, but plain intrinsic
+newtype expressions remain unchanged. The modular example in section 10 is
+explicitly a later non-equality override example.
 
-Respect `Types.cs::NormalizeExpand` and `NewtypeDecl.RhsWithArgument` visibility
-behavior. The escape cannot expose an unavailable underlying type. Ordinary
-`--general-newtypes` and `--general-traits` support limits continue to apply;
-the operator option never silently enables another option or completes an
-unsupported backend feature. In particular general newtypes currently require
-the refreshed resolver, and `--general-traits=full` still advertises incomplete
-support. Tests must distinguish those pre-existing restrictions from a missing
-operator feature.
+### 5.4 Traits and bounded types: later prerequisites
 
-### 5.4 Trait bounds: an explicit prerequisite, not existing functionality
+The parser accepts bounds such as `T extends Ordered<T>`, but at the pin both
+member-lookup implementations expect a `TopLevelDeclWithMembers`, and
+`TypeParameter` is not one. Existing bounded-polymorphism tests require an
+explicit cast before selecting the trait member. The legacy resolver also lacks
+some declared datatype-to-trait/type-parameter-to-trait compatibility supported
+by the refreshed resolver. Attaching a trait `Function` to a raw-T call can
+reach an invalid `Types.cs::AsParentType` assumption; that is not an implementation
+of bound-aware lookup.
 
-The grammar already accepts `T extends Ordered<T>` and repeated `extends` bounds.
-However, both current member lookups expect a `TopLevelDeclWithMembers`;
-`TypeParameter` is not one. Existing tests explicitly require a cast before
-`x.f` when `x:T extends Trait`. The legacy resolver also rejects several declared
-type-parameter-to-trait and concrete datatype-to-trait views that the refreshed
-resolver accepts. Merely attaching a trait `Function` to a call with a raw `T`
-receiver can crash `Types.cs::AsParentType`.
+A later trait PR must enumerate instantiated bounds, deduplicate slot lineage,
+reject unrelated collisions independently of bound order, and introduce the
+ordinary bound-typed receiver view before call checking. Retain the original
+expression for every well-formedness obligation. Support its explicit named-call
+expansion under the same mode, so operator correctness can be compared to real
+source. Reuse existing declared-parent substitution and verification/backend
+conversions; add no unchecked cast.
 
-The trait milestone must therefore implement the following small, explicit
-piece of resolution support, not claim to reuse functionality that is absent:
+Legacy parity needs feature-gated declared-view support in its subtype/cast and
+`Equatable`/`EquatableArg` paths, not a global relaxation of unrelated type
+relations. It is a separate PR, not an unstated premise of the first milestone.
+The refreshed-only option must fail early and clearly when used with the legacy
+resolver.
 
-1. Enumerate instantiated declared trait bounds and inherited instance slots.
-2. Deduplicate the same slot and reject unrelated competing slots. Do not let
-   bound order select the winner.
-3. Create an ordinary bound-typed receiver view before normal member/call
-   resolution, retaining the original expression for all well-formedness checks.
-4. With the feature enabled, teach the legacy assignability/conversion/comparability
-   path the **declared** trait-view relationships needed for that expansion:
-   concrete datatype-to-instantiated-parent and type-parameter-to-instantiated-bound.
-   No arbitrary downcast or unchecked type assertion is introduced.
-5. Permit the corresponding explicit named-call expansion with that view in the
-   same enabled mode, so the equivalence is reviewable. Preserve all legacy
-   behavior when the option is off.
-6. Reuse existing type-bound membership facts, verification conversions, parent
-   substitutions, and backend upcasts. Test both resolver results against the
-   explicitly cast named-call form before declaring trait support complete.
-
-The source locations and existing tests are listed in section 11. This prerequisite
-is a high-risk part of the implementation, and deserves its own PR. It is still
-ordinary existing trait-call semantics; it adds no algebraic or operator axiom.
-
-An unbounded `T(==)` continues to select intrinsic equality, even when later
-instantiated with `Rat`. A parameter bounded by a trait with an equality override
-can select that trait slot. These choices are fixed when the generic body is
-resolved. Implementation-specific operators never appear retroactively through
-specialization. Dispatch of a selected instance slot remains ordinary virtual
-trait dispatch; static type selection does not mean devirtualizing its body.
+Generic selection is fixed in the generic body's static view. A later
+`T extends Add<T>` operator call stays a call after specialization to a numeric
+newtype, even though a newly written expression at that concrete newtype might
+select intrinsic arithmetic. This is ordinary static resolution plus ordinary
+instance dispatch, not specialization-time overload lookup. Equality is
+intrinsic in both cases; `T(==)` does not mean a library-equivalence capability.
 
 ### 5.5 Diagnostics
 
-Use new stable diagnostic identifiers, in enabled paths only. Examples:
+Use stable new identifiers only on enabled paths. Representative messages:
 
 ```text
+--user-defined-operators currently requires --type-system-refresh
+operator '==' cannot be declared; use a named equivalence predicate
+operator '!=' cannot be declared; use a named predicate or its negation
+operator mode 'override' is not supported in this milestone
 operator '*' is not defined for left operand type 'Rat'
-operator '+' has ambiguous inherited slots: A.plus and B.add
-operator '==' requires {:operator "==", "override"}; intrinsic equality otherwise wins
+operator '+' has ambiguous slots: A.plus and B.add
 operator '<=' must return bool
-operator '-' expects zero instance operands (unary) or one (binary)
-operator '*' is a method and cannot be used inside an expression; use a named call first
-operator receiver type is not determined; annotate the left operand or use a named call
-operator override of Ordered.le must preserve symbol '<=' and priority 'override'
+operator '-' has invalid operand arity
+operator members cannot have method type parameters or default/nameonly operands
+operator receiver type is not determined; annotate it or use a named call
+operator use requires an unsupported hidden or abstract owner view
+operator selection cannot be transported into this export/refinement view
 ```
 
-Wrong-argument and contract failures should otherwise reuse ordinary call
-diagnostics at the operator token, with the selected member's declaration as
-related information. `--show-hints`/hover may explain that a fallback declaration
-lost to intrinsic newtype arithmetic or datatype rank. Do not silently select an
-unintended operator to avoid an error. When the option is off, retain all existing
-diagnostic IDs, text, locations, ordering, and exit codes.
+Later stages add trait, method-context, and priority-agreement diagnostics.
+Reuse ordinary argument/contract errors at the operator token with the selected
+member as related information. Hover should distinguish an intrinsic from a
+member; an applicable intrinsic is not silently replaced to avoid an error.
+Disabled diagnostic identifiers, text, locations, ordering and exit codes remain
+exactly those of the baseline.
 
-### 5.6 Refinement and source clones must preserve the original choice
+### 5.6 Concrete binding records and every cloning path
 
-Freezing choices only in ordinary resolved AST clones is insufficient.
-`Rewriters/RefinementTransformer.cs::RefinementCloner` uses `base(false, false)`:
-it deliberately copies source while discarding normal resolved fields. Scope and
-export clones also reconstruct source views. An inherited expression must not
-choose a new operator just because a refining module adds an override or makes
-an intrinsic operation newly applicable.
+A bare `ResolvedExpression` or `MemberDecl` pointer is insufficient. The pin's
+`RefinementCloner` deliberately discards ordinary resolved fields; exports
+rebuild owner views; chains recompute desugaring. The saved object is an
+**immutable replay recipe**, separate from `ResolvedExpression`:
 
-For example, a base module can prove a lemma with postcondition `c == c` for its
-class `C`, using intrinsic reflexivity. A refining module may add a user equality
-on `C` that always returns false. Re-resolving the inherited postcondition as that
-new call would change a previously proved lemma into a lemma ensuring false,
-while inherited verification conditions can be skipped. The risk exists without
-any source-level abstract-type operator declarations.
+```csharp
+// Design types, not existing definitions or a product patch.
+readonly record struct DeclKey(Declaration Origin, ModuleViewId View);
+readonly record struct BinderKey(Declaration Origin, int Index, ModuleViewId View);
 
-Give every resolved source operator an immutable **selection record**, distinct
-from `ResolvedExpression`: intrinsic-only, or a selected member/slot with its
-static/instance form and necessary receiver/type-view information. Transport this
-record through semantic source clones even when `CloneResolvedFields` is false.
-During refinement:
+abstract record FrozenType;
+record ParameterType(BinderKey Parameter) : FrozenType;
+record NominalType(DeclKey Declaration,
+  ImmutableArray<FrozenType> Arguments) : FrozenType;
+record PrimitiveType(PrimitiveTypeKind Kind) : FrozenType;
+// Add immutable collection/arrow constructors wherever a receiver argument needs them.
 
-1. Copy records for all inherited operator occurrences, including intrinsic ones.
-2. After the refining module's signatures/inheritance are available, map selected
-   members through the checked declaration correspondence, including
-   `MemberDecl.RefinementBase` links established by `MergeClass`.
-3. Resolve an inherited intrinsic through the intrinsic-only path. Resolve an
-   inherited member selection as a normal call to its corresponding member,
-   with all ordinary receiver/argument/type checks. Never repeat priority lookup.
-4. Reject a selection that cannot be transported; do not replace it with another
-   available member or intrinsic. Preserve the symbol/arity/priority of refined
-   member signatures as for inherited trait slots.
-5. Resolve newly authored expressions in the refining module normally; they can
-   use a newly added override even though inherited expressions cannot change.
+abstract record OperatorSelection(OperatorKey Key);
+record IntrinsicSelection(OperatorKey Key, IntrinsicFamily Family,
+  ImmutableArray<FrozenType> OperandViews,
+  int? SemanticBitWidth) : OperatorSelection(Key);
+record MemberSelection(OperatorKey Key, DeclKey SelectedMember,
+  DeclKey OriginalSlot, CallForm Form, FrozenType ReceiverView,
+  ImmutableArray<FrozenType> OwnerArguments) : OperatorSelection(Key);
 
-This does not require a preliminary whole-program resolution pass.
-`Resolver/ProgramResolver.cs` resolves dependency-ordered modules, and
-`RefinementTransformer.PreResolve` receives an already resolved base. The
-selection records therefore exist before its source is cloned. Keep the records
-separate from mutable solver types and transport substitutions using the normal
-refinement mappings. The record is a replay recipe, not a saved resolved AST:
-do not retain old local-variable/type-parameter pointers or enable wholesale
-`CloneResolvedFields` where an abstract/signature clone deliberately needs
-rebinding. Freeze the slot and view, while allowing its corresponding refining
-member and ordinary instance dispatch to supply the implementation. Use general
-clone/member correspondence, not cardinality-specific provenance as an operator
-mapping API.
+// On OperatorSyntaxExpr, independent of CloneResolvedFields:
+OperatorSelection? Selection;
+SelectionPhase Phase; // FreshSyntax, AwaitingInitialInference, or Frozen
+// On ChainingExpression: one such entry per source edge.
+// On a future CompoundAssignStmt: its underlying operation selection.
+```
 
-Store records per edge in `ChainingExpression`, whose clone currently recomputes
-its desugaring, and on a compound statement's underlying operation. Records only
-on transient generated edge/call nodes would be lost. Apply the same discipline
-to `ScopeCloner` and export-consistency clones. An exported contract whose pinned
-callee or receiver view is unavailable must fail the ordinary consistency check,
-not acquire a different interpretation through fallback lookup. Preserve the
-origin-owner/member mapping through generated `AbstractTypeDecl` views.
+`Origin` is declaration identity within this resolution transaction, not a source
+name or hash assumed globally unique. `ModuleViewId` distinguishes actual module,
+export, abstract-signature and refinement instantiations: two refinements of the
+same origin must not collapse to one binding. Allocate these identities only on
+the enabled path. They are not serialized object addresses. The checked clone
+context maps origin/view/binder keys to the target environment; original source
+can reconstruct them on an artifact round trip.
 
-The current `Backends/Library/LibraryBackend.cs` serializes
-`Program.AfterParsingClone`, retaining original module/refinement source. With
-matching mode, reloading can reconstruct choices by resolving the base first and
-then transporting them again. Test this exact round trip. Any serialization path
-that flattens inherited source must instead preserve the selection records or
-emit an explicit named call/intrinsic escape; printing bare infix syntax without
-its original provenance is insufficient.
+`OriginalSlot` identifies normal member-override lineage; `SelectedMember` is
+the signature selected at the occurrence. Freezing a trait slot does **not**
+freeze its runtime implementation body. `FrozenType` contains neither a mutable
+`PreType`/proxy nor an old local-variable pointer. Rebuild types using the target
+binder/declaration correspondence. Provisional inference state may select a slot
+while solving constraints, but publish this immutable record only when its view
+recipe is complete, before the semantic-analysis boundary.
 
-The publication-time #236 change in `RefinementTransformer` merges an abstract
-type's members into a refining synonym's target. That is another checked member
-correspondence across which the same metadata/selection rules apply; it does not
-authorize new subset/alias-owned operators or a change to an inherited meaning.
+`IntrinsicFamily` is semantic identity, not a blindly copied backend opcode.
+Intrinsic equality under a legal type refinement remains intrinsic equality;
+rank `<` must not turn into numeric `<` or a user predicate. Replay checks that
+the same intrinsic meaning is valid in the target view. #193's family also keeps
+its semantic bit width, independently of `NativeType.Bitwidth`. If the target
+view cannot express the saved operation, report inconsistency. Member replay
+resolves exactly the corresponding selected named member/slot and applies all
+ordinary receiver, type, argument, visibility, ghost, frame and termination
+checks. Neither replay route falls back to another operation.
 
-## 6. Equality and the boundary of intrinsic reasoning
+**Declaration correspondence.** Add an `OperatorCloneContext` shared by a whole
+module/signature construction, with source-to-final owner/member/binder/view
+maps and deferred fixups. Register declaration shells first where possible;
+otherwise finish fixups only after final signature objects exist. Cloning an
+expression often precedes cloning the member it calls.
 
-### 6.1 What a user `==` means
+Do not implement this with `CloneMember(member, true)`. In `AST/Cloner.cs`,
+`CloneMember` uses a private `memberClones` cache and `GetOrCreate`; a reference
+clone can return and cache the *old* declaration before its definition clone is
+created. `GetCloneIfAvailable` for a type parameter also silently falls back to
+the original, so it cannot certify checked transport. The new correspondence
+must explicitly name the final objects. In particular:
 
-For an explicit override, `a == b` means exactly `a.eq(b)` or its selected static
-call. It may be non-reflexive, non-transitive, heap-dependent, partial through a
-precondition, or unsuitable for hashing. None of those properties is a language
-error beyond the existing callable restrictions. The definition, contract, or
-explicitly called library lemmas determine what can be proved.
+- `RefinementTransformer.MergeClass` creates final replacement functions and
+  methods and must register them after construction; its absent-member path
+  sets `MemberDecl.RefinementBase`.
+- `MemberDecl.RefinementBase` and `OverriddenMember` supply checked lineage
+  edges, not an all-purpose complete environment map.
+- The pin's synonym-target refinement branch maps an abstract owner to the
+  checked target with its type-argument substitution; register that final target.
+- Do not reuse cardinality-specific provenance fields: their equivalence
+  relation is not the operator-view correspondence.
+- `ScopeCloner` must map to the *final* `AbstractTypeDecl` view it creates, not
+  to an intermediate clone. If the view hides a selected callee or intrinsic
+  capability, export consistency must fail.
+- `CloneDeclarationForAbstractSignature` creates a new
+  `AbstractSignatureCloner` per declaration. The shared correspondence must
+  therefore belong to signature construction, not one cloner instance. Its
+  manually built `AbstractModuleDecl` facades also need mapping.
 
-Intrinsic equality remains substitutive. A user `==` supplies **no automatic
-substitution**, no quotient values, and no replacement of representation identity.
-Equivalence alone does not imply congruence for every function: parity equality
-does not preserve the integer identity function as intrinsic equality, and
-mathematical rational equality does not preserve numerator/denominator accessors.
-An opaque representation does not remove this distinction.
+These are the **14 `Cloner` classes at the pin**, including indirect subclasses.
+Paths are relative to `Source/DafnyCore/`:
 
-Allow equality notation for all eligible nominal types, rather than classes only.
-Classes-only is familiar for value-versus-reference comparison but supplies no
-extra soundness: class predicates can be nontransitive and mutable too, while
-datatypes are the principal numeric-library use case. Disallowing user equality
-entirely preserves a simpler reading of `==`, but unnecessarily rejects the
-requested notation once intrinsic escape and honest call lowering are present.
-This recommendation depends on the AST and intrinsic-context rules below, not on
-proving an unspecified global congruence condition.
+| Class / path | Required treatment |
+|---|---|
+| `Cloner`, `AST/Cloner.cs` | Wrapper/chain constructors transport selections independently of `CloneResolvedFields`. Unresolved parsed clones retain null; resolved semantic copies retain the actual ordinary call/intrinsic. |
+| `ClonerKeepParensExpressions`, `AST/Cloner.cs` | Preserve source records through recursive children, not solely on a disposable parenthesis. |
+| `DeepModuleSignatureCloner`, `AST/Cloner.cs` | Carry module-view/declaration correspondence through signatures and alias/facade roots; never find a saved target by a fresh name search. |
+| `ClonerButDropMethodBodies`, `AST/Cloner.cs` | Dropped bodies may drop their records. Retained contracts, frames and decreases keep records; `ExpectContracts` uses this with resolved fields. |
+| `ScopeCloner`, `AST/Modules/ScopeCloner.cs` | Filter visibility and register final owner/member export views, including manually created abstract owners. Fail a surviving untransportable selection instead of rebinding. |
+| `AbstractSignatureCloner`, `AST/Modules/AbstractSignatureCloner.cs` | Same scope rule; removed bodies/exports need no record. Share correspondence across all per-declaration instances and manually rebuilt facades. |
+| `RefinementCloner`, `Rewriters/RefinementTransformer.cs` | Its `base(false, false)` is intentional. Keep records separately, map final merged declarations, then replay after signatures exist. Fresh refining source has no inherited selection. |
+| `SubstitutingCloner`, `AST/SubstitutingCloner.cs` | Substitute operand identifiers/types with normal rules and transport the view recipe; it holds no captured local-variable object. |
+| `ClonerButIVariablesAreKeptOnce`, `Resolver/ClonerButIVariablesAreKeptOnce.cs` | Inherit base/parenthesis handling despite retained/recloned variables; no new lookup. |
+| `QuantifiedVariableDomainCloner`, `AST/Expressions/Variables/BoundVar.cs` | Origin wrapping does not alter selection. Parsed unresolved occurrences legitimately carry null. |
+| `QuantifiedVariableRangeCloner`, `AST/Expressions/Variables/BoundVar.cs` | Same rule for range-origin wrapping. |
+| `ExtremeCloner`, `AST/ExtremeCloner.cs` | Classify the ordinary resolved expression. Only true intrinsic equality gets prefix/coinductive treatment; source portions retain replay records. |
+| `ExtremeLemmaSpecificationSubstituter`, `AST/ExtremeLemmaSpecificationSubstituter.cs` | It explicitly bypasses concrete wrappers to clone `.Resolved`. This is safe only if the resulting ordinary named call/intrinsic retains its meaning when re-resolved; never emit bare unpinned infix text. |
+| `ExtremeLemmaBodyCloner`, `AST/ExtremeLemmaBodyCloner.cs` | Keep source records through focal/recursive rewriting. User comparisons are ordinary calls and do not enter primitive equality transformations. |
 
-### 6.2 Intrinsic mechanisms and nested source expressions
+`AST/Substituter.cs` is not a `Cloner` subclass, but is another essential route.
+Its concrete-syntax case substitutes the resolved child into a resolved
+parenthesis, and its function-call case preserves the selected Function while
+substituting receiver/arguments/types. It may discard the surface record because
+this is semantic lowering, provided the result never returns to user lookup.
+The same rule applies to match flattening: keep the normal call, not a user
+symbol with a lost choice.
 
-Do not say that every operator occurring syntactically under `old`, a frame, or
-a trigger becomes intrinsic. The right distinction is between the mechanism's
-own generated operations and ordinary source expressions nested in it.
+`ConcreteSyntaxExpression` copies `ResolvedExpression` only when
+`CloneResolvedFields` is true. The new selection must be copied outside that
+condition. `ChainingExpression` rebuilds `E` through `ComputeDesugaring`; restore
+selections from the source edge array while rebuilding. A future compound keeps
+its operation record on the statement, not only a temporary generated node.
 
-| Construct | Operations that remain intrinsic | Source expressions inside it |
-|---|---|---|
-| Pattern matching | Constructor/discriminator tests, literal-pattern comparisons, exhaustiveness, generated discrimination equalities | Scrutinees, guards, branch expressions resolve normally |
-| Sets, multisets, maps, sequences | Element/key identity, membership, multiplicity, extensional collection equality, map lookup/update uniqueness, runtime hashing | Element expressions, predicates, key/value computations resolve normally |
-| `T(==)` | Existing compiled-equality characteristic; no new equality-support inference | An explicitly trait-bounded operator call is a separate callable capability |
-| `fresh` / `allocated` | Allocation state and reference identity | Expressions producing their arguments use normal calls |
-| `old` / `old@L` | Existing heap selection, not an equality operation | `old(a == b)` contains the selected `eq` call in the old heap, with ordinary reads/preconditions |
-| `unchanged` | Generated field-value equalities and frame membership | Expressions denoting the frame resolve normally |
-| `reads` / `modifies` | Object/field identity and frame-set membership | Frame-producing expressions resolve normally |
-| `decreases` and automatic termination machinery | The existing well-founded orders on measure values, including datatype rank | An explicitly written operator within a measure computes a value; it does not redefine the order used to compare measures |
-| Triggers | Generated intrinsic terms retain their semantics | An explicit operator call becomes the same function application as the named form; do not retain fake equality/arithmetic trigger kinds |
-| Generated/compiled equality | Datatype equality, collection equality, generic equality, null/identity tests, hashing | A selected user override compiles as its ordinary callable |
-| `calc` connectors | Default/explicit step relations and their built-in composition rules | Ordinary expressions in lines and hints may contain user calls |
-| Prefix equality and coinduction | `==#[k]`, codatatype equality machinery, generated induction/coinduction conditions | A user equality function is analyzed as a function, without coinductive-equality privileges |
-| Generated proof statements | Equalities introduced by assignments, `forall`, matching, refinement, frame checks, and compiler rewrites | Already resolved user subexpressions retain their selected calls |
+**Lifecycle:**
 
-"Intrinsic equality" means the type's existing Dafny equality, not a new universal
-shallow field comparison. Classes use identity; datatypes, collections, and
-codatatypes have their existing structural/extensional/coinductive treatments
-and existing compilability restrictions. `Verifier/Expressions/TranslateBinaryExpr.cs`
-and `AST/Types/UserDefinedType.cs::SupportsEquality` contain important distinctions.
+1. `AST/Grammar/ProgramParser.cs` captures `AfterParsingClone` with a plain
+   cloner before resolution; `Pipeline/Compilation.cs` also keeps parsed
+   pipeline state. These genuinely unresolved clones have no selections yet.
+2. `Resolver/ProgramResolver.cs` resolves modules in dependency order.
+   `RefinementTransformer.PreResolve` sees an already resolved base, so its
+   inherited occurrences do have selections before cloning.
+3. First resolution commits the choice and emits the ordinary semantic AST.
+   Export/refinement/signature source clones copy and transport the record even
+   while discarding other resolved fields.
+4. `ModuleResolver.CheckModuleExportConsistency` creates a `ScopeCloner`,
+   re-resolves its view, and accepts an `EffectiveModule` only after consistency
+   succeeds. Transport must be installed before that re-resolution.
+5. Semantic-only copies/substitutions can erase wrappers only after retaining
+   the actual selected calls/intrinsics. No later pass repeats priority lookup.
+6. `Backends/Library/LibraryBackend.cs` serializes `AfterParsingClone`. With
+   compatible language modes, resolving original dependency/refinement source
+   reconstructs choices in order. A flattened inherited source view must instead
+   serialize a stable replay encoding or print explicit named calls/intrinsic
+   escapes. Bare infix reprinting is insufficient.
 
-### 6.3 Why `calc` needs an explicit rule
+A parsed unresolved occurrence and a lost binding are distinct states. A
+`Frozen` occurrence requires a non-null selection. A clone context marked
+`ResolvedSource` requires records for every eligible source occurrence before
+copying, independently of the occurrence's field defaults; it must fail on a
+missing record rather than label the copy fresh. Only the parser/known
+pre-resolution clone path creates `FreshSyntax`. Semantic-only clones keep the
+ordinary expression and never return to lookup.
 
-`AST/Statements/CalcStmt.cs::BinaryCalcOp.ResultOp` encodes fixed composition
-rules. `Verifier/Statements/BoogieGenerator.TrStatement.cs::TrCalcStmt` proves
-adjacent steps and then assumes the endpoint relation. It checks the line
-expressions, not the arbitrary preconditions of a newly introduced operator call.
-Replacing a connector by a user relation would therefore import unproved
-transitivity and can also skip a precondition.
+This needs no preliminary whole-program second resolution. It does need complete
+checked correspondence before a cloned source view is accepted. A missing map
+is an error, not permission to reuse an old pointer or choose a new candidate.
 
-For example, a relation that means "the two integer representations differ by at
-most one" holds for 0/1 and 1/2 but not 0/2. It cannot use the existing `calc ==`
-rule. Keep connectors intrinsic in this feature, including default equality;
-report the ordinary intrinsic type error if a connector is unavailable, such as
-`calc <=` on a rational datatype. Explain the intrinsic connector in hover/docs.
-Users can call the trait's transitivity lemma, or calculate over Boolean
-propositions containing ordinary user comparisons. A future calculation syntax
-that takes explicit law evidence is a separate feature.
+### 5.7 Concrete wrong-verification programs if records are dropped
 
-## 7. Compound assignment
+**Refinement without equality override.** This prospective regression uses a
+trait-owned `+`; there is no independently annotated standalone abstract type:
 
-The accepted forms are `lhs += e;`, `-=`, `*=`, `/=`, and `%=`. They have no
+```dafny
+abstract module A {
+  trait Add<T> {
+    function {:operator "+"} plus(y: T): T
+  }
+  type T extends Add<T> {
+    function plus(y: T): T
+  }
+  lemma same(x: T)
+    ensures x + x == x.plus(x)
+  { }
+}
+module B refines A {
+  newtype T = int {
+    function plus(y: T): T {
+      ((this as int) + (y as int) + 1) as T
+    }
+  }
+  lemma bad() {
+    same(0);
+    assert false; // Must fail.
+  }
+}
+```
+
+In A, both sides of the postcondition are the same call. If B discards the
+selection and repeats built-in-first lookup, its left side becomes numeric
+addition while its right side remains `plus`. Calling `same(0)` then publishes
+`0 == 1`. `RefinementCloner` drops resolved fields;
+`Verifier/BoogieGenerator.Methods.cs` guards inherited implementation
+postconditions with `$_reverifyPost`; `RefinementTransformer.ContainsChange`
+recognizes extended predicates, not this hypothetical operator reinterpretation.
+Correct replay keeps the left side as the call. M1 rejects this feature-bearing
+refinement; the later trait/refinement stage must accept the positive expansion
+and still reject `assert false`.
+
+**Export without refinement or override.**
+
+```dafny
+module M {
+  datatype D = D {
+    function {:operator "<"} less(other: D): (r: bool)
+      ensures r
+    { true }
+  }
+  lemma rank_irreflexive(x: D)
+    ensures !(x < x)
+  { }
+  export provides D, D.less, rank_irreflexive
+}
+module Client {
+  import M
+  lemma bad(x: M.D) {
+    M.rank_irreflexive(x);
+    assert false;
+  }
+}
+```
+
+Inside M, intrinsic datatype rank wins and the lemma is true. In the opaque view,
+rank is unavailable. A faulty export clone could select visible `less` instead,
+while that member's contract makes it true, so the exported lemma yields false.
+Correct intrinsic replay rejects the inconsistent export. This example explains
+why "no refinement in M1" does not justify omitting selection preservation.
+M1 must reject the hidden view or its unavailable intrinsic; revealing D yields
+a positive export-consistency test (the deliberate false assertion still fails).
+
+Both feature-bearing programs are **unchecked prospective regression programs**:
+operator syntax is not implemented. The first program's today's-syntax control
+replaced only `x + x` by `x.plus(x)` and produced **3 verified, 1 expected error
+at `assert false`**. The second, with the inert attribute omitted, produced its
+**two expected resolution errors** for the opaque rank use/export inconsistency.
+These controls ran on public release
+`4.11.0+fcb2042d.review.bf47de16`, Z3 5.1.0, refreshed resolver (and
+`--general-traits=datatype` for refinement), additional axioms off. They are not
+claimed tests of a binary built from the source audit pin.
+
+## 6. Equality, intrinsic reasoning, and issue #193
+
+### 6.1 Equality recommendation and exact site rules
+
+**Reject user declarations for both `==` and `!=`, on every eligible owner and
+in every mode of the enabled feature.** Use ordinary `eq`/`equiv` predicates for
+non-structural relations. This is the recommended final policy, not merely a
+first-PR restriction. Disabled compilers continue treating the attribute as
+unknown metadata, as required by compatibility.
+
+The old proposal could make a uniform source `==` an ordinary predicate call
+without automatically assuming substitution. That is a possible sound notation
+feature. It cannot simultaneously mean "all ghost equality in specifications is
+intrinsic" and "an explicit `a == b` selects the user member" without a further
+context-dependent rule. Nor can "compiled equality stays intrinsic" cover the
+compiled form of a source expression that was verified as a user predicate.
+If equality override were retained, **every explicit use**, including requires,
+ensures, assertions, old expressions, and compiled expressions, would have to
+keep its selected call; only generated machinery could remain intrinsic. This
+revision chooses the simpler uniform intrinsic rule instead.
+
+Here **I** is the existing equality for the static type under the ordinary
+visibility/typing rules, and **E** is an explicitly named user predicate call.
+They are different relations. No coercion or mode changes E into I. Intrinsic
+does not mean "shallow fields for every type": class equality is reference
+identity, inductive datatype equality compares its constructor/fields, collection
+equality uses its existing extensional definition, and codatatypes retain the
+existing coinductive equality and compiled-use restrictions. Existing equality
+on abstract/generic/function-containing values retains its current rules; this
+proposal supplies no new extensionality or runtime equality algorithm.
+
+| Source/implicit site | Exact rule in the recommended design |
+|---|---|
+| `a == b` in an expression, statement RHS, function body, `if`, `print`, or return value | I, regardless of whether the expression is ghost or compiled. Operands may contain ordinary user calls. |
+| `a != b` | Existing negation of I, including existing collection-specific handling; never negation of a library `eq` unless written `!a.eq(b)`. |
+| `requires`, `ensures`, invariants, assertions, assumptions, lemma contracts, witnesses, type/subset/newtype constraints, quantified ranges/bodies | Every explicit `==`/`!=` is I. Writing `a.eq(b)` explicitly requests E, with ordinary reads, preconditions, visibility and termination. |
+| Equality in a mixed/chained relation | That edge is I. Arithmetic/order edges use their own recorded selection. Chaining contributes conjunction, not substitution/transitivity of a user relation. |
+| `calc`, default connector or explicit `==`/`!=` connector | Existing intrinsic connector and composition rule. `calc <=` is also intrinsic; it never calls an attributed `le`. |
+| Expressions and hints within `calc` lines | Normal expression rules: explicit equality is I; named E remains E; an eligible arithmetic/order use may be a user call. |
+| `==#[k]` / `!=#[k]`, generated codatatype equality and coinduction | Existing prefix/coinductive semantics, with ordinary restrictions; not member lookup. |
+| `match`, constructor tests, literal patterns, pattern exhaustiveness, discrimination and generated field comparisons | Existing intrinsic constructor/value reasoning. A scrutinee or branch may call E, but that does not redefine matching. |
+| Set/iset membership and extensional equality; multiset multiplicities and equality | Existing intrinsic element identity. A predicate inside a comprehension is evaluated normally; E does not change element identity or quotient the collection. |
+| Sequence membership, equality, prefix relations, and element lookup | Existing intrinsic element equality. No element `eq` method is consulted. |
+| Map/imap key membership, lookup, update, duplicate-key consistency, and equality | Existing intrinsic key equality and value equality. E cannot supply hashing or identify two different keys. |
+| Set/map/multiset/sequence literals and comprehensions | Element/key/value expressions use ordinary calls; collection construction and identity remain intrinsic. `{a,b}` may have two elements even when E(a,b). |
+| `T(==)` and equality-support inference | Existing compiled-equality capability, not an equivalence-trait requirement. A proved equivalence or user `eq` supplies no new `(==)` characteristic. |
+| Generic bodies and later specialization | Explicit equality is I at the generic static view. Substituting a type with an `eq` member never changes that expression to a call. |
+| `old(e)` / `old@L(e)` | Existing heap interpretation of `e`. `old(a == b)` is I on the operands evaluated by old's ordinary rules; `old(a.eq(b))` is E in that heap, with its ordinary call obligations. Old is not a blanket equality rewrite. |
+| `fresh` / `allocated` | Existing allocation and reference-identity machinery. Computations producing their arguments may contain calls, but do not change allocation identity. |
+| `unchanged` | Existing generated equality of the specified locations/fields, and intrinsic frame membership. The frame-producing expression may contain E or other calls. |
+| `reads`, `modifies`, frame checks, heap succession | Existing object/field identity and frame-set membership. Explicit source computations retain their own ordinary meanings. |
+| `decreases`, `decreases to`, lexicographic tie tests, generated call/loop termination checks | Existing intrinsic equality and well-founded orders on the computed measure values. A named E in a measure merely computes a Boolean; it does not replace the termination order. |
+| Triggers, generated trigger terms, bound discovery, exact bounded pools | Explicit `==` is the existing intrinsic relation; a named E is an ordinary function application. E must never receive `EqCommon`-based exact-bound reasoning. |
+| Assignment/forall postconditions, let substitution, refinement checks, generated proof equalities | Existing intrinsic equality. An already resolved user subexpression stays its call. No generated `BinaryExpr` participates in user lookup. |
+| Compiled explicit `==`, generic equality, generated datatype equality, runtime collection equality/hash, null tests | Existing backend equality consistent with I, wherever compilable. User `eq` compiles as its ordinary function. Unsupported intrinsic equality stays an error; it does not fall back to E. |
+| Export/refinement/library clones | The equality choice remains I. Calls to named E remain calls and retain normal declaration/view transport. Non-equality operators need the extra records in 5.6. |
+| `builtin.==(a,b)` / `builtin.!=(a,b)` once the escape exists | Redundant explicit I. The escape does not waive type comparability or compiled-equality restrictions. |
+
+The source basis for the distinction is explicit:
+`Resolver/ModuleResolver.cs::ResolveOp` chooses `SetEq`, `MultiSetEq`, `SeqEq`,
+`MapEq`, or `EqCommon`; `Verifier/Expressions/TranslateBinaryExpr.cs` handles
+`EqCommon` with datatype/codatatype special cases;
+`AST/Types/UserDefinedType.cs::SupportsEquality` controls compiled support.
+`Verifier/BoogieGenerator.Decreases.cs::ComputeLessEq`,
+`BoogieGenerator.ExpressionTranslator.cs` (`OldExpr`, `UnchangedExpr`, prefix
+comparison), and `Resolver/BoundsDiscovery/BoundsDiscovery.cs` are examples of
+implicit machinery that must remain untouched. These are existing definitions,
+not new equality axioms supplied by #194.
+
+### 6.2 A concrete misleading program, and why to remove that case
+
+Consider noncanonical rational values:
+
+```dafny
+type Pos = d: int | 0 < d witness 1
+datatype Q = Q(n: int, d: Pos) {
+  predicate eq(b: Q) { n * b.d == b.n * d }
+}
+
+method equality_example() {
+  var a := Q(1, 2);
+  var b := Q(2, 4);
+  assert a.eq(b);       // mathematical rational equality
+  assert a != b;        // different representations
+  assert b !in {a};
+  assert |{a, b}| == 2;
+  assert a.n != b.n;
+}
+```
+
+With the old `{:operator "==", "override"}` on `eq`, the first assertion could
+be spelled `assert a == b;` while the set still has two elements and `b !in {a}`.
+For clarity, the old design's assertions would instead be:
+
+```dafny
+// Q.eq is annotated {:operator "==", "override"} in the superseded design.
+assert a == b;
+assert b !in {a};
+assert a.n != b.n;
+// assert b in {a}; // must fail
+```
+
+The natural conclusion `assert b in {a};` would fail, as would substitution of
+`b` for `a` in `a.n == 1`. This is not evidence that ordinary call lowering is
+logically unsound: the failed implications are exactly what that lowering should
+refuse. It is evidence that an equality token which lacks equality's defining
+substitution behavior is costly in a verification language. A ghost-only
+intrinsic exception would make identical tokens mean different things between
+specifications and executable expressions and would add another source of
+surprise.
+
+The recommended rule removes the case: `a == b` is false, `a.eq(b)` is true, and
+the syntax states which relation is being used. A quotient collection can still
+be implemented as a library with an explicit relation and a proved API. A library
+can also choose canonical rational representations and prove that representation
+equality coincides with mathematical equality. Neither facility follows from an
+operator attribute or from an equivalence proof alone.
+
+| Equality policy | Argument for it | Argument against it | Decision |
+|---|---|---|---|
+| Overrides on classes only | Familiar value-versus-reference distinction | Mutable/nontransitive/partial relations remain possible; excludes the main numeric-datatype use case without removing the semantic split | Reject |
+| Overrides on all nominal types, uniformly in every explicit context | Convenient mathematical notation; can be sound as plain calls with no new laws | Loses substitutivity of `==`, differs from collection identity and calc, complicates generic/export tooling; needs escape and persistent bindings | Do not recommend |
+| Intrinsic `==`/`!=`, named equivalence | One equality meaning in specs, execution and collections; ordinary congruence reasoning remains valid | Mathematical relations use a named call; noncanonical rationals cannot borrow `==` | Recommend |
+| Allow override only after proving equivalence/congruence | Appears to recover familiar reasoning | Equivalence is insufficient; congruence for every observer in an open API essentially demands equality of all observations, not a mere notation feature | Outside this feature |
+
+The displayed current-syntax program was checked on public release
+`4.11.0+fcb2042d.review.bf47de16`, Z3 5.1.0, refreshed resolver, additional axioms
+off: **2 verified, 0 errors**. Adding `assert b in {a};` gives **1 verified,
+1 error** precisely at that added assertion. A separate checked runtime driver
+prints `true false false 2 false` for named equivalence, intrinsic equality,
+membership, set cardinality and numerator equality. These are existing-syntax
+checks; the superseded override fragment is an unchecked design counterexample.
+
+Confidence is high on the soundness and implementation simplification. The
+remaining tradeoff is notation preference, not a claim that all equality
+overloading is impossible or inherently inconsistent.
+
+### 6.3 Why `calc` connectors stay intrinsic
+
+`AST/Statements/CalcStmt.cs::BinaryCalcOp.ResultOp` has fixed composition rules.
+`Verifier/Statements/BoogieGenerator.TrStatement.cs::TrCalcStmt` proves adjacent
+steps then assumes the endpoint relation. It does not establish arbitrary user
+relation transitivity, and its connector well-formedness path was not designed
+to check an arbitrary user predicate's preconditions.
+
+A relation "the integer representations differ by at most one" holds between
+0 and 1, and between 1 and 2, but not between 0 and 2. It cannot use the intrinsic equality calculation rule.
+Keep every connector intrinsic, including default equality and all `< <= > >=`
+connectors. Thus `calc <=` over rational datatypes is an intrinsic type error,
+even though `a <= b` outside a connector can call `le`. This distinction is
+retained because calc is an explicit proof construct with fixed composition
+rules. The alternative of silently importing laws is unsound; banning all
+intrinsic calc on types with operators would unnecessarily remove existing
+proofs. Document/hover the connector's intrinsic meaning.
+
+Users may invoke `le`'s transitivity lemma, or calculate over Boolean
+propositions containing calls. Law-aware calculation syntax would need explicit
+verified evidence of composition and call-domain obligations; it is a separate
+feature. Library laws become usable through their ordinary proved contracts and
+explicit lemma calls; no law is activated by an operator attribute.
+
+### 6.4 Can issue #193 be a user-operator library?
+
+**Yes for notation and reference semantics; not for its full native-execution
+promise by adding attributes alone.** The comparison must distinguish three
+routes:
+
+1. **Ordinary executable library.** Extend the user-symbol set to `& | ^ ! << >>`,
+   supply named members over executable integer references or verified
+   function-by-method implementations, and compile the resulting ordinary calls.
+   This adds no bitwise axiom, but may execute the recursive/iterative reference
+   algorithm rather than a native integer instruction.
+2. **Library API with canonical native specialization.** Verify those ordinary
+   calls, but compile the exact bundled canonical implementation identity to
+   native instructions for the known semantic width/carrier. This can satisfy
+   #193, with no BV conversion. It is compiler work: provenance, width
+   specialization, backend correspondence and generated-code checks remain.
+   A public attribute, method name, or arbitrary user implementation must not
+   authorize the specialization.
+3. **#193's intrinsic bounded-newtype surface.** A revealed integer newtype with
+   validated semantic-width metadata acquires the operations directly. The
+   verifier uses the integer-reference meaning; the compiler uses a width-bearing
+   intrinsic descriptor. It needs no per-newtype operator facade and no #194
+   dependency.
+
+Recommend **route 3 for the staged implementation**, keeping named reference
+functions and proved library lemmas. Route 2 is a plausible later implementation
+alternative, not a reason to wait for the general operator feature. This respects
+#193's accepted architecture and default-off `--integer-bitwise` option.
+
+The #193 reference definitions at PR #247's audited revision are **ghost**. A
+normal executable `band` function cannot merely call ghost `andNat`.
+`Resolver/ExpressionTester.cs` checks ghost calls, while
+`Resolver/ModuleResolver.cs` handles the actual by-method exception. An
+executable definition, verified by-method, or reviewed compiler implementation
+is required. `SinglePassCodeGenerator.Expression.cs` and
+`SinglePassCodeGenerator.cs::CompileFunctionCallExpr` compile an ordinary
+`FunctionCallExpr` as its ordinary call; an operator attribute is not a native
+instruction selector.
+
+| Dimension | Ordinary library operators | Canonical library specialization | #193 intrinsics |
+|---|---|---|---|
+| Verification | Ordinary calls/contracts over integer references | Same call semantics | Integer-reference semantics after intrinsic lowering |
+| Proof cost | Same mathematical problem; wrappers may add unfolding/contract work | Same frontend cost as library route | Can avoid a facade layer; no automatic algebraic advantage from infix notation |
+| Native execution | Not guaranteed; reference loop/recursion may remain | Possible with explicit compiler mapping and exact identity | Explicit backend mapping is part of the feature |
+| Conversion through bitvectors | Unnecessary | Unnecessary | Unnecessary |
+| Declaration burden | Six direct member/attribute declarations per owner without additional inheritance/generation support, plus contracts | Same facade burden unless another mechanism generates it | One semantic-width annotation plus the existing type constraint |
+| Count and result diagnostics | Ordinary member precondition or explicit-cast errors | Same, plus specialization/target checks | Dedicated width/count/result/target diagnostics at the intrinsic use |
+| New trusted surface | General call notation/compiler only, but lacks the native guarantee | Canonical identity, width/carrier specialization, each native implementation | Capability recognition, intrinsic-to-reference lowering, canonical model identity, each native implementation |
+| Dependency | General user bitwise symbol support must exist first | Both that support and native specialization | Independent #193 work |
+
+There is no measured performance winner between these unimplemented frontends.
+For identical normalized calls/contracts, the logical problem is the same modulo
+source metadata; wrappers can add ordinary cost. PR #247's published
+[reference-wrapper measurements](https://github.com/erniecohen/dafny/blob/a61b06c71d742ff19b280592d26d1a0e2ce9c87c/docs/dev/design/193-evidence/public-measurements.md)
+proved 68/68 reference-wrapper contracts at 2,994–7,511 RU on Z3 5.1.0 and
+3,002–7,519 on 4.12.1 in that corpus. They do not measure an implemented
+library-versus-intrinsic frontend or general algebraic automation. The separate
+3,744–15,735-RU composed trusted-bridge results are client-cost projections, not
+proofs of bridge soundness or an advantage for either spelling. This review
+performs no new performance measurement and does not discharge #193's still
+required effective vacuity controls.
+
+**Whole-type closure also differs.** For `N = n:nat | 0 < n < 256`, `1 & 2` is
+zero. A library function returning `N` needs an appropriate precondition, a wider
+return type plus explicit cast, or a proof that will fail at its definition. The
+intrinsic design checks the complete original predicate at each use, not just the
+width range. Similarly a named composite helper can compute `a & !b` in its
+integer model and check only its final result; the written two-intrinsic
+expression checks the intermediate result too. Neither route gets arbitrary
+newtype closure from a width annotation.
+
+**Native trust is not removed by moving syntax into a library.** Signedness,
+carrier masks, full-width shifts, shifts by zero, sub-carrier semantic widths,
+wide JavaScript values and target limitations remain. A canonical specialization
+must show the same generated result as the integer reference. It must also avoid
+unnecessary arbitrary-integer boxing on fixed native carriers; relying on an
+unmeasured host optimizer is not the promised generated-code behavior. Do not
+widen every existing `IsBitVectorType`/`BooleanBits` predicate to include integer
+newtypes: the pin's BV translation assumes a real BV width.
+
+### 6.5 Cross-feature selection and exact document changes
+
+Let U be `--user-defined-operators` and I be `--integer-bitwise`. The first #194
+milestone does not add user bitwise symbols:
+
+| U | I | Supported ordinary user arithmetic | Width-qualified revealed integer-newtype `a & b` | Existing `bvN` bitwise / Boolean `!p` |
+|---:|---:|---|---|---|
+| off | off | Existing behavior, attributes inert | Existing rejection | Existing intrinsics |
+| on | off | #194 fallback selection | Existing rejection | Existing intrinsics |
+| off | on | Existing behavior, attributes inert | #193 intrinsic | Existing intrinsics |
+| on | on | #194 fallback selection | Same #193 intrinsic | Existing intrinsics |
+
+Static intrinsic applicability depends on the operator, operand types, visible
+capability/semantic width and recorded language options. It does not depend on
+proving a particular count/result obligation. An eligible intrinsic with an
+unprovable count or result predicate fails; it never retries a user member. An
+invalid enabled width declaration is a declaration error. An opaque export does
+not expose a capability merely because a source attribute was copied.
+
+If a later separately approved stage adds bitwise user slots, existing bool/BV
+and enabled eligible #193 operations are in the same intrinsic-first category;
+only an inapplicable intrinsic allows fallback. This proposal does not include
+bitwise override. A frozen member choice remains that call even if an imported
+view/client mode would now admit an intrinsic, and a frozen intrinsic remains
+intrinsic. #194's exact artifact-mode checks and #193's per-source capability
+provenance must each hold; one option never enables the other. M1's library-input ban concerns user-supplied
+trusted/precompiled inputs, not compiler-owned canonical model support injected
+by an independently enabled #193. Only #193's authenticated support provenance
+may distinguish that case; a file name or public attribute cannot bypass the ban.
+
+`--additional-axioms` is independent of U and I. #193 bridge collection must use
+resolved native-BV operation identity and genuine integer observations, never
+source tokens or names/attributes on arbitrary user functions. User operators
+receive no bridge facts by virtue of their notation.
+
+**Changes to this document are normative:** sections 1/2 exclude user bitwise
+symbols from the first PR; 5.2 defines static applicability; 5.6 accommodates
+intrinsic family/width identity; 8/9 distinguish ordinary user calls from #193
+intrinsic descriptors; 12 requires the four-flag tests. The comparison above
+replaces any suggestion that an operator library alone supplies native code.
+
+**Required companion changes to `193-bitwise-integers.md`** (specified here for
+its coordinator; this commit deliberately changes only the #194 document):
+
+| Section in PR #247 at `a61b06c7` | Exact replacement/addition required |
+|---|---|
+| 6.3, issue-194 interaction paragraph | State that #193 is independent of #194. Use the four-row U/I table above. Define static eligibility and no fallback on count/result failure; preserve frozen choices across views/reload. User bitwise override is not part of either first milestone. |
+| 6.4, reference packaging | Retain the ghost-reference/executable-operation distinction. State that a library replacement requires an executable or by-method implementation, or exact canonical native specialization; arbitrary member names/attributes confer no privilege. Retain identity/provenance checks for either source or prelude model machinery chosen in #193's own revision. |
+| 7, compilation | Keep direct integer code with no BV intermediate. If route 2 is substituted later, require generated-code parity: no reference recursion, materialized bit sequence, or avoidable arbitrary-integer conversion on a native carrier; retain masks, endpoint counts and all target limitations. |
+| 8, code inventory | Do not depend on #194 parser/operator support. A shared intrinsic-applicability/semantic-width descriptor is allowed, but globally widening BV predicates is not. Preserve the I-off path. |
+| 10, `Operator API` alternatives | Replace the two-way shorthand with the three routes in 6.4; recommend the intrinsic surface now and retain named library APIs. |
+| 11–12, tests/milestones | Add all four U/I combinations, opaque capability tests, failed count/result controls and a user function with a misleading native name that receives neither native privileges nor bridge facts. #194 completion discharges none of #193's model/vacuity/backend gates. |
+
+Useful exact-pin paths are `Resolver/NativeTypeAnalysis.cs`,
+`AST/TypeDeclarations/NewtypeDecl.cs`,
+`Resolver/PreType/PreTypeResolve.Expressions.cs`,
+`Resolver/PreType/PreTypeConstraints.cs`,
+`Verifier/Expressions/TranslateBinaryExpr.cs`, and the backend bitwise switches.
+They separate semantic eligibility, storage carrier, BV translation and ordinary
+call compilation; the implementation should preserve those distinctions.
+
+## 7. Compound assignment (later milestone)
+
+After its dedicated milestone, the accepted forms are `lhs += e;`, `-=`, `*=`, `/=`, and `%=`. They have no
 separately declarable operators. Only one ordinary assignable location is allowed:
 a local/out variable, a writable field, or an array element, including supported
 multidimensional array elements. Slices, immutable locations, patterns, multiple
@@ -704,15 +1117,15 @@ Add `OperatorSyntaxExpr : ConcreteSyntaxExpression`, containing:
 - source form (`infix`, `unary`, or `builtin` escape);
 - lookup mode (`ordinary` or `intrinsic-only`);
 - resolved binding metadata for diagnostics/navigation;
-- an immutable selection record that survives refinement/export source clones,
-  independently of whether ordinary resolved fields are copied;
+- the immutable selection and checked clone-context correspondence specified in
+  5.6, independent of whether ordinary resolved fields are copied;
 - an ordinary `ResolvedExpression`, or the existing method-RHS information while
   resolving a permitted statement context.
 
 `AST/Expressions/ConcreteSyntaxExpression.cs` and `Expression.Resolved` already
 support this distinction. After successful expression resolution, the wrapper
-contains an intrinsic expression, `FunctionCallExpr`, or Boolean negation of an
-equality call. A statement-only method use instead becomes ordinary resolved
+contains an intrinsic expression or `FunctionCallExpr`. Non-overloadable equality
+uses the existing intrinsic nodes directly. A statement-only method use instead becomes ordinary resolved
 statements containing a `CallStmt`. There is no unresolved operator at a semantic
 analysis/translation boundary.
 
@@ -739,8 +1152,15 @@ an optional callee preserves precedence machinery but requires every semantic
 consumer to remember a special exception. Bounds discovery, coinduction, constant
 folding, compilation, and termination already use primitive opcodes. The wrapper
 wins because it makes the semantic invariant structural rather than conventional.
+This applies to arbitrary user operators. #193's compiler-owned width-bearing
+intrinsic is a different AST category; a user attribute never manufactures it.
 
 ### 8.2 Disabled parsing must remain byte-identical, including errors
+
+M1 changes only guarded construction actions for already parsed expressions.
+The following escape/compound hooks belong to later milestones and are not part
+of M1. No milestone may relax the disabled parser/error identity requirement.
+
 
 The attribute declaration needs no grammar change. The escape and compound forms
 can also avoid new scanner terminals. This matters for invalid old inputs as well
@@ -812,8 +1232,7 @@ generated call, and do not hide the actual source operator origin as autogenerat
 
 ## 9. Verification, compilation, and a relative soundness argument
 
-For every accepted enabled program, erase source wrappers and expand compounds
-and derived `!=`. The resulting program uses existing primitive operators and
+For every accepted enabled program, erase source wrappers and expand compounds. The resulting program uses existing primitive operators and
 ordinary calls. For functions, the call has the same selected member, receiver,
 arguments, instantiated types, visibility, ghostness, heap context, and source
 well-formedness obligations as the explicitly written call. For methods, the
@@ -824,8 +1243,8 @@ The verifier must see this expansion before call-graph construction, bounds
 discovery, ghost checking, co-call/extreme-predicate analysis, decreases inference,
 trigger collection, and translation. In particular:
 
-- `BoundsDiscovery.cs` must never see user equality as `EqCommon`, since it uses
-  intrinsic equality to construct an exact bounded pool.
+- `BoundsDiscovery.cs` must see named equivalence predicates as ordinary calls,
+  never as `EqCommon`; it uses intrinsic equality to construct exact bounded pools.
 - Codatatype equality consumers must never mistake a user relation for
   coinductive equality.
 - `CallGraphBuilder`, `ModularTerminationRewriter`, and ordinary function/method
@@ -837,6 +1256,9 @@ trigger collection, and translation. In particular:
 Subject to the soundness of the existing call/type-view machinery, a proof of the
 expanded program proves the same source proposition. The feature adds notation
 and checked expansions, not a new equality, order, algebra, or termination axiom.
+All source equality remains intrinsic. #193's separate, opt-in reference/bridge
+work is not licensed by an operator attribute and is not trusted reasoning added
+by this proposal.
 Proof traits carry ordinary contracts and lemma bodies: implementations verify
 their obligations, and clients obtain laws by ordinary lemma calls. The language
 does not auto-call every law or treat an interface name as evidence.
@@ -867,80 +1289,232 @@ capture-and-call expansion. When disabled, the stronger requirement is literal
 byte-identical diagnostics/Boogie and unchanged verdicts/resource counts under
 the fork's deterministic comparison procedure.
 
-## 10. Worked library example: Ordered and rational values
+## 10. Worked examples, notation counts, and library laws
 
-The example below uses an ordinary self-typed trait. `self` is a ghost function
-whose intrinsic-identity contract connects its `T` result to the receiver; it is
-not a language-provided self type. This avoids pretending that static trait
-helpers are abstract instance obligations. The trait states equality equivalence,
-order congruence, reflexivity, antisymmetry, and transitivity as library lemmas.
-No law is recognized by the operator implementation.
+The following three blocks form one existing-syntax program when concatenated.
+Append the `Main` below to reproduce the positive run. The commented infix forms
+are proposed source, not implemented syntax; the declaration changes are shown
+explicitly. The separate Ordered/Rat program in 10.5 is not concatenated with them.
 
-`Rat` uses noncanonical positive-denominator representations. Consequently the
-order is a preorder on representations and a partial order modulo its declared
-equivalence; antisymmetry concludes `eq`, **not structural equality**. The extra
-congruence lemmas make the order well-defined on those equivalence classes. They
-do not make numerator/denominator accessors congruent, or turn ordinary sets/maps
-into quotient collections. A library needing structural antisymmetry must use a
-canonical representation and prove its canonicality.
+All three share their function bodies, representation constraints and proof obligations between the columns. The operator version adds only the shown declaration attributes and changes the client assertion. It does not make rational equivalence structural equality, and the matrix/modular `==` remains intrinsic.
 
-All declarations are in the same module. Existing trait support requires
-`--general-traits=datatype`. The explicit-call baseline was checked using the
-refreshed resolver; the legacy trait-view prerequisite in 5.4 must land before
-claiming equivalent legacy support. The following is **proposed enabled syntax**;
-the checked baseline and its limits are described immediately afterward.
+### 10.1 Rationals
+
+```dafny
+type Pos = x: int | 0 < x witness 1
+
+datatype Rat = Rat(n: int, d: Pos) {
+  function plus(b: Rat): Rat { Rat(n * b.d + b.n * d, d * b.d) }
+  function times(b: Rat): Rat { Rat(n * b.n, d * b.d) }
+  predicate le(b: Rat) { n * b.d <= b.n * d }
+  predicate equiv(b: Rat) { n * b.d == b.n * d }
+}
+
+method rationals() {
+  var a := Rat(1, 2);
+  var b := Rat(2, 3);
+  var c := Rat(1, 6);
+  var d := Rat(1, 2);
+  assert a.times(b).plus(c).le(d);  // today
+  // assert a * b + c <= d;        // proposed, M1
+  assert Rat(1, 2).equiv(Rat(2, 4));
+  assert Rat(1, 2) != Rat(2, 4);    // structural equality remains distinct
+}
+```
+
+Operator declarations add `{:operator "+"}` to `plus`, `{:operator "*"}` to `times`, and `{:operator "<="}` to `le`; no attribute on `equiv`. No `"override"` is necessary for `<=` on `Rat`. The single positive-denominator subset condition and witness are unchanged. No new requires/ensures/reads/decreases/lemma annotation is needed for notation.
+
+### 10.2 2x2 integer matrices
+
+```dafny
+datatype Mat = Mat(a: int, b: int, c: int, d: int) {
+  function plus(m: Mat): Mat {
+    Mat(a + m.a, b + m.b, c + m.c, d + m.d)
+  }
+  function times(m: Mat): Mat {
+    Mat(a * m.a + b * m.c, a * m.b + b * m.d,
+        c * m.a + d * m.c, c * m.b + d * m.d)
+  }
+}
+
+method matrices() {
+  var a := Mat(1, 2, 3, 4);
+  var b := Mat(0, 1, 1, 0);
+  var c := Mat(1, 0, 0, 1);
+  assert a.times(b).plus(c) == Mat(3, 1, 4, 4); // today
+  // assert a * b + c == Mat(3, 1, 4, 4);      // proposed, M1
+}
+```
+
+Add `{:operator "+"}` and `{:operator "*"}` to the two declarations. Equality of matrices is structural equality of their four integers; no bespoke equivalence or proof annotations are needed.
+
+### 10.3 Modular-arithmetic numeric newtype
+
+```dafny
+newtype Mod17 = x: int | 0 <= x < 17 witness 0 {
+  function plus(b: Mod17): Mod17 {
+    (((this as int) + (b as int)) % 17) as Mod17
+  }
+  function times(b: Mod17): Mod17 {
+    (((this as int) * (b as int)) % 17) as Mod17
+  }
+}
+
+method modular() {
+  var a := 5 as Mod17;
+  var b := 7 as Mod17;
+  var c := 14 as Mod17;
+  assert a.times(b).plus(c) == (15 as Mod17); // today
+  // assert a * b + c == (15 as Mod17);      // proposed only after arithmetic override
+}
+```
+
+The operator version requires `{:operator "+", "override"}` and `{:operator "*", "override"}`. This is intentionally outside M1. Ordinary `Mod17` arithmetic is constrained integer arithmetic, not modular reduction: `5 * 7` cannot become 1 merely because a fallback `times` member exists. No-override M1 must reject the attributes; it must not claim that this program has modular infix behavior. The body casts to `int` make its intrinsic arithmetic explicit; `% 17` proves the cast back is in range. The bound/witness/casts and proof obligations are identical in the named and future operator forms. A wrapper datatype is an alternative available in M1, but that changes the representation, so do not present it as the same newtype example.
+
+### 10.4 Reproducible counts and checks
+
+Count Unicode code points in exactly the single client assertion as printed below, including internal spaces and semicolon, excluding indentation, newline, trailing comments and Markdown. ASCII-only examples make this equal to UTF-8 byte counts. Also report whitespace-free counts to show the result is not an artifact of formatting.
+
+| Type | Today's exact assertion | Operator assertion | Chars today → operator | Whitespace-free | Reduction |
+|---|---|---|---:|---:|---:|
+| Rat | `assert a.times(b).plus(c).le(d);` | `assert a * b + c <= d;` | 32 → 22 | 31 → 15 | 10 (31.25%) |
+| Mat | `assert a.times(b).plus(c) == Mat(3, 1, 4, 4);` | `assert a * b + c == Mat(3, 1, 4, 4);` | 45 → 36 | 39 → 26 | 9 (20.0%) |
+| Mod17 | `assert a.times(b).plus(c) == (15 as Mod17);` | `assert a * b + c == (15 as Mod17);` | 43 → 34 | 38 → 25 | 9 (20.93%) |
+
+| Type | Added declaration annotations | Added characters including one following space each | Added use annotations | Added proof/representation annotations |
+|---|---:|---:|---:|---:|
+| Rat | 3 | 49 | 0 | 0 |
+| Mat | 2 | 32 | 0 | 0 |
+| Mod17 | 2 | 56 | 0 | 0 |
+
+For a whole snippet with just one such use, operator metadata increases source size by 39/23/47 characters respectively; do not hide that cost. Reusing the same pattern 5/4/7 times amortizes the metadata. This count measures source notation, not comprehension or proof performance. A stronger quantitative usability claim requires a real library and client corpus.
+
+```python
+pairs = [
+  ('assert a.times(b).plus(c).le(d);', 'assert a * b + c <= d;'),
+  ('assert a.times(b).plus(c) == Mat(3, 1, 4, 4);',
+   'assert a * b + c == Mat(3, 1, 4, 4);'),
+  ('assert a.times(b).plus(c) == (15 as Mod17);',
+   'assert a * b + c == (15 as Mod17);'),
+]
+for named, operators in pairs:
+  print(len(named), len(operators),
+        len(''.join(named.split())), len(''.join(operators.split())))
+```
+
+**Validation performed for the three explicit-call examples:**
+
+The complete positive driver is:
+
+```dafny
+method Main() {
+  rationals();
+  matrices();
+  modular();
+  print "ok\n";
+}
+```
+
+Save the three code blocks and this driver as `194-usability-explicit.dfy`, then
+use the public release's `dafny` with an explicit installed Z3 5.1.0 path:
+
+```sh
+dafny verify 194-usability-explicit.dfy --type-system-refresh --solver-path="$DAFNY_194_Z3"
+dafny run 194-usability-explicit.dfy --type-system-refresh --target py --no-verify
+```
+
+For the negative version, replace only the final print with `assert false;` and
+verify again; an assertion error is required, not a parser/type failure.
+
+Using public release `4.11.0+fcb2042d.review.bf47de16`, Z3 5.1.0, `--type-system-refresh`, additional axioms OFF:
+
+- The complete explicit-call program verifies: **10 verified, 0 errors**.
+- Python compilation/execution (`run --target py --no-verify` after verification) prints **`ok`**.
+- The same complete file with `Main`'s final print replaced by `assert false` reports **9 verified, 1 error**, at that deliberate assertion.
+- The initial attempt without an explicit solver path failed with `Z3 is not found`; no proof claim comes from that attempt.
+
+This is an existing-call baseline, not a test of proposed syntax or an exact build of source pin 428e348. All proposed `{:operator}` meanings/infix examples are unchecked because the feature is not implemented. The separate original Ordered/Rat explicit-call example and its earlier 25-verified result remain distinct evidence, below.
+
+The declaration changes, side by side, are equally small; function bodies and
+all representation/contract annotations remain identical:
+
+| Program | Today's member head | Proposed member head |
+|---|---|---|
+| Rat | `function plus(b: Rat): Rat` | `function {:operator "+"} plus(b: Rat): Rat` |
+| Rat | `function times(b: Rat): Rat` | `function {:operator "*"} times(b: Rat): Rat` |
+| Rat | `predicate le(b: Rat)` | `predicate {:operator "<="} le(b: Rat)` |
+| Mat | `function plus(m: Mat): Mat` | `function {:operator "+"} plus(m: Mat): Mat` |
+| Mat | `function times(m: Mat): Mat` | `function {:operator "*"} times(m: Mat): Mat` |
+| Mod17, later only | `function plus(b: Mod17): Mod17` | `function {:operator "+", "override"} plus(b: Mod17): Mod17` |
+| Mod17, later only | `function times(b: Mod17): Mod17` | `function {:operator "*", "override"} times(b: Mod17): Mod17` |
+
+The counted representation annotations are one positive-denominator constraint
+and witness for Rat, none for Mat, and one range constraint and witness for
+Mod17. All remain in both versions. Casts in Mod17's bodies remain unchanged.
+There are no added law lemmas or requires/ensures/reads/decreases annotations for
+these notation changes. Declaration metadata is a real up-front cost, so these
+small examples support a modest repeated-use notation benefit, not a quantitative
+claim about human comprehension or proof speed.
+
+### 10.5 Ordered trait and rational implementation (later trait milestone)
+
+This separate complete proposed program retains the original checked library
+pattern while replacing equality override with a named `eq`. The only trait
+operator is fallback `<=`; its implementation is inherited through the ordinary
+instance slot. Laws use explicit named calls, so their statement does not depend
+on reader assumptions about overloaded equality.
+
+`self` is an ordinary ghost function with an intrinsic identity contract, not a
+built-in self type. Noncanonical positive-denominator rationals give an order
+that is antisymmetric **modulo `eq`**, not modulo representation equality. The
+congruence lemmas make it a partial order on equivalence classes; they do not make
+numerator/denominator observations congruent or change built-in sets/maps. A
+canonical representation would be needed for structural antisymmetry.
+
+This program requires the later trait milestone and ordinary
+`--general-traits=datatype`; direct arithmetic in 10.1 requires neither the
+trait stage nor legacy-resolver parity.
 
 ```dafny
 type Pos = x: int | 0 < x witness 1
 
 trait Ordered<T extends Ordered<T>> {
   ghost function self(): T
-    ensures builtin.==(this, self() as Ordered<T>)
-
-  predicate {:operator "==", "override"} eq(other: T)
-  predicate {:operator "<=", "override"} le(other: T)
-
+    ensures this == (self() as Ordered<T>)
+  predicate eq(other: T)
+  predicate {:operator "<="} le(other: T)
   lemma eq_reflexive()
-    ensures this == self()
+    ensures eq(self())
   lemma eq_symmetric(other: T)
-    requires this == other
-    ensures other == self()
+    requires eq(other)
+    ensures (other as Ordered<T>).eq(self())
   lemma eq_transitive(other: T, last: T)
-    requires this == other && other == last
-    ensures this == last
+    requires eq(other) && (other as Ordered<T>).eq(last)
+    ensures eq(last)
   lemma le_congruent(other: T, last: T)
-    requires other == last
-    ensures (this <= other) == (this <= last)
+    requires (other as Ordered<T>).eq(last)
+    ensures le(other) == le(last)
   lemma le_congruent_left(other: T, last: T)
-    requires this == other
-    ensures (this <= last) == (other <= last)
-
+    requires eq(other)
+    ensures le(last) == (other as Ordered<T>).le(last)
   lemma reflexive()
-    ensures this <= self()
+    ensures le(self())
   lemma antisymmetric(other: T)
-    requires this <= other && other <= self()
-    ensures this == other
+    requires le(other) && (other as Ordered<T>).le(self())
+    ensures eq(other)
   lemma transitive(other: T, last: T)
-    requires this <= other && other <= last
-    ensures this <= last
+    requires le(other) && (other as Ordered<T>).le(last)
+    ensures le(last)
 }
 
 datatype Rat extends Ordered<Rat> = Rat(n: int, d: Pos) {
   ghost function self(): Rat
-    ensures builtin.==(this, self() as Ordered<Rat>)
+    ensures this == self() as Ordered<Rat>
   { this }
-
-  // eq and le inherit their operator metadata from Ordered<Rat>.
   predicate eq(other: Rat) { n * other.d == other.n * d }
   predicate le(other: Rat) { n * other.d <= other.n * d }
-
-  function {:operator "*"} times(other: Rat): Rat {
-    Rat(n * other.n, d * other.d)
-  }
-  function {:operator "+"} plus(other: Rat): Rat {
-    Rat(n * other.d + other.n * d, d * other.d)
-  }
-
+  function {:operator "*"} times(other: Rat): Rat { Rat(n * other.n, d * other.d) }
+  function {:operator "+"} plus(other: Rat): Rat { Rat(n * other.d + other.n * d, d * other.d) }
   lemma eq_reflexive()
     ensures eq(this)
   { }
@@ -982,186 +1556,154 @@ method Main() {
   var b := Rat(2, 3);
   var c := Rat(1, 6);
   var d := Rat(1, 2);
-  print a * b + c <= d, " ", a == Rat(2, 4), " ",
-        builtin.==(a, Rat(2, 4)), "\n";
+  print a * b + c <= d, " ", a.eq(Rat(2, 4)), " ", a == Rat(2, 4), "\n";
 }
 ```
 
-The intended output is `true true false`. The last two outputs deliberately
-distinguish rational equality from representation equality. Operator bodies
-above contain ordinary integer arithmetic/equality; those remain intrinsic.
-The trait's Boolean equality between two propositions is also intrinsic.
+Intended output remains `true true false`: the first Boolean is the arithmetic
+comparison, the second named mathematical equality, and the third intrinsic
+representation equality. The last two meanings now differ visibly in the source.
+No `==` override and no non-equality priority override are needed.
 
-**Validation performed for this design:** the fully explicit-call expansion of
-this example, including all eight law lemmas, was checked with public fork release
+The existing PR files
+[194-ordered-rat-explicit.dfy](examples/194-ordered-rat-explicit.dfy) and
+[194-ordered-rat-vacuity.dfy](examples/194-ordered-rat-vacuity.dfy) remain unchanged.
+Their historical validation used public release
 [`v4.11.0+fcb2042d.review.9a4451d7`](https://github.com/erniecohen/dafny/releases/tag/v4.11.0%2Bfcb2042d.review.9a4451d7),
-Z3 5.1.0, `--general-traits=datatype --type-system-refresh`, with additional axioms
-off: **25 verified, 0 errors**. Python compilation/execution succeeded and printed
-`true true false`. A separate client that calls `reflexive` and `eq_reflexive` and
-then executes `assert false` reported its one expected verification error. The
-same explicit-call example under the legacy resolver reported nine existing
-trait-view/comparability resolution errors. These are functional checks of the
-ordinary-call baseline, not tests of unimplemented operator syntax or a build of
-the audited source commit.
+Z3 5.1.0, refreshed resolver and `--general-traits=datatype`, additional axioms
+off: **25 verified, 0 errors**, Python output `true true false`, and one expected
+vacuity error in the negative client. Its legacy invocation reported nine
+trait-view/comparability errors. These are the original explicit-call checks,
+not new measurements of the rewritten trait syntax or the pin used for this audit.
+The first PR does not promise to remove those legacy errors.
 
-The exact checked baseline is included as
-[194-ordered-rat-explicit.dfy](examples/194-ordered-rat-explicit.dfy), and its
-negative client as
-[194-ordered-rat-vacuity.dfy](examples/194-ordered-rat-vacuity.dfy). They are design
-examples using existing syntax, not an operator implementation or new integration
-suite entries. To reproduce with the cited release, set `Z3_5_1_0` to the Z3
-5.1.0 executable and run:
-
-```sh
-dafny verify docs/dev/design/examples/194-ordered-rat-explicit.dfy --general-traits=datatype --type-system-refresh --solver-path="$Z3_5_1_0"
-dafny run docs/dev/design/examples/194-ordered-rat-explicit.dfy --target:py --general-traits=datatype --type-system-refresh --solver-path="$Z3_5_1_0"
-dafny verify docs/dev/design/examples/194-ordered-rat-vacuity.dfy --general-traits=datatype --type-system-refresh --solver-path="$Z3_5_1_0"
-```
-
-The last command is expected to exit 4 at `assert false`. In the expansion, a
-selected instance operator becomes its named call, with an explicit
-`(x as Ordered<T>)` receiver for a type-parameter operand. The two `builtin.==`
-identity contracts and final intrinsic comparison become ordinary equality in
-the baseline; ordinary integer/Boolean operations stay unchanged. Section 12
-requires keeping this reference program alongside the future operator regression.
-The proposed declarations/lookup add no new proof step to the law bodies.
-
-Additional usage examples for the eventual test suite are:
-
-```dafny
-predicate ordered<T extends Ordered<T>>(a: T, b: T) { a <= b }
-// Expands to (a as Ordered<T>).le(b).
-
-type Positive = r: Rat | 0 < r.n witness Rat(1, 1)
-// Positive uses Rat's operators. plus still returns Rat;
-// assigning it back to Positive must prove positivity.
-
-lemma false_control(a: Rat) {
-  a.reflexive();
-  a.eq_reflexive();
-  assert false;  // must fail
-}
-```
+A generic client may eventually write `a <= b` with `T extends Ordered<T>`,
+expanding to `(a as Ordered<T>).le(b)`. Until bound-aware lookup is implemented,
+write that explicit cast/call. No stage should accept an unsupported bound and
+pretend that this cast happens automatically.
 
 ## 11. Concrete implementation map
 
-### 11.1 Option, artifacts, and source compatibility
+### 11.1 Option and staged artifact compatibility
 
-Add `CommonOptionBag.UserDefinedOperators` as `Option<bool>` with default false,
-and expose it in `DafnyCommands.ParserOptions` so parsing, verification,
-compilation, formatting, IDE projects, and `dfyconfig.toml` agree. Project syntax:
+Add `CommonOptionBag.UserDefinedOperators` as `Option<bool>`, default false, and
+expose it through `DafnyCommands.ParserOptions` for parse/verify/compile/format/IDE
+and project settings. Do not add it to the module `{:options}` allowlist. Preserve
+command-line-over-project precedence, including explicit false:
 
 ```toml
 [options]
 user-defined-operators = true
 ```
 
-Proposed help text:
+First-PR help must describe the actual implemented subset:
 
-> Enable operator declarations on user-defined types, intrinsic operator calls
-> such as builtin.==(a,b), and compound assignments. Operators resolve to ordinary
-> member calls. Built-ins take precedence unless the declaration explicitly uses
-> the override mode. Disabled by default.
+> Enable fallback arithmetic and comparison function operators on concrete
+> classes and inductive datatypes. Requires --type-system-refresh. Equality and
+> module-attribute operators remain intrinsic. Override mode, compounds, trait
+> operators and library/precompiled input reuse are not yet supported. Disabled
+> by default.
 
-Do not add this option to the module `{:options}` allowlist. A single source
-compilation has one setting; source modules cannot locally change the meaning of
-an imported callable's operator metadata. Preserve command-line-over-project
-precedence, including explicit `--user-defined-operators:false`.
+**M1 is source-only.** Reject feature-on `.doo` production/consumption, user-supplied
+trusted `--library` inputs, standard-library compiled reuse, and precompiled
+module reuse, including equivalent programmatic paths. Fully checked source,
+concrete imports and the compiler's own independently authenticated support
+remain allowed. An early shared input gate covers verification-only invocations;
+a backend-only check would be too late for those.
 
-Unlike a cosmetic parser setting, this option affects the interpretation of
-serialized library source. `DooFile.cs` serializes the source/pre-resolution form
-and resolves it again when loading it. Merely registering the option as `Cli`, or
-checking only "library true implies client true", is insufficient.
+Suppress automatic `.dtr` output when enabled; reject explicit record input or
+output requests before code emission. `ExecutableBackend.ProcessTranslationRecords`
+must still initialize `Compilation.AlreadyTranslatedRecord` with
+`TranslationRecord.Empty(program)`, because outer-module, Python and Go paths use
+it. Then reject nonempty `TranslationRecords` or non-null `TranslationRecordOutput`
+and skip record read/write. Both `ExecutableBackend.Compile` and
+`DafnyExecutableBackend.Compile` must stop on the rejection, rather than continue
+after a helper returns. Their own output record is never read back by the same
+compilation, so normal complete-source compile/run needs no reusable record.
+Keep the whole OFF path unchanged, including malformed-record errors and
+serialization. No new artifact schema or OFF validation rule belongs to M1.
 
-For the first implementation, require **matching producer/consumer settings**
-for `.doo` imports and already-translated source modules. Register a global exact
-compatibility check, with missing metadata interpreted as false. Add corresponding
-recording/checking in `Options/TranslationRecord.cs` for `.dtr` modules; its current
-translation-option scope is separate from the global registry, so this needs an
-explicit integration rather than assuming registration covers both formats.
-Record the new value when true; omit this new false-valued field on the disabled
-path to preserve existing artifact bytes. Existing metadata and
-option checks remain untouched.
+**The later artifact milestone** replaces those restrictions with this protocol:
 
-The artifact gate compares serialized program/interpretation metadata; the
-fork's mandatory product-version fields and incidental ZIP-container metadata
-are accounted for separately. It does not require identical whole archives from
-two differently versioned compiler builds. This qualification does not relax the
-required scanner/diagnostic/Boogie compatibility checks.
+1. Initially require matching producer/consumer operator modes for `.doo` and
+   recorded precompiled modules; absent metadata means false. A client cannot
+   reinterpret formerly inert attributes or source operators merely by enabling
+   its own flag. Do not assume a `Cli` registry entry enforces compatibility.
+2. `.doo` stores original source/pre-resolution form. Validate mode in its
+   manifest before reparsing. Original module/refinement source can reconstruct
+   saved choices in dependency order; flattened inherited source needs stable
+   replay data or explicit named/intrinsic spellings (5.6).
+3. `.dtr` needs a **record-level** true marker as well as appropriate module
+   coverage: `TranslationRecord` omits the default module and empty modules from
+   `OptionsByModule`. A top-level-only feature program otherwise has no marker.
+   Omit the field on OFF serialization and test actual TOML bytes. Missing means
+   false; a malformed/nonboolean value is an error. Validate supplied true mode
+   against an OFF consumer before merge/reuse; current `Validate` does not check
+   arbitrary option equality. Reconcile this new-schema rejection with the
+   old-format OFF compatibility requirement before that milestone ships.
+4. Require complete interpretation coverage for every nonempty reused compiled
+   module on the enabled path. `ProcessTranslationRecords` runs during
+   compilation, after source resolution; do not claim that it protects earlier
+   parsing or verification-only trusted inputs. A `Validate` check alone cannot
+   protect modules absent from all records. For omitted default-module cases,
+   supply an unambiguous identity or reject enabled reuse.
+5. Supplied records must protect both mismatch directions. Existing raw trusted
+   source or foreign code without any record retains its caller responsibility;
+   strict OFF compatibility does not authorize a new blanket missing-record
+   error on old invocations. Feature libraries must distribute their required
+   manifest/record. Removing all metadata is outside the checked reuse route.
+6. Initially, prebuilt libraries (including Std) need the same mode. A future
+   per-module interpretation scheme could relax this, but must preserve callable
+   metadata and selection provenance. Never treat #193's different capability
+   protocol as permission to skip #194's checks.
 
-For `.doo`, reject mode mismatches during manifest validation, before reparsing
-the library's source. For precompiled source reuse, make the `.dtr` check at the
-reuse boundary: `Backends/ExecutableBackend.cs::ProcessTranslationRecords` currently
-reads records only during compilation, after resolution, and record coverage is
-optional. Checking `TranslationRecord.Validate` alone cannot protect a module
-absent from every record. When this feature is enabled, require matching mode
-metadata for **every nonempty reused precompiled module**, and reject missing
-records/module coverage before emitting calls to that code. Audit currently
-excluded default-module cases: either record an unambiguous module identity or
-reject that enabled reuse until coverage can be established. Do not claim this
-late check prevents source parsing or checks a verification-only invocation.
+Tests cover mode mismatches, missing/malformed metadata, default/named modules,
+hidden members, complete reused-module coverage, original-source round trips,
+and flattened-source rejection. Compare interpretation/source payloads while
+accounting separately for mandatory product-version and incidental ZIP metadata;
+this does not relax scanner, diagnostics or literal Boogie checks.
 
-Plain trusted `--library` source, and a disabled-mode link with no translation
-record, retain their existing caller responsibility for matching an assumed
-interface to the actual implementation. The strict OFF policy does not permit
-adding a blanket missing-record error to those old invocations. Feature-using
-libraries must distribute their `.doo` manifest and/or required `.dtr` metadata;
-omitting that metadata is outside the automatically checked reuse route. Supplied
-records must check both mismatch directions, even for a disabled consumer. This
-distinction is necessary to avoid claiming a guarantee the current raw-source
-library interface cannot enforce.
+Keep `{:operator}` available to source/serialization printers. Enabled validation
+consumes it as front-end metadata, never an SMT instruction; inspect
+`BoogieGenerator.ExpressionTranslator.cs::TrAttributes` before suppressing any
+emission. Compare operator/named-call programs with identical attributes. OFF
+unknown attributes must follow their old path, including printed output.
 
-An enabled application using a prebuilt library, including the standard library,
-initially needs one produced with the same setting. That rebuild requirement is
-a conservative cost of the initial design. A later per-module interpretation
-scheme could relax it, but must preserve validated operator metadata and resolved
-meanings; it is not part of this feature. Tests cover both mismatch directions,
-absent values, absent records/modules, exported attributes, and `.doo`/`.dtr`
-round trips. Mode-off loading of existing mode-off libraries retains the previous
-diagnostics and behavior, subject to the existing product-version check.
+### 11.2 Implementation map beyond the first PR
 
-`{:operator}` metadata must remain available to source/serialization printers.
-On the enabled path, treat it as front-end metadata rather than emitting an SMT
-operator instruction. Review `Verifier/BoogieGenerator.ExpressionTranslator.cs::TrAttributes`
-and its callers for whether a feature-gated omission is needed. Compare infix
-and named-call programs with identical declarations/attributes. In disabled mode,
-unknown attributes must traverse exactly their old path, including printed output.
+Section 12.2 is the per-file M1 map and estimate; 5.6 names every clone route.
+The remaining complete-design changes are these staged extensions, not extra
+work hidden in M1:
 
-### 11.2 Parser, AST, and shared declaration work
-
-| File/location | Required change |
+| File/location | Later change |
 |---|---|
-| `Source/DafnyCore/Options/CommonOptionBag.cs` | Declare/register the option and document its compatibility policy |
-| `Source/DafnyCore/Options/DafnyCommands.cs::ParserOptions` | Make the option available consistently to relevant commands |
-| `Source/DafnyCore/DooFile.cs`; `Options/OptionRegistry.cs`; `Options/OptionCompatibility.cs`; `Options/TranslationRecord.cs` | Preserve producer interpretation and reject mode mismatches; test disabled artifact compatibility |
-| `Source/DafnyCore/Backends/ExecutableBackend.cs::ProcessTranslationRecords`; `Backends/DafnyExecutableBackend.cs` | Check supplied record modes and require complete reused-module coverage when enabled, before compiled-code reuse; retain the documented raw-library trust boundary |
-| `Source/DafnyCore/Dafny.atg` | Guarded semantic hooks in `NameSegment`/`AssignStatement`; enabled source operator construction in existing expression actions; no new terminals/grammar alternatives |
-| `Source/DafnyCore/AST/Grammar/ParserNonGeneratedPart.cs` | Contextual escape lookahead/parser and compound lookahead/parser, using existing tokens and expression parsing |
-| `Source/DafnyCore/DafnyCore.csproj::RunCoco` | Regenerate and compare generated parser/scanner; normally no build-target behavior change |
-| Proposed `Source/DafnyCore/AST/Expressions/Operators/OperatorSyntaxExpr.cs` | Source wrapper, cloning, source operands, resolution/binding metadata, formatting/navigation hooks |
-| `Source/DafnyCore/AST/Expressions/Operators/ChainingExpression.cs` | Deliberately wrap enabled source comparison edges; preserve mode/provenance through cloning |
-| `Source/DafnyCore/AST/Expressions/LiteralExpr.cs::NegationExpression` | Coordinate unary operator selection with existing intrinsic negative-literal behavior |
-| Proposed `Source/DafnyCore/AST/Statements/Assignment/CompoundAssignStmt.cs` | Source statement plus ordinary resolved capture/call/store statements |
-| Proposed `Source/DafnyCore/Resolver/OperatorResolution.cs` | Shared descriptor validation, instance-slot inheritance, visibility filtering, static ownership, priority rules, and diagnostics |
-| `Source/DafnyCore/AST/Members/MemberDecl.cs` and callable/owner clone paths | Store validated descriptor metadata or equivalent shared resolution data; preserve inherited-slot identity and reset resolution-local caches correctly |
-| `Source/DafnyCore/Resolver/ModuleResolver.cs` | Invoke validation after member signatures/inheritance; finalize operator calls before the existing semantic-analysis pipeline |
-| `Source/DafnyCore/AST/Cloner.cs`; `AST/Substituter.cs` | Preserve wrapper syntax where needed; substitute the ordinary resolved call without rediscovering a slot |
-| `Source/DafnyCore/Rewriters/RefinementTransformer.cs`; `AST/Modules/ScopeCloner.cs`; export-consistency cloning in `Resolver/ModuleResolver.cs` | Preserve intrinsic/member selection records even in source-only clones, map refined slots, keep opaque-view identity, and reject untransportable or invisible selections |
-| `Source/DafnyCore/Backends/Library/LibraryBackend.cs` | Retain original module provenance in serialized source and test selection reconstruction through `.doo` round trips |
+| `Dafny.atg`; `AST/Grammar/ParserNonGeneratedPart.cs` | Contextual escape/compound hooks, using existing tokens; no scanner changes; remove the module-attribute restriction only with shared legacy support |
+| `AST/Expressions/LiteralExpr.cs::NegationExpression`; source wrapper/chain classes | Keep ordinary unary-literal behavior and source selections when adding new owners/priorities |
+| Proposed `AST/Statements/Assignment/CompoundAssignStmt.cs` | Source statement plus ordinary capture/call/store expansion |
+| `Resolver/OperatorResolution.cs`; `AST/Members/MemberDecl.cs`; `Resolver/ModuleResolver.cs` | Extend direct slots to inherited trait slots, bounds, newtype views and non-equality priority; share policy across resolvers |
+| `AST/OperatorSelection.cs`; `AST/OperatorCloneContext.cs`; cloners in 5.6 | Full binder/view/refinement/abstract-signature correspondence, not name-based fallback |
+| `Rewriters/RefinementTransformer.cs`; `AST/Modules/ScopeCloner.cs`; abstract/export signature construction | Replace M1 rejection guards only after checked final-member transport exists, including synonym-target refinement |
+| `DooFile.cs`; `Options/OptionRegistry.cs`; `Options/OptionCompatibility.cs`; `Options/TranslationRecord.cs` | Replace source-only restrictions with the exact interpretation/coverage protocol in 11.1 |
+| `Backends/Library/LibraryBackend.cs`; `Backends/ExecutableBackend.cs`; `Backends/DafnyExecutableBackend.cs` | Preserve original source provenance and check every reused compiled module before lifting reuse guards |
+| `AST/Grammar/Printer/Printer.Statement.cs`; `TokenNewIndentCollector.cs` | Print/format compound and escape source without exposing generated temporaries |
 
-The proposed file names can follow local conventions, but the separation between
-shared policy and resolver-specific constraints must remain. Do not maintain two
-different definitions of operator applicability or inheritance. Existing
-`ConcreteSyntaxExpression` substitution may intentionally keep only a parenthesized
-resolved expression in internal proof clones; that is acceptable semantically.
-Source/export clones still need appropriate syntax and metadata for their purpose.
+Paths in this table are under `Source/DafnyCore/`. Keep the shared declaration/
+applicability policy separate from resolver-specific constraints. Semantic-only
+substitution may preserve just a resolved parenthesis/call; source/export clones
+still need their distinct checked replay metadata. No table entry authorizes
+operator-specific verifier or target-language equality semantics.
 
-### 11.3 Legacy resolver
+### 11.3 Legacy resolver (separate later PR)
+
+M1 performs only an early enabled-mode prerequisite check and keeps the legacy
+expression resolver unchanged. The parser's module-attribute conversion in 3.4
+is mandatory because that phase still uses legacy resolution under refresh.
+The complete feature later needs the following.
 
 In `Resolver/NameResolutionAndTypeInference/NameResolutionAndTypeInference.cs`:
 
 1. Handle `OperatorSyntaxExpr` before `BinaryExpr` intrinsic constraints. The
-   current `Plussable`, `Minusable`, `Mullable`, `RankOrderable`, `Equatable`, and
+   current `Plussable`, `Minusable`, `Mullable`, `RankOrderable`, and
    numeric constraints must not reject or erase a possible user owner first.
 2. Add a deferred operator obligation to the existing constraint-solving loop.
    Resolve operand expressions once, retain an unresolved result proxy, and wake
@@ -1209,21 +1751,21 @@ old control path immediately when the option is off. Primitive-only enabled
 expressions should also fall through to the existing intrinsic implementation
 once their selection is known.
 
-### 11.4 Refreshed resolver
+### 11.4 Refreshed resolver (first useful PR)
 
 In `Resolver/PreType/PreTypeResolve.Expressions.cs`, handle source wrappers before
 `ResolveBinaryExpr` adds family confirmations/default advice. Use
 `PreTypeConstraints.cs`'s guarded-constraint infrastructure and receiver
-approximation to delay unresolved owners. Share descriptors and selection policy
-with the legacy resolver; use the refreshed resolver's normal member/call
+approximation to delay unresolved owners. Design descriptors and selection policy for later
+reuse by the legacy resolver; use the refreshed resolver's normal member/call
 resolution to construct the selected application.
 
 Before `UnderspecificationDetector` assigns intrinsic opcodes, each wrapper must
 have a chosen expansion or an enabled-mode diagnostic. Update/check
 `PreTypeToType.cs` and `TypeRefinementVisitor.cs` so the wrapper and expansion
 have consistent result types, including subtype refinements. A result expectation
-constrains the selected call; it does not select a different operator. Extend
-`PreTypeResolve.Statements.cs::ResolveAssignmentRhs`/`ResolveUpdateStmt` for method
+constrains the selected call; it does not select a different operator. In the
+later method/compound milestone, extend `PreTypeResolve.Statements.cs::ResolveAssignmentRhs`/`ResolveUpdateStmt` for method
 RHS wrappers and compound expansions. Ordinary general-newtype receiver handling
 and parent substitutions must remain intact.
 
@@ -1236,8 +1778,8 @@ must hold, not permission to add a second operator semantics in each consumer:
 |---|---|
 | `Resolver/CallGraphBuilder.cs`; `Resolver/ModularTermination.cs` | Calls are present early, including trait calls; no lost edges or synthesized termination exemptions |
 | `Resolver/BoundsDiscovery/BoundsDiscovery.cs` | User relation never yields intrinsic exact/numeric bounded pools |
-| `Resolver/CoCallResolution.cs`; `CollectFriendlyCallsInSpecVisitor.cs`; `Abstemious.cs` | User `==` gets only ordinary-call treatment |
-| `AST/ExtremeLemmaSpecificationSubstituter.cs`; `ExtremeLemmaBodyCloner.cs` | No conversion of user equality to coinductive/prefix equality |
+| `Resolver/CoCallResolution.cs`; `CollectFriendlyCallsInSpecVisitor.cs`; `Abstemious.cs` | Named equivalence and user arithmetic/order operators get ordinary-call treatment |
+| `AST/ExtremeLemmaSpecificationSubstituter.cs`; `ExtremeLemmaBodyCloner.cs` | No conversion of named equivalence calls to coinductive/prefix equality |
 | `Resolver/ConstantFolder.cs`; `FillInDefaultLoopDecreasesVisitor.cs` | No primitive algebra or well-founded order inferred from source spelling |
 | `Resolver/ExpressionTester.cs` and ordinary ghost-interest passes | Compilability, ghost formals, and by-method treatment match explicit calls |
 | `Triggers/TriggersCollector.cs` | Same candidates and selected trigger structure as the named call |
@@ -1254,8 +1796,7 @@ must hold, not permission to add a second operator semantics in each consumer:
 Paths in this table are relative to `Source/DafnyCore/` except the explicit
 `DafnyLanguageServer/` paths, which are relative to `Source/`. Existing generated
 type equality and runtime hash code should need no change. If a backend needs an
-operator-specific equality hook, the lowering boundary has probably been placed
-too late.
+operator-specific equality hook, the permanent equality rule has been violated.
 
 ### 11.6 Documentation and repository requirements for later product PRs
 
@@ -1273,15 +1814,20 @@ Update the Reference Manual in:
 - Grammar/reference listings where the repository derives or presents the
   accepted syntax; describe the contextual forms without reserving new words.
 
-A concise normative manual statement should say:
+A concise first-milestone manual statement should say:
 
-> With user-defined operators enabled, an operator use selects a member using the
-> static operand type. An explicit operator override has priority; otherwise an
-> applicable built-in operator has priority. A selected user operator has exactly
-> the checks and meaning of the corresponding named call. User equality does not
-> change intrinsic equality, collection identity, equality-support characteristics,
-> termination orders, or calculation connectors. The builtin operator form selects
-> the existing intrinsic meaning explicitly.
+> With user-defined operators and the refreshed type system enabled, a supported
+> source arithmetic/comparison operation selects the applicable intrinsic first,
+> otherwise the unique directly declared function operator at its static operand
+> type. A selected user operator has exactly the checks and meaning of its named
+> call. Equality and inequality, collection identity, equality-support
+> characteristics, termination orders and calc connectors remain intrinsic.
+> This initial milestone does not support override mode, compound assignment,
+> symbolic trait/bounded dispatch or library/precompiled input reuse.
+
+Later updates add non-equality priority and intrinsic escape, ordinary trait/view
+support, checked artifacts and whole-RHS/compound syntax only when those stages
+are implemented. Do not document the final feature as available in M1.
 
 Each later product PR needs the appropriate `docs/dev/news/194.feat` fragment
 (or staged descriptive fragment following repository practice), regression and
@@ -1292,257 +1838,390 @@ procedure if a new test changes a gate inventory. Merge product PRs one at a tim
 and reconcile the base according to current repository rules. This design PR
 does not claim the feature has shipped and needs no product-version change.
 
-## 12. Validation plan and PR sequence
+## 12. Smallest useful PR, size, tests, and subsequent stages
 
-### 12.1 Tests with observable acceptance criteria
+### 12.1 Exact first-milestone contract
 
-Create `Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/github-issue-194.dfy`
-as the driver and separate `Inputs/github-issue-194-*` fixtures where expected
-failures or option combinations differ. Keep explicit-call reference programs
-alongside operator programs. Use the repository's existing per-resolver and
-per-compiler harnesses where supported. Add focused AST/parser tests in
-`Source/DafnyCore.Test`, `.doo` cases in `DooFileTest.cs`, and editor tests in
-`Source/DafnyLanguageServer.Test/Lookup/` and `Refactoring/RenameTest.cs`.
+**Yes: refreshed resolver only, no override mode, and no compound assignment is a
+coherent useful first PR.** It implements real rational/matrix expressions, not
+merely attribute parsing. Add the feature prerequisite and limit the accepted
+surface deliberately; do not claim the complete design already exists.
 
-| Area | Required cases and expected result |
+M1 accepts directly declared ordinary functions/predicates (including supported
+opaque/ghost/by-method functions) on concrete classes and inductive datatypes.
+Both instance and directly owned static forms work. Owner type parameters use
+ordinary call substitution; member type parameters do not. It supports binary
+`+ - * / %`, unary `-`, and `< <= > >=` through the existing precedence/chaining
+rules and intrinsic-first policy. It checks ordinary contracts/reads/ghostness,
+constructs ordinary calls, and supports normal fully checked source modules,
+concrete imports and revealed exports.
+
+It intentionally rejects exactly these feature-dependent forms:
+
+1. `--user-defined-operators` without `--type-system-refresh`, even when the
+   input contains no operator use. Report one clear prerequisite error.
+2. Any `"override"` mode, even on an unused callable; `==`/`!=` declarations
+   permanently; every unsupported symbol, including all six bitwise symbols;
+   malformed/nonliteral/extra attribute arguments, duplicate attributes or slots,
+   wrong effective arity, non-Boolean comparisons, default/`nameonly` formals,
+   and member-level type parameters.
+3. Operator declarations owned by traits, newtypes, codatatypes, source abstract
+   types, modules/default classes, or inherited symbolic slots. Ordinary named
+   trait calls inside a supported operator body remain ordinary calls and are
+   not prohibited by this restriction.
+4. A symbolic use requiring method effects, inherited or bounded-trait lookup,
+   a hidden/abstract/general-newtype operator owner, an extension/right-operand
+   search, an implicit user conversion, or a nominal receiver still unresolved
+   after ordinary inference. Existing intrinsic expressions on unsupported
+   owner categories continue to use the existing intrinsic path.
+5. Compound assignment and `builtin.<op>(...)` syntax. Neither grammar extension
+   is introduced in M1; these inputs retain the existing parse failure. Their
+   absence is coherent because fallback operators hide no intrinsic operation.
+6. Refinement or module replacement involving a **feature-bearing module/view**,
+   meaning a validated operator descriptor or a source occurrence selected as a
+   user call in the relevant transitive module/view graph. Include bases,
+   refinements, replacements and exposed nested views; a local scan of the new
+   refining source is insufficient. A base can contain only intrinsic source
+   and a refining module introduce the descriptor. Plain modules using only
+   existing intrinsics with no feature-bearing dependency need no new ban.
+   Because `RefinementTransformer.PreResolve` precedes validation of newly authored
+   descriptors, its early guard conservatively scans enabled source operator
+   attributes in unresolved descendants, combines them with completed dependency/
+   view summaries, and confirms the closure before accepting a resolved clone.
+7. Abstract-signature imports carrying the feature, and opaque export views
+   hiding a selected operator owner/member or intrinsic family. Ordinary
+   concrete imports/revealed exports are allowed, but **must** transport records
+   through `ScopeCloner` to its final member/owner objects. An implicit/default
+   export is not exempt from the check. Reject an inconsistent view; never erase
+   its metadata and repeat candidate selection.
+8. Feature-on `.doo` production/consumption, trusted `--library` source inputs,
+   standard-library `.doo` reuse, and precompiled module input reuse. Fully
+   checked source can be supplied normally. Suppress automatic `.dtr` output
+   and reject explicit record input/output requests when enabled; keep the OFF
+   record read/write/error path unchanged.
+   Section 11.1 defines the later protocol that relaxes this initial source-only
+   restriction. Existing externally trusted code retains its explicit trust
+   boundary; no automatic guarantee is claimed for code linked without records.
+   Compiler-owned canonical #193 support, if that independent option is enabled,
+   is distinguished only by its authenticated provenance as described in 6.5.
+9. User-operator lookup inside module-attribute arguments. Those expressions
+   retain intrinsic-only syntax in M1 because that phase still uses the legacy
+   resolver under refresh. Explicit named calls remain available (3.4).
+
+A valid fallback annotation is **not** rejected merely because a particular
+operation selects a built-in. For example, homogeneous datatype `<` remains
+rank comparison even if `less` has a fallback annotation; the named call is
+available. This keeps one selection rule instead of a second declaration-time
+reachability analysis. M1's help/hover/tests must make that behavior clear.
+Numeric-newtype operator declarations are excluded entirely in M1; its ordinary
+intrinsic arithmetic is unaffected.
+
+M1 needs the simple direct-owner subset of 5.6: records on wrappers/chain edges,
+copying with either `CloneResolvedFields` value, checked source-to-final export
+member maps, and a failure for unavailable saved operations. It may defer the
+full trait/refinement/binder-view correspondence only because the above guards
+exclude those accepted-language paths. All other clone/substitution routes must
+preserve the semantic call/intrinsic already selected. "No overrides" alone is
+not a sound reason to omit this work.
+
+### 12.2 Estimated changed lines by file
+
+These are **planning estimates of added plus deleted hand-edited lines**, not a
+measured patch, deadline or performance claim. They include direct instance/static
+members, concrete generic owners, chains, simple binding/export transport,
+source-only artifact guards/output suppression and safe symbolic references. They exclude generated
+parser output and unrelated cleanup. Factoring may move code between the proposed
+new files; a roughly 50% planning error is plausible.
+
+| File | Estimated changed lines | Work |
+|---|---:|---|
+| `Source/DafnyCore/Options/CommonOptionBag.cs` | 20–35 | Option, actual M1 help and registration |
+| `Source/DafnyCore/Options/DafnyCommands.cs` | 1–3 | Parser option exposure |
+| `Source/DafnyCore/Dafny.atg` | 20–45 | Guarded factories and module-attribute intrinsic conversion hook; no new terminals |
+| `Source/DafnyCore/AST/Grammar/ParserNonGeneratedPart.cs` | 50–100 | Source wrapper factory and recursive intrinsic module-attribute conversion |
+| New `Source/DafnyCore/AST/Expressions/Operators/OperatorSyntaxExpr.cs` | 75–130 | Syntax, ordinary expansion, cloning/formatting origin |
+| New `Source/DafnyCore/AST/OperatorSelection.cs` | 70–130 | Immutable choice/type-view recipe |
+| New `Source/DafnyCore/AST/OperatorCloneContext.cs` | 70–120 | Direct-owner correspondence and final-object fixups |
+| `Source/DafnyCore/AST/Expressions/Operators/ChainingExpression.cs` | 30–60 | Edge wrappers and saved choices |
+| New `Source/DafnyCore/Resolver/OperatorResolution.cs` | 160–260 | Signature validation, direct slots, static applicability, scope diagnostics |
+| `Source/DafnyCore/AST/Members/MemberDecl.cs` | 10–20 | Descriptor/slot identity |
+| `Source/DafnyCore/Resolver/ModuleResolver.cs` | 45–90 | Integration, prerequisite and feature-view guards |
+| New `Source/DafnyCore/Resolver/PreType/PreTypeResolve.Operators.cs` | 230–360 | Deferred constraint, chosen ordinary call and captured context |
+| `Source/DafnyCore/Resolver/PreType/PreTypeResolve.Expressions.cs` | 30–60 | Wrapper branch and selected-call finalization factoring |
+| `Source/DafnyCore/Resolver/PreType/UnderspecificationDetector.cs` | 10–25 | Reject unresolved wrappers before primitive completion |
+| `Source/DafnyCore/Resolver/PreType/PreTypeToType.cs` | 0–15 | Audit existing concrete-wrapper fusion; change only if needed |
+| `Source/DafnyCore/Resolver/PreType/TypeRefinementVisitor.cs` | 0–15 | Audit existing resolved traversal |
+| `Source/DafnyCore/AST/Cloner.cs` | 35–70 | Base transport/final correspondence hooks |
+| `Source/DafnyCore/AST/Modules/ScopeCloner.cs` | 90–160 | Map final export views and reject lost selections |
+| `Source/DafnyCore/Rewriters/RefinementTransformer.cs` | 25–55 | Transitive feature-bearing refinement/replacement guard |
+| `Source/DafnyCore/AST/Substituter.cs` | 0–10 | Existing resolved-child path should suffice; regression gate |
+| `Source/DafnyCore/AST/Grammar/Printer/Printer.Expression.cs` | 35–65 | Source/resolved printing and grouping |
+| `Source/DafnyCore/AST/Expressions/Applications/FunctionCallExpr.cs` | 10–20 | Synthesized symbol is not an editable identifier range |
+| `Source/DafnyCore/AST/IHasReferences.cs` | 5–15 | Nontextual reference kind |
+| `Source/DafnyLanguageServer/Workspace/SymbolTable.cs` | 10–25 | Preserve reference kind |
+| `Source/DafnyLanguageServer/Handlers/DafnyRenameHandler.cs` | 10–25 | Leave symbolic uses unchanged during rename |
+| `Source/DafnyCore/DooFile.cs` | 10–20 | Reject feature-on artifact imports before reparsing |
+| `Source/DafnyCore/Backends/Library/LibraryBackend.cs` | 5–15 | Reject feature-on library output |
+| `Source/DafnyCore/Backends/ExecutableBackend.cs` | 20–40 | Keep empty incoming-record state; reject feature-on record requests and skip automatic output |
+| `Source/DafnyCore/Backends/DafnyExecutableBackend.cs` | 5–10 | Stop the second compilation path after a record-input/output rejection |
+| `Source/DafnyCore/Options/TranslationRecord.cs` | 0 | No M1 schema/validation changes; later artifact stage owns them |
+| `Source/DafnyCore/AST/Grammar/ProgramParser.cs` / existing input-validation owner | 10–25 | Early trusted-source/standard-library input guard |
+
+The ranges sum to **1,091–2,023 product lines**. Allow roughly **650–1,000** lines
+of focused tests/expectations and **150–250** of manual/help/release-note work:
+about **1.9–3.3K changed lines total**, before generated output. This is a
+front-end feature PR, not a small parser-only edit. If final-view transport or
+call-context factoring materially exceeds that budget, split tested scaffolding
+into a prerequisite PR; do not reduce the safety contract to fit a line count.
+
+No legacy expression-resolver implementation, new verifier axiom/runtime
+operator, or per-backend user-operator implementation belongs to M1. Existing
+call compilation supplies the semantics. The zero-minimum rows are deliberate:
+`PreTypeToType` already fuses concrete wrappers and `Substituter` already
+substitutes their resolved child, so an audit/test may be all that is needed.
+
+### 12.3 M1 tests and measurable acceptance
+
+Use `Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/github-issue-194.dfy`
+as the driver, with separate `Inputs/github-issue-194-*` positive/negative files
+and expectations. Add focused clone/AST/parser tests in `Source/DafnyCore.Test`
+and rename tests under `Source/DafnyLanguageServer.Test`. Keep explicit-call
+reference programs beside supported operator programs.
+
+| Area | Minimum observable test |
 |---|---|
-| Disabled parser | Valid legacy programs, malformed programs, identifiers `operator`/`builtin`, unknown/malformed operator-looking attributes, `builtin.==`, `+=` and whitespace variants: exact previous tokens, diagnostics, exit codes, printed/resolved output, and Boogie |
-| Enabled declarations | All eligible owners; static/instance unary/binary arity; enclosing generic types; invalid symbols, mode/arity/result/default/member-generics; comparisons-as-methods rejected |
-| Priority | Fallback rational `+`; numeric-newtype fallback/override `+`; datatype fallback/override `<`; equality requires override; override errors never trigger fallback |
-| Types and inference | RHS/result mismatch, mixed operand type, unresolved left type, null in either position with/without annotation, expected result type, nested uses, late type constraints; deterministic result across traversals |
-| Precedence and chains | Unary versus binary `-`, mixed arithmetic/comparison, parenthesized forms, ascending/descending chain restrictions; each edge selects independently and second-edge preconditions use short-circuit facts |
-| Intrinsic escape | Every supported symbol/arity, malformed calls, nested user calls in operands, casts, identity/null comparison, scope collisions with ordinary `builtin` identifiers |
-| Traits | Declared and inherited slots, concrete implementation with omitted annotation, diamond deduplication, unrelated-slot ambiguity, conflicting repeated annotation, opaque/provided exports, missing named member export |
-| Bounded types | Direct bound, inherited bound, generic substitution, multiple bounds in permuted order; explicit-call expansion and generated receiver view agree under both resolvers after the parity PR |
-| Generic coherence | `T(==)` equality stays intrinsic at an overriding instantiation; bound-based equality remains the chosen trait call; resolved/refinement/library clones never rediscover operators |
-| Refinement source clones | A refinement adds a false equality override after an inherited reflexivity lemma: inherited `==` stays intrinsic and `assert false` fails; user-call selections also stay calls when a representation/view changes; new refinement syntax can use the new override; chain/compound selections, opaque exports, synonym-target refinement, and `.doo` round trips preserve these distinctions |
-| Newtypes/subsets | Visible/opaque nominal heads, general-newtype inherited instance members, inherited static-name versus symbolic scope, no result lifting; negative subset/newtype result conversion fails |
-| Calls and effects | Failing requires, reads, ghostness, receiver checks, wrong result count, nested method rejection, whole-RHS method success, by-method execution; compare to named-call errors |
-| Compound assignment | Local, out variable, field, multidimensional array; RHS/address observations evaluated once in specified order; aliased/mutating method; null/bounds/uninitialized/frame/subset failures; invalid LHSs rejected |
-| Equality safety | Always-true and non-reflexive `eq`; `a == a` not simplified; user eq does not imply intrinsic equality or accessor substitution; codatatype user eq gets no special coinduction or `T(==)` capability |
-| Structural mechanisms | Pattern matching, duplicate map keys, set membership/cardinality, multiset multiplicity, generic compiled equality/hash, `fresh`/`unchanged`/frames remain intrinsic despite user eq |
-| `calc` | Nontransitive user eq cannot prove endpoint relation through `calc`; custom comparison preconditions cannot be skipped; primitive connectors on unsupported types fail; Boolean lines containing calls work |
-| Bounds and decreases | Parity equality in a comprehension yields no fake exact bound; overloaded `<` yields no fake numeric bounds or automatic decrease; generated rank comparisons remain primitive |
-| Heap/proof contexts | `old`, `old@L`, quantifier triggers, comprehensions, lambdas, witnesses, type constraints, refinement; selected calls retain all original receiver/argument obligations |
-| Recursive contracts | Operator equality in its own contract cannot bootstrap the unproved contract; retain #166 protections for lets/sequence initializers and #39 receiver checks |
-| Termination | Function/method and trait recursion operator/named-call pairs give identical results with modular termination off/on; cross-module rejection/obligations follow the current #211 policy |
-| Tooling | Source print/format/parse round trip; diagnostics at symbol; hover/definition/references; renaming `times` changes names but leaves all `*` tokens intact |
-| Artifacts | `.doo` matching modes succeed and mismatches reject before reparsing; supplied `.dtr` modes match before compiled-code reuse; enabled reused modules require full record coverage; old absent flag means false; defaults stay compatible; exposed metadata survives serialization |
-| Vacuity | After exercising operators, trait laws, chain/compound paths, and intrinsic escape in inhabited contexts, `assert false` still fails; never count a prior resolver failure as a successful vacuity control |
+| OFF parser and attributes | Valid and malformed legacy inputs; identifiers `operator`/`builtin`; unknown and malformed operator-looking attributes; future escape/compound strings. Exact old tokens, parse errors, diagnostic order/text/locations and exit codes. |
+| Module attributes | Primitive/nested/chain arguments and leading/post-keyword attribute forms reach the existing legacy phase without wrappers; user-operator-dependent arguments reject and named calls remain usable. |
+| Option prerequisite | ON without refresh gives the declared single prerequisite diagnostic and never enters unsupported legacy lowering. |
+| Positive syntax | Rat `+ * <=`, Mat `+ *`, unary minus, a static member, an enclosing generic owner, nested uses, precedence and source print/format/parse round trip. |
+| Actual selected meaning | Datatype `<`/`>` still intrinsic rank; datatype `<=` fallback is its predicate. A rank operation rejected in compiled code does not retry a user predicate. Equality remains intrinsic with a same-named `eq` present. |
+| Calls | Corresponding operator/named-call failures for requires, reads, null receivers, ghost formals, wrong operand/result type and termination. Same selected call edge, receiver evaluation and diagnostics class. |
+| Declaration negatives | Every excluded mode/symbol/owner/member form in 12.1, including unused malformed/override/equality declarations. Duplicate keys do not choose by result or other-operand type. |
+| Inference | Known parameters, nested call results, literal RHS, late receiver constraints, unresolved receiver, constraint-order permutations; no duplicate edges/diagnostics from retries. |
+| Chains | Per-edge selection survives rebuilding; second-edge preconditions use short-circuit facts; no endpoint transitivity assumption. |
+| Clone/export | Both base-cloner field modes, repeated clones, a selected member declared after its use, final export-member mapping, revealed-export positive, hidden-owner/member negative, the opaque-rank example in 5.7. Unit-injected stale/missing records fail instead of rebinding. |
+| Excluded source views | Transitive refinement/replacement/abstract-import cases fail even if the local refining file has no attribute. Ordinary non-feature source views retain their existing behavior. |
+| Semantic traversal | A match, lambda, comprehension and old/labeled expression containing a supported user call retain its receiver/argument checks. Ordinary named equivalence receives no equality/bounds/coinduction privilege. |
+| Source-only artifacts | Feature-on `.doo`/trusted-source/standard-library/precompiled input restrictions; no automatic `.dtr`, explicit record requests rejected, required empty incoming-record state initialized; OFF artifacts/invalid-record errors unchanged. |
+| IDE | Renaming `times` updates its declaration and named calls but never replaces `*`; hover/definition identify the selected member/intrinsic without duplicate editable references. |
+| Execution | Checked rational/matrix programs agree with named expansions on Python and another existing supported backend; static/instance/by-method behavior matches ordinary calls. |
+| Vacuity | Inhabited successful call contexts followed by `assert false` produce an error at that assertion. A prior parse/type/contract error is not a passing vacuity test. |
 
-Useful existing fixtures to extend/compare include
-`dafny0/BoundedPolymorphismResolution.dfy`, `BoundedPolymorphismVerification.dfy`,
-`BoundedPolymorphismCompilation.dfy`, `GeneralNewtypeMemberResolution.dfy`,
-`GeneralNewtypeMemberCompile.dfy`, `GeneralNewtypeMemberVerify.dfy`, and the
-`traits/` general-trait/export tests. Their current restrictions are evidence to
-account for, not tests to rewrite indiscriminately to get a green run.
+For each product milestone, compare baseline and candidate with the feature off
+under the deterministic settings in `REVIEW.md`. Required comparisons include
+literal parsed/resolved output and Boogie, diagnostic corpus, full suite and
+standard-library verdicts, and their required resource-count profiles. Do not
+normalize away changed tokens, selection, generated names, axioms or triggers.
+Control only independently identified incidental timestamps/build metadata.
+The new option/index/worklist does no work on the disabled path.
 
-### 12.2 Compatibility and proof-cost gates
+For enabled syntax versus its named expansion, compare normalized semantic AST,
+selected members/type arguments, call graph, Boogie, trigger terms, runtime
+results and ordinary well-formedness checks. Source locations can affect report
+identifiers/order; explain and minimize such differences before claiming cost
+parity. The notation has no intrinsic proof-speed advantage. Existing suite/
+standard-library baseline updates follow the fork's fail/artifact/reasoned
+procedure, never an anticipatory verdict rewrite.
 
-For each product milestone, compare the baseline and candidate with the feature
-off, using the same source filenames, solver/build configuration, and deterministic
-settings described in `REVIEW.md`. Compare:
+### 12.4 Subsequent independently reviewable milestones
 
-1. Scanner/parser tables and a diagnostic corpus including rejected programs.
-2. Parsed/resolved source output and literal Boogie output, controlling known
-   timestamps/paths outside the language change without normalizing away a semantic
-   difference. Also compare generated-name allocation where applicable.
-3. The full verifier suite and standard-library verdicts, and resource counts
-   under the fork's required comparison profiles. Use its existing deterministic
-   literal hashes and restart policy; do not reinterpret known process noise as
-   a license for an unmeasured regression.
-4. Existing default library import, IDE, formatting, and artifact round trips.
+The first PR is useful without waiting for all later rows. Equality override is
+absent from this sequence.
 
-For enabled operator-versus-named-call pairs, require equal verification outcomes,
-runtime results, call graph edges, and normal call checks. Compare normalized
-resolved AST, Boogie, trigger sets, and resource counts for the rational acceptance
-case. If a source origin changes a proof identifier/order, explain that difference
-and eliminate unnecessary AST/Boogie changes before accepting proof-cost drift.
-The design does not promise unsupported backends or exact timing equivalence.
-
-The shared resolver policy can index declarations in linear time in the number
-of visible/effective members; each selected nominal slot has constant-time lookup
-after ordinary type/view preparation. Bound lookup is proportional to the explicit
-bound slots before deduplication. There is no global imported-function scan and
-no exponential candidate backtracking. Deferred type obligations use a worklist
-and deterministic progress/error conditions. These are algorithmic expectations,
-not measured performance results. With the option off the new index/worklist is
-not built at all.
-
-### 12.3 Milestones, each independently reviewable
-
-The order deliberately puts the intrinsic escape before overrides and separates
-legacy trait parity from operator mechanics. No product milestone begins until
-the owner reviews this design and its priority qualification.
-
-| PR | Content | Completion gate |
+| Stage | Scope | Required gate before relaxing M1 restrictions |
 |---|---|---|
-| D0 (this PR) | Design, alternatives, critical review, checked explicit-call example | Owner decision on the specified policies; no implementation |
-| M1 | Option/help/project plumbing; validated declaration descriptors and duplicate diagnostics; artifact mode protection | Declaration/serialization/OFF gates; no silent claim that operator uses work yet |
-| M2 | Concrete syntax wrappers, source printing/cloning, contextual intrinsic escape | Intrinsic-only parse/resolve/verify/compile pairs, both resolvers; scanner/error tables unchanged OFF |
-| M3 | Shared lookup and both resolver paths for ordinary function arithmetic/comparison, unary and chains; concrete instance and directly owned static slots; source-clone selection transport; safe symbolic-reference/rename handling | Rational arithmetic against named calls; failing-call and refinement/export tests; no operator opcode reaches semantic passes; member rename never edits operator tokens |
-| M4 | Instance-trait metadata inheritance and ordinary explicit trait-receiver dispatch | Override/diamond/export/refinement tests; exact call graph/termination behavior |
-| M5 | Legacy declared-trait-view/comparability parity; bound-aware operator lookup in both resolvers | Checked Ordered/Rat expansion supported under both resolvers; generic/bound ambiguity and runtime tests |
-| M6 | Compound statements and single-result arithmetic method RHSs | Capture/evaluation/frame/alias tests; negative nested-effect cases; normal method verification |
-| M7 | Explicit override priority on colliding intrinsics, user `==` and derived `!=` | Intrinsic-context safety matrix, inherited-reflexivity negative, `calc`/bounds/coinduction/self-contract negatives, vacuity and named-call equivalence |
-| M8 | Final editor navigation/reference/rename integration, full acceptance matrix and manual examples | Verified/compiled infix Ordered/Rat program; library mode tests; complete OFF neutrality evidence |
+| D0 | This rewritten design/review | Owner/coordinator can assign M1 using its concrete scope; no product implementation here |
+| M1 | Direct function/predicate operators, refreshed resolver, fallback only, source-only artifacts, simple export records and safe references | Entire 12.3 matrix plus OFF suite/library/output gates |
+| M2a | Trait descriptor inheritance and explicit trait-view instance calls | Diamond deduplication, unrelated ambiguity, omitted/repeated metadata, normal dispatch, ordinary-call frames/termination; no unproved laws |
+| M2b | Bound-aware lookup and full refinement/abstract/export transport | All 14 clone routes, both 5.7 negatives, two refinements of one origin, synonym-target correspondence, chain records, Ordered/Rat expansion |
+| M3 | Full `.doo`/`.dtr` interpretation/coverage protocol from 11.1 | Both mismatch directions; original-source reload; hidden metadata and flattened-source negatives; full precompiled module coverage before reuse |
+| M4 | Legacy resolver and declared-trait-view parity | Exact operator/named-call pairs under both resolvers, including bounded views and all negative controls; remove only the supported prerequisite restriction |
+| M5a | General-newtype/codatatype owner support that named calls/backends already support, plus contextual intrinsic escape | Nominal/opaque views, no implicit result lifting, all escape arities and disabled parse-error identity |
+| M5b | Explicit non-equality arithmetic/order override | Intrinsic escape already available; modular-newtype example, strict datatype order, frozen choices across generic/refinement/export/library paths; no equality/bitwise override |
+| M6 | Compound assignment and single-result arithmetic methods | Location/old-value capture once, alias/mutation evaluation order, frame/null/bounds/initialization/subset checks, nested-method negatives |
+| Independent #193 | Bounded integer bitwise intrinsics and their own reference/model/backend work | U/I matrix in 6.5; no native privilege for a user name/attribute; all #193 model/vacuity/count/result/codegen gates |
 
-Source-preserving AST/formatting support belongs with M2, and basic diagnostic
-origins belong with every milestone. Nontextual reference metadata and rename
-filtering must accompany the first operator-backed call in M3, because ordinary
-`FunctionCallExpr` already exposes references; until that is safe, suppress its
-symbolic reference rather than allow corrupting rename edits. M8 completes IDE
-behavior and does not defer that safety requirement. Every stage M1–M6 must reject
-enabled `"override"` declarations as an unsupported capability until M7 gives
-them their specified meaning; do not accept an attempted override and silently
-interpret its uses as built-ins. M5 checks the unannotated explicit-call Ordered/Rat
-baseline and the supported fallback trait operators, not the final overriding
-infix example. M5 may be split into a bounded
-trait-view prerequisite PR and an operator-bound lookup PR if review size warrants
-it, but both are required for the promised final behavior. No stage enables
-general-newtype/general-trait backend support that the underlying language lacks.
+If M2b is too large, separate the ordinary checked type-view/binder transport
+from symbolic-bound lookup; do not expose an accepted path between those PRs
+without its guard. If M3 and M4 are reordered, the compatibility contract remains
+unchanged. The full artifact mode protocol can later be relaxed only with a
+separately reviewed per-module interpretation scheme.
 
-## 13. Critical review and decision record
+Later stages retain M1 tests and add:
 
-### 13.1 Severity-ranked issues
+- no-fallback-on-failure tests for overrides and #193 count/result checks;
+- hidden/opaque views, newtype/subset result obligations and bounded generic
+  specialization; inherited metadata must be signature-stable;
+- compound field/array/multidimensional destinations, aliases and methods that
+  mutate the destination or its address computations;
+- calc intrinsic connectors, named equivalence versus structural collection
+  identity, recursive contracts, old heaps, ghost/by-method and termination pairs;
+- all supported backend/artifact combinations and effective vacuity controls.
 
-Here **P0** means a possible proof of false or verification/runtime disagreement,
-**P1** a required-language/compatibility defect, and **P2** a usability or
-maintainability defect. These are design/implementation risks, not a claim that an
-unwritten patch already contains them.
+Slot indexing is linear in visible/effective member count; direct lookup is
+constant time after ordinary type/view preparation. Later bound lookup is
+proportional to its declared bound slots before deduplication. A worklist avoids
+exponential candidate backtracking. These are algorithmic expectations, not
+measured speedups; default-off work remains absent.
 
-| Rank | Issue | Disposition and required evidence |
+## 13. Critical review, next question, and implementation decision
+
+### 13.1 Findings, severity first
+
+These are design/implementation risks and dispositions, not claims that a product
+patch exists. P0 means possible proof of false or verification/runtime
+disagreement; P1 means a required compatibility/capability defect; P2 means a
+usability or maintenance issue.
+
+| Rank | Finding | Disposition |
 |---|---|---|
-| P0 | User operators left as primitive `BinaryExpr` opcodes inherit equality/arithmetic/bounds/coinduction rules | Resolve to honest call nodes before semantic passes; exact-bound, nonreflexive-eq, datatype-rank and codatatype negatives |
-| P0 | Source-only refinement/export clones reinterpret already verified operators after discarding resolved fields | Transport separate intrinsic/member selection records through checked member correspondence, including chain edges and compound operations; inherited-reflexivity false control and opaque-view round trips |
-| P0 | `calc` grants transitivity and omits arbitrary operator-call preconditions | Connectors remain intrinsic; nontransitive-relation and precondition controls |
-| P0 | Hidden operator calls evade frames, self-contract rules, or termination (#211/#166/#39 interactions) | Reuse normal call resolution/graphs/checks; operator/named-call negative pairs; no new unchecked assumptions |
-| P0 | Reparsed/precompiled libraries change operator meaning across modes | Exact `.doo` mode checks and complete enabled `.dtr` coverage at the reuse boundary; both mismatch directions tested; raw trusted-source caller responsibility stated explicitly |
-| P1 | Absolute built-in-first makes requested overrides unreachable, including datatype `<` and newtype arithmetic | Explicit `"override"` qualification approved as part of this design; tests cover all three collision families |
-| P1 | New tokens or Coco grammar sets alter disabled parsing/errors | Existing-token semantic hooks; generated-table comparison and invalid-input OFF corpus |
-| P1 | Both-resolver promise overlooks missing legacy trait views and bound member lookup | M5 is a real prerequisite with explicit cast/comparability parity; current checked example is refreshed-only |
-| P1 | General compound expansion reevaluates destination or reads its old value after a mutating call | Explicit capture-before-call sequence and alias/mutation runtime tests |
-| P1 | Ghost/runtime, generic specialization, or inference order changes slot selection | Static-view binding frozen at resolution; no fallback on proof/compilability failures; generic/literal tests |
-| P1 | Mathematical rational equality is mistaken for structural equality or global congruence | Example proves equivalence/order laws only; intrinsic identity escape and representation-inequality tests |
-| P1 | Export/newtype handling leaks hidden operators or implicitly lifts values/results | Visible signature index and scope-aware normalization; no inferred newtype closure |
-| P2 | Operator tokens participate in textual symbol rename | Nontextual reference kind; rename regression |
-| P2 | Static symbolic lookup differs from ordinary inherited static name access | Explicit owner rule and documentation; use instance slots for polymorphic requirements |
-| P2 | One-slot policy and method restrictions exclude convenient overloads | Clear diagnostic and named-call/by-method alternatives; avoid a larger unreviewed inference/effect system |
-| P2 | Matching library modes requires rebuilding libraries for opt-in use | Document the conservative initial cost; defer relaxation to a separately validated per-module design |
+| P0 | Re-resolving inherited/exported operators can change a proved proposition even with no equality override. | Separate immutable choices, semantic-family identity, final-declaration maps and checked replay; both concrete negatives in 5.7. M1 includes basic records and rejects complex views. |
+| P0 | A user call left as a primitive opcode can acquire bounds, arithmetic, rank or coinduction reasoning it has not proved. | Lower to ordinary calls before semantic consumers; preserve original receiver/argument obligations; no overloaded semantic opcode. |
+| P0 | A missing record on resolved source can be mistaken for a fresh operator occurrence. | Distinguish unresolved parsed source from replay-required source; a lost resolved choice is an error, never a new lookup. |
+| P0 | Library/precompiled interpretation may differ between verification and execution; per-module `.dtr` metadata misses default-module-only programs. | Source-only M1 guards and no reusable record output; later record-level interpretation marker including default modules, mismatch validation and complete coverage protocol. |
+| P0 | `calc` composition could assume unproved laws or skip user preconditions. | Every connector remains intrinsic; named lemma calls or calculations over Boolean propositions remain available. |
+| P0 | Arbitrary operator attributes/native-looking names could acquire #193 native implementations or BV bridge facts. | Keep #193 intrinsic identity/capability distinct; canonical specialization, if chosen later, is a separate reviewed compiler mechanism. |
+| P1 | Uniform explicit equality override conflicts with a promise that all specification/compiled equality is intrinsic. | Remove `==` and `!=` overriding; named `eq` distinguishes mathematical equivalence. Exact site matrix in 6.1. |
+| P1 | An equivalence relation does not preserve representation observers or collection identity. | Checked rational example makes the distinction explicit; no global congruence or quotient semantics inferred. |
+| P1 | A ghost integer reference function is not automatically executable/native because a wrapper has an operator attribute. | Compare executable library, specialized canonical library, and intrinsic routes separately; retain independent #193 intrinsics. |
+| P1 | Refreshed mode still sends module attributes through the legacy resolver. | Intrinsic-only module-attribute syntax in M1, with explicit named calls available; test the path before claiming legacy resolver unchanged. |
+| P1 | “Both resolvers” and “trait bounds” would hide significant missing existing functionality. | Useful refreshed-only M1; explicit rejected forms and later legacy/bound-view prerequisites. |
+| P1 | New tokens or parser alternatives can change disabled errors even when normal parsing is guarded. | No new terminals in M1; later contextual semantic hooks, generated-table checks and exact invalid-input OFF corpus. |
+| P1 | Queued source re-resolution can lose lexical/label context or make lookup depend on constraint iteration order. | Resolve operands once, capture ordinary-call context, use deterministic delayed head discovery, and error when underdetermined. |
+| P1 | Purely textual operator references can corrupt source during rename. | Nontextual reference metadata and rename safety accompany the first callable operator, not a later polish stage. |
+| P2 | Valid fallback `<` on a datatype may be hidden by rank meaning; numeric-newtype fallback arithmetic is not modular. | State built-in priority, show selected meaning, keep named calls, and require explicit later non-equality override where necessary. |
+| P2 | First source-only milestone cannot import prebuilt standard libraries. | Document the concrete restriction and budget the subsequent artifact stage; do not pretend artifact compatibility is free. |
+| P2 | One-slot lookup and no method-generics exclude some convenient overloads. | Keep predictable inference; use ordinary named calls for those operations. |
+| P2 | Small client expressions save characters but annotations increase a one-use program. | Report both costs and the 5/4/7-use amortization points; make no unmeasured comprehension/proof-speed claim. |
 
-### 13.2 Decision alternatives, argued both ways
+### 13.2 Alternatives and decision record
 
-**Declaration syntax.** Dedicated syntax is more discoverable and can encode
-arity/kind directly; attributes are less elegant and require string validation.
-Attributes win here because they preserve ordinary named members, introduce no
-declaration ambiguity or reserved word, and make disabled compatibility much
-easier to demonstrate. Reserved names such as `op_Addition` would avoid an
-attribute but constrain users' naming and still need mapping/validation; they
-offer no compelling advantage.
+The detailed arguments appear at each decision point:
 
-**Built-in escape.** `===` is compact but handles only equality and complicates
-lexing. Casts are the clearest way to expose numeric representation but cannot
-express general intrinsic identity. An infix annotation keeps visual shape but
-complicates grammar/heap-label interpretation. `builtin.<op>(...)` wins because
-it is uniform, unshadowable, uses existing tokens, and states exactly which outer
-operation is forced. Its verbosity is acceptable for an escape rather than the
-ordinary notation.
+| Choice | Why the recommendation wins | Main cost / rejected alternative |
+|---|---|---|
+| Attributes (2.4) | Ordinary callable/export identity and no declaration grammar change | Less prominent than dedicated syntax; requires string validation |
+| Deferred contextual intrinsic escape (4.2) | Uniform arithmetic/rank coverage using existing tokens; M1 needs none | More verbose than infix annotation; `===` solves only an equality distinction this proposal removes |
+| Intrinsic equality (6.2) | Same substitutive relation in proofs, execution and collections | Named mathematical equivalence is longer; classes-only buys no extra soundness |
+| Fallback first, later explicit non-equality override (2.3, 5.2) | Useful M1 without hiding intrinsics; later supports modular and strict-order notation deliberately | Two priority modes eventually; declaration-first is simpler but changes more meanings |
+| Direct static and instance calls (2.4) | Reuses normal calls; later instance slots carry trait obligations | No symbolic static inheritance/typeclass mechanism |
+| Wrapper plus ordinary call (8.1) | Source notation survives while semantic consumers see honest calls | Requires separate selection records for source clones; an overloaded BinaryExpr would rely on every consumer remembering an exception |
+| Independent #193 intrinsics (6.4) | Native plan and width metadata without six-member facades or a #194 dependency | Canonical library specialization remains a viable compiler alternative, not a library-only implementation |
 
-**Override policy.** Strict built-in-first is simple and meets one sentence of
-the brief literally, but prevents other explicit requirements. Declaration-first
-for every symbol is simpler than two modes and makes every annotation effective,
-but silently replaces intrinsic rank/arithmetic whenever a trait is inherited.
-An explicit priority marker wins as the narrow qualification that preserves
-built-in-first by default and makes replacement deliberate. The cost is a second
-declaration mode and view-dependent fallback behavior; document it and freeze
-bindings rather than hiding it.
+### 13.3 Next design question, answered: when may delayed lookup commit?
 
-**User equality: classes only, all eligible types, or none.** Classes-only makes
-the identity distinction familiar but removes value-type numeric libraries while
-not preventing any dangerous relation definition. None keeps all equality syntax
-substitutive but rejects a requested use that ordinary predicates can already
-express soundly. All eligible nominal types wins under ordinary-call semantics.
-The escape and the intrinsic-context rules are mandatory. Proving equivalence
-and congruence for every possible function is neither a prerequisite for notation
-nor an implementable promise for open mutable APIs; quotient types are separate
-language work.
+**Question:** Can an operator use choose a slot as soon as an approximate
+receiver type appears, without making meaning depend on inference order or
+expected-result search?
 
-**Static versus instance.** Instance-only is enough for arithmetic trait
-interfaces and reuses dynamic dispatch; it makes nullable comparisons and some
-mixed-type helpers awkward. Static-only is easy to select and avoids a non-null
-receiver requirement, but abstract static functions are not current trait
-implementation obligations. Supporting both, with a single deterministic slot
-and a declared static owner, wins. It adds no typeclass dictionary or static
-dispatch abstraction. Requiring static operators to be inherited symbolically
-would need more owner/first-operand rules, particularly for newtypes; named static
-access remains available without that complication.
+**Answer:** commit only after ordinary constraints determine a unique static
+nominal head/view; do not use a guessed intrinsic family or candidate's result to
+manufacture that head. Use the following bounded, non-backtracking procedure:
 
-**Functions versus methods.** Function-only provides the cleanest algebraic
-expression feature and by-method already serves efficient executable functions.
-The brief also asks for ordinary methods. Allowing methods at existing whole-RHS
-positions meets that request without inventing effectful expressions. Allowing
-arbitrary nested method calls would need evaluation sequencing, heap snapshots,
-specification rules, and temporary lifetime decisions well beyond syntax sugar.
-Comparison methods are excluded to keep derived negation and chains ordinary
-expressions.
+1. Resolve source operand names, applications and labels once. Allocate a result
+   proxy and a pending operator obligation that retains the ordinary call
+   context. Its original static source owner is not yet guessed.
+2. Let ordinary receiver/argument declarations, nested already selected call
+   results, assignments and comparable-type evidence propagate. An expected
+   type may constrain an existing result proxy by ordinary typing, but it does
+   not enumerate operator owners or compare candidate return types.
+3. When the left/unary head is uniquely fixed, find the slot in that view and
+   apply the fixed intrinsic/priority rule. Once chosen, add the selected call's
+   normal argument/result constraints exactly once. Freeze the completed view
+   recipe when its type arguments are resolved. Owner choice does not get
+   reconsidered after a contract/compiled-use failure.
+4. If no nominal choice is pending, preserve ordinary primitive literal/default
+   inference. Do not default an unresolved would-be nominal receiver to an
+   integer merely because the token is `+` and thus bypass an annotation error.
+5. At the existing inference completion boundary, a still-underdetermined
+   operator gives the explicit annotation/named-call diagnostic. There is no
+   search over every declared operator and no retry of a rejected selected call.
 
-**AST representation.** Direct call replacement makes the semantic path simple
-but needs another store of source form for formatting/navigation. An overloaded
-`BinaryExpr` is initially less code but asks every existing opcode consumer to
-remember an exception, with severe soundness consequences if one is missed. A
-`ConcreteSyntaxExpression` wrapper plus ordinary resolved call wins: it follows
-an existing design pattern and preserves the strongest downstream invariant.
+For `a.times(b) + c`, the named call's result supplies the owner normally. For
+`a * b + c`, the selected `*` result can supply the next `+` owner. A lambda
+whose receiver type is known from an ordinary declared arrow type can work;
+an otherwise untyped `x => x + x` must not choose some user numeric library by
+looking at all available return types. An explicit `(x: Rat) => x + x` or a
+named call makes the intent determinate. No new numeric literal embedding is
+inferred by this procedure.
 
-**Derived comparisons.** Automatic `>`/`>=` reversal reduces annotations but
-changes lookup ownership and needs careful operand evaluation order, especially
-with heterogeneous types. Separate declarations win for a minimal predictable
-feature; library wrappers are short. Deriving `!=` from the same selected `==`
-needs no equality law and keeps left ownership/evaluation order unchanged, so it
-is worth doing.
+`PreTypeConstraints` already has guarded constraints, but the integration must
+retain lexical `scope.AllowInstance`, current class, enclosing formals/call
+context and dominating heap labels as needed by normal call resolution. It must
+not call a source-name resolver later after its scope has been popped. Tests
+permute declaration/constraint discovery order, exercise nested operators and
+late evidence, and compare selected member IDs and error text. This settles the
+design question; actual helper factoring and generated AST parity are M1 work.
 
-**`calc` treatment.** Rejecting all calculation connectors on types with an
-override would reduce surprise but unnecessarily reject correct intrinsic proofs.
-Automatically using user connectors would be unsound. Keeping connectors
-intrinsic is consistent with retaining other generated proof mechanisms and
-preserves existing calculations; clear documentation/hover and explicit lemma
-calls handle the distinction. General law-aware calculations need their own
-design.
+### 13.4 Review conclusion and handoff
 
-### 13.3 Review conclusion
+1. **Settled enough to implement, and what that frees.** The intrinsic equality
+   rule, ordinary-call boundary, independent #193 surface, immutable choice
+   invariant, and concrete source-only refreshed M1 are specified. A worker can
+   implement M1 without waiting for equality overloading, legacy trait parity,
+   compound syntax, integer bitwise implementation or full artifact support.
+2. **What is expected to change.** Replace the old equality-override policy,
+   broad initial rollout and vague clone-record paragraph with these rules.
+   Companion #193 edits are precisely listed in 6.5. Later implementation may
+   adjust call-finalization factoring, map representation and line estimates;
+   it must not weaken the published meaning-preservation/disabled-mode gates.
+3. **The next question.** Section 13.3 answers the next design question about
+   deterministic delayed lookup. The next empirical question is whether the
+   implemented direct operators produce the same normalized calls, VCs,
+   triggers and proof costs as their explicit expansions. That needs a real
+   M1 patch; this documentation review cannot measure it.
+4. **Feedback on this request.** The fixed source/design pins, explicit
+   source-only deliverable and priority order made the review concrete. The
+   phrase about ghost/compiled equality needed an explicit distinction between
+   source expressions and generated machinery. Asking for examples and counts
+   also exposed a useful simplification: datatype `<=` needs no override.
+5. **Why the review stops.** The six requested questions are answered, the
+   proposed source forms are labelled unchecked, and existing-syntax controls
+   are identified separately. Product implementation is deliberately outside
+   this request, not an unfinished deliverable.
 
-**Recommend approval of this design, including its explicit qualification of
-built-in-first, before starting implementation.** The central architecture is
-sound as a reduction to existing call semantics. The proof-trait pattern is
-concrete: its explicit rational instance has verified and executed, including
-equality/order law obligations and a failing false control.
+## 14. Primary source references and evidence boundaries
 
-The implementation is larger than a parser-only patch. The irreducible work is
-correct early call lowering in both resolvers, strict disabled-mode isolation,
-legacy trait-view parity, and preservation of library interpretation. Those are
-bounded front-end tasks, not a reason to add semantic laws. The ranked P0/P1 items
-are implementation acceptance gates; this design review does not certify a
-future patch or the unfinished #211 termination work.
+The source audit pin is
+[`428e348b0b125cb67505f03a0026b3f497f98e48`](https://github.com/erniecohen/dafny/tree/428e348b0b125cb67505f03a0026b3f497f98e48).
+The prior design reviewed is PR #239 at
+[`5339faad320aab58b16f2a35ebae623f81c3413d`](https://github.com/erniecohen/dafny/blob/5339faad320aab58b16f2a35ebae623f81c3413d/docs/dev/design/194-operators.md).
+The interacting #193 document is PR #247 at
+[`a61b06c71d742ff19b280592d26d1a0e2ce9c87c`](https://github.com/erniecohen/dafny/blob/a61b06c71d742ff19b280592d26d1a0e2ce9c87c/docs/dev/design/193-bitwise-integers.md).
+Subsequent edits to that live PR are not silently attributed to this audit.
 
-## 14. Primary source references
+Exact-pin entry points:
 
-The source tree audited for all paths above is
-[`review/4.11.0` at `62bae981952337d312cbb3d43c39f9813cca6084`](https://github.com/erniecohen/dafny/tree/62bae981952337d312cbb3d43c39f9813cca6084).
-Useful direct entry points:
+- [AGENTS.md](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/AGENTS.md)
+  and [REVIEW.md](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/REVIEW.md)
+  govern later product changes, default-off comparisons and public provenance.
+- [Dafny.atg](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/Dafny.atg),
+  [pretype expressions](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/Resolver/PreType/PreTypeResolve.Expressions.cs),
+  and [ModuleResolver](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/Resolver/ModuleResolver.cs)
+  establish syntax, strict datatype rank comparison, exported views and pipeline order.
+- [Cloner](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/AST/Cloner.cs),
+  [ScopeCloner](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/AST/Modules/ScopeCloner.cs),
+  [RefinementTransformer](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/Rewriters/RefinementTransformer.cs),
+  and [method verification](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/Verifier/BoogieGenerator.Methods.cs)
+  substantiate the source-clone and skipped-inherited-obligation risks.
+- [Binary translation](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/Verifier/Expressions/TranslateBinaryExpr.cs),
+  [equality support](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/AST/Types/UserDefinedType.cs),
+  [calc AST](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/AST/Statements/CalcStmt.cs),
+  and [calc translation](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs)
+  are the main equality and proof-rule boundaries.
+- [TranslationRecord](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/Options/TranslationRecord.cs),
+  [DooFile](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/DooFile.cs),
+  and [library backend](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/Backends/Library/LibraryBackend.cs)
+  establish the record coverage and original-source serialization constraints.
+- [ExpressionTester](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/Resolver/ExpressionTester.cs)
+  and [call compilation](https://github.com/erniecohen/dafny/blob/428e348b0b125cb67505f03a0026b3f497f98e48/Source/DafnyCore/Backends/SinglePassCodeGenerator/SinglePassCodeGenerator.cs)
+  distinguish ghost references, by-method functions and ordinary/native calls.
 
-- [Fork instructions](https://github.com/erniecohen/dafny/blob/62bae981952337d312cbb3d43c39f9813cca6084/AGENTS.md)
-  and [review/version/gate rules](https://github.com/erniecohen/dafny/blob/62bae981952337d312cbb3d43c39f9813cca6084/REVIEW.md).
-- [Parser grammar](https://github.com/erniecohen/dafny/blob/62bae981952337d312cbb3d43c39f9813cca6084/Source/DafnyCore/Dafny.atg).
-- [Legacy resolution](https://github.com/erniecohen/dafny/blob/62bae981952337d312cbb3d43c39f9813cca6084/Source/DafnyCore/Resolver/NameResolutionAndTypeInference/NameResolutionAndTypeInference.cs)
-  and [refreshed resolution](https://github.com/erniecohen/dafny/blob/62bae981952337d312cbb3d43c39f9813cca6084/Source/DafnyCore/Resolver/PreType/PreTypeResolve.Expressions.cs).
-- [Concrete-syntax wrapper](https://github.com/erniecohen/dafny/blob/62bae981952337d312cbb3d43c39f9813cca6084/Source/DafnyCore/AST/Expressions/ConcreteSyntaxExpression.cs)
-  and [calculation AST](https://github.com/erniecohen/dafny/blob/62bae981952337d312cbb3d43c39f9813cca6084/Source/DafnyCore/AST/Statements/CalcStmt.cs).
-- [Calculation translation](https://github.com/erniecohen/dafny/blob/62bae981952337d312cbb3d43c39f9813cca6084/Source/DafnyCore/Verifier/Statements/BoogieGenerator.TrStatement.cs)
-  and [bounds discovery](https://github.com/erniecohen/dafny/blob/62bae981952337d312cbb3d43c39f9813cca6084/Source/DafnyCore/Resolver/BoundsDiscovery/BoundsDiscovery.cs).
-- [Trait-bound resolution fixtures](https://github.com/erniecohen/dafny/blob/62bae981952337d312cbb3d43c39f9813cca6084/Source/IntegrationTests/TestFiles/LitTests/LitTest/dafny0/BoundedPolymorphismResolution.dfy).
-- [Library serialization and loading](https://github.com/erniecohen/dafny/blob/62bae981952337d312cbb3d43c39f9813cca6084/Source/DafnyCore/DooFile.cs),
-  [library backend](https://github.com/erniecohen/dafny/blob/62bae981952337d312cbb3d43c39f9813cca6084/Source/DafnyCore/Backends/Library/LibraryBackend.cs),
-  and [refinement source cloning](https://github.com/erniecohen/dafny/blob/62bae981952337d312cbb3d43c39f9813cca6084/Source/DafnyCore/Rewriters/RefinementTransformer.cs).
-- [Opt-in precedent #220](https://github.com/erniecohen/dafny/pull/220)
-  and [opt-in/neutrality precedent #223](https://github.com/erniecohen/dafny/pull/223).
-- [Trait termination issue #211](https://github.com/erniecohen/dafny/issues/211)
-  and [audited option status](https://github.com/erniecohen/dafny/blob/62bae981952337d312cbb3d43c39f9813cca6084/Source/DafnyCore/Options/CommonOptionBag.cs).
+New functional checks in this revision use the public release
+[`v4.11.0+fcb2042d.review.bf47de16`](https://github.com/erniecohen/dafny/releases/tag/v4.11.0%2Bfcb2042d.review.bf47de16),
+not a newly built binary of the audit pin. The existing Ordered/Rat example's
+historical check uses the separately identified `9a4451d7` release. All proposed
+operator syntax, intrinsic escape, clone-record implementation, native-code
+comparisons and line estimates remain design material. No implementation,
+exact-pin runtime run, new performance benchmark, or completed #193 vacuity gate
+is claimed.
