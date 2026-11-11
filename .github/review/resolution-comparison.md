@@ -1,7 +1,7 @@
 # Module-resolution compatibility audit
 
 `review.yml` builds the pre-feature control at
-`428e348b0b125cb67505f03a0026b3f497f98e48` with the same SDK, runtime and
+`b98637c6677560944b2498002ecd32ec987a90af` with the same SDK, runtime and
 checksum-checked Boogie packages as the candidate. Its binary verifies the
 candidate's public inputs. A change to this control requires a separately
 reviewed default change; it must not silently follow the feature branch.
