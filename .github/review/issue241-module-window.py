@@ -59,7 +59,7 @@ import sys
 
 TIME = '/usr/bin/time'
 TRUNCATED = re.compile(r'-n\d+\.smt2$')
-ANSWER = re.compile(rb'^; [A-Z][A-Za-z]*\s*$')
+ANSWER = re.compile(rb'^; [A-Z][A-Za-z ]*$')  # ; Valid, ; Invalid, ; Out of resource, ...
 MODULE = re.compile(r'^\s*(?:abstract\s+|replaceable\s+)?module\s', re.M)
 
 
