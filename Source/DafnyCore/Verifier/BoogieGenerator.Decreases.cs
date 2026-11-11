@@ -29,14 +29,17 @@ public partial class BoogieGenerator {
   bool UseConsistentDecreasesOrder => !options.Get(CommonOptionBag.LegacyDecreasesOrder);
 
   bool CompatibleDecreasesTypesForComparison(Type t, Type u) {
-    if (!CompatibleDecreasesTypes(t, u)) {
-      return false;
-    }
     if (!UseConsistentDecreasesOrder) {
-      return true;
+      return CompatibleDecreasesTypes(t, u);
     }
     t = t.NormalizeToAncestorType();
     u = u.NormalizeToAncestorType();
+    if (t.IsTypeParameter || t.IsAbstractType || t.IsInternalTypeSynonym) {
+      return t.Equals(u); // equality-only order within this opaque family
+    }
+    if (!CompatibleDecreasesTypes(t, u)) {
+      return false;
+    }
     // These representations have no shared component order. In particular, do not
     // apply a bitvector operator of one width to an operand of another width.
     return (t is not BitvectorType a || u is not BitvectorType b || a.Width == b.Width) &&
@@ -511,8 +514,8 @@ public partial class BoogieGenerator {
           ? Bpl.Expr.Le(ee0[i], Bpl.Expr.Sub(ee1[i], Bpl.Expr.Literal(BigDec.FromInt(1))))
           : Bpl.Expr.Lt(ee0[i], ee1[i]));
         weak = BplOr(Bpl.Expr.Eq(ee0[i], ee1[i]), BplAnd(oldNonnegative, Bpl.Expr.Le(ee0[i], ee1[i])));
-      } else if (ty0.IsCoDatatype) {
-        // Coinductive values have no well-founded structural rank.
+      } else if (ty0.IsCoDatatype || ty0.IsTypeParameter || ty0.IsAbstractType || ty0.IsInternalTypeSynonym) {
+        // Coinductive and opaque values have no well-founded structural rank.
         strict = Bpl.Expr.False;
         weak = Bpl.Expr.Eq(ee0[i], ee1[i]);
       } else {
