@@ -790,6 +790,15 @@ public class Compilation : IDisposable {
     }
   }
 
+  /// <summary>Cancels the verification tasks scheduled for one symbol.</summary>
+  public void CancelCanVerify(ICanVerify canVerify) {
+    if (tasksPerVerifiable.TryGetValue(canVerify, out var tasks)) {
+      foreach (var task in tasks) {
+        task.Cancel();
+      }
+    }
+  }
+
   public void ClearModuleCache(ModuleDefinition moduleDefinition) {
     translatedModules.Remove(moduleDefinition);
   }
