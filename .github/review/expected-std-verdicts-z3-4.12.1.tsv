@@ -1964,6 +1964,9 @@ Std Std.Producers.SeqReader.ValidImpliesValidChange (override check)	Correct
 Std Std.Producers.SeqReader.ValidImpliesValidChange (well-formedness)	Correct		
 Std Std.Producers.SeqReader.ValidOutputs (override check)	Correct		
 Std Std.Producers.SeqReader._ctor (correctness)	Correct		
+Std Std.RealCompleteness.ExistsLub (correctness)	Correct		
+Std Std.RealCompleteness.Sup (well-formedness)	Correct		
+Std Std.RealCompleteness.UniqueLub (correctness)	Correct		
 Std Std.Relations.AsymmetricIsAntiSymmetric (correctness)	Correct		
 Std Std.Relations.AsymmetricIsIrreflexive (correctness)	Correct		
 Std Std.Relations.SortedBy (well-formedness)	Correct		
@@ -2190,7 +2193,7 @@ TargetSpecific-py Std.FileIO.WriteUTF8ToFile (correctness)	Correct
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (correctness)	Correct		
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (well-formedness)	Correct		
 TargetSpecific-py Std.PythonConcurrent.MutableMap.Get (well-formedness)	Correct		
-run Std	0	7752 verified, 0 errors	
+run Std	0	7755 verified, 0 errors	
 run TargetSpecific-cs	0	15 verified, 0 errors	
 run TargetSpecific-go	0	16 verified, 0 errors	
 run TargetSpecific-java	0	15 verified, 0 errors	
