@@ -514,6 +514,10 @@ public partial class BoogieGenerator {
           ? Bpl.Expr.Le(ee0[i], Bpl.Expr.Sub(ee1[i], Bpl.Expr.Literal(BigDec.FromInt(1))))
           : Bpl.Expr.Lt(ee0[i], ee1[i]));
         weak = BplOr(Bpl.Expr.Eq(ee0[i], ee1[i]), BplAnd(oldNonnegative, Bpl.Expr.Le(ee0[i], ee1[i])));
+        // Splitting a surrounding conjunction can use the component expression's
+        // token as its diagnostic origin, just as in ComputeLessEq below.
+        strict.tok = toks[i];
+        weak.tok = toks[i];
       } else if (ty0.IsCoDatatype || ty0.IsTypeParameter || ty0.IsAbstractType || ty0.IsInternalTypeSynonym) {
         // Coinductive and opaque values have no well-founded structural rank.
         strict = Bpl.Expr.False;
