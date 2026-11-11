@@ -474,6 +474,15 @@ namespace Microsoft.Dafny {
           newExprsDafny, oldExprsDafny, newExprs, oldExprs, null,
           null, allowNoChange, false,
           N == oldArray.Length && (N < newArray.Length || decreasesToExpr.AllowNoChange && N == newArray.Length));
+        if (BoogieGenerator.UseConsistentDecreasesOrder) {
+          // Simplification can return a shared Boolean literal, including when
+          // there is no compatible prefix. Do not mutate its diagnostic token.
+          if (decreasesExpr is Bpl.LiteralExpr { isBool: true } literal) {
+            decreasesExpr = new Bpl.LiteralExpr(decreasesToExpr.Origin, literal.asBool);
+          } else {
+            decreasesExpr.tok = decreasesToExpr.Origin;
+          }
+        }
         return decreasesExpr;
       }
 
