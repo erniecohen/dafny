@@ -1,0 +1,171 @@
+name: Decreases-order comparison
+on:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  Z3_RELEASE: https://github.com/Z3Prover/z3/releases/download/z3-5.1.0
+  Z3_ARCHIVE: z3-5.1.0-x64-glibc-2.39
+  Z3_SHA256: f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: 428e348b0b125cb67505f03a0026b3f497f98e48
+          path: baseline
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build candidate and pre-fix product with identical version metadata
+        run: |
+          sh Scripts/fetch-boogie-packages.sh
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/candidate -p:GeneratePackageOnBuild=false -p:SourceRevisionId=decreases-order-comparison
+          cd baseline
+          sh Scripts/fetch-boogie-packages.sh
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o ../out/baseline -p:GeneratePackageOnBuild=false -p:SourceRevisionId=decreases-order-comparison
+      - name: Pin solver
+        run: |
+          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_ARCHIVE.zip"
+          echo "$Z3_SHA256  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+      - name: Check old-source versus legacy byte identity
+        run: |
+          set +e
+          python3 .github/review/decreases-order.py identity --baseline out/baseline/Dafny --dafny out/candidate/Dafny \
+            --z3 "$Z3_ARCHIVE/bin/z3" --output identity
+          result=$?
+          echo "$result" > identity/exit.txt
+          echo '## Old-source / legacy byte identity (probe)' >> "$GITHUB_STEP_SUMMARY"
+          cat identity/identity.json >> "$GITHUB_STEP_SUMMARY"
+          # Expected differences during development are recorded, never hidden or
+          # mistaken for acceptance, and do not send failure notifications.
+          exit 0
+      - run: tar -C out -czf candidate.tar.gz candidate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: decreases-candidate
+          path: candidate.tar.gz
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: decreases-identity
+          path: identity
+          retention-days: 90
+  suite:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [default, legacy]
+        axioms: ['off', 'on']
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: decreases-candidate
+      - run: mkdir -p out && tar -C out -xzf candidate.tar.gz
+      - name: Pin solver
+        run: |
+          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_ARCHIVE.zip"
+          echo "$Z3_SHA256  z3.zip" | sha256sum -c -
+          unzip -q z3.zip
+      - name: Record suite verdicts, proof outcomes and resources
+        run: |
+          python3 .github/review/decreases-order.py record suite --mode '${{ matrix.mode }}' --axioms '${{ matrix.axioms }}' \
+            --shard '${{ matrix.shard }}/4' --dafny out/candidate/Dafny --z3 "$Z3_ARCHIVE/bin/z3" --output results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: suite-${{ matrix.axioms }}-${{ matrix.mode }}-${{ matrix.shard }}
+          path: |
+            results/verdicts.tsv
+            results/proofs.json
+            results/plan.tsv
+            results/source.json
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: raw-suite-${{ matrix.axioms }}-${{ matrix.mode }}-${{ matrix.shard }}
+          path: results/measurements
+          compression-level: 9
+          retention-days: 90
+  std:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [default, legacy]
+        axioms: ['off', 'on']
+        solver: ['5.1.0', '4.16.0']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/download-artifact@v4
+        with:
+          name: decreases-candidate
+      - run: mkdir -p out && tar -C out -xzf candidate.tar.gz
+      - name: Pin solver
+        run: |
+          if [ '${{ matrix.solver }}' = 5.1.0 ]; then
+            curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_ARCHIVE.zip"
+            echo "$Z3_SHA256  z3.zip" | sha256sum -c -
+            unzip -q z3.zip
+            echo "Z3=$PWD/$Z3_ARCHIVE/bin/z3" >> "$GITHUB_ENV"
+          else
+            curl -fsSLo z3.zip https://github.com/dafny-lang/solver-builds/releases/download/snapshot-2026-04-03/z3-4.16.0-x64-ubuntu-24.04-bin.zip
+            echo '87de9c9e86c877abfccb00cf24b946c4a1bda7b9cba6f363ea58311d2573c320  z3.zip' | sha256sum -c -
+            mkdir z3h && unzip -q z3.zip -d z3h
+            chmod +x z3h/z3-4.16.0
+            echo "Z3=$PWD/z3h/z3-4.16.0" >> "$GITHUB_ENV"
+          fi
+      - name: Record standard-library verdicts and resources
+        run: |
+          python3 .github/review/decreases-order.py record std --mode '${{ matrix.mode }}' --axioms '${{ matrix.axioms }}' \
+            --dafny out/candidate/Dafny --z3 "$Z3" --output results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: std-${{ matrix.axioms }}-${{ matrix.solver }}-${{ matrix.mode }}
+          path: results
+          compression-level: 9
+          retention-days: 90
+  report:
+    needs: [suite, std]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: suite-*
+          path: measurements
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: std-*
+          path: measurements
+      - name: List every changed verdict and resource totals
+        run: |
+          python3 .github/review/decreases-order.py compare --input measurements --output comparison
+          cat comparison/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: decreases-comparison
+          path: comparison
+          retention-days: 90

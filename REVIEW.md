@@ -146,6 +146,25 @@ Z3 5.1.0 (`Sequences.Elements` well-formedness to out of resource, `DecodeValidP
 well-formedness to correct); the commit that updates their expected verdicts gives the counts.
 With the option off, no verdict of the suite or of the standard library moves.
 
+## Compatible decreases comparison ([issue 264](https://github.com/erniecohen/dafny/issues/264))
+
+The default termination check now lifts compatible strict/weak component orders
+right to left, with TOP padding. A fractional real decrease or an equal
+sequence/datatype rank cannot discard an increasing suffix. Numeric lower
+bounds are inside the component relations, retaining negative terminal values.
+Calls, loops, overrides, termination-ordering expressions, and the experimental
+modular global/callback checks share the construction. No new primitive axiom
+is added; the loop's assumed weak summary follows from the component laws.
+The [soundness argument](docs/dev/decreases-order.md) covers each component
+family and the lift.
+
+This soundness fix ships enabled by explicit owner decision. The hidden
+`--legacy-decreases-order` switch restores the former, unsound translation for
+comparison and migration. `--modular-termination` remains opt-in. The regression
+is `git-issues/git-issue-264.dfy`. Actions records default/legacy verdict and
+resource comparisons for the suite and standard library, and byte identity
+between the pre-fix product and candidate legacy mode.
+
 ## Boogie
 
 Boogie's unguarded reverse casts,

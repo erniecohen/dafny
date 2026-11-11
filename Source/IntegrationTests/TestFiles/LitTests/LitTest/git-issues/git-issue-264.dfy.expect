@@ -1,0 +1,44 @@
+real, default
+git-issue-264-real.dfy(4,3): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 1 verified, 1 error
+false, default
+git-issue-264-false.dfy(5,3): Error: decreases clause might not decrease
+
+Dafny program verifier finished with 5 verified, 1 error
+mixed, default
+git-issue-264-mixed.dfy(8,9): Error: method's (possibly automatically generated) decreases clause must be below or equal to that in the trait
+
+Dafny program verifier finished with 0 verified, 1 error
+m2, default
+git-issue-264-m2.dfy(20,9): Error: decreases clause might not decrease (--modular-termination: the callee can reach a call dispatched to implementations that other modules may provide, so its 'decreases {:global}' bound must not exceed the caller's)
+
+Dafny program verifier finished with 2 verified, 1 error
+positive, default
+
+Dafny program verifier finished with 8 verified, 0 errors
+negative, default
+git-issue-264-negative.dfy(2,2): Error: assertion might not hold
+git-issue-264-negative.dfy(5,2): Error: assertion might not hold
+git-issue-264-negative.dfy(8,2): Error: assertion might not hold
+git-issue-264-negative.dfy(11,2): Error: assertion might not hold
+git-issue-264-negative.dfy(16,19): Error: decreases clause might not decrease
+git-issue-264-negative.dfy(19,2): Error: assertion might not hold
+
+Dafny program verifier finished with 0 verified, 6 errors
+callback, default
+git-issue-264-callback.dfy(10,7): Error: decreases clause might not decrease (--modular-termination: the 'decreases {:callback}' bound of 'g' must not exceed that of the parameter it is passed for)
+
+Dafny program verifier finished with 2 verified, 1 error
+real, legacy
+
+Dafny program verifier finished with 2 verified, 0 errors
+false, legacy
+
+Dafny program verifier finished with 6 verified, 0 errors
+mixed, legacy
+
+Dafny program verifier finished with 1 verified, 0 errors
+m2, legacy
+
+Dafny program verifier finished with 3 verified, 0 errors

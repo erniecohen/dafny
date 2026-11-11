@@ -31,6 +31,11 @@ on:
         type: boolean
         default: false
 
+      decreases_order_comparison:
+        description: Record corrected versus legacy decreases orders (scratch comparison only)
+        type: boolean
+        default: false
+
       default_comparison:
         description: Record only repeated default suite/library vectors for frozen products (manual scratch only)
         type: boolean
@@ -66,8 +71,12 @@ env:
   HARNESS_Z3_4_16_0_SHA256: 87de9c9e86c877abfccb00cf24b946c4a1bda7b9cba6f363ea58311d2573c320
 
 jobs:
+  decreases-order-comparison:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.decreases_order_comparison && startsWith(github.ref, 'refs/heads/scratch/') }}
+    uses: ./.github/workflows/decreases-order.yml
+
   build:
-    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/')) }}
+    if: ${{ !(github.event_name == 'workflow_dispatch' && (inputs.default_comparison || inputs.decreases_order_comparison) && startsWith(github.ref, 'refs/heads/scratch/')) }}
     name: Build (Release)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -267,7 +276,7 @@ jobs:
 
   default-comparison:
     name: Repeated default suite and standard-library comparison (probe)
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/') }}
+    if: ${{ github.event_name == 'workflow_dispatch' && (inputs.default_comparison || inputs.decreases_order_comparison) && startsWith(github.ref, 'refs/heads/scratch/') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     steps:
@@ -546,7 +555,7 @@ jobs:
           retention-days: 90
 
   regressions:
-    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/')) }}
+    if: ${{ !(github.event_name == 'workflow_dispatch' && (inputs.default_comparison || inputs.decreases_order_comparison) && startsWith(github.ref, 'refs/heads/scratch/')) }}
     name: Regression tests (upstream harness)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -622,7 +631,7 @@ jobs:
 
 
   resolver-tests:
-    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/')) }}
+    if: ${{ !(github.event_name == 'workflow_dispatch' && (inputs.default_comparison || inputs.decreases_order_comparison) && startsWith(github.ref, 'refs/heads/scratch/')) }}
     name: Resolver unit tests and language-server recovery
     runs-on: ubuntu-24.04
     timeout-minutes: 20

@@ -370,6 +370,28 @@ termination, Dafny does not normally surface this ordering directly in
 expressions. However, it is possible to write such ordering constraints
 using [`decreases to` expressions](#sec-termination-ordering-expressions).
 
+The component order has a strict relation `s` and a compatible weak nonincrease
+relation `w`. Strict tuple comparison is computed right to left as
+`L_i = s_i || (w_i && L_(i+1))`, ending with `false`; weak tuple comparison
+uses the same recurrence ending with `true`. Tuples are padded with TOP before
+comparison. Thus only an actual strict component decrease permits an arbitrary
+increase in the remaining suffix. A weak component decrease still requires the
+suffix comparison to hold.
+
+For integers, `s(x,y)` is `0 <= y && x < y`; for reals it is
+`0.0 <= y && x <= y - 1.0`, where `x` is the new value and `y` the old value.
+In either case `w(x,y)` is equality, or `0 <= y && x <= y`. A decrease may
+end at a negative value, but cannot continue decreasing from that value.
+A fractional real decrease can accompany progress in a later component, or an
+unchanged suffix in a weak comparison. Sequences and inductive datatypes use
+one common natural structural-rank order for both relations, including when
+the two components have different representations.
+
+The hidden `--legacy-decreases-order` switch restores the previous, unsound
+comparison for migration and comparison only. It applies to ordinary and modular
+checks; `--modular-termination` itself remains opt-in. The repair is described in
+https://github.com/erniecohen/dafny/issues/264.
+
 #### 7.1.3.1. Global bounds: `decreases {:global}` (experimental) {#sec-global-decreases}
 
 The module and call-graph components that Dafny prepends to a decreases tuple order only

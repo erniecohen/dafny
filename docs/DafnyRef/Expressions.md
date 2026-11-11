@@ -1961,7 +1961,9 @@ this ordering. (The parentheses can be omitted if there is exactly 1 left-hand s
 and exactly 1 right-hand side.) For example, the following assertions are valid:
 <!-- %check-verify -->
 ```dafny
-method M(x: int, y: int) {
+method M(x: int, y: int)
+  requires 0 <= x
+{
   assert 1 decreases to 0;
   assert (true, false decreases to false, true);
   assert (x, y decreases to x - 1, y);
@@ -1977,7 +1979,11 @@ method M(x: int, y: int) {
 ```
 
 The `decreases to` operator is strict, that is, it means "strictly greater than".
-The `nonincreases to` operator is the non-strict ("greater than or equal") version of it.
+The `nonincreases to` operator uses the compatible weak tuple comparison described
+in [the decreases-clause rules](#sec-decreases-clause). In particular, a fractional
+real decrease with an unchanged suffix is weak nonincrease, while a suffix increase
+requires an earlier strict decrease. Numeric lower bounds apply here too: an old
+negative component can stay unchanged, but cannot decrease again.
 
 ## 9.39. Compile-Time Constants {#sec-compile-time-constants}
 
