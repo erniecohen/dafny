@@ -10,6 +10,7 @@ import argparse
 import concurrent.futures
 import hashlib
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -41,8 +42,30 @@ def files(folder):
     return {p.relative_to(folder).as_posix(): sha(p) for p in folder.rglob('*') if p.is_file()}
 
 
+class LiteralSubprocess:
+    """Keep original stream bytes while reusing the existing verdict parsers."""
+    TimeoutExpired = subprocess.TimeoutExpired
+
+    def __init__(self, destination):
+        self.destination = destination
+
+    def run(self, command, **kwargs):
+        result = subprocess.run(command, **dict(kwargs, text=False))
+        folder = self.destination(command)
+        folder.mkdir(parents=True, exist_ok=True)
+        for name, data in [('stdout', result.stdout), ('stderr', result.stderr)]:
+            (folder / name).write_bytes(data)
+
+        def text(data):
+            with io.TextIOWrapper(io.BytesIO(data)) as reader:
+                return reader.read()
+        return subprocess.CompletedProcess(command, result.returncode, text(result.stdout), text(result.stderr))
+
+
 def suite(args, output):
     lit = load('lit')
+    lit.subprocess = LiteralSubprocess(lambda command: Path(next(
+        arg.removeprefix('json;LogFileName=') for arg in command if arg.startswith('json;LogFileName='))).parent / 'streams')
     litdir = Path('Source/IntegrationTests/TestFiles/LitTests/LitTest').resolve()
     lit.plan(str(litdir), str(output / 'plan.tsv'))
     rows = [line.split('\t') for line in (output / 'plan.tsv').read_text().splitlines()]
@@ -62,6 +85,8 @@ def suite(args, output):
                 shutil.rmtree(destination)
             shutil.move(str(folder), destination)
             results[mode] = {'verdict': list(verdict[:4]), 'output_sha256': sha(destination / 'output.txt'),
+                             'stdout_sha256': sha(destination / 'streams/stdout'),
+                             'stderr_sha256': sha(destination / 'streams/stderr'),
                              'resources': resources(destination / 'results.json')}
         differences = []
         if results['baseline'] != results['candidate']:
@@ -80,6 +105,7 @@ def suite(args, output):
 
 def stdlib(args, output):
     std = load('std')
+    std.subprocess = LiteralSubprocess(lambda command: Path(command[command.index('--bprint') + 1]).parent / 'streams')
     library = Path('Source/DafnyStandardLibraries').resolve()
     log = output / 'shared-log.json'
     def fixed_log(*_args, **_kwargs):

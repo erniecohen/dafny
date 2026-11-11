@@ -29,7 +29,7 @@ datatype Box<T> = Box(value: T) {
 
 class Counter {
   const value: int
-  constructor(n: int) { value := n; }
+  constructor(n: int) ensures value == n { value := n; }
   function {:operator "+"} plus(n: int): int { value + n }
 }
 

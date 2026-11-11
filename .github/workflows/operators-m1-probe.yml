@@ -4,7 +4,7 @@ on:
     branches: ['codex/194-operators-m1']
   workflow_dispatch:
 concurrency:
-  group: operators-m1-probe-${{ github.ref }}
+  group: operators-m1-probe-${{ github.ref }}-${{ contains(github.event.head_commit.message, '[off-gates]') && 'off' || 'focused' }}
   cancel-in-progress: true
 permissions:
   contents: read

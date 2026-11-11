@@ -7,7 +7,7 @@ using Microsoft.Dafny.Auditor;
 namespace Microsoft.Dafny;
 
 public abstract class MemberDecl : Declaration, ISymbol {
-  public OperatorDescriptor? Operator { get; set; }
+  [FilledInDuringResolution] public OperatorDescriptor? Operator { get; set; }
   public abstract string WhatKind { get; }
   public string WhatKindAndName => $"{WhatKind} '{Name}'";
   public virtual string WhatKindMentionGhost => (IsGhost ? "ghost " : "") + WhatKind;

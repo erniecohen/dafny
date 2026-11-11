@@ -86,7 +86,11 @@ def main():
     check('format-roundtrip', source_text=(output / 'format' / 'test.dfy').read_text())
     check('false', 'false', kind='verify-failure', diagnostic='assertion might not hold')
     check('precondition', 'contracts', kind='verify-failure', diagnostic='precondition')
+    check('precondition-named', 'contracts-named', kind='verify-failure', diagnostic='precondition')
     check('termination', 'termination', kind='verify-failure', diagnostic='decreases')
+    check('termination-named', 'termination-named', kind='verify-failure', diagnostic='decreases')
+    for filename in ['wrong-argument-named', 'wrong-result-named']:
+        check(filename, filename, kind='reject')
     for filename, diagnostic in [
         ('refinement', 'operators require directly declared'),
         ('opaque-rank', ('operator selection cannot be transported', 'operators require directly declared')),
@@ -101,7 +105,7 @@ def main():
     exclusions = ['equality', 'inequality', 'override', 'malformed', 'duplicate-attribute', 'duplicate-slot',
                   'arity', 'result', 'method', 'trait', 'newtype', 'codatatype', 'module', 'member-generic',
                   'default', 'nameonly', 'static-owner', 'right-only', 'wrong-result', 'wrong-argument',
-                  'compound', 'escape'] + ['bitwise-' + str(i) for i in range(6)]
+                  'compound', 'escape', 'constructor'] + ['bitwise-' + str(i) for i in range(6)]
     for filename in exclusions:
         check(filename, filename, kind='reject')
     check('requires-refresh', feature=False, args=['--user-defined-operators'], kind='reject',

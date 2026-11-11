@@ -36,7 +36,8 @@ public class SymbolTable {
         .DistinctBy(op => op.Origin.ReportingRange)
         .ToImmutableDictionary(op => op.Origin.ReportingRange, OperatorMeaning)
       : ImmutableDictionary<TokenRange, string>.Empty;
-    return new SymbolTable(references, definitions.ToList(), meanings);
+    return new SymbolTable(references, definitions.ToList(), meanings,
+      program.Options.Get(CommonOptionBag.UserDefinedOperators));
   }
 
   private static string OperatorMeaning(OperatorSyntaxExpr op) => op.Selection switch {
@@ -61,11 +62,13 @@ public class SymbolTable {
   }
 
   private SymbolTable(IReadOnlyList<Reference> references, IReadOnlyList<IHasNavigationToken> hasNavigationTokens,
-    ImmutableDictionary<TokenRange, string> operatorMeanings) {
+    ImmutableDictionary<TokenRange, string> operatorMeanings, bool userDefinedOperators) {
     OperatorMeanings = operatorMeanings;
     var safeReferences = references.Where(k => k.Referer.Uri != null).ToImmutableList();
 
-    NonTextualReferences = safeReferences.Where(r => !r.IsTextual).Select(r => r.Referer).ToImmutableHashSet();
+    NonTextualReferences = userDefinedOperators
+      ? safeReferences.Where(r => !r.IsTextual).Select(r => r.Referer).ToImmutableHashSet()
+      : ImmutableHashSet<TokenRange>.Empty;
     var referencesAsKeyValuePairs = safeReferences.Select(k => KeyValuePair.Create(k.Referer, k.Referred));
     ReferenceToNode = referencesAsKeyValuePairs.DistinctBy(pair => pair.Key).ToImmutableDictionary();
 

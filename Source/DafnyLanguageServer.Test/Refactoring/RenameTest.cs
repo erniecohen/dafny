@@ -26,6 +26,10 @@ const i := 0
 
     [Fact]
     public async Task OperatorSymbolsAreReferencesButAreNeverRenamed() {
+      await SetUp(options => {
+        options.Set(CommonOptionBag.UserDefinedOperators, true);
+        options.Set(CommonOptionBag.TypeSystemRefresh, true);
+      });
       var tempDir = GetFreshTempPath();
       CreateAndOpenTestDocument("[options]\nuser-defined-operators = true\ntype-system-refresh = true\n",
         Path.Combine(tempDir, DafnyProject.FileName));

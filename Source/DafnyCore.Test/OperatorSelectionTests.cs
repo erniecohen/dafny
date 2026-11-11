@@ -150,9 +150,9 @@ public class OperatorSelectionTests {
   public async Task IntrinsicRankCannotBecomeAComparisonPredicate() {
     var (program, reporter) = await Parse("""
       datatype D = D { predicate {:operator "<"} less(b: D) { true } }
-      predicate p(x: D) { x < x }
+      ghost predicate p(x: D) { x < x }
       """);
-    Assert.False(reporter.HasErrors);
+    Assert.False(reporter.HasErrors, string.Join("\n", reporter.AllMessages.Select(m => m.Message)));
     var op = Assert.IsType<OperatorSyntaxExpr>(Function(program, "p").Body);
     var selected = Assert.IsType<IntrinsicOperatorSelection>(op.Selection);
     Assert.Equal(BinaryExpr.ResolvedOpcode.RankLt, selected.Opcode);

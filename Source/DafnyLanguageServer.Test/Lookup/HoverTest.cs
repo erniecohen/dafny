@@ -96,7 +96,7 @@ namespace Microsoft.Dafny.LanguageServer.IntegrationTest.Lookup {
           predicate {:operator "<"} less(b: D) { true }
           function {:operator "+"} plus(b: D): D { b }
         }
-        predicate p(x: D) { x < x }
+        ghost predicate p(x: D) { x < x }
         function q(x: D): D { x + x }
         """;
       var document = await CreateOpenAndWaitForResolve(source);

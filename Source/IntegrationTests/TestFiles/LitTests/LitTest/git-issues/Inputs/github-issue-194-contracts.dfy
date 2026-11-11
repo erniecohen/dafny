@@ -3,5 +3,5 @@ datatype D = D(n: int) {
 }
 lemma bad() {
   var d := D(1);
-  assert (d / 0).n == 0;
+  var result := d / 0;
 }

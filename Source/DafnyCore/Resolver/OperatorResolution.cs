@@ -18,6 +18,9 @@ public static class OperatorResolution {
       if (owner is TopLevelDeclWithMembers members) {
         hosts.AddRange(members.Members);
       }
+      if (owner is DatatypeDecl datatype) {
+        hosts.AddRange(datatype.Ctors);
+      }
       foreach (var host in hosts) {
         var attributes = host.Attributes?.AsEnumerable().Where(a => a.Name == "operator").ToList();
         if (attributes == null || attributes.Count == 0) {

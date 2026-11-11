@@ -727,8 +727,9 @@ namespace Microsoft.Dafny {
       }
 
       if (resolver.Options.Get(CommonOptionBag.UserDefinedOperators)) {
+        var operatorErrorCount = resolver.Reporter.ErrorCount;
         OperatorResolution.Validate(declarations, resolver);
-        if (resolver.Reporter.HasErrors) {
+        if (resolver.Reporter.ErrorCount != operatorErrorCount) {
           return;
         }
       }

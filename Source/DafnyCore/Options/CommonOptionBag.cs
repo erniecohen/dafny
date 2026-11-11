@@ -250,6 +250,7 @@ true - All class instances are raw pointers and need to be manually deallocated"
   public static readonly Option<bool> UserDefinedOperators = new("--user-defined-operators", () => false,
     "Enable fallback arithmetic and comparison function operators on concrete classes and inductive datatypes. " +
     "Requires --type-system-refresh. Equality and module-attribute operators remain intrinsic. " +
+    "Datatype < and > retain intrinsic rank comparison; call annotated predicates by name. " +
     "Override mode, compounds, trait operators and library/precompiled input reuse are not yet supported. Disabled by default.");
 
   public static readonly Option<bool> AdditionalAxioms = new("--additional-axioms", () => false,

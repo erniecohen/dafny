@@ -6,7 +6,7 @@ module M {
   // The selected function occurs before its declaration is cloned.
   function twice(x: D): D { x + x }
   lemma check(x: D) ensures (x + x).n == 2 * x.n { }
-  export reveals D, D.plus, D.le, twice, check
+  export reveals D, D.plus, D.le, twice provides check
 }
 module Generic {
   datatype Box<T> = Box(v: T) {
