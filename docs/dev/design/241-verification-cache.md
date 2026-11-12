@@ -501,3 +501,8 @@ translation-text classification and every outcome change listed by declaration
 in the pull request. Any difference without a translation-text explanation
 blocks acceptance. Enabled-mode CI expectations, if needed, are separate from
 the shipped defaults. Acceptance does not authorize merging.
+
+The 194-case historical translation-input classification and all observed outcome
+changes are recorded in
+[241-translation-equivalence.md](241-translation-equivalence.md), with the
+per-module raw byte digests in its accompanying table.
