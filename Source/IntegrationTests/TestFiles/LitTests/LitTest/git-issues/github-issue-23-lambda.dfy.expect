@@ -1,4 +1,0 @@
-github-issue-23-lambda.dfy(11,14): Error: function precondition could not be proved
-github-issue-23-lambda.dfy(8,32): Related location: this proposition could not be proved
-
-Dafny program verifier finished with 1 verified, 1 error

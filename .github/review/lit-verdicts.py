@@ -78,18 +78,7 @@ def plan(litdir, out):
                 opts = re.split(r'%(?:build|run)\b', cmd, 1)[1]
             if opts is None:
                 continue
-            # The suite supplies its pinned solver itself. Resolve the harness solver
-            # placeholder by dropping that option and its value together.
-            raw = shlex.split(opts)
-            toks = []
-            i = 0
-            while i < len(raw):
-                if raw[i] == '--solver-path' and i + 1 < len(raw) and raw[i + 1].startswith('%'):
-                    i += 2
-                    continue
-                if not raw[i].startswith('%'):
-                    toks.append(raw[i])
-                i += 1
+            toks = [t for t in shlex.split(opts) if not t.startswith('%')]
             if '--no-verify' in toks:
                 continue
             keep, skip = [], False

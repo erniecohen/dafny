@@ -59,7 +59,8 @@ ghost function binom(a: nat, b: nat): nat
 // div-2 is applied to both arguments--except in the case where
 // the first argument to "binom" is even and the second argument
 // is odd, in which case "binom" is always even.
-lemma Lucas_Binary''(a: nat, b: nat)
+// The recursive calls below supply the induction steps.
+lemma {:induction false} Lucas_Binary''(a: nat, b: nat)
   ensures binom(a, b) % 2 == if EVEN(a) && !EVEN(b) then 0 else binom(a / 2, b / 2) % 2
 {
   if a == 0 || b == 0 {

@@ -1,1 +1,0 @@
-Guard the elements axioms of Map#Glue and IMap#Glue by the domain of the glued map, which equals the original domain, to reduce proof cost without changing their meaning (https://github.com/erniecohen/dafny/issues/23).

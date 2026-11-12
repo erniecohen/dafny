@@ -393,29 +393,24 @@ module Std.Arithmetic.Power {
   }
 
   /* A positive number raised to a power increases as the power increases. */
-  lemma LemmaPowIncreases(b: nat, e1: nat, e2: nat)
+  lemma {:induction false} LemmaPowIncreases(b: nat, e1: nat, e2: nat)
     requires b > 0
     requires e1 <= e2
     ensures Pow(b, e1) <= Pow(b, e2)
+    decreases e2 - e1
   {
-    var f := e => 0 <= e ==> Pow(b, e1) <= Pow(b, e1 + e);
-    forall i | IsLe(0, i) && f(i)
-      ensures f(i + 1)
-    {
+    if e1 < e2 {
+      LemmaPowIncreases(b, e1, e2 - 1);
       calc {
-        Pow(b, e1 + i);
-      <= { LemmaPowPositive(b, e1 + i);
-           LemmaMulLeftInequality(Pow(b, e1 + i), 1, b); }
-        Pow(b, e1 + i) * b;
-      == { LemmaPow1(b); }
-        Pow(b, e1 + i) * Pow(b, 1);
-      == { LemmaPowAdds(b, e1 + i, 1); }
-        Pow(b, e1 + i + 1);
+        Pow(b, e1);
+      <=
+        Pow(b, e2 - 1);
+      <= { LemmaPowPositive(b, e2 - 1);
+           LemmaMulLeftInequality(Pow(b, e2 - 1), 1, b); }
+        Pow(b, e2 - 1) * b;
+      == { LemmaMulIsCommutative(Pow(b, e2 - 1), b); }
+        Pow(b, e2);
       }
-    }
-    LemmaMulInductionAuto(e2 - e1, f);
-    assert Pow(b, e1) <= Pow(b, e1 + (e2 - e1)) by {
-      assert 0 <= e2 - e1;
     }
   }
 

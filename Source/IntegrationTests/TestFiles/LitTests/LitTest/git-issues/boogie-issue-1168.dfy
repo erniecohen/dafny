@@ -4,10 +4,10 @@
 // boogie-org/boogie#1168: Boogie's arguments type encoding, which Dafny uses, had reverse
 // casts such as forall x: U :: int_2_U(U_2_int(x)) == x, which say that every value is an
 // int (a bool, ...) and have no model beside the casts' left inverses. Dafny now builds
-// against a Boogie that removes those reverse casts. The regression checks preservation
-// of typed reads. Proofs had relied on those casts
-// to join a built-in value read from a collection, field or boxed position with its cast.
-// The fix preserves those proofs by passing such a value to the solver as a cast. Each
+// against a Boogie that emits none. No program is known to prove false by them; the axioms
+// themselves had no model (see the issue). Proofs had relied on them to join a value of a
+// built-in type that is read from a collection, a field or a boxed position with its cast,
+// and the fix keeps those proofs by passing such a value to the solver as a cast. Each
 // method below needs that: each verifies under 4.11.0 and with the fix, and fails when the
 // reverse casts are dropped without it.
 
