@@ -57,6 +57,8 @@ def run(name, text, directory=cache):
     for task in tasks:
         module = task['task'].split('.', 1)[0]
         by_module[module]['hit' if task['replayed'] else 'rerun'] += 1
+    assert {module: sum(counts.values()) for module, counts in by_module.items()} == {
+        'Api': 1, 'ClientB': 2, 'ClientC': 2, 'ClientD': 2, 'Leaf': 1}, (name, dict(by_module))
     result = {'report': untimed(json.loads(report.read_text())),
               'output': [process.returncode, (destination / (name + '.stdout')).read_bytes(),
                          (destination / (name + '.stderr')).read_bytes()],
