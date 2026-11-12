@@ -1,7 +1,7 @@
 # Module-resolution compatibility audit
 
 `review.yml` builds the pre-feature control at
-`dfe57d8d94869cbfa9169f9e331ab882790eb5d6` with the same SDK, runtime and
+`c02d46e8c7faad8490b66238d1a3378267985728` with the same SDK, runtime and
 checksum-checked Boogie packages as the candidate. Its binary verifies the
 candidate's public inputs. A change to this control requires a separately
 reviewed default change; it must not silently follow the feature branch.
@@ -14,6 +14,11 @@ control/candidate audit remains at
 https://github.com/erniecohen/dafny/actions/runs/43134871839. The control remains
 pinned to a shipped commit without this feature; no verdict baseline is changed
 by this update.
+
+The control subsequently advanced to the shipped decreases-order product in
+https://github.com/erniecohen/dafny/pull/275, which independently changed the
+default expected rows. Both candidate branches merge that shipped product;
+this control update does not adopt cache-enabled behavior as the default.
 
 For each suite shard and for the standard library, the audit runs that control,
 the candidate with the option omitted, and the candidate at N = 1, 2, 4, 8.
