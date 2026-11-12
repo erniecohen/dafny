@@ -79,7 +79,7 @@ namespace Microsoft.Dafny {
                  : results.OrderByDescending(r => r.Duration)) {
         var resourceCount = result.GetPropertyValue(VerificationResultLogger.ResourceCountProperty);
         var randomSeed = result.GetPropertyValue(VerificationResultLogger.RandomSeedProperty) ?? "unknown";
-        var replayed = result.GetPropertyValue(VerificationResultLogger.TimingReplayedProperty, false);
+        var replayed = includeReplayTiming && result.GetPropertyValue(VerificationResultLogger.TimingReplayedProperty, false);
         writer.WriteLine($"{result.TestCase.DisplayName},{result.Outcome},{result.Duration},{resourceCount},{randomSeed}" +
           (includeReplayTiming ? $",{replayed.ToString().ToLowerInvariant()}" : ""));
       }

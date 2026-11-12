@@ -39,7 +39,10 @@ namespace Microsoft.Dafny {
     private readonly DafnyOptions options;
 
     public static TestProperty ResourceCountProperty = TestProperty.Register("TestResult.ResourceCount", "TestResult.ResourceCount", typeof(int), typeof(TestResult));
-    public static TestProperty TimingReplayedProperty = TestProperty.Register("TestResult.TimingReplayed", "TestResult.TimingReplayed", typeof(bool), typeof(TestResult));
+    public static TestProperty TimingReplayedProperty => ReplayTimingProperty.Value;
+    private static class ReplayTimingProperty {
+      internal static readonly TestProperty Value = TestProperty.Register("TestResult.TimingReplayed", "TestResult.TimingReplayed", typeof(bool), typeof(TestResult));
+    }
     public static TestProperty RandomSeedProperty = TestProperty.Register("TestResult.RandomSeed", "TestResult.RandomSeed", typeof(int), typeof(TestResult));
 
     private readonly IList<IVerificationResultFormatLogger> formatLoggers = new List<IVerificationResultFormatLogger>();
