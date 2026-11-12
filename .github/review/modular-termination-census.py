@@ -277,7 +277,7 @@ def main():
     os.makedirs(out, exist_ok=True)
     if kind == "lit":
         files = sorted(os.path.join(d, f) for d, _, fs in os.walk(target) for f in fs if f.endswith(".dfy"))
-        with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() or 2) as pool:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=int(os.environ.get("DOTNET_PROCESSOR_COUNT", str(os.cpu_count() or 2)))) as pool:
             programs = list(pool.map(lambda f: lit_one(dafny, target, f), files))
         title = f"LitTests ({os.path.relpath(target)})"
     else:
