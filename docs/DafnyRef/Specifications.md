@@ -419,9 +419,16 @@ not concatenated.  A member has at most one `decreases {:global}` clause.  An ov
 that declares none inherits its parent's; one that declares its own must give a bound no
 greater than its parent's, as an override's ordinary decreases clause must.
 
-Under the option, a call to a bodyless instance member of an _open_ trait (a trait marked
-`{:termination false}`, a trait that a type in another module extends, or an ancestor of
-either) must go to a smaller global bound: the callee's global bound, at the call's
+Under the option, a trait is _extensible_ exactly when its defining declaration has
+`{:termination false}`; this declares checked extensibility. Otherwise it is sealed against
+foreign extension. Every non-`object` ancestor of a foreign implementation must also be
+extensible. A same-module descendant may remain sealed, but an extensible descendant cannot
+expose a sealed ancestor. `@AssumeCrossModuleTermination` cannot override sealing. Aliases,
+export views and refinement preserve the declaration's policy.
+
+A call to an overridable instance slot of an extensible trait must go to a smaller global
+bound. Bodyful methods can be overridden and remain open; a fully defined function has a fixed
+target even when its body is hidden by `provides`. The callee's global bound, at the call's
 arguments, must be below the caller's, evaluated on entry to the caller.  A missing bound
 is above every other.  So a call from a member without a global bound to one with a
 global bound always passes, and a call to a member without one always fails.  This rejects
@@ -459,14 +466,24 @@ module L {
 With a parameter `n: nat` and `decreases {:global} n` on both members, and
 `other.A(this, n - 1)` and `other.B(this, n - 1)` under `n != 0`, the program verifies.
 
-A call to code that is known statically (a function, a method, a constructor, a member of a trait
-that no other module extends, or an iterator) runs under its caller's bound. If the callee can
-reach such a dispatched call, through its own body, the default values of its parameters, or the
-code it calls in turn, the call
-must not go to a larger global bound: the callee's global bound, at the call's arguments, must be
-at most the caller's, evaluated on entry to the caller. A callee that cannot reach a dispatched
-call needs no bound and gets no such check. So a helper that forwards a dispatched call needs a
-global bound of its own:
+An imported operation has a public termination effect. Without `{:termination_closed}`, it is
+_General_: its declared or inherited global bound applies, or TOP when it has no bound.
+An exact call to General code requires the callee's bound to be at most the caller's entry
+bound, in addition to the ordinary termination checks. This holds even if the imported body
+currently returns a constant. Private body analysis never strengthens an imported contract,
+including when both modules are supplied as source in one invocation.
+
+The optional `{:termination_closed}` attribute promises that the operation's body,
+specifications, measures, defaults and implicit evaluations cannot reach open dispatch,
+an unknown function-value application or an imported General operation. Dafny checks that
+promise in its defining module. Locally inferred closed helpers remain available there;
+imported helpers need their own public promise. Exact calls to Closed code need no outer
+bound comparison, but still obey the ordinary termination discipline. Closed cannot be combined
+with callback bounds or promised by an overridable slot of an extensible trait. A permitted
+sealed override or refinement must preserve the promise.
+
+Within a module, Dafny can infer whether exact code reaches open dispatch. A local closed
+callee needs no outer comparison; a local forwarding helper needs a global bound of its own:
 
 <!-- %no-check -->
 ```dafny
@@ -517,8 +534,14 @@ module Y {
 
 the type test runs `Good`'s constraint, which calls `t.F(0)`, in `Y.F`, whose inherited bound is
 `n`; the program is rejected. Without the check it verifies, and `F(0) == 1 <==> F(0) == 0` proves
-`false`. A type whose constraint, witness and components reach no dispatched call, such as `nat`,
-needs nothing.
+`false`. Locally, a type whose constraint, witness and components reach no dispatched call,
+such as `nat`, needs nothing. Across imports, constraints, witnesses, component defaults and
+constant initializers also need stable effects. An opaque type or hidden evaluation hook is
+General(TOP) unless its owner publishes `{:termination_closed}`. The attribute is allowed on
+constants, type declarations and iterators. On a type it covers its evaluation hooks, including
+field/component types and defaults, rather than its virtual members; on an iterator it covers
+its protocol and specifications. Public signature structure may establish that a hook is absent.
+Invalid attribute arguments or placement are rejected under the option.
 
 A call through a function value runs code that the call does not name. Under the option, an application
 `f(x)` (and a call of `f.requires` or `f.reads`, and the initializing function of `seq(n, f)` and
@@ -526,8 +549,8 @@ A call through a function value runs code that the call does not name. Under the
 
 * If the value is a lambda expression, written at the application, its body is part of the code around
   it and is checked there, under the same rules.
-* If the value is a function named as a value that can reach no dispatched call, nothing needs to be
-  checked.
+* If the value is a function named as a value that is locally closed, or publishes
+  `{:termination_closed}` across an import, nothing needs to be checked.
 * If the value is an in-parameter with a _callback bound_ (below), outside a lambda, the application is a
   call to code whose bound is that callback bound: the callback bound must be below the caller's global
   bound, both evaluated on entry (the smaller-bound rule).
@@ -582,15 +605,16 @@ function, have no bound in this version: a member with a global bound cannot app
 Inside a lambda expression, the bound of the member it belongs to is the value on entry to that member,
 also where the lambda's body is checked in a heap of its own.
 
-Together the two rules order every chain of calls: along it, the global bound never goes up and
-goes down at each dispatched call, and once no dispatched call can follow, the existing
-termination checks apply.
+The intended composition argument combines outer-bound descent with the ordinary termination
+discipline. The option remains experimental: the separate comparison repair and checked-library
+admission work must complete before it establishes termination of every accepted composition.
 
 A global bound, and a callback bound, may only use code that cannot reach a dispatched call: the
 functions and methods it calls, the constants it reads, the types it mentions (their constraints,
 witnesses and component defaults) and the function values it applies must reach none, directly or
 through the code they call in turn, and a function value whose code is not known counts as reaching
-one.  The value of a bound is the measure that these rules decrease, so it must not be computed by the
+one. Across imports, the supporting operations must publish `{:termination_closed}`; a hidden
+leaf body is insufficient. The value of a bound is the measure that these rules decrease, so it must not be computed by the
 code whose termination they establish.  Before this rule, the program below verified, `assert false`
 included, and when run it overflowed the stack:
 

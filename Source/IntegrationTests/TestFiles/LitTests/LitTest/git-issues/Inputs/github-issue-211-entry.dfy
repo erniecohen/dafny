@@ -1,7 +1,7 @@
 // The caller's global bound is captured on entry.  Here it reads a mutable field.  Each call goes
 // through a receiver of the trait type, so it is dispatched; this.Run() would bind statically.
 module Tr {
-  trait {:termination false} T {
+  trait {:termination false} {:termination_closed} T {
     var fuel: nat
     method Run() modifies this decreases {:global} fuel
   }

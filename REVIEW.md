@@ -375,10 +375,12 @@ and reports each program's verdict.  It verifies Dafny's standard library,
 `Source/DafnyStandardLibraries`, as the library's Makefile's `verify` target does,
 once with Z3 5.1.0 and once with the Z3 that the tree's own tests expect (4.12.1 on
 this branch), and reports each declaration's verdict.  It also runs the tests named in `.github/review/regressions` in
-upstream's own harness.  On a tag it attaches a self-contained binary for `linux-x64`
-to a GitHub release, with its sha256 sum; for now (https://github.com/erniecohen/dafny/issues/256) the `osx-arm64` binary is built on a Mac
-and added to that release by `.github/review/release-macos.sh`, which also updates
-`SHA256SUMS` and the release notes.
+upstream's own harness.  On a tag it attaches self-contained binaries for `linux-x64` and `osx-arm64`
+to a GitHub release, with their sha256 sums.  The `osx-arm64` binary and the release
+itself are built on the owner's self-hosted Mac runner (label `mac-studio`), which only
+runs tag and manually dispatched jobs of this repository
+(https://github.com/erniecohen/dafny/issues/256).  `.github/review/release-macos.sh`
+remains as a manual fallback.
 
 ### Expected verdicts
 
