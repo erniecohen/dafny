@@ -52,14 +52,14 @@ public sealed class TaskCacheSession {
     options.RestartProverPerVC = true;
     options.CreateSolver = (library, solverOptions) => {
       var run = Current.Value;
-      if (run == null || run.Disabled || original.Method.Module.Assembly != typeof(CommandLineOptions).Assembly || solverOptions.BatchMode || solverOptions.Solver != SolverKind.Z3 ||
+      if (run == null || original.Method.Module.Assembly != typeof(CommandLineOptions).Assembly || solverOptions.BatchMode || solverOptions.Solver != SolverKind.Z3 ||
           solverOptions.Inspector != null || solverOptions.LogFilename != null) {
         if (run != null) { Interlocked.Increment(ref starts); }
         return original(library, solverOptions);
       }
       var task = run.Task;
       var transport = new CachedTaskSolver(results,
-        () => environment.Freeze(library, solverOptions, out var reason) is { } bytes ? bytes : Bypass(reason),
+        () => run.Disabled ? null : environment.Freeze(library, solverOptions, out var reason) is { } bytes ? bytes : Bypass(reason),
         () => { Interlocked.Increment(ref starts); return original(library, solverOptions); },
         library.PrintProverWarnings == CoreOptions.ProverWarnings.None);
       run.Solvers.Add(transport);

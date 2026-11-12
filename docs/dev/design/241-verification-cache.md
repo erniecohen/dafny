@@ -554,6 +554,9 @@ handshake, using the pinned pool's existing `TimeoutException` cleanup path.
 Both cold and replay therefore start the next task with a fresh Boogie prover
 as well as an independent native solver history. This cleanup exception is not
 a verification timeout and is consumed by the existing pool protocol.
+Whole-task retries disable persistent lookup while retaining the same exclusive
+checker lifecycle, so retrying one divergent exchange does not change the next
+task's setup stream.
 Divergence discards all buffered completion data and retries
 `FromSeed` with persistent reads disabled and a fresh solver. Divergent keys are
 quarantined persistently, so a later invocation recomputes without replaying the
