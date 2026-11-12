@@ -55,16 +55,12 @@ public class ProgramResolver {
     var sortedDecls = dependencies.TopologicallySortedComponents();
     Program.ModuleSigs = new();
 
-    if (Options.Get(CommonOptionBag.ResolutionThreads) > 0) {
-      foreach (var declaration in sortedDecls) {
-        declaration.Height = dependencies.FindVertex(declaration).Successors.Select(v => v.N.Height + 1).DefaultIfEmpty(0).Max();
-        if (declaration is LiteralModuleDecl literal) { literal.ModuleDef.Height = declaration.Height; }
-      }
-    } else {
-      SetHeights(sortedDecls);
+    foreach (var declaration in sortedDecls) {
+      declaration.Height = dependencies.FindVertex(declaration).Successors.Select(v => v.N.Height + 1).DefaultIfEmpty(0).Max();
+      if (declaration is LiteralModuleDecl literal) { literal.ModuleDef.Height = declaration.Height; }
     }
 
-    using var systemNames = Options.Get(CommonOptionBag.ResolutionThreads) > 0 ? new ModuleNamingScope("_System") : null;
+    using var systemNames = new ModuleNamingScope("_System");
     var systemClassMembers = ResolveSystemModule(Program);
     foreach (var moduleClassMembers in systemClassMembers) {
       classMembers[moduleClassMembers.Key] = moduleClassMembers.Value;
@@ -78,15 +74,8 @@ public class ProgramResolver {
       rewriter.PreResolve(Program);
     }
 
-    if (Options.Get(CommonOptionBag.ResolutionThreads) > 0) {
-      ResolveModulesInParallel(sortedDecls, moduleDeclarationPointers, cancellationToken);
-    } else {
-      foreach (var decl in sortedDecls) {
-        cancellationToken.ThrowIfCancellationRequested();
-        var moduleResolutionResult = ResolveModuleDeclaration(compilation, decl);
-        ProcessDeclarationResolutionResult(moduleDeclarationPointers, decl, moduleResolutionResult);
-      }
-    }
+    // Zero selects sequential scheduling, never a different naming or builtin view.
+    ResolveModulesInParallel(sortedDecls, moduleDeclarationPointers, cancellationToken);
 
     if (Reporter.ErrorCount != startingErrorCount) {
       return Task.CompletedTask;
@@ -256,7 +245,7 @@ public class ProgramResolver {
     // Plugins have arbitrary state and no concurrent-resolution contract. Retain
     // module-local outputs and names, but execute their callbacks on one worker.
     var count = Options.Plugins.Except(DafnyOptions.DefaultPlugins).Any()
-      ? 1 : Math.Min(Options.Get(CommonOptionBag.ResolutionThreads), declarations.Count);
+      ? 1 : Math.Min(Math.Max(1, Options.Get(CommonOptionBag.ResolutionThreads)), declarations.Count);
     var workers = Enumerable.Range(0, count).Select(_ => new Thread(RunWorker, 0x10000000) { IsBackground = true }).ToArray();
     foreach (var worker in workers) { worker.Start(); }
     foreach (var worker in workers) { worker.Join(); }

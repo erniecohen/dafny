@@ -356,8 +356,7 @@ public class CliCompilation {
 
         yield return new CanVerifyResult(canVerify,
           results.CompletedParts.Select(c => new VerificationTaskResult(c.Task, c.Result.Result)).ToList()) {
-          ProofDependencies = Options.Get(CommonOptionBag.ResolutionThreads) > 0
-            ? results.ProofDependencies : repeatVerification ? requestDependencies : null
+          ProofDependencies = results.ProofDependencies
         };
 
         canVerifyResults.TryRemove(canVerify, out _); // Free memory
@@ -517,8 +516,7 @@ public class CliCompilation {
 
           yield return new CanVerifyResult(canVerify,
             results.CompletedParts.Select(c => new VerificationTaskResult(c.Task, c.Result.Result)).ToList()) {
-            ProofDependencies = Options.Get(CommonOptionBag.ResolutionThreads) > 0
-            ? results.ProofDependencies : repeatVerification ? requestDependencies : null
+            ProofDependencies = results.ProofDependencies
           };
 
           canVerifyResults.TryRemove(canVerify, out _); // Free memory

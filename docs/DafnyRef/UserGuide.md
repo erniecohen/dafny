@@ -259,23 +259,6 @@ and specification from
 implementation.
 
 The options relevant to this command are
-
-- `--resolution-threads N` opts into dependency-ready resolution with up to `N`
-  workers (`N >= 1`). Without this option, the existing resolver path is used.
-  Diagnostics are emitted in the usual module order. Generated identifiers are
-  qualified by module, including identifiers used during verification translation.
-  Boogie state labels use stable module identities; counterexamples in the current
-  invocation retain their current source coordinates. Reading raw saved models
-  separately requires that invocation's state-to-source map.
-  Resolution keys cover the module's source, fully qualified identity, options,
-  Dafny version, and prerequisites from the semantic resolution graph (including
-  refinement bases, nesting, imports and export views).
-  Whole-program rewriters, replaceable-module instantiation, duplicate module-name
-  checks and cardinality validation still run on every invocation. External plugins
-  currently limit this mode to one worker because their callbacks have no
-  concurrent-resolution contract. This mode bypasses the language server's legacy
-  resolution-result cache; edits resolve module bodies again until a compatible
-  content-keyed cache is implemented.
 - those relevant to the command-line itself
    - `--allow-warnings` --- return a success [exit code](#sec-exit-codes), even when there are warnings 
 
@@ -319,17 +302,10 @@ programs together in a single run of `dafny`.
 
 Various options control the verification process, in addition to all those described for [`dafny resolve`](#sec-dafny-resolve).
 
-- `--translation-cache` opts into a process-local, content-addressed module
-  translation table. It enables `--resolution-threads 1` if no worker count was
-  selected, using that mode's semantic module keys and module-qualified names.
-  Repeated `--filter-position-batch` requests can reuse unchanged translations;
-  every request still prepares fresh tasks and runs the solver. Reuse checks the
-  prelude, effective options and exact source bindings, and current whole-program
-  validation still runs. Unsupported snapshots and `--extract-counterexample`
-  requests are translated normally. The LRU
-  table retains at most 256 entries and 512 MiB of text; graphs and source metadata
-  also use memory. It stores no files and is discarded when the process exits.
-  This option defaults to false and can also be set in `dfyconfig.toml`.
+- `--resolution-threads N` uses N workers for dependency-ready module resolution.
+  Scheduling is opt-in and N must be positive when specified. Sequential and
+  parallel resolution use the same module-scoped names, dependency heights and
+  builtin inventories; changing N does not select a different translation scheme.
 
 - What is verified
    - `--verify-included-files` (when enabled, all included files are verified, except library files, otherwise just those files on the command-line)

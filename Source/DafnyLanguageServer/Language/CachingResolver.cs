@@ -44,31 +44,9 @@ public class CachingResolver : ProgramResolver {
     }, logger, telemetryPublisher, Program.FullName, "resolution", cancellationToken);
   }
 
-  protected override Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> ResolveSystemModule(Program program) {
-    if (Options.Get(CommonOptionBag.ResolutionThreads) > 0) {
-      // The old cache's CloneId/system-shape key does not describe module-local
-      // results. Keep it entirely separate from the opt-in pipeline.
-      return base.ResolveSystemModule(program);
-    }
-    if (cache.Builtins == null || !new HashEquality().Equals(cache.Builtins.MyHash, program.SystemModuleManager.MyHash)) {
-      var systemClassMembers = base.ResolveSystemModule(program);
-      cache.Builtins = program.SystemModuleManager;
-      cache.SystemClassMembers = systemClassMembers;
-      logger.LogDebug($"Resolution cache miss for system module");
-    } else {
-      program.SystemModuleManager = cache.Builtins;
-      logger.LogDebug($"Resolution cache hit for system module");
-    }
-
-    return cache.SystemClassMembers!;
-  }
-
-  public override void AddSystemClass(TopLevelDeclWithMembers declaration, Dictionary<string, MemberDecl> members) {
-    base.AddSystemClass(declaration, members);
-    // Bitvector types can be added after ResolveSystemModule. Their declarations are
-    // cached in Builtins, so retain their member tables for the next resolution too.
-    cache.SystemClassMembers![declaration] = members;
-  }
+  // The old CloneId/system-shape cache cannot certify dependency-local builtin views.
+  protected override Dictionary<TopLevelDeclWithMembers, Dictionary<string, MemberDecl>> ResolveSystemModule(Program program) =>
+    base.ResolveSystemModule(program);
 
   protected override ModuleResolutionResult ResolveModuleDeclaration(CompilationData compilation, ModuleDecl decl) {
     var hash = GetHash(decl);

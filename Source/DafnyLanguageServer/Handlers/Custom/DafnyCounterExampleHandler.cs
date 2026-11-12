@@ -95,8 +95,7 @@ namespace Microsoft.Dafny.LanguageServer.Handlers.Custom {
       }
 
       private DafnyModel GetLanguageSpecificModel(Model model) {
-        var modelOptions = ideState.ResolvedProgram is Program program &&
-          program.Options.Get(CommonOptionBag.ResolutionThreads) > 0 ? program.Options : options;
+        var modelOptions = ideState.ResolvedProgram is Program program ? program.Options : options;
         var dafnyModel = new DafnyModel(model, modelOptions);
         dafnyModel.AssignConcretePrimitiveValues();
         return dafnyModel;

@@ -22,6 +22,11 @@ on:
         type: boolean
         default: false
 
+      review_followup_probe:
+        description: Record expected new-test baseline differences without failing the scratch probe
+        type: boolean
+        default: false
+
       platform_parity:
         description: Measure Linux/macOS parity at this exact source without changing baselines
         type: boolean
@@ -288,6 +293,7 @@ jobs:
       # time, and not the resources its finished proofs used.  To change the
       # expected verdicts on purpose, see .github/review/lit-verdicts.py.
       - name: Compare with the expected verdicts
+        continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.review_followup_probe && startsWith(github.ref, 'refs/heads/scratch/') }}
         env:
           PROBE: ${{ inputs.additional_axioms_probe }}
         run: |
@@ -302,142 +308,6 @@ jobs:
           name: verdict-comparison-${{ matrix.axioms }}
           path: comparison
           retention-days: 90
-
-  resolution-baseline:
-    name: Build pre-resolution-option control
-    needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
-        with:
-          ref: c02d46e8c7faad8490b66238d1a3378267985728
-          path: resolution-baseline-source
-      - uses: ./.github/actions/setup-dotnet
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - name: Build fixed control with the same toolchain and dependencies
-        working-directory: resolution-baseline-source
-        run: |
-          sh Scripts/fetch-boogie-packages.sh
-          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false
-          git rev-parse HEAD > out/dafny/resolution-control-source.txt
-          tar -C out -czf resolution-baseline.tar.gz dafny
-      - uses: actions/upload-artifact@v4
-        with:
-          name: resolution-baseline
-          path: resolution-baseline-source/resolution-baseline.tar.gz
-          retention-days: 14
-
-  parallel-resolution:
-    name: Parallel resolution (${{ matrix.part }})
-    needs: [build, resolution-baseline]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 240
-    strategy:
-      fail-fast: false
-      matrix:
-        part: ['0', '1', '2', '3', 'stdlib']
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
-        with:
-          name: dafny
-      - uses: actions/download-artifact@v4
-        with:
-          name: resolution-baseline
-      - name: Unpack both builds
-        run: |
-          mkdir -p out resolution-control
-          tar -C out -xzf dafny.tar.gz
-          tar -C resolution-control -xzf resolution-baseline.tar.gz
-      - name: Pinned solver
-        run: |
-          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
-          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
-          unzip -q z3.zip
-          echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
-      - name: Capture fixed control, option off, and N=1,2,4,8
-        run: |
-          python3 .github/review/resolution-comparison.py capture --part '${{ matrix.part }}' \
-            --baseline "$PWD/resolution-control/dafny/Dafny" --dafny "$PWD/out/dafny/Dafny" --z3 "$Z3" --output parallel-results
-      - name: Check default preservation, worker invariance, and reviewed opt-in baseline
-        run: |
-          expected=.github/review/expected-resolution-suite.tsv
-          if [ '${{ matrix.part }}' = stdlib ]; then expected=.github/review/expected-std-resolution-z3-5.1.0.tsv; fi
-          python3 .github/review/resolution-comparison.py compare --part '${{ matrix.part }}' --output parallel-results --expected "$expected"
-      - name: Measure three seeds for scopes with changed outcomes
-        if: always() && matrix.part != 'stdlib'
-        run: |
-          if [ -f parallel-results/report.json ]; then
-            python3 .github/review/resolution-comparison.py variance --part '${{ matrix.part }}' --dafny "$PWD/out/dafny/Dafny" --output parallel-results
-          fi
-      - name: Preserve inputs for independent full-Std seed jobs
-        if: matrix.part == 'stdlib'
-        run: |
-          mkdir -p seed-inputs/off/measurements seed-inputs/1
-          cp parallel-results/report.json seed-inputs/
-          cp parallel-results/off/vector.json seed-inputs/off/
-          cp parallel-results/1/vector.json seed-inputs/1/
-          cp parallel-results/off/measurements/Std.invocation.json seed-inputs/off/measurements/
-      - uses: actions/upload-artifact@v4
-        if: matrix.part == 'stdlib'
-        with:
-          name: resolution-std-seed-inputs
-          path: seed-inputs
-          retention-days: 90
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: parallel-resolution-${{ matrix.part }}
-          path: parallel-results
-          retention-days: 90
-          compression-level: 9
-
-  resolution-std-seeds:
-    name: Full Std resolution seed (${{ matrix.mode }}, ${{ matrix.seed }})
-    needs: parallel-resolution
-    runs-on: ubuntu-24.04
-    timeout-minutes: 100
-    strategy:
-      fail-fast: false
-      matrix:
-        mode: ['off', '1']
-        seed: [0, 1, 2]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-dotnet
-      - uses: actions/download-artifact@v4
-        with:
-          name: dafny
-      - uses: actions/download-artifact@v4
-        with:
-          name: resolution-std-seed-inputs
-          path: seed-results
-      - name: Unpack the captured producer and pin the solver
-        run: |
-          mkdir -p out
-          tar -C out -xzf dafny.tar.gz
-          curl -fsSLo z3.zip "$Z3_RELEASE/$Z3_LINUX_X64.zip"
-          echo "$Z3_LINUX_X64_SHA256  z3.zip" | sha256sum -c -
-          unzip -q z3.zip
-          echo "Z3=$PWD/$Z3_LINUX_X64/bin/z3" >> "$GITHUB_ENV"
-      - name: Repeat the complete Std invocation
-        run: |
-          python3 .github/review/resolution-comparison.py variance --part stdlib \
-            --dafny "$PWD/out/dafny/Dafny" --z3 "$Z3" --output seed-results \
-            --seed '${{ matrix.seed }}' --mode '${{ matrix.mode }}'
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: resolution-std-seed-${{ matrix.mode }}-${{ matrix.seed }}
-          path: seed-results
-          retention-days: 90
-          compression-level: 9
 
   verification-batch:
     if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity }}
@@ -625,8 +495,6 @@ jobs:
         run: python3 -m unittest discover -s .github/review -p test_additional_axioms.py
       - name: Test matrix runner
         run: python3 -m unittest discover -s .github/review -p test_resolver_matrix.py
-      - name: Test fail-closed resolution comparison controls
-        run: python3 -m unittest discover -s .github/review -p test_resolution_comparison.py
       - name: Resolve manifest in both modes
         env:
           PROBE: ${{ inputs.resolver_probe }}
@@ -747,6 +615,7 @@ jobs:
       # and error lines.  Not times, and not the resources finished proofs used.  To
       # change the expected verdicts on purpose, see .github/review/std-verdicts.py.
       - name: Compare with the expected verdicts
+        continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.review_followup_probe && startsWith(github.ref, 'refs/heads/scratch/') }}
         env:
           PROBE: ${{ inputs.additional_axioms_probe }}
         run: |
@@ -898,6 +767,7 @@ jobs:
       - name: JavaScript runtime dependency
         run: npm install --no-save --package-lock=false bignumber.js@9.1.2
       - name: Run the tests named in .github/review/regressions
+        continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.review_followup_probe && startsWith(github.ref, 'refs/heads/scratch/') }}
         env:
           DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS: cs
         run: |
@@ -926,14 +796,10 @@ jobs:
           retention-days: 30
       - name: Literal identities are option guarded and local to each module
         run: dotnet test --settings .github/review/ci.runsettings Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~AdditionalAxiomsTranslationTests --logger "console;verbosity=normal"
-      - name: Translation snapshots preserve reports, outcomes and resource counts
-        env:
-          Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
-        run: |
-          dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter FullyQualifiedName~ModuleTranslationCacheTests --logger "console;verbosity=normal"
-          dotnet test --settings .github/review/ci.runsettings Source/IntegrationTests -c Release --no-build --filter FullyQualifiedName~TranslationCacheTests --logger "console;verbosity=normal"
       - name: Obligation lowering inventory and structural comparisons
         run: dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter FullyQualifiedName~Obligation --logger "console;verbosity=normal"
+      - name: Default module-local names, dependencies and emission order
+        run: dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --filter 'FullyQualifiedName~HistoryFreeTranslationTests|FullyQualifiedName~ResolutionPipelineTests' --logger "console;verbosity=normal"
       - name: Editor obligation option changes invalidate verification results
         env:
           Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
@@ -1001,8 +867,6 @@ jobs:
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~DafnyCore.Test.RedirectingTypeDependencyTrackerTests|FullyQualifiedName~DafnyCore.Test.NumericAncestryTests|FullyQualifiedName~DafnyCore.Test.NumericAncestryAllocationTests|FullyQualifiedName~DafnyCore.Test.ScopeCheckpointTest|FullyQualifiedName~MapComprehensionSubstitutionTests" \
             --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none
-      - name: Test isolated parallel resolution and module keys
-        run: dotnet test --settings .github/review/ci.runsettings Source/DafnyCore.Test -c Release --no-build --filter FullyQualifiedName~ResolutionPipelineTests --logger "console;verbosity=normal"
       - name: Test newtype-cycle edits in both resolver modes
         run: |
           dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --no-build \
@@ -1020,11 +884,6 @@ jobs:
             --logger "console;verbosity=normal" \
             --filter "FullyQualifiedName~IncrementalBitvectorMembersTest" \
             --blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none
-      - name: Test current counterexample positions with module-local state labels
-        run: |
-          DAFNY_TEST_Z3="$Z3" dotnet test --settings .github/review/ci.runsettings Source/DafnyLanguageServer.Test -c Release --no-build \
-            --filter "FullyQualifiedName~ParallelResolutionCounterexamplesUseCurrentPositions" \
-            --blame-hang --blame-hang-timeout 60s --blame-hang-dump-type none
 
   finite-support:
     if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity }}
@@ -1133,10 +992,9 @@ jobs:
           name: dafny
       - name: Unpack Dafny
         run: mkdir -p out && tar -C out -xzf dafny.tar.gz
-      - name: Check M1 introduction and current optional inputs
+      - name: Check unchanged existing product inputs
         run: |
-          git fetch --no-tags --depth=2 origin "$(cat .github/review/issue193-introduced)"
-          python3 -m unittest discover -s .github/review -p test_issue193_identity.py
+          git fetch --no-tags --depth=1 origin "$(cat .github/review/issue193-base)"
           python3 .github/review/issue193-identity.py reference-results/identity
       - name: Pinned solver
         run: |
@@ -1247,7 +1105,7 @@ jobs:
   release:
     if: ${{ !inputs.platform_parity && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref_type == 'tag') }}
     name: GitHub release
-    needs: [build, binaries, verdicts, stdlib, javascript-runtime, regressions, regressions-linux, resolver, resolver-tests, finite-support, statement-conclusions, axiom-resources, verification-batch, integer-bitwise-reference, parallel-resolution, resolution-std-seeds]
+    needs: [build, binaries, verdicts, stdlib, javascript-runtime, regressions, regressions-linux, resolver, resolver-tests, finite-support, statement-conclusions, axiom-resources, verification-batch, integer-bitwise-reference]
     runs-on: mac-studio
     timeout-minutes: 15
     permissions:

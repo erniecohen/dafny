@@ -1,0 +1,5 @@
+Use module-scoped verification names, dependency heights and builtin inventories
+in the default translator. Unrelated module growth no longer changes another
+unit's translated text. This intentionally changes generated Boogie once and can
+move solver resource costs. Translation-table consumers use the same graph
+materialization and module-owned proof/report maps as uncached consumers.

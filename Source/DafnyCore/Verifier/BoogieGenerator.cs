@@ -50,9 +50,6 @@ namespace Microsoft.Dafny {
     private int sourceCommentCount;
 
     internal string CaptureStateName(string description) {
-      if (options.Get(CommonOptionBag.ResolutionThreads) == 0) {
-        return description;
-      }
       var name = $"module:{forModule.FullName}:state:{capturedStateCount++}";
       options.RecordCapturedStateDescription(name, description);
       return name;
@@ -758,12 +755,15 @@ namespace Microsoft.Dafny {
     }
 
     public Bpl.Program DoTranslation(Program p, ModuleDefinition forModule) {
+      var snapshot = DoTranslationForSnapshot(p, forModule);
+      return BoogieSnapshotCloner.TryClone(snapshot, out var consumer, out _) ? consumer : snapshot;
+    }
+
+    // The snapshot is never prepared or returned to another mutable consumer.
+    // Cached and uncached callers materialize exactly one graph through the same copier.
+    internal Bpl.Program DoTranslationForSnapshot(Program p, ModuleDefinition forModule) {
       RequireCardinalityValidation(p);
-      using var moduleNames = Options.Get(CommonOptionBag.ResolutionThreads) > 0
-        ? new ModuleNamingScope(forModule.FullName) : null;
-      if (moduleNames == null) {
-        return DoTranslationCore(p, forModule);
-      }
+      using var moduleNames = new ModuleNamingScope(forModule.FullName);
       Type.ResetScopes();
       try {
         proofDependencies.SetCurrentDefinition(forModule.FullName, forModule.EnclosingLiteralModuleDecl);
@@ -790,10 +790,7 @@ namespace Microsoft.Dafny {
 
       program = p;
       if (options.Get(CommonOptionBag.ModularTermination)) {
-        // Opt-in module translations/reporters retain their supplied private map.
-        // Preserve the shipped shared-map parent on the default path.
-        var parent = options.Get(CommonOptionBag.ResolutionThreads) > 0 ? proofDependencies : p.ProofDependencyManager;
-        proofDependencies = parent.ForModule(forModule.FullDafnyName);
+        proofDependencies = proofDependencies.ForModule(forModule.FullDafnyName);
       }
       this.forModule = forModule;
       triggersCollector = new TriggersCollector(new Dictionary<Expression, HashSet<OldExpr>>(), options, forModule);
@@ -1299,7 +1296,7 @@ namespace Microsoft.Dafny {
 
     private IEnumerable<ModuleDefinition> TranslationModules() {
       var modules = program.RawModules();
-      if (Options.Get(CommonOptionBag.ResolutionThreads) > 0 && forModule.TranslationInputs is { } inputs) {
+      if (forModule.TranslationInputs is { } inputs) {
         return modules.Where(m => inputs.ModuleNames.Contains(m.FullName)).OrderBy(m => m.FullName, StringComparer.Ordinal);
       }
       return modules;
@@ -2311,8 +2308,7 @@ namespace Microsoft.Dafny {
 
     public void InsertUniqueIdForImplementation(Bpl.Declaration decl) {
       var impl = decl as Bpl.Implementation;
-      var prefix = options.Get(CommonOptionBag.ResolutionThreads) > 0 ? "module:" + forModule.ResolutionKey :
-        UniqueIdPrefix ?? (decl.tok.filename == null ? "" : System.Text.RegularExpressions.Regex.Replace(decl.tok.filename, @".v\d+.dfy", ".dfy"));
+      var prefix = UniqueIdPrefix ?? "module:" + forModule.ResolutionKey;
       if (impl != null && !string.IsNullOrEmpty(prefix)) {
         decl.AddAttribute("id", prefix + ":" + impl.Name + ":0");
       }
@@ -4022,9 +4018,7 @@ namespace Microsoft.Dafny {
       Contract.Requires(builder != null);
       Contract.Requires(stmt != null);
       Contract.Requires(comment != null);
-      var location = builder.Options.Get(CommonOptionBag.ResolutionThreads) > 0
-        ? $"module:{builder.tran.forModule.FullName}:statement:{builder.tran.sourceCommentCount++}"
-        : string.Format("{0}({1},{2})", stmt.Origin.Filepath, stmt.Origin.line, stmt.Origin.col);
+      var location = $"module:{builder.tran.forModule.FullName}:statement:{builder.tran.sourceCommentCount++}";
       builder.Add(new Bpl.CommentCmd(string.Format("----- {0} ----- {1}", comment, location)));
     }
 
