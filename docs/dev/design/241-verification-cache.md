@@ -609,3 +609,12 @@ mode's expectations. Negative controls, the option-classification drift gate and
 five-run measurements are also required. These are opt-in changes; acceptance
 does not authorize merging them.
 Modular-termination bypasses still own a private proof map in the opt-in module path: `ForModule` scopes the supplied map rather than replacing it with the program-wide map. The default parent is unchanged. Coverage/report regressions cover both resolver engines and repeated uncached bypass requests.
+
+Acceptance requires default-off Boogie, verdicts and RU to equal the shipped
+product byte for byte, and enabled-warm outcomes, RU, stdout, stderr and exit
+status to equal enabled-cold execution. Off/on differences caused by changed
+translation names or declaration order are allowed only with a per-case
+translation-text classification and every outcome change listed by declaration
+in the pull request. Any difference without a translation-text explanation
+blocks acceptance. Enabled-mode CI expectations, if needed, are separate from
+the shipped defaults. Acceptance does not authorize merging.
