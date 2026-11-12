@@ -33,8 +33,7 @@ Dafny program verifier finished with 5 verified, 3 errors
 rules, option on, refresh false
 github-issue-211-rules.dfy(9,44): Error: possible division by zero
 github-issue-211-rules.dfy(19,11): Error: method's 'decreases {:global}' bound must be below or equal to that in the trait
-github-issue-211-rules.dfy(23,43): Error: decreases expression must be bounded below by 0
-github-issue-211-rules.dfy(7,51): Related location: this decreases clause was not satisfied
+github-issue-211-rules.dfy(23,43): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 github-issue-211-rules.dfy(48,51): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 9 verified, 4 errors
@@ -67,8 +66,7 @@ Dafny program verifier finished with 5 verified, 3 errors
 rules, option on, refresh true
 github-issue-211-rules.dfy(9,44): Error: possible division by zero
 github-issue-211-rules.dfy(19,11): Error: method's 'decreases {:global}' bound must be below or equal to that in the trait
-github-issue-211-rules.dfy(23,43): Error: decreases expression must be bounded below by 0
-github-issue-211-rules.dfy(7,51): Related location: this decreases clause was not satisfied
+github-issue-211-rules.dfy(23,43): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 github-issue-211-rules.dfy(48,51): Error: decreases clause might not decrease (--modular-termination: the dispatched callee's 'decreases {:global}' bound must be below the caller's)
 
 Dafny program verifier finished with 9 verified, 4 errors

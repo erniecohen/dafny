@@ -1,10 +1,19 @@
 # Module-resolution compatibility audit
 
 `review.yml` builds the pre-feature control at
-`b98637c6677560944b2498002ecd32ec987a90af` with the same SDK, runtime and
+`dfe57d8d94869cbfa9169f9e331ab882790eb5d6` with the same SDK, runtime and
 checksum-checked Boogie packages as the candidate. Its binary verifies the
 candidate's public inputs. A change to this control requires a separately
 reviewed default change; it must not silently follow the feature branch.
+
+The control advanced from `b98637c6677560944b2498002ecd32ec987a90af` after
+https://github.com/erniecohen/dafny/pull/279 independently changed the shipped
+default to fix duplicate opaque-reference type constructors. That crash fix can
+legitimately change Boogie bytes, so it belongs in both builds. The original
+control/candidate audit remains at
+https://github.com/erniecohen/dafny/actions/runs/43134871839. The control remains
+pinned to a shipped commit without this feature; no verdict baseline is changed
+by this update.
 
 For each suite shard and for the standard library, the audit runs that control,
 the candidate with the option omitted, and the candidate at N = 1, 2, 4, 8.

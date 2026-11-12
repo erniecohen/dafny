@@ -382,3 +382,16 @@ git-issues/git-issue-246.dfy
 git-issues/git-issue-241-verification-cache.dfy
 TranslationCacheTests.ExtractedCounterexampleTraceIsNonemptyAndIdenticalAcrossRepeatedRequests
 TranslationCacheTests.ModularTerminationBypassKeepsCurrentModuleCoverageMaps
+
+# Compatible component and tuple decreases orders (https://github.com/erniecohen/dafny/issues/264).
+git-issues/git-issue-264.dfy
+git-issues/git-issue-264-refreshed.dfy
+# Positive and negative ordering expressions, and explicit list induction repaired for the corrected order.
+dafny0/DecreasesTo0.dfy
+dafny0/DecreasesTo1.dfy
+dafny0/NoTypeArgs.dfy
+# Pure integer bitwise reference model; no language or solver changes (https://github.com/erniecohen/dafny/issues/193).
+git-issues/git-issue-193-reference-laws.dfy
+
+# Distinct opaque nullable and non-null type constructors (https://github.com/erniecohen/dafny/issues/268).
+git-issues/github-issue-268.dfy
