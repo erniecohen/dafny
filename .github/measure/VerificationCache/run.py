@@ -12,6 +12,7 @@ import statistics
 import subprocess
 import threading
 import time
+import traceback
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--dafny', required=True, type=Path, help='Built Dafny.dll')
@@ -44,8 +45,14 @@ manifest = {'arguments': {k: str(v) if isinstance(v, Path) else v for k, v in va
 
 def untimed(value):
     if isinstance(value, dict):
-        return {k: untimed(v) for k, v in value.items()
-                if k not in ('runTime', 'startTime', 'endTime', 'timingReplayed')}
+        result = {k: untimed(v) for k, v in value.items()
+                  if k not in ('runTime', 'startTime', 'endTime', 'timingReplayed')}
+        if 'vcResults' in result:
+            # The logger retains asynchronous split completion order. Compare every
+            # complete row and its multiplicity by identity, without dropping fields.
+            result['vcResults'] = sorted(result['vcResults'], key=lambda row:
+                (row['vcNum'], str(row.get('randomSeed', 0)), json.dumps(row, sort_keys=True)))
+        return result
     if isinstance(value, list):
         return [untimed(v) for v in value]
     return value
@@ -82,6 +89,9 @@ def sample(number):
                     _, status, usage = os.wait4(process.pid, 0)
                     process.returncode = os.waitstatus_to_exitcode(status)
                 wall = time.monotonic() - start
+            (destination / (mode + '.process.json')).write_text(json.dumps({
+                'wall': wall, 'cpu': usage.ru_utime + usage.ru_stime,
+                'exit': process.returncode}, indent=2))
             for suffix, path in (('jsonl', current_profile), ('json', current_log)):
                 shutil.copyfile(path, destination / (mode + '.' + suffix))
             events = [json.loads(line) for line in current_profile.read_text().splitlines()]
@@ -110,6 +120,8 @@ def sample(number):
             (destination / (mode + '.measurement.json')).write_text(json.dumps(row, indent=2))
             print(json.dumps(row), flush=True)
     except BaseException:
+        (destination / 'failure.json').write_text(json.dumps({
+            'mode': mode, 'traceback': traceback.format_exc()}, indent=2))
         barrier.abort()
         raise
     return rows

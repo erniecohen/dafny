@@ -32,7 +32,9 @@ child process tree. `solverStarts` counts physical proof-solver processes;
 task, including replayed tasks; it is not the RU of work actually sent to a solver.
 
 The script checks a nonempty complete task inventory, exact cold/warm stdout,
-stderr and exit status, and identical JSON report contents except timing/provenance.
+stderr and exit status, and identical complete JSON rows except timing/provenance.
+Split rows are matched by VC number/seed, retaining every field and duplicate;
+the logger's existing asynchronous split completion order can vary between runs.
 Every warm task must replay with zero proof or version-probe processes. After the
 edit, the set of recomputed keys must equal the new complete task keys absent
 from the cold run. Complete input includes ordered UsedTypes and execution

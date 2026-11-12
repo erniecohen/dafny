@@ -581,6 +581,9 @@ these provenance markers. Stdout, stderr, exit code, task outcomes, RU, assertio
 inventory and report contents remain the differential obligations. The default
 CSV schema and ordering are unchanged. The opt-in CSV sorts by task name so
 replay latency cannot reorder rows.
+The JSON logger retains asynchronous split completion order. Its complete split
+rows are compared by VC number/seed, preserving every field and multiplicity;
+row order is not a task identity.
 
 The total modern CLI and inherited prover/solver input inventory is recorded in
 [241-option-audit.tsv](241-option-audit.tsv). The driver unit drift gate compares
