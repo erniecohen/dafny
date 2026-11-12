@@ -600,3 +600,4 @@ negative controls, option-classification drift gate and five-run measurements ar
 recorded. The inherited module naming/materialization comparison currently has a
 strict on/off RU/verdict discrepancy; cache-enabled cold/warm agreement alone
 cannot establish the stronger default-on/off acceptance gate.
+Modular-termination bypasses still own a private proof map in the opt-in module path: `ForModule` scopes the supplied map rather than replacing it with the program-wide map. The default parent is unchanged. Coverage/report regressions cover both resolver engines and repeated uncached bypass requests.

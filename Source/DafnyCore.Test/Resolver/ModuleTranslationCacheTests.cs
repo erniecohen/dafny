@@ -26,8 +26,12 @@ public class ModuleTranslationCacheTests {
     var module = program.RawModules().Single(m => m.Name == "M");
     Assert.NotNull(module.ResolutionKey);
     var cache = new ModuleTranslationCache();
-    cache.Translate(program, module, new(program.Options), default);
-    cache.Translate(program, module, new(program.Options), default);
+    var first = cache.TranslateModule(program, module, new(program.Options), default, out _);
+    var second = cache.TranslateModule(program, module, new(program.Options), default, out _);
+    Assert.NotEmpty(first.ProofDependencies.ProofDependenciesById);
+    Assert.NotEmpty(second.ProofDependencies.ProofDependenciesById);
+    Assert.NotSame(first.ProofDependencies, second.ProofDependencies);
+    Assert.Empty(program.ProofDependencyManager.ProofDependenciesById);
     Assert.Equal(0, cache.Hits);
     Assert.Equal(0, cache.EntryCount);
     Assert.Equal(2, cache.Translations);

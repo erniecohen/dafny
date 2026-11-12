@@ -63,6 +63,38 @@ public class TranslationCacheTests {
     }
   }
 
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task ModularTerminationBypassKeepsCurrentModuleCoverageMaps(bool refresh) {
+    var directory = Path.Combine(Path.GetTempPath(), "dafny-translation-modular-" + Guid.NewGuid());
+    Directory.CreateDirectory(directory);
+    var cache = ModuleTranslationCache.ProcessCache;
+    cache.Clear();
+    var hits = cache.Hits;
+    var bypasses = cache.Bypasses;
+    try {
+      var source = Path.Combine(directory, "input.dfy");
+      await File.WriteAllTextAsync(source, Source);
+      var baseline = await Verify(source, false, refresh, true, modularTermination: true);
+      Assert.Equal(ExitValue.VERIFICATION_ERROR, baseline.Exit);
+      Assert.NotEmpty(baseline.Tasks);
+      foreach (var repeated in new[] { 0, 1 }) {
+        var current = await Verify(source, true, refresh, true, modularTermination: true);
+        Assert.Equal(baseline.Stdout, current.Stdout);
+        Assert.Equal(baseline.Stderr, current.Stderr);
+        Assert.Equal(baseline.Exit, current.Exit);
+        Assert.Equal(baseline.Tasks, current.Tasks);
+      }
+      Assert.Equal(hits, cache.Hits);
+      Assert.True(cache.Bypasses > bypasses);
+      Assert.Equal(0, cache.EntryCount);
+    } finally {
+      cache.Clear();
+      Directory.Delete(directory, true);
+    }
+  }
+
   [Fact]
   public async Task ExtractedCounterexampleTraceIsNonemptyAndIdenticalAcrossRepeatedRequests() {
     var source = Path.Combine(AppContext.BaseDirectory, "TestFiles", "LitTests", "LitTest", "git-issues",
@@ -94,7 +126,7 @@ public class TranslationCacheTests {
   }
 
   private static async Task<Run> Verify(string source, bool cached, bool refresh, bool coverage,
-    bool extractCounterexample = false) {
+    bool extractCounterexample = false, bool modularTermination = false) {
     var stdout = new StringWriter();
     var stderr = new StringWriter();
     var options = new DafnyOptions(TextReader.Null, stdout, stderr);
@@ -108,6 +140,7 @@ public class TranslationCacheTests {
       options.EnhancedErrorMessages = 1;
     }
     options.Set(CommonOptionBag.TypeSystemRefresh, refresh);
+    options.Set(CommonOptionBag.ModularTermination, modularTermination);
     options.Set(CommonOptionBag.WarnRedundantAssumptions, coverage);
     options.Set(CommonOptionBag.WarnContradictoryAssumptions, coverage);
     options.TrackVerificationCoverage = coverage;
