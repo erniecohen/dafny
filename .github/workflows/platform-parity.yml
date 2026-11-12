@@ -25,6 +25,18 @@ jobs:
       revision: ${{ steps.version.outputs.revision }}
       version: ${{ steps.version.outputs.version }}
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+          echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
       - uses: actions/checkout@v4
       - name: Version
         id: version
@@ -89,6 +101,18 @@ jobs:
         shard: [0, 1, 2, 3]
         axioms: ['off', 'on']
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+          echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
@@ -111,6 +135,12 @@ jobs:
             --additional-axioms ${{ matrix.axioms == 'on' }} --measurements measurements/${{ matrix.axioms }}
           python3 .github/review/additional-axioms.py inventory measurements/${{ matrix.axioms }} \
             resources-${{ matrix.axioms }}-${{ matrix.shard }}.json
+      - name: Record per-program resource counts and headroom
+        if: always()
+        run: |
+          python3 .github/review/program-resources.py suite measurements/${{ matrix.axioms }} \
+            Source/IntegrationTests/TestFiles/LitTests/LitTest verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv ru \
+            --solver "$Z3" --archive ci-z3/archive.zip
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -119,6 +149,7 @@ jobs:
             verdicts-${{ matrix.axioms }}-${{ matrix.shard }}.tsv
             resources-${{ matrix.axioms }}-${{ matrix.shard }}.json
             plan.tsv
+            ru/
           retention-days: 90
       - uses: actions/upload-artifact@v4
         if: always()
@@ -145,6 +176,18 @@ jobs:
         z3: ['5.1.0', 'of the tests']
         axioms: ['off', 'on']
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+          echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/download-artifact@v4
@@ -168,7 +211,7 @@ jobs:
           "$Z3" --version
           python3 .github/review/std-verdicts.py run Source/DafnyStandardLibraries "$PWD/out/dafny/Dafny" "$Z3" \
             std-verdicts.tsv --cores 4 --additional-axioms ${{ matrix.axioms == 'on' }} \
-            --boogie "/deterministicLiteralHashes:1 /restartProver"
+            --boogie "/deterministicLiteralHashes:1 /restartProver" --measurements measurements
           python3 .github/review/std-verdicts.py expected std-verdicts.tsv > "expected-std-verdicts-z3-$Z3V.tsv"
           # Fingerprints, to compare runs of one tree without downloading artifacts (#186):
           # the verdict columns, and the declarations' resource and proof counts.
@@ -186,12 +229,19 @@ jobs:
             echo
             echo "Verdict fingerprint \`$vfp\`, resource fingerprint \`$rfp\`."
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Record per-program resource counts and headroom
+        if: always()
+        run: |
+          python3 .github/review/program-resources.py library measurements \
+            Source/DafnyStandardLibraries std-verdicts.tsv ru --solver "$Z3" --archive ci-z3/archive.zip
       - uses: actions/upload-artifact@v4
         with:
           name: parity-${{ inputs.platform }}-std-verdicts-${{ matrix.axioms }}-z3-${{ env.Z3V }}
           path: |
             std-verdicts.tsv
             expected-std-verdicts-z3-${{ env.Z3V }}.tsv
+            ru/
+            measurements/
           retention-days: 90
 
 
@@ -202,6 +252,18 @@ jobs:
     continue-on-error: true
     timeout-minutes: 90
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+          echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4
@@ -274,6 +336,18 @@ jobs:
     continue-on-error: true
     timeout-minutes: 20
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+          echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - name: Boogie packages

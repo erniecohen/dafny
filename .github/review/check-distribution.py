@@ -7,11 +7,21 @@ import tarfile
 import zipfile
 
 
-def check(directory, roots, archive=None):
+def check(directory, roots, archive=None, home=None):
     needles = [str(root).rstrip('/').encode(encoding) for root in roots
                for encoding in ['utf-8', 'utf-16-le'] if str(root).rstrip('/')]
-    bad = [str(path.relative_to(directory)) for path in directory.rglob('*')
-           if path.is_file() and any(needle in path.read_bytes() for needle in needles)]
+    bad = []
+    for path in directory.rglob('*'):
+        if not path.is_file():
+            continue
+        content = path.read_bytes()
+        current = needles[:]
+        # Dependencies may legitimately contain public hosted-runner paths.
+        # Only our own assemblies must also exclude the contributor's home.
+        if home and path.name.startswith('Dafny'):
+            current += [str(home).encode(encoding) for encoding in ['utf-8', 'utf-16-le']]
+        if any(needle in content for needle in current):
+            bad.append(str(path.relative_to(directory)))
     if bad:
         raise ValueError('Private build paths in: ' + ', '.join(bad))
     if archive:
@@ -31,5 +41,5 @@ if __name__ == '__main__':
     parser.add_argument('directory', type=Path)
     parser.add_argument('--archive', type=Path)
     args = parser.parse_args()
-    check(args.directory, [Path.cwd(), Path.home(), os.environ.get('GITHUB_WORKSPACE', '')], args.archive)
+    check(args.directory, [Path.cwd(), os.environ.get('GITHUB_WORKSPACE', '')], args.archive, Path.home())
     print('Distribution paths and archive metadata checked')

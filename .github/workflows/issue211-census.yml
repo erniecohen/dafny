@@ -31,6 +31,18 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 120
     steps:
+      - name: Yield to interactive work
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          case "$(ps -o comm= -p "$PPID")" in
+            */Runner.Worker|Runner.Worker) ;;
+            *) echo "::error::Expected this job's Runner.Worker parent"; exit 1 ;;
+          esac
+          renice 10 -p "$PPID" "$$" >/dev/null
+          test "$(ps -o nice= -p "$PPID" | tr -d ' ')" = 10
+          test "$(ps -o nice= -p "$$" | tr -d ' ')" = 10
+          echo 'Job worker and shell niceness: 10; subsequent actions inherit it.'
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
       - uses: actions/setup-java@v4

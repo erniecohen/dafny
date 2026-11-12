@@ -368,28 +368,43 @@ Fork pull requests skip these jobs. The obligation-proof matrix, resolution-only
 census and pipeline probe have separate hosted fallbacks for other events,
 including the obligation matrix's weekly schedule.
 
-The suite and standard-library verdict gates remain on hosted Linux pending
-platform parity. A manual `review.yml` run with `platform_parity: true` builds
-both platforms at the dispatch's exact commit, runs every suite shard with
-additional axioms off and on, and verifies the library under both solvers in
-both modes. It also records regression-harness and resolver-unit-test results.
-The `platform-parity-report` artifact compares verdict columns, per-program
-sums of suite resource counts, individual proof batches, and library declaration
-resource counts. It includes the number of differing entries, the maximum
-absolute difference in resource units, detailed differences and job wall times.
-Missing observations are reported as incomplete evidence. The probe records
-expected failures without changing any baseline or failing the workflow.
+The suite verdict gates (all shards, additional axioms off/on) and the Z3
+4.12.1 library gates use the guarded Mac pool. Their fixed-source verdicts
+matched hosted Linux; the owner approved their measured resource differences
+on 2026-11-11. The library job reads the build's harness solver version and
+admits only 4.12.1 to that pool; a future harness solver stays hosted until
+separately qualified. Z3 5.1.0 library gates remain on Linux because
+`Std.Arithmetic.DivMod.LemmaMultiplyDivideLe` changes from `OutOfResource` on
+Linux to `Correct` on macOS at the library's existing 1,000,000 RU limit.
 
-Only identical verdicts **and** resource counts permit moving proof gates.
-Equal verdicts with different resource counts require an owner decision before
-routing changes; different verdicts keep the gates on Linux. The frozen
+Each suite/library job records per-program totals, maximum batch RU,
+every batch's resource use and applicable limit, and actual solver binary and
+archive hashes in its verdict artifact. Job summaries list every batch using
+at least 75% of a finite limit, including overruns. A program's total can span
+multiple batches and is never compared with a single batch's limit. Literal
+member-level limits (both attribute syntaxes), legacy limits, and resource-limit
+multipliers are accounted for; unsupported limit syntax is reported rather
+than guessed. These observations do not add resource thresholds to the gates.
+
+A manual `review.yml` run with `platform_parity: true` builds both platforms
+at the dispatch's exact commit, runs every suite shard with additional axioms
+off/on, and verifies the library under both solvers in both modes. It records
+regression and resolver test results too. The `platform-parity-report`
+artifact compares verdict columns, resource counts, proof batches, coverage
+and job wall times; missing observations are incomplete evidence. Further
+platform migrations with resource-only differences require an owner decision;
+verdict differences retain the corresponding Linux gate. The frozen
 repeated-default-comparison experiment stays on Linux because it pins a Linux
 runtime and measures that environment. Self-contained `linux-x64` binaries
 also stay on Linux for their execution smoke test.
 
 Jobs in the shared pool set `DOTNET_PROCESSOR_COUNT=4`; suite shards use four
 single-core verifier processes and library jobs use `--cores 4`. This bounds
-ordinary .NET scheduling to four processors per runner. The test runsettings
+ordinary .NET scheduling to four processors per runner. Every job that can
+use the Mac pool first sets its own ephemeral `Runner.Worker` and initial shell
+to nice 10, before checkout; subsequent actions and verifier processes inherit
+that niceness. The step verifies both values and never changes the listener,
+runner installation or service configuration. The test runsettings
 limit xUnit to two concurrent tests, since each lit test normally uses two
 verifier cores. Solver
 archives for both platforms and harness versions 4.12.1 and 4.16.0 are pinned

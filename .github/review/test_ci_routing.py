@@ -40,6 +40,32 @@ def enabled(expression, event, head, repository, flags, ref_type="branch"):
 
 
 class RoutingTests(unittest.TestCase):
+    def test_mac_job_worker_is_reniced_before_checkout(self):
+        for name, _ in mac_jobs():
+            workflow, job = name.split('/')
+            text = (ROOT / workflow).read_text()
+            body = re.search(r'^  ' + re.escape(job) + r':\n(.*?)(?=^  [\w-]+:|\Z)', text, re.M | re.S)[1]
+            with self.subTest(job=name):
+                steps = body.split('    steps:\n', 1)[1]
+                self.assertTrue(steps.startswith('      - name: Yield to interactive work\n'))
+                first = steps.split('      - uses:', 1)[0]
+                self.assertIn("if: runner.os == 'macOS'", first)
+                self.assertIn('*/Runner.Worker|Runner.Worker)', first)
+                self.assertIn('renice 10 -p "$PPID" "$$"', first)
+                self.assertIn('ps -o nice= -p "$PPID"', first)
+
+    def test_only_approved_library_version_routes_to_mac(self):
+        text = (ROOT / 'review.yml').read_text()
+        body = re.search(r'^  stdlib:\n(.*?)(?=^  [\w-]+:|\Z)', text, re.M | re.S)[1]
+        expression = re.search(r'^    runs-on: \$\{\{ (.*) \}\}', body, re.M)[1]
+        expression = expression.replace('&&', ' and ').replace('||', ' or ')
+        for z3, harness, expected in [('5.1.0', '4.12.1', 'ubuntu-24.04'),
+                                       ('of the tests', '4.12.1', 'mac-studio'),
+                                       ('of the tests', '4.16.0', 'ubuntu-24.04')]:
+            with self.subTest(z3=z3, harness=harness):
+                self.assertEqual(expected, eval(expression, {'__builtins__': {}}, {
+                    'matrix': NS(z3=z3), 'needs': NS(build=NS(outputs=NS(harness_z3=harness)))}))
+
     def test_self_hosted_jobs_are_present(self):
         self.assertGreater(len(list(mac_jobs())), 10)
 

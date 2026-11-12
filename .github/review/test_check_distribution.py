@@ -24,6 +24,15 @@ class DistributionTests(unittest.TestCase):
             (root / 'compiler.dll').write_bytes(b'/_/source.cs')
             distribution.check(root, ['private-checkout'])
 
+    def test_dependency_hosted_build_path_is_not_this_checkout(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / 'Dependency.dll').write_bytes(b'hosted-home/other-project/source.cs')
+            distribution.check(root, ['hosted-home/this-project'], home='hosted-home')
+            (root / 'DafnyCore.dll').write_bytes(b'hosted-home/private-checkout/source.cs')
+            with self.assertRaisesRegex(ValueError, 'DafnyCore.dll'):
+                distribution.check(root, ['hosted-home/this-project'], home='hosted-home')
+
     def test_rejects_apple_archive_metadata(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
