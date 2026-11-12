@@ -1,5 +1,6 @@
 """Fresh-process result replay, exact changed-key invalidation, and negative controls."""
 import collections
+import concurrent.futures
 import csv
 import base64
 import hashlib
@@ -30,10 +31,10 @@ def without_timing(value):
     return value
 
 
-def run(name, directory=cache, extra=(), time_limit="0", resource_limit="16000000", enabled=True, expect_keyed=True):
-    profile = destination / "current.jsonl"
-    log = destination / "current.json"
-    csv_log = destination / "current.csv"
+def run(name, directory=cache, extra=(), time_limit="0", resource_limit="16000000", enabled=True, expect_keyed=True, observer="current"):
+    profile = destination / (observer + ".jsonl")
+    log = destination / (observer + ".json")
+    csv_log = destination / (observer + ".csv")
     for file in (profile, log, csv_log):
         file.unlink(missing_ok=True)
     args = ["dotnet", str(exe), "verify", str(input_file), "--cores", "1",
@@ -85,6 +86,23 @@ assert warm["stats"]["hits"] == 3 and warm["stats"]["solverStarts"] == 0, warm["
 assert warm["stats"]["solverVersionProbes"] == 0
 assert all(t["replayed"] for t in warm["tasks"])
 assert all(vc["timingReplayed"] for r in json.loads((destination / "warm.json").read_text())["verificationResults"] for vc in r["vcResults"])
+
+# Independent CLI processes race to publish the same immutable records. Neither
+# may observe a partial object; their union must support a solver-free warm run.
+concurrent_cache = destination / "concurrent-cache"
+with concurrent.futures.ThreadPoolExecutor(2) as pool:
+    futures = [pool.submit(run, "concurrent-" + name, concurrent_cache, observer="observe-" + name)
+               for name in ("left", "right")]
+    concurrent_runs = [future.result() for future in futures]
+for observation in concurrent_runs:
+    assert cold["report"] == observation["report"] and cold["csv"] == observation["csv"]
+    assert cold["output"][0] == observation["output"][0] and cold["output"][2] == observation["output"][2]
+    # Each concurrent writer has its own report destination; that path is printed.
+    assert cold["output"][1].split(b"Results File:")[0] == observation["output"][1].split(b"Results File:")[0]
+    assert observation["stats"]["conflicts"] == 0, observation["stats"]
+concurrent_warm = run("concurrent-warm", concurrent_cache)
+same_report(cold, concurrent_warm)
+assert concurrent_warm["stats"]["hits"] == 3 and concurrent_warm["stats"]["solverStarts"] == 0
 
 # A well-formed candidate can still diverge after lookup. Rehash the intentionally
 # changed exchange so the lifecycle retry, rather than the checksum check, is tested.

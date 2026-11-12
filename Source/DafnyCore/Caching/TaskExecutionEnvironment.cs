@@ -107,6 +107,14 @@ internal sealed class TaskExecutionEnvironment(DafnyOptions options) {
       }
     }
     var manifest = ExecutionImageIdentity.Read(solver.ExecutablePath());
+    // Public Z3 5.1.0 release profiles used by this fork's CI. Native executable magic
+    // and a version string cannot establish that an arbitrary launcher reads no files.
+    // https://github.com/Z3Prover/z3/releases/tag/z3-5.1.0
+    if (!manifest.TryGetValue(Path.GetFullPath(solver.ExecutablePath()), out var solverHash) ||
+        solverHash is not ("164c85de5f5dcb7d57cbab64b1a11580a982c1658384120b2b65358f41847418" or
+                          "b4e0b3483ce37817230b20d6cad48390eb6a3aefde1d93342ad6dc763f24bc23")) {
+      throw new NotSupportedException("unaudited native solver execution profile");
+    }
     manifest["solver-version"] = options.SolverVersion?.ToString() ?? throw new NotSupportedException("unvalidated solver version");
     manifest["os"] = RuntimeInformation.OSDescription;
     manifest["architecture"] = RuntimeInformation.ProcessArchitecture.ToString();

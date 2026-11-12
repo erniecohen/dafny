@@ -216,7 +216,9 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
       }
       return CachePublication.AlreadyPresent;
     }
-    if (!cacheable || !sealedExchange || descriptor == null || mode != Mode.Live) {
+    // Boogie may retire a checker after its successful final handshake, before the
+    // task's completion observer runs. Closing that sealed transport loses no evidence.
+    if (!cacheable || !sealedExchange || descriptor == null || mode is not (Mode.Live or Mode.Closed)) {
       return CachePublication.Unavailable;
     }
     try {

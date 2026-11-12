@@ -8,6 +8,16 @@ namespace Microsoft.Dafny.Caching;
 
 /// <summary>Reads effective limit commands without mistaking comments, strings or quoted names for commands.</summary>
 internal static class SmtExecutionLimits {
+  private static readonly HashSet<string> BooleanOptions = new(StringComparer.Ordinal) {
+    ":print-success", ":produce-models", ":produce-unsat-cores", ":auto_config", ":type_check",
+    ":smt.delay_units", ":model_evaluator.completion", ":model.completion", ":model.compact",
+    ":smt.refine_inj_axioms", ":smt.mbqi", ":model.v2", ":pp.bv_literals",
+    ":smt.arith.random_initial_value", ":smt.pull_nested_quantifiers"
+  };
+  private static readonly HashSet<string> NumericOptions = new(StringComparer.Ordinal) {
+    ":smt.qi.eager_threshold", ":smt.qi.lazy_threshold", ":smt.qi.max_instances", ":smt.case_split",
+    ":smt.arith.solver", ":smt.phase_selection", ":smt.relevancy", ":smt.random_seed", ":sat.random_seed"
+  };
   internal readonly record struct Limits(uint Resource, uint Milliseconds, bool Supported);
   public static Limits Read(IEnumerable<string> chunks) {
     uint resource = 0;
@@ -47,10 +57,12 @@ internal static class SmtExecutionLimits {
               if (words.Count != 3 || !uint.TryParse(words[2], NumberStyles.None, CultureInfo.InvariantCulture, out var value)) {
                 supported = false;
               } else if (name == ":timeout") { milliseconds = value; } else { resource = value; }
-            } else if (name.Contains("timeout", StringComparison.OrdinalIgnoreCase) ||
-                       name.Contains("rlimit", StringComparison.OrdinalIgnoreCase) ||
-                       name.Contains("thread", StringComparison.OrdinalIgnoreCase) || name == ":parallel.enable") {
-              // Parallel and alternate deadline controls need a separately audited profile.
+            } else if (words.Count != 3 ||
+                       !(BooleanOptions.Contains(name) && words[2] is "true" or "false" ||
+                         NumericOptions.Contains(name) && double.TryParse(words[2], NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign,
+                           CultureInfo.InvariantCulture, out var number) && double.IsFinite(number))) {
+              // Unknown options may read/write files, enable parallel tactics or add hidden
+              // deadlines. Admit only the audited scalar options, including raw overrides.
               supported = false;
             }
           }

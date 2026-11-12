@@ -23,8 +23,19 @@ public class SmtExecutionLimitsTests {
   [InlineData("(set-option :sat.timeout 10)")]
   [InlineData("(set-option :smt.threads 2)")]
   [InlineData("(set-option :parallel.enable true)")]
+  [InlineData("(set-option :smtlib2_log \"solver.log\")")]
+  [InlineData("(set-option :unknown.future.option true)")]
+  [InlineData("(set-option :smt.random_seed NaN)")]
   [InlineData("(set-option :timeout 0")]
   public void UnrecognizedLimitAndParallelProfilesAreRejected(string command) {
     Assert.False(SmtExecutionLimits.Read(new[] { command }).Supported);
+  }
+
+  [Fact]
+  public void AuditedScalarOverridesAreAdmitted() {
+    Assert.True(SmtExecutionLimits.Read(new[] {
+      "(set-option :timeout 0)", "(set-option :smt.random_seed 17)",
+      "(set-option :smt.qi.eager_threshold 44.5)", "(set-option :smt.mbqi false)"
+    }).Supported);
   }
 }

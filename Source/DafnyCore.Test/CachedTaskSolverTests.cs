@@ -30,12 +30,15 @@ public class CachedTaskSolverTests : IDisposable {
     await transport.PingPong();
   }
 
-  [Fact]
-  public async Task CompleteExchangeReplaysWithoutStartingAnotherSolver() {
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task CompleteExchangeReplaysWithoutStartingAnotherSolver(bool retireBeforeCompletion) {
     var cold = Transport();
     Setup(cold);
     Assert.Equal("unsat", (await cold.SendRequest("(check-sat)")).Name);
     await Finish(cold);
+    if (retireBeforeCompletion) { cold.Close(); }
     Assert.Equal(CachePublication.Stored, cold.CompleteNormally(CacheTaskOutcome.Correct, 17));
     cold.Close();
     var warm = Transport();
@@ -47,6 +50,16 @@ public class CachedTaskSolverTests : IDisposable {
     Assert.Equal(CachePublication.AlreadyPresent, warm.CompleteNormally(CacheTaskOutcome.Correct, 17));
     Assert.True(warm.Replayed);
     Assert.Equal(1, starts);
+  }
+
+  [Fact]
+  public async Task RetirementBeforeTheFinalHandshakeCannotPublishAResult() {
+    var cold = Transport();
+    Setup(cold);
+    await cold.SendRequest("(check-sat)");
+    cold.Send("; Valid");
+    cold.Close();
+    Assert.Equal(CachePublication.Unavailable, cold.CompleteNormally(CacheTaskOutcome.Correct, 17));
   }
 
   [Fact]

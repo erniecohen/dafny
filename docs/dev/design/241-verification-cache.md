@@ -510,8 +510,12 @@ application/runtime managed assemblies, the native solver and host, hostfxr,
 runtime native libraries and resolved native dependencies. The macOS profile
 also hashes the actual OS dyld shared-cache files; Linux resolves dependencies
 with `ldd` and records actual mapped libraries, including dlopen-only ICU/OpenSSL
-inputs. An unrecorded later Linux native load bypasses. Native launcher scripts
-and Windows are unsupported. All environment
+inputs. An unrecorded later Linux native load bypasses. V1 admits only the exact
+native executables from the public Z3 5.1.0 macOS arm64 and Linux x64 releases
+used by the fork's CI. Both archive checksums were validated before recording
+their executable digests; arbitrary native wrappers cannot establish a complete
+dependency profile merely by reporting that version. Other solver builds,
+native launcher scripts and Windows bypass. All environment
 variable values are represented by digests. Image digests are memoized only within
 an invocation that treats code files as immutable; file length/mtime changes
 disable reuse for that invocation rather than certifying new files against old
@@ -536,10 +540,15 @@ flag and retries the entire task, rather than reporting that cleanup as a proof
 timeout. A result is published
 only after normal completion and exact outcome/RU agreement. The terminal comment
 and subsequent idle handshake seal the exchange before a checker can be reused.
+Retiring a checker after that successful handshake does not discard its sealed
+evidence; retirement before the handshake cannot publish a result.
 
 `SmtExecutionLimits` lexes the actual initial command stream, respecting comments,
 strings and quoted symbols. Last effective `:timeout` and `:rlimit` commands win,
-including raw prover-option overrides. Unknown deadline/thread controls bypass.
+including raw prover-option overrides. Only an explicit inventory of scalar
+Boolean/numeric SMT options is admitted. Unknown controls, string-valued options,
+external logging and parallel/deadline controls bypass rather than silently
+skipping their side effects on a hit.
 Completed Valid is eligible under any limit; Errors/OutOfResource additionally
 require positive RU and zero timeout. Timeout, memory failure, cancellation,
 protocol error and unknown outcomes are never reused. Retention is bounded by
