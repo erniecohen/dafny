@@ -543,8 +543,11 @@ subsequent sends, requests, parsed S-expressions and synchronization operations.
 It is never used as a response-dependent substitute for the descriptor. Replay
 checks each current command against that exchange, while pinned Boogie builds
 counterexamples, assertion bindings and coverage using the current task. The
-wrapper withholds `Completed` until the task observable closes, including final
-idle synchronization. Divergence discards all buffered completion data and retries
+wrapper withholds `Completed` until the task observable closes and any pending
+final idle handshake finishes. The pinned checker can retire after a 100 ms
+cleanup deadline while that handshake's continuation is still pending; observable
+completion alone therefore does not establish that the exchange is sealed.
+Divergence discards all buffered completion data and retries
 `FromSeed` with persistent reads disabled and a fresh solver. Divergent keys are
 quarantined persistently, so a later invocation recomputes without replaying the
 same rejected candidate. The pinned checker's idle cleanup retires failed slots
@@ -553,8 +556,11 @@ flag and retries the entire task, rather than reporting that cleanup as a proof
 timeout. A result is published
 only after normal completion and exact outcome/RU agreement. The terminal comment
 and subsequent idle handshake seal the exchange before a checker can be reused.
-Retiring a checker after that successful handshake does not discard its sealed
-evidence; retirement before the handshake cannot publish a result.
+Retiring a checker does not discard a successful handshake, including one whose
+continuation finishes after retirement. A failed or absent final handshake cannot
+publish a result. Retirement timing does not decide the proof outcome: only the
+completed Valid or eligible RU-bounded outcome can be reused. The default
+verification path never constructs this transport or waits on this extra barrier.
 
 `SmtExecutionLimits` lexes the actual initial command stream, respecting comments,
 strings and quoted symbols. Last effective `:timeout` and `:rlimit` commands win,

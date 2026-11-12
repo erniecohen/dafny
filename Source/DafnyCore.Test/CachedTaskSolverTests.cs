@@ -63,6 +63,61 @@ public class CachedTaskSolverTests : IDisposable {
   }
 
   [Theory]
+  [InlineData(true)]
+  [InlineData(false)]
+  public async Task RetirementOvertakingAnInFlightHandshakeWaitsForItsEvidence(bool valid) {
+    var handshake = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    var cold = new CachedTaskSolver(new TaskResultCache(new ContentAddressedCache(directory)),
+      () => Encoding.UTF8.GetBytes("frozen adaptive execution program"), () => {
+        starts++;
+        return new Solver("canceled", handshake: handshake.Task, response: valid ? "unsat" : "unknown");
+      });
+    Setup(cold);
+    await cold.SendRequest("(check-sat)");
+    cold.Send(valid ? "; Valid" : "; Out of resource");
+    var pending = cold.PingPong();
+    // Model the pinned checker's retirement notification overtaking its final
+    // handshake continuation, without relying on wall-clock scheduling in a test.
+    cold.Close();
+    var finishing = cold.AwaitPendingHandshake();
+    Assert.False(finishing.IsCompleted);
+    Assert.False(Directory.Exists(Path.Combine(directory, "v1", "results")));
+    handshake.SetResult();
+    await pending;
+    await finishing;
+    var outcome = valid ? CacheTaskOutcome.Correct : CacheTaskOutcome.OutOfResource;
+    Assert.Equal(CachePublication.Stored, cold.CompleteNormally(outcome, 17));
+
+    var warm = Transport();
+    Setup(warm);
+    Assert.Equal(valid ? "unsat" : "unknown", (await warm.SendRequest("(check-sat)")).Name);
+    warm.Send(valid ? "; Valid" : "; Out of resource");
+    await warm.PingPong();
+    await warm.AwaitPendingHandshake();
+    Assert.Equal(CachePublication.AlreadyPresent, warm.CompleteNormally(outcome, 17));
+    Assert.True(warm.Replayed);
+    Assert.Equal(1, starts);
+    warm.Close();
+  }
+
+  [Fact]
+  public async Task AFailedInFlightHandshakeStillCannotPublishAResult() {
+    var handshake = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    var cold = new CachedTaskSolver(new TaskResultCache(new ContentAddressedCache(directory)),
+      () => Encoding.UTF8.GetBytes("frozen adaptive execution program"),
+      () => new Solver("canceled", handshake: handshake.Task));
+    Setup(cold);
+    await cold.SendRequest("(check-sat)");
+    cold.Send("; Valid");
+    var pending = cold.PingPong();
+    cold.Close();
+    handshake.SetException(new IOException("retired transport failed"));
+    await Assert.ThrowsAsync<IOException>(() => pending);
+    await cold.AwaitPendingHandshake();
+    Assert.Equal(CachePublication.Unavailable, cold.CompleteNormally(CacheTaskOutcome.Correct, 17));
+  }
+
+  [Theory]
   [InlineData(true, "WARNING: ignored pattern", true)]
   [InlineData(false, "WARNING: displayed pattern", false)]
   [InlineData(true, "solver error", false)]
@@ -141,16 +196,16 @@ public class CachedTaskSolverTests : IDisposable {
     Assert.NotEqual(first.Key, new TaskCacheDescriptor(input, Types(ta), 100, 0).Key);
   }
 
-  private sealed class Solver(string reason, string? warning = null) : SMTLibSolver {
+  private sealed class Solver(string reason, string? warning = null, Task? handshake = null, string response = "unsat") : SMTLibSolver {
     public override event Action<string>? ErrorHandler;
     public override void Close() { }
     public override void Send(string command) { }
     public override void NewProblem(string name) { }
-    public override Task PingPong() => Task.CompletedTask;
+    public override Task PingPong() => handshake ?? Task.CompletedTask;
     public override void AddErrorHandler(Action<string> handler) { }
     public override Task<SExpr> SendRequest(string request, CancellationToken cancellationToken = default) {
       if (warning != null) { ErrorHandler?.Invoke(warning); }
-      return Task.FromResult(request == "(check-sat)" ? S("unsat") : S(":reason-unknown", S(reason)));
+      return Task.FromResult(request == "(check-sat)" ? S(response) : S(":reason-unknown", S(reason)));
     }
     public override Task<IReadOnlyList<SExpr>> SendRequestsAndCloseInput(IReadOnlyList<string> requests,
       CancellationToken cancellationToken = default) => throw new NotSupportedException();

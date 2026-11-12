@@ -117,6 +117,9 @@ public sealed class TaskCacheSession {
           Current.Value = context;
           try {
             completed = await Observe(active, subject);
+            if (completed != null && context.Solvers.Count == 1) {
+              await context.Solvers[0].AwaitPendingHandshake();
+            }
             if (context.Solvers.Any(s => s.ReplayMismatch)) { throw new CacheReplayMismatchException(); }
             if (completed != null && context.Solvers.Count == 1) {
               var solver = context.Solvers[0];

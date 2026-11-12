@@ -55,6 +55,7 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
   private int replayPosition;
   private long retainedCharacters;
   private int retainedResponseNodes;
+  private Task? pendingHandshake;
   private SMTLibSolver? solver;
   private TaskCacheDescriptor? descriptor;
   private Replay? replay;
@@ -98,7 +99,11 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
     Record(step);
   }
 
-  public override async Task PingPong() {
+  public override Task PingPong() {
+    return pendingHandshake = PingPongCore();
+  }
+
+  private async Task PingPongCore() {
     if (completed || sealedExchange) { return; }
     RequireOpen();
     var step = new Step(Kind.Ping, "");
@@ -122,6 +127,17 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
     }
     Record(step);
     if (terminalComment) { sealedExchange = true; }
+  }
+
+  internal async Task AwaitPendingHandshake() {
+    // Checker.GoBackToIdle retires its checker after 100 ms without awaiting the
+    // underlying handshake's continuation. Its verification observable can thus
+    // complete before that continuation seals this exchange. Native Close wakes
+    // the pending transport; a failed handshake still prevents publication.
+    if (pendingHandshake != null) {
+      try { await pendingHandshake; }
+      catch { cacheable = false; }
+    }
   }
 
   public override async Task<SExpr> SendRequest(string request, CancellationToken cancellationToken = default) {
