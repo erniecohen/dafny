@@ -1,0 +1,77 @@
+name: Operators M1 probe
+on:
+  push:
+    branches: ['codex/194-operators-m1']
+  workflow_dispatch:
+concurrency:
+  group: operators-m1-probe-${{ github.ref }}-${{ contains(github.event.head_commit.message, '[off-gates]') && 'off' || 'focused' }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build and focused checks (record expected development failures)
+        shell: bash
+        run: |
+          mkdir -p out/operators
+          curl -fsSLo out/operators/z3.zip https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip
+          echo 'f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a  out/operators/z3.zip' | sha256sum -c -
+          unzip -q out/operators/z3.zip -d out/operators
+          export DAFNY_OPERATORS_Z3="$PWD/out/operators/z3-5.1.0-x64-glibc-2.39/bin/z3"
+          chmod +x "$DAFNY_OPERATORS_Z3"
+          mkdir -p Binaries/z3/bin
+          cp "$DAFNY_OPERATORS_Z3" Binaries/z3/bin/z3-5.1.0
+          set +e
+          sh Scripts/fetch-boogie-packages.sh > out/operators/packages.log 2>&1
+          dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false > out/operators/build.log 2>&1
+          result=$?
+          echo "$result" > out/operators/build.exit
+          tail -60 out/operators/build.log
+          if [ "$result" = 0 ] && [ -f .github/review/operators-m1.py ]; then
+            python3 .github/review/operators-m1.py "$PWD/out/dafny/Dafny" "$PWD/out/operators" > out/operators/checks.log 2>&1
+            echo "$?" > out/operators/checks.exit
+            tail -60 out/operators/checks.log
+            dotnet test Source/DafnyCore.Test/DafnyCore.Test.csproj -c Release --filter FullyQualifiedName~OperatorSelectionTests --logger "trx;LogFileName=operators.trx" --results-directory "$PWD/out/operators/core-tests" > out/operators/core-tests.log 2>&1
+            echo "$?" > out/operators/core-tests.exit
+            tail -40 out/operators/core-tests.log
+            dotnet test Source/DafnyLanguageServer.Test/DafnyLanguageServer.Test.csproj -c Release --filter 'FullyQualifiedName~OperatorSymbolsAreReferencesButAreNeverRenamed|FullyQualifiedName~OperatorHoverDistinguishesRankFromAnOrdinaryFallbackCall' --logger "trx;LogFileName=operators.trx" --results-directory "$PWD/out/operators/rename-tests" > out/operators/rename-tests.log 2>&1
+            echo "$?" > out/operators/rename-tests.exit
+            tail -40 out/operators/rename-tests.log
+            dotnet test Source/IntegrationTests -c Release --filter 'DisplayName~git-issues/github-issue-194.dfy' --logger "trx;LogFileName=operators.trx" --results-directory "$PWD/out/operators/lit-tests" > out/operators/lit-tests.log 2>&1
+            echo "$?" > out/operators/lit-tests.exit
+            tail -40 out/operators/lit-tests.log
+          fi
+          echo 'Development probe: retained exit files and logs are authoritative; this workflow records failures without notifying the owner.' >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: operators-m1-probe
+          path: |
+            out/operators/*.log
+            out/operators/*.exit
+            out/operators/results.json
+            out/operators/**/stdout.txt
+            out/operators/**/stderr.txt
+            out/operators/**/command.json
+            out/operators/**/*.bpl
+            out/operators/**/verification.json
+            out/operators/core-tests
+            out/operators/rename-tests
+            out/operators/lit-tests
+          retention-days: 14
+
+  disabled-compatibility:
+    if: contains(github.event.head_commit.message, '[off-gates]')
+    uses: ./.github/workflows/operators-m1-off.yml
+    with:
+      probe: true

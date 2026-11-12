@@ -145,6 +145,12 @@ namespace Microsoft.Dafny {
         CheckSuperfluousRefiningMarks(m.TopLevelDecls, []);
         AddDefaultBaseTypeToUnresolvedNewtypes(m.TopLevelDecls);
       } else {
+        if (Reporter.Options.Get(CommonOptionBag.UserDefinedOperators) &&
+            (OperatorResolution.FeatureBearing(m) || OperatorResolution.FeatureBearing(m.Implements.Target.Def))) {
+          Reporter.Error(MessageSource.RefinementTransformer, "operator_refinement", m.Origin,
+            "user-defined operators do not support feature-bearing refinement or module replacement in this milestone");
+          return;
+        }
         // There is a refinement parent and it resolved OK
         var refinementTarget = m.Implements.Target;
         if (m.Implements.Kind == ImplementationKind.Refinement && refinementTarget.Def.ModuleKind == ModuleKindEnum.Replaceable) {

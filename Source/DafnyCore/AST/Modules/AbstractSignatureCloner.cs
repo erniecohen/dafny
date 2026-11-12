@@ -2,8 +2,8 @@ namespace Microsoft.Dafny;
 
 class AbstractSignatureCloner : ScopeCloner {
 
-  public AbstractSignatureCloner(VisibilityScope scope)
-    : base(scope) {
+  public AbstractSignatureCloner(VisibilityScope scope, ModuleDefinition systemModule = null)
+    : base(scope, systemModule) {
   }
 
   public override ModuleDefinition CloneModuleDefinition(ModuleDefinition m, ModuleDefinition newParent, Name name) {

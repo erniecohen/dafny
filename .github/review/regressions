@@ -396,3 +396,6 @@ git-issues/github-issue-268.dfy
 
 # Persistent per-task solver replay (https://github.com/erniecohen/dafny/issues/241).
 git-issues/git-issue-241-verification-cache.dfy
+
+# Source-only opt-in function operators, clone preservation and negative controls (https://github.com/erniecohen/dafny/issues/194).
+git-issues/github-issue-194.dfy
