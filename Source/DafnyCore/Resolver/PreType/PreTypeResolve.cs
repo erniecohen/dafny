@@ -726,6 +726,13 @@ namespace Microsoft.Dafny {
         ResolvePreTypeSignature(d, preTypeInferenceModuleState, resolver);
       }
 
+      if (resolver.Options.Get(CommonOptionBag.UserDefinedOperators)) {
+        var operatorErrorCount = resolver.Reporter.ErrorCount;
+        OperatorResolution.Validate(declarations, resolver);
+        if (resolver.Reporter.ErrorCount != operatorErrorCount) {
+          return;
+        }
+      }
       if (!firstPhaseOnly) {
         var basicPreTypeResolver = new PreTypeResolver(resolver, preTypeInferenceModuleState);
         foreach (var d in allDeclarations) {
