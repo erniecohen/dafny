@@ -1002,76 +1002,172 @@ are retained. Test existing `.doo` roundtrips/unknown-manifest handling, compile
 and option mismatch, changed dependency/Std/prelude, cross-engine rejection,
 malformed references, and downstream cardinality invalidation.
 
-### 6.4.1 Resolution-result format, version 1
+### 6.4.1 Draft resolution-result envelope, version 1
 
-The cache unit is one resolved module, identified by the section 6.2.1 key. A
-directory contains `<key>.dres` files. Each file is a ZIP container, reusing the
-container and TOML manifest conventions of `DooFile`, with exactly two entries:
-`manifest.toml` and `module.cbor`. A `.doo` remains a source library and is neither
-renamed nor treated as a resolved snapshot. Its source printer/parser cannot
-encode this payload: resolved types, references and generated declarations must
-survive without another inference pass.
+This is a format proposal, not a cache implementation. There is no `.dres` codec,
+new cache option, frozen in-memory cache or cold/warm performance result in this
+specification. The closed typed-record inventory and its tests remain required
+before version 1 can ship. The integration boundary follows
+https://github.com/erniecohen/dafny/issues/241#issuecomment-6805195480,
+https://github.com/erniecohen/dafny/issues/241#issuecomment-6805266011 and
+https://github.com/erniecohen/dafny/issues/241#issuecomment-6805327364, and the
+local/global/final split in [the cache design](261-content-addressed-caches.md).
 
-The manifest contains `format_version = 1`, the complete Dafny version,
-`resolution_schema` (a digest of the typed record schema), `module_key`,
-`module_identity`, the canonical effective option records and an array of direct
-semantic prerequisites. Each prerequisite records its role, qualified identity
-and key; imports also record the selected export views. `payload_length` and
-`payload_sha256` cover the uncompressed CBOR bytes. Unknown required fields,
-duplicate fields/entries, noncanonical keys or unexpected container entries are
-misses. The manifest's key must match the filename and a freshly computed key.
+The unit is the existing `ModuleResolutionResult` for a semantic resolution-graph
+node. Its owner key is the section 6.2.1 `ModuleResolutionKey`, called `L(m)` here.
+Literal modules, import/export views, refinement and nested prerequisites retain
+their graph identities and dependency roles. A directory contains `<L>.dres`
+files. Several generated abstract signatures can belong to one owner result;
+select one by its stable `ModuleDefinition.FullName`, not by owner key alone.
+`ModuleResolutionKey.Compute` and `Prerequisite` remain the shared interfaces.
+
+The file stores only a detached **pre-global** local snapshot. After loading it,
+current whole-program passes produce the translation-observable projection
+`G(m)`; a separately domain-separated final key `R(m) = H(L(m), G(m))` governs
+reuse of admitted translation inputs. In particular, modular termination can
+observe downstream implementations and test-runner generation can replace a
+body after local resolution. A local file is not evidence that these facts are
+unchanged. The resolution index in the cache design may reference this local
+object plus its current global projection; this envelope is not another
+translation-cache authority. Unsupported global/prepass inputs require bypass
+until their input contract is covered, rather than a hit based on `L` alone.
+
+Each file is a ZIP container with exactly two case-sensitive entries, in this
+order: `manifest.toml` and `module.cbor`. This reuses the container and TOML
+conventions of `DooFile`; reusable bounded I/O and manifest handling belong in
+shared helpers. Today's `.doo` contains `manifest.toml` and source in `program`.
+Its `Printer(PrintModes.Serialization)` calls `PrintProgram(..., false)` and its
+reader reparses that source. Neither that printer/parser nor `DooFile.Write`'s
+delete-then-create publication is a typed snapshot codec or an atomic publisher.
+A `.doo` remains a source library with its existing compatibility checks.
+
+The manifest has the following required fields:
+
+| Field | Meaning |
+|---|---|
+| `format_version` | Integer `1`; any unsupported version is a miss. |
+| `dafny_version`, `producer_fingerprint` | Complete display version and exact producer identity used by the key, including the resolver assembly MVID. |
+| `resolution_schema` | Digest of the complete typed tag/field schema and codec identity; no partially compatible schema is accepted. |
+| `profile` | The audited module-local resolution profile, including resolver engine and exact built-in plugin identity/order. |
+| `module_key`, `module_identity` | The full lowercase SHA-256 owner key and fully qualified graph-node identity. |
+| `options` | Canonical effective modern/legacy options and verification-membership records used by `Compute`; execution/report/cache locations are excluded as in section 6.2.1. |
+| `prerequisites` | Canonically ordered role, qualified graph identity and full local key for every direct semantic prerequisite; include selected export-view selectors. |
+| `payload_length`, `payload_sha256` | Uncompressed CBOR byte length and SHA-256 digest. |
+
+Reserve an optional `observable_interface_sha256` field on module/view descriptors.
+It is absent until an audited observable-interface projection exists. In this
+version it is advisory metadata, never a replacement for the full dependency key
+or authority for early cutoff. Inferred characteristics and nominal ownership
+must participate in any later view hash. Body-only reuse requires the separately
+reviewed view-read boundary and rebinding rules from the cache design.
+
+The filename, manifest key and freshly computed `L` must agree. Do not accept a
+matching filename without recomputing source/options/prerequisite/producer inputs.
+Reject duplicate manifest fields or ZIP entries, unknown required fields, encrypted
+entries, unexpected entries, malformed/noncanonical keys, traversal names and
+unsupported compression. Apply explicit bounds before allocation and during
+streaming decompression; declared lengths do not authorize unbounded reads.
+Reader limits are cache-eligibility limits: an oversized valid module resolves
+normally. Hash exactly the uncompressed bytes that the decoder will consume.
 
 The payload is a versioned typed object table with integer object IDs. Records
 have schema-defined tags and fields, not CLR type names or arbitrary executable
-types. The roots are the resolved module declaration, its signature, owned
-class-member tables, builtin requests and ordered diagnostics. Declaration
-records retain generated declarations and names, ghost/opaque status, contracts,
-inferred decreases, inheritance/refinement correspondence and the resolved bodies.
-Type records retain resolved targets and type arguments, including subset/newtype,
-opaque/facade and type-parameter identity; solved proxies encode their targets.
-Unsolved proxies in successful results are ineligible until explicitly supported.
-Object IDs preserve internal sharing and cycles. Constructor-specific semantic
-fields have an explicit schema entry and a test; an unsupported node causes a miss.
+types. Roots cover the resolved module declaration, every generated signature
+with its stable selector, owned class-member tables, builtin requests, generated
+names and ordered diagnostics. Declaration records retain ghost/opaque status,
+contracts, inferred decreases, inheritance/refinement correspondence and resolved
+bodies. Type records retain resolved targets and arguments, including subset,
+newtype, opaque/facade and type-parameter identity; solved proxies encode their
+targets. Unsolved proxies in successful results are ineligible until supported.
 
-A reference outside the module is `(prerequisite key, qualified declaration
-identity, declaration path)`, with a separate intrinsic-builtin namespace keyed by
-shape (array rank, arrow arity, tuple ghost vector or bitvector width). References
-to parameters and locals extend the stable declaration path with the role and
-ordinal within the owning declaration. Ancestor-module identity is a name-only
-binding, never an embedded copy of an enclosing program. No reference may silently
-resolve by a display name alone. The loader requires the expected declaration
-kind, ownership and type arity, then binds the reference to this invocation's
-resolved prerequisite. Missing, ambiguous or mismatched references are misses.
+Object IDs preserve internal sharing and cycles. The schema defines a canonical
+root/field traversal and ordering of unordered collections; GUIDs, runtime hashes
+and allocation order cannot assign IDs or order records. Each constructor's
+semantic fields require an explicit schema entry and roundtrip control. Unknown
+nodes, unsupported error/partial-result graphs and missing required fields cause
+bypass or a miss, never a source reparse reported as a hit. A complete schema
+inventory is an implementation prerequisite, not supplied by this envelope alone.
 
-Diagnostics contain severity, source, message ID, message text and ordered related
-information. Source spans use a module-relative token offset plus an origin tag;
-inherited spans identify the prerequisite key and relative offset. The loader
-rebinds every span to the current source map, including location-only edits.
+An external reference is `(prerequisite key, generated-signature selector,
+qualified declaration identity, declaration path)`, with the key drawn from the
+validated semantic prerequisite closure. Parameters and locals extend
+the stable declaration path with role and ordinal. Intrinsics use a separate
+shape namespace: array rank, arrow arity, tuple ghost vector or bitvector width.
+Ancestor-module identity is a name-only binding, never an embedded enclosing
+program. No reference silently resolves by a display name alone. The loader
+requires expected kind, owner, arity and view, then binds to this invocation's
+resolved prerequisite; missing, ambiguous or mismatched references are misses.
+
+Diagnostics retain severity, source, message ID, semantic message data and ordered
+related information. Spans identify a declaration path, module-relative token
+offset and origin tag; inherited spans also identify the prerequisite key and
+signature selector. Bind every span to the current parsed source map, including
+multi-file default modules and location-only edits. Physical paths or rendering
+preferences embedded in messages need typed rebinding placeholders; an
+unclassified path-dependent message makes the result ineligible. Rendering and
+ordered replay use the current invocation, not a saved reporter or URI.
+
 Visibility is encoded as local scope identities and prerequisite scope references,
-never process counters or stale memo-table contents. Fresh-name generators,
-reporters, locks, traversal caches, whole-program validation receipts and previous
-compilations are not payload fields. The result is materialized into private
-working state before global rewriters and admission run again.
+never process counters or stale memo tables. Fresh-name generators, reporters,
+locks, traversal/translation caches, proof-report managers, whole-program validation
+receipts and previous compilations are not payload fields. Freeze the local result
+before global passes mutate it; materialize a private working graph, logical
+builtin identities and fresh visibility identities for each compilation. Never
+return the previous compilation's live `ModuleResolutionResult` or retain mutable
+aliases into its `Program`.
 
-Publication writes both entries to a uniquely named temporary file in the target
-directory, closes and flushes it, validates its length/hash, then atomically renames
-it to `<key>.dres`. Readers only open final names. Concurrent identical writers
-may reuse the existing valid file. Interrupted writes and orphan temporaries are
-ignored. Truncation, decompression/size limits, a bad hash, unsupported format or
-schema, option/version/prerequisite mismatch, malformed object IDs, unknown tags,
-bad reference ownership or uncertain source rebinding all mean re-resolution.
-There is no partial recovery of typed facts and no fallback to trusting a subset
-of the payload. Cache files require trusted local writers, as with other typed
-artifacts; a checksum does not authenticate a fabricated resolution result.
+Whole-program graph admission, rewriter PreResolve/PostResolve, replacement
+instantiation, duplicate-name checks and cardinality validation run on every
+invocation. Preserve their existing phase order; a hit skips only the eligible
+module-local resolver work. Recompute global analysis and invalidate all prior
+validation receipts. Immediately before coordinator publication, check current
+compilation generation and cancellation. An immutable object completed before
+cancellation can be retained, but stale diagnostics or admission cannot publish.
 
-The first delivery may provide this specification and an in-memory store with
-the identical key and module-result boundary. Such a store must freeze results
-before global passes, instantiate private working graphs, rebind prerequisites
-and source locations, and exercise cold/warm diagnostics, Boogie, verdicts and
-module-resolution counts. It must identify itself as process-local and must not
-claim disk hits or write source text under the `.dres` extension. On-disk support
-and `--resolution-cache DIR` ship only when the typed payload and loader are
-implemented and pass those same controls.
+The implementation must extend the existing `CachingResolver`,
+`ModuleResolutionResult` and `PruneIfNotUsedSinceLastPruneCache` boundary, with
+key construction, eligibility, freeze/materialize and payload contracts in
+`DafnyCore`. CLI and IDE consumers share it. Retain IDE pruning, telemetry,
+cancellation and outer coordination rather than creating a second cache with
+different semantics. The current opt-in scheduler bypasses the old
+CloneId/system-shape cache; this proposal does not claim to have replaced it.
+A process-local milestone uses the same contract and private materialization,
+not a dictionary of live module objects.
+
+Eligibility requires the exact audited built-in plugin list and order. Additions,
+removals or reordering bypass both lookup and publication unless an explicit
+purity/input contract covers them. Executing custom callbacks on one worker does
+not make them cacheable. Unsupported resolver options, mutable retained state or
+uncertain source/prerequisite rebinding likewise fall back to normal resolution.
+
+Publication encodes deterministic bytes, writes a unique temporary file in the
+target directory, closes/flushes it, validates lengths and hashes, then atomically
+publishes without replacing an existing final file. Readers open final names
+only. Concurrent equal writers validate and reuse the winner. Two valid but
+unequal payloads for the same key indicate a determinism/provenance failure:
+quarantine or bypass the key; do not select the last writer. Interrupted writes
+and orphan temporary files are ignored. Truncation, invalid IDs, unknown tags,
+reference mismatch, corruption or any uncertainty means re-resolution, with no
+partial recovery of typed facts. Trust requires a locally trusted writer/producer
+namespace; a checksum does not authenticate fabricated resolved facts.
+
+A future `--resolution-cache DIR` opts into this module-local profile even without
+`--resolution-threads`; that case uses one worker. With both options omitted,
+keep the current default path. Cache location and worker count do not enter `L`.
+The option ships only after actual typed load/freeze/materialize support exists.
+No payload consisting of source plus reparsing/re-resolution counts as a hit.
+
+Acceptance requires cold/warm diagnostic, module-Boogie and verdict identity,
+including repeated in-process and cross-process loads. Record actual resolver
+calls separately from hit/load/miss/bypass/rejected events, with graph identity
+and key. An edit test independently specifies the exact changed module plus
+semantic dependent closure, including import/export/refinement/nesting roles;
+assert the names of actual resolver calls, not just a hit counter. Also cover
+location-only rebinding, library/root-role changes, builtin growth, producer and
+option mismatch, malformed payloads, concurrent publication, cancellation and
+fresh downstream cardinality/global validation. The in-memory milestone needs
+these same tests. Cold/warm resolve timings require at least five runs on Std
+and a multi-module program; no such cache timings are claimed in this draft.
 
 ### 6.5 Parallel resolution and the import DAG
 
