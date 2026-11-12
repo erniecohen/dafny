@@ -127,3 +127,12 @@ own commit, with a reason for each change.
 
 The [comparison results and proof annotations](decreases-order-results.md) retain
 the named outcomes, resource totals, and incomplete standard-library obligations.
+
+The reviewed obligation-producer inventory retains all 290 groups and 589 sites,
+with unchanged family classifications and per-producer counts. Optional comparison
+parameters change the member keys `CheckCallTermination/14` to `/15` and
+`DecreasesCheck/10` to `/11`. The termination assertion's diagnostic tuple and
+M2/M3 calls change their token hashes; can-call checks and the legacy lower-bound
+assertion retain their tokens. Other changes are complete-file hash updates for
+the three modified verifier files. The pure strict/weak recurrence is audited by
+the specialized termination argument above; it adds no assertion producer.
