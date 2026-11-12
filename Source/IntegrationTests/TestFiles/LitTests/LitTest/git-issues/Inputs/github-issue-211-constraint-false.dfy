@@ -9,9 +9,9 @@ module Tr {
 module S {
   import Tr
   function Leaf(x: int): bool { x != 7 }
-  type Small = x: int | Leaf(x) witness 0
-  newtype Byte = x: int | 0 <= x < 256
-  datatype Box = Box(s: Small, b: Byte)
+  type {:termination_closed} Small = x: int | Leaf(x) witness 0
+  newtype {:termination_closed} Byte = x: int | 0 <= x < 256
+  datatype {:termination_closed} Box = Box(s: Small, b: Byte)
   type Good = t: Tr.T | t.F(0) == 0 witness *
 }
 

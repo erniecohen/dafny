@@ -5,17 +5,17 @@
 // ordinary decreases clause, where the same-bound rule checks its call.
 
 module Tr {
-  datatype List = Nil | Cons(head: nat, tail: List)
+  datatype {:termination_closed} List = Nil | Cons(head: nat, tail: List)
 
-  function Size(xs: List): nat {
+  function {:termination_closed} Size(xs: List): nat {
     match xs
     case Nil => 0
     case Cons(_, tail) => 1 + Size(tail)
   }
 
-  type Small = x: nat | x < 100
+  type {:termination_closed} Small = x: nat | x < 100
 
-  trait {:termination false} T extends object {
+  trait {:termination false} {:termination_closed} T extends object {
     var fuel: nat
     function F(xs: List): nat
       reads *

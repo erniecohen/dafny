@@ -37,7 +37,7 @@ module Routes {
   type Good = t: Tr.T | t.F(0) == 0 witness *
 
   function ByHelper(t: Tr.T, n: nat): nat
-    decreases {:global} Q(t, n)            // error: 'Routes.Q' -> 'Tr.R' -> dispatch of 'Tr.T.F'
+    decreases {:global} Q(t, n)            // error: 'Routes.Q' -> imported General contract of 'Tr.R'
   {
     0
   }
