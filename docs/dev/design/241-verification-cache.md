@@ -36,6 +36,10 @@ needs an explicit source/report codec instead of these process-local references.
 Printing process-specific AST identities (`PrintWithUniqueASTIds`) bypasses the
 table: fresh graph copies necessarily have different identities, so their debug
 text cannot share a stable content hash.
+`--extract-counterexample` also bypasses the table: its rendered model trace
+consumes graph/source state outside the current snapshot codec. Repeated requests
+must retain the complete trace, so this mode recomputes until that state has a
+tested codec.
 
 The resolution worker on
 https://github.com/erniecohen/dafny/tree/codex/241-parallel-resolution owns the

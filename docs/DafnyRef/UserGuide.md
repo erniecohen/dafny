@@ -323,7 +323,8 @@ Various options control the verification process, in addition to all those descr
   Repeated `--filter-position-batch` requests can reuse unchanged translations;
   every request still prepares fresh tasks and runs the solver. Reuse checks the
   prelude, effective options and exact source bindings, and current whole-program
-  validation still runs. Unsupported snapshots are translated normally. The LRU
+  validation still runs. Unsupported snapshots and `--extract-counterexample`
+  requests are translated normally. The LRU
   table retains at most 256 entries and 512 MiB of text; graphs and source metadata
   also use memory. It stores no files and is discarded when the process exits.
   This option defaults to false and can also be set in `dfyconfig.toml`.

@@ -7,3 +7,5 @@ translation hits, coverage and diagnostic reporting, without merging unrelated
 module state into the program-wide map.
 Translation reuse is bypassed under `--modular-termination` until the current
 post-global-analysis view is included in the resolution key.
+Counterexample extraction also recomputes translation to preserve the complete
+rendered model trace until its report state has a snapshot codec.

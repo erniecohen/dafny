@@ -183,10 +183,13 @@ public class ModuleTranslationCacheTests {
       copy.Constants.Single(v => v.Name == "float").TypedIdent.Type);
   }
 
-  [Fact]
-  public async Task DebugPrintingOfProcessSpecificNodeIdentitiesBypassesReuse() {
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task DebugReportStateWithoutASnapshotCodecBypassesReuse(bool extractCounterexample) {
     var program = await Resolve(Source);
-    program.Options.PrintWithUniqueASTIds = true;
+    program.Options.PrintWithUniqueASTIds = !extractCounterexample;
+    program.Options.ExtractCounterexample = extractCounterexample;
     var module = program.RawModules().Single(m => m.Name == "M");
     var cache = new ModuleTranslationCache();
     cache.Translate(program, module, new(program.Options), default);
