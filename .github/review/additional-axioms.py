@@ -101,10 +101,15 @@ def resources(directory, output):
             unavailable.update(data.get('unavailable', {}))
         suite[mode] = batches
         counts[mode] = {'programs': len(programs), 'batches': len(batches), 'unavailable': unavailable}
+    observations = {}
+    for file in sorted(root.glob('*/ru/summary.json')):
+        observation = json.loads(file.read_text())
+        observations[file.parent.parent.name] = {key: observation[key] for key in
+                                                 ['platform', 'archive_sha256', 'solver_sha256']}
+    if len(observations) != 12:
+        raise ValueError('Expected solver provenance for eight suite and four library jobs')
     report = {'source': os.environ.get('GITHUB_SHA', ''),
-              'solver_archive_sha256': {
-                  '5.1.0': os.environ.get('Z3_LINUX_X64_SHA256', ''),
-                  '4.12.1': os.environ.get('HARNESS_Z3_4_12_1_SHA256', '')},
+              'solver_observations': observations,
               'suite_coverage': counts,
               'suite': pair(suite['off'], suite['on']), 'library': {}}
     std = runner('std')

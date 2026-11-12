@@ -31,7 +31,7 @@ if [ -f .github/review/base ]; then
     echo "$changed" >&2
     exit 1
   fi
-  hash=$(git diff --no-ext-diff --no-color --diff-filter=M --abbrev=7 "$base" "$product" | sha256sum | cut -c1-8)
+  hash=$(git diff --no-ext-diff --no-color --diff-filter=M --abbrev=7 "$base" "$product" | shasum -a 256 | cut -c1-8)
   revision="$(git rev-parse --short=8 "$base^{commit}").review.$hash"
 else
   revision=$(git rev-parse --short=8 HEAD)
