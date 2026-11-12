@@ -2275,6 +2275,8 @@ module Std.Producers {
           // Need to use Invoke() here for the extra postcondition from ProducerOfNewProducers
           currentInner := original.Invoke(());
 
+          // Establish the new last output before changing the representation set.
+          assert {:split_here} currentInner == Seq.Last(original.Outputs());
           assert fresh(original.Repr - old@beforeOriginalNext(Repr));
           if currentInner.Some? {
             Repr := {this} + original.Repr + currentInner.value.Repr;
@@ -2284,7 +2286,6 @@ module Std.Producers {
             assert old@beforeOriginalNext(original.Valid());
             assert currentInner.value.history == [];
 
-            assert currentInner == Seq.Last(original.Outputs());
             Seq.PartitionedLastTrueImpliesAll(original.Outputs(), IsSome<Producer<T>>);
             assert !original.Done() && currentInner.Some? && !currentInner.value.Done();
             original.DoneIsOneWay();
@@ -2294,7 +2295,6 @@ module Std.Producers {
           } else {
             Repr := {this} + original.Repr;
 
-            assert currentInner == Seq.Last(original.Outputs());
             assert original.Done() && currentInner.None?;
 
             old@beforeOriginalNext(DecreasesMetric()).TupleNonIncreasesToTuple(DecreasesMetric()) by {
