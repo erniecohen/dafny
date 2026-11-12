@@ -893,6 +893,8 @@ remain derived from their declarations; backend compilation and solver preparati
 are later boundaries. Source locations remain attached to diagnostics; any snapshot
 loader must rebind them to the current source map. This PR does not introduce a
 cache, freeze resolved ASTs for reuse, or remove the language server's outer lock.
+The opt-in scheduler bypasses the IDE's legacy CloneId/system-shape result cache;
+edits resolve module bodies again. That cache remains active on the default path.
 External plugin callbacks have no concurrency contract, so their presence limits
 the opt-in path to one worker. Whole-program admission and global rewrites always
 run outside the module scheduler.
