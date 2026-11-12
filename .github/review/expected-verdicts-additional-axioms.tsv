@@ -58,8 +58,8 @@ dafny0/DTypes.dfy	4	20 verified, 7 errors	18,56,121,127,137,156,179
 dafny0/DatatypeUpdate.dfy	4	5 verified, 2 errors	67,69
 dafny0/DatatypeUpdateResolution.dfy	2		13,14,18,20,29,53,55,61,63,70,71,72
 dafny0/Datatypes.dfy	4	29 verified, 15 errors	82,170,172,201,204,225,297,298,349,356,377,493,495
-dafny0/DecreasesTo0.dfy	4	3 verified, 13 errors	7,8,22,26,30,34,38,42,52,56,58,60,67
-dafny0/DecreasesTo1.dfy	4	1 verified, 11 errors	6,7,19,23,27,39,49,57,69,73,77
+dafny0/DecreasesTo0.dfy	4	4 verified, 13 errors	24,28,32,36,40,44,56,60,62,71,72,73,80
+dafny0/DecreasesTo1.dfy	4	2 verified, 12 errors	21,25,29,41,51,59,71,75,79,86,87,88
 dafny0/DecreasesTo3.dfy	4	0 verified, 7 errors	5,9,13,17,21,28,32
 dafny0/DecreasesTo5.dfy	2		5,10
 dafny0/DefaultParameters.dfy	4	72 verified, 74 errors	55,63,67,92,102,110,124,131,135,137,140,145,148,150,153,158,160,162,165,170,172,178,179,180,181,194,200,211,219,220,229,235,241,251,258,267,320,326,327,360,361,362,363,365,385,386,387,388,390,416,417,418,419,438,443,447,453,481,493,494,500,520,521,524,548,601
@@ -152,7 +152,7 @@ dafny0/Newtypes.dfy	4	43 verified, 16 errors	74,76,87,95,97,104,177,193,194,223,
 dafny0/NewtypesResolution.dfy	2		5,12,38,44,50,51,52,53,57,75,77,91,101,105,114,120,139,140,156,157,162,188,219,221,223,227,229,230,238,240,249,256,259,262,265,276,284,285,289,304,317,332,350,360,371,381,400,414,430,444,458,472,481,489,496,503
 dafny0/NoMoreAssume2Less2.dfy	4	0 verified, 26 errors	26,35,44,50,53,59,62,68,72,86,92,95,104,110,113,119,135,140,146,149,158,175,180,186,191,198
 dafny0/NoReferencesVerification.dfy	4	2 verified, 4 errors	16,26,33,49
-dafny0/NoTypeArgs.dfy	4	7 verified, 0 errors, 1 out of resource; 2 out of resource	75
+dafny0/NoTypeArgs.dfy	0	10 verified, 0 errors	
 dafny0/NonGhostQuantifiers.dfy	2		16,46,50,54,114,123,140,149,153,158,163,167,171,176,181,192
 dafny0/NonZeroInitialization.dfy	4	12 verified, 13 errors	4,11,12,13,16,17,18,19,37,38,39,53,58
 dafny0/NonZeroInitializationCompile.dfy	0	15 verified, 0 errors	
@@ -298,7 +298,7 @@ dafny2/MonotonicHeapstate.dfy	0	17 verified, 0 errors
 dafny2/SegmentSum.dfy	0	3 verified, 0 errors	
 dafny2/SmallestMissingNumber-functional.dfy	4	51 verified, 0 errors, 7 out of resource; 8 out of resource	157,230,277,278,279,297
 dafny2/SmallestMissingNumber-imperative.dfy	0	8 verified, 0 errors	
-dafny2/SnapshotableTrees.dfy	4	100 verified, 1 error, 5 out of resource; 6 out of resource	72,363,383,426,451,596
+dafny2/SnapshotableTrees.dfy	4	108 verified, 1 error, 4 out of resource; 5 out of resource	72,363,383,426,451
 dafny2/StoreAndRetrieve.dfy	0	16 verified, 0 errors	
 dafny2/TreeBarrier.dfy	0	7 verified, 0 errors	
 dafny2/TreeFill.dfy	0	3 verified, 0 errors	
