@@ -4,6 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
+using System.Threading;
+using System.Text.Json;
+using System.Security.Cryptography;
 using DafnyDriver.Commands;
 using Microsoft.Dafny;
 using Xunit;
@@ -122,6 +125,65 @@ public class TranslationCacheTests {
       Assert.True(cache.Bypasses > bypassesBefore);
     } finally {
       cache.Clear();
+    }
+  }
+
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task ImportedProofEditChangesResolutionKeyButKeepsClientBoogie(bool refresh) {
+    const string source = """
+      module Api {
+        function Used(x: int): int { x + 1 }
+        lemma Proof(x: int) ensures Used(x) == x + 1 { assert true; }
+      }
+      module Client {
+        import A = Api
+        lemma Reached(x: int) ensures A.Used(x) == x + 1 {}
+      }
+      """;
+    var directory = Path.Combine(Path.GetTempPath(), "dafny-translation-cutoff-" + Guid.NewGuid());
+    Directory.CreateDirectory(directory);
+    try {
+      var cache = new ModuleTranslationCache();
+      var before = await Translate(source, "before");
+      var after = await Translate(source.Replace("assert true;", "assert 0 == 0;"), "after");
+      Assert.NotEqual(before.Key, after.Key);
+      Assert.Equal(before.Text, after.Text);
+      Assert.Equal(2, cache.Translations);
+      Assert.Equal(0, cache.Hits);
+      var hash = Convert.ToHexStringLower(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(before.Text)));
+      Assert.True(cache.TryGetBoogieText(hash, out var retained));
+      Assert.Equal(before.Text, retained);
+
+      async Task<(string Key, string Text)> Translate(string text, string label) {
+        Microsoft.Dafny.Type.ResetScopes();
+        var options = new DafnyOptions(TextReader.Null, TextWriter.Null, TextWriter.Null);
+        options.ApplyDefaultOptionsWithoutSettingsDefault();
+        options.Set(CommonOptionBag.UnicodeCharacters, true);
+        options.Set(CommonOptionBag.TypeSystemRefresh, refresh);
+        var profile = Path.Combine(directory, label + ".jsonl");
+        options.Set(CommonOptionBag.PipelineProfile, profile);
+        var reporter = new BatchErrorReporter(options);
+        var parsed = await ProgramParser.Parse(text, new Uri("untitled:translation-cutoff.dfy"), reporter);
+        await new ProgramResolver(parsed.Program).Resolve(CancellationToken.None);
+        Assert.False(reporter.HasErrors, string.Join("\n", reporter.AllMessages.Select(d => d.Message)));
+        PipelineProfile.For(options)!.Finish("translation-cutoff-test");
+        var key = File.ReadLines(profile).Select(line => JsonDocument.Parse(line)).Where(document =>
+            document.RootElement.TryGetProperty("stage", out var stage) && stage.GetString() == "resolve.module" &&
+            document.RootElement.GetProperty("module").GetString() == "_module.Client")
+          .Select(document => document.RootElement.GetProperty("key").GetString()!).Single();
+        var module = parsed.Program.RawModules().Single(m => m.Name == "Client");
+        var graph = cache.Translate(parsed.Program, module, new(options), default, out var reused);
+        Assert.False(reused);
+        using var output = new StringWriter(System.Globalization.CultureInfo.InvariantCulture);
+        using (var writer = new Microsoft.Boogie.TokenTextWriter("translation-cache", output, false, options.PrettyPrint, options)) {
+          graph.Emit(writer);
+        }
+        return (key, output.ToString());
+      }
+    } finally {
+      Directory.Delete(directory, true);
     }
   }
 
