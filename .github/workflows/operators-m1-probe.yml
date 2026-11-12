@@ -28,6 +28,8 @@ jobs:
           unzip -q out/operators/z3.zip -d out/operators
           export DAFNY_OPERATORS_Z3="$PWD/out/operators/z3-5.1.0-x64-glibc-2.39/bin/z3"
           chmod +x "$DAFNY_OPERATORS_Z3"
+          mkdir -p Binaries/z3/bin
+          cp "$DAFNY_OPERATORS_Z3" Binaries/z3/bin/z3-5.1.0
           set +e
           sh Scripts/fetch-boogie-packages.sh > out/operators/packages.log 2>&1
           dotnet publish Source/Dafny/Dafny.csproj -c Release -o out/dafny -p:GeneratePackageOnBuild=false > out/operators/build.log 2>&1
@@ -44,6 +46,9 @@ jobs:
             dotnet test Source/DafnyLanguageServer.Test/DafnyLanguageServer.Test.csproj -c Release --filter 'FullyQualifiedName~OperatorSymbolsAreReferencesButAreNeverRenamed|FullyQualifiedName~OperatorHoverDistinguishesRankFromAnOrdinaryFallbackCall' --logger "trx;LogFileName=operators.trx" --results-directory "$PWD/out/operators/rename-tests" > out/operators/rename-tests.log 2>&1
             echo "$?" > out/operators/rename-tests.exit
             tail -40 out/operators/rename-tests.log
+            dotnet test Source/IntegrationTests -c Release --filter 'DisplayName~git-issues/github-issue-194.dfy' --logger "trx;LogFileName=operators.trx" --results-directory "$PWD/out/operators/lit-tests" > out/operators/lit-tests.log 2>&1
+            echo "$?" > out/operators/lit-tests.exit
+            tail -40 out/operators/lit-tests.log
           fi
           echo 'Development probe: retained exit files and logs are authoritative; this workflow records failures without notifying the owner.' >> "$GITHUB_STEP_SUMMARY"
           exit 0
@@ -62,6 +67,7 @@ jobs:
             out/operators/**/verification.json
             out/operators/core-tests
             out/operators/rename-tests
+            out/operators/lit-tests
           retention-days: 14
 
   disabled-compatibility:

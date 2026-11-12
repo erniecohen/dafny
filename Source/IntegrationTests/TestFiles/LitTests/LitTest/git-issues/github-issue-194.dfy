@@ -1,4 +1,4 @@
-// RUN: python3 "%S/Inputs/github-issue-194.py" "%repositoryRoot/Binaries/net10.0/DafnyDriver.dll" "%t.dir" > "%t"
+// RUN: python3 "%S/Inputs/github-issue-194.py" "%repositoryRoot/Binaries/net10.0/DafnyDriver.dll" "%t.dir" "%repositoryRoot/Binaries/z3/bin/z3-5.1.0" > "%t"
 // RUN: %diff "%s.expect" "%t"
 
 // Source-only fallback function operators: https://github.com/erniecohen/dafny/issues/194.

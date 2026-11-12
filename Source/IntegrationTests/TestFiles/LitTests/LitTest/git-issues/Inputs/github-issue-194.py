@@ -14,7 +14,12 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     sources = Path(__file__).resolve().parent
     launcher = ['dotnet', str(executable)] if executable.suffix == '.dll' else [str(executable)]
-    solver = os.environ.get('DAFNY_OPERATORS_Z3')
+    solver = sys.argv[3] if len(sys.argv) > 3 else os.environ.get('DAFNY_OPERATORS_Z3')
+    if not solver:
+        raise SystemExit('M1 checks require an explicit Z3 5.1.0 path')
+    version = subprocess.run([solver, '--version'], capture_output=True, text=True, check=True).stdout.strip()
+    if not re.match(r'^Z3 version 5\.1\.0(?:\s|$)', version):
+        raise SystemExit('M1 checks require Z3 5.1.0: ' + version)
     records, failures = [], []
     common = ['--use-basename-for-filename', '--show-snippets:false', '--cores', '1',
               '--resource-limit', '16000000', '--verification-time-limit', '0']
@@ -169,7 +174,7 @@ def main():
         records.append({'name': 'project-' + mode, 'exit': result.returncode})
         if (result.returncode == 0) != expected:
             failures.append({'name': 'project-' + mode, 'output': result.stdout + result.stderr})
-    (output / 'results.json').write_text(json.dumps({'checks': records, 'failures': failures}, indent=2))
+    (output / 'results.json').write_text(json.dumps({'solver_version': version, 'checks': records, 'failures': failures}, indent=2))
     if failures:
         for failure in failures:
             print(json.dumps(failure, indent=2))

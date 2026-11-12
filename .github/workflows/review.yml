@@ -641,7 +641,6 @@ jobs:
       - name: Run the tests named in .github/review/regressions
         env:
           DAFNY_INTEGRATION_TESTS_ONLY_COMPILERS: cs
-          DAFNY_OPERATORS_Z3: ${{ github.workspace }}/Binaries/z3/bin/z3-5.1.0
         run: |
           filter=$(grep -v '^#' .github/review/regressions | grep . | sed 's|^|DisplayName~|' | paste -sd'|' -)
           if [ -z "$filter" ]; then echo "no tests named"; exit 0; fi

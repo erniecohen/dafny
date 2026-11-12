@@ -54,8 +54,8 @@ The input-validation estimate is shared by `ProgramParser.cs` and `DafnyFile.cs`
 | `.github/review/operators-m1.py` | 7 | 0 | 7 |
 | `.github/review/regressions` | 3 | 0 | 3 |
 | `.github/workflows/operators-m1-off.yml` | 113 | 0 | 113 |
-| `.github/workflows/operators-m1-probe.yml` | 71 | 0 | 71 |
-| `.github/workflows/review.yml` | 9 | 0 | 9 |
+| `.github/workflows/operators-m1-probe.yml` | 77 | 0 | 77 |
+| `.github/workflows/review.yml` | 8 | 0 | 8 |
 | `Source/DafnyCore.Test/OperatorSelectionTests.cs` | 220 | 0 | 220 |
 | `Source/DafnyLanguageServer.Test/Lookup/HoverTest.cs` | 20 | 0 | 20 |
 | `Source/DafnyLanguageServer.Test/Refactoring/RenameTest.cs` | 26 | 1 | 27 |
@@ -132,7 +132,7 @@ The input-validation estimate is shared by `ProgramParser.cs` and `DafnyFile.cs`
 | `Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-194-wrong-argument.dfy` | 1 | 0 | 1 |
 | `Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-194-wrong-result-named.dfy` | 1 | 0 | 1 |
 | `Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-194-wrong-result.dfy` | 1 | 0 | 1 |
-| `Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-194.py` | 181 | 0 | 181 |
+| `Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/Inputs/github-issue-194.py` | 186 | 0 | 186 |
 | `Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/github-issue-194.dfy` | 6 | 0 | 6 |
 | `Source/IntegrationTests/TestFiles/LitTests/LitTest/git-issues/github-issue-194.dfy.expect` | 1 | 0 | 1 |
 | `docs/DafnyRef/Attributes.md` | 33 | 0 | 33 |
@@ -142,4 +142,4 @@ The input-validation estimate is shared by `ProgramParser.cs` and `DafnyFile.cs`
 | `docs/dev/operators-m1-size.md` | 145 | 0 | 145 |
 | `docs/dev/operators-m1.md` | 96 | 0 | 96 |
 
-Other changes total **1811 lines**, including tests, CI, documentation and review metadata. The table includes this report. The complete patch has **2520 changed lines**.
+Other changes total **1821 lines**, including tests, CI, documentation and review metadata. The table includes this report. The complete patch has **2530 changed lines**.
