@@ -595,9 +595,17 @@ a stored rendered report. Legacy `--boogie` settings either flow into those
 interfaces/actual commands or select a bypassed external profile; the opt-in
 transport is available only on the modern verify command.
 
-The implementation remains draft until the complete local suite/Std comparison,
-negative controls, option-classification drift gate and five-run measurements are
-recorded. The inherited module naming/materialization comparison currently has a
-strict on/off RU/verdict discrepancy; cache-enabled cold/warm agreement alone
-cannot establish the stronger default-on/off acceptance gate.
+Acceptance has three separate obligations. With both options disabled, Boogie,
+verdicts and resource counts must equal the shipped product byte for byte. In the
+enabled mode, warm execution must reproduce cold outcomes, resource counts,
+stdout, stderr and exit status; replayed timing fields remain explicitly marked.
+Enabled translation may change Boogie names and declaration order, and therefore
+solver resource counts or resource-bounded outcomes. Every observed off/on
+difference must be classified against actual translation text, and every outcome
+change must be listed by declaration in the pull request. A difference with no
+corresponding translation-text explanation blocks acceptance. Enabled verdicts,
+when needed for CI, have their own expectations rather than replacing the shipped
+mode's expectations. Negative controls, the option-classification drift gate and
+five-run measurements are also required. These are opt-in changes; acceptance
+does not authorize merging them.
 Modular-termination bypasses still own a private proof map in the opt-in module path: `ForModule` scopes the supplied map rather than replacing it with the program-wide map. The default parent is unchanged. Coverage/report regressions cover both resolver engines and repeated uncached bypass requests.
