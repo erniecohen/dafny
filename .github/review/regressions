@@ -377,3 +377,4 @@ git-issues/github-issue-241-translation-cache.dfy
 git-issues/github-issue-211-m4b.dfy
 # Wide JavaScript runtime bitwise results (https://github.com/erniecohen/dafny/issues/246).
 git-issues/git-issue-246.dfy
+TranslationCacheTests.ExtractedCounterexampleTraceIsNonemptyAndIdenticalAcrossRepeatedRequests

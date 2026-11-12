@@ -63,7 +63,38 @@ public class TranslationCacheTests {
     }
   }
 
-  private static async Task<Run> Verify(string source, bool cached, bool refresh, bool coverage) {
+  [Fact]
+  public async Task ExtractedCounterexampleTraceIsNonemptyAndIdenticalAcrossRepeatedRequests() {
+    var source = Path.Combine(AppContext.BaseDirectory, "TestFiles", "LitTests", "LitTest", "git-issues",
+      "git-issue-2026.dfy");
+    var cache = ModuleTranslationCache.ProcessCache;
+    cache.Clear();
+    var hitsBefore = cache.Hits;
+    var bypassesBefore = cache.Bypasses;
+    try {
+      var baseline = await Verify(source, false, false, false, extractCounterexample: true);
+      var cold = await Verify(source, true, false, false, extractCounterexample: true);
+      var warm = await Verify(source, true, false, false, extractCounterexample: true);
+      Assert.Equal(ExitValue.VERIFICATION_ERROR, baseline.Exit);
+      Assert.NotEmpty(baseline.Tasks);
+      Assert.Contains("initial state:", baseline.Stdout);
+      Assert.Contains("counterexampleLoopGuard", baseline.Stdout);
+      foreach (var run in new[] { cold, warm }) {
+        Assert.Equal(baseline.Stdout, run.Stdout);
+        Assert.Equal(baseline.Stderr, run.Stderr);
+        Assert.Equal(baseline.Exit, run.Exit);
+        Assert.Equal(baseline.Tasks, run.Tasks);
+      }
+      Assert.Equal(hitsBefore, cache.Hits);
+      Assert.Equal(0, cache.EntryCount);
+      Assert.True(cache.Bypasses > bypassesBefore);
+    } finally {
+      cache.Clear();
+    }
+  }
+
+  private static async Task<Run> Verify(string source, bool cached, bool refresh, bool coverage,
+    bool extractCounterexample = false) {
     var stdout = new StringWriter();
     var stderr = new StringWriter();
     var options = new DafnyOptions(TextReader.Null, stdout, stderr);
@@ -71,6 +102,11 @@ public class TranslationCacheTests {
     options.Set(CommonOptionBag.UnicodeCharacters, true);
     options.Set(CommonOptionBag.ResolutionThreads, 1);
     options.Set(CommonOptionBag.TranslationCache, cached);
+    if (extractCounterexample) {
+      options.Set(CommonOptionBag.ExtractCounterexample, true);
+      options.ExtractCounterexample = true;
+      options.EnhancedErrorMessages = 1;
+    }
     options.Set(CommonOptionBag.TypeSystemRefresh, refresh);
     options.Set(CommonOptionBag.WarnRedundantAssumptions, coverage);
     options.Set(CommonOptionBag.WarnContradictoryAssumptions, coverage);
