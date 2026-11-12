@@ -49,6 +49,9 @@ public abstract class DafnyExecutableBackend : ExecutableBackend {
 
   public override void Compile(Program dafnyProgram, string dafnyProgramName, ConcreteSyntaxTree output) {
     ProcessTranslationRecords(dafnyProgram, dafnyProgramName, output);
+    if (Options.Get(CommonOptionBag.UserDefinedOperators) && dafnyProgram.Reporter.HasErrors) {
+      return;
+    }
     CheckInstantiationReplaceableModules(dafnyProgram);
     ProcessOuterModules(dafnyProgram);
 

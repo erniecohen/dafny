@@ -7,6 +7,7 @@ namespace Microsoft.Dafny;
 
 class ScopeCloner : DeepModuleSignatureCloner {
   private VisibilityScope scope = null;
+  private readonly ModuleDefinition systemModule;
 
   private Dictionary<Declaration, Declaration> reverseMap = new();
 
@@ -15,9 +16,13 @@ class ScopeCloner : DeepModuleSignatureCloner {
     return !reverseMap[d].IsVisibleInScope(scope);
   }
 
-  public ScopeCloner(VisibilityScope scope) {
+  public ScopeCloner(VisibilityScope scope, ModuleDefinition systemModule = null) {
     this.scope = scope;
+    this.systemModule = systemModule;
+
   }
+
+  protected override OperatorCloneContext CreateOperatorCloneContext() => new() { ExportScope = scope, SystemModule = systemModule };
 
   private bool RevealedInScope(Declaration d) {
     return d.IsRevealedInScope(scope);
@@ -28,6 +33,21 @@ class ScopeCloner : DeepModuleSignatureCloner {
   }
 
   public override ModuleDefinition CloneModuleDefinition(ModuleDefinition m, ModuleDefinition newParent, Name name) {
+    EnsureOperatorClones(m);
+    foreach (var owner in ExistingOperatorClones == null ? Enumerable.Empty<TopLevelDecl>() : m.TopLevelDecls) {
+      OperatorClones.Require(owner);
+      owner.TypeArgs.ForEach(OperatorClones.Require);
+      if (owner is TopLevelDeclWithMembers members) {
+        foreach (var member in members.Members) {
+          OperatorClones.Require(member);
+          if (member is Function function) {
+            function.TypeArgs.ForEach(OperatorClones.Require);
+          } else if (member is MethodOrConstructor method) {
+            method.TypeArgs.ForEach(OperatorClones.Require);
+          }
+        }
+      }
+    }
     var basem = base.CloneModuleDefinition(m, newParent, name);
 
     //Merge signatures for imports which point to the same module
@@ -101,6 +121,7 @@ class ScopeCloner : DeepModuleSignatureCloner {
       otd.TerminationContract = d.TerminationContract;
       otd.CardinalityParentObligations = based.CardinalityParentObligations;
       based = otd;
+      ExistingOperatorClones?.Register(d, based);
       based.CardinalityViewOf = d;
       if (d is ClassLikeDecl { IsReferenceTypeDecl: true } cl) {
         reverseMap.Add(based, cl.NonNullTypeDecl);

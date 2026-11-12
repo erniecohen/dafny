@@ -47,6 +47,8 @@ namespace Microsoft.Dafny {
     public ModuleSignature moduleInfo = null;
 
     public ErrorReporter Reporter => reporter;
+    private HashSet<TopLevelDecl> operatorOwnersValidated;
+    internal HashSet<TopLevelDecl> OperatorOwnersValidated => operatorOwnersValidated ??= new();
     public Scope<IVariable> Scope => scope;
 
     public List<TypeConstraint.ErrorMsg> TypeConstraintErrorsToBeReported { get; } = [];
@@ -664,7 +666,7 @@ namespace Microsoft.Dafny {
         }
 
         var scope = exportDecl.Signature.VisibilityScope;
-        Cloner cloner = new ScopeCloner(scope);
+        Cloner cloner = new ScopeCloner(scope, SystemModuleManager.SystemModule);
         var exportView = cloner.CloneModuleDefinition(m, m.EnclosingModule, m.NameNode);
         if (Options.DafnyPrintExportedViews.Contains(exportDecl.FullName)) {
           var wr = new StringWriter();
@@ -942,6 +944,10 @@ namespace Microsoft.Dafny {
       Contract.Requires(origin != null);
       Contract.Requires(name != null);
       Contract.Requires(moduleSignatures != null);
+      if (Options.Get(CommonOptionBag.UserDefinedOperators) && OperatorResolution.FeatureBearing(origin.ModuleDef)) {
+        reporter.Error(MessageSource.Resolver, "operator_abstract_import", origin.ModuleDef.Origin,
+          "user-defined operators do not support feature-bearing abstract-signature imports in this milestone");
+      }
       var errCount = reporter.Count(ErrorLevel.Error);
 
       var module = new ModuleDefinition(SourceOrigin.NoToken, new Name(name + ".Abs"), [], ModuleKindEnum.Abstract, true, null, null, null);
@@ -1005,7 +1011,7 @@ namespace Microsoft.Dafny {
         };
         return result;
       } else {
-        return new AbstractSignatureCloner(scope).CloneDeclaration(d, newParent);
+        return new AbstractSignatureCloner(scope, SystemModuleManager.SystemModule).CloneDeclaration(d, newParent);
       }
     }
 

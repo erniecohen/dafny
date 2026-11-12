@@ -3055,3 +3055,26 @@ for values of inputs to a method that cause the program to execute specific bloc
 A detailed description of how to do this is given in
 [a separate document](https://github.com/dafny-lang/dafny/blob/master/Source/DafnyTestGeneration/README.md).
 
+
+### Experimental source operator option
+
+`--user-defined-operators` is disabled by default and requires
+`--type-system-refresh`. It is listed by `dafny verify --help-internal` and enables the initial
+[user-defined function operator milestone](#sec-user-defined-operators).
+A project can select it in `dfyconfig.toml`:
+
+```toml
+[options]
+user-defined-operators = true
+type-system-refresh = true
+```
+
+An explicit command-line `--user-defined-operators:false` overrides that setting.
+The option is not allowed in a module's `{:options}` attribute.
+
+This milestone is source-only: feature-on `.doo` input/output, trusted
+`--library` inputs, compiled standard-library reuse, precompiled modules and
+explicit translation-record input/output are rejected. Supply fully checked
+source normally instead. Complete-source compilation and execution remain
+available and do not emit automatic `.dtr` records. With the option off, existing
+library and record behavior is unchanged.

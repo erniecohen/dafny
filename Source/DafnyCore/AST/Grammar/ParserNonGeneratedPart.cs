@@ -9,6 +9,33 @@ using static Microsoft.Dafny.ParseErrors;
 namespace Microsoft.Dafny;
 
 public partial class Parser {
+  private Expression SourceBinary(IOrigin origin, BinaryExpr.Opcode op, Expression left, Expression right) =>
+    OperatorSyntaxExpr.Binary(theOptions.Get(CommonOptionBag.UserDefinedOperators), origin, op, left, right);
+
+  private Expression SourceNegation(IOrigin origin, Expression operand) {
+    var intrinsic = new NegationExpression(origin, operand);
+    return theOptions.Get(CommonOptionBag.UserDefinedOperators) ? new OperatorSyntaxExpr(origin, intrinsic) : intrinsic;
+  }
+
+  // Module attributes still go through legacy resolution even under refresh. A syntax
+  // cloner visits lambda attributes, statement expressions and other pre-resolution syntax.
+  private sealed class IntrinsicAttributeCloner : Cloner {
+    public override Expression CloneExpr(Expression expression) {
+      if (expression is OperatorSyntaxExpr op) {
+        return base.CloneExpr(op.Syntax);
+      }
+      var clone = base.CloneExpr(expression);
+      if (clone is ChainingExpression chain) {
+        chain.UseUserOperators = false;
+        chain.Rebuild();
+      }
+      return clone;
+    }
+  }
+
+  private static Attributes IntrinsicModuleAttributes(Attributes attributes) =>
+    new IntrinsicAttributeCloner().CloneAttributes(attributes);
+
 
   public Parser(DafnyOptions options, Scanner/*!*/ scanner, Errors/*!*/ errors, CancellationToken cancellationToken)
     : this(scanner, errors, cancellationToken)  // the real work
