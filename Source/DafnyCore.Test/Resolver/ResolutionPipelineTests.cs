@@ -30,6 +30,24 @@ public class ResolutionPipelineTests {
     }
     """;
 
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task DefaultResolutionUsesCallerAndMatchesScheduledOwnership(bool refresh) {
+    var caller = 0;
+    var observed = new List<int>();
+    var (direct, directReporter) = await Resolve(Source, 0, refresh,
+      starting: _ => observed.Add(Environment.CurrentManagedThreadId),
+      configure: _ => caller = Environment.CurrentManagedThreadId);
+    Assert.Empty(Errors(directReporter));
+    Assert.NotEmpty(observed);
+    Assert.All(observed, thread => Assert.Equal(caller, thread));
+    var (scheduled, scheduledReporter) = await Resolve(Source, 1, refresh);
+    Assert.Empty(Errors(scheduledReporter));
+    Assert.Equal(Keys(direct), Keys(scheduled));
+    Assert.Equal(Translate(direct, true), Translate(scheduled, true));
+  }
+
   [Fact]
   public async Task RejectedLegacyNewtypesDoNotTraverseUnresolvedImports() {
     const string source = """
