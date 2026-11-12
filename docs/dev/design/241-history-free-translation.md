@@ -76,3 +76,14 @@ and exit. A differing graph-construction order is a defect even when printed
 Boogie matches. If a construct inherently requires program-global translation
 state, report the construct, measured size and effective options; do not disguise
 that dependence by saving/restoring counters or weakening the equality check.
+
+## Moved-proof repair
+
+The filtered `Std.Base64.EncodeBVIsBase64` proof exhausts its existing one-million
+RU bound with the refreshed resolver and additional axioms off after the default
+translation changes. Assertion isolation retains the same contract and proof
+body while checking the modulo, sequence-bound, padding and final membership
+obligations separately. It adds no axiom, assumption, precondition or unchecked
+fact. The selected declaration passes all four combinations of additional axioms
+and consistent-obligation checks at the unchanged bound. This is focused repair
+evidence; whole-library and dependent-client qualification still gate the PR.
