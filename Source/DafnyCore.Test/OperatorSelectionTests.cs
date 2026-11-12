@@ -158,6 +158,27 @@ public class OperatorSelectionTests {
     Assert.Equal(BinaryExpr.ResolvedOpcode.RankLt, selected.Opcode);
   }
 
+  [Theory]
+  [InlineData(0)]
+  [InlineData(1)]
+  [InlineData(2)]
+  [InlineData(3)]
+  public async Task IntrinsicReplayRequiresEveryOperandView(int recordedOperands) {
+    var (program, reporter) = await Parse("datatype D = D\nghost predicate p(x: D) { x < x }", false);
+    var op = Assert.IsType<OperatorSyntaxExpr>(Function(program, "p").Body);
+    var owner = program.DefaultModuleDef.TopLevelDecls.OfType<IndDatatypeDecl>().Single();
+    var view = new OperatorTypeView(owner, ImmutableArray<OperatorTypeView>.Empty);
+    op.Selection = new IntrinsicOperatorSelection(BinaryExpr.ResolvedOpcode.RankLt, null,
+      Enumerable.Repeat(view, recordedOperands).ToImmutableArray());
+    op.ResolutionStarted = true; // unit-injected saved record, including a valid control
+    await new ProgramResolver(program).Resolve(CancellationToken.None);
+    if (recordedOperands == 2) {
+      Assert.False(reporter.HasErrors);
+    } else {
+      Assert.Contains(reporter.AllMessages, m => m.Message.Contains("cannot be transported into this intrinsic view"));
+    }
+  }
+
   [Fact]
   public async Task ConcreteClonerRoutesPreserveTheReplayRecipe() {
     var (program, reporter) = await Parse(Source);

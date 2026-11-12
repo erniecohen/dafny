@@ -293,7 +293,7 @@ namespace Microsoft.Dafny {
             var family = op.Syntax is NegationExpression ? PreTypeResolver.AncestorName(operands[0].PreType) : null;
             var views = operands.Select(e => OperatorTypeView.Freeze(e.PreType)).ToImmutableArray();
             if (saved is IntrinsicOperatorSelection old &&
-                (old.Opcode != opcode || old.UnaryFamily != family ||
+                (old.Opcode != opcode || old.UnaryFamily != family || old.Operands.Length != operands.Count ||
                  !old.Operands.Zip(operands).All(p => p.First.Matches(p.Second.PreType)))) {
               cus.ReportError(op.Origin, "operator selection cannot be transported into this intrinsic view");
               return;
