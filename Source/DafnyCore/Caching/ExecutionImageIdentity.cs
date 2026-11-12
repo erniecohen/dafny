@@ -93,14 +93,19 @@ internal static class ExecutionImageIdentity {
         }
       }
     } else if (OperatingSystem.IsLinux()) {
-      foreach (var mapped in LinuxMappedImages()) { files.Add(mapped); }
-      foreach (var image in files.Where(f => f == executable || f.EndsWith(".so", StringComparison.Ordinal)).ToArray()) {
+      var mappedImages = LinuxMappedImages().ToHashSet(StringComparer.Ordinal);
+      foreach (var mapped in mappedImages) { files.Add(mapped); }
+      // Optional runtime providers can reference packages absent from this installation.
+      // Hash their bytes, but enumerate dependency closure only for images actually loaded
+      // by this process and the selected child executable. A later unrecorded dlopen still
+      // rejects reuse in Read, including any newly loaded transitive dependency.
+      foreach (var image in LinuxDependencyRoots(files, mappedImages, executable, System.Environment.ProcessPath)) {
         foreach (var line in Run("/usr/bin/ldd", image).Split('\n')) {
           var tokens = line.Trim().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
           if (tokens.Length == 0 || tokens[0].StartsWith("linux-vdso", StringComparison.Ordinal)) { continue; }
           var dependency = tokens.Length > 2 && tokens[1] == "=>" ? tokens[2] : tokens[0];
           if (!Path.IsPathRooted(dependency) || !File.Exists(dependency)) {
-            throw new NotSupportedException("unresolved native dependency");
+            throw new NotSupportedException("unresolved native dependency " + dependency);
           }
           files.Add(dependency);
         }
@@ -121,6 +126,11 @@ internal static class ExecutionImageIdentity {
     }
     return new Image(manifest, stamps);
   }
+
+  internal static IEnumerable<string> LinuxDependencyRoots(IEnumerable<string> files,
+    ISet<string> mappedImages, string executable, string? host) => files.Where(file =>
+      (file == executable || file == host || mappedImages.Contains(file)) &&
+      !file.EndsWith(".dll", StringComparison.Ordinal));
 
   private static IEnumerable<string> LinuxMappedImages() {
     foreach (var line in File.ReadLines("/proc/self/maps")) {

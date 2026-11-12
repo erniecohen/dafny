@@ -3,3 +3,4 @@ Exact task inputs, ordered UsedTypes, execution options and native dependency
 identities guard reuse. Completed valid results and resource-bounded errors or
 resource exhaustion retain their resource counts; replayed log timings are marked.
 Unsupported profiles, corrupt entries and divergent replay execute normally.
+Linux dependency closure follows loaded native images and the selected solver; unused optional runtime providers do not require unrelated system packages.

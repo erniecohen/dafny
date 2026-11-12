@@ -61,6 +61,7 @@ cli	javadoclike-docstring-plugin	--javadoclike-docstring-plugin	System.CommandLi
 cli	json-diagnostics	--json-diagnostics	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	json-output	--json-output	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	legacy-data-constructors	--legacy-data-constructors	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
+cli	legacy-decreases-order	--legacy-decreases-order	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	legacy-module-names	--legacy-module-names	System.CommandLine.Option`1[System.Boolean]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
 cli	length-limit	--length-limit	System.CommandLine.Option`1[System.UInt32]	command-setup	setup or another command; executes before/outside proof transport
 cli	library	--library	System.CommandLine.Option`1[System.Collections.Generic.IList`1[System.IO.FileInfo]]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
@@ -90,8 +91,8 @@ cli	pipeline-profile	--pipeline-profile	System.CommandLine.Option`1[System.Strin
 cli	plugin	--plugin	System.CommandLine.Option`1[System.Collections.Generic.IList`1[System.String]]	bypass	unsupported side effects/factory/repeated batch; ordinary execution
 cli	pprint	--pprint	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	prelude	--prelude	System.CommandLine.Option`1[System.IO.FileInfo]	input	parsed/resolved/rewritten/lowered before task lookup; exact SMT and current assertion map
-cli	print	--print	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	print	--print	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
+cli	print	--print	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	print-bpl	--print-bpl	System.CommandLine.Option`1[System.String]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	print-mode	--print-mode	System.CommandLine.Option`1[Microsoft.Dafny.PrintModes]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
 cli	print-ranges	--print-ranges	System.CommandLine.Option`1[System.Boolean]	current-report	current diagnostics/reporting runs; prover-side flags also frozen in interfaces
@@ -193,8 +194,8 @@ prover	Microsoft.Boogie.CoreOptions.ProverLogFilePath		System.String	execution	c
 prover	Microsoft.Boogie.CoreOptions.ProverOptions		System.Collections.Generic.List`1[System.String]	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.Prune		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.PruneInfeasibleEdges		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
-prover	Microsoft.Boogie.CoreOptions.RandomizeVcIterations		System.Int32	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.RandomSeed		System.Nullable`1[System.Int32]	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.RandomizeVcIterations		System.Int32	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.RelaxFocus		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.ResourceLimit		System.UInt32	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.RunDiagnosticsOnTimeout		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
@@ -271,8 +272,8 @@ solver-field	SmtOptions		System.Collections.Generic.List`1[Microsoft.Boogie.SMTL
 solver-field	Solver		Microsoft.Boogie.SMTLib.SolverKind	execution	all public solver fields/properties enumerated and encoded
 solver-field	SolverArguments		System.Collections.Generic.List`1[System.String]	execution	all public solver fields/properties enumerated and encoded
 solver-field	TimeLimit		System.UInt32	execution	all public solver fields/properties enumerated and encoded
-solver-field	UsedTypes		System.Collections.Generic.List`1[Microsoft.Boogie.Type]	execution	ordered lowered type identities encoded separately, including inputs outside pruned declarations
 solver-field	UseWeights		System.Boolean	execution	all public solver fields/properties enumerated and encoded
+solver-field	UsedTypes		System.Collections.Generic.List`1[Microsoft.Boogie.Type]	execution	ordered lowered type identities encoded separately, including inputs outside pruned declarations
 solver-field	Verbosity		System.Int32	bypass	observable warning or native transport output bypasses; None/zero encoded in supported profile
 solver-property	Help		System.String	command-setup	static option documentation; no execution read
 solver-property	LibOptions		Microsoft.Boogie.SMTLibOptions	execution	covered by complete inherited prover interfaces; never serialized as an opaque object
