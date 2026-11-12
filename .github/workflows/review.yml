@@ -37,6 +37,11 @@ on:
         type: boolean
         default: false
 
+      decreases_order_comparison:
+        description: Record corrected versus legacy decreases orders (scratch comparison only)
+        type: boolean
+        default: false
+
       default_comparison:
         description: Record only repeated default suite/library vectors for frozen products (manual scratch only)
         type: boolean
@@ -75,8 +80,12 @@ env:
   HARNESS_Z3_4_16_0_SHA256: 87de9c9e86c877abfccb00cf24b946c4a1bda7b9cba6f363ea58311d2573c320
 
 jobs:
+  decreases-order-comparison:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.decreases_order_comparison && startsWith(github.ref, 'refs/heads/scratch/') }}
+    uses: ./.github/workflows/decreases-order.yml
+
   build:
-    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/'))) }}
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && (inputs.default_comparison || inputs.decreases_order_comparison) && startsWith(github.ref, 'refs/heads/scratch/'))) }}
     name: Build (Release)
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 60
@@ -705,7 +714,7 @@ jobs:
             before-control.txt
 
   regressions:
-    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/'))) }}
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && (inputs.default_comparison || inputs.decreases_order_comparison) && startsWith(github.ref, 'refs/heads/scratch/'))) }}
     name: Regression tests (upstream harness)
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 90
@@ -817,7 +826,7 @@ jobs:
           grep -Eq 'Total( tests)?: *1([^0-9]|$)' test.log
 
   resolver-tests:
-    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && inputs.default_comparison && startsWith(github.ref, 'refs/heads/scratch/'))) }}
+    if: ${{ (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'erniecohen/dafny'))) && !inputs.platform_parity && (!(github.event_name == 'workflow_dispatch' && (inputs.default_comparison || inputs.decreases_order_comparison) && startsWith(github.ref, 'refs/heads/scratch/'))) }}
     name: Resolver unit tests and language-server recovery
     runs-on: [self-hosted, macOS, ARM64, mac-studio]
     timeout-minutes: 20
