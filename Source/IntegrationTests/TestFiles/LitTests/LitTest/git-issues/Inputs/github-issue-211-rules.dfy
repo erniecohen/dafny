@@ -33,9 +33,9 @@ module Impl {
   }
 }
 
-// A trait that another module extends with @AssumeCrossModuleTermination is open too.
+// The defining trait declares checked extensibility. The child marker is redundant on-mode.
 module Base {
-  trait U {
+  trait {:termination false} U {
     method Go(n: nat) decreases {:global} n
   }
 }
