@@ -504,6 +504,15 @@ separately. Output writers bind to the current report; only the pinned factory
 and installed transport are admitted. Solver logs, external preambles, plugins,
 inspectors, batch transport, repeated filter batches, adaptive timeout diagnostics,
 keep-going subdivisions and unsupported loader environments bypass.
+Solver transport verbosity and displayed prover warnings also bypass: replay
+cannot omit their observable transport events. With `PrintProverWarnings=None`,
+the pinned `VerificationResultCollector` inherits a warning callback that does
+nothing. A message is ignored for admission only if every line is classified as
+a warning by pinned `HandleProverError` (case-insensitive `WARNING: `); the cold
+callback still runs. Such ignored events affect neither reports nor the adaptive
+program. Genuine errors, mixed warning/error messages and parser failures still
+reject publication. Unit controls and native Std pattern-warning tasks exercise
+this distinction.
 
 The environment descriptor includes an ABI identifier and actual bytes of all
 application/runtime managed assemblies, the native solver and host, hostfxr,

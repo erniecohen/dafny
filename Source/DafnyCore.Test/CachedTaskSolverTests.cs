@@ -12,11 +12,11 @@ public class CachedTaskSolverTests : IDisposable {
   private readonly string directory = Path.Combine(Path.GetTempPath(), "dafny-exchanges-" + Guid.NewGuid().ToString("N"));
   private int starts;
   private static SExpr S(string name, params SExpr[] children) => new(name, children);
-  private CachedTaskSolver Transport(string reason = "unknown") => new(new TaskResultCache(new ContentAddressedCache(directory)),
+  private CachedTaskSolver Transport(string reason = "unknown", bool warningsHaveNoEffects = false, string? warning = null) => new(new TaskResultCache(new ContentAddressedCache(directory)),
     () => Encoding.UTF8.GetBytes("frozen adaptive execution program"), () => {
       starts++;
-      return new Solver(reason);
-    });
+      return new Solver(reason, warning);
+    }, warningsHaveNoEffects);
 
   private static void Setup(CachedTaskSolver transport) {
     transport.NewProblem("current split");
@@ -60,6 +60,30 @@ public class CachedTaskSolverTests : IDisposable {
     cold.Send("; Valid");
     cold.Close();
     Assert.Equal(CachePublication.Unavailable, cold.CompleteNormally(CacheTaskOutcome.Correct, 17));
+  }
+
+  [Theory]
+  [InlineData(true, "WARNING: ignored pattern", true)]
+  [InlineData(false, "WARNING: displayed pattern", false)]
+  [InlineData(true, "solver error", false)]
+  [InlineData(true, "WARNING: ignored pattern\nsolver error", false)]
+  public async Task OnlyWarningsWithNoObservableCallbackEffectsCanBeOmitted(bool ignored, string message, bool reusable) {
+    var cold = Transport(warningsHaveNoEffects: ignored, warning: message);
+    Setup(cold);
+    await cold.SendRequest("(check-sat)");
+    await Finish(cold);
+    Assert.Equal(reusable ? CachePublication.Stored : CachePublication.Unavailable,
+      cold.CompleteNormally(CacheTaskOutcome.Correct, 17));
+    cold.Close();
+    if (reusable) {
+      var warm = Transport(warningsHaveNoEffects: ignored);
+      Setup(warm);
+      await warm.SendRequest("(check-sat)");
+      await Finish(warm);
+      Assert.Equal(CachePublication.AlreadyPresent, warm.CompleteNormally(CacheTaskOutcome.Correct, 17));
+      Assert.Equal(1, starts);
+      warm.Close();
+    }
   }
 
   [Fact]
@@ -117,15 +141,17 @@ public class CachedTaskSolverTests : IDisposable {
     Assert.NotEqual(first.Key, new TaskCacheDescriptor(input, Types(ta), 100, 0).Key);
   }
 
-  private sealed class Solver(string reason) : SMTLibSolver {
-    public override event Action<string>? ErrorHandler { add { } remove { } }
+  private sealed class Solver(string reason, string? warning = null) : SMTLibSolver {
+    public override event Action<string>? ErrorHandler;
     public override void Close() { }
     public override void Send(string command) { }
     public override void NewProblem(string name) { }
     public override Task PingPong() => Task.CompletedTask;
     public override void AddErrorHandler(Action<string> handler) { }
-    public override Task<SExpr> SendRequest(string request, CancellationToken cancellationToken = default) =>
-      Task.FromResult(request == "(check-sat)" ? S("unsat") : S(":reason-unknown", S(reason)));
+    public override Task<SExpr> SendRequest(string request, CancellationToken cancellationToken = default) {
+      if (warning != null) { ErrorHandler?.Invoke(warning); }
+      return Task.FromResult(request == "(check-sat)" ? S("unsat") : S(":reason-unknown", S(reason)));
+    }
     public override Task<IReadOnlyList<SExpr>> SendRequestsAndCloseInput(IReadOnlyList<string> requests,
       CancellationToken cancellationToken = default) => throw new NotSupportedException();
   }

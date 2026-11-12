@@ -31,9 +31,9 @@ internal sealed class TaskExecutionEnvironment(DafnyOptions options) {
   public byte[]? Freeze(SMTLibOptions library, SMTLibSolverOptions solver, out string? reason) {
     try {
       if (library.TheProverFactory.GetType() != typeof(Factory) || solver.GetType() != typeof(SMTLibSolverOptions) ||
-          solver.Solver != SolverKind.Z3 || solver.SolverArguments.Count != 1 || solver.SolverArguments[0] != "-smt2 -in" || solver.BatchMode || solver.LogFilename != null || solver.Inspector != null ||
+          solver.Solver != SolverKind.Z3 || solver.SolverArguments.Count != 1 || solver.SolverArguments[0] != "-smt2 -in" || solver.BatchMode || solver.LogFilename != null || solver.Inspector != null || solver.Verbosity != 0 ||
           library.ProverPreamble != null || library.RunDiagnosticsOnTimeout || library.TraceDiagnosticsOnTimeout ||
-          library.Trace || library.TraceVerify || library.TraceTimes || options.AdditionalPlugins.Count != 0 ||
+          library.Trace || library.TraceVerify || library.TraceTimes || library.PrintProverWarnings != CoreOptions.ProverWarnings.None || options.AdditionalPlugins.Count != 0 ||
           options.AdditionalPluginArguments.Count != 0 || options.ProcessTimeLimit != 0 || library.ModelViewFile != null || library.SoundnessSmokeTest ||
           library.VcsMaxKeepGoingSplits > 1 || library.ImmediatelyAcceptCommands || !library.RestartProverPerVC) {
         reason = "unsupported factory, adaptive diagnostics or external side effects";

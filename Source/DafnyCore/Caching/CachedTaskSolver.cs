@@ -44,6 +44,7 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
   private readonly TaskResultCache cache;
   private readonly Func<byte[]?> environment;
   private readonly Func<SMTLibSolver> createSolver;
+  private readonly bool warningsHaveNoEffects;
   private readonly List<Step> steps = new();
   private Mode mode;
   private bool cacheable = true;
@@ -59,10 +60,11 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
   private Replay? replay;
 
   public CachedTaskSolver(TaskResultCache cache, Func<byte[]?> completeEnvironment,
-    Func<SMTLibSolver> createFreshSolver) {
+    Func<SMTLibSolver> createFreshSolver, bool warningsHaveNoEffects = false) {
     this.cache = cache;
     environment = completeEnvironment;
     createSolver = createFreshSolver;
+    this.warningsHaveNoEffects = warningsHaveNoEffects;
   }
 
   public string? ExecutionKey => descriptor?.Key;
@@ -180,7 +182,7 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
     solver = createSolver();
     solver.ErrorHandler += OnError;
     for (var index = 0; index < parserErrorSubscriptions; index++) {
-      solver.AddErrorHandler(_ => { cacheable = false; });
+      solver.AddErrorHandler(RejectObservableError);
     }
     mode = Mode.Live;
     foreach (var step in steps) {
@@ -194,15 +196,26 @@ internal sealed class CachedTaskSolver : SMTLibSolver {
   }
 
   private void OnError(string message) {
-    cacheable = false;
+    RejectObservableError(message);
     ErrorHandler?.Invoke(message);
+  }
+
+  private void RejectObservableError(string message) {
+    // Pinned HandleProverError treats each line containing "WARNING: " as a
+    // warning. VerificationResultCollector.OnWarning is a no-op under None.
+    // Such ignored events affect neither the adaptive solver program nor reports.
+    // Preserve actual callbacks on the cold path; every other event rejects reuse.
+    if (!warningsHaveNoEffects || !message.Replace("\r", "").Split('\n')
+          .All(line => line.Contains("WARNING: ", StringComparison.OrdinalIgnoreCase))) {
+      cacheable = false;
+    }
   }
 
   public override void AddErrorHandler(Action<string> handler) {
     ErrorHandler += handler;
     parserErrorSubscriptions++;
     // Preserve the underlying parser's explicit error-handler registration behavior.
-    solver?.AddErrorHandler(_ => { cacheable = false; });
+    solver?.AddErrorHandler(RejectObservableError);
   }
 
   /// <summary>Call only after all counterexample/coverage extraction and idle handshakes finish.</summary>

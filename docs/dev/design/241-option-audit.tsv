@@ -184,7 +184,7 @@ prover	Microsoft.Boogie.CoreOptions.NormalizeDeclarationOrder		System.Boolean	ex
 prover	Microsoft.Boogie.CoreOptions.OutputWriter		System.IO.TextWriter	current-report	current output binding
 prover	Microsoft.Boogie.CoreOptions.OverlookBoogieTypeErrors		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.PrettyPrint		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
-prover	Microsoft.Boogie.CoreOptions.PrintProverWarnings		Microsoft.Boogie.CoreOptions+ProverWarnings	execution	complete inherited prover interface enumerated and encoded before first query
+prover	Microsoft.Boogie.CoreOptions.PrintProverWarnings		Microsoft.Boogie.CoreOptions+ProverWarnings	bypass	observable warning or native transport output bypasses; None/zero encoded in supported profile
 prover	Microsoft.Boogie.CoreOptions.PrintSplitDeclarations		System.Boolean	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.PrintSplitFile		System.String	execution	complete inherited prover interface enumerated and encoded before first query
 prover	Microsoft.Boogie.CoreOptions.ProcedureInlining		Microsoft.Boogie.CoreOptions+Inlining	execution	complete inherited prover interface enumerated and encoded before first query
@@ -273,7 +273,7 @@ solver-field	SolverArguments		System.Collections.Generic.List`1[System.String]	e
 solver-field	TimeLimit		System.UInt32	execution	all public solver fields/properties enumerated and encoded
 solver-field	UsedTypes		System.Collections.Generic.List`1[Microsoft.Boogie.Type]	execution	ordered lowered type identities encoded separately, including inputs outside pruned declarations
 solver-field	UseWeights		System.Boolean	execution	all public solver fields/properties enumerated and encoded
-solver-field	Verbosity		System.Int32	execution	all public solver fields/properties enumerated and encoded
+solver-field	Verbosity		System.Int32	bypass	observable warning or native transport output bypasses; None/zero encoded in supported profile
 solver-property	Help		System.String	command-setup	static option documentation; no execution read
 solver-property	LibOptions		Microsoft.Boogie.SMTLibOptions	execution	covered by complete inherited prover interfaces; never serialized as an opaque object
 solver-property	UseTickleBool		System.Boolean	execution	all public solver fields/properties enumerated and encoded
