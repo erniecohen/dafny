@@ -1984,6 +1984,10 @@ in [the decreases-clause rules](#sec-decreases-clause). In particular, a fractio
 real decrease with an unchanged suffix is weak nonincrease, while a suffix increase
 requires an earlier strict decrease. Numeric lower bounds apply here too: an old
 negative component can stay unchanged, but cannot decrease again.
+For example, `0 decreases to -1` holds, while `-1 decreases to -2` and
+`-1 nonincreases to -2` do not. This is a behavior change from the legacy
+ordering expressions, which omitted the numeric lower bound. A tuple's
+earlier strict decrease can still allow a later component to increase.
 
 ## 9.39. Compile-Time Constants {#sec-compile-time-constants}
 

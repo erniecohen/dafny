@@ -1,9 +1,35 @@
-# Decreases-order comparison and proof annotations
+# Decreases-order comparison and proof repairs
 
 The corrected comparison is the default for the soundness repair in
 https://github.com/erniecohen/dafny/issues/264. The hidden
 `--legacy-decreases-order` switch supplies the old side of this comparison.
 The [component argument](decreases-order.md) explains the changed formulas.
+
+## Coordinator-requested proof repairs
+
+The five items requested at
+https://github.com/erniecohen/dafny/pull/275#issuecomment-6813065817
+are repaired without raising any limit or adding an assumption:
+
+- `NoTypeArgs.Lemma` uses explicit recursive calls and named concatenation
+  identity/associativity lemmas instead of broad quantified automatic induction.
+- `SnapTree.Iterator.Push` explicitly establishes the left subtree's prefix and
+  residual stack relation before the recursive call.
+- `Std.Arithmetic.Power.LemmaPowIncreases` uses direct induction on `e2 - e1`,
+  with the existing multiplication lemmas proving the successor step.
+- `Std.Producers.FlattenedProducer.Invoke` establishes the new last output
+  immediately after the original producer call, then splits that history fact
+  from the remaining loop update. Moving the assertion alone avoided the solver
+  overflow but exhausted the existing budget; the local split finishes.
+- `DecreasesTo0/1.GoodInstances` require nonnegative inputs. Negative old values
+  are tested by `BadNegativeInstances`, with marked strict and weak failures.
+  `DecreasesTo0.Tuples` likewise bounds the input used by its positive case.
+
+Focused checks pass for both axiom modes, both resolvers on the ordering tests,
+and both Z3 versions on the changed library declarations. The complete PR CI
+will supply replacement verdict artifacts and final resource measurements.
+The tables below record the initial comparison **before these proof repairs**;
+they do not describe the repaired declarations' current focused outcomes.
 
 ## Reproductions
 
