@@ -15,7 +15,7 @@ runs:
     - name: Runtime for generated C# programs
       shell: bash
       run: |
-        curl -fsSL https://dot.net/v1/dotnet-install.sh -o "$RUNNER_TEMP/dotnet-install.sh"
+        curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 20 --max-time 60 https://dot.net/v1/dotnet-install.sh -o "$RUNNER_TEMP/dotnet-install.sh"
         bash "$RUNNER_TEMP/dotnet-install.sh" --channel 8.0 --runtime dotnet --install-dir "$DOTNET_ROOT" --no-path --skip-non-versioned-files
     - name: Check SDK and runtime inventory
       shell: bash
