@@ -790,7 +790,10 @@ namespace Microsoft.Dafny {
 
       program = p;
       if (options.Get(CommonOptionBag.ModularTermination)) {
-        proofDependencies = p.ProofDependencyManager.ForModule(forModule.FullDafnyName);
+        // Opt-in module translations/reporters retain their supplied private map.
+        // Preserve the shipped shared-map parent on the default path.
+        var parent = options.Get(CommonOptionBag.ResolutionThreads) > 0 ? proofDependencies : p.ProofDependencyManager;
+        proofDependencies = parent.ForModule(forModule.FullDafnyName);
       }
       this.forModule = forModule;
       triggersCollector = new TriggersCollector(new Dictionary<Expression, HashSet<OldExpr>>(), options, forModule);

@@ -490,3 +490,5 @@ excluded from equality and must identify replayed observations. Verdicts,
 diagnostics, exact per-task RU and solver input remain equal. Separately audit
 legacy default-off versus option-on costs; do not hide naming-related cost or
 verdict changes by calling them cache hits.
+
+Modular-termination bypasses still own a private proof map in the opt-in module path: `ForModule` scopes the supplied map rather than replacing it with the program-wide map. The default parent is unchanged. Coverage/report regressions cover both resolver engines and repeated uncached bypass requests.

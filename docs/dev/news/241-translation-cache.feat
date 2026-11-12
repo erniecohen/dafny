@@ -9,3 +9,4 @@ Translation reuse is bypassed under `--modular-termination` until the current
 post-global-analysis view is included in the resolution key.
 Counterexample extraction also recomputes translation to preserve the complete
 rendered model trace until its report state has a snapshot codec.
+Module-scoped modular-termination translations retain their private proof-report maps when cache reuse is bypassed.
