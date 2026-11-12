@@ -674,7 +674,7 @@ Std Std.Base64.Encode1Padding (well-formedness)	Correct
 Std Std.Base64.Encode1PaddingIs1Padding (correctness)	Correct		
 Std Std.Base64.Encode1PaddingIs1Padding (well-formedness)	Correct		
 Std Std.Base64.Encode2Padding (well-formedness)	Correct		
-Std Std.Base64.Encode2PaddingIs2Padding (correctness)	Correct		
+Std Std.Base64.Encode2PaddingIs2Padding (correctness)	OutOfResource		
 Std Std.Base64.Encode2PaddingIs2Padding (well-formedness)	Correct		
 Std Std.Base64.EncodeBV (well-formedness)	Correct		
 Std Std.Base64.EncodeBVIs1Padded (correctness)	Correct		
@@ -2193,7 +2193,7 @@ TargetSpecific-py Std.FileIO.WriteUTF8ToFile (correctness)	Correct
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (correctness)	Correct		
 TargetSpecific-py Std.JavaCsActionsExterns.MakeSetReader (well-formedness)	Correct		
 TargetSpecific-py Std.PythonConcurrent.MutableMap.Get (well-formedness)	Correct		
-run Std	0	7716 verified, 0 errors	
+run Std	4	7750 verified, 0 errors, 1 out of resource	src/Std/Base64.dfy(704,8)
 run TargetSpecific-cs	0	15 verified, 0 errors	
 run TargetSpecific-go	0	16 verified, 0 errors	
 run TargetSpecific-java	0	15 verified, 0 errors	
