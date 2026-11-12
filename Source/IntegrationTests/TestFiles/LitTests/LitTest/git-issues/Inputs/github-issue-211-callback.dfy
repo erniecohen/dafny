@@ -38,7 +38,7 @@ module L {
   {
     g(n)
   }
-  function Id(x: nat): nat { x }
+  function {:termination_closed} Id(x: nat): nat { x }
 }
 
 module Y {

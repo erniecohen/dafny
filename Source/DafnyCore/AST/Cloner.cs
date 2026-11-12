@@ -65,6 +65,7 @@ namespace Microsoft.Dafny {
       Contract.Requires(newParent != null);
 
       var clone = CloneDeclarationSyntax(d, newParent);
+      clone.TerminationContract = d.TerminationContract;
       var parentObligations = d.CardinalityParentObligations;
       // Iterator syntax has no parent-trait list, and its clone constructor omits
       // Traits. A parent introduced by kind-changing refinement must still survive.
@@ -213,7 +214,7 @@ namespace Microsoft.Dafny {
     }
 
     public virtual MemberDecl CloneMember(MemberDecl member, bool isReference) {
-      return memberClones.GetOrCreate(member, () => {
+      var clone = memberClones.GetOrCreate(member, () => {
         if (isReference) {
           return member;
         }
@@ -227,6 +228,8 @@ namespace Microsoft.Dafny {
           return CloneMethod(m);
         }
       });
+      clone.TerminationContract = member.TerminationContract;
+      return clone;
     }
 
     public virtual Type CloneType(Type t) {
