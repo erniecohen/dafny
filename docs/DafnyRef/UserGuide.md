@@ -273,7 +273,9 @@ The options relevant to this command are
   Whole-program rewriters, replaceable-module instantiation, duplicate module-name
   checks and cardinality validation still run on every invocation. External plugins
   currently limit this mode to one worker because their callbacks have no
-  concurrent-resolution contract.
+  concurrent-resolution contract. This mode bypasses the language server's legacy
+  resolution-result cache; edits resolve module bodies again until a compatible
+  content-keyed cache is implemented.
 - those relevant to the command-line itself
    - `--allow-warnings` --- return a success [exit code](#sec-exit-codes), even when there are warnings 
 

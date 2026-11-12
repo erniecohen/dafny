@@ -208,6 +208,19 @@ def compare(args):
     return int(bool(errors))
 
 
+def validate_seed_zero(vector, source, records):
+    expected = {key: value for key, value in vector['proofs'].items() if key.split('\t')[0] == source}
+    actual = {}
+    for record in records:
+        for proof in record['vcResults']:
+            key = '\t'.join([source, record['name'], str(proof['vcNum'])])
+            if key in actual:
+                raise ValueError('Duplicate seed-zero proof: ' + key)
+            actual[key] = [proof['outcome'], proof['resourceCount']]
+    if not expected or expected != actual:
+        raise ValueError('Seed zero does not reproduce the full capture: ' + source)
+
+
 def variance(args):
     """Three-seed OFF/ON observations of every scope whose outcome moved."""
     root = args.output.resolve()
@@ -216,7 +229,10 @@ def variance(args):
     scopes = sorted({tuple(key.split('\t')[:2]) for key, value in changed.items()
         if value['before'] is not None and value['after'] is not None and value['before'][0] != value['after'][0]})
     observations = []
-    cases = scopes if args.part == 'stdlib' else sorted({(source, '') for source, _ in scopes})
+    # Filtering to one symbol skips translation of other modules. That changes
+    # legacy name history, so it is not a controlled seed experiment. Repeat the
+    # complete original invocation and retain affected scopes in the summary.
+    cases = sorted({(source, '') for source, _ in scopes})
     for source, scope in cases:
         if args.part == 'stdlib':
             label = source.removesuffix('.verification.json')
@@ -225,29 +241,29 @@ def variance(args):
                 raise ValueError('Target-specific variance requires preserving its binary options')
             cwd = ROOT / 'Source/DafnyStandardLibraries'
             original = invocation['command'][1:]
-            symbol = scope.rsplit(' (', 1)[0]
         else:
             original = json.loads((root / 'off/measurements' / source / 'command.json').read_text())[1:]
             cwd = ROOT / 'Source/IntegrationTests/TestFiles/LitTests/LitTest'
-            symbol = None
         name = hashlib.sha256((source + '\t' + scope).encode()).hexdigest()[:16]
-        for seed in (0, 1, 2):
-            for mode in ('off', '1'):
+        seeds = (args.seed,) if getattr(args, 'seed', None) is not None else (0, 1, 2)
+        modes = (args.mode,) if getattr(args, 'mode', None) is not None else ('off', '1')
+        for seed in seeds:
+            for mode in modes:
                 folder = root / 'seed-variance' / name / str(seed) / mode
                 folder.mkdir(parents=True, exist_ok=False)
                 log = folder / 'proofs.json'
                 argv = original.copy()
                 argv[argv.index('--log-format') + 1] = 'json;LogFileName=' + str(log)
-                extra = ['--boogie', '/randomSeed:' + str(seed)]
-                if symbol:
-                    extra += ['--filter-symbol', symbol + '.']
+                if getattr(args, 'z3', None) is not None:
+                    argv[argv.index('--solver-path') + 1] = str(args.z3.resolve())
+                extra = ['--bprint', str(folder / 'program.bpl'), '--boogie', '/randomSeed:' + str(seed)]
                 if mode == '1':
                     extra += ['--resolution-threads', '1']
                 command = [str(args.dafny.resolve()), argv[0], *extra, *argv[1:]]
                 process = subprocess.Popen(command, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                     text=True, start_new_session=True)
                 try:
-                    output, _ = process.communicate(timeout=1200)
+                    output, _ = process.communicate(timeout=5350 if args.part == 'stdlib' else 1200)
                 except subprocess.TimeoutExpired:
                     os.killpg(process.pid, signal.SIGKILL)
                     process.communicate()
@@ -257,11 +273,15 @@ def variance(args):
                 if process.returncode not in (0, 4) or not log.is_file():
                     raise ValueError('Incomplete seed-variance observation: ' + str(folder))
                 records = json.loads(log.read_text())['verificationResults']
-                if not records or (scope and not any(r['name'] == scope for r in records)):
-                    raise ValueError('Missing affected scope: ' + scope)
+                affected = {name for input_source, name in scopes if input_source == source}
+                if not records or not affected.issubset({r['name'] for r in records}):
+                    raise ValueError('Missing affected scopes: ' + source)
+                if seed == 0:
+                    vector = json.loads((root / mode / 'vector.json').read_text())
+                    validate_seed_zero(vector, source, records)
                 entries = {r['name']: dict(outcome=r['outcome'], ru=r['resourceCount'],
                     vcs={str(v['vcNum']): [v['outcome'], v['resourceCount']] for v in r['vcResults']})
-                    for r in records if not scope or r['name'] == scope}
+                    for r in records if args.part != 'stdlib' or r['name'] in affected}
                 observations.append(dict(source=source, scope=scope, seed=seed, mode=mode, results=entries))
                 dump(root / 'seed-variance.json', observations)
                 print('Seed variance', source, scope, seed, mode, entries, flush=True)
@@ -290,6 +310,9 @@ def main():
     seeds.add_argument('--part', required=True)
     seeds.add_argument('--dafny', type=Path, required=True)
     seeds.add_argument('--output', type=Path, required=True)
+    seeds.add_argument('--seed', type=int, choices=[0, 1, 2])
+    seeds.add_argument('--mode', choices=['off', '1'])
+    seeds.add_argument('--z3', type=Path)
     args = parser.parse_args()
     if args.action == 'capture':
         capture(args)

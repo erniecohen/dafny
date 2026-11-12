@@ -830,9 +830,15 @@ depths, so adding an unrelated module does not renumber an existing module.
 fully qualified module identity, original source, Dafny version, effective options
 and sorted `(dependency role, qualified identity, key)` prerequisite records. It
 does not use `CloneId`, execution order, worker count or the whole-program builtin
-shape. Execution/report destinations are excluded; other option values are
+shape. The implicit default module hashes its individual source declarations and
+members, including members contributed by different files; its synthetic default
+class has no source span and cannot stand in for those members.
+Execution/report destinations are excluded; other option values are
 conservatively included. Effective legacy fields and backend native-type support
 are also included, since legacy parsing can bypass the modern option dictionary.
+Effective per-declaration verification membership is included without source URIs:
+the unchecked-termination warning distinguishes selected roots from already
+verified library declarations even when their source and CLI options match.
 The key is available on each module output and in the
 requested `resolve.module` profile events. `--pipeline-profile` also works with
 `resolve`, allowing resolve-only measurements without solver startup.
@@ -887,6 +893,8 @@ remain derived from their declarations; backend compilation and solver preparati
 are later boundaries. Source locations remain attached to diagnostics; any snapshot
 loader must rebind them to the current source map. This PR does not introduce a
 cache, freeze resolved ASTs for reuse, or remove the language server's outer lock.
+The opt-in scheduler bypasses the IDE's legacy CloneId/system-shape result cache;
+edits resolve module bodies again. That cache remains active on the default path.
 External plugin callbacks have no concurrency contract, so their presence limits
 the opt-in path to one worker. Whole-program admission and global rewrites always
 run outside the module scheduler.
@@ -904,8 +912,9 @@ within the owning resolution result: several signatures can share one owner key.
 
 The reproducible resolve-only benchmark is
 [`.github/review/resolution-threads.py`](../../../.github/review/resolution-threads.py).
-It measures five fresh processes per N on the standard library, the three public
-lit inputs with the most module declarations, and a generated wide DAG. The
+It measures five fresh processes per N on the standard library, its examples,
+the DafnyCore project, the three public lit inputs with the most module
+declarations, and a generated wide DAG. The
 integration regression compares actual `--bprint` files at N = 1, 2, 4, 8 and after
 unrelated builtin growth. Unit tests cover key boundaries, diagnostic order, both
 inference engines, refinement invalidation, export ownership and immediate ready
