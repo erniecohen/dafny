@@ -1144,12 +1144,11 @@ jobs:
           name: dafny
       - name: Unpack Dafny
         run: mkdir -p out && tar -C out -xzf dafny.tar.gz
-      - name: Check unchanged product inputs at the reference-model introduction
+      - name: Check M1 introduction and current optional inputs
         run: |
+          git fetch --no-tags --depth=2 origin "$(cat .github/review/issue193-introduced)"
           python3 -m unittest discover -s .github/review -p test_issue193_identity.py
-          git fetch --no-tags --depth=1 origin "$(cat .github/review/issue193-base)" "$(cat .github/review/issue193-product)"
-          python3 .github/review/issue193-identity.py reference-results/identity \
-            --product-commit "$(cat .github/review/issue193-product)"
+          python3 .github/review/issue193-identity.py reference-results/identity
       - name: Pinned solver
         run: |
           if [ '${{ matrix.z3 }}' = 5.1.0 ]; then
@@ -1259,7 +1258,7 @@ jobs:
   release:
     if: ${{ !inputs.platform_parity && (github.repository == 'erniecohen/dafny' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref_type == 'tag') }}
     name: GitHub release
-    needs: [build, binaries, verdicts, stdlib, javascript-runtime, regressions, resolver, resolver-tests, finite-support, statement-conclusions, axiom-resources, verification-batch, regressions-linux, integer-bitwise-reference, parallel-resolution, resolution-std-seeds]
+    needs: [build, binaries, verdicts, stdlib, javascript-runtime, regressions, regressions-linux, resolver, resolver-tests, finite-support, statement-conclusions, axiom-resources, verification-batch, integer-bitwise-reference, parallel-resolution, resolution-std-seeds]
     runs-on: mac-studio
     timeout-minutes: 15
     permissions:
