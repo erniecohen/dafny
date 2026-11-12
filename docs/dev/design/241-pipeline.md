@@ -817,6 +817,8 @@ case. Adding a lock around `id++` prevents duplication but permits different SMT
 names on every schedule. Apply the same reasoning to type/visibility IDs, builtin
 enumeration and declaration-order ties.
 
+Operator-export clone contexts snapshot the actual builtin declaration identities from the dependency-local publication view. This shared correctness hook also applies on the default caller-thread path: an interned declaration can be owned by a different publication module. It does not exempt declarations by module or type name, and user declarations retain their ordinary visibility and revelation checks.
+
 ### 6.3 Improve the existing resolution cache
 
 Under proposed `--resolution-cache-content`:

@@ -403,3 +403,5 @@ git-issues/git-issue-241-history-free-translation.dfy
 
 # Source-only opt-in function operators, clone preservation and negative controls (https://github.com/erniecohen/dafny/issues/194).
 git-issues/github-issue-194.dfy
+
+# Parallel operator-export builtin ownership and visibility negatives are in git-issues/github-issue-241-parallel-resolution.dfy.
