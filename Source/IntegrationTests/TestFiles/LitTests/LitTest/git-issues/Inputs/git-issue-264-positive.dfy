@@ -1,4 +1,4 @@
-// Fractional real progress may be weak, provided the suffix still makes progress.
+// Fractional real progress is weak nonincrease and permits an unchanged suffix.
 trait T {
   method M(r: real)
     requires r >= 0.0

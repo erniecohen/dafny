@@ -164,7 +164,9 @@ This soundness fix ships enabled by explicit owner decision. The hidden
 comparison and migration. `--modular-termination` remains opt-in. The regression
 is `git-issues/git-issue-264.dfy`. Actions records default/legacy verdict and
 resource comparisons for the suite and standard library, and byte identity
-between the pre-fix product and candidate legacy mode.
+between the pre-fix product and candidate legacy mode. The [comparison results
+and proof annotations](docs/dev/decreases-order-results.md) list every changed
+declaration outcome and explain the baseline updates.
 
 ## Boogie
 

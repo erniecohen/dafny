@@ -49,7 +49,8 @@ new axioms or a mechanized proof of the translator.
 * **ORDINAL:** ordinary ordinal `<` and its reflexive closure. Ordinal order is
   transitive and well-founded, so both absorption laws hold, including at limits.
 * **Equality-only families:** infinite sets/maps, arrows, abstract values and
-  coinductive datatypes have `s = false` and equivalence as `w`. The laws hold
+  coinductive datatypes have `s = false` and equivalence as `w` (domain
+  equivalence for infinite maps). The laws hold
   trivially. Coinductive values are not assigned an inductive descent order.
 * **TOP:** every proper value is strictly and weakly below TOP; TOP is weakly
   below only itself. No proper component is above TOP. This extends each pair
@@ -123,3 +124,6 @@ declaration verdicts/resources. Differences are reported by name. It also checks
 old-source default against candidate legacy without normalizing solver text or
 output. Expected-verdict updates are taken from the Actions artifacts in their
 own commit, with a reason for each change.
+
+The [comparison results and proof annotations](decreases-order-results.md) retain
+the named outcomes, resource totals, and incomplete standard-library obligations.
