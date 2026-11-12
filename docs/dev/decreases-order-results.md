@@ -37,6 +37,16 @@ is not a claim that every library theorem is proved.
 The branch incorporates the independently shipped opaque-trait constructor
 repair from https://github.com/erniecohen/dafny/pull/279.
 
+The later [CI platform run](https://github.com/erniecohen/dafny/actions/runs/43152109330)
+exposed one additional proof-cost regression: `Lucas-down.Lucas_Binary''` is
+`Correct` on Linux but exhausts the same 16,000,000 RU budget on macOS, in both
+axiom modes. The lemma already contains its two recursive induction calls.
+Disabling redundant automatic induction preserves its statement and twelve
+verified declarations, without raising the limit. Its existing lit regression
+covers the unchanged expected output; final PR CI checks the suite budget.
+This repair needs no expected-verdict change: the baseline already requires
+`Correct`.
+
 ## Reproductions
 
 The original product and candidate legacy mode accept the varying-arity real
@@ -101,7 +111,7 @@ A focused repeat after integrating shipped source-contract changes through
 Subsequent comparison-source changes only attach diagnostic origins in the
 corrected mode; the legacy path is unchanged.
 
-The **repaired-source cohort** is `ecd7d6b17b18cf494d277ad21d627641fbd1268a`,
+The **cohort after the five requested repairs** is `ecd7d6b17b18cf494d277ad21d627641fbd1268a`,
 measured by [post-repair PR CI](https://github.com/erniecohen/dafny/actions/runs/43146753087).
 It includes the proof edits and merged shipped changes. Its resource difference
 from the initial corrected source therefore includes those changes; it is not
@@ -111,8 +121,9 @@ All six replacement baselines are copied from this run's artifacts.
 The later CI-only merge from https://github.com/erniecohen/dafny/pull/274 moves
 the suite and Z3 4.12.1 gates to macOS; the Z3 5.1.0 library gates stay on
 Linux. The measurements here remain the identified Linux cohort. Cross-platform
-resource counts are not asserted equal; final PR CI enforces the same expected
-verdicts.
+resource counts are not asserted equal. These recorded totals also precede
+the later Lucas induction repair; final PR CI enforces the same expected
+verdicts and retains the later resource observations.
 
 ## Initial comparison, before proof repairs
 
@@ -148,7 +159,7 @@ Every initially changed declaration, and its repaired-source outcome:
 | std-on-5.1.0 | `Std Std.Collections.Seq.MergeSortedWith (well-formedness)` | OutOfResource | Correct | Correct |
 | std-off-4.12.1 | `Std Std.Producers.FlattenedProducer.Invoke (correctness)` | Correct | Errors | Correct |
 
-## Repaired-source outcomes and resources
+## Outcomes and resources after the five requested repairs
 
 Only newly finishing proofs differ among the common declaration names relative
 to the original legacy control. The added declarations are
