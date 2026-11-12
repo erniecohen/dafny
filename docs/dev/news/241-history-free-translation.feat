@@ -3,3 +3,5 @@ in the default translator. Unrelated module growth no longer changes another
 unit's translated text. This intentionally changes generated Boogie once and can
 move solver resource costs. Translation-table consumers use the same graph
 materialization and module-owned proof/report maps as uncached consumers.
+
+The moved Base64 encoding proof checks its existing obligations in separate assertion batches, within its unchanged resource limit.
