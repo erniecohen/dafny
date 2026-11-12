@@ -374,3 +374,6 @@ git-issues/git-issue-246.dfy
 
 # Pure integer bitwise reference model; no language or solver changes (https://github.com/erniecohen/dafny/issues/193).
 git-issues/git-issue-193-reference-laws.dfy
+
+# Distinct opaque nullable and non-null type constructors (https://github.com/erniecohen/dafny/issues/268).
+git-issues/github-issue-268.dfy
