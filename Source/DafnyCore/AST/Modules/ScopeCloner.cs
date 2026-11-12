@@ -8,6 +8,7 @@ namespace Microsoft.Dafny;
 class ScopeCloner : DeepModuleSignatureCloner {
   private VisibilityScope scope = null;
   private readonly ModuleDefinition systemModule;
+  private readonly IReadOnlySet<TopLevelDecl> systemTypes;
 
   private Dictionary<Declaration, Declaration> reverseMap = new();
 
@@ -16,13 +17,17 @@ class ScopeCloner : DeepModuleSignatureCloner {
     return !reverseMap[d].IsVisibleInScope(scope);
   }
 
-  public ScopeCloner(VisibilityScope scope, ModuleDefinition systemModule = null) {
+  public ScopeCloner(VisibilityScope scope, ModuleDefinition systemModule = null,
+    IReadOnlySet<TopLevelDecl> systemTypes = null) {
     this.scope = scope;
     this.systemModule = systemModule;
+    this.systemTypes = systemTypes;
 
   }
 
-  protected override OperatorCloneContext CreateOperatorCloneContext() => new() { ExportScope = scope, SystemModule = systemModule };
+  protected override OperatorCloneContext CreateOperatorCloneContext() => new() {
+    ExportScope = scope, SystemModule = systemModule, SystemTypes = systemTypes
+  };
 
   private bool RevealedInScope(Declaration d) {
     return d.IsRevealedInScope(scope);

@@ -900,6 +900,10 @@ views together. Reuse additionally requires unchanged parse identity for diagnos
 tokens and the exact prerequisite output objects; replacing a prerequisite forces
 its dependents to resolve again. An editor-owned intrinsic catalog supplies canonical
 builtin identities across edits, with fresh per-resolution and per-worker views.
+Operator-export clone contexts snapshot the view's actual builtin type identities:
+an interned declaration need not be owned by the publication module. The snapshot
+survives output pruning and grants no exemption based on a module or type name;
+user declarations still require ordinary export visibility and revelation.
 Containment is rebound after deterministic publication, including parent cache hits.
 Rejected modules and their failed prerequisite closures are not traversed to collect
 translation inputs. These are editor-session results, not serialized snapshots or

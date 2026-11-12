@@ -6,4 +6,6 @@ Editor resolution caches retain complete dependency-local worker outputs keyed b
 module identity, with canonical builtin views and containment rebound on publication.
 Whole-program admission is rerun after cache hits. Rejected resolver configurations
 report their diagnostics without traversing unresolved translation inputs.
+Operator export views recognize canonical builtin identities without relaxing
+visibility checks on user declarations.
 The default resolution path is unchanged.
