@@ -1,0 +1,7 @@
+Add opt-in `--translation-cache`, a bounded process-local translation table over
+semantic module keys. It reuses the default module-local translator's immutable
+snapshots and prepares fresh proof tasks, without changing names, resolution
+scheduling or solver inputs. Separate CLI processes share no table. No disk
+translation cache or verification-result cache is enabled by this option.
+Translation reuse is bypassed for modular termination until its post-global
+view is keyed, and for counterexample extraction until report state has a codec.

@@ -396,3 +396,4 @@ git-issues/github-issue-268.dfy
 
 # Default dependency-local translation (https://github.com/erniecohen/dafny/issues/241).
 git-issues/git-issue-241-history-free-translation.dfy
+git-issues/github-issue-241-translation-cache.dfy
