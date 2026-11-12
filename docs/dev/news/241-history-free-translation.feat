@@ -9,3 +9,5 @@ The moved Base64 encoding proof checks its existing obligations in separate asse
 The moved structural-JSON function checks its existing well-formedness obligations separately, within its unchanged resource limit.
 
 The original well-founded induction regression and the one-padding Base64 decomposition lemma keep their existing proof obligations and resource ceilings, with assertion isolation to repair moved proof costs. Generated-name and canonical builtin-display expectations follow the new ownership scheme.
+
+Operator export views recognize dependency-local compiler builtin identities while retaining visibility checks on user declarations.

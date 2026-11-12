@@ -134,6 +134,15 @@ public class SystemModuleManager {
     }
   }
 
+  internal IReadOnlySet<TopLevelDecl> GetBuiltinTypeIdentities() {
+    // A worker's publication module is not the owner of interned declarations.
+    // Snapshot actual builtin identities before output pruning; neither module
+    // names nor a declaration's apparent shape establish compiler ownership.
+    return ResolutionCatalog == null ? null : SystemModule.SourceDecls
+      .Concat(valuetypeDecls).Concat(PreTypeBuiltins.Values)
+      .ToHashSet<TopLevelDecl>(ReferenceEqualityComparer.Instance);
+  }
+
   internal void RestrictResolutionOutput(ModuleTranslationInputs inputs) {
     // Parsing discovers builtin shapes across all input files. Retain only the
     // shapes needed by this module's resolved closure in its published output.
